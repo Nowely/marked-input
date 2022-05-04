@@ -38,3 +38,31 @@ export function setCaretRightTo(element: HTMLElement, offset: number) {
     range?.setStart(range.endContainer, offset)
     range?.setEnd(range.endContainer, offset)
 }
+
+export enum PLACEHOLDER {
+    Id = '__id__',
+    Value = '__value__',
+}
+
+type id = `${string}${PLACEHOLDER.Id}${string}`
+type value = `${string}${PLACEHOLDER.Value}${string}`
+export type Mark = `${value}${id}` | `${id}${value}` | `${id}`
+
+export const markupToRegex = (markup: string) => {
+    const escapedMarkup = escapeRegex(markup)
+    const charAfterDisplay = markup[markup.indexOf(PLACEHOLDER.Value) + PLACEHOLDER.Value.length]
+    const charAfterId = markup[markup.indexOf(PLACEHOLDER.Id) + PLACEHOLDER.Id.length]
+    return new RegExp(escapedMarkup
+        .replace(PLACEHOLDER.Value, `([^${escapeRegex(charAfterDisplay || '')}]+?)`)
+        .replace(PLACEHOLDER.Id, `([^${escapeRegex(charAfterId || '')}]+?)`),
+    )
+}
+
+export const makeMentionsMarkup = (markup: string, id: string, value: string) => {
+    return markup
+        .replace(PLACEHOLDER.Id, id)
+        .replace(PLACEHOLDER.Value, value)
+}
+
+// escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
+export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')

@@ -1,47 +1,37 @@
-import {Children, ComponentType, Fragment, ReactElement, useEffect, useRef, useState} from "react";
+import {ComponentType, ReactElement, useRef, useState} from "react";
 import {EditableCell} from "./components/EditableCell";
 import {MarkupProps} from "./Markup";
+import {useParsedText} from "./hooks";
 
+//TODO Id processing
+//TODO Correct Caret
+//TODO Processing on delete and on backspace
+//TODO API
+//TODO Demo
+//TODO publish to npm
+//TODO README
+//TODO more examples: based, stylish
+//TODO custom popup trigger
+//TODO Processing markup
 
 interface TaggedInputProps<T> {
     value: string
     onChange: (value: string) => void
     Tag: ComponentType<T>
-    children: ReactElement<MarkupProps<T>> //| ReactElement<MarkupProps & T>[]
+    children: ReactElement<MarkupProps<T>> | ReactElement<MarkupProps<T>>[]
 }
 
-type TagValue<T> = {
+export type TagValue<T> = {
     value: string
     props: T
+    valueKey: string
+    childIndex: number
 }
 
-export const TaggedInput = <T, >({Tag, ...props}: TaggedInputProps<T>) => {
-    const [values, setValues] = useState<(string | TagValue<T>)[]>([])
+export const TaggedInput = <T, >({Tag, value, children, ...props}: TaggedInputProps<T>) => {
+    const values = useParsedText(value, children)
     const [active, setActive] = useState<null | number>(null)
     const isTail = useRef(false)
-    const indexes = useRef<number[]>([])
-
-    const child = Children.only(props.children)
-
-    useEffect(() => {
-        let regExp = new RegExp(/@\w+/, "g")
-        let newValues: (string | TagValue<T>)[] = props.value.split(regExp)
-
-        let i = 1
-        indexes.current = []
-        let execArray = regExp.exec(props.value)
-        while (execArray) {
-            indexes.current.push(execArray.index)
-            newValues.splice(i, 0, {
-                value: execArray[0].substring(1),
-                props: child.props.inner,
-            })
-            i = i + 2
-            execArray = regExp.exec(props.value)
-        }
-        setValues(newValues)
-    }, [props.value])
-
 
     const onNext = () => {
         if (active != values.length - 1)
@@ -54,12 +44,12 @@ export const TaggedInput = <T, >({Tag, ...props}: TaggedInputProps<T>) => {
         }
     }
     const onRemove = () => {
-        let regExp = new RegExp(/@\w+/, "g")
-        let newValue = props.value?.replace(regExp, (match, index, allText, c) => {
-            if (index === indexes.current[(active ?? 0) - 1]) return ""
+        /*let regExp = new RegExp(/@\w+/, "g")
+        let newValue = value?.replace(regExp, (match, index, allText, c) => {
+            if (index === indexes[(active ?? 0) - 1]) return ""
             return match
         })
-        props.onChange?.(newValue ?? "")
+        props.onChange?.(newValue ?? "")*/
         //TODO caret
     }
 
@@ -67,7 +57,7 @@ export const TaggedInput = <T, >({Tag, ...props}: TaggedInputProps<T>) => {
         <div>
             {values.map((value, index) =>
                 typeof value === "object"
-                    ? <Tag {...value.props}/>
+                    ? <Tag tabIndex={-1} {...value.props} {...{[value.valueKey]: value.value}} />
                     : <EditableCell
                         //key={value}
                         index={index}
