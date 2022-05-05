@@ -30,6 +30,7 @@ function extractArr<T>(configs: ReactElement<MarkupProps<T>>[], text:string) {
 
         let before = input.substring(0, index)
         let processedMatch: TagValue<T> = {
+            id,
             value,
             props: configs[childIndex].props.inner,
             valueKey: configs[childIndex].props.valueKey,

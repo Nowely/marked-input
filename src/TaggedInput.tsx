@@ -1,11 +1,13 @@
-import {ComponentType, ReactElement, useRef, useState} from "react";
+import {ComponentType, KeyboardEvent, ReactElement, useEffect, useState} from "react";
 import {EditableCell} from "./components/EditableCell";
 import {MarkupProps} from "./Markup";
 import {useParsedText} from "./hooks";
+import {KEY} from "./constants";
+import {getCaretIndex, toString} from "./utils";
 
-//TODO Id processing
-//TODO Correct Caret
 //TODO Processing on delete and on backspace
+//TODO Correct Caret
+//TODO Id processing
 //TODO API
 //TODO Demo
 //TODO publish to npm
@@ -22,6 +24,7 @@ interface TaggedInputProps<T> {
 }
 
 export type TagValue<T> = {
+    id: string
     value: string
     props: T
     valueKey: string
@@ -30,20 +33,21 @@ export type TagValue<T> = {
 
 export const TaggedInput = <T, >({Tag, value, children, ...props}: TaggedInputProps<T>) => {
     const values = useParsedText(value, children)
-    const [active, setActive] = useState<null | number>(null)
-    const isTail = useRef(false)
+    const [activeIndex, setActiveIndex] = useState<null | number>(null)
 
-    const onNext = () => {
-        if (active != values.length - 1)
-            setActive(active! + 1)
-    }
-    const onPrevious = () => {
-        if (active) {
-            isTail.current = true
-            setActive(active - 1)
+    const onPressLeft = (target: HTMLSpanElement) => {
+        if (activeIndex != null) {
+            let newIndex = Math.abs(activeIndex) - 2
+            setActiveIndex(-newIndex)
         }
     }
-    const onRemove = () => {
+
+    const onPressRight = (target: HTMLSpanElement) => {
+        if (activeIndex != null)
+            setActiveIndex(Math.abs(activeIndex) + 2)
+    }
+
+    const onPressBackspace = (target: HTMLSpanElement) => {
         /*let regExp = new RegExp(/@\w+/, "g")
         let newValue = value?.replace(regExp, (match, index, allText, c) => {
             if (index === indexes[(active ?? 0) - 1]) return ""
@@ -53,29 +57,47 @@ export const TaggedInput = <T, >({Tag, value, children, ...props}: TaggedInputPr
         //TODO caret
     }
 
+    const handleKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+        const target = event.target as HTMLSpanElement
+        const caretIndex = getCaretIndex(target);
+        const isStartCaret = caretIndex === 0;
+        const isEndCaret = caretIndex === target.textContent?.length;
+
+        //TODO to object map
+        switch (event.key) {
+            case KEY.LEFT:
+                isStartCaret && onPressLeft(target)
+                break
+            case KEY.RIGHT:
+                isEndCaret && onPressRight(target)
+                break
+            case KEY.UP: //TODO to start input position
+            case KEY.DOWN: //TODO to end input position
+                break;
+            case KEY.BACKSPACE:
+                isStartCaret && onPressBackspace(target)
+                break
+        }
+    }
+
     return (
-        <div>
+        <div onKeyDown={handleKeyDown}>
             {values.map((value, index) =>
                 typeof value === "object"
-                    ? <Tag tabIndex={-1} {...value.props} {...{[value.valueKey]: value.value}} />
+                    ? <Tag /*key={value.value}*/ tabIndex={-1} {...value.props} {...{[value.valueKey]: value.value}} />
                     : <EditableCell
                         //key={value}
                         index={index}
-                        active={active}
-                        next={onNext}
-                        previous={onPrevious}
-                        remove={onRemove}
-                        setActive={setActive}
+                        active={activeIndex}
+                        setActive={setActiveIndex}
                         value={value}
-                        isTail={isTail}
                         onChange={(newValue: string) => {
                             values[index] = newValue
-                        }}
-                        onBlur={() => {
-                            //props.onChange?.(values.join(""))
+                            props.onChange(toString(values, children))
                         }}
                     />
             )}
         </div>
     )
 }
+

@@ -1,5 +1,6 @@
-import {forwardRef, KeyboardEvent, useEffect, useRef} from "react";
-import {getCaretIndex, setCaretRightTo, setCaretToEnd} from "../utils";
+import {forwardRef, KeyboardEvent, memo, useEffect, useLayoutEffect, useRef, useState} from "react";
+import {getCaretIndex, setCaretRightTo, setCaretTo, setCaretToEnd} from "../utils";
+import {KEY} from "../constants";
 
 export interface EditableCellProps {
     index: number
@@ -7,56 +8,45 @@ export interface EditableCellProps {
     setActive: Function
     value: string
     onChange?: Function
-    next?: Function
-    previous?: Function
-    remove?: Function
-    onBlur?: Function
-    isTail: any
 }
 
-export const EditableCell = forwardRef((props: EditableCellProps, ref: any) => {
-    const inputRef = useRef<any>()
-    const valueRef = useRef(props.value)
-    //ref1.current.
-
-    const handleKeyboardEvent = (e: KeyboardEvent<HTMLSpanElement>) => {
-        //TODO incorrect caret
-        if (e.key === "ArrowLeft" && getCaretIndex(inputRef.current) === 0)
-            props.previous?.()
-
-        if (e.key === "ArrowRight" && getCaretIndex(inputRef.current) === valueRef.current.length)
-            props.next?.()
-
-        if (e.key === "Backspace" && getCaretIndex(inputRef.current) === 0)
-            props.remove?.()
-
-    };
+export const EditableCell = (props: EditableCellProps) => {
+    const ref = useRef<HTMLSpanElement>(null)
+    const [caretIndex, setCaretIndex] = useState(0)
 
     useEffect(() => {
-        if (props.active === props.index) {
-            inputRef.current?.focus()
+        if (props.active === null) return
+        if (!ref.current) return;
 
-            if (props.isTail.current) {
-                //setCaretToEnd(inputRef.current)
-                props.isTail.current = false
-            }
+        if (props.active === props.index) {
+            ref.current?.focus()
+            return;
         }
+
+        if (props.active === -props.index) {
+            ref.current?.focus()
+            setCaretToEnd(ref.current)
+            return;
+        }
+    }, [props.active])
+
+    useLayoutEffect(() => {
+        if (!caretIndex) return
+        if (!ref.current) return;
+        setCaretTo(ref.current, caretIndex)
     })
 
     return (
         <span
-            onBlur={(e) => {props.onBlur?.(e)}}
-            ref={inputRef}
+            ref={ref}
             style={{outline: "none"}}
             contentEditable
             suppressContentEditableWarning
             onInput={(e) => {
                 const newValue = e.currentTarget.textContent ?? ""
-                valueRef.current = newValue
-                //console.log(newValue);
+                setCaretIndex(getCaretIndex(e.currentTarget))
                 props.onChange?.(newValue)
-                //setCaretRightTo(inputRef.current, 2)
-                //console.log(getCaretIndex(inputRef.current))
+
             }}
             onFocus={event => {
                 props.setActive(props.index)
@@ -65,16 +55,15 @@ export const EditableCell = forwardRef((props: EditableCellProps, ref: any) => {
                 if (props.active === props.index)
                     props.setActive(null)
             }}*/
-            onKeyDown={handleKeyboardEvent}
-            //onKeyUp={handleKeyboardEvent}
             onPaste={(e) => {
                 e.preventDefault();
                 const text = e.clipboardData.getData("text");
+                //e.currentTarget.textContent
                 document.execCommand("insertText", false, text);
-                //inputRef.current.innerText = text;
+                //ref.current.innerText = text;
             }}
         >
-            {valueRef.current}
+            {props.value}
         </span>
     )
-})
+}

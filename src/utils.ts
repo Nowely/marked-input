@@ -1,3 +1,8 @@
+import {Children, ReactElement} from "react";
+import {MarkupProps} from "./Markup";
+import {TagValue} from "./TaggedInput";
+import {PLACEHOLDER} from "./constants";
+
 export function getCaretIndex(element: HTMLElement) {
     let position = 0;
 
@@ -39,11 +44,6 @@ export function setCaretRightTo(element: HTMLElement, offset: number) {
     range?.setEnd(range.endContainer, offset)
 }
 
-export enum PLACEHOLDER {
-    Id = '__id__',
-    Value = '__value__',
-}
-
 type id = `${string}${PLACEHOLDER.Id}${string}`
 type value = `${string}${PLACEHOLDER.Value}${string}`
 export type Mark = `${value}${id}` | `${id}${value}` | `${id}`
@@ -66,3 +66,16 @@ export const makeMentionsMarkup = (markup: string, id: string, value: string) =>
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
+
+export function toString(values: (string | TagValue<any>)[], children: ReactElement<MarkupProps<any>> | ReactElement<MarkupProps<any>>[]) {
+    let result = ""
+    let configs = Children.map(children, child => child)
+    for (let value of values) {
+        if (typeof value === "string")
+            result += value
+        else {
+            result += makeMentionsMarkup(configs[value.childIndex].props.value, value.id, value.value)
+        }
+    }
+    return result
+}
