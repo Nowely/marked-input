@@ -27,3 +27,5 @@ export enum PLACEHOLDER {
     Id = '__id__',
     Value = '__value__',
 }
+
+export const EmptyFunc = () => {}

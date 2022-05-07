@@ -1,7 +1,7 @@
 import {Children, ReactElement} from "react";
 import {MarkupProps} from "./Markup";
-import {TagValue} from "./TaggedInput";
 import {PLACEHOLDER} from "./constants";
+import {TagValue} from "./types";
 
 export function getCaretIndex(element: HTMLElement) {
     let position = 0;
@@ -79,3 +79,19 @@ export function toString(values: (string | TagValue<any>)[], children: ReactElem
     }
     return result
 }
+
+//https://stackoverflow.com/a/52171480 cyrb53 generate hash
+export const genHash = (str: string, seed = 0) => {
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+    return 4294967296 * (2097151 & h2) + (h1>>>0);
+}
+
+export const genId = () => Math.random().toString(36).substring(2, 9)
+

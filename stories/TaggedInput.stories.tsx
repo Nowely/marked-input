@@ -20,6 +20,6 @@ export const Basic = () => {
         </TaggedInput>
 
         <br/>
-        <textarea value={value} onChange={event => setValue(event.target.value)}/>
+        <textarea style={{width: '45%'}} value={value} onChange={event => setValue(event.target.value)}/>
     </>
 }

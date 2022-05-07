@@ -1,12 +1,13 @@
-import {Children, ReactElement, useEffect, useState} from "react";
-import {MarkupProps} from "./Markup";
-import {TagValue} from "./TaggedInput";
-import {markupToRegex} from "./utils";
+import {Children, ReactElement, useEffect, useMemo, useState} from "react";
+import {MarkupProps} from "../Markup";
+import {genHash, genId, markupToRegex} from "../utils";
+import {TagValue} from "../types";
 
 export const useParsedText = <T, >(
     text: string,
     children: ReactElement<MarkupProps<T>> | ReactElement<MarkupProps<T>>[],
-): (string | TagValue<T>)[] => {
+//): (string | TagValue<T>)[] => {
+): Map<number, string | TagValue<T>> => {
     const [values, setValues] = useState<(string | TagValue<T>)[]>([])
 
     useEffect(() => {
@@ -15,7 +16,25 @@ export const useParsedText = <T, >(
         setValues(result)
     }, [text])
 
-    return values
+    //TODO instance prefix for keys
+    const prefix = useState(() => genId())[0]
+    const [map, setMap] = useState<Map<number, string | TagValue<T>>>(new Map())
+    useEffect(() => {
+        let newMap = new Map<number, string | TagValue<T>>()
+        for (let value of values){
+            let str = typeof value === 'string' ? value : value.id + value.value
+            let seed = 0
+            let key = genHash(str, seed)
+            while (newMap.has(key))
+                key = genHash(str, seed++)
+            newMap.set(key, value)
+        }
+        setMap(newMap)
+        /*let entries: [string, string | TagValue<T>][] = values.map(v => [genKey(), v])
+        setMap(new Map(entries))*/
+    }, [values.length])
+
+    return map
 }
 
 function extractArr<T>(configs: ReactElement<MarkupProps<T>>[], text:string) {
