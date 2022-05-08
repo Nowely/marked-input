@@ -17,6 +17,7 @@ export const useParsedText = <T, >(
     }, [text])
 
     //TODO instance prefix for keys
+    //TODO Compare new input value with returned
     const prefix = useState(() => genId())[0]
     const [map, setMap] = useState<Map<number, string | TagValue<T>>>(new Map())
     useEffect(() => {

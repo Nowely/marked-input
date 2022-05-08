@@ -10,7 +10,6 @@ import {useCaret} from "./hooks/useCaret";
 //TODO Correct Caret
 //TODO Id processing
 //TODO API
-//TODO Demo
 //TODO publish to npm
 //TODO README
 //TODO more examples: based, stylish

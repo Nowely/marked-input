@@ -5,11 +5,14 @@
   "main": "index.ts",
   "scripts": {
     "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook"
+    "build-storybook": "build-storybook",
+    "build": "vite build"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+  },
+  "peerDependencies": {
     "react": "^17.0.2"
   },
   "devDependencies": {
