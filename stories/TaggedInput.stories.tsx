@@ -1,12 +1,12 @@
 import {TaggedInput} from "../src";
 import {ComponentMeta, ComponentStory} from "@storybook/react";
-import {Button, ButtonProps} from "./Button";
+import {Button, ButtonProps} from "./assets/Button";
 import {useState} from "react";
 import {Markup, MarkupProps} from "../src";
 
 export default {
-    title: "Example/TaggedInput",
-    component: TaggedInput
+    title: "TaggedInput",
+    component: TaggedInput,
 } as ComponentMeta<typeof TaggedInput>
 
 export const Basic = () => {
