@@ -8,7 +8,7 @@ import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
 
 export default {
-    title: "TaggedInput",
+    title: "MarkedInput",
     component: MarkedInput,
 } as ComponentMeta<typeof MarkedInput>
 
