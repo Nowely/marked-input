@@ -1,2 +1,2 @@
-export * from "./TaggedInput"
-export * from "./Markup"
+export * from "./MarkedInput"
+export * from "./Option"

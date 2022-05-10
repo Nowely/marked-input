@@ -1,18 +1,21 @@
-import {useEffect, useLayoutEffect, useRef} from "react";
-import {getCaretIndex, setCaretRightTo, setCaretTo, setCaretToEnd} from "../utils";
+import {CSSProperties, useEffect, useLayoutEffect, useRef} from "react";
+import {assign, getCaretIndex, setCaretRightTo, setCaretTo, setCaretToEnd} from "../utils";
 import {CaretManager} from "../hooks/useCaret";
 
-export interface EditableCellProps {
+export interface EditableSpanProps {
     id: number
     caret: CaretManager
     focused: number | null
     setFocused: Function
     value: string
     onChange?: Function
+    className?: string
+    style?: CSSProperties
 }
 
-export const EditableCell = ({id, caret, focused, onChange, setFocused, value}: EditableCellProps) => {
+export const EditableSpan = ({id, caret, focused, onChange, setFocused, value, ...props}: EditableSpanProps) => {
     const ref = useRef<HTMLSpanElement>(null)
+    const style = assign({outline: "none"}, props.style)
 
     useEffect(() => {
         if (id !== focused || !ref.current) return
@@ -31,10 +34,12 @@ export const EditableCell = ({id, caret, focused, onChange, setFocused, value}: 
         setCaretTo(ref.current, caret.position)
     })
 
+
     return (
         <span
             ref={ref}
-            style={{outline: "none"}}
+            style={style}
+            className={props.className}
             contentEditable
             suppressContentEditableWarning
             onInput={(e) => {

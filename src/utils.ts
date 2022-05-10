@@ -1,5 +1,5 @@
 import {Children, ReactElement} from "react";
-import {MarkupProps} from "./Markup";
+import {OptionProps} from "./Option";
 import {PLACEHOLDER} from "./constants";
 import {TagValue} from "./types";
 
@@ -25,6 +25,8 @@ export function getCaretIndex(element: HTMLElement) {
     return position
 }
 
+export const assign = Object.assign
+
 export function setCaretToEnd(element: HTMLElement) {
     const selection = window.getSelection();
     selection?.setPosition(element, 1)
@@ -46,7 +48,7 @@ export function setCaretRightTo(element: HTMLElement, offset: number) {
 
 type id = `${string}${PLACEHOLDER.Id}${string}`
 type value = `${string}${PLACEHOLDER.Value}${string}`
-export type Mark = `${value}${id}` | `${id}${value}` | `${id}`
+export type Markup = `${value}${id}` | `${id}${value}` | `${id}`
 
 export const markupToRegex = (markup: string) => {
     const escapedMarkup = escapeRegex(markup)
@@ -67,14 +69,14 @@ export const makeMentionsMarkup = (markup: string, id: string, value: string) =>
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | TagValue<any>)[], children: ReactElement<MarkupProps<any>> | ReactElement<MarkupProps<any>>[]) {
+export function toString(values: (string | TagValue<any>)[], children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[]) {
     let result = ""
     let configs = Children.map(children, child => child)
     for (let value of values) {
         if (typeof value === "string")
             result += value
         else {
-            result += makeMentionsMarkup(configs[value.childIndex].props.value, value.id, value.value)
+            result += makeMentionsMarkup(configs[value.childIndex].props.markup, value.id, value.value)
         }
     }
     return result

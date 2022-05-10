@@ -1,11 +1,11 @@
 import {Children, ReactElement, useEffect, useMemo, useState} from "react";
-import {MarkupProps} from "../Markup";
+import {OptionProps} from "../Option";
 import {genHash, genId, markupToRegex} from "../utils";
 import {TagValue} from "../types";
 
 export const useParsedText = <T, >(
     text: string,
-    children: ReactElement<MarkupProps<T>> | ReactElement<MarkupProps<T>>[],
+    children: ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[],
 //): (string | TagValue<T>)[] => {
 ): Map<number, string | TagValue<T>> => {
     const [values, setValues] = useState<(string | TagValue<T>)[]>([])
@@ -38,8 +38,8 @@ export const useParsedText = <T, >(
     return map
 }
 
-function extractArr<T>(configs: ReactElement<MarkupProps<T>>[], text:string) {
-    const regExps = configs.map((c) => markupToRegex(c.props.value))
+function extractArr<T>(configs: ReactElement<OptionProps<T>>[], text:string) {
+    const regExps = configs.map((c) => markupToRegex(c.props.markup))
     const oneRegExp = new RegExp(regExps.map(value => value.source).join("|"))
     const result: (string | TagValue<T>)[] = []
 

@@ -1,5 +1,5 @@
 {
-  "name": "tagged-input",
+  "name": "marked-input",
   "version": "0.1.0",
   "description": "",
   "main": "index.ts",
@@ -11,6 +11,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "react-dom": "17.0.2",
+    "rsuite": "^5.11.0"
   },
   "peerDependencies": {
     "react": "^17.0.2"

@@ -1,5 +1,5 @@
 import {KeyboardEvent, ReactElement} from "react";
-import {MarkupProps} from "../Markup";
+import {OptionProps} from "../Option";
 import {getCaretIndex, toString} from "../utils";
 import {EmptyFunc, KEY} from "../constants";
 import {TagValue} from "../types";
@@ -11,7 +11,7 @@ export const useHandleKeyDown = (
     caret: CaretManager,
     values: Map<number, string | TagValue<any>>,
     onChange: (value: string) => void,
-    children: ReactElement<MarkupProps<any>> | ReactElement<MarkupProps<any>>[]
+    children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[]
 ) => {
     const keys = [...values.keys()]
 
