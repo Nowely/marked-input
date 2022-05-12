@@ -1,14 +1,13 @@
 import {Children, ReactElement, useEffect, useMemo, useState} from "react";
 import {OptionProps} from "../Option";
 import {genHash, genId, markupToRegex} from "../utils";
-import {TagValue} from "../types";
+import {Mark} from "../types";
 
 export const useParsedText = <T, >(
     text: string,
     children: ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[],
-//): (string | TagValue<T>)[] => {
-): Map<number, string | TagValue<T>> => {
-    const [values, setValues] = useState<(string | TagValue<T>)[]>([])
+): Map<number, string | Mark<T>> => {
+    const [values, setValues] = useState<(string | Mark<T>)[]>([])
 
     useEffect(() => {
         let configs = Children.map(children, child => child)
@@ -16,13 +15,13 @@ export const useParsedText = <T, >(
         setValues(result)
     }, [text])
 
-    //TODO instance prefix for keys
-    //TODO Compare new input value with returned
+    //TODO instance prefix for keys?
+    //TODO Compare new input value with returned caching?
     const prefix = useState(() => genId())[0]
-    const [map, setMap] = useState<Map<number, string | TagValue<T>>>(new Map())
+    const [map, setMap] = useState<Map<number, string | Mark<T>>>(new Map())
     useEffect(() => {
-        let newMap = new Map<number, string | TagValue<T>>()
-        for (let value of values){
+        let newMap = new Map<number, string | Mark<T>>()
+        for (let value of values) {
             let str = typeof value === 'string' ? value : value.id + value.value
             let seed = 0
             let key = genHash(str, seed)
@@ -31,34 +30,27 @@ export const useParsedText = <T, >(
             newMap.set(key, value)
         }
         setMap(newMap)
-        /*let entries: [string, string | TagValue<T>][] = values.map(v => [genKey(), v])
-        setMap(new Map(entries))*/
     }, [values.length])
 
     return map
 }
 
-function extractArr<T>(configs: ReactElement<OptionProps<T>>[], text:string) {
+function extractArr<T>(configs: ReactElement<OptionProps<T>>[], text: string) {
     const regExps = configs.map((c) => markupToRegex(c.props.markup))
     const oneRegExp = new RegExp(regExps.map(value => value.source).join("|"))
-    const result: (string | TagValue<T>)[] = []
+    const result: (string | Mark<T>)[] = []
 
     let tail = text
     let execArray: RegExpExecArray | null = null
     while (execArray = oneRegExp.exec(tail)) {
         const {match, id, value, index, input, childIndex} = extract(execArray)
 
-        let before = input.substring(0, index)
-        let processedMatch: TagValue<T> = {
-            id,
-            value,
-            props: configs[childIndex].props.inner,
-            valueKey: configs[childIndex].props.valueKey,
-            childIndex,
-        }
-        tail = input.substring(index + match.length)
+        const props = configs[childIndex].props.initializer(value, id)
+        const Mark: Mark<T> = {id, value, props, childIndex,};
 
-        result.push(before, processedMatch)
+        const before = input.substring(0, index)
+        tail = input.substring(index + match.length)
+        result.push(before, Mark)
     }
 
     result.push(tail)

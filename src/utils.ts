@@ -1,13 +1,9 @@
 import {Children, ReactElement} from "react";
 import {OptionProps} from "./Option";
 import {PLACEHOLDER} from "./constants";
-import {TagValue} from "./types";
+import {Mark} from "./types";
 
 export const assign = Object.assign
-
-type id = `${string}${PLACEHOLDER.Id}${string}`
-type value = `${string}${PLACEHOLDER.Value}${string}`
-export type Markup = `${value}${id}` | `${id}${value}` | `${id}`
 
 export const markupToRegex = (markup: string) => {
     const escapedMarkup = escapeRegex(markup)
@@ -28,15 +24,13 @@ export const makeMentionsMarkup = (markup: string, id: string, value: string) =>
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | TagValue<any>)[], children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[]) {
+export function toString(values: (string | Mark<any>)[], children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[]) {
     let result = ""
     let configs = Children.map(children, child => child)
     for (let value of values) {
-        if (typeof value === "string")
-            result += value
-        else {
-            result += makeMentionsMarkup(configs[value.childIndex].props.markup, value.id, value.value)
-        }
+        result += isMark(value)
+            ? makeMentionsMarkup(configs[value.childIndex].props.markup, value.id, value.value)
+            : value
     }
     return result
 }
@@ -55,6 +49,8 @@ export const genHash = (str: string, seed = 0) => {
 }
 
 export const genId = () => Math.random().toString(36).substring(2, 9)
+
+export const isMark = (value: unknown): value is Mark<unknown> => typeof value === "object"
 
 //TODO deannotate method
 /**

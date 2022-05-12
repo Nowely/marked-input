@@ -22,13 +22,11 @@ export const Basic = () => {
             <MarkedInput Mark={Button} value={value} onChange={(val: string) => setValue(val)}>
                 <Option<ButtonProps>
                     markup="@[__value__](primary:__id__)"
-                    valueKey="label"
-                    inner={{label: "Button", primary: true}}
+                    initializer={(label, id) => ({label, primary: true})}
                 />
                 <Option<ButtonProps>
                     markup="@[__value__](secondary:__id__)"
-                    valueKey="label"
-                    inner={{label: "Button"}}
+                    initializer={(label, id) => ({label})}
                 />
             </MarkedInput>
 
@@ -38,8 +36,9 @@ export const Basic = () => {
     )
 }
 
+//TODO to stylish folder
 export const Rsuite = () => {
-    const [value, setValue] = useState("Hello beautiful the @[first](primary:1) world from the @[second](secondary:2)")
+    const [value, setValue] = useState("Hello beautiful the @[first](closable:1) world from the @[second](common:2)")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
 
     return <>
@@ -59,14 +58,12 @@ export const Rsuite = () => {
             onChange={(val: string) => setValue(val)}
         >
             <Option<TagProps>
-                markup="@[__value__](primary:__id__)"
-                valueKey="children"
-                inner={{children: "Button", closable: true}}
+                markup="@[__value__](closable:__id__)"
+                initializer={(children, id) => ({children, closable: true})}
             />
             <Option<TagProps>
-                markup="@[__value__](secondary:__id__)"
-                valueKey="children"
-                inner={{children: "Button"}}
+                markup="@[__value__](common:__id__)"
+                initializer={(children, id) => ({children})}
             />
         </MarkedInput>
 

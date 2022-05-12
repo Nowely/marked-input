@@ -2,13 +2,13 @@ import {KeyboardEvent, ReactElement, useEffect} from "react";
 import {OptionProps} from "../Option";
 import {toString} from "../utils";
 import {EmptyFunc, KEY} from "../constants";
-import {TagValue} from "../types";
+import {Mark} from "../types";
 import {Caret} from "./useCaret";
 import {Focus} from "./useFocus";
 
 export const useHandleKeyDown = (
     caret: Caret,
-    values: Map<number, string | TagValue<any>>,
+    values: Map<number, string | Mark<any>>,
     onChange: (value: string) => void,
     children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[],
     focus: Focus,
