@@ -1,38 +1,27 @@
-import {CSSProperties, useEffect, useLayoutEffect, useRef} from "react";
-import {assign, getCaretIndex, setCaretRightTo, setCaretTo, setCaretToEnd} from "../utils";
-import {CaretManager} from "../hooks/useCaret";
+import {CSSProperties, useRef} from "react";
+import {assign} from "../utils";
+import {Caret} from "../hooks/useCaret";
+import {useHeldCaret} from "../hooks/useHeldCaret";
+import {Focus} from "../hooks/useFocus";
+import {useRestoredFocus} from "../hooks/useRestoredFocus";
 
 export interface EditableSpanProps {
     id: number
-    caret: CaretManager
-    focused: number | null
-    setFocused: Function
+    caret: Caret
+    focus: Focus
     value: string
     onChange?: Function
     className?: string
     style?: CSSProperties
 }
 
-export const EditableSpan = ({id, caret, focused, onChange, setFocused, value, ...props}: EditableSpanProps) => {
+export const EditableSpan = ({id, caret, onChange, value, focus, ...props}: EditableSpanProps) => {
     const ref = useRef<HTMLSpanElement>(null)
-    const style = assign({outline: "none"}, props.style)
+    const style = assign({outline: "none", whiteSpace: 'pre-wrap'}, props.style)
 
-    useEffect(() => {
-        if (id !== focused || !ref.current) return
-
-        if (caret.isEnd) {
-            ref.current.focus()
-            setCaretToEnd(ref.current)
-            return;
-        }
-
-        ref.current.focus()
-    }, [focused])
-
-    useLayoutEffect(() => {
-        if (!ref.current || !caret.isInteger) return;
-        setCaretTo(ref.current, caret.position)
-    })
+    const held = useHeldCaret()
+    focus.useManualFocus(id, ref)
+    useRestoredFocus(caret, ref)
 
 
     return (
@@ -43,16 +32,14 @@ export const EditableSpan = ({id, caret, focused, onChange, setFocused, value, .
             contentEditable
             suppressContentEditableWarning
             onInput={(e) => {
-                const newValue = e.currentTarget.textContent ?? ""
-                caret.setPosition(getCaretIndex(e.currentTarget))
-                onChange?.(newValue)
-
+                held()
+                onChange?.(e.currentTarget.textContent ?? "")
             }}
             onFocus={event => {
-                setFocused(id)
+                focus.setFocused(id)
             }}
             onBlur={event => {
-                caret.clear()
+                focus.setFocused(null)
             }}
             onPaste={(e) => {
                 e.preventDefault();

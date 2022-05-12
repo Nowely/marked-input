@@ -1,5 +1,6 @@
 import {Markup} from "./utils";
 
+//TODO initialArg, init?
 export interface OptionProps<T = Record<string, any>> {
     markup: Markup
     trigger?: string //| RegExp

@@ -5,16 +5,11 @@ import {useParsedText} from "./hooks/useParsedText";
 import {toString} from "./utils";
 import {useHandleKeyDown} from "./hooks/useHandleKeyDown";
 import {useCaret} from "./hooks/useCaret";
+import {useFocus} from "./hooks/useFocus";
 
-//TODO Processing on delete and on backspace
-//TODO Correct Caret
 //TODO Id processing
-//TODO API
 //TODO publish to npm
-//TODO README
-//TODO more examples: based, stylish
 //TODO custom popup trigger
-//TODO Processing markup
 
 interface MarkedInputProps<T> {
     value: string
@@ -30,8 +25,9 @@ interface MarkedInputProps<T> {
 export const MarkedInput = <T, >({Mark, value, children, ...props}: MarkedInputProps<T>) => {
     const caret = useCaret()
     const textMap = useParsedText(value, children)
-    const [focused, setFocused] = useState<number | null>(null)
-    const handleKeyDown = useHandleKeyDown(focused, setFocused, caret, textMap, props.onChange, children)
+    const focus = useFocus()
+    const handleKeyDown = useHandleKeyDown(caret, textMap, props.onChange, children, focus)
+
 
     return (
         <div className={props.className}
@@ -46,9 +42,8 @@ export const MarkedInput = <T, >({Mark, value, children, ...props}: MarkedInputP
                         id={key}
                         key={key}
                         caret={caret}
-                        focused={focused}
-                        setFocused={setFocused}
                         value={value}
+                        focus={focus}
                         className={props.spanClassName}
                         style={props.spanStyle}
                         onChange={(newValue: string) => {
