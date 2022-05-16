@@ -4,20 +4,18 @@ import {Configs, Mark, Match, PassedOptions, Slice, SliceMap} from "../types";
 
 //TODO Compare new input value with returned caching?
 export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): SliceMap<T> => {
-    const [slices, setSlices] = useState<Slice<T>[]>([])
-    const [sliceMap, setSliceMap] = useState<SliceMap<T>>(() => new Map())
-    useSlicer();
-    useKeyToSlicedMapper()
-    return sliceMap
+    const slices = useSlicerOf(text);
+    return useKeyMapperFor(slices)
 
 
-    function useSlicer() {
+    function useSlicerOf(text: string) {
+        const [slices, setSlices] = useState<Slice<T>[]>([])
         useEffect(() => {
             const configs = extractConfigs()
             const newSlices = slice(text, configs);
             setSlices(newSlices)
         }, [text])
-
+        return slices
 
         function extractConfigs(): Configs<T> {
             return Children.map(children, child => child.props);
@@ -44,7 +42,7 @@ export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): Slic
                 return result;
             }
 
-            function nextMatch(text: string): [string, Mark<T> | null, string | null]{
+            function nextMatch(text: string): [string, Mark<T> | null, string | null] {
                 let match = regExp.exec(text)
                 if (!match)
                     return [text, null, null]
@@ -89,14 +87,15 @@ export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): Slic
         }
     }
 
-    function useKeyToSlicedMapper() {
+    function useKeyMapperFor(slices: Slice<T>[]) {
+        const [sliceMap, setSliceMap] = useState<SliceMap<T>>(() => new Map())
         //TODO instance prefix for keys?
         //const prefix = useState(() => genId())[0]
         useEffect(() => {
             const newMap = slices.reduce((map: SliceMap<T>, slice) => map.set(genKey(slice, map), slice), new Map())
             setSliceMap(newMap)
         }, [slices.length])
-
+        return sliceMap
 
         function genKey<T>(slice: Slice<T>, newMap: Map<number, Slice<T>>) {
             let str = isMark(slice) ? slice.id + slice.value : slice
