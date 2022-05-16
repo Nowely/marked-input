@@ -1,16 +1,15 @@
-import {KeyboardEvent, ReactElement, useEffect} from "react";
-import {OptionProps} from "../Option";
+import {KeyboardEvent} from "react";
 import {toString} from "../utils";
 import {EmptyFunc, KEY} from "../constants";
-import {Mark} from "../types";
+import {PassedOptions, SliceMap} from "../types";
 import {Caret} from "./useCaret";
 import {Focus} from "./useFocus";
 
 export const useHandleKeyDown = (
     caret: Caret,
-    values: Map<number, string | Mark<any>>,
+    values: SliceMap<any>,
     onChange: (value: string) => void,
-    children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[],
+    children: PassedOptions<any>,
     focus: Focus,
 ) => {
     const keys = [...values.keys()]
