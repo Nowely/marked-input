@@ -4,11 +4,11 @@ import {Configs, Mark, Match, PassedOptions, Slice, SliceMap} from "../types";
 
 //TODO Compare new input value with returned caching?
 export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): SliceMap<T> => {
-    const slices = useSlicerOf(text);
+    const slices = useSlicesOf(text);
     return useKeyMapperFor(slices)
 
 
-    function useSlicerOf(text: string) {
+    function useSlicesOf(text: string) {
         const [slices, setSlices] = useState<Slice<T>[]>([])
         useEffect(() => {
             const configs = extractConfigs()
@@ -34,7 +34,7 @@ export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): Slic
             function iterateSlices() {
                 const result: Slice<T>[] = []
                 let [span, mark, raw] = nextMatch(text)
-                while (mark && raw) {
+                while (mark && raw != null) {
                     result.push(span, mark);
                     [span, mark, raw] = nextMatch(raw)
                 }
