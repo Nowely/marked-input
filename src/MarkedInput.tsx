@@ -10,14 +10,38 @@ import {PassedOptions} from "./types";
 //TODO publish to npm
 //TODO custom popup trigger
 
-interface MarkedInputProps<T> {
+export interface MarkedInputProps<T> {
+    /**
+     * Annotated text with markups for mark
+     */
     value: string
+    /**
+     * Change event
+     */
     onChange: (value: string) => void
+    /**
+     * Component that used for render markups
+     */
     Mark: ComponentType<T>
+    /**
+     * Passed options for configure
+     */
     children: PassedOptions<T>
+    /**
+     * Additional classes
+     */
     className?: string
+    /**
+     * Additional style
+     */
     style?: CSSProperties
+    /**
+     * Additional classes for span
+     */
     spanClassName?: string
+    /**
+     * Additional style for span
+     */
     spanStyle?: CSSProperties
 }
 
@@ -49,4 +73,3 @@ export const MarkedInput = <T, >({Mark, value, children, ...props}: MarkedInputP
         </div>
     )
 }
-
