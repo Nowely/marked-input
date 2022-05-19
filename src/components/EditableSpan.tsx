@@ -13,6 +13,7 @@ export interface EditableSpanProps {
     onChange?: Function
     className?: string
     style?: CSSProperties
+    readOnly?: boolean
 }
 
 export const EditableSpan = ({id, caret, onChange, value, focus, ...props}: EditableSpanProps) => {
@@ -29,7 +30,7 @@ export const EditableSpan = ({id, caret, onChange, value, focus, ...props}: Edit
             ref={ref}
             style={style}
             className={props.className}
-            contentEditable
+            contentEditable={!props.readOnly}
             suppressContentEditableWarning
             onInput={(e) => {
                 held()

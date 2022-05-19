@@ -24,6 +24,10 @@ export interface MarkedInputProps<T> {
      */
     Mark: ComponentType<T>
     /**
+     * Prevents from changing the value
+     */
+    readOnly?: boolean
+    /**
      * Passed options for configure
      */
     children: PassedOptions<T>
@@ -64,6 +68,7 @@ export const MarkedInput = <T, >({Mark, value, children, ...props}: MarkedInputP
                         focus={focus}
                         className={props.spanClassName}
                         style={props.spanStyle}
+                        readOnly={props.readOnly}
                         onChange={(newValue: string) => {
                             sliceMap.set(key, newValue)
                             props.onChange(toString([...sliceMap.values()], children))

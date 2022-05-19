@@ -10,11 +10,12 @@ Examples can be seen in the [storybook](https://marked-input.vercel.app).
 
 Props of the `MarkedInput` component:
 
-| Name          | Type                    | Default     | Description                            |
-|---------------|-------------------------|-------------|----------------------------------------|
-| value         | string                  |             | Annotated text with markups for mark   |
-| onChange      | (value: string) => void |             | Change event                           |
-| Mark          | ComponentType<T>        |             | Component that used for render markups |
+| Name     | Type                    | Default   | Description                            |
+|----------|-------------------------|-----------|----------------------------------------|
+| value    | string                  |           | Annotated text with markups for mark   |
+| onChange | (value: string) => void |           | Change event                           |
+| Mark     | ComponentType<T>        |           | Component that used for render markups |
+| readOnly | boolean?                | undefined | Prevents from changing the value       |
 
 Props of the `Option` component:
 
