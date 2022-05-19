@@ -59,3 +59,7 @@ export const isMark = (value: unknown): value is Mark<unknown> => typeof value =
 export const deannotate = () => {
 
 }
+
+export const deMark = () => {
+
+}

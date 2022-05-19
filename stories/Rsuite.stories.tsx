@@ -1,40 +1,11 @@
 import {MarkedInput} from "../src";
-import {ComponentMeta, ComponentStory} from "@storybook/react";
-import {Button, ButtonProps} from "./assets/Button";
 import {useState} from "react";
-import {Option, OptionProps} from "../src";
+import {Option} from "../src";
 import {Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
 
-export default {
-    title: "MarkedInput",
-    component: MarkedInput,
-} as ComponentMeta<typeof MarkedInput>
-
-
-export const Basic = () => {
-    const [value, setValue] = useState("Hello beautiful the @[first](primary:1) world from the @[second](secondary:2)" +
-        "and @[third](primary:1),and @[fourth](secondary:2)!")
-
-    return (
-        <>
-            <MarkedInput Mark={Button} value={value} onChange={(val: string) => setValue(val)}>
-                <Option<ButtonProps>
-                    markup="@[__value__](primary:__id__)"
-                    initializer={(label, id) => ({label, primary: true})}
-                />
-                <Option<ButtonProps>
-                    markup="@[__value__](secondary:__id__)"
-                    initializer={(label, id) => ({label})}
-                />
-            </MarkedInput>
-
-            <br/>
-            <textarea style={{width: '45%'}} value={value} onChange={event => setValue(event.target.value)}/>
-        </>
-    )
-}
+export default {component: MarkedInput, subcomponents: {Option}}
 
 //TODO to stylish folder
 export const Rsuite = () => {
