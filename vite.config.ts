@@ -1,10 +1,10 @@
-const path = require('path')
-const { defineConfig } = require('vite')
+import {defineConfig} from "vite";
+import * as path from "path";
 
-module.exports = defineConfig({
+export default defineConfig({
     build: {
         lib: {
-            entry: path.resolve(__dirname, 'src/index.ts'),
+            entry: path.resolve(__dirname, 'lib/index.ts'),
             name: 'MyLib',
             fileName: (format) => `my-lib.${format}.js`
         },

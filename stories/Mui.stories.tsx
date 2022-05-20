@@ -1,4 +1,4 @@
-import {MarkedInput, Option} from "../src";
+import {MarkedInput, Option} from "../lib";
 import {useState} from "react";
 import {Chip} from "@mui/material";
 import {ChipProps} from "@mui/material/Chip/Chip";

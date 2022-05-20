@@ -1,4 +1,4 @@
-import {MarkedInput, Option} from "../src";
+import {MarkedInput, Option} from "../lib";
 import {useState} from "react";
 import 'antd/dist/antd.css';
 import {Tag} from "antd";

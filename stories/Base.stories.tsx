@@ -1,5 +1,5 @@
 import {Button, ButtonProps} from "./assets/Button";
-import {MarkedInput, Option} from "../src";
+import {MarkedInput, Option} from "../lib";
 import {useState} from "react";
 import {PlainText} from "./assets/PlainText";
 import {getTitle} from "./assets/getTitle";
