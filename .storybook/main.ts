@@ -5,11 +5,6 @@ const config: StorybookViteConfig = {
         "builder": "@storybook/builder-vite"
     },
     "stories": [
-        {
-            directory: '../stories',
-            titlePrefix: 'MarkedInput',
-            files: '*.stories.*'
-        },
         "../stories/**/*.stories.mdx",
         "../stories/**/*.stories.@(js|jsx|ts|tsx)",
         "../stories/index.tsx"

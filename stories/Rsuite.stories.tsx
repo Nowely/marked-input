@@ -4,11 +4,17 @@ import {Option} from "../src";
 import {Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
+import {PlainText} from "./assets/PlainText";
+import {getTitleOfStyled} from "./assets/getTitle";
 
-export default {component: MarkedInput, subcomponents: {Option}}
+export default {
+    title: getTitleOfStyled("Rsuite"),
+    component: MarkedInput,
+    subcomponents: {Option}
+}
 
 //TODO to stylish folder
-export const Rsuite = () => {
+export const TaggedInput = () => {
     const [value, setValue] = useState("Hello beautiful the @[first](closable:1) world from the @[second](common:2)")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
 
@@ -39,8 +45,7 @@ export const Rsuite = () => {
         </MarkedInput>
 
         <br/>
-        <br/>
-        <textarea style={{width: '45%'}} value={value} onChange={event => setValue(event.target.value)}/>
+        <PlainText value={value}/>
     </>
 }
 

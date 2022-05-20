@@ -1,12 +1,19 @@
 import {Button, ButtonProps} from "./assets/Button";
 import {MarkedInput, Option} from "../src";
 import {useState} from "react";
+import {PlainText} from "./assets/PlainText";
+import {getTitle} from "./assets/getTitle";
 
-export default {component: MarkedInput, subcomponents: {Option}}
+export default {
+    title: getTitle(),
+    component: MarkedInput,
+    subcomponents: {Option}
+}
 
 export const Base = () => {
-    const [value, setValue] = useState("Hello beautiful @[first](primary:1) world from the @[second](secondary:2)" +
-        " and @[third](primary:1), and @[fourth](secondary:2)!")
+    const [value, setValue] = useState(
+        `Hello beautiful @[first](primary:1) world from the @[second](secondary:2) and @[third](primary:1), and @[fourth](secondary:2)!`
+    )
 
     return (
         <>
@@ -24,8 +31,7 @@ export const Base = () => {
                 />
             </MarkedInput>
 
-            <br/>
-            <textarea style={{width: '45%'}} value={value} onChange={event => setValue(event.target.value)}/>
+            <PlainText value={value}/>
         </>
     )
 }

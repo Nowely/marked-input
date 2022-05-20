@@ -1,4 +1,10 @@
 export const parameters = {
-    actions: {argTypesRegex: "^on[A-Z].*"},
-    //options: {showPanel: false},
+    controls: {hideNoControlsWarning: true},
+    options: {
+        storySort: {
+            method: 'alphabetical',
+            order: ['Base', 'Styled'],
+            locales: 'en-US',
+        }
+    },
 }

@@ -2,42 +2,29 @@ import {MarkedInput, Option} from "../src";
 import {useState} from "react";
 import 'antd/dist/antd.css';
 import {Tag} from "antd";
-import {TagProps, TagType} from "antd/lib/tag";
+import {TagProps} from "antd/lib/tag";
+import {PlainText} from "./assets/PlainText";
+import {getTitleOfStyled} from "./assets/getTitle";
 
-export default {component: MarkedInput, subcomponents: {Option}}
+export default {
+    title: getTitleOfStyled("Ant design"),
+    component: MarkedInput,
+    subcomponents: {Option}
+}
 
-export const Ant = () => {
-    const [value, setValue] = useState("Hello beautiful the @[first](outlined:1) world from the @[second](common:2)")
-    const classNames = ""
+export const Tagged = () => {
+    const [value, setValue] = useState(
+        `We preset five different colors. You can set color property such as @(success), @(processing), @(error), @(default) and @(warning) to show specific status.`
+    )
 
     return <>
-        <MarkedInput
-            /*className={classNames}
-            style={{
-                minHeight: 36
-            }}
-            spanClassName="rs-tag rs-tag-md"
-            spanStyle={{
-                backgroundColor: "white",
-                paddingLeft: 0,
-                paddingRight: 0
-            }}*/
-            Mark={Tag}
-            value={value}
-            onChange={(val: string) => setValue(val)}
-        >
+        <MarkedInput Mark={Tag} value={value} onChange={setValue}>
             <Option<TagProps>
-                markup="@[__value__](outlined:__id__)"
-                initializer={(children, id) => ({children, closable : true})}
-            />
-            <Option<TagProps>
-                markup="@[__value__](common:__id__)"
-                initializer={(children, id) => ({children})}
+                markup="@(__value__)"
+                initializer={(value) => ({children: value, color: value, style: {marginRight: 0}})}
             />
         </MarkedInput>
 
-        <br/>
-        <br/>
-        <textarea style={{width: '45%'}} value={value} onChange={event => setValue(event.target.value)}/>
+        <PlainText value={value}/>
     </>
 }

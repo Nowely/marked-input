@@ -11,7 +11,7 @@ export type Mark<T> = {
 
 type id = `${string}${PLACEHOLDER.Id}${string}`
 type value = `${string}${PLACEHOLDER.Value}${string}`
-export type Markup = `${value}${id}` | `${id}${value}` | `${id}`
+export type Markup = `${value}${id}` | `${value}` //| `${id}${value}`
 
 //TODO T to unknown?
 export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
