@@ -35,3 +35,41 @@ export const Base = () => {
         </>
     )
 }
+
+export const RichEditor = () => {
+    const [value, setValue] = useState(`Can use to simulate rich editor
+        <b>Bold text>
+        <strong>Important text>
+        <i>Italic text>
+        <em>Emphasized text>
+        <mark>Marked text>
+        <small>Smaller text>
+        <del>Deleted text>
+        <ins>Inserted text>
+        <sub>Subscript text>
+        <sup>Superscript text>
+    `)
+
+    return (
+        <>
+            <MarkedInput
+                style={{minWidth: 100}}
+                spanStyle={{width: 'auto', minWidth: 10}}
+                Mark={Tag} value={value} onChange={setValue}>
+                <Option
+                    markup="<__value__>__id__>"
+                    initializer={(tag, value) => ({tag, value})}
+                />
+            </MarkedInput>
+
+            <PlainText value={value}/>
+        </>
+    )
+}
+
+const Tag = ({tag, value}: { tag: any, value: string }) => {
+    const Tag1 = tag
+    return <Tag1>
+        {value}
+    </Tag1>
+}
