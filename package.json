@@ -1,23 +1,25 @@
 {
-  "name": "marked-input",
+  "name": "rc-marked-input",
   "version": "0.1.0",
-  "description": "",
-  "main": "index.ts",
+  "description": "React component for combine editable text with any component using annotated text",
+  "license": "MIT",
+  "author": "Ruslan Ilyin",
   "scripts": {
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
+    "prepack": "json -f package.json -I -e \"delete this.devDependencies; delete this.dependencies\"",
     "build": "vite build"
   },
-  "author": "",
-  "license": "MIT",
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
     "@mui/material": "^5.8.0",
     "antd": "^4.20.5",
-    "react": "^17.0.2",
     "react-dom": "17.0.2",
     "rsuite": "^5.12.0"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.17.12",
@@ -29,8 +31,33 @@
     "@storybook/react": "^6.5.0",
     "@storybook/testing-library": "^0.0.11",
     "@types/react": "^17.0.45",
+    "@vitejs/plugin-react": "^1.3.2",
     "babel-loader": "^8.2.5",
+    "json": "^11.0.0",
     "typescript": "^4.6.4",
-    "vite": "^2.9.9"
-  }
+    "vite": "^2.9.9",
+    "vite-plugin-dts": "^1.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nowely/marked-input.git"
+  },
+  "main": "./rc-marked-input.umd.js",
+  "module": "./rc-marked-input.es.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./rc-marked-input.es.js",
+      "require": "./rc-marked-input.umd.js"
+    }
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "component",
+    "mentions",
+    "markup",
+    "marked-input",
+    "highlight"
+  ]
 }

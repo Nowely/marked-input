@@ -1,12 +1,16 @@
+import path from "path";
 import {defineConfig} from "vite";
-import * as path from "path";
+import {MarkedInput} from "./lib";
+import dts from 'vite-plugin-dts';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     build: {
+        sourcemap: true,
         lib: {
             entry: path.resolve(__dirname, 'lib/index.ts'),
-            name: 'MyLib',
-            fileName: (format) => `my-lib.${format}.js`
+            name: MarkedInput.name,
+            formats: ['es', 'umd'],
         },
         rollupOptions: {
             external: ['react'],
@@ -16,5 +20,8 @@ export default defineConfig({
                 }
             }
         }
-    }
+    },
+    plugins: [react(), dts({
+        outputDir: "dist/types"
+    })]
 })
