@@ -1,12 +1,20 @@
-<h1 align="center">
-  <a href="https://marked-input.vercel.app">Marked input</a>
-</h1>
+# [Marked input](https://marked-input.vercel.app) &middot; [![npm version](https://img.shields.io/npm/v/rc-marked-input.svg?style=flat)](https://www.npmjs.com/package/rc-marked-input) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
+
 
 A React component that lets you combine editable text with any component using annotated text.
 
 Examples can be seen in the [storybook](https://marked-input.vercel.app).
 
-## Props
+## Getting started
+
+Install the package via npm:
+
+```
+npm install rc-marked-input
+```
+
+
+## API
 
 Props of the `MarkedInput` component:
 
