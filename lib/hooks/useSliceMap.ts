@@ -1,9 +1,9 @@
-import {Children, useEffect, useState} from "react";
-import {genHash, isMark, markupToRegex} from "../utils";
-import {Configs, Mark, Match, PassedOptions, Slice, SliceMap} from "../types";
+import {useEffect, useState} from "react";
+import {genHash, isObject, markupToRegex} from "../utils";
+import {Configs, Mark, Match, Slice, SliceMap} from "../types";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): SliceMap<T> => {
+export const useSliceMap = <T, >(text: string, configs: Configs<any>): SliceMap<T> => {
     const slices = useSlicesOf(text);
     return useKeyMapperFor(slices)
 
@@ -11,15 +11,11 @@ export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): Slic
     function useSlicesOf(text: string) {
         const [slices, setSlices] = useState<Slice<T>[]>([])
         useEffect(() => {
-            const configs = extractConfigs()
             const newSlices = slice(text, configs);
             setSlices(newSlices)
         }, [text])
         return slices
 
-        function extractConfigs(): Configs<T> {
-            return Children.map(children, child => child.props);
-        }
 
         function slice<T>(text: string, configs: Configs<T>) {
             const regExp = getCombinedRegex();
@@ -98,7 +94,7 @@ export const useSliceMap = <T, >(text: string, children: PassedOptions<T>): Slic
         return sliceMap
 
         function genKey<T>(slice: Slice<T>, newMap: Map<number, Slice<T>>) {
-            let str = isMark(slice) ? slice.id + slice.value : slice
+            let str = isObject(slice) ? slice.id + slice.value : slice
             let seed = 0
             let key = genHash(str, seed)
             while (newMap.has(key)) key = genHash(str, seed++)

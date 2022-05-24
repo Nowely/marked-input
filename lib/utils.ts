@@ -1,7 +1,6 @@
-import {Children, ReactElement} from "react";
-import {OptionProps} from "./Option";
+import React, {Children, Context, Provider, useContext} from "react";
 import {PLACEHOLDER} from "./constants";
-import {Mark} from "./types";
+import {Configs, Mark, PassedOptions, Store} from "./types";
 
 export const assign = Object.assign
 
@@ -24,12 +23,11 @@ export const makeMentionsMarkup = (markup: string, id: string, value: string) =>
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | Mark<any>)[], children: ReactElement<OptionProps<any>> | ReactElement<OptionProps<any>>[]) {
+export function toString(values: (string | Mark<any>)[], configs: Configs<any>) {
     let result = ""
-    let configs = Children.map(children, child => child)
     for (let value of values) {
-        result += isMark(value)
-            ? makeMentionsMarkup(configs[value.childIndex].props.markup, value.id, value.value)
+        result += isObject(value)
+            ? makeMentionsMarkup(configs[value.childIndex].markup, value.id, value.value)
             : value
     }
     return result
@@ -50,7 +48,7 @@ export const genHash = (str: string, seed = 0) => {
 
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
-export const isMark = (value: unknown): value is Mark<unknown> => typeof value === "object"
+export const isObject = (value: unknown): value is object => typeof value === "object"
 
 //TODO deannotate method
 /**
@@ -63,3 +61,35 @@ export const deannotate = () => {
 export const deMark = () => {
 
 }
+
+export function extractConfigs(children: PassedOptions<any>): Configs<any> {
+    return Children.map(children, child => child.props);
+}
+
+const createContext = <T,>(name: string): [() => T, Provider<NonNullable<T>>] => {
+    const context = React.createContext<T | undefined>(undefined)
+    context.displayName = name
+
+    const hook = createContextHook(context)
+    const provider = createProvider(context)
+
+    return [hook, provider]
+
+
+    function createContextHook<T, >(context: Context<T>) {
+        return () => {
+            const value = useContext(context)
+
+            if (value) return value as NonNullable<T>
+
+            throw new Error(`The context ${context.displayName} didn't found!`)
+        }
+    }
+
+    function createProvider<T, >(context: Context<T>) {
+        let value = context as unknown as Context<NonNullable<T>>
+        return value.Provider
+    }
+}
+
+export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")

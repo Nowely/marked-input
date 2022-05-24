@@ -13,7 +13,6 @@ export default {
     subcomponents: {Option}
 }
 
-//TODO to stylish folder
 export const TaggedInput = () => {
     const [value, setValue] = useState("Hello beautiful the @[first](closable:1) world from the @[second](common:2)")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
@@ -48,6 +47,3 @@ export const TaggedInput = () => {
         <PlainText value={value}/>
     </>
 }
-
-//TODO add mui example
-//TODO add ant design example

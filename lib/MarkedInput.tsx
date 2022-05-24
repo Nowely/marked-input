@@ -1,14 +1,11 @@
 import {ComponentType, CSSProperties} from "react";
-import {EditableSpan} from "./components/EditableSpan";
 import {useSliceMap} from "./hooks/useSliceMap";
-import {isMark, toString} from "./utils";
-import {useHandleKeyDown} from "./hooks/useHandleKeyDown";
+import {StoreProvider} from "./utils";
 import {useCaret} from "./hooks/useCaret";
 import {useFocus} from "./hooks/useFocus";
 import {PassedOptions} from "./types";
-
-//TODO publish to npm
-//TODO custom popup trigger
+import {useConfigs} from "./hooks/useConfigs";
+import {MarkOrSpanList} from "./components/MarkOrSpanList";
 
 export interface MarkedInputProps<T> {
     /**
@@ -49,32 +46,13 @@ export interface MarkedInputProps<T> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, >({Mark, value, children, ...props}: MarkedInputProps<T>) => {
-    const sliceMap = useSliceMap(value, children)
-    const caret = useCaret()
-    const focus = useFocus()
-    const handleKeyDown = useHandleKeyDown(caret, sliceMap, props.onChange, children, focus)
+export const MarkedInput = <T, >({children, ...props}: MarkedInputProps<T>) => {
+    const caret = useCaret(), focus = useFocus(), configs = useConfigs(children)
+    const sliceMap = useSliceMap(props.value, configs)
 
     return (
-        <div className={props.className} style={props.style} onKeyDown={handleKeyDown}>
-            {[...sliceMap].map(([key, value]) =>
-                isMark(value)
-                    ? <Mark key={key} tabIndex={-1} {...value.props} />
-                    : <EditableSpan
-                        id={key}
-                        key={key}
-                        caret={caret}
-                        value={value}
-                        focus={focus}
-                        className={props.spanClassName}
-                        style={props.spanStyle}
-                        readOnly={props.readOnly}
-                        onChange={(newValue: string) => {
-                            sliceMap.set(key, newValue)
-                            props.onChange(toString([...sliceMap.values()], children))
-                        }}
-                    />
-            )}
-        </div>
+        <StoreProvider value={{...props, configs, caret, focus, sliceMap}}>
+            <MarkOrSpanList/>
+        </StoreProvider>
     )
 }

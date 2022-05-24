@@ -1,3 +1,5 @@
+import {CSSProperties} from "react";
+
 export const KEY = {
     // Navigation Keys
     UP: 'ArrowUp',
@@ -29,3 +31,5 @@ export enum PLACEHOLDER {
 }
 
 export const EmptyFunc = () => {}
+
+export const DefaultSpanStyle: CSSProperties = {outline: "none", whiteSpace: 'pre-wrap'}

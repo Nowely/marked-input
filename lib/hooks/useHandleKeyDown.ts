@@ -1,18 +1,10 @@
 import {KeyboardEvent} from "react";
-import {toString} from "../utils";
+import {toString, useStore} from "../utils";
 import {EmptyFunc, KEY} from "../constants";
-import {PassedOptions, SliceMap} from "../types";
-import {Caret} from "./useCaret";
-import {Focus} from "./useFocus";
 
-export const useHandleKeyDown = (
-    caret: Caret,
-    values: SliceMap<any>,
-    onChange: (value: string) => void,
-    children: PassedOptions<any>,
-    focus: Focus,
-) => {
-    const keys = [...values.keys()]
+export const useHandleKeyDown = () => {
+    const {configs, onChange, caret, sliceMap, focus} = useStore()
+    const keys = [...sliceMap.keys()]
 
     const handleKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
         const target = event.target as HTMLSpanElement
@@ -24,6 +16,7 @@ export const useHandleKeyDown = (
             [KEY.RIGHT]: isEndCaret ? onPressRight : EmptyFunc,
             [KEY.UP]: EmptyFunc, //TODO to the start input position
             [KEY.DOWN]: EmptyFunc, //TODO to the end input position
+            [KEY.ENTER]: EmptyFunc, //TODO
             [KEY.DELETE]: EmptyFunc, //TODO reverse backspace
             [KEY.BACKSPACE]: isStartCaret ? onPressBackspace : EmptyFunc,
         }
@@ -54,8 +47,8 @@ export const useHandleKeyDown = (
             let index = keys.indexOf(focus.focused)
             if (index >= 1) {
                 caret.saveRightOffset()
-                values.delete(keys[index - 1])
-                onChange(toString([...values.values()], children))
+                sliceMap.delete(keys[index - 1])
+                onChange(toString([...sliceMap.values()], configs))
             }
         }
     }

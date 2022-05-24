@@ -1,6 +1,6 @@
 import {Button, ButtonProps} from "./assets/Button";
 import {MarkedInput, Option} from "../lib";
-import {useState} from "react";
+import {ElementType, useState} from "react";
 import {PlainText} from "./assets/PlainText";
 import {getTitle} from "./assets/getTitle";
 
@@ -52,14 +52,8 @@ export const RichEditor = () => {
 
     return (
         <>
-            <MarkedInput
-                style={{minWidth: 100}}
-                spanStyle={{width: 'auto', minWidth: 10}}
-                Mark={Tag} value={value} onChange={setValue}>
-                <Option
-                    markup="<__value__>__id__>"
-                    initializer={(tag, value) => ({tag, value})}
-                />
+            <MarkedInput Mark={Tag} value={value} onChange={setValue}>
+                <Option markup="<__value__>__id__>" initializer={(as, value) => ({as, value})}/>
             </MarkedInput>
 
             <PlainText value={value}/>
@@ -67,9 +61,9 @@ export const RichEditor = () => {
     )
 }
 
-const Tag = ({tag, value}: { tag: any, value: string }) => {
-    const Tag1 = tag
-    return <Tag1>
+const Tag = ({as, value}: { as: ElementType, value: string }) => {
+    const Component = as
+    return <Component>
         {value}
-    </Tag1>
+    </Component>
 }

@@ -1,56 +1,48 @@
-import {CSSProperties, useRef} from "react";
-import {assign} from "../utils";
-import {Caret} from "../hooks/useCaret";
+import React, {useRef} from "react";
+import {assign, toString, useStore} from "../utils";
 import {useHeldCaret} from "../hooks/useHeldCaret";
-import {Focus} from "../hooks/useFocus";
 import {useRestoredFocus} from "../hooks/useRestoredFocus";
+import {DefaultSpanStyle} from "../constants";
 
 export interface EditableSpanProps {
     id: number
-    caret: Caret
-    focus: Focus
     value: string
-    onChange?: Function
-    className?: string
-    style?: CSSProperties
-    readOnly?: boolean
 }
 
-export const EditableSpan = ({id, caret, onChange, value, focus, ...props}: EditableSpanProps) => {
+export const EditableSpan = ({id, value, ...props}: EditableSpanProps) => {
+    const {caret, focus, spanStyle, spanClassName, readOnly, sliceMap, onChange, configs} = useStore()
     const ref = useRef<HTMLSpanElement>(null)
-    const style = assign({outline: "none", whiteSpace: 'pre-wrap'}, props.style)
-
+    const style = assign({}, DefaultSpanStyle, spanStyle)
     const held = useHeldCaret()
+
     focus.useManualFocus(id, ref)
     useRestoredFocus(caret, ref)
 
+    const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
+        held()
+        const newValue = e.currentTarget.textContent ?? ""
+        sliceMap.set(id, newValue)
+        onChange(toString([...sliceMap.values()], configs))
+    }
+
+    const handlePaste = (e: React.ClipboardEvent<HTMLSpanElement>) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData("text");
+        document.execCommand("insertText", false, text);
+    }
 
     return (
         <span
             ref={ref}
             style={style}
-            className={props.className}
-            contentEditable={!props.readOnly}
+            className={spanClassName}
+            contentEditable={!readOnly}
             suppressContentEditableWarning
-            onInput={(e) => {
-                held()
-                onChange?.(e.currentTarget.textContent ?? "")
-            }}
-            onFocus={event => {
-                focus.setFocused(id)
-            }}
-            onBlur={event => {
-                focus.setFocused(null)
-            }}
-            onPaste={(e) => {
-                e.preventDefault();
-                const text = e.clipboardData.getData("text");
-                //e.currentTarget.textContent
-                document.execCommand("insertText", false, text);
-                //ref.current.innerText = text;
-            }}
-        >
-            {value}
-        </span>
+            onInput={handleInput}
+            onFocus={() => focus.setFocused(id)}
+            onBlur={() => focus.setFocused(null)}
+            onPaste={handlePaste}
+            children={value}
+        />
     )
 }
