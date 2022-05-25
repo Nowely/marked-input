@@ -6,6 +6,7 @@ import {useFocus} from "./hooks/useFocus";
 import {PassedOptions} from "./types";
 import {useConfigs} from "./hooks/useConfigs";
 import {MarkOrSpanList} from "./components/MarkOrSpanList";
+import "./style.css"
 
 export interface MarkedInputProps<T> {
     /**
@@ -52,7 +53,7 @@ export const MarkedInput = <T, >({children, ...props}: MarkedInputProps<T>) => {
 
     return (
         <StoreProvider value={{...props, configs, caret, focus, sliceMap}}>
-            <MarkOrSpanList/>
+                <MarkOrSpanList/>
         </StoreProvider>
     )
 }

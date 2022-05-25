@@ -1,0 +1,7 @@
+.marked-input {
+}
+.marked-input span {
+    outline: none;
+    white-space: pre-wrap;
+}
+

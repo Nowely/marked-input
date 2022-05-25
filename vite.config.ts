@@ -2,6 +2,7 @@ import path from "path";
 import {defineConfig} from "vite";
 import {MarkedInput} from "./lib";
 import react from '@vitejs/plugin-react';
+import injectCss from "./InjectCssPlugin"
 
 export default defineConfig({
     build: {
@@ -19,5 +20,5 @@ export default defineConfig({
             }
         }
     },
-    plugins: [react()]
+    plugins: [react(), injectCss()]
 })

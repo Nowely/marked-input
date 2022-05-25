@@ -1,8 +1,7 @@
 import React, {useRef} from "react";
-import {assign, toString, useStore} from "../utils";
+import {toString, useStore} from "../utils";
 import {useHeldCaret} from "../hooks/useHeldCaret";
 import {useRestoredFocus} from "../hooks/useRestoredFocus";
-import {DefaultSpanStyle} from "../constants";
 
 export interface EditableSpanProps {
     id: number
@@ -12,7 +11,6 @@ export interface EditableSpanProps {
 export const EditableSpan = ({id, value, ...props}: EditableSpanProps) => {
     const {caret, focus, spanStyle, spanClassName, readOnly, sliceMap, onChange, configs} = useStore()
     const ref = useRef<HTMLSpanElement>(null)
-    const style = assign({}, DefaultSpanStyle, spanStyle)
     const held = useHeldCaret()
 
     focus.useManualFocus(id, ref)
@@ -34,7 +32,7 @@ export const EditableSpan = ({id, value, ...props}: EditableSpanProps) => {
     return (
         <span
             ref={ref}
-            style={style}
+            style={spanStyle}
             className={spanClassName}
             contentEditable={!readOnly}
             suppressContentEditableWarning
