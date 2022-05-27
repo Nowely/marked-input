@@ -1,17 +1,18 @@
 import React, {useRef} from "react";
-import {toString, useStore} from "../utils";
+import {useStore} from "../utils";
 import {useHeldCaret} from "../hooks/useHeldCaret";
 import {useRestoredFocus} from "../hooks/useRestoredFocus";
+import {Type} from "../types";
 
 export interface EditableSpanProps {
     id: number
     value: string
 }
 
-export const EditableSpan = ({id, value, ...props}: EditableSpanProps) => {
-    const {caret, focus, spanStyle, spanClassName, readOnly, sliceMap, onChange, configs} = useStore()
+export const EditableSpan = ({id, value}: EditableSpanProps) => {
+    const {caret, focus, dispatch, props: {readOnly, spanStyle, spanClassName}} = useStore()
     const ref = useRef<HTMLSpanElement>(null)
-    const held = useHeldCaret()
+    const held = useHeldCaret(ref)
 
     focus.useManualFocus(id, ref)
     useRestoredFocus(caret, ref)
@@ -19,8 +20,7 @@ export const EditableSpan = ({id, value, ...props}: EditableSpanProps) => {
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         held()
         const newValue = e.currentTarget.textContent ?? ""
-        sliceMap.set(id, newValue)
-        onChange(toString([...sliceMap.values()], configs))
+        dispatch(Type.Change,{key: id, value: newValue})
     }
 
     const handlePaste = (e: React.ClipboardEvent<HTMLSpanElement>) => {

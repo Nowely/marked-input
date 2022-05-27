@@ -1,30 +1,31 @@
 import {KeyboardEvent} from "react";
-import {toString, useStore} from "../utils";
-import {EmptyFunc, KEY} from "../constants";
+import {useStore} from "../utils";
+import {KEY} from "../constants";
+import {Type} from "../types";
+import {Caret} from "./useCaret";
 
 export const useHandleKeyDown = () => {
-    const {configs, onChange, caret, sliceMap, focus} = useStore()
+    const {dispatch, caret, sliceMap, focus} = useStore()
     const keys = [...sliceMap.keys()]
 
     const handleKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
         const target = event.target as HTMLSpanElement
-        const caretIndex = caret.getCaretIndex(target);
+        const caretIndex = Caret.getCaretIndex(target);
         const isStartCaret = caretIndex === 0;
         const isEndCaret = caretIndex === target.textContent?.length;
-        const keyMap = {
-            [KEY.LEFT]: isStartCaret ? onPressLeft : EmptyFunc,
-            [KEY.RIGHT]: isEndCaret ? onPressRight : EmptyFunc,
-            [KEY.UP]: EmptyFunc, //TODO to the start input position
-            [KEY.DOWN]: EmptyFunc, //TODO to the end input position
-            [KEY.ENTER]: EmptyFunc, //TODO
-            [KEY.DELETE]: EmptyFunc, //TODO reverse backspace
-            [KEY.BACKSPACE]: isStartCaret ? onPressBackspace : EmptyFunc,
+        const handleMap = {
+            [KEY.LEFT]: isStartCaret ? handlePressLeft : null,
+            [KEY.RIGHT]: isEndCaret ? handlePressRight : null,
+            [KEY.UP]: null, //TODO to the start input position
+            [KEY.DOWN]: null, //TODO to the end input position
+            [KEY.DELETE]: null, //TODO reverse backspace
+            [KEY.BACKSPACE]: isStartCaret ? handlePressBackspace : null,
         }
 
-        keyMap[event.key]?.(target)
+        handleMap[event.key]?.()
     }
 
-    const onPressLeft = (target: HTMLSpanElement) => {
+    function handlePressLeft() {
         if (focus.focused != null) {
             let index = keys.indexOf(focus.focused)
             if (index >= 2) {
@@ -33,7 +34,8 @@ export const useHandleKeyDown = () => {
             }
         }
     }
-    const onPressRight = (target: HTMLSpanElement) => {
+
+    function handlePressRight() {
         if (focus.focused != null) {
             let index = keys.indexOf(focus.focused)
             if (keys.length - index > 2) {
@@ -42,13 +44,13 @@ export const useHandleKeyDown = () => {
             }
         }
     }
-    const onPressBackspace = (target: HTMLSpanElement) => {
+
+    function handlePressBackspace() {
         if (focus.focused != null) {
             let index = keys.indexOf(focus.focused)
             if (index >= 1) {
                 caret.saveRightOffset()
-                sliceMap.delete(keys[index - 1])
-                onChange(toString([...sliceMap.values()], configs))
+                dispatch(Type.Delete, {key: keys[index - 1]})
             }
         }
     }

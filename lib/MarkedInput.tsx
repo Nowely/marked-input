@@ -1,12 +1,9 @@
 import {ComponentType, CSSProperties} from "react";
-import {useSliceMap} from "./hooks/useSliceMap";
 import {StoreProvider} from "./utils";
-import {useCaret} from "./hooks/useCaret";
-import {useFocus} from "./hooks/useFocus";
 import {PassedOptions} from "./types";
-import {useConfigs} from "./hooks/useConfigs";
-import {MarkOrSpanList} from "./components/MarkOrSpanList";
+import {SliceList} from "./components/SliceList";
 import "./style.css"
+import {useMarkedInput} from "./hooks/useMarkedInput";
 
 export interface MarkedInputProps<T> {
     /**
@@ -47,13 +44,11 @@ export interface MarkedInputProps<T> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, >({children, ...props}: MarkedInputProps<T>) => {
-    const caret = useCaret(), focus = useFocus(), configs = useConfigs(children)
-    const sliceMap = useSliceMap(props.value, configs)
-
+export const MarkedInput = <T, >(props: MarkedInputProps<T>) => {
+    const store = useMarkedInput(props)
     return (
-        <StoreProvider value={{...props, configs, caret, focus, sliceMap}}>
-                <MarkOrSpanList/>
+        <StoreProvider value={store}>
+            <SliceList/>
         </StoreProvider>
     )
 }

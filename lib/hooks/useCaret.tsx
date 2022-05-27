@@ -24,8 +24,8 @@ export class Caret {
         if (!selection?.anchorNode || !selection.rangeCount) return
 
         const range = selection.getRangeAt(0)
-        range.setStart(selection.anchorNode, offset)
-        range.setEnd(selection.anchorNode, offset)
+        range?.setStart(range.startContainer.firstChild || range.startContainer, offset)
+        range?.setEnd(range.startContainer.firstChild || range.startContainer, offset)
     }
 
     static getIndex() {
@@ -51,7 +51,7 @@ export class Caret {
         this.clear()
     }
 
-    getCaretIndex(element: HTMLElement) {
+    static getCaretIndex(element: HTMLElement) {
         let position = 0;
 
         const selection = window.getSelection();
@@ -76,13 +76,6 @@ export class Caret {
     static setCaretToEnd(element: HTMLElement) {
         const selection = window.getSelection();
         selection?.setPosition(element, 1)
-    }
-
-    setCaretTo(element: HTMLElement, offset: number) {
-        const selection = window.getSelection();
-        const range = selection?.getRangeAt(0);
-        range?.setStart(range.startContainer, offset)
-        range?.setEnd(range.startContainer, offset)
     }
 
     setCaretRightTo(element: HTMLElement, offset: number) {

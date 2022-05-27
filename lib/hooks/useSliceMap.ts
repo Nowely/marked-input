@@ -1,16 +1,22 @@
-import {useEffect, useState} from "react";
-import {genHash, isObject, markupToRegex} from "../utils";
-import {Configs, Mark, Match, Slice, SliceMap} from "../types";
+import {useCallback, useEffect, useState} from "react";
+import {genHash, isObject, markupToRegex, toString} from "../utils";
+import {Action, Configs, Dispatch, Mark, Match, Payload, Slice, SliceMap, Type} from "../types";
+import {MarkedInputProps} from "../MarkedInput";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >(text: string, configs: Configs<any>): SliceMap<T> => {
-    const slices = useSlicesOf(text);
-    return useKeyMapperFor(slices)
+export const useSliceMap = <T, >(props: MarkedInputProps<any>, configs: Configs<any>)
+    : [SliceMap<T>, Dispatch] => {
+    const slices = useSlicesOf(props.value);
+    const state = useKeyMapperFor(slices)
+    const dispatch = useDispatcher()
+
+    return [state, dispatch]
 
 
     function useSlicesOf(text: string) {
         const [slices, setSlices] = useState<Slice<T>[]>([])
         useEffect(() => {
+            //TODO refact to smt like Parser.Parse?
             const newSlices = slice(text, configs);
             setSlices(newSlices)
         }, [text])
@@ -100,5 +106,27 @@ export const useSliceMap = <T, >(text: string, configs: Configs<any>): SliceMap<
             while (newMap.has(key)) key = genHash(str, seed++)
             return key;
         }
+    }
+
+    function useDispatcher() {
+        return useCallback((type: Type, payload: Payload) => {
+            reducer(state, {type, payload})
+
+            function reducer(state: SliceMap<T>, action: Action) {
+                switch (action.type) {
+                    case Type.Change:
+                        const {key, value = ""} = action.payload
+                        state.set(key, value)
+                        props.onChange(toString([...state.values()], configs))
+                        break;
+                    case Type.Delete:
+                        state.delete(action.payload.key)
+                        props.onChange(toString([...state.values()], configs))
+                        break;
+                    default:
+                        throw new Error();
+                }
+            }
+        }, [state])
     }
 }

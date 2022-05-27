@@ -3,8 +3,8 @@ import {useHandleKeyDown} from "../hooks/useHandleKeyDown";
 import {EditableSpan} from "./EditableSpan";
 import {DefaultClass} from "../constants";
 
-export const MarkOrSpanList = () => {
-    const {Mark, configs, sliceMap, ...props} = useStore()
+export const SliceList = () => {
+    const {sliceMap, props: {Mark, ...props}} = useStore()
     const handleKeyDown = useHandleKeyDown()
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
 

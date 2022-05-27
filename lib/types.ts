@@ -34,6 +34,28 @@ export type Match = {
     childIndex: number;
 }
 
-export type Store =
-    Omit<MarkedInputProps<any>, "children">
-    & { configs: Configs<any>, caret: Caret, focus: Focus, sliceMap: SliceMap<any> }
+export type Store = {
+    props: MarkedInputProps<any>
+    configs: Configs<any>
+    caret: Caret
+    focus: Focus
+    sliceMap: SliceMap<any>
+    dispatch: Dispatch
+}
+
+//TODO naming
+export type Dispatch = (type: Type, payload: Payload) => void
+
+export enum Type {
+    Change,
+    Delete
+}
+
+export type Action = {
+    type: Type,
+    payload: Payload
+}
+export type Payload = {
+    key: number,
+    value?: Slice<any>
+}
