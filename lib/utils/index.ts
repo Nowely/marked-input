@@ -1,6 +1,6 @@
 import React, {Children, Context, Provider, useContext} from "react";
-import {PLACEHOLDER} from "./constants";
-import {Configs, Mark, PassedOptions, Store} from "./types";
+import {PLACEHOLDER} from "../constants";
+import {Configs, Mark, Markup, PassedOptions, Store} from "../types";
 
 export const assign = Object.assign
 
@@ -14,7 +14,7 @@ export const markupToRegex = (markup: string) => {
     )
 }
 
-export const makeMentionsMarkup = (markup: string, id: string, value: string) => {
+export const makeAnnotation = (markup: string, id: string, value: string) => {
     return markup
         .replace(PLACEHOLDER.Id, id)
         .replace(PLACEHOLDER.Value, value)
@@ -23,14 +23,20 @@ export const makeMentionsMarkup = (markup: string, id: string, value: string) =>
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | Mark<any>)[], configs: Configs<any>) {
+export function toString(values: (string | Mark)[], configs: Configs<any>) {
     let result = ""
     for (let value of values) {
         result += isObject(value)
-            ? makeMentionsMarkup(configs[value.childIndex].markup, value.id, value.value)
+            ? makeAnnotation(configs[value.childIndex].markup, value.id, value.value)
             : value
     }
     return result
+}
+
+export const normalizeMark = (mark: Mark, markup: Markup) => {
+    if (mark.annotation !== makeAnnotation(markup, mark.id, mark.value))
+        return {...mark, id: mark.value, value: mark.id}
+    return mark
 }
 
 //https://stackoverflow.com/a/52171480 cyrb53 generate hash

@@ -5,27 +5,7 @@ import {MarkedInputProps} from "./MarkedInput";
 import {Caret} from "./hooks/useCaret";
 import {Focus} from "./hooks/useFocus";
 
-export type Mark<T> = {
-    id: string
-    value: string
-    props: T
-    childIndex: number
-}
-
-type id = `${string}${PLACEHOLDER.Id}${string}`
-type value = `${string}${PLACEHOLDER.Value}${string}`
-export type Markup = `${value}${id}` | `${value}` //| `${id}${value}`
-
-//TODO T to unknown?
-export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
-
-export type Configs<T> = OptionProps<T>[]
-
-export type Slice<T> = string | Mark<T>
-
-export type SliceMap<T> = Map<number, Slice<T>>
-
-export type Match = {
+export type Mark = {
     annotation: string;
     id: string;
     value: string
@@ -33,6 +13,20 @@ export type Match = {
     input: string;
     childIndex: number;
 }
+
+type id = `${string}${PLACEHOLDER.Id}${string}`
+type value = `${string}${PLACEHOLDER.Value}${string}`
+
+export type Markup = `${value}${id}` | `${value}` //| `${id}${value}`
+
+//TODO T to unknown?
+export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
+
+export type Configs<T> = OptionProps<T>[]
+
+export type Slice<T> = string | Mark
+
+export type SliceMap<T> = Map<number, Slice<T>>
 
 export type Store = {
     props: MarkedInputProps<any>
