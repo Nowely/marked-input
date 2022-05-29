@@ -1,2 +1,2 @@
-export * from "./MarkedInput"
-export * from "./Option"
+export * from "./components/MarkedInput"
+export * from "./components/Option"

@@ -3,7 +3,7 @@ import {useCaret} from "./useCaret";
 import {useFocus} from "./useFocus";
 import {useConfigs} from "./useConfigs";
 import {useSliceMap} from "./useSliceMap";
-import {MarkedInputProps} from "../MarkedInput";
+import {MarkedInputProps} from "../components/MarkedInput";
 
 export const useMarkedInput = (props: MarkedInputProps<any>): Store => {
     const caret = useCaret()

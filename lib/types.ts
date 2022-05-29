@@ -1,7 +1,7 @@
 import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
-import {OptionProps} from "./Option";
-import {MarkedInputProps} from "./MarkedInput";
+import {OptionProps} from "./components/Option";
+import {MarkedInputProps} from "./components/MarkedInput";
 import {Caret} from "./hooks/useCaret";
 import {Focus} from "./hooks/useFocus";
 

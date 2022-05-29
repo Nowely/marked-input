@@ -1,7 +1,7 @@
 import {useCallback, useMemo} from "react";
 import {genHash, isObject, toString} from "../utils";
 import {Action, Configs, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
-import {MarkedInputProps} from "../MarkedInput";
+import {MarkedInputProps} from "../components/MarkedInput";
 import {Parser} from "../utils/Parser";
 
 //TODO Compare new input value with returned caching?

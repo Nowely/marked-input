@@ -1,9 +1,9 @@
 import {ComponentType, CSSProperties} from "react";
-import {StoreProvider} from "./utils";
-import {PassedOptions} from "./types";
-import {SliceList} from "./components/SliceList";
-import "./style.css"
-import {useMarkedInput} from "./hooks/useMarkedInput";
+import {StoreProvider} from "../utils";
+import {PassedOptions} from "../types";
+import {SliceList} from "./SliceList";
+import "../style.css"
+import {useMarkedInput} from "../hooks/useMarkedInput";
 
 export interface MarkedInputProps<T> {
     /**

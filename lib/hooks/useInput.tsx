@@ -1,5 +1,5 @@
-import {Option, OptionProps} from "../Option";
-import {MarkedInput} from "../MarkedInput";
+import {Option, OptionProps} from "../components/Option";
+import {MarkedInput} from "../components/MarkedInput";
 
 //TODO hook initialize way
 const useInput = () => {
