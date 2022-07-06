@@ -1,13 +1,13 @@
 import {useCallback, useMemo} from "react";
 import {genHash, isObject, toString} from "../utils";
 import {Action, Configs, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
-import {MarkedInputProps} from "../components/MarkedInput";
+import {MarkedInputProps} from "../MarkedInput";
 import {Parser} from "../utils/Parser";
 
 //TODO Compare new input value with returned caching?
 export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any>, configs: Configs<any>)
     : [SliceMap<T>, Dispatch] => {
-    const slices = useMemo(() => Parser.split(value, configs), [value])
+    const slices = useMemo(Parser.split(value, configs), [value])
     const sliceMap = useMemo(sliceToKeyMapper, [slices.length])
     const dispatch = useDispatcher()
 

@@ -19,6 +19,15 @@ export class Caret {
         this._position = NaN
     }
 
+    static setIndex1(element: HTMLElement, offset: number) {
+        const selection = window.getSelection()
+        if (!selection?.anchorNode || !selection.rangeCount) return
+
+        const range = selection.getRangeAt(0)
+        range?.setStart(element.firstChild!, offset)
+        range?.setEnd(element.firstChild!, offset)
+    }
+
     static setIndex(offset: number) {
         const selection = window.getSelection()
         if (!selection?.anchorNode || !selection.rangeCount) return
@@ -33,6 +42,15 @@ export class Caret {
         return selection?.anchorOffset ?? NaN
     }
 
+    setPosition(position: number) {
+        this._position = position
+    }
+    getPosition() {
+        let temp = this._position
+        this._position = NaN
+        return temp
+    }
+
     saveRightOffset() {
         const selection = window.getSelection()
         const position = selection?.anchorNode?.textContent?.length
@@ -45,9 +63,10 @@ export class Caret {
         const selection = window.getSelection()
         const range = selection?.rangeCount ? selection.getRangeAt(0) : null
         if (!selection?.anchorNode) return
-        let offset = (selection?.anchorNode?.textContent?.length ?? 0) - this._position
-        range?.setStart(selection.anchorNode, offset)
-        range?.setEnd(selection.anchorNode, offset)
+        let a = selection?.anchorNode.firstChild || selection?.anchorNode
+        let offset = (a?.textContent?.length ?? 0) - this._position
+        range?.setStart(a, offset)
+        range?.setEnd(a, offset)
         this.clear()
     }
 

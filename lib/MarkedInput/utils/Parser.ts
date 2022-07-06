@@ -16,7 +16,7 @@ export class Parser {
     }
 
     static split(value: string, configs: Configs<any>) {
-        return new Parser(configs).split(value)
+        return () => new Parser(configs).split(value)
     }
 
     private constructor(configs: Configs<any>) {

@@ -1,4 +1,4 @@
-import {Markup} from "../types";
+import {Markup} from "./MarkedInput/types";
 
 export interface OptionProps<T = Record<string, any>> {
     /**

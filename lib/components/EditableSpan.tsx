@@ -1,21 +1,37 @@
-import React, {useRef} from "react";
-import {useStore} from "../utils";
-import {useHeldCaret} from "../hooks/useHeldCaret";
-import {useRestoredFocus} from "../hooks/useRestoredFocus";
-import {Type} from "../types";
+import React, {ForwardedRef, forwardRef, RefObject, useEffect, useRef} from "react";
+import {useStore} from "../MarkedInput/utils";
+import {useHeldCaret} from "../MarkedInput/hooks/useHeldCaret";
+import {Type} from "../MarkedInput/types";
+import {Caret} from "../MarkedInput/hooks/useCaret";
 
 export interface EditableSpanProps {
     id: number
     value: string
+    focused: React.MutableRefObject<number | undefined>
 }
 
-export const EditableSpan = ({id, value}: EditableSpanProps) => {
-    const {caret, focus, dispatch, props: {readOnly, spanStyle, spanClassName}} = useStore()
-    const ref = useRef<HTMLSpanElement>(null)
-    const held = useHeldCaret(ref)
+//TODO Заменить forwardRef на обычный хук, внутри которого провайдер
+export const EditableSpan = forwardRef(({id, value, focused}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
+    const {dispatch, caret, props: {readOnly, spanStyle, spanClassName}} = useStore()
+    const spanRef = useRef<HTMLSpanElement>(null)
 
-    focus.useManualFocus(id, ref)
-    useRestoredFocus(caret, ref)
+    if (typeof ref === "function") {
+        ref(spanRef)
+    }
+
+    useEffect(() => {
+        if (focused.current === id) {
+            spanRef.current?.focus()
+            focused.current = undefined
+
+            let position = caret.getPosition()
+            if (position && spanRef.current) {
+                Caret.setIndex1(spanRef.current, position)
+            }
+        }
+    })
+
+    const held = useHeldCaret(spanRef)
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         held()
@@ -23,24 +39,22 @@ export const EditableSpan = ({id, value}: EditableSpanProps) => {
         dispatch(Type.Change,{key: id, value: newValue})
     }
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLSpanElement>) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData("text");
-        document.execCommand("insertText", false, text);
-    }
-
     return (
         <span
-            ref={ref}
+            ref={spanRef}
             style={spanStyle}
             className={spanClassName}
             contentEditable={!readOnly}
             suppressContentEditableWarning
             onInput={handleInput}
-            onFocus={() => focus.setFocused(id)}
-            onBlur={() => focus.setFocused(null)}
             onPaste={handlePaste}
             children={value}
         />
     )
+})
+
+function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text");
+    document.execCommand("insertText", false, text);
 }

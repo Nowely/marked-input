@@ -1,9 +1,8 @@
 import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
-import {OptionProps} from "./components/Option";
-import {MarkedInputProps} from "./components/MarkedInput";
+import {OptionProps} from "../Option";
+import {MarkedInputProps} from "./MarkedInput";
 import {Caret} from "./hooks/useCaret";
-import {Focus} from "./hooks/useFocus";
 
 export type Mark = {
     annotation: string;
@@ -32,7 +31,6 @@ export type Store = {
     props: MarkedInputProps<any>
     configs: Configs<any>
     caret: Caret
-    focus: Focus
     sliceMap: SliceMap<any>
     dispatch: Dispatch
 }
