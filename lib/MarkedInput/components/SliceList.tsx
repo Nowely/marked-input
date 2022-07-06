@@ -1,7 +1,7 @@
-import {isObject, useStore} from "../MarkedInput/utils";
+import {isObject, useStore} from "../utils";
 import {EditableSpan} from "./EditableSpan";
-import {DefaultClass} from "../MarkedInput/constants";
-import {useFocus} from "../MarkedInput/hooks/useFocus";
+import {DefaultClass} from "../constants";
+import {useFocus} from "../hooks/useFocus";
 import {useEffect} from "react";
 
 export const SliceList = () => {

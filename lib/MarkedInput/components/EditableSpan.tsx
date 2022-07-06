@@ -1,8 +1,8 @@
 import React, {ForwardedRef, forwardRef, RefObject, useEffect, useRef} from "react";
-import {useStore} from "../MarkedInput/utils";
-import {useHeldCaret} from "../MarkedInput/hooks/useHeldCaret";
-import {Type} from "../MarkedInput/types";
-import {Caret} from "../MarkedInput/hooks/useCaret";
+import {useStore} from "../utils";
+import {useHeldCaret} from "../hooks/useHeldCaret";
+import {Type} from "../types";
+import {Caret} from "../hooks/useCaret";
 
 export interface EditableSpanProps {
     id: number
