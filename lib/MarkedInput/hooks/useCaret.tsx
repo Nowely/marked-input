@@ -2,6 +2,7 @@ import {useState} from "react";
 
 export const useCaret = () => useState(() => new Caret())[0]
 
+//TODO refact caret
 /**
  * Restore caret on union for two spans
  */

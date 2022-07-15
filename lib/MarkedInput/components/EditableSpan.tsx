@@ -2,34 +2,20 @@ import React, {ForwardedRef, forwardRef, RefObject, useEffect, useRef} from "rea
 import {useStore} from "../utils";
 import {useHeldCaret} from "../hooks/useHeldCaret";
 import {Type} from "../types";
-import {Caret} from "../hooks/useCaret";
 
 export interface EditableSpanProps {
     id: number
     value: string
-    focused: React.MutableRefObject<number | undefined>
 }
 
-//TODO Заменить forwardRef на обычный хук, внутри которого провайдер
-export const EditableSpan = forwardRef(({id, value, focused}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
-    const {dispatch, caret, props: {readOnly, spanStyle, spanClassName}} = useStore()
+//TODO Instead forwardRef to hook
+export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
+    const {dispatch, props: {readOnly, spanStyle, spanClassName}} = useStore()
     const spanRef = useRef<HTMLSpanElement>(null)
 
     if (typeof ref === "function") {
         ref(spanRef)
     }
-
-    useEffect(() => {
-        if (focused.current === id) {
-            spanRef.current?.focus()
-            focused.current = undefined
-
-            let position = caret.getPosition()
-            if (position && spanRef.current) {
-                Caret.setIndex1(spanRef.current, position)
-            }
-        }
-    })
 
     const held = useHeldCaret(spanRef)
 
