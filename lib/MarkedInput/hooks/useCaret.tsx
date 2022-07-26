@@ -1,6 +1,6 @@
-import {useState} from "react";
+import {useMemo} from "react";
 
-export const useCaret = () => useState(() => new Caret())[0]
+export const useCaret = () => useMemo(() => new Caret(), [])
 
 //TODO refact caret
 /**
@@ -20,36 +20,55 @@ export class Caret {
         this._position = NaN
     }
 
-    static setIndex1(element: HTMLElement, offset: number) {
+    static setIndex(element: HTMLElement, offset: number) {
         const selection = window.getSelection()
         if (!selection?.anchorNode || !selection.rangeCount) return
 
         const range = selection.getRangeAt(0)
-        range?.setStart(element.firstChild!, offset)
-        range?.setEnd(element.firstChild!, offset)
+        range?.setStart(element.firstChild! || element, offset)
+        range?.setEnd(element.firstChild! || element, offset)
     }
 
-    static setIndex(offset: number) {
-        const selection = window.getSelection()
-        if (!selection?.anchorNode || !selection.rangeCount) return
+    static getCaretIndex(element: HTMLElement) {
+        let position = 0;
 
-        const range = selection.getRangeAt(0)
-        range?.setStart(range.startContainer.firstChild || range.startContainer, offset)
-        range?.setEnd(range.startContainer.firstChild || range.startContainer, offset)
+        const selection = window.getSelection();
+        // Check if there is a selection (i.e. cursor in place)
+        if (!selection?.rangeCount) return position;
+
+        // Store the original range
+        const range = selection.getRangeAt(0);
+        // Clone the range
+        const preCaretRange = range.cloneRange();
+        // Select all textual contents from the contenteditable element
+        preCaretRange.selectNodeContents(element);
+        // And set the range end to the original clicked _position
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        // Return the text length from contenteditable start to the range end
+        position = preCaretRange.toString().length;
+
+        return position
     }
 
-    static getIndex() {
-        const selection = window.getSelection()
-        return selection?.anchorOffset ?? NaN
+    getPosition() {
+        let temp = this._position
+        this._position = NaN
+        return temp
     }
 
     setPosition(position: number) {
         this._position = position
     }
-    getPosition() {
-        let temp = this._position
-        this._position = NaN
-        return temp
+
+    static setCaretToEnd(element: HTMLElement) {
+        const selection = window.getSelection();
+        selection?.setPosition(element, 1)
+    }
+
+
+    static getIndex() {
+        const selection = window.getSelection()
+        return selection?.anchorOffset ?? NaN
     }
 
     saveRightOffset() {
@@ -71,31 +90,13 @@ export class Caret {
         this.clear()
     }
 
-    static getCaretIndex(element: HTMLElement) {
-        let position = 0;
+    static setIndex1(offset: number) {
+        const selection = window.getSelection()
+        if (!selection?.anchorNode || !selection.rangeCount) return
 
-        const selection = window.getSelection();
-        // Check if there is a selection (i.e. cursor in place)
-        if (!selection?.rangeCount) return position;
-
-        // Store the original range
-        const range = selection.getRangeAt(0);
-        //selection.setPosition(element, 1)
-        // Clone the range
-        const preCaretRange = range.cloneRange();
-        // Select all textual contents from the contenteditable element
-        preCaretRange.selectNodeContents(element);
-        // And set the range end to the original clicked _position
-        preCaretRange.setEnd(range.endContainer, range.endOffset);
-        // Return the text length from contenteditable start to the range end
-        position = preCaretRange.toString().length;
-
-        return position
-    }
-
-    static setCaretToEnd(element: HTMLElement) {
-        const selection = window.getSelection();
-        selection?.setPosition(element, 1)
+        const range = selection.getRangeAt(0)
+        range?.setStart(range.startContainer.firstChild || range.startContainer, offset)
+        range?.setEnd(range.startContainer.firstChild || range.startContainer, offset)
     }
 
     setCaretRightTo(element: HTMLElement, offset: number) {

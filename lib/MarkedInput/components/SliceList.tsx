@@ -4,8 +4,8 @@ import {DefaultClass} from "../constants";
 import {useFocus} from "../hooks/useFocus";
 
 export const SliceList = () => {
-    const {sliceMap, caret, configs, props: {Mark, ...props}} = useStore()
-    const {mapper, ...focusHandles} = useFocus()
+    const {sliceMap, configs, props: {Mark, ...props}} = useStore()
+    const {register, ...focusHandles} = useFocus()
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
 
     return (
@@ -15,7 +15,7 @@ export const SliceList = () => {
                         ? <Mark key={key} tabIndex={-1}
                                 {...configs[slice.childIndex].initializer(slice.value, slice.id)} />
                         : <EditableSpan
-                            ref={mapper(key)}
+                            ref={register(key)}
                             id={key} key={key} value={slice}/>
                 )
             )}

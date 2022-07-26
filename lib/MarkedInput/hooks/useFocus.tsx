@@ -1,15 +1,17 @@
 import {FocusEvent, KeyboardEvent, RefObject, useEffect, useRef} from "react";
-import {Caret} from "./useCaret";
+import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
 import {Type} from "../types";
 
 //TODO rename focusedIndex
 export const useFocus = () => {
+    const caret = useCaret()
+
     //TODO remove current property
     const refMap = {current: new Map<number, RefObject<HTMLSpanElement>>()}
 
-    const {caret, dispatch, sliceMap} = useStore()
+    const {dispatch, sliceMap} = useStore()
     const keys = [...sliceMap.keys()]
 
     const focusedIndex = useRef<number | null>(null)
@@ -59,7 +61,7 @@ export const useFocus = () => {
         }
 
         function handlePressDelete() {
-            if (focusedIndex.current && focusedIndex.current !== [...refMap.current.values()].length - 1) {
+            if (focusedIndex.current !== null && focusedIndex.current !== [...refMap.current.values()].length - 1) {
                 keyRestoredElement.current = predictRightKey()
                 let currentKey = [...refMap.current.keys()][focusedIndex.current]
                 let index = keys.indexOf(currentKey)
@@ -69,7 +71,7 @@ export const useFocus = () => {
     }
 
     function predictLeftKey() {
-        if (!focusedIndex.current) return null
+        if (focusedIndex.current === null) return null
 
         let previousKey = [...refMap.current.keys()][focusedIndex.current - 1]
         let currentKey = [...refMap.current.keys()][focusedIndex.current]
@@ -85,7 +87,7 @@ export const useFocus = () => {
     }
 
     function predictRightKey() {
-        if (!focusedIndex.current) return null
+        if (focusedIndex.current === null) return null
 
         let nextKey = [...refMap.current.keys()][focusedIndex.current + 1]
         let currentKey = [...refMap.current.keys()][focusedIndex.current]
@@ -105,7 +107,7 @@ export const useFocus = () => {
     }
 
     return {
-        mapper: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
+        register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
         onFocus: (event: FocusEvent<HTMLElement>) => {
             focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
         },
@@ -125,7 +127,7 @@ const useRestoredFocusAndCaretAfterDelete = (caret: Caret, refMap: {current: Map
 
             let position = caret.getPosition()
             if (position && refSpan) {
-                Caret.setIndex1(refSpan, position)
+                Caret.setIndex(refSpan, position)
             }
 
             predictedKey.current = null

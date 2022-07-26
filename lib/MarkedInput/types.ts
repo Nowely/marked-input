@@ -2,7 +2,6 @@ import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
-import {Caret} from "./hooks/useCaret";
 
 //TODO rename ParsedMarkup, Match?
 export type Mark = {
@@ -31,7 +30,6 @@ export type SliceMap<T> = Map<number, Slice<T>>
 export type Store = {
     props: MarkedInputProps<any>
     configs: Configs<any>
-    caret: Caret
     sliceMap: SliceMap<any>
     dispatch: Dispatch
 }
