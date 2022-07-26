@@ -4,7 +4,7 @@ import {Option} from "../lib";
 import {Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
-import {PlainText} from "./assets/PlainText";
+import {Text} from "./assets/Text";
 import {getTitleOfStyled} from "./assets/getTitle";
 
 export default {
@@ -44,6 +44,6 @@ export const TaggedInput = () => {
         </MarkedInput>
 
         <br/>
-        <PlainText value={value}/>
+        <Text value={value}/>
     </>
 }

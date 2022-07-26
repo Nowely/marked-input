@@ -1,7 +1,7 @@
 import {Button, ButtonProps} from "./assets/Button";
 import {MarkedInput, Option} from "../lib";
 import {ElementType, useState} from "react";
-import {PlainText} from "./assets/PlainText";
+import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 
 export default {
@@ -11,6 +11,9 @@ export default {
 }
 
 export const Base = () => {
+    const primaryMarkup = "@[__value__](primary:__id__)"
+    const secondaryMarkup = "@[__value__](secondary:__id__)"
+
     const [value, setValue] = useState(
         `Hello beautiful @[first](primary:1) world from the @[second](secondary:2) and @[third](primary:1), and @[fourth](secondary:2)!`
     )
@@ -22,16 +25,16 @@ export const Base = () => {
                 spanStyle={{width: 'auto', minWidth: 10}}
                 Mark={Button} value={value} onChange={setValue}>
                 <Option<ButtonProps>
-                    markup="@[__value__](primary:__id__)"
+                    markup={primaryMarkup}
                     initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
                 />
                 <Option<ButtonProps>
-                    markup="@[__value__](secondary:__id__)"
+                    markup={secondaryMarkup}
                     initializer={(label, id) => ({label})}
                 />
             </MarkedInput>
 
-            <PlainText value={value}/>
+            <Text value={value}/>
         </>
     )
 }
@@ -56,7 +59,7 @@ export const RichEditor = () => {
                 <Option markup="<__value__>__id__>" initializer={(as, value) => ({as, value})}/>
             </MarkedInput>
 
-            <PlainText value={value}/>
+            <Text value={value}/>
         </>
     )
 }

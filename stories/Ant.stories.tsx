@@ -3,7 +3,7 @@ import {useState} from "react";
 import 'antd/dist/antd.css';
 import {Tag} from "antd";
 import {TagProps} from "antd/lib/tag";
-import {PlainText} from "./assets/PlainText";
+import {Text} from "./assets/Text";
 import {getTitleOfStyled} from "./assets/getTitle";
 
 export default {
@@ -25,6 +25,6 @@ export const Tagged = () => {
             />
         </MarkedInput>
 
-        <PlainText value={value}/>
+        <Text value={value}/>
     </>
 }

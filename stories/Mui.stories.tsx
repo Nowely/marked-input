@@ -2,7 +2,7 @@ import {MarkedInput, Option} from "../lib";
 import {useState} from "react";
 import {Chip} from "@mui/material";
 import {ChipProps} from "@mui/material/Chip/Chip";
-import {PlainText} from "./assets/PlainText";
+import {Text} from "./assets/Text";
 import {getTitleOfStyled} from "./assets/getTitle";
 
 export default {
@@ -30,6 +30,6 @@ export const Chipped = () => {
             />
         </MarkedInput>
 
-        <PlainText value={value}/>
+        <Text value={value}/>
     </>
 }
