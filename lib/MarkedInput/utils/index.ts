@@ -1,6 +1,7 @@
 import React, {Children, Context, Provider, useContext} from "react";
 import {PLACEHOLDER} from "../constants";
 import {Configs, Mark, Markup, PassedOptions, Store} from "../types";
+import {Parser} from "./Parser";
 
 export const assign = Object.assign
 
@@ -56,23 +57,19 @@ export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
 
-//TODO deannotate method
 /**
- * Transform annotated text to display text
+ * Transform the annotated text to the another text.
  */
-export const deannotate = () => {
-
-}
-
-export const deMark = () => {
-
+export const denote = (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => {
+    const slices = new Parser(markups).split(value)
+    return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
 export function extractConfigs(children: PassedOptions<any>): Configs<any> {
     return Children.map(children, child => child.props);
 }
 
-const createContext = <T,>(name: string): [() => T, Provider<NonNullable<T>>] => {
+const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] => {
     const context = React.createContext<T | undefined>(undefined)
     context.displayName = name
 

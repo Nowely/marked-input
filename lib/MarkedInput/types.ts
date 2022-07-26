@@ -4,6 +4,7 @@ import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Caret} from "./hooks/useCaret";
 
+//TODO rename ParsedMarkup, Match?
 export type Mark = {
     annotation: string;
     id: string;

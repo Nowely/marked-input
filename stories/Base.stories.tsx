@@ -1,5 +1,5 @@
 import {Button, ButtonProps} from "./assets/Button";
-import {MarkedInput, Option} from "../lib";
+import {MarkedInput, Option, denote} from "../lib";
 import {ElementType, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
@@ -18,6 +18,8 @@ export const Base = () => {
         `Hello beautiful @[first](primary:1) world from the @[second](secondary:2) and @[third](primary:1), and @[fourth](secondary:2)!`
     )
 
+    const displayText = denote(value, mark => mark.value, primaryMarkup, secondaryMarkup)
+
     return (
         <>
             <MarkedInput
@@ -35,6 +37,8 @@ export const Base = () => {
             </MarkedInput>
 
             <Text value={value}/>
+
+            <Text label={"Display text:"} value={displayText}/>
         </>
     )
 }
