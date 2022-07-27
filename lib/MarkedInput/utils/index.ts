@@ -15,10 +15,20 @@ export const markupToRegex = (markup: string) => {
     )
 }
 
-export const makeAnnotation = (markup: string, id: string, value: string) => {
-    return markup
-        .replace(PLACEHOLDER.Id, id)
-        .replace(PLACEHOLDER.Value, value)
+/**
+ * Make annotation from the markup
+ */
+export function annotate(markup: Markup, value: string, id?: string) {
+    let annotation = markup.replace(PLACEHOLDER.Value, value)
+    return id ? annotation.replace(PLACEHOLDER.Id, id) : annotation
+}
+
+/**
+ * Transform the annotated text to the another text
+ */
+export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]) {
+    const slices = new Parser(markups).split(value)
+    return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
@@ -28,19 +38,19 @@ export function toString(values: (string | Mark)[], configs: Configs<any>) {
     let result = ""
     for (let value of values) {
         result += isObject(value)
-            ? makeAnnotation(configs[value.childIndex].markup, value.id, value.value)
+            ? annotate(configs[value.childIndex].markup, value.value, value.id)
             : value
     }
     return result
 }
 
 export const normalizeMark = (mark: Mark, markup: Markup) => {
-    if (mark.annotation !== makeAnnotation(markup, mark.id, mark.value))
+    if (mark.annotation !== annotate(markup, mark.value, mark.id))
         return {...mark, id: mark.value, value: mark.id}
     return mark
 }
-
 //https://stackoverflow.com/a/52171480 cyrb53 generate hash
+
 export const genHash = (str: string, seed = 0) => {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {
@@ -56,14 +66,6 @@ export const genHash = (str: string, seed = 0) => {
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
-
-/**
- * Transform the annotated text to the another text.
- */
-export const denote = (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => {
-    const slices = new Parser(markups).split(value)
-    return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
-}
 
 export function extractConfigs(children: PassedOptions<any>): Configs<any> {
     return Children.map(children, child => child.props);

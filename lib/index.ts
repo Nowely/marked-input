@@ -1,3 +1,3 @@
 export * from "./MarkedInput/MarkedInput"
 export * from "./Option"
-export {denote} from "./MarkedInput/utils"
+export {annotate, denote} from "./MarkedInput/utils"
