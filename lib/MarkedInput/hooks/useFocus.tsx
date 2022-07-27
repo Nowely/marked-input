@@ -1,8 +1,9 @@
-import {FocusEvent, KeyboardEvent, RefObject, useEffect, useRef} from "react";
+import {FocusEvent, KeyboardEvent, RefObject, useRef} from "react";
 import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
 import {Type} from "../types";
+import {useRestoredFocusAndCaretAfterDelete} from "./useRestoredFocusAndCaretAfterDelete";
 
 //TODO rename focusedIndex
 export const useFocus = () => {
@@ -116,23 +117,3 @@ export const useFocus = () => {
     }
 }
 
-const useRestoredFocusAndCaretAfterDelete = (caret: Caret, refMap: {current: Map<number, RefObject<HTMLSpanElement>>}) => {
-    const predictedKey = useRef<number | null>(null)
-
-    //Restore focus after delete mark
-    useEffect(() => {
-        if (predictedKey.current) {
-            let refSpan = refMap.current.get(predictedKey.current)?.current!
-            refSpan.focus()
-
-            let position = caret.getPosition()
-            if (position && refSpan) {
-                Caret.setIndex(refSpan, position)
-            }
-
-            predictedKey.current = null
-        }
-    })
-
-    return predictedKey
-}
