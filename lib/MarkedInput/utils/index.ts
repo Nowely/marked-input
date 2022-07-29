@@ -5,14 +5,20 @@ import {Parser} from "./Parser";
 
 export const assign = Object.assign
 
-export const markupToRegex = (markup: string) => {
+export const markupToRegex = (markup: Markup) => {
     const escapedMarkup = escapeRegex(markup)
-    const charAfterDisplay = markup[markup.indexOf(PLACEHOLDER.Value) + PLACEHOLDER.Value.length]
+    const charAfterValue = markup[markup.indexOf(PLACEHOLDER.Value) + PLACEHOLDER.Value.length]
     const charAfterId = markup[markup.indexOf(PLACEHOLDER.Id) + PLACEHOLDER.Id.length]
     return new RegExp(escapedMarkup
-        .replace(PLACEHOLDER.Value, `([^${escapeRegex(charAfterDisplay || '')}]+?)`)
+        .replace(PLACEHOLDER.Value, `([^${escapeRegex(charAfterValue || '')}]+?)`)
         .replace(PLACEHOLDER.Id, `([^${escapeRegex(charAfterId || '')}]+?)`),
     )
+}
+
+export const triggerToRegex = (value: string) => {
+    const escapedValue = escapeRegex(value)
+    const pattern = escapedValue + "\\w*"
+    return new RegExp(pattern)
 }
 
 /**

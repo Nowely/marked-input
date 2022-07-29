@@ -2,10 +2,13 @@ import {isObject, useStore} from "../utils";
 import {EditableSpan} from "./EditableSpan";
 import {DefaultClass} from "../constants";
 import {useFocus} from "../hooks/useFocus";
+import {useTrigger} from "../hooks/useTrigger";
+import {useRef} from "react";
 
 export const SliceList = () => {
-    const {sliceMap, configs, props: {Mark, ...props}} = useStore()
-    const {register, ...focusHandles} = useFocus()
+    const {sliceMap, configs, props: {Mark, Speaker, ...props}} = useStore()
+    const {word, check, clear} = useTrigger()
+    const {register, ...focusHandles} = useFocus(check, clear)
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
 
     return (
@@ -19,7 +22,7 @@ export const SliceList = () => {
                             id={key} key={key} value={slice}/>
                 )
             )}
+            {word && Speaker && <Speaker {...configs[0]?.triggerInitializer?.(word)}/>}
         </div>
     )
 }
-

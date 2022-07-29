@@ -5,7 +5,7 @@ import {SliceList} from "./components/SliceList";
 import "./style.css"
 import {useMarkedInput} from "./hooks/useMarkedInput";
 
-export interface MarkedInputProps<T> {
+export interface MarkedInputProps<T, T1> {
     /**
      * Annotated text with markups for mark
      */
@@ -18,6 +18,7 @@ export interface MarkedInputProps<T> {
      * Component that used for render markups
      */
     Mark: ComponentType<T>
+    Speaker?: ComponentType<T1>
     /**
      * Prevents from changing the value
      */
@@ -44,7 +45,7 @@ export interface MarkedInputProps<T> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, >(props: MarkedInputProps<T>) => {
+export const MarkedInput = <T, T1>(props: MarkedInputProps<T, T1>) => {
     const store = useMarkedInput(props)
     return (
         <StoreProvider value={store}>

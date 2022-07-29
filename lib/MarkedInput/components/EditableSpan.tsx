@@ -1,4 +1,4 @@
-import React, {ForwardedRef, forwardRef, RefObject, useEffect, useRef} from "react";
+import React, {ForwardedRef, forwardRef, RefObject, useRef} from "react";
 import {useStore} from "../utils";
 import {useHeldCaret} from "../hooks/useHeldCaret";
 import {Type} from "../types";
@@ -18,7 +18,6 @@ export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: For
     }
 
     const held = useHeldCaret(spanRef)
-
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         held()
         const newValue = e.currentTarget.textContent ?? ""
