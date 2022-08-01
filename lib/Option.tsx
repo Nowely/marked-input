@@ -7,12 +7,18 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
      * @Example: @[__value__](__id__)
      */
     markup: Markup
-    trigger?: string //| RegExp
-    triggerInitializer?: (word: string) => T1
     /**
-     * Function to initialize props for mark render. Gets arguments from found markup
+    * Sequence of symbols for calling speaker
+    */
+    trigger?: string //| RegExp
+    /**
+    * Function to initialize props for the speaker component
+    */
+    initSpeaker?: (word: string) => T1
+    /**
+     * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initializer: (value: string, id: string) => T
+    initializer: (value: string, id: string) => T //TODO rename to initMark
 }
 
 /**

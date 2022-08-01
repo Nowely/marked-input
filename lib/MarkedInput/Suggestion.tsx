@@ -1,13 +1,13 @@
 import React, {ReactNode} from "react";
 import "./style.css";
 
-interface PopupProps {
+export interface SuggestionProps {
     onClose: Function
     children: ReactNode,
     show: boolean
 }
 
-export const Popup = (props: PopupProps) => {
+export const Suggestion = (props: SuggestionProps) => {
     const onClose = (e: any) => {
         props.onClose && props.onClose(e);
     };

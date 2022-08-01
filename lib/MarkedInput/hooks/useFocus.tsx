@@ -115,7 +115,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
         },
         onBlur: () => {
             document?.removeEventListener("selectionchange", check);
-            clear()
+            //clear()
             focusedIndex.current = null;
         },
         onKeyDown,
