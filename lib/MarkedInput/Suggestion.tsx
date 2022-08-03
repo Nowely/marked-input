@@ -40,28 +40,23 @@ export const Suggestion = ({suggestions = ["a", "b", "c", "asdb", "heeell"], ...
     if (!filtered.length) return null
 
     return (
-        <ul className="suggestions">
+        <ul className="marked-suggestions" style={props.style}>
             {filtered.map((suggestion, index) => {
                 let className;
 
                 if (index === active) {
-                    className = "suggestion-active";
+                    className = "marked-suggestion-active";
                 }
 
                 return (
-                    <li className={className} key={suggestion} onClick={onClick}>
-                        {suggestion}
-                    </li>
+                    <li key={suggestion}
+                        className={className}
+                        //onMouseOver={_ => setActive(index)}
+                        onClick={onClick}
+                        children={suggestion}
+                    />
                 );
             })}
         </ul>
     )
-
-//<div className="content">{props.word}</div>
-    /*return (
-        <div className="marked-modal" style={props.style}>
-            {suggestionsListComponent}
-        </div>
-    );*/
-
 }

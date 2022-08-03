@@ -5,69 +5,34 @@
     white-space: pre-wrap;
 }
 
-.marked-modal1 {
-    width: fit-content;
-    background: white;
+.marked-suggestions {
     border: 1px solid #ccc;
+    max-height: 186px;
+    overflow-y: auto;
+    padding-left: 0;
+    position: absolute;
+    background: white;
+    width: fit-content;
+    min-width: 100px;
+
     transition: 1.1s ease-out;
-    box-shadow: -2rem 2rem 2rem rgba(0, 0, 0, 0.2);
     filter: blur(0);
     transform: scale(1);
     opacity: 1;
     visibility: visible;
-}
-.marked-modal {
+
     color: #000;
-    background: #fff;
-    width: 200px;
-    padding: 10px;
-    borderRadius: 4;
-    position: absolute;
-    border: 1px solid #ddd;
-    boxShadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
-}
-.marked-modal .content {
-    padding: 8px;
+    border-radius: 4%;
+    box-shadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
 }
 
-body {
-    font-family: sans-serif;
-}
-
-input {
-    border: 1px solid #999;
-    padding: 0.5rem;
-    width: 300px;
-}
-
-.no-suggestions {
-    color: #999;
+.marked-suggestions li {
     padding: 0.5rem;
 }
 
-.suggestions {
-    border: 1px solid #999;
-    border-top-width: 0;
-    list-style: none;
-    margin-top: 0;
-    max-height: 143px;
-    overflow-y: auto;
-    padding-left: 0;
-    width: calc(300px + 1rem);
-}
-
-.suggestions li {
-    padding: 0.5rem;
-}
-
-.suggestion-active,
-.suggestions li:hover {
-    background-color: #008f68;
-    color: #fae042;
+.marked-suggestions li:hover,
+.marked-suggestion-active {
+    background-color: #cce9ff;
+    color: #2589f5;
     cursor: pointer;
-    font-weight: 700;
-}
-
-.suggestions li:not(:last-of-type) {
-    border-bottom: 1px solid #999;
 }
