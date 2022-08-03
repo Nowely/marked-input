@@ -17,7 +17,7 @@ export const markupToRegex = (markup: Markup) => {
 
 export const triggerToRegex = (value: string) => {
     const escapedValue = escapeRegex(value)
-    const pattern = escapedValue + "\\w*"
+    const pattern = escapedValue + "(\\w*)"
     return new RegExp(pattern)
 }
 

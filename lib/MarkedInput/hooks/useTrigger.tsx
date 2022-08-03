@@ -12,7 +12,7 @@ export const useTrigger = (configs: OptionProps<any>[]) => {
     const check = useCallback(() => {
         for (let config of configs) {
             let word = findTriggeredWord(config.trigger)
-            if (word) {
+            if (word !== undefined) {
                 configRef.current = config
                 stylesRef.current = getCaretAbsolutePosition()
                 setWord(word)
@@ -43,11 +43,12 @@ function findTriggeredWord(trigger?: string): string | undefined {
     const wordBefore = textBefore.match(regexBefore)?.[0] ?? ""
     const wordAfter = textAfter.match(regexAfter)?.[0] ?? ""
 
-    const word = wordBefore + wordAfter
+    const annotation = wordBefore + wordAfter
 
     const regex = triggerToRegex(trigger)
 
-    if (regex.test(word)) return word
+    const word = regex.exec(annotation)?.[1]
+    if (word !== undefined) return word
 }
 
 function getCaretAbsolutePosition() {
