@@ -14,8 +14,10 @@ export type Mark = {
 }
 
 export interface OverlayProps {
-    left: number
-    top: number
+    style: {
+        left: number
+        top: number
+    }
     onClose: Function
     word: string
 }
@@ -40,7 +42,7 @@ export type Store = {
     sliceMap: SliceMap<any>
     dispatch: Dispatch
     //TODO type
-    trigger: {word: string | undefined, check: () => void, clear: () => void, configRef: React.MutableRefObject<OptionProps<any, any> | undefined>}
+    trigger: { word: string | undefined, check: () => void, clear: () => void, configRef: React.MutableRefObject<OptionProps<any, any> | undefined>, stylesRef: React.MutableRefObject<{ left: number, top: number }> }
 }
 
 //TODO naming

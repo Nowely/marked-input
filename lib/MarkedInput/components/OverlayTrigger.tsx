@@ -3,13 +3,13 @@ import {Suggestion} from "../Suggestion";
 import React, {createElement} from "react";
 
 export const OverlayTrigger = () => {
-    const {trigger: {word, configRef}, props: {Overlay = Suggestion}} = useStore()
+    const {trigger: {word, configRef, stylesRef}, props: {Overlay = Suggestion}} = useStore()
     let configs: any
 
     if (!word) return null;
 
-    const triggerProps = {word, left: 0, top: 0, onClose: configs}
+    const triggerProps = {word, style: stylesRef.current, onClose: configs}
     //TODO
-    const overlayProps = configRef.current?.initOverlay?.(triggerProps, configs) ?? triggerProps
+    const overlayProps = configRef.current?.initOverlay?.(triggerProps) ?? triggerProps
     return createElement(Overlay, overlayProps);
 }

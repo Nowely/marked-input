@@ -3,8 +3,6 @@ import "./style.css";
 import {OverlayProps} from "./types";
 
 export interface SuggestionProps extends OverlayProps{
-    children: ReactNode,
-    show: boolean
 }
 
 export const Suggestion = (props: SuggestionProps) => {
@@ -12,10 +10,11 @@ export const Suggestion = (props: SuggestionProps) => {
         return null;
     }*/
 
+    debugger
     return (
-        <div className="marked-modal">
-            <div className="content">{props.children}</div>
-            <div className="content">{props.children}</div>
+        <div className="marked-modal" style={props.style}>
+            <div className="content">{props.word}</div>
+            <div className="content">{props.word}</div>
         </div>
     );
 

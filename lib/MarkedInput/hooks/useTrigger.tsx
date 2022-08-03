@@ -6,12 +6,15 @@ import {OptionProps} from "../../Option";
 export const useTrigger = (configs: OptionProps<any>[]) => {
     const [word, setWord] = useState<string | undefined>()
     const configRef = useRef<OptionProps<any, any> | undefined>()
+    const stylesRef = useRef<{ left: number, top: number }>({top: 0, left: 0})
+
     const clear = useCallback(() => setWord(undefined), [])
     const check = useCallback(() => {
         for (let config of configs) {
             let word = findTriggeredWord(config.trigger)
             if (word) {
                 configRef.current = config
+                stylesRef.current = getCaretAbsolutePosition()
                 setWord(word)
                 return
             }
@@ -19,7 +22,7 @@ export const useTrigger = (configs: OptionProps<any>[]) => {
         setWord(undefined)
     }, [])
 
-    return {word, check, clear, configRef}
+    return {word, check, clear, configRef, stylesRef}
 }
 
 function findTriggeredWord(trigger?: string): string | undefined {
@@ -45,4 +48,10 @@ function findTriggeredWord(trigger?: string): string | undefined {
     const regex = triggerToRegex(trigger)
 
     if (regex.test(word)) return word
+}
+
+function getCaretAbsolutePosition() {
+    const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
+    if (rect) return {left: rect.left, top: rect.top + 15}
+    return {left: 0, top: 0}
 }

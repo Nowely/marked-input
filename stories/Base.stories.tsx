@@ -29,7 +29,7 @@ export const Base = () => {
                 <Option<ButtonProps>
                     markup={primaryMarkup}
                     trigger="@"
-                    initOverlay={trigger => ({children: trigger.word, show: true})}
+                    //initOverlay={trigger => ({children: trigger.word, show: true})}
                     initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
                 />
                 <Option<ButtonProps>
