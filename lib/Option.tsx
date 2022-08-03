@@ -1,4 +1,5 @@
-import {Markup} from "./MarkedInput/types";
+import {RefObject} from "react";
+import {Markup, OverlayProps} from "./MarkedInput/types";
 
 export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> {
     /**
@@ -14,7 +15,7 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
     /**
     * Function to initialize props for the speaker component
     */
-    initSpeaker?: (word: string) => T1
+    initOverlay?: (props: OverlayProps, ref: RefObject<HTMLElement>) => T1 //If missing then send these props to overlay component directly
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */

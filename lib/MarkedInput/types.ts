@@ -13,6 +13,13 @@ export type Mark = {
     childIndex: number;
 }
 
+export interface OverlayProps {
+    left: number
+    top: number
+    onClose: Function
+    word: string
+}
+
 type id = `${string}${PLACEHOLDER.Id}${string}`
 type value = `${string}${PLACEHOLDER.Value}${string}`
 
@@ -28,10 +35,12 @@ export type Slice<T> = string | Mark
 export type SliceMap<T> = Map<number, Slice<T>>
 
 export type Store = {
-    props: MarkedInputProps<any>
+    props: MarkedInputProps<any, any>
     configs: Configs<any>
     sliceMap: SliceMap<any>
     dispatch: Dispatch
+    //TODO type
+    trigger: {word: string | undefined, check: () => void, clear: () => void, configRef: React.MutableRefObject<OptionProps<any, any> | undefined>}
 }
 
 //TODO naming

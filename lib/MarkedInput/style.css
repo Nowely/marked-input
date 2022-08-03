@@ -5,7 +5,7 @@
     white-space: pre-wrap;
 }
 
-.marked-modal {
+.marked-modal1 {
     width: fit-content;
     background: white;
     border: 1px solid #ccc;
@@ -15,6 +15,16 @@
     transform: scale(1);
     opacity: 1;
     visibility: visible;
+}
+.marked-modal {
+    color: #000;
+    background: #fff;
+    width: 200px;
+    padding: 10px;
+    borderRadius: 4;
+    position: absolute;
+    border: 1px solid #ddd;
+    boxShadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
 }
 .marked-modal .content {
     padding: 8px;

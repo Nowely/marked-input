@@ -1,20 +1,16 @@
 import React, {ReactNode} from "react";
 import "./style.css";
+import {OverlayProps} from "./types";
 
-export interface SuggestionProps {
-    onClose: Function
+export interface SuggestionProps extends OverlayProps{
     children: ReactNode,
     show: boolean
 }
 
 export const Suggestion = (props: SuggestionProps) => {
-    const onClose = (e: any) => {
-        props.onClose && props.onClose(e);
-    };
-
-    if (!props.show) {
+    /*if (!props.show) {
         return null;
-    }
+    }*/
 
     return (
         <div className="marked-modal">

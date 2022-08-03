@@ -1,15 +1,17 @@
-import React, {useCallback, useState} from "react";
-import {triggerToRegex, useStore} from "../utils";
+import React, {useCallback, useRef, useState} from "react";
+import {triggerToRegex} from "../utils";
+import {OptionProps} from "../../Option";
 
-export const useTrigger = () => {
-    const {configs} = useStore()
-
+//TODO reducer?
+export const useTrigger = (configs: OptionProps<any>[]) => {
     const [word, setWord] = useState<string | undefined>()
+    const configRef = useRef<OptionProps<any, any> | undefined>()
     const clear = useCallback(() => setWord(undefined), [])
     const check = useCallback(() => {
         for (let config of configs) {
             let word = findTriggeredWord(config.trigger)
             if (word) {
+                configRef.current = config
                 setWord(word)
                 return
             }
@@ -17,7 +19,7 @@ export const useTrigger = () => {
         setWord(undefined)
     }, [])
 
-    return {word, check, clear}
+    return {word, check, clear, configRef}
 }
 
 function findTriggeredWord(trigger?: string): string | undefined {

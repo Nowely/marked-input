@@ -4,6 +4,7 @@ import {PassedOptions} from "./types";
 import {SliceList} from "./components/SliceList";
 import "./style.css"
 import {useMarkedInput} from "./hooks/useMarkedInput";
+import {OverlayTrigger} from "./components/OverlayTrigger";
 
 export interface MarkedInputProps<T, T1> {
     /**
@@ -18,7 +19,7 @@ export interface MarkedInputProps<T, T1> {
      * Component that used for render markups
      */
     Mark: ComponentType<T>
-    Speaker?: ComponentType<T1>
+    Overlay?: ComponentType<T1>
     /**
      * Prevents from changing the value
      */
@@ -50,6 +51,7 @@ export const MarkedInput = <T, T1>(props: MarkedInputProps<T, T1>) => {
     return (
         <StoreProvider value={store}>
             <SliceList/>
+            <OverlayTrigger/>
         </StoreProvider>
     )
 }

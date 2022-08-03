@@ -28,6 +28,22 @@ export const Base = () => {
                 Mark={Button} value={value} onChange={setValue}>
                 <Option<ButtonProps>
                     markup={primaryMarkup}
+                    trigger="@"
+                    initOverlay={trigger => ({children: trigger.word, show: true})}
+                    initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
+                />
+                <Option<ButtonProps>
+                    markup={secondaryMarkup}
+                    initializer={(label, id) => ({label})}
+                />
+            </MarkedInput>
+
+            <MarkedInput
+                style={{minWidth: 100}}
+                spanStyle={{width: 'auto', minWidth: 10}}
+                Mark={Button} value={value} onChange={setValue}>
+                <Option<ButtonProps>
+                    markup={primaryMarkup}
                     initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
                 />
                 <Option<ButtonProps>
