@@ -8,7 +8,7 @@ export interface SuggestionProps extends OverlayProps {
 }
 
 export const Suggestion = ({suggestions = ["a", "b", "c", "asdb", "heeell"], ...props}: SuggestionProps) => {
-    const [active, setActive] = useState(0)
+    const [active, setActive] = useState(NaN)
 
     const filtered = useMemo(
         () => suggestions.filter(s => s.toLowerCase().indexOf(props.word.toLowerCase()) > -1),
@@ -18,6 +18,7 @@ export const Suggestion = ({suggestions = ["a", "b", "c", "asdb", "heeell"], ...
     const onClick = (e: any) => {
     }
 
+    //TODO button hand
     const onKeyDown = (e: any) => {
         switch (e.key) {
             case KEY.ENTER:
