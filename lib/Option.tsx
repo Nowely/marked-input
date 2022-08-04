@@ -7,17 +7,20 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
      * @Example: @[__value__](__id__)
      */
     markup: Markup
-    data?: string[] //TODO | object[]
     /**
-    * Sequence of symbols for calling speaker
-    */
+     * Sequence of symbols for calling the overlay.
+     */
     trigger?: string //| RegExp
     /**
-    * Function to initialize props for the speaker component
-    */
-    //TODO complete this: If missing then send these props to overlay component directly
+     * Data for a overlay component. By default, it is suggestions.
+     */
+    data?: string[] //TODO | object[]
+    /**
+     * Function to initialize overlay props to your requirements.
+     * If missing then passed overlay props directly.
+     */
     //TODO Add the ref: RefObject<HTMLElement> such as second argument
-    adaptOverlay?: (props: OverlayProps) => T1
+    initOverlay?: (props: OverlayProps) => T1
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */

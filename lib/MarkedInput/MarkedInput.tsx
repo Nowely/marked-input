@@ -19,6 +19,9 @@ export interface MarkedInputProps<T, T1> {
      * Component that used for render markups
      */
     Mark: ComponentType<T>
+    /**
+    * Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc.
+    */
     Overlay?: ComponentType<T1>
     /**
      * Prevents from changing the value
