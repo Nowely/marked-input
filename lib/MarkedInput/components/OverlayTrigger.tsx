@@ -4,7 +4,12 @@ import React, {createElement} from "react";
 import {onSelect, OverlayProps, Type} from "../types";
 
 export const OverlayTrigger = () => {
-    const {sliceMap, trigger: {word, config, style, text, indexBefore, triggeredValue}, dispatch, props: {Overlay = Suggestion}} = useStore()
+    const {
+        sliceMap,
+        trigger: {word, config, style, text, indexBefore, triggeredValue},
+        dispatch,
+        props: {Overlay = Suggestion}
+    } = useStore()
 
     if (word === undefined) return null;
 
@@ -19,7 +24,7 @@ export const OverlayTrigger = () => {
         }
         let newValue = text?.slice(0, indexBefore) + annotation + text?.slice(indexBefore! + triggeredValue!.length)
         if (foundKey)
-        dispatch(Type.Change, {value: newValue, key: foundKey})
+            dispatch(Type.Change, {value: newValue, key: foundKey})
     }
 
     const triggerProps: OverlayProps = {word, style, onSelect, data: config.data ?? []}

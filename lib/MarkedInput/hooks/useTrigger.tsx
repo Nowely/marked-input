@@ -1,5 +1,5 @@
 import React, {useCallback, useRef, useState} from "react";
-import {assign, triggerToRegex} from "../utils";
+import {assign, escapeRegex, triggerToRegex} from "../utils";
 import {OptionProps} from "../../Option";
 
 export type Trigger = {
@@ -54,7 +54,9 @@ function findTriggeredWord(trigger?: string) {
     const textBefore = text.slice(0, position)
     const textAfter = text.slice(position)
 
-    const regexBefore = new RegExp(/@\w*$/)
+    const escapedTrigger = escapeRegex(trigger)
+    const pattenRegexBefore = escapedTrigger + '\\w*$'
+    const regexBefore = new RegExp(pattenRegexBefore)
     const regexAfter = new RegExp(/^\w*/)
 
     const matchBefore = textBefore.match(regexBefore)

@@ -28,13 +28,14 @@ export const Base = () => {
                 Mark={Button} value={value} onChange={setValue}>
                 <Option<ButtonProps>
                     markup={primaryMarkup}
-                    trigger="@"
-                    adaptOverlay={trigger => ({...trigger})}
+                    trigger="/"
                     data={["Hello"]}
                     initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
                 />
                 <Option<ButtonProps>
                     markup={secondaryMarkup}
+                    trigger="@"
+                    data={["Goodbye"]}
                     initializer={(label, id) => ({label})}
                 />
             </MarkedInput>
