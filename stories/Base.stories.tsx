@@ -15,7 +15,9 @@ export const Base = () => {
     const secondaryMarkup = "@[__value__](secondary:__id__)"
 
     const [value, setValue] = useState(
-        `Hello beautiful @[first](primary:1) world from the @[second](secondary:2) and @[third](primary:1), and @[fourth](secondary:2)!`
+        "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[secondary](secondary:7)!\n" +
+        "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
+        "For found mark used @[annotations](secondary:123). It text also is editable..."
     )
 
     const displayText = denote(value, mark => mark.value, primaryMarkup, secondaryMarkup)
@@ -28,14 +30,14 @@ export const Base = () => {
                 Mark={Button} value={value} onChange={setValue}>
                 <Option<ButtonProps>
                     markup={primaryMarkup}
-                    trigger="/"
-                    data={["Hello"]}
+                    trigger="@"
+                    data={["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]}
                     initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
                 />
                 <Option<ButtonProps>
                     markup={secondaryMarkup}
-                    trigger="@"
-                    data={["Goodbye"]}
+                    trigger="/"
+                    data={["Seventh", "Eight", "Ninth"]}
                     initializer={(label, id) => ({label})}
                 />
             </MarkedInput>
