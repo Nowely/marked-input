@@ -30,4 +30,4 @@ export enum PLACEHOLDER {
 
 export const EmptyFunc = () => {}
 
-export const DefaultClass = "marked-input"
+export const DefaultClass = "mk-input"

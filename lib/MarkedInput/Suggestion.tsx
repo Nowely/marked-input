@@ -40,12 +40,12 @@ export const Suggestion = ({data, word, style, onSelect, ...props}: SuggestionPr
     if (!filtered.length) return null
 
     return (
-        <ul className="marked-suggestions" style={style}>
+        <ul className="mk-suggestions" style={style}>
             {filtered.map((suggestion, index) => {
                 let className;
 
                 if (index === active) {
-                    className = "marked-suggestion-active";
+                    className = "mk-suggestion-active";
                 }
 
                 return (
