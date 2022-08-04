@@ -17,7 +17,7 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
     */
     //TODO complete this: If missing then send these props to overlay component directly
     //TODO Add the ref: RefObject<HTMLElement> such as second argument
-    initOverlay?: (props: OverlayProps) => T1
+    adaptOverlay?: (props: OverlayProps) => T1
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */

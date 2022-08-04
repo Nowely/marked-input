@@ -24,6 +24,6 @@ export const OverlayTrigger = () => {
 
     const triggerProps: OverlayProps = {word, style, onSelect, data: config.data ?? []}
     //TODO
-    const overlayProps = config.initOverlay?.(triggerProps) ?? triggerProps
+    const overlayProps = config.adaptOverlay?.(triggerProps) ?? triggerProps
     return createElement(Overlay, overlayProps);
 }

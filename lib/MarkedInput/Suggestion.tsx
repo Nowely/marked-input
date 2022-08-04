@@ -6,12 +6,12 @@ import {KEY} from "./constants";
 export interface SuggestionProps extends OverlayProps {
 }
 
-export const Suggestion = ({data, ...props}: SuggestionProps) => {
+export const Suggestion = ({data, word, style, onSelect, ...props}: SuggestionProps) => {
     const [active, setActive] = useState(NaN)
 
     const filtered = useMemo(
-        () => data.filter(s => s.toLowerCase().indexOf(props.word.toLowerCase()) > -1),
-        [props.word]
+        () => data.filter(s => s.toLowerCase().indexOf(word.toLowerCase()) > -1),
+        [word]
     )
 
     const onClick = (e: any) => {
@@ -40,7 +40,7 @@ export const Suggestion = ({data, ...props}: SuggestionProps) => {
     if (!filtered.length) return null
 
     return (
-        <ul className="marked-suggestions" style={props.style}>
+        <ul className="marked-suggestions" style={style}>
             {filtered.map((suggestion, index) => {
                 let className;
 
@@ -52,7 +52,7 @@ export const Suggestion = ({data, ...props}: SuggestionProps) => {
                     <li key={suggestion}
                         className={className}
                         //onMouseOver={_ => setActive(index)}
-                        onClick={onClick}
+                        onClick={_ => onSelect({id: index.toString(), value: suggestion})}
                         children={suggestion}
                     />
                 );
