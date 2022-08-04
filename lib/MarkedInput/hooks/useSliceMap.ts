@@ -3,10 +3,10 @@ import {genHash, isObject, toString} from "../utils";
 import {Action, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
 import {MarkedInputProps} from "../MarkedInput";
 import {Parser} from "../utils/Parser";
-import type {Option} from "../../Option";
+import type {OptionProps} from "../../Option";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, options: Option[])
+export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, options: OptionProps[])
     : [SliceMap<T>, Dispatch] => {
     const slices = useMemo(Parser.split(value, options), [value])
     const sliceMap = useMemo(sliceToKeyMapper, [slices.length])

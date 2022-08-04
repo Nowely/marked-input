@@ -1,6 +1,6 @@
 import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
-import type {Option} from "../Option";
+import type {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Trigger} from "./hooks/useTrigger";
 
@@ -33,7 +33,7 @@ type value = `${string}${PLACEHOLDER.Value}${string}`
 export type Markup = `${value}${id}` | `${value}` //| `${id}${value}`
 
 //TODO T to unknown?
-export type PassedOptions<T> = ReactElement<Option<T>> | ReactElement<Option<T>>[]
+export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
 
 export type Slice<T> = string | Mark
 
@@ -41,7 +41,7 @@ export type SliceMap<T> = Map<number, Slice<T>>
 
 export type Store = {
     props: MarkedInputProps<any, any>
-    options: Option[]
+    options: OptionProps[]
     sliceMap: SliceMap<any>
     dispatch: Dispatch
     //TODO type

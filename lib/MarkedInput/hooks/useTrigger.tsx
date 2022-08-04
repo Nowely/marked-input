@@ -1,6 +1,6 @@
 import React, {useCallback, useRef, useState} from "react";
 import {assign, escapeRegex, triggerToRegex} from "../utils";
-import {Option} from "../../Option";
+import {OptionProps} from "../../Option";
 
 export type Trigger = {
     word: string | undefined,
@@ -9,7 +9,7 @@ export type Trigger = {
     indexBefore: number | undefined,
     check: () => void,
     clear: () => void,
-    config: Option<any, any>,
+    option: OptionProps<any, any>,
     style: {
         left: number,
         top: number
@@ -17,19 +17,19 @@ export type Trigger = {
 }
 
 //TODO reducer?
-export const useTrigger = (configs: Option<any>[]): Trigger => {
+export const useTrigger = (options: OptionProps<any>[]): Trigger => {
     const [trigger, setTrigger] = useState<Omit<Trigger, "check" | "clear"> | undefined>()
 
     const clear = useCallback(() => setTrigger(undefined), [])
     const check = useCallback(() => {
-        for (let config of configs) {
-            let {word, triggeredValue, text, indexBefore} = findTriggeredWord(config.trigger) ?? {}
+        for (let option of options) {
+            let {word, triggeredValue, text, indexBefore} = findTriggeredWord(option.trigger) ?? {}
             if (word !== undefined) {
                 setTrigger({
                     word,
                     triggeredValue,
                     style: getCaretAbsolutePosition(),
-                    config,
+                    option,
                     text,
                     indexBefore
                 })

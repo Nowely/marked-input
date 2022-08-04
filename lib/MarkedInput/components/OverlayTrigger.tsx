@@ -6,7 +6,7 @@ import {onSelect, OverlayProps, Type} from "../types";
 export const OverlayTrigger = () => {
     const {
         sliceMap,
-        trigger: {word, config, style, text, indexBefore, triggeredValue},
+        trigger: {word, option, style, text, indexBefore, triggeredValue},
         dispatch,
         props: {Overlay = Suggestion}
     } = useStore()
@@ -14,7 +14,7 @@ export const OverlayTrigger = () => {
     if (word === undefined) return null;
 
     const onSelect: onSelect = ({id, value}) => {
-        const annotation = annotate(config.markup, value, id)
+        const annotation = annotate(option.markup, value, id)
         let foundKey
         for (let [key, value] of sliceMap.entries()) {
             if (value === text) {
@@ -27,8 +27,8 @@ export const OverlayTrigger = () => {
             dispatch(Type.Change, {value: newValue, key: foundKey})
     }
 
-    const triggerProps: OverlayProps = {word, style, onSelect, data: config.data ?? []}
+    const triggerProps: OverlayProps = {word, style, onSelect, data: option.data ?? []}
     //TODO
-    const overlayProps = config.initOverlay?.(triggerProps) ?? triggerProps
+    const overlayProps = option.initOverlay?.(triggerProps) ?? triggerProps
     return createElement(Overlay, overlayProps);
 }
