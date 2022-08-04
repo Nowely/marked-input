@@ -2,6 +2,7 @@ import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
+import {Trigger} from "./hooks/useTrigger";
 
 //TODO rename ParsedMarkup, Match?
 export type Mark = {
@@ -18,9 +19,13 @@ export interface OverlayProps {
         left: number
         top: number
     }
-    onClose: Function
+    //onClose: Function
+    onSelect?: onSelect
+    data: string[] //| object[]
     word: string
 }
+
+export type onSelect = ({ id, value } : { id: string, value: string }) => void
 
 type id = `${string}${PLACEHOLDER.Id}${string}`
 type value = `${string}${PLACEHOLDER.Value}${string}`
@@ -42,7 +47,7 @@ export type Store = {
     sliceMap: SliceMap<any>
     dispatch: Dispatch
     //TODO type
-    trigger: { word: string | undefined, check: () => void, clear: () => void, configRef: React.MutableRefObject<OptionProps<any, any> | undefined>, stylesRef: React.MutableRefObject<{ left: number, top: number }> }
+    trigger: Trigger
 }
 
 //TODO naming

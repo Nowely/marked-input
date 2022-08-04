@@ -1,31 +1,48 @@
 import React, {useCallback, useRef, useState} from "react";
-import {triggerToRegex} from "../utils";
+import {assign, triggerToRegex} from "../utils";
 import {OptionProps} from "../../Option";
 
-//TODO reducer?
-export const useTrigger = (configs: OptionProps<any>[]) => {
-    const [word, setWord] = useState<string | undefined>()
-    const configRef = useRef<OptionProps<any, any> | undefined>()
-    const stylesRef = useRef<{ left: number, top: number }>({top: 0, left: 0})
+export type Trigger = {
+    word: string | undefined,
+    triggeredValue: string | undefined,
+    text: string | undefined,
+    indexBefore: number | undefined,
+    check: () => void,
+    clear: () => void,
+    config: OptionProps<any, any>,
+    style: {
+        left: number,
+        top: number
+    }
+}
 
-    const clear = useCallback(() => setWord(undefined), [])
+//TODO reducer?
+export const useTrigger = (configs: OptionProps<any>[]): Trigger => {
+    const [trigger, setTrigger] = useState<Omit<Trigger, "check" | "clear"> | undefined>()
+
+    const clear = useCallback(() => setTrigger(undefined), [])
     const check = useCallback(() => {
         for (let config of configs) {
-            let word = findTriggeredWord(config.trigger)
+            let {word, triggeredValue, text, indexBefore} = findTriggeredWord(config.trigger) ?? {}
             if (word !== undefined) {
-                configRef.current = config
-                stylesRef.current = getCaretAbsolutePosition()
-                setWord(word)
+                setTrigger({
+                    word,
+                    triggeredValue,
+                    style: getCaretAbsolutePosition(),
+                    config,
+                    text,
+                    indexBefore
+                })
                 return
             }
         }
-        setWord(undefined)
+        setTrigger(undefined)
     }, [])
 
-    return {word, check, clear, configRef, stylesRef}
+    return assign({}, trigger, {check, clear})
 }
 
-function findTriggeredWord(trigger?: string): string | undefined {
+function findTriggeredWord(trigger?: string) {
     if (!trigger) return;
 
     const selection = window.getSelection()
@@ -37,22 +54,26 @@ function findTriggeredWord(trigger?: string): string | undefined {
     const textBefore = text.slice(0, position)
     const textAfter = text.slice(position)
 
-    const regexBefore = new RegExp(/ @\w*$/)
+    const regexBefore = new RegExp(/@\w*$/)
     const regexAfter = new RegExp(/^\w*/)
 
-    const wordBefore = textBefore.match(regexBefore)?.[0] ?? ""
+    const matchBefore = textBefore.match(regexBefore)
+    const indexBefore = matchBefore?.index
+    const wordBefore = matchBefore?.[0] ?? ""
     const wordAfter = textAfter.match(regexAfter)?.[0] ?? ""
 
     const annotation = wordBefore + wordAfter
 
     const regex = triggerToRegex(trigger)
 
-    const word = regex.exec(annotation)?.[1]
-    if (word !== undefined) return word
+    const a = regex.exec(annotation)
+    const triggeredValue = a?.[0]
+    const word = a?.[1]
+    if (word !== undefined) return {word, triggeredValue, text, indexBefore}
 }
 
 function getCaretAbsolutePosition() {
     const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
-    if (rect) return {left: rect.left, top: rect.top + 15}
+    if (rect) return {left: rect.left, top: rect.top + 20}
     return {left: 0, top: 0}
 }

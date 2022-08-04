@@ -1,4 +1,3 @@
-import {RefObject} from "react";
 import {Markup, OverlayProps} from "./MarkedInput/types";
 
 export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> {
@@ -8,6 +7,7 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
      * @Example: @[__value__](__id__)
      */
     markup: Markup
+    data?: string[] //TODO | object[]
     /**
     * Sequence of symbols for calling speaker
     */

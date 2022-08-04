@@ -1,17 +1,16 @@
-import React, {ReactNode, useEffect, useMemo, useState} from "react";
+import {useMemo, useState} from "react";
 import "./style.css";
 import {OverlayProps} from "./types";
 import {KEY} from "./constants";
 
 export interface SuggestionProps extends OverlayProps {
-    suggestions: string[]
 }
 
-export const Suggestion = ({suggestions = ["a", "b", "c", "asdb", "heeell"], ...props}: SuggestionProps) => {
+export const Suggestion = ({data, ...props}: SuggestionProps) => {
     const [active, setActive] = useState(NaN)
 
     const filtered = useMemo(
-        () => suggestions.filter(s => s.toLowerCase().indexOf(props.word.toLowerCase()) > -1),
+        () => data.filter(s => s.toLowerCase().indexOf(props.word.toLowerCase()) > -1),
         [props.word]
     )
 

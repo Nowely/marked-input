@@ -115,7 +115,8 @@ export const useFocus = (check: () => void, clear: () => void) => {
         },
         onBlur: () => {
             document?.removeEventListener("selectionchange", check);
-            clear()
+            //TODO. It is for overlay click correct handling
+            setTimeout(_ => clear(), 100)
             focusedIndex.current = null;
         },
         onKeyDown,
