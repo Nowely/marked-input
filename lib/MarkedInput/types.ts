@@ -20,7 +20,7 @@ export interface OverlayProps {
         top: number
     }
     //onClose: Function
-    onSelect?: onSelect
+    onSelect: onSelect
     data: string[] //| object[]
     word: string
 }

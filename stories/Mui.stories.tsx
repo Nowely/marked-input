@@ -4,6 +4,7 @@ import {Avatar, Chip, Divider, List, ListItem, ListItemAvatar, ListItemText, Typ
 import {ChipProps} from "@mui/material/Chip/Chip";
 import {Text} from "./assets/Text";
 import {getTitleOfStyled} from "./assets/getTitle";
+import {OverlayProps} from "../lib/MarkedInput/types";
 
 export default {
     title: getTitleOfStyled("Mui"),
@@ -56,7 +57,7 @@ export const Mention = () => {
 }
 
 //Component based on https://mui.com/material-ui/react-list/#align-list-items
-function AlignItemsList({onSelect}: any) {
+function AlignItemsList({onSelect}: OverlayProps) {
     return (
         <List sx={{width: '100%', maxWidth: 360, bgcolor: 'background.paper'}}>
             <ListItem alignItems="flex-start" onClick={() => onSelect({value: "Remy Sharp", id: "RS"})}>
