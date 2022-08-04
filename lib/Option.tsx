@@ -1,17 +1,30 @@
-import {Markup} from "./MarkedInput/types";
+import {Markup, OverlayProps} from "./MarkedInput/types";
 
-export interface OptionProps<T = Record<string, any>> {
+export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: __value__ and __id__
      * @Example: @[__value__](__id__)
      */
     markup: Markup
-    //TODO trigger?: string //| RegExp
     /**
-     * Function to initialize props for mark render. Gets arguments from found markup
+     * Sequence of symbols for calling the overlay.
      */
-    initializer: (value: string, id: string) => T
+    trigger?: string //| RegExp
+    /**
+     * Data for a overlay component. By default, it is suggestions.
+     */
+    data?: string[] //TODO | object[]
+    /**
+     * Function to initialize overlay props to your requirements.
+     * If missing then passed overlay props directly.
+     */
+    //TODO Add the ref: RefObject<HTMLElement> such as second argument
+    initOverlay?: (props: OverlayProps) => T1
+    /**
+     * Function to initialize props for the mark component. Gets arguments from found markup
+     */
+    initializer: (value: string, id: string) => T //TODO rename to initMark
 }
 
 /**

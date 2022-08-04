@@ -5,7 +5,7 @@ import {MarkedInputProps} from "../MarkedInput";
 import {Parser} from "../utils/Parser";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any>, configs: Configs<any>)
+export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, configs: Configs<any>)
     : [SliceMap<T>, Dispatch] => {
     const slices = useMemo(Parser.split(value, configs), [value])
     const sliceMap = useMemo(sliceToKeyMapper, [slices.length])

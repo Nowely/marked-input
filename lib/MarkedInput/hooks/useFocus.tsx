@@ -1,4 +1,4 @@
-import {FocusEvent, KeyboardEvent, RefObject, useRef} from "react";
+import {FocusEvent, KeyboardEvent, RefObject, useRef, useState} from "react";
 import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
@@ -6,7 +6,7 @@ import {Type} from "../types";
 import {useRestoredFocusAndCaretAfterDelete} from "./useRestoredFocusAndCaretAfterDelete";
 
 //TODO rename focusedIndex
-export const useFocus = () => {
+export const useFocus = (check: () => void, clear: () => void) => {
     const caret = useCaret()
 
     //TODO remove current property
@@ -110,9 +110,15 @@ export const useFocus = () => {
     return {
         register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
         onFocus: (event: FocusEvent<HTMLElement>) => {
+            document.addEventListener("selectionchange", check)
             focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
         },
-        onBlur: () => focusedIndex.current = null,
+        onBlur: () => {
+            document?.removeEventListener("selectionchange", check);
+            //TODO. It is for overlay click correct handling
+            setTimeout(_ => clear(), 200)
+            focusedIndex.current = null;
+        },
         onKeyDown,
     }
 }
