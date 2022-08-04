@@ -1,13 +1,14 @@
 import {useCallback, useMemo} from "react";
 import {genHash, isObject, toString} from "../utils";
-import {Action, Configs, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
+import {Action, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
 import {MarkedInputProps} from "../MarkedInput";
 import {Parser} from "../utils/Parser";
+import type {Option} from "../../Option";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, configs: Configs<any>)
+export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, options: Option[])
     : [SliceMap<T>, Dispatch] => {
-    const slices = useMemo(Parser.split(value, configs), [value])
+    const slices = useMemo(Parser.split(value, options), [value])
     const sliceMap = useMemo(sliceToKeyMapper, [slices.length])
     const dispatch = useDispatcher()
 
@@ -35,11 +36,11 @@ export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, 
                     case Type.Change:
                         const {key, value = ""} = action.payload
                         state.set(key, value)
-                        onChange(toString([...state.values()], configs))
+                        onChange(toString([...state.values()], options))
                         break;
                     case Type.Delete:
                         state.delete(action.payload.key)
-                        onChange(toString([...state.values()], configs))
+                        onChange(toString([...state.values()], options))
                         break;
                     default:
                         throw new Error();

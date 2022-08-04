@@ -1,7 +1,8 @@
 import React, {Children, Context, Provider, useContext} from "react";
 import {PLACEHOLDER} from "../constants";
-import {Configs, Mark, Markup, PassedOptions, Store} from "../types";
+import {Mark, Markup, PassedOptions, Store} from "../types";
 import {Parser} from "./Parser";
+import {Option} from "../../Option";
 
 export const assign = Object.assign
 
@@ -40,11 +41,11 @@ export function denote(value: string, callback: (mark: Mark) => string, ...marku
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | Mark)[], configs: Configs<any>) {
+export function toString(values: (string | Mark)[], options: Option[]) {
     let result = ""
     for (let value of values) {
         result += isObject(value)
-            ? annotate(configs[value.childIndex].markup, value.value, value.id)
+            ? annotate(options[value.childIndex].markup, value.value, value.id)
             : value
     }
     return result
@@ -73,7 +74,7 @@ export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
 
-export function extractConfigs(children: PassedOptions<any>): Configs<any> {
+export function extractOptions(children: PassedOptions<any>): Option[] {
     return Children.map(children, child => child.props);
 }
 

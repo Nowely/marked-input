@@ -1,6 +1,6 @@
 import React, {useCallback, useRef, useState} from "react";
 import {assign, escapeRegex, triggerToRegex} from "../utils";
-import {OptionProps} from "../../Option";
+import {Option} from "../../Option";
 
 export type Trigger = {
     word: string | undefined,
@@ -9,7 +9,7 @@ export type Trigger = {
     indexBefore: number | undefined,
     check: () => void,
     clear: () => void,
-    config: OptionProps<any, any>,
+    config: Option<any, any>,
     style: {
         left: number,
         top: number
@@ -17,7 +17,7 @@ export type Trigger = {
 }
 
 //TODO reducer?
-export const useTrigger = (configs: OptionProps<any>[]): Trigger => {
+export const useTrigger = (configs: Option<any>[]): Trigger => {
     const [trigger, setTrigger] = useState<Omit<Trigger, "check" | "clear"> | undefined>()
 
     const clear = useCallback(() => setTrigger(undefined), [])

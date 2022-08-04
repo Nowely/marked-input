@@ -1,6 +1,7 @@
-import {Configs, Markup, Slice} from "../types";
+import {Markup, Slice} from "../types";
 import {markupToRegex, normalizeMark} from "./index";
 import {Matches} from "./Matches";
+import {Option} from "../../Option";
 
 //TODO parser factory?
 export class Parser {
@@ -11,8 +12,8 @@ export class Parser {
         return this.markups.map(markupToRegex);
     }
 
-    static split(value: string, configs: Configs<any>) {
-        const markups = configs.map((c) => c.markup)
+    static split(value: string, options: Option[]) {
+        const markups = options.map((c) => c.markup)
         return () => new Parser(markups).split(value)
     }
 
