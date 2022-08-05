@@ -28,17 +28,17 @@ Props of the `MarkedInput` component:
 
 Props of the `Option` component:
 
-| Name        | Type                             | Default   | Description                                                                                                                                            |
-|-------------|----------------------------------|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| markup      | string                           |           | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__value__` and `__id__`<br/> For example: `@[__value__](__id__)` |
-| trigger     | string                           | undefined | Sequence of symbols for calling the overlay.                                                                                                           |
-| data        | string[]                         | undefined | Data for a overlay component. By default, it is suggestions.                                                                                           |
-| initOverlay | (props: OverlayProps) => T1      | undefined | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                         |
-| initializer | (value: string, id: string) => T |           | Function to initialize props for mark render. Gets arguments from found markup                                                                         |
+| Name        | Type                                | Default   | Description                                                                                                                                                           |
+|-------------|-------------------------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| markup      | string                              |           | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__`<br/> For example: `@[__label__](__value__)` |
+| trigger     | string                              | undefined | Sequence of symbols for calling the overlay.                                                                                                                          |
+| data        | string[]                            | undefined | Data for a overlay component. By default, it is suggestions.                                                                                                          |
+| initOverlay | (props: OverlayProps) => T1         | undefined | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                        |
+| initializer | (label: string, value: string) => T |           | Function to initialize props for mark render. Gets arguments from found markup                                                                                        |
 
 Helpers:
 
 | Name     | Type                                                                              | Description                     |
 |----------|-----------------------------------------------------------------------------------|---------------------------------|
-| annotate | (markup: Markup, value: string, id?: string) => string                            | Make annotation from the markup |
+| annotate | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup |
 | denote   | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text    |

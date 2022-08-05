@@ -39,18 +39,18 @@ export class Matches implements IterableIterator<[string, Mark | null]> {
         let annotation = execArray[0]
 
         let childIndex = 0
-        let value = execArray[1]
-        let id = execArray[2]
+        let label = execArray[1]
+        let value = execArray[2]
         while (true) {
-            if (value || id) break
+            if (label || value) break
 
             childIndex++
-            value = execArray[2 * childIndex + 1]
-            id = execArray[2 * childIndex + 2]
+            label = execArray[2 * childIndex + 1]
+            value = execArray[2 * childIndex + 2]
         }
 
         let index = execArray.index
         let input = execArray.input
-        return {annotation, value, id, input, index, childIndex}
+        return {annotation, label, value, input, index, childIndex}
     }
 }

@@ -19,7 +19,7 @@ export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, 
         return slices.reduce((map: SliceMap<T>, slice) => map.set(genKey(slice, map), slice), new Map())
 
         function genKey<T>(slice: Slice<T>, newMap: Map<number, Slice<T>>) {
-            let str = isObject(slice) ? slice.id + slice.value : slice
+            let str = isObject(slice) ? slice.label + slice.value : slice
             let seed = 0
             let key = genHash(str, seed)
             while (newMap.has(key)) key = genHash(str, seed++)

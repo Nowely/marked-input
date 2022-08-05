@@ -13,8 +13,8 @@ export const OverlayTrigger = () => {
 
     if (word === undefined) return null;
 
-    const onSelect: onSelect = ({id, value}) => {
-        const annotation = annotate(option.markup, value, id)
+    const onSelect: onSelect = ({label, value}) => {
+        const annotation = annotate(option.markup, label, value)
         let foundKey
         for (let [key, value] of sliceMap.entries()) {
             if (value === text) {
