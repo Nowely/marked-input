@@ -52,7 +52,7 @@ export const Suggestion = ({data, word, style, onSelect, ...props}: SuggestionPr
                     <li key={suggestion}
                         className={className}
                         //onMouseOver={_ => setActive(index)}
-                        onClick={_ => onSelect({id: index.toString(), value: suggestion})}
+                        onClick={_ => onSelect({label: suggestion, value: index.toString()})}
                         children={suggestion}
                     />
                 );

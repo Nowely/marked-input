@@ -7,7 +7,7 @@ import {Trigger} from "./hooks/useTrigger";
 //TODO rename ParsedMarkup, Match?
 export type Mark = {
     annotation: string;
-    id: string;
+    label: string;
     value: string
     index: number;
     input: string;
@@ -25,12 +25,12 @@ export interface OverlayProps {
     word: string
 }
 
-export type onSelect = ({ id, value } : { id: string, value: string }) => void
+export type onSelect = ({ label, value } : { label: string, value: string }) => void
 
-type id = `${string}${PLACEHOLDER.Id}${string}`
-type value = `${string}${PLACEHOLDER.Value}${string}`
+type label = `${string}${PLACEHOLDER.LABEL}${string}`
+type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
-export type Markup = `${value}${id}` | `${value}` //| `${id}${value}`
+export type Markup = `${label}${value}` | `${label}`
 
 //TODO T to unknown?
 export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]

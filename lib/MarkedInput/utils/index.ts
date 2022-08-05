@@ -8,11 +8,11 @@ export const assign = Object.assign
 
 export const markupToRegex = (markup: Markup) => {
     const escapedMarkup = escapeRegex(markup)
-    const charAfterValue = markup[markup.indexOf(PLACEHOLDER.Value) + PLACEHOLDER.Value.length]
-    const charAfterId = markup[markup.indexOf(PLACEHOLDER.Id) + PLACEHOLDER.Id.length]
+    const charAfterLabel = markup[markup.indexOf(PLACEHOLDER.LABEL) + PLACEHOLDER.LABEL.length]
+    const charAfterValue = markup[markup.indexOf(PLACEHOLDER.VALUE) + PLACEHOLDER.VALUE.length]
     return new RegExp(escapedMarkup
-        .replace(PLACEHOLDER.Value, `([^${escapeRegex(charAfterValue || '')}]+?)`)
-        .replace(PLACEHOLDER.Id, `([^${escapeRegex(charAfterId || '')}]+?)`),
+        .replace(PLACEHOLDER.LABEL, `([^${escapeRegex(charAfterLabel || '')}]+?)`)
+        .replace(PLACEHOLDER.VALUE, `([^${escapeRegex(charAfterValue || '')}]+?)`)
     )
 }
 
@@ -25,9 +25,9 @@ export const triggerToRegex = (value: string) => {
 /**
  * Make annotation from the markup
  */
-export function annotate(markup: Markup, value: string, id?: string) {
-    let annotation = markup.replace(PLACEHOLDER.Value, value)
-    return id ? annotation.replace(PLACEHOLDER.Id, id) : annotation
+export function annotate(markup: Markup, label: string, value?: string) {
+    let annotation = markup.replace(PLACEHOLDER.LABEL, label)
+    return value ? annotation.replace(PLACEHOLDER.VALUE, value) : annotation
 }
 
 /**
@@ -45,15 +45,15 @@ export function toString(values: (string | Mark)[], options: OptionProps[]) {
     let result = ""
     for (let value of values) {
         result += isObject(value)
-            ? annotate(options[value.childIndex].markup, value.value, value.id)
+            ? annotate(options[value.childIndex].markup, value.label, value.value)
             : value
     }
     return result
 }
 
 export const normalizeMark = (mark: Mark, markup: Markup) => {
-    if (mark.annotation !== annotate(markup, mark.value, mark.id))
-        return {...mark, id: mark.value, value: mark.id}
+    if (mark.annotation !== annotate(markup, mark.label, mark.value))
+        return {...mark, label: mark.value, value: mark.label}
     return mark
 }
 //https://stackoverflow.com/a/52171480 cyrb53 generate hash

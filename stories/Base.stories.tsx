@@ -3,6 +3,7 @@ import {MarkedInput, Option, denote} from "../lib";
 import {ElementType, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
+import {Markup} from "../lib/MarkedInput/types";
 
 export default {
     title: getTitle(),
@@ -11,8 +12,8 @@ export default {
 }
 
 export const Base = () => {
-    const primaryMarkup = "@[__value__](primary:__id__)"
-    const secondaryMarkup = "@[__value__](secondary:__id__)"
+    const primaryMarkup: Markup = "@[__label__](primary:__value__)"
+    const secondaryMarkup: Markup = "@[__label__](secondary:__value__)"
 
     const [value, setValue] = useState(
         "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[secondary](secondary:7)!\n" +
@@ -20,7 +21,7 @@ export const Base = () => {
         "For found mark used @[annotations](secondary:123). It text also is editable..."
     )
 
-    const displayText = denote(value, mark => mark.value, primaryMarkup, secondaryMarkup)
+    const displayText = denote(value, mark => mark.label, primaryMarkup, secondaryMarkup)
 
     return (
         <>
@@ -32,13 +33,13 @@ export const Base = () => {
                     markup={primaryMarkup}
                     trigger="@"
                     data={["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]}
-                    initializer={(label, id) => ({label, primary: true, onClick: () => alert(id)})}
+                    initializer={(label, value) => ({label, primary: true, onClick: () => alert(value)})}
                 />
                 <Option<ButtonProps>
                     markup={secondaryMarkup}
                     trigger="/"
                     data={["Seventh", "Eight", "Ninth"]}
-                    initializer={(label, id) => ({label})}
+                    initializer={(label) => ({label})}
                 />
             </MarkedInput>
 
@@ -66,7 +67,7 @@ export const RichEditor = () => {
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option markup="<__value__>__id__>" initializer={(as, value) => ({as, value})}/>
+                <Option markup="<__label__>__value__>" initializer={(as, value) => ({as, value})}/>
             </MarkedInput>
 
             <Text value={value}/>

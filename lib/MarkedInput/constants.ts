@@ -24,8 +24,8 @@ export const KEY = {
 };
 
 export enum PLACEHOLDER {
-    Id = '__id__',
-    Value = '__value__',
+    LABEL = '__label__',
+    VALUE = '__value__',
 }
 
 export const EmptyFunc = () => {}
