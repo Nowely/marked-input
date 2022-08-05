@@ -3,8 +3,8 @@ import {Markup, OverlayProps} from "./MarkedInput/types";
 export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
-     * Must contain placeholders: __value__ and __id__
-     * @Example: @[__value__](__id__)
+     * Must contain placeholders: __label__ and optional __value__
+     * @Example: @[__label__](__value__)
      */
     markup: Markup
     /**
@@ -12,7 +12,7 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
      */
     trigger?: string //| RegExp
     /**
-     * Data for a overlay component. By default, it is suggestions.
+     * Data for an overlay component. By default, it is suggestions.
      */
     data?: string[] //TODO | object[]
     /**
@@ -24,7 +24,7 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initializer: (value: string, id: string) => T //TODO rename to initMark
+    initializer: (label: string, value: string) => T //TODO rename to initMark
 }
 
 /**

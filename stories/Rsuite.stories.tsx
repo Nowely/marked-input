@@ -34,12 +34,12 @@ export const TaggedInput = () => {
             onChange={(val: string) => setValue(val)}
         >
             <Option<TagProps>
-                markup="@[__value__](closable:__id__)"
-                initializer={(children, id) => ({children, closable: true})}
+                markup="@[__label__](closable:__value__)"
+                initializer={(children) => ({children, closable: true})}
             />
             <Option<TagProps>
-                markup="@[__value__](common:__id__)"
-                initializer={(children, id) => ({children})}
+                markup="@[__label__](common:__value__)"
+                initializer={(children) => ({children})}
             />
         </MarkedInput>
 
