@@ -1,22 +1,29 @@
-//import {Button} from "../../../stories/assets/Button";
+import {ComponentType} from "react";
+import {Suggestion} from "../Suggestion";
+import {OptionProps} from "../../Option";
 
-//Sketch of headless
-/*
-const MarkedInput1 = createMarkedInput(Button, Button, [{
-    markup: "asd",
-    trigger: "asd",
-    initializer: "sd"
+const MarkedInput1 = createMarkedInput(Suggestion, Suggestion, [{
+    markup: "@[__value__](primary:__id__)",
+    trigger: "@",
+    initializer: (value, id) => ({} as any)
 }, {
-    markup: "asd",
-    trigger: "asd",
-    initializer: "sd"
-}
-]);
+    markup: "@[__value__](secondary:__id__)",
+    trigger: "/",
+    initializer: (value, id) => ({} as any)
+}]);
 
-//TODO the alternative way to create component
-function createMarkedInput(Mark: any, Overlay: any, options: any[]): any;
-function createMarkedInput(Mark: any, options: any[]): any;
-function createMarkedInput(Mark: any, optionsOrOverlay: any): any {
+const MarkedInput2 = createMarkedInput(Suggestion, [{
+    markup: "@[__value__](primary:__id__)",
+    trigger: "@",
+    initializer: (value, id) => ({} as any)
+}, {
+    markup: "@[__value__](secondary:__id__)",
+    trigger: "/",
+    initializer: (value, id) => ({} as any)
+}]);
+
+function createMarkedInput<T>(Mark: ComponentType<T>, options?: OptionProps<T>[]): any;
+function createMarkedInput<T, T1>(Mark: ComponentType<T>, Overlay: ComponentType<T1>, options?:  OptionProps<T, T1>[]): any;
+function createMarkedInput(Mark: ComponentType<any>, optionsOrOverlay?: ComponentType<any> | OptionProps[]): any {
     return 1
-}*/
-export {}
+}
