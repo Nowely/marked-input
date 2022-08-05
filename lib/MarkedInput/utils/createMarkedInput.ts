@@ -1,6 +1,7 @@
-import {Button} from "../../../stories/assets/Button";
+//import {Button} from "../../../stories/assets/Button";
 
 //Sketch of headless
+/*
 const MarkedInput1 = createMarkedInput(Button, Button, [{
     markup: "asd",
     trigger: "asd",
@@ -17,4 +18,5 @@ function createMarkedInput(Mark: any, Overlay: any, options: any[]): any;
 function createMarkedInput(Mark: any, options: any[]): any;
 function createMarkedInput(Mark: any, optionsOrOverlay: any): any {
     return 1
-}
+}*/
+export {}
