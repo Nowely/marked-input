@@ -23,11 +23,11 @@ export const Chipped = () => {
         >
             <Option<ChipProps>
                 markup="@[__label__](outlined:__value__)"
-                initializer={(label) => ({label, variant: "outlined", size: "small"})}
+                initMark={(label) => ({label, variant: "outlined", size: "small"})}
             />
             <Option<ChipProps>
                 markup="@[__label__](common:__value__)"
-                initializer={(label) => ({label, size: "small"})}
+                initMark={(label) => ({label, size: "small"})}
             />
         </MarkedInput>
 
@@ -48,7 +48,7 @@ export const Mention = () => {
             <Option<ChipProps>
                 trigger="@"
                 markup="@[__label__](__value__)"
-                initializer={(label, value) => ({label, avatar: <Avatar>{value}</Avatar>, size: "small"})}
+                initMark={(label, value) => ({label, avatar: <Avatar>{value}</Avatar>, size: "small"})}
             />
         </MarkedInput>
 

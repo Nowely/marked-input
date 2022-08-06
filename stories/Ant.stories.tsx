@@ -21,7 +21,7 @@ export const Tagged = () => {
         <MarkedInput Mark={Tag} value={value} onChange={setValue}>
             <Option<TagProps>
                 markup="@(__label__)"
-                initializer={(value) => ({children: value, color: value, style: {marginRight: 0}})}
+                initMark={(value) => ({children: value, color: value, style: {marginRight: 0}})}
             />
         </MarkedInput>
 
