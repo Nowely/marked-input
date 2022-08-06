@@ -46,8 +46,6 @@ export const Mention = () => {
             Overlay={AlignItemsList}
         >
             <Option<ChipProps>
-                trigger="@"
-                markup="@[__label__](__value__)"
                 initMark={(label, value) => ({label, avatar: <Avatar>{value}</Avatar>, size: "small"})}
             />
         </MarkedInput>
@@ -60,7 +58,7 @@ export const Mention = () => {
 function AlignItemsList({onSelect}: OverlayProps) {
     return (
         <List sx={{width: '100%', maxWidth: 360, bgcolor: 'background.paper'}}>
-            <ListItem alignItems="flex-start" onClick={() => onSelect({value: "Remy Sharp", label: "RS"})}>
+            <ListItem alignItems="flex-start" onClick={() => onSelect({label: "Remy Sharp", value: "RS"})}>
                 <ListItemAvatar>
                     <Avatar alt="Remy Sharp" children="RS"/>
                 </ListItemAvatar>
@@ -82,7 +80,7 @@ function AlignItemsList({onSelect}: OverlayProps) {
                 />
             </ListItem>
             <Divider variant="inset" component="li"/>
-            <ListItem alignItems="flex-start" onClick={() => onSelect({value: "Travis Howard", label: "TH"})}>
+            <ListItem alignItems="flex-start" onClick={() => onSelect({label: "Travis Howard", value: "TH"})}>
                 <ListItemAvatar>
                     <Avatar alt="Travis Howard" children="TH"/>
                 </ListItemAvatar>
@@ -104,7 +102,7 @@ function AlignItemsList({onSelect}: OverlayProps) {
                 />
             </ListItem>
             <Divider variant="inset" component="li"/>
-            <ListItem alignItems="flex-start" onClick={() => onSelect({value: "Cindy Baker", label: "CB"})}>
+            <ListItem alignItems="flex-start" onClick={() => onSelect({label: "Cindy Baker", value: "CB"})}>
                 <ListItemAvatar>
                     <Avatar alt="Cindy Baker" children="CB"/>
                 </ListItemAvatar>
