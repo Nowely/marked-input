@@ -1,3 +1,5 @@
+import {OptionProps} from "../Option";
+
 export const KEY = {
     // Navigation Keys
     UP: 'ArrowUp',
@@ -32,4 +34,7 @@ export const EmptyFunc = () => {}
 
 export const DefaultClass = "mk-input"
 
-export const DefaultOptionProps = {trigger: "@"}
+export const DefaultOptionProps: Partial<OptionProps> = {
+    trigger: "@",
+    markup: "@[__label__](__value__)"
+}

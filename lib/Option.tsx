@@ -4,9 +4,9 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__label__` and optional `__value__`
-     * @Example @[__label__](__value__)
+     * @Default "@[__label__](__value__)"
      */
-    markup: Markup
+    markup?: Markup
     /**
      * Sequence of symbols for calling the overlay.
      * @Default "@"
@@ -31,4 +31,4 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
 /**
  * Used for configure a MarkedInput
  */
-export const Option = <T, T1 = OverlayProps>({trigger = "@", ...props}: OptionProps<T, T1>) => null
+export const Option = <T, T1 = OverlayProps>({trigger = "@", markup = "@[__label__](__value__)", ...props}: OptionProps<T, T1>) => null
