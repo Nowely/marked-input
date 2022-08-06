@@ -9,6 +9,7 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     markup: Markup
     /**
      * Sequence of symbols for calling the overlay.
+     * @Default "@"
      */
     trigger?: string //| RegExp
     /**
@@ -30,4 +31,4 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
 /**
  * Used for configure a MarkedInput
  */
-export const Option = <T, T1 = OverlayProps>(props: OptionProps<T, T1>) => null
+export const Option = <T, T1 = OverlayProps>({trigger = "@", ...props}: OptionProps<T, T1>) => null

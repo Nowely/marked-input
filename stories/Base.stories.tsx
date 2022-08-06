@@ -31,7 +31,6 @@ export const Base = () => {
                 Mark={Button} value={value} onChange={setValue}>
                 <Option<ButtonProps>
                     markup={primaryMarkup}
-                    trigger="@"
                     data={["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]}
                     initMark={(label, value) => ({label, primary: true, onClick: () => alert(value)})}
                 />

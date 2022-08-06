@@ -31,3 +31,5 @@ export enum PLACEHOLDER {
 export const EmptyFunc = () => {}
 
 export const DefaultClass = "mk-input"
+
+export const DefaultOptionProps = {trigger: "@"}
