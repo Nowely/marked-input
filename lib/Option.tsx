@@ -3,8 +3,8 @@ import {Markup, OverlayProps} from "./MarkedInput/types";
 export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
      * Template string instead of which the mark is rendered.
-     * Must contain placeholders: __label__ and optional __value__
-     * @Example: @[__label__](__value__)
+     * Must contain placeholders: `__label__` and optional `__value__`
+     * @Example @[__label__](__value__)
      */
     markup: Markup
     /**
