@@ -1,5 +1,5 @@
 import React, {Children, Context, Provider, useContext} from "react";
-import {PLACEHOLDER} from "../constants";
+import {DefaultOptionProps, PLACEHOLDER} from "../constants";
 import {Mark, Markup, PassedOptions, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
@@ -75,7 +75,7 @@ export const genId = () => Math.random().toString(36).substring(2, 9)
 export const isObject = (value: unknown): value is object => typeof value === "object"
 
 export function extractOptions(children: PassedOptions<any>): OptionProps[] {
-    return Children.map(children, child => child.props);
+    return Children.map(children, child => assign({}, DefaultOptionProps, child.props));
 }
 
 const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] => {
