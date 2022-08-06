@@ -35,11 +35,11 @@ export const TaggedInput = () => {
         >
             <Option<TagProps>
                 markup="@[__label__](closable:__value__)"
-                initializer={(children) => ({children, closable: true})}
+                initMark={(children) => ({children, closable: true})}
             />
             <Option<TagProps>
                 markup="@[__label__](common:__value__)"
-                initializer={(children) => ({children})}
+                initMark={(children) => ({children})}
             />
         </MarkedInput>
 

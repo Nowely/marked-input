@@ -24,7 +24,7 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initializer: (label: string, value: string) => T //TODO rename to initMark
+    initMark: (label: string, value: string) => T
 }
 
 /**

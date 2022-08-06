@@ -14,7 +14,7 @@ export const SliceList = () => {
             {[...sliceMap].map(([key, slice]) => (
                     isObject(slice)
                         ? <Mark key={key} tabIndex={-1}
-                                {...options[slice.childIndex].initializer(slice.label, slice.value)} />
+                                {...options[slice.childIndex].initMark(slice.label, slice.value)} />
                         : <EditableSpan
                             ref={register(key)}
                             id={key} key={key} value={slice}/>

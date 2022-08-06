@@ -33,13 +33,13 @@ export const Base = () => {
                     markup={primaryMarkup}
                     trigger="@"
                     data={["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]}
-                    initializer={(label, value) => ({label, primary: true, onClick: () => alert(value)})}
+                    initMark={(label, value) => ({label, primary: true, onClick: () => alert(value)})}
                 />
                 <Option<ButtonProps>
                     markup={secondaryMarkup}
                     trigger="/"
                     data={["Seventh", "Eight", "Ninth"]}
-                    initializer={(label) => ({label})}
+                    initMark={(label) => ({label})}
                 />
             </MarkedInput>
 
@@ -67,7 +67,7 @@ export const RichEditor = () => {
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option markup="<__label__>__value__>" initializer={(as, value) => ({as, value})}/>
+                <Option markup="<__label__>__value__>" initMark={(as, value) => ({as, value})}/>
             </MarkedInput>
 
             <Text value={value}/>
