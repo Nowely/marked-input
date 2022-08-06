@@ -1,6 +1,6 @@
 import {Markup, OverlayProps} from "./MarkedInput/types";
 
-export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> {
+export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: __label__ and optional __value__
@@ -30,4 +30,4 @@ export interface OptionProps<T = Record<string, any>, T1 = Record<string, any>> 
 /**
  * Used for configure a MarkedInput
  */
-export const Option = <T, >(props: OptionProps<T>) => null
+export const Option = <T, T1 = OverlayProps>(props: OptionProps<T, T1>) => null
