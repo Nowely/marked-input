@@ -32,7 +32,7 @@ Props of the `Option` component:
 |-------------|-------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | markup      | string                              | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` |
 | trigger     | string                              | "@"                       | Sequence of symbols for calling the overlay.                                                                              |
-| data        | string[]                            | undefined                 | Data for a overlay component. By default, it is suggestions.                                                              |
+| data        | string[]                            | []                       | Data for a overlay component. By default, it is suggestions.                                                              |
 | initOverlay | (props: OverlayProps) => T1         | undefined                 | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.            |
 | initMark    | (label: string, value: string) => T |                           | Function to initialize props for mark render. Gets arguments from found markup                                            |
 
