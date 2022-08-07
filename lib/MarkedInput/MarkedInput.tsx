@@ -1,12 +1,13 @@
 import {ComponentType, CSSProperties} from "react";
 import {StoreProvider} from "./utils";
-import {PassedOptions} from "./types";
+import {OverlayProps, PassedOptions} from "./types";
 import {SliceList} from "./components/SliceList";
 import "./style.css"
 import {useMarkedInput} from "./hooks/useMarkedInput";
 import {OverlayTrigger} from "./components/OverlayTrigger";
+import {OptionProps} from "../Option";
 
-export interface MarkedInputProps<T, T1> {
+export interface MarkedInputProps<T, T1 = OverlayProps> {
     /**
      * Annotated text with markups for mark
      */
@@ -30,7 +31,7 @@ export interface MarkedInputProps<T, T1> {
     /**
      * Passed options for configure
      */
-    children: PassedOptions<T>
+    children: PassedOptions<T> | OptionProps[]
     /**
      * Additional classes
      */
@@ -49,7 +50,7 @@ export interface MarkedInputProps<T, T1> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, T1>(props: MarkedInputProps<T, T1>) => {
+export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => {
     const store = useMarkedInput(props)
     return (
         <StoreProvider value={store}>
