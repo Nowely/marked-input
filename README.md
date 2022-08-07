@@ -4,15 +4,51 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
-Examples can be seen in the [storybook](https://marked-input.vercel.app).
-
-## Getting started
+## Installation
 
 Install the package via npm:
 
 ```
 npm install rc-marked-input
 ```
+
+## Examples
+
+Using `createMarkedInput` to create a configured component:
+
+```javascript
+import {createMarkedInput} from "rc-marked-input";
+
+const Bold = (props) => <b onClick={props.onClick}>{props.label}</b>
+
+const MarkedInput = createMarkedInput(Bold, [{
+    initMark: ({label, value}) => ({label, onClick: () => alert(value)})
+}]);
+
+export const App = () => {
+    const [value, setValue] = useState("Hello @[world](Hello! Hello!)!")
+    return <MarkedInput value={value} onChange={setValue}/>
+}
+```
+
+Or the alternative way, using the components:
+
+```javascript
+import {MarkedInput, Option} from "rc-marked-input";
+
+const Bold = (props) => <b onClick={props.onClick}>{props.label}</b>
+
+const App = () => {
+    const [value, setValue] = useState("Hello @[world](Hello! Hello!)!")
+    return (
+        <MarkedInput Mark={Bolder} value={value} onChange={setValue}>
+            <Option initMark={({label, value}) => ({label, onClick: () => alert(value)})}/>
+        </MarkedInput>
+    )
+}
+```
+
+More examples can be seen in the [storybook](https://marked-input.vercel.app).
 
 ## API
 
@@ -28,13 +64,13 @@ Props of the `MarkedInput` component:
 
 Props of the `Option` component:
 
-| Name        | Type                                | Default                   | Description                                                                                                               |
-|-------------|-------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| markup      | string                              | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` |
-| trigger     | string                              | "@"                       | Sequence of symbols for calling the overlay.                                                                              |
-| data        | string[]                            | []                        | Data for a overlay component. By default, it is suggestions.                                                              |
-| initOverlay | (props: OverlayProps) => T1         | undefined                 | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.            |
-| initMark    | (label: string, value: string) => T |                           | Function to initialize props for mark render. Gets arguments from found markup                                            |
+| Name        | Type                        | Default                   | Description                                                                                                               |
+|-------------|-----------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| markup      | string                      | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` |
+| trigger     | string                      | "@"                       | Sequence of symbols for calling the overlay.                                                                              |
+| data        | string[]                    | []                        | Data for a overlay component. By default, it is suggestions.                                                              |
+| initOverlay | (props: OverlayProps) => T1 | undefined                 | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.            |
+| initMark    | (props: MarkProps) => T     |                           | Function to initialize props for mark render. Gets arguments from found markup                                            |
 
 Helpers:
 
