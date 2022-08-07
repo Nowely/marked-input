@@ -1,9 +1,23 @@
-import {Button, ButtonProps} from "./assets/Button";
-import {MarkedInput, Option, denote} from "../lib";
+import {Button} from "./assets/Button";
+import {MarkedInput, Option, denote, createMarkedInput} from "../lib";
 import {ElementType, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {Markup} from "../lib/MarkedInput/types";
+
+const primaryMarkup: Markup = "@[__label__](primary:__value__)"
+const secondaryMarkup: Markup = "@[__label__](secondary:__value__)"
+
+const MarkedInput1 = createMarkedInput(Button, [{
+    markup: "@[__label__](primary:__value__)",
+    data: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"],
+    initMark: (label, value) => ({label, primary: true, onClick: () => alert(value)})
+}, {
+    markup: "@[__label__](secondary:__value__)",
+    trigger: "/",
+    data: ["Seventh", "Eight", "Ninth"],
+    initMark: (label) => ({label})
+}]);
 
 export default {
     title: getTitle(),
@@ -12,9 +26,6 @@ export default {
 }
 
 export const Base = () => {
-    const primaryMarkup: Markup = "@[__label__](primary:__value__)"
-    const secondaryMarkup: Markup = "@[__label__](secondary:__value__)"
-
     const [value, setValue] = useState(
         "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[secondary](secondary:7)!\n" +
         "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
@@ -25,26 +36,13 @@ export const Base = () => {
 
     return (
         <>
-            <MarkedInput
-                style={{minWidth: 100}}
-                spanStyle={{width: 'auto', minWidth: 10}}
-                Mark={Button} value={value} onChange={setValue}>
-                <Option<ButtonProps>
-                    markup={primaryMarkup}
-                    data={["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]}
-                    initMark={(label, value) => ({label, primary: true, onClick: () => alert(value)})}
-                />
-                <Option<ButtonProps>
-                    markup={secondaryMarkup}
-                    trigger="/"
-                    data={["Seventh", "Eight", "Ninth"]}
-                    initMark={(label) => ({label})}
-                />
-            </MarkedInput>
+            <MarkedInput1
+                style={{minWidth: 100}} spanStyle={{width: 'auto', minWidth: 10}}
+                value={value} onChange={setValue}
+            />
 
-            <Text value={value}/>
-
-            <Text label={"Display text:"} value={displayText}/>
+            <Text label="Plaint text:" value={value}/>
+            <Text label="Display text (denoted):" value={displayText}/>
         </>
     )
 }

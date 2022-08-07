@@ -1,6 +1,6 @@
 import {PLACEHOLDER} from "./constants";
 import {ReactElement} from "react";
-import type {OptionProps} from "../Option";
+import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Trigger} from "./hooks/useTrigger";
 
@@ -39,9 +39,12 @@ export type Slice<T> = string | Mark
 
 export type SliceMap<T> = Map<number, Slice<T>>
 
+export type RequiredOption = Required<OptionProps>
+export type Options = RequiredOption[]
+
 export type Store = {
     props: MarkedInputProps<any, any>
-    options: OptionProps[]
+    options: Options
     sliceMap: SliceMap<any>
     dispatch: Dispatch
     //TODO type
