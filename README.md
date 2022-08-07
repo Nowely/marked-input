@@ -32,13 +32,14 @@ Props of the `Option` component:
 |-------------|-------------------------------------|---------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | markup      | string                              | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` |
 | trigger     | string                              | "@"                       | Sequence of symbols for calling the overlay.                                                                              |
-| data        | string[]                            | []                       | Data for a overlay component. By default, it is suggestions.                                                              |
+| data        | string[]                            | []                        | Data for a overlay component. By default, it is suggestions.                                                              |
 | initOverlay | (props: OverlayProps) => T1         | undefined                 | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.            |
 | initMark    | (label: string, value: string) => T |                           | Function to initialize props for mark render. Gets arguments from found markup                                            |
 
 Helpers:
 
-| Name     | Type                                                                              | Description                     |
-|----------|-----------------------------------------------------------------------------------|---------------------------------|
-| annotate | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup |
-| denote   | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text    |
+| Name              | Type                                                                                                                                                                                              | Description                                  |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| createMarkedInput | (Mark: ComponentType<T>, options: OptionProps<T>[]): ConfiguredMarkedInput<T> <br/> (Mark: ComponentType<T>, Overlay: ComponentType<T1>, options: OptionProps<T, T1>[]): ConfiguredMarkedInput<T> | Create the configured MarkedInput component. |
+| annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
+| denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
