@@ -40,8 +40,9 @@
     "type": "git",
     "url": "https://github.com/Nowely/marked-input.git"
   },
+  "type": "module",
   "main": "./rc-marked-input.umd.js",
-  "module": "./rc-marked-input.mjs",
+  "module": "./rc-marked-input.js",
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
