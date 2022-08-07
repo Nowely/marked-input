@@ -1,4 +1,4 @@
-import {Markup, OverlayProps} from "./MarkedInput/types";
+import {MarkProps, Markup, OverlayProps} from "./MarkedInput/types";
 
 export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
@@ -25,7 +25,7 @@ export interface OptionProps<T = Record<string, any>, T1 = OverlayProps> {
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark: (label: string, value: string) => T
+    initMark: (props: MarkProps) => T
 }
 
 /**

@@ -23,11 +23,11 @@ export const Chipped = () => {
         >
             <Option<ChipProps>
                 markup="@[__label__](outlined:__value__)"
-                initMark={(label) => ({label, variant: "outlined", size: "small"})}
+                initMark={({label}) => ({label, variant: "outlined", size: "small"})}
             />
             <Option<ChipProps>
                 markup="@[__label__](common:__value__)"
-                initMark={(label) => ({label, size: "small"})}
+                initMark={({label}) => ({label, size: "small"})}
             />
         </MarkedInput>
 
@@ -46,7 +46,7 @@ export const Mention = () => {
             Overlay={AlignItemsList}
         >
             <Option<ChipProps>
-                initMark={(label, value) => ({label, avatar: <Avatar>{value}</Avatar>, size: "small"})}
+                initMark={({label, value}) => ({label, avatar: <Avatar>{value}</Avatar>, size: "small"})}
             />
         </MarkedInput>
 
