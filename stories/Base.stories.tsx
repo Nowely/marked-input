@@ -11,12 +11,12 @@ const secondaryMarkup: Markup = "@[__label__](secondary:__value__)"
 const MarkedInput1 = createMarkedInput(Button, [{
     markup: "@[__label__](primary:__value__)",
     data: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"],
-    initMark: (label, value) => ({label, primary: true, onClick: () => alert(value)})
+    initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
 }, {
     markup: "@[__label__](secondary:__value__)",
     trigger: "/",
     data: ["Seventh", "Eight", "Ninth"],
-    initMark: (label) => ({label})
+    initMark: ({label}) => ({label})
 }]);
 
 export default {
@@ -64,7 +64,7 @@ export const RichEditor = () => {
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option markup="<__label__>__value__>" initMark={(as, value) => ({as, value})}/>
+                <Option markup="<__label__>__value__>" initMark={({label, value}) => ({as: label, value})}/>
             </MarkedInput>
 
             <Text value={value}/>

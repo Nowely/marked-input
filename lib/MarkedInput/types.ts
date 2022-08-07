@@ -25,7 +25,12 @@ export interface OverlayProps {
     word: string
 }
 
-export type onSelect = ({ label, value } : { label: string, value: string }) => void
+export interface MarkProps {
+    label: string
+    value: string
+}
+
+export type onSelect = ({label, value}: { label: string, value: string }) => void
 
 type label = `${string}${PLACEHOLDER.LABEL}${string}`
 type value = `${string}${PLACEHOLDER.VALUE}${string}`
