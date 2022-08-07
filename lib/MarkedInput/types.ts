@@ -1,6 +1,6 @@
 import {PLACEHOLDER} from "./constants";
-import {ReactElement} from "react";
-import type {OptionProps} from "../Option";
+import {ComponentType, FunctionComponent, ReactElement} from "react";
+import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Trigger} from "./hooks/useTrigger";
 
@@ -39,9 +39,15 @@ export type Slice<T> = string | Mark
 
 export type SliceMap<T> = Map<number, Slice<T>>
 
+export type RequiredOption = Required<OptionProps>
+export type Options = RequiredOption[]
+
+export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
+export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
+
 export type Store = {
     props: MarkedInputProps<any, any>
-    options: OptionProps[]
+    options: Options
     sliceMap: SliceMap<any>
     dispatch: Dispatch
     //TODO type

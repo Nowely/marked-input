@@ -36,5 +36,6 @@ export const DefaultClass = "mk-input"
 
 export const DefaultOptionProps: Partial<OptionProps> = {
     trigger: "@",
-    markup: "@[__label__](__value__)"
+    markup: "@[__label__](__value__)",
+    data: []
 }

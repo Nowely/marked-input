@@ -27,7 +27,7 @@ export const OverlayTrigger = () => {
             dispatch(Type.Change, {value: newValue, key: foundKey})
     }
 
-    const triggerProps: OverlayProps = {word, style, onSelect, data: option.data ?? []}
+    const triggerProps: OverlayProps = {word, style, onSelect, data: option.data}
     //TODO
     const overlayProps = option.initOverlay?.(triggerProps) ?? triggerProps
     return createElement(Overlay, overlayProps);

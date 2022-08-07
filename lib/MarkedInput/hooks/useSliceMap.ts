@@ -1,12 +1,11 @@
 import {useCallback, useMemo} from "react";
 import {genHash, isObject, toString} from "../utils";
-import {Action, Dispatch, Payload, Slice, SliceMap, Type} from "../types";
+import {Action, Dispatch, Options, Payload, Slice, SliceMap, Type} from "../types";
 import {MarkedInputProps} from "../MarkedInput";
 import {Parser} from "../utils/Parser";
-import type {OptionProps} from "../../Option";
 
 //TODO Compare new input value with returned caching?
-export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, options: OptionProps[])
+export const useSliceMap = <T, >({value, onChange}: MarkedInputProps<any, any>, options: Options)
     : [SliceMap<T>, Dispatch] => {
     const slices = useMemo(Parser.split(value, options), [value])
     const sliceMap = useMemo(sliceToKeyMapper, [slices.length])
