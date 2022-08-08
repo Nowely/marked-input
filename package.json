@@ -41,12 +41,12 @@
     "url": "https://github.com/Nowely/marked-input.git"
   },
   "type": "module",
+  "types": "./types/index.d.ts",
   "main": "./rc-marked-input.umd.js",
   "module": "./rc-marked-input.js",
-  "types": "./types/index.d.ts",
   "exports": {
     ".": {
-      "import": "./rc-marked-input.mjs",
+      "import": "./rc-marked-input.js",
       "require": "./rc-marked-input.umd.js"
     }
   },
