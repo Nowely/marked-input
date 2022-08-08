@@ -70,7 +70,7 @@ Props of the `Option` component:
 | trigger     | string                      | "@"                       | Sequence of symbols for calling the overlay.                                                                              |
 | data        | string[]                    | []                        | Data for a overlay component. By default, it is suggestions.                                                              |
 | initOverlay | (props: OverlayProps) => T1 | undefined                 | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.            |
-| initMark    | (props: MarkProps) => T     |                           | Function to initialize props for mark render. Gets arguments from found markup                                            |
+| initMark    | (props: MarkProps) => T     | undefined                 | Function to initialize props for mark render. Gets arguments from found markup                                            |
 
 Helpers:
 

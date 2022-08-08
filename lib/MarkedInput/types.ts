@@ -38,14 +38,17 @@ type value = `${string}${PLACEHOLDER.VALUE}${string}`
 export type Markup = `${label}${value}` | `${label}`
 
 //TODO T to unknown?
-export type PassedOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
+export type ElementOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
 
 export type Slice<T> = string | Mark
 
 export type SliceMap<T> = Map<number, Slice<T>>
 
-export type RequiredOption = Required<OptionProps>
-export type Options = RequiredOption[]
+type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
+
+export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay">
+
+export type Options = OptionType[]
 
 export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
 export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>

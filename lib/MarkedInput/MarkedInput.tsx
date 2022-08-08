@@ -1,6 +1,6 @@
 import {ComponentType, CSSProperties} from "react";
 import {StoreProvider} from "./utils";
-import {OverlayProps, PassedOptions} from "./types";
+import {OverlayProps, ElementOptions} from "./types";
 import {SliceList} from "./components/SliceList";
 import "./style.css"
 import {useMarkedInput} from "./hooks/useMarkedInput";
@@ -30,8 +30,9 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
     readOnly?: boolean
     /**
      * Passed options for configure
+     * @Default One option with default values is used
      */
-    children: PassedOptions<T> | OptionProps[]
+    children?: ElementOptions<T> | OptionProps[]
     /**
      * Additional classes
      */
