@@ -30,7 +30,7 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
     readOnly?: boolean
     /**
      * Passed options for configure
-     * @Default One option with the "@[__label__]" markup is used
+     * @Default One option with default values is used
      */
     children?: ElementOptions<T> | OptionProps[]
     /**

@@ -39,8 +39,3 @@ export const DefaultOptionProps: OptionType = {
     markup: "@[__label__](__value__)",
     data: []
 }
-export const EmptyOptionProps: OptionType = {
-    trigger: "",
-    markup: "@[__label__]",
-    data: []
-}
