@@ -4,6 +4,17 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
+## Feature
+
+* Powerful annotation tool
+* TypeScript
+* Two ways to configure
+* Support any components
+* Props customization
+* Utils for annotate and denote text
+* Button handling (Left, Right, Delete, Backspace)
+* Overlay with default the suggestion component
+
 ## Installation
 
 Install the package via npm:
@@ -30,7 +41,7 @@ const Bolder = (props) => <b>{props.label}</b>
 const MarkedInput = createMarkedInput(Bolder);
 
 const App = () => {
-    const [value, setValue] = useState("Hello, bold @[world]!")
+    const [value, setValue] = useState("Hello, bold @[world](0)!")
     return <MarkedInput value={value} onChange={setValue}/>
 }
 ```
@@ -43,7 +54,7 @@ import {MarkedInput, Option} from "rc-marked-input";
 const Bolder = (props) => <b>{props.label}</b>
 
 const App = () => {
-    const [value, setValue] = useState("Hello, bold @[world]!")
+    const [value, setValue] = useState("Hello, bold @[world](0)!")
     return <MarkedInput Mark={Bolder} value={value} onChange={setValue}/>
 }
 ```
