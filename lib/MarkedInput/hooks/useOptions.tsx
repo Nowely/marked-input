@@ -1,7 +1,7 @@
-import {OverlayProps, PassedOptions} from "../types";
+import {OverlayProps, ElementOptions} from "../types";
 import {useMemo} from "react";
 import {extractOptions} from "../utils";
 import {OptionProps} from "../../Option";
 
-export const useOptions = (children: PassedOptions<any> | OptionProps[]) =>
+export const useOptions = (children: ElementOptions<any> | OptionProps[]) =>
     useMemo(() => extractOptions(children), [children])

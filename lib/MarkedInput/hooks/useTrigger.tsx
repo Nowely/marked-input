@@ -1,6 +1,6 @@
 import React, {useCallback, useState} from "react";
 import {assign, escapeRegex, triggerToRegex} from "../utils";
-import {Options, RequiredOption} from "../types";
+import {Options, OptionType} from "../types";
 
 export type Trigger = {
     word: string | undefined,
@@ -9,7 +9,7 @@ export type Trigger = {
     indexBefore: number | undefined,
     check: () => void,
     clear: () => void,
-    option: RequiredOption,
+    option: OptionType,
     style: {
         left: number,
         top: number

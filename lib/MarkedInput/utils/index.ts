@@ -1,6 +1,6 @@
-import React, {Children, Context, Provider, useContext} from "react";
+import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {Mark, Markup, Options, PassedOptions, RequiredOption, Store} from "../types";
+import {Mark, Markup, Options, ElementOptions, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
 
@@ -73,17 +73,25 @@ export const genHash = (str: string, seed = 0) => {
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
-export const isFunction = (value: unknown): value is Function => typeof value === "function"
-const isOptionProps = (value: any): value is OptionProps[] => value?.[0]?.initMark !== undefined
 
-//TODO make default property is existing in type
-export function extractOptions(options: PassedOptions<any> | OptionProps[]): Options {
-    return isOptionProps(options)
-        ? options.map(initOption)
-        : Children.map(options, child => initOption(child.props));
+export const isFunction = (value: unknown): value is Function => typeof value === "function"
+
+const isElementOption = (value: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
+    if (isValidElement(value)) return true
+    return isValidElement(value[0]);
+}
+
+export function extractOptions(options: ElementOptions<any> | OptionProps[]): Options {
+    if (isElementOption(options))
+        return  Children.map(options, child => initOption(child.props))
+
+    if (options.length)
+        return options.map(initOption)
+
+    return [DefaultOptionProps]
 
     function initOption(props: OptionProps) {
-        return assign({}, DefaultOptionProps, props) as RequiredOption
+        return assign({}, DefaultOptionProps, props)
     }
 }
 
