@@ -14,6 +14,7 @@ A React component that lets you combine editable text with any component using a
 * Utils for annotate and denote text
 * Button handling (Left, Right, Delete, Backspace)
 * Overlay with default the suggestion component
+* Zero dependency
 
 ## Installation
 
