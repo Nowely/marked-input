@@ -1,5 +1,5 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
-import {DefaultOptionProps, PLACEHOLDER} from "../constants";
+import {DefaultOptionProps, EmptyOptionProps, PLACEHOLDER} from "../constants";
 import {Mark, Markup, Options, ElementOptions, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
@@ -88,7 +88,7 @@ export function extractOptions(options?: ElementOptions<any> | OptionProps[]): O
     if (options?.length)
         return options.map(initOption)
 
-    return [DefaultOptionProps]
+    return [EmptyOptionProps]
 
     function initOption(props: OptionProps) {
         return assign({}, DefaultOptionProps, props)

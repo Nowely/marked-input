@@ -27,7 +27,7 @@ export interface OverlayProps {
 
 export interface MarkProps {
     label: string
-    value: string
+    value?: string
 }
 
 export type onSelect = ({label, value}: { label: string, value: string }) => void
