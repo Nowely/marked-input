@@ -76,16 +76,16 @@ export const isObject = (value: unknown): value is object => typeof value === "o
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
-const isElementOption = (value: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
+const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
     if (isValidElement(value)) return true
-    return isValidElement(value[0]);
+    return isValidElement(value?.[0]);
 }
 
-export function extractOptions(options: ElementOptions<any> | OptionProps[]): Options {
+export function extractOptions(options?: ElementOptions<any> | OptionProps[]): Options {
     if (isElementOption(options))
         return  Children.map(options, child => initOption(child.props))
 
-    if (options.length)
+    if (options?.length)
         return options.map(initOption)
 
     return [DefaultOptionProps]
