@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Build Package
-        run: npm build
+        run: npm run build
 
       - id: publish
         name: Publish to npm
