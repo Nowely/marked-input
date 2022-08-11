@@ -7,7 +7,7 @@
   "scripts": {
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
-    "build": "vite build & tsc & node prepack.js"
+    "build": "vite build && tsc && node prepack.js"
   },
   "dependencies": {
     "@emotion/react": "^11.9.3",
