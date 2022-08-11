@@ -67,7 +67,7 @@ export const RichEditor = () => {
                 <Option markup="<__label__>__value__>" initMark={({label, value}) => ({as: label, value})}/>
             </MarkedInput>
 
-            <Text value={value}/>
+            <Text label="Plaint text:" value={value}/>
         </>
     )
 }

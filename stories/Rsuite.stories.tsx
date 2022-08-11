@@ -44,6 +44,6 @@ export const TaggedInput = () => {
         </MarkedInput>
 
         <br/>
-        <Text value={value}/>
+        <Text label="Plaint text:" value={value}/>
     </>
 }

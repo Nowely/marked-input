@@ -5,10 +5,10 @@ export interface TextProps {
     label?: string
 }
 
-export const Text = ({value, label = "Plaint text:"}: TextProps) => (
+export const Text = ({value, label}: TextProps) => (
     <>
         <br/>
-        <b>{label}</b>
+        {label && <b>{label}</b>}
         <pre>{value}</pre>
     </>
 )

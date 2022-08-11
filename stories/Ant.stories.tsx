@@ -25,6 +25,6 @@ export const Tagged = () => {
             />
         </MarkedInput>
 
-        <Text value={value}/>
+        <Text label="Plaint text:" value={value}/>
     </>
 }

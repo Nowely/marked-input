@@ -31,7 +31,7 @@ export const Chipped = () => {
             />
         </MarkedInput>
 
-        <Text value={value}/>
+        <Text label="Plaint text:" value={value}/>
     </>
 }
 
@@ -50,7 +50,7 @@ export const Mention = () => {
             />
         </MarkedInput>
 
-        <Text value={value}/>
+        <Text label="Plaint text:" value={value}/>
     </>
 }
 
