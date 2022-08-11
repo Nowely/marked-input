@@ -37,12 +37,12 @@ Using the `createMarkedInput`:
 ```javascript
 import {createMarkedInput} from "rc-marked-input";
 
-const Bolder = (props) => <b>{props.label}</b>
+const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
-const MarkedInput = createMarkedInput(Bolder);
+const MarkedInput = createMarkedInput(Mark);
 
-const App = () => {
-    const [value, setValue] = useState("Hello, bold @[world](0)!")
+const Marked = () => {
+    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
     return <MarkedInput value={value} onChange={setValue}/>
 }
 ```
@@ -52,11 +52,11 @@ Or using the components:
 ```javascript
 import {MarkedInput, Option} from "rc-marked-input";
 
-const Bolder = (props) => <b>{props.label}</b>
+const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
-const App = () => {
-    const [value, setValue] = useState("Hello, bold @[world](0)!")
-    return <MarkedInput Mark={Bolder} value={value} onChange={setValue}/>
+const Marked = () => {
+    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
 }
 ```
 
