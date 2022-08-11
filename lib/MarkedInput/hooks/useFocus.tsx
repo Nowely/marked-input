@@ -119,6 +119,14 @@ export const useFocus = (check: () => void, clear: () => void) => {
             setTimeout(_ => clear(), 200)
             focusedIndex.current = null;
         },
+        onClick: () => {
+            if (refMap.current.size === 1){
+                const element = [...refMap.current.values()][0].current
+                if (element?.textContent === ""){
+                    element.focus()
+                }
+            }
+        },
         onKeyDown,
     }
 }

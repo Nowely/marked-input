@@ -2,7 +2,6 @@ import {isObject, useStore} from "../utils";
 import {EditableSpan} from "./EditableSpan";
 import {DefaultClass} from "../constants";
 import {useFocus} from "../hooks/useFocus";
-import {createElement} from "react";
 
 export const SliceList = () => {
     const {sliceMap, options, props: {Mark, ...props}, trigger: {check, clear}} = useStore()
