@@ -55,13 +55,14 @@ function findTriggeredWord(trigger?: string) {
     const textAfter = text.slice(position)
 
     const escapedTrigger = escapeRegex(trigger)
-    const pattenRegexBefore = escapedTrigger + '\\w*$'
+    const pattenRegexBefore = '\\s?' + escapedTrigger + '\\w*$'
     const regexBefore = new RegExp(pattenRegexBefore)
     const regexAfter = new RegExp(/^\w*/)
 
     const matchBefore = textBefore.match(regexBefore)
-    const indexBefore = matchBefore?.index
-    const wordBefore = matchBefore?.[0] ?? ""
+    if (!matchBefore) return
+    const wordBefore = matchBefore[0] ?? ""
+    const indexBefore = matchBefore.index! + (isSpaceFirst(wordBefore) ? 1 : 0)
     const wordAfter = textAfter.match(regexAfter)?.[0] ?? ""
 
     const annotation = wordBefore + wordAfter
@@ -72,6 +73,10 @@ function findTriggeredWord(trigger?: string) {
     const triggeredValue = a?.[0]
     const word = a?.[1]
     if (word !== undefined) return {word, triggeredValue, text, indexBefore}
+}
+
+function isSpaceFirst(value: string) {
+    return value.startsWith(" ")
 }
 
 function getCaretAbsolutePosition() {
