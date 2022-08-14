@@ -22,6 +22,7 @@ export const triggerToRegex = (value: string) => {
     return new RegExp(pattern)
 }
 
+//TODO annotate options to object with required only label
 /**
  * Make annotation from the markup
  */
@@ -34,6 +35,7 @@ export function annotate(markup: Markup, label: string, value?: string) {
  * Transform the annotated text to the another text
  */
 export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]) {
+    if (!markups.length) return value
     const slices = new Parser(markups).split(value)
     return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
