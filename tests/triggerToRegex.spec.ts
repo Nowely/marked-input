@@ -1,2 +1,5 @@
-describe("Util: triggerToRegex", () => {
+describe.skip("Util: triggerToRegex", () => {
+    it('should ', () => {
+
+    });
 })
