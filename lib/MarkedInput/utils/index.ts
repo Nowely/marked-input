@@ -58,8 +58,8 @@ export const normalizeMark = (mark: Mark, markup: Markup) => {
         return {...mark, label: mark.value, value: mark.label}
     return mark
 }
-//https://stackoverflow.com/a/52171480 cyrb53 generate hash
 
+//https://stackoverflow.com/a/52171480 cyrb53 generate hash
 export const genHash = (str: string, seed = 0) => {
     let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {
