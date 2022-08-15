@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    name: Tests
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -19,11 +19,14 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Run tests
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Tests
         run: npm test
 
   build:
-    name: Build
+    name: Build Package
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -34,5 +37,8 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Run a build
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Build
         run: npm run build
