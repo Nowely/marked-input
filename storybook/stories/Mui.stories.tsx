@@ -1,10 +1,10 @@
-import {MarkedInput, Option} from "../lib";
+import {MarkedInput, Option} from "../../lib";
 import {useState} from "react";
 import {Avatar, Chip, Divider, List, ListItem, ListItemAvatar, ListItemText, Typography} from "@mui/material";
 import {ChipProps} from "@mui/material/Chip/Chip";
 import {Text} from "./assets/Text";
 import {getTitleOfStyled} from "./assets/getTitle";
-import {OverlayProps} from "../lib/MarkedInput/types";
+import {OverlayProps} from "../../lib/MarkedInput/types";
 
 export default {
     title: getTitleOfStyled("Mui"),

@@ -5,9 +5,9 @@ const config: StorybookViteConfig = {
         "builder": "@storybook/builder-vite"
     },
     "stories": [
-        "../stories/**/*.stories.mdx",
-        "../stories/**/*.stories.@(js|jsx|ts|tsx)",
-        "../stories/index.tsx"
+        "./stories/**/*.stories.mdx",
+        "./stories/**/*.stories.@(js|jsx|ts|tsx)",
+        "./stories/index.tsx"
     ],
     "addons": [
         "@storybook/addon-links",

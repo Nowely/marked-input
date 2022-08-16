@@ -1,4 +1,4 @@
-import {MarkedInput} from "../../lib";
+import {MarkedInput} from "../../../lib";
 
 const concat = (...str: string[]) => str.reduce((acc, curren) => acc += "/" + curren)
 

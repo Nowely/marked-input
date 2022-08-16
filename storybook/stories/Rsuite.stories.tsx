@@ -1,6 +1,6 @@
-import {MarkedInput} from "../lib";
+import {MarkedInput} from "../../lib";
 import {useState} from "react";
-import {Option} from "../lib";
+import {Option} from "../../lib";
 import {Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
