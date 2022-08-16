@@ -1,4 +1,4 @@
-import {FocusEvent, KeyboardEvent, RefObject, useRef, useState} from "react";
+import {FocusEvent, KeyboardEvent, RefObject, useEffect, useRef, useState} from "react";
 import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
@@ -12,7 +12,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
     //TODO remove current property
     const refMap = {current: new Map<number, RefObject<HTMLSpanElement>>()}
 
-    const {dispatch, sliceMap} = useStore()
+    const {dispatch, sliceMap, bus} = useStore()
     const keys = [...sliceMap.keys()]
 
     const focusedIndex = useRef<number | null>(null)
@@ -107,27 +107,57 @@ export const useFocus = (check: () => void, clear: () => void) => {
         return [...refMap.current.values()]
     }
 
-    return {
-        register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
-        onFocus: (event: FocusEvent<HTMLElement>) => {
+    //useEffect(() => {
+        const u1 = bus.listen("onFocus", (event: FocusEvent<HTMLElement>) => {
             document.addEventListener("selectionchange", check)
             focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
-        },
-        onBlur: () => {
+        })
+
+        const u2 = bus.listen("onBlur", () => {
             document?.removeEventListener("selectionchange", check);
             //TODO. It is for overlay click correct handling
             setTimeout(_ => clear(), 200)
             focusedIndex.current = null;
-        },
-        onClick: () => {
+        })
+
+        const u3 = bus.listen("onBlur", () => {
+            if (refMap.current.size === 1) {
+                const element = [...refMap.current.values()][0].current
+                if (element?.textContent === "") {
+                    element.focus()
+                }
+            }
+        })
+
+        const u4 = bus.listen("onKeyDown", onKeyDown)
+
+/*        return () => {
+            u1(), u2(), u3(), u4()
+        }
+    }, [])*/
+
+
+    return {
+        register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
+        /*onFocus: (event: FocusEvent<HTMLElement>) => {
+            document.addEventListener("selectionchange", check)
+            focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
+        },*/
+        /*onBlur: () => {
+            document?.removeEventListener("selectionchange", check);
+            //TODO. It is for overlay click correct handling
+            setTimeout(_ => clear(), 200)
+            focusedIndex.current = null;
+        },*/
+        /*onClick: () => {
             if (refMap.current.size === 1){
                 const element = [...refMap.current.values()][0].current
                 if (element?.textContent === ""){
                     element.focus()
                 }
             }
-        },
-        onKeyDown,
+        },*/
+        //onKeyDown,
     }
 }
 

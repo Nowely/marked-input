@@ -3,6 +3,7 @@ import {ComponentType, FunctionComponent, ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Trigger} from "./hooks/useTrigger";
+import {EventBus} from "./utils/EventBus";
 
 //TODO rename ParsedMarkup, Match?
 export type Mark = {
@@ -60,6 +61,7 @@ export type Store = {
     dispatch: Dispatch
     //TODO type
     trigger: Trigger
+    bus: EventBus
 }
 
 //TODO naming
