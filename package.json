@@ -5,8 +5,8 @@
   "license": "MIT",
   "author": "Ruslan Ilyin",
   "scripts": {
-    "storybook": "start-storybook -p 6006",
-    "build-storybook": "build-storybook",
+    "storybook": "start-storybook -p 6006 -c storybook",
+    "build-storybook": "build-storybook -c storybook",
     "build": "vite build && tsc && node prepack.js",
     "test": "jest",
     "coverage": "jest --coverage"
