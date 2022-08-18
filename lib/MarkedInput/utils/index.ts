@@ -1,6 +1,6 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {Mark, Markup, Options, ElementOptions, Store} from "../types";
+import {ElementOptions, Mark, Markup, Options, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
 
@@ -85,7 +85,7 @@ const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is 
 
 export function extractOptions(options?: ElementOptions<any> | OptionProps[]): Options {
     if (isElementOption(options))
-        return  Children.map(options, child => initOption(child.props))
+        return Children.map(options, child => initOption(child.props))
 
     if (options?.length)
         return options.map(initOption)
@@ -102,7 +102,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
     context.displayName = name
 
     const hook = createContextHook(context)
-    const provider = createProvider(context)
+    const provider = context.Provider as Provider<NonNullable<T>>
 
     return [hook, provider]
 
@@ -115,11 +115,6 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 
             throw new Error(`The context ${context.displayName} didn't found!`)
         }
-    }
-
-    function createProvider<T, >(context: Context<T>) {
-        let value = context as unknown as Context<NonNullable<T>>
-        return value.Provider
     }
 }
 
