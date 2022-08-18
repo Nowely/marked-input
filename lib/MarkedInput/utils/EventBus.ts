@@ -1,5 +1,10 @@
 export class EventBus {
     readonly #listeners: Record<string, EventListener[]> = {}
+    readonly #rerender: Function
+
+    constructor(rerender: Function) {
+        this.#rerender = rerender
+    }
 
     get length () {
         return Object.keys(this.#listeners).length
@@ -27,8 +32,9 @@ export class EventBus {
     listen(eventName: string, callback: (e: any) => void) {
         const listener: EventListener = callback
 
-        this.#listeners[eventName] ??= [];
-        this.#listeners[eventName].push(listener);
+        this.#listeners[eventName] ??= []
+        this.#listeners[eventName].push(listener)
+        this.#rerender()
 
         return () => {
             this.#listeners[eventName] = this.#listeners[eventName]

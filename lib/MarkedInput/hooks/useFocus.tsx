@@ -107,7 +107,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
         return [...refMap.current.values()]
     }
 
-    //useEffect(() => {
+    useEffect(() => {
         const u1 = bus.listen("onFocus", (event: FocusEvent<HTMLElement>) => {
             document.addEventListener("selectionchange", check)
             focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
@@ -131,10 +131,10 @@ export const useFocus = (check: () => void, clear: () => void) => {
 
         const u4 = bus.listen("onKeyDown", onKeyDown)
 
-/*        return () => {
+        return () => {
             u1(), u2(), u3(), u4()
         }
-    }, [])*/
+    }, [])
 
 
     return {
