@@ -23,12 +23,12 @@ export class Matches implements IterableIterator<[string, Mark | null]> {
             return {done: false, value: [this.raw, null]}
         }
 
-        let [span, mark, raw] = this.extractSlices(match)
+        let [span, mark, raw] = this.extractPieces(match)
         this.raw = raw
         return {done: false, value: [span, mark]}
     }
 
-    extractSlices(execArray: RegExpExecArray): [string, Mark, string] {
+    extractPieces(execArray: RegExpExecArray): [string, Mark, string] {
         const mark = this.extractMark(execArray)
         const span = mark.input.substring(0, mark.index)
         const raw = mark.input.substring(mark.index + mark.annotation.length)

@@ -12,8 +12,8 @@ export const useFocus = (check: () => void, clear: () => void) => {
     //TODO remove current property
     const refMap = {current: new Map<number, RefObject<HTMLSpanElement>>()}
 
-    const {dispatch, sliceMap, bus} = useStore()
-    const keys = [...sliceMap.keys()]
+    const {dispatch, pieces, bus} = useStore()
+    const keys = [...pieces.keys()]
 
     const focusedIndex = useRef<number | null>(null)
 

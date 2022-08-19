@@ -5,7 +5,7 @@ import {onSelect, OverlayProps, Type} from "../types";
 
 export const OverlayTrigger = () => {
     const {
-        sliceMap,
+        pieces,
         trigger: {word, option, style, text, indexBefore, triggeredValue},
         dispatch,
         props: {Overlay = Suggestion}
@@ -16,7 +16,7 @@ export const OverlayTrigger = () => {
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)
         let foundKey
-        for (let [key, value] of sliceMap.entries()) {
+        for (let [key, value] of pieces.entries()) {
             if (value === text) {
                 foundKey = key
                 break

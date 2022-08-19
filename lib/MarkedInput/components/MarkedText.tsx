@@ -3,8 +3,8 @@ import {EditableSpan} from "./EditableSpan";
 import {DefaultClass} from "../constants";
 import {useFocus} from "../hooks/useFocus";
 
-export const SliceList = () => {
-    const {sliceMap, options, props: {Mark, ...props}, trigger: {check, clear}, bus} = useStore()
+export const MarkedText = () => {
+    const {pieces, options, props: {Mark, ...props}, trigger: {check, clear}, bus} = useStore()
     const {register, ...focusHandles} = useFocus(check, clear)
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
 
@@ -13,11 +13,11 @@ export const SliceList = () => {
              //onFocus={bus.notify1("onFocus")}
              {...bus.events}
         >
-            {[...sliceMap].map(([key, slice]) => {
-                if (!isObject(slice))
-                    return <EditableSpan ref={register(key)} id={key} key={key} value={slice}/>
+            {[...pieces].map(([key, piece]) => {
+                if (!isObject(piece))
+                    return <EditableSpan ref={register(key)} id={key} key={key} value={piece}/>
 
-                const markProps = options[slice.childIndex].initMark?.(slice) ?? slice
+                const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
                 return <Mark key={key} tabIndex={-1} {...markProps}/>
             })}
         </div>

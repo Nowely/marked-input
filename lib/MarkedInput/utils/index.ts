@@ -36,8 +36,8 @@ export function annotate(markup: Markup, label: string, value?: string) {
  */
 export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]) {
     if (!markups.length) return value
-    const slices = new Parser(markups).split(value)
-    return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
+    const pieces = new Parser(markups).split(value)
+    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490

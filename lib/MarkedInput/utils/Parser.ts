@@ -1,4 +1,4 @@
-import {Markup, Options, Slice} from "../types";
+import {Markup, Options, Piece} from "../types";
 import {markupToRegex, normalizeMark} from "./index";
 import {Matches} from "./Matches";
 
@@ -21,12 +21,12 @@ export class Parser {
         this.uniRegExp = new RegExp(this.regExps.map(value => value.source).join("|"));
     }
 
-    split(value: string): Slice<any>[] {
+    split(value: string): Piece[] {
         return this.iterateMatches(value);
     }
 
     iterateMatches(value: string) {
-        const result: Slice<any>[] = []
+        const result: Piece[] = []
 
         for (let [span, mark] of new Matches(value, this.uniRegExp)) {
             result.push(span)

@@ -1,12 +1,10 @@
 import {ComponentType, CSSProperties} from "react";
-import {StoreProvider} from "./utils";
 import {OverlayProps, ElementOptions} from "./types";
-import {SliceList} from "./components/SliceList";
-import "./style.css"
-import {useMarkedInput} from "./hooks/useMarkedInput";
+import {MarkedText} from "./components/MarkedText";
 import {OverlayTrigger} from "./components/OverlayTrigger";
 import {OptionProps} from "../Option";
 import {MarkedInputProvider} from "./components/MarkedInputProvider";
+import "./style.css"
 
 export interface MarkedInputProps<T, T1 = OverlayProps> {
     /**
@@ -54,7 +52,7 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
 
 export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => (
     <MarkedInputProvider<T, T1> value={props}>
-        <SliceList/>
+        <MarkedText/>
         <OverlayTrigger/>
     </MarkedInputProvider>
 )

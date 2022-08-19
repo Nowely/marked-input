@@ -1,5 +1,5 @@
 import {PLACEHOLDER} from "./constants";
-import {ComponentType, FunctionComponent, ReactElement} from "react";
+import {FunctionComponent, ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
 import {Trigger} from "./hooks/useTrigger";
@@ -41,9 +41,10 @@ export type Markup = `${label}${value}` | `${label}`
 //TODO T to unknown?
 export type ElementOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
 
-export type Slice<T> = string | Mark
+/** Piece of marked text: fragment of text or mark definition */
+export type Piece = string | Mark
 
-export type SliceMap<T> = Map<number, Slice<T>>
+export type KeyedPieces = Map<number, Piece>
 
 type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
@@ -57,7 +58,7 @@ export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<Conf
 export type Store = {
     props: MarkedInputProps<any, any>
     options: Options
-    sliceMap: SliceMap<any>
+    pieces: KeyedPieces
     dispatch: Dispatch
     //TODO type
     trigger: Trigger
@@ -78,5 +79,5 @@ export type Action = {
 }
 export type Payload = {
     key: number,
-    value?: Slice<any>
+    value?: Piece
 }
