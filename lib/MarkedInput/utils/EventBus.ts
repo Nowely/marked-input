@@ -1,46 +1,46 @@
+import {EventName, Payload, Type} from "../types";
+import {isEventName} from "./index";
+
 export class EventBus {
     readonly #listeners: Record<string, EventListener[]> = {}
-    readonly #rerender: Function
 
-    constructor(rerender: Function) {
-        this.#rerender = rerender
-    }
-
-    get length () {
+    get length() {
         return Object.keys(this.#listeners).length
     }
+
     get events() {
-        /*for (let a of Object.entries(this.#listeners)) {
-
-        }*/
-        return Object.entries(this.#listeners).reduce((prev, [key, value]) => {
-            prev[key] = this.notify1(key)
-            return prev
-        }, {} as Record<string, Function>)
+        return Object.keys(this.#listeners)
+            .filter(isEventName)
+            .reduce((prev, key) => {
+                prev[key] = (arg: any) => this.send(key, arg)
+                return prev
+            }, {} as Record<string, Function>)
     }
 
-    notify1(eventName: string) {
-        return (arg: any) => this.notify(eventName, arg)
-    }
-
-    notify(eventName: string, arg: any) {
-        const notified = this.#listeners[eventName]
+    send(event: Type, arg: Payload): void
+    send(event: EventName, arg: any): void
+    send(event: string | number, arg: any): void {
+        const notified = this.#listeners[event]
         if (!notified) return;
         notified.forEach((func) => func(arg));
     }
 
-    listen(eventName: string, callback: (e: any) => void) {
+    listen(event: Type, callback: (e: Payload) => void): void
+    listen(event: EventName, callback: (e: any) => void): void
+    listen(event: string | number, callback: (e: any) => void) {
         const listener: EventListener = callback
 
-        this.#listeners[eventName] ??= []
-        this.#listeners[eventName].push(listener)
-        this.#rerender()
+        this.#listeners[event] ??= []
+        this.#listeners[event].push(listener)
+
+        /*if (needRerender)
+            this.#rerender?.()*/
 
         return () => {
-            this.#listeners[eventName] = this.#listeners[eventName]
+            this.#listeners[event] = this.#listeners[event]
                 .filter((subscriber) => subscriber !== listener);
 
-            if (this.#listeners[eventName].length === 0) delete this.#listeners[eventName];
+            //if (this.#listeners[event].length === 0) delete this.#listeners[event];
         };
     }
 }

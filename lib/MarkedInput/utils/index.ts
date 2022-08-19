@@ -1,6 +1,6 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, Mark, Markup, Options, Store} from "../types";
+import {ElementOptions, EventName, Mark, Markup, Options, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
 
@@ -77,6 +77,8 @@ export const genId = () => Math.random().toString(36).substring(2, 9)
 export const isObject = (value: unknown): value is object => typeof value === "object"
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
+
+export const isEventName = (value: string): value is EventName => value.startsWith("on")
 
 const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
     if (isValidElement(value)) return true

@@ -51,7 +51,7 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
 }
 
 export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => (
-    <MarkedInputProvider<T, T1> value={props}>
+    <MarkedInputProvider<T, T1> props={props}>
         <MarkedText/>
         <OverlayTrigger/>
     </MarkedInputProvider>

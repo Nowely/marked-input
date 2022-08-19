@@ -59,24 +59,18 @@ export type Store = {
     props: MarkedInputProps<any, any>
     options: Options
     pieces: KeyedPieces
-    dispatch: Dispatch
     //TODO type
     trigger: Trigger
     bus: EventBus
 }
 
-//TODO naming
-export type Dispatch = (type: Type, payload: Payload) => void
+export type EventName = `on${string}`
 
 export enum Type {
     Change,
-    Delete
+    Delete,
 }
 
-export type Action = {
-    type: Type,
-    payload: Payload
-}
 export type Payload = {
     key: number,
     value?: Piece
