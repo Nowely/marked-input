@@ -1,6 +1,6 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {Mark, Markup, Options, ElementOptions, Store} from "../types";
+import {ElementOptions, EventName, Mark, Markup, Options, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../../Option";
 
@@ -36,8 +36,8 @@ export function annotate(markup: Markup, label: string, value?: string) {
  */
 export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]) {
     if (!markups.length) return value
-    const slices = new Parser(markups).split(value)
-    return slices.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
+    const pieces = new Parser(markups).split(value)
+    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
@@ -78,6 +78,8 @@ export const isObject = (value: unknown): value is object => typeof value === "o
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
+export const isEventName = (value: string): value is EventName => value.startsWith("on")
+
 const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
     if (isValidElement(value)) return true
     return isValidElement(value?.[0]);
@@ -85,7 +87,7 @@ const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is 
 
 export function extractOptions(options?: ElementOptions<any> | OptionProps[]): Options {
     if (isElementOption(options))
-        return  Children.map(options, child => initOption(child.props))
+        return Children.map(options, child => initOption(child.props))
 
     if (options?.length)
         return options.map(initOption)
@@ -102,7 +104,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
     context.displayName = name
 
     const hook = createContextHook(context)
-    const provider = createProvider(context)
+    const provider = context.Provider as Provider<NonNullable<T>>
 
     return [hook, provider]
 
@@ -115,11 +117,6 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 
             throw new Error(`The context ${context.displayName} didn't found!`)
         }
-    }
-
-    function createProvider<T, >(context: Context<T>) {
-        let value = context as unknown as Context<NonNullable<T>>
-        return value.Provider
     }
 }
 

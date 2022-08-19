@@ -1,11 +1,10 @@
 import {ComponentType, CSSProperties} from "react";
-import {StoreProvider} from "./utils";
 import {OverlayProps, ElementOptions} from "./types";
-import {SliceList} from "./components/SliceList";
-import "./style.css"
-import {useMarkedInput} from "./hooks/useMarkedInput";
+import {MarkedText} from "./components/MarkedText";
 import {OverlayTrigger} from "./components/OverlayTrigger";
 import {OptionProps} from "../Option";
+import {MarkedInputProvider} from "./components/MarkedInputProvider";
+import "./style.css"
 
 export interface MarkedInputProps<T, T1 = OverlayProps> {
     /**
@@ -21,8 +20,8 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
      */
     Mark: ComponentType<T>
     /**
-    * Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc.
-    */
+     * Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc.
+     */
     Overlay?: ComponentType<T1>
     /**
      * Prevents from changing the value
@@ -51,12 +50,9 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => {
-    const store = useMarkedInput(props)
-    return (
-        <StoreProvider value={store}>
-            <SliceList/>
-            <OverlayTrigger/>
-        </StoreProvider>
-    )
-}
+export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => (
+    <MarkedInputProvider<T, T1> props={props}>
+        <MarkedText/>
+        <OverlayTrigger/>
+    </MarkedInputProvider>
+)

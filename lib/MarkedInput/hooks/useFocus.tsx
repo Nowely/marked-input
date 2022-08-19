@@ -1,4 +1,4 @@
-import {FocusEvent, KeyboardEvent, RefObject, useRef, useState} from "react";
+import {FocusEvent, KeyboardEvent, RefObject, useEffect, useRef, useState} from "react";
 import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
@@ -12,8 +12,8 @@ export const useFocus = (check: () => void, clear: () => void) => {
     //TODO remove current property
     const refMap = {current: new Map<number, RefObject<HTMLSpanElement>>()}
 
-    const {dispatch, sliceMap} = useStore()
-    const keys = [...sliceMap.keys()]
+    const {pieces, bus} = useStore()
+    const keys = [...pieces.keys()]
 
     const focusedIndex = useRef<number | null>(null)
 
@@ -57,7 +57,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
                 keyRestoredElement.current = predictLeftKey()
                 let currentKey = [...refMap.current.keys()][focusedIndex.current]
                 let index = keys.indexOf(currentKey)
-                dispatch(Type.Delete, {key: keys[index - 1]})
+                bus.send(Type.Delete, {key: keys[index - 1]})
             }
         }
 
@@ -66,7 +66,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
                 keyRestoredElement.current = predictRightKey()
                 let currentKey = [...refMap.current.keys()][focusedIndex.current]
                 let index = keys.indexOf(currentKey)
-                dispatch(Type.Delete, {key: keys[index + 1]})
+                bus.send(Type.Delete, {key: keys[index + 1]})
             }
         }
     }
@@ -106,6 +106,36 @@ export const useFocus = (check: () => void, clear: () => void) => {
     function getValues() {
         return [...refMap.current.values()]
     }
+
+    //TODO onFocus event incorrectly work:
+    /*useEffect(() => {
+        const u1 = bus.listen("onFocus", (event: FocusEvent<HTMLElement>) => {
+            document.addEventListener("selectionchange", check)
+            focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
+        })
+
+        const u2 = bus.listen("onBlur", () => {
+            document?.removeEventListener("selectionchange", check);
+            //TODO. It is for overlay click correct handling
+            setTimeout(_ => clear(), 200)
+            focusedIndex.current = null;
+        })
+
+        const u3 = bus.listen("onClick", () => {
+            if (refMap.current.size === 1) {
+                const element = [...refMap.current.values()][0].current
+                if (element?.textContent === "") {
+                    element.focus()
+                }
+            }
+        })
+
+        const u4 = bus.listen("onKeyDown", onKeyDown)
+
+        return () => {
+            u1(), u2(), u3(), u4()
+        }
+    })*/
 
     return {
         register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),

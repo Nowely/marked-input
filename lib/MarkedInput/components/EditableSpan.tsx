@@ -10,7 +10,7 @@ export interface EditableSpanProps {
 
 //TODO Instead forwardRef to hook
 export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
-    const {dispatch, props: {readOnly, spanStyle, spanClassName}} = useStore()
+    const {bus, props: {readOnly, spanStyle, spanClassName}} = useStore()
     const spanRef = useRef<HTMLSpanElement>(null)
 
     if (typeof ref === "function") {
@@ -20,8 +20,8 @@ export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: For
     const held = useHeldCaret(spanRef)
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         held()
-        const newValue = e.currentTarget.textContent ?? ""
-        dispatch(Type.Change,{key: id, value: newValue})
+        const value = e.currentTarget.textContent ?? ""
+        bus.send(Type.Change,{key: id, value})
     }
 
     return (
