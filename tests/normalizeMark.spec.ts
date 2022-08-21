@@ -1,5 +1,7 @@
-describe.skip("Util: normalizeMark", () => {
-    it('should ', () => {
+import {normalizeMark} from "../lib/MarkedInput/utils";
 
+describe(`Utility: ${normalizeMark.name}`, () => {
+    it('should ', () => {
+        //normalizeMark
     });
 })

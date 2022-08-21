@@ -1,4 +1,6 @@
-describe.skip("Util: Parser", () => {
+import {Parser} from "../lib/MarkedInput/utils/Parser";
+
+describe.skip(`Utility: ${Parser.name}`, () => {
     it('should ', () => {
 
     });

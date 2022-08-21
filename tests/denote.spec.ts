@@ -1,7 +1,7 @@
 import {denote} from "../lib/MarkedInput/utils";
 import {Markup} from "../lib/MarkedInput/types";
 
-describe("Util: denote", () => {
+describe(`Utility: ${denote.name}`, () => {
     const markup: Markup = "@[__label__](__value__)"
 
     it('should make a display text from annotated', () => {
