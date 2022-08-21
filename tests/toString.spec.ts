@@ -1,4 +1,4 @@
-describe.skip("Util: toString", () => {
+describe.skip(`"Utility: ${toString.name}`, () => {
     it('should ', () => {
 
     });

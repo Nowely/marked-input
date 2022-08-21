@@ -1,4 +1,4 @@
-describe.skip("Util: createMarkedInput", () => {
+describe.skip(`Utility: createMarkedInput`, () => {
     it('should ', () => {
 
     });

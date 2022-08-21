@@ -1,4 +1,5 @@
-describe.skip("Component: MarkedInput", () => {
+
+describe.skip(`Component: MarkedInput`, () => {
     it('should ', () => {
 
     });

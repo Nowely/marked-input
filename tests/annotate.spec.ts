@@ -1,7 +1,7 @@
 import {annotate} from "../lib/MarkedInput/utils";
 import {Markup} from "../lib/MarkedInput/types";
 
-describe("Util: annotate", () => {
+describe(`Utility: ${annotate.name}`, () => {
     const markup: Markup = "@[__label__](__value__)"
 
     it('should make an annotation', () => {

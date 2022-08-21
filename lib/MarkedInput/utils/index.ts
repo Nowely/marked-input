@@ -6,6 +6,10 @@ import {OptionProps} from "../../Option";
 
 export const assign = Object.assign
 
+//TODO the alternative way to create markup?
+//const markup2: any = createMarkup("@[__label__]", "(__value__)")
+//const markup3: any = createMarkup("@[hello](world)", "hello", "world")
+
 export const markupToRegex = (markup: Markup) => {
     const escapedMarkup = escapeRegex(markup)
     const charAfterLabel = markup[markup.indexOf(PLACEHOLDER.LABEL) + PLACEHOLDER.LABEL.length]
@@ -16,13 +20,14 @@ export const markupToRegex = (markup: Markup) => {
     )
 }
 
+//TODO move in here trigger regex manipulating
 export const triggerToRegex = (value: string) => {
     const escapedValue = escapeRegex(value)
     const pattern = escapedValue + "(\\w*)"
     return new RegExp(pattern)
 }
 
-//TODO annotate options to object with required only label
+//TODO annotate options to object with required only label?
 /**
  * Make annotation from the markup
  */
