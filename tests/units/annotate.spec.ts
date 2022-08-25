@@ -1,5 +1,5 @@
-import {annotate} from "../lib/MarkedInput/utils";
-import {Markup} from "../lib/MarkedInput/types";
+import {annotate} from "../../lib/MarkedInput/utils";
+import {Markup} from "../../lib/MarkedInput/types";
 
 describe(`Utility: ${annotate.name}`, () => {
     const markup: Markup = "@[__label__](__value__)"

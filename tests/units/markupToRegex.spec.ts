@@ -1,6 +1,6 @@
-import {annotate, markupToRegex} from "../lib/MarkedInput/utils";
+import {annotate, markupToRegex} from "../../lib/MarkedInput/utils";
 import {faker} from "@faker-js/faker";
-import {createRandomMarkup} from "./utils/createRandomMarkup";
+import {createRandomMarkup} from "../utils/createRandomMarkup";
 
 describe(`Utility: ${markupToRegex.name}`, () => {
     it('should convert markup to regex', () => {
