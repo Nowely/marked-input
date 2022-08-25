@@ -39,10 +39,11 @@
     "react",
     "react-component",
     "component",
-    "mentions",
+    "mention",
     "markup",
     "marked-input",
-    "highlight"
+    "highlight",
+    "input"
   ],
   "workspaces": [
     "lib",
