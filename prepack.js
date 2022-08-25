@@ -16,19 +16,21 @@ function copyReadme() {
 }
 
 function prepareAndCopyPackage() {
-    const copy = getCopy()
-    const prepared = prepareToDist(copy)
-    paste(prepared, err => {
+    const mainPackage = getPackageCopy()
+    const libPackage = getPackageCopy("lib")
+    deleteUnnecessaryProperties(mainPackage)
+    mainPackage.peerDependencies = libPackage.peerDependencies
+    paste(mainPackage, err => {
         if (err) throw err;
         console.log('package.json setup');
     })
 
-    function getCopy() {
-        const copy = fs.readFileSync(path.resolve(__dirname, "package.json"), "utf-8");
+    function getPackageCopy(pathSegment = "") {
+        const copy = fs.readFileSync(path.resolve(__dirname, pathSegment, "package.json"), "utf-8");
         return JSON.parse(copy);
     }
 
-    function prepareToDist(copy) {
+    function deleteUnnecessaryProperties(copy) {
         delete copy.scripts
         delete copy.dependencies
         delete copy.devDependencies
