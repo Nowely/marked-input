@@ -7,7 +7,7 @@ import {getTitleOfStyled} from "./assets/getTitle";
 import {OverlayProps} from "../../lib/MarkedInput/types";
 
 export default {
-    title: getTitleOfStyled("Mui"),
+    title: getTitleOfStyled("Material"),
     component: MarkedInput,
     subcomponents: {Option}
 }
