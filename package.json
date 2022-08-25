@@ -48,12 +48,12 @@
   },
   "type": "module",
   "types": "./types/index.d.ts",
-  "main": "./rc-marked-input.umd.js",
   "module": "./rc-marked-input.js",
+  "main": "./rc-marked-input.umd.cjs",
   "exports": {
     ".": {
       "import": "./rc-marked-input.js",
-      "require": "./rc-marked-input.umd.js"
+      "require": "./rc-marked-input.umd.cjs"
     }
   },
   "keywords": [
