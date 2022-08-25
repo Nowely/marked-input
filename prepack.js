@@ -34,6 +34,7 @@ function prepareAndCopyPackage() {
         delete copy.scripts
         delete copy.dependencies
         delete copy.devDependencies
+        delete copy.workspaces
         return copy
     }
 

@@ -43,5 +43,10 @@
     "markup",
     "marked-input",
     "highlight"
+  ],
+  "workspaces": [
+    "lib",
+    "storybook",
+    "tests"
   ]
 }
