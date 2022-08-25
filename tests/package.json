@@ -1,0 +1,8 @@
+{
+  "name": "tests",
+  "dependencies": {
+    "@faker-js/faker": "^7.4.0",
+    "@types/jest": "^28.1.6",
+    "jest": "^28.1.3"
+  }
+}
