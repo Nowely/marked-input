@@ -1,23 +1,22 @@
-import {FocusEvent, KeyboardEvent, RefObject, useEffect, useRef, useState} from "react";
+import {FocusEvent, KeyboardEvent, useRef} from "react";
 import {Caret, useCaret} from "./useCaret";
 import {KEY} from "../constants";
 import {genHash, useStore} from "../utils";
 import {Type} from "../types";
 import {useRestoredFocusAndCaretAfterDelete} from "./useRestoredFocusAndCaretAfterDelete";
+import {useRegistration} from "./useRegistration";
 
 //TODO rename focusedIndex
 export const useFocus = (check: () => void, clear: () => void) => {
     const caret = useCaret()
-
-    //TODO remove current property
-    const refMap = {current: new Map<number, RefObject<HTMLSpanElement>>()}
+    const {registered, register} = useRegistration()
 
     const {pieces, bus} = useStore()
     const keys = [...pieces.keys()]
 
     const focusedIndex = useRef<number | null>(null)
 
-    const keyRestoredElement = useRestoredFocusAndCaretAfterDelete(caret, refMap)
+    const keyRestoredElement = useRestoredFocusAndCaretAfterDelete(caret, registered)
 
     const onKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
         const target = event.target as HTMLSpanElement
@@ -46,7 +45,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
         }
 
         function handlePressRight() {
-            if (focusedIndex.current !== null && focusedIndex.current !== [...refMap.current.values()].length - 1) {
+            if (focusedIndex.current !== null && focusedIndex.current !== [...registered.values()].length - 1) {
                 getValues()[focusedIndex.current + 1].current?.focus()
             }
             event.preventDefault()
@@ -55,16 +54,16 @@ export const useFocus = (check: () => void, clear: () => void) => {
         function handlePressBackspace() {
             if (focusedIndex.current && focusedIndex.current > 0) {
                 keyRestoredElement.current = predictLeftKey()
-                let currentKey = [...refMap.current.keys()][focusedIndex.current]
+                let currentKey = [...registered.keys()][focusedIndex.current]
                 let index = keys.indexOf(currentKey)
                 bus.send(Type.Delete, {key: keys[index - 1]})
             }
         }
 
         function handlePressDelete() {
-            if (focusedIndex.current !== null && focusedIndex.current !== [...refMap.current.values()].length - 1) {
+            if (focusedIndex.current !== null && focusedIndex.current !== [...registered.values()].length - 1) {
                 keyRestoredElement.current = predictRightKey()
-                let currentKey = [...refMap.current.keys()][focusedIndex.current]
+                let currentKey = [...registered.keys()][focusedIndex.current]
                 let index = keys.indexOf(currentKey)
                 bus.send(Type.Delete, {key: keys[index + 1]})
             }
@@ -74,11 +73,11 @@ export const useFocus = (check: () => void, clear: () => void) => {
     function predictLeftKey() {
         if (focusedIndex.current === null) return null
 
-        let previousKey = [...refMap.current.keys()][focusedIndex.current - 1]
-        let currentKey = [...refMap.current.keys()][focusedIndex.current]
+        let previousKey = [...registered.keys()][focusedIndex.current - 1]
+        let currentKey = [...registered.keys()][focusedIndex.current]
 
-        let previousText = refMap.current.get(previousKey)?.current?.textContent!
-        let currentText = refMap.current.get(currentKey)?.current?.textContent!
+        let previousText = registered.get(previousKey)?.current?.textContent!
+        let currentText = registered.get(currentKey)?.current?.textContent!
 
         let newText = previousText + currentText
 
@@ -90,11 +89,11 @@ export const useFocus = (check: () => void, clear: () => void) => {
     function predictRightKey() {
         if (focusedIndex.current === null) return null
 
-        let nextKey = [...refMap.current.keys()][focusedIndex.current + 1]
-        let currentKey = [...refMap.current.keys()][focusedIndex.current]
+        let nextKey = [...registered.keys()][focusedIndex.current + 1]
+        let currentKey = [...registered.keys()][focusedIndex.current]
 
-        let nextText = refMap.current.get(nextKey)?.current?.textContent!
-        let currentText = refMap.current.get(currentKey)?.current?.textContent!
+        let nextText = registered.get(nextKey)?.current?.textContent!
+        let currentText = registered.get(currentKey)?.current?.textContent!
 
         let newText = currentText + nextText
 
@@ -104,14 +103,14 @@ export const useFocus = (check: () => void, clear: () => void) => {
     }
 
     function getValues() {
-        return [...refMap.current.values()]
+        return [...registered.values()]
     }
 
     //TODO onFocus event incorrectly work:
     /*useEffect(() => {
         const u1 = bus.listen("onFocus", (event: FocusEvent<HTMLElement>) => {
             document.addEventListener("selectionchange", check)
-            focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
+            focusedIndex.current = [...registered.values()].findIndex(value => value.current === event.target)
         })
 
         const u2 = bus.listen("onBlur", () => {
@@ -122,8 +121,8 @@ export const useFocus = (check: () => void, clear: () => void) => {
         })
 
         const u3 = bus.listen("onClick", () => {
-            if (refMap.current.size === 1) {
-                const element = [...refMap.current.values()][0].current
+            if (registered.size === 1) {
+                const element = [...registered.values()][0].current
                 if (element?.textContent === "") {
                     element.focus()
                 }
@@ -138,10 +137,10 @@ export const useFocus = (check: () => void, clear: () => void) => {
     })*/
 
     return {
-        register: (key: number) => (ref: RefObject<HTMLSpanElement>) => refMap.current.set(key, ref),
+        register,
         onFocus: (event: FocusEvent<HTMLElement>) => {
             document.addEventListener("selectionchange", check)
-            focusedIndex.current = [...refMap.current.values()].findIndex(value => value.current === event.target)
+            focusedIndex.current = [...registered.values()].findIndex(value => value.current === event.target)
         },
         onBlur: () => {
             document?.removeEventListener("selectionchange", check);
@@ -150,9 +149,9 @@ export const useFocus = (check: () => void, clear: () => void) => {
             focusedIndex.current = null;
         },
         onClick: () => {
-            if (refMap.current.size === 1){
-                const element = [...refMap.current.values()][0].current
-                if (element?.textContent === ""){
+            if (registered.size === 1) {
+                const element = [...registered.values()][0].current
+                if (element?.textContent === "") {
                     element.focus()
                 }
             }

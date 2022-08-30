@@ -1,13 +1,13 @@
 import {Caret} from "./useCaret";
 import {RefObject, useEffect, useRef} from "react";
 
-export const useRestoredFocusAndCaretAfterDelete = (caret: Caret, refMap: { current: Map<number, RefObject<HTMLSpanElement>> }) => {
+export const useRestoredFocusAndCaretAfterDelete = (caret: Caret, refMap: Map<number, RefObject<HTMLSpanElement>>) => {
     const predictedKey = useRef<number | null>(null)
 
     //Restore focus after delete mark
     useEffect(() => {
         if (predictedKey.current) {
-            let refSpan = refMap.current.get(predictedKey.current)?.current!
+            let refSpan = refMap.get(predictedKey.current)?.current!
             refSpan.focus()
 
             let position = caret.getPosition()
