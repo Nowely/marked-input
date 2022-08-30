@@ -1,7 +1,3 @@
-import {useMemo} from "react";
-
-export const useCaret = () => useMemo(() => new Caret(), [])
-
 //TODO refact caret
 /**
  * Restore caret on union for two spans

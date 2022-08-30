@@ -1,5 +1,5 @@
-import {Caret} from "./useCaret";
 import {RefObject, useEffect, useRef} from "react";
+import {Caret} from "../../../utils/Caret";
 
 export const useRestoredFocusAndCaretAfterDelete = (caret: Caret, refMap: Map<number, RefObject<HTMLSpanElement>>) => {
     const predictedKey = useRef<number | null>(null)

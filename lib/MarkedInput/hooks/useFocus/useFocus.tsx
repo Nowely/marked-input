@@ -1,10 +1,11 @@
 import {FocusEvent, KeyboardEvent, useRef} from "react";
-import {Caret, useCaret} from "./useCaret";
-import {KEY} from "../constants";
-import {genHash, useStore} from "../utils";
-import {Type} from "../types";
-import {useRestoredFocusAndCaretAfterDelete} from "./useRestoredFocusAndCaretAfterDelete";
-import {useRegistration} from "./useRegistration";
+import {useCaret} from "./hooks/useCaret";
+import {KEY} from "../../constants";
+import {genHash, useStore} from "../../utils";
+import {Type} from "../../types";
+import {useRestoredFocusAndCaretAfterDelete} from "./hooks/useRestoredFocusAndCaretAfterDelete";
+import {useRegistration} from "./hooks/useRegistration";
+import {Caret} from "../../utils/Caret";
 
 //TODO rename focusedIndex
 export const useFocus = (check: () => void, clear: () => void) => {
