@@ -7,6 +7,18 @@ import {useRestoredFocusAndCaretAfterDelete} from "./hooks/useRestoredFocusAndCa
 import {useRegistration} from "./hooks/useRegistration";
 import {Caret} from "../../utils/Caret";
 
+/**
+ * Remove useCaret
+ * registration - done
+ * currentIndex
+ * restore focus and index
+ * track current focus and place of caret:
+ *  onFocus
+ *  onBlur
+ *  onClick
+ * handle on key down: process left, right, up, down...
+ */
+
 //TODO rename focusedIndex
 export const useFocus = (check: () => void, clear: () => void) => {
     const caret = useCaret()
