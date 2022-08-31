@@ -18,7 +18,7 @@ export class EventBus {
     }
     //TODO rename. Predefined events?
     get events1() {
-        return ["onFocus", "onBlur", "onKeyDown"]
+        return ["onFocus", "onBlur", "onKeyDown", "onClick"]
             .reduce((prev, key) => {
                 // @ts-ignore
                 prev[key] = (arg: any) => this.send(key, arg)

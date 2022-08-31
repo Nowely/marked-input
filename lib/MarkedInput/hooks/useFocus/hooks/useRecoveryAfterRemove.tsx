@@ -7,8 +7,7 @@ export type Recovery = {
     caret: number
 }
 
-export const useRecoveryAfterRemove = (refMap: Map<number, React.RefObject<HTMLSpanElement>>) => {
-    //const predictedKey = useRef<number | null>(null)
+export const useRecoveryAfterRemove = (refMap: Map<number, RefObject<HTMLSpanElement>>) => {
     const recoveryRef = useRef<Recovery | null>(null)
 
     //Restore focus after delete mark
@@ -17,9 +16,8 @@ export const useRecoveryAfterRemove = (refMap: Map<number, React.RefObject<HTMLS
             const {key, caret} = recoveryRef.current
 
             let refSpan = refMap.get(key)?.current!
-            refSpan.focus()
+            refSpan?.focus()
 
-            //let position = caret.getPosition()
             if (caret && refSpan) {
                 Caret.setIndex(refSpan, caret)
             }

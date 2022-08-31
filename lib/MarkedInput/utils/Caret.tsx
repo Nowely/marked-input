@@ -3,19 +3,6 @@
  * Restore caret on union for two spans
  */
 export class Caret {
-    constructor(
-        private _position: number = NaN,
-    ) {
-    }
-
-    get isBlurred() {
-        return Number.isNaN(this._position)
-    }
-
-    clear() {
-        this._position = NaN
-    }
-
     static setIndex(element: HTMLElement, offset: number) {
         const selection = window.getSelection()
         if (!selection?.anchorNode || !selection.rangeCount) return
@@ -38,22 +25,12 @@ export class Caret {
         const preCaretRange = range.cloneRange();
         // Select all textual contents from the contenteditable element
         preCaretRange.selectNodeContents(element);
-        // And set the range end to the original clicked _position
+        // And set the range end to the original clicked position
         preCaretRange.setEnd(range.endContainer, range.endOffset);
         // Return the text length from contenteditable start to the range end
         position = preCaretRange.toString().length;
 
         return position
-    }
-
-    getPosition() {
-        let temp = this._position
-        this._position = NaN
-        return temp
-    }
-
-    setPosition(position: number) {
-        this._position = position
     }
 
     static setCaretToEnd(element: HTMLElement | null) {
@@ -66,25 +43,6 @@ export class Caret {
     static getIndex() {
         const selection = window.getSelection()
         return selection?.anchorOffset ?? NaN
-    }
-
-    saveRightOffset() {
-        const selection = window.getSelection()
-        const position = selection?.anchorNode?.textContent?.length
-        this._position = position ?? NaN
-    }
-
-    restoreRightOffset() {
-        if (this.isBlurred) return
-
-        const selection = window.getSelection()
-        const range = selection?.rangeCount ? selection.getRangeAt(0) : null
-        if (!selection?.anchorNode) return
-        let a = selection?.anchorNode.firstChild || selection?.anchorNode
-        let offset = (a?.textContent?.length ?? 0) - this._position
-        range?.setStart(a, offset)
-        range?.setEnd(a, offset)
-        this.clear()
     }
 
     static setIndex1(offset: number) {

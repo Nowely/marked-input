@@ -1,34 +1,15 @@
 import {useRecoveryAfterRemove} from "./hooks/useRecoveryAfterRemove";
-import {useRegistration} from "./hooks/useRegistration";
+import {useTextElements} from "./hooks/useTextElements";
 import {useFocusedElement} from "./hooks/useFocusedElement";
 import {useKeyDown} from "./hooks/useKeyDown";
+import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput";
 
-//TODO. Refactor triggers listeners
-//TODO. Refactor onClick handler
-export const useFocus = (check: () => void, clear: () => void) => {
-    const {registered, register} = useRegistration()
+export const useFocus = () => {
+    const {elements, register} = useTextElements()
     const focusedElement = useFocusedElement()
-    const recoveryRef = useRecoveryAfterRemove(registered)
-    useKeyDown(registered, recoveryRef, focusedElement)
+    const recoveryRef = useRecoveryAfterRemove(elements)
+    useKeyDown(elements, recoveryRef, focusedElement)
+    useFocusOnEmptyInput(elements)
 
-    return {
-        register,
-        /*onFocus: (event: FocusEvent<HTMLElement>) => {
-            document.addEventListener("selectionchange", check)
-        },
-        onBlur: () => {
-            document?.removeEventListener("selectionchange", check);
-            //TODO. It is for overlay click correct handling
-            setTimeout(_ => clear(), 200)
-        },*/
-        onClick: () => {
-            if (registered.size === 1) {
-                const element = [...registered.values()][0].current
-                if (element?.textContent === "") {
-                    element.focus()
-                }
-            }
-        },
-    }
+    return {register}
 }
-
