@@ -71,6 +71,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
                 let index = keys.indexOf(currentKey)
                 bus.send(Type.Delete, {key: keys[index - 1]})
             }
+            event.preventDefault()
         }
 
         function handlePressDelete() {
@@ -80,6 +81,7 @@ export const useFocus = (check: () => void, clear: () => void) => {
                 let index = keys.indexOf(currentKey)
                 bus.send(Type.Delete, {key: keys[index + 1]})
             }
+            event.preventDefault()
         }
     }
 
