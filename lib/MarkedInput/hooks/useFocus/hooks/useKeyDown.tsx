@@ -21,9 +21,9 @@ export function useKeyDown(
             const handleMap = {
                 [KEY.LEFT]: isStartCaret ? handlePressLeft : null,
                 [KEY.RIGHT]: isEndCaret ? handlePressRight : null,
-                [KEY.UP]: null, //TODO to the start input position
-                [KEY.DOWN]: null, //TODO to the end input position
-                [KEY.DELETE]: isEndCaret ? handlePressDelete : null, //TODO reverse backspace
+                [KEY.UP]: null, //TODO to the start input position?
+                [KEY.DOWN]: null, //TODO to the end input position?
+                [KEY.DELETE]: isEndCaret ? handlePressDelete : null,
                 [KEY.BACKSPACE]: isStartCaret ? handlePressBackspace : null,
             }
 
