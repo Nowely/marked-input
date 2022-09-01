@@ -7,13 +7,13 @@ import {Recovery} from "./useRecoveryAfterRemove";
 
 export function useKeyDown(
     elements: Map<number, RefObject<HTMLElement>>,
-    keyRestoredElement: MutableRefObject<Recovery | null>,
+    recoveryRef: MutableRefObject<Recovery | null>,
     focusedElement: MutableRefObject<HTMLElement | null>
 ) {
     const {pieces, bus} = useStore()
 
     useEffect(() => bus.listen("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
-            const oracle = new Oracle(focusedElement, elements, keyRestoredElement, pieces)
+            const oracle = new Oracle(focusedElement, elements, recoveryRef, pieces)
             const target = event.target as HTMLSpanElement
             const caretIndex = Caret.getCaretIndex(target);
             const isStartCaret = caretIndex === 0;
@@ -67,7 +67,7 @@ class Oracle {
     constructor(
         readonly focusedElement: MutableRefObject<HTMLElement | null>,
         readonly elements: Map<number, RefObject<HTMLSpanElement>>,
-        readonly keyRestoredElement: MutableRefObject<Recovery | null>,
+        readonly recoveryRef: MutableRefObject<Recovery | null>,
         readonly pieces: KeyedPieces
     ) {
     }
@@ -77,7 +77,7 @@ class Oracle {
         let currentText = this.focusedElement.current?.textContent!
         let newText = previousText + currentText
 
-        this.keyRestoredElement.current = {
+        this.recoveryRef.current = {
             key: genHash(newText),
             caret: previousText.length
         }
@@ -88,7 +88,7 @@ class Oracle {
         let currentText = this.focusedElement.current?.textContent!
         let newText = currentText + nextText
 
-        this.keyRestoredElement.current = {
+        this.recoveryRef.current = {
             key: genHash(newText),
             caret: currentText.length
         }

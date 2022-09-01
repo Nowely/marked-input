@@ -15,7 +15,7 @@ export const useRecoveryAfterRemove = (refMap: Map<number, RefObject<HTMLSpanEle
         if (recoveryRef.current) {
             const {key, caret} = recoveryRef.current
 
-            let refSpan = refMap.get(key)?.current!
+            let refSpan = refMap.get(key)?.current
             refSpan?.focus()
 
             if (caret && refSpan) {
