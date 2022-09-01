@@ -1,18 +1,19 @@
 import {KeyboardEvent, MutableRefObject, RefObject, useEffect} from "react";
 import {Caret} from "../../../utils/Caret";
 import {KEY} from "../../../constants";
-import {Type} from "../../../types";
+import {KeyedPieces, Type} from "../../../types";
 import {genHash, useStore} from "../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
 
 export function useKeyDown(
-    registered: Map<number, RefObject<HTMLSpanElement>>,
+    elements: Map<number, RefObject<HTMLElement>>,
     keyRestoredElement: MutableRefObject<Recovery | null>,
     focusedElement: MutableRefObject<HTMLElement | null>
 ) {
     const {pieces, bus} = useStore()
 
     useEffect(() => bus.listen("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
+            const oracle = new Oracle(focusedElement, elements, keyRestoredElement, pieces)
             const target = event.target as HTMLSpanElement
             const caretIndex = Caret.getCaretIndex(target);
             const isStartCaret = caretIndex === 0;
@@ -29,130 +30,142 @@ export function useKeyDown(
             handleMap[event.key]?.()
 
             function handlePressLeft() {
-                const element = getPreviousElement()
+                const element = oracle.getPreviousElement()
                 element?.focus()
                 Caret.setCaretToEnd(element)
                 event.preventDefault()
             }
 
             function handlePressRight() {
-                const element = getNextElement()
+                const element = oracle.getNextElement()
                 element?.focus()
                 event.preventDefault()
             }
 
             function handlePressBackspace() {
-                const key = getPreviousMarkKey()
+                const key = oracle.getPreviousMarkKey()
                 if (!key) return
 
-                recoverLeft()
+                oracle.recoverLeft()
                 bus.send(Type.Delete, {key})
                 event.preventDefault()
             }
 
             function handlePressDelete() {
-                const key = getNextMarkKey()
+                const key = oracle.getNextMarkKey()
                 if (!key) return
 
-                recoverRight()
+                oracle.recoverRight()
                 bus.send(Type.Delete, {key})
                 event.preventDefault()
             }
         }
-    ), [])
+    ), [pieces])
+}
 
-    function recoverLeft() {
-        let previousText = getPreviousElement()?.textContent!
-        let currentText = focusedElement.current?.textContent!
+class Oracle {
+    constructor(
+        readonly focusedElement: MutableRefObject<HTMLElement | null>,
+        readonly elements: Map<number, RefObject<HTMLSpanElement>>,
+        readonly keyRestoredElement: MutableRefObject<Recovery | null>,
+        readonly pieces: KeyedPieces
+    ) {
+    }
+
+    recoverLeft() {
+        let previousText = this.getPreviousElement()?.textContent!
+        let currentText = this.focusedElement.current?.textContent!
         let newText = previousText + currentText
 
-        keyRestoredElement.current = {
+        this.keyRestoredElement.current = {
             key: genHash(newText),
             caret: previousText.length
         }
     }
 
-    function recoverRight() {
-        let nextText = getNextElement()?.textContent!
-        let currentText = focusedElement.current?.textContent!
+    recoverRight() {
+        let nextText = this.getNextElement()?.textContent!
+        let currentText = this.focusedElement.current?.textContent!
         let newText = currentText + nextText
 
-        keyRestoredElement.current = {
+        this.keyRestoredElement.current = {
             key: genHash(newText),
             caret: currentText.length
         }
     }
 
-    function getPreviousElement() {
+    getPreviousElement() {
         let previous: HTMLElement | null = null
 
-        if (!focusedElement.current)
+        if (!this.focusedElement.current)
             return null
 
-        for (const [key, elementRef] of registered) {
-            if (elementRef.current === focusedElement.current)
+        for (const [key, elementRef] of this.elements) {
+            if (elementRef.current === this.focusedElement.current)
                 return previous
 
             previous = elementRef.current
         }
 
-        return previous
+        return null
     }
 
-    function getNextElement() {
+    getNextElement() {
         let isNext = false
 
-        if (!focusedElement.current)
+        if (!this.focusedElement.current)
             return null
 
-        for (const [key, elementRef] of registered) {
+        for (const [key, elementRef] of this.elements) {
             if (isNext)
                 return elementRef.current
 
-            if (elementRef.current === focusedElement.current)
+            if (elementRef.current === this.focusedElement.current)
                 isNext = true
         }
 
         return null
     }
 
-    function getCurrentKey() {
-        for (const [key, elementRef] of registered) {
-            if (elementRef.current === focusedElement.current)
-                return key
-        }
-    }
-
-    function getPreviousMarkKey() {
-        const current = getCurrentKey()
+    getPreviousMarkKey() {
         let previous: number | null = null
+        const current = this.getCurrentKey()
 
-        if (!focusedElement.current)
-            return null
+        if (!current) return null
 
-        for (const [key] of pieces) {
+        for (const [key] of this.pieces) {
             if (key === current)
                 return previous
 
             previous = key
         }
 
-        return previous
+        return null
     }
 
-    function getNextMarkKey() {
-        const current = getCurrentKey()
+    getNextMarkKey() {
         let isNext = false
+        const current = this.getCurrentKey()
 
-        if (!focusedElement.current)
-            return null
+        if (!current) return null
 
-        for (const [key] of pieces) {
+        for (const [key] of this.pieces) {
             if (isNext)
                 return key
 
             if (key === current)
                 isNext = true
+        }
+
+        return null
+    }
+
+    getCurrentKey() {
+        if (!this.focusedElement.current) return null
+
+        for (const [key, elementRef] of this.elements) {
+            if (elementRef.current === this.focusedElement.current)
+                return key
         }
 
         return null

@@ -4,6 +4,7 @@ import {Options, Piece, KeyedPieces} from "../types";
 import {Parser} from "../utils/Parser";
 
 //TODO Compare new input value with returned caching?
+//TODO dont create a new object for returned value
 export const useParsed = (value: string, options: Options): KeyedPieces => {
     const pieces = useMemo(Parser.split(value, options), [value])
     return useMemo(bindKeysWithPieces, [pieces.length])
