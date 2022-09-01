@@ -4,13 +4,15 @@ import React, {createElement} from "react";
 import {onSelect, OverlayProps, Type} from "../types";
 
 export const OverlayTrigger = () => {
-    const {
-        pieces, bus,
-        trigger: {word, option, style, text, indexBefore, triggeredValue},
-        props: {Overlay = Suggestion}
-    } = useStore()
+    const {pieces, bus, trigger, props: {Overlay = Suggestion}} = useStore()
 
-    if (word === undefined) return null;
+    if (!trigger)
+        return null
+
+    const {word, option, style, text, indexBefore, triggeredValue} = trigger
+    
+    if (word === undefined)
+        return null
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)

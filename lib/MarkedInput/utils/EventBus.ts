@@ -16,6 +16,15 @@ export class EventBus {
                 return prev
             }, {} as Record<string, Function>)
     }
+    //TODO rename. Predefined events?
+    get events1() {
+        return ["onFocus", "onBlur", "onKeyDown", "onClick"]
+            .reduce((prev, key) => {
+                // @ts-ignore
+                prev[key] = (arg: any) => this.send(key, arg)
+                return prev
+            }, {} as Record<string, Function>)
+    }
 
     send(event: Type, arg: Payload): void
     send(event: EventName, arg: any): void

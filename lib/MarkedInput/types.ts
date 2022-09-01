@@ -60,7 +60,7 @@ export type Store = {
     options: Options
     pieces: KeyedPieces
     //TODO type
-    trigger: Trigger
+    trigger?: Trigger
     bus: EventBus
 }
 

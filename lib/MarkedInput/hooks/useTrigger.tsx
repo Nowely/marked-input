@@ -1,14 +1,13 @@
-import React, {useCallback, useState} from "react";
+import React, {FocusEvent, useCallback, useEffect, useState} from "react";
 import {assign, escapeRegex, triggerToRegex} from "../utils";
 import {Options, OptionType} from "../types";
+import {EventBus} from "../utils/EventBus";
 
 export type Trigger = {
     word: string | undefined,
     triggeredValue: string | undefined,
     text: string | undefined,
     indexBefore: number | undefined,
-    check: () => void,
-    clear: () => void,
     option: OptionType,
     style: {
         left: number,
@@ -17,8 +16,8 @@ export type Trigger = {
 }
 
 //TODO reducer?
-export const useTrigger = (options: Options): Trigger => {
-    const [trigger, setTrigger] = useState<Omit<Trigger, "check" | "clear"> | undefined>()
+export const useTrigger = (options: Options, bus: EventBus): Trigger | undefined => {
+    const [trigger, setTrigger] = useState<Trigger | undefined>()
 
     const clear = useCallback(() => setTrigger(undefined), [])
     const check = useCallback(() => {
@@ -39,7 +38,17 @@ export const useTrigger = (options: Options): Trigger => {
         setTrigger(undefined)
     }, [])
 
-    return assign({}, trigger, {check, clear})
+    useEffect(() => bus.listen("onFocus", (e: FocusEvent<HTMLElement>) => {
+        document.addEventListener("selectionchange", check)
+    }), [])
+
+    useEffect(() => bus.listen("onBlur", (e: FocusEvent<HTMLElement>) => {
+        document?.removeEventListener("selectionchange", check);
+        //TODO. It is for overlay click correct handling
+        setTimeout(_ => clear(), 200)
+    }), [])
+
+    return trigger
 }
 
 function findTriggeredWord(trigger?: string) {
