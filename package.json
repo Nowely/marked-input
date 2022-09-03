@@ -8,8 +8,8 @@
     "storybook": "start-storybook -p 6006 -c storybook",
     "build-storybook": "build-storybook -c storybook",
     "build": "vite build && tsc && node prepack.js",
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "test": "jest -c tests/jest.config.json",
+    "coverage": "jest -c tests/jest.config.json --coverage"
   },
   "dependencies": {
     "react": "18.2.0",
