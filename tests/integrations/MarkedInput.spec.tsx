@@ -11,7 +11,9 @@ const Mark2 = () => {
 }
 
 describe(`Component: ${MarkedInput.name}`, () => {
-    it('should render', (): any => render(<Marked/>))
+    it('should render', () => {
+        render(<Marked/>);
+    })
 
     it('should support the "Backspace" button', async () => {
         const {container} = render(<Mark2/>)
