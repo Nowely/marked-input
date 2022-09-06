@@ -1,9 +1,9 @@
 import {Button} from "./assets/Button";
-import {MarkedInput, Option, denote, createMarkedInput} from "../../lib";
+import {MarkedInput, Option, denote, createMarkedInput} from "rc-marked-input";
 import {ElementType, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {Markup} from "../../lib/MarkedInput/types";
+import {Markup} from "rc-marked-input/MarkedInput/types";
 
 export default {
     title: getTitle(),

@@ -1,4 +1,4 @@
-import {genHash} from "../../lib/MarkedInput/utils";
+import {genHash} from "rc-marked-input/MarkedInput/utils";
 import {faker} from "@faker-js/faker";
 
 describe(`Utility: ${genHash.name}`, () => {

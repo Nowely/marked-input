@@ -31,7 +31,7 @@ export const triggerToRegex = (value: string) => {
 /**
  * Make annotation from the markup
  */
-export function annotate(markup: Markup, label: string, value?: string) {
+export function annotate(markup: Markup, label: string, value?: string): string {
     let annotation = markup.replace(PLACEHOLDER.LABEL, label)
     return value ? annotation.replace(PLACEHOLDER.VALUE, value) : annotation
 }
@@ -39,7 +39,7 @@ export function annotate(markup: Markup, label: string, value?: string) {
 /**
  * Transform the annotated text to the another text
  */
-export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]) {
+export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]): string {
     if (!markups.length) return value
     const pieces = new Parser(markups).split(value)
     return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");

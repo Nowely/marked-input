@@ -1,5 +1,5 @@
 import {faker} from "@faker-js/faker";
-import {Markup} from "../../lib/MarkedInput/types";
+import {Markup} from "rc-marked-input/MarkedInput/types";
 
 export const createRandomMarkup = (excludeSymbols: string) => {
     const str1 = faker.datatype.string(5)

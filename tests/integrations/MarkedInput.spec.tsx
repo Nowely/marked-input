@@ -1,6 +1,6 @@
 import user from "@testing-library/user-event";
-import {render, screen} from "@testing-library/react";
-import {MarkedInput} from "lib";
+import {render} from "@testing-library/react";
+import {MarkedInput} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
 import '@testing-library/jest-dom'
 import {useState} from "react";

@@ -1,5 +1,5 @@
 {
-  "name": "lib",
+  "name": "rc-marked-input",
   "peerDependencies": {
     "react": ">=17.0.0"
   },

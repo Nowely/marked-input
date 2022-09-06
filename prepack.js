@@ -20,6 +20,7 @@ function prepareAndCopyPackage() {
     const libPackage = getPackageCopy("lib")
     deleteUnnecessaryProperties(mainPackage)
     mainPackage.peerDependencies = libPackage.peerDependencies
+    mainPackage.name = libPackage.name
     paste(mainPackage, err => {
         if (err) throw err;
         console.log('package.json setup');
@@ -31,6 +32,7 @@ function prepareAndCopyPackage() {
     }
 
     function deleteUnnecessaryProperties(copy) {
+        delete copy.private
         delete copy.scripts
         delete copy.dependencies
         delete copy.devDependencies
