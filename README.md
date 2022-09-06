@@ -26,11 +26,14 @@ npm install rc-marked-input
 
 ## Examples
 
-A lot of examples can be seen in the [storybook](https://marked-input.vercel.app). Here is some examples to get you started.
+A lot of examples can be seen in the [storybook](https://marked-input.vercel.app). You can also try a template on
+[CodeSandbox](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx).
+
+Here is some examples to get you started.
 
 ### Two ways to configure
 
-The library allows you to configure the `MarkedInput` component in two ways. 
+The library allows you to configure the `MarkedInput` component in two ways.
 
 Using the `createMarkedInput`:
 
@@ -60,7 +63,7 @@ const Marked = () => {
 }
 ```
 
-Without options passing it will just highlight annotations.  
+Without options passing it will just highlight annotations.
 
 ## API
 
