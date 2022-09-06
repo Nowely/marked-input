@@ -8,12 +8,12 @@ import {EventBus} from "../utils/EventBus";
 import {useMutationHandlers} from "../hooks/useMutationHandlers";
 import {Store} from "../types";
 
-interface MarkedInputProviderProps<T, T1> {
-    props: MarkedInputProps<T, T1>
+interface MarkedInputProviderProps {
+    props: MarkedInputProps<any, any>
     children: ReactNode
 }
 
-export const MarkedInputProvider = <T, T1>({props, children}: MarkedInputProviderProps<T, T1>) => {
+export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps) => {
     const options = useOptions(props.children)
     const pieces = useParsed(props.value, options)
     const bus = useState(EventBus.withExternalEventsFrom(props))[0]
