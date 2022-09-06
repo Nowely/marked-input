@@ -59,8 +59,6 @@ export type Store = {
     props: MarkedInputProps<any, any>
     options: Options
     pieces: KeyedPieces
-    //TODO type
-    trigger?: Trigger
     bus: EventBus
 }
 

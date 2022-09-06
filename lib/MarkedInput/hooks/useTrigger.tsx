@@ -1,5 +1,5 @@
 import React, {FocusEvent, useCallback, useEffect, useState} from "react";
-import {assign, escapeRegex, triggerToRegex} from "../utils";
+import {assign, escapeRegex, triggerToRegex, useStore} from "../utils";
 import {Options, OptionType} from "../types";
 import {EventBus} from "../utils/EventBus";
 
@@ -16,7 +16,9 @@ export type Trigger = {
 }
 
 //TODO reducer?
-export const useTrigger = (options: Options, bus: EventBus): Trigger | undefined => {
+export const useTrigger = (): Trigger | undefined => {
+    const {options, bus} = useStore()
+
     const [trigger, setTrigger] = useState<Trigger | undefined>()
 
     const clear = useCallback(() => setTrigger(undefined), [])

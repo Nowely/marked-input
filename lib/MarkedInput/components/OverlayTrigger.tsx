@@ -2,9 +2,11 @@ import {annotate, useStore} from "../utils";
 import {Suggestion} from "../Suggestion";
 import React, {createElement} from "react";
 import {onSelect, OverlayProps, Type} from "../types";
+import {useTrigger} from "../hooks/useTrigger";
 
 export const OverlayTrigger = () => {
-    const {pieces, bus, trigger, props: {Overlay = Suggestion}} = useStore()
+    const {pieces, bus, props: {Overlay = Suggestion}} = useStore()
+    const trigger = useTrigger()
 
     if (!trigger)
         return null
