@@ -9,7 +9,7 @@ export const MarkedText = () => {
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
 
     return (
-        <div className={className} style={props.style} {...bus.events1}>
+        <div className={className} style={props.style} {...bus.events}>
             {[...pieces].map(([key, piece]) => {
                 if (!isObject(piece))
                     return <EditableSpan ref={register(key)} id={key} key={key} value={piece}/>

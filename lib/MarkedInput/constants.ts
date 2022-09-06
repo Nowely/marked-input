@@ -39,3 +39,5 @@ export const DefaultOptionProps: OptionType = {
     markup: "@[__label__](__value__)",
     data: []
 }
+
+export const PredefinedEvents = ["onFocus", "onBlur", "onKeyDown", "onClick"]

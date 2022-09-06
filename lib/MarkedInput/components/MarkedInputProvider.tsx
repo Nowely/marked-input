@@ -16,7 +16,7 @@ interface MarkedInputProviderProps<T, T1> {
 export const MarkedInputProvider = <T, T1>({props, children}: MarkedInputProviderProps<T, T1>) => {
     const options = useOptions(props.children)
     const pieces = useParsed(props.value, options)
-    const bus = useState(() => new EventBus())[0]
+    const bus = useState(EventBus.withExternalEventsFrom(props))[0]
     const trigger = useTrigger(options, bus)
 
     const store: Store = {options, props, pieces, trigger, bus}

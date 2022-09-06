@@ -1,5 +1,7 @@
 import {EventName, Payload, Type} from "../types";
 import {isEventName} from "./index";
+import {MarkedInputProps} from "../MarkedInput";
+import {PredefinedEvents} from "../constants";
 
 export class EventBus {
     readonly #listeners: Record<string, EventListener[]> = {}
@@ -16,14 +18,15 @@ export class EventBus {
                 return prev
             }, {} as Record<string, Function>)
     }
-    //TODO rename. Predefined events?
-    get events1() {
-        return ["onFocus", "onBlur", "onKeyDown", "onClick"]
-            .reduce((prev, key) => {
-                // @ts-ignore
-                prev[key] = (arg: any) => this.send(key, arg)
-                return prev
-            }, {} as Record<string, Function>)
+
+    static withExternalEventsFrom(props: MarkedInputProps<any, any>){
+        const set = new Set<string>(PredefinedEvents)
+        //TODO Object.keys(props).filter(isEventName).forEach(event => set.add(event))
+        return () => new EventBus(...set)
+    }
+
+    constructor(...initEvents: string[]) {
+        initEvents.forEach(event => this.#listeners[event] ??= [])
     }
 
     send(event: Type, arg: Payload): void
@@ -41,9 +44,6 @@ export class EventBus {
 
         this.#listeners[event] ??= []
         this.#listeners[event].push(listener)
-
-        /*if (needRerender)
-            this.#rerender?.()*/
 
         return () => {
             this.#listeners[event] = this.#listeners[event]
