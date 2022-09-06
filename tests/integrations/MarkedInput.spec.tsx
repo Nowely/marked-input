@@ -7,6 +7,7 @@ import {useState} from "react";
 
 const Mark2 = () => {
     const [value, setValue] = useState("Hello @[mark](1)!")
+    // @ts-ignore TODO
     return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue}/>
 }
 
