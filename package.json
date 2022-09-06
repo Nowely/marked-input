@@ -8,17 +8,21 @@
     "storybook": "start-storybook -p 6006 -c storybook",
     "build-storybook": "build-storybook -c storybook",
     "build": "vite build && tsc && node prepack.js",
-    "test": "jest",
-    "coverage": "jest --coverage"
+    "test": "jest -c tests/jest.config.json",
+    "coverage": "jest -c tests/jest.config.json --coverage"
   },
   "dependencies": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.18.9",
+    "@babel/preset-react": "^7.18.6",
+    "@types/react": "^18.0.18",
+    "@vitejs/plugin-react": "^2.0.0",
     "babel-loader": "^8.2.5",
     "typescript": "^4.6.4",
     "vite": "^3.0.5",
-    "@vitejs/plugin-react": "^2.0.0",
     "vite-plugin-css-injected-by-js": "^2.0.3"
   },
   "repository": {

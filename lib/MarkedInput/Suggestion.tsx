@@ -1,5 +1,4 @@
 import {useMemo, useState} from "react";
-import "./style.css";
 import {OverlayProps} from "./types";
 import {KEY} from "./constants";
 
