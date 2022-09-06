@@ -19,7 +19,7 @@ export class EventBus {
             }, {} as Record<string, Function>)
     }
 
-    static withExternalEventsFrom(props: MarkedInputProps<any, any>){
+    static withExternalEventsFrom(props: MarkedInputProps){
         const set = new Set<string>(PredefinedEvents)
         //TODO Object.keys(props).filter(isEventName).forEach(event => set.add(event))
         return () => new EventBus(...set)

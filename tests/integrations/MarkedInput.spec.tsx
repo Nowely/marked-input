@@ -1,23 +1,20 @@
+import '@testing-library/jest-dom'
 import user from "@testing-library/user-event";
 import {render} from "@testing-library/react";
 import {MarkedInput} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
-import '@testing-library/jest-dom'
 import {useState} from "react";
 
 const Mark2 = () => {
     const [value, setValue] = useState("Hello @[mark](1)!")
-    // @ts-ignore TODO
     return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue}/>
 }
 
 describe(`Component: ${MarkedInput.name}`, () => {
-    it('should render', () => {
-        render(<Marked/>)
-    })
+    it('should render', (): any => render(<Marked/>))
 
     it('should support the "Backspace" button', async () => {
-        const {container, debug} = render(<Mark2/>)
+        const {container} = render(<Mark2/>)
         const [firstSpan, secondSpan] = container.querySelectorAll("span")
 
         //Used for focused

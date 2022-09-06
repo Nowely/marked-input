@@ -1,12 +1,12 @@
 import {ComponentType, CSSProperties} from "react";
-import {OverlayProps, ElementOptions} from "./types";
+import {OverlayProps, ElementOptions, MarkProps} from "./types";
 import {MarkedText} from "./components/MarkedText";
 import {OverlayTrigger} from "./components/OverlayTrigger";
 import {OptionProps} from "../Option";
 import {MarkedInputProvider} from "./components/MarkedInputProvider";
 import "./style.css"
 
-export interface MarkedInputProps<T, T1 = OverlayProps> {
+export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
     /**
      * Annotated text with markups for mark
      */
@@ -50,9 +50,9 @@ export interface MarkedInputProps<T, T1 = OverlayProps> {
     spanStyle?: CSSProperties
 }
 
-export const MarkedInput = <T, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) => (
-    <MarkedInputProvider<T, T1> props={props}>
+export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
+    return <MarkedInputProvider<T, T1> props={props}>
         <MarkedText/>
         <OverlayTrigger/>
-    </MarkedInputProvider>
-)
+    </MarkedInputProvider>;
+}
