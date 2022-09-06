@@ -18,7 +18,7 @@ export const useRecoveryAfterRemove = (refMap: Map<number, RefObject<HTMLSpanEle
             let refSpan = refMap.get(key)?.current
             refSpan?.focus()
 
-            if (caret && refSpan) {
+            if (refSpan) {
                 Caret.setIndex(refSpan, caret)
             }
 
