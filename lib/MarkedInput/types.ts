@@ -2,7 +2,7 @@ import {PLACEHOLDER} from "./constants";
 import {FunctionComponent, ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
-import {Trigger} from "./hooks/useTrigger";
+import {Trigger} from "./components/OverlayTrigger/useTrigger";
 import {EventBus} from "./utils/EventBus";
 
 //TODO rename ParsedMarkup, Match?

@@ -1,20 +1,16 @@
-import {annotate, useStore} from "../utils";
-import {Suggestion} from "../Suggestion";
+import {annotate, useStore} from "../../utils";
+import {Suggestion} from "../../Suggestion";
 import React, {createElement} from "react";
-import {onSelect, OverlayProps, Type} from "../types";
-import {useTrigger} from "../hooks/useTrigger";
+import {onSelect, OverlayProps, Type} from "../../types";
+import {useTrigger} from "./useTrigger";
 
 export const OverlayTrigger = () => {
-    const {pieces, bus, props: {Overlay = Suggestion}} = useStore()
     const trigger = useTrigger()
+    const {pieces, bus, props: {Overlay = Suggestion}} = useStore()
 
-    if (!trigger)
-        return null
+    if (!trigger) return null
 
     const {word, option, style, text, indexBefore, triggeredValue} = trigger
-    
-    if (word === undefined)
-        return null
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)

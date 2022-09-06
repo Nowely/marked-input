@@ -1,10 +1,10 @@
 import React, {FocusEvent, useCallback, useEffect, useState} from "react";
-import {assign, escapeRegex, triggerToRegex, useStore} from "../utils";
-import {Options, OptionType} from "../types";
-import {EventBus} from "../utils/EventBus";
+import {assign, escapeRegex, triggerToRegex, useStore} from "../../utils";
+import {Options, OptionType} from "../../types";
+import {EventBus} from "../../utils/EventBus";
 
 export type Trigger = {
-    word: string | undefined,
+    word: string,
     triggeredValue: string | undefined,
     text: string | undefined,
     indexBefore: number | undefined,
@@ -16,41 +16,41 @@ export type Trigger = {
 }
 
 //TODO reducer?
-export const useTrigger = (): Trigger | undefined => {
+export const useTrigger = (): Trigger | null => {
     const {options, bus} = useStore()
+    const [trigger, setTrigger] = useState<Trigger | null>(null)
 
-    const [trigger, setTrigger] = useState<Trigger | undefined>()
-
-    const clear = useCallback(() => setTrigger(undefined), [])
-    const check = useCallback(() => {
-        for (let option of options) {
-            let {word, triggeredValue, text, indexBefore} = findTriggeredWord(option.trigger) ?? {}
-            if (word !== undefined) {
-                setTrigger({
-                    word,
-                    triggeredValue,
-                    style: getCaretAbsolutePosition(),
-                    option,
-                    text,
-                    indexBefore
-                })
-                return
-            }
-        }
-        setTrigger(undefined)
-    }, [])
+    const check = useCallback(() => setTrigger(TriggerFinder.find(options)), [options])
 
     useEffect(() => bus.listen("onFocus", (e: FocusEvent<HTMLElement>) => {
         document.addEventListener("selectionchange", check)
     }), [])
 
     useEffect(() => bus.listen("onBlur", (e: FocusEvent<HTMLElement>) => {
-        document?.removeEventListener("selectionchange", check);
+        document.removeEventListener("selectionchange", check);
         //TODO. It is for overlay click correct handling
-        setTimeout(_ => clear(), 200)
+        setTimeout(_ => setTrigger(null), 200)
     }), [])
 
     return trigger
+}
+
+class TriggerFinder {
+
+    static find(options: Options) {
+        for (let option of options) {
+            let found = findTriggeredWord(option.trigger)
+            if (found)
+                return assign(found, {option, style: getCaretAbsolutePosition()})
+        }
+        return null
+    }
+
+    constructor(
+        readonly options: Options
+    ) {
+
+    }
 }
 
 function findTriggeredWord(trigger?: string) {
@@ -83,7 +83,7 @@ function findTriggeredWord(trigger?: string) {
     const a = regex.exec(annotation)
     const triggeredValue = a?.[0]
     const word = a?.[1]
-    if (word !== undefined) return {word, triggeredValue, text, indexBefore}
+    if (word !== undefined) return {word, triggeredValue, text, indexBefore, style: getCaretAbsolutePosition()}
 }
 
 function isSpaceFirst(value: string) {
