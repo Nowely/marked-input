@@ -1,6 +1,6 @@
 {
   "name": "rc-marked-input",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
