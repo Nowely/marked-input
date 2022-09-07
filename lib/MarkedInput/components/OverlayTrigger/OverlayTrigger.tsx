@@ -5,8 +5,8 @@ import {onSelect, OverlayProps, Type} from "../../types";
 import {useTrigger} from "./useTrigger";
 
 export const OverlayTrigger = () => {
-    const trigger = useTrigger()
     const {pieces, bus, props: {Overlay = Suggestion}} = useStore()
+    const trigger = useTrigger()
 
     if (!trigger) return null
 
