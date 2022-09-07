@@ -36,21 +36,12 @@ export const useTrigger = (): Trigger | null => {
 }
 
 class TriggerFinder {
-    get style() {
-        return this.getCaretAbsolutePosition()
-    }
-
     static find(options: Options) {
-        return new TriggerFinder(options).find()
+        return new TriggerFinder().find(options)
     }
 
-    constructor(
-        readonly options: Options
-    ) {
-    }
-
-    find(): Trigger | null {
-        for (let option of this.options) {
+    find(options: Options): Trigger | null {
+        for (let option of options) {
             let found = this.queryWordBy(option.trigger)
             if (found)
                 return assign(found, {option})
@@ -74,14 +65,13 @@ class TriggerFinder {
         if (!annDetails) return
 
         const word = this.queryWord(trigger, annDetails.annotation)
-
         if (word !== undefined)
             return {
                 word,
                 triggeredValue: annDetails.annotation,
                 text,
                 index: annDetails.index,
-                style: this.style
+                style: this.getCaretAbsolutePosition()
             }
     }
 
