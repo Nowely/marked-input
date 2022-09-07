@@ -10,23 +10,23 @@ export const OverlayTrigger = () => {
 
     if (!trigger) return null
 
-    const {word, option, style, text, index, triggeredValue} = trigger
+    const {value, option, style, piece, index, source} = trigger
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)
         let foundKey
         for (let [key, value] of pieces.entries()) {
-            if (value === text) {
+            if (value === piece) {
                 foundKey = key
                 break
             }
         }
-        let newValue = text?.slice(0, index) + annotation + text?.slice(index! + triggeredValue!.length)
+        let newValue = piece?.slice(0, index) + annotation + piece?.slice(index! + source!.length)
         if (foundKey)
             bus.send(Type.Change, {value: newValue, key: foundKey})
     }
 
-    const triggerProps: OverlayProps = {word, style, onSelect, data: option.data}
+    const triggerProps: OverlayProps = {word: value, style, onSelect, data: option.data}
     //TODO
     const overlayProps = option.initOverlay?.(triggerProps) ?? triggerProps
     return createElement(Overlay, overlayProps);

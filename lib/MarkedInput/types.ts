@@ -2,7 +2,6 @@ import {PLACEHOLDER} from "./constants";
 import {FunctionComponent, ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
-import {Trigger} from "./components/OverlayTrigger/useTrigger";
 import {EventBus} from "./utils/EventBus";
 
 //TODO rename ParsedMarkup, Match?
@@ -72,4 +71,34 @@ export enum Type {
 export type Payload = {
     key: number,
     value?: Piece
+}
+
+export type Trigger = {
+    /**
+    * Found value via a trigger
+    */
+    value: string,
+    /**
+    * Triggered value
+    */
+    source: string,
+    /**
+    * Piece of text, in which was a trigger
+    */
+    piece: string,
+    /**
+    * Start position of a trigger
+    */
+    index: number,
+    /**
+    * Triggers option
+    */
+    option: OptionType,
+    /**
+    * Style with caret absolute position. Used for placing an overlay.
+    */
+    style: {
+        left: number,
+        top: number
+    }
 }

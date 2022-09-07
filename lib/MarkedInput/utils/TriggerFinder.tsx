@@ -1,6 +1,5 @@
-import {Options} from "../types";
-import {assign, escapeRegex, triggerToRegex} from "./index";
-import {Trigger} from "../components/OverlayTrigger/useTrigger";
+import {Options, Trigger} from "../types";
+import {escapeRegex} from "./index";
 
 export class TriggerFinder {
     sourceText: string;
@@ -33,64 +32,49 @@ export class TriggerFinder {
     }
 
     getDividedTextBy(position: number) {
-        return { left: this.sourceText.slice(0, position), right: this.sourceText.slice(position)}
+        return {left: this.sourceText.slice(0, position), right: this.sourceText.slice(position)}
     }
 
     find(options: Options): Trigger | undefined {
         for (let option of options) {
-            let found = this.queryWordBy(option.trigger)
+            let found = this.queryAnnotationDetails(option.trigger)
             if (found)
-                return assign(found, {option})
+                return {
+                    value: found.word,
+                    source: found.annotation,
+                    index: found.index,
+                    piece: this.sourceText,
+                    style: this.getCaretAbsolutePosition(),
+                    option
+                }
         }
     }
 
-    //Current TODO:
-    //Trigger to regex twice
-    //Naming
-    queryWordBy(trigger: string) {
+    //TODO Clean up
+    queryAnnotationDetails(trigger: string) {
         const [regexBefore, regexAfter] = this.makeRegex(trigger)
-        const annDetails = this.queryAnnotationDetails(regexBefore, regexAfter)
 
-        if (!annDetails) return
+        const {left, right} = this.dividedText
+        const matchBefore = left.match(regexBefore)
+        if (!matchBefore) return
+        const annotationBefore = matchBefore[0] ?? ""
+        const wordBefore = matchBefore[1] ?? ""
+        const index = matchBefore.index! + (this.isSpaceFirst(wordBefore) ? 1 : 0)
+        const matchAfter = right.match(regexAfter)
+        const wordAfter = matchAfter?.[0]
 
-        const word = this.queryWord(trigger, annDetails.annotation)
-        if (word !== undefined)
-            return {
-                word,
-                triggeredValue: annDetails.annotation,
-                text: this.sourceText,
-                index: annDetails.index,
-                style: this.getCaretAbsolutePosition()
-            }
+        const word = wordBefore + wordAfter
+        const annotation = annotationBefore + wordAfter
+
+        return {annotation, index, word}
     }
 
     makeRegex(trigger: string): [RegExp, RegExp] {
         const escapedTrigger = escapeRegex(trigger)
-        const pattenRegexBefore = '\\s?' + escapedTrigger + '\\w*$'
+        const pattenRegexBefore = '\\s?' + escapedTrigger + '(\\w*)$'
         const regexBefore = new RegExp(pattenRegexBefore)
         const regexAfter = new RegExp(/^\w*/)
         return [regexBefore, regexAfter]
-    }
-
-    queryAnnotationDetails(regexBefore: RegExp, regexAfter: RegExp) {
-        const {left, right} = this.dividedText
-        const matchBefore = left.match(regexBefore)
-        if (!matchBefore) return
-        const wordBefore = matchBefore[0] ?? ""
-        const indexBefore = matchBefore.index! + (this.isSpaceFirst(wordBefore) ? 1 : 0)
-        const wordAfter = right.match(regexAfter)?.[0] ?? ""
-
-        const annotation = wordBefore + wordAfter
-
-        return {annotation, index: indexBefore}
-    }
-
-    queryWord(trigger: string, annotation: string) {
-        const triggerRegex = triggerToRegex(trigger)
-        const exec = triggerRegex.exec(annotation)
-        //const triggeredValue = exec?.[0]
-        const word = exec?.[1]
-        return word
     }
 
     isSpaceFirst(value: string) {

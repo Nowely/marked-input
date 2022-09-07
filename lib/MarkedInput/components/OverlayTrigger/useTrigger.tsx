@@ -1,22 +1,9 @@
 import React, {useCallback, useState} from "react";
 import {useStore} from "../../utils";
-import {OptionType} from "../../types";
+import {Trigger} from "../../types";
 import {useCheckOnSelectionChange} from "./useCheckOnSelectionChange";
 import {TriggerFinder} from "../../utils/TriggerFinder";
 
-export type Trigger = {
-    word: string,
-    triggeredValue: string | undefined,
-    text: string | undefined,
-    index: number | undefined,
-    option: OptionType,
-    style: {
-        left: number,
-        top: number
-    }
-}
-
-//TODO reducer?
 export const useTrigger = (): Trigger | undefined => {
     const [trigger, setTrigger] = useState<Trigger | undefined>()
     const {options} = useStore()
