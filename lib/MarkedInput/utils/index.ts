@@ -28,6 +28,7 @@ export const triggerToRegex = (value: string) => {
 }
 
 //TODO annotate options to object with required only label?
+//TODO function annotate(label: string, markup?: Markup, value?: string): string;
 /**
  * Make annotation from the markup
  */
