@@ -41,3 +41,5 @@ export const DefaultOptionProps: OptionType = {
 }
 
 export const PredefinedEvents = ["onFocus", "onBlur", "onKeyDown", "onClick"]
+
+export const wordRegex = new RegExp(/^\w*/)

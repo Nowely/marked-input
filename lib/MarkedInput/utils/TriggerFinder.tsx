@@ -1,8 +1,9 @@
 import {Options, Trigger} from "../types";
 import {escapeRegex} from "./index";
+import {wordRegex} from "../constants";
 
 export class TriggerFinder {
-    sourceText: string;
+    text: string;
     dividedText: { left: string; right: string }
 
     static find(options: Options) {
@@ -19,7 +20,7 @@ export class TriggerFinder {
 
     constructor() {
         let caretPosition = this.getCaretPosition()
-        this.sourceText = this.getSourceText()
+        this.text = this.getCurrentPieceOfText()
         this.dividedText = this.getDividedTextBy(caretPosition)
     }
 
@@ -27,63 +28,64 @@ export class TriggerFinder {
         return window.getSelection()?.anchorOffset ?? 0
     }
 
-    getSourceText() {
+    getCurrentPieceOfText() {
         return window.getSelection()?.anchorNode?.textContent ?? ""
     }
 
     getDividedTextBy(position: number) {
-        return {left: this.sourceText.slice(0, position), right: this.sourceText.slice(position)}
+        return {left: this.text.slice(0, position), right: this.text.slice(position)}
     }
 
     find(options: Options): Trigger | undefined {
         for (let option of options) {
-            let found = this.queryAnnotationDetails(option.trigger)
-            if (found)
-                return {
-                    value: found.word,
-                    source: found.annotation,
-                    index: found.index,
-                    piece: this.sourceText,
-                    style: this.getCaretAbsolutePosition(),
-                    option
-                }
+            let match = this.matchInTextVia(option.trigger)
+            if (match) return {
+                value: match.word,
+                source: match.annotation,
+                index: match.index,
+                piece: this.text,
+                style: this.getCaretAbsolutePosition(),
+                option
+            }
         }
     }
 
-    //TODO Clean up
-    queryAnnotationDetails(trigger: string) {
-        const [regexBefore, regexAfter] = this.makeRegex(trigger)
-
-        const {left, right} = this.dividedText
-        const matchBefore = left.match(regexBefore)
-        if (!matchBefore) return
-        const annotationBefore = matchBefore[0] ?? ""
-        const wordBefore = matchBefore[1] ?? ""
-        const index = matchBefore.index! + (this.isSpaceFirst(wordBefore) ? 1 : 0)
-        const matchAfter = right.match(regexAfter)
-        const wordAfter = matchAfter?.[0]
-
-        const word = wordBefore + wordAfter
-        const annotation = annotationBefore + wordAfter
-
-        return {annotation, index, word}
+    matchInTextVia(trigger: string) {
+        const rightMatch = this.matchRightPart()
+        const leftMatch = this.matchLeftPart(trigger)
+        if (leftMatch) return {
+            word: leftMatch.word + rightMatch.word,
+            annotation: leftMatch.annotation + rightMatch.word,
+            index: leftMatch.index,
+        }
     }
 
-    makeRegex(trigger: string): [RegExp, RegExp] {
-        const escapedTrigger = escapeRegex(trigger)
-        const pattenRegexBefore = '\\s?' + escapedTrigger + '(\\w*)$'
-        const regexBefore = new RegExp(pattenRegexBefore)
-        const regexAfter = new RegExp(/^\w*/)
-        return [regexBefore, regexAfter]
+    matchLeftPart(trigger: string) {
+        const regex = this.makeTriggerRegex(trigger)
+        const {left} = this.dividedText
+        const match = left.match(regex)
+
+        if (!match) return
+
+        const [annotation, word] = match
+        return {word, annotation, index: match.index ?? 0}
     }
 
-    isSpaceFirst(value: string) {
-        return value.startsWith(" ")
+    //TODO new trigger option if (isSpaceBeforeRequired) append space check for not first words '\\s'
+    makeTriggerRegex(trigger: string): RegExp {
+        const patten = escapeRegex(trigger) + '(\\w*)$'
+        return new RegExp(patten)
+    }
+
+    matchRightPart() {
+        const {right} = this.dividedText
+        return {word: right.match(wordRegex)?.[0]}
     }
 
     getCaretAbsolutePosition() {
         const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
-        if (rect) return {left: rect.left, top: rect.top + 20}
+        if (rect)
+            return {left: rect.left, top: rect.top + 20}
         return {left: 0, top: 0}
     }
 }
