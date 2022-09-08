@@ -60,6 +60,11 @@ export class TriggerFinder {
         }
     }
 
+    matchRightPart() {
+        const {right} = this.dividedText
+        return {word: right.match(wordRegex)?.[0]}
+    }
+
     matchLeftPart(trigger: string) {
         const regex = this.makeTriggerRegex(trigger)
         const {left} = this.dividedText
@@ -75,11 +80,6 @@ export class TriggerFinder {
     makeTriggerRegex(trigger: string): RegExp {
         const patten = escapeRegex(trigger) + '(\\w*)$'
         return new RegExp(patten)
-    }
-
-    matchRightPart() {
-        const {right} = this.dividedText
-        return {word: right.match(wordRegex)?.[0]}
     }
 
     getCaretAbsolutePosition() {

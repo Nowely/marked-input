@@ -1,19 +1,21 @@
-import React, {useCallback, useState} from "react";
+import {useEffect, useState} from "react";
 import {useStore} from "../../utils";
-import {Trigger} from "../../types";
-import {useCheckOnSelectionChange} from "./useCheckOnSelectionChange";
+import {Trigger, Type} from "../../types";
+import {useSelectionChangeListener} from "./useSelectionChangeListener";
 import {TriggerFinder} from "../../utils/TriggerFinder";
 
 export const useTrigger = (): Trigger | undefined => {
     const [trigger, setTrigger] = useState<Trigger | undefined>()
-    const {options} = useStore()
+    const {options, bus} = useStore()
 
-    const clear = useCallback(() => setTrigger(undefined), [])
-    const check = useCallback(() => setTrigger(TriggerFinder.find(options)), [options])
+    useEffect(() => bus.listen(Type.ClearTrigger, _ =>
+        setTimeout(_ => setTrigger(undefined), 200)), [])
 
-    useCheckOnSelectionChange(check, clear)
+    //TODO. It is for overlay click correct handling
+    useEffect(() => bus.listen(Type.CheckTrigger, _ =>
+        setTrigger(TriggerFinder.find(options))), [options])
+
+    useSelectionChangeListener()
 
     return trigger
 }
-
-

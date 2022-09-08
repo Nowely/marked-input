@@ -4,6 +4,7 @@ import {MarkedInputProps} from "../MarkedInput";
 import {PredefinedEvents} from "../constants";
 
 export class EventBus {
+    //TODO system events
     readonly #listeners: Record<string, EventListener[]> = {}
 
     get length() {
@@ -29,7 +30,7 @@ export class EventBus {
         initEvents.forEach(event => this.#listeners[event] ??= [])
     }
 
-    send(event: Type, arg: Payload): void
+    send(event: Type, arg?: Payload): void
     send(event: EventName, arg: any): void
     send(event: string | number, arg: any): void {
         const notified = this.#listeners[event]
@@ -37,6 +38,7 @@ export class EventBus {
         notified.forEach((func) => func(arg));
     }
 
+    //TODO hoc for useEffect
     listen(event: Type, callback: (e: Payload) => void): void
     listen(event: EventName, callback: (e: any) => void): void
     listen(event: string | number, callback: (e: any) => void) {

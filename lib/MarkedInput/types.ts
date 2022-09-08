@@ -66,6 +66,8 @@ export type EventName = `on${string}`
 export enum Type {
     Change,
     Delete,
+    CheckTrigger,
+    ClearTrigger,
 }
 
 export type Payload = {
