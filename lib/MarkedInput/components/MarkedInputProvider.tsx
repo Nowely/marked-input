@@ -3,7 +3,6 @@ import {MarkedInputProps} from "../MarkedInput";
 import {StoreProvider} from "../utils";
 import {useOptions} from "../hooks/useOptions";
 import {useParsed} from "../hooks/useParsed";
-import {useTrigger} from "../hooks/useTrigger";
 import {EventBus} from "../utils/EventBus";
 import {useMutationHandlers} from "../hooks/useMutationHandlers";
 import {Store} from "../types";
@@ -17,9 +16,7 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
     const options = useOptions(props.children)
     const pieces = useParsed(props.value, options)
     const bus = useState(EventBus.withExternalEventsFrom(props))[0]
-    const trigger = useTrigger(options, bus)
-
-    const store: Store = {options, props, pieces, trigger, bus}
+    const store: Store = {options, props, pieces, bus}
 
     useMutationHandlers(store)
 

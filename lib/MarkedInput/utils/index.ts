@@ -20,14 +20,8 @@ export const markupToRegex = (markup: Markup) => {
     )
 }
 
-//TODO move in here trigger regex manipulating
-export const triggerToRegex = (value: string) => {
-    const escapedValue = escapeRegex(value)
-    const pattern = escapedValue + "(\\w*)"
-    return new RegExp(pattern)
-}
-
 //TODO annotate options to object with required only label?
+//TODO function annotate(label: string, markup?: Markup, value?: string): string;
 /**
  * Make annotation from the markup
  */

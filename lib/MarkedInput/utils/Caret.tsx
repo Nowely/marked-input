@@ -1,8 +1,26 @@
 //TODO refact caret
-/**
- * Restore caret on union for two spans
- */
 export class Caret {
+    static get isSelectedPosition() {
+        const selection = window.getSelection()
+        if (!selection) return
+        return selection.anchorOffset === selection.focusOffset
+    }
+
+    static getCurrentPosition() {
+        return window.getSelection()?.anchorOffset ?? 0
+    }
+
+    static getCurrentPieceOfText() {
+        return window.getSelection()?.anchorNode?.textContent ?? ""
+    }
+
+    static getCaretAbsolutePosition() {
+        const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
+        if (rect)
+            return {left: rect.left, top: rect.top + 20}
+        return {left: 0, top: 0}
+    }
+
     static setIndex(element: HTMLElement, offset: number) {
         const selection = window.getSelection()
         if (!selection?.anchorNode || !selection.rangeCount) return

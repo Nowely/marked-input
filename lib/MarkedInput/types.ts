@@ -2,7 +2,6 @@ import {PLACEHOLDER} from "./constants";
 import {FunctionComponent, ReactElement} from "react";
 import {OptionProps} from "../Option";
 import {MarkedInputProps} from "./MarkedInput";
-import {Trigger} from "./hooks/useTrigger";
 import {EventBus} from "./utils/EventBus";
 
 //TODO rename ParsedMarkup, Match?
@@ -16,6 +15,9 @@ export type Mark = {
 }
 
 export interface OverlayProps {
+    /**
+     * Style with caret absolute position. Used for placing an overlay.
+     */
     style: {
         left: number
         top: number
@@ -59,8 +61,6 @@ export type Store = {
     props: MarkedInputProps<any, any>
     options: Options
     pieces: KeyedPieces
-    //TODO type
-    trigger?: Trigger
     bus: EventBus
 }
 
@@ -69,9 +69,34 @@ export type EventName = `on${string}`
 export enum Type {
     Change,
     Delete,
+    CheckTrigger,
+    ClearTrigger,
 }
 
 export type Payload = {
     key: number,
     value?: Piece
+}
+
+export type Trigger = {
+    /**
+    * Found value via a trigger
+    */
+    value: string,
+    /**
+    * Triggered value
+    */
+    source: string,
+    /**
+    * Piece of text, in which was a trigger
+    */
+    piece: string,
+    /**
+    * Start position of a trigger
+    */
+    index: number,
+    /**
+    * Triggers option
+    */
+    option: OptionType
 }
