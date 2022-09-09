@@ -32,12 +32,12 @@
   },
   "type": "module",
   "types": "./types/index.d.ts",
-  "module": "./rc-marked-input.js",
-  "main": "./rc-marked-input.umd.cjs",
+  "module": "./index.js",
+  "main": "./index.umd.cjs",
   "exports": {
     ".": {
-      "import": "./rc-marked-input.js",
-      "require": "./rc-marked-input.umd.cjs"
+      "import": "./index.js",
+      "require": "./index.umd.cjs"
     }
   },
   "keywords": [

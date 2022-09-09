@@ -14,6 +14,7 @@ export default defineConfig({
             entry: path.resolve(__dirname, 'lib/index.ts'),
             name: 'MarkedInput',
             formats: ['es', 'umd'],
+            fileName: 'index'
         },
         rollupOptions: {
             external: ['react'],
