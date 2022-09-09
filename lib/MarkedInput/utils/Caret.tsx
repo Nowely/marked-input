@@ -14,7 +14,7 @@ export class Caret {
         return window.getSelection()?.anchorNode?.textContent ?? ""
     }
 
-    static getCaretAbsolutePosition() {
+    static getAbsolutePosition() {
         const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
         if (rect)
             return {left: rect.left, top: rect.top + 20}

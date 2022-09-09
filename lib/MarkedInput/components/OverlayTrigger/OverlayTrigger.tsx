@@ -12,7 +12,7 @@ export const OverlayTrigger = () => {
     if (!trigger) return null
 
     const {value, option, piece, index, source} = trigger
-    const style = Caret.getCaretAbsolutePosition()
+    const style = Caret.getAbsolutePosition()
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)
