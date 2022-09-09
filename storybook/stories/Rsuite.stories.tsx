@@ -21,13 +21,16 @@ export const TaggedInput = () => {
         <MarkedInput
             className={classNames}
             style={{
-                minHeight: 36
+                minHeight: 36,
+                width: 400
             }}
             spanClassName="rs-tag rs-tag-md"
             spanStyle={{
                 backgroundColor: "white",
                 paddingLeft: 0,
-                paddingRight: 0
+                paddingRight: 0,
+                whiteSpace: "pre-wrap",
+                minWidth: 12
             }}
             Mark={Tag}
             value={value}
