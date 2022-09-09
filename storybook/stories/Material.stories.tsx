@@ -36,7 +36,9 @@ export const Chipped = () => {
 }
 
 export const Mention = () => {
-    const [value, setValue] = useState("Hello @[Agustina](A) and @[Frank Parker](FP)")
+    const [value, setValue] = useState(
+        `Enter the '@' for calling mention list: \n- Hello @[Agustina](A) and @[Frank Parker](FP)!`
+    )
 
     return <>
         <MarkedInput
