@@ -59,8 +59,19 @@ describe(`Component: ${MarkedInput.name}`, () => {
         expect(secondSpan).toHaveTextContent("")
     })
 
-    //TODO
-    it('should support focus changing', function () {
+    it('should support focus changing',  async () => {
+        const {container} = render(<Mark2/>)
+        const [firstSpan, secondSpan] = container.querySelectorAll("span")
+        const firstSpanLength = firstSpan.textContent?.length ?? 0
 
+        //Used for focused
+        await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
+        expect(firstSpan).toHaveFocus()
+
+        await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
+        expect(secondSpan).toHaveFocus()
+
+        await user.keyboard(`{ArrowLeft>1/}`)
+        expect(firstSpan).toHaveFocus()
     });
 })
