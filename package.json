@@ -52,7 +52,7 @@
     "input"
   ],
   "workspaces": [
-    "dist",
+    "lib",
     "storybook",
     "tests"
   ]
