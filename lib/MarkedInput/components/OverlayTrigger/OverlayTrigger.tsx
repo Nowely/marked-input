@@ -3,6 +3,7 @@ import {Suggestion} from "../../Suggestion";
 import React, {createElement} from "react";
 import {onSelect, OverlayProps, Type} from "../../types";
 import {useTrigger} from "./useTrigger";
+import {Caret} from "../../utils/Caret";
 
 export const OverlayTrigger = () => {
     const {pieces, bus, props: {Overlay = Suggestion}} = useStore()
@@ -10,7 +11,8 @@ export const OverlayTrigger = () => {
 
     if (!trigger) return null
 
-    const {value, option, style, piece, index, source} = trigger
+    const {value, option, piece, index, source} = trigger
+    const style = Caret.getCaretAbsolutePosition()
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)

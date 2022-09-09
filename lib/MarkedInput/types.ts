@@ -15,6 +15,9 @@ export type Mark = {
 }
 
 export interface OverlayProps {
+    /**
+     * Style with caret absolute position. Used for placing an overlay.
+     */
     style: {
         left: number
         top: number
@@ -95,12 +98,5 @@ export type Trigger = {
     /**
     * Triggers option
     */
-    option: OptionType,
-    /**
-    * Style with caret absolute position. Used for placing an overlay.
-    */
-    style: {
-        left: number,
-        top: number
-    }
+    option: OptionType
 }
