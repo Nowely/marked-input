@@ -9,7 +9,8 @@
     "storybook": "start-storybook -p 6006 -c storybook",
     "build-storybook": "build-storybook -c storybook",
     "build": "vite build && tsc && node prepack.js",
-    "test": "jest -c tests/jest.config.json",
+    "test": "npm run test -w tests",
+    "test:integration": "npm run test:integration -w tests",
     "coverage": "jest -c tests/jest.config.json --coverage"
   },
   "dependencies": {
@@ -51,7 +52,7 @@
     "input"
   ],
   "workspaces": [
-    "lib",
+    "dist",
     "storybook",
     "tests"
   ]
