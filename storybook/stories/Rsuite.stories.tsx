@@ -5,10 +5,10 @@ import {Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
 import {Text} from "./assets/Text";
-import {getTitleOfStyled} from "./assets/getTitle";
+import {getTitle} from "./assets/getTitle";
 
 export default {
-    title: getTitleOfStyled("Rsuite"),
+    title: getTitle("Rsuite"),
     component: MarkedInput,
     subcomponents: {Option}
 }
