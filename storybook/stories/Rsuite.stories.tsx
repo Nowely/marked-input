@@ -22,7 +22,7 @@ export const TaggedInput = () => {
             className={classNames}
             style={{
                 minHeight: 36,
-                width: 400
+                paddingRight: 5
             }}
             spanClassName="rs-tag rs-tag-md"
             spanStyle={{
@@ -30,7 +30,7 @@ export const TaggedInput = () => {
                 paddingLeft: 0,
                 paddingRight: 0,
                 whiteSpace: "pre-wrap",
-                minWidth: 12
+                minWidth: 5
             }}
             Mark={Tag}
             value={value}
