@@ -3,5 +3,6 @@
     "moduleNameMapper": {
         "\\.(css|less)$": "jest-transform-stub"
     },
-    "rootDir": "../"
+    "rootDir": "../",
+    "verbose": true
 }
