@@ -15,7 +15,7 @@ export class Caret {
     }
 
     static getAbsolutePosition() {
-        const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
+        const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect?.()
         if (rect)
             return {left: rect.left, top: rect.top + 20}
         return {left: 0, top: 0}
