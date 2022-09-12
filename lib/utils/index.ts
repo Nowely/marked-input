@@ -77,7 +77,7 @@ export const isObject = (value: unknown): value is object => typeof value === "o
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
-export const isEventName = (value: string): value is EventName => value.startsWith("on")
+export const isEventName = (value: string | number): value is EventName => typeof value === "string" && value.startsWith("on")
 
 const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
     if (isValidElement(value)) return true
