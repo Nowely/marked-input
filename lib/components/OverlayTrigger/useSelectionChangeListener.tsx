@@ -10,8 +10,6 @@ export function useSelectionChangeListener() {
     useEffect(() => bus.listen("onFocus", (e: FocusEvent<HTMLElement>) =>
         document.addEventListener("selectionchange", sendCheckTriggerEvent)), [])
 
-    useEffect(() => bus.listen("onBlur", (e: FocusEvent<HTMLElement>) => {
-        document.removeEventListener("selectionchange", sendCheckTriggerEvent);
-        bus.send(Type.ClearTrigger)
-    }), [])
+    useEffect(() => bus.listen("onBlur", (e: FocusEvent<HTMLElement>) =>
+        document.removeEventListener("selectionchange", sendCheckTriggerEvent)), [])
 }

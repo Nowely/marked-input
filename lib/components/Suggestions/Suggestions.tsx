@@ -1,13 +1,14 @@
-import {useMemo, useState} from "react";
+import {forwardRef, useMemo, useState} from "react";
 import {OverlayProps} from "../../types";
 import {KEY} from "../../constants";
 
-export const Suggestions = ({data, word, style, onSelect, ...props}: OverlayProps) => {
+//TODO
+export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps, ref) => {
     const [active, setActive] = useState(NaN)
 
     const filtered = useMemo(
-        () => data.filter(s => s.toLowerCase().indexOf(word.toLowerCase()) > -1),
-        [word]
+        () => trigger.option.data.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
+        [trigger.value]
     )
 
     const onClick = (e: any) => {
@@ -35,8 +36,10 @@ export const Suggestions = ({data, word, style, onSelect, ...props}: OverlayProp
 
     if (!filtered.length) return null
 
+    //TODO ref type
     return (
-        <ul className="mk-suggestions" style={style}>
+    // @ts-ignore
+        <ul ref={ref} className="mk-suggestions" style={style}>
             {filtered.map((suggestion, index) => {
                 let className;
 
@@ -55,4 +58,4 @@ export const Suggestions = ({data, word, style, onSelect, ...props}: OverlayProp
             })}
         </ul>
     )
-}
+})

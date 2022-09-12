@@ -8,12 +8,8 @@ export const useTrigger = (): Trigger | undefined => {
     const [trigger, setTrigger] = useState<Trigger | undefined>()
     const {options, bus} = useStore()
 
-    useEffect(() => bus.listen(Type.ClearTrigger, _ =>
-        setTimeout(_ => setTrigger(undefined), 200)), [])
-
-    //TODO. It is for overlay click correct handling
-    useEffect(() => bus.listen(Type.CheckTrigger, _ =>
-        setTrigger(TriggerFinder.find(options))), [options])
+    useEffect(() => bus.listen(Type.ClearTrigger, _ => setTrigger(undefined)), [])
+    useEffect(() => bus.listen(Type.CheckTrigger, _ => setTrigger(TriggerFinder.find(options))), [options])
 
     useSelectionChangeListener()
 
