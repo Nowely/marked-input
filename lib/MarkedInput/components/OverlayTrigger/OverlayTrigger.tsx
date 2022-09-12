@@ -11,19 +11,19 @@ export const OverlayTrigger = () => {
 
     if (!trigger) return null
 
-    const {value, option, piece, index, source} = trigger
+    const {value, option, span, index, source} = trigger
     const style = Caret.getAbsolutePosition()
 
     const onSelect: onSelect = ({label, value}) => {
         const annotation = annotate(option.markup, label, value)
         let foundKey
         for (let [key, value] of pieces.entries()) {
-            if (value === piece) {
+            if (value === span) {
                 foundKey = key
                 break
             }
         }
-        let newValue = piece?.slice(0, index) + annotation + piece?.slice(index! + source!.length)
+        let newValue = span?.slice(0, index) + annotation + span?.slice(index! + source!.length)
         if (foundKey)
             bus.send(Type.Change, {value: newValue, key: foundKey})
     }

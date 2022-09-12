@@ -4,7 +4,7 @@ import {wordRegex} from "../constants";
 import {Caret} from "./Caret";
 
 export class TriggerFinder {
-    text: string;
+    span: string;
     dividedText: { left: string; right: string }
 
     static find(options: Options) {
@@ -14,12 +14,12 @@ export class TriggerFinder {
 
     constructor() {
         let caretPosition = Caret.getCurrentPosition()
-        this.text = Caret.getCurrentPieceOfText()
+        this.span = Caret.getFocusedSpan()
         this.dividedText = this.getDividedTextBy(caretPosition)
     }
 
     getDividedTextBy(position: number) {
-        return {left: this.text.slice(0, position), right: this.text.slice(position)}
+        return {left: this.span.slice(0, position), right: this.span.slice(position)}
     }
 
     find(options: Options): Trigger | undefined {
@@ -29,7 +29,7 @@ export class TriggerFinder {
                 value: match.word,
                 source: match.annotation,
                 index: match.index,
-                piece: this.text,
+                span: this.span,
                 option
             }
         }

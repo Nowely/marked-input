@@ -10,7 +10,8 @@ export class Caret {
         return window.getSelection()?.anchorOffset ?? 0
     }
 
-    static getCurrentPieceOfText() {
+    //TODO get span from state?
+    static getFocusedSpan() {
         return window.getSelection()?.anchorNode?.textContent ?? ""
     }
 

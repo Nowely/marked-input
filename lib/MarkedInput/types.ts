@@ -90,7 +90,7 @@ export type Trigger = {
     /**
     * Piece of text, in which was a trigger
     */
-    piece: string,
+    span: string,
     /**
     * Start position of a trigger
     */
