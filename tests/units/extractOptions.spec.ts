@@ -1,4 +1,4 @@
-import {extractOptions} from "rc-marked-input/MarkedInput/utils";
+import {extractOptions} from "rc-marked-input/utils";
 
 describe.skip(`Utility: ${extractOptions.name}`, () => {
     it('should ', () => {

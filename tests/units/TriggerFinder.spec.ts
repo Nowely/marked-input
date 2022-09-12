@@ -1,4 +1,4 @@
-import {TriggerFinder} from "rc-marked-input/MarkedInput/utils/TriggerFinder"
+import {TriggerFinder} from "rc-marked-input/utils/TriggerFinder"
 
 describe(`Utility: ${TriggerFinder.name}`, () => {
 

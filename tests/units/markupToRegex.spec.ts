@@ -1,4 +1,4 @@
-import {annotate, markupToRegex} from "rc-marked-input/MarkedInput/utils";
+import {annotate, markupToRegex} from "rc-marked-input/utils";
 import {faker} from "@faker-js/faker";
 import {createRandomMarkup} from "../.utils/createRandomMarkup";
 

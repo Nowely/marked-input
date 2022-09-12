@@ -69,13 +69,13 @@ Without options passing it will just highlight annotations.
 
 Props of the `MarkedInput` component:
 
-| Name     | Type                    | Default      | Description                                 |
-|----------|-------------------------|--------------|---------------------------------------------|
-| value    | string                  |              | Annotated text with markups for mark        |
-| onChange | (value: string) => void |              | Change event                                |
-| Mark     | ComponentType<T>        |              | Component that used for render markups      |
-| Overlay  | ComponentType<T1>       | `Suggestion` | Component that used for render any overlays |
-| readOnly | boolean                 | `undefined`  | Prevents from changing the value            |
+| Name     | Type                    | Default       | Description                                 |
+|----------|-------------------------|---------------|---------------------------------------------|
+| value    | string                  |               | Annotated text with markups for mark        |
+| onChange | (value: string) => void |               | Change event                                |
+| Mark     | ComponentType<T>        |               | Component that used for render markups      |
+| Overlay  | ComponentType<T1>       | `Suggestions` | Component that used for render any overlays |
+| readOnly | boolean                 | `undefined`   | Prevents from changing the value            |
 
 Props of the `Option` component:
 
