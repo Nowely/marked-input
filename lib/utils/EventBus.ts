@@ -1,4 +1,4 @@
-import {EventName, Payload, Type} from "../types";
+import {KeyMapper, EventName, Payload, Type} from "../types";
 import {isEventName} from "./index";
 import {MarkedInputProps} from "../components/MarkedInput";
 import {PredefinedEvents} from "../constants";
@@ -25,11 +25,14 @@ export class EventBus {
         initEvents.forEach(event => this.#ReactEvents.set(event, new Set()))
     }
 
-    get<T>(key: string): T {
-        return this.#map[key]
+    get<T extends keyof KeyMapper>(key: T): KeyMapper[T] {
+        const value = this.#map[key]
+        if (value)
+            return this.#map[key]
+        throw new Error(`The ${key} is not exist!`)
     }
 
-    set<T>(key: string, value: T) {
+    set<T extends keyof KeyMapper>(key: T, value: KeyMapper[T]) {
         this.#map[key] = value
     }
 

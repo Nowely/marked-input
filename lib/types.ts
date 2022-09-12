@@ -1,5 +1,5 @@
 import {PLACEHOLDER} from "./constants";
-import {FunctionComponent, ReactElement} from "react";
+import {FunctionComponent, ReactElement, RefObject} from "react";
 import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
 import {EventBus} from "./utils/EventBus";
@@ -22,10 +22,11 @@ export interface OverlayProps {
         left: number
         top: number
     }
-    //onClose: Function
+    onClose: () => void
     onSelect: onSelect
-    data: string[] //| object[]
-    word: string
+    trigger: Trigger
+    //data: string[] //| object[]
+    //word: string
 }
 
 export interface MarkProps {
@@ -99,4 +100,8 @@ export type Trigger = {
     * Triggers option
     */
     option: OptionType
+}
+
+export type KeyMapper = {
+    "TextRef": RefObject<HTMLDivElement>
 }
