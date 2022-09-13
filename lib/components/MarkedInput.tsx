@@ -1,9 +1,9 @@
 import {ComponentType, CSSProperties} from "react";
 import {OverlayProps, ElementOptions, MarkProps} from "../types";
 import {MarkedText} from "./MarkedText";
-import {OverlayTrigger} from "./OverlayTrigger";
 import {OptionProps} from "./Option";
 import {MarkedInputProvider} from "./MarkedInputProvider";
+import {Whisper} from "./Whisper";
 import "../styles.css"
 
 export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
@@ -53,6 +53,6 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
 export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
     return <MarkedInputProvider props={props}>
         <MarkedText/>
-        <OverlayTrigger/>
+        <Whisper/>
     </MarkedInputProvider>;
 }
