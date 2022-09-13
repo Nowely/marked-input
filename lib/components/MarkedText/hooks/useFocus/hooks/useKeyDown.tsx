@@ -6,14 +6,14 @@ import {genHash, useStore} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
 
 export function useKeyDown(
-    elements: Map<number, RefObject<HTMLElement>>,
+    spanRefs: Map<number, RefObject<HTMLElement>>,
     recoveryRef: MutableRefObject<Recovery | null>,
-    focusedElement: MutableRefObject<HTMLElement | null>
+    focusedSpanRef: MutableRefObject<HTMLElement | null>
 ) {
     const {pieces, bus} = useStore()
 
     useEffect(() => bus.listen("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
-            const oracle = new Oracle(focusedElement, elements, recoveryRef, pieces)
+            const oracle = new Oracle(focusedSpanRef, spanRefs, recoveryRef, pieces)
             const target = event.target as HTMLSpanElement
             const caretIndex = Caret.getCaretIndex(target);
             const isStartCaret = caretIndex === 0;
@@ -65,8 +65,8 @@ export function useKeyDown(
 
 class Oracle {
     constructor(
-        readonly focusedElement: MutableRefObject<HTMLElement | null>,
-        readonly elements: Map<number, RefObject<HTMLSpanElement>>,
+        readonly focusedSpanRef: MutableRefObject<HTMLElement | null>,
+        readonly spanRefs: Map<number, RefObject<HTMLSpanElement>>,
         readonly recoveryRef: MutableRefObject<Recovery | null>,
         readonly pieces: KeyedPieces
     ) {
@@ -74,7 +74,7 @@ class Oracle {
 
     recoverLeft() {
         let previousText = this.getPreviousElement()?.textContent!
-        let currentText = this.focusedElement.current?.textContent!
+        let currentText = this.focusedSpanRef.current?.textContent!
         let newText = previousText + currentText
 
         this.recoveryRef.current = {
@@ -85,7 +85,7 @@ class Oracle {
 
     recoverRight() {
         let nextText = this.getNextElement()?.textContent!
-        let currentText = this.focusedElement.current?.textContent!
+        let currentText = this.focusedSpanRef.current?.textContent!
         let newText = currentText + nextText
 
         this.recoveryRef.current = {
@@ -97,11 +97,11 @@ class Oracle {
     getPreviousElement() {
         let previous: HTMLElement | null = null
 
-        if (!this.focusedElement.current)
+        if (!this.focusedSpanRef.current)
             return null
 
-        for (const [key, elementRef] of this.elements) {
-            if (elementRef.current === this.focusedElement.current)
+        for (const [key, elementRef] of this.spanRefs) {
+            if (elementRef.current === this.focusedSpanRef.current)
                 return previous
 
             previous = elementRef.current
@@ -113,14 +113,14 @@ class Oracle {
     getNextElement() {
         let isNext = false
 
-        if (!this.focusedElement.current)
+        if (!this.focusedSpanRef.current)
             return null
 
-        for (const [key, elementRef] of this.elements) {
+        for (const [key, elementRef] of this.spanRefs) {
             if (isNext)
                 return elementRef.current
 
-            if (elementRef.current === this.focusedElement.current)
+            if (elementRef.current === this.focusedSpanRef.current)
                 isNext = true
         }
 
@@ -161,10 +161,10 @@ class Oracle {
     }
 
     getCurrentKey() {
-        if (!this.focusedElement.current) return null
+        if (!this.focusedSpanRef.current) return null
 
-        for (const [key, elementRef] of this.elements) {
-            if (elementRef.current === this.focusedElement.current)
+        for (const [key, elementRef] of this.spanRefs) {
+            if (elementRef.current === this.focusedSpanRef.current)
                 return key
         }
 

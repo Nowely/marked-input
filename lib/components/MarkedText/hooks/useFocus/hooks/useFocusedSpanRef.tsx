@@ -1,7 +1,7 @@
 import {useStore} from "../../../../../utils";
 import {FocusEvent, useEffect, useRef} from "react";
 
-export const useFocusedElement = () => {
+export const useFocusedSpanRef = () => {
     const {bus} = useStore()
     const elementRef = useRef<HTMLElement | null>(null)
 
