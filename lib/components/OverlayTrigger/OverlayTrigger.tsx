@@ -1,47 +1,44 @@
 import {annotate, useStore} from "../../utils";
 import {Suggestions} from "../Suggestions";
-import React, {createElement, useCallback, useEffect, useRef} from "react";
-import {onSelect, OverlayProps, Type} from "../../types";
+import React, {useCallback} from "react";
+import {onSelect, OverlayProps, Trigger, Type} from "../../types";
 import {useTrigger} from "./useTrigger";
 import {Caret} from "../../utils/Caret";
+import {useAutoClose} from "./hooks/useAutoClose";
 
 //TODO clean up
 export const OverlayTrigger = () => {
-    const {pieces, bus, props: {Overlay = Suggestions}} = useStore()
+    const {bus, props: {Overlay = Suggestions}} = useStore()
     const trigger = useTrigger()
 
-    const ref = useRef<HTMLDivElement>(null)
+    //TODO wrap this ic component: OverlayWrapper? Whisper?
+    const onClose = useCallback(() => bus.send(Type.ClearTrigger), [])
+    const onSelect = useSelectHandler(trigger)
+    const ref = useAutoClose(trigger, onClose)
 
-    //on document listener
-    /*const handleDocumentKeyUp = useCallback((event: React.KeyboardEvent) => {
-        if (listenEscape && event.key === KEY.ESC)
-            onRootClose?.(event);
-    }, [listenEscape, onRootClose]);*/
+    if (!trigger)
+        return null
 
-    //TODO check for no ref component
-    useEffect(() => {
-        if (!trigger) return
-        const x = (event: MouseEvent) => {
-            if (event.target === ref.current) return
-            if (event.target === bus.get("TextRef").current) return
-            //TODO
-            //@ts-ignore
-            if (event.target?.parentElement === bus.get("TextRef").current) return
+    const props = getOverlayProps(trigger, onClose, onSelect)
+    return <Overlay ref={ref} {...props} />
+}
 
-            bus.send(Type.ClearTrigger)
-        }
-        document.addEventListener("click", x)
-        return () => document.removeEventListener("click", x)
-    }, [trigger])
-
-    if (!trigger) return null
-
-    const {value, option, span, index, source} = trigger
+function getOverlayProps(trigger: Trigger, onClose: () => void, onSelect: onSelect) {
     const style = Caret.getAbsolutePosition()
+    const props: OverlayProps = {trigger, style, onSelect, onClose}
+    return trigger.option.initOverlay?.(props) ?? props
+}
 
-    const onSelect: onSelect = ({label, value}) => {
+function useSelectHandler(trigger: Trigger | undefined): onSelect {
+    const {bus, pieces} = useStore()
+
+    return useCallback(({label, value}) => {
+        if (!trigger) return
+
+        const {option, span, index, source} = trigger
         const annotation = annotate(option.markup, label, value)
         let foundKey
+
         for (let [key, value] of pieces.entries()) {
             if (value === span) {
                 foundKey = key
@@ -51,17 +48,5 @@ export const OverlayTrigger = () => {
         let newValue = span?.slice(0, index) + annotation + span?.slice(index! + source!.length)
         if (foundKey)
             bus.send(Type.Change, {value: newValue, key: foundKey})
-    }
-
-    //const onClose = useCallback(() => bus.send(Type.ClearTrigger), [])
-    const onClose = () => bus.send(Type.ClearTrigger)
-
-    //const triggerProps1: OverlayProps = {word: value, style, onSelect, onClose, data: option.data}
-    const triggerProps: OverlayProps = {trigger, style, onSelect, onClose}
-    //TODO
-    const overlayProps = option.initOverlay?.(triggerProps) ?? triggerProps
-
-    return <Overlay ref={ref} {...overlayProps} />
-
-    //createElement(Overlay, overlayProps);
+    }, [trigger])
 }
