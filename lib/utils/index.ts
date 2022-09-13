@@ -120,3 +120,20 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 }
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
+
+export function debounce(func: Function, wait: number, immediate: boolean = true) {
+    let timeout: NodeJS.Timeout | undefined
+    return () => {
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow)
+            func.apply(arguments);
+    }
+
+    function later() {
+        timeout = undefined;
+        if (!immediate)
+            func(arguments);
+    }
+}
