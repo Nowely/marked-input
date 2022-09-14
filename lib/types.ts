@@ -14,6 +14,11 @@ export type Mark = {
     childIndex: number;
 }
 
+export interface MarkProps {
+    label: string
+    value?: string
+}
+
 export interface OverlayProps {
     /**
      * Style with caret absolute position. Used for placing an overlay.
@@ -22,14 +27,18 @@ export interface OverlayProps {
         left: number
         top: number
     }
+    /**
+     * Used for close overlay.
+     */
     onClose: () => void
+    /**
+     * Used for insert an annotation instead a triggered value.
+     */
     onSelect: (value: MarkProps) => void
+    /**
+     * Trigger details
+     */
     trigger: Trigger
-}
-
-export interface MarkProps {
-    label: string
-    value?: string
 }
 
 type label = `${string}${PLACEHOLDER.LABEL}${string}`
@@ -98,7 +107,7 @@ export type Trigger = {
      */
     index: number,
     /**
-     * Triggers option
+     * Trigger's option
      */
     option: OptionType
 }

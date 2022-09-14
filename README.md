@@ -12,7 +12,7 @@ A React component that lets you combine editable text with any component using a
 * Support any components
 * Props customization
 * Utils for annotate and denote text
-* Button handling (Left, Right, Delete, Backspace)
+* Button handling (Left, Right, Delete, Backspace, Esc)
 * Overlay with default the suggestion component
 * Zero dependency
 
@@ -63,19 +63,19 @@ const Marked = () => {
 }
 ```
 
-Without options passing it will just highlight annotations.
+> **Note:** Without options and an overlay passing it will just mark annotations.
 
 ## API
 
 Props of the `MarkedInput` component:
 
-| Name     | Type                    | Default       | Description                                 |
-|----------|-------------------------|---------------|---------------------------------------------|
-| value    | string                  |               | Annotated text with markups for mark        |
-| onChange | (value: string) => void |               | Change event                                |
-| Mark     | ComponentType<T>        |               | Component that used for render markups      |
-| Overlay  | ComponentType<T1>       | `Suggestions` | Component that used for render any overlays |
-| readOnly | boolean                 | `undefined`   | Prevents from changing the value            |
+| Name     | Type                            | Default       | Description                                 |
+|----------|---------------------------------|---------------|---------------------------------------------|
+| value    | string                          |               | Annotated text with markups for mark        |
+| onChange | (value: string) => void         |               | Change event                                |
+| Mark     | ComponentType<T = MarkProps>    |               | Component that used for render markups      |
+| Overlay  | ComponentType<T = OverlayProps> | `Suggestions` | Component that used for render any overlays |
+| readOnly | boolean                         | `undefined`   | Prevents from changing the value            |
 
 Props of the `Option` component:
 
@@ -84,8 +84,8 @@ Props of the `Option` component:
 | markup      | string                      | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` `__value__`<br/> For example: `@[__label__](__value__)` |
 | trigger     | string                      | `"@"`                     | Sequence of symbols for calling the overlay.                                                                                                                                      |
 | data        | string[]                    | `[]`                      | Data for a overlay component. By default, it is suggestions.                                                                                                                      |
-| initOverlay | (props: OverlayProps) => T1 | `undefined`               | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                                    |
 | initMark    | (props: MarkProps) => T     | `undefined`               | Function to initialize props for mark render. Gets arguments from found markup                                                                                                    |
+| initOverlay | (props: OverlayProps) => T1 | `undefined`               | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                                    |
 
 Helpers:
 
@@ -94,3 +94,65 @@ Helpers:
 | createMarkedInput | (Mark: ComponentType<T>, options: OptionProps<T>[]): ConfiguredMarkedInput<T> <br/> (Mark: ComponentType<T>, Overlay: ComponentType<T1>, options: OptionProps<T, T1>[]): ConfiguredMarkedInput<T> | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
+
+Main types:
+
+```typescript
+interface MarkProps {
+    label: string
+    value?: string
+}
+```
+
+```typescript
+interface OverlayProps {
+    /**
+     * Style with caret absolute position. Used for placing an overlay.
+     */
+    style: {
+        left: number
+        top: number
+    }
+    /**
+     * Used for close overlay.
+     */
+    onClose: () => void
+    /**
+     * Used for insert an annotation instead a triggered value.
+     */
+    onSelect: (value: MarkProps) => void
+    /**
+     * Trigger details
+     */
+    trigger: Trigger
+}
+```
+
+```typescript
+type Trigger = {
+    /**
+     * Found value via a trigger
+     */
+    value: string,
+    /**
+     * Triggered value
+     */
+    source: string,
+    /**
+     * Piece of text, in which was a trigger
+     */
+    span: string,
+    /**
+     * Html element, in which was a trigger
+     */
+    node: Node,
+    /**
+     * Start position of a trigger
+     */
+    index: number,
+    /**
+     * Trigger's option
+     */
+    option: OptionType
+}
+```
