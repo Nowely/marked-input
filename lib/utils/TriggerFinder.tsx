@@ -5,6 +5,7 @@ import {Caret} from "./Caret";
 
 export class TriggerFinder {
     span: string;
+    node: Node
     dividedText: { left: string; right: string }
 
     static find(options: Options) {
@@ -14,6 +15,7 @@ export class TriggerFinder {
 
     constructor() {
         let caretPosition = Caret.getCurrentPosition()
+        this.node = Caret.getSelectedNode()
         this.span = Caret.getFocusedSpan()
         this.dividedText = this.getDividedTextBy(caretPosition)
     }
@@ -30,7 +32,8 @@ export class TriggerFinder {
                 source: match.annotation,
                 index: match.index,
                 span: this.span,
-                option
+                node: this.node,
+                option,
             }
         }
     }

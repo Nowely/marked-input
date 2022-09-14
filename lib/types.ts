@@ -1,5 +1,5 @@
 import {PLACEHOLDER} from "./constants";
-import {FunctionComponent, ReactElement} from "react";
+import {FunctionComponent, ReactElement, RefObject} from "react";
 import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
 import {EventBus} from "./utils/EventBus";
@@ -22,18 +22,15 @@ export interface OverlayProps {
         left: number
         top: number
     }
-    //onClose: Function
-    onSelect: onSelect
-    data: string[] //| object[]
-    word: string
+    onClose: () => void
+    onSelect: (value: MarkProps) => void
+    trigger: Trigger
 }
 
 export interface MarkProps {
     label: string
     value?: string
 }
-
-export type onSelect = ({label, value}: { label: string, value: string }) => void
 
 type label = `${string}${PLACEHOLDER.LABEL}${string}`
 type value = `${string}${PLACEHOLDER.VALUE}${string}`
@@ -71,6 +68,7 @@ export enum Type {
     Delete,
     CheckTrigger,
     ClearTrigger,
+    Select,
 }
 
 export type Payload = {
@@ -80,23 +78,34 @@ export type Payload = {
 
 export type Trigger = {
     /**
-    * Found value via a trigger
-    */
+     * Found value via a trigger
+     */
     value: string,
     /**
-    * Triggered value
-    */
+     * Triggered value
+     */
     source: string,
     /**
-    * Piece of text, in which was a trigger
-    */
+     * Piece of text, in which was a trigger
+     */
     span: string,
     /**
-    * Start position of a trigger
-    */
+     * Html element, in which was a trigger
+     */
+    node: Node,
+    /**
+     * Start position of a trigger
+     */
     index: number,
     /**
-    * Triggers option
-    */
+     * Triggers option
+     */
     option: OptionType
 }
+
+export type KeyMapper = {
+    "TextRef": RefObject<HTMLDivElement>,
+    "TriggerSpanRef": RefObject<HTMLElement>,
+}
+
+export type Listener = (e: any) => void

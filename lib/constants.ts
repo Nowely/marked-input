@@ -1,4 +1,4 @@
-import {OptionType} from "./types";
+import {EventName, OptionType} from "./types";
 
 export const KEY = {
     // Navigation Keys
@@ -40,6 +40,6 @@ export const DefaultOptionProps: OptionType = {
     data: []
 }
 
-export const PredefinedEvents = ["onFocus", "onBlur", "onKeyDown", "onClick"]
+export const PredefinedEvents: EventName[] = ["onFocus", "onBlur", "onKeyDown", "onClick"]
 
 export const wordRegex = new RegExp(/^\w*/)

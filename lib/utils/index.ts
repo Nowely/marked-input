@@ -77,7 +77,7 @@ export const isObject = (value: unknown): value is object => typeof value === "o
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
-export const isEventName = (value: string): value is EventName => value.startsWith("on")
+export const isEventName = (value: string | number): value is EventName => typeof value === "string" && value.startsWith("on")
 
 const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
     if (isValidElement(value)) return true
@@ -120,3 +120,35 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 }
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
+
+export function debounce(func: Function, wait: number, immediate: boolean = true) {
+    let timeout: NodeJS.Timeout | undefined
+    return () => {
+        const callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow)
+            func.apply(arguments);
+    }
+
+    function later() {
+        timeout = undefined;
+        if (!immediate)
+            func(arguments);
+    }
+}
+
+export function findSpanKey(span: string, pieces: any) {
+    let foundKey
+    for (let [key, piece] of pieces.entries()) {
+        if (piece === span) {
+            foundKey = key
+            break
+        }
+    }
+    return foundKey
+}
+
+export function createNewSpan(span: string, annotation: string, index: number, source: string) {
+    return span.slice(0, index) + annotation + span.slice(index + source.length)
+}

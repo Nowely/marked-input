@@ -1,15 +1,15 @@
 import {useRecoveryAfterRemove} from "./hooks/useRecoveryAfterRemove";
-import {useTextElements} from "./hooks/useTextElements";
-import {useFocusedElement} from "./hooks/useFocusedElement";
+import {useSpanRefs} from "./hooks/useSpanRefs";
+import {useFocusedSpanRef} from "./hooks/useFocusedSpanRef";
 import {useKeyDown} from "./hooks/useKeyDown";
 import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput";
 
 export const useFocus = () => {
-    const {elements, register} = useTextElements()
-    const focusedElement = useFocusedElement()
-    const recoveryRef = useRecoveryAfterRemove(elements)
-    useKeyDown(elements, recoveryRef, focusedElement)
-    useFocusOnEmptyInput(elements)
+    const {spanRefs, register} = useSpanRefs()
+    const focusedSpanRef = useFocusedSpanRef()
+    const recoveryRef = useRecoveryAfterRemove(spanRefs)
+    useKeyDown(spanRefs, recoveryRef, focusedSpanRef)
+    useFocusOnEmptyInput(spanRefs)
 
     return {register}
 }

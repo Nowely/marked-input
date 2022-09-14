@@ -1,35 +1,19 @@
-import {annotate, useStore} from "../../utils";
-import {Suggestions} from "../Suggestions/Suggestions";
-import React, {createElement} from "react";
-import {onSelect, OverlayProps, Type} from "../../types";
-import {useTrigger} from "./useTrigger";
-import {Caret} from "../../utils/Caret";
+import {useStore} from "../../utils";
+import {Suggestions} from "../Suggestions";
+import React, {useRef} from "react";
+import {Trigger} from "../../types";
+import {useOverlayProps} from "./hooks/useOverlayProps";
+import {useCloseByClickOutside} from "./hooks/useCloseByClickOutside";
+import {useCloseByEsc} from "./hooks/useCloseByEsc";
 
-export const OverlayTrigger = () => {
-    const {pieces, bus, props: {Overlay = Suggestions}} = useStore()
-    const trigger = useTrigger()
+export const OverlayTrigger = (trigger: Trigger) => {
+    const ref = useRef<HTMLElement>(null)
 
-    if (!trigger) return null
+    useCloseByEsc()
+    useCloseByClickOutside(ref)
 
-    const {value, option, span, index, source} = trigger
-    const style = Caret.getAbsolutePosition()
+    const props = useOverlayProps(trigger)
+    const {props: {Overlay = Suggestions}} = useStore()
 
-    const onSelect: onSelect = ({label, value}) => {
-        const annotation = annotate(option.markup, label, value)
-        let foundKey
-        for (let [key, value] of pieces.entries()) {
-            if (value === span) {
-                foundKey = key
-                break
-            }
-        }
-        let newValue = span?.slice(0, index) + annotation + span?.slice(index! + source!.length)
-        if (foundKey)
-            bus.send(Type.Change, {value: newValue, key: foundKey})
-    }
-
-    const triggerProps: OverlayProps = {word: value, style, onSelect, data: option.data}
-    //TODO
-    const overlayProps = option.initOverlay?.(triggerProps) ?? triggerProps
-    return createElement(Overlay, overlayProps);
+    return <Overlay ref={ref} {...props} />
 }

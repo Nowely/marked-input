@@ -1,1 +1,1 @@
-export * from "./OverlayTrigger"
+export {OverlayTrigger} from "./OverlayTrigger"

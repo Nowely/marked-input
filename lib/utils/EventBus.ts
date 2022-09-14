@@ -1,58 +1,60 @@
-import {EventName, Payload, Type} from "../types";
+import {KeyMapper, EventName, Type, Listener} from "../types";
 import {isEventName} from "./index";
 import {MarkedInputProps} from "../components/MarkedInput";
 import {PredefinedEvents} from "../constants";
 
 export class EventBus {
-    //TODO system events
-    readonly #listeners: Record<string, EventListener[]> = {}
-
-    get length() {
-        return Object.keys(this.#listeners).length
-    }
+    readonly #SystemEvents = new Map<Type, Set<Listener>>()
+    readonly #ReactEvents = new Map<EventName, Set<Listener>>()
+    readonly #map: Record<string, any> = {}
 
     get events() {
-        return Object.keys(this.#listeners)
-            .filter(isEventName)
-            .reduce((prev, key) => {
-                prev[key] = (arg: any) => this.send(key, arg)
-                return prev
-            }, {} as Record<string, Function>)
+        let result: any = {}
+        for (let eventName of this.#ReactEvents.keys())
+            result[eventName] = (arg: any) => this.send(eventName, arg)
+        return result
     }
 
-    static withExternalEventsFrom(props: MarkedInputProps){
-        const set = new Set<string>(PredefinedEvents)
+    static withExternalEventsFrom(props: MarkedInputProps) {
+        const set = new Set<EventName>(PredefinedEvents)
         //TODO Object.keys(props).filter(isEventName).forEach(event => set.add(event))
         return () => new EventBus(...set)
     }
 
-    constructor(...initEvents: string[]) {
-        initEvents.forEach(event => this.#listeners[event] ??= [])
+    constructor(...initEvents: EventName[]) {
+        initEvents.forEach(event => this.#ReactEvents.set(event, new Set()))
     }
 
-    send(event: Type, arg?: Payload): void
+    //TODO extract get and set over here
+    get<T extends keyof KeyMapper>(key: T): KeyMapper[T] {
+        const value = this.#map[key]
+        if (value)
+            return this.#map[key]
+        throw new Error(`The ${key} is not exist!`)
+    }
+
+    set<T extends keyof KeyMapper>(key: T, value: KeyMapper[T]) {
+        this.#map[key] = value
+    }
+
+    //TODO type
+    //send(event: Type, arg?: Payload): void
+    send(event: Type, arg?: any): void
     send(event: EventName, arg: any): void
-    send(event: string | number, arg: any): void {
-        const notified = this.#listeners[event]
-        if (!notified) return;
-        notified.forEach((func) => func(arg));
+    send(event: EventName | Type, arg: any): void {
+        this.#getListeners(event).forEach((func) => func(arg));
     }
 
-    //TODO hoc for useEffect
-    listen(event: Type, callback: (e: Payload) => void): void
-    listen(event: EventName, callback: (e: any) => void): void
-    listen(event: string | number, callback: (e: any) => void) {
-        const listener: EventListener = callback
+    listen(event: EventName | Type, listener: Listener): () => void {
+        this.#getListeners(event).add(listener)
+        return () => this.#getListeners(event).delete(listener)
+    }
 
-        this.#listeners[event] ??= []
-        this.#listeners[event].push(listener)
-
-        return () => {
-            this.#listeners[event] = this.#listeners[event]
-                .filter((subscriber) => subscriber !== listener);
-
-            //if (this.#listeners[event].length === 0) delete this.#listeners[event];
-        };
+    #getListeners(event: EventName | Type) {
+        const map: Map<EventName | Type, Set<Listener>> = isEventName(event) ? this.#ReactEvents : this.#SystemEvents
+        if (!map.has(event))
+            map.set(event, new Set())
+        return map.get(event) as Set<Listener>
     }
 }
 
