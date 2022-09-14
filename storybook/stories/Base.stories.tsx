@@ -1,9 +1,9 @@
 import {Button} from "./assets/Button";
 import {MarkedInput, Option, denote, createMarkedInput} from "rc-marked-input";
-import {ElementType, useState} from "react";
+import {createElement, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {Markup} from "rc-marked-input/MarkedInput/types";
+import {MarkProps, Markup} from "rc-marked-input/types";
 
 export default {
     title: getTitle(),
@@ -55,35 +55,29 @@ export const Base = () => {
     )
 }
 
+//TODO HTML editable tag
+/*
+interface TagProps {
+    as: string,
+    children?: string
+}
+
+const Tag = ({as, children}: TagProps) => createElement(as, {children})
 
 export const RichEditor = () => {
-    const [value, setValue] = useState(`Can use to simulate rich editor
-        <b>Bold text>
-        <strong>Important text>
-        <i>Italic text>
-        <em>Emphasized text>
-        <mark>Marked text>
-        <small>Smaller text>
-        <del>Deleted text>
-        <ins>Inserted text>
-        <sub>Subscript text>
-        <sup>Superscript text>
-    `)
+    const [value, setValue] = useState(`This example contain code of using the <b>initMark> prop.
+It appears to use any mark by initialize from default <b>MarkProps> to mark's props.`)
 
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option markup="<__label__>__value__>" initMark={({label, value}) => ({as: label, value})}/>
+                <Option<TagProps>
+                    markup="<__label__>__value__>"
+                    initMark={({label, value}) => ({as: label, children: value})}
+                />
             </MarkedInput>
 
             <Text label="Plaint text:" value={value}/>
         </>
     )
-}
-
-const Tag = ({as, value}: { as: ElementType, value: string }) => {
-    const Component = as
-    return <Component>
-        {value}
-    </Component>
-}
+}*/
