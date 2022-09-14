@@ -107,3 +107,5 @@ export type KeyMapper = {
     "TextRef": RefObject<HTMLDivElement>,
     "TriggerSpanRef": RefObject<HTMLElement>,
 }
+
+export type Listener = (e: any) => void

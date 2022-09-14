@@ -1,11 +1,11 @@
-import {KeyMapper, EventName, Payload, Type} from "../types";
+import {KeyMapper, EventName, Type, Listener} from "../types";
 import {isEventName} from "./index";
 import {MarkedInputProps} from "../components/MarkedInput";
 import {PredefinedEvents} from "../constants";
 
 export class EventBus {
-    readonly #SystemEvents = new Map<Type, Set<EventListener>>()
-    readonly #ReactEvents = new Map<EventName, Set<EventListener>>()
+    readonly #SystemEvents = new Map<Type, Set<Listener>>()
+    readonly #ReactEvents = new Map<EventName, Set<Listener>>()
     readonly #map: Record<string, any> = {}
 
     get events() {
@@ -45,20 +45,16 @@ export class EventBus {
         this.#getListeners(event).forEach((func) => func(arg));
     }
 
-    //TODO hoc for useEffect
-    //listen(event: Type, callback: (e: Payload) => void): void
-    listen(event: Type, callback: (e: any) => void): void
-    listen(event: EventName, callback: (e: any) => void): void
-    listen(event: EventName | Type, callback: (e: any) => void) {
-        this.#getListeners(event).add(callback)
-        return () => this.#getListeners(event).delete(callback)
+    listen(event: EventName | Type, listener: Listener): () => void {
+        this.#getListeners(event).add(listener)
+        return () => this.#getListeners(event).delete(listener)
     }
 
     #getListeners(event: EventName | Type) {
-        const map: Map<EventName | Type, Set<EventListener>> = isEventName(event) ? this.#ReactEvents : this.#SystemEvents
+        const map: Map<EventName | Type, Set<Listener>> = isEventName(event) ? this.#ReactEvents : this.#SystemEvents
         if (!map.has(event))
             map.set(event, new Set())
-        return map.get(event) as Set<EventListener>
+        return map.get(event) as Set<Listener>
     }
 }
 

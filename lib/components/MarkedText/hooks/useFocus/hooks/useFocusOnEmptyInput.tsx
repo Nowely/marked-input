@@ -1,15 +1,13 @@
-import {RefObject, useEffect} from "react";
-import {useStore} from "../../../../../utils";
+import {RefObject} from "react";
+import {useListener} from "../../../../../utils/useListener";
 
 export const useFocusOnEmptyInput = (spanRefs: Map<number, RefObject<HTMLSpanElement>>) => {
-    const {bus} = useStore()
-
-    useEffect(() => bus.listen("onClick", () => {
+    useListener("onClick", () => {
         if (spanRefs.size === 1) {
             const element = [...spanRefs.values()][0].current
             if (element?.textContent === "") {
                 element.focus()
             }
         }
-    }), [])
+    }, [])
 };
