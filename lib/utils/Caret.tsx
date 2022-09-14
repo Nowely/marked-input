@@ -14,6 +14,12 @@ export class Caret {
     static getFocusedSpan() {
         return window.getSelection()?.anchorNode?.textContent ?? ""
     }
+    static getSelectedNode() {
+        const node = window.getSelection()?.anchorNode
+        if (node) return node
+        throw new Error("Anchor node of selection is not exists!")
+    }
+
 
     static getAbsolutePosition() {
         const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect?.()

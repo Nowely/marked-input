@@ -137,3 +137,18 @@ export function debounce(func: Function, wait: number, immediate: boolean = true
             func(arguments);
     }
 }
+
+export function findSpanKey(span: string, pieces: any) {
+    let foundKey
+    for (let [key, piece] of pieces.entries()) {
+        if (piece === span) {
+            foundKey = key
+            break
+        }
+    }
+    return foundKey
+}
+
+export function createNewSpan(span: string, annotation: string, index: number, source: string) {
+    return span.slice(0, index) + annotation + span.slice(index + source.length)
+}

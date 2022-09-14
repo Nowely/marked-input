@@ -23,18 +23,14 @@ export interface OverlayProps {
         top: number
     }
     onClose: () => void
-    onSelect: onSelect
+    onSelect: (value: MarkProps) => void
     trigger: Trigger
-    //data: string[] //| object[]
-    //word: string
 }
 
 export interface MarkProps {
     label: string
     value?: string
 }
-
-export type onSelect = ({label, value}: { label: string, value: string }) => void
 
 type label = `${string}${PLACEHOLDER.LABEL}${string}`
 type value = `${string}${PLACEHOLDER.VALUE}${string}`
@@ -72,6 +68,7 @@ export enum Type {
     Delete,
     CheckTrigger,
     ClearTrigger,
+    Select,
 }
 
 export type Payload = {
@@ -81,27 +78,32 @@ export type Payload = {
 
 export type Trigger = {
     /**
-    * Found value via a trigger
-    */
+     * Found value via a trigger
+     */
     value: string,
     /**
-    * Triggered value
-    */
+     * Triggered value
+     */
     source: string,
     /**
-    * Piece of text, in which was a trigger
-    */
+     * Piece of text, in which was a trigger
+     */
     span: string,
     /**
-    * Start position of a trigger
-    */
+     * Html element, in which was a trigger
+     */
+    node: Node,
+    /**
+     * Start position of a trigger
+     */
     index: number,
     /**
-    * Triggers option
-    */
+     * Triggers option
+     */
     option: OptionType
 }
 
 export type KeyMapper = {
-    "TextRef": RefObject<HTMLDivElement>
+    "TextRef": RefObject<HTMLDivElement>,
+    "TriggerSpanRef": RefObject<HTMLElement>,
 }
