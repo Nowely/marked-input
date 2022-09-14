@@ -3,15 +3,17 @@ import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
+import {useMemo} from "react";
 
 export const MarkedText = () => {
     const {pieces, bus, options, props: {Mark, ...props}} = useStore()
     const {register} = useFocus()
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
     const ref = useSharedRef();
+    const events = useMemo(() => bus.events, [bus])
 
     return (
-        <div ref={ref} className={className} style={props.style} {...bus.events}>
+        <div ref={ref} className={className} style={props.style} {...events}>
             {[...pieces].map(([key, piece]) => {
                 if (!isObject(piece))
                     return <EditableSpan ref={register(key)} id={key} key={key} value={piece}/>
