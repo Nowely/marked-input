@@ -11,7 +11,7 @@ export default {
     subcomponents: {Option}
 }
 
-const Mark = (props: any) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+const Mark = (props: MarkProps) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
 export const Marked = () => {
     const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
@@ -19,32 +19,32 @@ export const Marked = () => {
 }
 
 
-const primaryMarkup: Markup = "@[__label__](primary:__value__)"
-const secondaryMarkup: Markup = "@[__label__](secondary:__value__)"
+const Primary: Markup = "@[__label__](primary:__value__)"
+const Default: Markup = "@[__label__](default:__value__)"
 
-const MarkedInput1 = createMarkedInput(Button, [{
-    markup: "@[__label__](primary:__value__)",
+const ConfiguredMarkedInput = createMarkedInput(Button, [{
+    markup: Primary,
     data: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"],
     initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
 }, {
-    markup: "@[__label__](secondary:__value__)",
+    markup: Default,
     trigger: "/",
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
 }]);
 
-export const Base = () => {
+export const Configured = () => {
     const [value, setValue] = useState(
-        "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[secondary](secondary:7)!\n" +
+        "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
         "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
-        "For found mark used @[annotations](secondary:123). It text also is editable..."
+        "For found mark used @[annotations](default:123)."
     )
 
-    const displayText = denote(value, mark => mark.label, primaryMarkup, secondaryMarkup)
+    const displayText = denote(value, mark => mark.label, Primary, Default)
 
     return (
         <>
-            <MarkedInput1
+            <ConfiguredMarkedInput
                 style={{minWidth: 100}} spanStyle={{width: 'auto', minWidth: 10}}
                 value={value} onChange={setValue}
             />
