@@ -1,11 +1,13 @@
 import {MarkedInput} from "../../lib";
 import {useState} from "react";
 import {Option} from "../../lib";
-import {Tag} from "rsuite";
+import {Popover, Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 import 'rsuite/dist/rsuite.min.css';
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
+import {PopoverProps} from "rsuite/esm/Popover/Popover";
+import {KEY} from "rc-marked-input/constants";
 
 export default {
     title: getTitle("Rsuite"),
@@ -14,11 +16,12 @@ export default {
 }
 
 export const TaggedInput = () => {
-    const [value, setValue] = useState("Hello beautiful the @[first](closable:1) world from the @[second](common:2)")
+    const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common:0). Then press the @[Enter](common:1) to finish. For example: @hello")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
 
     return <>
         <MarkedInput
+            Overlay={Popover}
             className={classNames}
             style={{
                 minHeight: 36,
@@ -36,11 +39,20 @@ export const TaggedInput = () => {
             value={value}
             onChange={(val: string) => setValue(val)}
         >
-            <Option<TagProps>
-                markup="@[__label__](closable:__value__)"
-                initMark={({label}) => ({children: label, closable: true})}
-            />
-            <Option<TagProps>
+            <Option<TagProps, PopoverProps>
+                initOverlay={props => {
+                    document.addEventListener("keydown", ev => {
+                        if (ev.key === KEY.ENTER) {
+                            props.onSelect({label: props.trigger.value, value: props.trigger.index.toString()})
+                            props.onClose()
+                        }
+                    }, {once: true})
+                    return {
+                        children: `Press 'Enter' to create: ${props.trigger.value}`,
+                        visible: true,
+                        style: props.style,
+                    }
+                }}
                 markup="@[__label__](common:__value__)"
                 initMark={({label}) => ({children: label})}
             />
