@@ -4,10 +4,10 @@ import 'antd/dist/antd.css';
 import {Tag} from "antd";
 import {TagProps} from "antd/lib/tag";
 import {Text} from "./assets/Text";
-import {getTitleOfStyled} from "./assets/getTitle";
+import {getTitle} from "./assets/getTitle";
 
 export default {
-    title: getTitleOfStyled("Ant design"),
+    title: getTitle("Ant"),
     component: MarkedInput,
     subcomponents: {Option}
 }

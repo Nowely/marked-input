@@ -3,11 +3,11 @@ import {useState} from "react";
 import {Avatar, Chip, Divider, List, ListItem, ListItemAvatar, ListItemText, Typography} from "@mui/material";
 import {ChipProps} from "@mui/material/Chip/Chip";
 import {Text} from "./assets/Text";
-import {getTitleOfStyled} from "./assets/getTitle";
+import {getTitle} from "./assets/getTitle";
 import {OverlayProps} from "rc-marked-input/MarkedInput/types";
 
 export default {
-    title: getTitleOfStyled("Material"),
+    title: getTitle("Material"),
     component: MarkedInput,
     subcomponents: {Option}
 }
@@ -36,7 +36,9 @@ export const Chipped = () => {
 }
 
 export const Mention = () => {
-    const [value, setValue] = useState("Hello @[Agustina](A) and @[Frank Parker](FP)")
+    const [value, setValue] = useState(
+        `Enter the '@' for calling mention list: \n- Hello @[Agustina](A) and @[Frank Parker](FP)!`
+    )
 
     return <>
         <MarkedInput

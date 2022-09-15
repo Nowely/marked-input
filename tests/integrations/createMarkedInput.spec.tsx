@@ -1,10 +1,10 @@
-import {render, screen} from "@testing-library/react";
-import {Base} from "storybook/stories/Base.stories";
+import {render} from "@testing-library/react";
+import {Configured} from "storybook/stories/Base.stories";
 
 //TODO
 describe(`Utility: createMarkedInput`, () => {
     it('should render', () => {
-        render(<Base/>)
+        render(<Configured/>)
 
     });
 })
