@@ -4,9 +4,9 @@
   "dependencies": {
     "@emotion/react": "^11.9.3",
     "@emotion/styled": "^11.9.3",
-    "@mui/material": "^5.9.2",
-    "antd": "^4.21.7",
-    "rsuite": "^5.16.1"
+    "@mui/material": "^5.10.5",
+    "antd": "^4.23.1",
+    "rsuite": "^5.18.0"
   },
   "devDependencies": {
     "@storybook/addon-actions": "^6.5.12",
