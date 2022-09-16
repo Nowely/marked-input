@@ -11,7 +11,8 @@
     "build": "vite build && tsc && node prepack.js",
     "test": "npm run test -w tests",
     "test:integration": "npm run test:integration -w tests",
-    "coverage": "jest -c tests/jest.config.json --coverage"
+    "coverage": "jest -c tests/jest.config.json --coverage",
+    "app": "vite tests/e2e/app -c vite.config.ts"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -52,6 +53,7 @@
     "input"
   ],
   "workspaces": [
+    "app",
     "lib",
     "storybook",
     "tests"
