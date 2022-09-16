@@ -7,7 +7,7 @@ import injectCssToJs from "vite-plugin-css-injected-by-js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
     build: {
         sourcemap: true,
         lib: {
@@ -25,5 +25,5 @@ export default defineConfig({
             }
         }
     },
-    plugins: [react(), injectCssToJs()]
-})
+    plugins: [react(), command !== "serve" && injectCssToJs()]
+}))
