@@ -4,7 +4,7 @@ import {Avatar, Chip, Divider, List, ListItem, ListItemAvatar, ListItemText, Typ
 import {ChipProps} from "@mui/material/Chip/Chip";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {OverlayProps} from "rc-marked-input/MarkedInput/types";
+import {OverlayProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle("Material"),

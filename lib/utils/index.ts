@@ -1,6 +1,6 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, EventName, Mark, Markup, Options, Store} from "../types";
+import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
 
@@ -121,6 +121,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
 
+//TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {
     let timeout: NodeJS.Timeout | undefined
     return () => {
@@ -138,9 +139,9 @@ export function debounce(func: Function, wait: number, immediate: boolean = true
     }
 }
 
-export function findSpanKey(span: string, pieces: any) {
+export function findSpanKey(span: string, pieces: KeyedPieces) {
     let foundKey
-    for (let [key, piece] of pieces.entries()) {
+    for (let [key, piece] of pieces) {
         if (piece === span) {
             foundKey = key
             break

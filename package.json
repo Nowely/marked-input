@@ -12,7 +12,7 @@
     "test": "npm run test -w tests",
     "test:integration": "npm run test:integration -w tests",
     "coverage": "jest -c tests/jest.config.json --coverage",
-    "app": "vite tests/e2e/app -c vite.config.ts"
+    "app": "vite tests/e2e/app -c vite.config.ts --open"
   },
   "dependencies": {
     "react": "18.2.0",
