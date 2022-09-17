@@ -14,6 +14,7 @@ const useStyleInsertion = (id: string) =>
 
         if (!link) throw new Error(`The style ${id} is not found!`)
 
+        link.rel = "stylesheet"
         link.disabled = false
         return () => link.disabled = true
     }, [])
