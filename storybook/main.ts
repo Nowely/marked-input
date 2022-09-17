@@ -21,4 +21,4 @@ const config: StorybookViteConfig = {
     },
 }
 
-module.exports = config;
+export default config

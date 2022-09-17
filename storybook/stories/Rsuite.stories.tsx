@@ -1,19 +1,21 @@
-import {MarkedInput} from "../../lib";
+import {MarkedInput, Option} from "../../lib";
 import {useState} from "react";
-import {Option} from "../../lib";
 import {Popover, Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
-import 'rsuite/dist/rsuite.min.css';
+//import 'rsuite/dist/rsuite.min.css';
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {PopoverProps} from "rsuite/esm/Popover/Popover";
 import {KEY} from "rc-marked-input/constants";
+import {ComponentMeta} from "@storybook/react";
+import {withCSS} from "./assets/withCSS";
 
 export default {
     title: getTitle("Rsuite"),
     component: MarkedInput,
-    subcomponents: {Option}
-}
+    subcomponents: {Option},
+    decorators: [withCSS('https://cdnjs.cloudflare.com/ajax/libs/rsuite/5.18.1/rsuite.min.css')]
+} as ComponentMeta<typeof MarkedInput>
 
 export const TaggedInput = () => {
     const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common:0). Then press the @[Enter](common:1) to finish. For example: @hello")
