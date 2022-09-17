@@ -6,7 +6,7 @@ import {useListener} from "../../../utils/useListener";
 export function useCheckOnSelectionChange() {
     const {bus} = useStore()
 
-    const sendCheckTrigger = useCallback(debounce(() => bus.send(Type.CheckTrigger), 2000), [])
+    const sendCheckTrigger = useCallback(debounce(() => bus.send(Type.CheckTrigger), 20), [])
 
     useListener("onFocus", (e: FocusEvent<HTMLElement>) =>
         document.addEventListener("selectionchange", sendCheckTrigger, {}), [])
