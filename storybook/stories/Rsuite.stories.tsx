@@ -23,12 +23,12 @@ const Overlay = ({style, trigger, onSelect, onClose}: OverlayProps) => {
         const handleEnter = (ev: KeyboardEvent) => {
             if (ev.key === KEY.ENTER) {
                 ev.preventDefault()
-                onSelect({label: trigger.value, value: trigger.index.toString()})
+                onSelect({label: trigger.value})
                 onClose()
             }
         }
 
-        document.addEventListener("keydown", handleEnter, {once: true})
+        document.addEventListener("keydown", handleEnter)
         return () => document.removeEventListener("keydown", handleEnter)
     }, [trigger])
 
@@ -38,7 +38,7 @@ const Overlay = ({style, trigger, onSelect, onClose}: OverlayProps) => {
 }
 
 export const TaggedInput = () => {
-    const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common:0). Then press the @[Enter](common:1) to finish. For example: @hello")
+    const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
 
     return <>
@@ -62,8 +62,8 @@ export const TaggedInput = () => {
             }}
         >
             <Option<TagProps, PopoverProps>
-                markup="@[__label__](common:__value__)"
-                initMark={({label}) => ({children: label})}
+                markup="@[__label__](common)"
+                initMark={({label}) => ({children: label, style: {marginLeft: 0}})}
             />
         </MarkedInput>
 
