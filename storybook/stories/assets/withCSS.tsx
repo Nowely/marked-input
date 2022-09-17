@@ -1,6 +1,7 @@
 import {DecoratorFunction} from "@storybook/csf/dist/story";
 import {useInsertionEffect} from "react";
 
+//TODO load css on startup
 export const withCSS = (href: string): DecoratorFunction<any, any> =>
     (Story) => {
         useStyleInsertion(href)
