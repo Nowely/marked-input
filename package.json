@@ -1,7 +1,7 @@
 {
   "name": "marked-input",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
@@ -53,7 +53,6 @@
     "input"
   ],
   "workspaces": [
-    "app",
     "lib",
     "storybook",
     "tests"
