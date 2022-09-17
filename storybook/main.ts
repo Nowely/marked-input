@@ -19,6 +19,7 @@ const config: StorybookViteConfig = {
         //config.base = '/storybook/';
         return config;
     },
+    staticDirs: ['./public'],
 }
 
 export default config

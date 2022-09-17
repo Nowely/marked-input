@@ -1,6 +1,6 @@
 import {MarkedInput, Option} from "../../lib";
 import {useState} from "react";
-//import 'antd/dist/antd.css';
+//import 'antd/dist/antd.min.css';
 import {Tag} from "antd";
 import {TagProps} from "antd/lib/tag";
 import {Text} from "./assets/Text";
@@ -11,7 +11,7 @@ export default {
     title: getTitle("Ant"),
     component: MarkedInput,
     subcomponents: {Option},
-    decorators: [withCSS('https://cdnjs.cloudflare.com/ajax/libs/antd/4.23.1/antd.min.css')]
+    decorators: [withCSS('antd.min.css')]
 }
 
 export const Tagged = () => {

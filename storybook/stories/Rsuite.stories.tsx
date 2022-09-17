@@ -14,7 +14,7 @@ export default {
     title: getTitle("Rsuite"),
     component: MarkedInput,
     subcomponents: {Option},
-    decorators: [withCSS('https://cdnjs.cloudflare.com/ajax/libs/rsuite/5.18.1/rsuite.min.css')]
+    decorators: [withCSS('./rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
 
 export const TaggedInput = () => {
