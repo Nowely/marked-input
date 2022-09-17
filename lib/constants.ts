@@ -37,7 +37,8 @@ export const DefaultClass = "mk-input"
 export const DefaultOptionProps: OptionType = {
     trigger: "@",
     markup: "@[__label__](__value__)",
-    data: []
+    data: [],
+    index: 0
 }
 
 export const PredefinedEvents: EventName[] = ["onFocus", "onBlur", "onKeyDown", "onClick"]

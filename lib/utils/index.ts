@@ -86,15 +86,14 @@ const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is 
 
 export function extractOptions(options?: ElementOptions<any> | OptionProps[]): Options {
     if (isElementOption(options))
-        return Children.map(options, child => initOption(child.props))
+        return Children.map(options, (child, index) => initOption(child.props, index))
 
-    if (options?.length)
-        return options.map(initOption)
+    if (options?.length) return options.map(initOption)
 
     return [DefaultOptionProps]
 
-    function initOption(props: OptionProps) {
-        return assign({}, DefaultOptionProps, props)
+    function initOption(props: OptionProps, index: number) {
+        return assign({index}, DefaultOptionProps, props)
     }
 }
 

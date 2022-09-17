@@ -3,10 +3,10 @@ import {FocusEvent, useCallback} from "react";
 import {Type} from "../../../types";
 import {useListener} from "../../../utils/useListener";
 
-export function useOnSelectionChangeCheck() {
+export function useCheckOnSelectionChange() {
     const {bus} = useStore()
 
-    const sendCheckTrigger = useCallback(debounce(() => bus.send(Type.CheckTrigger), 20), [])
+    const sendCheckTrigger = useCallback(debounce(() => bus.send(Type.CheckTrigger), 2000), [])
 
     useListener("onFocus", (e: FocusEvent<HTMLElement>) =>
         document.addEventListener("selectionchange", sendCheckTrigger, {}), [])

@@ -1,14 +1,11 @@
 import {useTrigger} from "./hooks/useTrigger";
 import {OverlayTrigger} from "../OverlayTrigger";
-import {useOnSelectionChangeCheck} from "./hooks/useOnSelectionChangeCheck";
+import {useCheckOnSelectionChange} from "./hooks/useCheckOnSelectionChange";
 
 export const Whisper = () => {
+    useCheckOnSelectionChange()
+
     const trigger = useTrigger()
-
-    useOnSelectionChangeCheck()
-
-    if (trigger)
-        return <OverlayTrigger {...trigger}/>
-
+    if (trigger) return <OverlayTrigger key={trigger.option.index} {...trigger}/>
     return null
 }
