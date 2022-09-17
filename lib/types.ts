@@ -56,7 +56,7 @@ export type KeyedPieces = Map<number, Piece>
 
 type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
-export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay">
+export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay"> & {index: number}
 
 export type Options = OptionType[]
 
