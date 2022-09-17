@@ -93,7 +93,7 @@ export function extractOptions(options?: ElementOptions<any> | OptionProps[]): O
     return [DefaultOptionProps]
 
     function initOption(props: OptionProps, index: number) {
-        return assign({index}, DefaultOptionProps, props)
+        return assign({}, DefaultOptionProps, props, {index})
     }
 }
 
