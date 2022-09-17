@@ -121,6 +121,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
 
+//TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {
     let timeout: NodeJS.Timeout | undefined
     return () => {

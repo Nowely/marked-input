@@ -1,9 +1,11 @@
 //TODO refact caret
+import {CSSProperties} from "react";
+
 export class Caret {
     static get isSelectedPosition() {
         const selection = window.getSelection()
         if (!selection) return
-        return selection.anchorOffset === selection.focusOffset
+        return selection.isCollapsed
     }
 
     static getCurrentPosition() {
@@ -14,17 +16,17 @@ export class Caret {
     static getFocusedSpan() {
         return window.getSelection()?.anchorNode?.textContent ?? ""
     }
+
     static getSelectedNode() {
         const node = window.getSelection()?.anchorNode
         if (node) return node
         throw new Error("Anchor node of selection is not exists!")
     }
 
-
+    //TODO add the returned type: "{left: CSSProperties["left"], top: CSSProperties["top"]}"?
     static getAbsolutePosition() {
         const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect?.()
-        if (rect)
-            return {left: rect.left, top: rect.top + 20}
+        if (rect) return {left: rect.left, top: rect.top + rect.height + 1}
         return {left: 0, top: 0}
     }
 

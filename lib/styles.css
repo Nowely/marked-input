@@ -15,6 +15,8 @@
     background: white;
     width: fit-content;
     min-width: 100px;
+    margin-top: 0;
+    margin-bottom: 0;
 
     transition: 1.1s ease-out;
     filter: blur(0);
