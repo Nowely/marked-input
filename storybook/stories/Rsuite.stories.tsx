@@ -1,5 +1,5 @@
 import {MarkedInput, Option} from "../../lib";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {Popover, Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
 //import 'rsuite/dist/rsuite.min.css';
@@ -9,6 +9,7 @@ import {PopoverProps} from "rsuite/esm/Popover/Popover";
 import {KEY} from "rc-marked-input/constants";
 import {ComponentMeta} from "@storybook/react";
 import {withStyle} from "./assets/withStyle";
+import {OverlayProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle("Rsuite"),
@@ -17,13 +18,35 @@ export default {
     decorators: [withStyle('rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
 
+const Overlay = ({style, trigger, onSelect, onClose}: OverlayProps) => {
+    useEffect(() => {
+        const handleEnter = (ev: KeyboardEvent) => {
+            if (ev.key === KEY.ENTER) {
+                ev.preventDefault()
+                onSelect({label: trigger.value, value: trigger.index.toString()})
+                onClose()
+            }
+        }
+
+        document.addEventListener("keydown", handleEnter, {once: true})
+        return () => document.removeEventListener("keydown", handleEnter)
+    }, [trigger])
+
+    return <Popover style={style} visible>
+        <i> Press the <b>'Enter'</b> to create: <b>{`${trigger.value}`}</b> </i>
+    </Popover>
+}
+
 export const TaggedInput = () => {
     const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common:0). Then press the @[Enter](common:1) to finish. For example: @hello")
     const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
 
     return <>
         <MarkedInput
-            Overlay={Popover}
+            Mark={Tag}
+            Overlay={Overlay}
+            value={value}
+            onChange={(val: string) => setValue(val)}
             className={classNames}
             style={{
                 minHeight: 36,
@@ -37,24 +60,8 @@ export const TaggedInput = () => {
                 whiteSpace: "pre-wrap",
                 minWidth: 5
             }}
-            Mark={Tag}
-            value={value}
-            onChange={(val: string) => setValue(val)}
         >
             <Option<TagProps, PopoverProps>
-                initOverlay={props => {
-                    document.addEventListener("keydown", ev => {
-                        if (ev.key === KEY.ENTER) {
-                            props.onSelect({label: props.trigger.value, value: props.trigger.index.toString()})
-                            props.onClose()
-                        }
-                    }, {once: true})
-                    return {
-                        children: `Press 'Enter' to create: ${props.trigger.value}`,
-                        visible: true,
-                        style: props.style,
-                    }
-                }}
                 markup="@[__label__](common:__value__)"
                 initMark={({label}) => ({children: label})}
             />
