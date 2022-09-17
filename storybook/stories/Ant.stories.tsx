@@ -5,13 +5,13 @@ import {Tag} from "antd";
 import {TagProps} from "antd/lib/tag";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {withCSS} from "./assets/withCSS";
+import {withStyle} from "./assets/withStyle";
 
 export default {
     title: getTitle("Ant"),
     component: MarkedInput,
     subcomponents: {Option},
-    decorators: [withCSS('antd.min.css')]
+    decorators: [withStyle('antd.min.css')]
 }
 
 export const Tagged = () => {

@@ -8,13 +8,13 @@ import {getTitle} from "./assets/getTitle";
 import {PopoverProps} from "rsuite/esm/Popover/Popover";
 import {KEY} from "rc-marked-input/constants";
 import {ComponentMeta} from "@storybook/react";
-import {withCSS} from "./assets/withCSS";
+import {withStyle} from "./assets/withStyle";
 
 export default {
     title: getTitle("Rsuite"),
     component: MarkedInput,
     subcomponents: {Option},
-    decorators: [withCSS('./rsuite.min.css')]
+    decorators: [withStyle('rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
 
 export const TaggedInput = () => {
