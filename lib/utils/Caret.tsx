@@ -30,6 +30,14 @@ export class Caret {
         return {left: 0, top: 0}
     }
 
+    static trySetIndex(element: HTMLElement, offset: number) {
+        try {
+            this.setIndex(element, offset)
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
     static setIndex(element: HTMLElement, offset: number) {
         const selection = window.getSelection()
         if (!selection?.anchorNode || !selection.rangeCount) return

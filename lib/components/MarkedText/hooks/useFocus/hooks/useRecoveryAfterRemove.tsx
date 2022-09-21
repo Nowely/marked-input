@@ -19,7 +19,7 @@ export const useRecoveryAfterRemove = (refMap: Map<number, RefObject<HTMLSpanEle
             refSpan?.focus()
 
             if (refSpan) {
-                Caret.setIndex(refSpan, caret)
+                Caret.trySetIndex(refSpan, caret)
             }
 
             recoveryRef.current = null
