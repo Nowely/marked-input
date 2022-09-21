@@ -14,7 +14,7 @@ export const useHeldCaret = (ref: RefObject<HTMLSpanElement>) => {
 
     function restore() {
         if (!ref.current) return
-        Caret.setIndex(ref.current, index.current)
+        Caret.trySetIndex(ref.current, index.current)
         index.current = NaN
     }
 
