@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "start-storybook -p 6006 -c ./",
-    "build": "build-storybook -c ./"
+    "build": "build-storybook -c ./ -o ../storybook-static"
   },
   "dependencies": {
     "@emotion/react": "^11.9.3",
