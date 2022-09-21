@@ -2,7 +2,8 @@
   "name": "tests",
   "scripts": {
     "test": "jest -c jest.config.json",
-    "test:integration": "jest integrations -c jest.config.json"
+    "test:integration": "jest integrations -c jest.config.json",
+    "coverage": "jest -c jest.config.json --coverage"
   },
   "dependencies": {
     "@faker-js/faker": "^7.4.0",

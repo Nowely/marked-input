@@ -6,13 +6,13 @@
   "license": "MIT",
   "author": "Ruslan Ilyin",
   "scripts": {
-    "storybook": "start-storybook -p 6006 -c storybook",
-    "build-storybook": "build-storybook -c storybook",
+    "app": "vite tests/e2e/app -c vite.config.ts --open",
     "build": "vite build && tsc && node prepack.js",
+    "storybook": "npm run start -w storybook",
+    "build-storybook": "npm run build -w storybook",
     "test": "npm run test -w tests",
     "test:integration": "npm run test:integration -w tests",
-    "coverage": "jest -c tests/jest.config.json --coverage",
-    "app": "vite tests/e2e/app -c vite.config.ts --open"
+    "coverage": "npm run coverage -w tests"
   },
   "dependencies": {
     "react": "18.2.0",
