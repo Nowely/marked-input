@@ -3,10 +3,10 @@ import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
-import {useMemo} from "react";
+import {memo, useMemo} from "react";
 
-export const MarkedText = () => {
-    const {pieces, bus, options, props: {Mark, ...props}} = useStore()
+export const MarkedText = memo(() => {
+    const {pieces, bus, options, textProps: {Mark, ...props}} = useStore()
     const {register} = useFocus()
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
     const ref = useSharedRef();
@@ -23,4 +23,4 @@ export const MarkedText = () => {
             })}
         </div>
     )
-}
+})

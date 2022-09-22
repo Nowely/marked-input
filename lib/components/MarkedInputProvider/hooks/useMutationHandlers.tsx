@@ -3,20 +3,20 @@ import {annotate, createNewSpan, findSpanKey, toString} from "../../../utils";
 import {useListener} from "../../../utils/useListener";
 
 //TODO upgrade to full members of react events to external
-export function useMutationHandlers(store: Store) {
-    const {bus, pieces, options, props} = store
+export function useMutationHandlers(store: Store, onChange: (value: string) => void) {
+    const {bus, pieces, options} = store
 
     useListener(Type.Change, (event: Payload) => {
         const {key, value = ""} = event
         pieces.set(key, value)
-        props.onChange(toString([...pieces.values()], options))
-    }, [pieces], store)
+        onChange(toString([...pieces.values()], options))
+    }, [pieces, onChange], store)
 
     useListener(Type.Delete, (event: Payload) => {
         const {key} = event
         pieces.delete(key)
-        props.onChange(toString([...pieces.values()], options))
-    }, [pieces], store)
+        onChange(toString([...pieces.values()], options))
+    }, [pieces, onChange], store)
 
     useListener(Type.Select, (event: {value: MarkProps, trigger: Trigger}) => {
         const {value, trigger: {option, span, index, source}} = event
@@ -26,5 +26,5 @@ export function useMutationHandlers(store: Store) {
         const key = findSpanKey(span, pieces)
 
         bus.send(Type.Change, {value: newSpan, key})
-    }, [pieces], store)
+    }, [pieces, onChange], store)
 }

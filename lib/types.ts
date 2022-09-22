@@ -64,10 +64,12 @@ export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputP
 export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
 
 export type Store = {
-    props: MarkedInputProps<any, any>
     options: Options
     pieces: KeyedPieces
     bus: EventBus
+    spanProps: ExtractedSpanProps
+    textProps: ExtractedTextProps
+    overlayProps: ExtractedOverlayProps
 }
 
 export type EventName = `on${string}`
@@ -111,6 +113,12 @@ export type Trigger = {
      */
     option: OptionType
 }
+
+export type ExtractedSpanProps = Pick<MarkedInputProps, 'spanStyle' | 'spanClassName' | 'readOnly'>
+
+export type ExtractedTextProps = Pick<MarkedInputProps, 'Mark' | 'style' | 'className'>
+
+export type ExtractedOverlayProps = Pick<MarkedInputProps, 'Overlay'>
 
 export type KeyMapper = {
     "TextRef": RefObject<HTMLDivElement>,

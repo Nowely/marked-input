@@ -51,8 +51,10 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
 }
 
 export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
-    return <MarkedInputProvider props={props}>
-        <MarkedText/>
-        <Whisper/>
-    </MarkedInputProvider>;
+    return (
+        <MarkedInputProvider props={props}>
+            <MarkedText/>
+            <Whisper/>
+        </MarkedInputProvider>
+    )
 }

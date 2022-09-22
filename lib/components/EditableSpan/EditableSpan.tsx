@@ -10,7 +10,7 @@ export interface EditableSpanProps {
 
 //TODO Instead forwardRef to hook
 export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
-    const {bus, props: {readOnly, spanStyle, spanClassName}} = useStore()
+    const {bus, spanProps: {readOnly, spanStyle, spanClassName}} = useStore()
     const spanRef = useRef<HTMLSpanElement>(null)
 
     if (typeof ref === "function") {
