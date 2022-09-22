@@ -65,7 +65,7 @@ export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<Conf
 
 export type Store = {
     options: Options
-    pieces: KeyedPieces
+    //pieces: KeyedPieces
     bus: EventBus
     spanProps: ExtractedSpanProps
     textProps: ExtractedTextProps

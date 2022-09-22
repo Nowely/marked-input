@@ -1,12 +1,15 @@
-import {isObject, useStore} from "../../utils";
+import {isObject, useStore, useStore1} from "../../utils";
 import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
-import {memo, useMemo} from "react";
+import {memo, useMemo, useReducer} from "react";
+import {useListener} from "../../utils/useListener";
+import {Type} from "../../types";
 
 export const MarkedText = memo(() => {
-    const {pieces, bus, options, textProps: {Mark, ...props}} = useStore()
+    const {bus, options, textProps: {Mark, ...props}} = useStore()
+    const pieces = useStore1()
     const {register} = useFocus()
     const className = props.className ? DefaultClass + " " + props.className : DefaultClass
     const ref = useSharedRef();

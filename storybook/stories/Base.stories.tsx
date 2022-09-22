@@ -32,6 +32,9 @@ const ConfiguredMarkedInput = createMarkedInput(Button, [{
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
 }]);
+const style = {minWidth: 100}
+
+const spanStyle = {width: 'auto', minWidth: 10}
 
 export const Configured = () => {
     const [value, setValue] = useState(
@@ -39,20 +42,36 @@ export const Configured = () => {
         "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
         "For found mark used @[annotations](default:123)."
     )
+    const [val, setVal] = useState(bigString)
 
     const displayText = denote(value, mark => mark.label, Primary, Default)
 
     return (
         <>
             <ConfiguredMarkedInput
-                style={{minWidth: 100}} spanStyle={{width: 'auto', minWidth: 10}}
+                style={style} spanStyle={spanStyle}
                 value={value} onChange={setValue}
             />
 
-            <Text label="Plaint text:" value={value}/>
-            <Text label="Display text (denoted):" value={displayText}/>
+            {/*<Text label="Plaint text:" value={value}/>
+            <Text label="Display text (denoted):" value={displayText}/>*/}
         </>
     )
+}
+
+const string = "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
+    "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
+    "For found mark used @[annotations](default:123)."
+
+const bigString = f(string, 10)
+//console.log(bigString)
+
+function f(value: string, count: number) {
+    let result = value
+    for (let i = 0; i < count; i++){
+        result = result + result
+    }
+    return result
 }
 
 //TODO HTML editable tag

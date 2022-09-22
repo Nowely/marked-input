@@ -1,6 +1,6 @@
 import {ReactNode, useMemo, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {StoreProvider} from "../../utils";
+import {StoreProvider, StoreProvider1, useStore} from "../../utils";
 import {useOptions} from "./hooks/useOptions";
 import {useParsed} from "./hooks/useParsed";
 import {EventBus} from "../../utils/EventBus";
@@ -15,17 +15,29 @@ interface MarkedInputProviderProps {
 
 export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps) => {
     const options = useOptions(props.children)
-    const pieces = useParsed(props.value, options)
-    const {spanProps, overlayProps, textProps} = useExtractedProps(props)
     const bus = useState(EventBus.withExternalEventsFrom(props))[0]
 
+    const {spanProps, overlayProps, textProps} = useExtractedProps(props)
+
     const store: Store = useMemo(
-        () => ({options, pieces, bus, spanProps, textProps, overlayProps}),
-        [options, pieces, spanProps, textProps, overlayProps, bus]
+        () => ({options, bus, spanProps, textProps, overlayProps}),
+        [options, spanProps, textProps, overlayProps, bus]
     )
 
-    useMutationHandlers(store, props.onChange)
 
-    return <StoreProvider value={store}> {children} </StoreProvider>
+    return (
+        <StoreProvider value={store}>
+            <PiecesProvider value={props.value} onChange={props.onChange}>
+                {children}
+            </PiecesProvider>
+        </StoreProvider>
+    )
 }
 
+function PiecesProvider({value, children, onChange}: { onChange: (value: string) => void, value: string, children: ReactNode }) {
+    const {options} = useStore()
+    const pieces = useParsed(value, options)
+    useMutationHandlers(onChange, pieces)
+
+    return <StoreProvider1 value={pieces}> {children} </StoreProvider1>
+}
