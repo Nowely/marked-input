@@ -56,7 +56,7 @@ export type KeyedPieces = Map<number, Piece>
 
 type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
-export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay"> & {index: number}
+export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay"> & { index: number }
 
 export type Options = OptionType[]
 
@@ -67,9 +67,11 @@ export type Store = {
     options: Options
     //pieces: KeyedPieces
     bus: EventBus
-    spanProps: ExtractedSpanProps
-    textProps: ExtractedTextProps
-    overlayProps: ExtractedOverlayProps
+    props: {
+        span: ExtractedSpanProps
+        text: ExtractedTextProps
+        overlay: ExtractedOverlayProps
+    }
 }
 
 export type EventName = `on${string}`

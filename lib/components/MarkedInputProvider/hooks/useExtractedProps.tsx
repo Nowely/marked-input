@@ -1,13 +1,16 @@
 import {MarkedInputProps} from "../../MarkedInput";
 import {ExtractedOverlayProps, ExtractedSpanProps, ExtractedTextProps} from "../../../types";
 import {useMemo} from "react";
+import {Suggestions} from "../../Suggestions";
 
 export function useExtractedProps(props: MarkedInputProps<any, any>) {
-    const spanProps = useSpanProps(props)
-    const textProps = useTextProps(props)
-    const overlayProps = useOverlayProps(props)
+    const span = useSpanProps(props)
+    const text = useTextProps(props)
+    const overlay = useOverlayProps(props)
 
-    return {spanProps, textProps, overlayProps}
+
+
+    return {span, text, overlay}
 }
 
 function useTextProps(props: MarkedInputProps<any, any>): ExtractedTextProps {
@@ -21,6 +24,6 @@ export function useSpanProps(props: MarkedInputProps<any, any>): ExtractedSpanPr
 }
 
 function useOverlayProps(props: MarkedInputProps<any, any>): ExtractedOverlayProps {
-    const {Overlay} = props
+    const {Overlay = Suggestions} = props
     return useMemo(() => ({Overlay}), [Overlay])
 }

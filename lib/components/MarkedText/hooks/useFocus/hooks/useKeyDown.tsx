@@ -2,7 +2,7 @@ import {KeyboardEvent, MutableRefObject, RefObject, useEffect} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {KEY} from "../../../../../constants";
 import {Type} from "../../../../../types";
-import {useStore, useStore1} from "../../../../../utils";
+import {useStore, usePieces} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
 import {Oracle} from "../../../../../utils/Oracle";
 import {useListener} from "../../../../../utils/useListener";
@@ -14,7 +14,7 @@ export function useKeyDown(
     focusedSpanRef: MutableRefObject<HTMLElement | null>
 ) {
     const {bus} = useStore()
-    const {pieces} = useStore1()
+    const {pieces} = usePieces()
 
     useListener("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
         const oracle = new Oracle(focusedSpanRef, spanRefs, recoveryRef, pieces)

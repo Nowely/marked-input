@@ -13,7 +13,7 @@ export const OverlayTrigger = (trigger: Trigger) => {
     useCloseByClickOutside(ref)
 
     const props = useOverlayProps(trigger)
-    const {overlayProps: {Overlay = Suggestions}} = useStore()
+    const {props: {overlay: {Overlay}}} = useStore()
 
     return <Overlay ref={ref} {...props} />
 }

@@ -1,5 +1,5 @@
-import React, {ForwardedRef, forwardRef, RefObject, useRef} from "react";
-import {useStore} from "../../utils";
+import React, {ForwardedRef, forwardRef, RefObject, useEffect, useReducer, useRef, useState} from "react";
+import {useStore, usePieces} from "../../utils";
 import {useHeldCaret} from "./hooks/useHeldCaret";
 import {Type} from "../../types";
 
@@ -8,10 +8,16 @@ export interface EditableSpanProps {
     value: string
 }
 
+//Editable block - edit text here
 //TODO Instead forwardRef to hook
-export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
-    const {bus, spanProps: {readOnly, spanStyle, spanClassName}} = useStore()
+export const EditableSpan = forwardRef((props: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
+    const {bus, props: {span}} = useStore()
+    const {readOnly, spanStyle, spanClassName} = span
     const spanRef = useRef<HTMLSpanElement>(null)
+
+    const [value, setValue] = useState(props.value)
+
+    //usePieces()
 
     if (typeof ref === "function") {
         ref(spanRef)
@@ -21,8 +27,18 @@ export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: For
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         held()
         const value = e.currentTarget.textContent ?? ""
-        bus.send(Type.Change,{key: id, value})
+        setValue(value)
+        bus.send(Type.Change,{key: props.id, value})
     }
+
+    useEffect(() => {
+        console.log(`${value} was updated`)
+    })
+
+    useEffect(() => {
+        console.log(`${value} was mounted`)
+        return () => console.log(`${value} was unmounted`)
+    }, [])
 
     return (
         <span
