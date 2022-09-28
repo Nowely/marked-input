@@ -5,7 +5,7 @@ import {Type} from "../../types";
 
 export interface EditableSpanProps {
     id: number
-    value: string
+    label: string
 }
 
 //Editable block - edit text here
@@ -15,9 +15,7 @@ export const EditableSpan = forwardRef((props: EditableSpanProps, ref: Forwarded
     const {readOnly, spanStyle, spanClassName} = span
     const spanRef = useRef<HTMLSpanElement>(null)
 
-    const [value, setValue] = useState(props.value)
-
-    //usePieces()
+    const [value, setValue] = useState(props.label)
 
     if (typeof ref === "function") {
         ref(spanRef)

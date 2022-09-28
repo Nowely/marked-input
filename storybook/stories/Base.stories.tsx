@@ -53,6 +53,7 @@ export const Configured = () => {
                 value={value} onChange={setValue}
             />
 
+            {/*TODO uncomment*/}
             {/*<Text label="Plaint text:" value={value}/>
             <Text label="Display text (denoted):" value={displayText}/>*/}
         </>

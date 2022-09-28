@@ -3,27 +3,40 @@ import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
-import {memo, useMemo, useReducer} from "react";
+import {memo, ReactNode, useMemo, useReducer} from "react";
 import {useListener} from "../../utils/useListener";
 import {Type} from "../../types";
 
 export const MarkedText = memo(() => {
-    const {bus, options, props: {text: {Mark, ...props}} } = useStore()
-    const pieces = usePieces()
-    const {register} = useFocus()
-    const className = props.className ? DefaultClass + " " + props.className : DefaultClass
+    const {bus, props} = useStore()
+    const {className, style} = props.text //text container
+
+    const className1 = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
     const events = useMemo(() => bus.events, [bus])
 
     return (
-        <div ref={ref} className={className} style={props.style} {...events}>
-            {[...pieces].map(([key, piece]) => {
-                if (!isObject(piece))
-                    return <EditableSpan ref={register(key)} id={key} key={key} value={piece}/>
-
-                const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
-                return <Mark key={key} tabIndex={-1} {...markProps}/>
-            })}
+        <div ref={ref} className={className1} style={style} {...events}>
+            <Pieces/>
         </div>
     )
 })
+
+function Pieces() {
+    const {options, props} = useStore()
+    //Remove groupping?
+    const {Mark} = props.text
+    const pieces = usePieces()
+    const {register} = useFocus()
+
+
+    return <>
+        {[...pieces].map(([key, piece]) => {
+            if (!isObject(piece))
+                return <EditableSpan ref={register(key)} id={key} key={key} label={piece}/>
+
+            const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
+            return <Mark key={key} tabIndex={-1} {...markProps}/>
+        })}
+    </>
+}

@@ -8,8 +8,6 @@ export function useExtractedProps(props: MarkedInputProps<any, any>) {
     const text = useTextProps(props)
     const overlay = useOverlayProps(props)
 
-
-
     return {span, text, overlay}
 }
 
