@@ -14,8 +14,9 @@ export function useKeyDown(
     focusedSpanRef: MutableRefObject<HTMLElement | null>
 ) {
     const {bus} = useStore()
-    const {pieces} = usePieces()
+    const pieces = usePieces()
 
+    //TODO fix broken this because of pieces
     useListener("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
         const oracle = new Oracle(focusedSpanRef, spanRefs, recoveryRef, pieces)
         const target = event.target as HTMLSpanElement
