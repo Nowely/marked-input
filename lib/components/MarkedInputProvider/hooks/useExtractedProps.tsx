@@ -1,27 +1,12 @@
 import {MarkedInputProps} from "../../MarkedInput";
-import {ExtractedOverlayProps, ExtractedSpanProps, ExtractedTextProps} from "../../../types";
+import {ExtractedProps} from "../../../types";
 import {useMemo} from "react";
-import {Suggestions} from "../../Suggestions";
 
-export function useExtractedProps(props: MarkedInputProps<any, any>) {
-    const span = useSpanProps(props)
-    const text = useTextProps(props)
-    const overlay = useOverlayProps(props)
+export function useExtractedProps(props: MarkedInputProps<any, any>): ExtractedProps {
+    const {value, children, ...other} = props
+    const {Overlay, spanStyle, spanClassName, style, className, readOnly, onChange, Mark} = other
 
-    return {span, text, overlay}
-}
-
-function useTextProps(props: MarkedInputProps<any, any>): ExtractedTextProps {
-    const {Mark, style, className} = props
-    return useMemo(() => ({Mark, style, className}), [Mark, style, className])
-}
-
-export function useSpanProps(props: MarkedInputProps<any, any>): ExtractedSpanProps {
-    const {readOnly, spanStyle, spanClassName} = props
-    return useMemo(() => ({readOnly, spanStyle, spanClassName}), [readOnly, spanStyle, spanClassName])
-}
-
-function useOverlayProps(props: MarkedInputProps<any, any>): ExtractedOverlayProps {
-    const {Overlay = Suggestions} = props
-    return useMemo(() => ({Overlay}), [Overlay])
+    return useMemo(() => {
+        return other
+    }, [Overlay, spanStyle, spanClassName, style, className, readOnly, onChange, Mark])
 }

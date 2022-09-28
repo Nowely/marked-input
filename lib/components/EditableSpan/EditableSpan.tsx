@@ -1,7 +1,4 @@
-import React, {ForwardedRef, forwardRef, RefObject, useEffect, useReducer, useRef, useState} from "react";
-import {useStore, usePieces} from "../../utils";
-import {useHeldCaret} from "./hooks/useHeldCaret";
-import {Type} from "../../types";
+import React from "react";
 import {useMark} from "../../utils/useMark";
 
 export interface EditableSpanProps {
@@ -11,40 +8,19 @@ export interface EditableSpanProps {
 
 //Editable block - edit text here
 export const EditableSpan = (props: EditableSpanProps) => {
-    const {props: {span}} = useStore()
-    //TODO get spans props from useMark
-    const {readOnly, spanStyle, spanClassName} = span
-    const spanRef = useRef<HTMLSpanElement>(null)
+    const {label, onChange, mark, heldCaret, className, style, readOnly} = props.useMark()
 
-    const {label, onChange, refReg, onRemove} = props.useMark()
-
-    refReg(spanRef)
-    /*if (typeof ref === "function") {
-        ref(spanRef)
-    }*/
-
-    //TODO Rename this. Move to useMark
-    const heldCaret = useHeldCaret(spanRef)
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
-        heldCaret()
+        heldCaret(e.currentTarget)
         const value = e.currentTarget.textContent ?? ""
         onChange({label: value})
     }
 
-    /*useEffect(() => {
-        console.log(`${value} was updated`)
-    })
-
-    useEffect(() => {
-        console.log(`${value} was mounted`)
-        return () => console.log(`${value} was unmounted`)
-    }, [])*/
-
     return (
         <span
-            ref={spanRef}
-            style={spanStyle}
-            className={spanClassName}
+            ref={mark}
+            style={style}
+            className={className}
             contentEditable={!readOnly}
             suppressContentEditableWarning
             onInput={handleInput}

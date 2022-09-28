@@ -17,11 +17,11 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
     const options = useOptions(props.children)
     const bus = useState(EventBus.withExternalEventsFrom(props))[0]
 
-    const {span, overlay, text} = useExtractedProps(props)
+    const extractedProps = useExtractedProps(props)
 
     const store: Store = useMemo(
-        () => ({options, bus, props: {span, text, overlay}}),
-        [options, span, text, overlay, bus]
+        () => ({options, bus, props: extractedProps}),
+        [options, extractedProps, bus]
     )
 
 

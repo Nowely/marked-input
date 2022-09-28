@@ -10,7 +10,7 @@ import {useMark} from "../../utils/useMark";
 
 export const MarkedText = memo(() => {
     const {bus, props} = useStore()
-    const {className, style} = props.text //text container
+    const {className, style} = props //text container
 
     const className1 = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
@@ -26,7 +26,7 @@ export const MarkedText = memo(() => {
 function Pieces() {
     const {options, props} = useStore()
     //Remove groupping?
-    const {Mark} = props.text
+    const {Mark} = props
     const pieces = usePieces()
     const {register} = useFocus()
 

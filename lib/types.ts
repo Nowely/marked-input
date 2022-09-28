@@ -67,12 +67,10 @@ export type Store = {
     options: Options
     //pieces: KeyedPieces
     bus: EventBus
-    props: {
-        span: ExtractedSpanProps
-        text: ExtractedTextProps
-        overlay: ExtractedOverlayProps
-    }
+    props: ExtractedProps
 }
+
+export type ExtractedProps = Omit<MarkedInputProps, 'children' | 'value'>
 
 export type EventName = `on${string}`
 
@@ -115,12 +113,6 @@ export type Trigger = {
      */
     option: OptionType
 }
-
-export type ExtractedSpanProps = Pick<MarkedInputProps, 'spanStyle' | 'spanClassName' | 'readOnly'>
-
-export type ExtractedTextProps = Pick<MarkedInputProps, 'Mark' | 'style' | 'className'>
-
-export type ExtractedOverlayProps = Pick<MarkedInputProps, 'Overlay'>
 
 export type KeyMapper = {
     "TextRef": RefObject<HTMLDivElement>,

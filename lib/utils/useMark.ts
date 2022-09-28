@@ -1,49 +1,46 @@
 import {MarkProps, Type} from "../types";
-import React, {RefObject, useCallback, useEffect, useRef, useState} from "react";
+import React, {RefObject, useCallback, useRef, useState} from "react";
 import {useRegister, useStore} from "./index";
+import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 
 export const useMark = (key: number, props: MarkProps) => {
-    const {bus} = useStore()
+    const {bus, props: {readOnly, spanStyle: style, spanClassName: className}} = useStore()
 
-    const register = useRegister()
-
-    const ref = useRef<HTMLElement>()
-
-    //TODO Rename to mark?
-    const refReg = useCallback((elementOrRefObject: HTMLElement | RefObject<any>) => {
-        let a = register(key)
-
-        if ('current' in elementOrRefObject) {
-            a(elementOrRefObject)
-        }
-        else {
-            ref.current = elementOrRefObject
-            // @ts-ignore
-            a(ref)
-        }
-    }, [])
+    const mark = useRegistration(key)
 
     const [label, setLabel] = useState(props.label)
     const [value, setValue] = useState(props.value)
 
     const onChange = useCallback((props: MarkProps) => {
         setLabel(props.label)
-        bus.send(Type.Change,{key, value: props.label})
+        bus.send(Type.Change, {key, value: props.label})
     }, [])
 
     //TODO
     const onRemove = useCallback(() => {
-        bus.send(Type.Delete,{key})
+        bus.send(Type.Delete, {key})
     }, [])
 
-    /*useEffect(() => {
-        console.log(`I was updated`)
-    })
+    const heldCaret = useHeldCaret()
 
-    useEffect(() => {
-        console.log(`I was mounted`)
-        return () => console.log(`I was unmounted`)
-    }, [])*/
 
-    return {label, value, onChange, refReg, onRemove}
+    return {label, value, onChange, mark, onRemove, heldCaret, readOnly, style, className}
+}
+
+function useRegistration(key: number) {
+    const register = useRegister()
+    const ref = useRef<HTMLElement | null>(null)
+
+    //TODO Rename to mark?
+    return useCallback((elementOrRefObject: HTMLElement | RefObject<any>) => {
+        let a = register(key)
+
+        if (elementOrRefObject && 'current' in elementOrRefObject) {
+            a(elementOrRefObject)
+        } else {
+            ref.current = elementOrRefObject
+            // @ts-ignore
+            a(ref)
+        }
+    }, [])
 }
