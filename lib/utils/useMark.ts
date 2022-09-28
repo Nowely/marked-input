@@ -1,9 +1,26 @@
 import {MarkProps, Type} from "../types";
-import {useCallback, useEffect, useRef, useState} from "react";
-import {useStore} from "./index";
+import React, {RefObject, useCallback, useEffect, useRef, useState} from "react";
+import {useRegister, useStore} from "./index";
 
 export const useMark = (key: number, props: MarkProps) => {
     const {bus} = useStore()
+
+    const register = useRegister()
+
+    const ref = useRef<HTMLElement>()
+    const refReg = useCallback((elementOrRefObject: HTMLElement | RefObject<any>) => {
+        let a = register(key)
+
+        if ('current' in elementOrRefObject) {
+            a(elementOrRefObject)
+        }
+        else {
+            ref.current = elementOrRefObject
+            // @ts-ignore
+            a(ref)
+        }
+    }, [])
+
     const [label, setLabel] = useState(props.label)
     const [value, setValue] = useState(props.value)
 
@@ -21,5 +38,5 @@ export const useMark = (key: number, props: MarkProps) => {
         return () => console.log(`I was unmounted`)
     }, [])*/
 
-    return {label, value, onChange}
+    return {label, value, onChange, refReg}
 }

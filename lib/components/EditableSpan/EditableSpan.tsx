@@ -10,17 +10,17 @@ export interface EditableSpanProps {
 }
 
 //Editable block - edit text here
-//TODO Instead forwardRef to hook
-export const EditableSpan = forwardRef((props: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
+export const EditableSpan = (props: EditableSpanProps) => {
     const {props: {span}} = useStore()
     const {readOnly, spanStyle, spanClassName} = span
     const spanRef = useRef<HTMLSpanElement>(null)
 
-    const {label, onChange} = props.useMark()
+    const {label, onChange, refReg} = props.useMark()
 
-    if (typeof ref === "function") {
+    refReg(spanRef)
+    /*if (typeof ref === "function") {
         ref(spanRef)
-    }
+    }*/
 
     const held = useHeldCaret(spanRef)
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
@@ -52,7 +52,7 @@ export const EditableSpan = forwardRef((props: EditableSpanProps, ref: Forwarded
             children={label}
         />
     )
-})
+}
 
 function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
     e.preventDefault();

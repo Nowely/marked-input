@@ -1,4 +1,4 @@
-import {isObject, useStore, usePieces} from "../../utils";
+import {isObject, useStore, usePieces, RegisterProvider} from "../../utils";
 import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
@@ -32,15 +32,18 @@ function Pieces() {
 
 
     return <>
+        <RegisterProvider value={register}>
         {[...pieces].map(([key, piece]) => {
             if (!isObject(piece))
                 return <EditableSpan
-                    ref={register(key)} key={key} label={piece}
+                    //ref={register(key)}
+                    key={key} label={piece}
                     useMark={useMark.bind(null, key, {label: piece})}
                 />
 
             const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
             return <Mark key={key} tabIndex={-1} {...markProps}/>
         })}
+        </RegisterProvider>
     </>
 }

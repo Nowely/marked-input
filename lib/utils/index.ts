@@ -120,6 +120,8 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
 export const [usePieces, PiecesProvider1] = createContext<KeyedPieces>("PiecesProvider")
+export const [useRegister, RegisterProvider] =
+    createContext<(key: number) => (ref: React.RefObject<HTMLSpanElement>) => Map<number, React.RefObject<HTMLSpanElement>>>("RegisterProvider")
 
 //TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {
