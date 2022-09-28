@@ -8,6 +8,8 @@ export const useMark = (key: number, props: MarkProps) => {
     const register = useRegister()
 
     const ref = useRef<HTMLElement>()
+
+    //TODO Rename to mark?
     const refReg = useCallback((elementOrRefObject: HTMLElement | RefObject<any>) => {
         let a = register(key)
 
