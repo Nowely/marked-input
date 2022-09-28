@@ -29,6 +29,11 @@ export const useMark = (key: number, props: MarkProps) => {
         bus.send(Type.Change,{key, value: props.label})
     }, [])
 
+    //TODO
+    const onRemove = useCallback(() => {
+        bus.send(Type.Delete,{key})
+    }, [])
+
     /*useEffect(() => {
         console.log(`I was updated`)
     })
@@ -38,5 +43,5 @@ export const useMark = (key: number, props: MarkProps) => {
         return () => console.log(`I was unmounted`)
     }, [])*/
 
-    return {label, value, onChange, refReg}
+    return {label, value, onChange, refReg, onRemove}
 }

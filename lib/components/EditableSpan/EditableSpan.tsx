@@ -12,23 +12,23 @@ export interface EditableSpanProps {
 //Editable block - edit text here
 export const EditableSpan = (props: EditableSpanProps) => {
     const {props: {span}} = useStore()
+    //TODO get spans props from useMark
     const {readOnly, spanStyle, spanClassName} = span
     const spanRef = useRef<HTMLSpanElement>(null)
 
-    const {label, onChange, refReg} = props.useMark()
+    const {label, onChange, refReg, onRemove} = props.useMark()
 
     refReg(spanRef)
     /*if (typeof ref === "function") {
         ref(spanRef)
     }*/
 
-    const held = useHeldCaret(spanRef)
+    //TODO Rename this. Move to useMark
+    const heldCaret = useHeldCaret(spanRef)
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
-        held()
+        heldCaret()
         const value = e.currentTarget.textContent ?? ""
         onChange({label: value})
-        //setValue(value)
-        //bus.send(Type.Change,{key: props.id, value})
     }
 
     /*useEffect(() => {
