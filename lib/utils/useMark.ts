@@ -11,8 +11,9 @@ export const useMark = (key: number, props: MarkProps) => {
     const [label, setLabel] = useState(props.label)
     const [value, setValue] = useState(props.value)
 
-    const onChange = useCallback((props: MarkProps) => {
-        setLabel(props.label)
+    const onChange = useCallback((props: MarkProps, options?: {silent: boolean}) => {
+        if (!options?.silent)
+            setLabel(props.label)
         bus.send(Type.Change, {key, value: props.label})
     }, [])
 
