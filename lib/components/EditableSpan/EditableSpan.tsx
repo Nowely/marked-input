@@ -12,8 +12,8 @@ export const EditableSpan = (props: EditableSpanProps) => {
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         heldCaret(e.currentTarget)
-        const value = e.currentTarget.textContent ?? ""
-        onChange({label: value}, {silent: true})
+        const label = e.currentTarget.textContent ?? ""
+        onChange({label}, {silent: true})
     }
 
     return (

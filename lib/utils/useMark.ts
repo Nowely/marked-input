@@ -1,5 +1,5 @@
 import {MarkProps, Type} from "../types";
-import React, {RefObject, useCallback, useRef, useState} from "react";
+import {RefObject, useCallback, useRef, useState} from "react";
 import {useRegister, useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 
@@ -11,7 +11,7 @@ export const useMark = (key: number, props: MarkProps) => {
     const [label, setLabel] = useState(props.label)
     const [value, setValue] = useState(props.value)
 
-    const onChange = useCallback((props: MarkProps, options?: {silent: boolean}) => {
+    const onChange = useCallback((props: MarkProps, options?: { silent: boolean }) => {
         if (!options?.silent)
             setLabel(props.label)
         bus.send(Type.Change, {key, value: props.label})
@@ -24,7 +24,6 @@ export const useMark = (key: number, props: MarkProps) => {
 
     const heldCaret = useHeldCaret()
 
-
     return {label, value, onChange, mark, onRemove, heldCaret, readOnly, style, className}
 }
 
@@ -34,6 +33,7 @@ function useRegistration(key: number) {
 
     //TODO Rename to mark?
     return useCallback((elementOrRefObject: HTMLElement | RefObject<any>) => {
+        //debugger
         let a = register(key)
 
         if (elementOrRefObject && 'current' in elementOrRefObject) {

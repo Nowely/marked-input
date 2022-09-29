@@ -24,7 +24,6 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
         [options, extractedProps, bus]
     )
 
-
     return (
         <StoreProvider value={store}>
             <PiecesProvider value={props.value} onChange={props.onChange}>
@@ -39,5 +38,7 @@ function PiecesProvider({value, children, onChange}: { onChange: (value: string)
     const pieces = useParsed(value, options)
     useMutationHandlers(onChange, pieces)
 
-    return <PiecesProvider1 value={pieces}> {children} </PiecesProvider1>
+    return <PiecesProvider1 value={pieces}>
+        {children}
+    </PiecesProvider1>
 }

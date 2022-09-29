@@ -1,4 +1,4 @@
-import {RefObject, useLayoutEffect, useRef} from "react";
+import {useLayoutEffect, useRef} from "react";
 import {Caret} from "../../../utils/Caret";
 
 /**

@@ -12,21 +12,19 @@ export const MarkedText = memo(() => {
     const {bus, props} = useStore()
     const {className, style} = props //text container
 
-    const className1 = className ? DefaultClass + " " + className : DefaultClass
+    const divClassName = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
     const events = useMemo(() => bus.events, [bus])
 
     return (
-        <div ref={ref} className={className1} style={style} {...events}>
+        <div ref={ref} className={divClassName} style={style} {...events}>
             <Pieces/>
         </div>
     )
 })
 
 function Pieces() {
-    const {options, props} = useStore()
-    //Remove groupping?
-    const {Mark} = props
+    const {options, props: {Mark}} = useStore()
     const pieces = usePieces()
     const {register} = useFocus()
 
