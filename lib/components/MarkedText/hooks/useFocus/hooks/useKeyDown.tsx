@@ -42,8 +42,6 @@ export function useKeyDown(
         }
 
         function handlePressRight() {
-            //const element = oracle.getNextElement()
-            //element?.focus()
             const node = pieces.findNode(piece => piece.ref?.current === focusedSpanRef.current)?.next?.next
             node?.data.ref?.current?.focus()
             event.preventDefault()

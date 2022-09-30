@@ -6,11 +6,6 @@ import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 export const useMark = (node: PieceNode) => {
     const {bus, props: {readOnly, spanStyle: style, spanClassName: className}} = useStore()
 
-    //const mark = useRegistration(key)
-    /*const ref = useRef<HTMLElement | null>(null)
-    node.ref = ref*/
-
-    //TODO функция по оборачиванию рефа. Использовать null
     const ref = useRef<HTMLElement | null>(null)
     const mark = useCallback((elementOrRef: HTMLElement | RefObject<HTMLElement> | null) => {
         if (elementOrRef && 'current' in elementOrRef) {
