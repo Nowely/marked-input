@@ -1,6 +1,6 @@
 import {Mark} from "../types";
 
-export class Matches implements IterableIterator<[string, Mark | null]> {
+export class ParserMatches implements IterableIterator<[string, Mark | null]> {
     done: boolean = false
 
     constructor(

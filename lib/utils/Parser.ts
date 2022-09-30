@@ -1,6 +1,6 @@
 import {Markup, Options, Piece} from "../types";
 import {markupToRegex, normalizeMark} from "./index";
-import {Matches} from "./Matches";
+import {ParserMatches} from "./ParserMatches";
 
 //TODO parser factory?
 export class Parser {
@@ -28,7 +28,7 @@ export class Parser {
     iterateMatches(value: string) {
         const result: Piece[] = []
 
-        for (let [span, mark] of new Matches(value, this.uniRegExp)) {
+        for (let [span, mark] of new ParserMatches(value, this.uniRegExp)) {
             result.push(span)
             if (mark !== null) {
                 result.push(normalizeMark(mark, this.markups[mark.childIndex]))

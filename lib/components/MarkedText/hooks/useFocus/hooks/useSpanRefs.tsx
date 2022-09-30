@@ -1,13 +1,13 @@
 import {RefObject, useCallback, useEffect, useMemo, useRef} from "react";
 import {Type} from "../../../../../types";
 import {useListener} from "../../../../../utils/useListener";
-import {usePieces} from "../../../../../utils";
+import {useValue} from "../../../../../utils";
 
 export const useSpanRefs = () => {
-    const pieces = usePieces()
+    const pieces = useValue()
     const spanRefs = useMemo(() => new Map<number, RefObject<HTMLSpanElement>>(), [])
     const register = useRef((key: number) => (ref: RefObject<HTMLSpanElement>) => {
-        if (!pieces.has(key)) return
+        //if (!pieces.has(key)) return
         //order
         spanRefs.set(key, ref);
     })

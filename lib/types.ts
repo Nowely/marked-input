@@ -4,6 +4,12 @@ import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
 import {EventBus} from "./utils/EventBus";
 
+export type PieceNode = {
+    key: number
+    piece: Piece
+    ref?: RefObject<HTMLElement>
+}
+
 //TODO rename ParsedMarkup, Match?
 export type Mark = {
     annotation: string;

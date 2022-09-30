@@ -1,8 +1,9 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Store} from "../types";
+import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Piece, PieceNode, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
+import LinkedList from "./LinkedList";
 
 export const assign = Object.assign
 
@@ -119,7 +120,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 }
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
-export const [usePieces, PiecesProvider1] = createContext<KeyedPieces>("PiecesProvider")
+export const [useValue, ValueProvider] = createContext<LinkedList<PieceNode>>("PiecesProvider")
 export const [useRegister, RegisterProvider] =
     createContext<(key: number) => (ref: React.RefObject<HTMLSpanElement>) => Map<number, React.RefObject<HTMLSpanElement>>>("RegisterProvider")
 
@@ -154,4 +155,13 @@ export function findSpanKey(span: string, pieces: KeyedPieces) {
 
 export function createNewSpan(span: string, annotation: string, index: number, source: string) {
     return span.slice(0, index) + annotation + span.slice(index + source.length)
+}
+
+export function genKey(piece: Piece, set: Set<number>) {
+    const str = isObject(piece) ? piece.label + piece.value : piece
+
+    let seed = 0, key = genHash(str, seed)
+    while (set.has(key))
+        key = genHash(str, seed++)
+    return key;
 }

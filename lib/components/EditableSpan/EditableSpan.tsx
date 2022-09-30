@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useRef} from "react";
 import {useMark} from "../../utils/useMark";
 
 export interface EditableSpanProps {
@@ -8,7 +8,7 @@ export interface EditableSpanProps {
 
 //Editable block - edit text here
 export const EditableSpan = (props: EditableSpanProps) => {
-    const {label, onChange, mark, heldCaret, className, style, readOnly} = props.useMark()
+    const {label, mark, onChange, heldCaret, className, style, readOnly} = props.useMark()
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         heldCaret(e.currentTarget)

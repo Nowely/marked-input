@@ -1,4 +1,4 @@
-import {isObject, useStore, usePieces, RegisterProvider} from "../../utils";
+import {isObject, useStore, useValue, RegisterProvider} from "../../utils";
 import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
@@ -9,12 +9,10 @@ import {Type} from "../../types";
 import {useMark} from "../../utils/useMark";
 
 export const MarkedText = memo(() => {
-    const {bus, props} = useStore()
-    const {className, style} = props //text container
-
+    const {bus, props: {className, style}} = useStore()
     const divClassName = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
-    const events = useMemo(() => bus.events, [bus])
+    const events = useMemo(() => bus.events, [])
 
     return (
         <div ref={ref} className={divClassName} style={style} {...events}>
@@ -25,23 +23,20 @@ export const MarkedText = memo(() => {
 
 function Pieces() {
     const {options, props: {Mark}} = useStore()
-    const pieces = usePieces()
+    const pieces = useValue()
     const {register} = useFocus()
 
 
     return <>
-        <RegisterProvider value={register}>
-        {[...pieces].map(([key, piece]) => {
-            if (!isObject(piece))
+        {pieces.toArray().map((node) => {
+            if (!isObject(node.piece))
                 return <EditableSpan
-                    //ref={register(key)}
-                    key={key} label={piece}
-                    useMark={useMark.bind(null, key, {label: piece})}
+                    key={node.key} label={node.piece}
+                    useMark={useMark.bind(null, node)}
                 />
 
-            const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
-            return <Mark key={key} tabIndex={-1} {...markProps}/>
+            const markProps = options[node.piece.childIndex].initMark?.(node.piece) ?? node.piece
+            return <Mark key={node.key} {...markProps}/>
         })}
-        </RegisterProvider>
     </>
 }
