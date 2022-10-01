@@ -1,4 +1,4 @@
-import {MarkProps, NodeData, Type} from "../types";
+import {Mark, MarkProps, NodeData, Type} from "../types";
 import {RefObject, useCallback, useRef, useState} from "react";
 import {isObject, useRegister, useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
@@ -16,16 +16,15 @@ export const useMark = (node: NodeData) => {
         node.ref = ref
     }, [])
 
-    //const a = isObject(node.piece) ?? node.piece : node.piece
-    // @ts-ignore
-    const [label, setLabel] = useState<string>(node.piece)
-    //const [value, setValue] = useState<string>(props.value)
+    const [label, setLabel] = useState<string>(node.piece.label)
+    const [value, setValue] = useState<string | undefined>(node.piece.value)
 
-    const onChange = useCallback((props: MarkProps, options?: { silent: boolean }) => {
+    const onChange = useCallback((props: Mark, options?: { silent: boolean }) => {
         if (!options?.silent) {
             setLabel(props.label)
+            setValue(props.value)
         }
-        bus.send(Type.Change, {key: node.key, value: props.label})
+        bus.send(Type.Change, {key: node.key, value: {...props}})
     }, [])
 
     //TODO
@@ -35,7 +34,7 @@ export const useMark = (node: NodeData) => {
 
     const heldCaret = useHeldCaret()
 
-    return {label, mark, onChange, onRemove, heldCaret, readOnly, style, className}
+    return {label, value, mark, onChange, onRemove, heldCaret, readOnly, style, className}
 }
 
 function useRegistration(key: number) {

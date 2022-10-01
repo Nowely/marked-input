@@ -1,4 +1,4 @@
-import {MarkProps, Payload, Piece, NodeData, Store, Trigger, Type} from "../../../types";
+import {MarkProps, Payload, Piece, NodeData, Store, Trigger, Type, Mark} from "../../../types";
 import {annotate, createNewSpan, findSpanKey, toString, useStore} from "../../../utils";
 import {useListener} from "../../../utils/useListener";
 import LinkedList from "../../../utils/LinkedList";
@@ -9,14 +9,15 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
 
 
     useListener(Type.Change, (event: Payload) => {
-        const {key, value = ""} = event
+        const {key, value} = event
         const piece = pieces.find(data => data.key === key)
-        if (piece) piece.piece = value
+        if (piece && value) {
+            piece.piece.label = value.label
+            piece.piece.value = value.value
+        }
 
         const values = pieces.toArray().map(value1 => value1.piece)
         onChange(toString(values, options))
-        //pieces.set(key, value)
-        //onChange(toString([...pieces.values()], options))
     }, [pieces, onChange])
 
     useListener(Type.Delete, (event: Payload) => {
@@ -30,15 +31,19 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
         //onChange(toString([...pieces.values()], options))
     }, [pieces, onChange])
 
-    useListener(Type.Select, (event: { value: MarkProps, trigger: Trigger }) => {
+    useListener(Type.Select, (event: { value: Mark, trigger: Trigger }) => {
         const {value, trigger: {option, span, index, source}} = event
 
         const annotation = annotate(option.markup, value.label, value.value)
         const newSpan = createNewSpan(span, annotation, index, source);
         //const key = findSpanKey(span, pieces)
-        const piece = pieces.findNode(data => data.piece === span)
+        const piece = pieces.findNode(data => data.piece.label === span)
 
-        if (piece)
-            bus.send(Type.Change, {value: newSpan, key: piece.data.key})
+        if (piece) {
+            piece.data.piece.label = newSpan
+            //piece.data.piece.value = value.value
+            //bus.send(Type.Change, {value: newSpan, key: piece.data.key})
+            bus.send(Type.Change, {value: {label: newSpan}, key: piece.data.key})
+        }
     }, [pieces, onChange])
 }

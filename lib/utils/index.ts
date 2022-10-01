@@ -1,6 +1,17 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Piece, NodeData, Store} from "../types";
+import {
+    ElementOptions,
+    EventName,
+    KeyedPieces,
+    AnnotatedMark,
+    Markup,
+    Options,
+    Piece,
+    NodeData,
+    Store,
+    Mark
+} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
 import LinkedList from "./LinkedList";
@@ -34,7 +45,7 @@ export function annotate(markup: Markup, label: string, value?: string): string 
 /**
  * Transform the annotated text to the another text
  */
-export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]): string {
+export function denote(value: string, callback: (mark: AnnotatedMark) => string, ...markups: Markup[]): string {
     if (!markups.length) return value
     const pieces = new Parser(markups).split(value)
     return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
@@ -43,17 +54,17 @@ export function denote(value: string, callback: (mark: Mark) => string, ...marku
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | Mark)[], options: Options) {
+export function toString(values: Mark[], options: Options) {
     let result = ""
     for (let value of values) {
-        result += isObject(value)
+        result += isAnnotated(value)
             ? annotate(options[value.childIndex].markup, value.label, value.value)
-            : value
+            : value.label
     }
     return result
 }
 
-export const normalizeMark = (mark: Mark, markup: Markup) => {
+export const normalizeMark = (mark: AnnotatedMark, markup: Markup) => {
     if (mark.annotation !== annotate(markup, mark.label, mark.value))
         return {...mark, label: mark.value, value: mark.label}
     return mark
@@ -75,6 +86,10 @@ export const genHash = (str: string, seed = 0) => {
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
+
+export const isAnnotated = (value: unknown): value is AnnotatedMark => {
+    return value !== null && typeof value === 'object' && 'annotation' in value
+}
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 

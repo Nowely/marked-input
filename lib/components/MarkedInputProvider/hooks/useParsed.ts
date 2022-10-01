@@ -1,5 +1,5 @@
 import {useMemo, useRef} from "react";
-import {genKey} from "../../../utils";
+import {genKey, isObject} from "../../../utils";
 import {Options, NodeData} from "../../../types";
 import {Parser} from "../../../utils/Parser";
 import LinkedList from "../../../utils/LinkedList";
@@ -20,7 +20,7 @@ export const useParsed = (value: string, options: Options): LinkedList<NodeData>
             const key = genKey(piece, set)
             const node = previous?.findNode(data => data.key === key)
             if (node) return node.data
-            return ({key, piece});
+            return ({key, piece: isObject(piece) ? piece : {label: piece}});
         })
 
         ref.current = LinkedList.from(data)

@@ -1,11 +1,11 @@
-import {isObject, useStore, useValue, RegisterProvider} from "../../utils";
+import {isObject, useStore, useValue, RegisterProvider, isAnnotated} from "../../utils";
 import {EditableSpan} from "../EditableSpan";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
 import {memo, ReactNode, useEffect, useMemo, useReducer} from "react";
 import {useListener} from "../../utils/useListener";
-import {Type} from "../../types";
+import {MarkProps, NodeData, Type} from "../../types";
 import {useMark} from "../../utils/useMark";
 
 export const MarkedText = memo(() => {
@@ -26,17 +26,24 @@ function Pieces() {
     const pieces = useValue()
     useFocus()
 
-
     return <>
         {pieces.toArray().map((node) => {
-            if (!isObject(node.piece))
-                return <EditableSpan
-                    key={node.key} label={node.piece}
-                    useMark={useMark.bind(null, node)}
-                />
+            const defaultProps = getDefaultProps(node)
 
-            const markProps = options[node.piece.childIndex].initMark?.(node.piece) ?? node.piece
-            return <Mark key={node.key} {...markProps}/>
+            if (!isAnnotated(node.piece))
+                return <EditableSpan key={node.key} {...defaultProps}/>
+
+            const props = options[node.piece.childIndex].initMark?.(defaultProps) ?? defaultProps
+            return <Mark key={node.key} {...props}/>
         })}
     </>
+}
+
+function getDefaultProps(node: NodeData): MarkProps {
+    const boundUseMark = useMark.bind(null, node)
+    return {
+        label: node.piece.label,
+        value: node.piece.value,
+        useMark: boundUseMark
+    }
 }
