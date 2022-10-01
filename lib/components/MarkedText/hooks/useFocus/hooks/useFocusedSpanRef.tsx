@@ -1,11 +1,16 @@
 import {FocusEvent, useRef} from "react";
 import {useListener} from "../../../../../utils/useListener";
+import {useValue} from "../../../../../utils";
+import {PieceNode} from "../../../../../types";
 
 export const useFocusedSpanRef = () => {
-    const spanRef = useRef<HTMLElement | null>(null)
+    const list = useValue()
+    const spanRef = useRef<PieceNode | undefined>()
 
-    useListener("onFocus", (e: FocusEvent<HTMLElement>) => spanRef.current = e.target, [])
-    useListener("onBlur", _ => spanRef.current = null, [])
+    useListener("onFocus", (e: FocusEvent<HTMLElement>) => {
+        spanRef.current = list.find(data => data.ref?.current === e.target)
+    }, [list])
+    useListener("onBlur", _ => spanRef.current = undefined, [])
 
     return spanRef
 };

@@ -1,24 +1,21 @@
 import {KeyboardEvent, MutableRefObject, RefObject, useEffect} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {KEY} from "../../../../../constants";
-import {Type} from "../../../../../types";
+import {PieceNode, Type} from "../../../../../types";
 import {useStore, useValue} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
-import {Oracle} from "../../../../../utils/Oracle";
 import {useListener} from "../../../../../utils/useListener";
 
 //TODO clean up
 export function useKeyDown(
-    spanRefs: Map<number, RefObject<HTMLElement>>,
     recoveryRef: MutableRefObject<Recovery | null>,
-    focusedSpanRef: MutableRefObject<HTMLElement | null>
+    focusedSpanRef: MutableRefObject<PieceNode | undefined>
 ) {
     const {bus} = useStore()
     const pieces = useValue()
 
     //TODO fix broken this because of pieces. Move to value provider
     useListener("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
-        //const oracle = new Oracle(focusedSpanRef, spanRefs, recoveryRef, pieces)
         const target = event.target as HTMLSpanElement
         const caretIndex = Caret.getCaretIndex(target);
         const isStartCaret = caretIndex === 0;
@@ -36,32 +33,33 @@ export function useKeyDown(
 
         function handlePressLeft() {
             //TODO find first with ref element
-            const node = pieces.findNode(piece => piece.ref?.current === focusedSpanRef.current)?.prev?.prev
+            const node = pieces.findNode(piece => piece === focusedSpanRef.current)?.prev?.prev
             Caret.setCaretToEnd(node?.data.ref?.current!)
             event.preventDefault()
         }
 
         function handlePressRight() {
-            const node = pieces.findNode(piece => piece.ref?.current === focusedSpanRef.current)?.next?.next
+            const node = pieces.findNode(piece => piece === focusedSpanRef.current)?.next?.next
             node?.data.ref?.current?.focus()
             event.preventDefault()
         }
 
         function handlePressBackspace() {
-            const node = pieces.findNode(piece => piece.ref?.current === focusedSpanRef.current)?.prev
+            const node = pieces.findNode(piece => piece === focusedSpanRef.current)?.prev
             if (!node?.data.key) return
 
-            //TODO
-            //oracle.recoverLeft()
+            const caretPosition = typeof node.prev?.data.piece === 'string' ? node.prev?.data.piece.length : 0
+            recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
             bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
         }
 
         function handlePressDelete() {
-            const node = pieces.findNode(piece => piece.ref?.current === focusedSpanRef.current)?.next
+            const node = pieces.findNode(piece => piece === focusedSpanRef.current)?.next
             if (!node?.data.key) return
 
-            //oracle.recoverRight()
+            const caretPosition = typeof node.prev?.data.piece === 'string' ? node.prev?.data.piece.length : 0
+            recoveryRef.current = {prevNodeData: node.prev?.data, caretPosition}
             bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
         }

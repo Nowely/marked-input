@@ -1,13 +1,10 @@
-import {RefObject} from "react";
 import {useListener} from "../../../../../utils/useListener";
+import {useValue} from "../../../../../utils";
 
-export const useFocusOnEmptyInput = (spanRefs: Map<number, RefObject<HTMLSpanElement>>) => {
+export const useFocusOnEmptyInput = () => {
+    const list = useValue()
     useListener("onClick", () => {
-        if (spanRefs.size === 1) {
-            const element = [...spanRefs.values()][0].current
-            if (element?.textContent === "") {
-                element.focus()
-            }
-        }
+        if (list.length === 1 && list.head?.data.piece === "")
+            list.head?.data.ref?.current?.focus()
     }, [])
 };

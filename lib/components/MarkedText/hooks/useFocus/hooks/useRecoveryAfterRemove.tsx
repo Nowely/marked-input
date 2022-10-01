@@ -1,26 +1,30 @@
 import {RefObject, useEffect, useRef} from "react";
 import {Caret} from "../../../../../utils/Caret";
+import {PieceNode} from "../../../../../types";
+import {useValue} from "../../../../../utils";
 
 //TODO move to types
 export type Recovery = {
-    key: number
-    caret: number
+    prevNodeData?: PieceNode
+    caretPosition: number
 }
 
-export const useRecoveryAfterRemove = (refMap: Map<number, RefObject<HTMLSpanElement>>) => {
+export const useRecoveryAfterRemove = () => {
+    const list = useValue()
     const recoveryRef = useRef<Recovery | null>(null)
 
     //Restore focus after delete mark
     useEffect(() => {
         if (recoveryRef.current) {
-            const {key, caret} = recoveryRef.current
+            const {prevNodeData, caretPosition} = recoveryRef.current
 
-            let refSpan = refMap.get(key)?.current
-            refSpan?.focus()
+            const node = list.findNode(data => data === prevNodeData)
+            const newNode = node?.next ?? list.head
+            const element = newNode?.data.ref?.current
+            element?.focus()
 
-            if (refSpan) {
-                Caret.trySetIndex(refSpan, caret)
-            }
+            if (element)
+                Caret.trySetIndex(element, caretPosition)
 
             recoveryRef.current = null
         }

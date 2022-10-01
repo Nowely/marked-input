@@ -16,7 +16,7 @@ export const useHeldCaret = () => {
 
 
     function restore() {
-        const el = window.getSelection()?.anchorNode
+        const el = window.getSelection()?.anchorNode as HTMLElement
         if (el)
             Caret.trySetIndex(el, index.current)
         index.current = NaN

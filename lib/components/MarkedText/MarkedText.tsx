@@ -24,7 +24,7 @@ export const MarkedText = memo(() => {
 function Pieces() {
     const {options, props: {Mark}} = useStore()
     const pieces = useValue()
-    const {register} = useFocus()
+    useFocus()
 
 
     return <>
