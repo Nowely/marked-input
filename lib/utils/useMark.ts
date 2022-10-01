@@ -27,8 +27,9 @@ export const useMark = (node: NodeData) => {
         bus.send(Type.Change, {key: node.key, value: {...props}})
     }, [])
 
-    //TODO
     const onRemove = useCallback(() => {
+        setLabel('')
+        setValue(undefined)
         bus.send(Type.Delete, {key: node.key})
     }, [])
 
