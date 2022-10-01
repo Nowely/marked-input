@@ -6,5 +6,5 @@ export const useFocusOnEmptyInput = () => {
     useListener("onClick", () => {
         if (list.length === 1 && list.head?.data.piece.label === "")
             list.head?.data.ref?.current?.focus()
-    }, [])
+    }, [list])
 };
