@@ -1,7 +1,7 @@
 import {KeyboardEvent, MutableRefObject, RefObject, useEffect} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {KEY} from "../../../../../constants";
-import {PieceNode, Type} from "../../../../../types";
+import {NodeData, Type} from "../../../../../types";
 import {useStore, useValue} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
 import {useListener} from "../../../../../utils/useListener";
@@ -9,7 +9,7 @@ import {useListener} from "../../../../../utils/useListener";
 //TODO clean up
 export function useKeyDown(
     recoveryRef: MutableRefObject<Recovery | null>,
-    focusedSpanRef: MutableRefObject<PieceNode | undefined>
+    focusedSpanRef: MutableRefObject<NodeData | undefined>
 ) {
     const {bus} = useStore()
     const pieces = useValue()

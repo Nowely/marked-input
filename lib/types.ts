@@ -4,7 +4,7 @@ import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
 import {EventBus} from "./utils/EventBus";
 
-export type PieceNode = {
+export type NodeData = {
     key: number
     piece: Piece
     ref?: RefObject<HTMLElement>

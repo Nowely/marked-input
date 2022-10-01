@@ -1,9 +1,9 @@
-import {MarkProps, PieceNode, Type} from "../types";
+import {MarkProps, NodeData, Type} from "../types";
 import {RefObject, useCallback, useRef, useState} from "react";
 import {isObject, useRegister, useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 
-export const useMark = (node: PieceNode) => {
+export const useMark = (node: NodeData) => {
     const {bus, props: {readOnly, spanStyle: style, spanClassName: className}} = useStore()
 
     const ref = useRef<HTMLElement | null>(null)

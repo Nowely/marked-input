@@ -1,11 +1,11 @@
 import {RefObject, useEffect, useRef} from "react";
 import {Caret} from "../../../../../utils/Caret";
-import {PieceNode} from "../../../../../types";
+import {NodeData} from "../../../../../types";
 import {useValue} from "../../../../../utils";
 
 //TODO move to types
 export type Recovery = {
-    prevNodeData?: PieceNode
+    prevNodeData?: NodeData
     caretPosition: number
 }
 

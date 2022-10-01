@@ -1,10 +1,10 @@
-import {MarkProps, Payload, Piece, PieceNode, Store, Trigger, Type} from "../../../types";
+import {MarkProps, Payload, Piece, NodeData, Store, Trigger, Type} from "../../../types";
 import {annotate, createNewSpan, findSpanKey, toString, useStore} from "../../../utils";
 import {useListener} from "../../../utils/useListener";
 import LinkedList from "../../../utils/LinkedList";
 
 //TODO upgrade to full members of react events to external
-export function useMutationHandlers(onChange: (value: string) => void, pieces: LinkedList<PieceNode>) {
+export function useMutationHandlers(onChange: (value: string) => void, pieces: LinkedList<NodeData>) {
     const {bus, options} = useStore()
 
 

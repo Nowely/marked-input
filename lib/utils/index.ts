@@ -1,6 +1,6 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Piece, PieceNode, Store} from "../types";
+import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Piece, NodeData, Store} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
 import LinkedList from "./LinkedList";
@@ -120,7 +120,7 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
 }
 
 export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
-export const [useValue, ValueProvider] = createContext<LinkedList<PieceNode>>("PiecesProvider")
+export const [useValue, ValueProvider] = createContext<LinkedList<NodeData>>("PiecesProvider")
 export const [useRegister, RegisterProvider] =
     createContext<(key: number) => (ref: React.RefObject<HTMLSpanElement>) => Map<number, React.RefObject<HTMLSpanElement>>>("RegisterProvider")
 
