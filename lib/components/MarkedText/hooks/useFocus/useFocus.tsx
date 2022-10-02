@@ -1,11 +1,11 @@
 import {useRecoveryAfterRemove} from "./hooks/useRecoveryAfterRemove";
-import {useFocusedSpanRef} from "./hooks/useFocusedSpanRef";
+import {useFocusedNodeRef} from "./hooks/useFocusedNodeRef";
 import {useKeyDown} from "./hooks/useKeyDown";
 import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput";
 
 export const useFocus = () => {
-    const focusedSpanRef = useFocusedSpanRef()
+    const focusedNodeRef = useFocusedNodeRef()
     const recoveryRef = useRecoveryAfterRemove()
-    useKeyDown(recoveryRef, focusedSpanRef)
+    useKeyDown(recoveryRef, focusedNodeRef)
     useFocusOnEmptyInput()
 }
