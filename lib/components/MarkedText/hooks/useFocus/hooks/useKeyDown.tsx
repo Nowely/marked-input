@@ -40,6 +40,7 @@ export function useKeyDown(
                 Caret.trySetIndex(node.data.ref.current, node.data.ref.current.textContent.length - 1)
             } else {*/
             const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
+            element?.focus()
             Caret.setCaretToEnd(element)
             //}
 
