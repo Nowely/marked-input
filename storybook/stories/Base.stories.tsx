@@ -42,7 +42,6 @@ export const Configured = () => {
         "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
         "For found mark used @[annotations](default:123)."
     )
-    const [val, setVal] = useState(bigString)
 
     const displayText = denote(value, mark => mark.label, Primary, Default)
 
@@ -53,36 +52,30 @@ export const Configured = () => {
                 value={value} onChange={setValue}
             />
 
-            {/*TODO uncomment*/}
-            {/*<Text label="Plaint text:" value={value}/>
-            <Text label="Display text (denoted):" value={displayText}/>*/}
+            <Text label="Plaint text:" value={value}/>
+            <Text label="Display text (denoted):" value={displayText}/>
         </>
     )
 }
 
-const string = "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
-    "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
-    "For found mark used @[annotations](default:123)."
-
-const bigString = f(string, 10)
-//console.log(bigString)
-
-function f(value: string, count: number) {
-    let result = value
-    for (let i = 0; i < count; i++){
-        result = result + result
-    }
-    return result
-}
-
 //TODO HTML editable tag
-/*
-interface TagProps {
-    as: string,
-    children?: string
-}
+const Tag = ({label, useMark}: MarkProps) => {
+    const {mark, value, onChange} = useMark()
 
-const Tag = ({as, children}: TagProps) => createElement(as, {children})
+    return createElement(label, {
+        ref: mark,
+        contentEditable: true,
+        suppressContentEditableWarning: true,
+        children: value,
+        style: {
+            outline: 'none',
+            whiteSpace: 'pre-wrap'
+        },
+        onInput: (e) => {
+            onChange({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
+        }
+    })
+}
 
 export const RichEditor = () => {
     const [value, setValue] = useState(`This example contain code of using the <b>initMark> prop.
@@ -91,13 +84,10 @@ It appears to use any mark by initialize from default <b>MarkProps> to mark's pr
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option<TagProps>
-                    markup="<__label__>__value__>"
-                    initMark={({label, value}) => ({as: label, children: value})}
-                />
+                <Option markup="<__label__>__value__>"/>
             </MarkedInput>
 
             <Text label="Plaint text:" value={value}/>
         </>
     )
-}*/
+}
