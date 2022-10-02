@@ -75,7 +75,7 @@ export function useKeyDown(
             if (!node?.data.key) return
 
             const caretPosition = node.prev?.data.piece.label.length ?? 0
-            recoveryRef.current = {prevNodeData: node.prev?.data, caretPosition}
+            recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
             bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
         }
