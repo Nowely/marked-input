@@ -34,13 +34,14 @@ export function useKeyDown(
         function handlePressLeft() {
             const node = focusedNodeRef.current?.prev
 
-            if (node?.data.ref?.current && node.data.ref.current.textContent) {
+            //TODO offset for focused text?
+            /*if (node?.data.ref?.current && node.data.ref.current.textContent) {
                 node.data.ref.current.focus()
                 Caret.trySetIndex(node.data.ref.current, node.data.ref.current.textContent.length - 1)
-            } else {
-                const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
-                Caret.setCaretToEnd(element)
-            }
+            } else {*/
+            const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
+            Caret.setCaretToEnd(element)
+            //}
 
             event.preventDefault()
         }
@@ -48,13 +49,13 @@ export function useKeyDown(
         function handlePressRight() {
             const node = focusedNodeRef.current?.next
 
-            if (node?.data.ref?.current && node.data.ref.current.textContent) {
+            /*if (node?.data.ref?.current && node.data.ref.current.textContent) {
                 node.data.ref.current.focus()
                 Caret.trySetIndex(node.data.ref.current, 1)
-            } else {
-                const element = node?.data.ref?.current ?? node?.next?.data.ref?.current
-                element?.focus()
-            }
+            } else {*/
+            const element = node?.data.ref?.current ?? node?.next?.data.ref?.current
+            element?.focus()
+            //}
 
             event.preventDefault()
         }
