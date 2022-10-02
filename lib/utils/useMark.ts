@@ -1,20 +1,13 @@
-import {Mark, MarkProps, NodeData, Type} from "../types";
+import {Mark, NodeData, Type} from "../types";
 import {RefObject, useCallback, useRef, useState} from "react";
-import {isObject, useRegister, useStore} from "./index";
+import {useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 
+//TODO
 export const useMark = (node: NodeData) => {
     const {bus, props: {readOnly, spanStyle: style, spanClassName: className}} = useStore()
 
-    const ref = useRef<HTMLElement | null>(null)
-    const mark = useCallback((elementOrRef: HTMLElement | RefObject<HTMLElement> | null) => {
-        if (elementOrRef && 'current' in elementOrRef) {
-            node.ref = elementOrRef
-            return
-        }
-        ref.current = elementOrRef
-        node.ref = ref
-    }, [])
+    const mark = useRegistration(node)
 
     const [label, setLabel] = useState<string>(node.piece.label)
     const [value, setValue] = useState<string | undefined>(node.piece.value)
@@ -38,20 +31,14 @@ export const useMark = (node: NodeData) => {
     return {label, value, mark, onChange, onRemove, heldCaret, readOnly, style, className}
 }
 
-function useRegistration(key: number) {
-    const register = useRegister()
+function useRegistration(node: NodeData) {
     const ref = useRef<HTMLElement | null>(null)
-
-    //TODO Rename to mark?
-    return useCallback((elementOrRef: HTMLElement | RefObject<any>) => {
-        let a = register(key)
-
+    return useCallback((elementOrRef: HTMLElement | RefObject<HTMLElement> | null) => {
         if (elementOrRef && 'current' in elementOrRef) {
-            a(elementOrRef)
-        } else {
-            ref.current = elementOrRef
-            // @ts-ignore
-            a(ref)
+            node.ref = elementOrRef
+            return
         }
+        ref.current = elementOrRef
+        node.ref = ref
     }, [])
 }

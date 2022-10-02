@@ -1,6 +1,6 @@
 import {ReactNode, useMemo, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {StoreProvider, ValueProvider, useStore} from "../../utils";
+import {useStore, StoreContext, ValueContext} from "../../utils";
 import {useOptions} from "./hooks/useOptions";
 import {useParsed} from "./hooks/useParsed";
 import {EventBus} from "../../utils/EventBus";
@@ -25,20 +25,21 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
     )
 
     return (
-        <StoreProvider value={store}>
+        <StoreContext.Provider value={store}>
             <ProceedValueProvider value={props.value} onChange={props.onChange}>
                 {children}
             </ProceedValueProvider>
-        </StoreProvider>
+        </StoreContext.Provider>
     )
 }
 
+//TODO
 function ProceedValueProvider({value, children, onChange}: { onChange: (value: string) => void, value: string, children: ReactNode }) {
     const {options} = useStore()
     const pieces = useParsed(value, options)
     useMutationHandlers(onChange, pieces)
 
-    return <ValueProvider value={pieces}>
+    return <ValueContext.Provider value={pieces}>
         {children}
-    </ValueProvider>
+    </ValueContext.Provider>
 }

@@ -113,14 +113,15 @@ export function extractOptions(options?: ElementOptions<any> | OptionProps[]): O
     }
 }
 
-const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] => {
-    const context = React.createContext<T | undefined>(undefined)
-    context.displayName = name
+const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T>>] => {
+    const defaultContext = React.createContext<T | undefined>(undefined)
+    defaultContext.displayName = name
 
-    const hook = createContextHook(context)
-    const provider = context.Provider as Provider<NonNullable<T>>
+    const hook = createContextHook(defaultContext)
+    //const provider = defaultContext.Provider as Provider<NonNullable<T>>
+    const context = defaultContext as  React.Context<NonNullable<T>>
 
-    return [hook, provider]
+    return [hook, context]
 
 
     function createContextHook<T, >(context: Context<T>) {
@@ -134,10 +135,8 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
     }
 }
 
-export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
-export const [useValue, ValueProvider] = createContext<LinkedList<NodeData>>("PiecesProvider")
-export const [useRegister, RegisterProvider] =
-    createContext<(key: number) => (ref: React.RefObject<HTMLSpanElement>) => Map<number, React.RefObject<HTMLSpanElement>>>("RegisterProvider")
+export const [useStore, StoreContext] = createContext<Store>("MarkedInputStoreProvider")
+export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("PiecesProvider")
 
 //TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {
