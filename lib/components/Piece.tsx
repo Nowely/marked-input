@@ -11,6 +11,7 @@ export function Piece({node}: { node: NodeData }) {
     if (!isAnnotated(node.piece)) return <EditableSpan {...defaultProps}/>
 
     const props = options[node.piece.childIndex].initMark?.(defaultProps) ?? defaultProps
+    // @ts-ignore
     return <Mark {...props}/>
 }
 
@@ -19,6 +20,7 @@ function getDefaultProps(node: NodeData): MarkProps {
     return {
         label: node.piece.label,
         value: node.piece.value,
+    // @ts-ignore
         useMark: boundUseMark
     }
 }
