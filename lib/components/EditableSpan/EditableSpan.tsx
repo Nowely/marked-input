@@ -1,42 +1,30 @@
-import React, {ForwardedRef, forwardRef, RefObject, useRef} from "react";
-import {useStore} from "../../utils";
-import {useHeldCaret} from "./hooks/useHeldCaret";
-import {Type} from "../../types";
+import React from "react";
+import {MarkProps} from "../../types";
 
-export interface EditableSpanProps {
-    id: number
-    value: string
-}
+//Editable block - edit text here
+export const EditableSpan = (props: MarkProps) => {
+    // @ts-ignore
+    const {label, mark, onChange, heldCaret, className, style, readOnly} = props.useMark()
 
-//TODO Instead forwardRef to hook
-export const EditableSpan = forwardRef(({id, value}: EditableSpanProps, ref: ForwardedRef<RefObject<HTMLSpanElement>>) => {
-    const {bus, props: {readOnly, spanStyle, spanClassName}} = useStore()
-    const spanRef = useRef<HTMLSpanElement>(null)
-
-    if (typeof ref === "function") {
-        ref(spanRef)
-    }
-
-    const held = useHeldCaret(spanRef)
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
-        held()
-        const value = e.currentTarget.textContent ?? ""
-        bus.send(Type.Change,{key: id, value})
+        heldCaret(e.currentTarget)
+        const label = e.currentTarget.textContent ?? ""
+        onChange({label}, {silent: true})
     }
 
     return (
         <span
-            ref={spanRef}
-            style={spanStyle}
-            className={spanClassName}
+            ref={mark}
+            style={style}
+            className={className}
             contentEditable={!readOnly}
             suppressContentEditableWarning
             onInput={handleInput}
             onPaste={handlePaste}
-            children={value}
+            children={label}
         />
     )
-})
+}
 
 function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
     e.preventDefault();

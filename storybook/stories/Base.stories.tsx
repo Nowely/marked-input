@@ -32,6 +32,9 @@ const ConfiguredMarkedInput = createMarkedInput(Button, [{
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
 }]);
+const style = {minWidth: 100}
+
+const spanStyle = {width: 'auto', minWidth: 10}
 
 export const Configured = () => {
     const [value, setValue] = useState(
@@ -45,7 +48,7 @@ export const Configured = () => {
     return (
         <>
             <ConfiguredMarkedInput
-                style={{minWidth: 100}} spanStyle={{width: 'auto', minWidth: 10}}
+                style={style} spanStyle={spanStyle}
                 value={value} onChange={setValue}
             />
 
@@ -56,28 +59,42 @@ export const Configured = () => {
 }
 
 //TODO HTML editable tag
-/*
-interface TagProps {
-    as: string,
-    children?: string
+// @ts-ignore
+const Tag = ({label, useMark}: MarkProps) => {
+    const {mark, value, onChange} = useMark() as ReturnType<typeof useMark>
+
+    return createElement(label, {
+        ref: mark,
+        contentEditable: true,
+        suppressContentEditableWarning: true,
+        children: value,
+        style: {
+            outline: 'none',
+            whiteSpace: 'pre-wrap'
+        },
+        onInput: (e) => {
+            onChange({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
+        }
+    })
 }
 
-const Tag = ({as, children}: TagProps) => createElement(as, {children})
-
 export const RichEditor = () => {
-    const [value, setValue] = useState(`This example contain code of using the <b>initMark> prop.
-It appears to use any mark by initialize from default <b>MarkProps> to mark's props.`)
+    const [value, setValue] = useState(`<h4>Dynamic marks:>` +
+        `<i>This page introduces a feature that has not yet been published.>
+
+This feature allows you to use dynamic marks to edit itself and beyond.
+
+It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked>, <small>smaller>, <del>deleted>, 
+<ins>inserted>, <sub>subscript> and other types of text.`)
 
     return (
         <>
             <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option<TagProps>
-                    markup="<__label__>__value__>"
-                    initMark={({label, value}) => ({as: label, children: value})}
-                />
+                <Option markup="<__label__>__value__>"/>
             </MarkedInput>
 
+            <br/>
             <Text label="Plaint text:" value={value}/>
         </>
     )
-}*/
+}

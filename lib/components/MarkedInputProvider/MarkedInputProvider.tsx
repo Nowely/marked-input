@@ -1,11 +1,12 @@
-import {ReactNode, useState} from "react";
+import {ReactNode, useMemo, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {StoreProvider} from "../../utils";
+import {useStore, StoreContext, ValueContext} from "../../utils";
 import {useOptions} from "./hooks/useOptions";
 import {useParsed} from "./hooks/useParsed";
 import {EventBus} from "../../utils/EventBus";
 import {useMutationHandlers} from "./hooks/useMutationHandlers";
 import {Store} from "../../types";
+import {useExtractedProps} from "./hooks/useExtractedProps";
 
 interface MarkedInputProviderProps {
     props: MarkedInputProps<any, any>
@@ -14,12 +15,31 @@ interface MarkedInputProviderProps {
 
 export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps) => {
     const options = useOptions(props.children)
-    const pieces = useParsed(props.value, options)
     const bus = useState(EventBus.withExternalEventsFrom(props))[0]
-    const store: Store = {options, props, pieces, bus}
 
-    useMutationHandlers(store)
+    const extractedProps = useExtractedProps(props)
 
-    return <StoreProvider value={store}> {children} </StoreProvider>
+    const store: Store = useMemo(
+        () => ({options, bus, props: extractedProps}),
+        [options, extractedProps, bus]
+    )
+
+    return (
+        <StoreContext.Provider value={store}>
+            <ProceedValueProvider value={props.value} onChange={props.onChange}>
+                {children}
+            </ProceedValueProvider>
+        </StoreContext.Provider>
+    )
 }
 
+//TODO
+function ProceedValueProvider({value, children, onChange}: { onChange: (value: string) => void, value: string, children: ReactNode }) {
+    const {options} = useStore()
+    const pieces = useParsed(value, options)
+    useMutationHandlers(onChange, pieces)
+
+    return <ValueContext.Provider value={pieces}>
+        {children}
+    </ValueContext.Provider>
+}

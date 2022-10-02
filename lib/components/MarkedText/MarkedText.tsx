@@ -1,26 +1,21 @@
-import {isObject, useStore} from "../../utils";
-import {EditableSpan} from "../EditableSpan";
+import {useStore, useValue} from "../../utils";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
-import {useMemo} from "react";
+import {memo, useMemo} from "react";
+import {Piece} from "../Piece";
 
-export const MarkedText = () => {
-    const {pieces, bus, options, props: {Mark, ...props}} = useStore()
-    const {register} = useFocus()
-    const className = props.className ? DefaultClass + " " + props.className : DefaultClass
+export const MarkedText = memo(() => {
+    const {bus, props: {className, style}} = useStore()
+    const divClassName = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
-    const events = useMemo(() => bus.events, [bus])
+    const events = useMemo(() => bus.events, [])
+    const pieces = useValue()
+    useFocus()
 
     return (
-        <div ref={ref} className={className} style={props.style} {...events}>
-            {[...pieces].map(([key, piece]) => {
-                if (!isObject(piece))
-                    return <EditableSpan ref={register(key)} id={key} key={key} value={piece}/>
-
-                const markProps = options[piece.childIndex].initMark?.(piece) ?? piece
-                return <Mark key={key} tabIndex={-1} {...markProps}/>
-            })}
+        <div ref={ref} className={divClassName} style={style} {...events}>
+            {pieces.toArray().map((node) => <Piece key={node.key} node={node}/>)}
         </div>
     )
-}
+})

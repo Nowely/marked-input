@@ -1,26 +1,25 @@
 import {KeyboardEvent, MutableRefObject, RefObject, useEffect} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {KEY} from "../../../../../constants";
-import {Type} from "../../../../../types";
+import {NodeData, Type} from "../../../../../types";
 import {useStore} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
-import {Oracle} from "../../../../../utils/Oracle";
 import {useListener} from "../../../../../utils/useListener";
+import LinkedListNode from "../../../../../utils/LinkedListNode";
 
 //TODO clean up
 export function useKeyDown(
-    spanRefs: Map<number, RefObject<HTMLElement>>,
     recoveryRef: MutableRefObject<Recovery | null>,
-    focusedSpanRef: MutableRefObject<HTMLElement | null>
+    focusedNodeRef: MutableRefObject<LinkedListNode<NodeData> | undefined>
 ) {
-    const {pieces, bus} = useStore()
+    const {bus} = useStore()
 
     useListener("onKeyDown", (event: KeyboardEvent<HTMLSpanElement>) => {
-        const oracle = new Oracle(focusedSpanRef, spanRefs, recoveryRef, pieces)
         const target = event.target as HTMLSpanElement
         const caretIndex = Caret.getCaretIndex(target);
         const isStartCaret = caretIndex === 0;
         const isEndCaret = caretIndex === target.textContent?.length;
+
         const handleMap = {
             [KEY.LEFT]: isStartCaret ? handlePressLeft : null,
             [KEY.RIGHT]: isEndCaret ? handlePressRight : null,
@@ -33,34 +32,53 @@ export function useKeyDown(
         handleMap[event.key]?.()
 
         function handlePressLeft() {
-            const element = oracle.getPreviousElement()
+            const node = focusedNodeRef.current?.prev
+
+            //TODO offset for focused text?
+            /*if (node?.data.ref?.current && node.data.ref.current.textContent) {
+                node.data.ref.current.focus()
+                Caret.trySetIndex(node.data.ref.current, node.data.ref.current.textContent.length - 1)
+            } else {*/
+            const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
             element?.focus()
             Caret.setCaretToEnd(element)
+            //}
+
             event.preventDefault()
         }
 
         function handlePressRight() {
-            const element = oracle.getNextElement()
+            const node = focusedNodeRef.current?.next
+
+            /*if (node?.data.ref?.current && node.data.ref.current.textContent) {
+                node.data.ref.current.focus()
+                Caret.trySetIndex(node.data.ref.current, 1)
+            } else {*/
+            const element = node?.data.ref?.current ?? node?.next?.data.ref?.current
             element?.focus()
+            //}
+
             event.preventDefault()
         }
 
         function handlePressBackspace() {
-            const key = oracle.getPreviousMarkKey()
-            if (!key) return
+            const node = focusedNodeRef.current?.prev
+            if (!node?.data.key) return
 
-            oracle.recoverLeft()
-            bus.send(Type.Delete, {key})
+            const caretPosition = node.prev?.data.piece.label.length ?? 0
+            recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
+            bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
         }
 
         function handlePressDelete() {
-            const key = oracle.getNextMarkKey()
-            if (!key) return
+            const node = focusedNodeRef.current?.next
+            if (!node?.data.key) return
 
-            oracle.recoverRight()
-            bus.send(Type.Delete, {key})
+            const caretPosition = node.prev?.data.piece.label.length ?? 0
+            recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
+            bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
         }
-    }, [pieces])
+    }, [])
 }

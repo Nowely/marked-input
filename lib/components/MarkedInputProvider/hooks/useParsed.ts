@@ -1,24 +1,29 @@
-import {useMemo} from "react";
-import {genHash, isObject} from "../../../utils";
-import {Options, Piece, KeyedPieces} from "../../../types";
+import {useMemo, useRef} from "react";
+import {genKey, isObject} from "../../../utils";
+import {Options, NodeData} from "../../../types";
 import {Parser} from "../../../utils/Parser";
+import LinkedList from "../../../utils/LinkedList";
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value
-export const useParsed = (value: string, options: Options): KeyedPieces => {
+export const useParsed = (value: string, options: Options): LinkedList<NodeData> => {
     const pieces = useMemo(Parser.split(value, options), [value])
-    return useMemo(bindKeysWithPieces, [pieces.length])
+    const ref = useRef<LinkedList<NodeData> | null>(null)
 
+    return useMemo(() => {
+        const set = new Set<number>()
 
-    function bindKeysWithPieces() {
-        return pieces.reduce((map: KeyedPieces, piece) => map.set(genKey(piece, map), piece), new Map())
+        const previous = ref.current
 
-        function genKey(piece: Piece, newMap: Map<number, Piece>) {
-            let str = isObject(piece) ? piece.label + piece.value : piece
-            let seed = 0
-            let key = genHash(str, seed)
-            while (newMap.has(key)) key = genHash(str, seed++)
-            return key;
-        }
-    }
+        //with caching from previous
+        let data = pieces.map(piece => {
+            const key = genKey(piece, set)
+            const node = previous?.findNode(data => data.key === key)
+            if (node) return node.data
+            return ({key, piece: isObject(piece) ? piece : {label: piece}});
+        })
+
+        ref.current = LinkedList.from(data)
+        return ref.current
+    }, [pieces.length])
 }

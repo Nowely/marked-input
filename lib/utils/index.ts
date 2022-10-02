@@ -1,8 +1,20 @@
 import React, {Children, Context, isValidElement, Provider, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {ElementOptions, EventName, KeyedPieces, Mark, Markup, Options, Store} from "../types";
+import {
+    ElementOptions,
+    EventName,
+    KeyedPieces,
+    AnnotatedMark,
+    Markup,
+    Options,
+    Piece,
+    NodeData,
+    Store,
+    Mark
+} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
+import LinkedList from "./LinkedList";
 
 export const assign = Object.assign
 
@@ -33,7 +45,7 @@ export function annotate(markup: Markup, label: string, value?: string): string 
 /**
  * Transform the annotated text to the another text
  */
-export function denote(value: string, callback: (mark: Mark) => string, ...markups: Markup[]): string {
+export function denote(value: string, callback: (mark: AnnotatedMark) => string, ...markups: Markup[]): string {
     if (!markups.length) return value
     const pieces = new Parser(markups).split(value)
     return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
@@ -42,17 +54,17 @@ export function denote(value: string, callback: (mark: Mark) => string, ...marku
 // escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
 export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
-export function toString(values: (string | Mark)[], options: Options) {
+export function toString(values: Mark[], options: Options) {
     let result = ""
     for (let value of values) {
-        result += isObject(value)
+        result += isAnnotated(value)
             ? annotate(options[value.childIndex].markup, value.label, value.value)
-            : value
+            : value.label
     }
     return result
 }
 
-export const normalizeMark = (mark: Mark, markup: Markup) => {
+export const normalizeMark = (mark: AnnotatedMark, markup: Markup) => {
     if (mark.annotation !== annotate(markup, mark.label, mark.value))
         return {...mark, label: mark.value, value: mark.label}
     return mark
@@ -74,6 +86,10 @@ export const genHash = (str: string, seed = 0) => {
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === "object"
+
+export const isAnnotated = (value: unknown): value is AnnotatedMark => {
+    return value !== null && typeof value === 'object' && 'annotation' in value
+}
 
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
@@ -97,14 +113,15 @@ export function extractOptions(options?: ElementOptions<any> | OptionProps[]): O
     }
 }
 
-const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] => {
-    const context = React.createContext<T | undefined>(undefined)
-    context.displayName = name
+const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T>>] => {
+    const defaultContext = React.createContext<T | undefined>(undefined)
+    defaultContext.displayName = name
 
-    const hook = createContextHook(context)
-    const provider = context.Provider as Provider<NonNullable<T>>
+    const hook = createContextHook(defaultContext)
+    //const provider = defaultContext.Provider as Provider<NonNullable<T>>
+    const context = defaultContext as  React.Context<NonNullable<T>>
 
-    return [hook, provider]
+    return [hook, context]
 
 
     function createContextHook<T, >(context: Context<T>) {
@@ -118,7 +135,8 @@ const createContext = <T, >(name: string): [() => T, Provider<NonNullable<T>>] =
     }
 }
 
-export const [useStore, StoreProvider] = createContext<Store>("MarkedInputStoreProvider")
+export const [useStore, StoreContext] = createContext<Store>("MarkedInputStoreProvider")
+export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("PiecesProvider")
 
 //TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {
@@ -151,4 +169,13 @@ export function findSpanKey(span: string, pieces: KeyedPieces) {
 
 export function createNewSpan(span: string, annotation: string, index: number, source: string) {
     return span.slice(0, index) + annotation + span.slice(index + source.length)
+}
+
+export function genKey(piece: Piece, set: Set<number>) {
+    const str = isObject(piece) ? piece.label + piece.value : piece
+
+    let seed = 0, key = genHash(str, seed)
+    while (set.has(key))
+        key = genHash(str, seed++)
+    return key;
 }
