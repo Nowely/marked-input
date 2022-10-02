@@ -59,8 +59,9 @@ export const Configured = () => {
 }
 
 //TODO HTML editable tag
+// @ts-ignore
 const Tag = ({label, useMark}: MarkProps) => {
-    const {mark, value, onChange} = useMark()
+    const {mark, value, onChange} = useMark() as ReturnType<typeof useMark>
 
     return createElement(label, {
         ref: mark,
@@ -78,8 +79,13 @@ const Tag = ({label, useMark}: MarkProps) => {
 }
 
 export const RichEditor = () => {
-    const [value, setValue] = useState(`This example contain code of using the <b>initMark> prop.
-It appears to use any mark by initialize from default <b>MarkProps> to mark's props.`)
+    const [value, setValue] = useState(`<h4>Dynamic marks:>` +
+        `<i>This page introduces a feature that has not yet been published.>
+
+This feature allows you to use dynamic marks to edit itself and beyond.
+
+It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked>, <small>smaller>, <del>deleted>, 
+<ins>inserted>, <sub>subscript> and other types of text.`)
 
     return (
         <>
@@ -87,6 +93,7 @@ It appears to use any mark by initialize from default <b>MarkProps> to mark's pr
                 <Option markup="<__label__>__value__>"/>
             </MarkedInput>
 
+            <br/>
             <Text label="Plaint text:" value={value}/>
         </>
     )

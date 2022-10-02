@@ -26,8 +26,9 @@ export interface AnnotatedMark extends Mark{
     childIndex: number;
 }
 
+//TODO
 export interface MarkProps extends Mark{
-    useMark: () => ReturnType<typeof useMark>
+    //useMark: () => ReturnType<typeof useMark>
 }
 
 export interface OverlayProps {
