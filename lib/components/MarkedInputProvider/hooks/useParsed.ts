@@ -17,9 +17,16 @@ export const useParsed = (value: string, options: Options): LinkedList<NodeData>
 
         //with caching from previous
         let data = pieces.map(piece => {
-            const key = genKey(piece, set)
+            let key = genKey(piece, set)
             const node = previous?.findNode(data => data.key === key)
-            if (node) return node.data
+
+            if (node) {
+                if (!isObject(piece) && node.data.piece.label !== piece){
+                    key = genKey(piece, set)
+                } else {
+                    return node.data
+                }
+            }
             return ({key, piece: isObject(piece) ? piece : {label: piece}});
         })
 

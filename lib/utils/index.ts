@@ -177,5 +177,6 @@ export function genKey(piece: Piece, set: Set<number>) {
     let seed = 0, key = genHash(str, seed)
     while (set.has(key))
         key = genHash(str, seed++)
+    set.add(key)
     return key;
 }
