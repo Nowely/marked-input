@@ -9,8 +9,8 @@ export const useMark = (node: NodeData) => {
 
     const mark = useRegistration(node)
 
-    const [label, setLabel] = useState<string>(node.piece.label)
-    const [value, setValue] = useState<string | undefined>(node.piece.value)
+    const [label, setLabel] = useState<string>(node.mark.label)
+    const [value, setValue] = useState<string | undefined>(node.mark.value)
 
     const onChange = useCallback((props: Mark, options?: { silent: boolean }) => {
         if (!options?.silent) {

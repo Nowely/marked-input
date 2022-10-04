@@ -21,13 +21,13 @@ export const useParsed = (value: string, options: Options): LinkedList<NodeData>
             const node = previous?.findNode(data => data.key === key)
 
             if (node) {
-                if (!isObject(piece) && node.data.piece.label !== piece){
+                if (!isObject(piece) && node.data.mark.label !== piece){
                     key = genKey(piece, set)
                 } else {
                     return node.data
                 }
             }
-            return ({key, piece: isObject(piece) ? piece : {label: piece}});
+            return ({key, mark: isObject(piece) ? piece : {label: piece}});
         })
 
         ref.current = LinkedList.from(data)

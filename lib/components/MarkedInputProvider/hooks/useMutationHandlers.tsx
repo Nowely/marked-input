@@ -12,11 +12,11 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
         const {key, value} = event
         const piece = pieces.find(data => data.key === key)
         if (piece && value) {
-            piece.piece.label = value.label
-            piece.piece.value = value.value
+            piece.mark.label = value.label
+            piece.mark.value = value.value
         }
 
-        const values = pieces.toArray().map(value1 => value1.piece)
+        const values = pieces.toArray().map(value1 => value1.mark)
         onChange(toString(values, options))
     }, [pieces, onChange])
 
@@ -25,7 +25,7 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
         const piece = pieces.findNode(data => data.key === key)
         if (piece) piece.remove()
 
-        const values = pieces.toArray().map(value1 => value1.piece)
+        const values = pieces.toArray().map(value1 => value1.mark)
         onChange(toString(values, options))
         //pieces.delete(key)
         //onChange(toString([...pieces.values()], options))
@@ -37,12 +37,12 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
         const annotation = annotate(option.markup, value.label, value.value)
         const newSpan = createNewSpan(span, annotation, index, source);
         //const key = findSpanKey(span, pieces)
-        const piece = pieces.findNode(data => data.piece.label === span)
+        const piece = pieces.findNode(data => data.mark.label === span)
 
         if (piece) {
-            piece.data.piece.label = newSpan
-            //piece.data.piece.value = value.value
-            //bus.send(Type.Change, {value: newSpan, key: piece.data.key})
+            piece.data.mark.label = newSpan
+            //piece.data.mark.value = value.value
+            //bus.send(Type.Change, {value: newSpan, key: mark.data.key})
             bus.send(Type.Change, {value: {label: newSpan}, key: piece.data.key})
         }
     }, [pieces, onChange])
