@@ -98,4 +98,13 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
         expect(await findByText("Item")).toBeInTheDocument()
     })
+
+    it('should correct process an annotation type', async () => {
+        const {container, queryByText} = render(<Mark2 initial=""/>)
+        const [span] = container.querySelectorAll("span")
+        expect(span).toHaveTextContent("")
+        await user.type(span, '@[[mark](1)')
+        expect(await queryByText('@[mark](1)')).toBeNull()
+        expect(await queryByText('mark')).toBeInTheDocument()
+    });
 })
