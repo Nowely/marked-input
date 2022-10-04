@@ -171,12 +171,12 @@ export function createNewSpan(span: string, annotation: string, index: number, s
     return span.slice(0, index) + annotation + span.slice(index + source.length)
 }
 
-export function genKey(piece: Piece, set: Set<number>) {
+export function genKey(piece: Piece, cache?: Set<number>) {
     const str = isObject(piece) ? piece.label + piece.value : piece
 
     let seed = 0, key = genHash(str, seed)
-    while (set.has(key))
+    while (cache?.has(key))
         key = genHash(str, seed++)
-    set.add(key)
+    cache?.add(key)
     return key;
 }
