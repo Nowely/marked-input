@@ -65,7 +65,7 @@ export function useKeyDown(
             const node = focusedNodeRef.current?.prev
             if (!node?.data.key) return
 
-            const caretPosition = node.prev?.data.piece.label.length ?? 0
+            const caretPosition = node.prev?.data.mark.label.length ?? 0
             recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
             bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()
@@ -75,7 +75,7 @@ export function useKeyDown(
             const node = focusedNodeRef.current?.next
             if (!node?.data.key) return
 
-            const caretPosition = node.prev?.data.piece.label.length ?? 0
+            const caretPosition = node.prev?.data.mark.label.length ?? 0
             recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
             bus.send(Type.Delete, {key: node.data.key})
             event.preventDefault()

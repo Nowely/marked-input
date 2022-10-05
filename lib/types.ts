@@ -7,7 +7,7 @@ import {useMark} from "./utils/useMark";
 
 export type NodeData = {
     key: number
-    piece: Mark
+    mark: Mark
     ref?: RefObject<HTMLElement>
 }
 
