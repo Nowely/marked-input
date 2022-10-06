@@ -67,7 +67,7 @@ const Marked = () => {
 
 ## API
 
-Props of the `MarkedInput` component:
+### MarkedInput
 
 | Name     | Type                            | Default       | Description                                 |
 |----------|---------------------------------|---------------|---------------------------------------------|
@@ -77,7 +77,7 @@ Props of the `MarkedInput` component:
 | Overlay  | ComponentType<T = OverlayProps> | `Suggestions` | Component that used for render any overlays |
 | readOnly | boolean                         | `undefined`   | Prevents from changing the value            |
 
-Props of the `Option` component:
+### Option
 
 | Name        | Type                        | Default                   | Description                                                                                                                                                                       |
 |-------------|-----------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -87,7 +87,7 @@ Props of the `Option` component:
 | initMark    | (props: MarkProps) => T     | `undefined`               | Function to initialize props for mark render. Gets arguments from found markup                                                                                                    |
 | initOverlay | (props: OverlayProps) => T1 | `undefined`               | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                                    |
 
-Helpers:
+### Helpers
 
 | Name              | Type                                                                                                                                                                                              | Description                                  |
 |-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
@@ -95,7 +95,7 @@ Helpers:
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
 
-Main types:
+### Types
 
 ```typescript
 interface MarkProps {
@@ -156,3 +156,7 @@ type Trigger = {
     option: OptionType
 }
 ```
+
+## Contributing
+
+If you want to contribute, you are welcome! Create an issue or start a discussion. 
