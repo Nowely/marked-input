@@ -31,9 +31,20 @@ A lot of examples can be seen in the [storybook](https://marked-input.vercel.app
 
 Here is some examples to get you started.
 
-### Two ways to configure
+### Base
 
-The library allows you to configure the `MarkedInput` component in two ways.
+```javascript
+import {MarkedInput} from "rc-marked-input";
+
+const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+
+const Marked = () => {
+    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+}
+```
+
+> **Note:** The library allows you to configure the `MarkedInput` component in two ways.
 
 Using the `createMarkedInput`:
 
@@ -50,32 +61,119 @@ const Marked = () => {
 }
 ```
 
-Or using the components:
+### Advanced
 
-```javascript
+Let's declare markups and suggestions data:
+
+```tsx
+const Data = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]
+const AnotherData = ["Seventh", "Eight", "Ninth"]
+const Primary = "@[__label__](primary:__value__)"
+const Default = "@[__label__](default)"
+```
+
+Using the components
+
+```tsx
 import {MarkedInput, Option} from "rc-marked-input";
 
-const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+export const App = () => {
+    const [value, setValue] = useState(
+        "Enter the '@' for creating @[Primary Mark](primary:Hello!) or '/' for @[Default mark](default)!"
+    )
 
-const Marked = () => {
-    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+    return (
+        <MarkedInput Mark={Button} value={value} onChange={setValue}>
+            <Option
+                markup={Primary}
+                data={Data}
+                initMark={({label, value}) => ({label, primary: true, onClick: () => alert(value)})}
+            />
+            <Option
+                markup={Default}
+                trigger="/"
+                data={AnotherData}
+            />
+        </MarkedInput>
+    )
 }
 ```
 
-> **Note:** Without options and an overlay passing it will just mark annotations.
+Using the `createMarkedInput`:
+
+```tsx
+import {createMarkedInput} from "rc-marked-input";
+
+const ConfiguredMarkedInput = createMarkedInput(Button, [{
+    markup: Primary,
+    data: Data,
+    initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
+}, {
+    trigger: '/',
+    markup: Default,
+    data: AnotherData
+}])
+
+const App = () => {
+    const [value, setValue] = useState(
+        "Enter the '@' for creating @[Primary Mark](primary:Hello!) or '/' for @[Default mark](default)!"
+    )
+    return <ConfiguredMarkedInput value={value} onChange={setValue}/>
+}
+```
+
+### Overall view
+
+```tsx
+<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}>
+    <Option
+        trigger='@'
+        markup='@[__label__](__value__)'
+        data={Data}
+        initMark={getCustomMarkProps}
+        initOverlay={getCustomOverlayProps}
+    />
+    <Option
+        trigger='/'
+        markup='@(__label__)[__value__]'
+        data={AnotherData}
+        initMark={getAnotherCustomMarkProps}
+        initOverlay={getAnotherCustomOverlayProps}
+    />
+</MarkedInput>
+```
+
+Or
+
+```tsx
+const MarkedInput = createMarkedInput(Mark, Overlay, [{
+    trigger: '@',
+    markup: '@[__label__](__value__)',
+    data: Data,
+    initMark: getCustomMarkProps,
+    initOverlay: getCustomOverlayProps,
+}, {
+    trigger: '/',
+    markup: '@(__label__)[__value__]',
+    data: AnotherData,
+    initMark: getAnotherCustomMarkProps,
+    initOverlay: getAnotherCustomOverlayProps,
+}])
+
+const App = () => <MarkedInput value={value} onChange={setValue}/>
+```
 
 ## API
 
 ### MarkedInput
 
-| Name     | Type                            | Default       | Description                                 |
-|----------|---------------------------------|---------------|---------------------------------------------|
-| value    | string                          |               | Annotated text with markups for mark        |
-| onChange | (value: string) => void         |               | Change event                                |
-| Mark     | ComponentType<T = MarkProps>    |               | Component that used for render markups      |
-| Overlay  | ComponentType<T = OverlayProps> | `Suggestions` | Component that used for render any overlays |
-| readOnly | boolean                         | `undefined`   | Prevents from changing the value            |
+| Name     | Type                            | Default       | Description                            |
+|----------|---------------------------------|---------------|----------------------------------------|
+| value    | string                          |               | Annotated text with markups for mark   |
+| onChange | (value: string) => void         |               | Change event                           |
+| Mark     | ComponentType<T = MarkProps>    |               | Component that used for render markups |
+| Overlay  | ComponentType<T = OverlayProps> | `Suggestions` | Component that is rendered by trigger  |
+| readOnly | boolean                         | `undefined`   | Prevents from changing the value       |
 
 ### Option
 
