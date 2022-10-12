@@ -1,8 +1,0 @@
-{
-    "testEnvironment": "jsdom",
-    "moduleNameMapper": {
-        "\\.(css|less)$": "jest-transform-stub"
-    },
-    "rootDir": "../",
-    "verbose": true
-}

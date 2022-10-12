@@ -25,5 +25,9 @@ export default defineConfig(({command}) => ({
             }
         }
     },
-    plugins: [react(), command !== "serve" && injectCssToJs()]
+    plugins: [react(), command !== "serve" && injectCssToJs()],
+    test: {
+        globals: true,
+        environment: 'jsdom',
+    },
 }))

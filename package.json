@@ -10,6 +10,8 @@
     "build": "vite build && tsc && node prepack.js",
     "storybook": "npm run start -w storybook",
     "build-storybook": "npm run build -w storybook",
+    "ui": "npm run ui -w tests",
+    "watch": "npm run watch -w tests",
     "test": "npm run test -w tests",
     "test:integration": "npm run test:integration -w tests",
     "coverage": "npm run coverage -w tests"
@@ -19,11 +21,8 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.9",
-    "@babel/preset-react": "^7.18.6",
     "@types/react": "^18.0.18",
     "@vitejs/plugin-react": "^2.0.0",
-    "babel-loader": "^8.2.5",
     "typescript": "^4.8.3",
     "vite": "^3.1.1",
     "vite-plugin-css-injected-by-js": "^2.1.0"
