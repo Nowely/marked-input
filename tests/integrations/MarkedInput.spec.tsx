@@ -4,6 +4,7 @@ import {act, render} from "@testing-library/react";
 import {MarkedInput, Option} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
 import {useState} from "react";
+import {vi} from "vitest";
 
 const Mark2 = ({initial}: { initial: string }) => {
     const [value, setValue] = useState(initial)
@@ -79,9 +80,9 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
     it('should appear a overlay component by trigger', async () => {
         //override event listener because 'selectionchange' don't work in here
-        let events: Record<string,  EventListenerOrEventListenerObject> = {};
-        document.addEventListener = jest.fn((event, callback) => events[event] = callback);
-        document.removeEventListener = jest.fn((event, callback) => delete events[event]);
+        let events: Record<string, EventListenerOrEventListenerObject> = {};
+        document.addEventListener = vi.fn((event, callback) => events[event] = callback);
+        document.removeEventListener = vi.fn((event, callback) => delete events[event]);
 
         const {getByText, findByText} = render(<Mark2 initial="@ @[mark](1)!"/>)
         const span = getByText(/@/i)

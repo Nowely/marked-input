@@ -1,18 +1,22 @@
 {
   "name": "tests",
   "scripts": {
-    "test": "jest -c jest.config.json",
-    "test:integration": "jest integrations -c jest.config.json",
-    "coverage": "jest -c jest.config.json --coverage"
+    "test": "vitest run",
+    "test:integration": "vitest run integrations",
+    "watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "related": "vitest related",
+    "ui": "vitest --ui"
   },
   "dependencies": {
     "@faker-js/faker": "^7.4.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.3.0",
     "@testing-library/user-event": "^14.4.3",
-    "jest": "^29.0.3",
-    "jest-environment-jsdom": "29.0.3",
-    "jest-transform-stub": "^2.0.0"
+    "@vitest/coverage-c8": "^0.24.1",
+    "@vitest/ui": "^0.24.1",
+    "jsdom": "^20.0.1",
+    "vitest": "^0.24.1"
   },
   "devDependencies": {
     "@types/jest": "^29.0.2"

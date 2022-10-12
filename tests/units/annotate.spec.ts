@@ -1,5 +1,5 @@
 import {annotate} from "rc-marked-input";
-import {Markup} from "rc-marked-input/MarkedInput/types";
+import {Markup} from "rc-marked-input/types";
 
 describe(`Utility: ${annotate.name}`, () => {
     const markup: Markup = "@[__label__](__value__)"
