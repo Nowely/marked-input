@@ -3,10 +3,10 @@
   "scripts": {
     "test": "vitest run",
     "test:integration": "vitest run integrations",
-    "watch": "vitest",
-    "coverage": "vitest run --coverage",
-    "related": "vitest related",
-    "ui": "vitest --ui"
+    "test:watch": "vitest",
+    "test:related": "vitest related",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@faker-js/faker": "^7.4.0",
