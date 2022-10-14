@@ -1,6 +1,4 @@
-import type {StorybookViteConfig} from '@storybook/builder-vite';
-
-const config: StorybookViteConfig = {
+const config = {
     "core": {
         "builder": "@storybook/builder-vite"
     },
@@ -22,4 +20,4 @@ const config: StorybookViteConfig = {
     staticDirs: ['./public'],
 }
 
-export default config
+module.exports = config
