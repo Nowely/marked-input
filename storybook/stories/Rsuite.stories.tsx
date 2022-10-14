@@ -12,7 +12,7 @@ import {withStyle} from "./assets/withStyle";
 import {OverlayProps} from "rc-marked-input/types";
 
 export default {
-    title: getTitle("Rsuite"),
+    //title: getTitle("Rsuite"),
     component: MarkedInput,
     subcomponents: {Option},
     decorators: [withStyle('rsuite.min.css')]

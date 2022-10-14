@@ -7,7 +7,7 @@ import {getTitle} from "./assets/getTitle";
 import {OverlayProps} from "rc-marked-input/types";
 
 export default {
-    title: getTitle("Material"),
+    //title: getTitle("Material"),
     component: MarkedInput,
     subcomponents: {Option}
 }

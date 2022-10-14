@@ -1,9 +1,6 @@
-import type {StorybookViteConfig} from '@storybook/builder-vite';
+import type {StorybookConfig} from '@storybook/builder-vite';
 
-const config: StorybookViteConfig = {
-    "core": {
-        "builder": "@storybook/builder-vite"
-    },
+const config: StorybookConfig = {
     "stories": [
         "./stories/**/*.stories.mdx",
         "./stories/**/*.stories.@(js|jsx|ts|tsx)",
@@ -14,7 +11,8 @@ const config: StorybookViteConfig = {
         "@storybook/addon-essentials",
         "@storybook/addon-storysource",
     ],
-    "framework": "@storybook/react",
+    "framework": '@storybook/react-vite',
+
     async viteFinal(config, options) {
         //config.base = '/storybook/';
         return config;

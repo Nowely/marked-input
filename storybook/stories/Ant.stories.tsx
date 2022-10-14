@@ -8,7 +8,7 @@ import {getTitle} from "./assets/getTitle";
 import {withStyle} from "./assets/withStyle";
 
 export default {
-    title: getTitle("Ant"),
+    //title: getTitle("Ant"),
     component: MarkedInput,
     subcomponents: {Option},
     decorators: [withStyle('antd.min.css')]
