@@ -44,24 +44,8 @@ const Marked = () => {
 }
 ```
 
-> **Note:** The library allows you to configure the `MarkedInput` component in two ways.
-
-Using the `createMarkedInput`:
-
-```javascript
-import {createMarkedInput} from "rc-marked-input";
-
-const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
-
-const MarkedInput = createMarkedInput(Mark);
-
-const Marked = () => {
-    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
-    return <MarkedInput value={value} onChange={setValue}/>
-}
-```
-
 ### Advanced
+The library allows you to configure the `MarkedInput` component in two ways.
 
 Let's declare markups and suggestions data:
 
@@ -192,6 +176,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | createMarkedInput | (Mark: ComponentType<T>, options: OptionProps<T>[]): ConfiguredMarkedInput<T> <br/> (Mark: ComponentType<T>, Overlay: ComponentType<T1>, options: OptionProps<T, T1>[]): ConfiguredMarkedInput<T> | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
+| useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
 
 ### Types
 
