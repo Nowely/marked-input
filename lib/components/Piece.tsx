@@ -9,5 +9,7 @@ export function Piece() {
     const defaultProps = {label: mark.label, value: mark.value}
     const props = options[mark.childIndex].initMark?.(defaultProps) ?? defaultProps
 
+    //TODO correct typing
+    // @ts-ignore
     return <Mark {...props}/>
 }
