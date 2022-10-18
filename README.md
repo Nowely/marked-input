@@ -130,7 +130,7 @@ export const Dynamic = () => {
 }
 ```
 
-> **Note:** The silent option used for prevent rerender itself.
+> **Note:** The silent option used to prevent re-rendering itself.
 
 #### Removable
 
