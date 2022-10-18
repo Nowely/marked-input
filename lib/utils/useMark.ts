@@ -1,14 +1,47 @@
 import {Mark, NodeData, Type} from "../types";
-import {RefObject, useCallback, useRef, useState} from "react";
+import {CSSProperties, RefObject, useCallback, useRef, useState} from "react";
 import {useNode, useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
 
-//TODO
-export const useMark = () => {
+export interface DynamicMark extends Mark {
+    /**
+     * Register a mark ref. Used for focusing and key operation.
+     */
+    reg: ReturnType<typeof useRegistration>
+    /**
+     * Change mark.
+     * @silent doesn't change itself label and value, only pass change event.
+     */
+    onChange: (props: Mark, options?: { silent: boolean }) => void
+    /**
+     * Remove itself.
+     */
+    onRemove: () => void
+    /**
+     * Passed the readOnly prop value
+     */
+    readOnly?: boolean
+    /**
+     * Passed style of span
+     */
+    style?: CSSProperties
+    /**
+     * Passed class name of span
+     */
+    className?: string
+    /**
+     * Held caret position in html element at rerender: save the position then restore this.
+     *
+     * Can be used on change event of editable text tags like <span>, <bold>, etc.
+     */
+    heldCaret: (element: HTMLElement) => void
+}
+
+export const useMark = (): DynamicMark => {
     const node = useNode()
     const {bus, props: {readOnly, spanStyle: style, spanClassName: className}} = useStore()
 
-    const mark = useRegistration(node)
+    const reg = useRegistration(node)
 
     const [label, setLabel] = useState<string>(node.mark.label)
     const [value, setValue] = useState<string | undefined>(node.mark.value)
@@ -29,7 +62,7 @@ export const useMark = () => {
 
     const heldCaret = useHeldCaret()
 
-    return {label, value, mark, onChange, onRemove, heldCaret, readOnly, style, className}
+    return {label, value, reg, onChange, onRemove, heldCaret, readOnly, style, className}
 }
 
 function useRegistration(node: NodeData) {

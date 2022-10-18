@@ -60,10 +60,10 @@ export const Configured = () => {
 }
 
 const Tag = () => {
-    const {mark, label, value, onChange} = useMark()
+    const {reg, label, value, onChange} = useMark()
 
     return createElement(label, {
-        ref: mark,
+        ref: reg,
         contentEditable: true,
         suppressContentEditableWarning: true,
         children: value,

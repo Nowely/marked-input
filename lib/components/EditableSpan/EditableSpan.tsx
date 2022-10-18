@@ -3,7 +3,7 @@ import {useMark} from "../../utils/useMark";
 
 //Editable block - edit text here
 export const EditableSpan = () => {
-    const {label, mark, onChange, heldCaret, className, style, readOnly} = useMark()
+    const {label, reg, onChange, heldCaret, className, style, readOnly} = useMark()
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         heldCaret(e.currentTarget)
@@ -13,7 +13,7 @@ export const EditableSpan = () => {
 
     return (
         <span
-            ref={mark}
+            ref={reg}
             style={style}
             className={className}
             contentEditable={!readOnly}
