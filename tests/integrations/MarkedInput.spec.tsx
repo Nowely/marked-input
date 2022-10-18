@@ -3,6 +3,7 @@ import user from "@testing-library/user-event";
 import {act, render} from "@testing-library/react";
 import {MarkedInput, Option} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
+import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
 import {vi} from "vitest";
 
@@ -107,5 +108,53 @@ describe(`Component: ${MarkedInput.name}`, () => {
         await user.type(span, '@[[mark](1)')
         expect(await queryByText('@[mark](1)')).toBeNull()
         expect(await queryByText('mark')).toBeInTheDocument()
+    })
+
+    it('should support reg focusing target',  async () => {
+        const {container} = render(<Focusable/>)
+        const [firstSpan, secondSpan] = container.querySelectorAll("span")
+        const [firstAbbr] = container.querySelectorAll("abbr")
+        const firstSpanLength = firstSpan.textContent?.length ?? 0
+        const firstAbbrLength = firstAbbr.textContent?.length ?? 0
+
+        //Used for focused
+        await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
+        expect(firstSpan).toHaveFocus()
+
+        await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
+        expect(firstAbbr).toHaveFocus()
+
+        await user.keyboard(`{ArrowLeft>1/}`)
+        expect(firstSpan).toHaveFocus()
+
+        await user.keyboard(`{ArrowRight>1/}`)
+        expect(firstAbbr).toHaveFocus()
+
+        await user.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
+        expect(secondSpan).toHaveFocus()
+
+        await user.keyboard(`{ArrowLeft>1/}`)
+        expect(firstAbbr).toHaveFocus()
+    })
+
+    it('should support remove itself', async () => {
+        const {getByText, queryByText} = render(<Removable/>)
+
+        let mark = getByText('contain')
+        await user.click(mark)
+        expect(await queryByText('contain')).toBeNull()
+
+        mark = getByText('marks')
+        await user.click(mark)
+        expect(await queryByText('marks')).toBeNull()
+    });
+
+    it('should support editable marks',  async () => {
+        const {getByText} = render(<Focusable/>)
+
+        await user.type(getByText('world'), '123')
+
+        expect(getByText('world123')).toBeInTheDocument()
+        expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
     });
 })

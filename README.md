@@ -1,4 +1,4 @@
-# [Marked input](https://marked-input.vercel.app) &middot; [![npm version](https://img.shields.io/npm/v/rc-marked-input.svg?style=flat)](https://www.npmjs.com/package/rc-marked-input) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
+# [Marked Input](https://marked-input.vercel.app) &middot; [![npm version](https://img.shields.io/npm/v/rc-marked-input.svg?style=flat)](https://www.npmjs.com/package/rc-marked-input) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
 
 <img width="521" alt="image" src="https://user-images.githubusercontent.com/37639183/182974441-49e4b247-449a-47ba-a090-2cb3aab7ce44.png">
 
@@ -31,7 +31,7 @@ A lot of examples can be seen in the [storybook](https://marked-input.vercel.app
 
 Here is some examples to get you started.
 
-### Base
+### Static marks
 
 ```javascript
 import {MarkedInput} from "rc-marked-input";
@@ -44,24 +44,8 @@ const Marked = () => {
 }
 ```
 
-> **Note:** The library allows you to configure the `MarkedInput` component in two ways.
-
-Using the `createMarkedInput`:
-
-```javascript
-import {createMarkedInput} from "rc-marked-input";
-
-const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
-
-const MarkedInput = createMarkedInput(Mark);
-
-const Marked = () => {
-    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
-    return <MarkedInput value={value} onChange={setValue}/>
-}
-```
-
-### Advanced
+#### Advanced
+The library allows you to configure the `MarkedInput` component in two ways.
 
 Let's declare markups and suggestions data:
 
@@ -121,6 +105,50 @@ const App = () => {
     return <ConfiguredMarkedInput value={value} onChange={setValue}/>
 }
 ```
+
+### Dynamic mark
+
+Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
+
+#### Editable
+
+```tsx
+import {MarkedInput, useMark} from "rc-marked-input";
+
+const Mark = () => {
+    const {label, onChange} = useMark()
+
+    const handleInput = (e) =>
+        onChange({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
+
+    return <mark contentEditable onInput={handleInput} children={label}/>
+}
+
+export const Dynamic = () => {
+    const [value, setValue] = useState("Hello, dynamical mark @[world]( )!")
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+}
+```
+
+> **Note:** The silent option used to prevent re-rendering itself.
+
+#### Removable
+
+```tsx
+const RemovableMark = () => {
+    const {label, onRemove} = useMark()
+    return <mark onClick={onRemove} children={label}/>
+}
+
+export const Removable = () => {
+    const [value, setValue] = useState("I @[contain]( ) @[removable]( ) by click @[marks]( )!")
+    return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
+}
+```
+
+#### Focusable
+
+If passed the `reg` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
 
 ### Overall view
 
@@ -192,6 +220,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | createMarkedInput | (Mark: ComponentType<T>, options: OptionProps<T>[]): ConfiguredMarkedInput<T> <br/> (Mark: ComponentType<T>, Overlay: ComponentType<T1>, options: OptionProps<T, T1>[]): ConfiguredMarkedInput<T> | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
+| useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
 
 ### Types
 

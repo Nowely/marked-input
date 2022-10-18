@@ -1,9 +1,10 @@
 import {Button} from "./assets/Button";
-import {MarkedInput, Option, denote, createMarkedInput} from "rc-marked-input";
-import {createElement, useState} from "react";
+import {createMarkedInput, denote, MarkedInput, Option} from "rc-marked-input";
+import React, {createElement, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {MarkProps, Markup} from "rc-marked-input/types";
+import {useMark} from "rc-marked-input";
 
 export default {
     title: getTitle(),
@@ -32,8 +33,8 @@ const ConfiguredMarkedInput = createMarkedInput(Button, [{
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
 }]);
-const style = {minWidth: 100}
 
+const style = {minWidth: 100}
 const spanStyle = {width: 'auto', minWidth: 10}
 
 export const Configured = () => {
@@ -54,47 +55,6 @@ export const Configured = () => {
 
             <Text label="Plaint text:" value={value}/>
             <Text label="Display text (denoted):" value={displayText}/>
-        </>
-    )
-}
-
-//TODO HTML editable tag
-// @ts-ignore
-const Tag = ({label, useMark}: MarkProps) => {
-    const {mark, value, onChange} = useMark() as ReturnType<typeof useMark>
-
-    return createElement(label, {
-        ref: mark,
-        contentEditable: true,
-        suppressContentEditableWarning: true,
-        children: value,
-        style: {
-            outline: 'none',
-            whiteSpace: 'pre-wrap'
-        },
-        onInput: (e) => {
-            onChange({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
-        }
-    })
-}
-
-export const RichEditor = () => {
-    const [value, setValue] = useState(`<h4>Dynamic marks:>` +
-        `<i>This page introduces a feature that has not yet been published.>
-
-This feature allows you to use dynamic marks to edit itself and beyond.
-
-It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked>, <small>smaller>, <del>deleted>, 
-<ins>inserted>, <sub>subscript> and other types of text.`)
-
-    return (
-        <>
-            <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-                <Option markup="<__label__>__value__>"/>
-            </MarkedInput>
-
-            <br/>
-            <Text label="Plaint text:" value={value}/>
         </>
     )
 }

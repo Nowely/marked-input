@@ -1,9 +1,10 @@
-import {useStore, useValue} from "../../utils";
+import {isAnnotated, NodeContext, useStore, useValue} from "../../utils";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
 import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
+import {EditableSpan} from "../EditableSpan";
 
 export const MarkedText = memo(() => {
     const {bus, props: {className, style}} = useStore()
@@ -15,7 +16,13 @@ export const MarkedText = memo(() => {
 
     return (
         <div ref={ref} className={divClassName} style={style} {...events}>
-            {pieces.toArray().map((node) => <Piece key={node.key} node={node}/>)}
+            {pieces.toArray().map((node) =>
+                <NodeContext.Provider key={node.key} value={node}>
+                    {
+                        isAnnotated(node.mark) ? <Piece/> : <EditableSpan/>
+                    }
+                </NodeContext.Provider>
+            )}
         </div>
     )
 })
