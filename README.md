@@ -1,4 +1,4 @@
-# [Marked input](https://marked-input.vercel.app) &middot; [![npm version](https://img.shields.io/npm/v/rc-marked-input.svg?style=flat)](https://www.npmjs.com/package/rc-marked-input) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
+# [Marked Input](https://marked-input.vercel.app) &middot; [![npm version](https://img.shields.io/npm/v/rc-marked-input.svg?style=flat)](https://www.npmjs.com/package/rc-marked-input) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
 
 <img width="521" alt="image" src="https://user-images.githubusercontent.com/37639183/182974441-49e4b247-449a-47ba-a090-2cb3aab7ce44.png">
 
@@ -31,7 +31,7 @@ A lot of examples can be seen in the [storybook](https://marked-input.vercel.app
 
 Here is some examples to get you started.
 
-### Base
+### Static marks
 
 ```javascript
 import {MarkedInput} from "rc-marked-input";
@@ -44,7 +44,7 @@ const Marked = () => {
 }
 ```
 
-### Advanced
+#### Advanced
 The library allows you to configure the `MarkedInput` component in two ways.
 
 Let's declare markups and suggestions data:
@@ -105,6 +105,50 @@ const App = () => {
     return <ConfiguredMarkedInput value={value} onChange={setValue}/>
 }
 ```
+
+### Dynamic mark
+
+Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
+
+#### Editable
+
+```tsx
+import {MarkedInput, useMark} from "rc-marked-input";
+
+const Mark = () => {
+    const {label, onChange} = useMark()
+
+    const handleInput = (e) =>
+        onChange({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
+
+    return <mark contentEditable onInput={handleInput} children={label}/>
+}
+
+export const Dynamic = () => {
+    const [value, setValue] = useState("Hello, dynamical mark @[world]( )!")
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+}
+```
+
+> **Note:** The silent option used for prevent rerender itself.
+
+#### Removable
+
+```tsx
+const RemovableMark = () => {
+    const {label, onRemove} = useMark()
+    return <mark onClick={onRemove} children={label}/>
+}
+
+export const Removable = () => {
+    const [value, setValue] = useState("I @[contain]( ) @[removable]( ) by click @[marks]( )!")
+    return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
+}
+```
+
+#### Focusable
+
+If passed the `reg` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
 
 ### Overall view
 
