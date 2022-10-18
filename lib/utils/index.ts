@@ -91,6 +91,11 @@ export const isAnnotated = (value: unknown): value is AnnotatedMark => {
     return value !== null && typeof value === 'object' && 'annotation' in value
 }
 
+export function assertAnnotated(value: unknown): asserts value is AnnotatedMark {
+    let condition = value !== null && typeof value === 'object' && 'annotation' in value
+    if (!condition) throw new Error("Value is not annotated mark!")
+}
+
 export const isFunction = (value: unknown): value is Function => typeof value === "function"
 
 export const isEventName = (value: string | number): value is EventName => typeof value === "string" && value.startsWith("on")
@@ -136,7 +141,8 @@ const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T
 }
 
 export const [useStore, StoreContext] = createContext<Store>("MarkedInputStoreProvider")
-export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("PiecesProvider")
+export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("ValueProvider")
+export const [useNode, NodeContext] = createContext<NodeData>("NodeProvider")
 
 //TODO fix passing arguments
 export function debounce(func: Function, wait: number, immediate: boolean = true) {

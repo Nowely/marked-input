@@ -1,9 +1,10 @@
 import {Button} from "./assets/Button";
-import {MarkedInput, Option, denote, createMarkedInput} from "rc-marked-input";
-import {createElement, useState} from "react";
+import {createMarkedInput, denote, MarkedInput, Option} from "rc-marked-input";
+import React, {createElement, useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {MarkProps, Markup} from "rc-marked-input/types";
+import {useMark} from "rc-marked-input";
 
 export default {
     title: getTitle(),
@@ -32,8 +33,8 @@ const ConfiguredMarkedInput = createMarkedInput(Button, [{
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
 }]);
-const style = {minWidth: 100}
 
+const style = {minWidth: 100}
 const spanStyle = {width: 'auto', minWidth: 10}
 
 export const Configured = () => {
@@ -58,10 +59,8 @@ export const Configured = () => {
     )
 }
 
-//TODO HTML editable tag
-// @ts-ignore
-const Tag = ({label, useMark}: MarkProps) => {
-    const {mark, value, onChange} = useMark() as ReturnType<typeof useMark>
+const Tag = () => {
+    const {mark, label, value, onChange} = useMark()
 
     return createElement(label, {
         ref: mark,
@@ -72,7 +71,7 @@ const Tag = ({label, useMark}: MarkProps) => {
             outline: 'none',
             whiteSpace: 'pre-wrap'
         },
-        onInput: (e) => {
+        onInput: (e: React.FormEvent<HTMLElement>) => {
             onChange({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
         }
     })

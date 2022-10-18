@@ -1,10 +1,9 @@
 import React from "react";
-import {MarkProps} from "../../types";
+import {useMark} from "../../utils/useMark";
 
 //Editable block - edit text here
-export const EditableSpan = (props: MarkProps) => {
-    // @ts-ignore
-    const {label, mark, onChange, heldCaret, className, style, readOnly} = props.useMark()
+export const EditableSpan = () => {
+    const {label, mark, onChange, heldCaret, className, style, readOnly} = useMark()
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         heldCaret(e.currentTarget)
