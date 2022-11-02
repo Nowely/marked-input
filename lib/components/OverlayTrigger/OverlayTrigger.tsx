@@ -3,14 +3,14 @@ import {Suggestions} from "../Suggestions";
 import React, {useRef} from "react";
 import {Trigger} from "../../types";
 import {useOverlayProps} from "./hooks/useOverlayProps";
-import {useCloseByClickOutside} from "./hooks/useCloseByClickOutside";
+import {useCloseByOutsideClick} from "./hooks/useCloseByOutsideClick";
 import {useCloseByEsc} from "./hooks/useCloseByEsc";
 
 export const OverlayTrigger = (trigger: Trigger) => {
     const ref = useRef<HTMLElement>(null)
 
     useCloseByEsc()
-    useCloseByClickOutside(ref)
+    useCloseByOutsideClick(ref)
 
     const props = useOverlayProps(trigger)
     const {props: {Overlay = Suggestions}} = useStore()
