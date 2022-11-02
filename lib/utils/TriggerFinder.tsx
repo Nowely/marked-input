@@ -1,5 +1,5 @@
 import {Options, Trigger} from "../types";
-import {escapeRegex} from "./index";
+import {escape} from "./index";
 import {wordRegex} from "../constants";
 import {Caret} from "./Caret";
 
@@ -66,7 +66,7 @@ export class TriggerFinder {
 
     //TODO new trigger option if (isSpaceBeforeRequired) append space check for not first words '\\s'
     makeTriggerRegex(trigger: string): RegExp {
-        const patten = escapeRegex(trigger) + '(\\w*)$'
+        const patten = escape(trigger) + '(\\w*)$'
         return new RegExp(patten)
     }
 }

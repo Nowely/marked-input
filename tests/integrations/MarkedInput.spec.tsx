@@ -6,11 +6,12 @@ import {Marked} from "storybook/stories/Base.stories";
 import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
 import {vi} from "vitest";
+import {Markup} from "rc-marked-input/types";
 
-const Mark2 = ({initial}: { initial: string }) => {
+const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)
     return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue}>
-        <Option data={["Item"]}/>
+        <Option markup={markup ?? '@[__label__](__value__)'} data={["Item"]}/>
     </MarkedInput>
 }
 
@@ -110,7 +111,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
         expect(await queryByText('mark')).toBeInTheDocument()
     })
 
-    it('should support reg focusing target',  async () => {
+    it('should support reg focusing target', async () => {
         const {container} = render(<Focusable/>)
         const [firstSpan, secondSpan] = container.querySelectorAll("span")
         const [firstAbbr] = container.querySelectorAll("abbr")
@@ -147,14 +148,14 @@ describe(`Component: ${MarkedInput.name}`, () => {
         mark = getByText('marks')
         await user.click(mark)
         expect(await queryByText('marks')).toBeNull()
-    });
+    })
 
-    it('should support editable marks',  async () => {
+    it('should support editable marks', async () => {
         const {getByText} = render(<Focusable/>)
 
         await user.type(getByText('world'), '123')
 
         expect(getByText('world123')).toBeInTheDocument()
         expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
-    });
+    })
 })

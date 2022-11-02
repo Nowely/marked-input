@@ -1,16 +1,16 @@
-import React, {Children, Context, isValidElement, Provider, useContext} from "react";
+import React, {Children, Context, isValidElement, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
 import {
+    AnnotatedMark,
     ElementOptions,
     EventName,
     KeyedPieces,
-    AnnotatedMark,
+    Mark,
     Markup,
+    NodeData,
     Options,
     Piece,
-    NodeData,
-    Store,
-    Mark
+    Store
 } from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
@@ -23,14 +23,26 @@ export const assign = Object.assign
 //const markup3: any = createMarkup("@[hello](world)", "hello", "world")
 
 export const markupToRegex = (markup: Markup) => {
-    const escapedMarkup = escapeRegex(markup)
-    const charAfterLabel = markup[markup.indexOf(PLACEHOLDER.LABEL) + PLACEHOLDER.LABEL.length]
-    const charAfterValue = markup[markup.indexOf(PLACEHOLDER.VALUE) + PLACEHOLDER.VALUE.length]
-    return new RegExp(escapedMarkup
-        .replace(PLACEHOLDER.LABEL, `([^${escapeRegex(charAfterLabel || '')}]+?)`)
-        .replace(PLACEHOLDER.VALUE, `([^${escapeRegex(charAfterValue || '')}]+?)`)
-    )
+    const escapedMarkup = escape(markup)
+
+    const charAfterLabel = escape(markup[markup.indexOf(PLACEHOLDER.LABEL) + PLACEHOLDER.LABEL.length] ?? '')
+    const charAfterValue = escape(markup[markup.indexOf(PLACEHOLDER.VALUE) + PLACEHOLDER.VALUE.length] ?? '')
+
+    const pattern = escapedMarkup
+        .replace(PLACEHOLDER.LABEL, `([^${charAfterLabel}]+?)`)
+        .replace(PLACEHOLDER.VALUE, `([^${charAfterValue}]+?)`)
+
+    return new RegExp(pattern)
 }
+
+export const normalizeMark = (mark: AnnotatedMark, markup: Markup) => {
+    if (mark.annotation !== annotate(markup, mark.label, mark.value))
+        return {...mark, label: mark.value, value: mark.label}
+    return mark
+}
+
+// escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
+export const escape = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 
 //TODO annotate options to object with required only label?
 //TODO function annotate(label: string, markup?: Markup, value?: string): string;
@@ -51,9 +63,6 @@ export function denote(value: string, callback: (mark: AnnotatedMark) => string,
     return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
-// escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
-export const escapeRegex = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
-
 export function toString(values: Mark[], options: Options) {
     let result = ""
     for (let value of values) {
@@ -62,12 +71,6 @@ export function toString(values: Mark[], options: Options) {
             : value.label
     }
     return result
-}
-
-export const normalizeMark = (mark: AnnotatedMark, markup: Markup) => {
-    if (mark.annotation !== annotate(markup, mark.label, mark.value))
-        return {...mark, label: mark.value, value: mark.label}
-    return mark
 }
 
 //https://stackoverflow.com/a/52171480 cyrb53 generate hash
@@ -124,7 +127,7 @@ const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T
 
     const hook = createContextHook(defaultContext)
     //const provider = defaultContext.Provider as Provider<NonNullable<T>>
-    const context = defaultContext as  React.Context<NonNullable<T>>
+    const context = defaultContext as React.Context<NonNullable<T>>
 
     return [hook, context]
 
