@@ -7,7 +7,6 @@ import LinkedList from "../../../utils/LinkedList";
 export function useMutationHandlers(onChange: (value: string) => void, pieces: LinkedList<NodeData>) {
     const {bus, options} = useStore()
 
-
     useListener(Type.Change, (event: Payload) => {
         const {key, value} = event
         const piece = pieces.find(data => data.key === key)
@@ -18,6 +17,7 @@ export function useMutationHandlers(onChange: (value: string) => void, pieces: L
 
         const values = pieces.toArray().map(value1 => value1.mark)
         onChange(toString(values, options))
+        //bus.send(Type.CheckTrigger) TODO check on value change
     }, [pieces, onChange])
 
     useListener(Type.Delete, (event: Payload) => {
