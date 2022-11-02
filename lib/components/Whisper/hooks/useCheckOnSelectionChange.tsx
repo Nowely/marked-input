@@ -1,4 +1,4 @@
-import {debounce, useStore} from "../../../utils";
+import {useStore} from "../../../utils";
 import {FocusEvent, useCallback} from "react";
 import {Type} from "../../../types";
 import {useListener} from "../../../utils/useListener";
@@ -6,10 +6,10 @@ import {useListener} from "../../../utils/useListener";
 export function useCheckOnSelectionChange() {
     const {bus} = useStore()
 
-    const sendCheckTrigger = useCallback(debounce(() => bus.send(Type.CheckTrigger), 20), [])
+    const sendCheckTrigger = useCallback(() => bus.send(Type.CheckTrigger),  [])
 
     useListener("onFocus", (e: FocusEvent<HTMLElement>) =>
-        document.addEventListener("selectionchange", sendCheckTrigger, {}), [])
+        document.addEventListener("selectionchange", sendCheckTrigger), [])
 
     useListener("onBlur", (e: FocusEvent<HTMLElement>) =>
         document.removeEventListener("selectionchange", sendCheckTrigger), [])

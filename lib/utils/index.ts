@@ -147,24 +147,6 @@ export const [useStore, StoreContext] = createContext<Store>("MarkedInputStorePr
 export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("ValueProvider")
 export const [useNode, NodeContext] = createContext<NodeData>("NodeProvider")
 
-//TODO fix passing arguments
-export function debounce(func: Function, wait: number, immediate: boolean = true) {
-    let timeout: NodeJS.Timeout | undefined
-    return () => {
-        const callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow)
-            func.apply(arguments);
-    }
-
-    function later() {
-        timeout = undefined;
-        if (!immediate)
-            func(arguments);
-    }
-}
-
 export function findSpanKey(span: string, pieces: KeyedPieces) {
     let foundKey
     for (let [key, piece] of pieces) {
