@@ -27,11 +27,11 @@ npm install rc-marked-input
 ## Examples
 
 A lot of examples can be seen in the [storybook](https://marked-input.vercel.app). You can also try a template on
-[CodeSandbox](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx).
+[CodeSandbox](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx).
 
 Here is some examples to get you started.
 
-### Static marks
+### Static marks &middot; [![sandboxbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx)
 
 ```javascript
 import {MarkedInput} from "rc-marked-input";
