@@ -31,7 +31,7 @@ A lot of examples can be seen in the [storybook](https://marked-input.vercel.app
 
 Here is some examples to get you started.
 
-### Static marks &middot; [![sandboxbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx)
+### Static marks &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx)
 
 ```javascript
 import {MarkedInput} from "rc-marked-input";
@@ -149,6 +149,73 @@ export const Removable = () => {
 #### Focusable
 
 If passed the `reg` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
+
+
+### Overlay
+
+A default overlay is the suggestion component, but it can be easily replaced for any other.
+
+#### Suggestions
+
+```tsx
+export const DefaultOverlay = () => {
+    const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue}>
+        <Option data={['First', 'Second', 'Third']}/>
+    </MarkedInput>
+}
+```
+
+#### Custom overlay
+
+```tsx
+const Overlay = () => <h1>I am the overlay</h1>
+export const CustomOverlay = () => {
+    const [value, setValue] = useState("Hello, custom overlay by trigger @!")
+    return <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}/>
+}
+```
+
+#### Custom trigger
+
+```tsx
+export const CustomTrigger = () => {
+    const [value, setValue] = useState("Hello, custom overlay by trigger /!")
+    return <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}>
+        <Option trigger='/'/>
+    </MarkedInput>
+}
+```
+
+#### Positioned
+
+The `OverlayProps` has a left and right absolute coordinate of a current caret position in the `style` prop.
+
+```tsx
+const Tooltip = (props: OverlayProps) => <div style={{position: 'absolute', ...props.style}}>I am the overlay</div>
+export const PositionedOverlay = () => {
+    const [value, setValue] = useState("Hello, positioned overlay by trigger @!")
+    return <MarkedInput Mark={Mark} Overlay={Tooltip} value={value} onChange={setValue}/>
+}
+```
+
+#### Selectable
+
+The `OverlayProps` provide some methods like `onSelect` for creating a new annotation.
+
+```tsx
+const List = (props: OverlayProps) => <ul>
+    <li onClick={() => props.onSelect({label: 'First'})}>Clickable First</li>
+    <li onClick={() => props.onSelect({label: 'Second'})}>Clickable Second</li>
+</ul>
+
+export const SelectableOverlay = () => {
+    const [value, setValue] = useState("Hello, suggest overlay by trigger @!")
+    return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue}/>
+}
+```
+
+> **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used for detect click outside.
 
 ### Overall view
 
