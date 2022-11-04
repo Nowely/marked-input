@@ -215,7 +215,7 @@ export const SelectableOverlay = () => {
 }
 ```
 
-> **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used for detect click outside.
+> **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used to detect outside click.
 
 ### Overall view
 
