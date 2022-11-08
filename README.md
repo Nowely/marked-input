@@ -45,6 +45,7 @@ const Marked = () => {
 ```
 
 #### Advanced
+
 The library allows you to configure the `MarkedInput` component in two ways.
 
 Let's declare markups and suggestions data:
@@ -150,7 +151,6 @@ export const Removable = () => {
 
 If passed the `reg` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
 
-
 ### Overlay
 
 A default overlay is the suggestion component, but it can be easily replaced for any other.
@@ -217,6 +217,34 @@ export const SelectableOverlay = () => {
 
 > **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used to detect outside click.
 
+### Event handlers
+
+The `onContainer` prop allows to forward any of div events to a container of text.
+
+```tsx
+<ConfiguredMarkedInput
+    value={value} 
+    onChange={setValue}
+    onContainer={{
+        onClick: (e) => {
+            console.log('onCLick')
+        },
+        onInput: (e) => {
+            console.log('onInput')
+        },
+        onBlur: (e) => {
+            console.log('onBlur')
+        },
+        onFocus: (e) => {
+            console.log('onFocus')
+        },
+        onKeyDown: (e) => {
+            console.log('onKeyDown')
+        },
+    }}
+/>
+```
+
 ### Overall view
 
 ```tsx
@@ -262,13 +290,14 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ### MarkedInput
 
-| Name     | Type                            | Default       | Description                            |
-|----------|---------------------------------|---------------|----------------------------------------|
-| value    | string                          |               | Annotated text with markups for mark   |
-| onChange | (value: string) => void         |               | Change event                           |
-| Mark     | ComponentType<T = MarkProps>    |               | Component that used for render markups |
-| Overlay  | ComponentType<T = OverlayProps> | `Suggestions` | Component that is rendered by trigger  |
-| readOnly | boolean                         | `undefined`   | Prevents from changing the value       |
+| Name        | Type                            | Default       | Description                                |
+|-------------|---------------------------------|---------------|--------------------------------------------|
+| value       | string                          |               | Annotated text with markups for mark       |
+| onChange    | (value: string) => void         |               | Change event                               |
+| Mark        | ComponentType<T = MarkProps>    |               | Component that used for render markups     |
+| Overlay     | ComponentType<T = OverlayProps> | `Suggestions` | Component that is rendered by trigger      |
+| readOnly    | boolean                         | `undefined`   | Prevents from changing the value           |
+| onContainer | DivEvents                       | `undefined`   | Forward any div events to a text container |
 
 ### Option
 
