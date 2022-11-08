@@ -1,12 +1,13 @@
 import {ReactNode, useMemo, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {useStore, StoreContext, ValueContext} from "../../utils";
+import {StoreContext, useStore, ValueContext} from "../../utils";
 import {useOptions} from "./hooks/useOptions";
 import {useParsed} from "./hooks/useParsed";
 import {EventBus} from "../../utils/EventBus";
 import {useMutationHandlers} from "./hooks/useMutationHandlers";
 import {Store} from "../../types";
 import {useExtractedProps} from "./hooks/useExtractedProps";
+import {useExternalEvents} from "./hooks/useExternalEvents";
 
 interface MarkedInputProviderProps {
     props: MarkedInputProps<any, any>
@@ -15,9 +16,10 @@ interface MarkedInputProviderProps {
 
 export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps) => {
     const options = useOptions(props.children)
-    const bus = useState(EventBus.withExternalEventsFrom(props))[0]
-
+    const bus = useState(EventBus.initWithExternalEvents(props.onContainer))[0]
     const extractedProps = useExtractedProps(props)
+
+    useExternalEvents(props.onContainer, bus)
 
     const store: Store = useMemo(
         () => ({options, bus, props: extractedProps}),

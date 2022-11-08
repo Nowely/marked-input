@@ -1,5 +1,5 @@
 import {ComponentType, CSSProperties} from "react";
-import {OverlayProps, ElementOptions, MarkProps} from "../types";
+import {DivEvents, ElementOptions, MarkProps, OverlayProps} from "../types";
 import {MarkedText} from "./MarkedText";
 import {OptionProps} from "./Option";
 import {MarkedInputProvider} from "./MarkedInputProvider";
@@ -48,6 +48,10 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
      * Additional style for span
      */
     spanStyle?: CSSProperties
+    /**
+     * Forward any div events to a text container
+     */
+    onContainer?: DivEvents
 }
 
 export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {

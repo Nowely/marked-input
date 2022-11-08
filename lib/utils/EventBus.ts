@@ -1,6 +1,5 @@
-import {KeyMapper, EventName, Type, Listener} from "../types";
+import {DivEvents, EventName, KeyMapper, Listener, Type} from "../types";
 import {isEventName} from "./index";
-import {MarkedInputProps} from "../components/MarkedInput";
 import {PredefinedEvents} from "../constants";
 
 export class EventBus {
@@ -15,10 +14,12 @@ export class EventBus {
         return result
     }
 
-    static withExternalEventsFrom(props: MarkedInputProps) {
-        const set = new Set<EventName>(PredefinedEvents)
-        //TODO Object.keys(props).filter(isEventName).forEach(event => set.add(event))
-        return () => new EventBus(...set)
+    static initWithExternalEvents(events?: DivEvents) {
+        return () => {
+            const set = new Set<EventName>(PredefinedEvents)
+            events && Object.keys(events).filter(isEventName).forEach(event => set.add(event))
+            return new EventBus(...set);
+        }
     }
 
     constructor(...initEvents: EventName[]) {
