@@ -1,7 +1,7 @@
+import {useState} from "react";
 import {getTitle} from "./assets/getTitle";
 import {MarkedInput, Option} from "rc-marked-input";
 import {MarkProps, OverlayProps} from "rc-marked-input/types";
-import React, {useState} from "react";
 
 export default {
     title: getTitle(),
