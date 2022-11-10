@@ -44,7 +44,7 @@ const Marked = () => {
 }
 ```
 
-#### Advanced
+#### Configured &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx)
 
 The library allows you to configure the `MarkedInput` component in two ways.
 
@@ -107,7 +107,7 @@ const App = () => {
 }
 ```
 
-### Dynamic mark
+### Dynamic mark &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/dynamic-mark-m5uv58?file=/src/App.js)
 
 Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
 
@@ -166,7 +166,7 @@ export const DefaultOverlay = () => {
 }
 ```
 
-#### Custom overlay
+#### Custom overlay &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/custom-overlay-8c8e2r?file=/src/App.tsx)
 
 ```tsx
 const Overlay = () => <h1>I am the overlay</h1>
@@ -226,21 +226,12 @@ The `onContainer` prop allows to forward any of div events to a container of tex
     value={value} 
     onChange={setValue}
     onContainer={{
-        onClick: (e) => {
-            console.log('onCLick')
-        },
-        onInput: (e) => {
-            console.log('onInput')
-        },
-        onBlur: (e) => {
-            console.log('onBlur')
-        },
-        onFocus: (e) => {
-            console.log('onFocus')
-        },
-        onKeyDown: (e) => {
-            console.log('onKeyDown')
-        },
+        onClick: (e) => console.log('onCLick'),
+        onInput: (e) => console.log('onInput'),
+        onBlur: (e) => console.log('onBlur'),
+        //...
+        onFocus: (e) => console.log('onFocus'),
+        onKeyDown: (e) => console.log('onKeyDown'),
     }}
 />
 ```
