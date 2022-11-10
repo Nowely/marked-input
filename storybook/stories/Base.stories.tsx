@@ -52,21 +52,11 @@ export const Configured = () => {
                 style={style} spanStyle={spanStyle}
                 value={value} onChange={setValue}
                 onContainer={{
-                    onClick: (e) => {
-                        console.log('onCLick')
-                    },
-                    onInput: (e) => {
-                        console.log('onInput')
-                    },
-                    onBlur: (e) => {
-                        console.log('onBlur')
-                    },
-                    onFocus: (e) => {
-                        console.log('onFocus')
-                    },
-                    onKeyDown: (e) => {
-                        console.log('onKeyDown')
-                    },
+                    onClick: (e) => console.log('onCLick'),
+                    onInput: (e) => console.log('onInput'),
+                    onBlur: (e) => console.log('onBlur'),
+                    onFocus: (e) => console.log('onFocus'),
+                    onKeyDown: (e) => console.log('onKeyDown'),
                 }}
             />
 
