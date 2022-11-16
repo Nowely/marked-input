@@ -1,4 +1,4 @@
-import {useStore} from "../../utils";
+import {isForward, useStore} from "../../utils";
 import {Suggestions} from "../Suggestions";
 import React, {useRef} from "react";
 import {Trigger} from "../../types";
@@ -15,5 +15,5 @@ export const OverlayTrigger = (trigger: Trigger) => {
     const props = useOverlayProps(trigger)
     const {props: {Overlay = Suggestions}} = useStore()
 
-    return <Overlay ref={ref} {...props} />
+    return <Overlay ref={isForward(Overlay) ? ref : undefined} {...props} />
 }

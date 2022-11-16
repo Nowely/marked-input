@@ -34,7 +34,7 @@ describe(`Utility: createMarkedInput`, () => {
 const Mark3 = () => {
     const [value, setValue] = useState('Hello @')
     const Overlay = forwardRef(() => <span>I'm here!</span>)
-    const Input = createMarkedInput(() => null, Overlay, [{}])
+    const Input = createMarkedInput(() => null, Overlay, [])
 
     return <Input value={value} onChange={setValue}/>
 }
