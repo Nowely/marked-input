@@ -171,3 +171,6 @@ export function genKey(piece: Piece, cache?: Set<number>) {
     cache?.add(key)
     return key;
 }
+
+export const isForward = (component?: React.ExoticComponent<any> | React.ComponentType<any>) =>
+    component && '$$typeof' in component && component.$$typeof === Symbol.for('react.forward_ref')
