@@ -1,4 +1,4 @@
-import {ComponentType} from "react";
+import {ComponentType, ExoticComponent, ForwardRefExoticComponent, isValidElement} from "react";
 import {OptionProps} from "../components/Option";
 import {assign, isFunction} from "./index";
 import {MarkedInput, MarkedInputProps} from "../components/MarkedInput";
@@ -15,13 +15,13 @@ export function createMarkedInput(
     optionsOrOverlay: ComponentType<any> | OptionProps[] | undefined,
     options?: OptionProps[]
 ): ConfiguredMarkedInput<any> {
-    const predefinedProps = isFunction(optionsOrOverlay)  ? {
+    const predefinedProps = Array.isArray(optionsOrOverlay) ? {
+        Mark,
+        children: optionsOrOverlay,
+    } : {
         Mark,
         Overlay: optionsOrOverlay,
         children: options
-    } : {
-        Mark,
-        children: optionsOrOverlay,
     }
 
     return (props: ConfiguredMarkedInputProps<any>) => {
