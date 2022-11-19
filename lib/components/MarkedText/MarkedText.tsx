@@ -8,14 +8,14 @@ import {EditableSpan} from "../EditableSpan";
 
 export const MarkedText = memo(() => {
     const {bus, props: {className, style}} = useStore()
-    const divClassName = className ? DefaultClass + " " + className : DefaultClass
+    const containerClass = className ? DefaultClass + " " + className : DefaultClass
     const ref = useSharedRef();
     const events = useMemo(() => bus.events, [])
     const pieces = useValue()
     useFocus()
 
     return (
-        <div ref={ref} className={divClassName} style={style} {...events}>
+        <div ref={ref} className={containerClass} style={style} {...events}>
             {pieces.toArray().map((node) =>
                 <NodeContext.Provider key={node.key} value={node}>
                     {
