@@ -26,3 +26,5 @@ export const MarkedText = memo(() => {
         </div>
     )
 })
+
+MarkedText.displayName = 'MarkedText'
