@@ -45,7 +45,7 @@ export const useMark = (): DynamicMark => {
         readOnly: state.readOnly,
         style: state.spanStyle,
         className: state.spanClassName
-    }))
+    }), true)
 
     const reg = useRegistration(node)
 

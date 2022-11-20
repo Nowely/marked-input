@@ -1,20 +1,21 @@
-import {MarkProps, Payload, Piece, NodeData, Trigger, Type, Mark} from "../../../types";
-import {annotate, createNewSpan, findSpanKey, toString, useStore} from "../../../utils";
+import {Mark, Payload, Trigger, Type} from "../../../types";
+import {annotate, createNewSpan, toString, useStore} from "../../../utils";
 import {useListener} from "../../../utils/useListener";
-import LinkedList from "../../../utils/LinkedList";
 import {useSelector} from "../../../utils/useSelector";
 
 //TODO upgrade to full members of react events to external
-export function useMutationHandlers(onChange: (value: string) => void, pieces: LinkedList<NodeData>) {
+export function useMutationHandlers() {
     const {bus} = useStore()
-    const options = useSelector(state => state.options)
+    const {pieces, onChange, options} = useSelector(state => ({
+        pieces: state.pieces, onChange: state.onChange, options: state.options
+    }), true)
 
     useListener(Type.Change, (event: Payload) => {
         const {key, value} = event
-        const piece = pieces.find(data => data.key === key)
-        if (piece && value) {
-            piece.mark.label = value.label
-            piece.mark.value = value.value
+        const node = pieces.find(data => data.key === key)
+        if (node && value) {
+            node.mark.label = value.label
+            node.mark.value = value.value
         }
 
         const values = pieces.toArray().map(value1 => value1.mark)

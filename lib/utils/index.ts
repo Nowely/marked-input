@@ -3,8 +3,7 @@ import {DefaultOptionProps, PLACEHOLDER} from "../constants";
 import {AnnotatedMark, ElementOptions, EventName, KeyedPieces, Mark, Markup, NodeData, Options, Piece,} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
-import LinkedList from "./LinkedList";
-import {Store} from "./useSelector";
+import {Store} from "./Store";
 
 export const assign = Object.assign
 
@@ -134,7 +133,6 @@ const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T
 }
 
 export const [useStore, StoreContext] = createContext<Store>("MarkedInputStoreProvider")
-export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("ValueProvider")
 export const [useNode, NodeContext] = createContext<NodeData>("NodeProvider")
 
 export function findSpanKey(span: string, pieces: KeyedPieces) {

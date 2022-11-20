@@ -1,10 +1,10 @@
 import {useListener} from "../../../../../utils/useListener";
-import {useValue} from "../../../../../utils";
+import {useSelector} from "../../../../../utils/useSelector";
 
 export const useFocusOnEmptyInput = () => {
-    const list = useValue()
+    const pieces = useSelector(state => state.pieces)
     useListener("onClick", () => {
-        if (list.length === 1 && list.head?.data.mark.label === "")
-            list.head?.data.ref?.current?.focus()
-    }, [list])
+        if (pieces.length === 1 && pieces.head?.data.mark.label === "")
+            pieces.head?.data.ref?.current?.focus()
+    }, [pieces])
 };

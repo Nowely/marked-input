@@ -2,7 +2,7 @@ import {PLACEHOLDER} from "./constants";
 import {FunctionComponent, ReactElement, RefObject} from "react";
 import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
-import {EventBus} from "./utils/EventBus";
+import LinkedList from "./utils/LinkedList";
 
 export type NodeData = {
     key: number
@@ -74,7 +74,7 @@ export type Options = OptionType[]
 export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
 export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
 
-export type State = Omit<MarkedInputProps, 'children'> & { options: Options }
+export type State = Omit<MarkedInputProps, 'children'> & { options: Options, pieces: LinkedList<NodeData> }
 
 export type EventName = `on${string}`
 

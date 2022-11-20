@@ -1,17 +1,20 @@
-import {useMemo, useRef} from "react";
-import {genKey, isObject} from "../../../utils";
-import {NodeData, Options, Piece} from "../../../types";
+import {useEffect, useMemo, useRef} from "react";
+import {genKey, isObject, useStore} from "../../../utils";
+import {NodeData, Piece} from "../../../types";
 import {Parser} from "../../../utils/Parser";
 import LinkedList from "../../../utils/LinkedList";
 import LinkedListNode from "../../../utils/LinkedListNode";
+import {useSelector} from "../../../utils/useSelector";
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value
-export const useParsed = (value: string, options: Options): LinkedList<NodeData> => {
+export const useParser = () => {
+    const store = useStore()
+    const {value, options} = useSelector(state => ({value: state.value, options: state.options}), true)
     const pieces = useMemo(Parser.split(value, options), [value])
     const previous = useRef<LinkedList<NodeData> | null>(null)
 
-    return useMemo(() => {
+    useEffect(() => {
         const existedKeys = new Set<number>()
         //get data from previous if exists
         const data = pieces.map(piece => {
@@ -25,7 +28,7 @@ export const useParsed = (value: string, options: Options): LinkedList<NodeData>
         })
 
         previous.current = LinkedList.from(data)
-        return previous.current
+        store.setState({pieces: previous.current})
     }, [pieces.length])
 }
 

@@ -3,7 +3,7 @@ import {useSelector} from "../utils/useSelector";
 
 export function Piece() {
     const {mark} = useNode()
-    const {options, Mark} = useSelector(state => ({options: state.options, Mark: state.Mark}))
+    const {options, Mark} = useSelector(state => ({options: state.options, Mark: state.Mark}), true)
 
     assertAnnotated(mark)
 

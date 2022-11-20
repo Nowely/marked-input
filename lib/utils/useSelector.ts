@@ -1,43 +1,22 @@
 import {useState} from "react";
 import {State, Type} from "../types";
-import {assign, extractOptions, useStore} from "./index";
-import {MarkedInputProps} from "../components/MarkedInput";
-import {EventBus} from "./EventBus";
+import {useStore} from "./index";
 import {useListener} from "./useListener";
+import {shallow} from "./shallow";
 
-export const useSelector = <T, >(selector: (state: State) => T) => {
+export const useSelector = <T, >(selector: (state: State) => T, isShallow?: boolean) => {
     const store = useStore()
-    const [value, setValue] = useState(selector(store.state))
+    const [value, setValue] = useState(() => selector(store.state))
 
-    useListener(Type.State, newState => setValue(selector(newState)), [])
+    useListener(Type.State, newState => {
+        setValue(value => {
+            const newValue = selector(newState)
+            if (isShallow && shallow(value, newValue)) return value
+            return newValue
+        })
+    }, [])
 
     return value
-}
-
-export class Store {
-
-    constructor(
-        public state: State,
-        readonly bus: EventBus
-    ) {
-    }
-
-    static create(props: MarkedInputProps) {
-        const state = {} as State
-        const {children, ...other} = props
-
-        state.options = extractOptions(children)
-        assign(state, other)
-
-        const bus = EventBus.initWithExternalEvents(props.onContainer)()
-
-        return new Store(state, bus)
-    }
-
-    set(state: Partial<State>) {
-        this.state = {...this.state, ...state}
-        this.bus.send(Type.State, this.state)
-    }
 }
 
 //export const useAbc = useState.bind(null, () => Store1.create())

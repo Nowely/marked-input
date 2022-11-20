@@ -1,7 +1,7 @@
 import {RefObject, useEffect, useRef} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {NodeData} from "../../../../../types";
-import {useValue} from "../../../../../utils";
+import {useSelector} from "../../../../../utils/useSelector";
 
 //TODO move to types
 export type Recovery = {
@@ -10,7 +10,7 @@ export type Recovery = {
 }
 
 export const useRecoveryAfterRemove = () => {
-    const list = useValue()
+    const pieces = useSelector(state => state.pieces)
     const recoveryRef = useRef<Recovery | null>(null)
 
     //Restore focus after delete mark
@@ -18,8 +18,8 @@ export const useRecoveryAfterRemove = () => {
         if (recoveryRef.current) {
             const {prevNodeData, caretPosition} = recoveryRef.current
 
-            const node = list.findNode(data => data === prevNodeData)
-            const newNode = node?.next ?? list.head
+            const node = pieces.findNode(data => data === prevNodeData)
+            const newNode = node?.next ?? pieces.head
             const element = newNode?.data.ref?.current
             element?.focus()
 

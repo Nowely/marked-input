@@ -1,10 +1,10 @@
 import {ReactNode, useEffect, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {extractOptions, StoreContext, useStore, ValueContext} from "../../utils";
-import {useParsed} from "./hooks/useParsed";
-import {useMutationHandlers} from "./hooks/useMutationHandlers";
-import {Store, useSelector} from "../../utils/useSelector";
+import {extractOptions, StoreContext} from "../../utils";
 import {useExternalEvents} from "./hooks/useExternalEvents";
+import {useMutationHandlers} from "./hooks/useMutationHandlers";
+import {useParser} from "./hooks/useParser";
+import {Store} from "../../utils/Store";
 
 interface MarkedInputProviderProps {
     props: MarkedInputProps<any, any>
@@ -16,27 +16,28 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
 
     const store = useState(() => Store.create(props))[0]
 
-    useEffect(() => store.set({options: extractOptions(options)}), [options])
-    useEffect(() => store.set({...other}))
+    useEffect(() => store.setState({options: extractOptions(options)}), [options])
+    useEffect(() => store.setState({...other}))
 
     useExternalEvents(props.onContainer, store.bus)
 
+
     return (
         <StoreContext.Provider value={store}>
-            <ProceedValueProvider value={props.value} onChange={props.onChange}>
+            <Initializer>
                 {children}
-            </ProceedValueProvider>
+            </Initializer>
         </StoreContext.Provider>
     )
 }
 
 //TODO
-function ProceedValueProvider({value, children, onChange}: { onChange: (value: string) => void, value: string, children: ReactNode }) {
-    const options = useSelector(state => state.options)
-    const pieces = useParsed(value, options)
-    useMutationHandlers(onChange, pieces)
+const Initializer = ({children}: { children: ReactNode }) => {
 
-    return <ValueContext.Provider value={pieces}>
+    useMutationHandlers()
+    useParser()
+
+    return <>
         {children}
-    </ValueContext.Provider>
+    </>
 }

@@ -1,4 +1,4 @@
-import {isAnnotated, NodeContext, useStore, useValue} from "../../utils";
+import {isAnnotated, NodeContext, useStore} from "../../utils";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
@@ -9,17 +9,16 @@ import {useSelector} from "../../utils/useSelector";
 
 export const MarkedText = memo(() => {
     const {bus} = useStore()
-    const {className, style} = useSelector(state => ({
+    const {className, style, pieces} = useSelector(state => ({
         className: state.className ? DefaultClass + " " + state.className : DefaultClass,
-        style: state.style
-    }))
+        style: state.style,
+        pieces: state.pieces,
+    }), true)
 
     const ref = useSharedRef();
     const events = useMemo(() => bus.events, [])
-    const pieces = useValue()
     useFocus()
 
-    //const a = useSelector(state => state.props.Mark)
     return (
         <div ref={ref} className={className} style={style} {...events}>
             {pieces.toArray().map((node) =>
