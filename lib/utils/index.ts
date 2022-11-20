@@ -1,20 +1,10 @@
 import React, {Children, Context, isValidElement, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {
-    AnnotatedMark,
-    ElementOptions,
-    EventName,
-    KeyedPieces,
-    Mark,
-    Markup,
-    NodeData,
-    Options,
-    Piece,
-    Store
-} from "../types";
+import {AnnotatedMark, ElementOptions, EventName, KeyedPieces, Mark, Markup, NodeData, Options, Piece,} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
 import LinkedList from "./LinkedList";
+import {Store} from "./useSelector";
 
 export const assign = Object.assign
 

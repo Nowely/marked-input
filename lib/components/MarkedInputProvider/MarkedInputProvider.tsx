@@ -1,12 +1,9 @@
-import {ReactNode, useMemo, useState} from "react";
+import {ReactNode, useEffect, useState} from "react";
 import {MarkedInputProps} from "../MarkedInput";
-import {StoreContext, useStore, ValueContext} from "../../utils";
-import {useOptions} from "./hooks/useOptions";
+import {extractOptions, StoreContext, useStore, ValueContext} from "../../utils";
 import {useParsed} from "./hooks/useParsed";
-import {EventBus} from "../../utils/EventBus";
 import {useMutationHandlers} from "./hooks/useMutationHandlers";
-import {Store} from "../../types";
-import {useExtractedProps} from "./hooks/useExtractedProps";
+import {Store, useSelector} from "../../utils/useSelector";
 import {useExternalEvents} from "./hooks/useExternalEvents";
 
 interface MarkedInputProviderProps {
@@ -15,16 +12,14 @@ interface MarkedInputProviderProps {
 }
 
 export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps) => {
-    const options = useOptions(props.children)
-    const bus = useState(EventBus.initWithExternalEvents(props.onContainer))[0]
-    const extractedProps = useExtractedProps(props)
+    const {children: options, ...other} = props
 
-    useExternalEvents(props.onContainer, bus)
+    const store = useState(() => Store.create(props))[0]
 
-    const store: Store = useMemo(
-        () => ({options, bus, props: extractedProps}),
-        [options, extractedProps, bus]
-    )
+    useEffect(() => store.set({options: extractOptions(options)}), [options])
+    useEffect(() => store.set({...other}))
+
+    useExternalEvents(props.onContainer, store.bus)
 
     return (
         <StoreContext.Provider value={store}>
@@ -37,7 +32,7 @@ export const MarkedInputProvider = ({props, children}: MarkedInputProviderProps)
 
 //TODO
 function ProceedValueProvider({value, children, onChange}: { onChange: (value: string) => void, value: string, children: ReactNode }) {
-    const {options} = useStore()
+    const options = useSelector(state => state.options)
     const pieces = useParsed(value, options)
     useMutationHandlers(onChange, pieces)
 

@@ -3,7 +3,6 @@ import {FunctionComponent, ReactElement, RefObject} from "react";
 import {OptionProps} from "./components/Option";
 import {MarkedInputProps} from "./components/MarkedInput";
 import {EventBus} from "./utils/EventBus";
-import {useMark} from "./utils/useMark";
 
 export type NodeData = {
     key: number
@@ -17,7 +16,7 @@ export interface Mark {
 }
 
 //TODO rename ParsedMarkup, Match?
-export interface AnnotatedMark extends Mark{
+export interface AnnotatedMark extends Mark {
     annotation: string;
     label: string;
     value: string
@@ -27,7 +26,7 @@ export interface AnnotatedMark extends Mark{
 }
 
 //TODO
-export interface MarkProps extends Mark{
+export interface MarkProps extends Mark {
     //useMark: () => ReturnType<typeof useMark>
 }
 
@@ -75,14 +74,7 @@ export type Options = OptionType[]
 export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
 export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
 
-export type Store = {
-    options: Options
-    //pieces: KeyedPieces
-    bus: EventBus
-    props: ExtractedProps
-}
-
-export type ExtractedProps = Omit<MarkedInputProps, 'children' | 'value'>
+export type State = Omit<MarkedInputProps, 'children'> & { options: Options }
 
 export type EventName = `on${string}`
 
@@ -92,6 +84,7 @@ export enum Type {
     CheckTrigger,
     ClearTrigger,
     Select,
+    State
 }
 
 export type Payload = {

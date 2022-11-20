@@ -5,17 +5,23 @@ import {useSharedRef} from "./hooks/useSharedRef";
 import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
 import {EditableSpan} from "../EditableSpan";
+import {useSelector} from "../../utils/useSelector";
 
 export const MarkedText = memo(() => {
-    const {bus, props: {className, style}} = useStore()
-    const containerClass = className ? DefaultClass + " " + className : DefaultClass
+    const {bus} = useStore()
+    const {className, style} = useSelector(state => ({
+        className: state.className ? DefaultClass + " " + state.className : DefaultClass,
+        style: state.style
+    }))
+
     const ref = useSharedRef();
     const events = useMemo(() => bus.events, [])
     const pieces = useValue()
     useFocus()
 
+    //const a = useSelector(state => state.props.Mark)
     return (
-        <div ref={ref} className={containerClass} style={style} {...events}>
+        <div ref={ref} className={className} style={style} {...events}>
             {pieces.toArray().map((node) =>
                 <NodeContext.Provider key={node.key} value={node}>
                     {
