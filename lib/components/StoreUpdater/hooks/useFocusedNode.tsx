@@ -1,8 +1,8 @@
 import {FocusEvent} from "react";
-import {useListener} from "../../../../../utils/useListener";
-import {useStore} from "../../../../../utils";
+import {useListener} from "../../../utils/useListener";
+import {useStore} from "../../../utils";
 
-export const useFocusedNodeRef = () => {
+export const useFocusedNode = () => {
     const store = useStore()
 
     useListener("onFocus", (e: FocusEvent<HTMLElement>) =>

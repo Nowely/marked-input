@@ -1,8 +1,8 @@
 import {RefObject, useEffect, useRef} from "react";
-import {Caret} from "../../../../../utils/Caret";
-import {NodeData} from "../../../../../types";
-import {useProps} from "../../../../../utils/useProps";
-import {useStore} from "../../../../../utils";
+import {Caret} from "../../../utils/Caret";
+import {NodeData} from "../../../types";
+import {useProps} from "../../../utils/useProps";
+import {useStore} from "../../../utils";
 
 //TODO move to types
 export type Recovery = {
@@ -11,7 +11,7 @@ export type Recovery = {
     isPrevPrev?: boolean
 }
 
-export const useRecoveryAfterRemove = () => {
+export const useFocusRecovery = () => {
     const store = useStore()
 
     //Restore focus after delete mark

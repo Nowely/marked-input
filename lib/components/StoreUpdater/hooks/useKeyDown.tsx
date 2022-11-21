@@ -1,10 +1,10 @@
 import {KeyboardEvent, MutableRefObject} from "react";
-import {Caret} from "../../../../../utils/Caret";
-import {KEY} from "../../../../../constants";
-import {Type} from "../../../../../types";
-import {useStore} from "../../../../../utils";
-import {Recovery} from "./useRecoveryAfterRemove";
-import {useDownOf} from "./useDownOf";
+import {Caret} from "../../../utils/Caret";
+import {KEY} from "../../../constants";
+import {Type} from "../../../types";
+import {useStore} from "../../../utils";
+import {Recovery} from "../../MarkedText/hooks/useFocusRecovery";
+import {useDownOf} from "../../../utils/useDownOf";
 
 export function useKeyDown() {
     const store = useStore()

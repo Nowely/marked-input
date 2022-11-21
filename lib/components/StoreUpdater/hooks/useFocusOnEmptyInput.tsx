@@ -1,5 +1,5 @@
-import {useListener} from "../../../../../utils/useListener";
-import {useProps} from "../../../../../utils/useProps";
+import {useListener} from "../../../utils/useListener";
+import {useProps} from "../../../utils/useProps";
 
 export const useFocusOnEmptyInput = () => {
     const pieces = useProps(state => state.pieces)

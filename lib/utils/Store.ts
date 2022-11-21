@@ -4,7 +4,7 @@ import {MarkedInputProps} from "../components/MarkedInput";
 import {extractOptions} from "./index";
 import {EmptyList} from "../constants";
 import LinkedListNode from "./LinkedListNode";
-import {Recovery} from "../components/MarkedText/hooks/useFocus/hooks/useRecoveryAfterRemove";
+import {Recovery} from "../components/MarkedText/hooks/useFocusRecovery";
 import {createRef} from "react";
 
 export class Store {

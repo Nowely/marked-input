@@ -5,7 +5,6 @@ import {PredefinedEvents} from "../constants";
 export class EventBus {
     readonly #SystemEvents = new Map<Type, Set<Listener>>()
     readonly #ReactEvents = new Map<EventName, Set<Listener>>()
-    readonly #map: Record<string, any> = {}
 
     get events() {
         let result: any = {}

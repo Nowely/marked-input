@@ -1,6 +1,6 @@
-import {KEY} from "../../../../../constants";
+import {KEY} from "../constants";
 import {KeyboardEvent} from "react";
-import {useListener} from "../../../../../utils/useListener";
+import {useListener} from "./useListener";
 
 export function useDownOf(key: KEY, callback: (event: KeyboardEvent<HTMLSpanElement>) => void) {
     useListener("onKeyDown", (event) => {
