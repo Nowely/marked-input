@@ -10,3 +10,5 @@ export const Whisper = memo(() => {
     if (trigger) return <OverlayTrigger key={trigger.option.index} {...trigger}/>
     return null
 })
+
+Whisper.displayName = 'Whisper'
