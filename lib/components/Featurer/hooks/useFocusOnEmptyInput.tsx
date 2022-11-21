@@ -1,8 +1,8 @@
 import {useListener} from "../../../utils/useListener";
-import {useProps} from "../../../utils/useProps";
+import {useSelector} from "../../../utils/useSelector";
 
 export const useFocusOnEmptyInput = () => {
-    const pieces = useProps(state => state.pieces)
+    const pieces = useSelector(state => state.pieces)
     useListener("onClick", () => {
         if (pieces.length === 1 && pieces.head?.data.mark.label === "")
             pieces.head?.data.ref?.current?.focus()

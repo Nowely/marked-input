@@ -2,7 +2,7 @@ import {Mark, NodeData, Type} from "../types";
 import {CSSProperties, RefObject, useCallback, useRef, useState} from "react";
 import {useNode, useStore} from "./index";
 import {useHeldCaret} from "../components/EditableSpan/useHeldCaret";
-import {useProps} from "./useProps";
+import {useSelector} from "./useSelector";
 
 export interface DynamicMark extends Mark {
     /**
@@ -41,7 +41,7 @@ export interface DynamicMark extends Mark {
 export const useMark = (): DynamicMark => {
     const node = useNode()
     const {bus} = useStore()
-    const {style, className, readOnly} = useProps(state => ({
+    const {style, className, readOnly} = useSelector(state => ({
         readOnly: state.readOnly,
         style: state.spanStyle,
         className: state.spanClassName

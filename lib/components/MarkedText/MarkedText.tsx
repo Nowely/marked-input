@@ -3,12 +3,12 @@ import {DefaultClass} from "../../constants";
 import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
 import {EditableSpan} from "../EditableSpan";
-import {useProps} from "../../utils/useProps";
+import {useSelector} from "../../utils/useSelector";
 import {useFocusRecovery} from "./useFocusRecovery";
 
 export const MarkedText = memo(() => {
     const store = useStore()
-    const {className, style, pieces} = useProps(state => ({
+    const {className, style, pieces} = useSelector(state => ({
         className: state.className ? DefaultClass + " " + state.className : DefaultClass,
         style: state.style,
         pieces: state.pieces,

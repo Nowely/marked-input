@@ -4,7 +4,7 @@ import {useStore} from "./index";
 import {useListener} from "./useListener";
 import {shallow} from "./shallow";
 
-export const useProps = <T, >(selector: (state: State) => T, isShallow?: boolean) => {
+export const useSelector = <T, >(selector: (state: State) => T, isShallow?: boolean) => {
     const store = useStore()
     const [value, setValue] = useState(() => selector(store.state))
 

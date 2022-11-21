@@ -1,9 +1,9 @@
 import {assertAnnotated, useNode} from "../utils";
-import {useProps} from "../utils/useProps";
+import {useSelector} from "../utils/useSelector";
 
 export function Piece() {
     const {mark} = useNode()
-    const {options, Mark} = useProps(state => ({options: state.options, Mark: state.Mark}), true)
+    const {options, Mark} = useSelector(state => ({options: state.options, Mark: state.Mark}), true)
 
     assertAnnotated(mark)
 

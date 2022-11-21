@@ -1,7 +1,7 @@
 import {RefObject, useEffect, useRef} from "react";
 import {Caret} from "../../utils/Caret";
 import {NodeData} from "../../types";
-import {useProps} from "../../utils/useProps";
+import {useSelector} from "../../utils/useSelector";
 import {useStore} from "../../utils";
 
 //TODO move to types
