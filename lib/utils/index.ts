@@ -1,20 +1,9 @@
 import React, {Children, Context, isValidElement, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {
-    AnnotatedMark,
-    ElementOptions,
-    EventName,
-    KeyedPieces,
-    Mark,
-    Markup,
-    NodeData,
-    Options,
-    Piece,
-    Store
-} from "../types";
+import {AnnotatedMark, ElementOptions, EventName, KeyedPieces, Mark, Markup, NodeData, Options, Piece,} from "../types";
 import {Parser} from "./Parser";
 import {OptionProps} from "../components/Option";
-import LinkedList from "./LinkedList";
+import {Store} from "./Store";
 
 export const assign = Object.assign
 
@@ -121,15 +110,15 @@ export function extractOptions(options?: ElementOptions<any> | OptionProps[]): O
     }
 }
 
-const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T>>] => {
+const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<T>>] => {
     const defaultContext = React.createContext<T | undefined>(undefined)
     defaultContext.displayName = name
 
     const hook = createContextHook(defaultContext)
-    //const provider = defaultContext.Provider as Provider<NonNullable<T>>
-    const context = defaultContext as React.Context<NonNullable<T>>
+    const provider = defaultContext.Provider as React.Provider<NonNullable<T>>
+    //const context = defaultContext as React.Context<NonNullable<T>>
 
-    return [hook, context]
+    return [hook, provider]
 
 
     function createContextHook<T, >(context: Context<T>) {
@@ -143,9 +132,8 @@ const createContext = <T, >(name: string): [() => T, React.Context<NonNullable<T
     }
 }
 
-export const [useStore, StoreContext] = createContext<Store>("MarkedInputStoreProvider")
-export const [useValue, ValueContext] = createContext<LinkedList<NodeData>>("ValueProvider")
-export const [useNode, NodeContext] = createContext<NodeData>("NodeProvider")
+export const [useStore, StoreProvider] = createContext<Store>("StoreProvider")
+export const [useNode, NodeProvider] = createContext<NodeData>("NodeProvider")
 
 export function findSpanKey(span: string, pieces: KeyedPieces) {
     let foundKey

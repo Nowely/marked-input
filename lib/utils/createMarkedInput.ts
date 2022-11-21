@@ -23,7 +23,7 @@ export function createMarkedInput(
         children: options
     }
 
-    return (props: ConfiguredMarkedInputProps<any>) => {
+    return function ConfiguredMarkedInput(props: ConfiguredMarkedInputProps<any>) {
         const assignedProps: MarkedInputProps<any> = assign({}, props, predefinedProps)
         return MarkedInput(assignedProps)
     }

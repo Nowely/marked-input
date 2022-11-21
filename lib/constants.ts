@@ -1,4 +1,5 @@
 import {EventName, OptionType} from "./types";
+import LinkedList from "./utils/LinkedList";
 
 export enum KEY {
     // Navigation Keys
@@ -44,3 +45,5 @@ export const DefaultOptionProps: OptionType = {
 export const PredefinedEvents: EventName[] = ["onFocus", "onBlur", "onKeyDown", "onClick"]
 
 export const wordRegex = new RegExp(/^\w*/)
+
+export const EmptyList = LinkedList.from([])
