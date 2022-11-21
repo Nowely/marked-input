@@ -34,7 +34,7 @@ export function useSystemListeners() {
         //onChange(toString([...pieces.values()], options))
     }, [])
 
-    useListener(Type.Select, (event: { value: Mark, trigger: Trigger }) => {
+    useListener(Type. Select, (event: { value: Mark, trigger: Trigger }) => {
         const {pieces} = store.state
         const {value, trigger: {option, span, index, source}} = event
 
@@ -42,6 +42,7 @@ export function useSystemListeners() {
         const newSpan = createNewSpan(span, annotation, index, source);
         //const key = findSpanKey(span, pieces)
         const piece = pieces.findNode(node => node.mark.label === span)
+        store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
 
         if (piece) {
             piece.data.mark.label = newSpan

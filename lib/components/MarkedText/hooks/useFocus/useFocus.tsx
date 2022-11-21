@@ -4,8 +4,8 @@ import {useKeyDown} from "./hooks/useKeyDown";
 import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput";
 
 export const useFocus = () => {
-    const focusedNodeRef = useFocusedNodeRef()
-    const recoveryRef = useRecoveryAfterRemove()
-    useKeyDown(recoveryRef, focusedNodeRef)
+    useFocusedNodeRef()
+    useRecoveryAfterRemove()
+    useKeyDown()
     useFocusOnEmptyInput()
 }

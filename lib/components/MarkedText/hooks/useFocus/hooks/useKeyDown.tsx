@@ -1,22 +1,18 @@
 import {KeyboardEvent, MutableRefObject} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {KEY} from "../../../../../constants";
-import {NodeData, Type} from "../../../../../types";
+import {Type} from "../../../../../types";
 import {useStore} from "../../../../../utils";
 import {Recovery} from "./useRecoveryAfterRemove";
-import LinkedListNode from "../../../../../utils/LinkedListNode";
 import {useDownOf} from "./useDownOf";
 
-export function useKeyDown(
-    recoveryRef: MutableRefObject<Recovery | null>,
-    focusedNodeRef: MutableRefObject<LinkedListNode<NodeData> | undefined>
-) {
-    const {bus} = useStore()
+export function useKeyDown() {
+    const store = useStore()
 
     useDownOf(KEY.LEFT, event => {
         if (!isCaretInStart(event)) return
 
-        const node = focusedNodeRef.current?.prev
+        const node = store.focusedNode?.prev
         const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
         element?.focus()
         Caret.setCaretToEnd(element)
@@ -26,7 +22,7 @@ export function useKeyDown(
     useDownOf(KEY.RIGHT, event => {
         if (!isCaretInEnd(event)) return
 
-        const node = focusedNodeRef.current?.next
+        const node = store.focusedNode?.next
         const element = node?.data.ref?.current ?? node?.next?.data.ref?.current
         element?.focus()
         event.preventDefault()
@@ -35,24 +31,24 @@ export function useKeyDown(
     useDownOf(KEY.DELETE, event => {
         if (!isCaretInEnd(event)) return
 
-        const node = focusedNodeRef.current?.next
+        const node = store.focusedNode?.next
         if (!node?.data.key) return
 
         const caretPosition = node.prev?.data.mark.label.length ?? 0
-        recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
-        bus.send(Type.Delete, {key: node.data.key})
+        store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
+        store.bus.send(Type.Delete, {key: node.data.key})
         event.preventDefault()
     })
 
     useDownOf(KEY.BACKSPACE, event => {
         if (!isCaretInStart(event)) return
 
-        const node = focusedNodeRef.current?.prev
+        const node = store.focusedNode?.prev
         if (!node?.data.key) return
 
         const caretPosition = node.prev?.data.mark.label.length ?? 0
-        recoveryRef.current = {prevNodeData: node.prev?.prev?.data, caretPosition}
-        bus.send(Type.Delete, {key: node.data.key})
+        store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
+        store.bus.send(Type.Delete, {key: node.data.key})
         event.preventDefault()
     })
 }
