@@ -1,7 +1,7 @@
 import {RefObject, useEffect, useRef} from "react";
 import {Caret} from "../../../../../utils/Caret";
 import {NodeData} from "../../../../../types";
-import {useSelector} from "../../../../../utils/useSelector";
+import {useProps} from "../../../../../utils/useProps";
 
 //TODO move to types
 export type Recovery = {
@@ -10,7 +10,7 @@ export type Recovery = {
 }
 
 export const useRecoveryAfterRemove = () => {
-    const pieces = useSelector(state => state.pieces)
+    const pieces = useProps(state => state.pieces)
     const recoveryRef = useRef<Recovery | null>(null)
 
     //Restore focus after delete mark

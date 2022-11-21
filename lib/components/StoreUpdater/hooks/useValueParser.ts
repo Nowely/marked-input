@@ -4,14 +4,14 @@ import {NodeData, Piece} from "../../../types";
 import {Parser} from "../../../utils/Parser";
 import LinkedList from "../../../utils/LinkedList";
 import LinkedListNode from "../../../utils/LinkedListNode";
-import {useSelector} from "../../../utils/useSelector";
+import {useProps} from "../../../utils/useProps";
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value
 //TODO move to marked text?
 export const useValueParser = () => {
     const store = useStore()
-    const {value, options} = useSelector(state => ({value: state.value, options: state.options}), true)
+    const {value, options} = useProps(state => ({value: state.value, options: state.options}), true)
 
     const pieces = useMemo(Parser.split(value, options), [value, options])
     const previous = useRef<LinkedList<NodeData> | null>(null)

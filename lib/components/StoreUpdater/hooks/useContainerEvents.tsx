@@ -1,12 +1,12 @@
 import {Activator, DivEvents, EventName} from "../../../types";
 import {EventBus} from "../../../utils/EventBus";
 import {useEffect} from "react";
-import {useSelector} from "../../../utils/useSelector";
+import {useProps} from "../../../utils/useProps";
 import {useStore} from "../../../utils";
 
 export const useContainerEvents = () => {
     const {bus} = useStore()
-    const onContainer = useSelector(state => state.onContainer ?? {}, true)
+    const onContainer = useProps(state => state.onContainer ?? {}, true)
     const eventNames = Object.keys(onContainer) as EventName[]
     const eventHandlers = Object.values(onContainer)
 

@@ -5,11 +5,11 @@ import {useSharedRef} from "./hooks/useSharedRef";
 import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
 import {EditableSpan} from "../EditableSpan";
-import {useSelector} from "../../utils/useSelector";
+import {useProps} from "../../utils/useProps";
 
 export const MarkedText = memo(() => {
     const {bus} = useStore()
-    const {className, style, pieces} = useSelector(state => ({
+    const {className, style, pieces} = useProps(state => ({
         className: state.className ? DefaultClass + " " + state.className : DefaultClass,
         style: state.style,
         pieces: state.pieces,

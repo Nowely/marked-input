@@ -5,7 +5,7 @@ import {Trigger} from "../../types";
 import {useOverlayProps} from "./hooks/useOverlayProps";
 import {useCloseByOutsideClick} from "./hooks/useCloseByOutsideClick";
 import {useCloseByEsc} from "./hooks/useCloseByEsc";
-import {useSelector} from "../../utils/useSelector";
+import {useProps} from "../../utils/useProps";
 
 export const OverlayTrigger = (trigger: Trigger) => {
     const ref = useRef<HTMLElement>(null)
@@ -14,7 +14,7 @@ export const OverlayTrigger = (trigger: Trigger) => {
     useCloseByOutsideClick(ref)
 
     const props = useOverlayProps(trigger)
-    const Overlay = useSelector(state => state.Overlay ?? Suggestions)
+    const Overlay = useProps(state => state.Overlay ?? Suggestions)
 
     return <Overlay ref={isForward(Overlay) ? ref : undefined} {...props} />
 }

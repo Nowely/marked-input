@@ -2,10 +2,10 @@ import {FocusEvent, useRef} from "react";
 import {useListener} from "../../../../../utils/useListener";
 import {NodeData} from "../../../../../types";
 import LinkedListNode from "../../../../../utils/LinkedListNode";
-import {useSelector} from "../../../../../utils/useSelector";
+import {useProps} from "../../../../../utils/useProps";
 
 export const useFocusedNodeRef = () => {
-    const pieces = useSelector(state => state.pieces)
+    const pieces = useProps(state => state.pieces)
     const ref = useRef<LinkedListNode<NodeData> | undefined>()
 
     useListener("onFocus", (e: FocusEvent<HTMLElement>) =>

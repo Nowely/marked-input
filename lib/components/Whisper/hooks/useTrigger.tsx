@@ -1,13 +1,12 @@
 import {useState} from "react";
-import {useStore} from "../../../utils";
 import {Trigger, Type} from "../../../types";
 import {TriggerFinder} from "../../../utils/TriggerFinder";
 import {useListener} from "../../../utils/useListener";
-import {useSelector} from "../../../utils/useSelector";
+import {useProps} from "../../../utils/useProps";
 
 export const useTrigger = (): Trigger | undefined => {
     const [trigger, setTrigger] = useState<Trigger | undefined>()
-    const options = useSelector(state => state.options)
+    const options = useProps(state => state.options)
 
     useListener(Type.ClearTrigger, _ => setTrigger(undefined), [])
     useListener(Type.CheckTrigger, _ => setTrigger(TriggerFinder.find(options)), [options])
