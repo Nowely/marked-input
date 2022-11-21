@@ -1,4 +1,4 @@
-import {DivEvents, EventName, KeyMapper, Listener, Type} from "../types";
+import {DivEvents, EventName, Listener, Type} from "../types";
 import {isEventName} from "./index";
 import {PredefinedEvents} from "../constants";
 
@@ -24,18 +24,6 @@ export class EventBus {
 
     constructor(...initEvents: EventName[]) {
         initEvents.forEach(event => this.#ReactEvents.set(event, new Set()))
-    }
-
-    //TODO extract get and set over here
-    get<T extends keyof KeyMapper>(key: T): KeyMapper[T] {
-        const value = this.#map[key]
-        if (value)
-            return this.#map[key]
-        throw new Error(`The ${key} is not exist!`)
-    }
-
-    set<T extends keyof KeyMapper>(key: T, value: KeyMapper[T]) {
-        this.#map[key] = value
     }
 
     //TODO type

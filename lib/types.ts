@@ -119,11 +119,6 @@ export type Trigger = {
     option: OptionType
 }
 
-export type KeyMapper = {
-    "TextRef": RefObject<HTMLDivElement>,
-    "TriggerSpanRef": RefObject<HTMLElement>,
-}
-
 export type Listener = (e: any) => void
 
 type EventsFrom<Type extends object> = {

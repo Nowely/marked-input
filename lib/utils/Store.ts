@@ -5,11 +5,13 @@ import {extractOptions} from "./index";
 import {EmptyList} from "../constants";
 import LinkedListNode from "./LinkedListNode";
 import {Recovery} from "../components/MarkedText/hooks/useFocus/hooks/useRecoveryAfterRemove";
+import {createRef} from "react";
 
 export class Store {
     #state: State;
     focusedNode?: LinkedListNode<NodeData>
     recovery?: Recovery
+    containerRef = createRef<HTMLDivElement>()
 
     get state(): State {
         return this.#state;

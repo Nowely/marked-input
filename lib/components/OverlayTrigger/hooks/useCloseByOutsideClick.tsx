@@ -3,13 +3,13 @@ import {useStore} from "../../../utils";
 import {Type} from "../../../types";
 
 export function useCloseByOutsideClick(overlayRef: RefObject<HTMLElement>) {
-    const {bus} = useStore()
+    const store = useStore()
 
     useEffect(() => {
         const handleClick = (event: MouseEvent) => {
             let target = event.target as HTMLElement | null
-            if (overlayRef.current?.contains(target) || bus.get("TextRef").current?.contains(target)) return;
-            bus.send(Type.ClearTrigger)
+            if (overlayRef.current?.contains(target) || store.containerRef.current?.contains(target)) return
+            store.bus.send(Type.ClearTrigger)
         }
 
         document.addEventListener("click", handleClick)
