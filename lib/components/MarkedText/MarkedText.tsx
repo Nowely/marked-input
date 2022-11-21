@@ -1,4 +1,4 @@
-import {isAnnotated, NodeContext, useStore} from "../../utils";
+import {isAnnotated, NodeProvider, useStore} from "../../utils";
 import {DefaultClass} from "../../constants";
 import {useFocus} from "./hooks/useFocus";
 import {useSharedRef} from "./hooks/useSharedRef";
@@ -22,11 +22,11 @@ export const MarkedText = memo(() => {
     return (
         <div ref={ref} className={className} style={style} {...events}>
             {pieces.toArray().map((node) =>
-                <NodeContext.Provider key={node.key} value={node}>
+                <NodeProvider key={node.key} value={node}>
                     {
                         isAnnotated(node.mark) ? <Piece/> : <EditableSpan/>
                     }
-                </NodeContext.Provider>
+                </NodeProvider>
             )}
         </div>
     )

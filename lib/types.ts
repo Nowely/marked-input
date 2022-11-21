@@ -74,7 +74,7 @@ export type Options = OptionType[]
 export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
 export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
 
-export type State = Omit<MarkedInputProps, 'children'> & { options: Options, pieces: LinkedList<NodeData> }
+export type State = Omit<MarkedInputProps<any, any>, 'children'> & { options: Options, pieces: LinkedList<NodeData> }
 
 export type EventName = `on${string}`
 

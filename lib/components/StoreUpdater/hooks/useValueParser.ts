@@ -8,10 +8,12 @@ import {useSelector} from "../../../utils/useSelector";
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value
-export const useParser = () => {
+//TODO move to marked text?
+export const useValueParser = () => {
     const store = useStore()
     const {value, options} = useSelector(state => ({value: state.value, options: state.options}), true)
-    const pieces = useMemo(Parser.split(value, options), [value])
+
+    const pieces = useMemo(Parser.split(value, options), [value, options])
     const previous = useRef<LinkedList<NodeData> | null>(null)
 
     useEffect(() => {

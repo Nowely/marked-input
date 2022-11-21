@@ -9,15 +9,12 @@ export const useSelector = <T, >(selector: (state: State) => T, isShallow?: bool
     const [value, setValue] = useState(() => selector(store.state))
 
     useListener(Type.State, newState => {
-        setValue(value => {
+        setValue(currentValue => {
             const newValue = selector(newState)
-            if (isShallow && shallow(value, newValue)) return value
+            if (isShallow && shallow(currentValue, newValue)) return currentValue
             return newValue
         })
     }, [])
 
     return value
 }
-
-//export const useAbc = useState.bind(null, () => Store1.create())
-
