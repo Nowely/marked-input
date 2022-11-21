@@ -3,7 +3,7 @@ import {useEffect} from "react";
 import {KEY} from "../../../constants";
 import {Type} from "../../../types";
 
-export function useCloseByEsc() {
+export function useCloseOverlayByEsc() {
     const {bus} = useStore()
 
     useEffect(() => {

@@ -1,7 +1,7 @@
 import {Mark, NodeData, Type} from "../types";
 import {CSSProperties, RefObject, useCallback, useRef, useState} from "react";
 import {useNode, useStore} from "./index";
-import {useHeldCaret} from "../components/EditableSpan/hooks/useHeldCaret";
+import {useHeldCaret} from "../components/EditableSpan/useHeldCaret";
 import {useProps} from "./useProps";
 
 export interface DynamicMark extends Mark {

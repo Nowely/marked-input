@@ -1,5 +1,5 @@
 import {useLayoutEffect, useRef} from "react";
-import {Caret} from "../../../utils/Caret";
+import {Caret} from "../../utils/Caret";
 
 /**
  * Holds caret position on changing data. Otherwise, it jumps to head.

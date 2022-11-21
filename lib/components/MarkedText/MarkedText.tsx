@@ -4,7 +4,7 @@ import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
 import {EditableSpan} from "../EditableSpan";
 import {useProps} from "../../utils/useProps";
-import {useFocusRecovery} from "./hooks/useFocusRecovery";
+import {useFocusRecovery} from "./useFocusRecovery";
 
 export const MarkedText = memo(() => {
     const store = useStore()

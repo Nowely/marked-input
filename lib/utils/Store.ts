@@ -1,17 +1,19 @@
-import {NodeData, State, Type} from "../types";
+import {NodeData, State, Trigger, Type} from "../types";
 import {EventBus} from "./EventBus";
 import {MarkedInputProps} from "../components/MarkedInput";
 import {extractOptions} from "./index";
 import {EmptyList} from "../constants";
 import LinkedListNode from "./LinkedListNode";
-import {Recovery} from "../components/MarkedText/hooks/useFocusRecovery";
+import {Recovery} from "../components/MarkedText/useFocusRecovery";
 import {createRef} from "react";
 
 export class Store {
-    #state: State;
+    #state: State
+
     focusedNode?: LinkedListNode<NodeData>
     recovery?: Recovery
     containerRef = createRef<HTMLDivElement>()
+    overlayRef = createRef<HTMLElement>()
 
     get state(): State {
         return this.#state;
