@@ -1,7 +1,7 @@
 {
   "name": "marked-input",
   "private": true,
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
