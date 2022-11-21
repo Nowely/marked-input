@@ -13,7 +13,7 @@ import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideCli
 
 //TODO centralize listeners in here?
 //TODO rename
-export const StoreUpdater = ({props}: { props: MarkedInputProps<any, any> }) => {
+export const Featurer = ({props}: { props: MarkedInputProps<any, any> }) => {
     useStateUpdating(props)
     useContainerEvents()
     useSystemListeners()
