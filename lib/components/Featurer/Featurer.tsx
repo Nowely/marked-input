@@ -11,8 +11,6 @@ import {useTrigger} from "./hooks/useTrigger";
 import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
 import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
 
-//TODO centralize listeners in here?
-//TODO rename
 export const Featurer = ({props}: { props: MarkedInputProps<any, any> }) => {
     useStateUpdating(props)
     useContainerEvents()

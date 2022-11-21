@@ -57,7 +57,7 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
 }
 
 export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
-    const store = useState(() => Store.create(props))[0]
+    const [store] = useState(Store.create(props))
     return (
         <StoreProvider value={store}>
             <MarkedText/>
