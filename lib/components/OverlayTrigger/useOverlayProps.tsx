@@ -1,7 +1,7 @@
-import {Mark, MarkProps, OverlayProps, Trigger, Type} from "../../../types";
-import {useStore} from "../../../utils";
+import {Mark, MarkProps, OverlayProps, Trigger, Type} from "../../types";
+import {useStore} from "../../utils";
 import {useCallback} from "react";
-import {Caret} from "../../../utils/Caret";
+import {Caret} from "../../utils/Caret";
 
 export function useOverlayProps(trigger: Trigger) {
     const {bus} = useStore()

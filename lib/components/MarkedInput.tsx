@@ -2,7 +2,7 @@ import {ComponentType, CSSProperties, useState} from "react";
 import {DivEvents, ElementOptions, MarkProps, OverlayProps} from "../types";
 import {MarkedText} from "./MarkedText";
 import {OptionProps} from "./Option";
-import {StoreUpdater} from "./StoreUpdater";
+import {Featurer} from "./Featurer";
 import {Whisper} from "./Whisper";
 import {Store} from "../utils/Store";
 import {StoreProvider} from "../utils";
@@ -57,12 +57,12 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
 }
 
 export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
-    const store = useState(() => Store.create(props))[0]
+    const [store] = useState(Store.create(props))
     return (
         <StoreProvider value={store}>
             <MarkedText/>
             <Whisper/>
-            <StoreUpdater props={props}/>
+            <Featurer props={props}/>
         </StoreProvider>
     )
 }

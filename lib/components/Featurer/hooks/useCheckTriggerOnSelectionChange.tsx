@@ -3,7 +3,7 @@ import {FocusEvent, useCallback} from "react";
 import {Type} from "../../../types";
 import {useListener} from "../../../utils/useListener";
 
-export function useCheckOnSelectionChange() {
+export function useCheckTriggerOnSelectionChange() {
     const {bus} = useStore()
 
     const sendCheckTrigger = useCallback(() => bus.send(Type.CheckTrigger),  [])

@@ -1,26 +1,24 @@
 import {isAnnotated, NodeProvider, useStore} from "../../utils";
 import {DefaultClass} from "../../constants";
-import {useFocus} from "./hooks/useFocus";
-import {useSharedRef} from "./hooks/useSharedRef";
 import {memo, useMemo} from "react";
 import {Piece} from "../Piece";
 import {EditableSpan} from "../EditableSpan";
 import {useSelector} from "../../utils/useSelector";
+import {useFocusRecovery} from "./useFocusRecovery";
 
 export const MarkedText = memo(() => {
-    const {bus} = useStore()
+    const store = useStore()
     const {className, style, pieces} = useSelector(state => ({
         className: state.className ? DefaultClass + " " + state.className : DefaultClass,
         style: state.style,
         pieces: state.pieces,
     }), true)
 
-    const ref = useSharedRef();
-    const events = useMemo(() => bus.events, [])
-    useFocus()
+    const events = useMemo(() => store.bus.events, [])
+    useFocusRecovery()
 
     return (
-        <div ref={ref} className={className} style={style} {...events}>
+        <div ref={store.containerRef} className={className} style={style} {...events}>
             {pieces.toArray().map((node) =>
                 <NodeProvider key={node.key} value={node}>
                     {

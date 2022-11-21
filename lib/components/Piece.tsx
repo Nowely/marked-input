@@ -1,4 +1,4 @@
-import {assertAnnotated, useNode, useStore} from "../utils";
+import {assertAnnotated, useNode} from "../utils";
 import {useSelector} from "../utils/useSelector";
 
 export function Piece() {
