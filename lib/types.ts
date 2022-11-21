@@ -134,3 +134,8 @@ export type DivEvents = EventsFrom<JSX.IntrinsicElements['div']>
 
 export type Activator = () => void
 
+export type Recovery = {
+    prevNodeData?: NodeData
+    caretPosition: number
+    isPrevPrev?: boolean
+}

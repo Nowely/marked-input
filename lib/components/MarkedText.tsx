@@ -1,10 +1,9 @@
-import {isAnnotated, NodeProvider, useStore} from "../../utils";
-import {DefaultClass} from "../../constants";
+import {isAnnotated, NodeProvider, useStore} from "../utils";
+import {DefaultClass} from "../constants";
 import {memo, useMemo} from "react";
-import {Piece} from "../Piece";
-import {EditableSpan} from "../EditableSpan";
-import {useSelector} from "../../utils/useSelector";
-import {useFocusRecovery} from "./useFocusRecovery";
+import {Piece} from "./Piece";
+import {EditableSpan} from "./EditableSpan";
+import {useSelector} from "../utils/useSelector";
 
 export const MarkedText = memo(() => {
     const store = useStore()
@@ -15,7 +14,6 @@ export const MarkedText = memo(() => {
     }), true)
 
     const events = useMemo(() => store.bus.events, [])
-    useFocusRecovery()
 
     return (
         <div ref={store.containerRef} className={className} style={style} {...events}>

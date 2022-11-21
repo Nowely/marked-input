@@ -1,10 +1,9 @@
-import {NodeData, State, Type} from "../types";
+import {NodeData, Recovery, State, Type} from "../types";
 import {EventBus} from "./EventBus";
 import {MarkedInputProps} from "../components/MarkedInput";
 import {extractOptions} from "./index";
 import {EmptyList} from "../constants";
 import LinkedListNode from "./LinkedListNode";
-import {Recovery} from "../components/MarkedText/useFocusRecovery";
 import {createRef} from "react";
 
 export class Store {

@@ -12,6 +12,16 @@ export default {
     subcomponents: {Option}
 }
 
+export const Mentions = () => {
+    const [value, setValue] = useState(`Enter the '@' for calling mention list: \n- Hello @Agustina and @[Ruslan]!`)
+
+    return <>
+        <MaterialMentions value={value} onChange={setValue}/>
+
+        <Text label="Plaint text:" value={value}/>
+    </>
+}
+
 export const Chipped = () => {
     const [value, setValue] = useState("Hello beautiful the @[first](outlined:1) world from the @[second](common:2)")
 
@@ -30,16 +40,6 @@ export const Chipped = () => {
                 initMark={({label}) => ({label, size: "small"})}
             />
         </MarkedInput>
-
-        <Text label="Plaint text:" value={value}/>
-    </>
-}
-
-export const Mentions = () => {
-    const [value, setValue] = useState(`Enter the '@' for calling mention list: \n- Hello @Agustina and @[Ruslan]!`)
-
-    return <>
-        <MaterialMentions value={value} onChange={setValue}/>
 
         <Text label="Plaint text:" value={value}/>
     </>

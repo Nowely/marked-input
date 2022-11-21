@@ -1,18 +1,11 @@
-import {RefObject, useEffect, useRef} from "react";
-import {Caret} from "../../utils/Caret";
-import {NodeData} from "../../types";
-import {useSelector} from "../../utils/useSelector";
-import {useStore} from "../../utils";
-
-//TODO move to types
-export type Recovery = {
-    prevNodeData?: NodeData
-    caretPosition: number
-    isPrevPrev?: boolean
-}
+import {useEffect} from "react";
+import {Caret} from "../../../utils/Caret";
+import {useSelector} from "../../../utils/useSelector";
+import {useStore} from "../../../utils";
 
 export const useFocusRecovery = () => {
     const store = useStore()
+    const pieces = useSelector(state => state.pieces)
 
     //Restore focus after delete mark
     useEffect(() => {
@@ -24,6 +17,7 @@ export const useFocusRecovery = () => {
                 ? node?.next?.next?.next ?? store.state.pieces.head?.next?.next
                 : node?.next ?? store.state.pieces.head
             const element = newNode?.data.ref?.current
+            //debugger
             element?.focus()
 
             if (element)
@@ -31,5 +25,5 @@ export const useFocusRecovery = () => {
 
             store.recovery = undefined
         }
-    })
+    }, [pieces])
 }
