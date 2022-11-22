@@ -3,7 +3,6 @@ import {OverlayProps} from "../../types";
 import {KEY} from "../../constants";
 import {useDownOf} from "../../utils/useDownOf";
 
-//TODO
 export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps, ref: ForwardedRef<HTMLUListElement>) => {
     const [active, setActive] = useState(NaN)
     const filtered = useMemo(
