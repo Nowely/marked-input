@@ -3,7 +3,7 @@ import {OverlayProps} from "../../types";
 import {KEY} from "../../constants";
 import {useDownOf} from "../../utils/useDownOf";
 
-export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps, ref: ForwardedRef<HTMLUListElement>) => {
+export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps, ref: ForwardedRef<any>) => {
     const [active, setActive] = useState(NaN)
     const filtered = useMemo(
         () => trigger.option.data.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
