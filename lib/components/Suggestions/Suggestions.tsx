@@ -9,17 +9,17 @@ export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps,
         () => trigger.option.data.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
         [trigger.value]
     )
-    const count = filtered.length
+    const length = filtered.length
 
     useDownOf(KEY.UP, event => {
         event.preventDefault()
-        setActive(prevState => isNaN(prevState) ? 0 : (count + (prevState - 1) % count) % count)
-    }, [count])
+        setActive(prevState => isNaN(prevState) ? 0 : (length + (prevState - 1) % length) % length)
+    }, [length])
 
     useDownOf(KEY.DOWN, event => {
         event.preventDefault()
-        setActive(prevState => isNaN(prevState) ? 0 : (prevState + 1) % count)
-    }, [count])
+        setActive(prevState => isNaN(prevState) ? 0 : (prevState + 1) % length)
+    }, [length])
 
     useDownOf(KEY.ENTER, event => {
         event.preventDefault()
