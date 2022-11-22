@@ -24,12 +24,9 @@ export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps,
 
     useDownOf(KEY.ENTER, event => {
         event.preventDefault()
-        setActive(prevState => {
-            const suggestion = filtered[prevState]
-            onSelect({label: suggestion, value: prevState.toString()})
-            return prevState
-        })
-    }, [filtered])
+        const suggestion = filtered[active]
+        onSelect({label: suggestion, value: active.toString()})
+    }, [filtered, active])
 
     if (!filtered.length) return null
 
