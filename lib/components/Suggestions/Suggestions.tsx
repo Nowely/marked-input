@@ -1,4 +1,4 @@
-import {ForwardedRef, forwardRef, KeyboardEvent, useCallback, useMemo, useState} from "react";
+import {ForwardedRef, forwardRef, useMemo, useState} from "react";
 import {OverlayProps} from "../../types";
 import {KEY} from "../../constants";
 import {useDownOf} from "../../utils/useDownOf";
