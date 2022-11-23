@@ -60,6 +60,12 @@ export const TaggedInput = () => {
                 whiteSpace: "pre-wrap",
                 minWidth: 5
             }}
+            onContainer={{
+                onKeyDown(e) {
+                    if (e.key === 'Enter')
+                        e.preventDefault()
+                }
+            }}
         >
             <Option<TagProps, PopoverProps>
                 markup="@[__label__](common)"
