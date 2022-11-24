@@ -84,6 +84,30 @@ export const App = () => {
 }
 ```
 
+Without the `Option` component:
+
+```tsx
+import {MarkedInput, Option} from "rc-marked-input";
+
+export const App = () => {
+    const [value, setValue] = useState(
+        "Enter the '@' for creating @[Primary Mark](primary:Hello!) or '/' for @[Default mark](default)!"
+    )
+
+    return (
+        <MarkedInput Mark={Button} value={value} onChange={setValue} children={[{
+            markup: Primary,
+            data: Data,
+            initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
+        }, {
+            trigger: '/',
+            markup: Default,
+            data: AnotherData
+        }]}/>
+    )
+}
+```
+
 Using the `createMarkedInput`:
 
 ```tsx
