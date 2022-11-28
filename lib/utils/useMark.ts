@@ -1,7 +1,6 @@
 import {Mark, NodeData, Type} from "../types";
 import {CSSProperties, RefObject, useCallback, useRef, useState} from "react";
 import {useNode, useStore} from "./index";
-import {useHeldCaret} from "../components/EditableSpan/useHeldCaret";
 import {useSelector} from "./useSelector";
 
 export interface DynamicMark extends Mark {
@@ -30,12 +29,6 @@ export interface DynamicMark extends Mark {
      * Passed class name of span
      */
     className?: string
-    /**
-     * Held caret position in html element at rerender: save the position then restore this.
-     *
-     * Can be used on change event of editable text tags like <span>, <bold>, etc.
-     */
-    heldCaret: (element: HTMLElement) => void
 }
 
 export const useMark = (): DynamicMark => {
@@ -66,9 +59,7 @@ export const useMark = (): DynamicMark => {
         bus.send(Type.Delete, {key: node.key})
     }, [])
 
-    const heldCaret = useHeldCaret()
-
-    return {label, value, reg, onChange, onRemove, heldCaret, readOnly, style, className}
+    return {label, value, reg, onChange, onRemove, readOnly, style, className}
 }
 
 function useRegistration(node: NodeData) {
