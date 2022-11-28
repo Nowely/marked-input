@@ -50,6 +50,7 @@ export interface OverlayProps {
      * Trigger details
      */
     trigger: Trigger
+    ref: RefObject<HTMLElement>
 }
 
 type label = `${string}${PLACEHOLDER.LABEL}${string}`

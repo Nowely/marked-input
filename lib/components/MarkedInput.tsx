@@ -8,7 +8,7 @@ import {Store} from "../utils/Store";
 import {StoreProvider} from "../utils";
 import "../styles.css"
 
-export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
+export interface MarkedInputProps<T = MarkProps, T1 = {}> {
     /**
      * Annotated text with markups for mark
      */
