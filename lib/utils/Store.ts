@@ -18,7 +18,7 @@ export class Store {
         return this.#state;
     }
 
-    static create(props: MarkedInputProps<any, any>) {
+    static create(props: MarkedInputProps<any>) {
         return () => {
             const {children, ...other} = props
 

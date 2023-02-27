@@ -12,7 +12,7 @@ import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
 import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
 import {useFocusRecovery} from "./hooks/useFocusRecovery";
 
-export const Featurer = ({props}: { props: MarkedInputProps<any, any> }) => {
+export const Featurer = ({props}: { props: MarkedInputProps<any> }) => {
     useStateUpdating(props)
     useContainerEvents()
     useSystemListeners()

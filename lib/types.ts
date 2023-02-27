@@ -30,29 +30,6 @@ export interface MarkProps extends Mark {
     //useMark: () => ReturnType<typeof useMark>
 }
 
-export interface OverlayProps {
-    /**
-     * Style with caret absolute position. Used for placing an overlay.
-     */
-    style: {
-        left: number
-        top: number
-    }
-    /**
-     * Used for close overlay.
-     */
-    onClose: () => void
-    /**
-     * Used for insert an annotation instead a triggered value.
-     */
-    onSelect: (value: Mark) => void
-    /**
-     * Trigger details
-     */
-    trigger: Trigger
-    ref: RefObject<HTMLElement>
-}
-
 type label = `${string}${PLACEHOLDER.LABEL}${string}`
 type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
@@ -68,14 +45,14 @@ export type KeyedPieces = Map<number, Piece>
 
 type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
-export type OptionType = PartialPick<OptionProps, "initMark" | "initOverlay"> & { index: number }
+export type OptionType = PartialPick<OptionProps, "initMark"> & { index: number }
 
 export type Options = OptionType[]
 
-export type ConfiguredMarkedInputProps<T, T1 = OverlayProps> = Omit<MarkedInputProps<T, T1>, "Mark" | "Overlay" | "children">
-export type ConfiguredMarkedInput<T, T1 = OverlayProps> = FunctionComponent<ConfiguredMarkedInputProps<T, T1>>
+export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "children">
+export type ConfiguredMarkedInput<T> = FunctionComponent<ConfiguredMarkedInputProps<T>>
 
-export type State = Omit<MarkedInputProps<any, any>, 'children'> & {
+export type State = Omit<MarkedInputProps<any>, 'children'> & {
     options: Options,
     pieces: LinkedList<NodeData>,
     trigger?: Trigger,

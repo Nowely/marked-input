@@ -1,4 +1,4 @@
-import {MarkedInput, Option} from "../../lib";
+import {MarkedInput, Option, useOverlay} from "../../lib";
 import {useEffect, useState} from "react";
 import {Popover, Tag} from "rsuite";
 import {TagProps} from "rsuite/esm/Tag/Tag";
@@ -9,7 +9,6 @@ import {PopoverProps} from "rsuite/esm/Popover/Popover";
 import {KEY} from "rc-marked-input/constants";
 import {ComponentMeta} from "@storybook/react";
 import {withStyle} from "./assets/withStyle";
-import {OverlayProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle("Rsuite"),
@@ -18,7 +17,9 @@ export default {
     decorators: [withStyle('rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
 
-const Overlay = ({style, trigger, onSelect, onClose}: OverlayProps) => {
+const Overlay = () => {
+    const {style, trigger, onSelect, onClose} = useOverlay()
+
     useEffect(() => {
         const handleEnter = (ev: KeyboardEvent) => {
             if (ev.key === KEY.ENTER) {

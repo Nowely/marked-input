@@ -269,14 +269,12 @@ The `onContainer` prop allows to forward any of div events to a container of tex
         markup='@[__label__](__value__)'
         data={Data}
         initMark={getCustomMarkProps}
-        initOverlay={getCustomOverlayProps}
     />
     <Option
         trigger='/'
         markup='@(__label__)[__value__]'
         data={AnotherData}
         initMark={getAnotherCustomMarkProps}
-        initOverlay={getAnotherCustomOverlayProps}
     />
 </MarkedInput>
 ```
@@ -289,13 +287,11 @@ const MarkedInput = createMarkedInput(Mark, Overlay, [{
     markup: '@[__label__](__value__)',
     data: Data,
     initMark: getCustomMarkProps,
-    initOverlay: getCustomOverlayProps,
 }, {
     trigger: '/',
     markup: '@(__label__)[__value__]',
     data: AnotherData,
     initMark: getAnotherCustomMarkProps,
-    initOverlay: getAnotherCustomOverlayProps,
 }])
 
 const App = () => <MarkedInput value={value} onChange={setValue}/>
@@ -322,7 +318,6 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | trigger     | string                      | `"@"`                     | Sequence of symbols for calling the overlay.                                                                                                                                      |
 | data        | string[]                    | `[]`                      | Data for a overlay component. By default, it is suggestions.                                                                                                                      |
 | initMark    | (props: MarkProps) => T     | `undefined`               | Function to initialize props for mark render. Gets arguments from found markup                                                                                                    |
-| initOverlay | (props: OverlayProps) => T1 | `undefined`               | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                                    |
 
 ### Helpers
 
