@@ -1,5 +1,5 @@
 import {ComponentType, CSSProperties, useState} from "react";
-import {DivEvents, ElementOptions, MarkProps, OverlayProps} from "../types";
+import {DivEvents, ElementOptions, MarkProps} from "../types";
 import {MarkedText} from "./MarkedText";
 import {OptionProps} from "./Option";
 import {Featurer} from "./Featurer";
@@ -8,7 +8,7 @@ import {Store} from "../utils/Store";
 import {StoreProvider} from "../utils";
 import "../styles.css"
 
-export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
+export interface MarkedInputProps<T = MarkProps> {
     /**
      * Annotated text with markups for mark
      */
@@ -24,7 +24,7 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
     /**
      * Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc.
      */
-    Overlay?: ComponentType<T1>
+    Overlay?: ComponentType
     /**
      * Prevents from changing the value
      */
@@ -56,7 +56,7 @@ export interface MarkedInputProps<T = MarkProps, T1 = OverlayProps> {
     onContainer?: DivEvents
 }
 
-export function MarkedInput<T = MarkProps, T1 = OverlayProps>(props: MarkedInputProps<T, T1>) {
+export function MarkedInput<T = MarkProps>(props: MarkedInputProps<T>) {
     const [store] = useState(Store.create(props))
     return (
         <StoreProvider value={store}>

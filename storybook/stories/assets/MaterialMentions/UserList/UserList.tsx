@@ -1,10 +1,11 @@
-import {OverlayProps} from "rc-marked-input/types/types";
 import {List, Paper} from "@mui/material";
 import {UserItem} from "./UserItem";
 import {useFetch} from "../utils/useFetch";
 import {SearchUser} from "../types";
+import {useOverlay} from "rc-marked-input";
 
-export const UserList = ({onSelect, trigger: {value}, style}: OverlayProps) => {
+export const UserList = () => {
+    const {onSelect, trigger: {value}, style} = useOverlay()
     const [data] = useFetch<{items: SearchUser[]}>(`https://api.github.com/search/users?q=${value}`, [value])
     const users = data?.items ?? []
 

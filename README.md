@@ -216,7 +216,10 @@ export const CustomTrigger = () => {
 The `OverlayProps` has a left and right absolute coordinate of a current caret position in the `style` prop.
 
 ```tsx
-const Tooltip = (props: OverlayProps) => <div style={{position: 'absolute', ...props.style}}>I am the overlay</div>
+const Tooltip = () => {
+    const {style} = useOverlay()
+    return <div style={{position: 'absolute', ...style}}>I am the overlay</div>;
+}
 export const PositionedOverlay = () => {
     const [value, setValue] = useState("Hello, positioned overlay by trigger @!")
     return <MarkedInput Mark={Mark} Overlay={Tooltip} value={value} onChange={setValue}/>
@@ -228,10 +231,13 @@ export const PositionedOverlay = () => {
 The `OverlayProps` provide some methods like `onSelect` for creating a new annotation.
 
 ```tsx
-const List = (props: OverlayProps) => <ul>
-    <li onClick={() => props.onSelect({label: 'First'})}>Clickable First</li>
-    <li onClick={() => props.onSelect({label: 'Second'})}>Clickable Second</li>
-</ul>
+const List = () => {
+    const {onSelect} = useOverlay()
+    return <ul>
+        <li onClick={() => onSelect({label: 'First'})}>Clickable First</li>
+        <li onClick={() => onSelect({label: 'Second'})}>Clickable Second</li>
+    </ul>;
+}
 
 export const SelectableOverlay = () => {
     const [value, setValue] = useState("Hello, suggest overlay by trigger @!")
@@ -269,14 +275,12 @@ The `onContainer` prop allows to forward any of div events to a container of tex
         markup='@[__label__](__value__)'
         data={Data}
         initMark={getCustomMarkProps}
-        initOverlay={getCustomOverlayProps}
     />
     <Option
         trigger='/'
         markup='@(__label__)[__value__]'
         data={AnotherData}
         initMark={getAnotherCustomMarkProps}
-        initOverlay={getAnotherCustomOverlayProps}
     />
 </MarkedInput>
 ```
@@ -289,13 +293,11 @@ const MarkedInput = createMarkedInput(Mark, Overlay, [{
     markup: '@[__label__](__value__)',
     data: Data,
     initMark: getCustomMarkProps,
-    initOverlay: getCustomOverlayProps,
 }, {
     trigger: '/',
     markup: '@(__label__)[__value__]',
     data: AnotherData,
     initMark: getAnotherCustomMarkProps,
-    initOverlay: getAnotherCustomOverlayProps,
 }])
 
 const App = () => <MarkedInput value={value} onChange={setValue}/>
@@ -322,7 +324,6 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | trigger     | string                      | `"@"`                     | Sequence of symbols for calling the overlay.                                                                                                                                      |
 | data        | string[]                    | `[]`                      | Data for a overlay component. By default, it is suggestions.                                                                                                                      |
 | initMark    | (props: MarkProps) => T     | `undefined`               | Function to initialize props for mark render. Gets arguments from found markup                                                                                                    |
-| initOverlay | (props: OverlayProps) => T1 | `undefined`               | Function to initialize overlay props to your requirements.<br/> If missing then passed overlay props directly.                                                                    |
 
 ### Helpers
 
@@ -332,6 +333,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
 | useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
+| useOverlay        | () => OverlayProps                                                                                                                                                                                | Use overlay props                            |
 
 ### Types
 

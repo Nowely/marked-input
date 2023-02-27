@@ -1,5 +1,4 @@
-import {Activator, DivEvents, EventName} from "../../../types";
-import {EventBus} from "../../../utils/EventBus";
+import {Activator, EventName} from "../../../types";
 import {useEffect} from "react";
 import {useSelector} from "../../../utils/useSelector";
 import {useStore} from "../../../utils";

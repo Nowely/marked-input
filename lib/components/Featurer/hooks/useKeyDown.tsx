@@ -1,7 +1,7 @@
-import {KeyboardEvent, MutableRefObject} from "react";
+import {KeyboardEvent} from "react";
 import {Caret} from "../../../utils/Caret";
 import {KEY} from "../../../constants";
-import {Recovery, Type} from "../../../types";
+import {Type} from "../../../types";
 import {useStore} from "../../../utils";
 import {useDownOf} from "../../../utils/useDownOf";
 

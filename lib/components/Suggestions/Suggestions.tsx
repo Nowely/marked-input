@@ -1,9 +1,10 @@
-import {ForwardedRef, forwardRef, useMemo, useState} from "react";
-import {OverlayProps} from "../../types";
+import {RefObject, useMemo, useState} from "react";
 import {KEY} from "../../constants";
 import {useDownOf} from "../../utils/useDownOf";
+import {useOverlay} from "../../utils/useOverlay";
 
-export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps, ref: ForwardedRef<any>) => {
+export const Suggestions = () => {
+    const {trigger, onSelect, style, ref} = useOverlay()
     const [active, setActive] = useState(NaN)
     const filtered = useMemo(
         () => trigger.option.data.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
@@ -30,7 +31,7 @@ export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps,
     if (!filtered.length) return null
 
     return (
-        <ul ref={ref} className="mk-suggestions" style={style}>
+        <ul ref={ref as RefObject<HTMLUListElement>} className="mk-suggestions" style={style}>
             {filtered.map((suggestion, index) => {
                 const className = index === active ? "mk-suggestion-active" : undefined
 
@@ -45,4 +46,4 @@ export const Suggestions = forwardRef(({trigger, style, onSelect}: OverlayProps,
             })}
         </ul>
     )
-})
+}

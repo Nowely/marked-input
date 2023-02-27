@@ -1,4 +1,4 @@
-import {RefObject, useEffect} from "react";
+import {useEffect} from "react";
 import {useStore} from "../../../utils";
 import {Type} from "../../../types";
 import {useSelector} from "../../../utils/useSelector";

@@ -1,7 +1,7 @@
 import {useState} from "react";
 import {getTitle} from "./assets/getTitle";
-import {MarkedInput, Option} from "rc-marked-input";
-import {MarkProps, OverlayProps} from "rc-marked-input/types";
+import {MarkedInput, Option, useOverlay} from "rc-marked-input";
+import {MarkProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle(),
@@ -31,16 +31,22 @@ export const CustomTrigger = () => {
     </MarkedInput>
 }
 
-const Tooltip = (props: OverlayProps) => <div style={{position: 'absolute', ...props.style}}>I am the overlay</div>
+const Tooltip = () => {
+    const {style} = useOverlay()
+    return <div style={{position: 'absolute', ...style}}>I am the overlay</div>;
+}
 export const PositionedOverlay = () => {
     const [value, setValue] = useState("Hello, positioned overlay by trigger @!")
     return <MarkedInput Mark={() => null} Overlay={Tooltip} value={value} onChange={setValue}/>
 }
 
-const List = (props: OverlayProps) => <ul>
-    <li onClick={() => props.onSelect({label: 'First'})}>Clickable First</li>
-    <li onClick={() => props.onSelect({label: 'Second'})}>Clickable Second</li>
-</ul>
+const List = () => {
+    const {onSelect} = useOverlay()
+    return <ul>
+        <li onClick={() => onSelect({label: 'First'})}>Clickable First</li>
+        <li onClick={() => onSelect({label: 'Second'})}>Clickable Second</li>
+    </ul>;
+}
 
 export const SelectableOverlay = () => {
     const [value, setValue] = useState("Hello, suggest overlay by trigger @!")
