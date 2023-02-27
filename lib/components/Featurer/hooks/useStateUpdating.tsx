@@ -4,7 +4,7 @@ import {useEffect} from "react";
 
 export const useStateUpdating = (props: MarkedInputProps<any>) => {
     const store = useStore()
-    const {children, ...other} = props
-    useEffect(() => store.setState({options: extractOptions(children)}), [children])
+    const {options, ...other} = props
+    useEffect(() => store.setState({options: extractOptions(options)}), [options])
     useEffect(() => store.setState({...other}))
 }

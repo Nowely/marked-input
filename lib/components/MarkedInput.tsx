@@ -1,7 +1,6 @@
 import {ComponentType, CSSProperties, useState} from "react";
-import {DivEvents, ElementOptions, MarkProps} from "../types";
+import {DivEvents, MarkProps, OptionProps} from "../types";
 import {MarkedText} from "./MarkedText";
-import {OptionProps} from "./Option";
 import {Featurer} from "./Featurer";
 import {Whisper} from "./Whisper";
 import {Store} from "../utils/Store";
@@ -33,7 +32,7 @@ export interface MarkedInputProps<T = MarkProps> {
      * Passed options for configure
      * @Default One option with default values is used
      */
-    children?: ElementOptions<T> | OptionProps[]
+    options?: OptionProps<T>[]
     /**
      * Additional classes
      */

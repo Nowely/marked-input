@@ -1,7 +1,6 @@
-import {MarkedInput, Option} from "rc-marked-input";
+import {MarkedInput} from "rc-marked-input";
 import {useState} from "react";
 import {Chip} from "@mui/material";
-import {ChipProps} from "@mui/material/Chip/Chip";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {MaterialMentions} from "./assets/MaterialMentions";
@@ -9,7 +8,6 @@ import {MaterialMentions} from "./assets/MaterialMentions";
 export default {
     title: getTitle("Material"),
     component: MarkedInput,
-    subcomponents: {Option}
 }
 
 export const Mentions = () => {
@@ -30,16 +28,14 @@ export const Chipped = () => {
             Mark={Chip}
             value={value}
             onChange={(val: string) => setValue(val)}
-        >
-            <Option<ChipProps>
-                markup="@[__label__](outlined:__value__)"
-                initMark={({label}) => ({label, variant: "outlined", size: "small"})}
-            />
-            <Option<ChipProps>
-                markup="@[__label__](common:__value__)"
-                initMark={({label}) => ({label, size: "small"})}
-            />
-        </MarkedInput>
+            options={[{
+                markup: "@[__label__](outlined:__value__)",
+                initMark: ({label}) => ({label, variant: "outlined" as const, size: "small" as const}),
+            }, {
+                markup: "@[__label__](common:__value__)",
+                initMark: ({label}) => ({label, size: "small" as const}),
+            }]}
+        />
 
         <Text label="Plaint text:" value={value}/>
     </>

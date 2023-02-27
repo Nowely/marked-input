@@ -1,7 +1,6 @@
-import {MarkedInput, Option, useOverlay} from "../../lib";
+import {MarkedInput, useOverlay} from "../../lib";
 import {useEffect, useState} from "react";
 import {Popover, Tag} from "rsuite";
-import {TagProps} from "rsuite/esm/Tag/Tag";
 //import 'rsuite/dist/rsuite.min.css';
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
@@ -12,7 +11,6 @@ import {withStyle} from "./assets/withStyle";
 export default {
     title: getTitle("Rsuite"),
     component: MarkedInput,
-    subcomponents: {Option},
     decorators: [withStyle('rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
 
@@ -66,12 +64,11 @@ export const TaggedInput = () => {
                         e.preventDefault()
                 }
             }}
-        >
-            <Option<TagProps>
-                markup="@[__label__](common)"
-                initMark={({label}) => ({children: label, style: {marginLeft: 0}})}
-            />
-        </MarkedInput>
+            options={[{
+                markup: "@[__label__](common)",
+                initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
+            }]}
+        />
 
         <br/>
         <Text label="Plaint text:" value={value}/>
