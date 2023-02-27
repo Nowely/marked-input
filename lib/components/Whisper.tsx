@@ -3,10 +3,10 @@ import {useSelector} from "../utils/useSelector";
 import {Suggestions} from "./Suggestions";
 
 export const Whisper = memo(() => {
-    const trigger = useSelector(state => state.trigger)
+    const key = useSelector(state => state.trigger?.option.index)
     const Overlay = useSelector(state => state.Overlay ?? Suggestions)
 
-    return trigger ? <Overlay key={trigger.option.index}/> : null;
+    return key !== undefined ? <Overlay key={key}/> : null;
 })
 
 Whisper.displayName = 'Whisper'
