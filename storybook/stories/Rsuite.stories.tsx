@@ -5,7 +5,6 @@ import {TagProps} from "rsuite/esm/Tag/Tag";
 //import 'rsuite/dist/rsuite.min.css';
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {PopoverProps} from "rsuite/esm/Popover/Popover";
 import {KEY} from "rc-marked-input/constants";
 import {ComponentMeta} from "@storybook/react";
 import {withStyle} from "./assets/withStyle";
@@ -68,7 +67,7 @@ export const TaggedInput = () => {
                 }
             }}
         >
-            <Option<TagProps, PopoverProps>
+            <Option<TagProps>
                 markup="@[__label__](common)"
                 initMark={({label}) => ({children: label, style: {marginLeft: 0}})}
             />

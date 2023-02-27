@@ -2,7 +2,6 @@ import {useStore} from "../../../utils";
 import {useEffect} from "react";
 import {KEY} from "../../../constants";
 import {Type} from "../../../types";
-import {useListener} from "../../../utils/useListener";
 import {useSelector} from "../../../utils/useSelector";
 
 export function useCloseOverlayByEsc() {

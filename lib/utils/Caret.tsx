@@ -1,5 +1,4 @@
 //TODO refact caret
-import {CSSProperties} from "react";
 
 export class Caret {
     static get isSelectedPosition() {
