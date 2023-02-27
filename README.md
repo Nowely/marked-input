@@ -216,7 +216,10 @@ export const CustomTrigger = () => {
 The `OverlayProps` has a left and right absolute coordinate of a current caret position in the `style` prop.
 
 ```tsx
-const Tooltip = (props: OverlayProps) => <div style={{position: 'absolute', ...props.style}}>I am the overlay</div>
+const Tooltip = () => {
+    const {style} = useOverlay()
+    return <div style={{position: 'absolute', ...style}}>I am the overlay</div>;
+}
 export const PositionedOverlay = () => {
     const [value, setValue] = useState("Hello, positioned overlay by trigger @!")
     return <MarkedInput Mark={Mark} Overlay={Tooltip} value={value} onChange={setValue}/>
@@ -228,10 +231,13 @@ export const PositionedOverlay = () => {
 The `OverlayProps` provide some methods like `onSelect` for creating a new annotation.
 
 ```tsx
-const List = (props: OverlayProps) => <ul>
-    <li onClick={() => props.onSelect({label: 'First'})}>Clickable First</li>
-    <li onClick={() => props.onSelect({label: 'Second'})}>Clickable Second</li>
-</ul>
+const List = () => {
+    const {onSelect} = useOverlay()
+    return <ul>
+        <li onClick={() => onSelect({label: 'First'})}>Clickable First</li>
+        <li onClick={() => onSelect({label: 'Second'})}>Clickable Second</li>
+    </ul>;
+}
 
 export const SelectableOverlay = () => {
     const [value, setValue] = useState("Hello, suggest overlay by trigger @!")
@@ -327,6 +333,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
 | useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
+| useOverlay        | () => OverlayProps                                                                                                                                                                                | Use overlay props                            |
 
 ### Types
 
