@@ -60,7 +60,7 @@ const Default = "@[__label__](default)"
 Using the components
 
 ```tsx
-import {MarkedInput, Option} from "rc-marked-input";
+import {MarkedInput} from "rc-marked-input";
 
 export const App = () => {
     const [value, setValue] = useState(
@@ -68,34 +68,7 @@ export const App = () => {
     )
 
     return (
-        <MarkedInput Mark={Button} value={value} onChange={setValue}>
-            <Option
-                markup={Primary}
-                data={Data}
-                initMark={({label, value}) => ({label, primary: true, onClick: () => alert(value)})}
-            />
-            <Option
-                markup={Default}
-                trigger="/"
-                data={AnotherData}
-            />
-        </MarkedInput>
-    )
-}
-```
-
-Without the `Option` component:
-
-```tsx
-import {MarkedInput, Option} from "rc-marked-input";
-
-export const App = () => {
-    const [value, setValue] = useState(
-        "Enter the '@' for creating @[Primary Mark](primary:Hello!) or '/' for @[Default mark](default)!"
-    )
-
-    return (
-        <MarkedInput Mark={Button} value={value} onChange={setValue} children={[{
+        <MarkedInput Mark={Button} value={value} onChange={setValue} options={[{
             markup: Primary,
             data: Data,
             initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
@@ -184,9 +157,7 @@ A default overlay is the suggestion component, but it can be easily replaced for
 ```tsx
 export const DefaultOverlay = () => {
     const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}>
-        <Option data={['First', 'Second', 'Third']}/>
-    </MarkedInput>
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data:['First', 'Second', 'Third']}]}/>
 }
 ```
 
@@ -205,9 +176,7 @@ export const CustomOverlay = () => {
 ```tsx
 export const CustomTrigger = () => {
     const [value, setValue] = useState("Hello, custom overlay by trigger /!")
-    return <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}>
-        <Option trigger='/'/>
-    </MarkedInput>
+    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]}/>
 }
 ```
 
@@ -269,20 +238,17 @@ The `onContainer` prop allows to forward any of div events to a container of tex
 ### Overall view
 
 ```tsx
-<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}>
-    <Option
-        trigger='@'
-        markup='@[__label__](__value__)'
-        data={Data}
-        initMark={getCustomMarkProps}
-    />
-    <Option
-        trigger='/'
-        markup='@(__label__)[__value__]'
-        data={AnotherData}
-        initMark={getAnotherCustomMarkProps}
-    />
-</MarkedInput>
+<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}> option={[{
+    trigger: '@',
+    markup: '@[__label__](__value__)',
+    data: Data,
+    initMark: getCustomMarkProps,
+}, {
+    trigger: '/',
+    markup: '@(__label__)[__value__]',
+    data: AnotherData,
+    initMark: getAnotherCustomMarkProps,
+}]}/>
 ```
 
 Or
@@ -307,23 +273,15 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ### MarkedInput
 
-| Name        | Type                            | Default       | Description                                |
-|-------------|---------------------------------|---------------|--------------------------------------------|
-| value       | string                          |               | Annotated text with markups for mark       |
-| onChange    | (value: string) => void         |               | Change event                               |
-| Mark        | ComponentType<T = MarkProps>    |               | Component that used for render markups     |
-| Overlay     | ComponentType<T = OverlayProps> | `Suggestions` | Component that is rendered by trigger      |
-| readOnly    | boolean                         | `undefined`   | Prevents from changing the value           |
-| onContainer | DivEvents                       | `undefined`   | Forward any div events to a text container |
-
-### Option
-
-| Name        | Type                        | Default                   | Description                                                                                                                                                                       |
-|-------------|-----------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| markup      | string                      | `@[__label__](__value__)` | Template string instead of which the mark is rendered<br/>Must contain placeholders: `__label__` and optional `__value__` `__value__`<br/> For example: `@[__label__](__value__)` |
-| trigger     | string                      | `"@"`                     | Sequence of symbols for calling the overlay.                                                                                                                                      |
-| data        | string[]                    | `[]`                      | Data for a overlay component. By default, it is suggestions.                                                                                                                      |
-| initMark    | (props: MarkProps) => T     | `undefined`               | Function to initialize props for mark render. Gets arguments from found markup                                                                                                    |
+| Name        | Type                         | Default       | Description                                |
+|-------------|------------------------------|---------------|--------------------------------------------|
+| value       | string                       |               | Annotated text with markups for mark       |
+| onChange    | (value: string) => void      |               | Change event                               |
+| Mark        | ComponentType<T = MarkProps> |               | Component that used for render markups     |
+| Overlay     | ComponentType                | `Suggestions` | Component that is rendered by trigger      |
+| readOnly    | boolean                      | `undefined`   | Prevents from changing the value           |
+| onContainer | DivEvents                    | `undefined`   | Forward any div events to a text container |
+| options     | OptionProps[]                | `[{}]`        | Passed options for configure               |
 
 ### Helpers
 
@@ -394,6 +352,30 @@ type Trigger = {
      * Trigger's option
      */
     option: OptionType
+}
+```
+
+```typescript jsx
+export interface OptionProps<T = Record<string, any>> {
+    /**
+     * Template string instead of which the mark is rendered.
+     * Must contain placeholders: `__label__` and optional `__value__`
+     * @Default "@[__label__](__value__)"
+     */
+    markup?: Markup
+    /**
+     * Sequence of symbols for calling the overlay.
+     * @Default "@"
+     */
+    trigger?: string
+    /**
+     * Data for an overlay component. By default, it is suggestions.
+     */
+    data?: string[] 
+    /**
+     * Function to initialize props for the mark component. Gets arguments from found markup
+     */
+    initMark?: (props: MarkProps) => T
 }
 ```
 

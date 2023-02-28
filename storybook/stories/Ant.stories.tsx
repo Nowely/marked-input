@@ -1,8 +1,7 @@
-import {MarkedInput, Option} from "../../lib";
+import {MarkedInput} from "../../lib";
 import {useState} from "react";
 //import 'antd/dist/antd.min.css';
 import {Tag} from "antd";
-import {TagProps} from "antd/lib/tag";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {withStyle} from "./assets/withStyle";
@@ -10,7 +9,6 @@ import {withStyle} from "./assets/withStyle";
 export default {
     title: getTitle("Ant"),
     component: MarkedInput,
-    subcomponents: {Option},
     decorators: [withStyle('antd.min.css')]
 }
 
@@ -20,12 +18,10 @@ export const Tagged = () => {
     )
 
     return <>
-        <MarkedInput Mark={Tag} value={value} onChange={setValue}>
-            <Option<TagProps>
-                markup="@(__label__)"
-                initMark={({label}) => ({children: label, color: label, style: {marginRight: 0}})}
-            />
-        </MarkedInput>
+        <MarkedInput Mark={Tag} value={value} onChange={setValue} options={[{
+            markup: "@(__label__)",
+            initMark: ({label}) => ({children: label, color: label, style: {marginRight: 0}})
+        }]}/>
 
         <Text label="Plaint text:" value={value}/>
     </>

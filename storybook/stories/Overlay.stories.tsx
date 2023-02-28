@@ -1,21 +1,18 @@
 import {useState} from "react";
 import {getTitle} from "./assets/getTitle";
-import {MarkedInput, Option, useOverlay} from "rc-marked-input";
+import {MarkedInput, useOverlay} from "rc-marked-input";
 import {MarkProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle(),
     component: MarkedInput,
-    subcomponents: {Option}
 }
 
 const Mark = (props: MarkProps) => <mark>{props.label}</mark>
 
 export const DefaultOverlay = () => {
     const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}>
-        <Option data={['First', 'Second', 'Third']}/>
-    </MarkedInput>
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data:['First', 'Second', 'Third']}]}/>
 }
 
 const Overlay = () => <h1>I am the overlay</h1>
@@ -26,9 +23,7 @@ export const CustomOverlay = () => {
 
 export const CustomTrigger = () => {
     const [value, setValue] = useState("Hello, custom overlay by trigger /!")
-    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}>
-        <Option trigger='/'/>
-    </MarkedInput>
+    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]}/>
 }
 
 const Tooltip = () => {
