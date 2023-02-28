@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import user from "@testing-library/user-event";
 import {act, render} from "@testing-library/react";
-import {MarkedInput, Option} from "rc-marked-input";
+import {MarkedInput} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
 import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
@@ -10,9 +10,9 @@ import {Markup} from "rc-marked-input/types";
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)
-    return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue}>
-        <Option markup={markup ?? '@[__label__](__value__)'} data={["Item"]}/>
-    </MarkedInput>
+    return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue} options={[{
+        markup: markup ?? '@[__label__](__value__)', data: ["Item"]
+    }]}/>
 }
 
 describe(`Component: ${MarkedInput.name}`, () => {
