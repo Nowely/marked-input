@@ -1,12 +1,11 @@
 import React, {useState} from "react";
 import {getTitle} from "./assets/getTitle";
-import {MarkedInput, Option, useMark} from "rc-marked-input";
+import {MarkedInput, useMark} from "rc-marked-input";
 import {Text} from "./assets/Text";
 
 export default {
     title: getTitle(),
     component: MarkedInput,
-    subcomponents: {Option}
 }
 
 const Mark = () => {

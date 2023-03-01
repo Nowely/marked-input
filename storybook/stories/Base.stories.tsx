@@ -1,5 +1,5 @@
 import {Button} from "./assets/Button";
-import {createMarkedInput, denote, MarkedInput, Option} from "rc-marked-input";
+import {createMarkedInput, denote, MarkedInput} from "rc-marked-input";
 import React, {useState} from "react";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
@@ -8,7 +8,6 @@ import {MarkProps, Markup} from "rc-marked-input/types";
 export default {
     title: getTitle(),
     component: MarkedInput,
-    subcomponents: {Option}
 }
 
 const Mark = (props: MarkProps) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>

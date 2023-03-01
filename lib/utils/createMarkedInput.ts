@@ -1,8 +1,7 @@
 import {ComponentType} from "react";
-import {OptionProps} from "../components/Option";
 import {assign} from "./index";
 import {MarkedInput, MarkedInputProps} from "../components/MarkedInput";
-import {ConfiguredMarkedInput, ConfiguredMarkedInputProps, Mark} from "../types";
+import {ConfiguredMarkedInput, ConfiguredMarkedInputProps, Mark, OptionProps} from "../types";
 
 /**
  * Create the configured MarkedInput component.
@@ -16,11 +15,11 @@ export function createMarkedInput(
 ): ConfiguredMarkedInput<any> {
     const predefinedProps = Array.isArray(optionsOrOverlay) ? {
         Mark,
-        children: optionsOrOverlay,
+        options: optionsOrOverlay,
     } : {
         Mark,
         Overlay: optionsOrOverlay,
-        children: options
+        options
     }
 
     return function ConfiguredMarkedInput(props: ConfiguredMarkedInputProps<any>) {

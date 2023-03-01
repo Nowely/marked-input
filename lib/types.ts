@@ -1,6 +1,5 @@
 import {PLACEHOLDER} from "./constants";
-import {FunctionComponent, ReactElement, RefObject} from "react";
-import {OptionProps} from "./components/Option";
+import {FunctionComponent, RefObject} from "react";
 import {MarkedInputProps} from "./components/MarkedInput";
 import LinkedList from "./utils/LinkedList";
 
@@ -35,9 +34,6 @@ type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
 export type Markup = `${label}${value}` | `${label}`
 
-//TODO T to unknown?
-export type ElementOptions<T> = ReactElement<OptionProps<T>> | ReactElement<OptionProps<T>>[]
-
 /** Piece of marked text: fragment of text or mark definition */
 export type Piece = string | AnnotatedMark
 
@@ -49,10 +45,33 @@ export type OptionType = PartialPick<OptionProps, "initMark"> & { index: number 
 
 export type Options = OptionType[]
 
-export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "children">
+//TODO rename to options
+export interface OptionProps<T = Record<string, any>> {
+    /**
+     * Template string instead of which the mark is rendered.
+     * Must contain placeholders: `__label__` and optional `__value__`
+     * @Default "@[__label__](__value__)"
+     */
+    markup?: Markup
+    /**
+     * Sequence of symbols for calling the overlay.
+     * @Default "@"
+     */
+    trigger?: string //| RegExp
+    /**
+     * Data for an overlay component. By default, it is suggestions.
+     */
+    data?: string[] //TODO | object[]
+    /**
+     * Function to initialize props for the mark component. Gets arguments from found markup
+     */
+    initMark?: (props: MarkProps) => T
+}
+
+export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "options">
 export type ConfiguredMarkedInput<T> = FunctionComponent<ConfiguredMarkedInputProps<T>>
 
-export type State = Omit<MarkedInputProps<any>, 'children'> & {
+export type State = Omit<MarkedInputProps<any>, 'options'> & {
     options: Options,
     pieces: LinkedList<NodeData>,
     trigger?: Trigger,

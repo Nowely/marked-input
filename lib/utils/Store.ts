@@ -20,10 +20,10 @@ export class Store {
 
     static create(props: MarkedInputProps<any>) {
         return () => {
-            const {children, ...other} = props
+            const {options, ...other} = props
 
             const initialState = {
-                options: extractOptions(children),
+                options: extractOptions(options),
                 pieces: EmptyList,
                 ...other
             } as State

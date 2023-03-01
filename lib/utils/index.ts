@@ -1,8 +1,17 @@
-import React, {Children, Context, isValidElement, useContext} from "react";
+import React, {Context, useContext} from "react";
 import {DefaultOptionProps, PLACEHOLDER} from "../constants";
-import {AnnotatedMark, ElementOptions, EventName, KeyedPieces, Mark, Markup, NodeData, Options, Piece,} from "../types";
+import {
+    AnnotatedMark,
+    EventName,
+    KeyedPieces,
+    Mark,
+    Markup,
+    NodeData,
+    OptionProps,
+    Options,
+    Piece,
+} from "../types";
 import {Parser} from "./Parser";
-import {OptionProps} from "../components/Option";
 import {Store} from "./Store";
 
 export const assign = Object.assign
@@ -92,15 +101,7 @@ export const isFunction = (value: unknown): value is Function => typeof value ==
 
 export const isEventName = (value: string | number): value is EventName => typeof value === "string" && value.startsWith("on")
 
-const isElementOption = (value?: ElementOptions<any> | OptionProps[]): value is ElementOptions<any> => {
-    if (isValidElement(value)) return true
-    return isValidElement(value?.[0]);
-}
-
-export function extractOptions(options?: ElementOptions<any> | OptionProps[]): Options {
-    if (isElementOption(options))
-        return Children.map(options, (child, index) => initOption(child.props, index))
-
+export function extractOptions(options?: OptionProps[]): Options {
     if (options?.length) return options.map(initOption)
 
     return [DefaultOptionProps]
