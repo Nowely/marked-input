@@ -6,7 +6,7 @@ import LinkedList from "./utils/LinkedList";
 export type NodeData = {
     key: number
     mark: Mark
-    ref?: RefObject<HTMLElement>
+    ref: RefObject<HTMLElement>
 }
 
 export interface Mark {

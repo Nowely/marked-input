@@ -149,7 +149,7 @@ export const Removable = () => {
 
 #### Focusable
 
-If passed the `reg` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
+If passed the `ref` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
 
 ### Overlay
 

@@ -12,7 +12,7 @@ export function useKeyDown() {
         if (!isCaretInStart(event)) return
 
         const node = store.focusedNode?.prev
-        const element = node?.data.ref?.current ?? node?.prev?.data.ref?.current
+        const element = node?.data.ref.current ?? node?.prev?.data.ref.current
         element?.focus()
         Caret.setCaretToEnd(element)
         event.preventDefault()
@@ -22,7 +22,7 @@ export function useKeyDown() {
         if (!isCaretInEnd(event)) return
 
         const node = store.focusedNode?.next
-        const element = node?.data.ref?.current ?? node?.next?.data.ref?.current
+        const element = node?.data.ref.current ?? node?.next?.data.ref.current
         element?.focus()
         event.preventDefault()
     })
