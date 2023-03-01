@@ -4,6 +4,8 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
+> You are viewing docs for the **next** version, the latest release is available in [here](https://github.com/Nowely/marked-input/releases/latest).
+
 ## Feature
 
 * Powerful annotation tool
