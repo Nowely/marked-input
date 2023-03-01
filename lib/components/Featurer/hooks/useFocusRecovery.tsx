@@ -16,7 +16,7 @@ export const useFocusRecovery = () => {
             const newNode = isPrevPrev
                 ? node?.next?.next?.next ?? store.state.pieces.head?.next?.next
                 : node?.next ?? store.state.pieces.head
-            const element = newNode?.data.ref?.current
+            const element = newNode?.data.ref.current
             //debugger
             element?.focus()
 

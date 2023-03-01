@@ -33,7 +33,7 @@ export const Removable = () => {
 }
 
 const Abbr = () => {
-    const {label, value, reg, onChange} = useMark()
+    const {label, value, ref, onChange} = useMark()
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
         const label = e.currentTarget.textContent ?? ""
@@ -42,7 +42,7 @@ const Abbr = () => {
 
     return (
         <abbr
-            ref={reg}
+            ref={ref}
             title={value}
             contentEditable
             style={{

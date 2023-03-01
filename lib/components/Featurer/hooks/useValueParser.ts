@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from "react";
+import {createRef, useEffect, useMemo, useRef} from "react";
 import {genKey, isObject, useStore} from "../../../utils";
 import {NodeData, Piece} from "../../../types";
 import {Parser} from "../../../utils/Parser";
@@ -24,7 +24,11 @@ export const useValueParser = () => {
             const node = previous.current?.findNode(data => data.key === key)
 
             if (!node || hasOutdatedState(piece, node) && key++)
-                return ({key, mark: isObject(piece) ? piece : {label: piece}});
+                return {
+                    key,
+                    mark: isObject(piece) ? piece : {label: piece},
+                    ref: createRef<HTMLElement>()
+                }
 
             return node.data
         })

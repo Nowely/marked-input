@@ -111,7 +111,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
         expect(await queryByText('mark')).toBeInTheDocument()
     })
 
-    it('should support reg focusing target', async () => {
+    it('should support ref focusing target', async () => {
         const {container} = render(<Focusable/>)
         const [firstSpan, secondSpan] = container.querySelectorAll("span")
         const [firstAbbr] = container.querySelectorAll("abbr")
