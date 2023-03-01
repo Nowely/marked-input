@@ -4,34 +4,35 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
-> You are viewing docs for the **next** version, the latest release is available in [here](https://github.com/Nowely/marked-input/releases/latest).
+> **Note:** This page is for the **next** version. The latest release can be found [here](https://github.com/Nowely/marked-input/releases/latest).
 
 ## Feature
 
-* Powerful annotation tool
+* Powerful annotations tool: add, edit, remove, visualize 
 * TypeScript
+* Support for any components
+* Flexible and customizable
 * Two ways to configure
-* Support any components
-* Props customization
-* Utils for annotate and denote text
+* Helpers for processing text
+* Hooks for advanced components
 * Button handling (Left, Right, Delete, Backspace, Esc)
-* Overlay with default the suggestion component
-* Zero dependency
+* Overlay with the suggestions component by default
+* Zero dependencies
 
 ## Installation
 
-Install the package via npm:
+You can install the package via npm:
 
 ```
 npm install rc-marked-input
 ```
 
-## Examples
+## Usage
 
-A lot of examples can be seen in the [storybook](https://marked-input.vercel.app). You can also try a template on
-[CodeSandbox](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx).
+There are many examples available in the [Storybook](https://marked-input.vercel.app). You can also try a template
+on [CodeSandbox](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx). 
 
-Here is some examples to get you started.
+Here are a few examples to get you started:
 
 ### Static marks &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx)
 
