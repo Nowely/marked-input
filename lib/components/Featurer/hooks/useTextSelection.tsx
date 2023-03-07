@@ -8,7 +8,7 @@ export function useTextSelection() {
 
     useEffect(() => {
         const listener = (e: MouseEvent) => {
-            ref.current = e.target
+            ref.current = e.target as Node
             pressedUp.current = true
         }
 
