@@ -42,7 +42,10 @@ export const DefaultOptionProps: OptionType = {
     index: 0
 }
 
-export const PredefinedEvents: EventName[] = ["onFocus", "onBlur", "onKeyDown", "onClick"]
+//TODO
+export const PredefinedEvents: EventName[] = [
+    "onFocus", "onBlur", "onKeyDown", "onClick", "onMouseDown", "onMouseMove", "onMouseUp", "onMouseOver", "onMouseLeave"
+]
 
 export const wordRegex = new RegExp(/^\w*/)
 

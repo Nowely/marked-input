@@ -11,6 +11,7 @@ import {useTrigger} from "./hooks/useTrigger";
 import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
 import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
 import {useFocusRecovery} from "./hooks/useFocusRecovery";
+import {useTextSelection} from "./hooks/useTextSelection";
 
 export const Featurer = ({props}: { props: MarkedInputProps<any, any> }) => {
     useStateUpdating(props)
@@ -29,6 +30,7 @@ export const Featurer = ({props}: { props: MarkedInputProps<any, any> }) => {
     useCloseOverlayByEsc()
     useCloseOverlayByOutsideClick()
 
+    useTextSelection()
     return null
 }
 
