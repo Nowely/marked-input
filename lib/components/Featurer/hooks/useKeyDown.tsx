@@ -52,17 +52,17 @@ export function useKeyDown() {
         event.preventDefault()
     })
 
+    //Select all text
     useListener("onKeyDown", (event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.ctrlKey && event.key === 'a') {
+        if (event.ctrlKey && event.code === 'KeyA') {
             event.preventDefault()
-            const selection = window.getSelection()
-            if (!selection) return
-            selection.selectAllChildren(store.containerRef.current!)
-        }
 
-        if (event.ctrlKey && event.key === 'c') {
-            const copyText = window.getSelection()?.toString() || store.containerRef.current?.textContent || ''
-            navigator.clipboard.writeText(copyText)
+            const selection = window.getSelection()
+            const anchorNode = store.containerRef.current?.firstChild
+            const focusNode = store.containerRef.current?.lastChild
+
+            if (!selection || !anchorNode || !focusNode) return
+            selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
         }
     }, [])
 }
