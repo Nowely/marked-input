@@ -4,6 +4,7 @@ import {KEY} from "../../../constants";
 import {Type} from "../../../types";
 import {useStore} from "../../../utils";
 import {useDownOf} from "../../../utils/useDownOf";
+import {useListener} from "../../../utils/useListener";
 
 export function useKeyDown() {
     const store = useStore()
@@ -50,6 +51,20 @@ export function useKeyDown() {
         store.bus.send(Type.Delete, {key: node.data.key})
         event.preventDefault()
     })
+
+    //Select all text
+    useListener("onKeyDown", (event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.ctrlKey && event.code === 'KeyA') {
+            event.preventDefault()
+
+            const selection = window.getSelection()
+            const anchorNode = store.containerRef.current?.firstChild
+            const focusNode = store.containerRef.current?.lastChild
+
+            if (!selection || !anchorNode || !focusNode) return
+            selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
+        }
+    }, [])
 }
 
 function isCaretInStart(e: KeyboardEvent<HTMLSpanElement>) {

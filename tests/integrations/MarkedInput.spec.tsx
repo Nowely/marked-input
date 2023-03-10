@@ -5,7 +5,7 @@ import {MarkedInput} from "rc-marked-input";
 import {Marked} from "storybook/stories/Base.stories";
 import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
-import {vi} from "vitest";
+import {vi, expect} from "vitest";
 import {Markup} from "rc-marked-input/types";
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
@@ -157,5 +157,57 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
         expect(getByText('world123')).toBeInTheDocument()
         expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
+    })
+
+    it('should be selectable', async () => {
+        const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+        const selection = window.getSelection()!
+        expect(selection).not.toBeNull()
+
+        await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
+        expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
+
+        const MarkedText = container.firstElementChild!
+        const [span1, mark, span2] = MarkedText.children
+
+        await user.pointer([{target: span1, offset: 0, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+        expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
+
+        await user.pointer([{target: span2, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+        expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
+
+        await user.pointer([{target: span1, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+        expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
+
+        await user.pointer([{target: span2, offset: 0, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+        expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
+
+        await user.pointer([{target: mark, offset: 2, keys: '[MouseLeft>]'}, {target: span1, offset: 2}])
+        expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
+
+        await user.pointer([{target: mark, offset: 2, keys: '[MouseLeft>]'}, {target: span2, offset: 1}])
+        expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
+
+
+        await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
+        expect(selection.isCollapsed).toBeTruthy()
+        await user.keyboard('abc')
+        expect(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
+    })
+
+    it('it should select all text by shortcut "cmd + a"', async () => {
+        const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+        const [span] = container.querySelectorAll("span")
+
+        //Used for focused
+        await user.type(span, '{ArrowLeft}', {initialSelectionStart: 0})
+
+        expect(window.getSelection()?.toString()).toBe('')
+
+        await user.type(span, '{Control>}a{/Control}')
+        expect(window.getSelection()?.toString()).toBe(container.textContent)
+
+        await user.type(span, '{Control>}A{/Control}')
+        expect(window.getSelection()?.toString()).toBe(container.textContent)
     })
 })
