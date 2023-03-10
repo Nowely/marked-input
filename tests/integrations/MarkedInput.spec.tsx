@@ -158,4 +158,25 @@ describe(`Component: ${MarkedInput.name}`, () => {
         expect(getByText('world123')).toBeInTheDocument()
         expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
     })
+
+    it('should be selectable', async () => {
+        const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+        user.pointer({})
+    })
+
+    it('it should select all text by shortcut "cmd + a"', async () => {
+        const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+        const [span] = container.querySelectorAll("span")
+
+        //Used for focused
+        await user.type(span, '{ArrowLeft}', {initialSelectionStart: 0})
+
+        expect(window.getSelection()?.toString()).toBe('')
+
+        await user.type(span, '{Control>}a{/Control}')
+        expect(window.getSelection()?.toString()).toBe(container.textContent)
+
+        await user.type(span, '{Control>}A{/Control}')
+        expect(window.getSelection()?.toString()).toBe(container.textContent)
+    })
 })
