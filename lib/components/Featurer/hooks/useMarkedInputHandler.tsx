@@ -6,11 +6,11 @@ export interface MarkedInputHandler {
     /**
      * Container element
      */
-    container: HTMLDivElement | null
+    readonly container: HTMLDivElement | null
     /**
      * Overlay element if exists
      */
-    overlay: HTMLElement | null
+    readonly overlay: HTMLElement | null
 
     focus(): void
 }
