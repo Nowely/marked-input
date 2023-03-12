@@ -1,3 +1,4 @@
+import {ForwardedRef, forwardRef} from "react";
 import {useContainerEvents} from "./hooks/useContainerEvents";
 import {useSystemListeners} from "./hooks/useSystemListeners";
 import {useValueParser} from "./hooks/useValueParser";
@@ -12,9 +13,13 @@ import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
 import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
 import {useFocusRecovery} from "./hooks/useFocusRecovery";
 import {useTextSelection} from "./hooks/useTextSelection";
+import {MarkedInputHandler, useMarkedInputHandler} from "./hooks/useMarkedInputHandler";
 
-export const Featurer = ({props}: { props: MarkedInputProps<any> }) => {
+export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, ref: ForwardedRef<MarkedInputHandler>) => {
+    //TODO move to provider
     useStateUpdating(props)
+    useMarkedInputHandler(ref)
+
     useContainerEvents()
     useSystemListeners()
     useValueParser()
@@ -31,6 +36,6 @@ export const Featurer = ({props}: { props: MarkedInputProps<any> }) => {
     useCloseOverlayByOutsideClick()
 
     useTextSelection()
-    return null
-}
 
+    return null
+})
