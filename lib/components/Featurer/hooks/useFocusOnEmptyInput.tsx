@@ -7,4 +7,4 @@ export const useFocusOnEmptyInput = () => {
         if (pieces.length === 1 && pieces.head?.data.mark.label === "")
             pieces.head?.data.ref.current?.focus()
     }, [pieces])
-};
+}

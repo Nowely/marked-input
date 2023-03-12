@@ -1,6 +1,6 @@
-import {ComponentType} from "react";
+import {ComponentType, ForwardedRef, forwardRef} from "react";
 import {assign} from "./index";
-import {MarkedInput, MarkedInputProps} from "../components/MarkedInput";
+import {_MarkedInput, MarkedInputProps} from "../components/MarkedInput";
 import {ConfiguredMarkedInput, ConfiguredMarkedInputProps, Mark, OptionProps} from "../types";
 
 /**
@@ -22,8 +22,10 @@ export function createMarkedInput(
         options
     }
 
-    return function ConfiguredMarkedInput(props: ConfiguredMarkedInputProps<any>) {
+    const ConfiguredMarkedInput = (props: ConfiguredMarkedInputProps<any>, ref: ForwardedRef<any>) => {
         const assignedProps: MarkedInputProps<any> = assign({}, props, predefinedProps)
-        return MarkedInput(assignedProps)
+        return _MarkedInput(assignedProps, ref)
     }
+
+    return forwardRef(ConfiguredMarkedInput)
 }

@@ -60,7 +60,7 @@ export interface MarkedInputProps<T = MarkProps> {
     ref?: ForwardedRef<MarkedInputHandler>
 }
 
-const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
+export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
     const [store] = useState(Store.create(props))
     return (
         <StoreProvider value={store}>
