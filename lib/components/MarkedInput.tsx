@@ -1,4 +1,4 @@
-import {ComponentType, CSSProperties, useState} from "react";
+import {ComponentType, CSSProperties, ForwardedRef, forwardRef, Ref, useState} from "react";
 import {DivEvents, MarkProps, OptionProps} from "../types";
 import {MarkedText} from "./MarkedText";
 import {Featurer} from "./Featurer";
@@ -53,10 +53,22 @@ export interface MarkedInputProps<T = MarkProps> {
      * Forward div events to a text container
      */
     onContainer?: DivEvents
+    ref?: Ref<MarkedInputHandler>
 }
 
-export function MarkedInput<T = MarkProps>(props: MarkedInputProps<T>) {
+export interface MarkedInputHandler {
+    number: number
+}
+
+export interface MarkedInputComponent {
+    <T = MarkProps>(props: MarkedInputProps<T>): JSX.Element | null
+    displayName?: string
+}
+
+//export function MarkedInput<T = MarkProps>(props: MarkedInputProps<T>) {
+const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
     const [store] = useState(Store.create(props))
+
     return (
         <StoreProvider value={store}>
             <MarkedText/>
@@ -65,3 +77,5 @@ export function MarkedInput<T = MarkProps>(props: MarkedInputProps<T>) {
         </StoreProvider>
     )
 }
+
+export const MarkedInput = forwardRef(_MarkedInput) as MarkedInputComponent
