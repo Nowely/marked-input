@@ -16,6 +16,7 @@ import {useTextSelection} from "./hooks/useTextSelection";
 import {MarkedInputHandler, useMarkedInputHandler} from "./hooks/useMarkedInputHandler";
 
 export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, ref: ForwardedRef<MarkedInputHandler>) => {
+    //TODO move to provider
     useStateUpdating(props)
     useMarkedInputHandler(ref)
 

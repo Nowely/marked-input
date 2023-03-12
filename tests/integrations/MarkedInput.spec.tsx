@@ -7,6 +7,7 @@ import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
 import {vi, expect} from "vitest";
 import {Markup} from "rc-marked-input/types";
+import {MarkedInputHandler} from "rc-marked-input/components/Featurer/hooks/useMarkedInputHandler";
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)
@@ -209,5 +210,15 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
         await user.type(span, '{Control>}A{/Control}')
         expect(window.getSelection()?.toString()).toBe(container.textContent)
+    })
+
+    it('should to support the ref prop', async () => {
+        let ref: MarkedInputHandler | null = null
+
+        render(<MarkedInput ref={(el) => ref = el} Mark={() => null} value={''} onChange={() => ({})}/>)
+
+        await act(() => {
+            expect(ref?.container).not.toBeNull()
+        })
     })
 })

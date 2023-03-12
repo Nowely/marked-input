@@ -4,7 +4,8 @@ import {act, render} from "@testing-library/react";
 import {Configured} from "storybook/stories/Base.stories";
 import React, {forwardRef, useState} from "react";
 import {createMarkedInput} from "rc-marked-input";
-import {vi} from "vitest";
+import {vi, expect} from "vitest";
+import {MarkedInputHandler} from "rc-marked-input/components/Featurer/hooks/useMarkedInputHandler";
 
 describe(`Utility: createMarkedInput`, () => {
     it('should render', () => {
@@ -28,6 +29,17 @@ describe(`Utility: createMarkedInput`, () => {
         });
 
         expect(await queryByText("I'm here!")).toBeInTheDocument()
+    })
+
+    it('should to support the ref prop', async () => {
+        const Input = createMarkedInput(() => null)
+        let ref: MarkedInputHandler | null = null
+
+        render(<Input ref={(el) => ref = el} value={''} onChange={() => ({})}/>)
+
+        await act(() => {
+            expect(ref?.container).not.toBeNull()
+        })
     })
 })
 
