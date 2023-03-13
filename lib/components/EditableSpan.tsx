@@ -1,5 +1,5 @@
-import React from "react";
-import {useMark} from "../utils/useMark";
+import React from "react"
+import {useMark} from "../utils/useMark"
 
 //Editable block - edit text here
 export const EditableSpan = () => {
@@ -25,7 +25,7 @@ export const EditableSpan = () => {
 }
 
 function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text");
-    document.execCommand("insertText", false, text);
+    e.preventDefault()
+    const text = e.clipboardData.getData("text")
+    document.execCommand("insertText", false, text)
 }

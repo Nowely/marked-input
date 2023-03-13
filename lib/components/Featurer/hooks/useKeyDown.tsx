@@ -1,10 +1,10 @@
-import {KeyboardEvent} from "react";
-import {Caret} from "../../../utils/Caret";
-import {KEY} from "../../../constants";
-import {Type} from "../../../types";
-import {useStore} from "../../../utils";
-import {useDownOf} from "../../../utils/useDownOf";
-import {useListener} from "../../../utils/useListener";
+import {KeyboardEvent} from "react"
+import {KEY} from "../../../constants"
+import {Type} from "../../../types"
+import {useStore} from "../../../utils"
+import {Caret} from "../../../utils/Caret"
+import {useDownOf} from "../../../utils/useDownOf"
+import {useListener} from "../../../utils/useListener"
 
 export function useKeyDown() {
     const store = useStore()
@@ -69,12 +69,12 @@ export function useKeyDown() {
 
 function isCaretInStart(e: KeyboardEvent<HTMLSpanElement>) {
     const target = e.target as HTMLSpanElement
-    const caretIndex = Caret.getCaretIndex(target);
-    return caretIndex === 0;
+    const caretIndex = Caret.getCaretIndex(target)
+    return caretIndex === 0
 }
 
 function isCaretInEnd(event: KeyboardEvent<HTMLSpanElement>) {
     const target = event.target as HTMLSpanElement
-    const caretIndex = Caret.getCaretIndex(target);
-    return caretIndex === target.textContent?.length;
+    const caretIndex = Caret.getCaretIndex(target)
+    return caretIndex === target.textContent?.length
 }

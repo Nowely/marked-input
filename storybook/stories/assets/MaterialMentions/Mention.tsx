@@ -1,7 +1,7 @@
-import {MarkStruct} from "rc-marked-input";
-import {Avatar, Chip} from "@mui/material";
-import {useFetch} from "./utils/useFetch";
-import {User} from "./types";
+import {Avatar, Chip} from "@mui/material"
+import {MarkStruct} from "rc-marked-input"
+import {User} from "./types"
+import {useFetch} from "./utils/useFetch"
 
 export const Mention = ({label}: MarkStruct) => {
     const [user] = useFetch<User>(`https://api.github.com/users/${label}`, [])

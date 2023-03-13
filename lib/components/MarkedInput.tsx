@@ -1,11 +1,11 @@
-import {ComponentType, CSSProperties, ForwardedRef, forwardRef, useState} from "react";
-import {DivEvents, MarkedInputHandler, MarkStruct, OptionProps} from "../types";
-import {MarkedText} from "./MarkedText";
-import {Featurer} from "./Featurer";
-import {Whisper} from "./Whisper";
-import {Store} from "../utils/Store";
-import {StoreProvider} from "../utils";
+import {ComponentType, CSSProperties, ForwardedRef, forwardRef, useState} from "react"
 import "../styles.css"
+import {DivEvents, MarkedInputHandler, MarkStruct, OptionProps} from "../types"
+import {StoreProvider} from "../utils"
+import {Store} from "../utils/Store"
+import {Featurer} from "./Featurer"
+import {MarkedText} from "./MarkedText"
+import {Whisper} from "./Whisper"
 
 export interface MarkedInputProps<T = MarkStruct> {
     /**
@@ -54,8 +54,8 @@ export interface MarkedInputProps<T = MarkStruct> {
      */
     onContainer?: DivEvents
     /**
-    * Ref to handler
-    */
+     * Ref to handler
+     */
     ref?: ForwardedRef<MarkedInputHandler>
 }
 

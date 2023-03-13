@@ -1,10 +1,14 @@
-import {DivEvents, EventName, Listener, Type} from "../types";
-import {isEventName} from "./index";
-import {PredefinedEvents} from "../constants";
+import {PredefinedEvents} from "../constants"
+import {DivEvents, EventName, Listener, Type} from "../types"
+import {isEventName} from "./index"
 
 export class EventBus {
     readonly #SystemEvents = new Map<Type, Set<Listener>>()
     readonly #ReactEvents = new Map<EventName, Set<Listener>>()
+
+    constructor(...initEvents: EventName[]) {
+        initEvents.forEach(event => this.#ReactEvents.set(event, new Set()))
+    }
 
     get events() {
         let result: any = {}
@@ -17,20 +21,17 @@ export class EventBus {
         return () => {
             const set = new Set<EventName>(PredefinedEvents)
             events && Object.keys(events).filter(isEventName).forEach(event => set.add(event))
-            return new EventBus(...set);
+            return new EventBus(...set)
         }
     }
 
-    constructor(...initEvents: EventName[]) {
-        initEvents.forEach(event => this.#ReactEvents.set(event, new Set()))
-    }
-
     //TODO type
+
     //send(event: Type, arg?: Payload): void
     send(event: Type, arg?: any): void
     send(event: EventName, arg: any): void
     send(event: EventName | Type, arg: any): void {
-        this.#getListeners(event).forEach((func) => func(arg));
+        this.#getListeners(event).forEach((func) => func(arg))
     }
 
     listen(event: EventName | Type, listener: Listener): () => void {

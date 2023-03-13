@@ -1,11 +1,11 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from 'url';
+import fs from "fs"
+import path from "path"
+import {fileURLToPath} from 'url'
 import api from '@microsoft/api-extractor'
 
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 copyReadme()
 prepareAndCopyPackage()
@@ -15,8 +15,8 @@ removeExtraTypeDeclarations()
 
 function copyReadme() {
     fs.copyFile(path.resolve(__dirname, "README.md"), path.resolve(__dirname, "dist/README.md"), err => {
-        if (err) throw err;
-        console.log('README.md copied');
+        if (err) throw err
+        console.log('README.md copied')
     })
 }
 
@@ -27,13 +27,13 @@ function prepareAndCopyPackage() {
     mainPackage.peerDependencies = libPackage.peerDependencies
     mainPackage.name = libPackage.name
     paste(mainPackage, err => {
-        if (err) throw err;
-        console.log('package.json setup');
+        if (err) throw err
+        console.log('package.json setup')
     })
 
     function getPackageCopy(pathSegment = "") {
-        const copy = fs.readFileSync(path.resolve(__dirname, pathSegment, "package.json"), "utf-8");
-        return JSON.parse(copy);
+        const copy = fs.readFileSync(path.resolve(__dirname, pathSegment, "package.json"), "utf-8")
+        return JSON.parse(copy)
     }
 
     function deleteUnnecessaryProperties(copy) {
@@ -62,10 +62,10 @@ function rollupTypes() {
     const result = api.Extractor.invoke(config, {showVerboseMessages: true})
     if (result.succeeded) {
         console.log(`Types rollup completed successfully`)
-        process.exitCode = 0;
+        process.exitCode = 0
     } else {
         console.error(`Types rollup completed with ${result.errorCount} errors and ${result.warningCount} warnings`)
-        process.exitCode = 1;
+        process.exitCode = 1
     }
 
 
@@ -105,8 +105,8 @@ function rollupTypes() {
 }
 
 function removeExtraTypeDeclarations() {
-    fs.rm(path.resolve(__dirname, "dist/types"), { recursive: true }, (err) => {
-        if (err) throw err;
-        console.log('Extra declarations deleted');
-    });
+    fs.rm(path.resolve(__dirname, "dist/types"), {recursive: true}, (err) => {
+        if (err) throw err
+        console.log('Extra declarations deleted')
+    })
 }

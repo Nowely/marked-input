@@ -1,9 +1,9 @@
-import {useState} from "react";
-import {Tag} from "antd";
-import {MarkedInput} from "rc-marked-input";
-import {Text} from "./assets/Text";
-import {getTitle} from "./assets/getTitle";
-import {withStyle} from "./assets/withStyle";
+import {Tag} from "antd"
+import {MarkedInput} from "rc-marked-input"
+import {useState} from "react"
+import {getTitle} from "./assets/getTitle"
+import {Text} from "./assets/Text"
+import {withStyle} from "./assets/withStyle"
 
 export default {
     title: getTitle("Ant"),

@@ -1,10 +1,10 @@
-import {NodeData, Recovery, State, Type} from "../types";
-import {EventBus} from "./EventBus";
-import {MarkedInputProps} from "../components/MarkedInput";
-import {extractOptions} from "./index";
-import {EmptyList} from "../constants";
-import LinkedListNode from "./LinkedListNode";
-import {createRef} from "react";
+import {createRef} from "react"
+import {MarkedInputProps} from "../components/MarkedInput"
+import {EmptyList} from "../constants"
+import {NodeData, Recovery, State, Type} from "../types"
+import {EventBus} from "./EventBus"
+import {extractOptions} from "./index"
+import LinkedListNode from "./LinkedListNode"
 
 export class Store {
     #state: State
@@ -15,7 +15,7 @@ export class Store {
     overlayRef = createRef<HTMLElement>()
 
     get state(): State {
-        return this.#state;
+        return this.#state
     }
 
     static create(props: MarkedInputProps<any>) {
@@ -35,7 +35,7 @@ export class Store {
     }
 
     constructor(state: State, readonly bus: EventBus) {
-        this.#state = state;
+        this.#state = state
     }
 
     setState(state: Partial<State>) {

@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from "react";
-import {useStore} from "../../../utils";
+import React, {useEffect, useRef} from "react"
+import {useStore} from "../../../utils"
 
 export function useTextSelection() {
     const store = useStore()
@@ -12,7 +12,7 @@ export function useTextSelection() {
             pressedUp.current = true
         }
 
-        document.addEventListener("mousedown", listener);
+        document.addEventListener("mousedown", listener)
         return () => document.removeEventListener("mousedown", listener)
     }, [])
 
@@ -34,12 +34,12 @@ export function useTextSelection() {
 
     useEffect(() => {
         const listener = () => {
-            pressedUp.current = false;
+            pressedUp.current = false
             ref.current = null
             store.setState({readOnly: false})
         }
 
-        document.addEventListener("mouseup", listener);
-        return () => document.removeEventListener("mouseup", listener);
+        document.addEventListener("mouseup", listener)
+        return () => document.removeEventListener("mouseup", listener)
     }, [])
 }

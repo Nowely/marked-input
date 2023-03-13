@@ -1,5 +1,5 @@
-import React, {Context, useContext} from "react";
-import {DefaultOptionProps, PLACEHOLDER} from "../constants";
+import React, {Context, useContext} from "react"
+import {DefaultOptionProps, PLACEHOLDER} from "../constants"
 import {
     AnnotatedMark,
     EventName,
@@ -10,9 +10,9 @@ import {
     OptionProps,
     Options,
     Piece,
-} from "../types";
-import {Parser} from "./Parser";
-import {Store} from "./Store";
+} from "../types"
+import {Parser} from "./Parser"
+import {Store} from "./Store"
 
 export const assign = Object.assign
 
@@ -58,7 +58,7 @@ export function annotate(markup: Markup, label: string, value?: string): string 
 export function denote(value: string, callback: (mark: AnnotatedMark) => string, ...markups: Markup[]): string {
     if (!markups.length) return value
     const pieces = new Parser(markups).split(value)
-    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
+    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "")
 }
 
 export function toString(values: MarkStruct[], options: Options) {
@@ -73,15 +73,15 @@ export function toString(values: MarkStruct[], options: Options) {
 
 //https://stackoverflow.com/a/52171480 cyrb53 generate hash
 export const genHash = (str: string, seed = 0) => {
-    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed
     for (let i = 0, ch; i < str.length; i++) {
-        ch = str.charCodeAt(i);
-        h1 = Math.imul(h1 ^ ch, 2654435761);
-        h2 = Math.imul(h2 ^ ch, 1597334677);
+        ch = str.charCodeAt(i)
+        h1 = Math.imul(h1 ^ ch, 2654435761)
+        h2 = Math.imul(h2 ^ ch, 1597334677)
     }
-    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0)
 }
 
 export const genId = () => Math.random().toString(36).substring(2, 9)
@@ -158,7 +158,7 @@ export function genKey(piece: Piece, cache?: Set<number>) {
     while (cache?.has(key))
         key = genHash(str, seed++)
     cache?.add(key)
-    return key;
+    return key
 }
 
 export const isForward = (component?: React.ExoticComponent<any> | React.ComponentType<any>) =>

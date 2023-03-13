@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom'
-import React, {forwardRef, useState} from "react";
-import user from "@testing-library/user-event";
-import {act, render} from "@testing-library/react";
+import {act, render} from "@testing-library/react"
+import user from "@testing-library/user-event"
 import {createMarkedInput, MarkedInputHandler} from "rc-marked-input"
-import {Configured} from "storybook/stories/Base.stories";
-import {vi, expect} from "vitest";
+import React, {forwardRef, useState} from "react"
+import {Configured} from "storybook/stories/Base.stories"
+import {expect, vi} from "vitest"
 
 describe(`Utility: createMarkedInput`, () => {
     it('should render', () => {
@@ -13,9 +13,9 @@ describe(`Utility: createMarkedInput`, () => {
 
     it('should support to pass a forward overlay', async () => {
         //override event listener because 'selectionchange' don't work in here
-        let events: Record<string, EventListenerOrEventListenerObject> = {};
-        document.addEventListener = vi.fn((event, callback) => events[event] = callback);
-        document.removeEventListener = vi.fn((event, callback) => delete events[event]);
+        let events: Record<string, EventListenerOrEventListenerObject> = {}
+        document.addEventListener = vi.fn((event, callback) => events[event] = callback)
+        document.removeEventListener = vi.fn((event, callback) => delete events[event])
 
         const {queryByText, getByText} = render(<Mark3/>)
         const span = getByText(/hello/i)
@@ -25,7 +25,7 @@ describe(`Utility: createMarkedInput`, () => {
         await act(() => {
             // @ts-ignore
             events['selectionchange']()
-        });
+        })
 
         expect(await queryByText("I'm here!")).toBeInTheDocument()
     })

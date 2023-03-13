@@ -1,6 +1,6 @@
-import {MarkStruct, Payload, Trigger, Type} from "../../../types";
-import {annotate, createNewSpan, toString, useStore} from "../../../utils";
-import {useListener} from "../../../utils/useListener";
+import {MarkStruct, Payload, Trigger, Type} from "../../../types"
+import {annotate, createNewSpan, toString, useStore} from "../../../utils"
+import {useListener} from "../../../utils/useListener"
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -34,12 +34,12 @@ export function useSystemListeners() {
         //onChange(toString([...pieces.values()], options))
     }, [])
 
-    useListener(Type. Select, (event: { value: MarkStruct, trigger: Trigger }) => {
+    useListener(Type.Select, (event: { value: MarkStruct, trigger: Trigger }) => {
         const {pieces} = store.state
         const {value, trigger: {option, span, index, source}} = event
 
         const annotation = annotate(option.markup, value.label, value.value)
-        const newSpan = createNewSpan(span, annotation, index, source);
+        const newSpan = createNewSpan(span, annotation, index, source)
         //const key = findSpanKey(span, pieces)
         const piece = pieces.findNode(node => node.mark.label === span)
         store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}

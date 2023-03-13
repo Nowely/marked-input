@@ -1,5 +1,5 @@
-import {assertAnnotated, useNode} from "../utils";
-import {useSelector} from "../utils/useSelector";
+import {assertAnnotated, useNode} from "../utils"
+import {useSelector} from "../utils/useSelector"
 
 export function Piece() {
     const {mark} = useNode()

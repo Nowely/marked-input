@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom'
-import {useState} from "react";
-import {vi, expect} from "vitest";
-import user from "@testing-library/user-event";
-import {act, render} from "@testing-library/react";
-import {MarkedInput, MarkedInputHandler, Markup} from "rc-marked-input";
-import {Marked} from "storybook/stories/Base.stories";
-import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
+import {act, render} from "@testing-library/react"
+import user from "@testing-library/user-event"
+import {MarkedInput, MarkedInputHandler, Markup} from "rc-marked-input"
+import {useState} from "react"
+import {Marked} from "storybook/stories/Base.stories"
+import {Focusable, Removable} from "storybook/stories/Dynamic.stories"
+import {expect, vi} from "vitest"
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)
@@ -16,7 +16,7 @@ const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
 
 describe(`Component: ${MarkedInput.name}`, () => {
     it('should render', () => {
-        render(<Marked/>);
+        render(<Marked/>)
     })
 
     it('should support the "Backspace" button', async () => {
@@ -81,9 +81,9 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
     it('should appear a overlay component by trigger', async () => {
         //override event listener because 'selectionchange' don't work in here
-        let events: Record<string, EventListenerOrEventListenerObject> = {};
-        document.addEventListener = vi.fn((event, callback) => events[event] = callback);
-        document.removeEventListener = vi.fn((event, callback) => delete events[event]);
+        let events: Record<string, EventListenerOrEventListenerObject> = {}
+        document.addEventListener = vi.fn((event, callback) => events[event] = callback)
+        document.removeEventListener = vi.fn((event, callback) => delete events[event])
 
         const {getByText, findByText} = render(<Mark2 initial="@ @[mark](1)!"/>)
         const span = getByText(/@/i)
@@ -96,7 +96,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
         await act(() => {
             // @ts-ignore
             events['selectionchange']()
-        });
+        })
 
         expect(await findByText("Item")).toBeInTheDocument()
     })

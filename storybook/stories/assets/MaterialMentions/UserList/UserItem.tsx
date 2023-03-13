@@ -1,9 +1,9 @@
-import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from "@mui/material";
-import {Mark} from "rc-marked-input/types/types";
-import {SearchUser} from "../types";
+import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from "@mui/material"
+import {MarkStruct} from "rc-marked-input"
+import {SearchUser} from "../types"
 
 export interface UserItemProps {
-    onSelect: (mark: Mark) => void
+    onSelect: (mark: MarkStruct) => void
     user: SearchUser
 }
 

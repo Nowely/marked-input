@@ -1,7 +1,7 @@
-import {PLACEHOLDER} from "./constants";
-import {FunctionComponent, RefObject} from "react";
-import {MarkedInputProps} from "./components/MarkedInput";
-import LinkedList from "./utils/LinkedList";
+import {FunctionComponent, RefObject} from "react"
+import {MarkedInputProps} from "./components/MarkedInput"
+import {PLACEHOLDER} from "./constants"
+import LinkedList from "./utils/LinkedList"
 
 export type NodeData = {
     key: number

@@ -1,7 +1,7 @@
-import {useEffect} from "react";
-import {useStore} from "../../../utils";
-import {Type} from "../../../types";
-import {useSelector} from "../../../utils/useSelector";
+import {useEffect} from "react"
+import {Type} from "../../../types"
+import {useStore} from "../../../utils"
+import {useSelector} from "../../../utils/useSelector"
 
 export function useCloseOverlayByOutsideClick() {
     const store = useStore()

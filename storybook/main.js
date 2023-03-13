@@ -15,7 +15,7 @@ const config = {
     "framework": "@storybook/react",
     async viteFinal(config, options) {
         //config.base = '/storybook/';
-        return config;
+        return config
     },
     staticDirs: ['./public'],
 }

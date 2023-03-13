@@ -1,9 +1,9 @@
-import {useState} from "react";
-import {Chip} from "@mui/material";
-import {MarkedInput} from "rc-marked-input";
-import {Text} from "./assets/Text";
-import {getTitle} from "./assets/getTitle";
-import {MaterialMentions} from "./assets/MaterialMentions";
+import {Chip} from "@mui/material"
+import {MarkedInput} from "rc-marked-input"
+import {useState} from "react"
+import {getTitle} from "./assets/getTitle"
+import {MaterialMentions} from "./assets/MaterialMentions"
+import {Text} from "./assets/Text"
 
 export default {
     title: getTitle("Material"),

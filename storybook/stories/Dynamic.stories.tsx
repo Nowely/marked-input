@@ -1,7 +1,7 @@
-import {FormEvent, useState} from "react";
-import {MarkedInput, useMark} from "rc-marked-input";
-import {getTitle} from "./assets/getTitle";
-import {Text} from "./assets/Text";
+import {MarkedInput, useMark} from "rc-marked-input"
+import {FormEvent, useState} from "react"
+import {getTitle} from "./assets/getTitle"
+import {Text} from "./assets/Text"
 
 export default {
     title: getTitle(),

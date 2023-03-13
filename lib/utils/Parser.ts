@@ -1,6 +1,6 @@
-import {Markup, Options, Piece} from "../types";
-import {markupToRegex, normalizeMark} from "./index";
-import {ParserMatches} from "./ParserMatches";
+import {Markup, Options, Piece} from "../types"
+import {markupToRegex, normalizeMark} from "./index"
+import {ParserMatches} from "./ParserMatches"
 
 //TODO parser factory?
 export class Parser {
@@ -8,7 +8,7 @@ export class Parser {
     private readonly uniRegExp: RegExp
 
     get regExps() {
-        return this.markups.map(markupToRegex);
+        return this.markups.map(markupToRegex)
     }
 
     static split(value: string, options: Options) {
@@ -18,11 +18,11 @@ export class Parser {
 
     constructor(markups: Markup[]) {
         this.markups = markups
-        this.uniRegExp = new RegExp(this.regExps.map(value => value.source).join("|"));
+        this.uniRegExp = new RegExp(this.regExps.map(value => value.source).join("|"))
     }
 
     split(value: string): Piece[] {
-        return this.iterateMatches(value);
+        return this.iterateMatches(value)
     }
 
     iterateMatches(value: string) {
@@ -34,7 +34,7 @@ export class Parser {
                 result.push(normalizeMark(mark, this.markups[mark.childIndex]))
         }
 
-        return result;
+        return result
     }
 }
 

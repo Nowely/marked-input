@@ -1,20 +1,20 @@
-import {ForwardedRef, forwardRef} from "react";
-import {useContainerEvents} from "./hooks/useContainerEvents";
-import {useSystemListeners} from "./hooks/useSystemListeners";
-import {useValueParser} from "./hooks/useValueParser";
-import {MarkedInputProps} from "../MarkedInput";
-import {useStateUpdating} from "./hooks/useStateUpdating";
-import {useFocusedNode} from "./hooks/useFocusedNode";
-import {useKeyDown} from "./hooks/useKeyDown";
-import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput";
-import {useCheckTriggerOnSelectionChange} from "./hooks/useCheckTriggerOnSelectionChange";
-import {useTrigger} from "./hooks/useTrigger";
-import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
-import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
-import {useFocusRecovery} from "./hooks/useFocusRecovery";
-import {useTextSelection} from "./hooks/useTextSelection";
-import {useMarkedInputHandler} from "./hooks/useMarkedInputHandler";
-import {MarkedInputHandler} from "../../types";
+import {ForwardedRef, forwardRef} from "react"
+import {MarkedInputHandler} from "../../types"
+import {MarkedInputProps} from "../MarkedInput"
+import {useCheckTriggerOnSelectionChange} from "./hooks/useCheckTriggerOnSelectionChange"
+import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc"
+import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick"
+import {useContainerEvents} from "./hooks/useContainerEvents"
+import {useFocusedNode} from "./hooks/useFocusedNode"
+import {useFocusOnEmptyInput} from "./hooks/useFocusOnEmptyInput"
+import {useFocusRecovery} from "./hooks/useFocusRecovery"
+import {useKeyDown} from "./hooks/useKeyDown"
+import {useMarkedInputHandler} from "./hooks/useMarkedInputHandler"
+import {useStateUpdating} from "./hooks/useStateUpdating"
+import {useSystemListeners} from "./hooks/useSystemListeners"
+import {useTextSelection} from "./hooks/useTextSelection"
+import {useTrigger} from "./hooks/useTrigger"
+import {useValueParser} from "./hooks/useValueParser"
 
 export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, ref: ForwardedRef<MarkedInputHandler>) => {
     //TODO move to provider

@@ -1,10 +1,10 @@
-import {createRef, useEffect, useMemo, useRef} from "react";
-import {genKey, isObject, useStore} from "../../../utils";
-import {NodeData, Piece} from "../../../types";
-import {Parser} from "../../../utils/Parser";
-import LinkedList from "../../../utils/LinkedList";
-import LinkedListNode from "../../../utils/LinkedListNode";
-import {useSelector} from "../../../utils/useSelector";
+import {createRef, useEffect, useMemo, useRef} from "react"
+import {NodeData, Piece} from "../../../types"
+import {genKey, isObject, useStore} from "../../../utils"
+import LinkedList from "../../../utils/LinkedList"
+import LinkedListNode from "../../../utils/LinkedListNode"
+import {Parser} from "../../../utils/Parser"
+import {useSelector} from "../../../utils/useSelector"
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value

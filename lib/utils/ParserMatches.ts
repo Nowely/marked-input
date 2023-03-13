@@ -1,4 +1,4 @@
-import {AnnotatedMark} from "../types";
+import {AnnotatedMark} from "../types"
 
 export class ParserMatches implements IterableIterator<[string, AnnotatedMark | null]> {
     done: boolean = false
@@ -10,7 +10,7 @@ export class ParserMatches implements IterableIterator<[string, AnnotatedMark | 
     }
 
     [Symbol.iterator](): IterableIterator<[string, AnnotatedMark | null]> {
-        return this;
+        return this
     }
 
     next(): IteratorResult<[string, AnnotatedMark | null], [string, AnnotatedMark | null] | null> {

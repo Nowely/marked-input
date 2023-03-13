@@ -1,4 +1,4 @@
-import LinkedList from './LinkedList';
+import LinkedList from './LinkedList'
 
 /**
  * The class which represents one link or node in a linked list
@@ -64,7 +64,7 @@ export default class LinkedListNode<NodeData = any> {
      */
     public remove(): LinkedListNode<NodeData> {
         if (this.list === null)
-            throw new ReferenceError('Node does not belong to any list');
+            throw new ReferenceError('Node does not belong to any list')
         return this.list.removeNode(this)
     }
 }

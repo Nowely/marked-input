@@ -1,5 +1,5 @@
-import {EventName, OptionType} from "./types";
-import LinkedList from "./utils/LinkedList";
+import {EventName, OptionType} from "./types"
+import LinkedList from "./utils/LinkedList"
 
 export enum KEY {
     // Navigation Keys

@@ -1,23 +1,23 @@
-import {Options, Trigger} from "../types";
-import {escape} from "./index";
-import {wordRegex} from "../constants";
-import {Caret} from "./Caret";
+import {wordRegex} from "../constants"
+import {Options, Trigger} from "../types"
+import {Caret} from "./Caret"
+import {escape} from "./index"
 
 export class TriggerFinder {
-    span: string;
+    span: string
     node: Node
     dividedText: { left: string; right: string }
-
-    static find(options: Options) {
-        if (Caret.isSelectedPosition)
-            return new TriggerFinder().find(options)
-    }
 
     constructor() {
         let caretPosition = Caret.getCurrentPosition()
         this.node = Caret.getSelectedNode()
         this.span = Caret.getFocusedSpan()
         this.dividedText = this.getDividedTextBy(caretPosition)
+    }
+
+    static find(options: Options) {
+        if (Caret.isSelectedPosition)
+            return new TriggerFinder().find(options)
     }
 
     getDividedTextBy(position: number) {

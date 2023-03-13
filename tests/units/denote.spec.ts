@@ -1,5 +1,4 @@
-import {denote} from "rc-marked-input";
-import {Markup} from "rc-marked-input/types";
+import {denote, Markup} from "rc-marked-input"
 
 describe(`Utility: ${denote.name}`, () => {
     const markup: Markup = "@[__label__](__value__)"

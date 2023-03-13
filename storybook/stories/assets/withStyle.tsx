@@ -1,11 +1,11 @@
-import {DecoratorFunction} from "@storybook/csf/dist/story";
-import {useInsertionEffect} from "react";
+import {DecoratorFunction} from "@storybook/csf/dist/story"
+import {useInsertionEffect} from "react"
 
 //TODO load css on startup
 export const withStyle = (id: string): DecoratorFunction<any, any> =>
     (Story) => {
         useStyleInsertion(id)
-        return <Story/>;
+        return <Story/>
     }
 
 const useStyleInsertion = (id: string) =>

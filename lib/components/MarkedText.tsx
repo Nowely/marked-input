@@ -1,9 +1,9 @@
-import {isAnnotated, NodeProvider, useStore} from "../utils";
-import {DefaultClass} from "../constants";
-import {memo, useMemo} from "react";
-import {Piece} from "./Piece";
-import {EditableSpan} from "./EditableSpan";
-import {useSelector} from "../utils/useSelector";
+import {memo, useMemo} from "react"
+import {DefaultClass} from "../constants"
+import {isAnnotated, NodeProvider, useStore} from "../utils"
+import {useSelector} from "../utils/useSelector"
+import {EditableSpan} from "./EditableSpan"
+import {Piece} from "./Piece"
 
 export const MarkedText = memo(() => {
     const store = useStore()

@@ -1,9 +1,9 @@
-import {useState} from "react";
-import {createMarkedInput, denote, MarkedInput} from "rc-marked-input";
-import {MarkStruct, Markup} from "rc-marked-input/types";
-import {Button} from "./assets/Button";
-import {Text} from "./assets/Text";
-import {getTitle} from "./assets/getTitle";
+import {createMarkedInput, denote, MarkedInput} from "rc-marked-input"
+import {MarkStruct, Markup} from "rc-marked-input/types"
+import {useState} from "react"
+import {Button} from "./assets/Button"
+import {getTitle} from "./assets/getTitle"
+import {Text} from "./assets/Text"
 
 export default {
     title: getTitle(),
@@ -30,7 +30,7 @@ const ConfiguredMarkedInput = createMarkedInput(Button, [{
     trigger: "/",
     data: ["Seventh", "Eight", "Ninth"],
     initMark: ({label}) => ({label})
-}]);
+}])
 
 const style = {minWidth: 100}
 const spanStyle = {width: 'auto', minWidth: 10}
