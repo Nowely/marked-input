@@ -1,5 +1,7 @@
-export * from "./components/MarkedInput"
+export {MarkedInput} from "./components/MarkedInput"
+export type {MarkedInputProps} from "./components/MarkedInput"
 export {annotate, denote} from "./utils"
 export {createMarkedInput} from "./utils/createMarkedInput"
-export * from "./utils/useMark";
-export * from "./utils/useOverlay";
+export * from "./utils/useMark"
+export * from "./utils/useOverlay"
+export type {MarkProps, MarkedInputHandler, Markup} from "./types"

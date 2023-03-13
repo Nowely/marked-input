@@ -136,3 +136,16 @@ export type Recovery = {
     caretPosition: number
     isPrevPrev?: boolean
 }
+
+export interface MarkedInputHandler {
+    /**
+     * Container element
+     */
+    readonly container: HTMLDivElement | null
+    /**
+     * Overlay element if exists
+     */
+    readonly overlay: HTMLElement | null
+
+    focus(): void
+}

@@ -6,8 +6,7 @@ import {Marked} from "storybook/stories/Base.stories";
 import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
 import {vi, expect} from "vitest";
-import {Markup} from "rc-marked-input/types";
-import {MarkedInputHandler} from "rc-marked-input/components/Featurer/hooks/useMarkedInputHandler";
+import {MarkedInputHandler, Markup} from "rc-marked-input/types";
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)

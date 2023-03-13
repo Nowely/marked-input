@@ -13,7 +13,8 @@ import {useCloseOverlayByEsc} from "./hooks/useCloseOverlayByEsc";
 import {useCloseOverlayByOutsideClick} from "./hooks/useCloseOverlayByOutsideClick";
 import {useFocusRecovery} from "./hooks/useFocusRecovery";
 import {useTextSelection} from "./hooks/useTextSelection";
-import {MarkedInputHandler, useMarkedInputHandler} from "./hooks/useMarkedInputHandler";
+import {useMarkedInputHandler} from "./hooks/useMarkedInputHandler";
+import {MarkedInputHandler} from "../../types";
 
 export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, ref: ForwardedRef<MarkedInputHandler>) => {
     //TODO move to provider
