@@ -5,23 +5,28 @@ export {useMark} from "./utils/useMark"
 export {useOverlay} from "./utils/useOverlay"
 
 export type {MarkedInputProps, MarkedInputComponent} from "./components/MarkedInput"
-export type {DynamicMark} from "./utils/useMark"
-export type {OverlayProps} from "./utils/useOverlay"
+export type {DynamicMark} from "./utils/useMark" //TODO rename to MarkProps or similar?
+export type {OverlayProps} from "./utils/useOverlay" //TODO rename?
 export type {
     MarkedInputHandler,
     Markup,
-    Trigger,
-    AnnotatedMark,
-    ConfiguredMarkedInput,
-    OptionProps,
+
+    Trigger, //TODO named
+    AnnotatedMark, //TODO named
+
+    OptionProps, //TODO named
+    PartialPick, //TODO Remove?
+    OptionType, //TODO named
+
     MarkStruct,
-    OptionType,
+    ConfiguredMarkedInput,
     ConfiguredMarkedInputProps,
-    DivEvents,
+
+    DivEvents, //TODO Removed?
+    EventsFrom, //TODO Removed?
+
     label,
     value,
-    PartialPick,
-    EventsFrom,
 } from "./types"
 
 export {PLACEHOLDER} from "./constants";
