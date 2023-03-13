@@ -1,4 +1,4 @@
-import "./Text.css"
+import './Text.css'
 
 export interface TextProps {
     value: string

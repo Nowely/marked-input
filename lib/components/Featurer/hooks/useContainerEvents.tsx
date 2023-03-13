@@ -1,7 +1,7 @@
-import {useEffect} from "react"
-import {Activator, EventName} from "../../../types"
-import {useStore} from "../../../utils"
-import {useSelector} from "../../../utils/useSelector"
+import {useEffect} from 'react'
+import {Activator, EventName} from '../../../types'
+import {useStore} from '../../../utils'
+import {useSelector} from '../../../utils/useSelector'
 
 export const useContainerEvents = () => {
     const {bus} = useStore()

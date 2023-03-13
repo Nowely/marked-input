@@ -1,8 +1,8 @@
-import {RefObject, useCallback} from "react"
-import {MarkStruct, Trigger, Type} from "../types"
-import {Caret} from "./Caret"
-import {useStore} from "./index"
-import {useSelector} from "./useSelector"
+import {RefObject, useCallback} from 'react'
+import {MarkStruct, Trigger, Type} from '../types'
+import {Caret} from './Caret'
+import {useStore} from './index'
+import {useSelector} from './useSelector'
 
 export interface OverlayProps {
     /**

@@ -1,16 +1,16 @@
 import '@testing-library/jest-dom'
-import {act, render} from "@testing-library/react"
-import user from "@testing-library/user-event"
-import {MarkedInput, MarkedInputHandler, Markup} from "rc-marked-input"
-import {useState} from "react"
-import {Marked} from "storybook/stories/Base.stories"
-import {Focusable, Removable} from "storybook/stories/Dynamic.stories"
-import {expect, vi} from "vitest"
+import {act, render} from '@testing-library/react'
+import user from '@testing-library/user-event'
+import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
+import {useState} from 'react'
+import {Marked} from 'storybook/stories/Base.stories'
+import {Focusable, Removable} from 'storybook/stories/Dynamic.stories'
+import {expect, vi} from 'vitest'
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)
     return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue} options={[{
-        markup: markup ?? '@[__label__](__value__)', data: ["Item"]
+        markup: markup ?? '@[__label__](__value__)', data: ['Item']
     }]}/>
 }
 
@@ -21,51 +21,51 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
     it('should support the "Backspace" button', async () => {
         const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-        const [firstSpan, secondSpan] = container.querySelectorAll("span")
+        const [firstSpan, secondSpan] = container.querySelectorAll('span')
 
         //Used for focused
         await user.type(secondSpan, '{ArrowRight}')
         expect(secondSpan).toHaveFocus()
 
-        await user.keyboard("{Backspace}")
-        expect(secondSpan).toHaveTextContent("")
+        await user.keyboard('{Backspace}')
+        expect(secondSpan).toHaveTextContent('')
 
 
-        expect(container.querySelector("mark")).toBeInTheDocument()
-        await user.keyboard("{Backspace}")
+        expect(container.querySelector('mark')).toBeInTheDocument()
+        await user.keyboard('{Backspace}')
         expect(secondSpan).not.toBeInTheDocument()
-        expect(container.querySelector("mark")).toBeNull()
+        expect(container.querySelector('mark')).toBeNull()
 
-        expect(firstSpan).toHaveTextContent("Hello ", {normalizeWhitespace: false})
-        await user.keyboard("{Backspace>7/}")
-        expect(firstSpan).toHaveTextContent("")
+        expect(firstSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
+        await user.keyboard('{Backspace>7/}')
+        expect(firstSpan).toHaveTextContent('')
     })
 
     it('should support the "Delete" button', async () => {
         const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-        const [firstSpan, secondSpan] = container.querySelectorAll("span")
+        const [firstSpan, secondSpan] = container.querySelectorAll('span')
 
         //Used for focused
         await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
         expect(firstSpan).toHaveFocus()
 
-        await user.keyboard("{Delete>6/}")
-        expect(firstSpan).toHaveTextContent("")
+        await user.keyboard('{Delete>6/}')
+        expect(firstSpan).toHaveTextContent('')
 
-        expect(container.querySelector("mark")).toBeInTheDocument()
-        await user.keyboard("{Delete}")
+        expect(container.querySelector('mark')).toBeInTheDocument()
+        await user.keyboard('{Delete}')
         expect(firstSpan).not.toBeInTheDocument()
-        expect(container.querySelector("mark")).toBeNull()
+        expect(container.querySelector('mark')).toBeNull()
 
         expect(secondSpan).toHaveFocus()
-        expect(secondSpan).toHaveTextContent("!")
-        await user.keyboard("{Delete>2/}")
-        expect(secondSpan).toHaveTextContent("")
+        expect(secondSpan).toHaveTextContent('!')
+        await user.keyboard('{Delete>2/}')
+        expect(secondSpan).toHaveTextContent('')
     })
 
     it('should support focus changing', async () => {
         const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-        const [firstSpan, secondSpan] = container.querySelectorAll("span")
+        const [firstSpan, secondSpan] = container.querySelectorAll('span')
         const firstSpanLength = firstSpan.textContent?.length ?? 0
 
         //Used for focused
@@ -98,13 +98,13 @@ describe(`Component: ${MarkedInput.name}`, () => {
             events['selectionchange']()
         })
 
-        expect(await findByText("Item")).toBeInTheDocument()
+        expect(await findByText('Item')).toBeInTheDocument()
     })
 
     it('should correct process an annotation type', async () => {
         const {container, queryByText} = render(<Mark2 initial=""/>)
-        const [span] = container.querySelectorAll("span")
-        expect(span).toHaveTextContent("")
+        const [span] = container.querySelectorAll('span')
+        expect(span).toHaveTextContent('')
         await user.type(span, '@[[mark](1)')
         expect(await queryByText('@[mark](1)')).toBeNull()
         expect(await queryByText('mark')).toBeInTheDocument()
@@ -112,8 +112,8 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
     it('should support ref focusing target', async () => {
         const {container} = render(<Focusable/>)
-        const [firstSpan, secondSpan] = container.querySelectorAll("span")
-        const [firstAbbr] = container.querySelectorAll("abbr")
+        const [firstSpan, secondSpan] = container.querySelectorAll('span')
+        const [firstAbbr] = container.querySelectorAll('abbr')
         const firstSpanLength = firstSpan.textContent?.length ?? 0
         const firstAbbrLength = firstAbbr.textContent?.length ?? 0
 
@@ -196,7 +196,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
     it('it should select all text by shortcut "cmd + a"', async () => {
         const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-        const [span] = container.querySelectorAll("span")
+        const [span] = container.querySelectorAll('span')
 
         //Used for focused
         await user.type(span, '{ArrowLeft}', {initialSelectionStart: 0})

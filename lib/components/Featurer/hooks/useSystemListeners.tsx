@@ -1,6 +1,6 @@
-import {MarkStruct, Payload, Trigger, Type} from "../../../types"
-import {annotate, createNewSpan, toString, useStore} from "../../../utils"
-import {useListener} from "../../../utils/useListener"
+import {MarkStruct, Payload, Trigger, Type} from '../../../types'
+import {annotate, createNewSpan, toString, useStore} from '../../../utils'
+import {useListener} from '../../../utils/useListener'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {

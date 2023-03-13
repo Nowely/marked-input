@@ -1,5 +1,5 @@
-import fs from "fs"
-import path from "path"
+import fs from 'fs'
+import path from 'path'
 import {fileURLToPath} from 'url'
 import api from '@microsoft/api-extractor'
 
@@ -14,7 +14,7 @@ removeExtraTypeDeclarations()
 
 
 function copyReadme() {
-    fs.copyFile(path.resolve(__dirname, "README.md"), path.resolve(__dirname, "dist/README.md"), err => {
+    fs.copyFile(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
         if (err) throw err
         console.log('README.md copied')
     })
@@ -22,7 +22,7 @@ function copyReadme() {
 
 function prepareAndCopyPackage() {
     const mainPackage = getPackageCopy()
-    const libPackage = getPackageCopy("lib")
+    const libPackage = getPackageCopy('lib')
     deleteUnnecessaryProperties(mainPackage)
     mainPackage.peerDependencies = libPackage.peerDependencies
     mainPackage.name = libPackage.name
@@ -31,8 +31,8 @@ function prepareAndCopyPackage() {
         console.log('package.json setup')
     })
 
-    function getPackageCopy(pathSegment = "") {
-        const copy = fs.readFileSync(path.resolve(__dirname, pathSegment, "package.json"), "utf-8")
+    function getPackageCopy(pathSegment = '') {
+        const copy = fs.readFileSync(path.resolve(__dirname, pathSegment, 'package.json'), 'utf-8')
         return JSON.parse(copy)
     }
 
@@ -47,7 +47,7 @@ function prepareAndCopyPackage() {
 
     function paste(obj, callback) {
         try {
-            fs.writeFileSync(path.resolve(__dirname, "dist/package.json"), Buffer.from(JSON.stringify(obj, null, 2), "utf-8"))
+            fs.writeFileSync(path.resolve(__dirname, 'dist/package.json'), Buffer.from(JSON.stringify(obj, null, 2), 'utf-8'))
             callback(null)
         } catch (err) {
             callback(err)
@@ -76,27 +76,27 @@ function rollupTypes() {
         /** @type api.IConfigFile */
         const configObject = {
             projectFolder: path.resolve(__dirname),
-            mainEntryPointFilePath: "<projectFolder>/dist/types/index.d.ts",
-            compiler: {tsconfigFilePath: "<projectFolder>/tsconfig.json"},
+            mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
+            compiler: {tsconfigFilePath: '<projectFolder>/tsconfig.json'},
             dtsRollup: {
                 enabled: true,
-                untrimmedFilePath: "<projectFolder>/dist/index.d.ts"
+                untrimmedFilePath: '<projectFolder>/dist/index.d.ts'
             },
             messages: {
                 compilerMessageReporting: {
-                    default: {logLevel: "warning"},
+                    default: {logLevel: 'warning'},
                 },
                 //ae - prefix
                 extractorMessageReporting: {
-                    default: {logLevel: "warning"},
-                    "ae-missing-release-tag": {logLevel: "none"},
+                    default: {logLevel: 'warning'},
+                    'ae-missing-release-tag': {logLevel: 'none'},
                 },
                 //tsdoc = prefix
                 tsdocMessageReporting: {
-                    default: {logLevel: "warning"},
-                    "tsdoc-undefined-tag": {logLevel: "none"},
-                    "tsdoc-characters-after-block-tag": {logLevel: "none"},
-                    "tsdoc-at-sign-in-word": {logLevel: "none"},
+                    default: {logLevel: 'warning'},
+                    'tsdoc-undefined-tag': {logLevel: 'none'},
+                    'tsdoc-characters-after-block-tag': {logLevel: 'none'},
+                    'tsdoc-at-sign-in-word': {logLevel: 'none'},
                 }
             }
         }
@@ -105,7 +105,7 @@ function rollupTypes() {
 }
 
 function removeExtraTypeDeclarations() {
-    fs.rm(path.resolve(__dirname, "dist/types"), {recursive: true}, (err) => {
+    fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, (err) => {
         if (err) throw err
         console.log('Extra declarations deleted')
     })

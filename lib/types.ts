@@ -1,7 +1,7 @@
-import {FunctionComponent, RefObject} from "react"
-import {MarkedInputProps} from "./components/MarkedInput"
-import {PLACEHOLDER} from "./constants"
-import LinkedList from "./utils/LinkedList"
+import {FunctionComponent, RefObject} from 'react'
+import {MarkedInputProps} from './components/MarkedInput'
+import {PLACEHOLDER} from './constants'
+import LinkedList from './utils/LinkedList'
 
 export type NodeData = {
     key: number
@@ -36,7 +36,7 @@ export type KeyedPieces = Map<number, Piece>
 
 export type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
-export type OptionType = PartialPick<OptionProps, "initMark"> & { index: number }
+export type OptionType = PartialPick<OptionProps, 'initMark'> & { index: number }
 
 export type Options = OptionType[]
 
@@ -63,7 +63,7 @@ export interface OptionProps<T = Record<string, any>> {
     initMark?: (props: MarkStruct) => T
 }
 
-export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "options">
+export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, 'Mark' | 'Overlay' | 'options'>
 export type ConfiguredMarkedInput<T> = FunctionComponent<ConfiguredMarkedInputProps<T>>
 
 export type State = Omit<MarkedInputProps<any>, 'options'> & {

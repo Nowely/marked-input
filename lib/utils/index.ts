@@ -1,5 +1,5 @@
-import React, {Context, useContext} from "react"
-import {DefaultOptionProps, PLACEHOLDER} from "../constants"
+import React, {Context, useContext} from 'react'
+import {DefaultOptionProps, PLACEHOLDER} from '../constants'
 import {
     AnnotatedMark,
     EventName,
@@ -10,9 +10,9 @@ import {
     OptionProps,
     Options,
     Piece,
-} from "../types"
-import {Parser} from "./Parser"
-import {Store} from "./Store"
+} from '../types'
+import {Parser} from './Parser'
+import {Store} from './Store'
 
 export const assign = Object.assign
 
@@ -58,11 +58,11 @@ export function annotate(markup: Markup, label: string, value?: string): string 
 export function denote(value: string, callback: (mark: AnnotatedMark) => string, ...markups: Markup[]): string {
     if (!markups.length) return value
     const pieces = new Parser(markups).split(value)
-    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "")
+    return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, '')
 }
 
 export function toString(values: MarkStruct[], options: Options) {
-    let result = ""
+    let result = ''
     for (let value of values) {
         result += isAnnotated(value)
             ? annotate(options[value.childIndex].markup, value.label, value.value)
@@ -86,7 +86,7 @@ export const genHash = (str: string, seed = 0) => {
 
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
-export const isObject = (value: unknown): value is object => typeof value === "object"
+export const isObject = (value: unknown): value is object => typeof value === 'object'
 
 export const isAnnotated = (value: unknown): value is AnnotatedMark => {
     return value !== null && typeof value === 'object' && 'annotation' in value
@@ -94,12 +94,12 @@ export const isAnnotated = (value: unknown): value is AnnotatedMark => {
 
 export function assertAnnotated(value: unknown): asserts value is AnnotatedMark {
     let condition = value !== null && typeof value === 'object' && 'annotation' in value
-    if (!condition) throw new Error("Value is not annotated mark!")
+    if (!condition) throw new Error('Value is not annotated mark!')
 }
 
-export const isFunction = (value: unknown): value is Function => typeof value === "function"
+export const isFunction = (value: unknown): value is Function => typeof value === 'function'
 
-export const isEventName = (value: string | number): value is EventName => typeof value === "string" && value.startsWith("on")
+export const isEventName = (value: string | number): value is EventName => typeof value === 'string' && value.startsWith('on')
 
 export function extractOptions(options?: OptionProps[]): Options {
     if (options?.length) return options.map(initOption)
@@ -133,8 +133,8 @@ const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<
     }
 }
 
-export const [useStore, StoreProvider] = createContext<Store>("StoreProvider")
-export const [useNode, NodeProvider] = createContext<NodeData>("NodeProvider")
+export const [useStore, StoreProvider] = createContext<Store>('StoreProvider')
+export const [useNode, NodeProvider] = createContext<NodeData>('NodeProvider')
 
 export function findSpanKey(span: string, pieces: KeyedPieces) {
     let foundKey

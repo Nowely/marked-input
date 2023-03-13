@@ -1,7 +1,7 @@
-import {CSSProperties, RefObject, useCallback, useState} from "react"
-import {MarkStruct, Type} from "../types"
-import {useNode, useStore} from "./index"
-import {useSelector} from "./useSelector"
+import {CSSProperties, RefObject, useCallback, useState} from 'react'
+import {MarkStruct, Type} from '../types'
+import {useNode, useStore} from './index'
+import {useSelector} from './useSelector'
 
 export interface DynamicMark<T> extends MarkStruct {
     /**

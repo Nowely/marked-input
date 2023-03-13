@@ -1,7 +1,7 @@
-import {useEffect} from "react"
-import {Type} from "../../../types"
-import {useStore} from "../../../utils"
-import {useSelector} from "../../../utils/useSelector"
+import {useEffect} from 'react'
+import {Type} from '../../../types'
+import {useStore} from '../../../utils'
+import {useSelector} from '../../../utils/useSelector'
 
 export function useCloseOverlayByOutsideClick() {
     const store = useStore()
@@ -16,7 +16,7 @@ export function useCloseOverlayByOutsideClick() {
             store.bus.send(Type.ClearTrigger)
         }
 
-        document.addEventListener("click", handleClick)
-        return () => document.removeEventListener("click", handleClick)
+        document.addEventListener('click', handleClick)
+        return () => document.removeEventListener('click', handleClick)
     }, [trigger])
 }

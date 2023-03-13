@@ -1,6 +1,6 @@
-import {PredefinedEvents} from "../constants"
-import {DivEvents, EventName, Listener, Type} from "../types"
-import {isEventName} from "./index"
+import {PredefinedEvents} from '../constants'
+import {DivEvents, EventName, Listener, Type} from '../types'
+import {isEventName} from './index'
 
 export class EventBus {
     readonly #SystemEvents = new Map<Type, Set<Listener>>()

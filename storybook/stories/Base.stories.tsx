@@ -1,9 +1,9 @@
-import {createMarkedInput, denote, MarkedInput} from "rc-marked-input"
-import {MarkStruct, Markup} from "rc-marked-input/types"
-import {useState} from "react"
-import {Button} from "./assets/Button"
-import {getTitle} from "./assets/getTitle"
-import {Text} from "./assets/Text"
+import {createMarkedInput, denote, MarkedInput} from 'rc-marked-input'
+import {MarkStruct, Markup} from 'rc-marked-input/types'
+import {useState} from 'react'
+import {Button} from './assets/Button'
+import {getTitle} from './assets/getTitle'
+import {Text} from './assets/Text'
 
 export default {
     title: getTitle(),
@@ -13,22 +13,22 @@ export default {
 const Mark = (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
 export const Marked = () => {
-    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
+    const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
     return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
 }
 
 
-const Primary: Markup = "@[__label__](primary:__value__)"
-const Default: Markup = "@[__label__](default:__value__)"
+const Primary: Markup = '@[__label__](primary:__value__)'
+const Default: Markup = '@[__label__](default:__value__)'
 
 const ConfiguredMarkedInput = createMarkedInput(Button, [{
     markup: Primary,
-    data: ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"],
+    data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
     initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
 }, {
     markup: Default,
-    trigger: "/",
-    data: ["Seventh", "Eight", "Ninth"],
+    trigger: '/',
+    data: ['Seventh', 'Eight', 'Ninth'],
     initMark: ({label}) => ({label})
 }])
 
@@ -37,9 +37,9 @@ const spanStyle = {width: 'auto', minWidth: 10}
 
 export const Configured = () => {
     const [value, setValue] = useState(
-        "Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
-        "Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n" +
-        "For found mark used @[annotations](default:123)."
+        'Enter the \'@\' for calling @[primary](primary:4) suggestions and \'/\' for @[default](default:7)!\n' +
+        'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
+        'For found mark used @[annotations](default:123).'
     )
 
     const displayText = denote(value, mark => mark.label, Primary, Default)

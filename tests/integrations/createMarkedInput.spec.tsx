@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom'
-import {act, render} from "@testing-library/react"
-import user from "@testing-library/user-event"
-import {createMarkedInput, MarkedInputHandler} from "rc-marked-input"
-import React, {forwardRef, useState} from "react"
-import {Configured} from "storybook/stories/Base.stories"
-import {expect, vi} from "vitest"
+import {act, render} from '@testing-library/react'
+import user from '@testing-library/user-event'
+import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
+import React, {forwardRef, useState} from 'react'
+import {Configured} from 'storybook/stories/Base.stories'
+import {expect, vi} from 'vitest'
 
 describe(`Utility: createMarkedInput`, () => {
     it('should render', () => {
@@ -27,7 +27,7 @@ describe(`Utility: createMarkedInput`, () => {
             events['selectionchange']()
         })
 
-        expect(await queryByText("I'm here!")).toBeInTheDocument()
+        expect(await queryByText('I\'m here!')).toBeInTheDocument()
     })
 
     it('should to support the ref prop', async () => {

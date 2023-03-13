@@ -1,7 +1,7 @@
-import {wordRegex} from "../constants"
-import {Options, Trigger} from "../types"
-import {Caret} from "./Caret"
-import {escape} from "./index"
+import {wordRegex} from '../constants'
+import {Options, Trigger} from '../types'
+import {Caret} from './Caret'
+import {escape} from './index'
 
 export class TriggerFinder {
     span: string

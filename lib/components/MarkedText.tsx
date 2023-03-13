@@ -1,14 +1,14 @@
-import {memo, useMemo} from "react"
-import {DefaultClass} from "../constants"
-import {isAnnotated, NodeProvider, useStore} from "../utils"
-import {useSelector} from "../utils/useSelector"
-import {EditableSpan} from "./EditableSpan"
-import {Piece} from "./Piece"
+import {memo, useMemo} from 'react'
+import {DefaultClass} from '../constants'
+import {isAnnotated, NodeProvider, useStore} from '../utils'
+import {useSelector} from '../utils/useSelector'
+import {EditableSpan} from './EditableSpan'
+import {Piece} from './Piece'
 
 export const MarkedText = memo(() => {
     const store = useStore()
     const {className, style, pieces} = useSelector(state => ({
-        className: state.className ? DefaultClass + " " + state.className : DefaultClass,
+        className: state.className ? DefaultClass + ' ' + state.className : DefaultClass,
         style: state.style,
         pieces: state.pieces,
     }), true)

@@ -13,13 +13,13 @@ export class Caret {
 
     //TODO get span from state?
     static getFocusedSpan() {
-        return window.getSelection()?.anchorNode?.textContent ?? ""
+        return window.getSelection()?.anchorNode?.textContent ?? ''
     }
 
     static getSelectedNode() {
         const node = window.getSelection()?.anchorNode
         if (node) return node
-        throw new Error("Anchor node of selection is not exists!")
+        throw new Error('Anchor node of selection is not exists!')
     }
 
     //TODO add the returned type: "{left: CSSProperties["left"], top: CSSProperties["top"]}"?

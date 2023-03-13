@@ -1,7 +1,7 @@
-import {useEffect} from "react"
-import {useStore} from "../../../utils"
-import {Caret} from "../../../utils/Caret"
-import {useSelector} from "../../../utils/useSelector"
+import {useEffect} from 'react'
+import {useStore} from '../../../utils'
+import {Caret} from '../../../utils/Caret'
+import {useSelector} from '../../../utils/useSelector'
 
 export const useFocusRecovery = () => {
     const store = useStore()

@@ -1,4 +1,4 @@
-import {AnnotatedMark} from "../types"
+import {AnnotatedMark} from '../types'
 
 export class ParserMatches implements IterableIterator<[string, AnnotatedMark | null]> {
     done: boolean = false

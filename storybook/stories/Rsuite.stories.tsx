@@ -1,14 +1,14 @@
-import {ComponentMeta} from "@storybook/react"
-import {MarkedInput, useOverlay} from "rc-marked-input"
-import {KEY} from "rc-marked-input/constants"
-import {useEffect, useState} from "react"
-import {Popover, Tag} from "rsuite"
-import {getTitle} from "./assets/getTitle"
-import {Text} from "./assets/Text"
-import {withStyle} from "./assets/withStyle"
+import {ComponentMeta} from '@storybook/react'
+import {MarkedInput, useOverlay} from 'rc-marked-input'
+import {KEY} from 'rc-marked-input/constants'
+import {useEffect, useState} from 'react'
+import {Popover, Tag} from 'rsuite'
+import {getTitle} from './assets/getTitle'
+import {Text} from './assets/Text'
+import {withStyle} from './assets/withStyle'
 
 export default {
-    title: getTitle("Rsuite"),
+    title: getTitle('Rsuite'),
     component: MarkedInput,
     decorators: [withStyle('rsuite.min.css')]
 } as ComponentMeta<typeof MarkedInput>
@@ -25,8 +25,8 @@ const Overlay = () => {
             }
         }
 
-        document.addEventListener("keydown", handleEnter)
-        return () => document.removeEventListener("keydown", handleEnter)
+        document.addEventListener('keydown', handleEnter)
+        return () => document.removeEventListener('keydown', handleEnter)
     }, [trigger])
 
     return <Popover style={style} visible>
@@ -35,8 +35,8 @@ const Overlay = () => {
 }
 
 export const TaggedInput = () => {
-    const [value, setValue] = useState("Type the '@' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello")
-    const classNames = "rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag"
+    const [value, setValue] = useState('Type the \'@\' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello')
+    const classNames = 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag'
 
     return <>
         <MarkedInput
@@ -51,10 +51,10 @@ export const TaggedInput = () => {
             }}
             spanClassName="rs-tag rs-tag-md"
             spanStyle={{
-                backgroundColor: "white",
+                backgroundColor: 'white',
                 paddingLeft: 0,
                 paddingRight: 0,
-                whiteSpace: "pre-wrap",
+                whiteSpace: 'pre-wrap',
                 minWidth: 5
             }}
             onContainer={{
@@ -64,7 +64,7 @@ export const TaggedInput = () => {
                 }
             }}
             options={[{
-                markup: "@[__label__](common)",
+                markup: '@[__label__](common)',
                 initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
             }]}
         />

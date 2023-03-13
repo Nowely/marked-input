@@ -1,8 +1,8 @@
-import {useEffect} from "react"
-import {KEY} from "../../../constants"
-import {Type} from "../../../types"
-import {useStore} from "../../../utils"
-import {useSelector} from "../../../utils/useSelector"
+import {useEffect} from 'react'
+import {KEY} from '../../../constants'
+import {Type} from '../../../types'
+import {useStore} from '../../../utils'
+import {useSelector} from '../../../utils/useSelector'
 
 export function useCloseOverlayByEsc() {
     const {bus} = useStore()

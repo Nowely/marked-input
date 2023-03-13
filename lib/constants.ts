@@ -1,5 +1,5 @@
-import {EventName, OptionType} from "./types"
-import LinkedList from "./utils/LinkedList"
+import {EventName, OptionType} from './types'
+import LinkedList from './utils/LinkedList'
 
 export enum KEY {
     // Navigation Keys
@@ -31,20 +31,21 @@ export enum PLACEHOLDER {
     VALUE = '__value__',
 }
 
-export const EmptyFunc = () => {}
+export const EmptyFunc = () => {
+}
 
-export const DefaultClass = "mk-input"
+export const DefaultClass = 'mk-input'
 
 export const DefaultOptionProps: OptionType = {
-    trigger: "@",
-    markup: "@[__label__](__value__)",
+    trigger: '@',
+    markup: '@[__label__](__value__)',
     data: [],
     index: 0
 }
 
 //TODO
 export const PredefinedEvents: EventName[] = [
-    "onFocus", "onBlur", "onKeyDown", "onClick", "onMouseDown", "onMouseMove", "onMouseUp", "onMouseOver", "onMouseLeave"
+    'onFocus', 'onBlur', 'onKeyDown', 'onClick', 'onMouseDown', 'onMouseMove', 'onMouseUp', 'onMouseOver', 'onMouseLeave'
 ]
 
 export const wordRegex = new RegExp(/^\w*/)

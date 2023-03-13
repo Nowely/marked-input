@@ -1,12 +1,12 @@
-import React from "react"
-import {useMark} from "../utils/useMark"
+import React from 'react'
+import {useMark} from '../utils/useMark'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
     const {label, onChange, className, style, readOnly, ref} = useMark()
 
     const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
-        const label = e.currentTarget.textContent ?? ""
+        const label = e.currentTarget.textContent ?? ''
         onChange({label}, {silent: true})
     }
 
@@ -26,6 +26,6 @@ export const EditableSpan = () => {
 
 function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
     e.preventDefault()
-    const text = e.clipboardData.getData("text")
-    document.execCommand("insertText", false, text)
+    const text = e.clipboardData.getData('text')
+    document.execCommand('insertText', false, text)
 }

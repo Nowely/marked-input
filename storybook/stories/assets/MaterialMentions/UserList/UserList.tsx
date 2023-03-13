@@ -1,8 +1,8 @@
-import {List, Paper} from "@mui/material"
-import {useOverlay} from "rc-marked-input"
-import {SearchUser} from "../types"
-import {useFetch} from "../utils/useFetch"
-import {UserItem} from "./UserItem"
+import {List, Paper} from '@mui/material'
+import {useOverlay} from 'rc-marked-input'
+import {SearchUser} from '../types'
+import {useFetch} from '../utils/useFetch'
+import {UserItem} from './UserItem'
 
 export const UserList = () => {
     const {onSelect, trigger: {value}, style} = useOverlay()
@@ -13,7 +13,14 @@ export const UserList = () => {
 
     return (
         <Paper elevation={3}
-               sx={{width: '100%', maxWidth: 280, maxHeight: 260, overflow: 'auto', position: 'absolute', top: style.top}}>
+               sx={{
+                   width: '100%',
+                   maxWidth: 280,
+                   maxHeight: 260,
+                   overflow: 'auto',
+                   position: 'absolute',
+                   top: style.top
+               }}>
             <List dense>
                 {users.map(user => (<UserItem key={user.login} onSelect={onSelect} user={user}/>))}
             </List>

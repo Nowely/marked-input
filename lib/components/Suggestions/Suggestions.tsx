@@ -1,7 +1,7 @@
-import {RefObject, useMemo, useState} from "react"
-import {KEY} from "../../constants"
-import {useDownOf} from "../../utils/useDownOf"
-import {useOverlay} from "../../utils/useOverlay"
+import {RefObject, useMemo, useState} from 'react'
+import {KEY} from '../../constants'
+import {useDownOf} from '../../utils/useDownOf'
+import {useOverlay} from '../../utils/useOverlay'
 
 export const Suggestions = () => {
     const {trigger, onSelect, style, ref} = useOverlay()
@@ -33,7 +33,7 @@ export const Suggestions = () => {
     return (
         <ul ref={ref as RefObject<HTMLUListElement>} className="mk-suggestions" style={style}>
             {filtered.map((suggestion, index) => {
-                const className = index === active ? "mk-suggestion-active" : undefined
+                const className = index === active ? 'mk-suggestion-active' : undefined
 
                 return (
                     <li key={suggestion}
