@@ -85,7 +85,10 @@ function rollupTypes() {
             messages: {
                 compilerMessageReporting: {default: {logLevel: "warning"}},
                 //ae - prefix
-                extractorMessageReporting: {default: {logLevel: "warning"}},
+                extractorMessageReporting: {
+                    default: {logLevel: "warning"},
+                    "ae-missing-release-tag": {logLevel: "none"}
+                },
                 //tsdoc = prefix
                 tsdocMessageReporting: {default: {logLevel: "warning"}}
             }
