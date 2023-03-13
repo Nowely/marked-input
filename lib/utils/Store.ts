@@ -7,39 +7,39 @@ import {extractOptions} from './index'
 import LinkedListNode from './LinkedListNode'
 
 export class Store {
-    #state: State
+	#state: State
 
-    focusedNode?: LinkedListNode<NodeData>
-    recovery?: Recovery
-    containerRef = createRef<HTMLDivElement>()
-    overlayRef = createRef<HTMLElement>()
+	focusedNode?: LinkedListNode<NodeData>
+	recovery?: Recovery
+	containerRef = createRef<HTMLDivElement>()
+	overlayRef = createRef<HTMLElement>()
 
-    get state(): State {
-        return this.#state
-    }
+	get state(): State {
+		return this.#state
+	}
 
-    static create(props: MarkedInputProps<any>) {
-        return () => {
-            const {options, ...other} = props
+	static create(props: MarkedInputProps<any>) {
+		return () => {
+			const {options, ...other} = props
 
-            const initialState = {
-                options: extractOptions(options),
-                pieces: EmptyList,
-                ...other
-            } as State
+			const initialState = {
+				options: extractOptions(options),
+				pieces: EmptyList,
+				...other
+			} as State
 
-            const bus = EventBus.initWithExternalEvents(props.onContainer)()
+			const bus = EventBus.initWithExternalEvents(props.onContainer)()
 
-            return new Store(initialState, bus)
-        }
-    }
+			return new Store(initialState, bus)
+		}
+	}
 
-    constructor(state: State, readonly bus: EventBus) {
-        this.#state = state
-    }
+	constructor(state: State, readonly bus: EventBus) {
+		this.#state = state
+	}
 
-    setState(state: Partial<State>) {
-        this.#state = {...this.#state, ...state}
-        this.bus.send(Type.State, this.#state)
-    }
+	setState(state: Partial<State>) {
+		this.#state = {...this.#state, ...state}
+		this.bus.send(Type.State, this.#state)
+	}
 }

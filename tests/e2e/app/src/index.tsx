@@ -4,7 +4,7 @@ import {Configured} from 'storybook/stories/Base.stories'
 import './style.css'
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-    <React.StrictMode>
-        <Configured/>
-    </React.StrictMode>
+	<React.StrictMode>
+		<Configured/>
+	</React.StrictMode>
 )

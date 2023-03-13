@@ -5,25 +5,25 @@ import {useFetch} from '../utils/useFetch'
 import {UserItem} from './UserItem'
 
 export const UserList = () => {
-    const {onSelect, trigger: {value}, style} = useOverlay()
-    const [data] = useFetch<{ items: SearchUser[] }>(`https://api.github.com/search/users?q=${value}`, [value])
-    const users = data?.items ?? []
+	const {onSelect, trigger: {value}, style} = useOverlay()
+	const [data] = useFetch<{ items: SearchUser[] }>(`https://api.github.com/search/users?q=${value}`, [value])
+	const users = data?.items ?? []
 
-    if (users.length === 0) return null
+	if (users.length === 0) return null
 
-    return (
-        <Paper elevation={3}
-               sx={{
-                   width: '100%',
-                   maxWidth: 280,
-                   maxHeight: 260,
-                   overflow: 'auto',
-                   position: 'absolute',
-                   top: style.top
-               }}>
-            <List dense>
-                {users.map(user => (<UserItem key={user.login} onSelect={onSelect} user={user}/>))}
-            </List>
-        </Paper>
-    )
+	return (
+		<Paper elevation={3}
+			   sx={{
+				   width: '100%',
+				   maxWidth: 280,
+				   maxHeight: 260,
+				   overflow: 'auto',
+				   position: 'absolute',
+				   top: style.top
+			   }}>
+			<List dense>
+				{users.map(user => (<UserItem key={user.login} onSelect={onSelect} user={user}/>))}
+			</List>
+		</Paper>
+	)
 }

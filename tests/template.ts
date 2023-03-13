@@ -1,11 +1,11 @@
 //Types: Utility, Component, Hook, etc.
 describe(`[Type]: [name of tested]`, () => {
 
-    it('should do this thing', () => {
+	it('should do this thing', () => {
 
-    })
+	})
 
-    it('does this thing', () => {
+	it('does this thing', () => {
 
-    })
+	})
 })

@@ -8,25 +8,25 @@ export type {MarkedInputProps, MarkedInputComponent} from './components/MarkedIn
 export type {DynamicMark} from './utils/useMark' //TODO rename to MarkProps or similar?
 export type {OverlayProps} from './utils/useOverlay' //TODO rename?
 export type {
-    MarkedInputHandler,
-    Markup,
+	MarkedInputHandler,
+	Markup,
 
-    Trigger, //TODO named
-    AnnotatedMark, //TODO named
+	Trigger, //TODO named
+	AnnotatedMark, //TODO named
 
-    OptionProps, //TODO named
-    PartialPick, //TODO Remove?
-    OptionType, //TODO named
+	OptionProps, //TODO named
+	PartialPick, //TODO Remove?
+	OptionType, //TODO named
 
-    MarkStruct,
-    ConfiguredMarkedInput,
-    ConfiguredMarkedInputProps,
+	MarkStruct,
+	ConfiguredMarkedInput,
+	ConfiguredMarkedInputProps,
 
-    DivEvents, //TODO Removed?
-    EventsFrom, //TODO Removed?
+	DivEvents, //TODO Removed?
+	EventsFrom, //TODO Removed?
 
-    label,
-    value,
+	label,
+	value,
 } from './types'
 
 export {PLACEHOLDER} from './constants'

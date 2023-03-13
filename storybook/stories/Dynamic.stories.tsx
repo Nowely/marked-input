@@ -4,66 +4,66 @@ import {getTitle} from './assets/getTitle'
 import {Text} from './assets/Text'
 
 export default {
-    title: getTitle(),
-    component: MarkedInput,
+	title: getTitle(),
+	component: MarkedInput,
 }
 
 const Mark = () => {
-    const {label, onChange} = useMark()
+	const {label, onChange} = useMark()
 
-    const handleInput = (e: FormEvent<HTMLSpanElement>) =>
-        onChange({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
+	const handleInput = (e: FormEvent<HTMLSpanElement>) =>
+		onChange({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
 
-    return <mark contentEditable onInput={handleInput} children={label}/>
+	return <mark contentEditable onInput={handleInput} children={label}/>
 }
 
 export const Dynamic = () => {
-    const [value, setValue] = useState('Hello, dynamical mark @[world]( )!')
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+	const [value, setValue] = useState('Hello, dynamical mark @[world]( )!')
+	return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
 }
 
 const RemovableMark = () => {
-    const {label, onRemove} = useMark()
-    return <mark onClick={onRemove} children={label}/>
+	const {label, onRemove} = useMark()
+	return <mark onClick={onRemove} children={label}/>
 }
 
 export const Removable = () => {
-    const [value, setValue] = useState('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
-    return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
+	const [value, setValue] = useState('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
+	return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
 }
 
 const Abbr = () => {
-    const {label, value, ref, onChange} = useMark()
+	const {label, value, ref, onChange} = useMark()
 
-    const handleInput = (e: FormEvent<HTMLSpanElement>) => {
-        const label = e.currentTarget.textContent ?? ''
-        onChange({label, value}, {silent: true})
-    }
+	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
+		const label = e.currentTarget.textContent ?? ''
+		onChange({label, value}, {silent: true})
+	}
 
-    return (
-        <abbr
-            ref={ref}
-            title={value}
-            contentEditable
-            style={{
-                outline: 'none',
-                whiteSpace: 'pre-wrap'
-            }}
-            suppressContentEditableWarning
-            onInput={handleInput}
-            children={label}
-        />
-    )
+	return (
+		<abbr
+			ref={ref}
+			title={value}
+			contentEditable
+			style={{
+				outline: 'none',
+				whiteSpace: 'pre-wrap'
+			}}
+			suppressContentEditableWarning
+			onInput={handleInput}
+			children={label}
+		/>
+	)
 }
 
 export const Focusable = () => {
-    const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
-    return (
-        <>
-            <MarkedInput Mark={Abbr} value={value} onChange={setValue}/>
-            <Text label="Plaint text:" value={value}/>
-        </>
-    )
+	const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
+	return (
+		<>
+			<MarkedInput Mark={Abbr} value={value} onChange={setValue}/>
+			<Text label="Plaint text:" value={value}/>
+		</>
+	)
 }
 
 

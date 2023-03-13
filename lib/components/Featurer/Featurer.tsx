@@ -17,26 +17,26 @@ import {useTrigger} from './hooks/useTrigger'
 import {useValueParser} from './hooks/useValueParser'
 
 export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, ref: ForwardedRef<MarkedInputHandler>) => {
-    //TODO move to provider
-    useStateUpdating(props)
-    useMarkedInputHandler(ref)
+	//TODO move to provider
+	useStateUpdating(props)
+	useMarkedInputHandler(ref)
 
-    useContainerEvents()
-    useSystemListeners()
-    useValueParser()
+	useContainerEvents()
+	useSystemListeners()
+	useValueParser()
 
-    useFocusedNode()
-    useKeyDown()
-    useFocusOnEmptyInput()
-    useFocusRecovery()
+	useFocusedNode()
+	useKeyDown()
+	useFocusOnEmptyInput()
+	useFocusRecovery()
 
-    useTrigger()
-    useCheckTriggerOnSelectionChange()
+	useTrigger()
+	useCheckTriggerOnSelectionChange()
 
-    useCloseOverlayByEsc()
-    useCloseOverlayByOutsideClick()
+	useCloseOverlayByEsc()
+	useCloseOverlayByOutsideClick()
 
-    useTextSelection()
+	useTextSelection()
 
-    return null
+	return null
 })

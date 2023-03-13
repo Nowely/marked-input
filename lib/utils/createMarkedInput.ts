@@ -9,23 +9,23 @@ import {assign} from './index'
 export function createMarkedInput<T = MarkStruct>(Mark: ComponentType<T>, options?: OptionProps<T>[]): ConfiguredMarkedInput<T>;
 export function createMarkedInput<T = MarkStruct>(Mark: ComponentType<T>, Overlay: ComponentType, options?: OptionProps<T>[]): ConfiguredMarkedInput<T>;
 export function createMarkedInput(
-    Mark: ComponentType<any>,
-    optionsOrOverlay: ComponentType<any> | OptionProps[] | undefined,
-    options?: OptionProps[]
+	Mark: ComponentType<any>,
+	optionsOrOverlay: ComponentType<any> | OptionProps[] | undefined,
+	options?: OptionProps[]
 ): ConfiguredMarkedInput<any> {
-    const predefinedProps = Array.isArray(optionsOrOverlay) ? {
-        Mark,
-        options: optionsOrOverlay,
-    } : {
-        Mark,
-        Overlay: optionsOrOverlay,
-        options
-    }
+	const predefinedProps = Array.isArray(optionsOrOverlay) ? {
+		Mark,
+		options: optionsOrOverlay,
+	} : {
+		Mark,
+		Overlay: optionsOrOverlay,
+		options
+	}
 
-    const ConfiguredMarkedInput = (props: ConfiguredMarkedInputProps<any>, ref: ForwardedRef<any>) => {
-        const assignedProps: MarkedInputProps<any> = assign({}, props, predefinedProps)
-        return _MarkedInput(assignedProps, ref)
-    }
+	const ConfiguredMarkedInput = (props: ConfiguredMarkedInputProps<any>, ref: ForwardedRef<any>) => {
+		const assignedProps: MarkedInputProps<any> = assign({}, props, predefinedProps)
+		return _MarkedInput(assignedProps, ref)
+	}
 
-    return forwardRef(ConfiguredMarkedInput)
+	return forwardRef(ConfiguredMarkedInput)
 }
