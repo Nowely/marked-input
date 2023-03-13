@@ -6,7 +6,7 @@ import {useSelector} from "./useSelector";
 export interface DynamicMark<T> extends Mark {
     /**
      * Change mark.
-     * @silent doesn't change itself label and value, only pass change event.
+     * @options.silent doesn't change itself label and value, only pass change event.
      */
     onChange: (props: Mark, options?: { silent: boolean }) => void
     /**

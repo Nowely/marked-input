@@ -30,7 +30,7 @@ export interface MarkedInputProps<T = MarkProps> {
     readOnly?: boolean
     /**
      * Passed options for configure
-     * @Default One option with default values is used
+     * @default One option with default values is used
      */
     options?: OptionProps<T>[]
     /**

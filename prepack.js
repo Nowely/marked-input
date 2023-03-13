@@ -83,14 +83,21 @@ function rollupTypes() {
                 untrimmedFilePath: "<projectFolder>/dist/index.d.ts"
             },
             messages: {
-                compilerMessageReporting: {default: {logLevel: "warning"}},
+                compilerMessageReporting: {
+                    default: {logLevel: "warning"},
+                },
                 //ae - prefix
                 extractorMessageReporting: {
                     default: {logLevel: "warning"},
-                    "ae-missing-release-tag": {logLevel: "none"}
+                    "ae-missing-release-tag": {logLevel: "none"},
                 },
                 //tsdoc = prefix
-                tsdocMessageReporting: {default: {logLevel: "warning"}}
+                tsdocMessageReporting: {
+                    default: {logLevel: "warning"},
+                    "tsdoc-undefined-tag": {logLevel: "none"},
+                    "tsdoc-characters-after-block-tag": {logLevel: "none"},
+                    "tsdoc-at-sign-in-word": {logLevel: "none"},
+                }
             }
         }
         return {configObject, configObjectFullPath, packageJsonFullPath}

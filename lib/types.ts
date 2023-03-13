@@ -29,8 +29,8 @@ export interface MarkProps extends Mark {
     //useMark: () => ReturnType<typeof useMark>
 }
 
-type label = `${string}${PLACEHOLDER.LABEL}${string}`
-type value = `${string}${PLACEHOLDER.VALUE}${string}`
+export type label = `${string}${PLACEHOLDER.LABEL}${string}`
+export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
 export type Markup = `${label}${value}` | `${label}`
 
@@ -39,7 +39,7 @@ export type Piece = string | AnnotatedMark
 
 export type KeyedPieces = Map<number, Piece>
 
-type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
+export type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
 export type OptionType = PartialPick<OptionProps, "initMark"> & { index: number }
 
@@ -50,12 +50,12 @@ export interface OptionProps<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__label__` and optional `__value__`
-     * @Default "@[__label__](__value__)"
+     * @default "@[__label__](__value__)"
      */
     markup?: Markup
     /**
      * Sequence of symbols for calling the overlay.
-     * @Default "@"
+     * @default "@"
      */
     trigger?: string //| RegExp
     /**
@@ -123,7 +123,7 @@ export type Trigger = {
 
 export type Listener = (e: any) => void
 
-type EventsFrom<Type extends object> = {
+export type EventsFrom<Type extends object> = {
     [Key in keyof Type & `on${string}`]+?: Type[Key]
 };
 
