@@ -1,12 +1,17 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from 'url';
+import api from '@microsoft/api-extractor'
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 copyReadme()
 prepareAndCopyPackage()
+rollupTypes()
+removeExtraTypeDeclarations()
+
 
 function copyReadme() {
     fs.copyFile(path.resolve(__dirname, "README.md"), path.resolve(__dirname, "dist/README.md"), err => {
@@ -48,4 +53,50 @@ function prepareAndCopyPackage() {
             callback(err)
         }
     }
+}
+
+function rollupTypes() {
+    console.log('Start rollup types:')
+
+    const config = api.ExtractorConfig.prepare(getOptions())
+    const result = api.Extractor.invoke(config, {showVerboseMessages: true})
+    if (result.succeeded) {
+        console.log(`Types rollup completed successfully`)
+        process.exitCode = 0;
+    } else {
+        console.error(`Types rollup completed with ${result.errorCount} errors and ${result.warningCount} warnings`)
+        process.exitCode = 1;
+    }
+
+
+    function getOptions() {
+        const configObjectFullPath = __filename
+        const packageJsonFullPath = path.resolve(__dirname, `package.json`)
+
+        /** @type api.IConfigFile */
+        const configObject = {
+            projectFolder: path.resolve(__dirname),
+            mainEntryPointFilePath: "<projectFolder>/dist/types/index.d.ts",
+            compiler: {tsconfigFilePath: "<projectFolder>/tsconfig.json"},
+            dtsRollup: {
+                enabled: true,
+                untrimmedFilePath: "<projectFolder>/dist/index.d.ts"
+            },
+            messages: {
+                compilerMessageReporting: {default: {logLevel: "warning"}},
+                //ae - prefix
+                extractorMessageReporting: {default: {logLevel: "warning"}},
+                //tsdoc = prefix
+                tsdocMessageReporting: {default: {logLevel: "warning"}}
+            }
+        }
+        return {configObject, configObjectFullPath, packageJsonFullPath}
+    }
+}
+
+function removeExtraTypeDeclarations() {
+    fs.rm(path.resolve(__dirname, "dist/types"), { recursive: true }, (err) => {
+        if (err) throw err;
+        console.log('Extra declarations deleted');
+    });
 }

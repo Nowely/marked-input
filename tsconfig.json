@@ -10,8 +10,8 @@
     "skipLibCheck": true,
     "emitDeclarationOnly": true,
     "declaration": true,
-    "declarationDir": "dist/types",
     "declarationMap": true,
+    "declarationDir": "dist/types",
     "outDir": "dist",
     "types": ["vitest/globals"]
   },
