@@ -1,4 +1,4 @@
-import {Mark, Trigger, Type} from "../types";
+import {MarkStruct, Trigger, Type} from "../types";
 import {useStore} from "./index";
 import {RefObject, useCallback} from "react";
 import {Caret} from "./Caret";
@@ -19,7 +19,7 @@ export interface OverlayProps {
     /**
      * Used for insert an annotation instead a triggered value.
      */
-    onSelect: (value: Mark) => void
+    onSelect: (value: MarkStruct) => void
     /**
      * Trigger details
      */
@@ -33,7 +33,7 @@ export function useOverlay(): OverlayProps {
     const style = Caret.getAbsolutePosition()
 
     const onClose = useCallback(() => store.bus.send(Type.ClearTrigger), [])
-    const onSelect = useCallback((value: Mark) => {
+    const onSelect = useCallback((value: MarkStruct) => {
         store.bus.send(Type.Select, {value, trigger})
         store.bus.send(Type.ClearTrigger)
     }, [trigger])

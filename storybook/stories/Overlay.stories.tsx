@@ -1,14 +1,13 @@
 import {useState} from "react";
+import {MarkedInput, useOverlay, MarkStruct} from "rc-marked-input";
 import {getTitle} from "./assets/getTitle";
-import {MarkedInput, useOverlay} from "rc-marked-input";
-import {MarkProps} from "rc-marked-input/types";
 
 export default {
     title: getTitle(),
     component: MarkedInput,
 }
 
-const Mark = (props: MarkProps) => <mark>{props.label}</mark>
+const Mark = (props: MarkStruct) => <mark>{props.label}</mark>
 
 export const DefaultOverlay = () => {
     const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")

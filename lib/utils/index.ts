@@ -4,7 +4,7 @@ import {
     AnnotatedMark,
     EventName,
     KeyedPieces,
-    Mark,
+    MarkStruct,
     Markup,
     NodeData,
     OptionProps,
@@ -61,7 +61,7 @@ export function denote(value: string, callback: (mark: AnnotatedMark) => string,
     return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, "");
 }
 
-export function toString(values: Mark[], options: Options) {
+export function toString(values: MarkStruct[], options: Options) {
     let result = ""
     for (let value of values) {
         result += isAnnotated(value)

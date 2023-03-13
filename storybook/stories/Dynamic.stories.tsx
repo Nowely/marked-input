@@ -1,6 +1,6 @@
-import React, {useState} from "react";
-import {getTitle} from "./assets/getTitle";
+import {FormEvent, useState} from "react";
 import {MarkedInput, useMark} from "rc-marked-input";
+import {getTitle} from "./assets/getTitle";
 import {Text} from "./assets/Text";
 
 export default {
@@ -11,7 +11,7 @@ export default {
 const Mark = () => {
     const {label, onChange} = useMark()
 
-    const handleInput = (e: React.FormEvent<HTMLSpanElement>) =>
+    const handleInput = (e: FormEvent<HTMLSpanElement>) =>
         onChange({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
 
     return <mark contentEditable onInput={handleInput} children={label}/>
@@ -35,7 +35,7 @@ export const Removable = () => {
 const Abbr = () => {
     const {label, value, ref, onChange} = useMark()
 
-    const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
+    const handleInput = (e: FormEvent<HTMLSpanElement>) => {
         const label = e.currentTarget.textContent ?? ""
         onChange({label, value}, {silent: true})
     }
@@ -67,7 +67,7 @@ export const Focusable = () => {
 }
 
 
-/*
+/*TODO
 const Tag = () => {
     const {reg, label, value, onChange} = useMark()
 

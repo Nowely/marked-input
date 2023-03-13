@@ -1,21 +1,9 @@
 import {ForwardedRef, useImperativeHandle} from "react";
 import {useStore} from "../../../utils";
 import {Store} from "../../../utils/Store";
+import {MarkedInputHandler} from "../../../types";
 
-export interface MarkedInputHandler {
-    /**
-     * Container element
-     */
-    readonly container: HTMLDivElement | null
-    /**
-     * Overlay element if exists
-     */
-    readonly overlay: HTMLElement | null
-
-    focus(): void
-}
-
-const initHandler = (store: Store) => ({
+const initHandler = (store: Store): MarkedInputHandler => ({
     get container() {
         return store.containerRef.current
     },

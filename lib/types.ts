@@ -5,17 +5,17 @@ import LinkedList from "./utils/LinkedList";
 
 export type NodeData = {
     key: number
-    mark: Mark
+    mark: MarkStruct
     ref: RefObject<HTMLElement>
 }
 
-export interface Mark {
+export interface MarkStruct {
     label: string
     value?: string
 }
 
 //TODO rename ParsedMarkup, Match?
-export interface AnnotatedMark extends Mark {
+export interface AnnotatedMark extends MarkStruct {
     annotation: string;
     label: string;
     value: string
@@ -24,13 +24,8 @@ export interface AnnotatedMark extends Mark {
     childIndex: number;
 }
 
-//TODO
-export interface MarkProps extends Mark {
-    //useMark: () => ReturnType<typeof useMark>
-}
-
-type label = `${string}${PLACEHOLDER.LABEL}${string}`
-type value = `${string}${PLACEHOLDER.VALUE}${string}`
+export type label = `${string}${PLACEHOLDER.LABEL}${string}`
+export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
 export type Markup = `${label}${value}` | `${label}`
 
@@ -39,7 +34,7 @@ export type Piece = string | AnnotatedMark
 
 export type KeyedPieces = Map<number, Piece>
 
-type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
+export type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
 
 export type OptionType = PartialPick<OptionProps, "initMark"> & { index: number }
 
@@ -50,12 +45,12 @@ export interface OptionProps<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__label__` and optional `__value__`
-     * @Default "@[__label__](__value__)"
+     * @default "@[__label__](__value__)"
      */
     markup?: Markup
     /**
      * Sequence of symbols for calling the overlay.
-     * @Default "@"
+     * @default "@"
      */
     trigger?: string //| RegExp
     /**
@@ -65,7 +60,7 @@ export interface OptionProps<T = Record<string, any>> {
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark?: (props: MarkProps) => T
+    initMark?: (props: MarkStruct) => T
 }
 
 export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "options">
@@ -91,7 +86,7 @@ export enum Type {
 
 export type Payload = {
     key: number,
-    value?: Mark
+    value?: MarkStruct
 }
 
 export type Trigger = {
@@ -123,7 +118,7 @@ export type Trigger = {
 
 export type Listener = (e: any) => void
 
-type EventsFrom<Type extends object> = {
+export type EventsFrom<Type extends object> = {
     [Key in keyof Type & `on${string}`]+?: Type[Key]
 };
 
@@ -135,4 +130,17 @@ export type Recovery = {
     prevNodeData?: NodeData
     caretPosition: number
     isPrevPrev?: boolean
+}
+
+export interface MarkedInputHandler {
+    /**
+     * Container element
+     */
+    readonly container: HTMLDivElement | null
+    /**
+     * Overlay element if exists
+     */
+    readonly overlay: HTMLElement | null
+
+    focus(): void
 }
