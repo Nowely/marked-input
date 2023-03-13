@@ -24,11 +24,6 @@ export interface AnnotatedMark extends Mark {
     childIndex: number;
 }
 
-//TODO
-export interface MarkProps extends Mark {
-    //useMark: () => ReturnType<typeof useMark>
-}
-
 export type label = `${string}${PLACEHOLDER.LABEL}${string}`
 export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
@@ -65,7 +60,7 @@ export interface OptionProps<T = Record<string, any>> {
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark?: (props: MarkProps) => T
+    initMark?: (props: Mark) => T
 }
 
 export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, "Mark" | "Overlay" | "options">

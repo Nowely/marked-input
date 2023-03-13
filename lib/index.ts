@@ -5,7 +5,6 @@ export {createMarkedInput} from "./utils/createMarkedInput"
 export * from "./utils/useMark"
 export * from "./utils/useOverlay"
 export type {
-    MarkProps,
     MarkedInputHandler,
     Markup,
     Trigger,
