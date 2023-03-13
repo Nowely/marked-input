@@ -1,5 +1,5 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, useState} from "react";
-import {DivEvents, MarkedInputHandler, Mark, OptionProps} from "../types";
+import {DivEvents, MarkedInputHandler, MarkStruct, OptionProps} from "../types";
 import {MarkedText} from "./MarkedText";
 import {Featurer} from "./Featurer";
 import {Whisper} from "./Whisper";
@@ -7,7 +7,7 @@ import {Store} from "../utils/Store";
 import {StoreProvider} from "../utils";
 import "../styles.css"
 
-export interface MarkedInputProps<T = Mark> {
+export interface MarkedInputProps<T = MarkStruct> {
     /**
      * Annotated text with markups for mark
      */
@@ -60,7 +60,7 @@ export interface MarkedInputProps<T = Mark> {
 }
 
 export interface MarkedInputComponent {
-    <T = Mark>(props: MarkedInputProps<T>): JSX.Element | null
+    <T = MarkStruct>(props: MarkedInputProps<T>): JSX.Element | null
     displayName?: string
 }
 

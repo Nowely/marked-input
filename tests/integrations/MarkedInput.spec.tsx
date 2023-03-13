@@ -1,12 +1,11 @@
 import '@testing-library/jest-dom'
-import user from "@testing-library/user-event";
-import {act, render} from "@testing-library/react";
-import {MarkedInput} from "rc-marked-input";
-import {Marked} from "storybook/stories/Base.stories";
-import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 import {useState} from "react";
 import {vi, expect} from "vitest";
-import {MarkedInputHandler, Markup} from "rc-marked-input/types";
+import user from "@testing-library/user-event";
+import {act, render} from "@testing-library/react";
+import {MarkedInput, MarkedInputHandler, Markup} from "rc-marked-input";
+import {Marked} from "storybook/stories/Base.stories";
+import {Focusable, Removable} from "storybook/stories/Dynamic.stories";
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
     const [value, setValue] = useState(initial)

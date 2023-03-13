@@ -1,9 +1,9 @@
-import React, {forwardRef, useState} from "react";
 import '@testing-library/jest-dom'
+import React, {forwardRef, useState} from "react";
 import user from "@testing-library/user-event";
 import {act, render} from "@testing-library/react";
-import {Configured} from "storybook/stories/Base.stories";
 import {createMarkedInput, MarkedInputHandler} from "rc-marked-input"
+import {Configured} from "storybook/stories/Base.stories";
 import {vi, expect} from "vitest";
 
 describe(`Utility: createMarkedInput`, () => {

@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {createMarkedInput, denote, MarkedInput} from "rc-marked-input";
-import {Mark, Markup} from "rc-marked-input/types";
+import {MarkStruct, Markup} from "rc-marked-input/types";
 import {Button} from "./assets/Button";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
@@ -10,7 +10,7 @@ export default {
     component: MarkedInput,
 }
 
-const Mark = (props: Mark) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+const Mark = (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
 export const Marked = () => {
     const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")

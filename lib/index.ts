@@ -14,7 +14,7 @@ export type {
     AnnotatedMark,
     ConfiguredMarkedInput,
     OptionProps,
-    Mark,
+    MarkStruct,
     OptionType,
     ConfiguredMarkedInputProps,
     DivEvents,
