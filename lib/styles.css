@@ -1,6 +1,7 @@
 .mk-input {
     min-height: 1.4em;
 }
+
 .mk-input span {
     outline: none;
     white-space: pre-wrap;

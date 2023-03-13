@@ -1,42 +1,41 @@
-import {denote} from "rc-marked-input";
-import {Markup} from "rc-marked-input/types";
+import {denote, Markup} from 'rc-marked-input'
 
 describe(`Utility: ${denote.name}`, () => {
-    const markup: Markup = "@[__label__](__value__)"
+	const markup: Markup = '@[__label__](__value__)'
 
-    it('should make a display text from annotated', () => {
-        const annotatedText = "Enter the '@' for calling @[Hello](HelloValue) suggestions and '/' for @[Bye](ByeValue)!"
-        const displayText = denote(annotatedText, mark => mark.label, markup)
-        const expected = "Enter the '@' for calling Hello suggestions and '/' for Bye!"
-        expect(displayText).toBe(expected)
-    })
+	it('should make a display text from annotated', () => {
+		const annotatedText = 'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @[Bye](ByeValue)!'
+		const displayText = denote(annotatedText, mark => mark.label, markup)
+		const expected = 'Enter the \'@\' for calling Hello suggestions and \'/\' for Bye!'
+		expect(displayText).toBe(expected)
+	})
 
-    it('should be able to accept a usual text without changing', () => {
-        const text = "Enter the '@' for calling Hello suggestions and '/' for Bye!"
-        expect(denote(text, mark => mark.label, markup)).toBe(text)
-    })
+	it('should be able to accept a usual text without changing', () => {
+		const text = 'Enter the \'@\' for calling Hello suggestions and \'/\' for Bye!'
+		expect(denote(text, mark => mark.label, markup)).toBe(text)
+	})
 
-    it('should be able to accept a empty text', () => {
-        const empty = ""
-        expect(denote(empty, mark => mark.label, markup)).toBe(empty)
-    })
+	it('should be able to accept a empty text', () => {
+		const empty = ''
+		expect(denote(empty, mark => mark.label, markup)).toBe(empty)
+	})
 
-    it('should be ignore other annotations', () => {
-        const annotatedText = "Enter the '@' for calling @[Hello](HelloValue) suggestions and '/' for @(Bye)[ByeValue]!"
-        expect(denote(annotatedText, mark => mark.label, markup))
-            .toBe("Enter the '@' for calling Hello suggestions and '/' for @(Bye)[ByeValue]!")
-    })
+	it('should be ignore other annotations', () => {
+		const annotatedText = 'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @(Bye)[ByeValue]!'
+		expect(denote(annotatedText, mark => mark.label, markup))
+			.toBe('Enter the \'@\' for calling Hello suggestions and \'/\' for @(Bye)[ByeValue]!')
+	})
 
-    it('should accept zero markups', () => {
-        const annotatedText = "Enter the '@' for calling @[Hello](HelloValue) suggestions and '/' for @[Bye](ByeValue)!"
-        expect(denote(annotatedText, mark => mark.label)).toBe(annotatedText)
-    })
+	it('should accept zero markups', () => {
+		const annotatedText = 'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @[Bye](ByeValue)!'
+		expect(denote(annotatedText, mark => mark.label)).toBe(annotatedText)
+	})
 
-    it('should accept many markups', () => {
-        const markup2: Markup = "@(__label__)[__value__]"
-        const annotatedText = "Enter the '@' for calling @[Hello](HelloValue) suggestions and '/' for @(Bye)[ByeValue]!"
-        const actual = denote(annotatedText, mark => mark.label, markup, markup2)
-        const expected = "Enter the '@' for calling Hello suggestions and '/' for Bye!"
-        expect(actual).toBe(expected)
-    })
+	it('should accept many markups', () => {
+		const markup2: Markup = '@(__label__)[__value__]'
+		const annotatedText = 'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @(Bye)[ByeValue]!'
+		const actual = denote(annotatedText, mark => mark.label, markup, markup2)
+		const expected = 'Enter the \'@\' for calling Hello suggestions and \'/\' for Bye!'
+		expect(actual).toBe(expected)
+	})
 })

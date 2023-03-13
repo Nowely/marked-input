@@ -1,1 +1,1 @@
-export {MaterialMentions} from "./MaterialMentions";
+export {MaterialMentions} from './MaterialMentions'
