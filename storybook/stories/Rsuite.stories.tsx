@@ -1,11 +1,10 @@
-import {MarkedInput, useOverlay} from "../../lib";
 import {useEffect, useState} from "react";
 import {Popover, Tag} from "rsuite";
-//import 'rsuite/dist/rsuite.min.css';
+import {ComponentMeta} from "@storybook/react";
+import {MarkedInput, useOverlay} from "rc-marked-input";
+import {KEY} from "rc-marked-input/constants";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
-import {KEY} from "rc-marked-input/constants";
-import {ComponentMeta} from "@storybook/react";
 import {withStyle} from "./assets/withStyle";
 
 export default {

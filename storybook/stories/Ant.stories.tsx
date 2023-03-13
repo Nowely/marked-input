@@ -1,7 +1,6 @@
-import {MarkedInput} from "../../lib";
 import {useState} from "react";
-//import 'antd/dist/antd.min.css';
 import {Tag} from "antd";
+import {MarkedInput} from "rc-marked-input";
 import {Text} from "./assets/Text";
 import {getTitle} from "./assets/getTitle";
 import {withStyle} from "./assets/withStyle";
