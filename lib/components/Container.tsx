@@ -1,11 +1,11 @@
-import {memo, useMemo} from 'react'
+import {memo} from 'react'
 import {DefaultClass} from '../constants'
 import {isAnnotated, NodeProvider, useStore} from '../utils'
 import {useSelector} from '../utils/useSelector'
 import {EditableSpan} from './EditableSpan'
 import {Piece} from './Piece'
 
-export const MarkedText = memo(() => {
+export const Container = memo(() => {
 	const store = useStore()
 	const {className, style, pieces} = useSelector(state => ({
 		className: state.className ? DefaultClass + ' ' + state.className : DefaultClass,
@@ -13,10 +13,11 @@ export const MarkedText = memo(() => {
 		pieces: state.pieces,
 	}), true)
 
-	const events = useMemo(() => store.bus.events, [])
+	/*const children = useSelector(state =>
+		React.Children.toArray(state.children).find((value) => (value as ReactElement).type === 'div')?.props, true)*/
 
 	return (
-		<div ref={store.containerRef} className={className} style={style} {...events}>
+		<div ref={store.containerRef} className={className} style={style} /*{...children}*/>
 			{pieces.toArray().map((node) =>
 				<NodeProvider key={node.key} value={node}>
 					{
@@ -28,4 +29,4 @@ export const MarkedText = memo(() => {
 	)
 })
 
-MarkedText.displayName = 'MarkedText'
+Container.displayName = 'Container'

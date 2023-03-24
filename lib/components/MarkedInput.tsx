@@ -1,10 +1,10 @@
-import {ComponentType, CSSProperties, ForwardedRef, forwardRef, useState} from 'react'
+import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement, useState} from 'react'
 import '../styles.css'
-import {DivEvents, MarkedInputHandler, MarkStruct, OptionProps} from '../types'
+import {MarkedInputHandler, MarkStruct, OptionProps} from '../types'
 import {StoreProvider} from '../utils'
 import {Store} from '../utils/Store'
+import {Container} from './Container'
 import {Featurer} from './Featurer'
-import {MarkedText} from './MarkedText'
 import {Whisper} from './Whisper'
 
 export interface MarkedInputProps<T = MarkStruct> {
@@ -50,13 +50,10 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 */
 	spanStyle?: CSSProperties
 	/**
-	 * Forward div events to a text container
-	 */
-	onContainer?: DivEvents
-	/**
 	 * Ref to handler
 	 */
 	ref?: ForwardedRef<MarkedInputHandler>
+	children?: ReactElement //React.ReactElement<React.HTMLProps<HTMLDivElement>>
 }
 
 export interface MarkedInputComponent {
@@ -71,7 +68,7 @@ export function _MarkedInput(props: MarkedInputProps, ref: ForwardedRef<MarkedIn
 	const [store] = useState(Store.create(props))
 	return (
 		<StoreProvider value={store}>
-			<MarkedText/>
+			<Container/>
 			<Whisper/>
 			<Featurer ref={ref} props={props}/>
 		</StoreProvider>

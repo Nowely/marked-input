@@ -49,14 +49,15 @@ export const Configured = () => {
 			<ConfiguredMarkedInput
 				style={style} spanStyle={spanStyle}
 				value={value} onChange={setValue}
-				onContainer={{
-					onClick: (e) => console.log('onCLick'),
-					onInput: (e) => console.log('onInput'),
-					onBlur: (e) => console.log('onBlur'),
-					onFocus: (e) => console.log('onFocus'),
-					onKeyDown: (e) => console.log('onKeyDown'),
-				}}
-			/>
+			>
+				<div
+					onClick = {(e) => console.log('onCLick')}
+					onInput = {(e) => console.log('onInput')}
+					onBlur = {(e) => console.log('onBlur')}
+					onFocus = {(e) => console.log('onFocus')}
+					onKeyDown={(e) => console.log('onKeyDown')}
+				/>
+			</ConfiguredMarkedInput>
 
 			<Text label="Plaint text:" value={value}/>
 			<Text label="Display text (denoted):" value={displayText}/>

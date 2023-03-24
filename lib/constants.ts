@@ -1,4 +1,4 @@
-import {EventName, OptionType} from './types'
+import {OptionType} from './types'
 import LinkedList from './utils/LinkedList'
 
 export enum KEY {
@@ -43,10 +43,6 @@ export const DefaultOptionProps: OptionType = {
 	index: 0
 }
 
-//TODO
-export const PredefinedEvents: EventName[] = [
-	'onFocus', 'onBlur', 'onKeyDown', 'onClick', 'onMouseDown', 'onMouseMove', 'onMouseUp', 'onMouseOver', 'onMouseLeave'
-]
 
 export const wordRegex = new RegExp(/^\w*/)
 

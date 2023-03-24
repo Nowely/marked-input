@@ -22,9 +22,6 @@ export type {
 	ConfiguredMarkedInput,
 	ConfiguredMarkedInputProps,
 
-	DivEvents, //TODO Removed?
-	EventsFrom, //TODO Removed?
-
 	label,
 	value,
 } from './types'
