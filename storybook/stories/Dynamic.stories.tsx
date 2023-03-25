@@ -9,10 +9,10 @@ export default {
 }
 
 const Mark = () => {
-	const {label, onChange} = useMark()
+	const {label, change} = useMark()
 
 	const handleInput = (e: FormEvent<HTMLSpanElement>) =>
-		onChange({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
+		change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
 
 	return <mark contentEditable onInput={handleInput} children={label}/>
 }
@@ -23,8 +23,8 @@ export const Dynamic = () => {
 }
 
 const RemovableMark = () => {
-	const {label, onRemove} = useMark()
-	return <mark onClick={onRemove} children={label}/>
+	const {label, remove} = useMark()
+	return <mark onClick={remove} children={label}/>
 }
 
 export const Removable = () => {
@@ -33,11 +33,11 @@ export const Removable = () => {
 }
 
 const Abbr = () => {
-	const {label, value, ref, onChange} = useMark()
+	const {label, value, ref, change} = useMark()
 
 	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
 		const label = e.currentTarget.textContent ?? ''
-		onChange({label, value}, {silent: true})
+		change({label, value}, {silent: true})
 	}
 
 	return (
@@ -69,7 +69,7 @@ export const Focusable = () => {
 
 /*TODO
 const Tag = () => {
-    const {reg, label, value, onChange} = useMark()
+    const {reg, label, value, change} = useMark()
 
     return createElement(label, {
         ref: reg,
@@ -81,7 +81,7 @@ const Tag = () => {
             whiteSpace: 'pre-wrap'
         },
         onInput: (e: React.FormEvent<HTMLElement>) => {
-            onChange({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
+            change({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
         }
     })
 }
@@ -97,7 +97,7 @@ It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked
 
     return (
         <>
-            <MarkedInput Mark={Tag} value={value} onChange={setValue}>
+            <MarkedInput Mark={Tag} value={value} change={setValue}>
                 <Option markup="<__label__>__value__>"/>
             </MarkedInput>
 
