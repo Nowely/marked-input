@@ -37,11 +37,11 @@ export default class LinkedListNode<NodeData = any> {
 	 * ```
 	 * @param data Data to save in the node
 	 */
-	public insertBefore(data: NodeData): LinkedList<NodeData> {
+	/*public insertBefore(data: NodeData): LinkedList<NodeData> {
 		return this.list !== null
 			? this.list.insertBefore(this, data)
 			: new LinkedList(data, this.data)
-	}
+	}*/
 
 	/**
 	 * Insert new data after this node
@@ -50,11 +50,11 @@ export default class LinkedListNode<NodeData = any> {
 	 * ```
 	 * @param data Data to be saved in the node
 	 */
-	public insertAfter(data: NodeData): LinkedList<NodeData> {
+	/*public insertAfter(data: NodeData): LinkedList<NodeData> {
 		return this.list !== null
 			? this.list.insertAfter(this, data)
 			: new LinkedList(this.data, data)
-	}
+	}*/
 
 	/**
 	 * Remove this node

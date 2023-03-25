@@ -69,10 +69,10 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param index to retrieve data at
 	 */
-	public get(index: number): NodeData | undefined {
+	/*public get(index: number): NodeData | undefined {
 		const node = this.getNode(index)
 		return node !== undefined ? node.data : undefined
-	}
+	}*/
 
 	/**
 	 * Get the node at index, zero based
@@ -81,7 +81,7 @@ export default class LinkedList<NodeData = any> {
 	 * // { prev: null, data: 1, next: LinkedListNode }
 	 * ```
 	 */
-	public getNode(index: number): LinkedListNode<NodeData> | undefined {
+	/*public getNode(index: number): LinkedListNode<NodeData> | undefined {
 		if (this.head === null || index < 0 || index >= this.length) {
 			return undefined
 		}
@@ -93,7 +93,7 @@ export default class LinkedList<NodeData = any> {
 			currentNode = currentNode![nextNode]
 		}
 		return currentNode!
-	}
+	}*/
 
 	/**
 	 * Return the first node and its index in the list that
@@ -195,7 +195,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param data Data to be stored in the node, accepts any number of arguments
 	 */
-	public prepend(...args: NodeData[]): LinkedList<NodeData> {
+	/*public prepend(...args: NodeData[]): LinkedList<NodeData> {
 		const reverseArgs = Array.from(args).reverse()
 		for (const data of reverseArgs) {
 			const node = new LinkedListNode(data, null, this.head, this)
@@ -209,7 +209,7 @@ export default class LinkedList<NodeData = any> {
 			this.size += 1
 		}
 		return this
-	}
+	}*/
 
 	/**
 	 * Insert a new node at a given index position. If index is
@@ -221,7 +221,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param index The index to insert the new node at
 	 * @param data Data to be stored on the new node
 	 */
-	public insertAt(index: number, data: NodeData): LinkedList<NodeData> {
+	/*public insertAt(index: number, data: NodeData): LinkedList<NodeData> {
 		if (this.head === null) {
 			return this.append(data)
 		}
@@ -237,7 +237,7 @@ export default class LinkedList<NodeData = any> {
 		}
 		currentNode.insertAfter(data)
 		return this
-	}
+	}*/
 
 	/**
 	 * Remove the specified node from the list and return the removed
@@ -283,10 +283,10 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param index Index at which to remove
 	 */
-	public removeAt(index: number): LinkedListNode<NodeData> | undefined {
+	/*public removeAt(index: number): LinkedListNode<NodeData> | undefined {
 		const node = this.getNode(index)
 		return node !== undefined ? this.removeNode(node) : undefined
-	}
+	}*/
 
 	/**
 	 * Insert a new node before the reference node
@@ -297,7 +297,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param referenceNode The node reference
 	 * @param data Data to save in the node
 	 */
-	public insertBefore(
+	/*public insertBefore(
 		referenceNode: LinkedListNode<NodeData>,
 		data: NodeData,
 	): LinkedList<NodeData> {
@@ -311,7 +311,7 @@ export default class LinkedList<NodeData = any> {
 		referenceNode.prev = node
 		this.size += 1
 		return this
-	}
+	}*/
 
 	/**
 	 * Sorts the linked list using the provided compare function
@@ -320,7 +320,7 @@ export default class LinkedList<NodeData = any> {
 	 *                (a, b) => a < b or (1, 2) => 1 < 2 === true, 2 will be inserted after 1,
 	 *                the sort order will be ascending.
 	 */
-	public sort(compare: (a: NodeData, b: NodeData) => boolean): LinkedList<NodeData> {
+	/*public sort(compare: (a: NodeData, b: NodeData) => boolean): LinkedList<NodeData> {
 		if (this.head === null || this.tail === null) {
 			return this
 		}
@@ -367,7 +367,7 @@ export default class LinkedList<NodeData = any> {
 
 		quicksort(this.head, this.tail)
 		return this
-	}
+	}*/
 
 	/**
 	 * Insert a new node after this one
@@ -378,7 +378,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param referenceNode The reference node
 	 * @param data Data to be saved in the node
 	 */
-	public insertAfter(
+	/*public insertAfter(
 		referenceNode: LinkedListNode<NodeData>,
 		data: NodeData,
 	): LinkedList<NodeData> {
@@ -392,7 +392,7 @@ export default class LinkedList<NodeData = any> {
 		referenceNode.next = node
 		this.size += 1
 		return this
-	}
+	}*/
 
 	/**
 	 * Remove the first node from the list and return the data of the removed node
@@ -401,9 +401,9 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).shift(); // 1
 	 * ```
 	 */
-	public shift(): NodeData | undefined {
+	/*public shift(): NodeData | undefined {
 		return this.removeFromAnyEnd(this.head)
-	}
+	}*/
 
 	/**
 	 * Remove the last node from the list and return the data of the removed node
@@ -412,9 +412,9 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).pop(); // 3
 	 * ```
 	 */
-	public pop(): NodeData | undefined {
+	/*public pop(): NodeData | undefined {
 		return this.removeFromAnyEnd(this.tail)
-	}
+	}*/
 
 	/**
 	 * Merge the current list with another. Both lists will be
@@ -427,7 +427,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param list The list to be merged
 	 */
-	public merge(list: LinkedList<NodeData>): void {
+	/*public merge(list: LinkedList<NodeData>): void {
 		if (this.tail !== null) {
 			this.tail.next = list.head
 		}
@@ -440,7 +440,7 @@ export default class LinkedList<NodeData = any> {
 		list.size = this.size
 		list.head = this.head
 		list.tail = this.tail
-	}
+	}*/
 
 	/**
 	 * Removes all nodes from a list
@@ -449,12 +449,12 @@ export default class LinkedList<NodeData = any> {
 	 * list.clear();
 	 * ```
 	 */
-	public clear() {
+	/*public clear() {
 		this.head = null
 		this.tail = null
 		this.size = 0
 		return this
-	}
+	}*/
 
 	/**
 	 * The slice() method returns a shallow copy of a
@@ -468,7 +468,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param start Start index
 	 * @param end End index, optional
 	 */
-	public slice(start: number, end?: number): LinkedList<NodeData | {}> {
+	/*public slice(start: number, end?: number): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		let finish = end
 
@@ -485,7 +485,7 @@ export default class LinkedList<NodeData = any> {
 			head = head.next
 		}
 		return list
-	}
+	}*/
 
 	/**
 	 * The reverse() function reverses the list in place and returns the list
@@ -494,7 +494,7 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).reverse(); // 3 <=> 2 <=> 1
 	 * ```
 	 */
-	public reverse(): LinkedList<NodeData> {
+	/*public reverse(): LinkedList<NodeData> {
 		let currentNode = this.head
 		while (currentNode) {
 			const next = currentNode.next
@@ -506,7 +506,7 @@ export default class LinkedList<NodeData = any> {
 		this.tail = this.head
 		this.head = tail
 		return this
-	}
+	}*/
 
 	/**
 	 * The forEach() method executes a provided function once for each list node.
@@ -516,7 +516,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function to execute for each element, taking up to three arguments.
 	 * @param reverse Indicates if the list should be walked in reverse order, default is false
 	 */
-	public forEach(f: TMapFunction<NodeData>, reverse = false): void {
+	/*public forEach(f: TMapFunction<NodeData>, reverse = false): void {
 		let currentIndex = reverse ? this.length - 1 : 0
 		let currentNode = reverse ? this.tail : this.head
 		const modifier = reverse ? -1 : 1
@@ -526,7 +526,7 @@ export default class LinkedList<NodeData = any> {
 			currentNode = currentNode[nextNode]
 			currentIndex += modifier
 		}
-	}
+	}*/
 
 	/**
 	 * The map() method creates a new list with the results of
@@ -537,11 +537,11 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function that produces an node of the new list, taking up to three arguments
 	 * @param reverse Indicates if the list should be mapped in reverse order, default is false
 	 */
-	public map(f: TMapFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
+	/*public map(f: TMapFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		this.forEach((data, index) => list.append(f(data, index, this)), reverse)
 		return list
-	}
+	}*/
 
 	/**
 	 * The filter() method creates a new list with all nodes
@@ -552,7 +552,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function to test each node data in the list. Return true to keep the node
 	 * @param reverse Indicates if the list should be filtered in reverse order, default is false
 	 */
-	public filter(f: TTestFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
+	/*public filter(f: TTestFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		this.forEach((data, index) => {
 			if (f(data, index, this)) {
@@ -560,7 +560,7 @@ export default class LinkedList<NodeData = any> {
 			}
 		}, reverse)
 		return list
-	}
+	}*/
 
 	/**
 	 * Reduce over each node in the list
@@ -571,7 +571,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param start An initial value
 	 * @returns The final state of the accumulator
 	 */
-	public reduce(
+	/*public reduce(
 		f: (
 			accumulator: any,
 			currentNode: NodeData,
@@ -603,7 +603,7 @@ export default class LinkedList<NodeData = any> {
 		}
 
 		return result
-	}
+	}*/
 
 	/**
 	 * Convert the linked list to an array
@@ -622,9 +622,9 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param separator Optional string to be placed in between data nodes, default is one space
 	 */
-	public toString(separator = ' '): string {
+	/*public toString(separator = ' '): string {
 		return this.reduce((s, data) => `${s}${separator}${data}`)
-	}
+	}*/
 
 	/**
 	 * The iterator implementation
@@ -643,7 +643,7 @@ export default class LinkedList<NodeData = any> {
 	}
 
 	/** Private helper function to reduce duplication of pop() and shift() methods */
-	private removeFromAnyEnd(node: LinkedListNode<NodeData> | null) {
+	/*private removeFromAnyEnd(node: LinkedListNode<NodeData> | null) {
 		return node !== null ? this.removeNode(node).data : undefined
-	}
+	}*/
 }
