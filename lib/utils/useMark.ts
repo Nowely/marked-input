@@ -8,11 +8,11 @@ export interface DynamicMark<T> extends MarkStruct {
 	 * Change mark.
 	 * @options.silent doesn't change itself label and value, only pass change event.
 	 */
-	onChange: (props: MarkStruct, options?: { silent: boolean }) => void
+	change: (props: MarkStruct, options?: { silent: boolean }) => void
 	/**
 	 * Remove itself.
 	 */
-	onRemove: () => void
+	remove: () => void
 	/**
 	 * Passed the readOnly prop value
 	 */
@@ -43,7 +43,7 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T>
 	const [label, setLabel] = useState<string>(node.mark.label)
 	const [value, setValue] = useState<string | undefined>(node.mark.value)
 
-	const onChange = useCallback((props: MarkStruct, options?: { silent: boolean }) => {
+	const change = useCallback((props: MarkStruct, options?: { silent: boolean }) => {
 		if (!options?.silent) {
 			setLabel(props.label)
 			setValue(props.value)
@@ -51,11 +51,11 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T>
 		bus.send(Type.Change, {key: node.key, value: {...props}})
 	}, [])
 
-	const onRemove = useCallback(() => {
+	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
 		bus.send(Type.Delete, {key: node.key})
 	}, [])
 
-	return {label, value, onChange, onRemove, readOnly, style, className, ref: node.ref as RefObject<T>}
+	return {label, value, change, remove, readOnly, style, className, ref: node.ref as RefObject<T>}
 }

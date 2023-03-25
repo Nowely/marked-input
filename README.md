@@ -117,10 +117,10 @@ Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
 import {MarkedInput, useMark} from "rc-marked-input";
 
 const Mark = () => {
-    const {label, onChange} = useMark()
+    const {label, ochange} = useMark()
 
     const handleInput = (e) =>
-        onChange({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
+        change({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
 
     return <mark contentEditable onInput={handleInput} children={label}/>
 }
@@ -137,8 +137,8 @@ export const Dynamic = () => {
 
 ```tsx
 const RemovableMark = () => {
-    const {label, onRemove} = useMark()
-    return <mark onClick={onRemove} children={label}/>
+    const {label, remove} = useMark()
+    return <mark onClick={remove} children={label}/>
 }
 
 export const Removable = () => {
