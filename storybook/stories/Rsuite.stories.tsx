@@ -1,7 +1,8 @@
 import {ComponentMeta} from '@storybook/react'
-import {MarkedInput, useOverlay} from 'rc-marked-input'
+import {MarkedInput, useOverlay, MarkStruct} from 'rc-marked-input'
 import {KEY} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
+import {Input} from 'rsuite'
 import {Popover, Tag} from 'rsuite'
 import {getTitle} from './assets/getTitle'
 import {Text} from './assets/Text'
@@ -34,8 +35,23 @@ const Overlay = () => {
 	</Popover>
 }
 
+const initialState = 'Type the \'@\' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello'
+
+export const TaggedInputUsingAs = () => {
+	const [value, setValue] = useState(initialState)
+
+	return <>
+		<Input as={MarkedInput} Mark={Tag as any} Overlay={Overlay} value={value}
+			   onChange={(_, value) => setValue(value as unknown as string)}
+			   options={[{markup: '@[__label__](common)', initMark: ({label}: MarkStruct) => ({children: label})}]}
+		/>
+
+		<Text label="Plaint text:" value={value}/>
+	</>
+}
+
 export const TaggedInput = () => {
-	const [value, setValue] = useState('Type the \'@\' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello')
+	const [value, setValue] = useState(initialState)
 	const classNames = 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag'
 
 	return <>
@@ -43,7 +59,7 @@ export const TaggedInput = () => {
 			Mark={Tag}
 			Overlay={Overlay}
 			value={value}
-			onChange={(val: string) => setValue(val)}
+			onChange={setValue}
 			className={classNames}
 			style={{
 				minHeight: 36,
