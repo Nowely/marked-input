@@ -37,7 +37,7 @@ const Overlay = () => {
 
 const initialState = 'Type the \'@\' to begin creating a @[tag](common). Then press the @[Enter](common) to finish. For example: @hello'
 
-export const TaggedInputUsingAs = () => {
+export const Overridden = () => {
 	const [value, setValue] = useState(initialState)
 
 	return <>
