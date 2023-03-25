@@ -4,7 +4,6 @@ import {MarkedInputProps} from '../MarkedInput'
 import {useCheckTriggerOnSelectionChange} from './hooks/useCheckTriggerOnSelectionChange'
 import {useCloseOverlayByEsc} from './hooks/useCloseOverlayByEsc'
 import {useCloseOverlayByOutsideClick} from './hooks/useCloseOverlayByOutsideClick'
-import {useContainerEvents} from './hooks/useContainerEvents'
 import {useFocusedNode} from './hooks/useFocusedNode'
 import {useFocusOnEmptyInput} from './hooks/useFocusOnEmptyInput'
 import {useFocusRecovery} from './hooks/useFocusRecovery'
@@ -21,7 +20,6 @@ export const Featurer = forwardRef(({props}: { props: MarkedInputProps<any> }, r
 	useStateUpdating(props)
 	useMarkedInputHandler(ref)
 
-	useContainerEvents()
 	useSystemListeners()
 	useValueParser()
 

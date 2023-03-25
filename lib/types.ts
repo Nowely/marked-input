@@ -72,8 +72,6 @@ export type State = Omit<MarkedInputProps<any>, 'options'> & {
 	trigger?: Trigger,
 }
 
-export type EventName = `on${string}`
-
 export enum Type {
 	Change,
 	Delete,
@@ -117,14 +115,6 @@ export type Trigger = {
 }
 
 export type Listener = (e: any) => void
-
-export type EventsFrom<Type extends object> = {
-	[Key in keyof Type & `on${string}`]+?: Type[Key]
-};
-
-export type DivEvents = EventsFrom<JSX.IntrinsicElements['div']>
-
-export type Activator = () => void
 
 export type Recovery = {
 	prevNodeData?: NodeData

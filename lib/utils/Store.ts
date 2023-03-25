@@ -28,7 +28,7 @@ export class Store {
 				...other
 			} as State
 
-			const bus = EventBus.initWithExternalEvents(props.onContainer)()
+			const bus = new EventBus()
 
 			return new Store(initialState, bus)
 		}

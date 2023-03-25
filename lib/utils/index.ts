@@ -2,7 +2,6 @@ import React, {Context, useContext} from 'react'
 import {DefaultOptionProps, PLACEHOLDER} from '../constants'
 import {
 	AnnotatedMark,
-	EventName,
 	KeyedPieces,
 	MarkStruct,
 	Markup,
@@ -98,8 +97,6 @@ export function assertAnnotated(value: unknown): asserts value is AnnotatedMark 
 }
 
 export const isFunction = (value: unknown): value is Function => typeof value === 'function'
-
-export const isEventName = (value: string | number): value is EventName => typeof value === 'string' && value.startsWith('on')
 
 export function extractOptions(options?: OptionProps[]): Options {
 	if (options?.length) return options.map(initOption)

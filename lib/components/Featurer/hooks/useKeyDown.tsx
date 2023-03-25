@@ -4,7 +4,7 @@ import {Type} from '../../../types'
 import {useStore} from '../../../utils'
 import {Caret} from '../../../utils/Caret'
 import {useDownOf} from '../../../utils/useDownOf'
-import {useListener} from '../../../utils/useListener'
+import {useContainerListener} from '../../../utils/useListener'
 
 export function useKeyDown() {
 	const store = useStore()
@@ -53,7 +53,7 @@ export function useKeyDown() {
 	})
 
 	//Select all text
-	useListener('onKeyDown', (event: KeyboardEvent<HTMLDivElement>) => {
+	useContainerListener('keydown', (event: KeyboardEvent<HTMLDivElement>) => {
 		if (event.ctrlKey && event.code === 'KeyA') {
 			event.preventDefault()
 
