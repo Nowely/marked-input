@@ -219,23 +219,21 @@ export const SelectableOverlay = () => {
 
 > **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used to detect outside click.
 
-### Event handlers
+### Forwarded props
 
-The `onContainer` prop allows to forward any of div events to a container of text.
+The `children` prop allows to forward any of div props to a container via react element.
 
 ```tsx
-<ConfiguredMarkedInput
-    value={value} 
-    onChange={setValue}
-    onContainer={{
-        onClick: (e) => console.log('onCLick'),
-        onInput: (e) => console.log('onInput'),
-        onBlur: (e) => console.log('onBlur'),
-        //...
-        onFocus: (e) => console.log('onFocus'),
-        onKeyDown: (e) => console.log('onKeyDown'),
-    }}
-/>
+<ConfiguredMarkedInput value={value} onChange={setValue}>
+    <div
+        onClick = {(e) => console.log('onCLick')}
+        onInput = {(e) => console.log('onInput')}
+        /* other props */
+        onBlur = {(e) => console.log('onBlur')}
+        onFocus = {(e) => console.log('onFocus')}
+        onKeyDown={(e) => console.log('onKeyDown')}
+    />
+</>
 ```
 
 ### Overall view
