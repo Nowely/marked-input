@@ -3,6 +3,7 @@ import {DefaultClass} from '../constants'
 import {isAnnotated, NodeProvider, useStore} from '../utils'
 import {useSelector} from '../utils/useSelector'
 import {EditableSpan} from './EditableSpan'
+import {getChildProps} from '../utils/getChildProps'
 import {Piece} from './Piece'
 
 export const Container = memo(() => {
@@ -13,11 +14,10 @@ export const Container = memo(() => {
 		pieces: state.pieces,
 	}), true)
 
-	/*const children = useSelector(state =>
-		React.Children.toArray(state.children).find((value) => (value as ReactElement).type === 'div')?.props, true)*/
+	const divForward = useSelector(getChildProps('div'), true)
 
 	return (
-		<div ref={store.containerRef} className={className} style={style} /*{...children}*/>
+		<div {...divForward} ref={store.containerRef} className={className} style={style}>
 			{pieces.toArray().map((node) =>
 				<NodeProvider key={node.key} value={node}>
 					{

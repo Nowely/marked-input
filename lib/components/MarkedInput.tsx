@@ -9,6 +9,10 @@ import {Whisper} from './Whisper'
 
 export interface MarkedInputProps<T = MarkStruct> {
 	/**
+	 * Ref to handler
+	 */
+	ref?: ForwardedRef<MarkedInputHandler>
+	/**
 	 * Annotated text with markups for mark
 	 */
 	value: string
@@ -50,10 +54,10 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 */
 	spanStyle?: CSSProperties
 	/**
-	 * Ref to handler
+	 * Forward props to internal components via react elements
+	 * @param div to container
 	 */
-	ref?: ForwardedRef<MarkedInputHandler>
-	children?: ReactElement //React.ReactElement<React.HTMLProps<HTMLDivElement>>
+	children?: ReactElement | ReactElement[]
 }
 
 export interface MarkedInputComponent {
