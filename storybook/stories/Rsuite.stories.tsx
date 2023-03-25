@@ -57,17 +57,13 @@ export const TaggedInput = () => {
 				whiteSpace: 'pre-wrap',
 				minWidth: 5
 			}}
-			onContainer={{
-				onKeyDown(e) {
-					if (e.key === 'Enter')
-						e.preventDefault()
-				}
-			}}
 			options={[{
 				markup: '@[__label__](common)',
 				initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
 			}]}
-		/>
+		>
+			<div onKeyDown={e => e.key === 'Enter' && e.preventDefault()}/>
+		</MarkedInput>
 
 		<br/>
 		<Text label="Plaint text:" value={value}/>
