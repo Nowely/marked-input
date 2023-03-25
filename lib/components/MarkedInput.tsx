@@ -55,7 +55,7 @@ export interface MarkedInputProps<T = MarkStruct> {
 	spanStyle?: CSSProperties
 	/**
 	 * Forward props to internal components via react elements
-	 * @param div to container
+	 * @param div - to container
 	 */
 	children?: ReactElement | ReactElement[]
 }
