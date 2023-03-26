@@ -298,7 +298,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 ### Types
 
 ```typescript
-interface MarkProps {
+interface MarkStruct {
     label: string
     value?: string
 }
