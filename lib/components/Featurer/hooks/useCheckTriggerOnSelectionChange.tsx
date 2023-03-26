@@ -1,16 +1,16 @@
-import {FocusEvent, useCallback} from 'react'
-import {Type} from '../../../types'
+import {useCallback} from 'react'
+import {SystemEvent} from '../../../constants'
 import {useStore} from '../../../utils'
-import {useContainerListener} from '../../../utils/useListener'
+import {useListener} from '../../../utils/useListener'
 
 export function useCheckTriggerOnSelectionChange() {
 	const {bus} = useStore()
 
-	const sendCheckTrigger = useCallback(() => bus.send(Type.CheckTrigger), [])
+	const sendCheckTrigger = useCallback(() => bus.send(SystemEvent.CheckTrigger), [])
 
-	useContainerListener('focusin', (e: FocusEvent<HTMLElement>) =>
+	useListener('focusin', () =>
 		document.addEventListener('selectionchange', sendCheckTrigger), [])
 
-	useContainerListener('focusout', (e: FocusEvent<HTMLElement>) =>
+	useListener('focusout', () =>
 		document.removeEventListener('selectionchange', sendCheckTrigger), [])
 }

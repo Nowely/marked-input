@@ -72,16 +72,6 @@ export type State = Omit<MarkedInputProps<any>, 'options'> & {
 	trigger?: Trigger,
 }
 
-export enum Type {
-	Change,
-	Delete,
-	CheckTrigger,
-	ClearTrigger,
-	Trigger,
-	Select,
-	State
-}
-
 export type Payload = {
 	key: number,
 	value?: MarkStruct
@@ -114,7 +104,7 @@ export type Trigger = {
 	option: OptionType
 }
 
-export type Listener = (e: any) => void
+export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
 	prevNodeData?: NodeData

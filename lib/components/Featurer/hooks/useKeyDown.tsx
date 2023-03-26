@@ -1,10 +1,8 @@
-import {KeyboardEvent} from 'react'
-import {KEY} from '../../../constants'
-import {Type} from '../../../types'
+import {KEY, SystemEvent} from '../../../constants'
 import {useStore} from '../../../utils'
 import {Caret} from '../../../utils/Caret'
 import {useDownOf} from '../../../utils/useDownOf'
-import {useContainerListener} from '../../../utils/useListener'
+import {useListener} from '../../../utils/useListener'
 
 export function useKeyDown() {
 	const store = useStore()
@@ -36,7 +34,7 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(Type.Delete, {key: node.data.key})
+		store.bus.send(SystemEvent.Delete, {key: node.data.key})
 		event.preventDefault()
 	})
 
@@ -48,12 +46,12 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(Type.Delete, {key: node.data.key})
+		store.bus.send(SystemEvent.Delete, {key: node.data.key})
 		event.preventDefault()
 	})
 
 	//Select all text
-	useContainerListener('keydown', (event: KeyboardEvent<HTMLDivElement>) => {
+	useListener('keydown', (event) => {
 		if (event.ctrlKey && event.code === 'KeyA') {
 			event.preventDefault()
 
@@ -67,13 +65,13 @@ export function useKeyDown() {
 	}, [])
 }
 
-function isCaretInStart(e: KeyboardEvent<HTMLSpanElement>) {
+function isCaretInStart(e: KeyboardEvent) {
 	const target = e.target as HTMLSpanElement
 	const caretIndex = Caret.getCaretIndex(target)
 	return caretIndex === 0
 }
 
-function isCaretInEnd(event: KeyboardEvent<HTMLSpanElement>) {
+function isCaretInEnd(event: KeyboardEvent) {
 	const target = event.target as HTMLSpanElement
 	const caretIndex = Caret.getCaretIndex(target)
 	return caretIndex === target.textContent?.length

@@ -1,5 +1,6 @@
 import {CSSProperties, RefObject, useCallback, useState} from 'react'
-import {MarkStruct, Type} from '../types'
+import {SystemEvent} from '../constants'
+import {MarkStruct} from '../types'
 import {useNode, useStore} from './index'
 import {useSelector} from './useSelector'
 
@@ -48,13 +49,13 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T>
 			setLabel(props.label)
 			setValue(props.value)
 		}
-		bus.send(Type.Change, {key: node.key, value: {...props}})
+		bus.send(SystemEvent.Change, {key: node.key, value: {...props}})
 	}, [])
 
 	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
-		bus.send(Type.Delete, {key: node.key})
+		bus.send(SystemEvent.Delete, {key: node.key})
 	}, [])
 
 	return {label, value, change, remove, readOnly, style, className, ref: node.ref as RefObject<T>}

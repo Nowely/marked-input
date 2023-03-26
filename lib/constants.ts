@@ -47,3 +47,13 @@ export const DefaultOptionProps: OptionType = {
 export const wordRegex = new RegExp(/^\w*/)
 
 export const EmptyList = LinkedList.from([])
+
+export enum SystemEvent {
+    Change,
+    Delete,
+    CheckTrigger,
+    ClearTrigger,
+    Trigger,
+    Select,
+    State
+}

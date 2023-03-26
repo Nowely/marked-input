@@ -1,4 +1,5 @@
-import {MarkStruct, Payload, Trigger, Type} from '../../../types'
+import {SystemEvent} from '../../../constants'
+import {MarkStruct, Payload, Trigger} from '../../../types'
 import {annotate, createNewSpan, toString, useStore} from '../../../utils'
 import {useListener} from '../../../utils/useListener'
 
@@ -6,7 +7,7 @@ import {useListener} from '../../../utils/useListener'
 export function useSystemListeners() {
 	const store = useStore()
 
-	useListener(Type.Change, (event: Payload) => {
+	useListener(SystemEvent.Change, (event: Payload) => {
 		const {pieces, onChange, options} = store.state
 		const {key, value} = event
 
@@ -18,10 +19,10 @@ export function useSystemListeners() {
 
 		const values = pieces.toArray().map(node => node.mark)
 		onChange(toString(values, options))
-		//bus.send(Type.CheckTrigger) TODO check on value change
+		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 
-	useListener(Type.Delete, (event: Payload) => {
+	useListener(SystemEvent.Delete, (event: Payload) => {
 		const {pieces, onChange, options} = store.state
 		const {key} = event
 
@@ -34,7 +35,7 @@ export function useSystemListeners() {
 		//onChange(toString([...pieces.values()], options))
 	}, [])
 
-	useListener(Type.Select, (event: { value: MarkStruct, trigger: Trigger }) => {
+	useListener(SystemEvent.Select, (event: { value: MarkStruct, trigger: Trigger }) => {
 		const {pieces} = store.state
 		const {value, trigger: {option, span, index, source}} = event
 
@@ -47,8 +48,8 @@ export function useSystemListeners() {
 		if (piece) {
 			piece.data.mark.label = newSpan
 			//piece.data.mark.value = value.value
-			//bus.send(Type.Change, {value: newSpan, key: mark.data.key})
-			store.bus.send(Type.Change, {value: {label: newSpan}, key: piece.data.key})
+			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
+			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, key: piece.data.key})
 		}
 	}, [])
 }
