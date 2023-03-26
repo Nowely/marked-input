@@ -1,4 +1,4 @@
-import {SystemEvent} from '../../../types'
+import {SystemEvent} from '../../../constants'
 import {useStore} from '../../../utils'
 import {TriggerFinder} from '../../../utils/TriggerFinder'
 import {useListener} from '../../../utils/useListener'

@@ -1,5 +1,6 @@
 import {RefObject, useCallback} from 'react'
-import {MarkStruct, Trigger, SystemEvent} from '../types'
+import {SystemEvent} from '../constants'
+import {MarkStruct, Trigger} from '../types'
 import {Caret} from './Caret'
 import {useStore} from './index'
 import {useSelector} from './useSelector'

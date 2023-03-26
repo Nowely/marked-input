@@ -1,5 +1,6 @@
 import {DependencyList, useEffect} from 'react'
-import {Listener, SystemEvent} from '../types'
+import {SystemEvent} from '../constants'
+import {Listener} from '../types'
 import {useStore} from './index'
 
 export function useListener(type: SystemEvent, listener: Listener, deps?: DependencyList): void

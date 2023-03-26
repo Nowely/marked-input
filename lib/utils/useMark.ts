@@ -1,5 +1,6 @@
 import {CSSProperties, RefObject, useCallback, useState} from 'react'
-import {MarkStruct, SystemEvent} from '../types'
+import {SystemEvent} from '../constants'
+import {MarkStruct} from '../types'
 import {useNode, useStore} from './index'
 import {useSelector} from './useSelector'
 

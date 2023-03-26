@@ -72,16 +72,6 @@ export type State = Omit<MarkedInputProps<any>, 'options'> & {
 	trigger?: Trigger,
 }
 
-export enum SystemEvent {
-	Change,
-	Delete,
-	CheckTrigger,
-	ClearTrigger,
-	Trigger,
-	Select,
-	State
-}
-
 export type Payload = {
 	key: number,
 	value?: MarkStruct

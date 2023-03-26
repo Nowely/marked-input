@@ -1,5 +1,6 @@
 import {useState} from 'react'
-import {State, SystemEvent} from '../types'
+import {SystemEvent} from '../constants'
+import {State} from '../types'
 import {useStore} from './index'
 import {shallow} from './shallow'
 import {useListener} from './useListener'

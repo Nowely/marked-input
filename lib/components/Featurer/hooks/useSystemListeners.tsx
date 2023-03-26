@@ -1,4 +1,5 @@
-import {MarkStruct, Payload, Trigger, SystemEvent} from '../../../types'
+import {SystemEvent} from '../../../constants'
+import {MarkStruct, Payload, Trigger} from '../../../types'
 import {annotate, createNewSpan, toString, useStore} from '../../../utils'
 import {useListener} from '../../../utils/useListener'
 

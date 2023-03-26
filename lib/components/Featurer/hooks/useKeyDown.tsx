@@ -1,5 +1,4 @@
-import {KEY} from '../../../constants'
-import {SystemEvent} from '../../../types'
+import {KEY, SystemEvent} from '../../../constants'
 import {useStore} from '../../../utils'
 import {Caret} from '../../../utils/Caret'
 import {useDownOf} from '../../../utils/useDownOf'

@@ -1,5 +1,5 @@
 import {useCallback} from 'react'
-import {SystemEvent} from '../../../types'
+import {SystemEvent} from '../../../constants'
 import {useStore} from '../../../utils'
 import {useListener} from '../../../utils/useListener'
 

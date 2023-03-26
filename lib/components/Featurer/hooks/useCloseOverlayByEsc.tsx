@@ -1,6 +1,6 @@
 import {useEffect} from 'react'
+import {SystemEvent} from '../../../constants'
 import {KEY} from '../../../constants'
-import {SystemEvent} from '../../../types'
 import {useStore} from '../../../utils'
 import {useSelector} from '../../../utils/useSelector'
 
