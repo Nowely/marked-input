@@ -1,6 +1,6 @@
 import {useEffect} from 'react'
 import {KEY} from '../../../constants'
-import {Type} from '../../../types'
+import {SystemEvent} from '../../../types'
 import {useStore} from '../../../utils'
 import {useSelector} from '../../../utils/useSelector'
 
@@ -13,7 +13,7 @@ export function useCloseOverlayByEsc() {
 
 		const handle = (event: KeyboardEvent) => {
 			if (event.key === KEY.ESC)
-				bus.send(Type.ClearTrigger)
+				bus.send(SystemEvent.ClearTrigger)
 		}
 
 		window.addEventListener('keydown', handle)

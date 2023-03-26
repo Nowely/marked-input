@@ -1,5 +1,5 @@
 import {RefObject, useCallback} from 'react'
-import {MarkStruct, Trigger, Type} from '../types'
+import {MarkStruct, Trigger, SystemEvent} from '../types'
 import {Caret} from './Caret'
 import {useStore} from './index'
 import {useSelector} from './useSelector'
@@ -32,10 +32,10 @@ export function useOverlay(): OverlayProps {
 	const trigger = useSelector(state => state.trigger!)
 	const style = Caret.getAbsolutePosition()
 
-	const onClose = useCallback(() => store.bus.send(Type.ClearTrigger), [])
+	const onClose = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
 	const onSelect = useCallback((value: MarkStruct) => {
-		store.bus.send(Type.Select, {value, trigger})
-		store.bus.send(Type.ClearTrigger)
+		store.bus.send(SystemEvent.Select, {value, trigger})
+		store.bus.send(SystemEvent.ClearTrigger)
 	}, [trigger])
 
 	return {trigger, style, onSelect, onClose, ref: store.overlayRef}
