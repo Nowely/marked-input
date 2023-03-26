@@ -8,7 +8,7 @@ import {useSelector} from '../../../utils/useSelector'
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value
-//TODO move to marked text?
+//TODO move to marked text or store provider?
 export const useValueParser = () => {
 	const store = useStore()
 	const {value, options} = useSelector(state => ({value: state.value, options: state.options}), true)

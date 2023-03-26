@@ -108,15 +108,15 @@ export function extractOptions(options?: OptionProps[]): Options {
 	}
 }
 
-const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<T>>] => {
+const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<T>>, React.Context<NonNullable<T>>] => {
 	const defaultContext = React.createContext<T | undefined>(undefined)
 	defaultContext.displayName = name
 
 	const hook = createContextHook(defaultContext)
 	const provider = defaultContext.Provider as React.Provider<NonNullable<T>>
-	//const context = defaultContext as React.Context<NonNullable<T>>
+	const context = defaultContext as React.Context<NonNullable<T>>
 
-	return [hook, provider]
+	return [hook, provider, context]
 
 
 	function createContextHook<T, >(context: Context<T>) {
@@ -130,7 +130,7 @@ const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<
 	}
 }
 
-export const [useStore, StoreProvider] = createContext<Store>('StoreProvider')
+export const [useStore, _, StoreContext] = createContext<Store>('StoreProvider')
 export const [useNode, NodeProvider] = createContext<NodeData>('NodeProvider')
 
 export function findSpanKey(span: string, pieces: KeyedPieces) {
