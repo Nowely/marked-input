@@ -293,6 +293,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
 | useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
 | useOverlay        | () => OverlayProps                                                                                                                                                                                | Use overlay props                            |
+| useListener       | (type, listener, deps) => void                                                                                                                                                                    | Event listener                               |
 
 ### Types
 
