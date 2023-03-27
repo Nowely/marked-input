@@ -11,7 +11,10 @@ import {useSelector} from '../../../utils/useSelector'
 //TODO move to marked text or store provider?
 export const useValueParser = () => {
 	const store = useStore()
-	const {value, options} = useSelector(state => ({value: state.value, options: state.options}), true)
+	const {value, options} = useSelector(state => ({
+		value: state.value,
+		options: state.Mark ? state.options : undefined,
+	}), true)
 
 	const pieces = useMemo(Parser.split(value, options), [value, options])
 	const previous = useRef<LinkedList<NodeData> | null>(null)

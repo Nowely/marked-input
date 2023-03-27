@@ -37,7 +37,7 @@ export function useSystemListeners() {
 
 	useListener(SystemEvent.Select, (event: { value: MarkStruct, trigger: Trigger }) => {
 		const {pieces} = store.state
-		const {value, trigger: {option, span, index, source}} = event
+		const {value, trigger: {option, span, index, source, node}} = event
 
 		const annotation = annotate(option.markup, value.label, value.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
@@ -50,6 +50,7 @@ export function useSystemListeners() {
 			//piece.data.mark.value = value.value
 			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
 			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, key: piece.data.key})
+			node.textContent = newSpan
 		}
 	}, [])
 }
