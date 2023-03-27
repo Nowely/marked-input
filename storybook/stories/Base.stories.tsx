@@ -17,7 +17,6 @@ export const Marked = () => {
 	return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
 }
 
-
 const Primary: Markup = '@[__label__](primary:__value__)'
 const Default: Markup = '@[__label__](default:__value__)'
 
@@ -51,10 +50,10 @@ export const Configured = () => {
 				value={value} onChange={setValue}
 			>
 				<div
-					onClick = {(e) => console.log('onCLick')}
-					onInput = {(e) => console.log('onInput')}
-					onBlur = {(e) => console.log('onBlur')}
-					onFocus = {(e) => console.log('onFocus')}
+					onClick={(e) => console.log('onCLick')}
+					onInput={(e) => console.log('onInput')}
+					onBlur={(e) => console.log('onBlur')}
+					onFocus={(e) => console.log('onFocus')}
 					onKeyDown={(e) => console.log('onKeyDown')}
 				/>
 			</ConfiguredMarkedInput>
@@ -62,5 +61,15 @@ export const Configured = () => {
 			<Text label="Plaint text:" value={value}/>
 			<Text label="Display text (denoted):" value={displayText}/>
 		</>
+	)
+}
+
+export const WithoutMark = () => {
+	const [value, setValue] = useState('Hello, clickable marked @world!')
+	return (
+		<MarkedInput value={value} onChange={setValue} options={[{
+		markup: '@__label__',
+		data: ['one', 'two', 'three', 'four']
+	}]}/>
 	)
 }

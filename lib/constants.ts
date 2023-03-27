@@ -55,5 +55,5 @@ export enum SystemEvent {
     ClearTrigger,
     Trigger,
     Select,
-    State
+    State,
 }

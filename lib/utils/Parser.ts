@@ -11,9 +11,9 @@ export class Parser {
 		return this.markups.map(markupToRegex)
 	}
 
-	static split(value: string, options: Options) {
-		const markups = options.map((c) => c.markup)
-		return () => new Parser(markups).split(value)
+	static split(value: string, options?: Options) {
+		const markups = options?.map((c) => c.markup)
+		return () => markups ? new Parser(markups).split(value) : [value]
 	}
 
 	constructor(markups: Markup[]) {
