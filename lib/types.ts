@@ -24,6 +24,8 @@ export type Piece = string | MarkMatch
 
 export type KeyedPieces = Map<number, Piece>
 
+export type NumberedOption = Option & {index: number}
+
 export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.

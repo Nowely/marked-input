@@ -1,4 +1,4 @@
-import {Option} from './types'
+import {NumberedOption} from './types'
 import LinkedList from './utils/LinkedList'
 
 export enum KEY {
@@ -36,10 +36,11 @@ export const EmptyFunc = () => {
 
 export const DefaultClass = 'mk-input'
 
-export const DefaultOptionProps: Option = {
+export const DefaultOptionProps: NumberedOption = {
 	trigger: '@',
 	markup: '@[__label__](__value__)',
 	data: [],
+	index: 0,
 }
 
 
@@ -48,11 +49,11 @@ export const wordRegex = new RegExp(/^\w*/)
 export const EmptyList = LinkedList.from([])
 
 export enum SystemEvent {
-    Change,
-    Delete,
-    CheckTrigger,
-    ClearTrigger,
-    Trigger,
-    Select,
-    State,
+	Change,
+	Delete,
+	CheckTrigger,
+	ClearTrigger,
+	Trigger,
+	Select,
+	State,
 }
