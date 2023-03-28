@@ -21,7 +21,6 @@ export type {
 
 	MarkStruct,
 	ConfiguredMarkedInput,
-	ConfiguredMarkedInputProps,
 
 	label,
 	value,
