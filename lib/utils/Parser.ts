@@ -1,4 +1,4 @@
-import {Markup, Options, Piece} from '../types'
+import {Markup, Option, Piece} from '../types'
 import {markupToRegex, normalizeMark} from './index'
 import {ParserMatches} from './ParserMatches'
 
@@ -11,8 +11,8 @@ export class Parser {
 		return this.markups.map(markupToRegex)
 	}
 
-	static split(value: string, options?: Options) {
-		const markups = options?.map((c) => c.markup)
+	static split(value: string, options?: Option[]) {
+		const markups = options?.map((c) => c.markup!)
 		return () => markups ? new Parser(markups).split(value) : [value]
 	}
 

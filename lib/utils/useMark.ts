@@ -4,7 +4,7 @@ import {MarkStruct} from '../types'
 import {useNode, useStore} from './index'
 import {useSelector} from './useSelector'
 
-export interface DynamicMark<T> extends MarkStruct {
+export interface MarkHandler<T> extends MarkStruct {
 	/**
 	 * MarkStruct ref. Used for focusing and key handling operations.
 	 */
@@ -24,7 +24,7 @@ export interface DynamicMark<T> extends MarkStruct {
 	readOnly?: boolean
 }
 
-export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T> => {
+export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
 	const node = useNode()
 	const {bus} = useStore()
 	const readOnly = useSelector(state => state.readOnly)

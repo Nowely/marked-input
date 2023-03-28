@@ -1,15 +1,6 @@
 import React, {Context, useContext} from 'react'
 import {DefaultOptionProps, PLACEHOLDER} from '../constants'
-import {
-	AnnotatedMark,
-	KeyedPieces,
-	MarkStruct,
-	Markup,
-	NodeData,
-	OptionProps,
-	Options,
-	Piece,
-} from '../types'
+import {AnnotatedMark, KeyedPieces, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
 import {Parser} from './Parser'
 import {Store} from './Store'
 
@@ -60,11 +51,11 @@ export function denote(value: string, callback: (mark: AnnotatedMark) => string,
 	return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, '')
 }
 
-export function toString(values: MarkStruct[], options: Options) {
+export function toString(values: MarkStruct[], options: Option[]) {
 	let result = ''
 	for (let value of values) {
 		result += isAnnotated(value)
-			? annotate(options[value.childIndex].markup, value.label, value.value)
+			? annotate(options[value.childIndex].markup!, value.label, value.value)
 			: value.label
 	}
 	return result
@@ -98,12 +89,12 @@ export function assertAnnotated(value: unknown): asserts value is AnnotatedMark 
 
 export const isFunction = (value: unknown): value is Function => typeof value === 'function'
 
-export function extractOptions(options?: OptionProps[]): Options {
+export function extractOptions(options?: Option[]): Option[] {
 	if (options?.length) return options.map(initOption)
 
 	return [DefaultOptionProps]
 
-	function initOption(props: OptionProps, index: number) {
+	function initOption(props: Option, index: number) {
 		return assign({}, DefaultOptionProps, props, {index})
 	}
 }

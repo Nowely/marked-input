@@ -208,10 +208,10 @@ The `OverlayProps` provide some methods like `onSelect` for creating a new annot
 
 ```tsx
 const List = () => {
-    const {onSelect} = useOverlay()
+    const {select} = useOverlay()
     return <ul>
-        <li onClick={() => onSelect({label: 'First'})}>Clickable First</li>
-        <li onClick={() => onSelect({label: 'Second'})}>Clickable Second</li>
+        <li onClick={() => select({label: 'First'})}>Clickable First</li>
+        <li onClick={() => select({label: 'Second'})}>Clickable Second</li>
     </ul>;
 }
 

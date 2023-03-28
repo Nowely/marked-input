@@ -1,6 +1,6 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
 import '../styles.css'
-import {MarkedInputHandler, MarkStruct, OptionProps} from '../types'
+import {MarkedInputHandler, MarkStruct, Option} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
@@ -35,7 +35,7 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 * Passed options for configure
 	 * @default One option with default values is used
 	 */
-	options?: OptionProps<T>[]
+	options?: Option<T>[]
 	/**
 	 * Additional classes
 	 */

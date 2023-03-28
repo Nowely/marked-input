@@ -5,7 +5,7 @@ import {Caret} from './Caret'
 import {useStore} from './index'
 import {useSelector} from './useSelector'
 
-export interface OverlayProps {
+export interface OverlayHandler {
 	/**
 	 * Style with caret absolute position. Used for placing an overlay.
 	 */
@@ -16,11 +16,11 @@ export interface OverlayProps {
 	/**
 	 * Used for close overlay.
 	 */
-	onClose: () => void
+	close: () => void
 	/**
 	 * Used for insert an annotation instead a triggered value.
 	 */
-	onSelect: (value: MarkStruct) => void
+	select: (value: MarkStruct) => void
 	/**
 	 * Trigger details
 	 */
@@ -28,16 +28,16 @@ export interface OverlayProps {
 	ref: RefObject<HTMLElement>
 }
 
-export function useOverlay(): OverlayProps {
+export function useOverlay(): OverlayHandler {
 	const store = useStore()
 	const trigger = useSelector(state => state.trigger!)
 	const style = Caret.getAbsolutePosition()
 
-	const onClose = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
-	const onSelect = useCallback((value: MarkStruct) => {
+	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
+	const select = useCallback((value: MarkStruct) => {
 		store.bus.send(SystemEvent.Select, {value, trigger})
 		store.bus.send(SystemEvent.ClearTrigger)
 	}, [trigger])
 
-	return {trigger, style, onSelect, onClose, ref: store.overlayRef}
+	return {trigger, style, select, close, ref: store.overlayRef}
 }
