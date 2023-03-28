@@ -65,20 +65,19 @@ export const TaggedInput = () => {
 				minHeight: 36,
 				paddingRight: 5
 			}}
-			spanClassName="rs-tag rs-tag-md"
-			spanStyle={{
-				backgroundColor: 'white',
-				paddingLeft: 0,
-				paddingRight: 0,
-				whiteSpace: 'pre-wrap',
-				minWidth: 5
-			}}
 			options={[{
 				markup: '@[__label__](common)',
 				initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
 			}]}
 		>
 			<div onKeyDown={e => e.key === 'Enter' && e.preventDefault()}/>
+			<span className="rs-tag rs-tag-md" style={{
+				backgroundColor: 'white',
+				paddingLeft: 0,
+				paddingRight: 0,
+				whiteSpace: 'pre-wrap',
+				minWidth: 5
+			}}/>
 		</MarkedInput>
 
 		<br/>

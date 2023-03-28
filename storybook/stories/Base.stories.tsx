@@ -34,9 +34,6 @@ const ConfiguredMarkedInput = createMarkedInput({
 	}],
 })
 
-const style = {minWidth: 100}
-const spanStyle = {width: 'auto', minWidth: 10}
-
 export const Configured = () => {
 	const [value, setValue] = useState(
 		'Enter the \'@\' for calling @[primary](primary:4) suggestions and \'/\' for @[default](default:7)!\n' +
@@ -48,10 +45,7 @@ export const Configured = () => {
 
 	return (
 		<>
-			<ConfiguredMarkedInput
-				style={style} spanStyle={spanStyle}
-				value={value} onChange={setValue}
-			>
+			<ConfiguredMarkedInput value={value} onChange={setValue}>
 				<div
 					onClick={(e) => console.log('onCLick')}
 					onInput={(e) => console.log('onInput')}

@@ -1,10 +1,14 @@
-import {CSSProperties, RefObject, useCallback, useState} from 'react'
+import {RefObject, useCallback, useState} from 'react'
 import {SystemEvent} from '../constants'
 import {MarkStruct} from '../types'
 import {useNode, useStore} from './index'
 import {useSelector} from './useSelector'
 
 export interface DynamicMark<T> extends MarkStruct {
+	/**
+	 * MarkStruct ref. Used for focusing and key handling operations.
+	 */
+	ref: RefObject<T>
 	/**
 	 * Change mark.
 	 * @options.silent doesn't change itself label and value, only pass change event.
@@ -18,28 +22,12 @@ export interface DynamicMark<T> extends MarkStruct {
 	 * Passed the readOnly prop value
 	 */
 	readOnly?: boolean
-	/**
-	 * Passed style of span
-	 */
-	style?: CSSProperties
-	/**
-	 * Passed class name of span
-	 */
-	className?: string
-	/**
-	 * MarkStruct ref. Used for focusing and key handling operations.
-	 */
-	ref: RefObject<T>
 }
 
 export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T> => {
 	const node = useNode()
 	const {bus} = useStore()
-	const {style, className, readOnly} = useSelector(state => ({
-		readOnly: state.readOnly,
-		style: state.spanStyle,
-		className: state.spanClassName
-	}), true)
+	const readOnly = useSelector(state => state.readOnly)
 
 	const [label, setLabel] = useState<string>(node.mark.label)
 	const [value, setValue] = useState<string | undefined>(node.mark.value)
@@ -58,5 +46,5 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): DynamicMark<T>
 		bus.send(SystemEvent.Delete, {key: node.key})
 	}, [])
 
-	return {label, value, change, remove, readOnly, style, className, ref: node.ref as RefObject<T>}
+	return {label, value, change, remove, readOnly, ref: node.ref as RefObject<T>}
 }
