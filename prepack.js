@@ -78,6 +78,11 @@ function rollupTypes() {
 			projectFolder: path.resolve(__dirname),
 			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
 			compiler: {tsconfigFilePath: '<projectFolder>/tsconfig.json'},
+			/*docModel: {
+				enabled: true,
+				projectFolderUrl: '<projectFolder>',
+				apiJsonFilePath: '<projectFolder>/dist/index.d.ts',
+			},*/
 			dtsRollup: {
 				enabled: true,
 				untrimmedFilePath: '<projectFolder>/dist/index.d.ts'

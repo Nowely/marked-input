@@ -18,6 +18,7 @@ A React component that lets you combine editable text with any component using a
 * Button handling (Left, Right, Delete, Backspace, Esc)
 * Overlay with the suggestions component by default
 * Zero dependencies
+* Cross selection
 
 ## Installation
 
@@ -121,7 +122,7 @@ Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
 import {MarkedInput, useMark} from "rc-marked-input";
 
 const Mark = () => {
-    const {label, ochange} = useMark()
+    const {label, change} = useMark()
 
     const handleInput = (e) =>
         change({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
@@ -189,7 +190,7 @@ export const CustomTrigger = () => {
 
 #### Positioned
 
-The `OverlayProps` has a left and right absolute coordinate of a current caret position in the `style` prop.
+The `useOverlay` has a left and right absolute coordinate of a current caret position in the `style` prop.
 
 ```tsx
 const Tooltip = () => {
@@ -204,7 +205,7 @@ export const PositionedOverlay = () => {
 
 #### Selectable
 
-The `OverlayProps` provide some methods like `onSelect` for creating a new annotation.
+The `useOverlay` hook provide some methods like `select` for creating a new annotation.
 
 ```tsx
 const List = () => {
@@ -221,7 +222,7 @@ export const SelectableOverlay = () => {
 }
 ```
 
-> **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used to detect outside click.
+> **Note:** Recommend to pass the `ref` for an overlay component. It used to detect outside click.
 
 ### Overriding internal components
 
@@ -280,14 +281,14 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ### MarkedInput
 
-| Name        | Type                         | Default       | Description                                |
-|-------------|------------------------------|---------------|--------------------------------------------|
-| value       | string                       |               | Annotated text with markups for mark       |
-| onChange    | (value: string) => void      |               | Change event                               |
-| Mark        | ComponentType<T = MarkProps> |               | Component that used for render markups     |
-| Overlay     | ComponentType                | `Suggestions` | Component that is rendered by trigger      |
-| readOnly    | boolean                      | `undefined`   | Prevents from changing the value           |
-| options     | OptionProps[]                | `[{}]`        | Passed options for configure               |
+| Name     | Type                         | Default       | Description                            |
+|----------|------------------------------|---------------|----------------------------------------|
+| value    | string                       |               | Annotated text with markups for mark   |
+| onChange | (value: string) => void      |               | Change event                           |
+| Mark     | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups |
+| Overlay  | ComponentType                | `Suggestions` | Component that is rendered by trigger  |
+| readOnly | boolean                      | `undefined`   | Prevents from changing the value       |
+| options  | OptionProps[]                | `[{}]`        | Passed options for configure           |
 
 ### Helpers
 
@@ -296,8 +297,8 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | createMarkedInput | <T = MarkStruct>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>          | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text                 |
-| useMark           | () => DynamicMark                                                                 | Allow to use dynamic mark                    |
-| useOverlay        | () => OverlayProps                                                                | Use overlay props                            |
+| useMark           | () => MarkHandler                                                                 | Allow to use dynamic mark                    |
+| useOverlay        | () => OverlayHandler                                                              | Use overlay props                            |
 | useListener       | (type, listener, deps) => void                                                    | Event listener                               |
 
 ### Types
@@ -310,79 +311,102 @@ interface MarkStruct {
 ```
 
 ```typescript
-interface OverlayProps {
+interface OverlayHandler {
     /**
      * Style with caret absolute position. Used for placing an overlay.
      */
     style: {
-        left: number
-        top: number
-    }
+        left: number;
+        top: number;
+    };
     /**
      * Used for close overlay.
      */
-    onClose: () => void
+    close: () => void;
     /**
      * Used for insert an annotation instead a triggered value.
      */
-    onSelect: (value: MarkProps) => void
+    select: (value: MarkStruct) => void;
     /**
-     * Trigger details
+     * Overlay match details
      */
-    trigger: Trigger
+    match: OverlayMatch;
+    ref: RefObject<HTMLElement>;
 }
 ```
 
 ```typescript
-type Trigger = {
+interface MarkHandler<T> extends MarkStruct {
     /**
-     * Found value via a trigger
+     * MarkStruct ref. Used for focusing and key handling operations.
      */
-    value: string,
+    ref: RefObject<T>
+    /**
+     * Change mark.
+     * @options.silent doesn't change itself label and value, only pass change event.
+     */
+    change: (props: MarkStruct, options?: { silent: boolean }) => void
+    /**
+     * Remove itself.
+     */
+    remove: () => void
+    /**
+     * Passed the readOnly prop value
+     */
+    readOnly?: boolean
+}
+```
+
+```typescript
+type OverlayMatch = {
+    /**
+     * Found value via a overlayMatch
+     */
+    value: string;
     /**
      * Triggered value
      */
-    source: string,
+    source: string;
     /**
-     * Piece of text, in which was a trigger
+     * Piece of text, in which was a overlayMatch
      */
-    span: string,
+    span: string;
     /**
-     * Html element, in which was a trigger
+     * Html element, in which was a overlayMatch
      */
-    node: Node,
+    node: Node;
     /**
-     * Start position of a trigger
+     * Start position of a overlayMatch
      */
-    index: number,
+    index: number;
     /**
-     * Trigger's option
+     * OverlayMatch's option
      */
-    option: OptionType
+    option: Option;
 }
 ```
 
 ```typescript jsx
-export interface OptionProps<T = Record<string, any>> {
+export interface Option<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__label__` and optional `__value__`
-     * @Default "@[__label__](__value__)"
+     * @default "@[__label__](__value__)"
      */
-    markup?: Markup
+    markup?: Markup;
     /**
      * Sequence of symbols for calling the overlay.
-     * @Default "@"
+     * @default "@"
      */
-    trigger?: string
+    trigger?: string;
     /**
      * Data for an overlay component. By default, it is suggestions.
      */
-    data?: string[] 
+    data?: string[];
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark?: (props: MarkProps) => T
+    initMark?: (props: MarkStruct) => T;
 }
 ```
 
