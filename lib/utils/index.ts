@@ -23,9 +23,9 @@ export const markupToRegex = (markup: Markup) => {
 	return new RegExp(pattern)
 }
 
-export const normalizeMark = (mark: MarkMatch, markup: Markup) => {
+export const normalizeMark = (mark: MarkMatch, markup: Markup): MarkMatch => {
 	if (mark.annotation !== annotate(markup, mark.label, mark.value))
-		return {...mark, label: mark.value, value: mark.label}
+		return {...mark, label: mark.value!, value: mark.label}
 	return mark
 }
 
@@ -55,7 +55,7 @@ export function toString(values: MarkStruct[], options: Option[]) {
 	let result = ''
 	for (let value of values) {
 		result += isAnnotated(value)
-			? annotate(options[value.childIndex].markup!, value.label, value.value)
+			? annotate(options[value.optionIndex].markup!, value.label, value.value)
 			: value.label
 	}
 	return result

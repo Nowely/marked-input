@@ -60,12 +60,13 @@ export type Payload = {
 }
 
 export interface MarkMatch extends MarkStruct {
-	annotation: string;
-	label: string;
-	value: string
-	index: number;
-	input: string;
-	childIndex: number;
+	annotation: string
+	input: string
+	/**
+	 * Start position of a overlayMatch
+	 */
+	index: number
+	optionIndex: number
 }
 
 export type OverlayMatch = {

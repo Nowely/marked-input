@@ -31,7 +31,7 @@ export class Parser {
 		for (let [span, mark] of new ParserMatches(value, this.uniRegExp)) {
 			result.push(span)
 			if (mark !== null)
-				result.push(normalizeMark(mark, this.markups[mark.childIndex]))
+				result.push(normalizeMark(mark, this.markups[mark.optionIndex]))
 		}
 
 		return result
