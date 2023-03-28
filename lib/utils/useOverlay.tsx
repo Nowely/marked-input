@@ -5,7 +5,7 @@ import {Caret} from './Caret'
 import {useStore} from './index'
 import {useSelector} from './useSelector'
 
-export interface OverlayProps {
+export interface OverlayHandler {
 	/**
 	 * Style with caret absolute position. Used for placing an overlay.
 	 */
@@ -28,7 +28,7 @@ export interface OverlayProps {
 	ref: RefObject<HTMLElement>
 }
 
-export function useOverlay(): OverlayProps {
+export function useOverlay(): OverlayHandler {
 	const store = useStore()
 	const trigger = useSelector(state => state.trigger!)
 	const style = Caret.getAbsolutePosition()
