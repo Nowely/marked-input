@@ -37,20 +37,21 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 
 	extractMark(execArray: RegExpExecArray): MarkMatch {
 		let annotation = execArray[0]
-
-		let childIndex = 0
+		let optionIndex = 0
 		let label = execArray[1]
 		let value = execArray[2]
+
 		while (true) {
 			if (label || value) break
 
-			childIndex++
-			label = execArray[2 * childIndex + 1]
-			value = execArray[2 * childIndex + 2]
+			optionIndex++
+			label = execArray[2 * optionIndex + 1]
+			value = execArray[2 * optionIndex + 2]
 		}
 
 		let index = execArray.index
 		let input = execArray.input
-		return {annotation, label, value, input, index, childIndex}
+
+		return {annotation, label, value, input, index, optionIndex}
 	}
 }
