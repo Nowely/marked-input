@@ -1,6 +1,6 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
 import '../styles.css'
-import {MarkedInputHandler, MarkStruct, Option} from '../types'
+import {MarkedInputHandler, MarkStruct, Option, OverlayTrigger} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
@@ -49,6 +49,12 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 * @param div - to container
 	 */
 	children?: ReactElement | ReactElement[]
+	/**
+	 * Triggering events for overlay
+	 * @default 'change'
+	 */
+	trigger?: OverlayTrigger
+
 }
 
 export interface MarkedInputComponent {

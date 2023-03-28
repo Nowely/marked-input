@@ -5,7 +5,7 @@ import {useFetch} from '../utils/useFetch'
 import {UserItem} from './UserItem'
 
 export const UserList = () => {
-	const {select, trigger: {value}, style} = useOverlay()
+	const {select, match: {value}, style} = useOverlay()
 	const [data] = useFetch<{ items: SearchUser[] }>(`https://api.github.com/search/users?q=${value}`, [value])
 	const users = data?.items ?? []
 

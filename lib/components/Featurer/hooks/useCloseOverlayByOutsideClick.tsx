@@ -5,10 +5,10 @@ import {useSelector} from '../../../utils/useSelector'
 
 export function useCloseOverlayByOutsideClick() {
 	const store = useStore()
-	const trigger = useSelector(state => state.trigger)
+	const match = useSelector(state => state.overlayMatch)
 
 	useEffect(() => {
-		if (!trigger) return
+		if (!match) return
 
 		const handleClick = (event: MouseEvent) => {
 			let target = event.target as HTMLElement | null
@@ -18,5 +18,5 @@ export function useCloseOverlayByOutsideClick() {
 
 		document.addEventListener('click', handleClick)
 		return () => document.removeEventListener('click', handleClick)
-	}, [trigger])
+	}, [match])
 }

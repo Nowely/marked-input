@@ -24,7 +24,7 @@ describe(`Utility: createMarkedInput`, () => {
 
 		await act(() => {
 			// @ts-ignore
-			events['selectionchange']()
+			events['selectionchange']({})
 		})
 
 		expect(await queryByText('I\'m here!')).toBeInTheDocument()
@@ -47,5 +47,5 @@ const Mark3 = () => {
 	const Overlay = forwardRef(() => <span>I'm here!</span>)
 	const Input = createMarkedInput({Mark: () => null, Overlay, options: []})
 
-	return <Input value={value} onChange={setValue}/>
+	return <Input trigger='selectionChange' value={value} onChange={setValue}/>
 }

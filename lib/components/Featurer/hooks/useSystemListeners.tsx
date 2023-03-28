@@ -1,5 +1,5 @@
 import {SystemEvent} from '../../../constants'
-import {MarkStruct, Payload, Trigger} from '../../../types'
+import {MarkStruct, Payload, OverlayMatch} from '../../../types'
 import {annotate, createNewSpan, toString, useStore} from '../../../utils'
 import {useListener} from '../../../utils/useListener'
 
@@ -35,9 +35,9 @@ export function useSystemListeners() {
 		//onChange(toString([...pieces.values()], options))
 	}, [])
 
-	useListener(SystemEvent.Select, (event: { value: MarkStruct, trigger: Trigger }) => {
+	useListener(SystemEvent.Select, (event: { value: MarkStruct, match: OverlayMatch }) => {
 		const {pieces} = store.state
-		const {value, trigger: {option, span, index, source, node}} = event
+		const {value, match: {option, span, index, source, node}} = event
 
 		const annotation = annotate(option.markup!, value.label, value.value)
 		const newSpan = createNewSpan(span, annotation, index, source)

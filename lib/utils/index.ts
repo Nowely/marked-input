@@ -1,6 +1,6 @@
 import React, {Context, useContext} from 'react'
 import {DefaultOptionProps, PLACEHOLDER} from '../constants'
-import {AnnotatedMark, KeyedPieces, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
+import {MarkMatch, KeyedPieces, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
 import {Parser} from './Parser'
 import {Store} from './Store'
 
@@ -23,7 +23,7 @@ export const markupToRegex = (markup: Markup) => {
 	return new RegExp(pattern)
 }
 
-export const normalizeMark = (mark: AnnotatedMark, markup: Markup) => {
+export const normalizeMark = (mark: MarkMatch, markup: Markup) => {
 	if (mark.annotation !== annotate(markup, mark.label, mark.value))
 		return {...mark, label: mark.value, value: mark.label}
 	return mark
@@ -45,7 +45,7 @@ export function annotate(markup: Markup, label: string, value?: string): string 
 /**
  * Transform the annotated text to the another text
  */
-export function denote(value: string, callback: (mark: AnnotatedMark) => string, ...markups: Markup[]): string {
+export function denote(value: string, callback: (mark: MarkMatch) => string, ...markups: Markup[]): string {
 	if (!markups.length) return value
 	const pieces = new Parser(markups).split(value)
 	return pieces.reduce((previous: string, current) => previous += isObject(current) ? callback(current) : current, '')
@@ -78,11 +78,11 @@ export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === 'object'
 
-export const isAnnotated = (value: unknown): value is AnnotatedMark => {
+export const isAnnotated = (value: unknown): value is MarkMatch => {
 	return value !== null && typeof value === 'object' && 'annotation' in value
 }
 
-export function assertAnnotated(value: unknown): asserts value is AnnotatedMark {
+export function assertAnnotated(value: unknown): asserts value is MarkMatch {
 	let condition = value !== null && typeof value === 'object' && 'annotation' in value
 	if (!condition) throw new Error('Value is not annotated mark!')
 }

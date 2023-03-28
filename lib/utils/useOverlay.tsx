@@ -1,6 +1,6 @@
 import {RefObject, useCallback} from 'react'
 import {SystemEvent} from '../constants'
-import {MarkStruct, Trigger} from '../types'
+import {MarkStruct, OverlayMatch} from '../types'
 import {Caret} from './Caret'
 import {useStore} from './index'
 import {useSelector} from './useSelector'
@@ -22,22 +22,22 @@ export interface OverlayHandler {
 	 */
 	select: (value: MarkStruct) => void
 	/**
-	 * Trigger details
+	 * Overlay match details
 	 */
-	trigger: Trigger
+	match: OverlayMatch
 	ref: RefObject<HTMLElement>
 }
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const trigger = useSelector(state => state.trigger!)
+	const match = useSelector(state => state.overlayMatch!)
 	const style = Caret.getAbsolutePosition()
 
 	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
 	const select = useCallback((value: MarkStruct) => {
-		store.bus.send(SystemEvent.Select, {value, trigger})
+		store.bus.send(SystemEvent.Select, {value, match})
 		store.bus.send(SystemEvent.ClearTrigger)
-	}, [trigger])
+	}, [match])
 
-	return {trigger, style, select, close, ref: store.overlayRef}
+	return {match, style, select, close, ref: store.overlayRef}
 }

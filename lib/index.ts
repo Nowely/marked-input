@@ -12,8 +12,9 @@ export type {
 	MarkedInputHandler,
 	Markup,
 
-	Trigger, //TODO named
-	AnnotatedMark, //TODO named
+	OverlayMatch,
+	MarkMatch,
+	OverlayTrigger,
 
 	Option,
 
