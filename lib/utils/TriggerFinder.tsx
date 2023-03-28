@@ -1,5 +1,5 @@
 import {wordRegex} from '../constants'
-import {Options, Trigger} from '../types'
+import {Option, Trigger} from '../types'
 import {Caret} from './Caret'
 import {escape} from './index'
 
@@ -15,7 +15,7 @@ export class TriggerFinder {
 		this.dividedText = this.getDividedTextBy(caretPosition)
 	}
 
-	static find(options: Options) {
+	static find(options: Option[]) {
 		if (Caret.isSelectedPosition)
 			return new TriggerFinder().find(options)
 	}
@@ -24,9 +24,9 @@ export class TriggerFinder {
 		return {left: this.span.slice(0, position), right: this.span.slice(position)}
 	}
 
-	find(options: Options): Trigger | undefined {
+	find(options: Option[]): Trigger | undefined {
 		for (let option of options) {
-			let match = this.matchInTextVia(option.trigger)
+			let match = this.matchInTextVia(option.trigger!)
 			if (match) return {
 				value: match.word,
 				source: match.annotation,

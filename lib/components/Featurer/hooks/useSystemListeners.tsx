@@ -39,7 +39,7 @@ export function useSystemListeners() {
 		const {pieces} = store.state
 		const {value, trigger: {option, span, index, source, node}} = event
 
-		const annotation = annotate(option.markup, value.label, value.value)
+		const annotation = annotate(option.markup!, value.label, value.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
 		const piece = pieces.findNode(node => node.mark.label === span)

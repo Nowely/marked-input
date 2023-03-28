@@ -7,7 +7,7 @@ export const Suggestions = () => {
 	const {trigger, onSelect, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const filtered = useMemo(
-		() => trigger.option.data.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
+		() => trigger.option.data!.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
 		[trigger.value]
 	)
 	const length = filtered.length

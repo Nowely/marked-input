@@ -15,9 +15,7 @@ export type {
 	Trigger, //TODO named
 	AnnotatedMark, //TODO named
 
-	OptionProps, //TODO named
-	PartialPick, //TODO Remove?
-	OptionType, //TODO named
+	Option,
 
 	MarkStruct,
 	ConfiguredMarkedInput,

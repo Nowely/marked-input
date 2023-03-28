@@ -34,14 +34,7 @@ export type Piece = string | AnnotatedMark
 
 export type KeyedPieces = Map<number, Piece>
 
-export type PartialPick<T, F extends keyof T> = Omit<Required<T>, F> & Partial<Pick<T, F>>
-
-export type OptionType = PartialPick<OptionProps, 'initMark'> & { index: number }
-
-export type Options = OptionType[]
-
-//TODO rename to options
-export interface OptionProps<T = Record<string, any>> {
+export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.
 	 * Must contain placeholders: `__label__` and optional `__value__`
@@ -66,7 +59,7 @@ export interface OptionProps<T = Record<string, any>> {
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
 export type State = Omit<MarkedInputProps<any>, 'options'> & {
-	options: Options,
+	options: Option[],
 	pieces: LinkedList<NodeData>,
 	trigger?: Trigger,
 }
@@ -100,7 +93,7 @@ export type Trigger = {
 	/**
 	 * Trigger's option
 	 */
-	option: OptionType
+	option: Option
 }
 
 export type Listener<T = any> = (e: T) => void

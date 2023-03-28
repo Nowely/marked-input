@@ -1,4 +1,4 @@
-import {OptionType} from './types'
+import {Option} from './types'
 import LinkedList from './utils/LinkedList'
 
 export enum KEY {
@@ -36,11 +36,10 @@ export const EmptyFunc = () => {
 
 export const DefaultClass = 'mk-input'
 
-export const DefaultOptionProps: OptionType = {
+export const DefaultOptionProps: Option = {
 	trigger: '@',
 	markup: '@[__label__](__value__)',
 	data: [],
-	index: 0
 }
 
 
