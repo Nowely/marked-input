@@ -1,20 +1,22 @@
-import React from 'react'
+import {FormEvent, ClipboardEvent} from 'react'
+import {getChildProps} from '../utils/getChildProps'
 import {useMark} from '../utils/useMark'
+import {useSelector} from '../utils/useSelector'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
-	const {label, change, className, style, readOnly, ref} = useMark()
+	const {label, change, readOnly, ref} = useMark()
+	const spanOverride = useSelector(getChildProps('span'), true)
 
-	const handleInput = (e: React.FormEvent<HTMLSpanElement>) => {
+	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
 		const label = e.currentTarget.textContent ?? ''
 		change({label}, {silent: true})
 	}
 
 	return (
 		<span
+			{...spanOverride}
 			ref={ref}
-			style={style}
-			className={className}
 			contentEditable={!readOnly}
 			suppressContentEditableWarning
 			onInput={handleInput}
@@ -24,7 +26,7 @@ export const EditableSpan = () => {
 	)
 }
 
-function handlePaste(e: React.ClipboardEvent<HTMLSpanElement>) {
+function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {
 	e.preventDefault()
 	const text = e.clipboardData.getData('text')
 	document.execCommand('insertText', false, text)

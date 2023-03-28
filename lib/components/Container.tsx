@@ -14,10 +14,10 @@ export const Container = memo(() => {
 		pieces: state.pieces,
 	}), true)
 
-	const divForward = useSelector(getChildProps('div'), true)
+	const divOverride = useSelector(getChildProps('div'), true)
 
 	return (
-		<div {...divForward} ref={store.containerRef} className={className} style={style}>
+		<div {...divOverride} ref={store.containerRef} className={className} style={style}>
 			{pieces.toArray().map((node) =>
 				<NodeProvider key={node.key} value={node}>
 					{

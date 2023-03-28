@@ -223,9 +223,10 @@ export const SelectableOverlay = () => {
 
 > **Note:** Recommend to use the `React.forwardRef` for an overlay component. It used to detect outside click.
 
-### Forwarded props
+### Overriding internal components
 
-The `children` prop allows to forward any of div props to a container via react element.
+The `children` prop allows to pass elements to overrides internal components.
+The `div` tag for container. The `span` tag for text cell.
 
 ```tsx
 <ConfiguredMarkedInput value={value} onChange={setValue}>
@@ -237,6 +238,7 @@ The `children` prop allows to forward any of div props to a container via react 
         onFocus = {(e) => console.log('onFocus')}
         onKeyDown={(e) => console.log('onKeyDown')}
     />
+    <span className='span-class'/>
 </>
 ```
 
@@ -285,7 +287,6 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | Mark        | ComponentType<T = MarkProps> |               | Component that used for render markups     |
 | Overlay     | ComponentType                | `Suggestions` | Component that is rendered by trigger      |
 | readOnly    | boolean                      | `undefined`   | Prevents from changing the value           |
-| onContainer | DivEvents                    | `undefined`   | Forward any div events to a text container |
 | options     | OptionProps[]                | `[{}]`        | Passed options for configure               |
 
 ### Helpers
