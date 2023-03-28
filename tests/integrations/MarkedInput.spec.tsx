@@ -9,7 +9,7 @@ import {expect, vi} from 'vitest'
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
 	const [value, setValue] = useState(initial)
-	return <MarkedInput Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue} options={[{
+	return <MarkedInput trigger='selectionChange' Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue} options={[{
 		markup: markup ?? '@[__label__](__value__)', data: ['Item']
 	}]}/>
 }
@@ -95,7 +95,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
 
 		await act(() => {
 			// @ts-ignore
-			events['selectionchange']()
+			events['selectionchange']({})
 		})
 
 		expect(await findByText('Item')).toBeInTheDocument()
