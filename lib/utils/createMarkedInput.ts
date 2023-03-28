@@ -1,29 +1,14 @@
-import {ComponentType, ForwardedRef, forwardRef} from 'react'
+import {ForwardedRef, forwardRef} from 'react'
 import {_MarkedInput, MarkedInputProps} from '../components/MarkedInput'
-import {ConfiguredMarkedInput, ConfiguredMarkedInputProps, MarkStruct, OptionProps} from '../types'
+import {ConfiguredMarkedInput, MarkStruct} from '../types'
 import {assign} from './index'
 
 /**
  * Create the configured MarkedInput component.
  */
-export function createMarkedInput<T = MarkStruct>(Mark: ComponentType<T>, options?: OptionProps<T>[]): ConfiguredMarkedInput<T>;
-export function createMarkedInput<T = MarkStruct>(Mark: ComponentType<T>, Overlay: ComponentType, options?: OptionProps<T>[]): ConfiguredMarkedInput<T>;
-export function createMarkedInput(
-	Mark: ComponentType<any>,
-	optionsOrOverlay: ComponentType<any> | OptionProps[] | undefined,
-	options?: OptionProps[]
-): ConfiguredMarkedInput<any> {
-	const predefinedProps = Array.isArray(optionsOrOverlay) ? {
-		Mark,
-		options: optionsOrOverlay,
-	} : {
-		Mark,
-		Overlay: optionsOrOverlay,
-		options
-	}
-
-	const ConfiguredMarkedInput = (props: ConfiguredMarkedInputProps<any>, ref: ForwardedRef<any>) => {
-		const assignedProps: MarkedInputProps<any> = assign({}, props, predefinedProps)
+export function createMarkedInput<T = MarkStruct>(configs: Omit<MarkedInputProps<T>, 'value' | 'onChange'>): ConfiguredMarkedInput<T> {
+	const ConfiguredMarkedInput = (props: MarkedInputProps<any>, ref: ForwardedRef<any>) => {
+		const assignedProps: MarkedInputProps = assign({}, configs, props)
 		return _MarkedInput(assignedProps, ref)
 	}
 

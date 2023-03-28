@@ -20,16 +20,19 @@ export const Marked = () => {
 const Primary: Markup = '@[__label__](primary:__value__)'
 const Default: Markup = '@[__label__](default:__value__)'
 
-const ConfiguredMarkedInput = createMarkedInput(Button, [{
-	markup: Primary,
-	data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-	initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
-}, {
-	markup: Default,
-	trigger: '/',
-	data: ['Seventh', 'Eight', 'Ninth'],
-	initMark: ({label}) => ({label})
-}])
+const ConfiguredMarkedInput = createMarkedInput({
+	Mark: Button,
+	options: [{
+		markup: Primary,
+		data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
+		initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
+	}, {
+		markup: Default,
+		trigger: '/',
+		data: ['Seventh', 'Eight', 'Ninth'],
+		initMark: ({label}) => ({label})
+	}],
+})
 
 const style = {minWidth: 100}
 const spanStyle = {width: 'auto', minWidth: 10}

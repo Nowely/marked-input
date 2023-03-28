@@ -31,7 +31,7 @@ describe(`Utility: createMarkedInput`, () => {
 	})
 
 	it('should to support the ref prop', async () => {
-		const Input = createMarkedInput(() => null)
+		const Input = createMarkedInput({})
 		let ref: MarkedInputHandler | null = null
 
 		render(<Input ref={(el) => ref = el} value={''} onChange={() => ({})}/>)
@@ -45,7 +45,7 @@ describe(`Utility: createMarkedInput`, () => {
 const Mark3 = () => {
 	const [value, setValue] = useState('Hello @')
 	const Overlay = forwardRef(() => <span>I'm here!</span>)
-	const Input = createMarkedInput(() => null, Overlay, [])
+	const Input = createMarkedInput({Mark: () => null, Overlay, options: []})
 
 	return <Input value={value} onChange={setValue}/>
 }

@@ -89,15 +89,19 @@ Using the `createMarkedInput`:
 ```tsx
 import {createMarkedInput} from "rc-marked-input";
 
-const ConfiguredMarkedInput = createMarkedInput(Button, [{
-    markup: Primary,
-    data: Data,
-    initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
-}, {
-    trigger: '/',
-    markup: Default,
-    data: AnotherData
-}])
+const ConfiguredMarkedInput = createMarkedInput({
+    Mark: Button,
+    options: [{
+        markup: Primary,
+        data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
+        initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
+    }, {
+        markup: Default,
+        trigger: '/',
+        data: ['Seventh', 'Eight', 'Ninth'],
+        initMark: ({label}) => ({label})
+    }],
+})
 
 const App = () => {
     const [value, setValue] = useState(
@@ -255,7 +259,7 @@ The `children` prop allows to forward any of div props to a container via react 
 Or
 
 ```tsx
-const MarkedInput = createMarkedInput(Mark, Overlay, [{
+const MarkedInput = createMarkedInput({Mark, Overlay, options: [{
     trigger: '@',
     markup: '@[__label__](__value__)',
     data: Data,
@@ -265,7 +269,7 @@ const MarkedInput = createMarkedInput(Mark, Overlay, [{
     markup: '@(__label__)[__value__]',
     data: AnotherData,
     initMark: getAnotherCustomMarkProps,
-}])
+}]})
 
 const App = () => <MarkedInput value={value} onChange={setValue}/>
 ```
@@ -286,14 +290,14 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ### Helpers
 
-| Name              | Type                                                                                                                                                                                              | Description                                  |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| createMarkedInput | (Mark: ComponentType<T>, options: OptionProps<T>[]): ConfiguredMarkedInput<T> <br/> (Mark: ComponentType<T>, Overlay: ComponentType<T1>, options: OptionProps<T, T1>[]): ConfiguredMarkedInput<T> | Create the configured MarkedInput component. |
-| annotate          | (markup: Markup, label: string, value?: string) => string                                                                                                                                         | Make annotation from the markup              |
-| denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string                                                                                                                 | Transform the annotated text                 |
-| useMark           | () => DynamicMark                                                                                                                                                                                 | Allow to use dynamic mark                    |
-| useOverlay        | () => OverlayProps                                                                                                                                                                                | Use overlay props                            |
-| useListener       | (type, listener, deps) => void                                                                                                                                                                    | Event listener                               |
+| Name              | Type                                                                              | Description                                  |
+|-------------------|-----------------------------------------------------------------------------------|----------------------------------------------|
+| createMarkedInput | <T = MarkStruct>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>          | Create the configured MarkedInput component. |
+| annotate          | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup              |
+| denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text                 |
+| useMark           | () => DynamicMark                                                                 | Allow to use dynamic mark                    |
+| useOverlay        | () => OverlayProps                                                                | Use overlay props                            |
+| useListener       | (type, listener, deps) => void                                                    | Event listener                               |
 
 ### Types
 

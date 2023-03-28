@@ -63,8 +63,7 @@ export interface OptionProps<T = Record<string, any>> {
 	initMark?: (props: MarkStruct) => T
 }
 
-export type ConfiguredMarkedInputProps<T> = Omit<MarkedInputProps<T>, 'Mark' | 'Overlay' | 'options'>
-export type ConfiguredMarkedInput<T> = FunctionComponent<ConfiguredMarkedInputProps<T>>
+export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
 export type State = Omit<MarkedInputProps<any>, 'options'> & {
 	options: Options,
