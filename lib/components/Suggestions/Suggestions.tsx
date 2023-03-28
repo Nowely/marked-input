@@ -4,7 +4,7 @@ import {useDownOf} from '../../utils/useDownOf'
 import {useOverlay} from '../../utils/useOverlay'
 
 export const Suggestions = () => {
-	const {trigger, onSelect, style, ref} = useOverlay()
+	const {trigger, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const filtered = useMemo(
 		() => trigger.option.data!.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
@@ -25,7 +25,7 @@ export const Suggestions = () => {
 	useDownOf(KEY.ENTER, event => {
 		event.preventDefault()
 		const suggestion = filtered[active]
-		onSelect({label: suggestion, value: active.toString()})
+		select({label: suggestion, value: active.toString()})
 	}, [filtered, active])
 
 	if (!filtered.length) return null
@@ -39,7 +39,7 @@ export const Suggestions = () => {
 					<li key={suggestion}
 						ref={el => className && el?.scrollIntoView(false)}
 						className={className}
-						onClick={_ => onSelect({label: suggestion, value: index.toString()})}
+						onClick={_ => select({label: suggestion, value: index.toString()})}
 						children={suggestion}
 					/>
 				)

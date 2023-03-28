@@ -15,14 +15,14 @@ export default {
 } as ComponentMeta<typeof MarkedInput>
 
 const Overlay = () => {
-	const {style, trigger, onSelect, onClose} = useOverlay()
+	const {style, trigger, select, close} = useOverlay()
 
 	useEffect(() => {
 		const handleEnter = (ev: KeyboardEvent) => {
 			if (ev.key === KEY.ENTER) {
 				ev.preventDefault()
-				onSelect({label: trigger.value})
-				onClose()
+				select({label: trigger.value})
+				close()
 			}
 		}
 
