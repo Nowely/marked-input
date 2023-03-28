@@ -1,6 +1,6 @@
-import {AnnotatedMark} from '../types'
+import {MarkMatch} from '../types'
 
-export class ParserMatches implements IterableIterator<[string, AnnotatedMark | null]> {
+export class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 	done: boolean = false
 
 	constructor(
@@ -9,11 +9,11 @@ export class ParserMatches implements IterableIterator<[string, AnnotatedMark | 
 	) {
 	}
 
-	[Symbol.iterator](): IterableIterator<[string, AnnotatedMark | null]> {
+	[Symbol.iterator](): IterableIterator<[string, MarkMatch | null]> {
 		return this
 	}
 
-	next(): IteratorResult<[string, AnnotatedMark | null], [string, AnnotatedMark | null] | null> {
+	next(): IteratorResult<[string, MarkMatch | null], [string, MarkMatch | null] | null> {
 		if (this.done)
 			return {done: this.done, value: null}
 
@@ -28,14 +28,14 @@ export class ParserMatches implements IterableIterator<[string, AnnotatedMark | 
 		return {done: false, value: [span, mark]}
 	}
 
-	extractPieces(execArray: RegExpExecArray): [string, AnnotatedMark, string] {
+	extractPieces(execArray: RegExpExecArray): [string, MarkMatch, string] {
 		const mark = this.extractMark(execArray)
 		const span = mark.input.substring(0, mark.index)
 		const raw = mark.input.substring(mark.index + mark.annotation.length)
 		return [span, mark, raw]
 	}
 
-	extractMark(execArray: RegExpExecArray): AnnotatedMark {
+	extractMark(execArray: RegExpExecArray): MarkMatch {
 		let annotation = execArray[0]
 
 		let childIndex = 0

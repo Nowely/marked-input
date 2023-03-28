@@ -1,5 +1,5 @@
 import {wordRegex} from '../constants'
-import {Option, Trigger} from '../types'
+import {Option, OverlayMatch} from '../types'
 import {Caret} from './Caret'
 import {escape} from './index'
 
@@ -24,7 +24,7 @@ export class TriggerFinder {
 		return {left: this.span.slice(0, position), right: this.span.slice(position)}
 	}
 
-	find(options: Option[]): Trigger | undefined {
+	find(options: Option[]): OverlayMatch | undefined {
 		for (let option of options) {
 			let match = this.matchInTextVia(option.trigger!)
 			if (match) return {
@@ -64,7 +64,7 @@ export class TriggerFinder {
 		return {word, annotation, index: match.index ?? 0}
 	}
 
-	//TODO new trigger option if (isSpaceBeforeRequired) append space check for not first words '\\s'
+	//TODO new overlayMatch option if (isSpaceBeforeRequired) append space check for not first words '\\s'
 	makeTriggerRegex(trigger: string): RegExp {
 		const patten = escape(trigger) + '(\\w*)$'
 		return new RegExp(patten)

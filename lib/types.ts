@@ -14,23 +14,13 @@ export interface MarkStruct {
 	value?: string
 }
 
-//TODO rename ParsedMarkup, Match?
-export interface AnnotatedMark extends MarkStruct {
-	annotation: string;
-	label: string;
-	value: string
-	index: number;
-	input: string;
-	childIndex: number;
-}
-
 export type label = `${string}${PLACEHOLDER.LABEL}${string}`
-export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 
+export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 export type Markup = `${label}${value}` | `${label}`
 
 /** Piece of marked text: fragment of text or mark definition */
-export type Piece = string | AnnotatedMark
+export type Piece = string | MarkMatch
 
 export type KeyedPieces = Map<number, Piece>
 
@@ -61,7 +51,7 @@ export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 export type State = Omit<MarkedInputProps<any>, 'options'> & {
 	options: Option[],
 	pieces: LinkedList<NodeData>,
-	trigger?: Trigger,
+	overlayMatch?: OverlayMatch,
 }
 
 export type Payload = {
@@ -69,9 +59,18 @@ export type Payload = {
 	value?: MarkStruct
 }
 
-export type Trigger = {
+export interface MarkMatch extends MarkStruct {
+	annotation: string;
+	label: string;
+	value: string
+	index: number;
+	input: string;
+	childIndex: number;
+}
+
+export type OverlayMatch = {
 	/**
-	 * Found value via a trigger
+	 * Found value via a overlayMatch
 	 */
 	value: string,
 	/**
@@ -79,19 +78,19 @@ export type Trigger = {
 	 */
 	source: string,
 	/**
-	 * Piece of text, in which was a trigger
+	 * Piece of text, in which was a overlayMatch
 	 */
 	span: string,
 	/**
-	 * Html element, in which was a trigger
+	 * Html element, in which was a overlayMatch
 	 */
 	node: Node,
 	/**
-	 * Start position of a trigger
+	 * Start position of a overlayMatch
 	 */
 	index: number,
 	/**
-	 * Trigger's option
+	 * OverlayMatch's option
 	 */
 	option: Option
 }
@@ -116,3 +115,9 @@ export interface MarkedInputHandler {
 
 	focus(): void
 }
+
+export type OverlayTrigger =
+	| Array<'change' | 'selectionChange'>
+	| 'change'
+	| 'selectionChange'
+	| 'none';

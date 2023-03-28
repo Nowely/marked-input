@@ -6,10 +6,10 @@ import {useSelector} from '../../../utils/useSelector'
 
 export function useCloseOverlayByEsc() {
 	const {bus} = useStore()
-	const trigger = useSelector(state => state.trigger)
+	const match = useSelector(state => state.overlayMatch)
 
 	useEffect(() => {
-		if (!trigger) return
+		if (!match) return
 
 		const handle = (event: KeyboardEvent) => {
 			if (event.key === KEY.ESC)
@@ -18,5 +18,5 @@ export function useCloseOverlayByEsc() {
 
 		window.addEventListener('keydown', handle)
 		return () => window.removeEventListener('keydown', handle)
-	}, [trigger])
+	}, [match])
 }

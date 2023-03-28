@@ -4,11 +4,11 @@ import {useDownOf} from '../../utils/useDownOf'
 import {useOverlay} from '../../utils/useOverlay'
 
 export const Suggestions = () => {
-	const {trigger, select, style, ref} = useOverlay()
+	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const filtered = useMemo(
-		() => trigger.option.data!.filter(s => s.toLowerCase().indexOf(trigger.value.toLowerCase()) > -1),
-		[trigger.value]
+		() => match.option.data!.filter(s => s.toLowerCase().indexOf(match.value.toLowerCase()) > -1),
+		[match.value]
 	)
 	const length = filtered.length
 

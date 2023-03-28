@@ -1,6 +1,6 @@
 import {ForwardedRef} from 'react'
 import {MarkedInputHandler} from '../../types'
-import {useCheckTriggerOnSelectionChange} from './hooks/useCheckTriggerOnSelectionChange'
+import {useCheckTrigger} from './hooks/useCheckTrigger'
 import {useCloseOverlayByEsc} from './hooks/useCloseOverlayByEsc'
 import {useCloseOverlayByOutsideClick} from './hooks/useCloseOverlayByOutsideClick'
 import {useFocusedNode} from './hooks/useFocusedNode'
@@ -25,7 +25,7 @@ export const Featurer = ({inRef}: { inRef: ForwardedRef<MarkedInputHandler> }) =
 	useFocusRecovery()
 
 	useTrigger()
-	useCheckTriggerOnSelectionChange()
+	useCheckTrigger()
 
 	useCloseOverlayByEsc()
 	useCloseOverlayByOutsideClick()

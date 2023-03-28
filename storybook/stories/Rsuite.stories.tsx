@@ -15,23 +15,23 @@ export default {
 } as ComponentMeta<typeof MarkedInput>
 
 const Overlay = () => {
-	const {style, trigger, select, close} = useOverlay()
+	const {style, match, select, close} = useOverlay()
 
 	useEffect(() => {
 		const handleEnter = (ev: KeyboardEvent) => {
 			if (ev.key === KEY.ENTER) {
 				ev.preventDefault()
-				select({label: trigger.value})
+				select({label: match.value})
 				close()
 			}
 		}
 
 		document.addEventListener('keydown', handleEnter)
 		return () => document.removeEventListener('keydown', handleEnter)
-	}, [trigger])
+	}, [match])
 
 	return <Popover style={style} visible>
-		<i> Press the <b>'Enter'</b> to create: <b>{`${trigger.value}`}</b> </i>
+		<i> Press the <b>'Enter'</b> to create: <b>{`${match.value}`}</b> </i>
 	</Popover>
 }
 
