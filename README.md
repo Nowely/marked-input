@@ -4,8 +4,6 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
-> **Note:** This page is for the **next** version. The latest release can be found [here](https://github.com/Nowely/marked-input/releases/latest).
-
 ## Feature
 
 * Powerful annotations tool: add, edit, remove, visualize 
@@ -31,11 +29,11 @@ npm install rc-marked-input
 ## Usage
 
 There are many examples available in the [Storybook](https://marked-input.vercel.app). You can also try a template
-on [CodeSandbox](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx). 
+on [CodeSandbox](https://codesandbox.io/s/configured-marked-input-305v6m). 
 
 Here are a few examples to get you started:
 
-### Static marks &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-ywnplp?file=/src/App.tsx)
+### Static marks &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-x5wx6k?file=/src/App.tsx)
 
 ```javascript
 import {MarkedInput} from "rc-marked-input";
@@ -48,7 +46,7 @@ const Marked = () => {
 }
 ```
 
-#### Configured &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/configured-marked-input-dnvuv9?file=/src/App.tsx)
+#### Configured &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/configured-marked-input-305v6m)
 
 The library allows you to configure the `MarkedInput` component in two ways.
 
@@ -112,7 +110,7 @@ const App = () => {
 }
 ```
 
-### Dynamic mark &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/dynamic-mark-m5uv58?file=/src/App.js)
+### Dynamic mark &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/dynamic-mark-w2nj82?file=/src/App.js)
 
 Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
 
@@ -169,7 +167,7 @@ export const DefaultOverlay = () => {
 }
 ```
 
-#### Custom overlay &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/custom-overlay-8c8e2r?file=/src/App.tsx)
+#### Custom overlay &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/custom-overlay-1m5ctx?file=/src/App.tsx)
 
 ```tsx
 const Overlay = () => <h1>I am the overlay</h1>
