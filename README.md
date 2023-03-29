@@ -287,6 +287,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | Overlay  | ComponentType                | `Suggestions` | Component that is rendered by trigger  |
 | readOnly | boolean                      | `undefined`   | Prevents from changing the value       |
 | options  | OptionProps[]                | `[{}]`        | Passed options for configure           |
+| trigger  | OverlayTrigger               | `change`      | Triggering events for overlay          |
 
 ### Helpers
 
@@ -300,6 +301,14 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 | useListener       | (type, listener, deps) => void                                                    | Event listener                               |
 
 ### Types
+
+```typescript
+type OverlayTrigger =
+	| Array<'change' | 'selectionChange'>
+	| 'change'
+	| 'selectionChange'
+	| 'none';
+```
 
 ```typescript
 interface MarkStruct {
