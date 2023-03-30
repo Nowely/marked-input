@@ -36,7 +36,7 @@ export function useSystemListeners() {
 	}, [])
 
 	useListener(SystemEvent.Select, (event: { value: MarkStruct, match: OverlayMatch }) => {
-		const {pieces} = store.state
+		const {pieces, Mark} = store.state
 		const {value, match: {option, span, index, source, node}} = event
 
 		const annotation = annotate(option.markup!, value.label, value.value)
@@ -50,7 +50,10 @@ export function useSystemListeners() {
 			//piece.data.mark.value = value.value
 			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
 			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, key: piece.data.key})
-			node.textContent = newSpan
+			if (!Mark) {
+				node.textContent = newSpan
+				store.recovery = {caretPosition: index + annotation.length}
+			}
 		}
 	}, [])
 }

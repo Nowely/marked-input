@@ -6,6 +6,7 @@ import {useSelector} from '../../../utils/useSelector'
 export const useFocusRecovery = () => {
 	const store = useStore()
 	const pieces = useSelector(state => state.pieces)
+	const deps = !store.state.Mark ? undefined : [pieces]
 
 	//Restore focus after delete mark
 	useEffect(() => {
@@ -25,5 +26,5 @@ export const useFocusRecovery = () => {
 
 			store.recovery = undefined
 		}
-	}, [pieces])
+	}, deps)
 }
