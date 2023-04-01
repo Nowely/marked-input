@@ -1,12 +1,11 @@
 import {Tag} from 'antd'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {getTitle} from './assets/getTitle'
 import {Text} from './assets/Text'
 import {withStyle} from './assets/withStyle'
 
 export default {
-	title: getTitle('Ant'),
+	title: 'MarkedInput/Ant',
 	component: MarkedInput,
 	decorators: [withStyle('antd.min.css')]
 }

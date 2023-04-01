@@ -2,11 +2,11 @@ import {createMarkedInput, denote, MarkedInput} from 'rc-marked-input'
 import {MarkStruct, Markup} from 'rc-marked-input/types'
 import {useState} from 'react'
 import {Button} from './assets/Button'
-import {getTitle} from './assets/getTitle'
 import {Text} from './assets/Text'
 
 export default {
-	title: getTitle(),
+	title: 'MarkedInput',
+	tags: ['autodocs'],
 	component: MarkedInput,
 }
 
@@ -47,11 +47,11 @@ export const Configured = () => {
 		<>
 			<ConfiguredMarkedInput value={value} onChange={setValue}>
 				<div
-					onClick={(e) => console.log('onCLick')}
-					onInput={(e) => console.log('onInput')}
-					onBlur={(e) => console.log('onBlur')}
-					onFocus={(e) => console.log('onFocus')}
-					onKeyDown={(e) => console.log('onKeyDown')}
+					onClick={_ => console.log('onCLick')}
+					onInput={_ => console.log('onInput')}
+					onBlur={_ => console.log('onBlur')}
+					onFocus={_ => console.log('onFocus')}
+					onKeyDown={_ => console.log('onKeyDown')}
 				/>
 			</ConfiguredMarkedInput>
 

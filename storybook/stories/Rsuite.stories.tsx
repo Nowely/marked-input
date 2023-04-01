@@ -1,18 +1,17 @@
-import {ComponentMeta} from '@storybook/react'
+import {Meta} from '@storybook/react'
 import {MarkedInput, useOverlay, MarkStruct} from 'rc-marked-input'
 import {KEY} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
 import {Input} from 'rsuite'
 import {Popover, Tag} from 'rsuite'
-import {getTitle} from './assets/getTitle'
 import {Text} from './assets/Text'
 import {withStyle} from './assets/withStyle'
 
 export default {
-	title: getTitle('Rsuite'),
+	title: 'MarkedInput/Rsuite',
 	component: MarkedInput,
-	decorators: [withStyle('rsuite.min.css')]
-} as ComponentMeta<typeof MarkedInput>
+	decorators: [withStyle('rsuite.min.css')],
+} as Meta<typeof MarkedInput>
 
 const Overlay = () => {
 	const {style, match, select, close} = useOverlay()
