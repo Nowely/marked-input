@@ -102,6 +102,8 @@ function rollupTypes() {
 					'tsdoc-undefined-tag': {logLevel: 'none'},
 					'tsdoc-characters-after-block-tag': {logLevel: 'none'},
 					'tsdoc-at-sign-in-word': {logLevel: 'none'},
+					'tsdoc-escape-right-brace': {logLevel: 'none'},
+					'tsdoc-malformed-inline-tag': {logLevel: 'none'},
 				}
 			}
 		}

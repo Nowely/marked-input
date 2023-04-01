@@ -55,7 +55,6 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 * @default 'change'
 	 */
 	trigger?: OverlayTrigger
-
 }
 
 export interface MarkedInputComponent {
