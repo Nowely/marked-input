@@ -1,8 +1,8 @@
 import {createMarkedInput, denote, MarkedInput} from 'rc-marked-input'
 import {MarkStruct, Markup} from 'rc-marked-input/types'
 import {useState} from 'react'
-import {Button} from './assets/Button'
-import {Text} from './assets/Text'
+import {Button} from '../assets/Button'
+import {Text} from '../assets/Text'
 
 export default {
 	title: 'MarkedInput',
@@ -11,6 +11,14 @@ export default {
 }
 
 const Mark = (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+
+/* CSF 3.0
+export const Abc = {
+	args: {
+		Mark: (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
+	}
+}*/
 
 export const Marked = () => {
 	const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')

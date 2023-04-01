@@ -1,4 +1,4 @@
-import {createMarkedInput} from 'rc-marked-input'
+import {createMarkedInput} from 'lib'
 import {Mention} from './Mention'
 import {UserList} from './UserList'
 

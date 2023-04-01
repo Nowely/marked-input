@@ -1,8 +1,8 @@
 import {Tag} from 'antd'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {Text} from './assets/Text'
-import {withStyle} from './assets/withStyle'
+import {Text} from '../assets/Text'
+import {withStyle} from '../assets/withStyle'
 
 export default {
 	title: 'MarkedInput/Ant',
