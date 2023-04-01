@@ -1,4 +1,4 @@
-import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
+import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactNode} from 'react'
 import '../styles.css'
 import {MarkedInputHandler, MarkStruct, Option, OverlayTrigger} from '../types'
 import {Container} from './Container'
@@ -33,7 +33,7 @@ export interface MarkedInputProps<T = MarkStruct> {
 	readOnly?: boolean
 	/**
 	 * Passed options for configure
-	 * @default One option with default values is used
+	 * @default [{trigger: '@', markup: '@[__label__](__value__)', data: []}]
 	 */
 	options?: Option<T>[]
 	/**
@@ -45,10 +45,11 @@ export interface MarkedInputProps<T = MarkStruct> {
 	 */
 	style?: CSSProperties
 	/**
-	 * Forward props to internal components via react elements
-	 * @param div - to container
+	 * Override props of internal components via react elements
+	 * @param div - for container
+	 * @param span - for span
 	 */
-	children?: ReactElement | ReactElement[]
+	children?: ReactNode
 	/**
 	 * Triggering events for overlay
 	 * @default 'change'
