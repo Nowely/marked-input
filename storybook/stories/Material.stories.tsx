@@ -2,12 +2,11 @@ import {Chip, Input} from '@mui/material'
 import {MarkStruct} from 'rc-marked-input'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {getTitle} from './assets/getTitle'
 import {MaterialMentions} from './assets/MaterialMentions'
 import {Text} from './assets/Text'
 
 export default {
-	title: getTitle('Material'),
+	title: 'MarkedInput/Material',
 	component: MarkedInput,
 }
 

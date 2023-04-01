@@ -1,9 +1,9 @@
 import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
 import {useState} from 'react'
-import {getTitle} from './assets/getTitle'
 
 export default {
-	title: getTitle(),
+	title: 'MarkedInput',
+	tags: ['autodocs'],
 	component: MarkedInput,
 }
 
