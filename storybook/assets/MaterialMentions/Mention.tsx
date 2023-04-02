@@ -1,5 +1,5 @@
 import {Avatar, Chip} from '@mui/material'
-import {MarkStruct} from 'lib'
+import {MarkStruct} from 'rc-marked-input'
 import {User} from './types'
 import {useFetch} from './utils/useFetch'
 
