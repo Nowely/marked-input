@@ -1,5 +1,5 @@
 import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from '@mui/material'
-import {MarkStruct} from 'lib'
+import {MarkStruct} from 'rc-marked-input'
 import {SearchUser} from '../types'
 
 export interface UserItemProps {
