@@ -1,16 +1,24 @@
-import {createMarkedInput, denote, MarkedInput} from 'rc-marked-input'
-import {MarkStruct, Markup} from 'rc-marked-input/types'
+import {Meta} from '@storybook/react'
+import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
 import {useState} from 'react'
-import {Button} from './assets/Button'
-import {Text} from './assets/Text'
+import {Button} from '../assets/Button'
+import {Text} from '../assets/Text'
 
 export default {
 	title: 'MarkedInput',
 	tags: ['autodocs'],
 	component: MarkedInput,
-}
+} satisfies Meta<typeof MarkedInput>
 
 const Mark = (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+
+/* CSF 3.0
+export const Abc = {
+	args: {
+		Mark: (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
+	}
+}*/
 
 export const Marked = () => {
 	const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
@@ -65,8 +73,8 @@ export const WithoutMark = () => {
 	const [value, setValue] = useState('Hello, clickable marked @world!')
 	return (
 		<MarkedInput value={value} onChange={setValue} options={[{
-		markup: '@__label__',
-		data: ['one', 'two', 'three', 'four']
-	}]}/>
+			markup: '@__label__',
+			data: ['one', 'two', 'three', 'four']
+		}]}/>
 	)
 }

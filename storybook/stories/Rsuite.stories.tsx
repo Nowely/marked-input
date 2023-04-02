@@ -4,8 +4,8 @@ import {KEY} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
 import {Input} from 'rsuite'
 import {Popover, Tag} from 'rsuite'
-import {Text} from './assets/Text'
-import {withStyle} from './assets/withStyle'
+import {Text} from '../assets/Text'
+import {withStyle} from '../assets/withStyle'
 
 export default {
 	title: 'MarkedInput/Rsuite',
