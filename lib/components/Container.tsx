@@ -1,18 +1,16 @@
 import {memo} from 'react'
 import {DefaultClass} from '../constants'
 import {isAnnotated, NodeProvider, useStore} from '../utils'
+import {getChildProps} from '../utils/getChildProps'
+import {useCurrentState} from '../utils/useCurrentState'
 import {useSelector} from '../utils/useSelector'
 import {EditableSpan} from './EditableSpan'
-import {getChildProps} from '../utils/getChildProps'
 import {Piece} from './Piece'
 
 export const Container = memo(() => {
 	const store = useStore()
-	const {className, style, pieces} = useSelector(state => ({
-		className: state.className ? DefaultClass + ' ' + state.className : DefaultClass,
-		style: state.style,
-		pieces: state.pieces,
-	}), true)
+	const className = useSelector(({className}) => (className ? DefaultClass + ' ' + className : DefaultClass))
+	const {pieces, style} = useCurrentState('style', 'pieces', 'className')
 
 	const divOverride = useSelector(getChildProps('div'), true)
 
