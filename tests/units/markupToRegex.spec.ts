@@ -1,6 +1,6 @@
 import {faker} from '@faker-js/faker'
 import {annotate, markupToRegex} from 'rc-marked-input/utils'
-import {createRandomMarkup} from '../.utils/createRandomMarkup'
+import {createRandomMarkup} from '../_utils/createRandomMarkup'
 
 describe(`Utility: ${markupToRegex.name}`, () => {
 	it('should convert markup to regex', () => {
