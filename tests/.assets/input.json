@@ -1,0 +1,26 @@
+{
+  "content": [
+    {
+      "type": "heading",
+      "text": "Example Heading",
+      "level": 1
+    },
+    {
+      "type": "paragraph",
+      "text": "This is an example paragraph of text."
+    },
+    {
+      "type": "image",
+      "url": "https://example.com/image.jpg",
+      "altText": "Example Image"
+    },
+    {
+      "type": "list",
+      "items": [
+        "List item 1",
+        "List item 2",
+        "List item 3"
+      ]
+    }
+  ]
+}
