@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as process from 'process'
 import {Parser} from 'rc-marked-input/utils/Parser'
-import {markups} from './genAnnotatedText'
+import {Markups_16} from './consts'
 import {readFile} from './readFile'
 import {writeFile} from './writeFile'
 
@@ -48,8 +48,8 @@ export class Tester {
 
 	async start() {
 		const names = await this.getTestDataNames()
-		for (let i = 0; i < names.length; i++){
-			const name = names[i];
+		for (let i = 0; i < names.length; i++) {
+			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 
 			for (let j = 0; j < 10; j++)
@@ -63,7 +63,7 @@ export class Tester {
 		this.result['111'] ??= {}
 		this.result['111'][clearName] ??= {measures: {memory: [], speed: [], time: []}}
 
-		const parser = new Parser(markups)
+		const parser = new Parser(Markups_16)
 
 		const [time, memory, speed] = this.benchmark(() => parser.split(data))
 		this.result['111'][clearName].measures.time.push(time)
