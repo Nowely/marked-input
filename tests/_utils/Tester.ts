@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as process from 'process'
 import {Parser} from 'rc-marked-input/utils/Parser'
 import {Markups_16} from './consts'
+import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {readFile} from './readFile'
 import {MeasureResult} from './types'
 import {writeFile} from './writeFile'
@@ -10,25 +11,8 @@ export class Tester {
 	dataDir = './data'
 	result: MeasureResult = {}
 
-	constructor() {
-	}
-
-	async loadResult() {
-		const content = await readFile('./result.json')
-		this.result = JSON.parse(content)
-	}
-
-	clearResult() {
-		this.result = {}
-	}
-
-	async saveResult() {
-		const content = JSON.stringify(this.result, null, ' ')
-		await writeFile('./result.json', content)
-	}
-
 	async start() {
-		const names = await this.getTestDataNames()
+		const names = await getTestDataNames(this.dataDir)
 		for (let i = 0; i < names.length; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
@@ -44,45 +28,54 @@ export class Tester {
 		this.result['111'] ??= {}
 		this.result['111'][clearName] ??= {measures: {memory: [], speed: [], time: []}}
 
+		//Not only 16 markups
 		const parser = new Parser(Markups_16)
 
-		const [time, memory, speed] = this.benchmark(() => parser.split(data))
+		const [time, memory, speed] = this.measure(() => parser.split(data))
 		this.result['111'][clearName].measures.time.push(time)
 		this.result['111'][clearName].measures.memory.push(memory)
 		this.result['111'][clearName].measures.speed.push(speed)
 	}
 
-	benchmark(func: Function) {
+	measure(func: Function) {
 		const startMemory = process.memoryUsage().heapUsed
-		const start = performance.now()
+		const startTime = performance.now()
 
 		func()
 
-		const end = performance.now()
+		const endTime = performance.now()
 		const endMemory = process.memoryUsage().heapUsed
-		const averageTime = (end - start) /// 1000
 
-		// Measure memory usage after sorting
-		const usedMemory = endMemory - startMemory
-		const opPerSec = (1 / (averageTime / 1000))
-		//console.log(`Average execution time: ${averageTime} ms`)
-		//console.log(`Memory used: ${usedMemory} bytes`)
-		//console.log('Op/sec: ' + opPerSec)
-		return [averageTime, usedMemory, opPerSec] as const
-		// Convert in second
-		//const diffSec = (end - start) / 1000;
-		//console.log('op/sec: ' + (1 / diffSec));
+		const time = endTime - startTime
+		const memory = endMemory - startMemory
+		const opPerSec = convertMsIntoFrequency(time)
+
+		return [time, memory, opPerSec] as const
 	}
 
-	async getTestDataNames() {
-		try {
-			let files = await fs.promises.readdir(this.dataDir)
-			files = files.filter(value => value.includes('-k'))
-			return files
-			//files.forEach(file => console.log(file))
-		} catch (error) {
-			console.log('Unable to scan directory: ' + error)
-			throw error
-		}
+	async loadResult() {
+		const content = await readFile('./result.json')
+		this.result = JSON.parse(content)
+	}
+
+	clearResult() {
+		this.result = {}
+	}
+
+	async saveResult() {
+		const content = JSON.stringify(this.result, null, ' ')
+		await writeFile('./result.json', content)
+	}
+}
+
+async function getTestDataNames(path: string) {
+	try {
+		let files = await fs.promises.readdir(path)
+		files = files.filter(value => value.includes('-k'))
+		return files
+		//files.forEach(file => console.log(file))
+	} catch (error) {
+		console.log('Unable to scan directory: ' + error)
+		throw error
 	}
 }
