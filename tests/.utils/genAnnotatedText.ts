@@ -26,7 +26,7 @@ export const markups: Markup[] = [
 	'[[__label__]]',
 ]
 
-function genAnnotatedText(size: number, markupCount: number[]) {
+export function genAnnotatedText(size: number, markupCount: number[]) {
 	const filePath = `./data/${size}.txt`
 
 	fs.readFile(filePath, 'utf8', (err, data) => {
