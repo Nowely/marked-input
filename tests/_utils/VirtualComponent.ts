@@ -2,6 +2,7 @@ import {annotate, MarkMatch, Markup} from 'rc-marked-input'
 import {Piece} from 'rc-marked-input/types'
 import {isAnnotated} from 'rc-marked-input/utils'
 import {Parser} from 'rc-marked-input/utils/Parser'
+import {SymbolParser} from 'rc-marked-input/utils/SymbolParser'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 
 type ParserConstructor = new(markups: Markup[]) => IParser
@@ -10,7 +11,7 @@ interface IParser {
 	split(value: string): Piece[]
 }
 
-const Parsers: ParserConstructor[] = [Parser]
+const Parsers: ParserConstructor[] = [SymbolParser, Parser]
 const Analyzers: Analyzer[] = [analyzeSimple]
 const Joiners: ((params: JoinParameters) => string)[] = [joinSimple, joinExactly]
 
