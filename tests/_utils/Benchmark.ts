@@ -7,7 +7,7 @@ import {readFile} from './readFile'
 import {MeasureResult} from './types'
 import {writeFile} from './writeFile'
 
-export class Tester {
+export class Benchmark {
 	dataDir = './data'
 	result: MeasureResult = {}
 
