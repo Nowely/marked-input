@@ -1,7 +1,8 @@
 import {wordRegex} from '../constants'
 import {Option, OverlayMatch} from '../types'
 import {Caret} from './Caret'
-import {escape} from './index'
+
+import {escape} from "./escape";
 
 export class TriggerFinder {
 	span: string

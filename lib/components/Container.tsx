@@ -1,10 +1,11 @@
 import {memo} from 'react'
 import {DefaultClass} from '../constants'
-import {isAnnotated, NodeProvider, useStore} from '../utils'
+import {NodeProvider, useStore} from '../utils'
 import {useSelector} from '../utils/useSelector'
 import {EditableSpan} from './EditableSpan'
 import {getChildProps} from '../utils/getChildProps'
 import {Piece} from './Piece'
+import {isAnnotated} from "../utils/isAnnotated";
 
 export const Container = memo(() => {
 	const store = useStore()

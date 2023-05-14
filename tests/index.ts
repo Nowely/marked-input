@@ -6,7 +6,7 @@
 import {Markups_2} from './_utils/consts'
 import {VirtualComponent} from './_utils/VirtualComponent'
 
-const component = new VirtualComponent(Markups_2, [1, 0, 1])
+const component = new VirtualComponent(Markups_2, [0, 0, 1])
 
 //First render
 component.render('Hello @[friend]')
@@ -36,7 +36,7 @@ const b = convertMsIntoFrequency(endTime2 - startTime2)
 console.log(`Reg: ${a}`)
 console.log(`Sym: ${b}`)*/
 
-//const a = formalizeTear('Hellfriend!', 'Hello friend!')
+//const a = findSingleGap('Hellfriend!', 'Hello friend!')
 //console.log(a)
 
 

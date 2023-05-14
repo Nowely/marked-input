@@ -26,11 +26,6 @@ export enum KEY {
 	ESC = 'Escape'
 }
 
-export enum PLACEHOLDER {
-	LABEL = '__label__',
-	VALUE = '__value__',
-}
-
 export const EmptyFunc = () => {
 }
 

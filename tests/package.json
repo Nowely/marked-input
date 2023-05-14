@@ -1,5 +1,6 @@
 {
   "name": "tests",
+  "type": "module",
   "scripts": {
     "test": "vitest run",
     "test:integration": "vitest run integrations",
@@ -8,7 +9,8 @@
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
     "start": "vite-node index.ts",
-    "watch": "vite-node --watch index.ts"
+    "watch": "vite-node --watch index.ts",
+    "build:moduls": "vite build"
   },
   "dependencies": {
     "@faker-js/faker": "^7.6.0",

@@ -1,6 +1,8 @@
 import React, {Context, useContext} from 'react'
-import {DefaultOptionProps, PLACEHOLDER} from '../constants'
-import {MarkMatch, KeyedPieces, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
+import {DefaultOptionProps} from '../constants'
+import {KeyedPieces, MarkMatch, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
+import {annotate} from './annotate'
+import {isAnnotated} from './isAnnotated'
 import {Parser} from './Parser'
 import {Store} from './Store'
 
@@ -9,38 +11,6 @@ export const assign = Object.assign
 //TODO the alternative way to create markup?
 //const markup2: any = createMarkup("@[__label__]", "(__value__)")
 //const markup3: any = createMarkup("@[hello](world)", "hello", "world")
-
-export const markupToRegex = (markup: Markup) => {
-	const escapedMarkup = escape(markup)
-
-	const charAfterLabel = escape(markup[markup.indexOf(PLACEHOLDER.LABEL) + PLACEHOLDER.LABEL.length] ?? '')
-	const charAfterValue = escape(markup[markup.indexOf(PLACEHOLDER.VALUE) + PLACEHOLDER.VALUE.length] ?? '')
-
-	const pattern = escapedMarkup
-		.replace(PLACEHOLDER.LABEL, `([^${charAfterLabel}]+?)`)
-		.replace(PLACEHOLDER.VALUE, `([^${charAfterValue}]+?)`)
-
-	return new RegExp(pattern)
-}
-
-export const normalizeMark = (mark: MarkMatch, markup: Markup): MarkMatch => {
-	if (mark.annotation !== annotate(markup, mark.label, mark.value))
-		return {...mark, label: mark.value!, value: mark.label}
-	return mark
-}
-
-// escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
-export const escape = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
-
-//TODO annotate options to object with required only label?
-//TODO function annotate(label: string, markup?: Markup, value?: string): string;
-/**
- * Make annotation from the markup
- */
-export function annotate(markup: Markup, label: string, value?: string): string {
-	let annotation = markup.replace(PLACEHOLDER.LABEL, label)
-	return value ? annotation.replace(PLACEHOLDER.VALUE, value) : annotation
-}
 
 /**
  * Transform the annotated text to the another text
@@ -77,10 +47,6 @@ export const genHash = (str: string, seed = 0) => {
 export const genId = () => Math.random().toString(36).substring(2, 9)
 
 export const isObject = (value: unknown): value is object => typeof value === 'object'
-
-export const isAnnotated = (value: unknown): value is MarkMatch => {
-	return value !== null && typeof value === 'object' && 'annotation' in value
-}
 
 export function assertAnnotated(value: unknown): asserts value is MarkMatch {
 	let condition = value !== null && typeof value === 'object' && 'annotation' in value

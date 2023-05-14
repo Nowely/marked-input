@@ -22,6 +22,7 @@ export class VirtualComponent {
 
 	render(value: string) {
 		const diff = this.analyzer(this.value, value)
+
 		if (!diff || !diff[0] && !diff[1]) {
 			//find by ranges find
 

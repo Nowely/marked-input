@@ -1,8 +1,8 @@
 //111, 112, 121, 122, 211...
 import {Markup} from 'rc-marked-input'
 import {Piece} from 'rc-marked-input/types'
-import {formalizeTear} from './analyzers/formalizeTear'
-import {joinSimple} from './joiners/joinSimple'
+import {findSingleGap} from './analyzers/findSingleGap'
+import {mapStraight} from './joiners/mapStraight'
 
 type AlgorithmGroup = number
 //2-k02-a1
@@ -29,6 +29,6 @@ export interface IParser {
 	split(value: string): Piece[]
 }
 
-export type Analyzer = typeof formalizeTear
-export type Joiner = typeof joinSimple
+export type Analyzer = typeof findSingleGap
+export type Joiner = typeof mapStraight
 export type JoinParameters = { pieces: Piece[], index: number, value: string, markups: Markup[] }

@@ -1,8 +1,8 @@
-import * as fs from 'fs'
 import * as process from 'process'
 import {Parser} from 'rc-marked-input/utils/Parser'
 import {Markups_16} from './consts'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
+import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
 import {MeasureResult} from './types'
 import {writeFile} from './writeFile'
@@ -12,7 +12,7 @@ export class Benchmark {
 	result: MeasureResult = {}
 
 	async start() {
-		const names = await getTestDataNames(this.dataDir)
+		const names = (await getFileNames(this.dataDir)).filter(value => value.includes('-k'))
 		for (let i = 0; i < names.length; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
@@ -68,14 +68,3 @@ export class Benchmark {
 	}
 }
 
-async function getTestDataNames(path: string) {
-	try {
-		let files = await fs.promises.readdir(path)
-		files = files.filter(value => value.includes('-k'))
-		return files
-		//files.forEach(file => console.log(file))
-	} catch (error) {
-		console.log('Unable to scan directory: ' + error)
-		throw error
-	}
-}

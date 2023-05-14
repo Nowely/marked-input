@@ -1,4 +1,4 @@
-export function formalizeTear(value: string, newValue: string) {
+export function findSingleGap(value: string, newValue: string) {
 	if (value === newValue) return
 
 	let firstIndex = value.length

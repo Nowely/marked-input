@@ -1,6 +1,7 @@
 import {Markup, Option, Piece} from '../types'
-import {markupToRegex, normalizeMark} from './index'
+import {markupToRegex} from './markupToRegex'
 import {ParserMatches} from './ParserMatches'
+import {normalizeMark} from "./normalizeMark";
 
 //TODO parser factory?
 export class Parser {
