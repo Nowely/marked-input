@@ -7,21 +7,30 @@ import {mapStraight} from './joiners/mapStraight'
 export type AlgorithmGroup = string
 //2-k02-a1
 type TestDataName = string
-type TestDataMeasure = {
-	measures: {
-		/** In bytes */
-		memory: number[]
-		/** In ms */
-		time: number[]
-		/** In operations per sec */
-		speed: number[]
-	}
-	memory?: number
-	time?: number
-	speed?: number
+type TestDataRawMeasure = {
+	/** In bytes */
+	memory: number[]
+	/** In ms */
+	time: number[]
+	/** In operations per sec */
+	speed: number[]
 }
-type AlgorithmGroupTestResult = Record<TestDataName, TestDataMeasure>
-export type MeasureResult = Record<AlgorithmGroup, AlgorithmGroupTestResult>
+
+export type RawMeasures = Record<AlgorithmGroup, Record<TestDataName, TestDataRawMeasure>>
+
+type TestDataMeasure = {
+	/** In bytes */
+	memory: number
+	/** In ms */
+	time: number
+	/** In operations per sec */
+	speed: number
+	/** In kB */
+	size: number
+}
+export type Measures = Record<AlgorithmGroup, Record<TestDataName, TestDataMeasure>>
+//export type RawMeasures = Record<AlgorithmGroup, any>
+
 
 export type ParserConstructor = new(markups: Markup[]) => IParser
 

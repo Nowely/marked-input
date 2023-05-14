@@ -4,13 +4,13 @@ import {Analyzers, AnnCountToMarkupMap, Joiners, LineCountToDiff, Parsers} from 
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
-import {AlgorithmGroup, MeasureResult} from './types'
+import {AlgorithmGroup, RawMeasures} from './types'
 import {VirtualComponent} from './VirtualComponent'
 import {writeFile} from './writeFile'
 
 export class Benchmark {
 	dataDir = './data'
-	result: MeasureResult = {}
+	result: RawMeasures = {}
 
 	async start() {
 		const names = (await getFileNames(this.dataDir))
@@ -21,6 +21,7 @@ export class Benchmark {
 				return a1 -b1
 			})
 
+		//To 10_000
 		for (let i = 0; i < 105; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
@@ -43,7 +44,7 @@ export class Benchmark {
 					const group = getAlgorithmGroup(i, j, k)
 
 					this.result[group] ??= {}
-					this.result[group][clearName] ??= {measures: {memory: [], speed: [], time: []}}
+					this.result[group][clearName] ??= {memory: [], speed: [], time: []}
 
 					const component = new VirtualComponent(markups, [i, j, k])
 
@@ -63,9 +64,9 @@ export class Benchmark {
 						const [time1, memory1, speed1] = this.measure(() =>
 							component.update(str => str + c))
 
-						this.result[group][clearName].measures.time.push(time1)
-						this.result[group][clearName].measures.memory.push(memory1)
-						this.result[group][clearName].measures.speed.push(speed1)
+						this.result[group][clearName].time.push(time1)
+						this.result[group][clearName].memory.push(memory1)
+						this.result[group][clearName].speed.push(speed1)
 					}
 
 
@@ -103,7 +104,7 @@ export class Benchmark {
 
 	async saveResult() {
 		const content = JSON.stringify(this.result, null, ' ')
-		await writeFile('./result.json', content)
+		await writeFile('./raw.json', content)
 	}
 }
 
