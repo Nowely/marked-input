@@ -3,14 +3,17 @@
 //await tester.start()
 //await tester.saveResult()
 
-/*const component = new VirtualComponent(Markups_2, [0, 0, 1])
+import {Markups_2} from './_utils/consts'
+import {VirtualComponent} from './_utils/VirtualComponent'
+
+const component = new VirtualComponent(Markups_2, [1, 0, 1])
 
 //First render
 component.render('Hello @[friend]')
 
 component.update(str => str + '1')
 
-component.update(str => str + ' @[friend2]')*/
+component.update(str => str + ' @[friend2]')
 
 /*let symPar = new SymbolParser(Markups_2)
 let regPar = new Parser(Markups_2)
@@ -32,5 +35,8 @@ const a = convertMsIntoFrequency(endTime1 - startTime1)
 const b = convertMsIntoFrequency(endTime2 - startTime2)
 console.log(`Reg: ${a}`)
 console.log(`Sym: ${b}`)*/
+
+//const a = formalizeTear('Hellfriend!', 'Hello friend!')
+//console.log(a)
 
 
