@@ -51,7 +51,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		if (this.done)
 			return {done: this.done, value: null}
 
-		let match = this.findMatch(this.raw)
+		let match = this.findMatch1(this.raw)
 		if (match === null) {
 			this.done = true
 			return {done: false, value: [this.raw, null]}
@@ -62,28 +62,45 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		return {done: false, value: [span, mark]}
 	}
 
-	findMatch(raw: string) {
+	findMatch1(raw: string) {
 		for (let i = 0; i < raw.length; i++) {
-			for (let j = 0; j < this.splitMarkups.length; j++){
-				const markup = this.splitMarkups[j];
-				const substring = raw.substring(i)
-
-				if (substring.startsWith(markup[0])){
-					const endIndex = substring.indexOf(markup[1])
-					if (endIndex !== -1) {
-						return [
-							raw.slice(0, i),
-							{
-								annotation: substring.slice(0, endIndex + 1),
-								input: raw,
-								label: substring.slice(0, endIndex + 1).slice(markup[0].length, endIndex),
-								index: i,
-								optionIndex: j
-							} as MarkMatch,
-							substring.slice(endIndex + 1)
-						] as const
+			const substring = raw.substring(i)
+			const indexPairs: [number, number][] = []
+			this.splitMarkups.forEach(([left, right], markupIndex) => {
+				if (substring.startsWith(left)) {
+					const endIndex = substring.indexOf(right)
+					if (endIndex !== -1){
+						indexPairs.push([endIndex, markupIndex])
 					}
 				}
+			})
+			let minEndIndex = Number.POSITIVE_INFINITY
+			let minEndMarkupIndex = Number.POSITIVE_INFINITY
+			indexPairs.forEach(([endIndex, markupIndex]) => {
+				if (endIndex < minEndIndex) {
+					minEndIndex = endIndex
+					minEndMarkupIndex = markupIndex
+				}
+			})
+			if (indexPairs.length) {
+				/*return {
+					startIndex: i,
+					endIndex: minEndIndex,
+					markupIndex: minEndMarkupIndex
+				}*/
+				return [
+					raw.slice(0, i),
+					{
+						annotation: substring.slice(0, minEndIndex + 1),
+						input: raw,
+						label: substring
+							.slice(0, minEndIndex + 1)
+							.slice(this.splitMarkups[minEndMarkupIndex][0].length, minEndIndex),
+						index: i,
+						optionIndex: minEndMarkupIndex
+					} as MarkMatch,
+					substring.slice(minEndIndex + 1)
+				] as const
 			}
 		}
 		return null
