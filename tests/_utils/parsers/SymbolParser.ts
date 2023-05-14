@@ -27,7 +27,8 @@ export class SymbolParser {
 		for (let [span, mark] of new ParserMatches(value, this.splitMarkups)) {
 			result.push(span)
 			if (mark !== null)
-				result.push(normalizeMark(mark, this.markups[mark.optionIndex]))
+				//result.push(normalizeMark(mark, this.markups[mark.optionIndex]))
+				result.push(mark)
 		}
 
 		return result
@@ -63,7 +64,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 	}
 
 	findMatch(raw: string) {
-		const indexPairs: [number, number, number][] = []
+		let indexPairs: [number, number, number][] = []
 		this.splitMarkups.forEach(([left, right], markupIndex) => {
 			const startIndex = raw.indexOf(left)
 			if (startIndex === -1) return
@@ -77,6 +78,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		let minStartIndex = Number.POSITIVE_INFINITY
 		let minEndIndex = Number.POSITIVE_INFINITY
 		let minEndMarkupIndex = Number.POSITIVE_INFINITY
+		indexPairs = indexPairs.filter(([startIndex, endIndex]) => (startIndex < endIndex))
 		indexPairs.forEach(([startIndex, endIndex, markupIndex]) => {
 			if (endIndex < minEndIndex) {
 				minStartIndex = startIndex
@@ -86,19 +88,21 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		})
 
 		if (indexPairs.length) {
-			const substring = raw.slice(minStartIndex)
+			if (raw.slice(minStartIndex, minEndIndex + 1) === '') {
+				debugger
+			}
 			return [
 				raw.slice(0, minStartIndex),
 				{
-					annotation: substring.slice(0, minEndIndex + 1),
+					annotation: raw.slice(minStartIndex, minEndIndex + 1),
 					input: raw,
-					label: substring
-						.slice(0, minEndIndex + 1)
-						.slice(this.splitMarkups[minEndMarkupIndex][0].length, minEndIndex),
+					label: raw
+						.slice(minStartIndex, minEndIndex + 1)
+						.slice(this.splitMarkups[minEndMarkupIndex][0].length, -this.splitMarkups[minEndMarkupIndex][1].length),
 					index: minStartIndex,
 					optionIndex: minEndMarkupIndex
 				} as MarkMatch,
-				substring.slice(minEndIndex + 1)
+				raw.slice(minEndIndex + 1)
 			] as const
 		}
 
