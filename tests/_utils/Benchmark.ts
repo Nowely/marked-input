@@ -1,10 +1,11 @@
+import path from 'path'
 import * as process from 'process'
-import {Parser} from 'rc-marked-input/utils/Parser'
-import {Markups_16} from './consts'
+import {Analyzers, AnnCountToMarkupMap, Joiners, LineCountToDiff, Parsers} from './consts'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
-import {MeasureResult} from './types'
+import {AlgorithmGroup, MeasureResult} from './types'
+import {VirtualComponent} from './VirtualComponent'
 import {writeFile} from './writeFile'
 
 export class Benchmark {
@@ -13,7 +14,7 @@ export class Benchmark {
 
 	async start() {
 		const names = (await getFileNames(this.dataDir)).filter(value => value.includes('-k'))
-		for (let i = 0; i < names.length; i++) {
+		for (let i = 13; i < 14; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 
@@ -23,18 +24,49 @@ export class Benchmark {
 	}
 
 	async runFor(name: string) {
-		const data = await readFile(this.dataDir + '/' + name)
+		const data = await readFile(path.resolve(this.dataDir, name))
 		const clearName = name.replace('.txt', '')
-		this.result['111'] ??= {}
-		this.result['111'][clearName] ??= {measures: {memory: [], speed: [], time: []}}
+		const [lineCount, annRatio, annCount] = clearName.split('-')
+		const updateRule = LineCountToDiff[lineCount]
+		const markups = AnnCountToMarkupMap[annCount]
 
-		//Not only 16 markups
-		const parser = new Parser(Markups_16)
+		for (let i = 0; i < Analyzers.length; i++) {
+			for (let j = 0; j < Parsers.length; j++) {
+				for (let k = 0; k < Joiners.length; k++) {
+					const group = getAlgorithmGroup(i, j, k)
 
-		const [time, memory, speed] = this.measure(() => parser.split(data))
-		this.result['111'][clearName].measures.time.push(time)
-		this.result['111'][clearName].measures.memory.push(memory)
-		this.result['111'][clearName].measures.speed.push(speed)
+					this.result[group] ??= {}
+					this.result[group][clearName] ??= {measures: {memory: [], speed: [], time: []}}
+
+					const component = new VirtualComponent(markups, [i, j, k])
+
+					const inputData = data.substring(0, data.length - updateRule.count * updateRule.speed)
+					const updaterData = data.substring(data.length - updateRule.count * updateRule.speed)
+
+					/*const [time, memory, speed] = this.measure(() => component.render(inputData))
+					this.result[group][clearName].measures.time.push(time)
+					this.result[group][clearName].measures.memory.push(memory)
+					this.result[group][clearName].measures.speed.push(speed)*/
+					component.render(inputData)
+
+					let currentPosition = 0
+					for (let l = 0; l < updateRule.count; l++) {
+						let c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
+						currentPosition = currentPosition + updateRule.speed
+						const [time1, memory1, speed1] = this.measure(() =>
+							component.update(str => str + c))
+
+						this.result[group][clearName].measures.time.push(time1)
+						this.result[group][clearName].measures.memory.push(memory1)
+						this.result[group][clearName].measures.speed.push(speed1)
+					}
+
+
+				}
+			}
+		}
+
+
 	}
 
 	measure(func: Function) {
@@ -68,3 +100,7 @@ export class Benchmark {
 	}
 }
 
+
+function getAlgorithmGroup(i: number, j: number, k: number): AlgorithmGroup {
+	return `${i}${j}${k}`
+}

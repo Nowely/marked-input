@@ -1,19 +1,26 @@
-//const tester = new Benchmark()
-//await tester.loadResult()
-//await tester.start()
-//await tester.saveResult()
-
+import {Benchmark} from './_utils/Benchmark'
 import {Markups_2} from './_utils/consts'
+import {SymbolParser} from './_utils/parsers/SymbolParser'
+import {readFile} from './_utils/readFile'
 import {VirtualComponent} from './_utils/VirtualComponent'
 
-const component = new VirtualComponent(Markups_2, [0, 0, 1])
 
+const tester = new Benchmark()
+//await tester.loadResult()
+await tester.start()
+await tester.saveResult()
+
+//const a = new SymbolParser(Markups_2)
+//const data = await readFile('./data/2-k02-a2.txt')
+//const tokens = a.split(data)
+//console.log(data)
+//console.log(tokens)
+
+/*const component = new VirtualComponent(Markups_2, [0, 0, 1])
 //First render
 component.render('Hello @[friend]')
-
 component.update(str => str + '1')
-
-component.update(str => str + ' @[friend2]')
+component.update(str => str + ' @[friend2]')*/
 
 /*let symPar = new SymbolParser(Markups_2)
 let regPar = new Parser(Markups_2)

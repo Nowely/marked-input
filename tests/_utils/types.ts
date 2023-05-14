@@ -4,7 +4,7 @@ import {Piece} from 'rc-marked-input/types'
 import {findSingleGap} from './analyzers/findSingleGap'
 import {mapStraight} from './joiners/mapStraight'
 
-type AlgorithmGroup = number
+export type AlgorithmGroup = string
 //2-k02-a1
 type TestDataName = string
 type TestDataMeasure = {

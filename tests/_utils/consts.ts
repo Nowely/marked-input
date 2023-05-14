@@ -34,6 +34,61 @@ export const Markups_2 = Markups_16.slice(0, 2)
 export const Markups_4 = Markups_16.slice(0, 4)
 export const Markups_8 = Markups_16.slice(0, 8)
 
+export const AnnCountToMarkupMap: Record<string, Markup[]> = {
+	'a1': Markups_1,
+	'a2': Markups_2,
+	'a4': Markups_4,
+	'a8': Markups_8,
+	'a16': Markups_16,
+}
+
+export const LineCountToDiff: Record<string, { count: number, speed: number }> = {
+	2: {
+		count: 10,
+		speed: 1,
+	},
+	5: {
+		count: 10,
+		speed: 2,
+	},
+	10: {
+		count: 10,
+		speed: 5,
+	},
+	20: {
+		count: 10,
+		speed: 5,
+	},
+	50: {
+		count: 10,
+		speed: 10,
+	},
+	100: {
+		count: 10,
+		speed: 20,
+	},
+	1_000: {
+		count: 10,
+		speed: 50,
+	},
+	10_000: {
+		count: 10,
+		speed: 100,
+	},
+	100_000: {
+		count: 10,
+		speed: 1000,
+	},
+	500_000: {
+		count: 10,
+		speed: 5000,
+	},
+	1_000_000: {
+		count: 10,
+		speed: 10000,
+	},
+}
+
 export const Analyzers: Analyzer[] = [isEqual, findSingleGap]
 export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser]
 export const Joiners: ((params: JoinParameters) => string)[] = [mapStraight, modifyOrigin]
