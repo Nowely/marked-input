@@ -1,4 +1,4 @@
-import {JoinParameters} from './types'
+import {JoinParameters} from '../types'
 import {MarkMatch} from 'rc-marked-input'
 
 export function joinExactly({pieces, index, value}: JoinParameters) {

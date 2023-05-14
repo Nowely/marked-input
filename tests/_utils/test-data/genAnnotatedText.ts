@@ -1,7 +1,7 @@
 import {annotate} from 'rc-marked-input'
-import {Markups_16} from './consts'
-import {readFile} from './readFile'
-import {writeFile} from './writeFile'
+import {Markups_16} from '../consts'
+import {readFile} from '../readFile'
+import {writeFile} from '../writeFile'
 
 /**
  * @example genAnnotatedText(1_000, [1, 2]) - generate 1000 lines text with 03, 05, 08 annotated ratio and 1, 2 annotations

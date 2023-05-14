@@ -1,8 +1,8 @@
 //111, 112, 121, 122, 211...
 import {Markup} from 'rc-marked-input'
 import {Piece} from 'rc-marked-input/types'
-import {formalizeTear} from './formalizeTear'
-import {joinSimple} from './joinSimple'
+import {formalizeTear} from './analyzers/formalizeTear'
+import {joinSimple} from './joiners/joinSimple'
 
 type AlgorithmGroup = number
 //2-k02-a1

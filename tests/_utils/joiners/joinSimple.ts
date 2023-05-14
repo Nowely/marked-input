@@ -1,4 +1,4 @@
-import {JoinParameters} from './types'
+import {JoinParameters} from '../types'
 import {annotate, isAnnotated} from 'rc-marked-input/utils'
 
 export function joinSimple({pieces, markups}: JoinParameters) {

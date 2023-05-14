@@ -10,7 +10,7 @@ export class VirtualComponent {
 	private readonly joiner: Joiner
 
 	value: string = ''
-	tokens!: Piece[]
+	tokens: Piece[] = []
 	private ranges!: number[]
 
 	constructor(private readonly markups: Markup[], group: [number, number, number]) {

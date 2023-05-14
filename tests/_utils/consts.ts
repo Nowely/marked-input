@@ -1,10 +1,10 @@
 import {Markup} from 'rc-marked-input'
 import {Parser} from 'rc-marked-input/utils/Parser'
-import {SymbolParser} from 'rc-marked-input/utils/SymbolParser'
-import {analyzeSimple} from './analyzeSimple'
-import {formalizeTear} from './formalizeTear'
-import {joinExactly} from './joinExactly'
-import {joinSimple} from './joinSimple'
+import {analyzeSimple} from './analyzers/analyzeSimple'
+import {formalizeTear} from './analyzers/formalizeTear'
+import {joinExactly} from './joiners/joinExactly'
+import {joinSimple} from './joiners/joinSimple'
+import {SymbolParser} from './parsers/SymbolParser'
 import {Analyzer, JoinParameters, ParserConstructor} from './types'
 
 export const Markups_16: Markup[] = [
