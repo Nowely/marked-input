@@ -1,23 +1,8 @@
-import {annotate, MarkMatch, Markup} from 'rc-marked-input'
+import {Markup} from 'rc-marked-input'
 import {Piece} from 'rc-marked-input/types'
-import {isAnnotated} from 'rc-marked-input/utils'
-import {Parser} from 'rc-marked-input/utils/Parser'
-import {SymbolParser} from 'rc-marked-input/utils/SymbolParser'
-import {formalizeTear} from './formalizeTear'
+import {Analyzers, Joiners, Parsers} from './consts'
 import {getClosestIndexes} from './getClosestIndexes'
-
-type ParserConstructor = new(markups: Markup[]) => IParser
-
-interface IParser {
-	split(value: string): Piece[]
-}
-
-const Analyzers: Analyzer[] = [analyzeSimple, formalizeTear]
-const Parsers: ParserConstructor[] = [SymbolParser, Parser]
-const Joiners: ((params: JoinParameters) => string)[] = [joinSimple, joinExactly]
-
-type Analyzer = typeof formalizeTear
-type Joiner = typeof joinSimple
+import {Analyzer, IParser, Joiner} from './types'
 
 export class VirtualComponent {
 	private readonly analyzer: Analyzer
@@ -54,22 +39,8 @@ export class VirtualComponent {
 		this.tokens.splice(updatedIndex, 1, ...partTokens)
 		this.value = value
 		this.ranges = this.getRangeMap()
-
-		/*const a = this.tokens.map(token => typeof token === 'string' ? token : token.annotation)
-		console.log(indexes)
-		console.log(a)
-		console.log(value)*/
 	}
 
-
-	getRangeMap() {
-		let position = 0
-		return this.tokens.map(token => {
-			const length = typeof token === 'string' ? token.length : token.annotation.length
-			position += length
-			return position - length
-		})
-	}
 
 	update(fn: (value: string) => string) {
 		const index = this.tokens.length - 1
@@ -84,47 +55,16 @@ export class VirtualComponent {
 			value: this.value
 		}
 		const newValue = this.joiner(params)
-
-		/*const startTime1 = performance.now()
-		for (let i = 0; i < 1000000; i++) {
-			joinSimple(params)
-		}
-		const endTime1 = performance.now()
-
-		const startTime2 = performance.now()
-		for (let i = 0; i < 1000000; i++) {
-			joinExactly(params)
-		}
-		const endTime2 = performance.now()
-
-		const a = convertMsIntoFrequency(endTime1 - startTime1)
-		const b = convertMsIntoFrequency(endTime2 - startTime2)
-		console.log(`Simple: ${a}`)
-		console.log(`Exactly: ${b}`)*/
-
 		this.render(newValue)
 	}
-}
 
-function analyzeSimple(value: string, newValue: string) {
-	if (value === newValue) return undefined
-}
-
-type JoinParameters = { pieces: Piece[], index: number, value: string, markups: Markup[] }
-
-function joinSimple({pieces, markups}: JoinParameters) {
-	let result = ''
-	for (let value of pieces) {
-		result += isAnnotated(value)
-			? annotate(markups[value.optionIndex], value.label, value.value)
-			: value
+	private getRangeMap() {
+		let position = 0
+		return this.tokens.map(token => {
+			const length = typeof token === 'string' ? token.length : token.annotation.length
+			position += length
+			return position - length
+		})
 	}
-	return result
 }
 
-function joinExactly({pieces, index, value}: JoinParameters) {
-	const annotationLast = (pieces[index - 1] as MarkMatch).annotation
-	const annIndex = value.lastIndexOf(annotationLast)
-	const substring = value.substring(0, annIndex + annotationLast.length)
-	return substring + pieces[index]
-}
