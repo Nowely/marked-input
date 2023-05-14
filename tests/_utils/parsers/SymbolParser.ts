@@ -51,7 +51,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		if (this.done)
 			return {done: this.done, value: null}
 
-		let match = this.findMatch1(this.raw)
+		let match = this.findMatch(this.raw)
 		if (match === null) {
 			this.done = true
 			return {done: false, value: [this.raw, null]}
@@ -62,47 +62,46 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		return {done: false, value: [span, mark]}
 	}
 
-	findMatch1(raw: string) {
-		for (let i = 0; i < raw.length; i++) {
-			const substring = raw.substring(i)
-			const indexPairs: [number, number][] = []
-			this.splitMarkups.forEach(([left, right], markupIndex) => {
-				if (substring.startsWith(left)) {
-					const endIndex = substring.indexOf(right)
-					if (endIndex !== -1){
-						indexPairs.push([endIndex, markupIndex])
-					}
-				}
-			})
-			let minEndIndex = Number.POSITIVE_INFINITY
-			let minEndMarkupIndex = Number.POSITIVE_INFINITY
-			indexPairs.forEach(([endIndex, markupIndex]) => {
-				if (endIndex < minEndIndex) {
-					minEndIndex = endIndex
-					minEndMarkupIndex = markupIndex
-				}
-			})
-			if (indexPairs.length) {
-				/*return {
-					startIndex: i,
-					endIndex: minEndIndex,
-					markupIndex: minEndMarkupIndex
-				}*/
-				return [
-					raw.slice(0, i),
-					{
-						annotation: substring.slice(0, minEndIndex + 1),
-						input: raw,
-						label: substring
-							.slice(0, minEndIndex + 1)
-							.slice(this.splitMarkups[minEndMarkupIndex][0].length, minEndIndex),
-						index: i,
-						optionIndex: minEndMarkupIndex
-					} as MarkMatch,
-					substring.slice(minEndIndex + 1)
-				] as const
+	findMatch(raw: string) {
+		const indexPairs: [number, number, number][] = []
+		this.splitMarkups.forEach(([left, right], markupIndex) => {
+			const startIndex = raw.indexOf(left)
+			if (startIndex === -1) return
+
+			const endIndex = raw.indexOf(right)
+			if (endIndex === -1) return
+
+			indexPairs.push([startIndex, endIndex, markupIndex])
+		})
+
+		let minStartIndex = Number.POSITIVE_INFINITY
+		let minEndIndex = Number.POSITIVE_INFINITY
+		let minEndMarkupIndex = Number.POSITIVE_INFINITY
+		indexPairs.forEach(([startIndex, endIndex, markupIndex]) => {
+			if (endIndex < minEndIndex) {
+				minStartIndex = startIndex
+				minEndIndex = endIndex
+				minEndMarkupIndex = markupIndex
 			}
+		})
+
+		if (indexPairs.length) {
+			const substring = raw.slice(minStartIndex)
+			return [
+				raw.slice(0, minStartIndex),
+				{
+					annotation: substring.slice(0, minEndIndex + 1),
+					input: raw,
+					label: substring
+						.slice(0, minEndIndex + 1)
+						.slice(this.splitMarkups[minEndMarkupIndex][0].length, minEndIndex),
+					index: minStartIndex,
+					optionIndex: minEndMarkupIndex
+				} as MarkMatch,
+				substring.slice(minEndIndex + 1)
+			] as const
 		}
+
 		return null
 	}
 }
