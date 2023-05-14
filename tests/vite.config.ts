@@ -21,8 +21,8 @@ export default defineConfig(({command}) => ({
 	build: {
 		lib: {
 			entry: [
-				...analyzerPaths,
-				...parserPaths,
+				//...analyzerPaths,
+				//...parserPaths,
 				...joinerPaths,
 			],
 			//name: 'MarkedInput',
