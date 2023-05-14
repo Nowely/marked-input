@@ -1,20 +1,24 @@
 import {Benchmark} from './_utils/Benchmark'
 import {Markups_2} from './_utils/consts'
+import {RegexParser} from './_utils/parsers/RegexParser'
 import {SymbolParser} from './_utils/parsers/SymbolParser'
 import {readFile} from './_utils/readFile'
 import {VirtualComponent} from './_utils/VirtualComponent'
 
 
-const tester = new Benchmark()
+//const tester = new Benchmark()
 //await tester.loadResult()
-await tester.start()
-await tester.saveResult()
+//await tester.start()
+//await tester.saveResult()
 
-//const a = new SymbolParser(Markups_2)
-//const data = await readFile('./data/2-k02-a2.txt')
-//const tokens = a.split(data)
-//console.log(data)
-//console.log(tokens)
+/*const a = new SymbolParser(Markups_2)
+const b = new RegexParser(Markups_2)
+const data = await readFile('./data/2-k02-a2.txt')
+const tokens = a.split(data)
+const tokens1 = b.split(data)
+console.log(data)
+console.log(tokens)
+console.log(tokens1)*/
 
 /*const component = new VirtualComponent(Markups_2, [0, 0, 1])
 //First render

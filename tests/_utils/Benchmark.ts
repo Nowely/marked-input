@@ -13,8 +13,15 @@ export class Benchmark {
 	result: MeasureResult = {}
 
 	async start() {
-		const names = (await getFileNames(this.dataDir)).filter(value => value.includes('-k'))
-		for (let i = 13; i < 14; i++) {
+		const names = (await getFileNames(this.dataDir))
+			.filter(value => value.includes('-k'))
+			.sort((a, b) => {
+				const a1 = Number(a.split('-')[0])
+				const b1 = Number(b.split('-')[0])
+				return a1 -b1
+			})
+
+		for (let i = 0; i < 105; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 

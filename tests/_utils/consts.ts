@@ -29,6 +29,28 @@ export const Markups_16: Markup[] = [
 	'[[__label__]]',
 ]
 
+export const Markups_161: Markup[] = [
+	'@[__label__]',
+	'@{__label__}',
+	'/[__label__]',
+	'/{__label__}',
+
+	'*__label__*',
+	'___label___',
+	'#__label__#',
+	'`__label__`',
+
+	'~__label__~',
+	'(__label__)',
+	'$__label__$',
+	'!__label__!',
+
+	'^__label__^',
+	'((__label__))',
+	'/__label__/',
+	'|__label__|',
+]
+
 export const Markups_1 = Markups_16.slice(0, 1)
 export const Markups_2 = Markups_16.slice(0, 2)
 export const Markups_4 = Markups_16.slice(0, 4)
