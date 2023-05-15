@@ -132,3 +132,10 @@ export const SizeMap = {
 		1: 0.18, //0.17 modifyOrigin
 	}
 } as const
+
+export const RawPath = './raw.json'
+export const MeasuresPath = './measures.json'
+export const NormalizedMeasuresPath = './norm-measures.json'
+
+export const EachScoredMeasuresPath = './scored-measures.json'
+export const FinalScorePath = './final-score.json'

@@ -1,6 +1,6 @@
 import path from 'path'
 import * as process from 'process'
-import {Analyzers, AnnCountToMarkupMap, Joiners, LineCountToDiff, Parsers} from './consts'
+import {Analyzers, AnnCountToMarkupMap, Joiners, LineCountToDiff, Parsers, RawPath} from './consts'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
@@ -94,7 +94,7 @@ export class Benchmark {
 	}
 
 	async loadResult() {
-		const content = await readFile('./result.json')
+		const content = await readFile(RawPath)
 		this.result = JSON.parse(content)
 	}
 
@@ -104,7 +104,7 @@ export class Benchmark {
 
 	async saveResult() {
 		const content = JSON.stringify(this.result, null, ' ')
-		await writeFile('./raw.json', content)
+		await writeFile(RawPath, content)
 	}
 }
 

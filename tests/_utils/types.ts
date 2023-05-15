@@ -29,6 +29,16 @@ type TestDataMeasure = {
 	size: number
 }
 export type Measures = Record<AlgorithmGroup, Record<TestDataName, TestDataMeasure>>
+
+/** All values from 0 to 1 */
+type NormalizedTestDataMeasure = {
+	memory: number
+	time: number
+	size: number
+}
+export type NormalizedMeasures = Record<AlgorithmGroup, Record<TestDataName, NormalizedTestDataMeasure>>
+export type EachScored = Record<AlgorithmGroup, Record<TestDataName, number>>
+export type FinalScored = Record<AlgorithmGroup, number>
 //export type RawMeasures = Record<AlgorithmGroup, any>
 
 
