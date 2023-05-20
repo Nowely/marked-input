@@ -134,7 +134,8 @@ export const SizeMap = {
 	}
 } as const
 
-export const ResultFolderPath = './results'
+export const DataFolderPath = './benchmarks/data'
+export const ResultFolderPath = './benchmarks/results'
 export const RawPath = path.resolve(ResultFolderPath, '1-raw.json')
 export const TargetPath = path.resolve(ResultFolderPath, '2-target.json')
 export const NormalizedPath = path.resolve(ResultFolderPath, '3-normalized.json')

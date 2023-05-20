@@ -1,6 +1,6 @@
 import path from 'path'
 import * as process from 'process'
-import {Analyzers, AnnCountToMarkupMap, Joiners, LineCountToDiff, Parsers, RawPath} from '../consts'
+import {Analyzers, AnnCountToMarkupMap, DataFolderPath, Joiners, LineCountToDiff, Parsers, RawPath} from '../consts'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
@@ -9,11 +9,10 @@ import {VirtualComponent} from './VirtualComponent'
 import {writeFile} from './writeFile'
 
 export class Benchmark {
-	dataDir = './data'
 	result: RawMeasures = {}
 
 	async start() {
-		const names = (await getFileNames(this.dataDir))
+		const names = (await getFileNames(DataFolderPath))
 			.filter(value => value.includes('-k'))
 			.sort((a, b) => {
 				const a1 = Number(a.split('-')[0])
@@ -26,13 +25,13 @@ export class Benchmark {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 
-			for (let j = 0; j < 10; j++)
+			for (let j = 0; j < 1; j++)
 				await this.runFor(name)
 		}
 	}
 
 	async runFor(name: string) {
-		const data = await readFile(path.resolve(this.dataDir, name))
+		const data = await readFile(path.resolve(DataFolderPath, name))
 		const clearName = name.replace('.txt', '')
 		const [lineCount, annRatio, annCount] = clearName.split('-')
 		const updateRule = LineCountToDiff[lineCount]
