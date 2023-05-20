@@ -1,15 +1,16 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
     "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "node",
+    /*"moduleResolution": "node",
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "outDir": "dist",
-    //"types": ["vitest/globals"]
+    "outDir": "dist"
+    //"types": ["vitest/globals"]*/
   },
-  "include": ["index.ts"],
+  /*"include": ["index.ts"]*/
 }
