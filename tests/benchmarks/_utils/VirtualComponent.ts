@@ -37,7 +37,13 @@ export class VirtualComponent {
 		const substring = value.substring(this.ranges[updatedIndex])
 
 		const partTokens = this.parser.split(substring)
-		this.tokens.splice(updatedIndex, 1, ...partTokens)
+		//TODO
+		try {
+			this.tokens.splice(updatedIndex, 1, ...partTokens)
+		}
+		catch (e) {
+
+		}
 		this.value = value
 		this.ranges = this.getRangeMap()
 	}

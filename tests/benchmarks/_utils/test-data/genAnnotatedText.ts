@@ -1,5 +1,6 @@
+import path from 'path'
 import {annotate} from 'rc-marked-input'
-import {Markups_16} from '../../consts'
+import {DataFolderPath, Markups_16} from '../../consts'
 import {readFile} from '../readFile'
 import {writeFile} from '../writeFile'
 
@@ -7,7 +8,7 @@ import {writeFile} from '../writeFile'
  * @example genAnnotatedText(1_000, [1, 2]) - generate 1000 lines text with 03, 05, 08 annotated ratio and 1, 2 annotations
  */
 export async function genAnnotatedText(size: number, markupCount: number[]) {
-	const filePath = `./data/${size}.txt`
+	const filePath = path.resolve(DataFolderPath, `${size}.txt`)
 	const data = await readFile(filePath)
 
 	const words = data.split(/[\s\n]+/)
@@ -33,9 +34,9 @@ export async function genAnnotatedText(size: number, markupCount: number[]) {
 		const textK05 = annotatedK05.join(' ').replaceAll('. ', '.\n')
 		const textK08 = annotatedK08.join(' ').replaceAll('. ', '.\n')
 
-		writeFile(`./data/${size}-k02-a${count}.txt`, textK02)
-		writeFile(`./data/${size}-k05-a${count}.txt`, textK05)
-		writeFile(`./data/${size}-k08-a${count}.txt`, textK08)
+		writeFile(path.resolve(DataFolderPath, `${size}-k02-a${count}.txt`), textK02)
+		writeFile(path.resolve(DataFolderPath, `${size}-k05-a${count}.txt`), textK05)
+		writeFile(path.resolve(DataFolderPath, `${size}-k08-a${count}.txt`), textK08)
 	}
 
 
