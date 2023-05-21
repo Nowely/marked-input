@@ -6,7 +6,7 @@ import {writeFile} from '../writeFile'
 
 /**
  * @example
- * genAnnotatedText([20, 50, 100, 1000, 10_000, 100_000, 500_000, 1000_000], [1, 2, 4, 8, 16])
+ * genAnnotatedText([20, 50, 100, 1000, 10_000, 100_000, 500_000], [1, 2, 4, 8, 16])
  * genAnnotatedText([10], [1, 2, 4, 8]) // generate 10 lines text with 03, 05, 08 annotated ratio and 1, 2, 4, 8 annotations
  * genAnnotatedText([2, 5], [1, 2, 4])
  */
