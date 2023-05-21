@@ -1,10 +1,10 @@
-Placeat @[qui] enim quasi eligendi.
-Illo sint @[dolorem} culpa @[ad] eos illum dicta et.
-Quaerat natus dolore accusantium.
-Sunt earum unde cumque pariatur doloribus ducimus @[maxime} distinctio consequuntur.
-Sint @[modi] placeat iste @[fuga} vero @[dicta].
-@[Quisquam} omnis neque quod.
-Maxime facere voluptate.
-Impedit veniam doloremque nulla est magni quae delectus quasi.
-@[Nesciunt] non @[perferendis} @[sunt].
-@[Accusamus} minima @[explicabo] magni blanditiis occaecati.
+Placeat qui enim quasi eligendi.
+Illo sint <h1>dolorem</h1> culpa <h2>ad</h2> eos illum dicta <h1>et</h1>.
+Quaerat natus dolore <h2>accusantium</h2>.
+Sunt earum unde cumque pariatur <h1>doloribus</h1> ducimus <h2>maxime</h2> distinctio consequuntur.
+<h1>Sint</h1> <h2>modi</h2> placeat iste <h1>fuga</h1> vero dicta.
+Quisquam omnis neque quod.
+Maxime <h2>facere</h2> voluptate.
+Impedit veniam <h1>doloremque</h1> nulla est magni <h2>quae</h2> delectus quasi.
+Nesciunt non perferendis sunt.
+<h1>Accusamus</h1> minima explicabo magni blanditiis occaecati.

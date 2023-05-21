@@ -14,7 +14,6 @@ export class Benchmark {
 	async start() {
 		const names = (await getFileNames(DataFolderPath))
 			.filter(value => value.includes('-k'))
-			//.filter(value => !value.includes('-a16')) //to 90
 			.sort((a, b) => {
 				const a1 = Number(a.split('-')[0])
 				const b1 = Number(b.split('-')[0])
@@ -26,7 +25,7 @@ export class Benchmark {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 
-			for (let j = 0; j < 10; j++)
+			for (let j = 0; j < 1; j++)
 				await this.runFor(name)
 		}
 	}

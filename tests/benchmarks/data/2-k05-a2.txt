@@ -1,2 +1,2 @@
-Adipisci @[amet] @[quod} @[accusantium] similique @[natus} officiis.
-@[Maiores] maxime @[necessitatibus} @[fugit] dolor @[minima} @[consequatur] molestias officiis quae.
+Adipisci <h1>amet</h1> <h2>quod</h2> accusantium similique <h1>natus</h1> officiis.
+<h2>Maiores</h2> <h1>maxime</h1> <h2>necessitatibus</h2> <h1>fugit</h1> dolor minima <h2>consequatur</h2> molestias officiis <h1>quae</h1>.

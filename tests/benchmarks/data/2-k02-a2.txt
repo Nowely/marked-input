@@ -1,2 +1,2 @@
-Adipisci @[amet] quod accusantium similique natus officiis.
-Maiores maxime necessitatibus fugit dolor @[minima} consequatur molestias @[officiis] @[quae}.
+Adipisci amet quod accusantium similique natus officiis.
+<h1>Maiores</h1> <h2>maxime</h2> necessitatibus <h1>fugit</h1> dolor minima <h2>consequatur</h2> molestias officiis quae.

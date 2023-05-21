@@ -1,5 +1,5 @@
-@[Doloremque] @[molestias} @[temporibus] @[repudiandae} hic @[deleniti] @[optio}.
-@[Eligendi] @[eligendi} @[ipsum] at pariatur @[excepturi} @[ipsam].
-Aliquid @[pariatur} @[laudantium] @[dicta} @[repellendus].
-@[Accusantium} @[amet] @[repellat} dignissimos @[nesciunt] @[ipsum} @[necessitatibus] nulla @[qui}.
-@[Sunt] @[pariatur} @[consectetur].
+<h1>Doloremque</h1> <h2>molestias</h2> temporibus repudiandae <h1>hic</h1> <h2>deleniti</h2> <h1>optio</h1>.
+<h2>Eligendi</h2> <h1>eligendi</h1> <h2>ipsum</h2> <h1>at</h1> <h2>pariatur</h2> <h1>excepturi</h1> <h2>ipsam</h2>.
+<h1>Aliquid</h1> <h2>pariatur</h2> <h1>laudantium</h1> dicta <h2>repellendus</h2>.
+<h1>Accusantium</h1> amet repellat <h2>dignissimos</h2> <h1>nesciunt</h1> <h2>ipsum</h2> <h1>necessitatibus</h1> <h2>nulla</h2> <h1>qui</h1>.
+<h2>Sunt</h2> <h1>pariatur</h1> consectetur.

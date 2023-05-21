@@ -1,10 +1,10 @@
-@[Placeat] @[qui} enim quasi @{eligendi].
-@{Illo} @[sint] @[dolorem} @{culpa] ad @{eos} @[illum] @[dicta} @{et].
-@{Quaerat} @[natus] @[dolore} @{accusantium].
-Sunt @{earum} @[unde] @[cumque} @{pariatur] @{doloribus} @[ducimus] @[maxime} @{distinctio] consequuntur.
-@{Sint} modi @[placeat] @[iste} @{fuga] @{vero} @[dicta].
-@[Quisquam} @{omnis] @{neque} @[quod].
-@[Maxime} @{facere] @{voluptate}.
-@[Impedit] veniam doloremque @[nulla} est magni @{quae] @{delectus} @[quasi].
-@[Nesciunt} @{non] @{perferendis} @[sunt].
-Accusamus @[minima} @{explicabo] magni @{blanditiis} @[occaecati].
+<h1>Placeat</h1> <h2>qui</h2> <p>enim</p> <a>quasi</a> eligendi.
+Illo <h1>sint</h1> <h2>dolorem</h2> <p>culpa</p> <a>ad</a> <h1>eos</h1> <h2>illum</h2> <p>dicta</p> <a>et</a>.
+<h1>Quaerat</h1> <h2>natus</h2> <p>dolore</p> <a>accusantium</a>.
+Sunt <h1>earum</h1> <h2>unde</h2> <p>cumque</p> <a>pariatur</a> <h1>doloribus</h1> <h2>ducimus</h2> <p>maxime</p> <a>distinctio</a> consequuntur.
+<h1>Sint</h1> <h2>modi</h2> placeat iste <p>fuga</p> <a>vero</a> <h1>dicta</h1>.
+<h2>Quisquam</h2> <p>omnis</p> <a>neque</a> <h1>quod</h1>.
+<h2>Maxime</h2> <p>facere</p> <a>voluptate</a>.
+<h1>Impedit</h1> <h2>veniam</h2> <p>doloremque</p> nulla <a>est</a> magni <h1>quae</h1> <h2>delectus</h2> <p>quasi</p>.
+<a>Nesciunt</a> <h1>non</h1> perferendis <h2>sunt</h2>.
+Accusamus <p>minima</p> <a>explicabo</a> magni blanditiis <h1>occaecati</h1>.

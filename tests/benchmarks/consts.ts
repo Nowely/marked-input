@@ -9,47 +9,25 @@ import {SymbolParser} from './_utils/parsers/SymbolParser'
 import {Analyzer, JoinParameters, ParserConstructor} from './types'
 
 export const Markups_16: Markup[] = [
-	'@[__label__]',
-	'@[__label__}',
-	'@{__label__]',
-	'@{__label__}',
+	'<h1>__label__</h1>',
+	'<h2>__label__</h2>',
+	'<p>__label__</p>',
+	'<a>__label__</a>',
 
-	'/[__label__}',
-	'/{__label__]',
-	'/{__label__}',
+	'<span>__label__</span>',
+	'<b>__label__</b>',
+	'<i>__label__</i>',
+	'<abbr>__label__</abbr>',
 
-	'@[__label__*',
-	'@*__label__]',
-	'@*__label__*',
+	'<input>__label__</input>',
+	'<button>__label__</button>',
+	'<select>__label__</select>',
+	'<section>__label__</section>',
 
-	'_[__label__]_',
-	'____label____',
-	'**__label__**',
-	'[^__label__^]',
-	'[=^__label__^=]',
-	'[[__label__]]',
-]
-
-export const Markups_161: Markup[] = [
-	'@[__label__]',
-	'@{__label__}',
-	'/[__label__]',
-	'/{__label__}',
-
-	'*__label__*',
-	'___label___',
-	'#__label__#',
-	'`__label__`',
-
-	'~__label__~',
-	'(__label__)',
-	'$__label__$',
-	'!__label__!',
-
-	'^__label__^',
-	'((__label__))',
-	'/__label__/',
-	'|__label__|',
+	'<strong>__label__</strong>',
+	'<article>__label__</article>',
+	'<header>__label__</header>',
+	'<footer>__label__</footer>',
 ]
 
 export const Markups_1 = Markups_16.slice(0, 1)

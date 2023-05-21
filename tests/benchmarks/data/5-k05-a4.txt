@@ -1,5 +1,5 @@
-Doloremque molestias @[temporibus] @[repudiandae} hic @{deleniti] @{optio}.
-Eligendi eligendi @[ipsum] at pariatur @[excepturi} @{ipsam].
-@{Aliquid} pariatur laudantium @[dicta] @[repellendus}.
-Accusantium @{amet] @{repellat} dignissimos nesciunt @[ipsum] necessitatibus @[nulla} qui.
-@{Sunt] @{pariatur} consectetur.
+Doloremque <h1>molestias</h1> temporibus <h2>repudiandae</h2> <p>hic</p> deleniti optio.
+Eligendi eligendi <a>ipsum</a> at <h1>pariatur</h1> excepturi <h2>ipsam</h2>.
+<p>Aliquid</p> <a>pariatur</a> laudantium dicta repellendus.
+<h1>Accusantium</h1> <h2>amet</h2> <p>repellat</p> dignissimos <a>nesciunt</a> <h1>ipsum</h1> <h2>necessitatibus</h2> nulla qui.
+Sunt <p>pariatur</p> <a>consectetur</a>.

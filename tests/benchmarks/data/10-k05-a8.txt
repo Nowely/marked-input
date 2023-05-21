@@ -1,10 +1,10 @@
-Placeat @[qui] enim quasi eligendi.
-@[Illo} @{sint] dolorem culpa ad @{eos} /[illum} dicta et.
-/{Quaerat] natus dolore /{accusantium}.
-Sunt @[earum* @[unde] @[cumque} pariatur @{doloribus] @{ducimus} /[maxime} distinctio consequuntur.
-/{Sint] /{modi} @[placeat* iste @[fuga] @[vero} dicta.
-Quisquam @{omnis] @{neque} quod.
-Maxime /[facere} voluptate.
-Impedit veniam /{doloremque] nulla est magni /{quae} delectus @[quasi*.
-@[Nesciunt] @[non} @{perferendis] @{sunt}.
-Accusamus minima /[explicabo} magni /{blanditiis] /{occaecati}.
+<h1>Placeat</h1> <h2>qui</h2> enim quasi eligendi.
+Illo sint dolorem <p>culpa</p> <a>ad</a> eos illum dicta <span>et</span>.
+<b>Quaerat</b> <i>natus</i> <abbr>dolore</abbr> accusantium.
+<h1>Sunt</h1> <h2>earum</h2> <p>unde</p> cumque <a>pariatur</a> <span>doloribus</span> ducimus maxime <b>distinctio</b> <i>consequuntur</i>.
+Sint modi placeat <abbr>iste</abbr> <h1>fuga</h1> <h2>vero</h2> <p>dicta</p>.
+<a>Quisquam</a> omnis neque quod.
+Maxime <span>facere</span> voluptate.
+Impedit <b>veniam</b> doloremque <i>nulla</i> <abbr>est</abbr> <h1>magni</h1> <h2>quae</h2> <p>delectus</p> quasi.
+Nesciunt <a>non</a> perferendis sunt.
+Accusamus <span>minima</span> explicabo <b>magni</b> <i>blanditiis</i> occaecati.

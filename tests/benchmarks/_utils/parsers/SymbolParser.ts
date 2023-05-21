@@ -94,15 +94,15 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 			return [
 				raw.slice(0, minStartIndex),
 				{
-					annotation: raw.slice(minStartIndex, minEndIndex + 1),
+					annotation: raw.slice(minStartIndex, minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length),
 					input: raw,
 					label: raw
-						.slice(minStartIndex, minEndIndex + 1)
+						.slice(minStartIndex, minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length)
 						.slice(this.splitMarkups[minEndMarkupIndex][0].length, -this.splitMarkups[minEndMarkupIndex][1].length),
 					index: minStartIndex,
 					optionIndex: minEndMarkupIndex
 				} as MarkMatch,
-				raw.slice(minEndIndex + 1)
+				raw.slice(minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length)
 			] as const
 		}
 
