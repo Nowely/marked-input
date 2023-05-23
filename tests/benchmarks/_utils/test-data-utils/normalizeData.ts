@@ -3,7 +3,7 @@ import {TargetPath, NormalizedPath} from '../../consts'
 import {Measures} from '../../types'
 import {writeFile} from '../writeFile'
 
-async function normalizeData() {
+export async function normalizeData() {
 	const str = await readFile(TargetPath)
 	const data: Measures = JSON.parse(str)
 	const groups = Object.keys(data)

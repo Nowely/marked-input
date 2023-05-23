@@ -4,7 +4,7 @@ import {Measures, RawMeasures} from '../../types'
 import {convertMsIntoFrequency} from '../convertMsIntoFrequency'
 import {writeFile} from '../writeFile'
 
-async function rawToMeasures() {
+export async function rawToMeasures() {
 	const data = await readFile(RawPath)
 	const result: RawMeasures = JSON.parse(data)
 	const measures: Measures = {}

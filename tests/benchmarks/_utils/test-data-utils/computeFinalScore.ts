@@ -3,7 +3,7 @@ import {DataScoredPath, GroupScoredPath} from '../../consts'
 import {EachScored, FinalScored} from '../../types'
 import {writeFile} from '../writeFile'
 
-async function computeFinalScore() {
+export async function computeFinalScore() {
 	const str = await readFile(DataScoredPath)
 	let data: EachScored = JSON.parse(str)
 

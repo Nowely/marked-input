@@ -1,23 +1,40 @@
 import * as path from 'path'
 import * as process from 'process'
 import {Analyzers, AnnCountToMarkupMap, DataFolderPath, Joiners, LineCountToDiff, Parsers, RawPath} from '../consts'
+import {AlgorithmGroup, RawMeasures} from '../types'
 import {convertMsIntoFrequency} from './convertMsIntoFrequency'
 import {getFileNames} from './getFileNames'
 import {readFile} from './readFile'
-import {AlgorithmGroup, RawMeasures} from '../types'
 import {VirtualComponent} from './VirtualComponent'
 import {writeFile} from './writeFile'
 
 export class Benchmark {
 	result: RawMeasures = {}
 
+	//Load last results, start measuring, save result in any way
+	static async continue() {
+		const tester = new Benchmark()
+		await tester.loadResult()
+		try {
+			await tester.start()
+		} catch (e) {
+			console.error(e)
+		} finally {
+			await tester.saveResult()
+		}
+	}
+	//Only start measuring
+	static async start() {
+		const tester = new Benchmark()
+		await tester.start()
+	}
 	async start() {
 		const names = (await getFileNames(DataFolderPath))
 			.filter(value => value.includes('-k'))
 			.sort((a, b) => {
 				const a1 = Number(a.split('-')[0])
 				const b1 = Number(b.split('-')[0])
-				return a1 -b1
+				return a1 - b1
 			})
 
 		//To 10_000

@@ -5,7 +5,7 @@ import {writeFile} from '../writeFile'
 
 //await computeScoreForTestData(0.8, 0.1, 0.1)
 
-async function computeScoreForTestData(timeAffect: number = 0.6, sizeAffect: number = 0.3, memoryAffect: number = 0.1) {
+export async function computeScoreForTestData(timeAffect: number = 0.6, sizeAffect: number = 0.3, memoryAffect: number = 0.1) {
 	const str = await readFile(NormalizedPath)
 	const data: NormalizedMeasures = JSON.parse(str)
 
