@@ -1,7 +1,7 @@
-import {readFile} from './readFile'
-import {TargetPath, NormalizedPath} from '../consts'
-import {Measures} from '../types'
-import {writeFile} from './writeFile'
+import {readFile} from '../readFile'
+import {TargetPath, NormalizedPath} from '../../consts'
+import {Measures} from '../../types'
+import {writeFile} from '../writeFile'
 
 async function normalizeData() {
 	const str = await readFile(TargetPath)

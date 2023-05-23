@@ -1,7 +1,7 @@
-import {readFile} from './readFile'
-import {DataScoredPath, NormalizedPath} from '../consts'
-import {NormalizedMeasures} from '../types'
-import {writeFile} from './writeFile'
+import {readFile} from '../readFile'
+import {DataScoredPath, NormalizedPath} from '../../consts'
+import {NormalizedMeasures} from '../../types'
+import {writeFile} from '../writeFile'
 
 //await computeScoreForTestData(0.8, 0.1, 0.1)
 

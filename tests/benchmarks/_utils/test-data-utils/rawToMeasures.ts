@@ -1,8 +1,8 @@
-import {readFile} from './readFile'
-import {TargetPath, RawPath, SizeMap} from '../consts'
-import {Measures, RawMeasures} from '../types'
-import {convertMsIntoFrequency} from './convertMsIntoFrequency'
-import {writeFile} from './writeFile'
+import {readFile} from '../readFile'
+import {TargetPath, RawPath, SizeMap} from '../../consts'
+import {Measures, RawMeasures} from '../../types'
+import {convertMsIntoFrequency} from '../convertMsIntoFrequency'
+import {writeFile} from '../writeFile'
 
 async function rawToMeasures() {
 	const data = await readFile(RawPath)

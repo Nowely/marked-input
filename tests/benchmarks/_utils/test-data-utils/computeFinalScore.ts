@@ -1,7 +1,7 @@
-import {readFile} from './readFile'
-import {DataScoredPath, GroupScoredPath} from '../consts'
-import {EachScored, FinalScored} from '../types'
-import {writeFile} from './writeFile'
+import {readFile} from '../readFile'
+import {DataScoredPath, GroupScoredPath} from '../../consts'
+import {EachScored, FinalScored} from '../../types'
+import {writeFile} from '../writeFile'
 
 async function computeFinalScore() {
 	const str = await readFile(DataScoredPath)
