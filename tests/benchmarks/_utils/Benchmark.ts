@@ -12,23 +12,25 @@ export class Benchmark {
 	result: RawMeasures = {}
 
 	//Load last results, start measuring, save result in any way
-	static async continue() {
+	static async continue(iterations: number = 10) {
 		const tester = new Benchmark()
 		await tester.loadResult()
 		try {
-			await tester.start()
+			await tester.start(iterations)
 		} catch (e) {
 			console.error(e)
 		} finally {
 			await tester.saveResult()
 		}
 	}
+
 	//Only start measuring
-	static async start() {
+	static async start(iterations: number = 10) {
 		const tester = new Benchmark()
 		await tester.start()
 	}
-	async start() {
+
+	async start(iterations: number = 10) {
 		const names = (await getFileNames(DataFolderPath))
 			.filter(value => value.includes('-k'))
 			.sort((a, b) => {
@@ -37,14 +39,25 @@ export class Benchmark {
 				return a1 - b1
 			})
 
-		//To 10_000
-		for (let i = 0; i < 105; i++) {
+		//To 10_000 is 105
+		console.log(`Start benchmark`)
+		const startTime = performance.now()
+		for (let i = 0; i < names.length; i++) {
 			const name = names[i]
 			console.log(`Process ${i} of ${names.length} the ${name}`)
 
-			for (let j = 0; j < 1; j++)
-				await this.runFor(name)
+			const startTime = performance.now()
+
+			for (let j = 0; j < iterations; j++) await this.runFor(name)
+
+			const endTime = performance.now()
+			const executionTime = Math.round(endTime - startTime)
+			console.log(`Process ${i} finished in ${executionTime} ms`)
+			console.log()
 		}
+		const endTime = performance.now()
+		const executionTime = Math.round(endTime - startTime) / 60000
+		console.log(`Benchmark finished in ${executionTime} min`)
 	}
 
 	async runFor(name: string) {
