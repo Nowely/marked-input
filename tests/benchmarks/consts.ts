@@ -4,6 +4,7 @@ import {isEqual} from './_utils/analyzers/isEqual'
 import {findSingleGap} from './_utils/analyzers/findSingleGap'
 import {modifyOrigin} from './_utils/joiners/modifyOrigin'
 import {mapStraight} from './_utils/joiners/mapStraight'
+import {PEGParser} from './_utils/parsers/PEGParser'
 import {RegexParser} from './_utils/parsers/RegexParser'
 import {SymbolParser} from './_utils/parsers/SymbolParser'
 import {Analyzer, JoinParameters, ParserConstructor} from './types'
@@ -84,14 +85,10 @@ export const LineCountToDiff: Record<string, { count: number, speed: number }> =
 		count: 10,
 		speed: 5000,
 	},
-	1_000_000: {
-		count: 10,
-		speed: 10000,
-	},
 }
 
 export const Analyzers: Analyzer[] = [isEqual, findSingleGap]
-export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser]
+export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser, PEGParser]
 export const Joiners: ((params: JoinParameters) => string)[] = [mapStraight, modifyOrigin]
 
 /**
@@ -112,6 +109,7 @@ export const SizeMap = {
 	}
 } as const
 
+export const UtilsFolderPath = './benchmarks/_utils'
 export const DataFolderPath = './benchmarks/data'
 export const ResultFolderPath = './benchmarks/results'
 export const RawPath = path.resolve(ResultFolderPath, '1-raw.json')
