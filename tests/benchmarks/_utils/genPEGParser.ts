@@ -15,7 +15,7 @@ OpenTag = "<" tagName:$TagName ">" { return tagName}
 CloseTag = "</" tagName:TagName ">"
 TagName = [a-z0-9]i+
 Char = text:$[^<]* { return text }
-rest "The rest of the input" = $.*
+rest = $.*
 `
 
 export async function genPEGParser() {

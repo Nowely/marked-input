@@ -19,8 +19,12 @@
     "@vitest/coverage-c8": "^0.29.8",
     "@vitest/ui": "^0.29.8",
     "jsdom": "^21.1.1",
+    "nearley": "^2.20.1",
     "peggy": "^3.0.2",
     "vite-node": "^0.30.1",
     "vitest": "^0.29.8"
+  },
+  "devDependencies": {
+    "@types/nearley": "^2.11.2"
   }
 }

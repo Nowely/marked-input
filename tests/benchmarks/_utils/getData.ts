@@ -4,7 +4,7 @@ import {readFile} from './readFile'
 import path from 'path'
 
 //Allow to get specific text data by index
-async function getData(index: number = 2) {
+export async function getData(index: number = 2) {
 	const name = (await getFileNames(DataFolderPath))
 		.filter(value => value.includes('-k'))
 		//.filter(value => !value.includes('-a16')) //to 90

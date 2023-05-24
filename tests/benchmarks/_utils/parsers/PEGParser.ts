@@ -1,13 +1,9 @@
-import {PLACEHOLDER} from 'rc-marked-input/PLACEHOLDER'
-import {MarkMatch, Markup, Option, Piece} from 'rc-marked-input/types'
-import {normalizeMark} from 'rc-marked-input/utils/normalizeMark'
-import * as peggy from "peggy";
+import {Markup, Option, Piece} from 'rc-marked-input/types'
 // @ts-ignore
-import * as parser from "../GeneratedPEGParser"
+import * as parser from '../GeneratedPEGParser'
 
 export class PEGParser {
 	private readonly markups: Markup[]
-
 
 	static split(value: string, options?: Option[]) {
 		const markups = options?.map((c) => c.markup!)
