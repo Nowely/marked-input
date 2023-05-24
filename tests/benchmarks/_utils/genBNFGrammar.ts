@@ -32,7 +32,6 @@ const Markups_16 = [
 %}
 
 main -> Element:* rest {% (data) => { let a = data[0].flat(); a.push(data[1]); return a } %}
-
 Element -> Char OpenTag Char CloseTag {% (data) => [data[0], {
     tag: data[1],
     annotation: "<" + data[1] + ">" + data[2] + "</" + data[1] + ">",
@@ -43,7 +42,7 @@ OpenTag -> "<" TagName ">" {% (data) => data[1].join("") %}
 CloseTag -> "</" TagName ">"
 TagName -> [a-zA-Z0-9]:+ {% (data) => data[0] %}
 Char -> [^<]:* {% (data) => data[0].join("") %}
-rest -> .:* {% (data) => data[0].join("") %}`
+rest ->  [^%]:* {% (data) => data[0].join("") %}`
 
 export async function genBNFGrammar() {
 	const grammarParser = new nearley.Parser(nearleyGrammar)
@@ -55,4 +54,5 @@ export async function genBNFGrammar() {
 	// Generate JavaScript code from the rules
 	const parserSource = generate.esmodule(grammarInfoObject, 'grammar')
 	fs.writeFileSync(path.resolve(UtilsFolderPath, 'GeneratedBNFGrammar.js'), parserSource, "utf8")
+	console.log(`Generated the new BNF grammar at ${Date.now()}`)
 }

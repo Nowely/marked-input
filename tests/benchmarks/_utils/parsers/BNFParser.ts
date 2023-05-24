@@ -1,4 +1,3 @@
-import fs from 'fs'
 import {Markup, Option, Piece} from 'rc-marked-input/types'
 import nearley from 'nearley'
 // @ts-ignore
@@ -6,7 +5,6 @@ import grammar from '../GeneratedBNFGrammar.js'
 
 export class BNFParser {
 	//private readonly markups: Markup[]
-	private parser: nearley.Parser
 
 	static split(value: string, options?: Option[]) {
 		const markups = options?.map((c) => c.markup!)
@@ -14,7 +12,6 @@ export class BNFParser {
 	}
 
 	constructor(markups: Markup[]) {
-		this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
 	}
 
 	split(value: string): Piece[] {
@@ -23,9 +20,13 @@ export class BNFParser {
 
 	#parse(value: string) {
 		try {
-			this.parser.feed(value)
-			if (this.parser.results.length > 0) {
-				return this.parser.results[0]
+			const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
+			parser.feed(value)
+			if (parser.results.length === 0) debugger
+			if (parser.results.length > 0) {
+				const max = Math.max(...parser.results.map(v => v.length))
+				const index = parser.results.findIndex(v => v.length === max)
+			 	return parser.results[index]
 			}
 		} catch (error) {
 			console.error('Parsing error:', error)

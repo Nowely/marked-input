@@ -27,7 +27,7 @@ export class Benchmark {
 	//Only start measuring
 	static async start(iterations: number = 10) {
 		const tester = new Benchmark()
-		await tester.start()
+		await tester.start(iterations)
 	}
 
 	async start(iterations: number = 10) {
@@ -68,7 +68,7 @@ export class Benchmark {
 		const markups = AnnCountToMarkupMap[annCount]
 
 		for (let i = 0; i < Analyzers.length; i++) {
-			for (let j = 0; j < Parsers.length; j++) {
+			for (let j = 0; j < Parsers.length - 1; j++) {
 				for (let k = 0; k < Joiners.length; k++) {
 					const group = getAlgorithmGroup(i, j, k)
 

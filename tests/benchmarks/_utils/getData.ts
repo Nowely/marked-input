@@ -13,5 +13,6 @@ export async function getData(index: number = 2) {
 			const b1 = Number(b.split('-')[0])
 			return a1 - b1
 		})[index]
+	console.log(`Read the ${name}`)
 	return await readFile(path.resolve(DataFolderPath, name))
 }

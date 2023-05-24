@@ -44,7 +44,7 @@ let ParserRules = [
     {"name": "Char$ebnf$1", "symbols": ["Char$ebnf$1", /[^<]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "Char", "symbols": ["Char$ebnf$1"], "postprocess": (data) => data[0].join("")},
     {"name": "rest$ebnf$1", "symbols": []},
-    {"name": "rest$ebnf$1", "symbols": ["rest$ebnf$1", /./], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
+    {"name": "rest$ebnf$1", "symbols": ["rest$ebnf$1", /[^%]/], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
     {"name": "rest", "symbols": ["rest$ebnf$1"], "postprocess": (data) => data[0].join("")}
 ];
 let ParserStart = "main";
