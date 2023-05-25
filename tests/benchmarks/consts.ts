@@ -1,5 +1,6 @@
 import path from 'path'
 import {Markup} from 'rc-marked-input'
+import {findMultiGap} from './_utils/analyzers/findMultiGap'
 import {isEqual} from './_utils/analyzers/isEqual'
 import {findSingleGap} from './_utils/analyzers/findSingleGap'
 import {modifyOrigin} from './_utils/joiners/modifyOrigin'
@@ -88,7 +89,7 @@ export const LineCountToDiff: Record<string, { count: number, speed: number }> =
 	},
 }
 
-export const Analyzers: Analyzer[] = [isEqual, findSingleGap]
+export const Analyzers: Analyzer[] = [isEqual, findSingleGap, findMultiGap]
 export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser, PEGParser, BNFParser]
 export const Joiners: ((params: JoinParameters) => string)[] = [mapStraight, modifyOrigin]
 

@@ -23,7 +23,7 @@ export class VirtualComponent {
 	render(value: string) {
 		const diff = this.analyzer(this.value, value)
 
-		if (!diff || !diff[0] && !diff[1]) {
+		if (!diff || !diff[0] && !diff[1] || !this.ranges) {
 			//find by ranges find
 
 			this.tokens = this.parser.split(value)

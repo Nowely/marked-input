@@ -67,8 +67,8 @@ export class Benchmark {
 		const updateRule = LineCountToDiff[lineCount]
 		const markups = AnnCountToMarkupMap[annCount]
 
-		for (let i = 0; i < Analyzers.length; i++) {
-			for (let j = 0; j < Parsers.length - 1; j++) {
+		for (let i = 2; i < Analyzers.length; i++) {
+			for (let j = 0; j < Parsers.length - 1; j++) { //ignore last is the slowest parser
 				for (let k = 0; k < Joiners.length; k++) {
 					const group = getAlgorithmGroup(i, j, k)
 
