@@ -100,10 +100,13 @@ export const SizeMap = {
 	analyzer: {
 		0: 0.05, //0.07 isEqual
 		1: 0.34, //0.19 findSingleGap
+		2: 3.63, //1.27 findMultiGap
 	},
 	parser: {
-		0: 2.24, //1.02 symbol
-		1: 2.16, //1.04 regex
+		0: 2.27, //0.98 symbol
+		1: 2.53, //1.16 regex
+		2: 7.83, //2.65 peg
+		3: 13.99 //4.06 bnf
 	},
 	joiner: {
 		0: 0.44, //0.31 mapStraight

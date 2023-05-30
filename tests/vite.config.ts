@@ -7,7 +7,7 @@ import {getFileNames} from './benchmarks/_utils/getFileNames'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-/*const __utils = path.resolve(__dirname, '_utils')
+const __utils = path.resolve(__dirname, 'benchmarks', '_utils')
 
 const __analyzers = path.resolve(__utils, 'analyzers')
 const __parsers = path.resolve(__utils, 'parsers')
@@ -15,7 +15,7 @@ const __joiners = path.resolve(__utils, 'joiners')
 
 const analyzerPaths = await getPaths(__analyzers)
 const parserPaths = await getPaths(__parsers)
-const joinerPaths = await getPaths(__joiners)*/
+const joinerPaths = await getPaths(__joiners)
 
 export default defineConfig(({command}) => ({
 	build: {

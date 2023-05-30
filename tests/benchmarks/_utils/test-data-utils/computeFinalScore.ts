@@ -24,6 +24,7 @@ export async function computeFinalScore() {
 	for (const [key, value] of entries) {
 		finalResult[key] = value
 	}
+	console.log(entries)
 	console.log(finalResult)
 
 	await writeFile(GroupScoredPath, JSON.stringify(entries, null, ' '))

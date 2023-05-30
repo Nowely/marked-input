@@ -9,7 +9,8 @@
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
     "bench:start": "vite-node benchmarks/index.ts",
-    "bench:watch": "vite-node --watch benchmarks/index.ts"
+    "bench:watch": "vite-node --watch benchmarks/index.ts",
+    "bench:build": "vite build"
   },
   "dependencies": {
     "@faker-js/faker": "^7.6.0",
