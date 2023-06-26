@@ -1,8 +1,30 @@
 import path from 'path'
 import {annotate} from 'rc-marked-input'
-import {DataFolderPath, Markups_16} from '../../consts'
+import {DataFolderPath, Markups_16, ResultFolderPath} from '../../consts'
 import {readFile} from '../readFile'
 import {writeFile} from '../writeFile'
+
+export async function genAnnotatedTextCount(sizes: number[]) {
+	const result: any = {}
+
+	for (const size of sizes) {
+		const filePath = path.resolve(DataFolderPath, `${size}.txt`)
+		const data = await readFile(filePath)
+
+		const words = data.split(/[\s\n]+/)
+
+		//annotated ratio
+		const k02 = Math.ceil(words.length * 0.2)
+		const k05 = Math.ceil(words.length * 0.5)
+		const k08 = Math.ceil(words.length * 0.8)
+
+		result[`${size}-k02`] = k02
+		result[`${size}-k05`] = k05
+		result[`${size}-k08`] = k08
+	}
+	console.log(result)
+	await writeFile(path.resolve(ResultFolderPath, `annotation-count.json`), JSON.stringify(result, null, ' '))
+}
 
 /**
  * @example
