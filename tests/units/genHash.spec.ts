@@ -1,5 +1,6 @@
 import {faker} from '@faker-js/faker'
 import {genHash} from 'rc-marked-input/utils'
+import {describe, it, expect} from 'vitest'
 
 describe(`Utility: ${genHash.name}`, () => {
 	const str = faker.datatype.string()

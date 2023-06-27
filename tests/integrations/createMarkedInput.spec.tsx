@@ -4,7 +4,7 @@ import user from '@testing-library/user-event'
 import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import React, {forwardRef, useState} from 'react'
 import {Configured} from 'storybook/stories/Base.stories'
-import {expect, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 
 describe(`Utility: createMarkedInput`, () => {
 	it('should render', () => {
@@ -47,5 +47,5 @@ const Mark3 = () => {
 	const Overlay = forwardRef(() => <span>I'm here!</span>)
 	const Input = createMarkedInput({Mark: () => null, Overlay, options: []})
 
-	return <Input trigger='selectionChange' value={value} onChange={setValue}/>
+	return <Input trigger="selectionChange" value={value} onChange={setValue}/>
 }

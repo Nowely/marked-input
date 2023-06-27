@@ -5,11 +5,12 @@ import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Marked} from 'storybook/stories/Base.stories'
 import {Focusable, Removable} from 'storybook/stories/Dynamic.stories'
-import {expect, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 
 const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
 	const [value, setValue] = useState(initial)
-	return <MarkedInput trigger='selectionChange' Mark={props => <mark>{props.label}</mark>} value={value} onChange={setValue} options={[{
+	return <MarkedInput trigger="selectionChange" Mark={props => <mark>{props.label}</mark>} value={value}
+						onChange={setValue} options={[{
 		markup: markup ?? '@[__label__](__value__)', data: ['Item']
 	}]}/>
 }

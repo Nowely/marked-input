@@ -1,3 +1,4 @@
+import {describe, it} from 'vitest'
 import {TriggerFinder} from 'rc-marked-input/utils/TriggerFinder'
 
 describe(`Utility: ${TriggerFinder.name}`, () => {
