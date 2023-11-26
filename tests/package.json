@@ -4,7 +4,7 @@
   "scripts": {
     "test": "vitest run",
     "test:integration": "vitest run integrations",
-    "test:watch": "vitest",
+    "test:watch": "vitest bench",
     "test:related": "vitest related",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
@@ -22,7 +22,6 @@
     "jsdom": "^21.1.1",
     "nearley": "^2.20.1",
     "peggy": "^3.0.2",
-    "vite-node": "^0.30.1",
     "vitest": "^0.29.8"
   },
   "devDependencies": {

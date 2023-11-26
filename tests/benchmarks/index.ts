@@ -31,9 +31,9 @@ console.log(c)
 //console.log(a1)
 //console.log(a2)
 debugger*/
-
+console.log(1)
 //console.log(grammar)
-await processMeasures(0.5, 0.2, 0.3)
+//await processMeasures(0.5, 0.2, 0.3)
 //await processMeasures(0, 1, 0)
 //await processMeasures(0, 0, 1)
 
