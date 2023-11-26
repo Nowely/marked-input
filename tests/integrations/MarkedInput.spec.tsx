@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'

@@ -1,28 +1,24 @@
 {
   "name": "tests",
-  "type": "module",
   "scripts": {
     "test": "vitest run",
     "test:integration": "vitest run integrations",
-    "test:watch": "vitest bench",
+    "test:watch": "vitest",
     "test:related": "vitest related",
     "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage",
-    "bench:start": "vite-node benchmarks/index.ts",
-    "bench:watch": "vite-node --watch benchmarks/index.ts",
-    "bench:build": "vite build"
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@faker-js/faker": "^7.6.0",
-    "@testing-library/jest-dom": "^5.16.5",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/user-event": "^14.4.3",
-    "@vitest/coverage-c8": "^0.29.8",
-    "@vitest/ui": "^0.29.8",
-    "jsdom": "^21.1.1",
+    "@faker-js/faker": "^8.3.1",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/user-event": "^14.5.1",
+    "@vitest/coverage-v8": "^0.34.6",
+    "@vitest/ui": "^0.34.6",
+    "jsdom": "^22.1.0",
+    "vitest": "^0.34.6",
     "nearley": "^2.20.1",
-    "peggy": "^3.0.2",
-    "vitest": "^0.29.8"
+    "peggy": "^3.0.2"
   },
   "devDependencies": {
     "@types/nearley": "^2.11.2"

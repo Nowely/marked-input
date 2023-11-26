@@ -13,7 +13,7 @@
     "declarationMap": true,
     "declarationDir": "dist/types",
     "outDir": "dist",
-    //"types": ["vitest/globals"]
+    "types": ["vitest/globals"]
   },
   "include": ["lib/**/*"],
 }

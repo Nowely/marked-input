@@ -46,8 +46,8 @@ export interface MarkedInputProps<T = MarkStruct> {
 	style?: CSSProperties
 	/**
 	 * Override props of internal components via react elements
-	 * @param div - for container
-	 * @param span - for span
+	 * @param div - container
+	 * @param span - span
 	 */
 	children?: ReactElement | ReactElement[]
 	/**
