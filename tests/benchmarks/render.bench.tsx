@@ -13,4 +13,4 @@ const stories = [
 	...Object.entries(composeStories(MaterialStories))
 ]
 
-describe('render stories', () => stories.forEach(([name, Story]) => bench(name, ((): any => render(<Story/>)))))
+describe('render stories', () => stories.forEach(([name, Story]) => bench(name, ((): any => render(<Story/>)), {time: 1000})))
