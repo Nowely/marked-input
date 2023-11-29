@@ -5,7 +5,8 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 
 	constructor(
 		public raw: string,
-		public uniRegExp: RegExp
+		public uniRegExp: RegExp,
+		public regExps: RegExp[]
 	) {
 	}
 
@@ -38,16 +39,30 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 	extractMark(execArray: RegExpExecArray): MarkMatch {
 		let annotation = execArray[0]
 		let optionIndex = 0
-		let label = execArray[1]
+		let label
+		let value
+		while (true) {
+			if (this.regExps[optionIndex].test(annotation)) {
+				const match = this.regExps[optionIndex].exec(annotation)
+				label = match![1]
+				value = match![2]
+				break
+			}
+			optionIndex++
+		}
+		/*if (this.markups[optionIndex].includes(PLACEHOLDER.VALUE)) {
+
+		}*/
+		/*let label = execArray[1]
 		let value = execArray[2]
 
 		while (true) {
-			if (label || value) break
+			if (label !== undefined) break
 
 			optionIndex++
 			label = execArray[2 * optionIndex + 1]
 			value = execArray[2 * optionIndex + 2]
-		}
+		}*/
 
 		let index = execArray.index
 		let input = execArray.input

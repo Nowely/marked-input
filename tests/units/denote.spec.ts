@@ -1,4 +1,5 @@
 import {denote, Markup} from 'rc-marked-input'
+import {describe, it, expect} from 'vitest'
 
 describe(`Utility: ${denote.name}`, () => {
 	const markup: Markup = '@[__label__](__value__)'

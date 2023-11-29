@@ -1,5 +1,5 @@
 export {MarkedInput} from './components/MarkedInput'
-export {annotate, denote} from './utils'
+export {denote} from './utils'
 export {createMarkedInput} from './utils/createMarkedInput'
 export {useMark} from './utils/useMark'
 export {useOverlay} from './utils/useOverlay'
@@ -26,4 +26,6 @@ export type {
 	Listener
 } from './types'
 
-export {PLACEHOLDER, SystemEvent} from './constants'
+export {SystemEvent} from './constants'
+export {annotate} from "./utils/annotate";
+export {PLACEHOLDER} from './PLACEHOLDER'
