@@ -1,4 +1,5 @@
 import fs from 'fs'
+import {DataFolderPath} from '../consts'
 
 export async function getFileNames(path: string) {
 	try {
@@ -8,4 +9,8 @@ export async function getFileNames(path: string) {
 		console.log('Unable to scan directory: ' + error)
 		throw error
 	}
+}
+
+export async function getFileNamesOfData() {
+	return await getFileNames(DataFolderPath)
 }

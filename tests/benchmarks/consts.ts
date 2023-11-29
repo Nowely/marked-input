@@ -5,7 +5,6 @@ import {isEqual} from './_utils/analyzers/isEqual'
 import {findSingleGap} from './_utils/analyzers/findSingleGap'
 import {modifyOrigin} from './_utils/joiners/modifyOrigin'
 import {mapStraight} from './_utils/joiners/mapStraight'
-import {BNFParser} from './_utils/parsers/BNFParser'
 import {PEGParser} from './_utils/parsers/PEGParser'
 import {RegexParser} from './_utils/parsers/RegexParser'
 import {SymbolParser} from './_utils/parsers/SymbolParser'
@@ -48,8 +47,8 @@ export const AnnCountToMarkupMap: Record<string, Markup[]> = {
 
 export const LineCountToDiff: Record<string, { count: number, speed: number }> = {
 	2: {
-		count: 10,
-		speed: 1,
+		count: 3,
+		speed: 3,
 	},
 	5: {
 		count: 10,
@@ -90,7 +89,7 @@ export const LineCountToDiff: Record<string, { count: number, speed: number }> =
 }
 
 export const Analyzers: Analyzer[] = [isEqual, findSingleGap, findMultiGap]
-export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser, PEGParser, BNFParser]
+export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser, PEGParser]
 export const Joiners: ((params: JoinParameters) => string)[] = [mapStraight, modifyOrigin]
 
 /**
