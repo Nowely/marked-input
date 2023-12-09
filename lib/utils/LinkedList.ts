@@ -1,21 +1,12 @@
 //Base of this structure getting from https://github.com/gfellerph/ts-linked-list
 import LinkedListNode from './LinkedListNode'
-
 export {LinkedListNode}
 
 /** Type used for filter and find methods, returning a boolean */
-export type TTestFunction<NodeData> = (
-	data: NodeData,
-	index: number,
-	list: LinkedList<NodeData>,
-) => boolean;
+export type TTestFunction<NodeData> = (data: NodeData, index: number, list: LinkedList<NodeData>) => boolean;
 
 /** Type used for map and forEach methods, returning anything */
-export type TMapFunction<NodeData> = (
-	data: any,
-	index: number,
-	list: LinkedList<NodeData>,
-) => any;
+export type TMapFunction<NodeData> = (data: any, index: number, list: LinkedList<NodeData>) => any;
 
 /**
  * A doubly linked list
@@ -27,16 +18,16 @@ export type TMapFunction<NodeData> = (
 export default class LinkedList<NodeData = any> {
 
 	/** The head of the list, the first node */
-	public head: LinkedListNode<NodeData> | null
+	head: LinkedListNode<NodeData> | null
 	/** The tail of the list, the last node */
-	public tail: LinkedListNode<NodeData> | null
-	/** Internal size reference */
-	private size: number
+	tail: LinkedListNode<NodeData> | null
+	/** Internal $length reference */
+	$length: number
 
 	constructor(...args: NodeData[]) {
 		this.head = null
 		this.tail = null
-		this.size = 0
+		this.$length = 0
 
 		for (let i = 0; i < arguments.length; i++) {
 			this.append(arguments[i])
@@ -46,8 +37,8 @@ export default class LinkedList<NodeData = any> {
 	/**
 	 * The length of the list
 	 */
-	public get length(): number {
-		return this.size
+	get length(): number {
+		return this.$length
 	}
 
 	/**
@@ -58,7 +49,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param iterable Any iterable datatype like Array or Map
 	 */
-	public static from<T>(iterable: Iterable<T>): LinkedList<T> {
+	static from<T>(iterable: Iterable<T>): LinkedList<T> {
 		return new LinkedList(...iterable)
 	}
 
@@ -69,7 +60,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param index to retrieve data at
 	 */
-	/*public get(index: number): NodeData | undefined {
+	/*get(index: number): NodeData | undefined {
 		const node = this.getNode(index)
 		return node !== undefined ? node.data : undefined
 	}*/
@@ -81,7 +72,8 @@ export default class LinkedList<NodeData = any> {
 	 * // { prev: null, data: 1, next: LinkedListNode }
 	 * ```
 	 */
-	/*public getNode(index: number): LinkedListNode<NodeData> | undefined {
+
+	/*getNode(index: number): LinkedListNode<NodeData> | undefined {
 		if (this.head === null || index < 0 || index >= this.length) {
 			return undefined
 		}
@@ -104,7 +96,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param f A function to be applied to the data of each node
 	 */
-	public findNodeIndex(f: TTestFunction<NodeData>): ({
+	findNodeIndex(f: TTestFunction<NodeData>): ({
 		node: LinkedListNode<NodeData>,
 		index: number,
 	}) | undefined {
@@ -132,7 +124,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param f Function to test data against
 	 */
-	public findNode(f: TTestFunction<NodeData>): LinkedListNode<NodeData> | undefined {
+	findNode(f: TTestFunction<NodeData>): LinkedListNode<NodeData> | undefined {
 		const nodeIndex = this.findNodeIndex(f)
 		return nodeIndex !== undefined ? nodeIndex.node : undefined
 	}
@@ -145,7 +137,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param f Function to test data against
 	 */
-	public find(f: TTestFunction<NodeData>): NodeData | undefined {
+	find(f: TTestFunction<NodeData>): NodeData | undefined {
 		const nodeIndex = this.findNodeIndex(f)
 		return nodeIndex !== undefined ? nodeIndex.node.data : undefined
 	}
@@ -158,7 +150,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param f Function to test data against
 	 */
-	public findIndex(f: TTestFunction<NodeData>): number {
+	findIndex(f: TTestFunction<NodeData>): number {
 		const nodeIndex = this.findNodeIndex(f)
 		return nodeIndex !== undefined ? nodeIndex.index : -1
 	}
@@ -170,9 +162,9 @@ export default class LinkedList<NodeData = any> {
 	 * ```ts
 	 * new LinkedList(1).append(2).append(3, 4); // 1 <=> 2 <=> 3 <=> 4
 	 * ```
-	 * @param data Data to be stored in the node, takes any number of arguments
+	 * @param args Data to be stored in the node, takes any number of arguments
 	 */
-	public append(...args: NodeData[]): LinkedList<NodeData> {
+	append(...args: NodeData[]): LinkedList<NodeData> {
 		for (const data of args) {
 			const node = new LinkedListNode(data, this.tail, null, this)
 			if (this.head === null) {
@@ -182,7 +174,7 @@ export default class LinkedList<NodeData = any> {
 				this.tail.next = node
 			}
 			this.tail = node
-			this.size += 1
+			this.$length += 1
 		}
 		return this
 	}
@@ -195,7 +187,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param data Data to be stored in the node, accepts any number of arguments
 	 */
-	/*public prepend(...args: NodeData[]): LinkedList<NodeData> {
+	/*prepend(...args: NodeData[]): LinkedList<NodeData> {
 		const reverseArgs = Array.from(args).reverse()
 		for (const data of reverseArgs) {
 			const node = new LinkedListNode(data, null, this.head, this)
@@ -206,7 +198,7 @@ export default class LinkedList<NodeData = any> {
 				this.head.prev = node
 			}
 			this.head = node
-			this.size += 1
+			this.$length += 1
 		}
 		return this
 	}*/
@@ -221,7 +213,8 @@ export default class LinkedList<NodeData = any> {
 	 * @param index The index to insert the new node at
 	 * @param data Data to be stored on the new node
 	 */
-	/*public insertAt(index: number, data: NodeData): LinkedList<NodeData> {
+
+	/*insertAt(index: number, data: NodeData): LinkedList<NodeData> {
 		if (this.head === null) {
 			return this.append(data)
 		}
@@ -248,7 +241,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param node The node to be removed
 	 */
-	public removeNode(node: LinkedListNode<NodeData>): LinkedListNode<NodeData> {
+	removeNode(node: LinkedListNode<NodeData>): LinkedListNode<NodeData> {
 		if (node.list !== this) {
 			throw new ReferenceError('Node does not belong to this list')
 		}
@@ -269,11 +262,18 @@ export default class LinkedList<NodeData = any> {
 			this.tail = node.prev
 		}
 
-		this.size -= 1
+		this.$length -= 1
 		node.next = null
 		node.prev = null
 		node.list = null
 		return node
+	}
+
+
+	replace(referenceNode: LinkedListNode<NodeData>, data: NodeData): LinkedList<NodeData> {
+		const linkedList = this.insertBefore(referenceNode, data)
+		this.removeNode(referenceNode)
+		return linkedList
 	}
 
 	/**
@@ -283,7 +283,8 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param index Index at which to remove
 	 */
-	/*public removeAt(index: number): LinkedListNode<NodeData> | undefined {
+
+	/*removeAt(index: number): LinkedListNode<NodeData> | undefined {
 		const node = this.getNode(index)
 		return node !== undefined ? this.removeNode(node) : undefined
 	}*/
@@ -297,10 +298,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param referenceNode The node reference
 	 * @param data Data to save in the node
 	 */
-	/*public insertBefore(
-		referenceNode: LinkedListNode<NodeData>,
-		data: NodeData,
-	): LinkedList<NodeData> {
+	insertBefore(referenceNode: LinkedListNode<NodeData>, data: NodeData): LinkedList<NodeData> {
 		const node = new LinkedListNode(data, referenceNode.prev, referenceNode, this)
 		if (referenceNode.prev === null) {
 			this.head = node
@@ -309,9 +307,9 @@ export default class LinkedList<NodeData = any> {
 			referenceNode.prev.next = node
 		}
 		referenceNode.prev = node
-		this.size += 1
+		this.$length += 1
 		return this
-	}*/
+	}
 
 	/**
 	 * Sorts the linked list using the provided compare function
@@ -320,7 +318,7 @@ export default class LinkedList<NodeData = any> {
 	 *                (a, b) => a < b or (1, 2) => 1 < 2 === true, 2 will be inserted after 1,
 	 *                the sort order will be ascending.
 	 */
-	/*public sort(compare: (a: NodeData, b: NodeData) => boolean): LinkedList<NodeData> {
+	/*sort(compare: (a: NodeData, b: NodeData) => boolean): LinkedList<NodeData> {
 		if (this.head === null || this.tail === null) {
 			return this
 		}
@@ -378,7 +376,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param referenceNode The reference node
 	 * @param data Data to be saved in the node
 	 */
-	/*public insertAfter(
+	/*insertAfter(
 		referenceNode: LinkedListNode<NodeData>,
 		data: NodeData,
 	): LinkedList<NodeData> {
@@ -390,7 +388,7 @@ export default class LinkedList<NodeData = any> {
 			referenceNode.next.prev = node
 		}
 		referenceNode.next = node
-		this.size += 1
+		this.$length += 1
 		return this
 	}*/
 
@@ -401,7 +399,7 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).shift(); // 1
 	 * ```
 	 */
-	/*public shift(): NodeData | undefined {
+	/*shift(): NodeData | undefined {
 		return this.removeFromAnyEnd(this.head)
 	}*/
 
@@ -412,7 +410,7 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).pop(); // 3
 	 * ```
 	 */
-	/*public pop(): NodeData | undefined {
+	/*pop(): NodeData | undefined {
 		return this.removeFromAnyEnd(this.tail)
 	}*/
 
@@ -427,7 +425,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param list The list to be merged
 	 */
-	/*public merge(list: LinkedList<NodeData>): void {
+	/*merge(list: LinkedList<NodeData>): void {
 		if (this.tail !== null) {
 			this.tail.next = list.head
 		}
@@ -436,8 +434,8 @@ export default class LinkedList<NodeData = any> {
 		}
 		this.head = this.head || list.head
 		this.tail = list.tail || this.tail
-		this.size += list.size
-		list.size = this.size
+		this.$length += list.$length
+		list.$length = this.$length
 		list.head = this.head
 		list.tail = this.tail
 	}*/
@@ -449,10 +447,10 @@ export default class LinkedList<NodeData = any> {
 	 * list.clear();
 	 * ```
 	 */
-	/*public clear() {
+	/*clear() {
 		this.head = null
 		this.tail = null
-		this.size = 0
+		this.$length = 0
 		return this
 	}*/
 
@@ -468,7 +466,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param start Start index
 	 * @param end End index, optional
 	 */
-	/*public slice(start: number, end?: number): LinkedList<NodeData | {}> {
+	/*slice(start: number, end?: number): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		let finish = end
 
@@ -494,7 +492,8 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).reverse(); // 3 <=> 2 <=> 1
 	 * ```
 	 */
-	/*public reverse(): LinkedList<NodeData> {
+
+	/*reverse(): LinkedList<NodeData> {
 		let currentNode = this.head
 		while (currentNode) {
 			const next = currentNode.next
@@ -516,7 +515,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function to execute for each element, taking up to three arguments.
 	 * @param reverse Indicates if the list should be walked in reverse order, default is false
 	 */
-	/*public forEach(f: TMapFunction<NodeData>, reverse = false): void {
+	forEach(f: TMapFunction<NodeData>, reverse = false): void {
 		let currentIndex = reverse ? this.length - 1 : 0
 		let currentNode = reverse ? this.tail : this.head
 		const modifier = reverse ? -1 : 1
@@ -526,7 +525,7 @@ export default class LinkedList<NodeData = any> {
 			currentNode = currentNode[nextNode]
 			currentIndex += modifier
 		}
-	}*/
+	}
 
 	/**
 	 * The map() method creates a new list with the results of
@@ -537,7 +536,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function that produces an node of the new list, taking up to three arguments
 	 * @param reverse Indicates if the list should be mapped in reverse order, default is false
 	 */
-	/*public map(f: TMapFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
+	/*map(f: TMapFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		this.forEach((data, index) => list.append(f(data, index, this)), reverse)
 		return list
@@ -552,7 +551,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param f Function to test each node data in the list. Return true to keep the node
 	 * @param reverse Indicates if the list should be filtered in reverse order, default is false
 	 */
-	/*public filter(f: TTestFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
+	/*filter(f: TTestFunction<NodeData>, reverse = false): LinkedList<NodeData | {}> {
 		const list = new LinkedList()
 		this.forEach((data, index) => {
 			if (f(data, index, this)) {
@@ -571,7 +570,8 @@ export default class LinkedList<NodeData = any> {
 	 * @param start An initial value
 	 * @returns The final state of the accumulator
 	 */
-	/*public reduce(
+
+	/*reduce(
 		f: (
 			accumulator: any,
 			currentNode: NodeData,
@@ -611,7 +611,7 @@ export default class LinkedList<NodeData = any> {
 	 * new LinkedList(1, 2, 3).toArray(); // [1, 2, 3]
 	 * ```
 	 */
-	public toArray(): NodeData[] {
+	toArray(): NodeData[] {
 		return [...this]
 	}
 
@@ -622,7 +622,8 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 * @param separator Optional string to be placed in between data nodes, default is one space
 	 */
-	/*public toString(separator = ' '): string {
+
+	/*toString(separator = ' '): string {
 		return this.reduce((s, data) => `${s}${separator}${data}`)
 	}*/
 
@@ -633,7 +634,7 @@ export default class LinkedList<NodeData = any> {
 	 * for (const data of list) { log(data); } // 1 2 3
 	 * ```
 	 */
-	public* [Symbol.iterator](): IterableIterator<NodeData> {
+	* [Symbol.iterator](): IterableIterator<NodeData> {
 		let element = this.head
 
 		while (element !== null) {
