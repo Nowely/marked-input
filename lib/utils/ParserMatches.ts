@@ -50,9 +50,6 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 			}
 			optionIndex++
 		}
-		/*if (this.markups[optionIndex].includes(PLACEHOLDER.VALUE)) {
-
-		}*/
 		/*let label = execArray[1]
 		let value = execArray[2]
 

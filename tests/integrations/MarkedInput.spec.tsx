@@ -7,7 +7,7 @@ import {Marked} from 'storybook/stories/Base.stories'
 import {Focusable, Removable} from 'storybook/stories/Dynamic.stories'
 import {describe, expect, it, vi} from 'vitest'
 
-const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
+export const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
 	const [value, setValue] = useState(initial)
 	return <MarkedInput trigger="selectionChange" Mark={props => <mark>{props.label}</mark>} value={value}
 						onChange={setValue} options={[{
