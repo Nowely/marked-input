@@ -16,29 +16,41 @@ export const useValueParser = () => {
 		options: state.Mark ? state.options : undefined,
 	}), true)
 
-	const pieces = useMemo(Parser.split(value, options), [value, options])
-	const previous = useRef<LinkedList<NodeData> | null>(null)
-
 	useEffect(() => {
+		if (store.changedNode) {
+			const pieces = Parser.split(store.changedNode.data.mark.label, options)()
+			if (pieces.length === 1) return
+
+			const data = pieces.map(piece => ({
+				key: genKey(piece),
+				mark: isObject(piece) ? piece : {label: piece},
+				ref: createRef<HTMLElement>()
+			}))
+			store.state.pieces
+			data.forEach(value1 => {
+				store.state.pieces.insertBefore(store.changedNode!, value1)
+			})
+			store.focusedNode = store.changedNode.next
+			store.changedNode.remove()
+
+			const newList = new LinkedList()
+			store.state.pieces.forEach((data) => newList.append(data))
+
+			store.changedNode = undefined
+			store.setState({pieces: newList})
+			return
+		}
+
 		const existedKeys = new Set<number>()
-		//get data from previous if exists
-		const data = pieces.map(piece => {
-			let key = genKey(piece, existedKeys)
-			const node = previous.current?.findNode(data => data.key === key)
+		const pieces = Parser.split(value, options)()
+		const data = pieces.map(piece => ({
+			key: genKey(piece, existedKeys),
+			mark: isObject(piece) ? piece : {label: piece},
+			ref: createRef<HTMLElement>()
+		}))
+		store.setState({pieces: LinkedList.from(data)})
 
-			if (!node || hasOutdatedState(piece, node) && key++)
-				return {
-					key,
-					mark: isObject(piece) ? piece : {label: piece},
-					ref: createRef<HTMLElement>()
-				}
-
-			return node.data
-		})
-
-		previous.current = LinkedList.from(data)
-		store.setState({pieces: previous.current})
-	}, [pieces.length])
+	}, [value, options])
 }
 
 const hasOutdatedState = (piece: Piece, node: LinkedListNode<NodeData>) => {

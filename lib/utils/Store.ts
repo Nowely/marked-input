@@ -9,6 +9,7 @@ import LinkedListNode from './LinkedListNode'
 export class Store {
 	#state: State
 
+	changedNode?: LinkedListNode<NodeData>
 	focusedNode?: LinkedListNode<NodeData>
 	recovery?: Recovery
 	containerRef = createRef<HTMLDivElement>()

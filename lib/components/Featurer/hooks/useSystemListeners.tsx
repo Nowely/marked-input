@@ -12,13 +12,15 @@ export function useSystemListeners() {
 		const {pieces, onChange, options} = store.state
 		const {key, value} = event
 
-		const node = pieces.find(data => data.key === key)
-		if (node && value) {
-			node.mark.label = value.label
-			node.mark.value = value.value
+		const piece = pieces.findNode(data => data.key === key)
+		if (piece && value) {
+			piece.data.mark.label = value.label
+			piece.data.mark.value = value.value
 		}
-
+		store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
 		const values = pieces.toArray().map(node => node.mark)
+
+		store.changedNode = piece
 		onChange(toString(values, options))
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
@@ -28,7 +30,10 @@ export function useSystemListeners() {
 		const {key} = event
 
 		const piece = pieces.findNode(node => node.key === key)
-		if (piece) piece.remove()
+		if (piece) {
+			store.changedNode = undefined
+			piece.remove()
+		}
 
 		const values = pieces.toArray().map(data => data.mark)
 		onChange(toString(values, options))

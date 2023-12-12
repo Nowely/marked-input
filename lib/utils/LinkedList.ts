@@ -18,25 +18,13 @@ export type TMapFunction<NodeData> = (data: any, index: number, list: LinkedList
 export default class LinkedList<NodeData = any> {
 
 	/** The head of the list, the first node */
-	head: LinkedListNode<NodeData> | null
+	head?: LinkedListNode<NodeData>
 	/** The tail of the list, the last node */
-	tail: LinkedListNode<NodeData> | null
+	tail?: LinkedListNode<NodeData>
 	/** Internal $length reference */
 	$length: number
 
-	constructor(...args: NodeData[]) {
-		this.head = null
-		this.tail = null
-		this.$length = 0
-
-		for (let i = 0; i < arguments.length; i++) {
-			this.append(arguments[i])
-		}
-	}
-
-	/**
-	 * The length of the list
-	 */
+	/** The length of the list */
 	get length(): number {
 		return this.$length
 	}
@@ -51,6 +39,16 @@ export default class LinkedList<NodeData = any> {
 	 */
 	static from<T>(iterable: Iterable<T>): LinkedList<T> {
 		return new LinkedList(...iterable)
+	}
+
+	constructor(...args: NodeData[]) {
+		delete this.head
+		delete this.tail
+		this.$length = 0
+
+		for (let i = 0; i < args.length; i++) {
+			this.append(args[i])
+		}
 	}
 
 	/**
@@ -69,12 +67,12 @@ export default class LinkedList<NodeData = any> {
 	 * Get the node at index, zero based
 	 * ```ts
 	 * new LinkedList(1, 2, 3).getNode(0);
-	 * // { prev: null, data: 1, next: LinkedListNode }
+	 * // { prev: undefined, data: 1, next: LinkedListNode }
 	 * ```
 	 */
 
 	/*getNode(index: number): LinkedListNode<NodeData> | undefined {
-		if (this.head === null || index < 0 || index >= this.length) {
+		if (this.head === undefined || index < 0 || index >= this.length) {
 			return undefined
 		}
 		const asc = index < this.length / 2
@@ -120,7 +118,7 @@ export default class LinkedList<NodeData = any> {
 	 * satisfies the provided testing function. Otherwise undefined is returned.
 	 * ```ts
 	 * new LinkedList(1, 2, 3).findNode(data => data === 1);
-	 * // { prev: null, data: 1, next: LinkedListNode }
+	 * // { prev: undefined, data: 1, next: LinkedListNode }
 	 * ```
 	 * @param f Function to test data against
 	 */
@@ -166,11 +164,11 @@ export default class LinkedList<NodeData = any> {
 	 */
 	append(...args: NodeData[]): LinkedList<NodeData> {
 		for (const data of args) {
-			const node = new LinkedListNode(data, this.tail, null, this)
-			if (this.head === null) {
+			const node = new LinkedListNode(data, this.tail, undefined, this)
+			if (this.head === undefined) {
 				this.head = node
 			}
-			if (this.tail !== null) {
+			if (this.tail !== undefined) {
 				this.tail.next = node
 			}
 			this.tail = node
@@ -190,11 +188,11 @@ export default class LinkedList<NodeData = any> {
 	/*prepend(...args: NodeData[]): LinkedList<NodeData> {
 		const reverseArgs = Array.from(args).reverse()
 		for (const data of reverseArgs) {
-			const node = new LinkedListNode(data, null, this.head, this)
-			if (this.tail === null) {
+			const node = new LinkedListNode(data, undefined, this.head, this)
+			if (this.tail === undefined) {
 				this.tail = node
 			}
-			if (this.head !== null) {
+			if (this.head !== undefined) {
 				this.head.prev = node
 			}
 			this.head = node
@@ -215,7 +213,7 @@ export default class LinkedList<NodeData = any> {
 	 */
 
 	/*insertAt(index: number, data: NodeData): LinkedList<NodeData> {
-		if (this.head === null) {
+		if (this.head === undefined) {
 			return this.append(data)
 		}
 		if (index <= 0) {
@@ -224,7 +222,7 @@ export default class LinkedList<NodeData = any> {
 
 		let currentNode = this.head
 		let currentIndex = 0
-		while (currentIndex < index - 1 && currentNode.next !== null) {
+		while (currentIndex < index - 1 && currentNode.next !== undefined) {
 			currentIndex += 1
 			currentNode = currentNode.next
 		}
@@ -237,7 +235,7 @@ export default class LinkedList<NodeData = any> {
 	 * node afterwards.
 	 * ```ts
 	 * const list = new LinkedList(1, 2, 3);
-	 * list.removeNode(list.tail); // { prev: null, data: 3, next: null, list: null }
+	 * list.removeNode(list.tail); // { prev: undefined, data: 3, next: undefined, list: undefined }
 	 * ```
 	 * @param node The node to be removed
 	 */
@@ -246,11 +244,11 @@ export default class LinkedList<NodeData = any> {
 			throw new ReferenceError('Node does not belong to this list')
 		}
 
-		if (node.prev !== null) {
+		if (node.prev !== undefined) {
 			node.prev.next = node.next
 		}
 
-		if (node.next !== null) {
+		if (node.next !== undefined) {
 			node.next.prev = node.prev
 		}
 
@@ -263,9 +261,9 @@ export default class LinkedList<NodeData = any> {
 		}
 
 		this.$length -= 1
-		node.next = null
-		node.prev = null
-		node.list = null
+		delete node.next
+		delete node.prev
+		delete node.list
 		return node
 	}
 
@@ -279,7 +277,7 @@ export default class LinkedList<NodeData = any> {
 	/**
 	 * Remove the node at the specified index
 	 * ```ts
-	 * new LinkedList(1, 2, 3).removeAt(2); // { prev: null, data: 3, next: null, list: null }
+	 * new LinkedList(1, 2, 3).removeAt(2); // { prev: undefined, data: 3, next: undefined, list: undefined }
 	 * ```
 	 * @param index Index at which to remove
 	 */
@@ -300,10 +298,10 @@ export default class LinkedList<NodeData = any> {
 	 */
 	insertBefore(referenceNode: LinkedListNode<NodeData>, data: NodeData): LinkedList<NodeData> {
 		const node = new LinkedListNode(data, referenceNode.prev, referenceNode, this)
-		if (referenceNode.prev === null) {
+		if (referenceNode.prev === undefined) {
 			this.head = node
 		}
-		if (referenceNode.prev !== null) {
+		if (referenceNode.prev !== undefined) {
 			referenceNode.prev.next = node
 		}
 		referenceNode.prev = node
@@ -319,7 +317,7 @@ export default class LinkedList<NodeData = any> {
 	 *                the sort order will be ascending.
 	 */
 	/*sort(compare: (a: NodeData, b: NodeData) => boolean): LinkedList<NodeData> {
-		if (this.head === null || this.tail === null) {
+		if (this.head === undefined || this.tail === undefined) {
 			return this
 		}
 		if (this.length < 2) {
@@ -334,7 +332,7 @@ export default class LinkedList<NodeData = any> {
 				return
 			}
 			const pivotData = end.data
-			let current: LinkedListNode | null = start
+			let current: LinkedListNode | undefined = start
 			let split: LinkedListNode = start
 			while (current && current !== end) {
 				const sort = compare(current.data, pivotData)
@@ -381,10 +379,10 @@ export default class LinkedList<NodeData = any> {
 		data: NodeData,
 	): LinkedList<NodeData> {
 		const node = new LinkedListNode(data, referenceNode, referenceNode.next, this)
-		if (referenceNode.next === null) {
+		if (referenceNode.next === undefined) {
 			this.tail = node
 		}
-		if (referenceNode.next !== null) {
+		if (referenceNode.next !== undefined) {
 			referenceNode.next.prev = node
 		}
 		referenceNode.next = node
@@ -426,10 +424,10 @@ export default class LinkedList<NodeData = any> {
 	 * @param list The list to be merged
 	 */
 	/*merge(list: LinkedList<NodeData>): void {
-		if (this.tail !== null) {
+		if (this.tail !== undefined) {
 			this.tail.next = list.head
 		}
-		if (list.head !== null) {
+		if (list.head !== undefined) {
 			list.head.prev = this.tail
 		}
 		this.head = this.head || list.head
@@ -448,8 +446,8 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 */
 	/*clear() {
-		this.head = null
-		this.tail = null
+		this.head = undefined
+		this.tail = undefined
 		this.$length = 0
 		return this
 	}*/
@@ -470,15 +468,15 @@ export default class LinkedList<NodeData = any> {
 		const list = new LinkedList()
 		let finish = end
 
-		if (this.head === null || this.tail === null) {
+		if (this.head === undefined || this.tail === undefined) {
 			return list
 		}
 		if (finish === undefined || finish < start) {
 			finish = this.length
 		}
 
-		let head: LinkedListNode<NodeData> | null | undefined = this.getNode(start)
-		for (let i = 0; i < finish - start && head !== null && head !== undefined; i++) {
+		let head: LinkedListNode<NodeData> | undefined | undefined = this.getNode(start)
+		for (let i = 0; i < finish - start && head !== undefined && head !== undefined; i++) {
 			list.append(head.data)
 			head = head.next
 		}
@@ -637,14 +635,14 @@ export default class LinkedList<NodeData = any> {
 	* [Symbol.iterator](): IterableIterator<NodeData> {
 		let element = this.head
 
-		while (element !== null) {
+		while (element !== undefined) {
 			yield element.data
 			element = element.next
 		}
 	}
 
 	/** Private helper function to reduce duplication of pop() and shift() methods */
-	/*private removeFromAnyEnd(node: LinkedListNode<NodeData> | null) {
-		return node !== null ? this.removeNode(node).data : undefined
+	/*private removeFromAnyEnd(node: LinkedListNode<NodeData> | undefined) {
+		return node !== undefined ? this.removeNode(node).data : undefined
 	}*/
 }
