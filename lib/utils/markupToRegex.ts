@@ -1,6 +1,6 @@
 import {Markup} from '../types'
-import {PLACEHOLDER} from '../PLACEHOLDER'
 import {escape} from './escape'
+import {PLACEHOLDER} from "../constants";
 
 export const markupToRegex = (markup: Markup) => {
 	const escapedMarkup = escape(markup)

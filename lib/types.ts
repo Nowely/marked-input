@@ -1,8 +1,8 @@
 import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 
-import {PLACEHOLDER} from './PLACEHOLDER'
 import LinkedList from './utils/LinkedList'
+import {PLACEHOLDER} from "./constants";
 
 export type NodeData = {
 	key: number

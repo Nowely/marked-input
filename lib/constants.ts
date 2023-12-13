@@ -52,3 +52,8 @@ export enum SystemEvent {
 	Select,
 	State,
 }
+
+export enum PLACEHOLDER {
+	LABEL = '__label__',
+	VALUE = '__value__',
+}
