@@ -6,7 +6,9 @@ export {LinkedListNode}
 export type TTestFunction<NodeData> = (data: NodeData, index: number, list: LinkedList<NodeData>) => boolean;
 
 /** Type used for map and forEach methods, returning anything */
-export type TMapFunction<NodeData> = (data: any, index: number, list: LinkedList<NodeData>) => any;
+export type TMapFunction<NodeData> = (data: NodeData, index: number, list: LinkedList<NodeData>) => any;
+
+export type MapFunction<NodeData> = (data: LinkedListNode<NodeData>, index: number, list: LinkedList<NodeData>) => any;
 
 /**
  * A doubly linked list
@@ -525,6 +527,18 @@ export default class LinkedList<NodeData = any> {
 		}
 	}
 
+	forEachNode(f: MapFunction<NodeData>, reverse = false): void {
+		let currentIndex = reverse ? this.length - 1 : 0
+		let currentNode = reverse ? this.tail : this.head
+		const modifier = reverse ? -1 : 1
+		const nextNode = reverse ? 'prev' : 'next'
+		while (currentNode) {
+			f(currentNode, currentIndex, this)
+			currentNode = currentNode[nextNode]
+			currentIndex += modifier
+		}
+	}
+
 	/**
 	 * The map() method creates a new list with the results of
 	 * calling a provided function on every node in the calling list.
@@ -539,6 +553,12 @@ export default class LinkedList<NodeData = any> {
 		this.forEach((data, index) => list.append(f(data, index, this)), reverse)
 		return list
 	}*/
+
+	map<P, T extends Array<P>>(f: MapFunction<NodeData>, reverse = false): P[] {
+		const list: P[] = []
+		this.forEachNode((data, index) => list.push(f(data, index, this)), reverse)
+		return list
+	}
 
 	/**
 	 * The filter() method creates a new list with all nodes

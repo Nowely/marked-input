@@ -3,6 +3,7 @@ import {DefaultOptionProps} from '../constants'
 import {KeyedPieces, MarkMatch, MarkStruct, Markup, NodeData, Option, Piece,} from '../types'
 import {annotate} from './annotate'
 import {isAnnotated} from './isAnnotated'
+import LinkedListNode from './LinkedListNode'
 import {Parser} from './Parser'
 import {Store} from './Store'
 
@@ -88,7 +89,7 @@ const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<
 }
 
 export const [useStore, _, StoreContext] = createContext<Store>('StoreProvider')
-export const [useNode, NodeProvider] = createContext<NodeData>('NodeProvider')
+export const [useNode, NodeProvider] = createContext<LinkedListNode<NodeData>>('NodeProvider')
 
 export function findSpanKey(span: string, pieces: KeyedPieces) {
 	let foundKey
@@ -103,16 +104,6 @@ export function findSpanKey(span: string, pieces: KeyedPieces) {
 
 export function createNewSpan(span: string, annotation: string, index: number, source: string) {
 	return span.slice(0, index) + annotation + span.slice(index + source.length)
-}
-
-export function genKey(piece: Piece, cache?: Set<number>) {
-	const str = isObject(piece) ? piece.label + piece.value : piece
-
-	let seed = 0, key = genHash(str, seed)
-	while (cache?.has(key))
-		key = genHash(str, seed++)
-	cache?.add(key)
-	return key
 }
 
 export const isForward = (component?: React.ExoticComponent<any> | React.ComponentType<any>) =>

@@ -1,8 +1,6 @@
-import {createRef, useEffect, useMemo, useRef} from 'react'
-import {NodeData, Piece} from '../../../types'
-import {genKey, isObject, useStore} from '../../../utils'
+import {createRef, useEffect} from 'react'
+import {isObject, useStore} from '../../../utils'
 import LinkedList from '../../../utils/LinkedList'
-import LinkedListNode from '../../../utils/LinkedListNode'
 import {Parser} from '../../../utils/Parser'
 import {useSelector} from '../../../utils/useSelector'
 
@@ -13,17 +11,16 @@ export const useValueParser = () => {
 	const store = useStore()
 	const {value, options} = useSelector(state => ({
 		value: state.value,
-		options: state.Mark ? state.options : undefined,
+		options: state.Mark ? state.options:undefined,
 	}), true)
 
 	useEffect(() => {
 		if (store.changedNode) {
 			const pieces = Parser.split(store.changedNode.data.mark.label, options)()
-			if (pieces.length === 1) return
+			if (pieces.length===1) return
 
 			const data = pieces.map(piece => ({
-				key: genKey(piece),
-				mark: isObject(piece) ? piece : {label: piece},
+				mark: isObject(piece) ? piece:{label: piece},
 				ref: createRef<HTMLElement>()
 			}))
 			store.state.pieces
@@ -41,19 +38,12 @@ export const useValueParser = () => {
 			return
 		}
 
-		const existedKeys = new Set<number>()
 		const pieces = Parser.split(value, options)()
 		const data = pieces.map(piece => ({
-			key: genKey(piece, existedKeys),
-			mark: isObject(piece) ? piece : {label: piece},
+			mark: isObject(piece) ? piece:{label: piece},
 			ref: createRef<HTMLElement>()
 		}))
 		store.setState({pieces: LinkedList.from(data)})
 
 	}, [value, options])
-}
-
-const hasOutdatedState = (piece: Piece, node: LinkedListNode<NodeData>) => {
-	if (isObject(piece)) return false
-	return node.data.mark.label !== piece
 }

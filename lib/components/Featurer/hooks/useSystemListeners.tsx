@@ -2,7 +2,7 @@ import {SystemEvent} from '../../../constants'
 import {MarkStruct, Payload, OverlayMatch} from '../../../types'
 import {createNewSpan, toString, useStore} from '../../../utils'
 import {useListener} from '../../../utils/useListener'
-import {annotate} from "../../../utils/annotate";
+import {annotate} from '../../../utils/annotate'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -10,30 +10,26 @@ export function useSystemListeners() {
 
 	useListener(SystemEvent.Change, (event: Payload) => {
 		const {pieces, onChange, options} = store.state
-		const {key, value} = event
+		const {node, value} = event
 
-		const piece = pieces.findNode(data => data.key === key)
-		if (piece && value) {
-			piece.data.mark.label = value.label
-			piece.data.mark.value = value.value
+		if (value) {
+			node.data.mark.label = value.label
+			node.data.mark.value = value.value
 		}
-		store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
+		store.recovery = {caretPosition: 0, prevNodeData: node?.prev?.data, isPrevPrev: true}
 		const values = pieces.toArray().map(node => node.mark)
 
-		store.changedNode = piece
+		store.changedNode = node
 		onChange(toString(values, options))
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 
 	useListener(SystemEvent.Delete, (event: Payload) => {
 		const {pieces, onChange, options} = store.state
-		const {key} = event
+		const {node} = event
 
-		const piece = pieces.findNode(node => node.key === key)
-		if (piece) {
-			store.changedNode = undefined
-			piece.remove()
-		}
+		store.changedNode = undefined
+		node.remove()
 
 		const values = pieces.toArray().map(data => data.mark)
 		onChange(toString(values, options))
@@ -48,14 +44,14 @@ export function useSystemListeners() {
 		const annotation = annotate(option.markup!, value.label, value.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
-		const piece = pieces.findNode(node => node.mark.label === span)
+		const piece = pieces.findNode(node => node.mark.label===span)
 		store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
 
 		if (piece) {
 			piece.data.mark.label = newSpan
 			//piece.data.mark.value = value.value
 			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
-			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, key: piece.data.key})
+			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, node: piece})
 			if (!Mark) {
 				node.textContent = newSpan
 				store.recovery = {caretPosition: index + annotation.length}

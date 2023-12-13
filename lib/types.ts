@@ -3,9 +3,9 @@ import {MarkedInputProps} from './components/MarkedInput'
 
 import LinkedList from './utils/LinkedList'
 import {PLACEHOLDER} from "./constants";
+import LinkedListNode from './utils/LinkedListNode'
 
 export type NodeData = {
-	key: number
 	mark: MarkStruct
 	ref: RefObject<HTMLElement>
 }
@@ -58,7 +58,7 @@ export type State = Omit<MarkedInputProps<any>, 'options'> & {
 }
 
 export type Payload = {
-	key: number,
+	node: LinkedListNode<NodeData>,
 	value?: MarkStruct
 }
 

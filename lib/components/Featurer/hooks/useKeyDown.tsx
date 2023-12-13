@@ -30,11 +30,11 @@ export function useKeyDown() {
 		if (!isCaretInEnd(event)) return
 
 		const node = store.focusedNode?.next
-		if (!node?.data.key) return
+		if (!node) return
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, {key: node.data.key})
+		store.bus.send(SystemEvent.Delete, {node})
 		event.preventDefault()
 	})
 
@@ -42,11 +42,11 @@ export function useKeyDown() {
 		if (!isCaretInStart(event)) return
 
 		const node = store.focusedNode?.prev
-		if (!node?.data.key) return
+		if (!node) return
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, {key: node.data.key})
+		store.bus.send(SystemEvent.Delete, {node})
 		event.preventDefault()
 	})
 

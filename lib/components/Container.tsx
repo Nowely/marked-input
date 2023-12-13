@@ -1,6 +1,7 @@
 import {memo} from 'react'
 import {DefaultClass} from '../constants'
 import {NodeProvider, useStore} from '../utils'
+import {getKey} from '../utils/getKey'
 import {useSelector} from '../utils/useSelector'
 import {EditableSpan} from './EditableSpan'
 import {getChildProps} from '../utils/getChildProps'
@@ -19,10 +20,10 @@ export const Container = memo(() => {
 
 	return (
 		<div {...divOverride} ref={store.containerRef} className={className} style={style}>
-			{pieces.toArray().map((node) =>
-				<NodeProvider key={node.key} value={node}>
+			{pieces.map((node) =>
+				<NodeProvider key={getKey(node)} value={node}>
 					{
-						isAnnotated(node.mark) ? <Piece/> : <EditableSpan/>
+						isAnnotated(node.data.mark) ? <Piece/> : <EditableSpan/>
 					}
 				</NodeProvider>
 			)}
