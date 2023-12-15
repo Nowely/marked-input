@@ -23,10 +23,6 @@ export type Markup = `${label}${value}` | `${label}`
 /** Piece of marked text: fragment of text or mark definition */
 export type Piece = string | MarkMatch
 
-export type KeyedPieces = Map<number, Piece>
-
-export type NumberedOption = Option & {index: number}
-
 export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.
@@ -51,9 +47,8 @@ export interface Option<T = Record<string, any>> {
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
-export type State = Omit<MarkedInputProps<any>, 'options'> & {
-	options: Option[],
-	pieces: LinkedList<NodeData>,
+export type State = {
+	pieces?: LinkedList<NodeData>,
 	overlayMatch?: OverlayMatch,
 }
 

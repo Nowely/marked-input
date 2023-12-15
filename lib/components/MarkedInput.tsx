@@ -1,5 +1,6 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
 import '../styles.css'
+import {DefaultOptions} from '../constants'
 import {MarkedInputHandler, MarkStruct, Option, OverlayTrigger} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
@@ -63,12 +64,18 @@ export interface MarkedInputComponent {
 	displayName?: string
 }
 
-export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => (
-	<StoreProvider props={props}>
-		<Container/>
-		<Whisper/>
-		<Featurer inRef={ref}/>
-	</StoreProvider>
-)
+export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
+	const propsWithDefault = Object.assign({}, props, {
+		options: DefaultOptions
+	})
+
+	return (
+		<StoreProvider props={propsWithDefault}>
+			<Container/>
+			<Whisper/>
+			<Featurer inRef={ref}/>
+		</StoreProvider>
+	)
+}
 
 export const MarkedInput = forwardRef(_MarkedInput) as MarkedInputComponent

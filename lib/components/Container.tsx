@@ -21,7 +21,7 @@ export const Container = memo(() => {
 
 	return (
 		<div {...divOverride} ref={store.containerRef} className={className} style={style}>
-			{pieces.map((node) =>
+			{pieces?.map((node) =>
 				<NodeProvider key={getKey(node)} value={node}>
 					{
 						isAnnotated(node.data.mark) ? <Piece/> : <EditableSpan/>

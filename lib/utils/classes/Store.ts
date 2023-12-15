@@ -1,45 +1,32 @@
 import {createRef} from 'react'
 import {MarkedInputProps} from '../../components/MarkedInput'
-import {EmptyList, SystemEvent} from '../../constants'
+import {SystemEvent} from '../../constants'
 import {NodeData, Recovery, State} from '../../types'
 import {EventBus} from './EventBus'
-import {extractOptions} from '../functions/extractOptions'
 import LinkedListNode from './LinkedList/LinkedListNode'
 
 export class Store {
-	#state: State
+	#state: MarkedInputProps & State
 
 	changedNode?: LinkedListNode<NodeData>
 	focusedNode?: LinkedListNode<NodeData>
+
 	recovery?: Recovery
+
 	containerRef = createRef<HTMLDivElement>()
 	overlayRef = createRef<HTMLElement>()
 
-	get state(): State {
+	readonly bus = new EventBus()
+
+	get state(): MarkedInputProps & State {
 		return this.#state
 	}
 
-	static create(props: MarkedInputProps<any>) {
-		return () => {
-			const {options, ...other} = props
-
-			const initialState = {
-				options: extractOptions(options),
-				pieces: EmptyList,
-				...other
-			} as State
-
-			const bus = new EventBus()
-
-			return new Store(initialState, bus)
-		}
+	constructor(props: MarkedInputProps) {
+		this.#state = props
 	}
 
-	constructor(state: State, readonly bus: EventBus) {
-		this.#state = state
-	}
-
-	setState(state: Partial<State>) {
+	setState(state: Partial<MarkedInputProps & State>) {
 		this.#state = {...this.#state, ...state}
 		this.bus.send(SystemEvent.State, this.#state)
 	}

@@ -1,11 +1,12 @@
 import {useState} from 'react'
+import {MarkedInputProps} from '../../components/MarkedInput'
 import {SystemEvent} from '../../constants'
 import {State} from '../../types'
 import {useStore} from '../providers/StoreProvider'
 import {shallow} from '../functions/shallow'
 import {useListener} from './useListener'
 
-export const useSelector = <T, >(selector: (state: State) => T, byStruct?: boolean) => {
+export const useSelector = <T, >(selector: (state: MarkedInputProps & State) => T, byStruct?: boolean) => {
 	const store = useStore()
 	const [value, setValue] = useState(() => selector(store.state))
 

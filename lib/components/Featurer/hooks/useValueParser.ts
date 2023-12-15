@@ -18,6 +18,7 @@ export const useValueParser = () => {
 	}), true)
 
 	useEffect(() => {
+
 		const pieces = store.changedNode
 			? updateByChangedLabel(store, options)
 			: updateByChangedValue(value, options)
@@ -35,7 +36,7 @@ function toNodeData(piece: Piece) {
 	}
 }
 
-function updateByChangedValue(value: string, options: Option[]) {
+function updateByChangedValue(value: string, options?: Option[]) {
 	const pieces = Parser.split(value, options)()
 	const nodeData = pieces.map(toNodeData)
 	return LinkedList.from(nodeData)
@@ -47,9 +48,9 @@ function updateByChangedLabel(store: Store, options: Option[]) {
 
 	const nodeData = pieces.map(toNodeData)
 
-	store.state.pieces.insertsBefore(store.changedNode!, nodeData)
+	store.state.pieces?.insertsBefore(store.changedNode!, nodeData)
 	store.focusedNode = store.changedNode!.next
 	store.changedNode!.remove()
 	store.changedNode = undefined
-	return store.state.pieces.shallowCopy()
+	return store.state.pieces?.shallowCopy()
 }
