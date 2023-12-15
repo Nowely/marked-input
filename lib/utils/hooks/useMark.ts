@@ -1,7 +1,8 @@
 import {RefObject, useCallback, useState} from 'react'
-import {SystemEvent} from '../constants'
-import {MarkStruct} from '../types'
-import {useNode, useStore} from './index'
+import {SystemEvent} from '../../constants'
+import {MarkStruct} from '../../types'
+import {useNode} from '../providers/NodeProvider'
+import {useStore} from '../providers/StoreProvider'
 import {useSelector} from './useSelector'
 
 export interface MarkHandler<T> extends MarkStruct {

@@ -1,7 +1,7 @@
 import {DependencyList, useEffect} from 'react'
-import {SystemEvent} from '../constants'
-import {Listener} from '../types'
-import {useStore} from './index'
+import {SystemEvent} from '../../constants'
+import {Listener} from '../../types'
+import {useStore} from '../providers/StoreProvider'
 
 export function useListener(type: SystemEvent, listener: Listener, deps?: DependencyList): void
 export function useListener<K extends keyof HTMLElementEventMap>(type: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList): void

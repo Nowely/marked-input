@@ -1,12 +1,13 @@
 import {memo} from 'react'
 import {DefaultClass} from '../constants'
-import {NodeProvider, useStore} from '../utils'
-import {getKey} from '../utils/getKey'
-import {useSelector} from '../utils/useSelector'
+import {getKey} from '../utils/functions/getKey'
+import {useSelector} from '../utils/hooks/useSelector'
+import {NodeProvider} from '../utils/providers/NodeProvider'
+import {useStore} from '../utils/providers/StoreProvider'
 import {EditableSpan} from './EditableSpan'
-import {getChildProps} from '../utils/getChildProps'
+import {getChildProps} from '../utils/functions/getChildProps'
 import {Piece} from './Piece'
-import {isAnnotated} from "../utils/isAnnotated";
+import {isAnnotated} from "../utils/checkers/isAnnotated";
 
 export const Container = memo(() => {
 	const store = useStore()

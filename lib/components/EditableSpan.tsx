@@ -1,7 +1,7 @@
 import {FormEvent, ClipboardEvent} from 'react'
-import {getChildProps} from '../utils/getChildProps'
-import {useMark} from '../utils/useMark'
-import {useSelector} from '../utils/useSelector'
+import {getChildProps} from '../utils/functions/getChildProps'
+import {useMark} from '../utils/hooks/useMark'
+import {useSelector} from '../utils/hooks/useSelector'
 
 //Editable block - edit text here
 export const EditableSpan = () => {

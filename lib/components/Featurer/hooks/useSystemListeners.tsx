@@ -1,8 +1,10 @@
 import {SystemEvent} from '../../../constants'
 import {MarkStruct, Payload, OverlayMatch} from '../../../types'
-import {createNewSpan, toString, useStore} from '../../../utils'
-import {useListener} from '../../../utils/useListener'
-import {annotate} from '../../../utils/annotate'
+import {createNewSpan} from '../../../utils/functions/createNewSpan'
+import {useListener} from '../../../utils/hooks/useListener'
+import {annotate} from '../../../utils/functions/annotate'
+import {useStore} from '../../../utils/providers/StoreProvider'
+import {toString} from '../../../utils/functions/toString'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {

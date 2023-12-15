@@ -1,9 +1,9 @@
 import {useCallback} from 'react'
 import {SystemEvent} from '../../../constants'
 import {OverlayTrigger, Payload} from '../../../types'
-import {useStore} from '../../../utils'
-import {Store} from '../../../utils/Store'
-import {useListener} from '../../../utils/useListener'
+import {useStore} from '../../../utils/providers/StoreProvider'
+import {Store} from '../../../utils/classes/Store'
+import {useListener} from '../../../utils/hooks/useListener'
 
 export function useCheckTrigger() {
 	const store = useStore()

@@ -1,7 +1,8 @@
 import {ReactNode, useEffect, useState} from 'react'
-import {extractOptions, StoreContext} from '../utils'
-import {Store} from '../utils/Store'
+import {extractOptions} from '../utils/functions/extractOptions'
+import {Store} from '../utils/classes/Store'
 import {MarkedInputProps} from './MarkedInput'
+import { StoreContext } from '../utils/providers/StoreProvider'
 
 export const StoreProvider = ({props, children}: { props: MarkedInputProps, children: ReactNode }) => {
 	const [store] = useState(Store.create(props))

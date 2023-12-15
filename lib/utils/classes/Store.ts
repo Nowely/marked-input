@@ -1,10 +1,10 @@
 import {createRef} from 'react'
-import {MarkedInputProps} from '../components/MarkedInput'
-import {EmptyList, SystemEvent} from '../constants'
-import {NodeData, Recovery, State} from '../types'
+import {MarkedInputProps} from '../../components/MarkedInput'
+import {EmptyList, SystemEvent} from '../../constants'
+import {NodeData, Recovery, State} from '../../types'
 import {EventBus} from './EventBus'
-import {extractOptions} from './index'
-import LinkedListNode from './LinkedListNode'
+import {extractOptions} from '../functions/extractOptions'
+import LinkedListNode from './LinkedList/LinkedListNode'
 
 export class Store {
 	#state: State

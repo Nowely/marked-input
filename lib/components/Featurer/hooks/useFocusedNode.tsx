@@ -1,5 +1,5 @@
-import {useStore} from '../../../utils'
-import {useListener} from '../../../utils/useListener'
+import {useListener} from '../../../utils/hooks/useListener'
+import {useStore} from '../../../utils/providers/StoreProvider'
 
 export const useFocusedNode = () => {
 	const store = useStore()

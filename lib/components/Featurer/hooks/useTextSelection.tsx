@@ -1,5 +1,5 @@
-import React, {useEffect, useRef} from 'react'
-import {useStore} from '../../../utils'
+import {useEffect, useRef} from 'react'
+import {useStore} from '../../../utils/providers/StoreProvider'
 
 export function useTextSelection() {
 	const store = useStore()

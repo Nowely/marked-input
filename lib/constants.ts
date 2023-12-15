@@ -1,5 +1,5 @@
 import {NumberedOption} from './types'
-import LinkedList from './utils/LinkedList'
+import LinkedList from './utils/classes/LinkedList/LinkedList'
 
 export enum KEY {
 	// Navigation Keys

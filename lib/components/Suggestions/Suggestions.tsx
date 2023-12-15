@@ -1,7 +1,7 @@
 import {RefObject, useMemo, useState} from 'react'
 import {KEY} from '../../constants'
-import {useDownOf} from '../../utils/useDownOf'
-import {useOverlay} from '../../utils/useOverlay'
+import {useDownOf} from '../../utils/hooks/useDownOf'
+import {useOverlay} from '../../utils/hooks/useOverlay'
 
 export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()

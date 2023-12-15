@@ -1,8 +1,8 @@
 import {useState} from 'react'
-import {SystemEvent} from '../constants'
-import {State} from '../types'
-import {useStore} from './index'
-import {shallow} from './shallow'
+import {SystemEvent} from '../../constants'
+import {State} from '../../types'
+import {useStore} from '../providers/StoreProvider'
+import {shallow} from '../functions/shallow'
 import {useListener} from './useListener'
 
 export const useSelector = <T, >(selector: (state: State) => T, byStruct?: boolean) => {

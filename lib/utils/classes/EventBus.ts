@@ -1,5 +1,5 @@
-import {SystemEvent} from '../constants'
-import {Listener} from '../types'
+import {SystemEvent} from '../../constants'
+import {Listener} from '../../types'
 
 export class EventBus {
 	readonly #SystemEvents = new Map<SystemEvent, Set<Listener>>()

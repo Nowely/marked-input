@@ -1,10 +1,11 @@
 import {createRef, useEffect} from 'react'
 import {Option, Piece} from '../../../types'
-import {isObject, useStore} from '../../../utils'
-import LinkedList from '../../../utils/LinkedList'
-import {Parser} from '../../../utils/Parser'
-import {Store} from '../../../utils/Store'
-import {useSelector} from '../../../utils/useSelector'
+import {useStore} from '../../../utils'
+import {isObject} from '../../../utils/checkers/isObject'
+import LinkedList from '../../../utils/classes/LinkedList/LinkedList'
+import {Parser} from '../../../utils/classes/Parser/Parser'
+import {Store} from '../../../utils/classes/Store'
+import {useSelector} from '../../../utils/hooks/useSelector'
 
 //TODO Compare new input value with returned caching?
 //TODO dont create a new object for returned value

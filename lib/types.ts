@@ -1,9 +1,9 @@
 import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 
-import LinkedList from './utils/LinkedList'
+import LinkedList from './utils/classes/LinkedList/LinkedList'
 import {PLACEHOLDER} from "./constants";
-import LinkedListNode from './utils/LinkedListNode'
+import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 
 export type NodeData = {
 	mark: MarkStruct

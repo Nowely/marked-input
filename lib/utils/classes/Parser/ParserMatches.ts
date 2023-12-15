@@ -1,4 +1,4 @@
-import {MarkMatch} from '../types'
+import {MarkMatch} from '../../../types'
 
 export class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 	done: boolean = false

@@ -1,7 +1,7 @@
 import {SystemEvent} from '../../../constants'
-import {useStore} from '../../../utils'
-import {TriggerFinder} from '../../../utils/TriggerFinder'
-import {useListener} from '../../../utils/useListener'
+import {useStore} from '../../../utils/providers/StoreProvider'
+import {TriggerFinder} from '../../../utils/classes/TriggerFinder'
+import {useListener} from '../../../utils/hooks/useListener'
 
 export const useTrigger = () => {
 	const store = useStore()

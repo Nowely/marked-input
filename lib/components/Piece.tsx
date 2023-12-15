@@ -1,5 +1,6 @@
-import {assertAnnotated, useNode} from '../utils'
-import {useSelector} from '../utils/useSelector'
+import {assertAnnotated} from '../utils/functions/assertAnnotated'
+import {useSelector} from '../utils/hooks/useSelector'
+import {useNode} from '../utils/providers/NodeProvider'
 
 export function Piece() {
 	const {data} = useNode()

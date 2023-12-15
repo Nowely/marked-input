@@ -1,7 +1,7 @@
 import {ForwardedRef, useImperativeHandle} from 'react'
 import {MarkedInputHandler} from '../../../types'
-import {useStore} from '../../../utils'
-import {Store} from '../../../utils/Store'
+import {useStore} from '../../../utils/providers/StoreProvider'
+import {Store} from '../../../utils/classes/Store'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {

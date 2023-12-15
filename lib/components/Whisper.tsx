@@ -1,5 +1,5 @@
 import {memo} from 'react'
-import {useSelector} from '../utils/useSelector'
+import {useSelector} from '../utils/hooks/useSelector'
 import {Suggestions} from './Suggestions'
 
 export const Whisper = memo(() => {

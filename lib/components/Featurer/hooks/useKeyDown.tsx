@@ -1,8 +1,8 @@
 import {KEY, SystemEvent} from '../../../constants'
-import {useStore} from '../../../utils'
-import {Caret} from '../../../utils/Caret'
-import {useDownOf} from '../../../utils/useDownOf'
-import {useListener} from '../../../utils/useListener'
+import {Caret} from '../../../utils/classes/Caret'
+import {useDownOf} from '../../../utils/hooks/useDownOf'
+import {useListener} from '../../../utils/hooks/useListener'
+import {useStore} from '../../../utils/providers/StoreProvider'
 
 export function useKeyDown() {
 	const store = useStore()
