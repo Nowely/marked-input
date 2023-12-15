@@ -24,11 +24,11 @@ export default class LinkedList<NodeData = any> {
 	/** The tail of the list, the last node */
 	tail?: LinkedListNode<NodeData>
 	/** Internal $length reference */
-	$length: number
+	#length: number
 
 	/** The length of the list */
 	get length(): number {
-		return this.$length
+		return this.#length
 	}
 
 	/**
@@ -46,7 +46,7 @@ export default class LinkedList<NodeData = any> {
 	constructor(...args: NodeData[]) {
 		delete this.head
 		delete this.tail
-		this.$length = 0
+		this.#length = 0
 
 		for (let i = 0; i < args.length; i++) {
 			this.append(args[i])
@@ -174,7 +174,7 @@ export default class LinkedList<NodeData = any> {
 				this.tail.next = node
 			}
 			this.tail = node
-			this.$length += 1
+			this.#length += 1
 		}
 		return this
 	}
@@ -262,7 +262,7 @@ export default class LinkedList<NodeData = any> {
 			this.tail = node.prev
 		}
 
-		this.$length -= 1
+		this.#length -= 1
 		delete node.next
 		delete node.prev
 		delete node.list
@@ -295,19 +295,24 @@ export default class LinkedList<NodeData = any> {
 	 * const list = new LinkedList(1, 3);
 	 * list.insertBefore(list.tail, 2); // 1 <=> 2 <=> 3
 	 * ```
-	 * @param referenceNode The node reference
+	 * @param reference The node reference
 	 * @param data Data to save in the node
 	 */
-	insertBefore(referenceNode: LinkedListNode<NodeData>, data: NodeData): LinkedList<NodeData> {
-		const node = new LinkedListNode(data, referenceNode.prev, referenceNode, this)
-		if (referenceNode.prev === undefined) {
+	insertBefore(reference: LinkedListNode<NodeData>, data: NodeData): LinkedList<NodeData> {
+		const node = new LinkedListNode(data, reference.prev, reference, this)
+		if (reference.prev === undefined) {
 			this.head = node
 		}
-		if (referenceNode.prev !== undefined) {
-			referenceNode.prev.next = node
+		if (reference.prev !== undefined) {
+			reference.prev.next = node
 		}
-		referenceNode.prev = node
-		this.$length += 1
+		reference.prev = node
+		this.#length += 1
+		return this
+	}
+
+	insertsBefore(reference: LinkedListNode<NodeData>, data: NodeData[]): LinkedList<NodeData> {
+		data.forEach(data => this.insertBefore(reference, data))
 		return this
 	}
 
@@ -537,6 +542,18 @@ export default class LinkedList<NodeData = any> {
 			currentNode = currentNode[nextNode]
 			currentIndex += modifier
 		}
+	}
+
+	/**
+	* Preserved nodes. Changed list reference
+	*/
+	shallowCopy(): LinkedList<NodeData> {
+		const list = new LinkedList()
+		list.head = this.head
+		list.tail = this.tail
+		list.#length = this.#length
+		list.forEachNode(data => data.list = list)
+		return list
 	}
 
 	/**
