@@ -65,9 +65,9 @@ export interface MarkedInputComponent {
 }
 
 export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
-	const propsWithDefault = Object.assign({}, props, {
+	const propsWithDefault = Object.assign({}, {
 		options: DefaultOptions
-	})
+	}, props)
 
 	return (
 		<StoreProvider props={propsWithDefault}>

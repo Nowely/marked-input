@@ -3,7 +3,6 @@ import {markupToRegex} from '../../functions/markupToRegex'
 import {ParserMatches} from './ParserMatches'
 import {normalizeMark} from "../../functions/normalizeMark";
 
-//TODO parser factory?
 export class Parser {
 	private readonly markups: Markup[]
 	private readonly uniRegExp: RegExp
