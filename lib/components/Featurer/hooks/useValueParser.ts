@@ -19,12 +19,11 @@ export const useValueParser = () => {
 
 	useEffect(() => {
 
-		const pieces = store.changedNode
-			? updateByChangedLabel(store, options)
-			: updateByChangedValue(value, options)
+		if (store.changedNode)
+			updateByChangedLabel(store, options)
+		else
+			store.setState({pieces: updateByChangedValue(value, options)})
 
-
-		store.setState({pieces})
 
 	}, [value, options])
 }
@@ -52,5 +51,6 @@ function updateByChangedLabel(store: Store, options: Option[]) {
 	store.focusedNode = store.changedNode!.next
 	store.changedNode!.remove()
 	store.changedNode = undefined
-	return store.state.pieces?.shallowCopy()
+	const result = store.state.pieces?.shallowCopy()
+	store.setState({pieces: result})
 }
