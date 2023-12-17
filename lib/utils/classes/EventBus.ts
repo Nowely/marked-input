@@ -1,22 +1,20 @@
-import {SystemEvent} from '../../constants'
-import {Listener} from '../../types'
+import {EventKey, Listener} from '../../types'
 
 export class EventBus {
-	readonly #SystemEvents = new Map<SystemEvent, Set<Listener>>()
+	readonly #SystemEvents = new Map<EventKey<any>, Set<Listener>>()
 
-	//TODO type
-	send(event: SystemEvent, arg?: any) {
-		this.#getListeners(event).forEach((func) => func(arg))
+	send<K extends EventKey<T>, T>(key: K, value?: T) {
+		this.#getListeners(key).forEach((func) => func(value))
 	}
 
-	listen(event: SystemEvent, listener: Listener): () => void {
-		this.#getListeners(event).add(listener)
-		return () => this.#getListeners(event).delete(listener)
+	on<K extends EventKey<T>, T>(key: K, listener: Listener<T>): () => void {
+		this.#getListeners(key).add(listener)
+		return () => this.#getListeners(key).delete(listener)
 	}
 
-	#getListeners(event: SystemEvent) {
-		if (!this.#SystemEvents.has(event))
-			this.#SystemEvents.set(event, new Set())
-		return this.#SystemEvents.get(event) as Set<Listener>
+	#getListeners(key: EventKey<any>) {
+		if (!this.#SystemEvents.has(key))
+			this.#SystemEvents.set(key, new Set())
+		return this.#SystemEvents.get(key) as Set<Listener>
 	}
 }

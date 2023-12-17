@@ -1,24 +1,26 @@
 import {DependencyList, useEffect} from 'react'
-import {SystemEvent} from '../../constants'
-import {Listener} from '../../types'
+import {EventKey, Listener} from '../../types'
 import {useStore} from '../providers/StoreProvider'
 
-export function useListener(type: SystemEvent, listener: Listener, deps?: DependencyList): void
-export function useListener<K extends keyof HTMLElementEventMap>(type: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList): void
-export function useListener(type: keyof HTMLElementEventMap | SystemEvent, listener: Listener, deps?: DependencyList) {
-	if (typeof type === 'number') useSystemListener(type, listener, deps)
-	else useContainerListener(type, listener, deps)
+export function useListener<T>(key: EventKey<T>, listener: Listener<T>, deps?: DependencyList): void
+export function useListener<K extends keyof HTMLElementEventMap>(key: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList): void
+export function useListener(key: keyof HTMLElementEventMap | EventKey<any>, listener: Listener, deps?: DependencyList) {
+	if (typeof key === 'string') {
+		useContainerListener(key, listener, deps)
+	} else {
+		useSystemListener(key, listener, deps)
+	}
 }
 
-function useSystemListener(type: SystemEvent, listener: Listener, deps?: DependencyList) {
+function useSystemListener<K extends EventKey<T>, T>(key: K, listener: Listener<T>, deps?: DependencyList) {
 	const {bus} = useStore()
-	useEffect(() => bus.listen(type, listener), deps)
+	useEffect(() => bus.on(key, listener), deps)
 }
 
-function useContainerListener<K extends keyof HTMLElementEventMap>(type: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList) {
+function useContainerListener<K extends keyof HTMLElementEventMap>(key: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList) {
 	const store = useStore()
 	useEffect(() => {
-		store.containerRef.current?.addEventListener(type, listener)
-		return () => store.containerRef.current?.removeEventListener(type, listener)
+		store.containerRef.current?.addEventListener(key, listener)
+		return () => store.containerRef.current?.removeEventListener(key, listener)
 	}, deps)
 }

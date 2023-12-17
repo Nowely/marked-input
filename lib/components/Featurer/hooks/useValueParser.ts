@@ -1,5 +1,5 @@
 import {createRef, useEffect} from 'react'
-import {Option, Piece} from '../../../types'
+import {MarkStruct, Option, Piece} from '../../../types'
 import {isAnnotated} from '../../../utils/checkers/isAnnotated'
 import {isObject} from '../../../utils/checkers/isObject'
 import LinkedList from '../../../utils/classes/LinkedList/LinkedList'
@@ -10,9 +10,6 @@ import {getClosestIndexes} from '../../../utils/functions/getClosestIndexes'
 import {useSelector} from '../../../utils/hooks/useSelector'
 import {useStore} from '../../../utils/providers/StoreProvider'
 
-//TODO Compare new input value with returned caching?
-//TODO dont create a new object for returned value
-//TODO move to marked text or store provider?
 export const useValueParser = () => {
 	const store = useStore()
 	const {value, options} = useSelector(state => ({
@@ -21,48 +18,49 @@ export const useValueParser = () => {
 	}), true)
 
 	useEffect(() => {
-			/*if (store.changedNode)
-				updateByChangedLabel(store, options)
-			else {*/
-
-			const ranges = getRangeMap(store)
-			const gap = findGap(store.previousValue, value)
-			store.previousValue = value
-
-			console.log(gap)
-			console.log(ranges)
-
-			if (gap.left) {
-				//Mark removing happen
-				if (ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1) {
-					const updatedIndex = ranges.indexOf(gap.left)
-					updateByChangedNodes(store, updatedIndex - 1, updatedIndex)
-					return
-				}
-
-				//Changing in label
-				const [updatedIndex] = getClosestIndexes(ranges, gap.left)
-				updateByChangedNode(store, updatedIndex)
-				return
+			if (store.changedNode)
+				updateStateFromUI(store, options)
+			else {
+				updateStateFromValue(store, value, options)
 			}
-
-
-			//Parse all string
-			const tokens = Parser.split(value, options)()
-			const nodeData = tokens.map(toNodeData)
-			const pieces = LinkedList.from(nodeData)
-
-			store.setState({pieces})
-			//}
-
-
 		}, [value, options]
 	)
 }
 
+function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {
+	const ranges = getRangeMap(store)
+	const gap = findGap(store.previousValue, value)
+	store.previousValue = value
+
+	console.log(gap)
+	console.log(ranges)
+
+	if (gap.left) {
+		//Mark removing happen
+		if (ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1) {
+			const updatedIndex = ranges.indexOf(gap.left)
+			updateByChangedNodes(store, updatedIndex - 1, updatedIndex)
+			return
+		}
+
+		//Changing in label
+		const [updatedIndex] = getClosestIndexes(ranges, gap.left)
+		updateByChangedNode(store, updatedIndex)
+		return
+	}
+
+
+	//Parse all string
+	const tokens = Parser.split(value, options)()
+	const nodeData = tokens.map(toNodeData)
+	const pieces = LinkedList.from(nodeData)
+
+	store.setState({pieces})
+}
+
 function getRangeMap(store: Store): number[] {
 	let position = 0
-	return store.state.pieces?.map(node => {
+	return store.state.pieces.map(node => {
 		const length = isAnnotated(node.data.mark) ? node.data.mark.annotation.length : node.data.mark.label.length
 		position += length
 		return position - length
@@ -77,8 +75,8 @@ function toNodeData(piece: Piece) {
 }
 
 function updateByChangedNodes(store: Store, index1: number, index2: number) {
-	const node1 = store.state.pieces?.getNode(index1)
-	const node2 = store.state.pieces?.getNode(index2)
+	const node1 = store.state.pieces.getNode(index1)
+	const node2 = store.state.pieces.getNode(index2)
 	const newString = node1!.data.mark.label + node2!.data.mark.label
 	const pieces = Parser.split(newString, store.state.options)()
 
@@ -87,21 +85,35 @@ function updateByChangedNodes(store: Store, index1: number, index2: number) {
 	store.state.pieces?.insertAfter(node2!, nodeData[0])
 	node1!.remove()
 	node2!.remove()
-	const result = store.state.pieces?.shallowCopy()
+	const result = store.state.pieces.shallowCopy()
 	store.setState({pieces: result})
 }
 
 function updateByChangedNode(store: Store, nodeIndex: number) {
-	const node = store.state.pieces?.getNode(nodeIndex)
+	const node = store.state.pieces.getNode(nodeIndex)
 	const pieces = Parser.split(node!.data.mark.label, store.state.options)()
 	if (pieces.length===1) return
 
 	const nodeData = pieces.map(toNodeData)
 
-	store.state.pieces?.insertsBefore(node!, nodeData)
+	store.state.pieces.insertsBefore(node!, nodeData)
 	store.focusedNode = node!.next
 	node!.remove()
-	const result = store.state.pieces?.shallowCopy()
+	const result = store.state.pieces.shallowCopy()
+	store.setState({pieces: result})
+}
+
+function updateStateFromUI(store: Store, options?: Option[]) {
+	const pieces = Parser.split(store.changedNode!.data.mark.label, options)()
+	if (pieces.length===1) return
+
+	const nodeData = pieces.map(toNodeData)
+
+	store.state.pieces.insertsBefore(store.changedNode!, nodeData)
+	store.focusedNode = store.changedNode!.next
+	store.changedNode!.remove()
+	store.changedNode = undefined
+	const result = store.state.pieces.shallowCopy()
 	store.setState({pieces: result})
 }
 
@@ -109,18 +121,4 @@ function updateByChangedValue(value: string, options?: Option[]) {
 	const pieces = Parser.split(value, options)()
 	const nodeData = pieces.map(toNodeData)
 	return LinkedList.from(nodeData)
-}
-
-function updateByChangedLabel(store: Store, options: Option[]) {
-	const pieces = Parser.split(store.changedNode!.data.mark.label, options)()
-	if (pieces.length===1) return
-
-	const nodeData = pieces.map(toNodeData)
-
-	store.state.pieces?.insertsBefore(store.changedNode!, nodeData)
-	store.focusedNode = store.changedNode!.next
-	store.changedNode!.remove()
-	store.changedNode = undefined
-	const result = store.state.pieces?.shallowCopy()
-	store.setState({pieces: result})
 }

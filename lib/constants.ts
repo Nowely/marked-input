@@ -1,5 +1,7 @@
-import {Option} from './types'
+import {MarkedInputProps} from './components/MarkedInput'
+import {EventKey, MarkStruct, NodeData, Option, OverlayMatch, State} from './types'
 import LinkedList from './utils/classes/LinkedList/LinkedList'
+import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 
 export enum KEY {
 	// Navigation Keys
@@ -42,14 +44,13 @@ export const wordRegex = new RegExp(/^\w*/)
 
 export const EmptyList = LinkedList.from([])
 
-export enum SystemEvent {
-	Change,
-	Delete,
-	CheckTrigger,
-	ClearTrigger,
-	Trigger,
-	Select,
-	State,
+export const EVENT = {
+	ClearTrigger: Symbol() as EventKey<undefined>,
+	Change: Symbol() as EventKey<{ node: LinkedListNode<NodeData>, mark?: MarkStruct }>,
+	Delete: Symbol() as EventKey<LinkedListNode<NodeData>>,
+	CheckTrigger: Symbol() as EventKey<undefined>,
+	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
+	State: Symbol() as EventKey<MarkedInputProps & State>,
 }
 
 export enum PLACEHOLDER {

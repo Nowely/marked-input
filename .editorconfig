@@ -29,6 +29,7 @@ ij_javascript_force_quote_style = true
 ij_typescript_force_quote_style = true
 ij_typescript_use_double_quotes = false
 
-# colon
+# space
 ij_typescript_space_before_colon = true
 ij_typescript_space_after_colon = true
+ij_typescript_spaces_around_equality_operators = true

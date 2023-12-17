@@ -1,8 +1,8 @@
 import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
+import {PLACEHOLDER} from './constants'
 
 import LinkedList from './utils/classes/LinkedList/LinkedList'
-import {PLACEHOLDER} from "./constants";
 import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 
 export type NodeData = {
@@ -48,7 +48,10 @@ export interface Option<T = Record<string, any>> {
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
 export type State = {
-	pieces?: LinkedList<NodeData>,
+	/**
+	* @default EmptyList
+	*/
+	pieces: LinkedList<NodeData>,
 	overlayMatch?: OverlayMatch,
 }
 
@@ -120,3 +123,5 @@ export type OverlayTrigger =
 	| 'change'
 	| 'selectionChange'
 	| 'none';
+
+export interface EventKey<T> extends Symbol {}

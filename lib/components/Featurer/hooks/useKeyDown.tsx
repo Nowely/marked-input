@@ -1,4 +1,4 @@
-import {KEY, SystemEvent} from '../../../constants'
+import {EVENT, KEY} from '../../../constants'
 import {Caret} from '../../../utils/classes/Caret'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
@@ -34,7 +34,7 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, {node})
+		store.bus.send(EVENT.Delete, {node})
 		event.preventDefault()
 	})
 
@@ -46,7 +46,7 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, {node})
+		store.bus.send(EVENT.Delete, {node})
 		event.preventDefault()
 	})
 
