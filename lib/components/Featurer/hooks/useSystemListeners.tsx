@@ -10,7 +10,7 @@ export function useSystemListeners() {
 	const store = useStore()
 
 	useListener(SystemEvent.Change, (event) => {
-		const {pieces, onChange, options} = store.state
+		const {onChange, options} = store.props
 		const {node, mark} = event
 
 		if (mark) {
@@ -18,7 +18,7 @@ export function useSystemListeners() {
 			node.data.mark.value = mark.value
 		}
 		store.recovery = {caretPosition: 0, prevNodeData: node?.prev?.data, isPrevPrev: true}
-		const values = pieces.toArray().map(node => node.mark)
+		const values = store.pieces.toArray().map(node => node.mark)
 
 		store.changedNode = node
 		onChange(toString(values, options))
@@ -26,32 +26,32 @@ export function useSystemListeners() {
 	}, [])
 
 	useListener(SystemEvent.Delete, (node) => {
-		const {pieces, onChange, options} = store.state
+		const {onChange, options} = store.props
 
 		store.changedNode = undefined
 		node.remove()
 
-		const values = pieces.toArray().map(data => data.mark)
+		const values = store.pieces.toArray().map(data => data.mark)
 		onChange(toString(values, options))
 		//pieces.delete(key)
 		//onChange(toString([...pieces.values()], options))
 	}, [])
 
 	useListener(SystemEvent.Select, (event) => {
-		const {pieces, Mark} = store.state
+		const {Mark} = store.props
 		const {mark, match: {option, span, index, source, node}} = event
 
 		const annotation = annotate(option.markup!, mark.label, mark.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
-		const piece = pieces.findNode(node => node.mark.label===span)
+		const piece = store.pieces.findNode(node => node.mark.label===span)
 		store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
 
 		if (piece) {
 			piece.data.mark.label = newSpan
 			//piece.data.mark.value = value.value
 			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
-			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, node: piece})
+			store.bus.send(SystemEvent.Change, {mark: {label: newSpan}, node: piece})
 			if (!Mark) {
 				node.textContent = newSpan
 				store.recovery = {caretPosition: index + annotation.length}

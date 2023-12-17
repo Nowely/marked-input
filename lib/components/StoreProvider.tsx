@@ -4,9 +4,12 @@ import {StoreContext} from '../utils/providers/StoreProvider'
 import {MarkedInputProps} from './MarkedInput'
 
 export const StoreProvider = ({props, children}: { props: MarkedInputProps, children: ReactNode }) => {
-	const [store] = useState(() => new Store(props))
 
-	useEffect(() => store.setState(props))
+	const [store] = useState(() => Store.create(props))
+
+	useEffect(() => {
+		store.props = props
+	})
 
 	return <StoreContext.Provider value={store} children={children}/>
 }

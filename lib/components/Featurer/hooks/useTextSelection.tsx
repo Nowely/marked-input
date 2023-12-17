@@ -24,7 +24,7 @@ export function useTextSelection() {
 			const isInside = window.getSelection()?.containsNode(store.containerRef.current!, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
-				store.setState({readOnly: true})
+				store.props.readOnly = true
 			}
 		}
 
@@ -36,7 +36,7 @@ export function useTextSelection() {
 		const listener = () => {
 			pressedUp.current = false
 			ref.current = null
-			store.setState({readOnly: false})
+			store.props.readOnly = false
 		}
 
 		document.addEventListener('mouseup', listener)

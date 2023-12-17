@@ -28,7 +28,7 @@ export interface MarkHandler<T> extends MarkStruct {
 export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
 	const node = useNode()
 	const {bus} = useStore()
-	const readOnly = useSelector(state => state.readOnly)
+	const readOnly = useSelector(state => state.props.readOnly)
 
 	const [label, setLabel] = useState<string>(node.data.mark.label)
 	const [value, setValue] = useState<string | undefined>(node.data.mark.value)
@@ -38,13 +38,13 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 			setLabel(props.label)
 			setValue(props.value)
 		}
-		bus.send(SystemEvent.Change, {node, value: {...props}})
+		bus.send(SystemEvent.Change, {node, mark: {...props}})
 	}, [])
 
 	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
-		bus.send(SystemEvent.Delete, {node})
+		bus.send(SystemEvent.Delete, node)
 	}, [])
 
 	return {label, value, change, remove, readOnly, ref: node.data.ref as RefObject<T>}

@@ -8,7 +8,7 @@ import {useListener} from '../../../utils/hooks/useListener'
 export function useCheckTrigger() {
 	const store = useStore()
 
-	const sendCheckTrigger = useCallback((e: Event | Payload) =>
+	const sendCheckTrigger = useCallback((e: Event) =>
 		isMatch(e, store) && store.bus.send(SystemEvent.CheckTrigger), [])
 
 	useListener('focusin', () =>
@@ -22,7 +22,7 @@ export function useCheckTrigger() {
 
 
 function isMatch(e: Event | Payload, store: Store) {
-	let trigger = store.state.trigger ?? 'change'
+	let trigger = store.props.trigger ?? 'change'
 	let type: OverlayTrigger
 
 	if ('key' in e) type = 'change'

@@ -4,7 +4,8 @@ import {useNode} from '../utils/providers/NodeProvider'
 
 export function Piece() {
 	const {data} = useNode()
-	const {options, Mark} = useSelector(state => ({options: state.options, Mark: state.Mark}), true)
+	const {options, Mark} = useSelector(store =>
+		({options: store.props.options, Mark: store.props.Mark}), true)
 
 	assertAnnotated(data.mark)
 

@@ -5,7 +5,7 @@ import {Suggestions} from './Suggestions'
 export const Whisper = memo(() => {
 	// @ts-ignore TODO
 	const key = useSelector(state => state.overlayMatch?.option.index)
-	const Overlay = useSelector(state => state.Overlay ?? Suggestions)
+	const Overlay = useSelector(state => state.props.Overlay ?? Suggestions)
 
 	return key !== undefined ? <Overlay key={key}/> : null
 })

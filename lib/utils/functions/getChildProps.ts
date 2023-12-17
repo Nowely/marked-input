@@ -1,8 +1,8 @@
 import {Children} from 'react'
-import {State} from '../../types'
+import type {Store} from '../classes/Store'
 
-export const getChildProps = (type: string) => (state: State) =>
+export const getChildProps = (type: string) => (state: Store) =>
 	Children
-		.map(state.children, child => child)
+		.map(state.props.children, child => child)
 		?.find(child => child.type === type)
 		?.props

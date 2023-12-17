@@ -47,19 +47,6 @@ export interface Option<T = Record<string, any>> {
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
-export type State = {
-	/**
-	* @default EmptyList
-	*/
-	pieces: LinkedList<NodeData>,
-	overlayMatch?: OverlayMatch,
-}
-
-export type Payload = {
-	node: LinkedListNode<NodeData>,
-	value?: MarkStruct
-}
-
 export interface MarkMatch extends MarkStruct {
 	annotation: string
 	input: string

@@ -5,18 +5,18 @@ import {useStore} from '../../../utils/providers/StoreProvider'
 
 export const useFocusRecovery = () => {
 	const store = useStore()
-	const pieces = useSelector(state => state.pieces)
-	const deps = !store.state.Mark ? undefined : [pieces]
+	const pieces = useSelector(store => store.pieces)
+	const deps = !store.props.Mark ? undefined : [pieces]
 
 	//Restore focus after delete mark
 	useEffect(() => {
 		if (store.recovery) {
 			const {prevNodeData, caretPosition, isPrevPrev} = store.recovery
 
-			const node = store.state.pieces.findNode(data => data === prevNodeData)
+			const node = store.pieces.findNode(data => data === prevNodeData)
 			const newNode = isPrevPrev
-				? node?.next?.next?.next ?? store.state.pieces.head?.next?.next
-				: node?.next ?? store.state.pieces.head
+				? node?.next?.next?.next ?? store.pieces.head?.next?.next
+				: node?.next ?? store.pieces.head
 			const element = newNode?.data.ref.current
 			//debugger
 			element?.focus()

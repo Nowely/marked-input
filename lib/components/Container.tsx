@@ -12,8 +12,8 @@ import {isAnnotated} from "../utils/checkers/isAnnotated";
 export const Container = memo(() => {
 	const store = useStore()
 	const {className, style, pieces} = useSelector(state => ({
-		className: state.className ? DefaultClass + ' ' + state.className : DefaultClass,
-		style: state.style,
+		className: state.props.className ? DefaultClass + ' ' + state.props.className : DefaultClass,
+		style: state.props.style,
 		pieces: state.pieces,
 	}), true)
 

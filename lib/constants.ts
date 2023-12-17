@@ -1,7 +1,7 @@
-import {MarkedInputProps} from './components/MarkedInput'
-import {EventKey, MarkStruct, NodeData, Option, OverlayMatch, State} from './types'
+import {EventKey, MarkStruct, NodeData, Option, OverlayMatch} from './types'
 import LinkedList from './utils/classes/LinkedList/LinkedList'
 import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
+import type {Store} from './utils/classes/Store'
 
 export enum KEY {
 	// Navigation Keys
@@ -28,9 +28,6 @@ export enum KEY {
 	ESC = 'Escape'
 }
 
-export const EmptyFunc = () => {
-}
-
 export const DefaultClass = 'mk-input'
 
 export const DefaultOptions: Option[] = [{
@@ -42,7 +39,7 @@ export const DefaultOptions: Option[] = [{
 
 export const wordRegex = new RegExp(/^\w*/)
 
-export const EmptyList = LinkedList.from([])
+export const EmptyList = LinkedList.from<NodeData>([])
 
 export const SystemEvent = {
 	ClearTrigger: Symbol() as EventKey<undefined>,
@@ -50,7 +47,7 @@ export const SystemEvent = {
 	Delete: Symbol() as EventKey<LinkedListNode<NodeData>>,
 	CheckTrigger: Symbol() as EventKey<undefined>,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
-	State: Symbol() as EventKey<MarkedInputProps & State>,
+	STORE_UPDATED: Symbol() as EventKey<Store>,
 }
 
 export enum PLACEHOLDER {

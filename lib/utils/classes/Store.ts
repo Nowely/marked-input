@@ -1,12 +1,12 @@
 import {createRef} from 'react'
 import {MarkedInputProps} from '../../components/MarkedInput'
 import {EmptyList, SystemEvent} from '../../constants'
-import {NodeData, Recovery, State} from '../../types'
+import {NodeData, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import LinkedListNode from './LinkedList/LinkedListNode'
 
 export class Store {
-	#state: MarkedInputProps & State
+	props: MarkedInputProps
 
 	changedNode?: LinkedListNode<NodeData>
 	focusedNode?: LinkedListNode<NodeData>
@@ -20,16 +20,24 @@ export class Store {
 
 	readonly bus = new EventBus()
 
-	get state(): MarkedInputProps & State {
-		return this.#state
+	overlayMatch?: OverlayMatch
+
+	pieces = EmptyList
+
+	static create(props: MarkedInputProps) {
+		let store = new Store(props)
+		store = new Proxy(store, {
+			set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
+				if (prop === 'bus') return false
+				target[prop] = newValue
+				target.bus.send(SystemEvent.STORE_UPDATED, store)
+				return true
+			}
+		})
+		return store
 	}
 
-	constructor(props: MarkedInputProps) {
-		this.#state = {...props, pieces: EmptyList}
-	}
-
-	setState(state: Partial<MarkedInputProps & State>) {
-		this.#state = {...this.#state, ...state}
-		this.bus.send(SystemEvent.State, this.#state)
+	private constructor(props: MarkedInputProps) {
+		this.props = props
 	}
 }

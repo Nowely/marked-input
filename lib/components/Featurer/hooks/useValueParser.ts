@@ -13,8 +13,8 @@ import {useStore} from '../../../utils/providers/StoreProvider'
 export const useValueParser = () => {
 	const store = useStore()
 	const {value, options} = useSelector(state => ({
-		value: state.value,
-		options: state.Mark ? state.options : undefined,
+		value: state.props.value,
+		options: state.props.Mark ? state.props.options : undefined,
 	}), true)
 
 	useEffect(() => {
@@ -55,12 +55,12 @@ function updateStateFromValue(store: Store, value: string, options?: Option<Mark
 	const nodeData = tokens.map(toNodeData)
 	const pieces = LinkedList.from(nodeData)
 
-	store.setState({pieces})
+	store.pieces = pieces
 }
 
 function getRangeMap(store: Store): number[] {
 	let position = 0
-	return store.state.pieces.map(node => {
+	return store.pieces.map(node => {
 		const length = isAnnotated(node.data.mark) ? node.data.mark.annotation.length : node.data.mark.label.length
 		position += length
 		return position - length
@@ -75,32 +75,30 @@ function toNodeData(piece: Piece) {
 }
 
 function updateByChangedNodes(store: Store, index1: number, index2: number) {
-	const node1 = store.state.pieces.getNode(index1)
-	const node2 = store.state.pieces.getNode(index2)
+	const node1 = store.pieces.getNode(index1)
+	const node2 = store.pieces.getNode(index2)
 	const newString = node1!.data.mark.label + node2!.data.mark.label
-	const pieces = Parser.split(newString, store.state.options)()
+	const pieces = Parser.split(newString, store.props.options)()
 
 	const nodeData = pieces.map(toNodeData)
 
-	store.state.pieces?.insertAfter(node2!, nodeData[0])
+	store.pieces.insertAfter(node2!, nodeData[0])
 	node1!.remove()
 	node2!.remove()
-	const result = store.state.pieces.shallowCopy()
-	store.setState({pieces: result})
+	store.pieces = store.pieces.shallowCopy()
 }
 
 function updateByChangedNode(store: Store, nodeIndex: number) {
-	const node = store.state.pieces.getNode(nodeIndex)
-	const pieces = Parser.split(node!.data.mark.label, store.state.options)()
+	const node = store.pieces.getNode(nodeIndex)
+	const pieces = Parser.split(node!.data.mark.label, store.props.options)()
 	if (pieces.length===1) return
 
 	const nodeData = pieces.map(toNodeData)
 
-	store.state.pieces.insertsBefore(node!, nodeData)
+	store.pieces.insertsBefore(node!, nodeData)
 	store.focusedNode = node!.next
 	node!.remove()
-	const result = store.state.pieces.shallowCopy()
-	store.setState({pieces: result})
+	store.pieces = store.pieces.shallowCopy()
 }
 
 function updateStateFromUI(store: Store, options?: Option[]) {
@@ -109,12 +107,11 @@ function updateStateFromUI(store: Store, options?: Option[]) {
 
 	const nodeData = pieces.map(toNodeData)
 
-	store.state.pieces.insertsBefore(store.changedNode!, nodeData)
+	store.pieces.insertsBefore(store.changedNode!, nodeData)
 	store.focusedNode = store.changedNode!.next
 	store.changedNode!.remove()
 	store.changedNode = undefined
-	const result = store.state.pieces.shallowCopy()
-	store.setState({pieces: result})
+	store.pieces = store.pieces.shallowCopy()
 }
 
 function updateByChangedValue(value: string, options?: Option[]) {
