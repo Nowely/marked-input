@@ -1,4 +1,4 @@
-import {Meta} from '@storybook/react'
+import {Meta, StoryObj} from '@storybook/react'
 import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
@@ -19,6 +19,13 @@ export const Abc = {
 		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
 	}
 }*/
+
+export const Abc: StoryObj<typeof MarkedInput> = {
+	args: {
+		Mark: (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
+	}
+}
 
 export const Marked = () => {
 	const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')

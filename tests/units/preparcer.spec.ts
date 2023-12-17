@@ -1,4 +1,5 @@
 import {expect} from 'vitest'
+import {findGap} from 'rc-marked-input/utils/functions/findGap'
 
 const Hello = 'Hello'
 const Day = 'Day'
@@ -57,26 +58,3 @@ describe.only(`Utility: preparcer`, () => {
 		expect(findGap(HelloDay, Hello)).toMatchObject({left: Hello.length, right: HelloDay.length}))
 })
 
-export type Gap = { left?: number, right?: number }
-
-function findGap(previous: string, current: string): Gap {
-	if (previous === current) return {}
-
-	let left: number | undefined
-	for (let i = 0; i < previous.length; i++) {
-		if (previous[i] !== current[i]) {
-			left = i
-			break
-		}
-	}
-
-	let right: number | undefined
-	for (let i = 1; i <= previous.length; i++) {
-		if (previous.at(-i) !== current.at(-i)) {
-			right = previous.length - i + 1
-			break
-		}
-	}
-
-	return {left, right}
-}

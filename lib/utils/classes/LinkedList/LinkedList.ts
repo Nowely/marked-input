@@ -73,7 +73,7 @@ export default class LinkedList<NodeData = any> {
 	 * ```
 	 */
 
-	/*getNode(index: number): LinkedListNode<NodeData> | undefined {
+	getNode(index: number): LinkedListNode<NodeData> | undefined {
 		if (this.head === undefined || index < 0 || index >= this.length) {
 			return undefined
 		}
@@ -84,8 +84,8 @@ export default class LinkedList<NodeData = any> {
 		for (let currentIndex = 0; currentIndex < stopAt; currentIndex++) {
 			currentNode = currentNode![nextNode]
 		}
-		return currentNode!
-	}*/
+		return currentNode
+	}
 
 	/**
 	 * Return the first node and its index in the list that
@@ -381,7 +381,7 @@ export default class LinkedList<NodeData = any> {
 	 * @param referenceNode The reference node
 	 * @param data Data to be saved in the node
 	 */
-	/*insertAfter(
+	insertAfter(
 		referenceNode: LinkedListNode<NodeData>,
 		data: NodeData,
 	): LinkedList<NodeData> {
@@ -393,9 +393,9 @@ export default class LinkedList<NodeData = any> {
 			referenceNode.next.prev = node
 		}
 		referenceNode.next = node
-		this.$length += 1
+		this.#length += 1
 		return this
-	}*/
+	}
 
 	/**
 	 * Remove the first node from the list and return the data of the removed node

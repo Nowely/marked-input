@@ -16,6 +16,8 @@ export class Store {
 	containerRef = createRef<HTMLDivElement>()
 	overlayRef = createRef<HTMLElement>()
 
+	previousValue?: string
+
 	readonly bus = new EventBus()
 
 	get state(): MarkedInputProps & State {
