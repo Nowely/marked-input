@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export function useTextSelection() {
 	const store = useStore()
@@ -20,8 +20,8 @@ export function useTextSelection() {
 		const listener = (e: MouseEvent) => {
 			const isPressed = pressedUp.current
 			const isNotInnerSome =
-				!store.containerRef.current?.contains(ref.current) || ref.current !== e.target
-			const isInside = window.getSelection()?.containsNode(store.containerRef.current!, true)
+				!store.refs.container.current?.contains(ref.current) || ref.current !== e.target
+			const isInside = window.getSelection()?.containsNode(store.refs.container.current!, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
 				store.props.readOnly = true

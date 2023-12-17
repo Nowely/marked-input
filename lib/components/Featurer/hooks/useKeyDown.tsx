@@ -2,7 +2,7 @@ import {SystemEvent, KEY} from '../../../constants'
 import {Caret} from '../../../utils/classes/Caret'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export function useKeyDown() {
 	const store = useStore()
@@ -56,8 +56,8 @@ export function useKeyDown() {
 			event.preventDefault()
 
 			const selection = window.getSelection()
-			const anchorNode = store.containerRef.current?.firstChild
-			const focusNode = store.containerRef.current?.lastChild
+			const anchorNode = store.refs.container.current?.firstChild
+			const focusNode = store.refs.container.current?.lastChild
 
 			if (!selection || !anchorNode || !focusNode) return
 			selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)

@@ -1,10 +1,10 @@
 import {assertAnnotated} from '../utils/functions/assertAnnotated'
-import {useSelector} from '../utils/hooks/useSelector'
+import {useStore} from '../utils/hooks/useStore'
 import {useNode} from '../utils/providers/NodeProvider'
 
 export function Piece() {
 	const {data} = useNode()
-	const {options, Mark} = useSelector(store =>
+	const {options, Mark} = useStore(store =>
 		({options: store.props.options, Mark: store.props.Mark}), true)
 
 	assertAnnotated(data.mark)

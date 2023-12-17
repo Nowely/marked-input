@@ -1,10 +1,9 @@
 import {ReactNode, useEffect, useState} from 'react'
 import {Store} from '../utils/classes/Store'
-import {StoreContext} from '../utils/providers/StoreProvider'
+import {StoreContext} from '../utils/providers/StoreContext'
 import {MarkedInputProps} from './MarkedInput'
 
 export const StoreProvider = ({props, children}: { props: MarkedInputProps, children: ReactNode }) => {
-
 	const [store] = useState(() => Store.create(props))
 
 	useEffect(() => {

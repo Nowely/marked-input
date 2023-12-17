@@ -1,14 +1,14 @@
 import {ForwardedRef, useImperativeHandle} from 'react'
 import {MarkedInputHandler} from '../../../types'
-import {useStore} from '../../../utils/providers/StoreProvider'
 import {Store} from '../../../utils/classes/Store'
+import {useStore} from '../../../utils/hooks/useStore'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {
-		return store.containerRef.current
+		return store.refs.container.current
 	},
 	get overlay() {
-		return store.overlayRef.current
+		return store.refs.overlay.current
 	},
 	focus() {
 		store.pieces.head?.data.ref.current?.focus()

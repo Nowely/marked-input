@@ -1,11 +1,12 @@
 import {useEffect} from 'react'
 import {SystemEvent, KEY} from '../../../constants'
-import {useSelector} from '../../../utils/hooks/useSelector'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export function useCloseOverlayByEsc() {
-	const {bus} = useStore()
-	const match = useSelector(state => state.overlayMatch)
+	const {match, bus} = useStore(store => ({
+		match: store.overlayMatch,
+		bus: store.bus
+	}), true)
 
 	useEffect(() => {
 		if (!match) return

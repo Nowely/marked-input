@@ -13,8 +13,10 @@ export class Store {
 
 	recovery?: Recovery
 
-	containerRef = createRef<HTMLDivElement>()
-	overlayRef = createRef<HTMLElement>()
+	readonly refs = {
+		container: createRef<HTMLDivElement>(),
+		overlay: createRef<HTMLElement>()
+	}
 
 	previousValue?: string
 
@@ -28,7 +30,8 @@ export class Store {
 		let store = new Store(props)
 		store = new Proxy(store, {
 			set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-				if (prop === 'bus') return false
+				if (prop === 'bus' || prop === 'refs') return false
+
 				target[prop] = newValue
 				target.bus.send(SystemEvent.STORE_UPDATED, store)
 				return true

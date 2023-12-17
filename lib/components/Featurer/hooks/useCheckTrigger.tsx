@@ -1,9 +1,9 @@
 import {useCallback} from 'react'
 import {SystemEvent} from '../../../constants'
-import {OverlayTrigger, Payload} from '../../../types'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {OverlayTrigger} from '../../../types'
 import {Store} from '../../../utils/classes/Store'
 import {useListener} from '../../../utils/hooks/useListener'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export function useCheckTrigger() {
 	const store = useStore()
@@ -21,7 +21,7 @@ export function useCheckTrigger() {
 }
 
 
-function isMatch(e: Event | Payload, store: Store) {
+function isMatch(e: Event, store: Store) {
 	let trigger = store.props.trigger ?? 'change'
 	let type: OverlayTrigger
 

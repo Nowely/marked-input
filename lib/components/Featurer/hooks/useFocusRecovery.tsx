@@ -1,11 +1,10 @@
 import {useEffect} from 'react'
 import {Caret} from '../../../utils/classes/Caret'
-import {useSelector} from '../../../utils/hooks/useSelector'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export const useFocusRecovery = () => {
 	const store = useStore()
-	const pieces = useSelector(store => store.pieces)
+	const pieces = useStore(store => store.pieces)
 	const deps = !store.props.Mark ? undefined : [pieces]
 
 	//Restore focus after delete mark

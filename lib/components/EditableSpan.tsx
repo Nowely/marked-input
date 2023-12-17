@@ -1,12 +1,12 @@
 import {FormEvent, ClipboardEvent} from 'react'
 import {getChildProps} from '../utils/functions/getChildProps'
 import {useMark} from '../utils/hooks/useMark'
-import {useSelector} from '../utils/hooks/useSelector'
+import {useStore} from '../utils/hooks/useStore'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
 	const {label, change, readOnly, ref} = useMark()
-	const spanOverride = useSelector(getChildProps('span'), true)
+	const spanOverride = useStore(getChildProps('span'), true)
 
 	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
 		const label = e.currentTarget.textContent ?? ''

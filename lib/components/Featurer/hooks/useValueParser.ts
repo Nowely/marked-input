@@ -7,14 +7,13 @@ import {Parser} from '../../../utils/classes/Parser/Parser'
 import {Store} from '../../../utils/classes/Store'
 import {findGap} from '../../../utils/functions/findGap'
 import {getClosestIndexes} from '../../../utils/functions/getClosestIndexes'
-import {useSelector} from '../../../utils/hooks/useSelector'
-import {useStore} from '../../../utils/providers/StoreProvider'
+import {useStore} from '../../../utils/hooks/useStore'
 
 export const useValueParser = () => {
 	const store = useStore()
-	const {value, options} = useSelector(state => ({
-		value: state.props.value,
-		options: state.props.Mark ? state.props.options : undefined,
+	const {value, options} = useStore(store => ({
+		value: store.props.value,
+		options: store.props.Mark ? store.props.options : undefined,
 	}), true)
 
 	useEffect(() => {

@@ -1,11 +1,11 @@
 import {memo} from 'react'
-import {useSelector} from '../utils/hooks/useSelector'
+import {useStore} from '../utils/hooks/useStore'
 import {Suggestions} from './Suggestions'
 
 export const Whisper = memo(() => {
 	// @ts-ignore TODO
-	const key = useSelector(state => state.overlayMatch?.option.index)
-	const Overlay = useSelector(state => state.props.Overlay ?? Suggestions)
+	const key = useStore(state => state.overlayMatch?.option.index)
+	const Overlay = useStore(state => state.props.Overlay ?? Suggestions)
 
 	return key !== undefined ? <Overlay key={key}/> : null
 })

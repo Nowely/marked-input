@@ -2,8 +2,7 @@ import {RefObject, useCallback, useState} from 'react'
 import {SystemEvent} from '../../constants'
 import {MarkStruct} from '../../types'
 import {useNode} from '../providers/NodeProvider'
-import {useStore} from '../providers/StoreProvider'
-import {useSelector} from './useSelector'
+import {useStore} from './useStore'
 
 export interface MarkHandler<T> extends MarkStruct {
 	/**
@@ -28,7 +27,7 @@ export interface MarkHandler<T> extends MarkStruct {
 export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
 	const node = useNode()
 	const {bus} = useStore()
-	const readOnly = useSelector(state => state.props.readOnly)
+	const readOnly = useStore(state => state.props.readOnly)
 
 	const [label, setLabel] = useState<string>(node.data.mark.label)
 	const [value, setValue] = useState<string | undefined>(node.data.mark.value)
