@@ -17,14 +17,13 @@ export const useValueParser = () => {
 	const store = useStore()
 	const {value, options} = useSelector(state => ({
 		value: state.value,
-		options: state.Mark ? state.options:undefined,
+		options: state.Mark ? state.options : undefined,
 	}), true)
 
 	useEffect(() => {
 			/*if (store.changedNode)
 				updateByChangedLabel(store, options)
 			else {*/
-
 
 			const ranges = getRangeMap(store)
 			const gap = findGap(store.previousValue, value)
@@ -64,7 +63,7 @@ export const useValueParser = () => {
 function getRangeMap(store: Store): number[] {
 	let position = 0
 	return store.state.pieces?.map(node => {
-		const length = isAnnotated(node.data.mark) ? node.data.mark.annotation.length:node.data.mark.label.length
+		const length = isAnnotated(node.data.mark) ? node.data.mark.annotation.length : node.data.mark.label.length
 		position += length
 		return position - length
 	}) ?? []
@@ -72,7 +71,7 @@ function getRangeMap(store: Store): number[] {
 
 function toNodeData(piece: Piece) {
 	return {
-		mark: isObject(piece) ? piece:{label: piece},
+		mark: isObject(piece) ? piece : {label: piece},
 		ref: createRef<HTMLElement>()
 	}
 }
