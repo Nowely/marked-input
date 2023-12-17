@@ -25,7 +25,7 @@ export type {
 	Listener
 } from './types'
 
-export {EVENT} from './constants'
+export {SystemEvent} from './constants'
 export {annotate} from "./utils/functions/annotate";
 export {PLACEHOLDER} from "./constants";
 export {denote} from './utils/functions/denote'

@@ -1,6 +1,6 @@
 import {createRef} from 'react'
 import {MarkedInputProps} from '../../components/MarkedInput'
-import {EmptyList, EVENT} from '../../constants'
+import {EmptyList, SystemEvent} from '../../constants'
 import {NodeData, Recovery, State} from '../../types'
 import {EventBus} from './EventBus'
 import LinkedListNode from './LinkedList/LinkedListNode'
@@ -30,6 +30,6 @@ export class Store {
 
 	setState(state: Partial<MarkedInputProps & State>) {
 		this.#state = {...this.#state, ...state}
-		this.bus.send(EVENT.State, this.#state)
+		this.bus.send(SystemEvent.State, this.#state)
 	}
 }

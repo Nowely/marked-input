@@ -1,5 +1,5 @@
 import {useCallback} from 'react'
-import {EVENT} from '../../../constants'
+import {SystemEvent} from '../../../constants'
 import {OverlayTrigger, Payload} from '../../../types'
 import {useStore} from '../../../utils/providers/StoreProvider'
 import {Store} from '../../../utils/classes/Store'
@@ -9,7 +9,7 @@ export function useCheckTrigger() {
 	const store = useStore()
 
 	const sendCheckTrigger = useCallback((e: Event | Payload) =>
-		isMatch(e, store) && store.bus.send(EVENT.CheckTrigger), [])
+		isMatch(e, store) && store.bus.send(SystemEvent.CheckTrigger), [])
 
 	useListener('focusin', () =>
 		document.addEventListener('selectionchange', sendCheckTrigger), [])
@@ -17,7 +17,7 @@ export function useCheckTrigger() {
 	useListener('focusout', () =>
 		document.removeEventListener('selectionchange', sendCheckTrigger), [])
 
-	useListener(EVENT.Change, sendCheckTrigger, [])
+	useListener(SystemEvent.Change, sendCheckTrigger, [])
 }
 
 

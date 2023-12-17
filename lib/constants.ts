@@ -44,7 +44,7 @@ export const wordRegex = new RegExp(/^\w*/)
 
 export const EmptyList = LinkedList.from([])
 
-export const EVENT = {
+export const SystemEvent = {
 	ClearTrigger: Symbol() as EventKey<undefined>,
 	Change: Symbol() as EventKey<{ node: LinkedListNode<NodeData>, mark?: MarkStruct }>,
 	Delete: Symbol() as EventKey<LinkedListNode<NodeData>>,

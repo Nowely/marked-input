@@ -1,5 +1,5 @@
 import {useEffect} from 'react'
-import {EVENT} from '../../../constants'
+import {SystemEvent} from '../../../constants'
 import {useSelector} from '../../../utils/hooks/useSelector'
 import {useStore} from '../../../utils/providers/StoreProvider'
 
@@ -13,7 +13,7 @@ export function useCloseOverlayByOutsideClick() {
 		const handleClick = (event: MouseEvent) => {
 			let target = event.target as HTMLElement | null
 			if (store.overlayRef.current?.contains(target) || store.containerRef.current?.contains(target)) return
-			store.bus.send(EVENT.ClearTrigger)
+			store.bus.send(SystemEvent.ClearTrigger)
 		}
 
 		document.addEventListener('click', handleClick)

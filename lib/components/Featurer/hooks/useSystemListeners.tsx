@@ -1,4 +1,4 @@
-import {EVENT} from '../../../constants'
+import {SystemEvent} from '../../../constants'
 import {createNewSpan} from '../../../utils/functions/createNewSpan'
 import {useListener} from '../../../utils/hooks/useListener'
 import {annotate} from '../../../utils/functions/annotate'
@@ -9,7 +9,7 @@ import {toString} from '../../../utils/functions/toString'
 export function useSystemListeners() {
 	const store = useStore()
 
-	useListener(EVENT.Change, (event) => {
+	useListener(SystemEvent.Change, (event) => {
 		const {pieces, onChange, options} = store.state
 		const {node, mark} = event
 
@@ -25,7 +25,7 @@ export function useSystemListeners() {
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 
-	useListener(EVENT.Delete, (node) => {
+	useListener(SystemEvent.Delete, (node) => {
 		const {pieces, onChange, options} = store.state
 
 		store.changedNode = undefined
@@ -37,7 +37,7 @@ export function useSystemListeners() {
 		//onChange(toString([...pieces.values()], options))
 	}, [])
 
-	useListener(EVENT.Select, (event) => {
+	useListener(SystemEvent.Select, (event) => {
 		const {pieces, Mark} = store.state
 		const {mark, match: {option, span, index, source, node}} = event
 
@@ -51,7 +51,7 @@ export function useSystemListeners() {
 			piece.data.mark.label = newSpan
 			//piece.data.mark.value = value.value
 			//bus.send(SystemEvent.Change, {value: newSpan, key: mark.data.key})
-			store.bus.send(EVENT.Change, {value: {label: newSpan}, node: piece})
+			store.bus.send(SystemEvent.Change, {value: {label: newSpan}, node: piece})
 			if (!Mark) {
 				node.textContent = newSpan
 				store.recovery = {caretPosition: index + annotation.length}

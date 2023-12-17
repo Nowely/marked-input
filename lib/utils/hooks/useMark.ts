@@ -1,5 +1,5 @@
 import {RefObject, useCallback, useState} from 'react'
-import {EVENT} from '../../constants'
+import {SystemEvent} from '../../constants'
 import {MarkStruct} from '../../types'
 import {useNode} from '../providers/NodeProvider'
 import {useStore} from '../providers/StoreProvider'
@@ -38,13 +38,13 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 			setLabel(props.label)
 			setValue(props.value)
 		}
-		bus.send(EVENT.Change, {node, value: {...props}})
+		bus.send(SystemEvent.Change, {node, value: {...props}})
 	}, [])
 
 	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
-		bus.send(EVENT.Delete, {node})
+		bus.send(SystemEvent.Delete, {node})
 	}, [])
 
 	return {label, value, change, remove, readOnly, ref: node.data.ref as RefObject<T>}

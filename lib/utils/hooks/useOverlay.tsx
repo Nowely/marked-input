@@ -1,5 +1,5 @@
 import {RefObject, useCallback} from 'react'
-import {EVENT} from '../../constants'
+import {SystemEvent} from '../../constants'
 import {MarkStruct, OverlayMatch} from '../../types'
 import {Caret} from '../classes/Caret'
 import {useStore} from '../providers/StoreProvider'
@@ -33,10 +33,10 @@ export function useOverlay(): OverlayHandler {
 	const match = useSelector(state => state.overlayMatch!)
 	const style = Caret.getAbsolutePosition()
 
-	const close = useCallback(() => store.bus.send(EVENT.ClearTrigger), [])
+	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
 	const select = useCallback((value: MarkStruct) => {
-		store.bus.send(EVENT.Select, {value, match})
-		store.bus.send(EVENT.ClearTrigger)
+		store.bus.send(SystemEvent.Select, {value, match})
+		store.bus.send(SystemEvent.ClearTrigger)
 	}, [match])
 
 	return {match, style, select, close, ref: store.overlayRef}
