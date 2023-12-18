@@ -42,12 +42,12 @@ export const wordRegex = new RegExp(/^\w*/)
 export const EmptyList = LinkedList.from<NodeData>([])
 
 export const SystemEvent = {
-	ClearTrigger: Symbol() as EventKey<undefined>,
-	Change: Symbol() as EventKey<{ node: LinkedListNode<NodeData>, mark?: MarkStruct }>,
-	Delete: Symbol() as EventKey<LinkedListNode<NodeData>>,
-	CheckTrigger: Symbol() as EventKey<undefined>,
-	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 	STORE_UPDATED: Symbol() as EventKey<Store>,
+	ClearTrigger: Symbol() as EventKey<undefined>,
+	CheckTrigger: Symbol() as EventKey<undefined>,
+	Change: Symbol() as EventKey<{ node: LinkedListNode<NodeData>, mark?: MarkStruct }>,
+	Delete: Symbol() as EventKey<{ node: LinkedListNode<NodeData>}>,
+	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }
 
 export enum PLACEHOLDER {

@@ -34,7 +34,7 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, node)
+		store.bus.send(SystemEvent.Delete, {node})
 		event.preventDefault()
 	})
 
@@ -46,7 +46,7 @@ export function useKeyDown() {
 
 		const caretPosition = node.prev?.data.mark.label.length ?? 0
 		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, node)
+		store.bus.send(SystemEvent.Delete, {node})
 		event.preventDefault()
 	})
 

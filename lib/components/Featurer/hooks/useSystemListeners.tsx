@@ -25,7 +25,7 @@ export function useSystemListeners() {
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 
-	useListener(SystemEvent.Delete, (node) => {
+	useListener(SystemEvent.Delete, ({node}) => {
 		const {onChange, options} = store.props
 
 		store.changedNode = undefined
