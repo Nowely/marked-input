@@ -1,4 +1,4 @@
-import {SystemEvent, KEY} from '../../../constants'
+import {SystemEvent, KEYBOARD} from '../../../constants'
 import {Caret} from '../../../utils/classes/Caret'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
@@ -7,7 +7,7 @@ import {useStore} from '../../../utils/hooks/useStore'
 export function useKeyDown() {
 	const store = useStore()
 
-	useDownOf(KEY.LEFT, event => {
+	useDownOf(KEYBOARD.LEFT, event => {
 		if (!isCaretInStart(event)) return
 
 		const node = store.focusedNode?.prev
@@ -17,7 +17,7 @@ export function useKeyDown() {
 		event.preventDefault()
 	})
 
-	useDownOf(KEY.RIGHT, event => {
+	useDownOf(KEYBOARD.RIGHT, event => {
 		if (!isCaretInEnd(event)) return
 
 		const node = store.focusedNode?.next
@@ -26,7 +26,7 @@ export function useKeyDown() {
 		event.preventDefault()
 	})
 
-	useDownOf(KEY.DELETE, event => {
+	useDownOf(KEYBOARD.DELETE, event => {
 		if (!isCaretInEnd(event)) return
 
 		const node = store.focusedNode?.next
@@ -38,7 +38,7 @@ export function useKeyDown() {
 		event.preventDefault()
 	})
 
-	useDownOf(KEY.BACKSPACE, event => {
+	useDownOf(KEYBOARD.BACKSPACE, event => {
 		if (!isCaretInStart(event)) return
 
 		const node = store.focusedNode?.prev

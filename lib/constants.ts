@@ -3,7 +3,7 @@ import LinkedList from './utils/classes/LinkedList/LinkedList'
 import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 import type {Store} from './utils/classes/Store'
 
-export enum KEY {
+export enum KEYBOARD {
 	// Navigation Keys
 	UP = 'ArrowUp',
 	DOWN = 'ArrowDown',

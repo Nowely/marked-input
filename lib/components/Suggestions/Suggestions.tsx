@@ -1,5 +1,5 @@
 import {RefObject, useMemo, useState} from 'react'
-import {KEY} from '../../constants'
+import {KEYBOARD} from '../../constants'
 import {useDownOf} from '../../utils/hooks/useDownOf'
 import {useOverlay} from '../../utils/hooks/useOverlay'
 
@@ -12,17 +12,17 @@ export const Suggestions = () => {
 	)
 	const length = filtered.length
 
-	useDownOf(KEY.UP, event => {
+	useDownOf(KEYBOARD.UP, event => {
 		event.preventDefault()
 		setActive(prevState => isNaN(prevState) ? 0 : (length + (prevState - 1) % length) % length)
 	}, [length])
 
-	useDownOf(KEY.DOWN, event => {
+	useDownOf(KEYBOARD.DOWN, event => {
 		event.preventDefault()
 		setActive(prevState => isNaN(prevState) ? 0 : (prevState + 1) % length)
 	}, [length])
 
-	useDownOf(KEY.ENTER, event => {
+	useDownOf(KEYBOARD.ENTER, event => {
 		event.preventDefault()
 		const suggestion = filtered[active]
 		select({label: suggestion, value: active.toString()})
