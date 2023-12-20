@@ -1,4 +1,4 @@
-import {FormEvent, ClipboardEvent} from 'react'
+import {ClipboardEvent, FormEvent} from 'react'
 import {getChildProps} from '../utils/functions/getChildProps'
 import {useMark} from '../utils/hooks/useMark'
 import {useStore} from '../utils/hooks/useStore'

@@ -87,7 +87,7 @@ export type OverlayMatch = {
 export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
-	prevNodeData?: NodeData
+	prevNode?: ChildNode | null
 	caretPosition: number
 	isPrevPrev?: boolean
 }

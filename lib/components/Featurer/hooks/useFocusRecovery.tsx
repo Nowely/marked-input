@@ -10,9 +10,9 @@ export const useFocusRecovery = () => {
 	//Restore focus after delete mark
 	useEffect(() => {
 		if (store.recovery) {
-			const {prevNodeData, caretPosition, isPrevPrev} = store.recovery
+			const {prevNode, caretPosition, isPrevPrev} = store.recovery
 
-			const node = store.pieces.findNode(data => data === prevNodeData)
+			const node = store.pieces.findNode(data => data === prevNode)
 			const newNode = isPrevPrev
 				? node?.next?.next?.next ?? store.pieces.head?.next?.next
 				: node?.next ?? store.pieces.head

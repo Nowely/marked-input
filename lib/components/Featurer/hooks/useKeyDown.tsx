@@ -1,51 +1,59 @@
-import {SystemEvent, KEYBOARD} from '../../../constants'
+import {KEYBOARD, SystemEvent} from '../../../constants'
+import {castToHTMLElement} from '../../../utils/checkers/castToHTMLElement'
 import {Caret} from '../../../utils/classes/Caret'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
 import {useStore} from '../../../utils/hooks/useStore'
 
+//TODO Focus on mark and attribute for this
 export function useKeyDown() {
 	const store = useStore()
 
 	useDownOf(KEYBOARD.LEFT, event => {
 		if (!isCaretInStart(event)) return
 
-		const node = store.focusedNode?.prev
-		const element = node?.data.ref.current ?? node?.prev?.data.ref.current
-		element?.focus()
-		Caret.setCaretToEnd(element)
+		const node = store.nodes.focused?.previousSibling?.previousSibling
+		castToHTMLElement(node)
+		if (node) {
+			node.focus()
+			Caret.setCaretToEnd(node)
+		}
+
 		event.preventDefault()
 	})
 
 	useDownOf(KEYBOARD.RIGHT, event => {
 		if (!isCaretInEnd(event)) return
 
-		const node = store.focusedNode?.next
-		const element = node?.data.ref.current ?? node?.next?.data.ref.current
-		element?.focus()
+		const node = store.nodes.focused?.nextSibling?.nextSibling
+		castToHTMLElement(node)
+		if (node) node.focus()
+
 		event.preventDefault()
 	})
 
 	useDownOf(KEYBOARD.DELETE, event => {
 		if (!isCaretInEnd(event)) return
 
-		const node = store.focusedNode?.next
+		const node = store.nodes.focused
+		castToHTMLElement(node)
 		if (!node) return
 
-		const caretPosition = node.prev?.data.mark.label.length ?? 0
-		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
-		store.bus.send(SystemEvent.Delete, {node})
+		const caretPosition = node.textContent?.length ?? 0
+		store.recovery = {prevNode: node.previousSibling, caretPosition}
+		store.bus.send(SystemEvent.Delete, {node: node.nextSibling})
 		event.preventDefault()
 	})
 
 	useDownOf(KEYBOARD.BACKSPACE, event => {
 		if (!isCaretInStart(event)) return
 
-		const node = store.focusedNode?.prev
+		const node = store.nodes.focused?.previousSibling
+		castToHTMLElement(node)
 		if (!node) return
 
-		const caretPosition = node.prev?.data.mark.label.length ?? 0
-		store.recovery = {prevNodeData: node.prev?.prev?.data, caretPosition}
+		const caretPosition = node.previousSibling?.textContent?.length ?? 0
+		store.recovery = {prevNode: node?.previousSibling, caretPosition}
 		store.bus.send(SystemEvent.Delete, {node})
 		event.preventDefault()
 	})

@@ -17,7 +17,7 @@ export function useSystemListeners() {
 			node.data.mark.label = mark.label
 			node.data.mark.value = mark.value
 		}
-		store.recovery = {caretPosition: 0, prevNodeData: node?.prev?.data, isPrevPrev: true}
+		store.recovery = {caretPosition: 0, prevNode: node?.prev?.data, isPrevPrev: true}
 		const values = store.pieces.toArray().map(node => node.mark)
 
 		store.changedNode = node
@@ -29,7 +29,7 @@ export function useSystemListeners() {
 		const {onChange, options} = store.props
 
 		store.changedNode = undefined
-		node.remove()
+		node?.remove()
 
 		const values = store.pieces.toArray().map(data => data.mark)
 		onChange(toString(values, options))
@@ -45,7 +45,7 @@ export function useSystemListeners() {
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
 		const piece = store.pieces.findNode(node => node.mark.label===span)
-		store.recovery = {caretPosition: 0, prevNodeData: piece?.prev?.data, isPrevPrev: true}
+		store.recovery = {caretPosition: 0, prevNode: piece?.prev?.data, isPrevPrev: true}
 
 		if (piece) {
 			piece.data.mark.label = newSpan

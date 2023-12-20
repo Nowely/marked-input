@@ -5,11 +5,18 @@ import {NodeData, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import LinkedListNode from './LinkedList/LinkedListNode'
 
+type Nodes = {
+	changed?: HTMLSpanElement
+	focused?: HTMLElement
+}
+
 export class Store {
 	props: MarkedInputProps
 
-	changedNode?: LinkedListNode<NodeData>
-	focusedNode?: LinkedListNode<NodeData>
+	readonly nodes: Nodes = {
+		changed: undefined,
+		focused: undefined
+	}
 
 	recovery?: Recovery
 
@@ -30,7 +37,7 @@ export class Store {
 		let store = new Store(props)
 		store = new Proxy(store, {
 			set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-				if (prop === 'bus' || prop === 'refs') return false
+				if (prop === 'bus' || prop === 'refs' || prop === 'nodes') return false
 
 				target[prop] = newValue
 				target.bus.send(SystemEvent.STORE_UPDATED, store)

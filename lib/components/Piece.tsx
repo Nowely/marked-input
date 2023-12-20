@@ -1,4 +1,4 @@
-import {assertAnnotated} from '../utils/functions/assertAnnotated'
+import {assertAnnotated} from '../utils/checkers/assertAnnotated'
 import {useStore} from '../utils/hooks/useStore'
 import {useNode} from '../utils/providers/NodeProvider'
 
