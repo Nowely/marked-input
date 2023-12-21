@@ -3,14 +3,14 @@ import {useStore} from '../utils/hooks/useStore'
 import {useNode} from '../utils/providers/NodeProvider'
 
 export function Piece() {
-	const {data} = useNode()
+	const node = useNode()
 	const {options, Mark} = useStore(store =>
 		({options: store.props.options, Mark: store.props.Mark}), true)
 
-	assertAnnotated(data.mark)
+	assertAnnotated(node)
 
-	const defaultProps = {label: data.mark.label, value: data.mark.value}
-	const props = options[data.mark.optionIndex].initMark?.(defaultProps) ?? defaultProps
+	const defaultProps = {label: node.label, value: node.value}
+	const props = options[node.optionIndex].initMark?.(defaultProps) ?? defaultProps
 
 	//TODO correct typing
 	// @ts-ignore

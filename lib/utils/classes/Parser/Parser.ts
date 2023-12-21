@@ -1,4 +1,5 @@
-import {Markup, Option, Piece} from '../../../types'
+import {MarkStruct, Markup, Option, Piece} from '../../../types'
+import {isObject} from '../../checkers/isObject'
 import {markupToRegex} from '../../functions/markupToRegex'
 import {ParserMatches} from './ParserMatches'
 import {normalizeMark} from "../../functions/normalizeMark";
@@ -11,6 +12,13 @@ export class Parser {
 	static split(value: string, options?: Option[]) {
 		const markups = options?.map((c) => c.markup!)
 		return () => markups ? new Parser(markups).split(value) : [value]
+	}
+	static split2(value: string, options?: Option[]): MarkStruct[] {
+		const markups = options?.map((c) => c.markup!)
+		const pieces = markups ? new Parser(markups).split(value) : [value]
+		return pieces.map(piece => {
+			return isObject(piece) ? piece : {label: piece}
+		})
 	}
 
 	constructor(markups: Markup[]) {

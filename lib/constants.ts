@@ -45,7 +45,7 @@ export const SystemEvent = {
 	STORE_UPDATED: Symbol() as EventKey<Store>,
 	ClearTrigger: Symbol() as EventKey<undefined>,
 	CheckTrigger: Symbol() as EventKey<undefined>,
-	Change: Symbol() as EventKey<{ node: ChildNode | null, mark?: MarkStruct }>,
+	Change: Symbol() as EventKey<{ node: ChildNode, mark?: MarkStruct }>,
 	Delete: Symbol() as EventKey<{ node: ChildNode | null}>,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }

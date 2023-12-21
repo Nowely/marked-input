@@ -17,13 +17,26 @@ export const useValueParser = () => {
 	}), true)
 
 	useEffect(() => {
-			if (store.changedNode)
-				updateStateFromUI(store, options)
-			else {
-				updateStateFromValue(store, value, options)
-			}
-		}, [value, options]
-	)
+		if (store.nodes.focused)
+			updateStateFromUI(store, options)
+		else {
+			store.tokens = Parser.split2(value, options)
+			//updateStateFromValue(store, value, options)
+		}
+	}, [value, options])
+}
+
+function updateStateFromUI(store: Store, options?: Option[]) {
+	const label = store.nodes.focused!.textContent ?? ''
+	const tokens = Parser.split2(label, options)
+
+	if (tokens.length === 1) return
+
+	/*store.pieces.insertsBefore(store.changedNode!, nodeData)
+	store.focusedNode = store.changedNode!.next
+	store.changedNode!.remove()
+	store.changedNode = undefined
+	store.pieces = store.pieces.shallowCopy()*/
 }
 
 function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {
@@ -90,7 +103,7 @@ function updateByChangedNodes(store: Store, index1: number, index2: number) {
 function updateByChangedNode(store: Store, nodeIndex: number) {
 	const node = store.pieces.getNode(nodeIndex)
 	const pieces = Parser.split(node!.data.mark.label, store.props.options)()
-	if (pieces.length===1) return
+	if (pieces.length === 1) return
 
 	const nodeData = pieces.map(toNodeData)
 
@@ -98,23 +111,4 @@ function updateByChangedNode(store: Store, nodeIndex: number) {
 	store.focusedNode = node!.next
 	node!.remove()
 	store.pieces = store.pieces.shallowCopy()
-}
-
-function updateStateFromUI(store: Store, options?: Option[]) {
-	const pieces = Parser.split(store.changedNode!.data.mark.label, options)()
-	if (pieces.length===1) return
-
-	const nodeData = pieces.map(toNodeData)
-
-	store.pieces.insertsBefore(store.changedNode!, nodeData)
-	store.focusedNode = store.changedNode!.next
-	store.changedNode!.remove()
-	store.changedNode = undefined
-	store.pieces = store.pieces.shallowCopy()
-}
-
-function updateByChangedValue(value: string, options?: Option[]) {
-	const pieces = Parser.split(value, options)()
-	const nodeData = pieces.map(toNodeData)
-	return LinkedList.from(nodeData)
 }

@@ -13,15 +13,11 @@ export function useSystemListeners() {
 		const {onChange, options} = store.props
 		const {node, mark} = event
 
-		if (mark) {
-			node.data.mark.label = mark.label
-			node.data.mark.value = mark.value
-		}
-		store.recovery = {caretPosition: 0, prevNode: node?.prev?.data, isPrevPrev: true}
-		const values = store.pieces.toArray().map(node => node.mark)
+		const index = [...node!.parentElement!.children].indexOf(node)
+		store.tokens[index].label = node.textContent
 
-		store.changedNode = node
-		onChange(toString(values, options))
+		//store.nodes.changed = node
+		onChange(toString(store.tokens, options))
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 

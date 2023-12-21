@@ -1,4 +1,4 @@
-import {RefObject, useCallback, useState} from 'react'
+import {RefObject, useCallback, useEffect, useRef, useState} from 'react'
 import {SystemEvent} from '../../constants'
 import {MarkStruct} from '../../types'
 import {useNode} from '../providers/NodeProvider'
@@ -29,10 +29,10 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 	const {bus} = useStore()
 	const readOnly = useStore(state => state.props.readOnly)
 
-	const [label, setLabel] = useState<string>(node.data.mark.label)
-	const [value, setValue] = useState<string | undefined>(node.data.mark.value)
+	const [label, setLabel] = useState<string>(node.label)
+	const [value, setValue] = useState<string | undefined>(node.value)
 
-	const change = useCallback((props: MarkStruct, options?: { silent: boolean }) => {
+	const change = useCallback((props: MarkStruct, node: ChildNode, options?: { silent: boolean }) => {
 		if (!options?.silent) {
 			setLabel(props.label)
 			setValue(props.value)
@@ -43,8 +43,10 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
-		bus.send(SystemEvent.Delete, node)
+		bus.send(SystemEvent.Delete, {node})
 	}, [])
 
-	return {label, value, change, remove, readOnly, ref: node.data.ref as RefObject<T>}
+	const ref = useRef<HTMLDivElement>()
+
+	return {label, value, change, remove, readOnly, ref: ref as RefObject<T>}
 }
