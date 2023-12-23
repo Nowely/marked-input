@@ -1,15 +1,16 @@
-import {memo} from 'react'
+import {memo, useEffect} from 'react'
+import {createRoot} from 'react-dom/client'
 import {DefaultClass, SystemEvent} from '../constants'
 import {isAnnotated} from '../utils/checkers/isAnnotated'
 import {getKey} from '../utils/functions/getKey'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
-import {NodeProvider} from '../utils/providers/NodeProvider'
 import {EditableSpan} from './EditableSpan'
 import {Piece} from './Piece'
 
 //TODO fix updating0
 export const Container = memo(() => {
+	const store = useStore()
 	const {className, style, pieces, refs, tokens, bus} = useStore(store => ({
 		className: store.props.className ? DefaultClass + ' ' + store.props.className : DefaultClass,
 		style: store.props.style,
@@ -26,17 +27,24 @@ export const Container = memo(() => {
 		bus.send(SystemEvent.Change, {node: e.target})
 	}, [])
 
+	useEffect(() => {
+		const div1 = document.createElement('div')
+		refs.container.current?.append(div1)
+
+		const root = createRoot(div1)
+		root.render(<div>ASsadas</div>)
+
+		root.render('ASsadas2')
+	}, [])
 	//console.log(1)
 
 	return (
 		<div /*{...divOverride}*/ ref={refs.container} className={className} style={style}>
-			{tokens.map((token) =>
-				<NodeProvider key={getKey(token)} value={token}>
-					{
-						isAnnotated(token) ? <Piece/> : <EditableSpan/>
-					}
-				</NodeProvider>
-			)}
+			{tokens.map(token => {
+				//<NodeProvider key={getKey(token)} value={token}>
+				return isAnnotated(token) ? <Piece key={getKey(token)}/> : <EditableSpan key={getKey(token)}/>
+				//</NodeProvider>
+			})}
 		</div>
 	)
 })

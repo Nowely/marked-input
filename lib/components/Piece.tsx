@@ -1,9 +1,11 @@
+import {useState} from 'react'
 import {assertAnnotated} from '../utils/checkers/assertAnnotated'
 import {useStore} from '../utils/hooks/useStore'
 import {useNode} from '../utils/providers/NodeProvider'
 
 export function Piece() {
-	const node = useNode()
+	const store = useStore()
+	const [node] = useState(() => store.tokens[store.currentIndex])
 	const {options, Mark} = useStore(store =>
 		({options: store.props.options, Mark: store.props.Mark}), true)
 

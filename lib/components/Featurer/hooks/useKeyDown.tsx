@@ -12,7 +12,7 @@ export function useKeyDown() {
 	useDownOf(KEYBOARD.LEFT, event => {
 		if (!isCaretInStart(event)) return
 
-		const node = store.nodes.focused?.previousSibling?.previousSibling
+		const node = event.target.previousSibling //store.nodes.focused?.previousSibling//?.previousSibling
 		castToHTMLElement(node)
 		if (node) {
 			node.focus()
@@ -25,7 +25,7 @@ export function useKeyDown() {
 	useDownOf(KEYBOARD.RIGHT, event => {
 		if (!isCaretInEnd(event)) return
 
-		const node = store.nodes.focused?.nextSibling?.nextSibling
+		const node = store.nodes.focused?.nextSibling//?.nextSibling
 		castToHTMLElement(node)
 		if (node) node.focus()
 
@@ -33,6 +33,11 @@ export function useKeyDown() {
 	})
 
 	useDownOf(KEYBOARD.DELETE, event => {
+		const target = event.target as HTMLElement | null
+		if (!target) return
+
+
+
 		if (!isCaretInEnd(event)) return
 
 		const node = store.nodes.focused
@@ -42,6 +47,12 @@ export function useKeyDown() {
 		const caretPosition = node.textContent?.length ?? 0
 		store.recovery = {prevNode: node.previousSibling, caretPosition}
 		store.bus.send(SystemEvent.Delete, {node: node.nextSibling})
+
+		store.nodes.focused = undefined
+		const index = [...node!.parentElement!.children].indexOf(node)
+		store.tokens.splice(index, 1)
+		node?.remove()
+
 		event.preventDefault()
 	})
 
@@ -55,6 +66,12 @@ export function useKeyDown() {
 		const caretPosition = node.previousSibling?.textContent?.length ?? 0
 		store.recovery = {prevNode: node?.previousSibling, caretPosition}
 		store.bus.send(SystemEvent.Delete, {node})
+
+		store.nodes.focused = undefined
+		const index = [...node!.parentElement!.children].indexOf(node)
+		store.tokens.splice(index, 1)
+		node?.remove()
+
 		event.preventDefault()
 	})
 

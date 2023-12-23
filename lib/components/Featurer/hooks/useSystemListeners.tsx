@@ -1,8 +1,8 @@
 import {SystemEvent} from '../../../constants'
-import {createNewSpan} from '../../../utils/functions/createNewSpan'
-import {useListener} from '../../../utils/hooks/useListener'
 import {annotate} from '../../../utils/functions/annotate'
+import {createNewSpan} from '../../../utils/functions/createNewSpan'
 import {toString} from '../../../utils/functions/toString'
+import {useListener} from '../../../utils/hooks/useListener'
 import {useStore} from '../../../utils/hooks/useStore'
 
 //TODO upgrade to full members of react events to external
@@ -16,21 +16,8 @@ export function useSystemListeners() {
 		const index = [...node!.parentElement!.children].indexOf(node)
 		store.tokens[index].label = node.textContent
 
-		//store.nodes.changed = node
 		onChange(toString(store.tokens, options))
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
-	}, [])
-
-	useListener(SystemEvent.Delete, ({node}) => {
-		const {onChange, options} = store.props
-
-		store.changedNode = undefined
-		node?.remove()
-
-		const values = store.pieces.toArray().map(data => data.mark)
-		onChange(toString(values, options))
-		//pieces.delete(key)
-		//onChange(toString([...pieces.values()], options))
 	}, [])
 
 	useListener(SystemEvent.Select, (event) => {
@@ -40,7 +27,7 @@ export function useSystemListeners() {
 		const annotation = annotate(option.markup!, mark.label, mark.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
-		const piece = store.pieces.findNode(node => node.mark.label===span)
+		const piece = store.pieces.findNode(node => node.mark.label === span)
 		store.recovery = {caretPosition: 0, prevNode: piece?.prev?.data, isPrevPrev: true}
 
 		if (piece) {
