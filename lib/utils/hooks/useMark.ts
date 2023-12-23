@@ -26,7 +26,8 @@ export interface MarkHandler<T> extends MarkStruct {
 
 export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
 	const store = useStore()
-	const [node] = useState(() => store.tokens[store.currentIndex])
+	//const [node] = useState(() => store.tokens[store.currentIndex])
+	const node = useNode()
 	const readOnly = useStore(state => state.props.readOnly)
 
 	const [label, setLabel] = useState<string>(node.label)

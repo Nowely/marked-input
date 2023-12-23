@@ -7,6 +7,7 @@ import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {EditableSpan} from './EditableSpan'
 import {Piece} from './Piece'
+import {Token} from './Token'
 
 //TODO fix updating0
 export const Container = memo(() => {
@@ -27,24 +28,18 @@ export const Container = memo(() => {
 		bus.send(SystemEvent.Change, {node: e.target})
 	}, [])
 
-	useEffect(() => {
+	/*useEffect(() => {
 		const div1 = document.createElement('div')
 		refs.container.current?.append(div1)
 
 		const root = createRoot(div1)
-		root.render(<div>ASsadas</div>)
-
-		root.render('ASsadas2')
-	}, [])
+		root.render(<>ASsadas</>)
+	}, [])*/
 	//console.log(1)
 
 	return (
 		<div /*{...divOverride}*/ ref={refs.container} className={className} style={style}>
-			{tokens.map(token => {
-				//<NodeProvider key={getKey(token)} value={token}>
-				return isAnnotated(token) ? <Piece key={getKey(token)}/> : <EditableSpan key={getKey(token)}/>
-				//</NodeProvider>
-			})}
+			{tokens.map(token => <Token key={getKey(token)} mark={token}/>)}
 		</div>
 	)
 })

@@ -51,7 +51,8 @@ export function useKeyDown() {
 		store.nodes.focused = undefined
 		const index = [...node!.parentElement!.children].indexOf(node)
 		store.tokens.splice(index, 1)
-		node?.remove()
+		//node?.remove()
+		store.tokens = [...store.tokens]
 
 		event.preventDefault()
 	})
