@@ -1,4 +1,4 @@
-import {MarkStruct, Markup, Option, Piece} from '../../../types'
+import {MarkStruct, Markup, Option, PieceType} from '../../../types'
 import {isObject} from '../../checkers/isObject'
 import {markupToRegex} from '../../functions/markupToRegex'
 import {ParserMatches} from './ParserMatches'
@@ -27,12 +27,12 @@ export class Parser {
 		this.uniRegExp = new RegExp(this.regExps.map(value => value.source).join('|'))
 	}
 
-	split(value: string): Piece[] {
+	split(value: string): PieceType[] {
 		return this.iterateMatches(value)
 	}
 
 	iterateMatches(value: string) {
-		const result: Piece[] = []
+		const result: PieceType[] = []
 
 		for (let [span, mark] of new ParserMatches(value, this.uniRegExp, this.regExps)) {
 			result.push(span)

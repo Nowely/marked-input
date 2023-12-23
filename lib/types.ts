@@ -2,8 +2,6 @@ import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {PLACEHOLDER} from './constants'
 
-import LinkedList from './utils/classes/LinkedList/LinkedList'
-import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 
 export type NodeData = {
 	mark: MarkStruct
@@ -21,7 +19,7 @@ export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 export type Markup = `${label}${value}` | `${label}`
 
 /** Piece of marked text: fragment of text or mark definition */
-export type Piece = string | MarkMatch
+export type PieceType = string | MarkMatch
 
 export interface Option<T = Record<string, any>> {
 	/**
@@ -87,7 +85,7 @@ export type OverlayMatch = {
 export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
-	prevNode?: ChildNode | null
+	prevNode?: HTMLElement
 	caretPosition: number
 	isPrevPrev?: boolean
 }

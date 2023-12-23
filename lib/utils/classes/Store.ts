@@ -1,6 +1,6 @@
 import {createRef} from 'react'
 import {MarkedInputProps} from '../../components/MarkedInput'
-import {EmptyList, SystemEvent} from '../../constants'
+import {SystemEvent} from '../../constants'
 import {MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 
@@ -35,8 +35,6 @@ export class Store {
 	readonly bus = new EventBus()
 
 	overlayMatch?: OverlayMatch
-
-	pieces = EmptyList
 
 	static create(props: MarkedInputProps) {
 		let store = new Store(props)

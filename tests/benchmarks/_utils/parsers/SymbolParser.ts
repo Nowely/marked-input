@@ -1,5 +1,4 @@
-import {MarkMatch, Markup, Option, Piece} from 'rc-marked-input/types'
-import {normalizeMark} from 'rc-marked-input/utils/helpers/normalizeMark'
+import {MarkMatch, Markup, Option, PieceType} from 'rc-marked-input/types'
 import {PLACEHOLDER} from "rc-marked-input";
 
 export class SymbolParser {
@@ -17,12 +16,12 @@ export class SymbolParser {
 		this.splitMarkups = this.markups.map(markup => markup.split(PLACEHOLDER.LABEL))
 	}
 
-	split(value: string): Piece[] {
+	split(value: string): PieceType[] {
 		return this.iterateMatches(value)
 	}
 
 	iterateMatches(value: string) {
-		const result: Piece[] = []
+		const result: PieceType[] = []
 
 		for (let [span, mark] of new ParserMatches(value, this.splitMarkups)) {
 			result.push(span)

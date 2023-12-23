@@ -1,6 +1,4 @@
 import {EventKey, MarkStruct, NodeData, Option, OverlayMatch} from './types'
-import LinkedList from './utils/classes/LinkedList/LinkedList'
-import LinkedListNode from './utils/classes/LinkedList/LinkedListNode'
 import type {Store} from './utils/classes/Store'
 
 export enum KEYBOARD {
@@ -38,8 +36,6 @@ export const DefaultOptions: Option[] = [{
 
 
 export const wordRegex = new RegExp(/^\w*/)
-
-export const EmptyList = LinkedList.from<NodeData>([])
 
 export const SystemEvent = {
 	STORE_UPDATED: Symbol() as EventKey<Store>,

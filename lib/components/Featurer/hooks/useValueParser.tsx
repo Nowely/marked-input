@@ -1,8 +1,7 @@
 import {createRef, useEffect} from 'react'
-import {MarkStruct, Option, Piece} from '../../../types'
+import {MarkStruct, Option, PieceType} from '../../../types'
 import {isAnnotated} from '../../../utils/checkers/isAnnotated'
 import {isObject} from '../../../utils/checkers/isObject'
-import LinkedList from '../../../utils/classes/LinkedList/LinkedList'
 import {Parser} from '../../../utils/classes/Parser/Parser'
 import {Store} from '../../../utils/classes/Store'
 import {findGap} from '../../../utils/functions/findGap'
@@ -21,6 +20,32 @@ export const useValueParser = () => {
 			updateStateFromUI(store, options)
 		else {
 			store.tokens = Parser.split2(value, options)
+			/*store.toks = store.tokens.map(mark => {
+				const div = document.createElement('div')
+				const root = createRoot(div)
+
+				queueMicrotask(() => {
+					flushSync(() => {
+						root.render(
+							<StoreContext.Provider value={store}>
+								<NodeProvider value={mark}>
+									{isAnnotated(mark) ? <Piece/> : <EditableSpan/>}
+								</NodeProvider>
+							</StoreContext.Provider>
+						)
+					})
+				if (!store.refs.container.current) return
+				const el = store.refs.container.current
+				el.append(div.firstChild)
+				})
+					//console.log(div)
+
+				return {
+					mark,
+					root,
+					node: div
+				}
+			})*/
 			//updateStateFromValue(store, value, options)
 		}
 	}, [value, options])
@@ -39,7 +64,7 @@ function updateStateFromUI(store: Store, options?: Option[]) {
 	store.pieces = store.pieces.shallowCopy()*/
 }
 
-function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {
+/*function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.previousValue, value)
 	store.previousValue = value
@@ -65,7 +90,7 @@ function updateStateFromValue(store: Store, value: string, options?: Option<Mark
 	//Parse all string
 	const tokens = Parser.split(value, options)()
 	const nodeData = tokens.map(toNodeData)
-	const pieces = LinkedList.from(nodeData)
+	//const pieces = LinkedList.from(nodeData)
 
 	store.pieces = pieces
 }
@@ -79,7 +104,7 @@ function getRangeMap(store: Store): number[] {
 	}) ?? []
 }
 
-function toNodeData(piece: Piece) {
+function toNodeData(piece: PieceType) {
 	return {
 		mark: isObject(piece) ? piece : {label: piece},
 		ref: createRef<HTMLElement>()
@@ -108,7 +133,7 @@ function updateByChangedNode(store: Store, nodeIndex: number) {
 	const nodeData = pieces.map(toNodeData)
 
 	store.pieces.insertsBefore(node!, nodeData)
-	store.focusedNode = node!.next
+	//store.focusedNode = node!.next
 	node!.remove()
 	store.pieces = store.pieces.shallowCopy()
-}
+}*/

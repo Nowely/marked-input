@@ -1,5 +1,5 @@
 import {Markup} from 'rc-marked-input'
-import {Piece} from 'rc-marked-input/types'
+import {PieceType} from 'rc-marked-input/types'
 import {Analyzers, Joiners, Parsers} from '../consts'
 import {getClosestIndexes} from 'rc-marked-input/utils/functions/getClosestIndexes'
 import {Analyzer, IParser, Joiner} from '../types'
@@ -10,7 +10,7 @@ export class VirtualComponent {
 	private readonly joiner: Joiner
 
 	value: string = ''
-	tokens: Piece[] = []
+	tokens: PieceType[] = []
 	private ranges!: number[]
 
 	constructor(private readonly markups: Markup[], group: [number, number, number]) {

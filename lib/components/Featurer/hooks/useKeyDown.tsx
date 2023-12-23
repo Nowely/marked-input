@@ -1,6 +1,8 @@
 import {KEYBOARD, SystemEvent} from '../../../constants'
 import {castToHTMLElement} from '../../../utils/checkers/castToHTMLElement'
 import {Caret} from '../../../utils/classes/Caret'
+import {getNodeIndex} from '../../../utils/functions/getNodeIndex'
+import {toString} from '../../../utils/functions/toString'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
 import {useStore} from '../../../utils/hooks/useStore'
@@ -10,9 +12,10 @@ export function useKeyDown() {
 	const store = useStore()
 
 	useDownOf(KEYBOARD.LEFT, event => {
-		if (!isCaretInStart(event)) return
+		const target = event.target as HTMLElement | null
+		if (!isCaretInStart(target)) return
 
-		const node = event.target.previousSibling //store.nodes.focused?.previousSibling//?.previousSibling
+		const node = target.previousSibling //store.nodes.focused?.previousSibling//?.previousSibling
 		castToHTMLElement(node)
 		if (node) {
 			node.focus()
@@ -23,7 +26,8 @@ export function useKeyDown() {
 	})
 
 	useDownOf(KEYBOARD.RIGHT, event => {
-		if (!isCaretInEnd(event)) return
+		const target = event.target as HTMLElement | null
+		if (!isCaretInEnd(target)) return
 
 		const node = store.nodes.focused?.nextSibling//?.nextSibling
 		castToHTMLElement(node)
@@ -36,42 +40,66 @@ export function useKeyDown() {
 		const target = event.target as HTMLElement | null
 		if (!target) return
 
+		const index = getNodeIndex(target)
 
+		//Remove not text
+		if (target.contentEditable !== 'true') {
+			let [span1, mark, span2] = store.tokens.splice(index - 1, 3)
+			store.tokens = store.tokens.toSpliced(index - 1, 0, {
+				label: span1.label + span2.label
+			})
 
-		if (!isCaretInEnd(event)) return
+			const caretPosition = target.previousSibling?.textContent?.length ?? 0
+			store.recovery = {prevNode: target.previousSibling?.previousSibling, caretPosition}
 
-		const node = store.nodes.focused
-		castToHTMLElement(node)
-		if (!node) return
+			store.props.onChange(toString(store.tokens, store.props.options))
+			return
+		}
 
-		const caretPosition = node.textContent?.length ?? 0
-		store.recovery = {prevNode: node.previousSibling, caretPosition}
-		store.bus.send(SystemEvent.Delete, {node: node.nextSibling})
+		if (!isCaretInEnd(target)) return
+
+		const caretPosition = target.textContent?.length ?? 0
+		store.recovery = {prevNode: target.previousSibling, caretPosition}
+
+		store.bus.send(SystemEvent.Delete, {node: target.nextSibling})
 
 		store.nodes.focused = undefined
-		const index = [...node!.parentElement!.children].indexOf(node)
-		store.tokens.splice(index, 1)
-		//node?.remove()
-		store.tokens = [...store.tokens]
+
+		store.tokens = store.tokens.toSpliced(index, 1)
 
 		event.preventDefault()
 	})
 
 	useDownOf(KEYBOARD.BACKSPACE, event => {
-		if (!isCaretInStart(event)) return
+		const target = event.target as HTMLElement | null
+		if (!target) return
 
-		const node = store.nodes.focused?.previousSibling
-		castToHTMLElement(node)
-		if (!node) return
+		const index = getNodeIndex(target)
 
-		const caretPosition = node.previousSibling?.textContent?.length ?? 0
-		store.recovery = {prevNode: node?.previousSibling, caretPosition}
-		store.bus.send(SystemEvent.Delete, {node})
+		//Remove not text
+		if (target.contentEditable !== 'true') {
+			let [span1, mark, span2] = store.tokens.splice(index - 1, 3)
+			store.tokens = store.tokens.toSpliced(index - 1, 0, {
+				label: span1.label + span2.label
+			})
+
+			const caretPosition = target.previousSibling?.textContent?.length ?? 0
+			store.recovery = {prevNode: target.previousSibling?.previousSibling, caretPosition}
+
+			store.props.onChange(toString(store.tokens, store.props.options))
+			return
+		}
+
+		if (!isCaretInStart(target)) return
+
+		const caretPosition = target.textContent?.length ?? 0
+		store.recovery = {prevNode: target.previousSibling, caretPosition}
+
+		store.bus.send(SystemEvent.Delete, {node: target.nextSibling})
 
 		store.nodes.focused = undefined
-		const index = [...node!.parentElement!.children].indexOf(node)
-		store.tokens.splice(index, 1)
-		node?.remove()
+
+		store.tokens = store.tokens.toSpliced(index, 1)
 
 		event.preventDefault()
 	})
@@ -91,14 +119,14 @@ export function useKeyDown() {
 	}, [])
 }
 
-function isCaretInStart(e: KeyboardEvent) {
-	const target = e.target as HTMLSpanElement
+function isCaretInStart(target: HTMLElement | null): target is HTMLElement {
+	if (!target) return false
 	const caretIndex = Caret.getCaretIndex(target)
 	return caretIndex === 0
 }
 
-function isCaretInEnd(event: KeyboardEvent) {
-	const target = event.target as HTMLSpanElement
+function isCaretInEnd(target: HTMLElement | null): target is HTMLElement {
+	if (!target) return false
 	const caretIndex = Caret.getCaretIndex(target)
 	return caretIndex === target.textContent?.length
 }
