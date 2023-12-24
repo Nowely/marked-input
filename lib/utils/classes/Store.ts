@@ -3,18 +3,12 @@ import {MarkedInputProps} from '../../components/MarkedInput'
 import {SystemEvent} from '../../constants'
 import {MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
-
-type Nodes = {
-	focused?: HTMLElement
-}
+import {NodeProxy} from './NodeProxy'
 
 export class Store {
 	props: MarkedInputProps
 
-
-	readonly nodes: Nodes = {
-		focused: undefined
-	}
+	readonly focus = new NodeProxy(undefined, this)
 
 	tokens: MarkStruct[] = []
 
@@ -40,7 +34,7 @@ export class Store {
 		let store = new Store(props)
 		store = new Proxy(store, {
 			set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-				if (prop === 'bus' || prop === 'refs' || prop === 'nodes' || prop === 'currentIndex') return false
+				if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex') return false
 
 				target[prop] = newValue
 				target.bus.send(SystemEvent.STORE_UPDATED, store)

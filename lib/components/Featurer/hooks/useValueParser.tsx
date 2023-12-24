@@ -1,11 +1,7 @@
-import {createRef, useEffect} from 'react'
-import {MarkStruct, Option, PieceType} from '../../../types'
-import {isAnnotated} from '../../../utils/checkers/isAnnotated'
-import {isObject} from '../../../utils/checkers/isObject'
+import {useEffect} from 'react'
+import {Option} from '../../../types'
 import {Parser} from '../../../utils/classes/Parser/Parser'
 import {Store} from '../../../utils/classes/Store'
-import {findGap} from '../../../utils/functions/findGap'
-import {getClosestIndexes} from '../../../utils/functions/getClosestIndexes'
 import {useStore} from '../../../utils/hooks/useStore'
 
 export const useValueParser = () => {
@@ -16,7 +12,7 @@ export const useValueParser = () => {
 	}), true)
 
 	useEffect(() => {
-		if (store.nodes.focused)
+		if (store.focus.target)
 			updateStateFromUI(store, options)
 		else {
 			store.tokens = Parser.split2(value, options)
@@ -52,7 +48,7 @@ export const useValueParser = () => {
 }
 
 function updateStateFromUI(store: Store, options?: Option[]) {
-	const label = store.nodes.focused!.textContent ?? ''
+	const label = store.focus.target!.textContent ?? ''
 	const tokens = Parser.split2(label, options)
 
 	if (tokens.length === 1) return

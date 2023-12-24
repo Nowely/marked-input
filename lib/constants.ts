@@ -1,4 +1,5 @@
 import {EventKey, MarkStruct, NodeData, Option, OverlayMatch} from './types'
+import {NodeProxy} from './utils/classes/NodeProxy'
 import type {Store} from './utils/classes/Store'
 
 export enum KEYBOARD {
@@ -41,8 +42,8 @@ export const SystemEvent = {
 	STORE_UPDATED: Symbol() as EventKey<Store>,
 	ClearTrigger: Symbol() as EventKey<undefined>,
 	CheckTrigger: Symbol() as EventKey<undefined>,
-	Change: Symbol() as EventKey<{ node: ChildNode, mark?: MarkStruct }>,
-	Delete: Symbol() as EventKey<{ node: ChildNode | null}>,
+	Change: Symbol() as EventKey<{ node: NodeProxy, mark?: MarkStruct }>,
+	Delete: Symbol() as EventKey<{ node: NodeProxy | null}>,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }
 

@@ -28,7 +28,7 @@ export function useSystemListeners() {
 		const newSpan = createNewSpan(span, annotation, index, source)
 		//const key = findSpanKey(span, pieces)
 		const piece = store.pieces.findNode(node => node.mark.label === span)
-		store.recovery = {caretPosition: 0, prevNode: piece?.prev?.data, isPrevPrev: true}
+		store.recovery = {caret: 0, anchor: piece?.prev?.data, isPrev: true}
 
 		if (piece) {
 			piece.data.mark.label = newSpan
@@ -37,7 +37,7 @@ export function useSystemListeners() {
 			store.bus.send(SystemEvent.Change, {mark: {label: newSpan}, node: piece})
 			if (!Mark) {
 				node.textContent = newSpan
-				store.recovery = {caretPosition: index + annotation.length}
+				store.recovery = {caret: index + annotation.length}
 			}
 		}
 	}, [])

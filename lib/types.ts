@@ -1,6 +1,7 @@
 import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {PLACEHOLDER} from './constants'
+import {NodeProxy} from './utils/classes/NodeProxy'
 
 
 export type NodeData = {
@@ -85,9 +86,8 @@ export type OverlayMatch = {
 export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
-	prevNode?: HTMLElement
-	caretPosition: number
-	isPrevPrev?: boolean
+	anchor: NodeProxy
+	caret: number
 }
 
 export interface MarkedInputHandler {

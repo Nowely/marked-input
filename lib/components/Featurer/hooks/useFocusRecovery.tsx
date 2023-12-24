@@ -1,5 +1,4 @@
 import {useEffect} from 'react'
-import {Caret} from '../../../utils/classes/Caret'
 import {useStore} from '../../../utils/hooks/useStore'
 
 export const useFocusRecovery = () => {
@@ -11,13 +10,17 @@ export const useFocusRecovery = () => {
 	useEffect(() => {
 		if (!store.recovery) return
 
-		const {prevNode, caretPosition, isPrevPrev} = store.recovery
-		const element = (isPrevPrev
-			? prevNode?.nextSibling?.nextSibling?.nextSibling ?? store.refs.container.current?.firstChild?.nextSibling?.nextSibling
-			: prevNode?.nextSibling ?? store.refs.container.current?.firstChild) as HTMLElement | undefined
-		element?.focus()
-		if (element)
-			Caret.trySetIndex(element, caretPosition)
+		const {anchor, caret} = store.recovery
+
+		switch (true) {
+			case !anchor.target:
+				store.focus.head.focus()
+				break
+			default:
+				anchor.next.focus()
+		}
+
+		store.focus.caret = caret
 		store.recovery = undefined
 	}, deps)
 }

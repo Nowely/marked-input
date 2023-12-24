@@ -2,9 +2,13 @@ import {useListener} from '../../../utils/hooks/useListener'
 import {useStore} from '../../../utils/hooks/useStore'
 
 export const useFocusOnEmptyInput = () => {
-	const pieces = useStore(state => state.pieces)
+	const store = useStore()
+	const tokens = useStore(state => state.tokens)
+
 	useListener('click', () => {
-		if (pieces.length === 1 && pieces.head?.data.mark.label === '')
-			pieces.head?.data.ref.current?.focus()
-	}, [pieces])
+		if (tokens.length === 1 && tokens[0].label === '') {
+			const element = store.refs.container.current?.firstElementChild as HTMLElement | undefined
+			element?.focus()
+		}
+	}, [tokens])
 }

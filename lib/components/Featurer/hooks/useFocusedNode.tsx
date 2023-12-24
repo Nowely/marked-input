@@ -4,6 +4,6 @@ import {useStore} from '../../../utils/hooks/useStore'
 export const useFocusedNode = () => {
 	const store = useStore()
 
-	useListener('focusin', (e) => store.nodes.focused = e.target as HTMLElement, [])
-	useListener('focusout', _ => store.nodes.focused = undefined, [])
+	useListener('focusin', (e) => store.focus.target = e.target, [])
+	useListener('focusout', _ => store.focus.target = undefined, [])
 }

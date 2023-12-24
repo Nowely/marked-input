@@ -1,7 +1,4 @@
 import {KEYBOARD, SystemEvent} from '../../../constants'
-import {castToHTMLElement} from '../../../utils/checkers/castToHTMLElement'
-import {Caret} from '../../../utils/classes/Caret'
-import {getNodeIndex} from '../../../utils/functions/getNodeIndex'
 import {toString} from '../../../utils/functions/toString'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
@@ -11,101 +8,102 @@ import {useStore} from '../../../utils/hooks/useStore'
 export function useKeyDown() {
 	const store = useStore()
 
-	useDownOf(KEYBOARD.LEFT, event => {
-		const target = event.target as HTMLElement | null
-		if (!isCaretInStart(target)) return
+	useDownOf(KEYBOARD.LEFT, shiftFocusPrev)
+	useDownOf(KEYBOARD.RIGHT, shiftFocusNext)
 
-		const node = target.previousSibling //store.nodes.focused?.previousSibling//?.previousSibling
-		castToHTMLElement(node)
-		if (node) {
-			node.focus()
-			Caret.setCaretToEnd(node)
-		}
+	//TODO different rules for editable
+	useDownOf(KEYBOARD.DELETE, preventDefault)
+	useDownOf(KEYBOARD.BACKSPACE, preventDefault)
 
+	useDownOf(KEYBOARD.DELETE, deleteNextMark)
+	useDownOf(KEYBOARD.BACKSPACE, deletePrevMark)
+
+	useDownOf(KEYBOARD.DELETE, deleteSelfMark)
+	useDownOf(KEYBOARD.BACKSPACE, deleteSelfMark)
+
+	useListener('keydown', selectAllText, [])
+
+	function preventDefault(event: KeyboardEvent) {
 		event.preventDefault()
-	})
+	}
 
-	useDownOf(KEYBOARD.RIGHT, event => {
-		const target = event.target as HTMLElement | null
-		if (!isCaretInEnd(target)) return
+	function shiftFocusPrev() {
+		const {focus} = store
 
-		const node = store.nodes.focused?.nextSibling//?.nextSibling
-		castToHTMLElement(node)
-		if (node) node.focus()
+		if (focus.isEditable && !focus.isCaretAtBeginning) return
 
-		event.preventDefault()
-	})
+		focus.prev.focus()
+		focus.setCaretToEnd()
+	}
 
-	useDownOf(KEYBOARD.DELETE, event => {
-		const target = event.target as HTMLElement | null
-		if (!target) return
+	function shiftFocusNext() {
+		const {focus} = store
 
-		const index = getNodeIndex(target)
+		if (focus.isEditable && !focus.isCaretAtEnd) return
 
-		//Remove not text
-		if (target.contentEditable !== 'true') {
-			let [span1, mark, span2] = store.tokens.splice(index - 1, 3)
-			store.tokens = store.tokens.toSpliced(index - 1, 0, {
-				label: span1.label + span2.label
-			})
+		focus.next.focus()
+	}
 
-			const caretPosition = target.previousSibling?.textContent?.length ?? 0
-			store.recovery = {prevNode: target.previousSibling?.previousSibling, caretPosition}
+	function deleteNextMark() {
+		const {focus} = store
 
-			store.props.onChange(toString(store.tokens, store.props.options))
-			return
-		}
+		if (focus.isEditable && focus.isCaretAtEnd)
+			deleteNMark()
+	}
 
-		if (!isCaretInEnd(target)) return
+	function deletePrevMark() {
+		const {focus} = store
 
-		const caretPosition = target.textContent?.length ?? 0
-		store.recovery = {prevNode: target.previousSibling, caretPosition}
+		if (focus.isEditable && focus.isCaretAtBeginning)
+			deletePMark()
+	}
 
-		store.bus.send(SystemEvent.Delete, {node: target.nextSibling})
+	function deleteSelfMark() {
+		const {focus} = store
 
-		store.nodes.focused = undefined
+		if (focus.isEditable) return
 
-		store.tokens = store.tokens.toSpliced(index, 1)
+		let [span1, mark, span2] = store.tokens.splice(focus.index - 1, 3)
+		store.tokens = store.tokens.toSpliced(focus.index - 1, 0, {
+			label: span1.label + span2.label
+		})
 
-		event.preventDefault()
-	})
+		const caretPosition = focus.prev.length
+		store.recovery = {anchor: focus.prev.prev, caret: caretPosition}
 
-	useDownOf(KEYBOARD.BACKSPACE, event => {
-		const target = event.target as HTMLElement | null
-		if (!target) return
+		store.props.onChange(toString(store.tokens, store.props.options))
+	}
 
-		const index = getNodeIndex(target)
 
-		//Remove not text
-		if (target.contentEditable !== 'true') {
-			let [span1, mark, span2] = store.tokens.splice(index - 1, 3)
-			store.tokens = store.tokens.toSpliced(index - 1, 0, {
-				label: span1.label + span2.label
-			})
+	function deleteNMark() {
+		const {focus} = store
 
-			const caretPosition = target.previousSibling?.textContent?.length ?? 0
-			store.recovery = {prevNode: target.previousSibling?.previousSibling, caretPosition}
+		let [span1, mark, span2] = store.tokens.splice(focus.index , 3)
+		store.tokens = store.tokens.toSpliced(focus.index , 0, {
+			label: span1.label + span2.label
+		})
 
-			store.props.onChange(toString(store.tokens, store.props.options))
-			return
-		}
+		const caretPosition = focus.length
+		store.recovery = {anchor: focus.prev, caret: caretPosition}
 
-		if (!isCaretInStart(target)) return
+		store.props.onChange(toString(store.tokens, store.props.options))
+	}
+	function deletePMark() {
+		const {focus} = store
 
-		const caretPosition = target.textContent?.length ?? 0
-		store.recovery = {prevNode: target.previousSibling, caretPosition}
+		let [span1, mark, span2] = store.tokens.splice(focus.index - 2, 3)
+		store.tokens = store.tokens.toSpliced(focus.index - 2, 0, {
+			label: span1.label + span2.label
+		})
 
-		store.bus.send(SystemEvent.Delete, {node: target.nextSibling})
+		const caretPosition = focus.prev.prev.length
 
-		store.nodes.focused = undefined
+		store.recovery = {anchor: focus.prev.prev.prev, caret: caretPosition}
 
-		store.tokens = store.tokens.toSpliced(index, 1)
+		store.props.onChange(toString(store.tokens, store.props.options))
+	}
 
-		event.preventDefault()
-	})
-
-	//Select all text
-	useListener('keydown', (event) => {
+	function selectAllText(event: KeyboardEvent) {
 		if (event.ctrlKey && event.code === 'KeyA') {
 			event.preventDefault()
 
@@ -113,20 +111,8 @@ export function useKeyDown() {
 			const anchorNode = store.refs.container.current?.firstChild
 			const focusNode = store.refs.container.current?.lastChild
 
-			if (!selection || !anchorNode || !focusNode) return
+			if (!selection || ! anchorNode || !focusNode) return
 			selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
 		}
-	}, [])
-}
-
-function isCaretInStart(target: HTMLElement | null): target is HTMLElement {
-	if (!target) return false
-	const caretIndex = Caret.getCaretIndex(target)
-	return caretIndex === 0
-}
-
-function isCaretInEnd(target: HTMLElement | null): target is HTMLElement {
-	if (!target) return false
-	const caretIndex = Caret.getCaretIndex(target)
-	return caretIndex === target.textContent?.length
+	}
 }
