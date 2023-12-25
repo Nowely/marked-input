@@ -7,11 +7,9 @@ import {Token} from './Token'
 
 //TODO fix updating0
 export const Container = memo(() => {
-	const store = useStore()
-	const {className, style, pieces, refs, tokens, bus} = useStore(store => ({
+	const {className, style, refs, tokens, bus} = useStore(store => ({
 		className: store.props.className ? DefaultClass + ' ' + store.props.className : DefaultClass,
 		style: store.props.style,
-		pieces: store.pieces,
 		refs: store.refs,
 		tokens: store.tokens,
 		bus: store.bus,

@@ -1,5 +1,5 @@
-import {KEYBOARD, SystemEvent} from '../../../constants'
-import {toString} from '../../../utils/functions/toString'
+import {KEYBOARD} from '../../../constants'
+import {deleteMark} from '../../../utils/functions/deleteMark'
 import {useDownOf} from '../../../utils/hooks/useDownOf'
 import {useListener} from '../../../utils/hooks/useListener'
 import {useStore} from '../../../utils/hooks/useStore'
@@ -15,11 +15,11 @@ export function useKeyDown() {
 	useDownOf(KEYBOARD.DELETE, preventDefault)
 	useDownOf(KEYBOARD.BACKSPACE, preventDefault)
 
-	useDownOf(KEYBOARD.DELETE, deleteNextMark)
-	useDownOf(KEYBOARD.BACKSPACE, deletePrevMark)
-
 	useDownOf(KEYBOARD.DELETE, deleteSelfMark)
 	useDownOf(KEYBOARD.BACKSPACE, deleteSelfMark)
+
+	useDownOf(KEYBOARD.DELETE, deleteNextMark)
+	useDownOf(KEYBOARD.BACKSPACE, deletePrevMark)
 
 	useListener('keydown', selectAllText, [])
 
@@ -29,7 +29,6 @@ export function useKeyDown() {
 
 	function shiftFocusPrev() {
 		const {focus} = store
-
 		if (focus.isEditable && !focus.isCaretAtBeginning) return
 
 		focus.prev.focus()
@@ -38,69 +37,24 @@ export function useKeyDown() {
 
 	function shiftFocusNext() {
 		const {focus} = store
-
 		if (focus.isEditable && !focus.isCaretAtEnd) return
 
 		focus.next.focus()
 	}
 
-	function deleteNextMark() {
-		const {focus} = store
-
-		if (focus.isEditable && focus.isCaretAtEnd)
-			deleteNMark()
+	function deleteSelfMark() {
+		if (!store.focus.isEditable)
+			deleteMark('self', store)
 	}
 
 	function deletePrevMark() {
-		const {focus} = store
-
-		if (focus.isEditable && focus.isCaretAtBeginning)
-			deletePMark()
+		if (store.focus.isEditable && store.focus.isCaretAtBeginning)
+			deleteMark('prev', store)
 	}
 
-	function deleteSelfMark() {
-		const {focus} = store
-
-		if (focus.isEditable) return
-
-		let [span1, mark, span2] = store.tokens.splice(focus.index - 1, 3)
-		store.tokens = store.tokens.toSpliced(focus.index - 1, 0, {
-			label: span1.label + span2.label
-		})
-
-		const caretPosition = focus.prev.length
-		store.recovery = {anchor: focus.prev.prev, caret: caretPosition}
-
-		store.props.onChange(toString(store.tokens, store.props.options))
-	}
-
-
-	function deleteNMark() {
-		const {focus} = store
-
-		let [span1, mark, span2] = store.tokens.splice(focus.index , 3)
-		store.tokens = store.tokens.toSpliced(focus.index , 0, {
-			label: span1.label + span2.label
-		})
-
-		const caretPosition = focus.length
-		store.recovery = {anchor: focus.prev, caret: caretPosition}
-
-		store.props.onChange(toString(store.tokens, store.props.options))
-	}
-	function deletePMark() {
-		const {focus} = store
-
-		let [span1, mark, span2] = store.tokens.splice(focus.index - 2, 3)
-		store.tokens = store.tokens.toSpliced(focus.index - 2, 0, {
-			label: span1.label + span2.label
-		})
-
-		const caretPosition = focus.prev.prev.length
-
-		store.recovery = {anchor: focus.prev.prev.prev, caret: caretPosition}
-
-		store.props.onChange(toString(store.tokens, store.props.options))
+	function deleteNextMark() {
+		if (store.focus.isEditable && store.focus.isCaretAtEnd)
+			deleteMark('next', store)
 	}
 
 	function selectAllText(event: KeyboardEvent) {
@@ -111,8 +65,9 @@ export function useKeyDown() {
 			const anchorNode = store.refs.container.current?.firstChild
 			const focusNode = store.refs.container.current?.lastChild
 
-			if (!selection || ! anchorNode || !focusNode) return
+			if (!selection || !anchorNode || !focusNode) return
 			selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
 		}
 	}
 }
+
