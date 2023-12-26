@@ -1,12 +1,11 @@
 import {createRef} from 'react'
-import {MarkedInputProps} from '../../components/MarkedInput'
 import {SystemEvent} from '../../constants'
-import {MarkStruct, OverlayMatch, Recovery} from '../../types'
+import {DefaultedProps, MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import {NodeProxy} from './NodeProxy'
 
 export class Store {
-	props: MarkedInputProps
+	props: DefaultedProps
 
 	readonly focus = new NodeProxy(undefined, this)
 
@@ -30,21 +29,21 @@ export class Store {
 
 	overlayMatch?: OverlayMatch
 
-	static create(props: MarkedInputProps) {
-		let store = new Store(props)
-		store = new Proxy(store, {
-			set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-				if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex') return false
-
-				target[prop] = newValue
-				target.bus.send(SystemEvent.STORE_UPDATED, store)
-				return true
-			}
+	static create(props: DefaultedProps) {
+		return new Proxy(new Store(props), {
+			set: setHandler
 		})
-		return store
 	}
 
-	private constructor(props: MarkedInputProps) {
+	private constructor(props: DefaultedProps) {
 		this.props = props
 	}
+}
+
+function setHandler(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
+	if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex') return false
+
+	target[prop] = newValue
+	target.bus.send(SystemEvent.STORE_UPDATED, receiver)
+	return true
 }

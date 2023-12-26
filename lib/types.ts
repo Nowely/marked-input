@@ -110,3 +110,6 @@ export type OverlayTrigger =
 	| 'none';
 
 export interface EventKey<T> extends Symbol {}
+
+export type DefaultedProps = WithRequired<MarkedInputProps, 'options'>
+type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
