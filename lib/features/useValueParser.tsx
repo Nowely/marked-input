@@ -1,8 +1,8 @@
 import {useEffect} from 'react'
-import {Option} from '../../../types'
-import {Parser} from '../../../utils/classes/Parser/Parser'
-import {Store} from '../../../utils/classes/Store'
-import {useStore} from '../../../utils/hooks/useStore'
+import {Option} from '../types'
+import {Parser} from '../utils/classes/Parser/Parser'
+import {Store} from '../utils/classes/Store'
+import {useStore} from '../utils/hooks/useStore'
 
 export const useValueParser = () => {
 	const store = useStore()

@@ -1,9 +1,9 @@
-import {SystemEvent} from '../../../constants'
-import {annotate} from '../../../utils/functions/annotate'
-import {createNewSpan} from '../../../utils/functions/createNewSpan'
-import {toString} from '../../../utils/functions/toString'
-import {useListener} from '../../../utils/hooks/useListener'
-import {useStore} from '../../../utils/hooks/useStore'
+import {SystemEvent} from '../constants'
+import {annotate} from '../utils/functions/annotate'
+import {createNewSpan} from '../utils/functions/createNewSpan'
+import {toString} from '../utils/functions/toString'
+import {useListener} from '../utils/hooks/useListener'
+import {useStore} from '../utils/hooks/useStore'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {

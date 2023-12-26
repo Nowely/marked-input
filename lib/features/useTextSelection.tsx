@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react'
-import {useStore} from '../../../utils/hooks/useStore'
+import {useStore} from '../utils/hooks/useStore'
 
 export function useTextSelection() {
 	const store = useStore()

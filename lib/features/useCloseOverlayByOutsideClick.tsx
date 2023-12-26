@@ -1,6 +1,6 @@
 import {useEffect} from 'react'
-import {SystemEvent} from '../../../constants'
-import {useStore} from '../../../utils/hooks/useStore'
+import {SystemEvent} from '../constants'
+import {useStore} from '../utils/hooks/useStore'
 
 export function useCloseOverlayByOutsideClick() {
 	const store = useStore()

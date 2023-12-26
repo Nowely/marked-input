@@ -1,6 +1,6 @@
 import {useEffect} from 'react'
-import {SystemEvent, KEYBOARD} from '../../../constants'
-import {useStore} from '../../../utils/hooks/useStore'
+import {SystemEvent, KEYBOARD} from '../constants'
+import {useStore} from '../utils/hooks/useStore'
 
 export function useCloseOverlayByEsc() {
 	const {match, bus} = useStore(store => ({

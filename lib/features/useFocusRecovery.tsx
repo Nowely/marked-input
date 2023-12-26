@@ -1,5 +1,5 @@
 import {useEffect} from 'react'
-import {useStore} from '../../../utils/hooks/useStore'
+import {useStore} from '../utils/hooks/useStore'
 
 export const useFocusRecovery = () => {
 	const store = useStore()
