@@ -88,6 +88,7 @@ export type Listener<T = any> = (e: T) => void
 export type Recovery = {
 	anchor: NodeProxy
 	caret: number
+	isAnchorNext?: boolean
 }
 
 export interface MarkedInputHandler {
@@ -111,5 +112,7 @@ export type OverlayTrigger =
 
 export interface EventKey<T> extends Symbol {}
 
-export type DefaultedProps = WithRequired<MarkedInputProps, 'options'>
+
+export type DefaultedProps = WithRequired<MarkedInputProps, 'options' | 'trigger'>
+
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }

@@ -8,6 +8,7 @@ export class Store {
 	props: DefaultedProps
 
 	readonly focus = new NodeProxy(undefined, this)
+	readonly input = new NodeProxy(undefined, this)
 
 	tokens: MarkStruct[] = []
 

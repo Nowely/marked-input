@@ -1,5 +1,5 @@
 import {MarkedInput, useMark} from 'rc-marked-input'
-import {FormEvent, useState} from 'react'
+import {FormEvent, useEffect, useState} from 'react'
 import {Text} from '../assets/Text'
 
 export default {
@@ -9,12 +9,14 @@ export default {
 }
 
 const Mark = () => {
-	const {label, change} = useMark()
+	const {label, change, ref} = useMark()
 
-	const handleInput = (e: FormEvent<HTMLSpanElement>) =>
-		change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
+	useEffect(() => {
+		if (ref.current)
+			ref.current.textContent = label
+	}, [])
 
-	return <mark contentEditable onInput={handleInput} children={label}/>
+	return <mark ref={ref} contentEditable/>
 }
 
 export const Dynamic = () => {

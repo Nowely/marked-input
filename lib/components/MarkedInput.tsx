@@ -66,7 +66,8 @@ export interface MarkedInputComponent {
 
 export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
 	const propsWithDefault = Object.assign({}, {
-		options: DefaultOptions
+		options: DefaultOptions,
+		trigger: 'change'
 	}, props)
 
 	return (

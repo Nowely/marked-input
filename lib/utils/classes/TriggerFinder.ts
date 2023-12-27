@@ -27,7 +27,7 @@ export class TriggerFinder {
 
 	find(options: Option[]): OverlayMatch | undefined {
 		for (let option of options) {
-			let match = this.matchInTextVia(option.trigger!)
+			let match = this.matchInTextVia(option.trigger)
 			if (match) return {
 				value: match.word,
 				source: match.annotation,
@@ -39,7 +39,7 @@ export class TriggerFinder {
 		}
 	}
 
-	matchInTextVia(trigger: string) {
+	matchInTextVia(trigger: string = '@') {
 		const rightMatch = this.matchRightPart()
 		const leftMatch = this.matchLeftPart(trigger)
 		if (leftMatch) return {

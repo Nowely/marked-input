@@ -24,7 +24,8 @@ export function useKeyDown() {
 	useListener('keydown', selectAllText, [])
 
 	function preventDefault(event: KeyboardEvent) {
-		event.preventDefault()
+		if (!store.focus.isEditable)
+			event.preventDefault()
 	}
 
 	function shiftFocusPrev() {
@@ -52,6 +53,8 @@ export function useKeyDown() {
 			deleteMark('prev', store)
 	}
 
+	//TODO pass focus
+	//TODO on && !store.focus.next.isEditable remove first symbol
 	function deleteNextMark() {
 		if (store.focus.isEditable && store.focus.isCaretAtEnd)
 			deleteMark('next', store)

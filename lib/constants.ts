@@ -29,11 +29,11 @@ export enum KEYBOARD {
 
 export const DefaultClass = 'mk-input'
 
-export const DefaultOptions: Option[] = [{
+export const DefaultOptions = [{
 	trigger: '@',
 	markup: '@[__label__](__value__)',
 	data: [],
-}]
+}] satisfies Option[]
 
 
 export const wordRegex = new RegExp(/^\w*/)
@@ -42,7 +42,7 @@ export const SystemEvent = {
 	STORE_UPDATED: Symbol() as EventKey<Store>,
 	ClearTrigger: Symbol() as EventKey<undefined>,
 	CheckTrigger: Symbol() as EventKey<undefined>,
-	Change: Symbol() as EventKey<{ node: NodeProxy, mark?: MarkStruct }>,
+	Change: Symbol() as EventKey<undefined>,
 	Delete: Symbol() as EventKey<{ node: NodeProxy | null}>,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }

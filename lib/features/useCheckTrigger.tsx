@@ -1,32 +1,33 @@
 import {useCallback} from 'react'
 import {SystemEvent} from '../constants'
 import {OverlayTrigger} from '../types'
-import {Store} from '../utils/classes/Store'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 
 export function useCheckTrigger() {
 	const store = useStore()
 
-	const sendCheckTrigger = useCallback((e: Event) =>
-		isMatch(e, store) && store.bus.send(SystemEvent.CheckTrigger), [])
+	const sendCheckTrigger = useCallback(() => {
+		const trigger = store.props.trigger
+		const type = 'selectionChange' satisfies OverlayTrigger
 
-	useListener('focusin', () =>
-		document.addEventListener('selectionchange', sendCheckTrigger), [])
+		if (trigger === type || trigger.includes(type))
+			store.bus.send(SystemEvent.CheckTrigger)
+	}, [])
 
-	useListener('focusout', () =>
-		document.removeEventListener('selectionchange', sendCheckTrigger), [])
+	useListener('focusin', () => {
+		document.addEventListener('selectionchange', sendCheckTrigger)
+	}, [])
 
-	useListener(SystemEvent.Change, sendCheckTrigger, [])
-}
+	useListener('focusout', () => {
+		document.removeEventListener('selectionchange', sendCheckTrigger)
+	}, [])
 
+	useListener(SystemEvent.Change, () => {
+		const trigger = store.props.trigger
+		const type = 'change' satisfies OverlayTrigger
 
-function isMatch(e: Event, store: Store) {
-	let trigger = store.props.trigger ?? 'change'
-	let type: OverlayTrigger
-
-	if ('key' in e) type = 'change'
-	else type = 'selectionChange'
-
-	return trigger === type || trigger.includes(type)
+		if (trigger === type || trigger.includes(type))
+			store.bus.send(SystemEvent.CheckTrigger)
+	}, [])
 }

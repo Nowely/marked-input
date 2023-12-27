@@ -19,7 +19,7 @@ export const Container = memo(() => {
 	//const divOverride = useStore(getChildProps('div'), true)
 
 	useListener('input', e => {
-		bus.send(SystemEvent.Change, {node: e.target})
+		bus.send(SystemEvent.Change)
 	}, [])
 
 	return (

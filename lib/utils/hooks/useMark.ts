@@ -38,6 +38,7 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 			setLabel(props.label)
 			setValue(props.value)
 		}
+
 		store.bus.send(SystemEvent.Change, {node, mark: {...props}})
 	}, [])
 
