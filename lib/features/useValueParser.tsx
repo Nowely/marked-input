@@ -15,7 +15,7 @@ export const useValueParser = () => {
 		if (store.focus.target)
 			updateStateFromUI(store, options)
 		else {
-			store.tokens = Parser.split2(value, options)
+			store.tokens = Parser.split(value, options)
 			/*store.toks = store.tokens.map(mark => {
 				const div = document.createElement('div')
 				const root = createRoot(div)
@@ -48,16 +48,12 @@ export const useValueParser = () => {
 }
 
 function updateStateFromUI(store: Store, options?: Option[]) {
-	const label = store.focus.target!.textContent ?? ''
-	const tokens = Parser.split2(label, options)
+	const {focus} = store
+	const tokens = Parser.split(focus.content, options)
 
 	if (tokens.length === 1) return
 
-	/*store.pieces.insertsBefore(store.changedNode!, nodeData)
-	store.focusedNode = store.changedNode!.next
-	store.changedNode!.remove()
-	store.changedNode = undefined
-	store.pieces = store.pieces.shallowCopy()*/
+	store.tokens = store.tokens.toSpliced(focus.index, 1, ...tokens)
 }
 
 /*function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {

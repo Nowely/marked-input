@@ -8,6 +8,7 @@ export class Store {
 	props: DefaultedProps
 
 	readonly focus = new NodeProxy(undefined, this)
+	//TODO rename to input node?
 	readonly input = new NodeProxy(undefined, this)
 
 	tokens: MarkStruct[] = []
@@ -42,7 +43,7 @@ export class Store {
 }
 
 function setHandler(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-	if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex') return false
+	if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex' || prop === 'input') return false
 
 	target[prop] = newValue
 	target.bus.send(SystemEvent.STORE_UPDATED, receiver)

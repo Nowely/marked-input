@@ -5,15 +5,12 @@ import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 
 //TODO Focus on mark and attribute for this
+//TODO different rules for editable
 export function useKeyDown() {
 	const store = useStore()
 
 	useDownOf(KEYBOARD.LEFT, shiftFocusPrev)
 	useDownOf(KEYBOARD.RIGHT, shiftFocusNext)
-
-	//TODO different rules for editable
-	useDownOf(KEYBOARD.DELETE, preventDefault)
-	useDownOf(KEYBOARD.BACKSPACE, preventDefault)
 
 	useDownOf(KEYBOARD.DELETE, deleteSelfMark)
 	useDownOf(KEYBOARD.BACKSPACE, deleteSelfMark)
@@ -22,11 +19,6 @@ export function useKeyDown() {
 	useDownOf(KEYBOARD.BACKSPACE, deletePrevMark)
 
 	useListener('keydown', selectAllText, [])
-
-	function preventDefault(event: KeyboardEvent) {
-		if (!store.focus.isEditable)
-			event.preventDefault()
-	}
 
 	function shiftFocusPrev() {
 		const {focus} = store
@@ -48,16 +40,20 @@ export function useKeyDown() {
 			deleteMark('self', store)
 	}
 
-	function deletePrevMark() {
-		if (store.focus.isEditable && store.focus.isCaretAtBeginning)
+	function deletePrevMark(event: KeyboardEvent) {
+		if (store.focus.isEditable && store.focus.isCaretAtBeginning) {
+			event.preventDefault()
 			deleteMark('prev', store)
+		}
 	}
 
 	//TODO pass focus
 	//TODO on && !store.focus.next.isEditable remove first symbol
-	function deleteNextMark() {
-		if (store.focus.isEditable && store.focus.isCaretAtEnd)
+	function deleteNextMark(event: KeyboardEvent) {
+		if (store.focus.isEditable && store.focus.isCaretAtEnd) {
+			event.preventDefault()
 			deleteMark('next', store)
+		}
 	}
 
 	function selectAllText(event: KeyboardEvent) {

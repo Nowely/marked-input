@@ -16,7 +16,6 @@ export function useSystemListeners() {
 
 		store.tokens[store.focus.index].label = store.focus.content
 
-
 		onChange(toString(store.tokens, options))
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
@@ -29,11 +28,15 @@ export function useSystemListeners() {
 		const newSpan = createNewSpan(span, annotation, index, source)
 
 		store.recovery = Mark
-			? {caret: index + annotation.length, anchor: store.input}
-			: {caret: 0, anchor: store.input.next, isAnchorNext: true}
+			? {caret: 0, anchor: store.input.next, isNext: true}
+			: {caret: index + annotation.length, anchor: store.input}
 
 		if (store.input.target) {
+			store.input.content = newSpan
 			store.tokens[store.input.index].label = newSpan
+
+			store.focus.target = store.input.target
+			store.input.clear()
 			onChange(toString(store.tokens, options))
 		}
 	}, [])

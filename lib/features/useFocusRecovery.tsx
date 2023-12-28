@@ -10,13 +10,13 @@ export const useFocusRecovery = () => {
 	useEffect(() => {
 		if (!store.recovery) return
 
-		const {anchor, caret, isAnchorNext} = store.recovery
+		const {anchor, caret, isNext} = store.recovery
 
 		switch (true) {
 			case !anchor.target:
 				store.focus.head.focus()
 				break
-			case isAnchorNext:
+			case isNext:
 				anchor.prev.focus()
 				break
 			default:

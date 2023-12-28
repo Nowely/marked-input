@@ -1,19 +1,15 @@
 import {MarkStruct, Markup, Option, PieceType} from '../../../types'
 import {isObject} from '../../checkers/isObject'
 import {markupToRegex} from '../../functions/markupToRegex'
+import {normalizeMark} from '../../functions/normalizeMark'
 import {ParserMatches} from './ParserMatches'
-import {normalizeMark} from "../../functions/normalizeMark";
 
 export class Parser {
 	private readonly markups: Markup[]
 	private readonly uniRegExp: RegExp
 	private readonly regExps: RegExp[]
 
-	static split(value: string, options?: Option[]) {
-		const markups = options?.map((c) => c.markup!)
-		return () => markups ? new Parser(markups).split(value) : [value]
-	}
-	static split2(value: string, options?: Option[]): MarkStruct[] {
+	static split(value: string, options?: Option[]): MarkStruct[] {
 		const markups = options?.map((c) => c.markup!)
 		const pieces = markups ? new Parser(markups).split(value) : [value]
 		return pieces.map(piece => {

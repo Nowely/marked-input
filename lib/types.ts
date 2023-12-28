@@ -87,8 +87,8 @@ export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
 	anchor: NodeProxy
+	isNext?: boolean
 	caret: number
-	isAnchorNext?: boolean
 }
 
 export interface MarkedInputHandler {
