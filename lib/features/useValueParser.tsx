@@ -1,7 +1,10 @@
 import {useEffect} from 'react'
 import {Option} from '../types'
+import {isAnnotated} from '../utils/checkers/isAnnotated'
 import {Parser} from '../utils/classes/Parser/Parser'
 import {Store} from '../utils/classes/Store'
+import {findGap} from '../utils/functions/findGap'
+import {getClosestIndexes} from '../utils/functions/getClosestIndexes'
 import {useStore} from '../utils/hooks/useStore'
 
 export const useValueParser = () => {
@@ -12,40 +15,14 @@ export const useValueParser = () => {
 	}), true)
 
 	useEffect(() => {
-		if (store.focus.target)
+		/*if (store.focus.target)
 			updateStateFromUI(store, options)
-		else {
-			store.tokens = Parser.split(value, options)
-			/*store.toks = store.tokens.map(mark => {
-				const div = document.createElement('div')
-				const root = createRoot(div)
-
-				queueMicrotask(() => {
-					flushSync(() => {
-						root.render(
-							<StoreContext.Provider value={store}>
-								<NodeProvider value={mark}>
-									{isAnnotated(mark) ? <Piece/> : <EditableSpan/>}
-								</NodeProvider>
-							</StoreContext.Provider>
-						)
-					})
-				if (!store.refs.container.current) return
-				const el = store.refs.container.current
-				el.append(div.firstChild)
-				})
-					//console.log(div)
-
-				return {
-					mark,
-					root,
-					node: div
-				}
-			})*/
-			//updateStateFromValue(store, value, options)
-		}
+		else {*/
+		updateStateFromValue(store, value, options)
+		//}
 	}, [value, options])
 }
+
 
 function updateStateFromUI(store: Store, options?: Option[]) {
 	const {focus} = store
@@ -56,76 +33,46 @@ function updateStateFromUI(store: Store, options?: Option[]) {
 	store.tokens = store.tokens.toSpliced(focus.index, 1, ...tokens)
 }
 
-/*function updateStateFromValue(store: Store, value: string, options?: Option<MarkStruct>[]) {
+
+function updateStateFromValue(store: Store, value: string, options?: Option[]) {
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.previousValue, value)
 	store.previousValue = value
 
-	console.log(gap)
-	console.log(ranges)
-
-	if (gap.left) {
+	switch (true) {
 		//Mark removing happen
-		if (ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1) {
-			const updatedIndex = ranges.indexOf(gap.left)
-			updateByChangedNodes(store, updatedIndex - 1, updatedIndex)
-			return
-		}
-
+		case gap.left && (ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1):
+			const updatedIndex1 = ranges.indexOf(gap.left)
+			const tokens1 = parseUnionedLabels(store, updatedIndex1 - 1, updatedIndex1)
+			store.tokens = store.tokens.toSpliced(updatedIndex1, 1, ...tokens1)
+			break
 		//Changing in label
-		const [updatedIndex] = getClosestIndexes(ranges, gap.left)
-		updateByChangedNode(store, updatedIndex)
-		return
+		case gap.left !== undefined:
+			const [updatedIndex] = getClosestIndexes(ranges, gap.left)
+			const tokens2 = parseUnionedLabels(store, updatedIndex)
+			if (tokens2.length === 1) return
+			store.tokens = store.tokens.toSpliced(updatedIndex, 1, ...tokens2)
+			break
+		default:
+			//Parse all string
+			store.tokens = Parser.split(value, options)
+	}
+}
+
+function parseUnionedLabels(store: Store, ...indexes: number[]) {
+	let span = ''
+	for (const index of indexes) {
+		span += store.tokens[index].label
 	}
 
-
-	//Parse all string
-	const tokens = Parser.split(value, options)()
-	const nodeData = tokens.map(toNodeData)
-	//const pieces = LinkedList.from(nodeData)
-
-	store.pieces = pieces
+	return Parser.split(span, store.props.options)
 }
 
 function getRangeMap(store: Store): number[] {
 	let position = 0
-	return store.pieces.map(node => {
-		const length = isAnnotated(node.data.mark) ? node.data.mark.annotation.length : node.data.mark.label.length
+	return store.tokens.map(token => {
+		const length = isAnnotated(token) ? token.annotation.length : token.label.length
 		position += length
 		return position - length
 	}) ?? []
 }
-
-function toNodeData(piece: PieceType) {
-	return {
-		mark: isObject(piece) ? piece : {label: piece},
-		ref: createRef<HTMLElement>()
-	}
-}
-
-function updateByChangedNodes(store: Store, index1: number, index2: number) {
-	const node1 = store.pieces.getNode(index1)
-	const node2 = store.pieces.getNode(index2)
-	const newString = node1!.data.mark.label + node2!.data.mark.label
-	const pieces = Parser.split(newString, store.props.options)()
-
-	const nodeData = pieces.map(toNodeData)
-
-	store.pieces.insertAfter(node2!, nodeData[0])
-	node1!.remove()
-	node2!.remove()
-	store.pieces = store.pieces.shallowCopy()
-}
-
-function updateByChangedNode(store: Store, nodeIndex: number) {
-	const node = store.pieces.getNode(nodeIndex)
-	const pieces = Parser.split(node!.data.mark.label, store.props.options)()
-	if (pieces.length === 1) return
-
-	const nodeData = pieces.map(toNodeData)
-
-	store.pieces.insertsBefore(node!, nodeData)
-	//store.focusedNode = node!.next
-	node!.remove()
-	store.pieces = store.pieces.shallowCopy()
-}*/
