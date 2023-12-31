@@ -41,7 +41,7 @@ export function useKeyDown() {
 	}
 
 	function deletePrevMark(event: KeyboardEvent) {
-		if (store.focus.isEditable && store.focus.isCaretAtBeginning) {
+		if (store.focus.isEditable && store.focus.isCaretAtBeginning && store.focus.prev.target) {
 			event.preventDefault()
 			deleteMark('prev', store)
 		}
@@ -50,7 +50,7 @@ export function useKeyDown() {
 	//TODO pass focus
 	//TODO on && !store.focus.next.isEditable remove first symbol
 	function deleteNextMark(event: KeyboardEvent) {
-		if (store.focus.isEditable && store.focus.isCaretAtEnd) {
+		if (store.focus.isEditable && store.focus.isCaretAtEnd && store.focus.next.target) {
 			event.preventDefault()
 			deleteMark('next', store)
 		}
