@@ -23,9 +23,22 @@ export function getTokensByValue(store: Store) {
 			const tokens2 = parseUnionLabels(store, updatedIndex)
 			if (tokens2.length === 1) return store.tokens
 			return store.tokens.toSpliced(updatedIndex, 1, ...tokens2)
+		case gap.right !== undefined:
+			const [updatedIndex2] = getClosestIndexes(ranges, gap.right)
+			const tokens3 = parseUnionLabels(store, updatedIndex2)
+			if (tokens3.length === 1) return store.tokens
+			return store.tokens.toSpliced(updatedIndex2, 1, ...tokens3)
 		default:
 			//Parse all string
 			return Parser.split(value, options)
+	}
+}
+
+type ParseType = '' | 'all'
+
+function identifyParseType(store: Store) {
+	switch (true) {
+
 	}
 }
 
