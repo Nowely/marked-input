@@ -19,11 +19,11 @@ export function useSystemListeners() {
 		store.tokens[store.focus.index].label = store.focus.content
 
 		onChange?.(toString(store.tokens, options))
-		store.bus.send(SystemEvent.Reparce)
+		store.bus.send(SystemEvent.Parse)
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 	}, [])
 
-	useListener(SystemEvent.Reparce, (event) => {
+	useListener(SystemEvent.Parse, (event) => {
 		store.tokens = store.focus.target
 			? getTokensByUI(store)
 			: getTokensByValue(store)
@@ -47,7 +47,7 @@ export function useSystemListeners() {
 			store.focus.target = store.input.target
 			store.input.clear()
 			onChange?.(toString(store.tokens, options))
-			store.bus.send(SystemEvent.Reparce)
+			store.bus.send(SystemEvent.Parse)
 		}
 	}, [])
 }

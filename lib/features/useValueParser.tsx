@@ -13,7 +13,7 @@ export const useValueParser = () => {
 
 	useEffect(() => {
 		if (isMounted.current) {
-			store.bus.send(SystemEvent.Reparce)
+			store.bus.send(SystemEvent.Parse)
 			return
 		}
 

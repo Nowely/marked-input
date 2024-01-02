@@ -43,7 +43,7 @@ export const SystemEvent = {
 	ClearTrigger: Symbol() as EventKey<undefined>,
 	CheckTrigger: Symbol() as EventKey<undefined>,
 	Change: Symbol() as EventKey<undefined>,
-	Reparce: Symbol() as EventKey<undefined>,
+	Parse: Symbol() as EventKey<undefined>,
 	Delete: Symbol() as EventKey<{ node: NodeProxy | null}>,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }

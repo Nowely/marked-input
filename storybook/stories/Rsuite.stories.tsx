@@ -8,7 +8,7 @@ import {Text} from '../assets/Text'
 import {withStyle} from '../assets/withStyle'
 
 export default {
-	title: 'MarkedInput/Rsuite',
+	title: 'Styled/Rsuite',
 	component: MarkedInput,
 	decorators: [withStyle('rsuite.min.css')],
 } as Meta<typeof MarkedInput>

@@ -3,7 +3,7 @@ import {FormEvent, useEffect, useState} from 'react'
 import {Text} from '../assets/Text'
 
 export default {
-	title: 'MarkedInput',
+	title: 'MarkedInput/Mark',
 	tags: ['autodocs'],
 	component: MarkedInput,
 }
