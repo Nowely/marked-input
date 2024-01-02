@@ -1,6 +1,8 @@
 import {DefaultOptions, SystemEvent} from '../constants'
 import {annotate} from '../utils/functions/annotate'
 import {createNewSpan} from '../utils/functions/createNewSpan'
+import {getTokensByUI} from '../utils/functions/getTokensByUI'
+import {getTokensByValue} from '../utils/functions/getTokensByValue'
 import {toString} from '../utils/functions/toString'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
@@ -16,8 +18,15 @@ export function useSystemListeners() {
 
 		store.tokens[store.focus.index].label = store.focus.content
 
-		onChange(toString(store.tokens, options))
+		onChange?.(toString(store.tokens, options))
+		store.bus.send(SystemEvent.Reparce)
 		//bus.send(SystemEvent.CheckTrigger) TODO check on value change
+	}, [])
+
+	useListener(SystemEvent.Reparce, (event) => {
+		store.tokens = store.focus.target
+			? getTokensByUI(store)
+			: getTokensByValue(store)
 	}, [])
 
 	useListener(SystemEvent.Select, (event) => {
@@ -37,7 +46,8 @@ export function useSystemListeners() {
 
 			store.focus.target = store.input.target
 			store.input.clear()
-			onChange(toString(store.tokens, options))
+			onChange?.(toString(store.tokens, options))
+			store.bus.send(SystemEvent.Reparce)
 		}
 	}, [])
 }

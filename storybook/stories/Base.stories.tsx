@@ -20,10 +20,10 @@ export const Abc = {
 	}
 }*/
 
-export const Abc: StoryObj<typeof MarkedInput> = {
+export const Abc: StoryObj<typeof MarkedInput<MarkStruct>> = {
 	args: {
 		Mark: (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
-		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
+		defaultValue: 'Hello, clickable marked @[world](Hello! Hello!)!',
 	}
 }
 

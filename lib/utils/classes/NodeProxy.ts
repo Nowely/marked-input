@@ -21,6 +21,14 @@ export class NodeProxy {
 		return new NodeProxy(this.target?.previousSibling, this.#store)
 	}
 
+	get isSpan() {
+		return this.index % 2 === 0
+	}
+
+	get isMark() {
+		return !this.isSpan
+	}
+
 	get isEditable() {
 		return this.target?.isContentEditable ?? false
 	}

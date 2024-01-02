@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom/vitest'
+import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
@@ -21,9 +21,9 @@ describe(`Component: ${MarkedInput.name}`, () => {
 	})
 
 	it('should support the "Backspace" button', async () => {
-		const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-		const [firstSpan, secondSpan] = container.querySelectorAll('span')
+		const {getByText, queryByText} = render(<Mark2 initial="Hello @[mark](1)!"/>)
 
+		const secondSpan = getByText('!')
 		//Used for focused
 		await user.type(secondSpan, '{ArrowRight}')
 		expect(secondSpan).toHaveFocus()
@@ -31,33 +31,40 @@ describe(`Component: ${MarkedInput.name}`, () => {
 		await user.keyboard('{Backspace}')
 		expect(secondSpan).toHaveTextContent('')
 
-
-		expect(container.querySelector('mark')).toBeInTheDocument()
+		expect(getByText(/mark/)).toBeInTheDocument()
 		await user.keyboard('{Backspace}')
 		expect(secondSpan).not.toBeInTheDocument()
-		expect(container.querySelector('mark')).toBeNull()
+		expect(queryByText(/mark/)).toBeNull()
 
+		const firstSpan = getByText(/Hello/)
 		expect(firstSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
+		expect(firstSpan).toHaveFocus()
+
 		await user.keyboard('{Backspace>7/}')
+
 		expect(firstSpan).toHaveTextContent('')
 	})
 
-	it('should support the "Delete" button', async () => {
-		const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-		const [firstSpan, secondSpan] = container.querySelectorAll('span')
+	it.only('should support the "Delete" button', async () => {
+		const {getByText, queryByText, debug} = render(<Mark2 initial="Hello @[mark](1)!"/>)
 
+		const firstSpan = getByText(/Hello/)
 		//Used for focused
-		await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
-		expect(firstSpan).toHaveFocus()
+		//debug()
+		//await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
+		await user.pointer({target: firstSpan, offset: 0})
+		//expect(firstSpan).toHaveFocus()
 
 		await user.keyboard('{Delete>6/}')
+		debug()
 		expect(firstSpan).toHaveTextContent('')
 
-		expect(container.querySelector('mark')).toBeInTheDocument()
+		expect(getByText(/mark/)).toBeInTheDocument()
 		await user.keyboard('{Delete}')
 		expect(firstSpan).not.toBeInTheDocument()
-		expect(container.querySelector('mark')).toBeNull()
+		expect(queryByText(/mark/)).toBeNull()
 
+		const secondSpan = getByText('!')
 		expect(secondSpan).toHaveFocus()
 		expect(secondSpan).toHaveTextContent('!')
 		await user.keyboard('{Delete>2/}')

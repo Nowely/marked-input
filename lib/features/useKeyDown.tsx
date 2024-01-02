@@ -22,7 +22,7 @@ export function useKeyDown() {
 
 	function shiftFocusPrev() {
 		const {focus} = store
-		if (focus.isEditable && !focus.isCaretAtBeginning) return
+		if (focus.isSpan && !focus.isCaretAtBeginning) return
 
 		focus.prev.focus()
 		focus.setCaretToEnd()
@@ -30,18 +30,18 @@ export function useKeyDown() {
 
 	function shiftFocusNext() {
 		const {focus} = store
-		if (focus.isEditable && !focus.isCaretAtEnd) return
+		if (focus.isSpan && !focus.isCaretAtEnd) return
 
 		focus.next.focus()
 	}
 
 	function deleteSelfMark() {
-		if (!store.focus.isEditable)
+		if (store.focus.isMark)
 			deleteMark('self', store)
 	}
 
 	function deletePrevMark(event: KeyboardEvent) {
-		if (store.focus.isEditable && store.focus.isCaretAtBeginning && store.focus.prev.target) {
+		if (store.focus.isSpan && store.focus.isCaretAtBeginning && store.focus.prev.target) {
 			event.preventDefault()
 			deleteMark('prev', store)
 		}
@@ -50,7 +50,7 @@ export function useKeyDown() {
 	//TODO pass focus
 	//TODO on && !store.focus.next.isEditable remove first symbol
 	function deleteNextMark(event: KeyboardEvent) {
-		if (store.focus.isEditable && store.focus.isCaretAtEnd && store.focus.next.target) {
+		if (store.focus.isSpan && store.focus.isCaretAtEnd && store.focus.next.target) {
 			event.preventDefault()
 			deleteMark('next', store)
 		}

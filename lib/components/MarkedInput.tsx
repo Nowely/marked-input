@@ -15,11 +15,13 @@ export interface MarkedInputProps<T = MarkStruct> {
 	/**
 	 * Annotated text with markups for mark
 	 */
-	value: string
+	value?: string
+	/** Default value */
+	defaultValue?: string
 	/**
 	 * Change event
 	 */
-	onChange: (value: string) => void
+	onChange?: (value: string) => void
 	/**
 	 * Component that used for render markups
 	 */
