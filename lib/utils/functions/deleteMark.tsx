@@ -23,5 +23,5 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	store.recovery = {anchor: caretAnchor.prev, caret}
 
-	store.props.onChange(toString(store.tokens, store.props.options))
+	store.props.onChange?.(toString(store.tokens, store.props.options))
 }

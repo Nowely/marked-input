@@ -8,6 +8,9 @@ export default {
 	title: 'MarkedInput',
 	tags: ['autodocs'],
 	component: MarkedInput,
+	args: {
+
+	}
 } satisfies Meta<typeof MarkedInput>
 
 type Story = StoryObj<typeof MarkedInput<MarkStruct>>

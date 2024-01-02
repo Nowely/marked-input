@@ -37,10 +37,10 @@ export const Removable = () => {
 const Abbr = () => {
 	const {label, value, ref, change} = useMark()
 
-	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
-		const label = e.currentTarget.textContent ?? ''
-		change({label, value}, {silent: true})
-	}
+	useEffect(() => {
+		if (ref.current)
+			ref.current.textContent = label
+	}, [])
 
 	return (
 		<abbr
@@ -51,9 +51,6 @@ const Abbr = () => {
 				outline: 'none',
 				whiteSpace: 'pre-wrap'
 			}}
-			suppressContentEditableWarning
-			onInput={handleInput}
-			children={label}
 		/>
 	)
 }

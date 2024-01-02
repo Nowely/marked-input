@@ -94,6 +94,10 @@ export class NodeProxy {
 		return
 	}
 
+	get isFocused() {
+		return this.target === document.activeElement
+	}
+
 	clear() {
 		this.target = undefined
 	}

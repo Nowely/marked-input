@@ -3,66 +3,70 @@ import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
 import {useState} from 'react'
-import {Marked} from 'storybook/stories/Base.stories'
+import {Default as DefaultStory} from 'storybook/stories/Base.stories'
 import {Focusable, Removable} from 'storybook/stories/Dynamic.stories'
 import {describe, expect, it, vi} from 'vitest'
+import Meta from '../../storybook/stories/Base.stories'
+import {composeStory} from '../_utils/composeStory'
 
 export const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
 	const [value, setValue] = useState(initial)
-	return <MarkedInput trigger="selectionChange" Mark={props => <mark>{props.label}</mark>} value={value}
-						onChange={setValue} options={[{
-		markup: markup ?? '@[__label__](__value__)', data: ['Item']
-	}]}/>
+	return <MarkedInput
+		trigger="selectionChange"
+		Mark={props => <mark>{props.label}</mark>}
+		value={value}
+		onChange={setValue}
+		options={[{markup: markup ?? '@[__label__](__value__)', data: ['Item']}]}
+	/>
 }
 
+const Default = composeStory(Meta, DefaultStory)
+
 describe(`Component: ${MarkedInput.name}`, () => {
-	it('should render', () => {
-		render(<Marked/>)
-	})
+	it('should render', () => render(<Default/>))
 
 	it('should support the "Backspace" button', async () => {
-		const {getByText, queryByText} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
-		const secondSpan = getByText('!')
-		//Used for focused
-		await user.type(secondSpan, '{ArrowRight}')
-		expect(secondSpan).toHaveFocus()
+		//Focus
+		const tailSpan = getByText('!')
+		await user.pointer({target: tailSpan, keys: '[MouseLeft]'})
+		expect(tailSpan).toHaveFocus()
 
+		//Remove last span
 		await user.keyboard('{Backspace}')
-		expect(secondSpan).toHaveTextContent('')
+		expect(tailSpan).toHaveTextContent('')
 
-		expect(getByText(/mark/)).toBeInTheDocument()
+		//Remove mark
+		const mark = getByText(/mark/)
+		expect(mark).toBeInTheDocument()
 		await user.keyboard('{Backspace}')
-		expect(secondSpan).not.toBeInTheDocument()
-		expect(queryByText(/mark/)).toBeNull()
+		expect(mark).not.toBeInTheDocument()
+		expect(tailSpan).not.toBeInTheDocument()
 
-		const firstSpan = getByText(/Hello/)
-		expect(firstSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
-		expect(firstSpan).toHaveFocus()
-
+		// Remove first span
+		const headSpan = getByText(/Hello/)
+		expect(headSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
+		expect(headSpan).toHaveFocus()
 		await user.keyboard('{Backspace>7/}')
-
-		expect(firstSpan).toHaveTextContent('')
+		expect(headSpan).toHaveTextContent('')
 	})
 
-	it.only('should support the "Delete" button', async () => {
-		const {getByText, queryByText, debug} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+	it('should support the "Delete" button', async () => {
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
 		const firstSpan = getByText(/Hello/)
-		//Used for focused
-		//debug()
-		//await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
-		await user.pointer({target: firstSpan, offset: 0})
-		//expect(firstSpan).toHaveFocus()
+		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
+		expect(firstSpan).toHaveFocus()
 
 		await user.keyboard('{Delete>6/}')
-		debug()
 		expect(firstSpan).toHaveTextContent('')
 
-		expect(getByText(/mark/)).toBeInTheDocument()
+		const mark = getByText(/mark/)
+		expect(mark).toBeInTheDocument()
 		await user.keyboard('{Delete}')
+		expect(mark).not.toBeInTheDocument()
 		expect(firstSpan).not.toBeInTheDocument()
-		expect(queryByText(/mark/)).toBeNull()
 
 		const secondSpan = getByText('!')
 		expect(secondSpan).toHaveFocus()
@@ -71,17 +75,20 @@ describe(`Component: ${MarkedInput.name}`, () => {
 		expect(secondSpan).toHaveTextContent('')
 	})
 
+	//TODO mark focus
 	it('should support focus changing', async () => {
-		const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
-		const [firstSpan, secondSpan] = container.querySelectorAll('span')
-		const firstSpanLength = firstSpan.textContent?.length ?? 0
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
 		//Used for focused
-		await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
+		const firstSpan = getByText(/Hello/)
+		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
 		expect(firstSpan).toHaveFocus()
 
+		const secondSpan = getByText('!')
+		const firstSpanLength = firstSpan.textContent?.length ?? 0
 		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		expect(secondSpan).toHaveFocus()
+
 
 		await user.keyboard(`{ArrowLeft>1/}`)
 		expect(firstSpan).toHaveFocus()
@@ -93,12 +100,13 @@ describe(`Component: ${MarkedInput.name}`, () => {
 		document.addEventListener = vi.fn((event, callback) => events[event] = callback)
 		document.removeEventListener = vi.fn((event, callback) => delete events[event])
 
-		const {getByText, findByText} = render(<Mark2 initial="@ @[mark](1)!"/>)
+		const {getByText, findByText} = render(<Default
+			trigger="selectionChange" defaultValue="@ @[mark](1)!"
+			options={[{markup: '@[__label__](__value__)', data: ['Item']}]}
+		/>)
 		const span = getByText(/@/i)
 
-		//Used for focused
-		await user.type(span, '{ArrowLeft}', {initialSelectionStart: 0})
-		expect(span).toHaveFocus()
+		await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
 		await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
 
 		await act(() => {
@@ -110,12 +118,12 @@ describe(`Component: ${MarkedInput.name}`, () => {
 	})
 
 	it('should correct process an annotation type', async () => {
-		const {container, queryByText} = render(<Mark2 initial=""/>)
+		const {container, queryByText} = render(<Default defaultValue=""/>)
 		const [span] = container.querySelectorAll('span')
 		expect(span).toHaveTextContent('')
 		await user.type(span, '@[[mark](1)')
-		expect(await queryByText('@[mark](1)')).toBeNull()
-		expect(await queryByText('mark')).toBeInTheDocument()
+		expect(queryByText('@[mark](1)')).toBeNull()
+		expect(queryByText('mark')).toBeInTheDocument()
 	})
 
 	it('should support ref focusing target', async () => {
@@ -125,9 +133,7 @@ describe(`Component: ${MarkedInput.name}`, () => {
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
 		const firstAbbrLength = firstAbbr.textContent?.length ?? 0
 
-		//Used for focused
-		await user.type(firstSpan, '{ArrowLeft}', {initialSelectionStart: 0})
-		expect(firstSpan).toHaveFocus()
+		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
 
 		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		expect(firstAbbr).toHaveFocus()

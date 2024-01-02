@@ -20,19 +20,29 @@ export function useKeyDown() {
 
 	useListener('keydown', selectAllText, [])
 
-	function shiftFocusPrev() {
+	function shiftFocusPrev(event: KeyboardEvent) {
 		const {focus} = store
-		if (focus.isSpan && !focus.isCaretAtBeginning) return
-
-		focus.prev.focus()
-		focus.setCaretToEnd()
+		if (focus.isMark && !focus.isEditable || focus.isCaretAtBeginning) {
+			const prev = focus.prev
+			prev.focus()
+			if (!prev.isFocused) {
+				prev.prev.focus()
+				event.preventDefault()
+			}
+			focus.setCaretToEnd()
+		}
 	}
 
-	function shiftFocusNext() {
+	function shiftFocusNext(event: KeyboardEvent) {
 		const {focus} = store
-		if (focus.isSpan && !focus.isCaretAtEnd) return
-
-		focus.next.focus()
+		if (focus.isMark && !focus.isEditable || focus.isCaretAtEnd) {
+			const next = focus.next
+			next.focus()
+			if (!next.isFocused) {
+				next.next.focus()
+				event.preventDefault()
+			}
+		}
 	}
 
 	function deleteSelfMark() {
