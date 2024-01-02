@@ -22,7 +22,9 @@ export type {
 
 	label,
 	value,
-	Listener
+	Listener,
+
+	EventKey,
 } from './types'
 
 export {SystemEvent} from './constants'

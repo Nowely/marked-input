@@ -53,6 +53,12 @@ export class NodeProxy {
 		return [...this.target.parentElement.children].indexOf(this.target)
 	}
 
+	get caret() {
+		if (this.target)
+			return Caret.getCaretIndex(this.target)
+		return -1
+	}
+
 	set caret(value: number) {
 		if (this.target)
 			Caret.trySetIndex(this.target, value)

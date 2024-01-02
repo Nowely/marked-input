@@ -39,12 +39,12 @@ export const DefaultOptions = [{
 export const wordRegex = new RegExp(/^\w*/)
 
 export const SystemEvent = {
-	STORE_UPDATED: Symbol() as EventKey<Store>,
-	ClearTrigger: Symbol() as EventKey<undefined>,
-	CheckTrigger: Symbol() as EventKey<undefined>,
-	Change: Symbol() as EventKey<undefined>,
-	Parse: Symbol() as EventKey<undefined>,
-	Delete: Symbol() as EventKey<{ node: NodeProxy | null}>,
+	STORE_UPDATED: Symbol() as EventKey,
+	ClearTrigger: Symbol() as EventKey,
+	CheckTrigger: Symbol() as EventKey,
+	Change: Symbol() as EventKey,
+	Parse: Symbol() as EventKey,
+	Delete: Symbol() as EventKey,
 	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
 }
 

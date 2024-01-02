@@ -13,7 +13,7 @@ export function useStore<T, >(selector?: (store: Store) => T, byStruct?: boolean
 	assertNonNullable(store)
 
 	const [value, setValue] = useState(() => selector?.(store))
-	useListener(SystemEvent.STORE_UPDATED, store => {
+	useListener(SystemEvent.STORE_UPDATED, () => {
 		setValue(value => {
 			const newValue = selector?.(store)
 			if (byStruct && shallow(value, newValue)) return value

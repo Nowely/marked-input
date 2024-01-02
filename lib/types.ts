@@ -110,7 +110,7 @@ export type OverlayTrigger =
 	| 'selectionChange'
 	| 'none';
 
-export interface EventKey<T> extends Symbol {}
+export interface EventKey<T = undefined> extends Symbol {}
 
 
 export type DefaultedProps = WithRequired<MarkedInputProps, 'options' | 'trigger'>
