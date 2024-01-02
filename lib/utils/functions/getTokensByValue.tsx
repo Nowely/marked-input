@@ -30,7 +30,7 @@ export function getTokensByValue(store: Store) {
 			return store.tokens.toSpliced(updatedIndex2, 1, ...tokens3)
 		default:
 			//Parse all string
-			return Parser.split(value, options)
+			return Parser.split(value ?? '', options)
 	}
 }
 

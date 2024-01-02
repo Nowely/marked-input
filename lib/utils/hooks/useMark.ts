@@ -33,7 +33,7 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 	const [label, setLabel] = useState<string>(node.label)
 	const [value, setValue] = useState<string | undefined>(node.value)
 
-	const change = useCallback((props: MarkStruct, node: ChildNode, options?: { silent: boolean }) => {
+	const change = useCallback((props: MarkStruct, options?: { silent: boolean }) => {
 		if (!options?.silent) {
 			setLabel(props.label)
 			setValue(props.value)
@@ -45,10 +45,10 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T>
 	const remove = useCallback(() => {
 		setLabel('')
 		setValue(undefined)
-		store.bus.send(SystemEvent.Delete, {node})
+		store.bus.send(SystemEvent.Delete)
 	}, [])
 
-	const ref = useRef<HTMLDivElement>()
+	const ref = useRef<HTMLDivElement>() as unknown as RefObject<T>
 
-	return {label, value, change, remove, readOnly, ref: ref as RefObject<T>}
+	return {label, value, change, remove, readOnly, ref}
 }
