@@ -13,7 +13,7 @@ const HelloI = `${Hello}${I}`
 const IHello = `${I}${Hello}`
 
 //TODO process Similar start such as HEro and HEllo
-describe.only(`Utility: preparcer`, () => {
+describe(`Utility: preparcer`, () => {
 
 	it('should work on equal', () =>
 		expect(findGap(Hello, Hello)).toMatchObject({}))
