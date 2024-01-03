@@ -1,31 +1,30 @@
 import {memo} from 'react'
-import {DefaultClass} from '../constants'
-import {NodeProvider, useStore} from '../utils'
-import {useSelector} from '../utils/useSelector'
-import {EditableSpan} from './EditableSpan'
-import {getChildProps} from '../utils/getChildProps'
-import {Piece} from './Piece'
-import {isAnnotated} from "../utils/isAnnotated";
+import {DefaultClass, SystemEvent} from '../constants'
+import {useListener} from '../utils/hooks/useListener'
+import {useStore} from '../utils/hooks/useStore'
+import {Token} from './Token'
 
+//TODO fix updating0
 export const Container = memo(() => {
-	const store = useStore()
-	const {className, style, pieces} = useSelector(state => ({
-		className: state.className ? DefaultClass + ' ' + state.className : DefaultClass,
-		style: state.style,
-		pieces: state.pieces,
+	const {className, style, refs, tokens, bus, key} = useStore(store => ({
+		className: store.props.className ? DefaultClass + ' ' + store.props.className : DefaultClass,
+		style: store.props.style,
+		refs: store.refs,
+		tokens: store.tokens,
+		bus: store.bus,
+		key: store.key,
 	}), true)
 
-	const divOverride = useSelector(getChildProps('div'), true)
+	//TODO
+	//const divOverride = useStore(getChildProps('div'), true)
+
+	useListener('input', e => {
+		bus.send(SystemEvent.Change)
+	}, [])
 
 	return (
-		<div {...divOverride} ref={store.containerRef} className={className} style={style}>
-			{pieces.toArray().map((node) =>
-				<NodeProvider key={node.key} value={node}>
-					{
-						isAnnotated(node.mark) ? <Piece/> : <EditableSpan/>
-					}
-				</NodeProvider>
-			)}
+		<div /*{...divOverride}*/ ref={refs.container} className={className} style={style}>
+			{tokens.map(token => <Token key={key.get(token)} mark={token}/>)}
 		</div>
 	)
 })

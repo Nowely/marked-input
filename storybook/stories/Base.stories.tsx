@@ -1,4 +1,4 @@
-import {Meta} from '@storybook/react'
+import {Meta, StoryObj} from '@storybook/react'
 import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
@@ -8,34 +8,33 @@ export default {
 	title: 'MarkedInput',
 	tags: ['autodocs'],
 	component: MarkedInput,
+	args: {
+
+	}
 } satisfies Meta<typeof MarkedInput>
+
+type Story = StoryObj<typeof MarkedInput<MarkStruct>>
 
 const Mark = (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
-/* CSF 3.0
-export const Abc = {
+export const Default: Story = {
 	args: {
-		Mark: (props: MarkStruct) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
-		value: 'Hello, clickable marked @[world](Hello! Hello!)!',
+		Mark: (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		defaultValue: 'Hello, clickable marked @[world](Hello! Hello!)!',
 	}
-}*/
-
-export const Marked = () => {
-	const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
-	return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
 }
 
-const Primary: Markup = '@[__label__](primary:__value__)'
-const Default: Markup = '@[__label__](default:__value__)'
+const PrimaryMarkup: Markup = '@[__label__](primary:__value__)'
+const DefaultMarkup: Markup = '@[__label__](default:__value__)'
 
 const ConfiguredMarkedInput = createMarkedInput({
 	Mark: Button,
 	options: [{
-		markup: Primary,
+		markup: PrimaryMarkup,
 		data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
 		initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
 	}, {
-		markup: Default,
+		markup: DefaultMarkup,
 		trigger: '/',
 		data: ['Seventh', 'Eight', 'Ninth'],
 		initMark: ({label}) => ({label})
@@ -49,7 +48,7 @@ export const Configured = () => {
 		'For found mark used @[annotations](default:123).'
 	)
 
-	const displayText = denote(value, mark => mark.label, Primary, Default)
+	const displayText = denote(value, mark => mark.label, PrimaryMarkup, DefaultMarkup)
 
 	return (
 		<>
@@ -69,7 +68,7 @@ export const Configured = () => {
 	)
 }
 
-export const WithoutMark = () => {
+export const Autocomplete = () => {
 	const [value, setValue] = useState('Hello, clickable marked @world!')
 	return (
 		<MarkedInput value={value} onChange={setValue} options={[{

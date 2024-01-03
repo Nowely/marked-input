@@ -1,7 +1,8 @@
-import {NumberedOption} from './types'
-import LinkedList from './utils/LinkedList'
+import {EventKey, MarkStruct, NodeData, Option, OverlayMatch} from './types'
+import {NodeProxy} from './utils/classes/NodeProxy'
+import type {Store} from './utils/classes/Store'
 
-export enum KEY {
+export enum KEYBOARD {
 	// Navigation Keys
 	UP = 'ArrowUp',
 	DOWN = 'ArrowDown',
@@ -26,29 +27,28 @@ export enum KEY {
 	ESC = 'Escape'
 }
 
-export const EmptyFunc = () => {
-}
-
 export const DefaultClass = 'mk-input'
 
-export const DefaultOptionProps: NumberedOption = {
+export const DefaultOptions = [{
 	trigger: '@',
 	markup: '@[__label__](__value__)',
 	data: [],
-	index: 0,
-}
+}] satisfies Option[]
 
 
 export const wordRegex = new RegExp(/^\w*/)
 
-export const EmptyList = LinkedList.from([])
+export const SystemEvent = {
+	STORE_UPDATED: Symbol() as EventKey,
+	ClearTrigger: Symbol() as EventKey,
+	CheckTrigger: Symbol() as EventKey,
+	Change: Symbol() as EventKey,
+	Parse: Symbol() as EventKey,
+	Delete: Symbol() as EventKey,
+	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
+}
 
-export enum SystemEvent {
-	Change,
-	Delete,
-	CheckTrigger,
-	ClearTrigger,
-	Trigger,
-	Select,
-	State,
+export enum PLACEHOLDER {
+	LABEL = '__label__',
+	VALUE = '__value__',
 }

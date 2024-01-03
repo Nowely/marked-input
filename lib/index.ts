@@ -1,13 +1,12 @@
 export {MarkedInput} from './components/MarkedInput'
-export {denote} from './utils'
-export {createMarkedInput} from './utils/createMarkedInput'
-export {useMark} from './utils/useMark'
-export {useOverlay} from './utils/useOverlay'
-export {useListener} from './utils/useListener'
+export {createMarkedInput} from './utils/functions/createMarkedInput'
+export {useMark} from './utils/hooks/useMark'
+export {useOverlay} from './utils/hooks/useOverlay'
+export {useListener} from './utils/hooks/useListener'
 
 export type {MarkedInputProps, MarkedInputComponent} from './components/MarkedInput'
-export type {MarkHandler} from './utils/useMark'
-export type {OverlayHandler} from './utils/useOverlay'
+export type {MarkHandler} from './utils/hooks/useMark'
+export type {OverlayHandler} from './utils/hooks/useOverlay'
 export type {
 	MarkedInputHandler,
 	Markup,
@@ -23,9 +22,12 @@ export type {
 
 	label,
 	value,
-	Listener
+	Listener,
+
+	EventKey,
 } from './types'
 
 export {SystemEvent} from './constants'
-export {annotate} from "./utils/annotate";
-export {PLACEHOLDER} from './PLACEHOLDER'
+export {annotate} from "./utils/functions/annotate";
+export {PLACEHOLDER} from "./constants";
+export {denote} from './utils/functions/denote'

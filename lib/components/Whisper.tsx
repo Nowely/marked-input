@@ -1,13 +1,18 @@
-import {memo} from 'react'
-import {useSelector} from '../utils/useSelector'
+import {memo, useEffect} from 'react'
+import {useStore} from '../utils/hooks/useStore'
 import {Suggestions} from './Suggestions'
 
 export const Whisper = memo(() => {
-	// @ts-ignore TODO
-	const key = useSelector(state => state.overlayMatch?.option.index)
-	const Overlay = useSelector(state => state.Overlay ?? Suggestions)
+	const store = useStore()
+	const key = useStore(state => state.overlayMatch ? state.key.get(state.overlayMatch.option) : undefined)
+	const Overlay = useStore(state => state.props.Overlay ?? Suggestions)
 
-	return key !== undefined ? <Overlay key={key}/> : null
+	useEffect(() => {
+		store.input.target = store.focus.target
+	}, [key])
+
+	if (key)
+		return <Overlay key={key}/>
 })
 
 Whisper.displayName = 'Whisper'
