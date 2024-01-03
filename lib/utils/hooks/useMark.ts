@@ -1,7 +1,7 @@
 import {RefObject, useCallback, useEffect, useRef, useState} from 'react'
 import {SystemEvent} from '../../constants'
 import {MarkStruct} from '../../types'
-import {useNode} from '../providers/NodeProvider'
+import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 
 export interface MarkHandler<T> extends MarkStruct {
@@ -26,8 +26,7 @@ export interface MarkHandler<T> extends MarkStruct {
 
 export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
 	const store = useStore()
-	//const [node] = useState(() => store.tokens[store.currentIndex])
-	const node = useNode()
+	const node = useToken()
 	const readOnly = useStore(state => state.props.readOnly)
 
 	const [label, setLabel] = useState<string>(node.label)

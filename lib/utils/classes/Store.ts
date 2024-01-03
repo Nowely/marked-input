@@ -8,46 +8,38 @@ import {NodeProxy} from './NodeProxy'
 export class Store {
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
-
-	props: DefaultedProps
 	readonly focus = new NodeProxy(undefined, this)
 	//TODO rename to input node?
-
 	readonly input = new NodeProxy(undefined, this)
 
+	props: DefaultedProps
 	tokens: MarkStruct[] = []
-
 	recovery?: Recovery
 
 	readonly refs = {
-		counter: 0,
 		container: createRef<HTMLDivElement>(),
 		overlay: createRef<HTMLElement>()
 	}
 
-	get currentIndex() {
-		return this.refs.counter++ % this.tokens.length
-	}
-
 	previousValue?: string
-
 	overlayMatch?: OverlayMatch
 
-	static create(props: DefaultedProps) {
-		return new Proxy(new Store(props), {
-			set: setHandler
-		})
-	}
+	static create = (props: DefaultedProps) => new Proxy(new Store(props), {set})
 
 	private constructor(props: DefaultedProps) {
 		this.props = props
 	}
 }
 
-function setHandler(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-	if (prop === 'bus'
-		|| prop === 'refs'
-		|| prop === 'focus' || prop === 'currentIndex' || prop === 'input' || prop === 'key') return false
+function set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
+	switch (prop) {
+		case 'bus':
+		case 'refs':
+		case 'focus':
+		case 'input':
+		case 'key':
+			return false
+	}
 
 	target[prop] = newValue
 	target.bus.send(SystemEvent.STORE_UPDATED, receiver)
