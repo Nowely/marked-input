@@ -25,6 +25,8 @@ const Default = composeStory(Meta, DefaultStory)
 describe(`Component: ${MarkedInput.name}`, () => {
 	it('should render', () => render(<Default/>))
 
+	it.todo('should set readOnly on selection')
+
 	it('should support the "Backspace" button', async () => {
 		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 

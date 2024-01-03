@@ -21,6 +21,8 @@ export class Store {
 		overlay: createRef<HTMLElement>()
 	}
 
+	selecting?: boolean
+
 	previousValue?: string
 	overlayMatch?: OverlayMatch
 
@@ -31,7 +33,7 @@ export class Store {
 	}
 }
 
-function set(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
+function set(target: Store, prop: keyof Store, newValue: any, receiver: any): boolean {
 	switch (prop) {
 		case 'bus':
 		case 'refs':

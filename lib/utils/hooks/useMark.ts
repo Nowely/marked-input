@@ -1,6 +1,7 @@
-import {RefObject, useCallback, useEffect, useRef, useState} from 'react'
+import {RefObject, useEffect, useReducer, useRef, useState} from 'react'
 import {SystemEvent} from '../../constants'
 import {MarkStruct} from '../../types'
+import {Store} from '../classes/Store'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 
@@ -13,41 +14,85 @@ export interface MarkHandler<T> extends MarkStruct {
 	 * Change mark.
 	 * @options.silent doesn't change itself label and value, only pass change event.
 	 */
-	change: (props: MarkStruct, options?: { silent: boolean }) => void
+	//change: (props: MarkStruct, options?: { silent: boolean }) => void
 	/**
 	 * Remove itself.
 	 */
-	remove: () => void
+	//remove: () => void
 	/**
 	 * Passed the readOnly prop value
 	 */
 	readOnly?: boolean
 }
 
-export const useMark = <T extends HTMLElement = HTMLElement, >(): MarkHandler<T> => {
+export interface MarkOptions {
+	/**
+	 * @default false
+	 */
+	controlled?: boolean
+}
+
+//TODO subscribe on external
+export const useMark = <T extends HTMLElement = HTMLElement, >(options: MarkOptions = {}): MarkHandlerP<T> => {
 	const store = useStore()
-	const node = useToken()
+	const token = useToken()
+	const ref = useRef<HTMLElement>() as unknown as RefObject<T>
+
+	const [mark] = useState(() => new MarkHandlerP<T>({ref, store, options, token}))
+
+	useUncontrolledInit(ref, options, token)
+
 	const readOnly = useStore(state => state.props.readOnly)
+	useEffect(() => {
+		mark.readOnly = readOnly
+	}, [readOnly])
 
-	const [label, setLabel] = useState<string>(node.label)
-	const [value, setValue] = useState<string | undefined>(node.value)
 
-	const change = useCallback((props: MarkStruct, options?: { silent: boolean }) => {
-		if (!options?.silent) {
-			setLabel(props.label)
-			setValue(props.value)
-		}
+	return mark
+}
 
-		store.bus.send(SystemEvent.Change, {node, mark: {...props}})
+type MarkHandlerPConstruct = { ref: RefObject<HTMLElement>; options: MarkOptions; store: Store; token: MarkStruct }
+
+export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
+	ref: RefObject<HTMLElement>
+	#options: MarkOptions
+	#store: Store
+	#token: MarkStruct
+
+	readOnly?: boolean
+
+	get label() {
+		return this.#token.label
+	}
+
+	set label(value: string) {
+		this.#token.label = value
+		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
+	}
+
+	constructor(param: MarkHandlerPConstruct) {
+		this.ref = param.ref
+		this.#options = param.options
+		this.#store = param.store
+		this.#token = param.token
+	}
+
+	change = (props: MarkStruct) => {
+		this.#token.label = props.label
+		this.#token.value = props.value
+		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
+	}
+
+	remove = () => {
+		/*setLabel('')
+		setValue(undefined)*/
+		this.#store.bus.send(SystemEvent.Delete)
+	}
+}
+
+function useUncontrolledInit(ref: RefObject<HTMLElement>, options: MarkOptions, token: MarkStruct) {
+	useEffect(() => {
+		if (ref.current && !options.controlled)
+			ref.current.textContent = token.label
 	}, [])
-
-	const remove = useCallback(() => {
-		setLabel('')
-		setValue(undefined)
-		store.bus.send(SystemEvent.Delete)
-	}, [])
-
-	const ref = useRef<HTMLDivElement>() as unknown as RefObject<T>
-
-	return {label, value, change, remove, readOnly, ref}
 }

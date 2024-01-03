@@ -5,19 +5,16 @@ import {useStore} from '../utils/hooks/useStore'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
-	const {label, readOnly, ref} = useMark()
+	const mark = useMark()
 	const spanOverride = useStore(getChildProps('span'), true)
+	//TODO this error mark.label = ''
 
-	useEffect(() => {
-		if (ref.current)
-			ref.current.textContent = label
-	}, [])
-
+	
 	return (
 		<span
 			{...spanOverride}
-			ref={ref}
-			contentEditable={!readOnly}
+			ref={mark.ref}
+			contentEditable={!mark.readOnly}
 			onPaste={handlePaste}
 		/>
 	)
