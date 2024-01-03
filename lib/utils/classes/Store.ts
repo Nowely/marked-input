@@ -2,13 +2,17 @@ import {createRef} from 'react'
 import {SystemEvent} from '../../constants'
 import {DefaultedProps, MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
+import {KeyGenerator} from './KeyGenerator'
 import {NodeProxy} from './NodeProxy'
 
 export class Store {
-	props: DefaultedProps
+	readonly bus = new EventBus()
+	readonly key = new KeyGenerator()
 
+	props: DefaultedProps
 	readonly focus = new NodeProxy(undefined, this)
 	//TODO rename to input node?
+
 	readonly input = new NodeProxy(undefined, this)
 
 	tokens: MarkStruct[] = []
@@ -27,8 +31,6 @@ export class Store {
 
 	previousValue?: string
 
-	readonly bus = new EventBus()
-
 	overlayMatch?: OverlayMatch
 
 	static create(props: DefaultedProps) {
@@ -43,7 +45,9 @@ export class Store {
 }
 
 function setHandler(target: Store, prop: keyof Store, newValue: any, receiver: Store): boolean {
-	if (prop === 'bus' || prop === 'refs' || prop === 'focus' || prop === 'currentIndex' || prop === 'input') return false
+	if (prop === 'bus'
+		|| prop === 'refs'
+		|| prop === 'focus' || prop === 'currentIndex' || prop === 'input' || prop === 'key') return false
 
 	target[prop] = newValue
 	target.bus.send(SystemEvent.STORE_UPDATED, receiver)

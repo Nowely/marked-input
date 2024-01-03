@@ -6,7 +6,7 @@ const preview: Preview = {
 		options: {
 			storySort: {
 				method: 'alphabetical',
-				order: ['Base', 'Styled'],
+				order: ['MarkedInput', 'Styled'],
 				locales: 'en-US',
 			}
 		},
