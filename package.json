@@ -21,11 +21,11 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.47.12",
-    "@types/react": "^18.3.3",
-    "@vitejs/plugin-react-swc": "^3.7.1",
+    "@microsoft/api-extractor": "^7.52.8",
+    "@types/react": "^18.3.21",
+    "@vitejs/plugin-react-swc": "^3.9.0",
     "typescript": "^5.3.3",
-    "vite": "^5.4.11",
+    "vite": "^6.3.5",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   },
   "repository": {
