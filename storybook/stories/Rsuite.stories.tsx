@@ -1,9 +1,8 @@
-import {Meta} from '@storybook/react'
-import {MarkedInput, useOverlay, MarkStruct} from 'rc-marked-input'
+import {Meta} from '@storybook/react-vite'
+import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
 import {KEYBOARD} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
-import {Input} from 'rsuite'
-import {Popover, Tag} from 'rsuite'
+import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
 import {withStyle} from '../assets/withStyle'
 

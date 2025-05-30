@@ -1,8 +1,9 @@
-import {Preview} from '@storybook/react'
+import {Preview} from '@storybook/react-vite'
 
 const preview: Preview = {
 	parameters: {
 		controls: {hideNoControlsWarning: true},
+
 		options: {
 			storySort: {
 				method: 'alphabetical',
@@ -10,6 +11,10 @@ const preview: Preview = {
 				locales: 'en-US',
 			}
 		},
+
+		docs: {
+			codePanel: true
+		}
 	}
 }
 

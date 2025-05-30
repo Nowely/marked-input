@@ -1,4 +1,4 @@
-import {Meta, StoryObj} from '@storybook/react'
+import {Meta, StoryObj} from '@storybook/react-vite'
 import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
