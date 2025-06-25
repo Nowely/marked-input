@@ -1,12 +1,11 @@
 import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
+import Meta, {Default as DefaultStory} from 'my-storybook/stories/Base.stories'
+import {Focusable, Removable} from 'my-storybook/stories/Dynamic.stories'
 import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
 import {useState} from 'react'
-import {Default as DefaultStory} from 'storybook/stories/Base.stories'
-import {Focusable, Removable} from 'storybook/stories/Dynamic.stories'
 import {describe, expect, it, vi} from 'vitest'
-import Meta from '../../storybook/stories/Base.stories'
 import {composeStory} from '../_utils/composeStory'
 
 export const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
@@ -166,9 +165,10 @@ describe(`Component: ${MarkedInput.name}`, () => {
 	})
 
 	it('should support editable marks', async () => {
-		const {getByText} = render(<Focusable/>)
+		const {getByText, debug} = render(<Focusable/>)
 
 		await user.type(getByText('world'), '123')
+		//debug()
 
 		expect(getByText('world123')).toBeInTheDocument()
 		expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()

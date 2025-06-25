@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
+import {Configured} from 'my-storybook/stories/Base.stories'
 import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import React, {forwardRef} from 'react'
-import {Configured} from 'storybook/stories/Base.stories'
 import {describe, expect, it, vi} from 'vitest'
 
 
