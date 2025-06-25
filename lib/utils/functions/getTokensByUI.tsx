@@ -1,9 +1,12 @@
-import {Store} from '../classes/Store'
-import {Option} from '../../types'
 import {Parser} from '../classes/Parser/Parser'
+import {Store} from '../classes/Store'
 
+/**
+ * Parse current focused token
+ */
 export function getTokensByUI(store: Store) {
-	const {focus, props: {options}} = store
+	const {focus, props} = store
+	const options = store.props.Mark ? store.props.options : undefined
 	const tokens = Parser.split(focus.content, options)
 
 	if (tokens.length === 1) return store.tokens
