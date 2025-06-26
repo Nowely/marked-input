@@ -1,11 +1,13 @@
 import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
-import {Configured} from 'my-storybook/stories/Base.stories'
+import Meta, {Configured as ConfiguredStory} from 'my-storybook/stories/Base.stories'
 import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import React, {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
+import {composeStory} from '../_utils/composeStory'
 
+const Configured = composeStory(Meta, ConfiguredStory)
 
 describe(`Utility: createMarkedInput`, () => {
 	it('should render', () => {
