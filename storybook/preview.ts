@@ -2,7 +2,10 @@ import {Preview} from '@storybook/react-vite'
 
 const preview: Preview = {
 	parameters: {
-		controls: {hideNoControlsWarning: true},
+		controls: {
+			hideNoControlsWarning: true,
+			expanded: true,
+		},
 
 		options: {
 			storySort: {
