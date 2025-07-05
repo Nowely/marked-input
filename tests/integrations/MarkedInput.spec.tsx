@@ -3,21 +3,10 @@ import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import Meta, {Default as DefaultStory} from 'my-storybook/stories/Base.stories'
 import {Focusable, Removable} from 'my-storybook/stories/Dynamic.stories'
-import {MarkedInput, MarkedInputHandler, Markup} from 'rc-marked-input'
-import {useState} from 'react'
+import {MarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import {describe, expect, it, vi} from 'vitest'
 import {composeStory} from '../_utils/composeStory'
-
-export const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) => {
-	const [value, setValue] = useState(initial)
-	return <MarkedInput
-		trigger="selectionChange"
-		Mark={props => <mark>{props.label}</mark>}
-		value={value}
-		onChange={setValue}
-		options={[{markup: markup ?? '@[__label__](__value__)', data: ['Item']}]}
-	/>
-}
+import {focusAtEnd, focusAtStart} from '../_utils/focus'
 
 const Default = composeStory(Meta, DefaultStory)
 
@@ -29,10 +18,8 @@ describe(`Component: MarkedInput`, () => {
 	it('should support the "Backspace" button', async () => {
 		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
-		//Focus
 		const tailSpan = getByText('!')
-		await user.pointer({target: tailSpan, keys: '[MouseLeft]'})
-		expect(tailSpan).toHaveFocus()
+		await focusAtEnd(tailSpan)
 
 		//Remove last span
 		await user.keyboard('{Backspace}')
@@ -57,8 +44,7 @@ describe(`Component: MarkedInput`, () => {
 		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
 		const firstSpan = getByText(/Hello/)
-		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
-		expect(firstSpan).toHaveFocus()
+		await focusAtStart(firstSpan)
 
 		await user.keyboard('{Delete>6/}')
 		expect(firstSpan).toHaveTextContent('')
@@ -80,10 +66,8 @@ describe(`Component: MarkedInput`, () => {
 	it('should support focus changing', async () => {
 		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 
-		//Used for focused
 		const firstSpan = getByText(/Hello/)
-		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
-		expect(firstSpan).toHaveFocus()
+		await focusAtStart(firstSpan)
 
 		const secondSpan = getByText('!')
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
@@ -134,7 +118,7 @@ describe(`Component: MarkedInput`, () => {
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
 		const firstAbbrLength = firstAbbr.textContent?.length ?? 0
 
-		await user.pointer({target: firstSpan, offset: 0, keys: '[MouseLeft]'})
+		await focusAtStart(firstSpan)
 
 		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		expect(firstAbbr).toHaveFocus()
@@ -165,17 +149,16 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support editable marks', async () => {
-		const {getByText, debug} = render(<Focusable/>)
+		const {getByText} = render(<Focusable/>)
 
 		await user.type(getByText('world'), '123')
-		//debug()
 
 		expect(getByText('world123')).toBeInTheDocument()
 		expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
 	it('should be selectable', async () => {
-		const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+		const {container} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 		const selection = window.getSelection()!
 		expect(selection).not.toBeNull()
 
@@ -211,11 +194,10 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('it should select all text by shortcut "cmd + a"', async () => {
-		const {container} = render(<Mark2 initial="Hello @[mark](1)!"/>)
+		const {container} = render(<Default defaultValue="Hello @[mark](1)!"/>)
 		const [span] = container.querySelectorAll('span')
 
-		//Used for focused
-		await user.type(span, '{ArrowLeft}', {initialSelectionStart: 0})
+		await focusAtStart(span)
 
 		expect(window.getSelection()?.toString()).toBe('')
 
