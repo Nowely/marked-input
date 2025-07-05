@@ -21,7 +21,7 @@ export const Mark2 = ({initial, markup}: { initial: string, markup?: Markup }) =
 
 const Default = composeStory(Meta, DefaultStory)
 
-describe(`Component: ${MarkedInput.name}`, () => {
+describe(`Component: MarkedInput`, () => {
 	it('should render', () => render(<Default/>))
 
 	it.todo('should set readOnly on selection')
