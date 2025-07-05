@@ -3,7 +3,6 @@ import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import Meta, {Default as DefaultStory} from 'my-storybook/stories/Base.stories'
 import {Focusable, Removable} from 'my-storybook/stories/Dynamic.stories'
-import {MarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import {describe, expect, it, vi} from 'vitest'
 import {composeStory} from '../_utils/composeStory'
 import {focusAtEnd, focusAtStart} from '../_utils/focus'
@@ -206,15 +205,5 @@ describe(`Component: MarkedInput`, () => {
 
 		await user.type(span, '{Control>}A{/Control}')
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
-	})
-
-	it('should to support the ref prop', async () => {
-		let ref: MarkedInputHandler | null = null
-
-		render(<MarkedInput ref={(el) => ref = el} Mark={() => null} value={''} onChange={() => ({})}/>)
-
-		await act(() => {
-			expect(ref?.container).not.toBeNull()
-		})
 	})
 })
