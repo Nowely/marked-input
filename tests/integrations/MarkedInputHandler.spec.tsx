@@ -1,11 +1,9 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {MarkedInputHandler} from 'rc-marked-input'
-import Meta, {Default as DefaultStory} from '../../storybook/stories/Base.stories'
-import {composeStory} from '../_utils/composeStory'
+import {Story} from '../_utils/stories'
 
-const Default = composeStory(Meta, DefaultStory)
-
+const {Default} = Story.Base
 
 type UseMarkedInputHandler = {
 	value: MarkedInputHandler | null;

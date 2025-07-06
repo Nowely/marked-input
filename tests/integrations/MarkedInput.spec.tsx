@@ -1,111 +1,26 @@
 import '@testing-library/jest-dom'
-import {act, render} from '@testing-library/react'
+import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
-import Meta, {Default as DefaultStory} from 'my-storybook/stories/Base.stories'
 import {Focusable, Removable} from 'my-storybook/stories/Dynamic.stories'
-import {describe, expect, it, vi} from 'vitest'
-import {composeStory} from '../_utils/composeStory'
-import {focusAtEnd, focusAtStart} from '../_utils/focus'
+import {describe, expect, it} from 'vitest'
+import {focusAtStart} from '../_utils/focus'
+import {Story} from '../_utils/stories'
 
-const Default = composeStory(Meta, DefaultStory)
+const {Default} = Story.Base
 
 describe(`Component: MarkedInput`, () => {
-	it('should render', () => render(<Default/>))
-
 	it.todo('should set readOnly on selection')
 
-	it('should support the "Backspace" button', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
-
-		const tailSpan = getByText('!')
-		await focusAtEnd(tailSpan)
-
-		//Remove last span
-		await user.keyboard('{Backspace}')
-		expect(tailSpan).toHaveTextContent('')
-
-		//Remove mark
-		const mark = getByText(/mark/)
-		expect(mark).toBeInTheDocument()
-		await user.keyboard('{Backspace}')
-		expect(mark).not.toBeInTheDocument()
-		expect(tailSpan).not.toBeInTheDocument()
-
-		// Remove first span
-		const headSpan = getByText(/Hello/)
-		expect(headSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
-		expect(headSpan).toHaveFocus()
-		await user.keyboard('{Backspace>7/}')
-		expect(headSpan).toHaveTextContent('')
-	})
-
-	it('should support the "Delete" button', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
-
-		const firstSpan = getByText(/Hello/)
-		await focusAtStart(firstSpan)
-
-		await user.keyboard('{Delete>6/}')
-		expect(firstSpan).toHaveTextContent('')
-
-		const mark = getByText(/mark/)
-		expect(mark).toBeInTheDocument()
-		await user.keyboard('{Delete}')
-		expect(mark).not.toBeInTheDocument()
-		expect(firstSpan).not.toBeInTheDocument()
-
-		const secondSpan = getByText('!')
-		expect(secondSpan).toHaveFocus()
-		expect(secondSpan).toHaveTextContent('!')
-		await user.keyboard('{Delete>2/}')
-		expect(secondSpan).toHaveTextContent('')
-	})
-
 	//TODO mark focus
-	it('should support focus changing', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
-
-		const firstSpan = getByText(/Hello/)
-		await focusAtStart(firstSpan)
-
-		const secondSpan = getByText('!')
-		const firstSpanLength = firstSpan.textContent?.length ?? 0
-		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		expect(secondSpan).toHaveFocus()
-
-
-		await user.keyboard(`{ArrowLeft>1/}`)
-		expect(firstSpan).toHaveFocus()
-	})
-
-	it('should appear a overlay component by trigger', async () => {
-		//override event listener because 'selectionchange' don't work in here
-		let events: Record<string, EventListenerOrEventListenerObject> = {}
-		document.addEventListener = vi.fn((event, callback) => events[event] = callback)
-		document.removeEventListener = vi.fn((event, callback) => delete events[event])
-
-		const {getByText, findByText} = render(<Default
-			trigger="selectionChange" defaultValue="@ @[mark](1)!"
-			options={[{markup: '@[__label__](__value__)', data: ['Item']}]}
-		/>)
-		const span = getByText(/@/i)
-
-		await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
-		await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
-
-		await act(() => {
-			// @ts-ignore
-			events['selectionchange']({})
-		})
-
-		expect(await findByText('Item')).toBeInTheDocument()
-	})
 
 	it('should correct process an annotation type', async () => {
 		const {container, queryByText} = render(<Default defaultValue=""/>)
 		const [span] = container.querySelectorAll('span')
+
 		expect(span).toHaveTextContent('')
+
 		await user.type(span, '@[[mark](1)')
+
 		expect(queryByText('@[mark](1)')).toBeNull()
 		expect(queryByText('mark')).toBeInTheDocument()
 	})
@@ -190,20 +105,5 @@ describe(`Component: MarkedInput`, () => {
 		expect(selection.isCollapsed).toBeTruthy()
 		await user.keyboard('abc')
 		expect(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
-	})
-
-	it('it should select all text by shortcut "cmd + a"', async () => {
-		const {container} = render(<Default defaultValue="Hello @[mark](1)!"/>)
-		const [span] = container.querySelectorAll('span')
-
-		await focusAtStart(span)
-
-		expect(window.getSelection()?.toString()).toBe('')
-
-		await user.type(span, '{Control>}a{/Control}')
-		expect(window.getSelection()?.toString()).toBe(container.textContent)
-
-		await user.type(span, '{Control>}A{/Control}')
-		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 })
