@@ -1,17 +1,10 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect} from 'vitest'
-import {
-	antStories,
-	baseStories,
-	dynamicStories,
-	materialStories,
-	overlayStories,
-	rsuiteStories
-} from '../_utils/stories'
+import {Story} from '../_utils/stories'
 
-
-const getTests = ([name, Story]: [any, any]) =>
+//TODO correct type
+const getTests = ([name, Story]: [string, any]) =>
 	it(`Story ${name}`, async () => {
 		const {container} = render(<Story/>)
 		expect(container.textContent?.length).toBeTruthy()
@@ -19,26 +12,26 @@ const getTests = ([name, Story]: [any, any]) =>
 
 describe('Component: stories', () => {
 	describe.todo('Ant stories', () => {
-		Object.entries(antStories).map(getTests)
+		Object.entries(Story.Ant).map(getTests)
 	})
 
 	describe('Base stories', () => {
-		Object.entries(baseStories).map(getTests)
+		Object.entries(Story.Base).map(getTests)
 	})
 
 	describe('Dynamic stories', () => {
-		Object.entries(dynamicStories).map(getTests)
+		Object.entries(Story.Dynamic).map(getTests)
 	})
 
 	describe('Material stories', () => {
-		Object.entries(materialStories).map(getTests)
+		Object.entries(Story.Material).map(getTests)
 	})
 
 	describe('Overlay stories', () => {
-		Object.entries(overlayStories).map(getTests)
+		Object.entries(Story.Overlay).map(getTests)
 	})
 
 	describe.todo('Rsuite stories', () => {
-		Object.entries(rsuiteStories).map(getTests)
+		Object.entries(Story.Rsuite).map(getTests)
 	})
 })

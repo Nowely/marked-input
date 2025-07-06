@@ -6,18 +6,11 @@ import * as MaterialStories from '../../storybook/stories/Material.stories'
 import * as OverlayStories from '../../storybook/stories/Overlay.stories'
 import * as RsuiteStories from '../../storybook/stories/Rsuite.stories'
 
-export const antStories = composeStories(AntStories)
-export const baseStories = composeStories(BaseStories)
-export const dynamicStories = composeStories(DynamicStories)
-export const materialStories = composeStories(MaterialStories)
-export const overlayStories = composeStories(OverlayStories)
-export const rsuiteStories = composeStories(RsuiteStories)
-
 export const Story = {
-	Ant: antStories,
-	Base: baseStories,
-	Dynamic: dynamicStories,
-	Material: materialStories,
-	Overlay: overlayStories,
-	Rsuite: rsuiteStories,
+	Ant: composeStories(AntStories),
+	Base: composeStories(BaseStories),
+	Dynamic: composeStories(DynamicStories),
+	Material: composeStories(MaterialStories),
+	Overlay: composeStories(OverlayStories),
+	Rsuite: composeStories(RsuiteStories),
 }
