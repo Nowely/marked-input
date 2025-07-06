@@ -18,13 +18,13 @@ export const DefaultOverlay = () => {
 const Overlay = () => <h1>I am the overlay</h1>
 export const CustomOverlay = () => {
 	const [value, setValue] = useState('Hello, custom overlay by trigger @!')
-	return <MarkedInput Overlay={Overlay} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}/>
 }
 
-//TODO fix if
 export const CustomTrigger = () => {
 	const [value, setValue] = useState('Hello, custom overlay by trigger /!')
-	return <MarkedInput Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]}/>
+	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}
+						options={[{trigger: '/'}]}/>
 }
 
 const Tooltip = () => {
