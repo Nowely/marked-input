@@ -5,8 +5,26 @@ import {describe, expect, it, vi} from 'vitest'
 import {Story} from '../_utils/stories'
 
 const {Default} = Story.Base
+const {DefaultOverlay} = Story.Overlay
 
 describe('API: Overlay and Triggers', () => {
+	//TODO not working
+	it.todo('should typed with default values of options', async () => {
+		const {container, getByText} = render(<DefaultOverlay options={[]}/>)
+
+		await user.type(container.firstElementChild?.firstElementChild, 'abc')
+
+		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+	})
+
+	it('should typed with default values of options', async () => {
+		const {container, getByText} = render(<DefaultOverlay/>)
+
+		await user.type(container.firstElementChild?.firstElementChild, 'abc')
+
+		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+	})
+
 	it('should appear a overlay component by trigger', async () => {
 		//override event listener because 'selectionchange' don't work in here
 		let events: Record<string, EventListenerOrEventListenerObject> = {}

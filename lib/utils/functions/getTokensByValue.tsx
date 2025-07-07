@@ -1,8 +1,9 @@
+import {DefaultOptions} from '../../constants'
+import {isAnnotated} from '../checkers/isAnnotated'
+import {Parser} from '../classes/Parser/Parser'
 import {Store} from '../classes/Store'
 import {findGap} from './findGap'
 import {getClosestIndexes} from './getClosestIndexes'
-import {Parser} from '../classes/Parser/Parser'
-import {isAnnotated} from '../checkers/isAnnotated'
 
 export function getTokensByValue(store: Store) {
 	const {props: {value, options}} = store
@@ -32,7 +33,9 @@ export function getTokensByValue(store: Store) {
 		}
 		default:
 			//Parse all string
-			return Parser.split(value ?? '', options)
+			//TODO temp hack
+			const optionsWithDefault = options?.map((option) => Object.assign({}, DefaultOptions[0], option))
+			return Parser.split(value ?? '', optionsWithDefault)
 	}
 }
 
@@ -50,7 +53,9 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 		span += store.tokens[index].label
 	}
 
-	return Parser.split(span, store.props.options)
+	//TODO temp hack
+	const optionsWithDefault = store.props.options?.map((option) => Object.assign({}, DefaultOptions[0], option))
+	return Parser.split(span, optionsWithDefault)
 }
 
 function getRangeMap(store: Store): number[] {
