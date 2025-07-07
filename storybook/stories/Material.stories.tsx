@@ -5,7 +5,7 @@ import {MaterialMentions} from '../assets/MaterialMentions'
 import {Text} from '../assets/Text'
 
 export default {
-	title: 'MarkedInput/Material',
+	title: 'Styled/Material',
 	component: MarkedInput,
 }
 

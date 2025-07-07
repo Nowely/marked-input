@@ -1,14 +1,13 @@
-import {Meta} from '@storybook/react'
-import {MarkedInput, useOverlay, MarkStruct} from 'rc-marked-input'
-import {KEY} from 'rc-marked-input/constants'
+import {Meta} from '@storybook/react-vite'
+import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
+import {KEYBOARD} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
-import {Input} from 'rsuite'
-import {Popover, Tag} from 'rsuite'
+import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
 import {withStyle} from '../assets/withStyle'
 
 export default {
-	title: 'MarkedInput/Rsuite',
+	title: 'Styled/Rsuite',
 	component: MarkedInput,
 	decorators: [withStyle('rsuite.min.css')],
 } as Meta<typeof MarkedInput>
@@ -18,7 +17,7 @@ const Overlay = () => {
 
 	useEffect(() => {
 		const handleEnter = (ev: KeyboardEvent) => {
-			if (ev.key === KEY.ENTER) {
+			if (ev.key === KEYBOARD.ENTER) {
 				ev.preventDefault()
 				select({label: match.value})
 				close()

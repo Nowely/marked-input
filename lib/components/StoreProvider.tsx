@@ -1,21 +1,14 @@
 import {ReactNode, useEffect, useState} from 'react'
-import {extractOptions, StoreContext} from '../utils'
-import {Store} from '../utils/Store'
-import {MarkedInputProps} from './MarkedInput'
+import {DefaultedProps} from '../types'
+import {Store} from '../utils/classes/Store'
+import {StoreContext} from '../utils/providers/StoreContext'
 
-export const StoreProvider = ({props, children}: { props: MarkedInputProps, children: ReactNode }) => {
-	const [store] = useState(Store.create(props))
-	useStateUpdating(props, store)
-	return (
-		<StoreContext.Provider value={store}>
-			{children}
-		</StoreContext.Provider>
-	)
-}
+export const StoreProvider = ({props, children}: { props: DefaultedProps, children: ReactNode }) => {
+	const [store] = useState(() => Store.create(props))
 
+	useEffect(() => {
+		store.props = props
+	})
 
-function useStateUpdating(props: MarkedInputProps, store: Store) {
-	const {options, ...other} = props
-	useEffect(() => store.setState({options: extractOptions(options)}), [options])
-	useEffect(() => store.setState({...other}))
+	return <StoreContext.Provider value={store} children={children}/>
 }

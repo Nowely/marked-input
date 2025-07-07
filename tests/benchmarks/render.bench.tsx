@@ -1,4 +1,4 @@
-import {composeStories} from '@storybook/react'
+import {composeStories} from '@storybook/react-vite'
 import {render} from '@testing-library/react'
 import * as BaseStories from 'storybook/stories/Base.stories'
 import * as DynamicStories from 'storybook/stories/Dynamic.stories'

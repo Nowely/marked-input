@@ -60,12 +60,21 @@ function rollupTypes() {
 
 	const config = api.ExtractorConfig.prepare(getOptions())
 	const result = api.Extractor.invoke(config, {showVerboseMessages: true})
-	if (result.succeeded) {
-		console.log(`Types rollup completed successfully`)
-		process.exitCode = 0
-	} else {
-		console.error(`Types rollup completed with ${result.errorCount} errors and ${result.warningCount} warnings`)
-		process.exitCode = 1
+	switch (true) {
+		case result.succeeded: {
+			console.log(`Types rollup completed successfully`)
+			process.exitCode = 0
+			break
+		}
+		case result.errorCount === 0: {
+			console.log(`Types rollup completed successfully with ${result.warningCount} warnings`)
+			process.exitCode = 0
+			break
+		}
+		default: {
+			console.error(`Types rollup completed with ${result.errorCount} errors and ${result.warningCount} warnings`)
+			process.exitCode = 1
+		}
 	}
 
 

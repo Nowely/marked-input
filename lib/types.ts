@@ -1,11 +1,10 @@
 import {FunctionComponent, RefObject} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
+import {PLACEHOLDER} from './constants'
+import {NodeProxy} from './utils/classes/NodeProxy'
 
-import {PLACEHOLDER} from './PLACEHOLDER'
-import LinkedList from './utils/LinkedList'
 
 export type NodeData = {
-	key: number
 	mark: MarkStruct
 	ref: RefObject<HTMLElement>
 }
@@ -21,11 +20,7 @@ export type value = `${string}${PLACEHOLDER.VALUE}${string}`
 export type Markup = `${label}${value}` | `${label}`
 
 /** Piece of marked text: fragment of text or mark definition */
-export type Piece = string | MarkMatch
-
-export type KeyedPieces = Map<number, Piece>
-
-export type NumberedOption = Option & {index: number}
+export type PieceType = string | MarkMatch
 
 export interface Option<T = Record<string, any>> {
 	/**
@@ -50,17 +45,6 @@ export interface Option<T = Record<string, any>> {
 }
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
-
-export type State = Omit<MarkedInputProps<any>, 'options'> & {
-	options: Option[],
-	pieces: LinkedList<NodeData>,
-	overlayMatch?: OverlayMatch,
-}
-
-export type Payload = {
-	key: number,
-	value?: MarkStruct
-}
 
 export interface MarkMatch extends MarkStruct {
 	annotation: string
@@ -102,9 +86,9 @@ export type OverlayMatch = {
 export type Listener<T = any> = (e: T) => void
 
 export type Recovery = {
-	prevNodeData?: NodeData
-	caretPosition: number
-	isPrevPrev?: boolean
+	anchor: NodeProxy
+	isNext?: boolean
+	caret: number
 }
 
 export interface MarkedInputHandler {
@@ -125,3 +109,10 @@ export type OverlayTrigger =
 	| 'change'
 	| 'selectionChange'
 	| 'none';
+
+export interface EventKey<T = undefined> extends Symbol {}
+
+
+export type DefaultedProps = WithRequired<MarkedInputProps, 'options' | 'trigger'>
+
+type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }

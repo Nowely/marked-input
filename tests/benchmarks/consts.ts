@@ -1,10 +1,10 @@
 import path from 'path'
 import {Markup} from 'rc-marked-input'
 import {findMultiGap} from './_utils/analyzers/findMultiGap'
-import {isEqual} from './_utils/analyzers/isEqual'
 import {findSingleGap} from './_utils/analyzers/findSingleGap'
-import {modifyOrigin} from './_utils/joiners/modifyOrigin'
+import {isEqual} from './_utils/analyzers/isEqual'
 import {mapStraight} from './_utils/joiners/mapStraight'
+import {modifyOrigin} from './_utils/joiners/modifyOrigin'
 import {PEGParser} from './_utils/parsers/PEGParser'
 import {RegexParser} from './_utils/parsers/RegexParser'
 import {SymbolParser} from './_utils/parsers/SymbolParser'
@@ -93,8 +93,8 @@ export const Parsers: ParserConstructor[] = [SymbolParser, RegexParser, PEGParse
 export const Joiners: ((params: JoinParameters) => string)[] = [mapStraight, modifyOrigin]
 
 /**
-* In kB
-*/
+ * In kB
+ */
 export const SizeMap = {
 	analyzer: {
 		0: 0.05,

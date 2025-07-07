@@ -1,3 +1,3 @@
-import {Parser} from 'rc-marked-input/utils/Parser'
+import {Parser} from 'rc-marked-input/utils/parser/Parser'
 
 export const RegexParser = Parser

@@ -9,11 +9,16 @@ import {patienceDiff, patienceDiffPlus} from './_utils/PatienceDiff'
 import {computeFinalScore} from './_utils/test-data-utils/computeFinalScore'
 import {processMeasures} from './_utils/test-data-utils/processMeasures'
 import {Markups_16} from './consts'
+import {genText} from "./_utils/test-data/genText";
+import {genAnnotatedText} from "./_utils/test-data/genAnnotatedText";
 
 //await processMeasures()
 //await Benchmark.start(1)
 //await Benchmark.continue(10)
 //await genBNFGrammar()
+
+/*genText(500)
+genAnnotatedText([500], [16])*/
 
 
 
@@ -30,7 +35,7 @@ console.log(c)
 //console.log(a1)
 //console.log(a2)
 debugger*/
-console.log(1)
+//console.log(1)
 //console.log(grammar)
 //await processMeasures(0.5, 0.2, 0.3)
 //await processMeasures(0, 1, 0)

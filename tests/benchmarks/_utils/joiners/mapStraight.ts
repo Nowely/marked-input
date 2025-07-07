@@ -1,5 +1,5 @@
-import {annotate} from 'rc-marked-input/utils/annotate'
-import {isAnnotated} from 'rc-marked-input/utils/isAnnotated'
+import {annotate} from 'rc-marked-input/utils/helpers/annotate'
+import {isAnnotated} from 'rc-marked-input/utils/checkers/isAnnotated'
 import {JoinParameters} from '../../types'
 
 export function mapStraight({pieces, markups}: JoinParameters) {

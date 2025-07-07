@@ -1,0 +1,32 @@
+import '@testing-library/jest-dom'
+import {render} from '@testing-library/react'
+import {MarkedInputHandler} from 'rc-marked-input'
+import {Story} from '../_utils/stories'
+
+const {Default} = Story.Base
+
+type UseMarkedInputHandler = {
+	value: MarkedInputHandler | null;
+	set: (el: (MarkedInputHandler | null)) => MarkedInputHandler | null
+}
+
+function useMarkedInputHandler(): UseMarkedInputHandler {
+	let value: MarkedInputHandler | null = null
+
+	function set(el: MarkedInputHandler | null) {
+		return value = el
+	}
+
+	return {value, set}
+}
+
+
+describe('API: MarkedInputHandler', () => {
+	it('should support the ref prop for accessing component handler', async () => {
+		const handler = useMarkedInputHandler()
+
+		render(<Default ref={handler.set}/>)
+
+		expect(handler.value?.container).not.toBeNull()
+	})
+})

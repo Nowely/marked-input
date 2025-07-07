@@ -1,6 +1,6 @@
 //111, 112, 121, 122, 211...
 import {Markup} from 'rc-marked-input'
-import {Piece} from 'rc-marked-input/types'
+import {PieceType} from 'rc-marked-input/types'
 import {findSingleGap} from './_utils/analyzers/findSingleGap'
 import {mapStraight} from './_utils/joiners/mapStraight'
 
@@ -45,9 +45,9 @@ export type FinalScored = Record<AlgorithmGroup, number>
 export type ParserConstructor = new(markups: Markup[]) => IParser
 
 export interface IParser {
-	split(value: string): Piece[]
+	split(value: string): PieceType[]
 }
 
 export type Analyzer = typeof findSingleGap
 export type Joiner = typeof mapStraight
-export type JoinParameters = { pieces: Piece[], index: number, value: string, markups: Markup[] }
+export type JoinParameters = { pieces: PieceType[], index: number, value: string, markups: Markup[] }

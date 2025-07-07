@@ -1,4 +1,4 @@
-import {Markup, Option, Piece} from 'rc-marked-input/types'
+import {Markup, Option, PieceType} from 'rc-marked-input/types'
 // @ts-ignore
 import * as parser from '../GeneratedPEGParser'
 
@@ -14,7 +14,7 @@ export class PEGParser {
 		this.markups = markups
 	}
 
-	split(value: string): Piece[] {
+	split(value: string): PieceType[] {
 		return parser.parse(value, {
 			markups: this.markups
 		})

@@ -5,8 +5,7 @@ const config: StorybookConfig = {
 	staticDirs: ['./public'],
 	addons: [
 		'@storybook/addon-links',
-		'@storybook/addon-essentials',
-		'@storybook/addon-storysource'
+		'@storybook/addon-docs'
 	],
 	framework: {
 		name: '@storybook/react-vite',
@@ -18,3 +17,10 @@ const config: StorybookConfig = {
 }
 
 export default config
+
+/*
+maybe need wrap for monorepo addons and framework
+const require = createRequire(import.meta.url)
+function getAbsolutePath(value: string): string {
+	return dirname(require.resolve(join(value, 'package.json')))
+}*/

@@ -1,14 +1,16 @@
-import {assertAnnotated, useNode} from '../utils'
-import {useSelector} from '../utils/useSelector'
+import {assertAnnotated} from '../utils/checkers/assertAnnotated'
+import {useStore} from '../utils/hooks/useStore'
+import {useToken} from '../utils/providers/TokenProvider'
 
 export function Piece() {
-	const {mark} = useNode()
-	const {options, Mark} = useSelector(state => ({options: state.options, Mark: state.Mark}), true)
+	const node = useToken()
+	const {options, Mark} = useStore(store =>
+		({options: store.props.options, Mark: store.props.Mark}), true)
 
-	assertAnnotated(mark)
+	assertAnnotated(node)
 
-	const defaultProps = {label: mark.label, value: mark.value}
-	const props = options[mark.optionIndex].initMark?.(defaultProps) ?? defaultProps
+	const defaultProps = {label: node.label, value: node.value}
+	const props = options[node.optionIndex].initMark?.(defaultProps) ?? defaultProps
 
 	//TODO correct typing
 	// @ts-ignore

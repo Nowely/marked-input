@@ -1,17 +1,29 @@
+import {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
 import {useState} from 'react'
 
 export default {
-	title: 'MarkedInput',
+	title: 'MarkedInput/Overlay',
 	tags: ['autodocs'],
 	component: MarkedInput,
 }
 
+type Story = StoryObj<Meta<typeof MarkedInput<MarkStruct>>>
+
 const Mark = (props: MarkStruct) => <mark>{props.label}</mark>
 
-export const DefaultOverlay = () => {
+//TODO fix if. Not working triggers after one with changable options?
+export const DefaultOverlayOld = () => {
 	const [value, setValue] = useState('Hello, default - suggestion overlay by trigger @!')
 	return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]}/>
+}
+
+export const DefaultOverlay: Story = {
+	args: {
+		Mark,
+		defaultValue: 'Hello, default - suggestion overlay by trigger @!',
+		options: [{data: ['First', 'Second', 'Third']}]
+	}
 }
 
 const Overlay = () => <h1>I am the overlay</h1>

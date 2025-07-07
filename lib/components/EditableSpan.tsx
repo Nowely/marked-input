@@ -1,27 +1,21 @@
-import {FormEvent, ClipboardEvent} from 'react'
-import {getChildProps} from '../utils/getChildProps'
-import {useMark} from '../utils/useMark'
-import {useSelector} from '../utils/useSelector'
+import {ClipboardEvent, useEffect} from 'react'
+import {getChildProps} from '../utils/functions/getChildProps'
+import {useMark} from '../utils/hooks/useMark'
+import {useStore} from '../utils/hooks/useStore'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
-	const {label, change, readOnly, ref} = useMark()
-	const spanOverride = useSelector(getChildProps('span'), true)
+	const mark = useMark()
+	const spanOverride = useStore(getChildProps('span'), true)
+	//TODO this error mark.label = ''
 
-	const handleInput = (e: FormEvent<HTMLSpanElement>) => {
-		const label = e.currentTarget.textContent ?? ''
-		change({label}, {silent: true})
-	}
-
+	
 	return (
 		<span
 			{...spanOverride}
-			ref={ref}
-			contentEditable={!readOnly}
-			suppressContentEditableWarning
-			onInput={handleInput}
+			ref={mark.ref}
+			contentEditable={!mark.readOnly}
 			onPaste={handlePaste}
-			children={label}
 		/>
 	)
 }

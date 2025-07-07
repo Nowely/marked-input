@@ -1,6 +1,6 @@
 import {faker} from '@faker-js/faker'
 import {annotate} from 'rc-marked-input'
-import {markupToRegex} from 'rc-marked-input/utils/markupToRegex'
+import {markupToRegex} from 'rc-marked-input/utils/functions/markupToRegex'
 import {describe, it, expect} from 'vitest'
 import {createRandomMarkup} from '../_utils/createRandomMarkup'
 
