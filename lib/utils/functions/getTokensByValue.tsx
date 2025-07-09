@@ -1,4 +1,4 @@
-import {DefaultOptions} from '../../constants'
+import {DEFAULT_OPTIONS} from '../../features/default/constants'
 import {isAnnotated} from '../checkers/isAnnotated'
 import {Parser} from '../classes/Parser/Parser'
 import {Store} from '../classes/Store'
@@ -34,7 +34,7 @@ export function getTokensByValue(store: Store) {
 		default:
 			//Parse all string
 			//TODO temp hack
-			const optionsWithDefault = options?.map((option) => Object.assign({}, DefaultOptions[0], option))
+			const optionsWithDefault = options?.map((option) => Object.assign({}, DEFAULT_OPTIONS[0], option))
 			return Parser.split(value ?? '', optionsWithDefault)
 	}
 }
@@ -54,7 +54,7 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 	}
 
 	//TODO temp hack
-	const optionsWithDefault = store.props.options?.map((option) => Object.assign({}, DefaultOptions[0], option))
+	const optionsWithDefault = store.props.options?.map((option) => Object.assign({}, DEFAULT_OPTIONS[0], option))
 	return Parser.split(span, optionsWithDefault)
 }
 
