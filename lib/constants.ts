@@ -25,8 +25,6 @@ export enum KEYBOARD {
 	ESC = 'Escape'
 }
 
-export const DefaultClass = 'mk-input'
-
 
 export const wordRegex = new RegExp(/^\w*/)
 

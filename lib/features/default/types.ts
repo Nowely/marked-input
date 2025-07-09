@@ -4,6 +4,7 @@ import {Markup, Option, OverlayTrigger} from '../../types'
 export interface InnerMarkedInputProps extends MarkedInputProps<unknown> {
 	options: InnerOption[]
 	trigger: OverlayTrigger
+	className: string
 }
 
 export interface InnerOption extends Option<unknown> {

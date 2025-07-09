@@ -1,13 +1,14 @@
 import {MarkedInputProps} from '../../components/MarkedInput'
 import {Option} from '../../types'
-import {DEFAULT_MARKUP, DEFAULT_OPTIONS} from './constants'
+import {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS} from './constants'
 import {InnerMarkedInputProps, InnerOption} from './types'
 
 export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps {
 	return {
 		...props,
 		options: props.options ? props.options.map(parseOption) : DEFAULT_OPTIONS,
-		trigger: props.trigger ?? 'change'
+		trigger: props.trigger ?? 'change',
+		className: props.className ? DEFAULT_CLASS_NAME + ' ' + props.className : DEFAULT_CLASS_NAME
 	}
 }
 

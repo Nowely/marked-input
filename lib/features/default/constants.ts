@@ -10,3 +10,5 @@ export const DEFAULT_OPTIONS: InnerOption[] = [{
 	markup: DEFAULT_MARKUP,
 	data: [],
 }]
+
+export const DEFAULT_CLASS_NAME = 'mk-input'
