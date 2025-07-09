@@ -1,6 +1,6 @@
 import {MarkedInputProps} from '../../components/MarkedInput'
 import {Option} from '../../types'
-import {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS} from './constants'
+import {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER} from './constants'
 import {InnerMarkedInputProps, InnerOption} from './types'
 
 export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps {
@@ -17,7 +17,7 @@ function parseOption(option: Option<any>): InnerOption {
 		...option,
 		data: option.data ?? [],
 		markup: option.markup ?? DEFAULT_MARKUP,
-		trigger: option.markup ?? DEFAULT_MARKUP,
+		trigger: option.trigger ?? DEFAULT_TRIGGER,
 	}
 }
 
