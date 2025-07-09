@@ -1,6 +1,4 @@
-import {EventKey, MarkStruct, NodeData, Option, OverlayMatch} from './types'
-import {NodeProxy} from './utils/classes/NodeProxy'
-import type {Store} from './utils/classes/Store'
+import {EventKey, MarkStruct, OverlayMatch} from './types'
 
 export enum KEYBOARD {
 	// Navigation Keys
@@ -28,12 +26,6 @@ export enum KEYBOARD {
 }
 
 export const DefaultClass = 'mk-input'
-
-export const DefaultOptions = [{
-	trigger: '@',
-	markup: '@[__label__](__value__)',
-	data: [],
-}] satisfies Option[]
 
 
 export const wordRegex = new RegExp(/^\w*/)
