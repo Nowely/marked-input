@@ -6,7 +6,6 @@ import {getTokensByValue} from '../utils/functions/getTokensByValue'
 import {toString} from '../utils/functions/toString'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
-import {DEFAULT_OPTIONS} from './default/constants'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -42,7 +41,7 @@ export function useSystemListeners() {
 		const {Mark, onChange, options} = store.props
 		const {mark, match: {option, span, index, source, node}} = event
 
-		const annotation = annotate(option.markup ?? DEFAULT_OPTIONS[0].markup, mark.label, mark.value)
+		const annotation = annotate(option.markup, mark.label, mark.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 
 		store.recovery = Mark

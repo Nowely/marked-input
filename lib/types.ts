@@ -1,6 +1,7 @@
 import {FunctionComponent} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {PLACEHOLDER} from './constants'
+import {InnerOption} from './features/default/types'
 import {NodeProxy} from './utils/classes/NodeProxy'
 
 export interface MarkStruct {
@@ -74,7 +75,7 @@ export type OverlayMatch = {
 	/**
 	 * OverlayMatch's option
 	 */
-	option: Option
+	option: InnerOption
 }
 
 export type Listener<T = any> = (e: T) => void
