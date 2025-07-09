@@ -1,13 +1,7 @@
-import {FunctionComponent, RefObject} from 'react'
+import {FunctionComponent} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {PLACEHOLDER} from './constants'
 import {NodeProxy} from './utils/classes/NodeProxy'
-
-
-export type NodeData = {
-	mark: MarkStruct
-	ref: RefObject<HTMLElement>
-}
 
 export interface MarkStruct {
 	label: string
@@ -111,8 +105,3 @@ export type OverlayTrigger =
 	| 'none';
 
 export interface EventKey<T = undefined> extends Symbol {}
-
-
-export type DefaultedProps = WithRequired<MarkedInputProps, 'options' | 'trigger'>
-
-type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
