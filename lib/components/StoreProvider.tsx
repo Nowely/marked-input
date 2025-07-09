@@ -1,9 +1,14 @@
 import {ReactNode, useEffect, useState} from 'react'
-import {DefaultedProps} from '../types'
+import {InnerMarkedInputProps} from '../features/default'
 import {Store} from '../utils/classes/Store'
 import {StoreContext} from '../utils/providers/StoreContext'
 
-export const StoreProvider = ({props, children}: { props: DefaultedProps, children: ReactNode }) => {
+interface StoreProviderProps {
+	props: InnerMarkedInputProps,
+	children: ReactNode
+}
+
+export const StoreProvider = ({props, children}: StoreProviderProps) => {
 	const [store] = useState(() => Store.create(props))
 
 	useEffect(() => {
