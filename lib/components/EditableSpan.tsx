@@ -1,4 +1,4 @@
-import {ClipboardEvent, useEffect} from 'react'
+import {ClipboardEvent} from 'react'
 import {getChildProps} from '../utils/functions/getChildProps'
 import {useMark} from '../utils/hooks/useMark'
 import {useStore} from '../utils/hooks/useStore'
@@ -7,8 +7,6 @@ import {useStore} from '../utils/hooks/useStore'
 export const EditableSpan = () => {
 	const mark = useMark()
 	const spanOverride = useStore(getChildProps('span'), true)
-	//TODO this error mark.label = ''
-
 	
 	return (
 		<span

@@ -5,7 +5,6 @@ import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {Token} from './Token'
 
-//TODO fix updating0
 export const Container = memo(() => {
 	const {className, style, refs, tokens, bus, key} = useStore(store => ({
 		className: store.props.className,
