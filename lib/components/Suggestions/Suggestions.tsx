@@ -30,6 +30,7 @@ export const Suggestions = () => {
 
 	if (!filtered.length) return null
 
+	//TODO possible to add classes via slots
 	return (
 		<ul ref={ref as RefObject<HTMLUListElement>} className="mk-suggestions" style={style}>
 			{filtered.map((suggestion, index) => {

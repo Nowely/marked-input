@@ -1,4 +1,4 @@
-import {DefaultOptions, SystemEvent} from '../constants'
+import {SystemEvent} from '../constants'
 import {annotate} from '../utils/functions/annotate'
 import {createNewSpan} from '../utils/functions/createNewSpan'
 import {getTokensByUI} from '../utils/functions/getTokensByUI'
@@ -41,7 +41,7 @@ export function useSystemListeners() {
 		const {Mark, onChange, options} = store.props
 		const {mark, match: {option, span, index, source, node}} = event
 
-		const annotation = annotate(option.markup ?? DefaultOptions[0].markup, mark.label, mark.value)
+		const annotation = annotate(option.markup, mark.label, mark.value)
 		const newSpan = createNewSpan(span, annotation, index, source)
 
 		store.recovery = Mark

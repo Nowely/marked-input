@@ -1,5 +1,5 @@
 import {memo} from 'react'
-import {DefaultClass, SystemEvent} from '../constants'
+import {SystemEvent} from '../constants'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {Token} from './Token'
@@ -7,7 +7,7 @@ import {Token} from './Token'
 //TODO fix updating0
 export const Container = memo(() => {
 	const {className, style, refs, tokens, bus, key} = useStore(store => ({
-		className: store.props.className ? DefaultClass + ' ' + store.props.className : DefaultClass,
+		className: store.props.className,
 		style: store.props.style,
 		refs: store.refs,
 		tokens: store.tokens,

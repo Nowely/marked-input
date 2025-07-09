@@ -1,4 +1,5 @@
-import {MarkStruct, Markup, Option, PieceType} from '../../../types'
+import {InnerOption} from '../../../features/default/types'
+import {MarkStruct, Markup, PieceType} from '../../../types'
 import {isObject} from '../../checkers/isObject'
 import {markupToRegex} from '../../functions/markupToRegex'
 import {normalizeMark} from '../../functions/normalizeMark'
@@ -9,7 +10,7 @@ export class Parser {
 	private readonly uniRegExp: RegExp
 	private readonly regExps: RegExp[]
 
-	static split(value: string, options?: Option[]): MarkStruct[] {
+	static split(value: string, options?: InnerOption[]): MarkStruct[] {
 		const markups = options?.map((c) => c.markup!)
 		const pieces = markups ? new Parser(markups).split(value) : [value]
 		return pieces.map(piece => {

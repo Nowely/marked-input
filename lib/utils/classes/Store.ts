@@ -1,6 +1,7 @@
 import {createRef} from 'react'
 import {SystemEvent} from '../../constants'
-import {DefaultedProps, MarkStruct, OverlayMatch, Recovery} from '../../types'
+import {InnerMarkedInputProps} from '../../features/default'
+import {MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import {KeyGenerator} from './KeyGenerator'
 import {NodeProxy} from './NodeProxy'
@@ -12,7 +13,7 @@ export class Store {
 	//TODO rename to input node?
 	readonly input = new NodeProxy(undefined, this)
 
-	props: DefaultedProps
+	props: InnerMarkedInputProps
 	tokens: MarkStruct[] = []
 	recovery?: Recovery
 
@@ -26,11 +27,11 @@ export class Store {
 	previousValue?: string
 	overlayMatch?: OverlayMatch
 
-	static create = (props: DefaultedProps) => new Proxy(new Store(props), {set})
-
-	private constructor(props: DefaultedProps) {
+	private constructor(props: InnerMarkedInputProps) {
 		this.props = props
 	}
+
+	static create = (props: InnerMarkedInputProps) => new Proxy(new Store(props), {set})
 }
 
 function set(target: Store, prop: keyof Store, newValue: any, receiver: any): boolean {
@@ -43,6 +44,7 @@ function set(target: Store, prop: keyof Store, newValue: any, receiver: any): bo
 			return false
 	}
 
+	//TODO don't send event if not updated
 	// @ts-expect-error TODO fix type
 	target[prop] = newValue
 	target.bus.send(SystemEvent.STORE_UPDATED, receiver)

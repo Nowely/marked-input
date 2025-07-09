@@ -1,4 +1,3 @@
-import {DefaultOptions} from '../../constants'
 import {isAnnotated} from '../checkers/isAnnotated'
 import {Parser} from '../classes/Parser/Parser'
 import {Store} from '../classes/Store'
@@ -33,9 +32,7 @@ export function getTokensByValue(store: Store) {
 		}
 		default:
 			//Parse all string
-			//TODO temp hack
-			const optionsWithDefault = options?.map((option) => Object.assign({}, DefaultOptions[0], option))
-			return Parser.split(value ?? '', optionsWithDefault)
+			return Parser.split(value ?? '', options)
 	}
 }
 
@@ -54,8 +51,7 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 	}
 
 	//TODO temp hack
-	const optionsWithDefault = store.props.options?.map((option) => Object.assign({}, DefaultOptions[0], option))
-	return Parser.split(span, optionsWithDefault)
+	return Parser.split(span, store.props.options)
 }
 
 function getRangeMap(store: Store): number[] {

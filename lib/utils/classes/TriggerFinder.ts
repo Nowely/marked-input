@@ -1,8 +1,9 @@
 import {wordRegex} from '../../constants'
-import {Option, OverlayMatch} from '../../types'
-import {Caret} from './Caret'
+import {InnerOption} from '../../features/default/types'
+import {OverlayMatch} from '../../types'
 
-import {escape} from "../functions/escape";
+import {escape} from '../functions/escape'
+import {Caret} from './Caret'
 
 export class TriggerFinder {
 	span: string
@@ -16,7 +17,7 @@ export class TriggerFinder {
 		this.dividedText = this.getDividedTextBy(caretPosition)
 	}
 
-	static find(options: Option[]) {
+	static find(options: InnerOption[]) {
 		if (Caret.isSelectedPosition)
 			return new TriggerFinder().find(options)
 	}
@@ -25,7 +26,7 @@ export class TriggerFinder {
 		return {left: this.span.slice(0, position), right: this.span.slice(position)}
 	}
 
-	find(options: Option[]): OverlayMatch | undefined {
+	find(options: InnerOption[]): OverlayMatch | undefined {
 		for (let option of options) {
 			let match = this.matchInTextVia(option.trigger)
 			if (match) return {

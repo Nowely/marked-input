@@ -40,7 +40,7 @@ describe('API: Overlay and Triggers', () => {
 		await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
 		await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
 
-		await act(() => {
+		act(() => {
 			// @ts-ignore
 			events['selectionchange']({})
 		})

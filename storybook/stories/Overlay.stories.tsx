@@ -12,12 +12,6 @@ type Story = StoryObj<Meta<typeof MarkedInput<MarkStruct>>>
 
 const Mark = (props: MarkStruct) => <mark>{props.label}</mark>
 
-//TODO fix if. Not working triggers after one with changable options?
-export const DefaultOverlayOld = () => {
-	const [value, setValue] = useState('Hello, default - suggestion overlay by trigger @!')
-	return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]}/>
-}
-
 export const DefaultOverlay: Story = {
 	args: {
 		Mark,

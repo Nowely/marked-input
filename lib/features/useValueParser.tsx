@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react'
-import {DefaultOptions, SystemEvent} from '../constants'
+import {SystemEvent} from '../constants'
 import {Parser} from '../utils/classes/Parser/Parser'
 import {useStore} from '../utils/hooks/useStore'
 
@@ -17,11 +17,8 @@ export const useValueParser = () => {
 			return
 		}
 
-		//TODO temp hack
-		const optionsWithDefault = options?.map((option) => Object.assign({}, DefaultOptions[0], option))
-
 		//Initial parse
-		store.tokens = Parser.split(value ?? store.props.defaultValue ?? '', optionsWithDefault)
+		store.tokens = Parser.split(value ?? store.props.defaultValue ?? '', options)
 		isMounted.current = true
 	}, [value, options])
 }

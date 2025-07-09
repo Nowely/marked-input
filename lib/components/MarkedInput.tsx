@@ -1,6 +1,6 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
 import '../styles.css'
-import {DefaultOptions} from '../constants'
+import {parseProps} from '../features/default'
 import {MarkedInputHandler, MarkStruct, Option, OverlayTrigger} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
@@ -8,44 +8,28 @@ import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
 
 export interface MarkedInputProps<T = MarkStruct> {
-	/**
-	 * Ref to handler
-	 */
+	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
-	/**
-	 * Annotated text with markups for mark
-	 */
+	/** Annotated text with markups for mark */
 	value?: string
 	/** Default value */
 	defaultValue?: string
-	/**
-	 * Change event
-	 */
+	/** Change event */
 	onChange?: (value: string) => void
-	/**
-	 * Component that used for render markups
-	 */
+	/** Component that used for render markups */
 	Mark?: ComponentType<T>
-	/**
-	 * Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc.
-	 */
+	/** Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc */
 	Overlay?: ComponentType
-	/**
-	 * Prevents from changing the value
-	 */
+	/** Prevents from changing the value */
 	readOnly?: boolean
 	/**
 	 * Passed options for configure
 	 * @default [{trigger: '@', markup: '@[__label__](__value__)', data: []}]
 	 */
 	options?: Option<T>[]
-	/**
-	 * Additional classes
-	 */
+	/** Additional classes */
 	className?: string
-	/**
-	 * Additional style
-	 */
+	/** Additional style */
 	style?: CSSProperties
 	/**
 	 * Override props of internal components via react elements
@@ -67,10 +51,7 @@ export interface MarkedInputComponent {
 }
 
 export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
-	const propsWithDefault = Object.assign({}, {
-		options: DefaultOptions,
-		trigger: 'change'
-	}, props)
+	const propsWithDefault = parseProps(props)
 
 	return (
 		<StoreProvider props={propsWithDefault}>
