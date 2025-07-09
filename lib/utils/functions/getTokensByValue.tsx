@@ -50,7 +50,6 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 		span += store.tokens[index].label
 	}
 
-	//TODO temp hack
 	return Parser.split(span, store.props.options)
 }
 
