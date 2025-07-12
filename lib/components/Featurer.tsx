@@ -1,5 +1,5 @@
 import {ForwardedRef} from 'react'
-import {MarkedInputHandler} from '../types'
+import {useValueParser} from '../features/parsing/useValueParser'
 import {useCheckTrigger} from '../features/useCheckTrigger'
 import {useCloseOverlayByEsc} from '../features/useCloseOverlayByEsc'
 import {useCloseOverlayByOutsideClick} from '../features/useCloseOverlayByOutsideClick'
@@ -11,7 +11,7 @@ import {useMarkedInputHandler} from '../features/useMarkedInputHandler'
 import {useSystemListeners} from '../features/useSystemListeners'
 import {useTextSelection} from '../features/useTextSelection'
 import {useTrigger} from '../features/useTrigger'
-import {useValueParser} from '../features/useValueParser'
+import {MarkedInputHandler} from '../types'
 
 export const Featurer = ({inRef}: { inRef: ForwardedRef<MarkedInputHandler> }) => {
 	useMarkedInputHandler(inRef)

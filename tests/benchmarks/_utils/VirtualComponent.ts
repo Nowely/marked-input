@@ -1,7 +1,7 @@
 import {Markup} from 'rc-marked-input'
+import {getClosestIndexes} from 'rc-marked-input/features/preparcing/utils/getClosestIndexes'
 import {PieceType} from 'rc-marked-input/types'
 import {Analyzers, Joiners, Parsers} from '../consts'
-import {getClosestIndexes} from 'rc-marked-input/utils/functions/getClosestIndexes'
 import {Analyzer, IParser, Joiner} from '../types'
 
 export class VirtualComponent {

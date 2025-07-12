@@ -1,7 +1,7 @@
 import {useEffect, useRef} from 'react'
-import {SystemEvent} from '../constants'
-import {Parser} from '../utils/classes/Parser/Parser'
-import {useStore} from '../utils/hooks/useStore'
+import {SystemEvent} from '../../constants'
+import {useStore} from '../../utils/hooks/useStore'
+import {Parser} from './Parser/Parser'
 
 export const useValueParser = () => {
 	const store = useStore()
