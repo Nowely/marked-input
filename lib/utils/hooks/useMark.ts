@@ -33,7 +33,6 @@ export interface MarkOptions {
 }
 
 //TODO subscribe on label/value changing
-//TODO remove
 export const useMark = <T extends HTMLElement = HTMLElement, >(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
 	const token = useToken()

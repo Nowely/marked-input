@@ -7,8 +7,6 @@ import {Story} from '../_utils/stories'
 
 const {Default} = Story.Base
 
-//Тест всех сторей, точка для импорта всех сторей?
-
 describe('Api: keyboard', () => {
 	it('should support the "Backspace" button', async () => {
 		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
