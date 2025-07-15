@@ -6,7 +6,7 @@ A React component that lets you combine editable text with any component using a
 
 ## Feature
 
-* Powerful annotations tool: add, edit, remove, visualize 
+* Powerful annotations tool: add, edit, remove, visualize
 * TypeScript
 * Support for any components
 * Flexible and customizable
@@ -29,7 +29,7 @@ npm install rc-marked-input
 ## Usage
 
 There are many examples available in the [Storybook](https://marked-input.vercel.app). You can also try a template
-on [CodeSandbox](https://codesandbox.io/s/configured-marked-input-305v6m). 
+on [CodeSandbox](https://codesandbox.io/s/configured-marked-input-305v6m).
 
 Here are a few examples to get you started:
 
@@ -163,7 +163,7 @@ A default overlay is the suggestion component, but it can be easily replaced for
 ```tsx
 export const DefaultOverlay = () => {
     const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data:['First', 'Second', 'Third']}]}/>
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]}/>
 }
 ```
 
@@ -182,7 +182,8 @@ export const CustomOverlay = () => {
 ```tsx
 export const CustomTrigger = () => {
     const [value, setValue] = useState("Hello, custom overlay by trigger /!")
-    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]}/>
+    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}
+                        options={[{trigger: '/'}]}/>
 }
 ```
 
@@ -230,11 +231,11 @@ The `div` tag for container. The `span` tag for text cell.
 ```tsx
 <ConfiguredMarkedInput value={value} onChange={setValue}>
     <div
-        onClick = {(e) => console.log('onCLick')}
-        onInput = {(e) => console.log('onInput')}
+        onClick={(e) => console.log('onCLick')}
+        onInput={(e) => console.log('onInput')}
         /* other props */
-        onBlur = {(e) => console.log('onBlur')}
-        onFocus = {(e) => console.log('onFocus')}
+        onBlur={(e) => console.log('onBlur')}
+        onFocus={(e) => console.log('onFocus')}
         onKeyDown={(e) => console.log('onKeyDown')}
     />
     <span className='span-class'/>
@@ -260,17 +261,19 @@ The `div` tag for container. The `span` tag for text cell.
 Or
 
 ```tsx
-const MarkedInput = createMarkedInput({Mark, Overlay, options: [{
-    trigger: '@',
-    markup: '@[__label__](__value__)',
-    data: Data,
-    initMark: getCustomMarkProps,
-}, {
-    trigger: '/',
-    markup: '@(__label__)[__value__]',
-    data: AnotherData,
-    initMark: getAnotherCustomMarkProps,
-}]})
+const MarkedInput = createMarkedInput({
+    Mark, Overlay, options: [{
+        trigger: '@',
+        markup: '@[__label__](__value__)',
+        data: Data,
+        initMark: getCustomMarkProps,
+    }, {
+        trigger: '/',
+        markup: '@(__label__)[__value__]',
+        data: AnotherData,
+        initMark: getAnotherCustomMarkProps,
+    }]
+})
 
 const App = () => <MarkedInput value={value} onChange={setValue}/>
 ```
@@ -279,15 +282,16 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ### MarkedInput
 
-| Name     | Type                         | Default       | Description                            |
-|----------|------------------------------|---------------|----------------------------------------|
-| value    | string                       |               | Annotated text with markups for mark   |
-| onChange | (value: string) => void      |               | Change event                           |
-| Mark     | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups |
-| Overlay  | ComponentType                | `Suggestions` | Component that is rendered by trigger  |
-| readOnly | boolean                      | `undefined`   | Prevents from changing the value       |
-| options  | OptionProps[]                | `[{}]`        | Passed options for configure           |
-| trigger  | OverlayTrigger               | `change`      | Triggering events for overlay          |
+| Name         | Type                         | Default       | Description                            |
+|--------------|------------------------------|---------------|----------------------------------------|
+| value        | string                       | `undefined`   | Annotated text with markups for mark   |
+| defaultValue | string                       | `undefined`   | Default value                          |
+| onChange     | (value: string) => void      | `undefined`   | Change event                           |
+| Mark         | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups |
+| Overlay      | ComponentType                | `Suggestions` | Component that is rendered by trigger  |
+| readOnly     | boolean                      | `undefined`   | Prevents from changing the value       |
+| options      | OptionProps[]                | `[{}]`        | Passed options for configure           |
+| trigger      | OverlayTrigger               | `change`      | Triggering events for overlay          |
 
 ### Helpers
 
@@ -304,10 +308,10 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 
 ```typescript
 type OverlayTrigger =
-	| Array<'change' | 'selectionChange'>
-	| 'change'
-	| 'selectionChange'
-	| 'none';
+    | Array<'change' | 'selectionChange'>
+    | 'change'
+    | 'selectionChange'
+    | 'none';
 ```
 
 ```typescript
