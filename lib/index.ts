@@ -30,4 +30,4 @@ export type {
 export {SystemEvent} from './constants'
 export {annotate} from "./utils/functions/annotate";
 export {PLACEHOLDER} from "./constants";
-export {denote} from './utils/functions/denote'
+export {denote} from './features/parsing/denote'

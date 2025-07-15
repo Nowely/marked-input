@@ -1,8 +1,8 @@
-import {isAnnotated} from '../checkers/isAnnotated'
-import {Parser} from '../classes/Parser/Parser'
-import {Store} from '../classes/Store'
-import {findGap} from './findGap'
-import {getClosestIndexes} from './getClosestIndexes'
+import {isAnnotated} from '../../utils/checkers/isAnnotated'
+import {Store} from '../../utils/classes/Store'
+import {findGap} from '../preparsing/utils/findGap'
+import {getClosestIndexes} from '../preparsing/utils/getClosestIndexes'
+import {Parser} from './Parser/Parser'
 
 export function getTokensByValue(store: Store) {
 	const {props: {value, options}} = store

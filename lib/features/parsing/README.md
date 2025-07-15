@@ -1,0 +1,1 @@
+Purpose: Handles parsing of text values into tokens and annotations

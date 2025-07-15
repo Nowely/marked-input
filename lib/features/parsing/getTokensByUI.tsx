@@ -1,5 +1,5 @@
-import {Parser} from '../classes/Parser/Parser'
-import {Store} from '../classes/Store'
+import {Store} from '../../utils/classes/Store'
+import {Parser} from './Parser/Parser'
 
 /**
  * Parse current focused token
