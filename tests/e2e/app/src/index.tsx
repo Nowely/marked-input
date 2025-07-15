@@ -1,10 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import {Configured} from '../../../../storybook/stories/Base.stories'
 import './style.css'
+import {Story} from '../../../_utils/stories'
+
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 	<React.StrictMode>
-		<Configured/>
+		<Story.Base.Configured/>
 	</React.StrictMode>
 )
