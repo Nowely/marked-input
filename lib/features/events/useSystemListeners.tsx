@@ -1,11 +1,9 @@
-import {SystemEvent} from '../constants'
-import {annotate} from '../utils/functions/annotate'
-import {createNewSpan} from '../utils/functions/createNewSpan'
-import {toString} from '../utils/functions/toString'
-import {useListener} from '../utils/hooks/useListener'
-import {useStore} from '../utils/hooks/useStore'
-import {getTokensByUI} from './parsing/getTokensByUI'
-import {getTokensByValue} from './parsing/getTokensByValue'
+import {SystemEvent} from '../../constants'
+import {annotate} from '../../utils/functions/annotate'
+import {createNewSpan} from '../../utils/functions/createNewSpan'
+import {toString} from '../../utils/functions/toString'
+import {useListener} from '../../utils/hooks/useListener'
+import {useStore} from '../../utils/hooks/useStore'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -29,12 +27,6 @@ export function useSystemListeners() {
 		store.tokens.splice(store.tokens.indexOf(token), 1)
 
 		onChange?.(toString(store.tokens, options))
-	}, [])
-
-	useListener(SystemEvent.Parse, (event) => {
-		store.tokens = store.focus.target
-			? getTokensByUI(store)
-			: getTokensByValue(store)
 	}, [])
 
 	useListener(SystemEvent.Select, (event) => {
