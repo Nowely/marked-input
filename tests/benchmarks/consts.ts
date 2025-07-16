@@ -15,17 +15,14 @@ export const Markups_16: Markup[] = [
 	'<h2>__label__</h2>',
 	'<p>__label__</p>',
 	'<a>__label__</a>',
-
 	'<span>__label__</span>',
 	'<b>__label__</b>',
 	'<i>__label__</i>',
 	'<abbr>__label__</abbr>',
-
 	'<input>__label__</input>',
 	'<button>__label__</button>',
 	'<select>__label__</select>',
 	'<section>__label__</section>',
-
 	'<strong>__label__</strong>',
 	'<article>__label__</article>',
 	'<header>__label__</header>',

@@ -8,5 +8,6 @@
   "jsxSingleQuote": false,
   "printWidth": 120,
   "arrowParens": "avoid",
-  "proseWrap": "preserve"
+  "proseWrap": "preserve",
+  "endOfLine": "auto"
 }

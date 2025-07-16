@@ -29,13 +29,13 @@ describe(`Utility: ${denote.name}`, () => {
 	})
 
 	it('should accept zero markups', () => {
-		const annotatedText = "Enter th'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @[Bye](ByeValue)!'(denote(annotatedText, mark => mark.label)).toBe(annotatedText)
+		const annotatedText = "Enter the '@' for calling @[Hello](HelloValue) suggestions and '/' for @[Bye](ByeValue)!"
+		expect(denote(annotatedText, mark => mark.label)).toBe(annotatedText)
 	})
 
 	it('should accept many markups', () => {
 		const markup2: Markup = '@(__label__)[__value__]'
-		const annotatedText = 'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @(Bye)[ByeValue]!'
-		const actual = denote(annotatedText, mark => mark.label, markup, markup2)
+		const annotatedText = "Ent'Enter the \'@\' for calling @[Hello](HelloValue) suggestions and \'/\' for @(Bye)[ByeValue]!'onst actual = denote(annotatedText, mark => mark.label, markup, markup2)
 		const expected = 'Enter the \'@\' for calling Hello suggestions and \'/\' for Bye!'
 		expect(actual).toBe(expected)
 	})
