@@ -88,7 +88,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 
 		if (indexPairs.length) {
 			if (raw.slice(minStartIndex, minEndIndex + 1) === '') {
-				debugger
+
 			}
 			return [
 				raw.slice(0, minStartIndex),
