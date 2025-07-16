@@ -6,7 +6,7 @@ export const useFetch = <T,>(url: string, deps: unknown[]) => {
 	useEffect(() => {
 		const abortController = new AbortController()
 		fetch(url, {signal: abortController.signal})
-			.then((res) => res.json())
+			.then(res => res.json())
 			.then(setData)
 		//.catch(reason => console.error(reason))
 

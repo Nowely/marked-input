@@ -7,7 +7,7 @@ import {Token} from './Token'
 
 export const Container = memo(() => {
 	const {className, style, refs, tokens, bus, key} = useStore(
-		(store) => ({
+		store => ({
 			className: store.props.className,
 			style: store.props.style,
 			refs: store.refs,
@@ -22,7 +22,7 @@ export const Container = memo(() => {
 
 	useListener(
 		'input',
-		(e) => {
+		e => {
 			bus.send(SystemEvent.Change)
 		},
 		[]
@@ -30,7 +30,7 @@ export const Container = memo(() => {
 
 	return (
 		<div {...divOverride} ref={refs.container} className={className} style={style}>
-			{tokens.map((token) => (
+			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />
 			))}
 		</div>

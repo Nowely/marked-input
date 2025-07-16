@@ -62,7 +62,7 @@ export class VirtualComponent {
 
 	private getRangeMap() {
 		let position = 0
-		return this.tokens.map((token) => {
+		return this.tokens.map(token => {
 			const length = typeof token === 'string' ? token.length : token.annotation.length
 			position += length
 			return position - length

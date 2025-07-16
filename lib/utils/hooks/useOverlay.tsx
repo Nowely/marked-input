@@ -29,7 +29,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const match = useStore((store) => store.overlayMatch!)
+	const match = useStore(store => store.overlayMatch!)
 	const style = Caret.getAbsolutePosition()
 
 	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])

@@ -83,7 +83,7 @@ export const TaggedInput = () => {
 					},
 				]}
 			>
-				<div onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()} />
+				<div onKeyDown={e => e.key === 'Enter' && e.preventDefault()} />
 				<span
 					className="rs-tag rs-tag-md"
 					style={{

@@ -16,7 +16,7 @@ export function useStore<T>(selector?: (store: Store) => T, byStruct?: boolean) 
 	useListener(
 		SystemEvent.STORE_UPDATED,
 		() => {
-			setValue((value) => {
+			setValue(value => {
 				const newValue = selector?.(store)
 				if (byStruct && shallow(value, newValue)) return value
 				return newValue

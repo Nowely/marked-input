@@ -4,7 +4,7 @@ import {useToken} from '../utils/providers/TokenProvider'
 
 export function Piece() {
 	const node = useToken()
-	const {options, Mark} = useStore((store) => ({options: store.props.options, Mark: store.props.Mark}), true)
+	const {options, Mark} = useStore(store => ({options: store.props.options, Mark: store.props.Mark}), true)
 
 	assertAnnotated(node)
 

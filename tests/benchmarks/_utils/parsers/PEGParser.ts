@@ -6,7 +6,7 @@ export class PEGParser {
 	private readonly markups: Markup[]
 
 	static split(value: string, options?: Option[]) {
-		const markups = options?.map((c) => c.markup!)
+		const markups = options?.map(c => c.markup!)
 		return () => (markups ? new PEGParser(markups).split(value) : [value])
 	}
 

@@ -57,7 +57,7 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 function getRangeMap(store: Store): number[] {
 	let position = 0
 	return (
-		store.tokens.map((token) => {
+		store.tokens.map(token => {
 			const length = isAnnotated(token) ? token.annotation.length : token.label.length
 			position += length
 			return position - length

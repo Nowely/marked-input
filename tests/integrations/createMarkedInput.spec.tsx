@@ -39,7 +39,7 @@ describe(`Utility: createMarkedInput`, () => {
 		const Input = createMarkedInput({})
 		let ref: MarkedInputHandler | null = null
 
-		render(<Input ref={(el) => (ref = el)} value={''} onChange={() => ({})} />)
+		render(<Input ref={el => (ref = el)} value={''} onChange={() => ({})} />)
 
 		await act(() => {
 			expect(ref?.container).not.toBeNull()

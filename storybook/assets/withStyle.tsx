@@ -4,7 +4,7 @@ import {useInsertionEffect} from 'react'
 //TODO load css on startup
 export const withStyle =
 	(id: string): DecoratorFunction<any, any> =>
-	(Story) => {
+	Story => {
 		useStyleInsertion(id)
 		return <Story />
 	}

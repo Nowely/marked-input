@@ -4,8 +4,8 @@ import {Suggestions} from './Suggestions'
 
 export const Whisper = memo(() => {
 	const store = useStore()
-	const key = useStore((state) => (state.overlayMatch ? state.key.get(state.overlayMatch.option) : undefined))
-	const Overlay = useStore((state) => state.props.Overlay ?? Suggestions)
+	const key = useStore(state => (state.overlayMatch ? state.key.get(state.overlayMatch.option) : undefined))
+	const Overlay = useStore(state => state.props.Overlay ?? Suggestions)
 
 	useEffect(() => {
 		store.input.target = store.focus.target

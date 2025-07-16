@@ -108,7 +108,7 @@ describe.skip('type bench', async () => {
 
 function createTestable(annotationCount: 1 | 8 | 16) {
 	const MarkedInput = createMarkedInput({
-		Mark: (props) => <span>{props.label}</span>,
+		Mark: props => <span>{props.label}</span>,
 		options: [
 			{
 				markup: Markups_16[annotationCount - 1],

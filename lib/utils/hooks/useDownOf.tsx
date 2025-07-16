@@ -5,7 +5,7 @@ import {useListener} from './useListener'
 export function useDownOf(key: KEYBOARD, callback: (event: KeyboardEvent) => void, deps: DependencyList = []) {
 	useListener(
 		'keydown',
-		(event) => {
+		event => {
 			if (event.key === key) callback(event)
 		},
 		deps

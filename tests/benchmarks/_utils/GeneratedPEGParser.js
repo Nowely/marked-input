@@ -227,7 +227,7 @@ function peg$parse(input, options) {
 				tag,
 				annotation: '<' + tag + '>' + label + '</' + tag + '>',
 				label,
-				optionIndex: options.markups.findIndex((markup) => markup.startsWith('<' + tag + '>')),
+				optionIndex: options.markups.findIndex(markup => markup.startsWith('<' + tag + '>')),
 			},
 		]
 	}

@@ -12,28 +12,28 @@ export async function normalizeData() {
 	//для каждого имени найти мин и макс по времени и памяти, и размеру
 	for (const name of testDataNames) {
 		//normalize time
-		const minTime = Math.min(...groups.map((group) => data[group][name].time))
-		const maxTime = Math.max(...groups.map((group) => data[group][name].time))
-		groups.forEach((group) => {
+		const minTime = Math.min(...groups.map(group => data[group][name].time))
+		const maxTime = Math.max(...groups.map(group => data[group][name].time))
+		groups.forEach(group => {
 			data[group][name].time = (data[group][name].time - minTime) / (maxTime - minTime)
 		})
 
 		//normalize memory
-		const minMemory = Math.min(...groups.map((group) => data[group][name].memory))
-		const maxMemory = Math.max(...groups.map((group) => data[group][name].memory))
-		groups.forEach((group) => {
+		const minMemory = Math.min(...groups.map(group => data[group][name].memory))
+		const maxMemory = Math.max(...groups.map(group => data[group][name].memory))
+		groups.forEach(group => {
 			data[group][name].memory = (data[group][name].memory - minMemory) / (maxMemory - minMemory)
 		})
 
 		//normalize size
-		const minSize = Math.min(...groups.map((group) => data[group][name].size))
-		const maxSize = Math.max(...groups.map((group) => data[group][name].size))
-		groups.forEach((group) => {
+		const minSize = Math.min(...groups.map(group => data[group][name].size))
+		const maxSize = Math.max(...groups.map(group => data[group][name].size))
+		groups.forEach(group => {
 			data[group][name].size = (data[group][name].size - minSize) / (maxSize - minSize)
 		})
 
 		//remove speed
-		groups.forEach((group) => {
+		groups.forEach(group => {
 			// @ts-ignore
 			delete data[group][name].speed
 		})

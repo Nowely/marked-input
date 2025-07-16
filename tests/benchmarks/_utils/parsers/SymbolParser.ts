@@ -8,11 +8,11 @@ export class SymbolParser {
 	constructor(markups: Markup[]) {
 		this.markups = markups
 		// @ts-ignore
-		this.splitMarkups = this.markups.map((markup) => markup.split(PLACEHOLDER.LABEL))
+		this.splitMarkups = this.markups.map(markup => markup.split(PLACEHOLDER.LABEL))
 	}
 
 	static split(value: string, options?: Option[]) {
-		const markups = options?.map((c) => c.markup!)
+		const markups = options?.map(c => c.markup!)
 		return () => (markups ? new SymbolParser(markups).split(value) : [value])
 	}
 

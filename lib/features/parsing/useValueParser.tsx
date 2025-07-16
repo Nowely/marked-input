@@ -10,7 +10,7 @@ export const useValueParser = () => {
 	const store = useStore()
 	const isMounted = useRef(false)
 	const {value, options} = useStore(
-		(store) => ({
+		store => ({
 			value: store.props.value,
 			options: store.props.Mark ? store.props.options : undefined,
 		}),
@@ -30,7 +30,7 @@ export const useValueParser = () => {
 
 	useListener(
 		SystemEvent.Parse,
-		(event) => {
+		event => {
 			store.tokens = store.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]

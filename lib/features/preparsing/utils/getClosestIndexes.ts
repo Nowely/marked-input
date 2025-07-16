@@ -10,5 +10,5 @@ export function getClosestIndexes(array: number[], target: number) {
 		}
 	}
 	if (array[left] == target) right = left
-	return [left, right].filter((v) => array[v] !== undefined)
+	return [left, right].filter(v => array[v] !== undefined)
 }

@@ -13,13 +13,13 @@ export class Parser {
 	constructor(markups: Markup[]) {
 		this.markups = markups
 		this.regExps = this.markups.map(markupToRegex)
-		this.uniRegExp = new RegExp(this.regExps.map((value) => value.source).join('|'))
+		this.uniRegExp = new RegExp(this.regExps.map(value => value.source).join('|'))
 	}
 
 	static split(value: string, options?: InnerOption[]): MarkStruct[] {
-		const markups = options?.map((c) => c.markup!)
+		const markups = options?.map(c => c.markup!)
 		const pieces = markups ? new Parser(markups).split(value) : [value]
-		return pieces.map((piece) => {
+		return pieces.map(piece => {
 			return isObject(piece) ? piece : {label: piece}
 		})
 	}

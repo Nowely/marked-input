@@ -14,7 +14,7 @@ export async function rawToMeasures() {
 		for (const testCase in result[group]) {
 			const lineCount = Number(testCase.split('-')[0])
 
-			const memoryArr = result[group][testCase].memory.filter((value) => value > 0)
+			const memoryArr = result[group][testCase].memory.filter(value => value > 0)
 			//const speedArr = result[group][testCase].speed.sort((a, b) => a - b)
 			let timeArr = result[group][testCase].time.sort((a, b) => a - b)
 			timeArr = removeFirstAndLast20Percent(timeArr)

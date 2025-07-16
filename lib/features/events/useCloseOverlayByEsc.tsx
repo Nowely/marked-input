@@ -4,7 +4,7 @@ import {useStore} from '../../utils/hooks/useStore'
 
 export function useCloseOverlayByEsc() {
 	const {match, bus} = useStore(
-		(store) => ({
+		store => ({
 			match: store.overlayMatch,
 			bus: store.bus,
 		}),

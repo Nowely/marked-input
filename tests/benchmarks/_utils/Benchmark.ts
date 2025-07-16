@@ -32,7 +32,7 @@ export class Benchmark {
 
 	async start(iterations: number = 10) {
 		const names = (await getFileNames(DataFolderPath))
-			.filter((value) => value.includes('-k'))
+			.filter(value => value.includes('-k'))
 			.sort((a, b) => {
 				const a1 = Number(a.split('-')[0])
 				const b1 = Number(b.split('-')[0])
@@ -91,7 +91,7 @@ export class Benchmark {
 					for (let l = 0; l < updateRule.count; l++) {
 						const c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
 						currentPosition = currentPosition + updateRule.speed
-						const [time1, memory1, speed1] = this.measure(() => component.update((str) => str + c))
+						const [time1, memory1, speed1] = this.measure(() => component.update(str => str + c))
 
 						this.result[group][clearName].time.push(time1)
 						this.result[group][clearName].memory.push(memory1)

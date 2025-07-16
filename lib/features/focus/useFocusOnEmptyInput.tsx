@@ -3,7 +3,7 @@ import {useStore} from '../../utils/hooks/useStore'
 
 export const useFocusOnEmptyInput = () => {
 	const store = useStore()
-	const tokens = useStore((state) => state.tokens)
+	const tokens = useStore(state => state.tokens)
 
 	useListener(
 		'click',

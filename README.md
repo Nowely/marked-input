@@ -38,7 +38,7 @@ Here are a few examples to get you started:
 ```javascript
 import {MarkedInput} from 'rc-marked-input'
 
-const Mark = (props) => <mark onClick={(_) => alert(props.value)}>{props.label}</mark>
+const Mark = props => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
 const Marked = () => {
 	const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
@@ -133,7 +133,7 @@ import {MarkedInput, useMark} from 'rc-marked-input'
 const Mark = () => {
 	const {label, change} = useMark()
 
-	const handleInput = (e) => change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
+    const handleInput = e => change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
 
 	return <mark contentEditable onInput={handleInput} children={label} />
 }

@@ -28,7 +28,7 @@ export const UserList = () => {
 			}}
 		>
 			<List dense>
-				{users.map((user) => (
+				{users.map(user => (
 					<UserItem key={user.login} onSelect={select} user={user} />
 				))}
 			</List>

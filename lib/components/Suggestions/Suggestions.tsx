@@ -7,32 +7,32 @@ export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const filtered = useMemo(
-		() => match.option.data!.filter((s) => s.toLowerCase().indexOf(match.value.toLowerCase()) > -1),
+		() => match.option.data!.filter(s => s.toLowerCase().indexOf(match.value.toLowerCase()) > -1),
 		[match.value]
 	)
 	const length = filtered.length
 
 	useDownOf(
 		KEYBOARD.UP,
-		(event) => {
+		event => {
 			event.preventDefault()
-			setActive((prevState) => (isNaN(prevState) ? 0 : (length + ((prevState - 1) % length)) % length))
+			setActive(prevState => (isNaN(prevState) ? 0 : (length + ((prevState - 1) % length)) % length))
 		},
 		[length]
 	)
 
 	useDownOf(
 		KEYBOARD.DOWN,
-		(event) => {
+		event => {
 			event.preventDefault()
-			setActive((prevState) => (isNaN(prevState) ? 0 : (prevState + 1) % length))
+			setActive(prevState => (isNaN(prevState) ? 0 : (prevState + 1) % length))
 		},
 		[length]
 	)
 
 	useDownOf(
 		KEYBOARD.ENTER,
-		(event) => {
+		event => {
 			event.preventDefault()
 			const suggestion = filtered[active]
 			select({label: suggestion, value: active.toString()})
@@ -51,9 +51,9 @@ export const Suggestions = () => {
 				return (
 					<li
 						key={suggestion}
-						ref={(el) => className && el?.scrollIntoView(false)}
+						ref={el => className && el?.scrollIntoView(false)}
 						className={className}
-						onClick={(_) => select({label: suggestion, value: index.toString()})}
+						onClick={_ => select({label: suggestion, value: index.toString()})}
 						children={suggestion}
 					/>
 				)

@@ -4,7 +4,7 @@ import {useStore} from '../../utils/hooks/useStore'
 
 export function useCloseOverlayByOutsideClick() {
 	const store = useStore()
-	const match = useStore((store) => store.overlayMatch)
+	const match = useStore(store => store.overlayMatch)
 
 	useEffect(() => {
 		if (!match) return

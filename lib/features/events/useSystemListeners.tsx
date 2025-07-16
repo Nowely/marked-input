@@ -11,7 +11,7 @@ export function useSystemListeners() {
 
 	useListener(
 		SystemEvent.Change,
-		(event) => {
+		event => {
 			const {onChange, options} = store.props
 
 			if (!store.focus.target) return
@@ -39,7 +39,7 @@ export function useSystemListeners() {
 
 	useListener(
 		SystemEvent.Select,
-		(event) => {
+		event => {
 			const {Mark, onChange, options} = store.props
 			const {
 				mark,

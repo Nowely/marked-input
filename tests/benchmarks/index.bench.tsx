@@ -8,7 +8,7 @@ import {Analyzers, AnnCountToMarkupMap, DataFolderPath, Joiners, LineCountToDiff
 describe.skip('sort', async () => {
 	//get all data name
 	const names = (await getFileNamesOfData())
-		.filter((value) => value.includes('-k'))
+		.filter(value => value.includes('-k'))
 		.sort((a, b) => {
 			const a1 = Number(a.split('-')[0])
 			const b1 = Number(b.split('-')[0])
@@ -60,7 +60,7 @@ describe.skip('sort', async () => {
 							bench(
 								`${i}-${j}-${k}`,
 								() => {
-									component.update((str) => str + c)
+									component.update(str => str + c)
 								},
 								{time: 1000}
 							)

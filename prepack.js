@@ -12,7 +12,7 @@ rollupTypes()
 removeExtraTypeDeclarations()
 
 function copyReadme() {
-	fs.copyFile(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'), (err) => {
+	fs.copyFile(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
 		if (err) throw err
 		console.log('README.md copied')
 	})
@@ -24,7 +24,7 @@ function prepareAndCopyPackage() {
 	deleteUnnecessaryProperties(mainPackage)
 	mainPackage.peerDependencies = libPackage.peerDependencies
 	mainPackage.name = libPackage.name
-	paste(mainPackage, (err) => {
+	paste(mainPackage, err => {
 		if (err) throw err
 		console.log('package.json setup')
 	})
@@ -121,7 +121,7 @@ function rollupTypes() {
 }
 
 function removeExtraTypeDeclarations() {
-	fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, (err) => {
+	fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, err => {
 		if (err) throw err
 		console.log('Extra declarations deleted')
 	})
