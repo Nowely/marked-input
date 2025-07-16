@@ -88,7 +88,7 @@ export class Benchmark {
 
 					let currentPosition = 0
 					for (let l = 0; l < updateRule.count; l++) {
-						let c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
+						const c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
 						currentPosition = currentPosition + updateRule.speed
 						const [time1, memory1, speed1] = this.measure(() =>
 							component.update(str => str + c))

@@ -1,7 +1,7 @@
-import {readFile} from '../readFile'
-import {TargetPath, RawPath, SizeMap} from '../../consts'
+import {RawPath, SizeMap, TargetPath} from '../../consts'
 import {Measures, RawMeasures} from '../../types'
 import {convertMsIntoFrequency} from '../convertMsIntoFrequency'
+import {readFile} from '../readFile'
 import {writeFile} from '../writeFile'
 
 export async function rawToMeasures() {
@@ -51,7 +51,7 @@ function findOften(groups: Record<number, number>) {
 function groupBySimilar(numbers: number[], accuracy: number = 10) {
 	const groups: Record<number, number> = {}
 
-	for (let number of numbers) {
+	for (const number of numbers) {
 		const key = Math.floor(number / accuracy) * accuracy
 		groups[key] ??= 0
 		groups[key] = groups[key] + 1

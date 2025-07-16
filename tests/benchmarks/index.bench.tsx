@@ -1,15 +1,14 @@
+import path from 'path'
 import {bench, describe} from 'vitest'
 import {getFileNamesOfData} from './_utils/getFileNames'
-import {readFile} from "./_utils/readFile";
-import path from "path";
-import {Analyzers, AnnCountToMarkupMap, DataFolderPath, Joiners, LineCountToDiff, Parsers} from "./consts";
-import {VirtualComponent} from "./_utils/VirtualComponent";
-
+import {readFile} from './_utils/readFile'
+import {VirtualComponent} from './_utils/VirtualComponent'
+import {Analyzers, AnnCountToMarkupMap, DataFolderPath, Joiners, LineCountToDiff, Parsers} from './consts'
 
 
 describe.skip('sort', async () => {
 //get all data name
-let names = (await getFileNamesOfData())
+	const names = (await getFileNamesOfData())
     .filter(value => value.includes('-k'))
     .sort((a, b) => {
         const a1 = Number(a.split('-')[0])
@@ -54,7 +53,7 @@ for (const name of [names[0]]) {
 
                     let currentPosition = 0
                     for (let l = 0; l < updateRule.count; l++) {
-                        let c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
+						const c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
                         currentPosition = currentPosition + updateRule.speed
                         bench(`${i}-${j}-${k}`, () => {
                             component.update(str => str + c)

@@ -27,7 +27,7 @@ describe('API: Overlay and Triggers', () => {
 
 	it('should appear a overlay component by trigger', async () => {
 		//override event listener because 'selectionchange' don't work in here
-		let events: Record<string, EventListenerOrEventListenerObject> = {}
+		const events: Record<string, EventListenerOrEventListenerObject> = {}
 		document.addEventListener = vi.fn((event, callback) => events[event] = callback)
 		document.removeEventListener = vi.fn((event, callback) => delete events[event])
 

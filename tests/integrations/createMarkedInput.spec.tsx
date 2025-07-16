@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
-import React, {forwardRef} from 'react'
+import {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
 import {Story} from '../_utils/stories'
 
@@ -15,7 +15,7 @@ describe(`Utility: createMarkedInput`, () => {
 
 	it('should support to pass a forward overlay', async () => {
 		//override event listener because 'selectionchange' don't work in here
-		let events: Record<string, EventListenerOrEventListenerObject> = {}
+		const events: Record<string, EventListenerOrEventListenerObject> = {}
 		document.addEventListener = vi.fn((event, callback) => events[event] = callback)
 		document.removeEventListener = vi.fn((event, callback) => delete events[event])
 
