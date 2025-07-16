@@ -31,7 +31,7 @@ export class Parser {
 	iterateMatches(value: string) {
 		const result: PieceType[] = []
 
-		for (let [span, mark] of new ParserMatches(value, this.uniRegExp, this.regExps)) {
+		for (const [span, mark] of new ParserMatches(value, this.uniRegExp, this.regExps)) {
 			result.push(span)
 			if (mark !== null)
 				result.push(normalizeMark(mark, this.markups[mark.optionIndex]))

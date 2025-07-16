@@ -1,11 +1,11 @@
-import {readFile} from '../readFile'
 import {DataScoredPath, GroupScoredPath} from '../../consts'
 import {EachScored, FinalScored} from '../../types'
+import {readFile} from '../readFile'
 import {writeFile} from '../writeFile'
 
 export async function computeFinalScore() {
 	const str = await readFile(DataScoredPath)
-	let data: EachScored = JSON.parse(str)
+	const data: EachScored = JSON.parse(str)
 
 	for (const group in data) {
 		let finalScore = 0

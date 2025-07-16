@@ -11,7 +11,7 @@ export class TriggerFinder {
 	dividedText: { left: string; right: string }
 
 	constructor() {
-		let caretPosition = Caret.getCurrentPosition()
+		const caretPosition = Caret.getCurrentPosition()
 		this.node = Caret.getSelectedNode()
 		this.span = Caret.getFocusedSpan()
 		this.dividedText = this.getDividedTextBy(caretPosition)
@@ -27,8 +27,8 @@ export class TriggerFinder {
 	}
 
 	find(options: InnerOption[]): OverlayMatch | undefined {
-		for (let option of options) {
-			let match = this.matchInTextVia(option.trigger)
+		for (const option of options) {
+			const match = this.matchInTextVia(option.trigger)
 			if (match) return {
 				value: match.word,
 				source: match.annotation,

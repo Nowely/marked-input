@@ -10,7 +10,7 @@ export function useCloseOverlayByOutsideClick() {
 		if (!match) return
 
 		const handleClick = (event: MouseEvent) => {
-			let target = event.target as HTMLElement | null
+			const target = event.target as HTMLElement | null
 			if (store.refs.overlay.current?.contains(target) || store.refs.container.current?.contains(target)) return
 			store.bus.send(SystemEvent.ClearTrigger)
 		}

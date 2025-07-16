@@ -18,13 +18,13 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 		if (this.done)
 			return {done: this.done, value: null}
 
-		let match = this.uniRegExp.exec(this.raw)
+		const match = this.uniRegExp.exec(this.raw)
 		if (match === null) {
 			this.done = true
 			return {done: false, value: [this.raw, null]}
 		}
 
-		let [span, mark, raw] = this.extractPieces(match)
+		const [span, mark, raw] = this.extractPieces(match)
 		this.raw = raw
 		return {done: false, value: [span, mark]}
 	}
@@ -37,7 +37,7 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 	}
 
 	extractMark(execArray: RegExpExecArray): MarkMatch {
-		let annotation = execArray[0]
+		const annotation = execArray[0]
 		let optionIndex = 0
 		let label
 		let value
@@ -61,8 +61,8 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 			value = execArray[2 * optionIndex + 2]
 		}*/
 
-		let index = execArray.index
-		let input = execArray.input
+		const index = execArray.index
+		const input = execArray.input
 
 		return {annotation, label, value, input, index, optionIndex}
 	}

@@ -8,6 +8,10 @@
   "scripts": {
     "dev": "vite tests/e2e/app -c vite.config.ts --open",
     "build": "vite build && tsc && node prepack.js",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "lint:fix:suggest": "oxlint . --fix-suggestions",
+    "lint:fix:danger": "oxlint . --fix-dangerously",
     "storybook:dev": "npm run start -w storybook",
     "storybook:build": "npm run build -w storybook",
     "test": "npm run test -w tests",
@@ -24,6 +28,7 @@
     "@microsoft/api-extractor": "^7.52.8",
     "@types/react": "^18.3.23",
     "@vitejs/plugin-react-swc": "^3.10.2",
+    "oxlint": "^1.6.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
     "vite-plugin-css-injected-by-js": "^3.5.2"

@@ -164,7 +164,7 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 
 			if (0 < ja.length) {
 
-				let n = ja.length - 1
+				const n = ja.length - 1
 				lcs = [ja[n][ja[n].length - 1]]
 
 				while (lcs[lcs.length - 1].prev) {
@@ -220,7 +220,7 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 			const lineMap = new Map<string, { count: number, index: number }>()
 
 			for (let i = lo; i <= hi; i++) {
-				let line = arr[i]
+				const line = arr[i]
 
 				const lineVal = lineMap.get(line)
 				if (lineVal) {
@@ -292,7 +292,7 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 			// in the "Difference" array just yet, as the lines between these matches at
 			// the beginning and the end need to be analyzed first.
 
-			let aHiTemp = aHi
+			const aHiTemp = aHi
 
 			while (aLo <= aHi && bLo <= bHi && aLines[aHi] === bLines[bHi]) {
 
@@ -386,17 +386,17 @@ export function patienceDiffPlus(aLines: string[], bLines: string[]): Difference
 
 	do {
 
-		let aMove = aMoveNext
-		let aMoveIndex = aMoveIndexNext
-		let bMove = bMoveNext
-		let bMoveIndex = bMoveIndexNext
+		const aMove = aMoveNext
+		const aMoveIndex = aMoveIndexNext
+		const bMove = bMoveNext
+		const bMoveIndex = bMoveIndexNext
 
 		aMoveNext = []
 		aMoveIndexNext = []
 		bMoveNext = []
 		bMoveIndexNext = []
 
-		let subDiff = patienceDiff(aMove, bMove)
+		const subDiff = patienceDiff(aMove, bMove)
 
 		lastLineCountMoved = difference.lineCountMoved
 

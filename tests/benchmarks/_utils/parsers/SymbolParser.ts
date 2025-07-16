@@ -1,5 +1,5 @@
+import {PLACEHOLDER} from 'rc-marked-input'
 import {MarkMatch, Markup, Option, PieceType} from 'rc-marked-input/types'
-import {PLACEHOLDER} from "rc-marked-input";
 
 export class SymbolParser {
 	private readonly markups: Markup[]
@@ -23,7 +23,7 @@ export class SymbolParser {
 	iterateMatches(value: string) {
 		const result: PieceType[] = []
 
-		for (let [span, mark] of new ParserMatches(value, this.splitMarkups)) {
+		for (const [span, mark] of new ParserMatches(value, this.splitMarkups)) {
 			result.push(span)
 			if (mark !== null)
 				//result.push(normalizeMark(mark, this.markups[mark.optionIndex]))
@@ -51,13 +51,13 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		if (this.done)
 			return {done: this.done, value: null}
 
-		let match = this.findMatch(this.raw)
+		const match = this.findMatch(this.raw)
 		if (match === null) {
 			this.done = true
 			return {done: false, value: [this.raw, null]}
 		}
 
-		let [span, mark, raw] = match
+		const [span, mark, raw] = match
 		this.raw = raw
 		return {done: false, value: [span, mark]}
 	}
@@ -88,7 +88,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 
 		if (indexPairs.length) {
 			if (raw.slice(minStartIndex, minEndIndex + 1) === '') {
-				debugger
+
 			}
 			return [
 				raw.slice(0, minStartIndex),
