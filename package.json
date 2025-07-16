@@ -8,8 +8,8 @@
   "scripts": {
     "dev": "vite tests/e2e/app -c vite.config.ts --open",
     "build": "vite build && tsc && node prepack.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
     "storybook:dev": "npm run start -w storybook",
     "storybook:build": "npm run build -w storybook",
     "test": "npm run test -w tests",
@@ -30,6 +30,7 @@
     "eslint": "^9.31.0",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^16.3.0",
+    "oxlint": "^1.6.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.37.0",
     "vite": "^7.0.0",
