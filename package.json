@@ -12,6 +12,8 @@
     "lint:fix": "oxlint . --fix",
     "lint:fix:suggest": "oxlint . --fix-suggestions",
     "lint:fix:danger": "oxlint . --fix-dangerously",
+    "format": "prettier .",
+    "format:write": "prettier . --write",
     "storybook:dev": "npm run start -w storybook",
     "storybook:build": "npm run build -w storybook",
     "test": "npm run test -w tests",
@@ -29,6 +31,7 @@
     "@types/react": "^18.3.23",
     "@vitejs/plugin-react-swc": "^3.10.2",
     "oxlint": "^1.6.0",
+    "prettier": "3.6.2",
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
     "vite-plugin-css-injected-by-js": "^3.5.2"
