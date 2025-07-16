@@ -8,7 +8,7 @@ export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps 
 		...props,
 		options: props.options ? props.options.map(parseOption) : DEFAULT_OPTIONS,
 		trigger: props.trigger ?? 'change',
-		className: props.className ? DEFAULT_CLASS_NAME + ' ' + props.className : DEFAULT_CLASS_NAME
+		className: props.className ? DEFAULT_CLASS_NAME + ' ' + props.className : DEFAULT_CLASS_NAME,
 	}
 }
 
@@ -20,5 +20,3 @@ function parseOption(option: Option<any>): InnerOption {
 		trigger: option.trigger ?? DEFAULT_TRIGGER,
 	}
 }
-
-

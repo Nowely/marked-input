@@ -53,6 +53,6 @@ export async function genBNFGrammar() {
 	const grammarInfoObject = compile(grammarAst, {})
 	// Generate JavaScript code from the rules
 	const parserSource = generate.esmodule(grammarInfoObject, 'grammar')
-	fs.writeFileSync(path.resolve(UtilsFolderPath, 'GeneratedBNFGrammar.js'), parserSource, "utf8")
+	fs.writeFileSync(path.resolve(UtilsFolderPath, 'GeneratedBNFGrammar.js'), parserSource, 'utf8')
 	console.log(`Generated the new BNF grammar at ${Date.now()}`)
 }

@@ -49,7 +49,6 @@ export async function genAnnotatedText(sizes: number[], markupCount: number[]) {
 		const indexesK05 = genRandomIndexes(0, words.length - 1, k05)
 		const indexesK08 = genRandomIndexes(0, words.length - 1, k08)
 
-
 		for (const count of markupCount) {
 			const annotatedK02 = annotateWords([...words], indexesK02, count)
 			const annotatedK05 = annotateWords([...words], indexesK05, count)
@@ -65,7 +64,6 @@ export async function genAnnotatedText(sizes: number[], markupCount: number[]) {
 			writeFile(path.resolve(DataFolderPath, `${size}-k08-a${count}.txt`), textK08)
 		}
 	}
-
 
 	function annotateWords(words: string[], indexes: number[], markupCount: number) {
 		for (let i = 0; i < indexes.length; i++) {
@@ -96,6 +94,6 @@ export async function genAnnotatedText(sizes: number[], markupCount: number[]) {
 			}
 		}
 
-		return result.sort((a, b) => a < b ? -1 : 1)
+		return result.sort((a, b) => (a < b ? -1 : 1))
 	}
 }

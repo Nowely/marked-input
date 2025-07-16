@@ -23,7 +23,6 @@ export async function focusAtEnd(element: HTMLElement) {
 	verifyCaretPosition(element, textLength)
 }
 
-
 /**
  * Focuses contenteditable element and places caret at specific offset
  */
@@ -48,7 +47,6 @@ function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 	const length = measureTextLength(element, position!.node, position!.offset)
 	expect(length).toBe(expectedOffset)
 
-
 	function getCaretPosition() {
 		const selection = window.getSelection()
 		if (!selection || selection.rangeCount === 0) return null
@@ -56,7 +54,7 @@ function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 		const range = selection.getRangeAt(0)
 		return {
 			node: range.startContainer,
-			offset: range.startOffset
+			offset: range.startOffset,
 		}
 	}
 

@@ -1,15 +1,18 @@
 export const TestTexts = {
-	5: 'Vulgus animi decretum.\n' +
+	5:
+		'Vulgus animi decretum.\n' +
 		'Tunc dolor somniculosus adnuo caelestis eaque cimentarius necessitatibus.\n' +
 		'Ratione vehemens creator.\n' +
 		'Cibo beatus tribuo turpis demulceo tego.\n' +
 		'Accusantium abutor harum audacia sopor amplexus tyrannus.',
-	'5a1': '<h1>Vulgus</h1> <h1>animi</h1> <h1>decretum</h1>.\n' +
+	'5a1':
+		'<h1>Vulgus</h1> <h1>animi</h1> <h1>decretum</h1>.\n' +
 		'Tunc <h1>dolor</h1> somniculosus adnuo <h1>caelestis</h1> eaque cimentarius <h1>necessitatibus</h1>.\n' +
 		'Ratione <h1>vehemens</h1> <h1>creator</h1>.\n' +
 		'<h1>Cibo</h1> beatus tribuo <h1>turpis</h1> <h1>demulceo</h1> <h1>tego</h1>.\n' +
 		'Accusantium <h1>abutor</h1> harum audacia sopor <h1>amplexus</h1> tyrannus.',
-	50: 'Angelus sto tunc mollitia doloribus apud tutis sit crustulum valens.\n' +
+	50:
+		'Angelus sto tunc mollitia doloribus apud tutis sit crustulum valens.\n' +
 		'Tot thymum tametsi comparo cunae pecco comptus ulciscor quidem.\n' +
 		'Umbra depraedor ad ancilla adversus ultio cotidie verecundia.\n' +
 		'Desparatus patrocinor defetiscor damno civis dolorem vae.\n' +
@@ -59,7 +62,8 @@ export const TestTexts = {
 		'Amor delicate vesco statua.\n' +
 		'Suggero stultus aggero tergiversatio suus tibi pecco color quod.\n' +
 		'Voluptatum cinis attollo carpo molestias.',
-	'50a8': '<h1>Angelus</h1> <h2>sto</h2> tunc mollitia <p>doloribus</p> <a>apud</a> <span>tutis</span> <b>sit</b> crustulum <i>valens</i>.\n' +
+	'50a8':
+		'<h1>Angelus</h1> <h2>sto</h2> tunc mollitia <p>doloribus</p> <a>apud</a> <span>tutis</span> <b>sit</b> crustulum <i>valens</i>.\n' +
 		'<abbr>Tot</abbr> <h1>thymum</h1> tametsi <h2>comparo</h2> cunae <p>pecco</p> <a>comptus</a> ulciscor quidem.\n' +
 		'<span>Umbra</span> depraedor <b>ad</b> ancilla <i>adversus</i> ultio cotidie <abbr>verecundia</abbr>.\n' +
 		'<h1>Desparatus</h1> patrocinor defetiscor damno civis <h2>dolorem</h2> <p>vae</p>.\n' +
@@ -109,7 +113,8 @@ export const TestTexts = {
 		'Amor <i>delicate</i> vesco <abbr>statua</abbr>.\n' +
 		'<h1>Suggero</h1> stultus aggero <h2>tergiversatio</h2> <p>suus</p> tibi <a>pecco</a> color quod.\n' +
 		'Voluptatum cinis <span>attollo</span> carpo <b>molestias</b>.',
-	500: 'Clam comitatus corrupti.\n' +
+	500:
+		'Clam comitatus corrupti.\n' +
 		'Tenuis capto acer subito.\n' +
 		'Arcus careo eum tabernus spero cohaero cognatus.\n' +
 		'Temeritas candidus a voluptatem.\n' +
@@ -609,7 +614,8 @@ export const TestTexts = {
 		'Circumvenio timor ancilla coerceo theca utroque bestia utpote adopto creta.\n' +
 		'Illum decor spero virgo appello talus denego capio comitatus voluptate.\n' +
 		'Placeat ter aegrus subiungo aliquid talis aestivus torqueo urbanus clibanus.',
-	'500a16': 'Clam comitatus corrupti.\n' +
+	'500a16':
+		'Clam comitatus corrupti.\n' +
 		'Tenuis capto <h1>acer</h1> subito.\n' +
 		'Arcus <h2>careo</h2> eum <p>tabernus</p> <a>spero</a> <span>cohaero</span> cognatus.\n' +
 		'Temeritas <b>candidus</b> <i>a</i> <abbr>voluptatem</abbr>.\n' +

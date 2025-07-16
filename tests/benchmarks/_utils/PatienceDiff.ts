@@ -88,40 +88,37 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 	// recursively performs another LCS search (via addSubMatch), until there are
 	// none found, at which point the subsequence is dumped to the Difference.
 	//
-	function recurseLCS(aLo: number, aHi: number, bLo: number, bHi: number, uniqueCommonMap?: Map<string, {
-		indexA: number,
-		indexB: number
-	}>) {
-
+	function recurseLCS(
+		aLo: number,
+		aHi: number,
+		bLo: number,
+		bHi: number,
+		uniqueCommonMap?: Map<
+			string,
+			{
+				indexA: number
+				indexB: number
+			}
+		>
+	) {
 		const x = longestCommonSubsequence(uniqueCommonMap || uniqueCommon(aLines, aLo, aHi, bLines, bLo, bHi))
 
 		if (x.length === 0) {
-
 			addSubMatch(aLo, aHi, bLo, bHi)
-
 		} else {
-
 			if (aLo < x[0].indexA || bLo < x[0].indexB) {
-
 				addSubMatch(aLo, x[0].indexA - 1, bLo, x[0].indexB - 1)
-
 			}
 
 			let i
 			for (i = 0; i < x.length - 1; i++) {
-
 				addSubMatch(x[i].indexA, x[i + 1].indexA - 1, x[i].indexB, x[i + 1].indexB - 1)
-
 			}
 
 			if (x[i].indexA <= aHi || x[i].indexB <= bHi) {
-
 				addSubMatch(x[i].indexA, aHi, x[i].indexB, bHi)
-
 			}
-
 		}
-
 
 		//
 		// longestCommonSubsequence takes an ordered Map from the function uniqueCommon
@@ -130,13 +127,17 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 		// Returns an ordered array of objects containing the array indexes of the
 		// matching lines for a LCS.
 		//
-		function longestCommonSubsequence(abMap: Map<string, {
-			indexA: number,
-			indexB: number,
-			prev?: { indexA: number, indexB: number }
-		}>) {
-
-			const ja: { indexA: number, indexB: number, prev?: { indexA: number, indexB: number } }[][] = []
+		function longestCommonSubsequence(
+			abMap: Map<
+				string,
+				{
+					indexA: number
+					indexB: number
+					prev?: {indexA: number; indexB: number}
+				}
+			>
+		) {
+			const ja: {indexA: number; indexB: number; prev?: {indexA: number; indexB: number}}[][] = []
 
 			// First, walk the list creating the jagged array.
 
@@ -160,23 +161,18 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 
 			// Now, pull out the longest common subsequence.
 
-			let lcs: { indexA: number, indexB: number, prev?: { indexA: number, indexB: number } }[] = []
+			let lcs: {indexA: number; indexB: number; prev?: {indexA: number; indexB: number}}[] = []
 
 			if (0 < ja.length) {
-
 				const n = ja.length - 1
 				lcs = [ja[n][ja[n].length - 1]]
 
 				while (lcs[lcs.length - 1].prev) {
-
 					lcs.push(lcs[lcs.length - 1].prev!)
-
 				}
-
 			}
 
 			return lcs.reverse()
-
 		}
 
 		//
@@ -192,19 +188,18 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 		function uniqueCommon(aArray: string[], aLo: number, aHi: number, bArray: string[], bLo: number, bHi: number) {
 			const ma = findUnique(aArray, aLo, aHi)
 			const mb = findUnique(bArray, bLo, bHi)
-			const a = new Map<string, { indexA: number, indexB: number }>()
+			const a = new Map<string, {indexA: number; indexB: number}>()
 
 			ma.forEach((val, key) => {
 				if (mb.has(key)) {
 					a.set(key, {
 						indexA: val,
-						indexB: mb.get(key)!
+						indexB: mb.get(key)!,
 					})
 				}
 			})
 
 			return a
-
 		}
 
 		//
@@ -217,7 +212,7 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 		// array index i as the Map value.
 		//
 		function findUnique(arr: string[], lo: number, hi: number) {
-			const lineMap = new Map<string, { count: number, index: number }>()
+			const lineMap = new Map<string, {count: number; index: number}>()
 
 			for (let i = lo; i <= hi; i++) {
 				const line = arr[i]
@@ -229,20 +224,18 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 				} else {
 					lineMap.set(line, {
 						count: 1,
-						index: i
+						index: i,
 					})
 				}
 			}
 
 			const lineMap1 = new Map<string, number>()
 			lineMap.forEach((val, key) => {
-				if (val.count === 1)
-					lineMap1.set(key, val.index)
+				if (val.count === 1) lineMap1.set(key, val.index)
 			})
 
 			return lineMap1
 		}
-
 
 		//
 		// addToResult simply pushes the latest value onto the "Difference" array.  This
@@ -250,19 +243,14 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 		// and bLines array.
 		//
 		function addToResult(aIndex: number, bIndex: number) {
-
 			if (bIndex < 0) {
-
 				aMove.push(aLines[aIndex])
 				aMoveIndex.push(result.length)
 				deleted++
-
 			} else if (aIndex < 0) {
-
 				bMove.push(bLines[bIndex])
 				bMoveIndex.push(result.length)
 				inserted++
-
 			}
 
 			result.push({
@@ -270,7 +258,6 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 				aIndex: aIndex,
 				bIndex: bIndex,
 			})
-
 		}
 
 		//
@@ -278,14 +265,11 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 		// this function might recursively call recurseLCS to further match the lines
 		// between aLines and bLines.
 		//
-		function addSubMatch(aLo: number, aHi: number, bLo:number, bHi: number) {
-
+		function addSubMatch(aLo: number, aHi: number, bLo: number, bHi: number) {
 			// Match any lines at the beginning of aLines and bLines.
 
 			while (aLo <= aHi && bLo <= bHi && aLines[aLo] === bLines[bLo]) {
-
 				addToResult(aLo++, bLo++)
-
 			}
 
 			// Match any lines at the end of aLines and bLines, but don't place them
@@ -295,10 +279,8 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 			const aHiTemp = aHi
 
 			while (aLo <= aHi && bLo <= bHi && aLines[aHi] === bLines[bHi]) {
-
 				aHi--
 				bHi--
-
 			}
 
 			// Now, check to determine with the remaining lines in the subsequence
@@ -312,33 +294,22 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
 			const uniqueCommonMap = uniqueCommon(aLines, aLo, aHi, bLines, bLo, bHi)
 
 			if (uniqueCommonMap.size === 0) {
-
 				while (aLo <= aHi) {
-
 					addToResult(aLo++, -1)
-
 				}
 
 				while (bLo <= bHi) {
-
 					addToResult(-1, bLo++)
-
 				}
-
 			} else {
-
 				recurseLCS(aLo, aHi, bLo, bHi)
-
 			}
 
 			// Finally, let's add the matches at the end to the Difference.
 
 			while (aHi < aHiTemp) {
-
 				addToResult(++aHi, ++bHi)
-
 			}
-
 		}
 	}
 }
@@ -369,7 +340,6 @@ export function patienceDiff(aLines: string[], bLines: string[], diffPlusFlag?: 
  *
  */
 export function patienceDiffPlus(aLines: string[], bLines: string[]): DifferencePlus {
-
 	const difference = patienceDiff(aLines, bLines, true)
 
 	let aMoveNext = difference.aMove!
@@ -385,7 +355,6 @@ export function patienceDiffPlus(aLines: string[], bLines: string[]): Difference
 	let lastLineCountMoved
 
 	do {
-
 		const aMove = aMoveNext
 		const aMoveIndex = aMoveIndexNext
 		const bMove = bMoveNext
@@ -401,32 +370,22 @@ export function patienceDiffPlus(aLines: string[], bLines: string[]): Difference
 		lastLineCountMoved = difference.lineCountMoved
 
 		subDiff.lines.forEach((v, i) => {
-
 			if (0 <= v.aIndex && 0 <= v.bIndex) {
-
 				difference.lines[aMoveIndex[v.aIndex]].moved = true
 				difference.lines[bMoveIndex[v.bIndex]].aIndex = aMoveIndex[v.aIndex]
 				difference.lines[bMoveIndex[v.bIndex]].moved = true
 				difference.lineCountInserted--
 				difference.lineCountDeleted--
 				difference.lineCountMoved++
-
 			} else if (v.bIndex < 0) {
-
 				aMoveNext.push(aMove[v.aIndex])
 				aMoveIndexNext.push(aMoveIndex[v.aIndex])
-
 			} else {
-
 				bMoveNext.push(bMove[v.bIndex])
 				bMoveIndexNext.push(bMoveIndex[v.bIndex])
-
 			}
-
 		})
-
 	} while (0 < difference.lineCountMoved - lastLineCountMoved)
 
 	return difference
-
 }

@@ -8,7 +8,7 @@ import {Caret} from './Caret'
 export class TriggerFinder {
 	span: string
 	node: Node
-	dividedText: { left: string; right: string }
+	dividedText: {left: string; right: string}
 
 	constructor() {
 		const caretPosition = Caret.getCurrentPosition()
@@ -18,8 +18,7 @@ export class TriggerFinder {
 	}
 
 	static find(options: InnerOption[]) {
-		if (Caret.isSelectedPosition)
-			return new TriggerFinder().find(options)
+		if (Caret.isSelectedPosition) return new TriggerFinder().find(options)
 	}
 
 	getDividedTextBy(position: number) {
@@ -29,25 +28,27 @@ export class TriggerFinder {
 	find(options: InnerOption[]): OverlayMatch | undefined {
 		for (const option of options) {
 			const match = this.matchInTextVia(option.trigger)
-			if (match) return {
-				value: match.word,
-				source: match.annotation,
-				index: match.index,
-				span: this.span,
-				node: this.node,
-				option,
-			}
+			if (match)
+				return {
+					value: match.word,
+					source: match.annotation,
+					index: match.index,
+					span: this.span,
+					node: this.node,
+					option,
+				}
 		}
 	}
 
 	matchInTextVia(trigger: string = '@') {
 		const rightMatch = this.matchRightPart()
 		const leftMatch = this.matchLeftPart(trigger)
-		if (leftMatch) return {
-			word: leftMatch.word + rightMatch.word,
-			annotation: leftMatch.annotation + rightMatch.word,
-			index: leftMatch.index,
-		}
+		if (leftMatch)
+			return {
+				word: leftMatch.word + rightMatch.word,
+				annotation: leftMatch.annotation + rightMatch.word,
+				index: leftMatch.index,
+			}
 	}
 
 	matchRightPart() {

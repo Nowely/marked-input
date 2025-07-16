@@ -32,7 +32,7 @@ export class Benchmark {
 
 	async start(iterations: number = 10) {
 		const names = (await getFileNames(DataFolderPath))
-			.filter(value => value.includes('-k'))
+			.filter((value) => value.includes('-k'))
 			.sort((a, b) => {
 				const a1 = Number(a.split('-')[0])
 				const b1 = Number(b.split('-')[0])
@@ -68,7 +68,8 @@ export class Benchmark {
 		const markups = AnnCountToMarkupMap[annCount]
 
 		for (let i = 2; i < Analyzers.length; i++) {
-			for (let j = 0; j < Parsers.length - 1; j++) { //ignore last is the slowest parser
+			for (let j = 0; j < Parsers.length - 1; j++) {
+				//ignore last is the slowest parser
 				for (let k = 0; k < Joiners.length; k++) {
 					const group = getAlgorithmGroup(i, j, k)
 
@@ -90,20 +91,15 @@ export class Benchmark {
 					for (let l = 0; l < updateRule.count; l++) {
 						const c = updaterData.substring(currentPosition, currentPosition + updateRule.speed)
 						currentPosition = currentPosition + updateRule.speed
-						const [time1, memory1, speed1] = this.measure(() =>
-							component.update(str => str + c))
+						const [time1, memory1, speed1] = this.measure(() => component.update((str) => str + c))
 
 						this.result[group][clearName].time.push(time1)
 						this.result[group][clearName].memory.push(memory1)
 						this.result[group][clearName].speed.push(speed1)
 					}
-
-
 				}
 			}
 		}
-
-
 	}
 
 	measure(func: Function) {
@@ -136,7 +132,6 @@ export class Benchmark {
 		await writeFile(RawPath, content)
 	}
 }
-
 
 function getAlgorithmGroup(i: number, j: number, k: number): AlgorithmGroup {
 	return `${i}${j}${k}`

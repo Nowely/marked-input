@@ -19,8 +19,7 @@ export function useTextSelection() {
 	useEffect(() => {
 		const listener = (e: MouseEvent) => {
 			const isPressed = pressedUp.current
-			const isNotInnerSome =
-				!store.refs.container.current?.contains(ref.current) || ref.current !== e.target
+			const isNotInnerSome = !store.refs.container.current?.contains(ref.current) || ref.current !== e.target
 			const isInside = window.getSelection()?.containsNode(store.refs.container.current!, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
@@ -48,17 +47,16 @@ export function useTextSelection() {
 
 function useSelectionListener() {
 	const store = useStore()
-	const selecting = useStore(store => store.selecting)
+	const selecting = useStore((store) => store.selecting)
 
 	useEffect(() => {
 		if (!selecting) return
 
 		const nodes = [...store.refs.container.current!.children] as HTMLElement[]
-		const preservedState = nodes.map(value => value.contentEditable)
+		const preservedState = nodes.map((value) => value.contentEditable)
 
-		nodes.forEach(value => value.contentEditable = 'false')
+		nodes.forEach((value) => (value.contentEditable = 'false'))
 
-		return () => nodes.forEach((value, index) => value.contentEditable = preservedState[index])
-
+		return () => nodes.forEach((value, index) => (value.contentEditable = preservedState[index]))
 	}, [selecting])
 }

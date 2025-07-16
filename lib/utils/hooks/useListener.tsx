@@ -5,7 +5,11 @@ import {StoreContext} from '../providers/StoreContext'
 import {useStore} from './useStore'
 
 export function useListener<T>(key: EventKey<T>, listener: Listener<T>, deps?: DependencyList): void
-export function useListener<K extends keyof HTMLElementEventMap>(key: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList): void
+export function useListener<K extends keyof HTMLElementEventMap>(
+	key: K,
+	listener: Listener<HTMLElementEventMap[K]>,
+	deps?: DependencyList
+): void
 export function useListener(key: keyof HTMLElementEventMap | EventKey<any>, listener: Listener, deps?: DependencyList) {
 	if (typeof key === 'string') {
 		useContainerListener(key, listener, deps)
@@ -21,7 +25,11 @@ function useSystemListener<K extends EventKey<T>, T>(key: K, listener: Listener<
 	useEffect(() => store.bus.on(key, listener), deps)
 }
 
-function useContainerListener<K extends keyof HTMLElementEventMap>(key: K, listener: Listener<HTMLElementEventMap[K]>, deps?: DependencyList) {
+function useContainerListener<K extends keyof HTMLElementEventMap>(
+	key: K,
+	listener: Listener<HTMLElementEventMap[K]>,
+	deps?: DependencyList
+) {
 	const store = useStore()
 	useEffect(() => {
 		store.refs.container.current?.addEventListener(key, listener)

@@ -3,7 +3,7 @@ import {useStore} from '../../utils/hooks/useStore'
 
 export const useFocusRecovery = () => {
 	const store = useStore()
-	const tokens = useStore(store => store.tokens)
+	const tokens = useStore((store) => store.tokens)
 	const deps = store.props.Mark ? [tokens] : undefined
 
 	//Restore focus after delete mark

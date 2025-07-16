@@ -5,14 +5,16 @@ import {getClosestIndexes} from '../preparsing/utils/getClosestIndexes'
 import {Parser} from './Parser/Parser'
 
 export function getTokensByValue(store: Store) {
-	const {props: {value, options}} = store
+	const {
+		props: {value, options},
+	} = store
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.previousValue, value)
 	store.previousValue = value
 
 	switch (true) {
 		//Mark removing happen
-		case gap.left && (ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1): {
+		case gap.left && ranges.includes(gap.left) && gap.right && Math.abs(gap.left - gap.right) > 1: {
 			const updatedIndex = ranges.indexOf(gap.left)
 			const tokens = parseUnionLabels(store, updatedIndex - 1, updatedIndex)
 			return store.tokens.toSpliced(updatedIndex - 1, 2, ...tokens)
@@ -40,7 +42,6 @@ type ParseType = '' | 'all'
 
 function identifyParseType(store: Store) {
 	switch (true) {
-
 	}
 }
 
@@ -55,9 +56,11 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 
 function getRangeMap(store: Store): number[] {
 	let position = 0
-	return store.tokens.map(token => {
-		const length = isAnnotated(token) ? token.annotation.length : token.label.length
-		position += length
-		return position - length
-	}) ?? []
+	return (
+		store.tokens.map((token) => {
+			const length = isAnnotated(token) ? token.annotation.length : token.label.length
+			position += length
+			return position - length
+		}) ?? []
+	)
 }

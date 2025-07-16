@@ -13,8 +13,7 @@ export class EventBus {
 	}
 
 	#getListeners(key: EventKey<any>) {
-		if (!this.#SystemEvents.has(key))
-			this.#SystemEvents.set(key, new Set())
+		if (!this.#SystemEvents.has(key)) this.#SystemEvents.set(key, new Set())
 		return this.#SystemEvents.get(key) as Set<Listener>
 	}
 }

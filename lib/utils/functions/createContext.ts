@@ -1,6 +1,8 @@
 import React, {Context, useContext} from 'react'
 
-export const createContext = <T, >(name: string): [() => T, React.Provider<NonNullable<T>>, React.Context<NonNullable<T>>] => {
+export const createContext = <T>(
+	name: string
+): [() => T, React.Provider<NonNullable<T>>, React.Context<NonNullable<T>>] => {
 	const defaultContext = React.createContext<T | undefined>(undefined)
 	defaultContext.displayName = name
 
@@ -10,8 +12,7 @@ export const createContext = <T, >(name: string): [() => T, React.Provider<NonNu
 
 	return [hook, provider, context]
 
-
-	function createContextHook<T, >(context: Context<T>) {
+	function createContextHook<T>(context: Context<T>) {
 		return () => {
 			const value = useContext(context)
 

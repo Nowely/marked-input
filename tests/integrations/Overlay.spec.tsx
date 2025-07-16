@@ -10,7 +10,7 @@ const {DefaultOverlay} = Story.Overlay
 describe('API: Overlay and Triggers', () => {
 	//TODO not working
 	it.todo('should typed with default values of options', async () => {
-		const {container, getByText} = render(<DefaultOverlay options={[]}/>)
+		const {container, getByText} = render(<DefaultOverlay options={[]} />)
 
 		await user.type(container.firstElementChild?.firstElementChild, 'abc')
 
@@ -18,7 +18,7 @@ describe('API: Overlay and Triggers', () => {
 	})
 
 	it('should typed with default values of options', async () => {
-		const {container, getByText} = render(<DefaultOverlay/>)
+		const {container, getByText} = render(<DefaultOverlay />)
 
 		await user.type(container.firstElementChild?.firstElementChild, 'abc')
 
@@ -28,13 +28,16 @@ describe('API: Overlay and Triggers', () => {
 	it('should appear a overlay component by trigger', async () => {
 		//override event listener because 'selectionchange' don't work in here
 		const events: Record<string, EventListenerOrEventListenerObject> = {}
-		document.addEventListener = vi.fn((event, callback) => events[event] = callback)
+		document.addEventListener = vi.fn((event, callback) => (events[event] = callback))
 		document.removeEventListener = vi.fn((event, callback) => delete events[event])
 
-		const {getByText, findByText} = render(<Default
-			trigger="selectionChange" defaultValue="@ @[mark](1)!"
-			options={[{markup: '@[__label__](__value__)', data: ['Item']}]}
-		/>)
+		const {getByText, findByText} = render(
+			<Default
+				trigger="selectionChange"
+				defaultValue="@ @[mark](1)!"
+				options={[{markup: '@[__label__](__value__)', data: ['Item']}]}
+			/>
+		)
 		const span = getByText(/@/i)
 
 		await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
@@ -47,5 +50,4 @@ describe('API: Overlay and Triggers', () => {
 
 		expect(await findByText('Item')).toBeInTheDocument()
 	})
-
 })

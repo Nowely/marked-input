@@ -1,5 +1,5 @@
 import {MarkedInput, useMark} from 'rc-marked-input'
-import {FormEvent, useEffect, useState} from 'react'
+import {useEffect, useState} from 'react'
 import {Text} from '../assets/Text'
 
 export default {
@@ -12,34 +12,32 @@ const Mark = () => {
 	const {label, change, ref} = useMark()
 
 	useEffect(() => {
-		if (ref.current)
-			ref.current.textContent = label
+		if (ref.current) ref.current.textContent = label
 	}, [])
 
-	return <mark ref={ref} contentEditable/>
+	return <mark ref={ref} contentEditable />
 }
 
 export const Dynamic = () => {
 	const [value, setValue] = useState('Hello, dynamical mark @[world]( )!')
-	return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={Mark} value={value} onChange={setValue} />
 }
 
 const RemovableMark = () => {
 	const {label, remove} = useMark()
-	return <mark onClick={remove} children={label}/>
+	return <mark onClick={remove} children={label} />
 }
 
 export const Removable = () => {
 	const [value, setValue] = useState('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
-	return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue} />
 }
 
 const Abbr = () => {
 	const {label, value, ref, change} = useMark()
 
 	useEffect(() => {
-		if (ref.current)
-			ref.current.textContent = label
+		if (ref.current) ref.current.textContent = label
 	}, [])
 
 	return (
@@ -49,7 +47,7 @@ const Abbr = () => {
 			contentEditable
 			style={{
 				outline: 'none',
-				whiteSpace: 'pre-wrap'
+				whiteSpace: 'pre-wrap',
 			}}
 		/>
 	)
@@ -59,12 +57,11 @@ export const Focusable = () => {
 	const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
 	return (
 		<>
-			<MarkedInput Mark={Abbr} value={value} onChange={setValue}/>
-			<Text label="Plaint text:" value={value}/>
+			<MarkedInput Mark={Abbr} value={value} onChange={setValue} />
+			<Text label="Plaint text:" value={value} />
 		</>
 	)
 }
-
 
 /*TODO
 const Tag = () => {

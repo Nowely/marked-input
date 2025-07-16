@@ -38,14 +38,14 @@ export const Markups_4 = Markups_16.slice(0, 4)
 export const Markups_8 = Markups_16.slice(0, 8)
 
 export const AnnCountToMarkupMap: Record<string, Markup[]> = {
-	'a1': Markups_1,
-	'a2': Markups_2,
-	'a4': Markups_4,
-	'a8': Markups_8,
-	'a16': Markups_16,
+	a1: Markups_1,
+	a2: Markups_2,
+	a4: Markups_4,
+	a8: Markups_8,
+	a16: Markups_16,
 }
 
-export const LineCountToDiff: Record<string, { count: number, speed: number }> = {
+export const LineCountToDiff: Record<string, {count: number; speed: number}> = {
 	2: {
 		count: 3,
 		speed: 3,
@@ -105,12 +105,12 @@ export const SizeMap = {
 		0: 2.27,
 		1: 2.53,
 		2: 7.83,
-		3: 13.99
+		3: 13.99,
 	},
 	joiner: {
 		0: 0.44,
 		1: 0.18,
-	}
+	},
 } as const
 
 export const UtilsFolderPath = './benchmarks/_utils'

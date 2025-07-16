@@ -12,7 +12,7 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 	},
 	focus() {
 		store.focus.head?.focus()
-	}
+	},
 })
 
 export function useMarkedInputHandler(ref: ForwardedRef<MarkedInputHandler>) {

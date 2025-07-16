@@ -1,5 +1,6 @@
 export function getClosestIndexes(array: number[], target: number) {
-	let left = -1, right = array.length
+	let left = -1,
+		right = array.length
 	while (right - left > 1) {
 		const middle = Math.round((left + right) / 2)
 		if (array[middle] <= target) {
@@ -9,5 +10,5 @@ export function getClosestIndexes(array: number[], target: number) {
 		}
 	}
 	if (array[left] == target) right = left
-	return [left, right].filter(v => array[v] !== undefined)
+	return [left, right].filter((v) => array[v] !== undefined)
 }

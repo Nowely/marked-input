@@ -12,7 +12,7 @@
     "lint:fix": "oxlint . --fix",
     "lint:fix:suggest": "oxlint . --fix-suggestions",
     "lint:fix:danger": "oxlint . --fix-dangerously",
-    "format": "prettier .",
+    "format": "prettier . --check",
     "format:write": "prettier . --write",
     "storybook:dev": "npm run start -w storybook",
     "storybook:build": "npm run build -w storybook",

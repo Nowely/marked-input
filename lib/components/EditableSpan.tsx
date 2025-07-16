@@ -7,15 +7,8 @@ import {useStore} from '../utils/hooks/useStore'
 export const EditableSpan = () => {
 	const mark = useMark()
 	const spanOverride = useStore(getChildProps('span'), true)
-	
-	return (
-		<span
-			{...spanOverride}
-			ref={mark.ref}
-			contentEditable={!mark.readOnly}
-			onPaste={handlePaste}
-		/>
-	)
+
+	return <span {...spanOverride} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
 }
 
 function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {
