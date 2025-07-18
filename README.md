@@ -133,7 +133,7 @@ import {MarkedInput, useMark} from 'rc-marked-input'
 const Mark = () => {
 	const {label, change} = useMark()
 
-    const handleInput = e => change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
+	const handleInput = e => change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
 
 	return <mark contentEditable onInput={handleInput} children={label} />
 }
@@ -303,7 +303,7 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 ### MarkedInput
 
 | Name         | Type                         | Default       | Description                            |
-|--------------|------------------------------|---------------|----------------------------------------|
+| ------------ | ---------------------------- | ------------- | -------------------------------------- |
 | value        | string                       | `undefined`   | Annotated text with markups for mark   |
 | defaultValue | string                       | `undefined`   | Default value                          |
 | onChange     | (value: string) => void      | `undefined`   | Change event                           |
@@ -316,7 +316,7 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 ### Helpers
 
 | Name              | Type                                                                              | Description                                  |
-|-------------------|-----------------------------------------------------------------------------------|----------------------------------------------|
+| ----------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
 | createMarkedInput | <T = MarkStruct>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>          | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text                 |
