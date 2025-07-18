@@ -1,14 +1,7 @@
 {
 	"overrides": [
 		{
-			"files": ["*.json"],
-			"options": {
-				"useTabs": false,
-				"tabWidth": 2
-			}
-		},
-		{
-			"files": ["*.md"],
+			"files": ["*.json", "*.md"],
 			"options": {
 				"useTabs": false,
 				"tabWidth": 2
