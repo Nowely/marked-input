@@ -8,16 +8,16 @@ export default {
 	title: 'MarkedInput',
 	tags: ['autodocs'],
 	component: MarkedInput,
-	args: {}
+	args: {},
 } satisfies Meta<typeof MarkedInput>
 
 type Story = StoryObj<Meta<typeof MarkedInput<MarkStruct>>>
 
 export const Default: Story = {
 	args: {
-		Mark: (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		Mark: props => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
 		defaultValue: 'Hello, clickable marked @[world](Hello! Hello!)!',
-	}
+	},
 }
 
 const PrimaryMarkup: Markup = '@[__label__](primary:__value__)'
@@ -25,24 +25,27 @@ const DefaultMarkup: Markup = '@[__label__](default:__value__)'
 
 const ConfiguredMarkedInput = createMarkedInput({
 	Mark: Button,
-	options: [{
-		markup: PrimaryMarkup,
-		data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-		initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
-	}, {
-		markup: DefaultMarkup,
-		trigger: '/',
-		data: ['Seventh', 'Eight', 'Ninth'],
-		initMark: ({label}) => ({label})
-	}],
+	options: [
+		{
+			markup: PrimaryMarkup,
+			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
+			initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+		},
+		{
+			markup: DefaultMarkup,
+			trigger: '/',
+			data: ['Seventh', 'Eight', 'Ninth'],
+			initMark: ({label}) => ({label}),
+		},
+	],
 })
 
 export const Configured: Story = {
 	render: () => {
 		const [value, setValue] = useState(
-			'Enter the \'@\' for calling @[primary](primary:4) suggestions and \'/\' for @[default](default:7)!\n' +
-			'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
-			'For found mark used @[annotations](default:123).'
+			"Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
+				'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
+				'For found mark used @[annotations](default:123).'
 		)
 
 		const displayText = denote(value, mark => mark.label, PrimaryMarkup, DefaultMarkup)
@@ -59,19 +62,21 @@ export const Configured: Story = {
 					/>
 				</ConfiguredMarkedInput>
 
-				<Text label="Plaint text:" value={value}/>
-				<Text label="Display text (denoted):" value={displayText}/>
+				<Text label="Plaint text:" value={value} />
+				<Text label="Display text (denoted):" value={displayText} />
 			</>
 		)
-	}
+	},
 }
 
 export const Autocomplete: Story = {
 	args: {
 		defaultValue: 'Hello, clickable marked @world!',
-		options: [{
-			markup: '@__label__',
-			data: ['one', 'two', 'three', 'four']
-		}]
-	}
+		options: [
+			{
+				markup: '@__label__',
+				data: ['one', 'two', 'three', 'four'],
+			},
+		],
+	},
 }

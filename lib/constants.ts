@@ -22,9 +22,8 @@ export enum KEYBOARD {
 	COMMA = ',',
 
 	// UI Keys
-	ESC = 'Escape'
+	ESC = 'Escape',
 }
-
 
 export const wordRegex = new RegExp(/^\w*/)
 
@@ -34,8 +33,8 @@ export const SystemEvent = {
 	CheckTrigger: Symbol() as EventKey,
 	Change: Symbol() as EventKey,
 	Parse: Symbol() as EventKey,
-	Delete: Symbol() as EventKey<{ token: MarkStruct }>,
-	Select: Symbol() as EventKey<{ mark: MarkStruct, match: OverlayMatch }>,
+	Delete: Symbol() as EventKey<{token: MarkStruct}>,
+	Select: Symbol() as EventKey<{mark: MarkStruct; match: OverlayMatch}>,
 }
 
 export enum PLACEHOLDER {

@@ -14,11 +14,10 @@ export const UserItem = ({onSelect, user}: UserItemProps) => {
 		<ListItem disablePadding onClick={() => onSelect({label: user.login, value: user.avatar_url ?? abbr})}>
 			<ListItemButton>
 				<ListItemAvatar>
-					<Avatar src={user.avatar_url} children={abbr}/>
+					<Avatar src={user.avatar_url} children={abbr} />
 				</ListItemAvatar>
-				<ListItemText primary={user.login}/>
+				<ListItemText primary={user.login} />
 			</ListItemButton>
 		</ListItem>
 	)
 }
-

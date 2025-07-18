@@ -7,16 +7,14 @@ export class ParserMatches implements IterableIterator<[string, MarkMatch | null
 		public raw: string,
 		public uniRegExp: RegExp,
 		public regExps: RegExp[]
-	) {
-	}
+	) {}
 
 	[Symbol.iterator](): IterableIterator<[string, MarkMatch | null]> {
 		return this
 	}
 
 	next(): IteratorResult<[string, MarkMatch | null], [string, MarkMatch | null] | null> {
-		if (this.done)
-			return {done: this.done, value: null}
+		if (this.done) return {done: this.done, value: null}
 
 		const match = this.uniRegExp.exec(this.raw)
 		if (match === null) {

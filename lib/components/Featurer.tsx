@@ -13,7 +13,7 @@ import {useValueParser} from '../features/parsing/useValueParser'
 import {useMarkedInputHandler} from '../features/useMarkedInputHandler'
 import {MarkedInputHandler} from '../types'
 
-export const Featurer = ({inRef}: { inRef: ForwardedRef<MarkedInputHandler> }) => {
+export const Featurer = ({inRef}: {inRef: ForwardedRef<MarkedInputHandler>}) => {
 	useMarkedInputHandler(inRef)
 
 	useSystemListeners()

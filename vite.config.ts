@@ -13,17 +13,17 @@ export default defineConfig(({command}) => ({
 			entry: path.resolve(__dirname, 'lib/index.ts'),
 			name: 'MarkedInput',
 			formats: ['es', 'umd'],
-			fileName: 'index'
+			fileName: 'index',
 		},
 		rollupOptions: {
 			external: ['react', 'react/jsx-runtime'],
 			output: {
 				globals: {
 					react: 'React',
-					'react/jsx-runtime': 'ReactJsxRuntime'
-				}
-			}
-		}
+					'react/jsx-runtime': 'ReactJsxRuntime',
+				},
+			},
+		},
 	},
 	plugins: [react(), command !== 'serve' && injectCssToJs()],
 	test: {

@@ -3,7 +3,6 @@ import path from 'path'
 import {fileURLToPath} from 'url'
 import api from '@microsoft/api-extractor'
 
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -11,7 +10,6 @@ copyReadme()
 prepareAndCopyPackage()
 rollupTypes()
 removeExtraTypeDeclarations()
-
 
 function copyReadme() {
 	fs.copyFile(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
@@ -47,7 +45,10 @@ function prepareAndCopyPackage() {
 
 	function paste(obj, callback) {
 		try {
-			fs.writeFileSync(path.resolve(__dirname, 'dist/package.json'), Buffer.from(JSON.stringify(obj, null, 2), 'utf-8'))
+			fs.writeFileSync(
+				path.resolve(__dirname, 'dist/package.json'),
+				Buffer.from(JSON.stringify(obj, null, 2), 'utf-8')
+			)
 			callback(null)
 		} catch (err) {
 			callback(err)
@@ -77,7 +78,6 @@ function rollupTypes() {
 		}
 	}
 
-
 	function getOptions() {
 		const configObjectFullPath = __filename
 		const packageJsonFullPath = path.resolve(__dirname, `package.json`)
@@ -94,7 +94,7 @@ function rollupTypes() {
 			},*/
 			dtsRollup: {
 				enabled: true,
-				untrimmedFilePath: '<projectFolder>/dist/index.d.ts'
+				untrimmedFilePath: '<projectFolder>/dist/index.d.ts',
 			},
 			messages: {
 				compilerMessageReporting: {
@@ -113,15 +113,15 @@ function rollupTypes() {
 					'tsdoc-at-sign-in-word': {logLevel: 'none'},
 					'tsdoc-escape-right-brace': {logLevel: 'none'},
 					'tsdoc-malformed-inline-tag': {logLevel: 'none'},
-				}
-			}
+				},
+			},
 		}
 		return {configObject, configObjectFullPath, packageJsonFullPath}
 	}
 }
 
 function removeExtraTypeDeclarations() {
-	fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, (err) => {
+	fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, err => {
 		if (err) throw err
 		console.log('Extra declarations deleted')
 	})

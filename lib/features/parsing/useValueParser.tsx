@@ -9,10 +9,13 @@ import {Parser} from './Parser/Parser'
 export const useValueParser = () => {
 	const store = useStore()
 	const isMounted = useRef(false)
-	const {value, options} = useStore(store => ({
-		value: store.props.value,
-		options: store.props.Mark ? store.props.options : undefined,
-	}), true)
+	const {value, options} = useStore(
+		store => ({
+			value: store.props.value,
+			options: store.props.Mark ? store.props.options : undefined,
+		}),
+		true
+	)
 
 	useEffect(() => {
 		if (isMounted.current) {
@@ -25,9 +28,11 @@ export const useValueParser = () => {
 		isMounted.current = true
 	}, [value, options])
 
-	useListener(SystemEvent.Parse, (event) => {
-		store.tokens = store.focus.target
-			? getTokensByUI(store)
-			: getTokensByValue(store)
-	}, [])
+	useListener(
+		SystemEvent.Parse,
+		event => {
+			store.tokens = store.focus.target ? getTokensByUI(store) : getTokensByValue(store)
+		},
+		[]
+	)
 }

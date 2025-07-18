@@ -55,23 +55,23 @@ export type OverlayMatch = {
 	/**
 	 * Found value via a overlayMatch
 	 */
-	value: string,
+	value: string
 	/**
 	 * Triggered value
 	 */
-	source: string,
+	source: string
 	/**
 	 * Piece of text, in which was a overlayMatch
 	 */
-	span: string,
+	span: string
 	/**
 	 * Html element, in which was a overlayMatch
 	 */
-	node: Node,
+	node: Node
 	/**
 	 * Start position of a overlayMatch
 	 */
-	index: number,
+	index: number
 	/**
 	 * OverlayMatch's option
 	 */
@@ -99,10 +99,6 @@ export interface MarkedInputHandler {
 	focus(): void
 }
 
-export type OverlayTrigger =
-	| Array<'change' | 'selectionChange'>
-	| 'change'
-	| 'selectionChange'
-	| 'none';
+export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 
 export interface EventKey<T = undefined> extends Symbol {}

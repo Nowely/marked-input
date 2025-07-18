@@ -7,7 +7,7 @@ export interface TextProps {
 
 export const Text = ({value, label}: TextProps) => (
 	<>
-		<br/>
+		<br />
 		{label && <b>{label}</b>}
 		<pre>{value}</pre>
 	</>

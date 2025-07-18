@@ -6,17 +6,17 @@ A React component that lets you combine editable text with any component using a
 
 ## Feature
 
-* Powerful annotations tool: add, edit, remove, visualize
-* TypeScript
-* Support for any components
-* Flexible and customizable
-* Two ways to configure
-* Helpers for processing text
-* Hooks for advanced components
-* Button handling (Left, Right, Delete, Backspace, Esc)
-* Overlay with the suggestions component by default
-* Zero dependencies
-* Cross selection
+- Powerful annotations tool: add, edit, remove, visualize
+- TypeScript
+- Support for any components
+- Flexible and customizable
+- Two ways to configure
+- Helpers for processing text
+- Hooks for advanced components
+- Button handling (Left, Right, Delete, Backspace, Esc)
+- Overlay with the suggestions component by default
+- Zero dependencies
+- Cross selection
 
 ## Installation
 
@@ -36,13 +36,13 @@ Here are a few examples to get you started:
 ### Static marks &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/marked-input-x5wx6k?file=/src/App.tsx)
 
 ```javascript
-import {MarkedInput} from "rc-marked-input";
+import {MarkedInput} from 'rc-marked-input'
 
-const Mark = (props) => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+const Mark = props => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
 
 const Marked = () => {
-    const [value, setValue] = useState("Hello, clickable marked @[world](Hello! Hello!)!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue} />
 }
 ```
 
@@ -53,16 +53,16 @@ The library allows you to configure the `MarkedInput` component in two ways.
 Let's declare markups and suggestions data:
 
 ```tsx
-const Data = ["First", "Second", "Third", "Fourth", "Fifth", "Sixth"]
-const AnotherData = ["Seventh", "Eight", "Ninth"]
-const Primary = "@[__label__](primary:__value__)"
-const Default = "@[__label__](default)"
+const Data = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']
+const AnotherData = ['Seventh', 'Eight', 'Ninth']
+const Primary = '@[__label__](primary:__value__)'
+const Default = '@[__label__](default)'
 ```
 
 Using the components
 
 ```tsx
-import {MarkedInput} from "rc-marked-input";
+import {MarkedInput} from 'rc-marked-input'
 
 export const App = () => {
     const [value, setValue] = useState(
@@ -70,15 +70,23 @@ export const App = () => {
     )
 
     return (
-        <MarkedInput Mark={Button} value={value} onChange={setValue} options={[{
-            markup: Primary,
-            data: Data,
-            initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
-        }, {
-            trigger: '/',
-            markup: Default,
-            data: AnotherData
-        }]}/>
+        <MarkedInput
+            Mark={Button}
+            value={value}
+            onChange={setValue}
+            options={[
+                {
+                    markup: Primary,
+                    data: Data,
+                    initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+                },
+                {
+                    trigger: '/',
+                    markup: Default,
+                    data: AnotherData,
+                },
+            ]}
+        />
     )
 }
 ```
@@ -86,27 +94,30 @@ export const App = () => {
 Using the `createMarkedInput`:
 
 ```tsx
-import {createMarkedInput} from "rc-marked-input";
+import {createMarkedInput} from 'rc-marked-input'
 
 const ConfiguredMarkedInput = createMarkedInput({
     Mark: Button,
-    options: [{
-        markup: Primary,
-        data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-        initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)})
-    }, {
-        markup: Default,
-        trigger: '/',
-        data: ['Seventh', 'Eight', 'Ninth'],
-        initMark: ({label}) => ({label})
-    }],
+    options: [
+        {
+            markup: Primary,
+            data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
+            initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+        },
+        {
+            markup: Default,
+            trigger: '/',
+            data: ['Seventh', 'Eight', 'Ninth'],
+            initMark: ({label}) => ({label}),
+        },
+    ],
 })
 
 const App = () => {
     const [value, setValue] = useState(
         "Enter the '@' for creating @[Primary Mark](primary:Hello!) or '/' for @[Default mark](default)!"
     )
-    return <ConfiguredMarkedInput value={value} onChange={setValue}/>
+    return <ConfiguredMarkedInput value={value} onChange={setValue} />
 }
 ```
 
@@ -117,20 +128,19 @@ Marks can be dynamic: editable, removable, etc. via the `useMark` hook helper.
 #### Editable
 
 ```tsx
-import {MarkedInput, useMark} from "rc-marked-input";
+import {MarkedInput, useMark} from 'rc-marked-input'
 
 const Mark = () => {
     const {label, change} = useMark()
 
-    const handleInput = (e) =>
-        change({label: e.currentTarget.textContent ?? "", value: " "}, {silent: true})
+    const handleInput = e => change({label: e.currentTarget.textContent ?? '', value: ' '}, {silent: true})
 
-    return <mark contentEditable onInput={handleInput} children={label}/>
+    return <mark contentEditable onInput={handleInput} children={label} />
 }
 
 export const Dynamic = () => {
-    const [value, setValue] = useState("Hello, dynamical mark @[world]( )!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('Hello, dynamical mark @[world]( )!')
+    return <MarkedInput Mark={Mark} value={value} onChange={setValue} />
 }
 ```
 
@@ -141,12 +151,12 @@ export const Dynamic = () => {
 ```tsx
 const RemovableMark = () => {
     const {label, remove} = useMark()
-    return <mark onClick={remove} children={label}/>
+    return <mark onClick={remove} children={label} />
 }
 
 export const Removable = () => {
-    const [value, setValue] = useState("I @[contain]( ) @[removable]( ) by click @[marks]( )!")
-    return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
+    return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue} />
 }
 ```
 
@@ -162,8 +172,10 @@ A default overlay is the suggestion component, but it can be easily replaced for
 
 ```tsx
 export const DefaultOverlay = () => {
-    const [value, setValue] = useState("Hello, default - suggestion overlay by trigger @!")
-    return <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]}/>
+    const [value, setValue] = useState('Hello, default - suggestion overlay by trigger @!')
+    return (
+        <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]} />
+    )
 }
 ```
 
@@ -172,8 +184,8 @@ export const DefaultOverlay = () => {
 ```tsx
 const Overlay = () => <h1>I am the overlay</h1>
 export const CustomOverlay = () => {
-    const [value, setValue] = useState("Hello, custom overlay by trigger @!")
-    return <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('Hello, custom overlay by trigger @!')
+    return <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue} />
 }
 ```
 
@@ -181,9 +193,10 @@ export const CustomOverlay = () => {
 
 ```tsx
 export const CustomTrigger = () => {
-    const [value, setValue] = useState("Hello, custom overlay by trigger /!")
-    return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}
-                        options={[{trigger: '/'}]}/>
+    const [value, setValue] = useState('Hello, custom overlay by trigger /!')
+    return (
+        <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]} />
+    )
 }
 ```
 
@@ -194,11 +207,11 @@ The `useOverlay` has a left and right absolute coordinate of a current caret pos
 ```tsx
 const Tooltip = () => {
     const {style} = useOverlay()
-    return <div style={{position: 'absolute', ...style}}>I am the overlay</div>;
+    return <div style={{position: 'absolute', ...style}}>I am the overlay</div>
 }
 export const PositionedOverlay = () => {
-    const [value, setValue] = useState("Hello, positioned overlay by trigger @!")
-    return <MarkedInput Mark={Mark} Overlay={Tooltip} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('Hello, positioned overlay by trigger @!')
+    return <MarkedInput Mark={Mark} Overlay={Tooltip} value={value} onChange={setValue} />
 }
 ```
 
@@ -209,15 +222,17 @@ The `useOverlay` hook provide some methods like `select` for creating a new anno
 ```tsx
 const List = () => {
     const {select} = useOverlay()
-    return <ul>
-        <li onClick={() => select({label: 'First'})}>Clickable First</li>
-        <li onClick={() => select({label: 'Second'})}>Clickable Second</li>
-    </ul>;
+    return (
+        <ul>
+            <li onClick={() => select({label: 'First'})}>Clickable First</li>
+            <li onClick={() => select({label: 'Second'})}>Clickable Second</li>
+        </ul>
+    )
 }
 
 export const SelectableOverlay = () => {
-    const [value, setValue] = useState("Hello, suggest overlay by trigger @!")
-    return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue}/>
+    const [value, setValue] = useState('Hello, suggest overlay by trigger @!')
+    return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue} />
 }
 ```
 
@@ -262,20 +277,25 @@ Or
 
 ```tsx
 const MarkedInput = createMarkedInput({
-    Mark, Overlay, options: [{
-        trigger: '@',
-        markup: '@[__label__](__value__)',
-        data: Data,
-        initMark: getCustomMarkProps,
-    }, {
-        trigger: '/',
-        markup: '@(__label__)[__value__]',
-        data: AnotherData,
-        initMark: getAnotherCustomMarkProps,
-    }]
+    Mark,
+    Overlay,
+    options: [
+        {
+            trigger: '@',
+            markup: '@[__label__](__value__)',
+            data: Data,
+            initMark: getCustomMarkProps,
+        },
+        {
+            trigger: '/',
+            markup: '@(__label__)[__value__]',
+            data: AnotherData,
+            initMark: getAnotherCustomMarkProps,
+        },
+    ],
 })
 
-const App = () => <MarkedInput value={value} onChange={setValue}/>
+const App = () => <MarkedInput value={value} onChange={setValue} />
 ```
 
 ## API
@@ -283,7 +303,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 ### MarkedInput
 
 | Name         | Type                         | Default       | Description                            |
-|--------------|------------------------------|---------------|----------------------------------------|
+| ------------ | ---------------------------- | ------------- | -------------------------------------- |
 | value        | string                       | `undefined`   | Annotated text with markups for mark   |
 | defaultValue | string                       | `undefined`   | Default value                          |
 | onChange     | (value: string) => void      | `undefined`   | Change event                           |
@@ -296,7 +316,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 ### Helpers
 
 | Name              | Type                                                                              | Description                                  |
-|-------------------|-----------------------------------------------------------------------------------|----------------------------------------------|
+| ----------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
 | createMarkedInput | <T = MarkStruct>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>          | Create the configured MarkedInput component. |
 | annotate          | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text                 |
@@ -307,11 +327,7 @@ const App = () => <MarkedInput value={value} onChange={setValue}/>
 ### Types
 
 ```typescript
-type OverlayTrigger =
-    | Array<'change' | 'selectionChange'>
-    | 'change'
-    | 'selectionChange'
-    | 'none';
+type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 ```
 
 ```typescript
@@ -327,22 +343,22 @@ interface OverlayHandler {
      * Style with caret absolute position. Used for placing an overlay.
      */
     style: {
-        left: number;
-        top: number;
-    };
+        left: number
+        top: number
+    }
     /**
      * Used for close overlay.
      */
-    close: () => void;
+    close: () => void
     /**
      * Used for insert an annotation instead a triggered value.
      */
-    select: (value: MarkStruct) => void;
+    select: (value: MarkStruct) => void
     /**
      * Overlay match details
      */
-    match: OverlayMatch;
-    ref: RefObject<HTMLElement>;
+    match: OverlayMatch
+    ref: RefObject<HTMLElement>
 }
 ```
 
@@ -356,7 +372,7 @@ interface MarkHandler<T> extends MarkStruct {
      * Change mark.
      * @options.silent doesn't change itself label and value, only pass change event.
      */
-    change: (props: MarkStruct, options?: { silent: boolean }) => void
+    change: (props: MarkStruct, options?: {silent: boolean}) => void
     /**
      * Remove itself.
      */
@@ -373,27 +389,27 @@ type OverlayMatch = {
     /**
      * Found value via a overlayMatch
      */
-    value: string;
+    value: string
     /**
      * Triggered value
      */
-    source: string;
+    source: string
     /**
      * Piece of text, in which was a overlayMatch
      */
-    span: string;
+    span: string
     /**
      * Html element, in which was a overlayMatch
      */
-    node: Node;
+    node: Node
     /**
      * Start position of a overlayMatch
      */
-    index: number;
+    index: number
     /**
      * OverlayMatch's option
      */
-    option: Option;
+    option: Option
 }
 ```
 
@@ -404,23 +420,23 @@ export interface Option<T = Record<string, any>> {
      * Must contain placeholders: `__label__` and optional `__value__`
      * @default "@[__label__](__value__)"
      */
-    markup?: Markup;
+    markup?: Markup
     /**
      * Sequence of symbols for calling the overlay.
      * @default "@"
      */
-    trigger?: string;
+    trigger?: string
     /**
      * Data for an overlay component. By default, it is suggestions.
      */
-    data?: string[];
+    data?: string[]
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark?: (props: MarkStruct) => T;
+    initMark?: (props: MarkStruct) => T
 }
 ```
 
 ## Contributing
 
-If you want to contribute, you are welcome! Create an issue or start a discussion. 
+If you want to contribute, you are welcome! Create an issue or start a discussion.

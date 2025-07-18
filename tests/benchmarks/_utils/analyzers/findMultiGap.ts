@@ -8,5 +8,5 @@ export function findMultiGap(value: string, newValue: string) {
 		if (v.aIndex === -1) return true
 		previousIndex = v.aIndex
 	})
-	return [previousIndex + 1, value.length-1] as const
+	return [previousIndex + 1, value.length - 1] as const
 }

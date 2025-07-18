@@ -4,7 +4,7 @@ export class EventBus {
 	readonly #SystemEvents = new Map<EventKey<any>, Set<Listener>>()
 
 	send<T>(key: EventKey<T>, value?: T) {
-		this.#getListeners(key).forEach((func) => func(value))
+		this.#getListeners(key).forEach(func => func(value))
 	}
 
 	on<T>(key: EventKey<T>, listener: Listener<T>): () => void {
@@ -13,8 +13,7 @@ export class EventBus {
 	}
 
 	#getListeners(key: EventKey<any>) {
-		if (!this.#SystemEvents.has(key))
-			this.#SystemEvents.set(key, new Set())
+		if (!this.#SystemEvents.has(key)) this.#SystemEvents.set(key, new Set())
 		return this.#SystemEvents.get(key) as Set<Listener>
 	}
 }

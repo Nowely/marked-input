@@ -14,7 +14,7 @@ export interface MarkHandler<T> extends MarkStruct {
 	 * Change mark.
 	 * @options.silent doesn't change itself label and value, only pass change event.
 	 */
-	change: (props: MarkStruct, options?: { silent: boolean }) => void
+	change: (props: MarkStruct, options?: {silent: boolean}) => void
 	/**
 	 * Remove itself.
 	 */
@@ -33,7 +33,7 @@ export interface MarkOptions {
 }
 
 //TODO subscribe on label/value changing
-export const useMark = <T extends HTMLElement = HTMLElement, >(options: MarkOptions = {}): MarkHandler<T> => {
+export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
 	const token = useToken()
 	const ref = useRef<HTMLElement>() as unknown as RefObject<T>
@@ -48,11 +48,10 @@ export const useMark = <T extends HTMLElement = HTMLElement, >(options: MarkOpti
 		mark.readOnly = readOnly
 	}, [readOnly])
 
-
 	return mark
 }
 
-type MarkHandlerPConstruct<T> = { ref: RefObject<T>; options: MarkOptions; store: Store; token: MarkStruct }
+type MarkHandlerPConstruct<T> = {ref: RefObject<T>; options: MarkOptions; store: Store; token: MarkStruct}
 
 export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 	ref: RefObject<T>
@@ -98,7 +97,6 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 
 function useUncontrolledInit(ref: RefObject<HTMLElement>, options: MarkOptions, token: MarkStruct) {
 	useEffect(() => {
-		if (ref.current && !options.controlled)
-			ref.current.textContent = token.label
+		if (ref.current && !options.controlled) ref.current.textContent = token.label
 	}, [])
 }

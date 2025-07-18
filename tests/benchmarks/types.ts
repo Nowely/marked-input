@@ -41,8 +41,7 @@ export type EachScored = Record<AlgorithmGroup, Record<TestDataName, number>>
 export type FinalScored = Record<AlgorithmGroup, number>
 //export type RawMeasures = Record<AlgorithmGroup, any>
 
-
-export type ParserConstructor = new(markups: Markup[]) => IParser
+export type ParserConstructor = new (markups: Markup[]) => IParser
 
 export interface IParser {
 	split(value: string): PieceType[]
@@ -50,4 +49,4 @@ export interface IParser {
 
 export type Analyzer = typeof findSingleGap
 export type Joiner = typeof mapStraight
-export type JoinParameters = { pieces: PieceType[], index: number, value: string, markups: Markup[] }
+export type JoinParameters = {pieces: PieceType[]; index: number; value: string; markups: Markup[]}

@@ -54,14 +54,12 @@ export class NodeProxy {
 	}
 
 	get caret() {
-		if (this.target)
-			return Caret.getCaretIndex(this.target)
+		if (this.target) return Caret.getCaretIndex(this.target)
 		return -1
 	}
 
 	set caret(value: number) {
-		if (this.target)
-			Caret.trySetIndex(this.target, value)
+		if (this.target) Caret.trySetIndex(this.target, value)
 	}
 
 	get length() {
@@ -73,8 +71,7 @@ export class NodeProxy {
 	}
 
 	set content(value: string | undefined) {
-		if (this.target)
-			this.target.textContent = value ?? ''
+		if (this.target) this.target.textContent = value ?? ''
 	}
 
 	get head() {

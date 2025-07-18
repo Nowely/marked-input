@@ -5,15 +5,15 @@ export class SymbolParser {
 	private readonly markups: Markup[]
 	private readonly splitMarkups: [string, string][]
 
-	static split(value: string, options?: Option[]) {
-		const markups = options?.map((c) => c.markup!)
-		return () => markups ? new SymbolParser(markups).split(value) : [value]
-	}
-
 	constructor(markups: Markup[]) {
 		this.markups = markups
 		// @ts-ignore
 		this.splitMarkups = this.markups.map(markup => markup.split(PLACEHOLDER.LABEL))
+	}
+
+	static split(value: string, options?: Option[]) {
+		const markups = options?.map(c => c.markup!)
+		return () => (markups ? new SymbolParser(markups).split(value) : [value])
 	}
 
 	split(value: string): PieceType[] {
@@ -40,16 +40,14 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 	constructor(
 		public raw: string,
 		public splitMarkups: [string, string][]
-	) {
-	}
+	) {}
 
 	[Symbol.iterator](): IterableIterator<[string, MarkMatch | null]> {
 		return this
 	}
 
 	next(): IteratorResult<[string, MarkMatch | null], [string, MarkMatch | null] | null> {
-		if (this.done)
-			return {done: this.done, value: null}
+		if (this.done) return {done: this.done, value: null}
 
 		const match = this.findMatch(this.raw)
 		if (match === null) {
@@ -77,7 +75,7 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 		let minStartIndex = Number.POSITIVE_INFINITY
 		let minEndIndex = Number.POSITIVE_INFINITY
 		let minEndMarkupIndex = Number.POSITIVE_INFINITY
-		indexPairs = indexPairs.filter(([startIndex, endIndex]) => (startIndex < endIndex))
+		indexPairs = indexPairs.filter(([startIndex, endIndex]) => startIndex < endIndex)
 		indexPairs.forEach(([startIndex, endIndex, markupIndex]) => {
 			if (endIndex < minEndIndex) {
 				minStartIndex = startIndex
@@ -88,7 +86,6 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 
 		if (indexPairs.length) {
 			if (raw.slice(minStartIndex, minEndIndex + 1) === '') {
-
 			}
 			return [
 				raw.slice(0, minStartIndex),
@@ -97,11 +94,14 @@ class ParserMatches implements IterableIterator<[string, MarkMatch | null]> {
 					input: raw,
 					label: raw
 						.slice(minStartIndex, minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length)
-						.slice(this.splitMarkups[minEndMarkupIndex][0].length, -this.splitMarkups[minEndMarkupIndex][1].length),
+						.slice(
+							this.splitMarkups[minEndMarkupIndex][0].length,
+							-this.splitMarkups[minEndMarkupIndex][1].length
+						),
 					index: minStartIndex,
-					optionIndex: minEndMarkupIndex
+					optionIndex: minEndMarkupIndex,
 				} as MarkMatch,
-				raw.slice(minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length)
+				raw.slice(minEndIndex + this.splitMarkups[minEndMarkupIndex][1].length),
 			] as const
 		}
 

@@ -19,7 +19,7 @@ export class Store {
 
 	readonly refs = {
 		container: createRef<HTMLDivElement>(),
-		overlay: createRef<HTMLElement>()
+		overlay: createRef<HTMLElement>(),
 	}
 
 	selecting?: boolean

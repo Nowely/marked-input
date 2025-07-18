@@ -4,7 +4,7 @@ import {Store} from '../utils/classes/Store'
 import {StoreContext} from '../utils/providers/StoreContext'
 
 interface StoreProviderProps {
-	props: InnerMarkedInputProps,
+	props: InnerMarkedInputProps
 	children: ReactNode
 }
 
@@ -15,5 +15,5 @@ export const StoreProvider = ({props, children}: StoreProviderProps) => {
 		store.props = props
 	})
 
-	return <StoreContext.Provider value={store} children={children}/>
+	return <StoreContext.Provider value={store} children={children} />
 }

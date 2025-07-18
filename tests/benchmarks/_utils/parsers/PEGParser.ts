@@ -6,8 +6,8 @@ export class PEGParser {
 	private readonly markups: Markup[]
 
 	static split(value: string, options?: Option[]) {
-		const markups = options?.map((c) => c.markup!)
-		return () => markups ? new PEGParser(markups).split(value) : [value]
+		const markups = options?.map(c => c.markup!)
+		return () => (markups ? new PEGParser(markups).split(value) : [value])
 	}
 
 	constructor(markups: Markup[]) {
@@ -16,7 +16,7 @@ export class PEGParser {
 
 	split(value: string): PieceType[] {
 		return parser.parse(value, {
-			markups: this.markups
+			markups: this.markups,
 		})
 	}
 }

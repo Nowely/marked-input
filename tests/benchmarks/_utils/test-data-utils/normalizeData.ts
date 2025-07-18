@@ -1,5 +1,5 @@
 import {readFile} from '../readFile'
-import {TargetPath, NormalizedPath} from '../../consts'
+import {NormalizedPath, TargetPath} from '../../consts'
 import {Measures} from '../../types'
 import {writeFile} from '../writeFile'
 

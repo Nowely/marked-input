@@ -14,7 +14,7 @@ describe(`Component: MarkedInput`, () => {
 	//TODO mark focus
 
 	it('should correct process an annotation type', async () => {
-		const {container, queryByText} = render(<Default defaultValue=""/>)
+		const {container, queryByText} = render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
 
 		expect(span).toHaveTextContent('')
@@ -26,7 +26,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support ref focusing target', async () => {
-		const {container} = render(<Focusable/>)
+		const {container} = render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
@@ -51,7 +51,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support remove itself', async () => {
-		const {getByText, queryByText} = render(<Removable/>)
+		const {getByText, queryByText} = render(<Removable />)
 
 		let mark = getByText('contain')
 		await user.click(mark)
@@ -63,7 +63,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support editable marks', async () => {
-		const {getByText} = render(<Focusable/>)
+		const {getByText} = render(<Focusable />)
 
 		await user.type(getByText('world'), '123')
 
@@ -72,7 +72,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should be selectable', async () => {
-		const {container} = render(<Default defaultValue="Hello @[mark](1)!"/>)
+		const {container} = render(<Default defaultValue="Hello @[mark](1)!" />)
 		const selection = window.getSelection()!
 		expect(selection).not.toBeNull()
 
@@ -82,24 +82,41 @@ describe(`Component: MarkedInput`, () => {
 		const MarkedText = container.firstElementChild!
 		const [span1, mark, span2] = MarkedText.children
 
-		await user.pointer([{target: span1, offset: 0, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+		await user.pointer([
+			{target: span1, offset: 0, keys: '[MouseLeft>]'},
+			{target: mark, offset: 2},
+		])
 		expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
 
-		await user.pointer([{target: span2, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+		await user.pointer([
+			{target: span2, keys: '[MouseLeft>]'},
+			{target: mark, offset: 2},
+		])
 		expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
 
-		await user.pointer([{target: span1, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+		await user.pointer([
+			{target: span1, keys: '[MouseLeft>]'},
+			{target: mark, offset: 2},
+		])
 		expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
 
-		await user.pointer([{target: span2, offset: 0, keys: '[MouseLeft>]'}, {target: mark, offset: 2}])
+		await user.pointer([
+			{target: span2, offset: 0, keys: '[MouseLeft>]'},
+			{target: mark, offset: 2},
+		])
 		expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
 
-		await user.pointer([{target: mark, offset: 2, keys: '[MouseLeft>]'}, {target: span1, offset: 2}])
+		await user.pointer([
+			{target: mark, offset: 2, keys: '[MouseLeft>]'},
+			{target: span1, offset: 2},
+		])
 		expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
 
-		await user.pointer([{target: mark, offset: 2, keys: '[MouseLeft>]'}, {target: span2, offset: 1}])
+		await user.pointer([
+			{target: mark, offset: 2, keys: '[MouseLeft>]'},
+			{target: span2, offset: 1},
+		])
 		expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
-
 
 		await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
 		expect(selection.isCollapsed).toBeTruthy()

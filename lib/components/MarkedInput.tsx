@@ -55,9 +55,9 @@ export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedIn
 
 	return (
 		<StoreProvider props={propsWithDefault}>
-			<Container/>
-			<Whisper/>
-			<Featurer inRef={ref}/>
+			<Container />
+			<Whisper />
+			<Featurer inRef={ref} />
 		</StoreProvider>
 	)
 }

@@ -6,7 +6,7 @@ import {Story} from '../_utils/stories'
 //TODO correct type
 const getTests = ([name, Story]: [string, any]) =>
 	it(`Story ${name}`, async () => {
-		const {container} = render(<Story/>)
+		const {container} = render(<Story />)
 		expect(container.textContent?.length).toBeTruthy()
 	})
 
@@ -35,5 +35,4 @@ describe('Component: stories', () => {
 	describe.todo('Rsuite stories', () => {
 		Object.entries(Story.Rsuite).map(getTests)
 	})
-
 })

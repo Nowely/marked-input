@@ -33,10 +33,13 @@ export function useOverlay(): OverlayHandler {
 	const style = Caret.getAbsolutePosition()
 
 	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
-	const select = useCallback((mark: MarkStruct) => {
-		store.bus.send(SystemEvent.Select, {mark, match})
-		store.bus.send(SystemEvent.ClearTrigger)
-	}, [match])
+	const select = useCallback(
+		(mark: MarkStruct) => {
+			store.bus.send(SystemEvent.Select, {mark, match})
+			store.bus.send(SystemEvent.ClearTrigger)
+		},
+		[match]
+	)
 
 	return {match, style, select, close, ref: store.refs.overlay}
 }

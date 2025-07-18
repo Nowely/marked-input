@@ -5,9 +5,7 @@ import {JoinParameters} from '../../types'
 export function mapStraight({pieces, markups}: JoinParameters) {
 	let result = ''
 	for (const value of pieces) {
-		result += isAnnotated(value)
-			? annotate(markups[value.optionIndex], value.label, value.value)
-			: value
+		result += isAnnotated(value) ? annotate(markups[value.optionIndex], value.label, value.value) : value
 	}
 	return result
 }

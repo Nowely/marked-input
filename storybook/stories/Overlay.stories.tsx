@@ -16,20 +16,21 @@ export const DefaultOverlay: Story = {
 	args: {
 		Mark,
 		defaultValue: 'Hello, default - suggestion overlay by trigger @!',
-		options: [{data: ['First', 'Second', 'Third']}]
-	}
+		options: [{data: ['First', 'Second', 'Third']}],
+	},
 }
 
 const Overlay = () => <h1>I am the overlay</h1>
 export const CustomOverlay = () => {
 	const [value, setValue] = useState('Hello, custom overlay by trigger @!')
-	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} />
 }
 
 export const CustomTrigger = () => {
 	const [value, setValue] = useState('Hello, custom overlay by trigger /!')
-	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue}
-						options={[{trigger: '/'}]}/>
+	return (
+		<MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]} />
+	)
 }
 
 const Tooltip = () => {
@@ -38,18 +39,20 @@ const Tooltip = () => {
 }
 export const PositionedOverlay = () => {
 	const [value, setValue] = useState('Hello, positioned overlay by trigger @!')
-	return <MarkedInput Mark={() => null} Overlay={Tooltip} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={() => null} Overlay={Tooltip} value={value} onChange={setValue} />
 }
 
 const List = () => {
 	const {select} = useOverlay()
-	return <ul>
-		<li onClick={() => select({label: 'First'})}>Clickable First</li>
-		<li onClick={() => select({label: 'Second'})}>Clickable Second</li>
-	</ul>
+	return (
+		<ul>
+			<li onClick={() => select({label: 'First'})}>Clickable First</li>
+			<li onClick={() => select({label: 'Second'})}>Clickable Second</li>
+		</ul>
+	)
 }
 
 export const SelectableOverlay = () => {
 	const [value, setValue] = useState('Hello, suggest overlay by trigger @!')
-	return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue}/>
+	return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue} />
 }

@@ -12,13 +12,13 @@ const preview: Preview = {
 				method: 'alphabetical',
 				order: ['MarkedInput', 'Styled'],
 				locales: 'en-US',
-			}
+			},
 		},
 
 		docs: {
-			codePanel: true
-		}
-	}
+			codePanel: true,
+		},
+	},
 }
 
 export default preview

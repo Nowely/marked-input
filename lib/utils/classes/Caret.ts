@@ -73,7 +73,6 @@ export class Caret {
 		selection?.setPosition(element, 1)
 	}
 
-
 	static getIndex() {
 		const selection = window.getSelection()
 		return selection?.anchorOffset ?? NaN

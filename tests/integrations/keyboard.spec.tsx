@@ -9,7 +9,7 @@ const {Default} = Story.Base
 
 describe('Api: keyboard', () => {
 	it('should support the "Backspace" button', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const tailSpan = getByText('!')
 		await focusAtEnd(tailSpan)
@@ -34,7 +34,7 @@ describe('Api: keyboard', () => {
 	})
 
 	it('should support the "Delete" button', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const firstSpan = getByText(/Hello/)
 		await focusAtStart(firstSpan)
@@ -56,7 +56,7 @@ describe('Api: keyboard', () => {
 	})
 
 	it('should support focus navigation between spans', async () => {
-		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!"/>)
+		const {getByText} = render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const firstSpan = getByText(/Hello/)
 		await focusAtStart(firstSpan)
@@ -66,13 +66,12 @@ describe('Api: keyboard', () => {
 		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		expect(secondSpan).toHaveFocus()
 
-
 		await user.keyboard(`{ArrowLeft>1/}`)
 		expect(firstSpan).toHaveFocus()
 	})
 
 	it('should select all text with keyboard shortcut "Ctrl+A"', async () => {
-		const {container} = render(<Default defaultValue="Hello @[mark](1)!"/>)
+		const {container} = render(<Default defaultValue="Hello @[mark](1)!" />)
 		const [span] = container.querySelectorAll('span')
 
 		await focusAtStart(span)

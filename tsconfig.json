@@ -15,5 +15,5 @@
     "outDir": "dist",
     "types": ["vitest/globals"]
   },
-  "include": ["lib/**/*"],
+  "include": ["lib/**/*"]
 }

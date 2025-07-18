@@ -20,7 +20,7 @@ rest = $.*
 
 export async function genPEGParser() {
 	const parserSource = peggy.generate(grammar, {
-		format: "es",
+		format: 'es',
 		output: 'source',
 	})
 	await writeFile(path.resolve(UtilsFolderPath, 'GeneratedPEGParser.js'), parserSource)

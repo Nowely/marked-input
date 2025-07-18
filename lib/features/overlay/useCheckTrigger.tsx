@@ -11,23 +11,33 @@ export function useCheckTrigger() {
 		const trigger = store.props.trigger
 		const type = 'selectionChange' satisfies OverlayTrigger
 
-		if (trigger === type || trigger.includes(type))
-			store.bus.send(SystemEvent.CheckTrigger)
+		if (trigger === type || trigger.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
 	}, [])
 
-	useListener('focusin', () => {
-		document.addEventListener('selectionchange', sendCheckTrigger)
-	}, [])
+	useListener(
+		'focusin',
+		() => {
+			document.addEventListener('selectionchange', sendCheckTrigger)
+		},
+		[]
+	)
 
-	useListener('focusout', () => {
-		document.removeEventListener('selectionchange', sendCheckTrigger)
-	}, [])
+	useListener(
+		'focusout',
+		() => {
+			document.removeEventListener('selectionchange', sendCheckTrigger)
+		},
+		[]
+	)
 
-	useListener(SystemEvent.Change, () => {
-		const trigger = store.props.trigger
-		const type = 'change' satisfies OverlayTrigger
+	useListener(
+		SystemEvent.Change,
+		() => {
+			const trigger = store.props.trigger
+			const type = 'change' satisfies OverlayTrigger
 
-		if (trigger === type || trigger.includes(type))
-			store.bus.send(SystemEvent.CheckTrigger)
-	}, [])
+			if (trigger === type || trigger.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
+		},
+		[]
+	)
 }

@@ -10,12 +10,16 @@ const stories = [
 	...Object.entries(composeStories(BaseStories)),
 	...Object.entries(composeStories(DynamicStories)),
 	...Object.entries(composeStories(OverlayStories)),
-	...Object.entries(composeStories(MaterialStories))
+	...Object.entries(composeStories(MaterialStories)),
 ]
 
 describe('render stories', () =>
 	stories.forEach(([name, Story]) => {
-		bench(name, (() => {
-			render(<Story/>)
-		}), {time: 1000})
+		bench(
+			name,
+			() => {
+				render(<Story />)
+			},
+			{time: 1000}
+		)
 	}))
