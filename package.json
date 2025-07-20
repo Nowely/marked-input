@@ -6,7 +6,7 @@
   "license": "MIT",
   "author": "Ruslan Ilyin",
   "engines": {
-    "pnpm": ">=10"
+    "pnpm": ">=9"
   },
   "scripts": {
     "dev": "vite tests/e2e/app -c vite.config.ts --open",
