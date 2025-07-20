@@ -5,6 +5,9 @@
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
+  "engines": {
+    "pnpm": ">=10"
+  },
   "scripts": {
     "dev": "vite tests/e2e/app -c vite.config.ts --open",
     "build": "vite build && tsc && node prepack.js",
@@ -13,6 +16,8 @@
     "lint:fix:suggest": "oxlint . --fix-suggestions",
     "lint:fix:danger": "oxlint . --fix-dangerously",
     "format": "prettier . --check",
+    "clean:git": "git clean -xdf",
+    "clean:git:dry": "git clean -xdn",
     "format:write": "prettier . --write",
     "storybook:dev": "npm run start -w storybook",
     "storybook:build": "npm run build -w storybook",
@@ -20,7 +25,9 @@
     "test:ui": "npm run test:ui -w tests",
     "test:watch": "npm run test:watch -w tests",
     "test:integration": "npm run test:integration -w tests",
-    "coverage": "npm run coverage -w tests"
+    "coverage": "npm run coverage -w tests",
+    "preinstall": "echo preinstall",
+    "postinstall": "echo postinstall"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -59,10 +66,5 @@
     "marked-input",
     "highlight",
     "input"
-  ],
-  "workspaces": [
-    "lib",
-    "storybook",
-    "tests"
   ]
 }

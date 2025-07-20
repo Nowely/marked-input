@@ -1,5 +1,5 @@
 {
-  "name": "my-storybook",
+  "name": "sb",
   "version": "1.0.0",
   "scripts": {
     "start": "storybook dev -p 6006 -c ./",

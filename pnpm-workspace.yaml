@@ -1,0 +1,5 @@
+packages:
+  - 'lib'
+  - 'sb'
+  - 'tests'
+  - 'packages/*'
