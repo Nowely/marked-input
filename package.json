@@ -20,7 +20,7 @@
     "clean:git:dry": "git clean -xdn",
     "format:write": "prettier . --write",
     "storybook:dev": "pnpm -F sb run start",
-    "storybook:build": "pnpm -F sb run buil",
+    "storybook:build": "pnpm -F sb run build",
     "test": "pnpm -F tests run test",
     "test:ui": "pnpm -F tests run test:ui",
     "test:watch": "pnpm  -F tests run test:watch",
