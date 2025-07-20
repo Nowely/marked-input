@@ -10,7 +10,8 @@
     "@emotion/styled": "^11.14.0",
     "@mui/material": "^5.17.1",
     "antd": "^4.24.16",
-    "rsuite": "^5.83.0"
+    "rsuite": "^5.83.0",
+    "rc-marked-input": "workspace:*"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^9.0.13",

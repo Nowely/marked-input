@@ -1,5 +1,5 @@
 packages:
   - 'lib'
-  - 'sb'
+  - 'storybook'
   - 'tests'
   - 'packages/*'

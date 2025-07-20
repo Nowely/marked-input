@@ -4,3 +4,4 @@ dist
 coverage
 storybook-static
 package-lock.json
+.pnpm-store/**

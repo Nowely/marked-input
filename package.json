@@ -19,15 +19,14 @@
     "clean:git": "git clean -xdf",
     "clean:git:dry": "git clean -xdn",
     "format:write": "prettier . --write",
-    "storybook:dev": "npm run start -w storybook",
-    "storybook:build": "npm run build -w storybook",
-    "test": "npm run test -w tests",
-    "test:ui": "npm run test:ui -w tests",
-    "test:watch": "npm run test:watch -w tests",
-    "test:integration": "npm run test:integration -w tests",
-    "coverage": "npm run coverage -w tests",
-    "preinstall": "echo preinstall",
-    "postinstall": "echo postinstall"
+    "storybook:dev": "pnpm -F sb run start",
+    "storybook:build": "pnpm -F sb run buil",
+    "test": "pnpm -F tests run test",
+    "test:ui": "pnpm -F tests run test:ui",
+    "test:watch": "pnpm  -F tests run test:watch",
+    "test:integration": "pnpm -F tests run test:integration",
+    "coverage": "pnpm -F tests run coverage",
+    "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect} from 'vitest'
-import {Story} from '../_utils/stories'
+import {Story} from '../../storybook/stories'
 
 //TODO correct type
 const getTests = ([name, Story]: [string, any]) =>
