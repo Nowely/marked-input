@@ -3,7 +3,7 @@ import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it} from 'vitest'
 import {focusAtEnd, focusAtStart} from '../_utils/focus'
-import {Story} from '../_utils/stories'
+import {Story} from '../../storybook/stories'
 
 const {Default} = Story.Base
 
