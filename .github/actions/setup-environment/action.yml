@@ -1,5 +1,5 @@
-name: "Setup Environment"
-description: "From checkout repo to install dependencies"
+name: "Node.js Environment Setup"
+description: "Checkout repository, install pnpm, setup Node.js, and install dependencies"
 
 runs:
   using: "composite"

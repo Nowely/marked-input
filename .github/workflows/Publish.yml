@@ -10,7 +10,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Setup Environment
-              uses: ./.github/actions/setup-environment
+              uses: nowely/action-setup-node@v1
 
             - name: Build Package
               run: pnpm run build
