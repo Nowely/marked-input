@@ -27,7 +27,7 @@
     "test:integration": "pnpm -F tests run test:integration",
     "coverage": "pnpm -F tests run coverage",
     "preinstall": "npx only-allow pnpm",
-    "publish": "pnpm publish dist --no-git-checks"
+    "publish": "pnpm publish dist --no-git-checks --json"
   },
   "dependencies": {
     "react": "^18.3.1",
