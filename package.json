@@ -26,7 +26,8 @@
     "test:watch": "pnpm  -F tests run test:watch",
     "test:integration": "pnpm -F tests run test:integration",
     "coverage": "pnpm -F tests run coverage",
-    "preinstall": "npx only-allow pnpm"
+    "preinstall": "npx only-allow pnpm",
+    "publish": "pnpm publish dist --no-git-checks"
   },
   "dependencies": {
     "react": "^18.3.1",
