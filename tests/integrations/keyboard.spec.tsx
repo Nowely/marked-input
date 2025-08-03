@@ -2,8 +2,8 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it} from 'vitest'
+import {Story} from '../../packages/storybook-react/stories'
 import {focusAtEnd, focusAtStart} from '../_utils/focus'
-import {Story} from '../../storybook/stories'
 
 const {Default} = Story.Base
 

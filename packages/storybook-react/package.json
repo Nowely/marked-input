@@ -2,8 +2,8 @@
   "name": "sb",
   "version": "1.0.0",
   "scripts": {
-    "start": "storybook dev -p 6006 -c ./",
-    "build": "storybook build -c ./ -o ../storybook-static"
+    "start": "storybook dev -p 6006 -c ../../storybook",
+    "build": "storybook build -c ../../storybook -o ../storybook-static"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
