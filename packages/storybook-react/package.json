@@ -1,9 +1,9 @@
 {
   "name": "sb",
-  "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "start": "storybook dev -p 6006 -c ../../storybook",
-    "build": "storybook build -c ../../storybook -o ../storybook-static"
+    "dev": "storybook dev -p 6006 -c ./",
+    "build": "storybook build -c ./"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -23,5 +23,6 @@
   "peerDependencies": {
     "react": ">=18.2.0",
     "react-dom": ">=18.2.0"
-  }
+  },
+  "type": "module"
 }
