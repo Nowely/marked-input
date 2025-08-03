@@ -5,7 +5,7 @@
     "pnpm": ">=9"
   },
   "scripts": {
-    "dev": "vite tests/e2e/app -c vite.config.ts --open",
+    "dev": "pnpm -F app-react dev",
     "build": "pnpm -F rc-marked-input run build",
     "build:all": "pnpm -r run build",
     "lint": "oxlint .",
@@ -20,7 +20,7 @@
     "storybook:build": "pnpm -F sb run build",
     "test": "pnpm -F tests run test",
     "test:ui": "pnpm -F tests run test:ui",
-    "test:watch": "pnpm  -F tests run test:watch",
+    "test:watch": "pnpm -F tests run test:watch",
     "test:integration": "pnpm -F tests run test:integration",
     "coverage": "pnpm -F tests run coverage",
     "preinstall": "npx only-allow pnpm",

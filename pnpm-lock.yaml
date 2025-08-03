@@ -40,7 +40,7 @@ importers:
         specifier: ^3.5.2
         version: 3.5.2(vite@7.0.6(@types/node@24.1.0))
 
-  packages/app-react:
+  packages/app:
     dependencies:
       react:
         specifier: ^18.2.0
@@ -65,13 +65,13 @@ importers:
         specifier: ^7.0.0
         version: 7.0.6(@types/node@24.1.0)
 
-  packages/markput-react:
+  packages/markput:
     dependencies:
       react:
         specifier: '>=17.0.0'
         version: 18.3.1
 
-  packages/storybook-react:
+  packages/storybook:
     dependencies:
       '@emotion/react':
         specifier: ^11.14.0
@@ -87,7 +87,7 @@ importers:
         version: 4.24.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       rc-marked-input:
         specifier: workspace:*
-        version: link:../markput-react
+        version: link:../markput
       react:
         specifier: '>=18.2.0'
         version: 18.3.1
@@ -114,7 +114,7 @@ importers:
         specifier: ^9.1.0
         version: 9.1.0(@testing-library/dom@10.4.1)(prettier@3.6.2)(vite@7.0.6(@types/node@24.1.0))
 
-  tests:
+  packages/tests:
     dependencies:
       '@faker-js/faker':
         specifier: ^9.8.0
@@ -139,10 +139,10 @@ importers:
         version: 23.1.0
       rc-marked-input:
         specifier: workspace:*
-        version: link:../packages/markput-react
+        version: link:../markput
       sb:
         specifier: workspace:*
-        version: link:../packages/storybook-react
+        version: link:../storybook
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.1.0)(@vitest/ui@3.2.4)(jsdom@23.1.0)
