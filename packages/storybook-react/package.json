@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "storybook dev -p 6006 -c ./",
-    "build": "storybook build -c ./"
+    "build": "storybook build -c ./ -o ./dist"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

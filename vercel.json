@@ -3,5 +3,5 @@
   "framework": "vite",
   "installCommand": "pnpm --filter \"sb\" install --frozen-lockfile",
   "buildCommand": "pnpm run storybook:build",
-  "outputDirectory": "storybook-static"
+  "outputDirectory": "packages/storybook-react/dist"
 }
