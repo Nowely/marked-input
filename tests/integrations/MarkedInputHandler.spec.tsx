@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {MarkedInputHandler} from 'rc-marked-input'
-import {Story} from '../../packages/storybook-react/stories'
+import {Story} from '../../packages/storybook/stories'
 
 const {Default} = Story.Base
 

@@ -4,7 +4,7 @@ import user from '@testing-library/user-event'
 import {createMarkedInput, MarkedInputHandler} from 'rc-marked-input'
 import {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../packages/storybook-react/stories'
+import {Story} from '../../packages/storybook/stories'
 
 const {Configured} = Story.Base
 
