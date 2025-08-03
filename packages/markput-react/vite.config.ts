@@ -1,0 +1,29 @@
+import react from '@vitejs/plugin-react-swc'
+import path from 'path'
+import {fileURLToPath} from 'url'
+import {defineConfig} from 'vite'
+import injectCssToJs from 'vite-plugin-css-injected-by-js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+export default defineConfig(({command}) => ({
+	plugins: [react(), command !== 'serve' && injectCssToJs()],
+	build: {
+		lib: {
+			entry: path.resolve(__dirname, './index.ts'),
+			name: 'MarkedInput',
+			formats: ['es', 'umd'],
+			fileName: 'index',
+		},
+		rollupOptions: {
+			external: ['react', 'react/jsx-runtime'],
+			output: {
+				globals: {
+					react: 'React',
+					'react/jsx-runtime': 'ReactJsxRuntime',
+				},
+			},
+		},
+	},
+}))
