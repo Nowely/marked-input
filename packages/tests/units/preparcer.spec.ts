@@ -1,5 +1,5 @@
-import {findGap} from 'rc-marked-input/features/preparsing/utils/findGap'
-import {expect} from 'vitest'
+import {findGap} from '../../markput/src/features/preparsing/utils/findGap'
+import {describe, expect, it} from 'vitest'
 
 const Hello = 'Hello'
 const Day = 'Day'

@@ -10,10 +10,6 @@ const __dirname = path.dirname(__filename)
 // Used primarily for the e2e test app
 export default defineConfig({
 	plugins: [react()],
-	test: {
-		globals: true,
-		environment: 'jsdom',
-	},
 	// Resolve packages in the monorepo
 	/*resolve: {
 		alias: {

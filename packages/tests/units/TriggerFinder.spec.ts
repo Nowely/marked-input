@@ -1,5 +1,5 @@
 import {describe, it} from 'vitest'
-import {TriggerFinder} from 'rc-marked-input/utils/classes/TriggerFinder'
+import {TriggerFinder} from '../../markput/src/utils/classes/TriggerFinder'
 
 describe(`Utility: ${TriggerFinder.name}`, () => {
 	it.todo('should do this thing')
