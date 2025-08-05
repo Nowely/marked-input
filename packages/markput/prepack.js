@@ -5,14 +5,16 @@ import api from '@microsoft/api-extractor'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const __root = path.join(__dirname, '..', '..')
 
+//TODO to ts
 copyReadme()
 prepareAndCopyPackage()
 rollupTypes()
 removeExtraTypeDeclarations()
 
 function copyReadme() {
-	fs.copyFile(path.resolve(__dirname, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
+	fs.copyFile(path.resolve(__root, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
 		if (err) throw err
 		console.log('README.md copied')
 	})
@@ -20,10 +22,10 @@ function copyReadme() {
 
 function prepareAndCopyPackage() {
 	const mainPackage = getPackageCopy()
-	const libPackage = getPackageCopy('lib')
-	deleteUnnecessaryProperties(mainPackage)
-	mainPackage.peerDependencies = libPackage.peerDependencies
-	mainPackage.name = libPackage.name
+	//const libPackage = getPackageCopy('lib')
+	//deleteUnnecessaryProperties(mainPackage)
+	//mainPackage.peerDependencies = libPackage.peerDependencies
+	//mainPackage.name = libPackage.name
 	paste(mainPackage, err => {
 		if (err) throw err
 		console.log('package.json setup')

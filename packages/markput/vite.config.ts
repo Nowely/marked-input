@@ -8,9 +8,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig(({command}) => ({
+	plugins: [react(), command !== 'serve' && injectCssToJs()],
 	build: {
 		lib: {
-			entry: path.resolve(__dirname, 'lib/index.ts'),
+			entry: path.resolve(__dirname, './index.ts'),
 			name: 'MarkedInput',
 			formats: ['es', 'umd'],
 			fileName: 'index',
@@ -24,10 +25,5 @@ export default defineConfig(({command}) => ({
 				},
 			},
 		},
-	},
-	plugins: [react(), command !== 'serve' && injectCssToJs()],
-	test: {
-		globals: true,
-		environment: 'jsdom',
 	},
 }))

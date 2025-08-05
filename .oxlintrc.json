@@ -14,6 +14,7 @@
   ],
   "categories": {},
   "rules": {
+    "no-children-prop": "allow",
     "for-direction": "warn",
     "no-async-promise-executor": "warn",
     "no-caller": "warn",

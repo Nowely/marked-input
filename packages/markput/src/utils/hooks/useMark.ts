@@ -12,7 +12,8 @@ export interface MarkHandler<T> extends MarkStruct {
 	ref: RefObject<T>
 	/**
 	 * Change mark.
-	 * @options.silent doesn't change itself label and value, only pass change event.
+	 * @param {Object} options - The options object
+	 * @param {boolean} options.silent - If true, doesn't change itself label and value, only pass change event.
 	 */
 	change: (props: MarkStruct, options?: {silent: boolean}) => void
 	/**

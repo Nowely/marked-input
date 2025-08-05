@@ -10,9 +10,9 @@
     "skipLibCheck": true,
     "emitDeclarationOnly": true,
     "declaration": true,
-    "declarationMap": true,
-    "declarationDir": "dist/types",
-    "outDir": "dist"
+    "declarationMap": true
   },
-  "include": ["lib/**/*"]
+  "references": [
+    { "path": "./packages/**/*" }
+  ]
 }

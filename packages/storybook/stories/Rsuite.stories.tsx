@@ -1,6 +1,5 @@
 import {Meta} from '@storybook/react-vite'
 import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
-import {KEYBOARD} from 'rc-marked-input/constants'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
@@ -17,7 +16,7 @@ const Overlay = () => {
 
 	useEffect(() => {
 		const handleEnter = (ev: KeyboardEvent) => {
-			if (ev.key === KEYBOARD.ENTER) {
+			if (ev.key === 'Enter') {
 				ev.preventDefault()
 				select({label: match.value})
 				close()
