@@ -1,4 +1,4 @@
-import {assertAnnotated} from '../utils/checkers/assertAnnotated'
+import {assertAnnotated} from '@markput/core'
 import {useStore} from '../utils/hooks/useStore'
 import {useToken} from '../utils/providers/TokenProvider'
 

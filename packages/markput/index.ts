@@ -9,20 +9,16 @@ export type {MarkHandler} from './src/utils/hooks/useMark'
 export type {OverlayHandler} from './src/utils/hooks/useOverlay'
 export type {
 	MarkedInputHandler,
-	Markup,
 	OverlayMatch,
-	MarkMatch,
 	OverlayTrigger,
 	Option,
-	MarkStruct,
 	ConfiguredMarkedInput,
-	label,
-	value,
 	Listener,
 	EventKey,
 } from './src/types'
 
 export {SystemEvent} from './src/constants'
-export {annotate} from './src/utils/functions/annotate'
-export {PLACEHOLDER} from './src/constants'
-export {denote} from './src/features/parsing/denote'
+export {annotate} from '../core/src/utils/functions/annotate'
+
+export {denote} from '@markput/core'
+export type {Markup, MarkMatch, MarkStruct, label, value} from '@markput/core'

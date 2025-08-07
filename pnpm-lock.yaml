@@ -65,8 +65,13 @@ importers:
         specifier: ^7.0.0
         version: 7.0.6(@types/node@24.1.0)
 
+  packages/core: {}
+
   packages/markput:
     dependencies:
+      '@markput/core':
+        specifier: workspace:*
+        version: link:../core
       react:
         specifier: '>=17.0.0'
         version: 18.3.1

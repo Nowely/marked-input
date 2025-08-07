@@ -1,8 +1,7 @@
-import {wordRegex} from '../../constants'
 import {InnerOption} from '../../features/default/types'
 import {OverlayMatch} from '../../types'
 
-import {escape} from '../functions/escape'
+import {escape, wordRegex} from '@markput/core'
 import {Caret} from './Caret'
 
 export class TriggerFinder {

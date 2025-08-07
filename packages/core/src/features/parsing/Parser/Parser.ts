@@ -1,9 +1,9 @@
-import {MarkStruct, Markup, PieceType} from '../../../types'
-import {isObject} from '../../../utils/checkers/isObject'
-import {markupToRegex} from '../../../utils/functions/markupToRegex'
-import {normalizeMark} from '../../../utils/functions/normalizeMark'
-import {InnerOption} from '../../default/types'
+import {isObject} from '../isObject'
+import {markupToRegex} from './markupToRegex'
+import {normalizeMark} from './normalizeMark'
 import {ParserMatches} from './ParserMatches'
+import {MarkStruct, Markup, PieceType} from '../../../types'
+import {InnerOption} from '../../default/types'
 
 export class Parser {
 	private readonly markups: Markup[]

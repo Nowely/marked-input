@@ -1,4 +1,4 @@
-import {normalizeMark} from '../../markput/src/utils/functions/normalizeMark'
+import {normalizeMark} from '../../core/src/features/parsing/Parser/normalizeMark'
 import {describe, it} from 'vitest'
 
 describe.skip(`Utility: ${normalizeMark.name}`, () => {

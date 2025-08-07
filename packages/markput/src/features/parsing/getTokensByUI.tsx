@@ -1,5 +1,5 @@
 import {Store} from '../../utils/classes/Store'
-import {Parser} from './Parser/Parser'
+import {Parser} from '@markput/core'
 
 /**
  * Parse current focused token

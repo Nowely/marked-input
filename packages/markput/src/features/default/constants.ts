@@ -1,4 +1,4 @@
-import {InnerOption} from './types'
+import {InnerOption} from '@markput/core'
 
 export const DEFAULT_TRIGGER = '@'
 

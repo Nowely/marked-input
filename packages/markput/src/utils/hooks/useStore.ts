@@ -1,6 +1,6 @@
 import {useContext, useState} from 'react'
 import {SystemEvent} from '../../constants'
-import {assertNonNullable} from '../checkers/assertNonNullable'
+import {assertNonNullable} from '@markput/core'
 import type {Store} from '../classes/Store'
 import {shallow} from '../functions/shallow'
 import {StoreContext} from '../providers/StoreContext'

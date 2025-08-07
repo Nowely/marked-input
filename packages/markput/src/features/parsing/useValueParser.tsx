@@ -4,7 +4,7 @@ import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 import {getTokensByUI} from './getTokensByUI'
 import {getTokensByValue} from './getTokensByValue'
-import {Parser} from './Parser/Parser'
+import {Parser} from '@markput/core'
 
 export const useValueParser = () => {
 	const store = useStore()

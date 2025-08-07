@@ -8,6 +8,9 @@
     "build": "vite build && tsc && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json"
   },
+  "dependencies": {
+    "@markput/core": "workspace:*"
+  },
   "peerDependencies": {
     "react": ">=17.0.0"
   },

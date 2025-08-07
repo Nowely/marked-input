@@ -1,8 +1,7 @@
-import {isAnnotated} from '../../utils/checkers/isAnnotated'
+import {isAnnotated, Parser} from '@markput/core'
 import {Store} from '../../utils/classes/Store'
 import {findGap} from '../preparsing/utils/findGap'
 import {getClosestIndexes} from '../preparsing/utils/getClosestIndexes'
-import {Parser} from './Parser/Parser'
 
 export function getTokensByValue(store: Store) {
 	const {
