@@ -1,10 +1,15 @@
-import {createRef} from 'react'
-import {SystemEvent} from '../../constants'
-import {InnerMarkedInputProps} from '../../features/default'
+import {NodeProxy} from './NodeProxy'
 import {MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import {KeyGenerator} from './KeyGenerator'
-import {NodeProxy} from './NodeProxy'
+import {SystemEvent} from '../../constants'
+
+interface Ref<T> {
+	/**
+	 * The current value of the ref.
+	 */
+	readonly current: T | null
+}
 
 export class Store {
 	readonly bus = new EventBus()
@@ -18,8 +23,12 @@ export class Store {
 	recovery?: Recovery
 
 	readonly refs = {
-		container: createRef<HTMLDivElement>(),
-		overlay: createRef<HTMLElement>(),
+		container: {
+			current: null,
+		} as Ref<HTMLDivElement>,
+		overlay: {
+			current: null,
+		} as Ref<HTMLElement>,
 	}
 
 	selecting?: boolean

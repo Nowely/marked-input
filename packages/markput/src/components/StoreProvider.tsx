@@ -1,6 +1,5 @@
 import {ReactNode, useEffect, useState} from 'react'
-import {InnerMarkedInputProps} from '../features/default'
-import {Store} from '../utils/classes/Store'
+import {InnerMarkedInputProps, Store} from '@markput/core'
 import {StoreContext} from '../utils/providers/StoreContext'
 
 interface StoreProviderProps {

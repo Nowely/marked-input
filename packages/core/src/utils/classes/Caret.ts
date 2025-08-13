@@ -1,5 +1,4 @@
 //TODO refact caret
-
 export class Caret {
 	static get isSelectedPosition() {
 		const selection = window.getSelection()

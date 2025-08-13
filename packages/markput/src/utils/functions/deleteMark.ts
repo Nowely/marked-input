@@ -1,4 +1,4 @@
-import {Store} from '../classes/Store'
+import {Store} from '@markput/core/src/utils/classes/Store'
 import {toString} from './toString'
 
 export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {

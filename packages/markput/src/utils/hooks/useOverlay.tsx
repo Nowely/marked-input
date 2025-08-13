@@ -1,9 +1,6 @@
 import {RefObject, useCallback} from 'react'
-import {SystemEvent} from '../../constants'
-import {OverlayMatch} from '../../types'
-import {Caret} from '../classes/Caret'
+import {Caret, MarkStruct, OverlayMatch, SystemEvent} from '@markput/core'
 import {useStore} from './useStore'
-import {MarkStruct} from '@markput/core'
 
 export interface OverlayHandler {
 	/**

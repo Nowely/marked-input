@@ -1,4 +1,4 @@
-import {Store} from '../../utils/classes/Store'
+import {Store} from '@markput/core/src/utils/classes/Store'
 import {Parser} from '@markput/core'
 
 /**

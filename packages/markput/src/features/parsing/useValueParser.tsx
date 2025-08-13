@@ -1,10 +1,9 @@
 import {useEffect, useRef} from 'react'
-import {SystemEvent} from '../../constants'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 import {getTokensByUI} from './getTokensByUI'
 import {getTokensByValue} from './getTokensByValue'
-import {Parser} from '@markput/core'
+import {Parser, SystemEvent} from '@markput/core'
 
 export const useValueParser = () => {
 	const store = useStore()

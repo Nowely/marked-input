@@ -1,5 +1,5 @@
 import {isAnnotated, Parser} from '@markput/core'
-import {Store} from '../../utils/classes/Store'
+import {Store} from '@markput/core/src/utils/classes/Store'
 import {findGap} from '../preparsing/utils/findGap'
 import {getClosestIndexes} from '../preparsing/utils/getClosestIndexes'
 

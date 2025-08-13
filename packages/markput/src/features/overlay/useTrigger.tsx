@@ -1,5 +1,4 @@
-import {SystemEvent} from '../../constants'
-import {TriggerFinder} from '../../utils/classes/TriggerFinder'
+import {SystemEvent, TriggerFinder} from '@markput/core'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 

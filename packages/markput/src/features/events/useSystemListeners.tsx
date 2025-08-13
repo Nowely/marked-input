@@ -1,9 +1,8 @@
-import {SystemEvent} from '../../constants'
 import {createNewSpan} from '../../utils/functions/createNewSpan'
 import {toString} from '../../utils/functions/toString'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {annotate} from '@markput/core'
+import {annotate, SystemEvent} from '@markput/core'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {

@@ -1,8 +1,7 @@
-import {InnerOption} from '../../features/default/types'
-import {OverlayMatch} from '../../types'
-
-import {escape, wordRegex} from '@markput/core'
 import {Caret} from './Caret'
+import {InnerOption} from '../../features/default/types'
+import {wordRegex} from '../../constants'
+import {OverlayMatch} from '../../types'
 
 export class TriggerFinder {
 	span: string
