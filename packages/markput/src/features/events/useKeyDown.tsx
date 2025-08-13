@@ -1,4 +1,4 @@
-import {deleteMark} from '../../utils/functions/deleteMark'
+import {deleteMark} from '../../../../core/src/utils/functions/deleteMark'
 import {useDownOf} from '../../utils/hooks/useDownOf'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'

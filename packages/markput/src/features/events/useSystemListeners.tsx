@@ -1,5 +1,5 @@
-import {createNewSpan} from '../../utils/functions/createNewSpan'
-import {toString} from '../../utils/functions/toString'
+import {createNewSpan} from '../../../../core/src/utils/functions/createNewSpan'
+import {toString} from '../../../../core/src/utils/functions/toString'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 import {annotate, SystemEvent} from '@markput/core'

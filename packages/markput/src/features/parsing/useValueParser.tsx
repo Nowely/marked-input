@@ -1,8 +1,8 @@
 import {useEffect, useRef} from 'react'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {getTokensByUI} from './getTokensByUI'
-import {getTokensByValue} from './getTokensByValue'
+import {getTokensByUI} from '../../../../core/src/features/parsing/getTokensByUI'
+import {getTokensByValue} from '../../../../core/src/features/parsing/getTokensByValue'
 import {Parser, SystemEvent} from '@markput/core'
 
 export const useValueParser = () => {

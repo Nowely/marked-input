@@ -1,4 +1,4 @@
-import {MarkStruct, Markup} from '../../types'
+import {MarkStruct, Markup, OverlayTrigger} from '../../types'
 
 export interface InnerOption {
 	markup: Markup

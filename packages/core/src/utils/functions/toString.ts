@@ -1,5 +1,7 @@
+import {MarkStruct} from '../../types'
 import {InnerOption} from '../../features/default/types'
-import {annotate, isAnnotated, MarkStruct} from '@markput/core'
+import {isAnnotated} from '../checkers/isAnnotated'
+import {annotate} from './annotate'
 
 export function toString(marks: MarkStruct[], options: InnerOption[]) {
 	let result = ''

@@ -9,7 +9,6 @@ export type {MarkHandler} from './src/utils/hooks/useMark'
 export type {OverlayHandler} from './src/utils/hooks/useOverlay'
 export type {
 	MarkedInputHandler,
-	OverlayTrigger,
 	Option,
 	ConfiguredMarkedInput,
 

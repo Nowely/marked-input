@@ -62,3 +62,5 @@ export type Recovery = {
 	isNext?: boolean
 	caret: number
 }
+
+export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'

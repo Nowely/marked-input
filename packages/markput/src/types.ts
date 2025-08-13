@@ -38,5 +38,3 @@ export interface MarkedInputHandler {
 
 	focus(): void
 }
-
-export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
