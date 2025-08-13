@@ -6,7 +6,7 @@ import {
 	DEFAULT_OPTIONS,
 	DEFAULT_TRIGGER,
 	InnerMarkedInputProps,
-	InnerOption
+	InnerOption,
 } from '@markput/core'
 
 export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps {
