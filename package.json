@@ -1,5 +1,6 @@
 {
   "name": "root",
+  "type": "module",
   "private": true,
   "engines": {
     "pnpm": ">=9"
@@ -39,10 +40,5 @@
     "typescript": "^5.8.3",
     "vite": "^7.0.0",
     "vite-plugin-css-injected-by-js": "^3.5.2"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Nowely/marked-input.git"
-  },
-  "type": "module"
+  }
 }
