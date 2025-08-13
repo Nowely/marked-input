@@ -1,8 +1,7 @@
 import {RefObject, useEffect, useRef, useState} from 'react'
-import {Store} from '@markput/core/src/utils/classes/Store'
+import {MarkStruct, Store, SystemEvent} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
-import {MarkStruct, SystemEvent} from '@markput/core'
 
 export interface MarkHandler<T> extends MarkStruct {
 	/**
