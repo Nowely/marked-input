@@ -11,11 +11,7 @@ export type {
 	MarkedInputHandler,
 	Option,
 	ConfiguredMarkedInput,
-
-
 } from './src/types'
 
-export {annotate} from '../core/src/utils/functions/annotate'
-
-export {denote} from '@markput/core'
+export {denote, annotate} from '@markput/core'
 export type {Markup, MarkMatch, MarkStruct, label, value} from '@markput/core'

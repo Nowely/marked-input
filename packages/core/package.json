@@ -1,11 +1,11 @@
 {
   "name": "@markput/core",
+  "type": "module",
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build -w",
     "publish": "pnpm publish dist --no-git-checks --json"
   },
-  "type": "module",
   "module": "./index.ts",
   "types": "./index.ts",
   "exports": {
