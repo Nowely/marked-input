@@ -10,7 +10,7 @@
     "url": "https://github.com/Nowely/marked-input.git"
   },
   "scripts": {
-    "build": "vite build && tsc -b && node prepack.js",
+    "build": "vite build && tsc && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json"
   },
   "dependencies": {

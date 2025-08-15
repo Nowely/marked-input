@@ -87,7 +87,7 @@ function rollupTypes() {
 		/** @type api.IConfigFile */
 		const configObject = {
 			projectFolder: path.resolve(__dirname),
-			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
+			mainEntryPointFilePath: '<projectFolder>/dist/types/markput/index.d.ts',
 			compiler: {tsconfigFilePath: '<projectFolder>/tsconfig.json'},
 			/*docModel: {
 				enabled: true,
