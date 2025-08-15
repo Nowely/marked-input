@@ -3,6 +3,7 @@ import {MarkStruct, OverlayMatch, Recovery} from '../../types'
 import {EventBus} from './EventBus'
 import {KeyGenerator} from './KeyGenerator'
 import {SystemEvent} from '../../constants'
+import {InnerMarkedInputProps} from '../../features/default/types'
 
 interface Ref<T> {
 	/**
