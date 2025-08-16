@@ -1,8 +1,8 @@
 import {faker} from '@faker-js/faker'
-import {annotate} from 'rc-marked-input'
-import {markupToRegex} from '../../core/src/features/parsing/Parser/markupToRegex'
+import {markupToRegex} from './markupToRegex'
 import {describe, expect, it} from 'vitest'
-import {createRandomMarkup} from '../_utils/createRandomMarkup'
+import {Markup} from '../../../types'
+import {annotate} from '../../../utils/functions/annotate'
 
 describe(`Utility: ${markupToRegex.name}`, () => {
 	it('should convert markup to regex', () => {
@@ -19,3 +19,12 @@ describe(`Utility: ${markupToRegex.name}`, () => {
 		expect(regex.test(textWithoutAnnotation)).toBeFalsy()
 	})
 })
+
+function createRandomMarkup(excludeSymbols: string) {
+	const str1 = faker.string.sample(5)
+	const str2 = faker.string.sample(5)
+	const str3 = faker.string.sample(5)
+	const markup = str1 + '__label__' + str2 + '__value__' + str3
+	const regExp = new RegExp(`[${excludeSymbols}]`, 'g')
+	return markup.replace(regExp, '') as Markup
+}

@@ -65,7 +65,20 @@ importers:
         specifier: ^7.0.0
         version: 7.0.6(@types/node@24.1.0)
 
-  packages/core: {}
+  packages/core:
+    devDependencies:
+      '@faker-js/faker':
+        specifier: ^9.8.0
+        version: 9.9.0
+      '@vitest/coverage-v8':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      '@vitest/ui':
+        specifier: ^3.2.4
+        version: 3.2.4(vitest@3.2.4)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.1.0)(@vitest/ui@3.2.4)(jsdom@23.1.0)
 
   packages/markput:
     dependencies:

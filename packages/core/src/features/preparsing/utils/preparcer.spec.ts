@@ -1,4 +1,4 @@
-import {findGap} from '../../core/src/features/preparsing/utils/findGap'
+import {findGap} from './findGap'
 import {describe, expect, it} from 'vitest'
 
 const Hello = 'Hello'

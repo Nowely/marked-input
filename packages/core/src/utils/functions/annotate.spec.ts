@@ -1,6 +1,6 @@
-import {annotate} from 'rc-marked-input'
-import {Markup} from 'rc-marked-input/types'
 import {describe, expect, it} from 'vitest'
+import {annotate} from './annotate'
+import {Markup} from '../../types'
 
 describe(`Utility: ${annotate.name}`, () => {
 	const markup: Markup = '@[__label__](__value__)'
