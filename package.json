@@ -26,7 +26,13 @@
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F rc-marked-input run publish"
   },
+  "dependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
   "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@microsoft/api-extractor": "^7.52.13",
     "@vitejs/plugin-react-swc": "^4.1.0",
     "oxlint": "^1.16.0",
