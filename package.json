@@ -27,17 +27,18 @@
     "publish": "pnpm -F rc-marked-input run publish"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@microsoft/api-extractor": "^7.52.8",
-    "@types/react": "^18.3.23",
-    "@vitejs/plugin-react-swc": "^3.10.2",
-    "oxlint": "^1.6.0",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@microsoft/api-extractor": "^7.52.13",
+    "@vitejs/plugin-react-swc": "^4.1.0",
+    "oxlint": "^1.16.0",
     "prettier": "3.6.2",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.6",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   },
   "repository": {
