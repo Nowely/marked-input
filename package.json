@@ -26,13 +26,8 @@
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F rc-marked-input run publish"
   },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.52.13",
-    "@types/react": "^18.3.23",
     "@vitejs/plugin-react-swc": "^4.1.0",
     "oxlint": "^1.16.0",
     "prettier": "3.6.2",
