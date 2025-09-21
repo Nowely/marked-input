@@ -16,6 +16,9 @@
   "exports": {
     ".": {
       "import": "./index.ts"
+    },
+    "./styles.css": {
+      "import": "./styles.css"
     }
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
-import '../styles.css'
+import '@markput/core/styles.css'
 import {parseProps} from '../features/default'
 import {MarkedInputHandler, Option} from '../types'
 import {Container} from './Container'
