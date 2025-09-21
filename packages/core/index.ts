@@ -1,28 +1,13 @@
-export type {InnerOption} from './src/features/default/types'
+// Shared exports
+export {assertAnnotated, assertNonNullable, isAnnotated} from './src/shared/checkers'
+export {KEYBOARD, wordRegex, PLACEHOLDER} from './src/shared/constants'
+export type {label, value, MarkMatch, Markup, MarkStruct, OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'
 
-export {assertAnnotated, assertNonNullable} from './src/shared/checkers'
-export {annotate} from './src/features/parsing/Parser/annotate'
-export {isAnnotated} from './src/shared/checkers'
-
-export {KEYBOARD, wordRegex} from './src/shared/constants'
-export type {label, value, MarkMatch, Markup, MarkStruct, OverlayMatch} from './src/shared/types'
-
-export {Parser} from './src/features/parsing/Parser/Parser'
-export {denote} from './src/features/parsing/utils/denote'
-export {escape} from './src/features/parsing/Parser/escape'
+// Feature exports
+export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER, InnerOption, InnerMarkedInputProps} from './src/features/default'
+export {Parser, annotate, escape, denote, getTokensByValue, getTokensByUI} from './src/features/parsing'
+export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString, shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
-export {getTokensByValue} from './src/features/parsing/utils/getTokensByValue'
-export {getTokensByUI} from './src/features/parsing/utils/getTokensByUI'
-export {findGap} from './src/features/preparsing/utils/findGap'
-export {getClosestIndexes} from './src/features/preparsing/utils/getClosestIndexes'
-
-export {PLACEHOLDER} from './src/shared/constants'
-export type {EventKey} from './src/shared/types'
-export type {Listener} from './src/shared/types'
 export {SystemEvent} from './src/features/events'
-export type {InnerMarkedInputProps} from './src/features/default/types'
 export {Store} from './src/features/store'
-export {Caret} from './src/features/caret'
-export {TriggerFinder} from './src/features/caret'
-export type {OverlayTrigger} from './src/shared/types'
-export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER} from './src/features/default/constants'
+export {Caret, TriggerFinder} from './src/features/caret'
