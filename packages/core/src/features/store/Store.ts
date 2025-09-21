@@ -1,9 +1,8 @@
 import {NodeProxy} from '../../shared/classes'
 import {MarkStruct, OverlayMatch, Recovery} from '../../shared/types'
-import {EventBus} from '../../shared/classes'
+import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes'
-import {SystemEvent} from '../../shared/constants'
-import {InnerMarkedInputProps} from '../../features/default/types'
+import {InnerMarkedInputProps} from '../default/types'
 
 interface Ref<T> {
 	/**

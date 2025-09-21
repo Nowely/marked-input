@@ -1,5 +1,5 @@
-import {Store} from '../../utils/classes/Store'
-import {Caret} from '../../utils/classes/Caret'
+import {Store} from '../../features/store'
+import {Caret} from '../../features/caret'
 
 export class NodeProxy {
 	#target?: HTMLElement

@@ -1,6 +1,6 @@
 import {findGap} from '../preparsing/utils/findGap'
 import {getClosestIndexes} from '../preparsing/utils/getClosestIndexes'
-import {Store} from '../../utils/classes/Store'
+import {Store} from '../store'
 import {Parser} from './Parser/Parser'
 import {isAnnotated} from '../../shared/checkers'
 
