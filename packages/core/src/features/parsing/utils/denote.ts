@@ -1,6 +1,6 @@
 import {isObject} from './isObject'
-import {Parser} from './Parser/Parser'
-import {MarkMatch, Markup} from '../../shared/types'
+import {Parser} from '../Parser/Parser'
+import {MarkMatch, Markup} from '../../../shared/types'
 
 /**
  * Transform the annotated text to the another text

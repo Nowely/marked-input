@@ -1,5 +1,4 @@
-import {createNewSpan} from '../../../../core/src/features/text-manipulation/createNewSpan'
-import {toString} from '../../../../core/src/features/text-manipulation/toString'
+import {createNewSpan, toString} from '@markput/core'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 import {annotate, SystemEvent} from '@markput/core'

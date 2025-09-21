@@ -6,12 +6,12 @@ import {Markup} from '../../../shared/types'
 vi.mock('./markupToRegex')
 vi.mock('./normalizeMark')
 vi.mock('./ParserMatches')
-vi.mock('../isObject')
+vi.mock('../utils/isObject')
 
 import {markupToRegex} from './markupToRegex'
 import {normalizeMark} from './normalizeMark'
 import {ParserMatches} from './ParserMatches'
-import {isObject} from '../isObject'
+import {isObject} from '../utils/isObject'
 
 describe(`Utility: ${Parser.name}`, () => {
 	let mockMarkupToRegex: MockedFunction<typeof markupToRegex>
