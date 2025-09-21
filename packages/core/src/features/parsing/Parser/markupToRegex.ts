@@ -1,6 +1,6 @@
-import {escape} from '../../../utils/functions/escape'
-import {Markup} from '../../../types'
-import {PLACEHOLDER} from '../../../constants'
+import {escape} from './escape'
+import {Markup} from '../../../shared/types'
+import {PLACEHOLDER} from '../../../shared/constants'
 
 export const markupToRegex = (markup: Markup) => {
 	const escapedMarkup = escape(markup)

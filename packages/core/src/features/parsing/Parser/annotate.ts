@@ -1,7 +1,7 @@
 //TODO annotate options to object with required only label?
 //TODO function annotate(label: string, markup?: Markup, value?: string): string;
-import {Markup} from '../../types'
-import {PLACEHOLDER} from '../../constants'
+import {Markup} from '../../../shared/types'
+import {PLACEHOLDER} from '../../../shared/constants'
 
 /**
  * Make annotation from the markup

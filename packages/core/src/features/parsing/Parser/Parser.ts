@@ -2,7 +2,7 @@ import {isObject} from '../isObject'
 import {markupToRegex} from './markupToRegex'
 import {normalizeMark} from './normalizeMark'
 import {ParserMatches} from './ParserMatches'
-import {MarkStruct, Markup, PieceType} from '../../../types'
+import {MarkStruct, Markup, PieceType} from '../../../shared/types'
 import {InnerOption} from '../../default/types'
 
 export class Parser {

@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest'
 import {toString} from './toString'
-import {MarkStruct, MarkMatch, Markup} from '../../types'
+import {MarkStruct, MarkMatch, Markup} from '../../shared/types'
 
 describe(`Utility: ${toString.name}`, () => {
 	it('should return empty string for empty marks array', () => {

@@ -1,4 +1,4 @@
-import {EventKey, Listener} from '../../types'
+import {EventKey, Listener} from '../types'
 
 export class EventBus {
 	readonly #SystemEvents = new Map<EventKey<any>, Set<Listener>>()

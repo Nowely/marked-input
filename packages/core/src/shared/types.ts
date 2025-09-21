@@ -1,11 +1,10 @@
-import {PLACEHOLDER} from './constants'
-import {InnerOption} from './features/default/types'
-import {NodeProxy} from './utils/classes/NodeProxy'
+import {InnerOption} from '../features/default/types'
+import {NodeProxy} from './classes/NodeProxy'
 
 //TODO to upper case
-export type label = `${string}${PLACEHOLDER.LABEL}${string}`
+export type label = `${string}__label__${string}`
 
-export type value = `${string}${PLACEHOLDER.VALUE}${string}`
+export type value = `${string}__value__${string}`
 export type Markup = `${label}${value}` | `${label}`
 
 /** Piece of marked text: fragment of text or mark definition */

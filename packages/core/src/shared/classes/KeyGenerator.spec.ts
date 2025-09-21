@@ -1,5 +1,5 @@
 import {describe, it, expect, beforeEach} from 'vitest'
-import {KeyGenerator} from './KeyGenerator'
+import {KeyGenerator} from '.'
 
 describe(`Utility: ${KeyGenerator.name}`, () => {
 	let keyGenerator: KeyGenerator

@@ -1,7 +1,7 @@
-import {MarkStruct} from '../../types'
+import {MarkStruct} from '../../shared/types'
 import {InnerOption} from '../../features/default/types'
-import {isAnnotated} from '../checkers/isAnnotated'
-import {annotate} from './annotate'
+import {isAnnotated} from '../../shared/checkers'
+import {annotate} from '../../features/parsing/Parser/annotate'
 
 export function toString(marks: MarkStruct[], options: InnerOption[]) {
 	let result = ''

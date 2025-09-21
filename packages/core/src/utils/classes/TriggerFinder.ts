@@ -1,8 +1,8 @@
 import {Caret} from './Caret'
 import {InnerOption} from '../../features/default/types'
-import {wordRegex} from '../../constants'
-import {OverlayMatch} from '../../types'
-import {escape} from '../functions/escape'
+import {wordRegex} from '../../shared/constants'
+import {OverlayMatch} from '../../shared/types'
+import {escape} from '../../features/parsing/Parser/escape'
 
 export class TriggerFinder {
 	span: string

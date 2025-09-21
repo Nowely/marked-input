@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
+import {Markup} from '../../../shared/types'
 import {annotate} from './annotate'
-import {Markup} from '../../types'
 
 describe(`Utility: ${annotate.name}`, () => {
 	const markup: Markup = '@[__label__](__value__)'
