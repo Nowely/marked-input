@@ -2,6 +2,7 @@ import {Caret} from './Caret'
 import {InnerOption} from '../../features/default/types'
 import {wordRegex} from '../../constants'
 import {OverlayMatch} from '../../types'
+import {escape} from '../functions/escape'
 
 export class TriggerFinder {
 	span: string

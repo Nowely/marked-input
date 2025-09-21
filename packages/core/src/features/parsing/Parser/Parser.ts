@@ -6,9 +6,9 @@ import {MarkStruct, Markup, PieceType} from '../../../types'
 import {InnerOption} from '../../default/types'
 
 export class Parser {
-	private readonly markups: Markup[]
-	private readonly uniRegExp: RegExp
-	private readonly regExps: RegExp[]
+	public readonly markups: Markup[]
+	public readonly uniRegExp: RegExp
+	public readonly regExps: RegExp[]
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
