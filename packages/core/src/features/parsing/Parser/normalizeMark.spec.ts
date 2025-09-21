@@ -11,7 +11,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'world',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -28,7 +28,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'hello',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -40,7 +40,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'world', // swapped back
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		})
 	})
 
@@ -52,7 +52,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: undefined,
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -68,7 +68,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'world',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -84,7 +84,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'world',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		// annotate('@(__value__)[__label__]', 'hello', 'world') = '@(world)[hello]'
@@ -97,7 +97,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'hello', // swapped
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		})
 	})
 
@@ -109,7 +109,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'italic',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -125,7 +125,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'bold',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -136,7 +136,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'italic', // swapped back
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		})
 	})
 
@@ -148,7 +148,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'hello',
 			input: 'some input text',
 			index: 5,
-			optionIndex: 2
+			optionIndex: 2,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -169,7 +169,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'empty',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -185,7 +185,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'special-value',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -201,7 +201,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'user@domain.com',
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		const result = normalizeMark(mark, markup)
@@ -212,7 +212,7 @@ describe(`Utility: ${normalizeMark.name}`, () => {
 			value: 'special-value', // swapped back
 			input: 'text',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		})
 	})
 })

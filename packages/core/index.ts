@@ -1,7 +1,17 @@
 // Shared exports
 export {assertAnnotated, assertNonNullable, isAnnotated} from './src/shared/checkers'
 export {KEYBOARD, wordRegex, PLACEHOLDER} from './src/shared/constants'
-export type {label, value, MarkMatch, Markup, MarkStruct, OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'
+export type {
+	label,
+	value,
+	MarkMatch,
+	Markup,
+	MarkStruct,
+	OverlayMatch,
+	EventKey,
+	Listener,
+	OverlayTrigger,
+} from './src/shared/types'
 
 // Feature exports
 export type {InnerOption, InnerMarkedInputProps} from './src/features/default'

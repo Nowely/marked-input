@@ -9,7 +9,7 @@ describe(`Utility: ${assertAnnotated.name}`, () => {
 			annotation: 'annotated text',
 			input: 'input text',
 			index: 5,
-			optionIndex: 1
+			optionIndex: 1,
 		}
 
 		expect(() => assertAnnotated(validMarkMatch)).not.toThrow()
@@ -21,7 +21,7 @@ describe(`Utility: ${assertAnnotated.name}`, () => {
 			annotation: 'annotated',
 			input: 'input',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(() => assertAnnotated(minimalMarkMatch)).not.toThrow()
@@ -32,7 +32,7 @@ describe(`Utility: ${assertAnnotated.name}`, () => {
 			label: 'test',
 			input: 'input',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(() => assertAnnotated(invalidObject)).toThrow('Value is not annotated mark!')
@@ -63,7 +63,7 @@ describe(`Utility: ${assertAnnotated.name}`, () => {
 
 	it('should handle objects with annotation property but missing other properties', () => {
 		const partialObject = {
-			annotation: 'test'
+			annotation: 'test',
 		}
 
 		expect(() => assertAnnotated(partialObject)).not.toThrow()
@@ -74,7 +74,7 @@ describe(`Utility: ${assertAnnotated.name}`, () => {
 			annotation: '',
 			input: 'test',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(() => assertAnnotated(falsyAnnotation)).not.toThrow()

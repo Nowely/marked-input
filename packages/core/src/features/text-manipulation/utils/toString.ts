@@ -13,7 +13,9 @@ const annotate = (markup: Markup, label: string, value?: string): string => {
 export function toString(marks: MarkStruct[], options: InnerOption[]) {
 	let result = ''
 	for (const mark of marks) {
-		result += isAnnotated(mark) ? annotate(options[(mark as MarkMatch).optionIndex].markup!, mark.label, mark.value) : mark.label
+		result += isAnnotated(mark)
+			? annotate(options[(mark as MarkMatch).optionIndex].markup!, mark.label, mark.value)
+			: mark.label
 	}
 	return result
 }

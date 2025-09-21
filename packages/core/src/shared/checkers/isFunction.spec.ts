@@ -8,7 +8,7 @@ describe(`Utility: ${isFunction.name}`, () => {
 	})
 
 	it('should return true for function expressions', () => {
-		const functionExpression = function() {}
+		const functionExpression = function () {}
 		expect(isFunction(functionExpression)).toBe(true)
 	})
 
@@ -26,7 +26,7 @@ describe(`Utility: ${isFunction.name}`, () => {
 
 	it('should return true for generator functions', () => {
 		function* generatorFunction() {}
-		const generatorExpression = function*() {}
+		const generatorExpression = function* () {}
 		expect(isFunction(generatorFunction)).toBe(true)
 		expect(isFunction(generatorExpression)).toBe(true)
 	})

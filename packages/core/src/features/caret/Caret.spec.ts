@@ -9,7 +9,7 @@ const mockGetRangeAt = vi.fn()
 const mockSelection = {
 	isCollapsed: true,
 	anchorOffset: 5,
-	anchorNode: { textContent: 'Hello world' },
+	anchorNode: {textContent: 'Hello world'},
 	getRangeAt: mockGetRangeAt,
 	setPosition: vi.fn(),
 	rangeCount: 1,
@@ -37,10 +37,10 @@ Object.defineProperty(global, 'window', {
 
 Object.defineProperty(global, 'document', {
 	value: {
-		createElement: vi.fn((tag) => ({
+		createElement: vi.fn(tag => ({
 			tagName: tag.toUpperCase(),
 			textContent: '',
-			firstChild: { nodeType: 3, textContent: '' },
+			firstChild: {nodeType: 3, textContent: ''},
 		})),
 	},
 	writable: true,
@@ -101,7 +101,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 	describe('getFocusedSpan', () => {
 		it('should return text content of anchor node', () => {
-			const textNode = { textContent: 'Hello world' }
+			const textNode = {textContent: 'Hello world'}
 			mockSelection.anchorNode = textNode
 			mockGetSelection.mockReturnValue(mockSelection)
 
@@ -124,7 +124,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 	describe('getSelectedNode', () => {
 		it('should return anchor node when available', () => {
-			const textNode = { textContent: 'Hello world' }
+			const textNode = {textContent: 'Hello world'}
 			mockSelection.anchorNode = textNode
 			mockGetSelection.mockReturnValue(mockSelection)
 
@@ -157,7 +157,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 			const result = Caret.getAbsolutePosition()
 
-			expect(result).toEqual({ left: 100, top: 221 }) // top + height + 1
+			expect(result).toEqual({left: 100, top: 221}) // top + height + 1
 			expect(mockGetRangeAt).toHaveBeenCalledWith(0)
 		})
 
@@ -168,7 +168,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 			const result = Caret.getAbsolutePosition()
 
-			expect(result).toEqual({ left: 0, top: 0 })
+			expect(result).toEqual({left: 0, top: 0})
 		})
 
 		it('should return default position when no selection', () => {
@@ -176,7 +176,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 			const result = Caret.getAbsolutePosition()
 
-			expect(result).toEqual({ left: 0, top: 0 })
+			expect(result).toEqual({left: 0, top: 0})
 		})
 	})
 
@@ -201,7 +201,7 @@ describe(`Utility: ${Caret.name}`, () => {
 			element.textContent = 'Hello world'
 
 			mockSelection.rangeCount = 1
-			mockSelection.anchorNode = { textContent: 'test' }
+			mockSelection.anchorNode = {textContent: 'test'}
 			mockGetSelection.mockReturnValue(mockSelection)
 			mockGetRangeAt.mockReturnValue(mockRange)
 
@@ -332,7 +332,7 @@ describe(`Utility: ${Caret.name}`, () => {
 			element.textContent = 'Hello world'
 
 			mockSelection.rangeCount = 1
-			mockSelection.anchorNode = { textContent: 'test' }
+			mockSelection.anchorNode = {textContent: 'test'}
 			mockGetSelection.mockReturnValue(mockSelection)
 
 			const mockStartContainer = {

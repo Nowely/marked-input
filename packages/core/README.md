@@ -21,16 +21,7 @@ pnpm add @markput/core
 ## Usage
 
 ```typescript
-import {
-  annotate,
-  denote,
-  Parser,
-  getTokensByValue,
-  Store,
-  Caret,
-  TriggerFinder,
-  EventBus
-} from '@markput/core'
+import {annotate, denote, Parser, getTokensByValue, Store, Caret, TriggerFinder, EventBus} from '@markput/core'
 
 // Annotate text with markup
 const annotated = annotate('@[__label__](__value__)', 'Hello', 'world')

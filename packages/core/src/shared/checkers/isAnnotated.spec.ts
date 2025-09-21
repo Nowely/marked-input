@@ -9,7 +9,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 			annotation: 'annotated text',
 			input: 'input text',
 			index: 5,
-			optionIndex: 1
+			optionIndex: 1,
 		}
 
 		expect(isAnnotated(validMarkMatch)).toBe(true)
@@ -21,7 +21,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 			annotation: 'annotated',
 			input: 'input',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(isAnnotated(minimalMarkMatch)).toBe(true)
@@ -32,7 +32,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 			label: 'test',
 			input: 'input',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(isAnnotated(invalidObject)).toBe(false)
@@ -61,12 +61,12 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 
 	it('should return false for functions', () => {
 		expect(isAnnotated(() => {})).toBe(false)
-		expect(isAnnotated(function() {})).toBe(false)
+		expect(isAnnotated(function () {})).toBe(false)
 	})
 
 	it('should return true for objects with annotation property', () => {
 		const partialObject = {
-			annotation: 'test'
+			annotation: 'test',
 		}
 
 		expect(isAnnotated(partialObject)).toBe(true)
@@ -77,7 +77,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 			annotation: '',
 			input: 'test',
 			index: 0,
-			optionIndex: 0
+			optionIndex: 0,
 		}
 
 		expect(isAnnotated(falsyAnnotation)).toBe(true)
@@ -98,7 +98,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 	it('should handle edge cases', () => {
 		// Object with annotation as a symbol
 		const symbolAnnotation = {
-			[Symbol('annotation')]: 'value'
+			[Symbol('annotation')]: 'value',
 		}
 		expect(isAnnotated(symbolAnnotation)).toBe(false)
 
@@ -106,7 +106,7 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 		const getterObject = {}
 		Object.defineProperty(getterObject, 'annotation', {
 			get: () => 'value',
-			enumerable: true
+			enumerable: true,
 		})
 		expect(isAnnotated(getterObject)).toBe(true)
 	})

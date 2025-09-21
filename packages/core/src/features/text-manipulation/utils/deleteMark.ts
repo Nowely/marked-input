@@ -1,6 +1,5 @@
-import { Store } from '../../store'
+import {Store} from '../../store'
 import {toString} from './toString'
-
 
 export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const placeMap = {

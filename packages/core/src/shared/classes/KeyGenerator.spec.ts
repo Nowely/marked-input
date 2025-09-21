@@ -70,9 +70,9 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			const nested = {
 				level1: {
 					level2: {
-						array: [1, 2, {deep: 'value'}]
-					}
-				}
+						array: [1, 2, {deep: 'value'}],
+					},
+				},
 			}
 
 			const key = keyGenerator.get(nested)

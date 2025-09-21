@@ -4,10 +4,13 @@ import {Caret} from './Caret'
 import {Markup} from '../../shared/types'
 
 // Mock DOM
-const mockCreateTextNode = vi.fn((text: string) => ({
-	nodeType: 3,
-	textContent: text,
-} as Text))
+const mockCreateTextNode = vi.fn(
+	(text: string) =>
+		({
+			nodeType: 3,
+			textContent: text,
+		}) as Text
+)
 
 Object.defineProperty(global, 'document', {
 	value: {
@@ -18,7 +21,7 @@ Object.defineProperty(global, 'document', {
 
 // Mock Text constructor
 Object.defineProperty(global, 'Text', {
-	value: function(text: string) {
+	value: function (text: string) {
 		return {
 			nodeType: 3,
 			textContent: text,
@@ -40,7 +43,9 @@ vi.mock('./Caret', () => ({
 let isSelectedPositionValue = true
 Object.defineProperty(Caret, 'isSelectedPosition', {
 	get: () => isSelectedPositionValue,
-	set: (value: boolean) => { isSelectedPositionValue = value },
+	set: (value: boolean) => {
+		isSelectedPositionValue = value
+	},
 })
 
 // Get the mocked methods
@@ -74,7 +79,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(finder.node.nodeType).toBe(3)
 			expect(finder.dividedText).toEqual({
 				left: 'Hello',
-				right: ' @world'
+				right: ' @world',
 			})
 
 			expect(mockCaret.getCurrentPosition).toHaveBeenCalled()
@@ -92,7 +97,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(finder.span).toBe('')
 			expect(finder.dividedText).toEqual({
 				left: '',
-				right: ''
+				right: '',
 			})
 		})
 
@@ -106,7 +111,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			expect(finder.dividedText).toEqual({
 				left: span,
-				right: ''
+				right: '',
 			})
 		})
 	})
@@ -145,7 +150,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			expect(result).toEqual({
 				left: 'Hello @',
-				right: 'world'
+				right: 'world',
 			})
 		})
 
@@ -159,7 +164,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			expect(result).toEqual({
 				left: '',
-				right: 'Hello @world'
+				right: 'Hello @world',
 			})
 		})
 
@@ -174,7 +179,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			expect(result).toEqual({
 				left: span,
-				right: ''
+				right: '',
 			})
 		})
 	})
@@ -194,8 +199,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 				source: '@world',
 				index: 6,
 				span: 'Hello @world test',
-				node: expect.objectContaining({ nodeType: 3 }),
-				option: options[0]
+				node: expect.objectContaining({nodeType: 3}),
+				option: options[0],
 			})
 		})
 
@@ -218,7 +223,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			const finder = new TriggerFinder()
 			const options = [
 				{trigger: '@', markup: '@[__label__](__value__)' as Markup, data: []},
-				{trigger: '#', markup: '#[__label__](__value__)' as Markup, data: []}
+				{trigger: '#', markup: '#[__label__](__value__)' as Markup, data: []},
 			]
 			const result = finder.find(options)
 
@@ -238,7 +243,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				word: 'world',
 				annotation: '@world',
-				index: 6
+				index: 6,
 			})
 		})
 
@@ -264,7 +269,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				word: 'world',
 				annotation: '#world',
-				index: 6
+				index: 6,
 			})
 		})
 	})
@@ -316,7 +321,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				word: 'world',
 				annotation: '@world',
-				index: 6
+				index: 6,
 			})
 		})
 
@@ -342,7 +347,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				word: 'hi',
 				annotation: '@hi',
-				index: 0
+				index: 0,
 			})
 		})
 
@@ -357,7 +362,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				word: '',
 				annotation: '@',
-				index: 0
+				index: 0,
 			})
 		})
 	})

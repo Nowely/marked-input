@@ -13,11 +13,7 @@ describe(`Utility: ${toString.name}`, () => {
 	})
 
 	it('should handle plain text marks', () => {
-		const marks: MarkStruct[] = [
-			{label: 'Hello'},
-			{label: ' '},
-			{label: 'world'}
-		]
+		const marks: MarkStruct[] = [{label: 'Hello'}, {label: ' '}, {label: 'world'}]
 		const options: any[] = []
 
 		const result = toString(marks, options)
@@ -33,12 +29,10 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '@[Hello](greeting)',
 				input: 'text',
 				index: 0,
-				optionIndex: 0
-			}
+				optionIndex: 0,
+			},
 		]
-		const options = [
-			{markup:  '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}
-		]
+		const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}]
 
 		const result = toString(marks, options)
 
@@ -54,7 +48,7 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '**bold**(strong)',
 				input: 'text',
 				index: 6,
-				optionIndex: 0
+				optionIndex: 0,
 			},
 			{label: ' and '},
 			{
@@ -62,13 +56,13 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '*italic*',
 				input: 'text',
 				index: 15,
-				optionIndex: 1
+				optionIndex: 1,
 			},
-			{label: ' end'}
+			{label: ' end'},
 		]
 		const options = [
-			{markup:  '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
-			{markup:  '*__label__*' as Markup, trigger: '*', data: [] as string[]}
+			{markup: '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
+			{markup: '*__label__*' as Markup, trigger: '*', data: [] as string[]},
 		]
 
 		const result = toString(marks, options)
@@ -83,12 +77,10 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '#hashtag',
 				input: 'text',
 				index: 0,
-				optionIndex: 0
-			}
+				optionIndex: 0,
+			},
 		]
-		const options = [
-			{markup:  '#__label__' as Markup, trigger: '#', data: [] as string[]}
-		]
+		const options = [{markup: '#__label__' as Markup, trigger: '#', data: [] as string[]}]
 
 		const result = toString(marks, options)
 
@@ -103,12 +95,12 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '@[mention](user)',
 				input: 'text',
 				index: 0,
-				optionIndex: 1 // Uses second option
-			}
+				optionIndex: 1, // Uses second option
+			},
 		]
 		const options = [
-			{markup:  '#__label__' as Markup, trigger: '#', data: [] as string[]},
-			{markup:  '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[]}
+			{markup: '#__label__' as Markup, trigger: '#', data: [] as string[]},
+			{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[]},
 		]
 
 		const result = toString(marks, options)
@@ -124,7 +116,7 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '**bold**(strong)',
 				input: 'text',
 				index: 0,
-				optionIndex: 0
+				optionIndex: 0,
 			},
 			{
 				label: 'link',
@@ -132,12 +124,12 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '[link](url)',
 				input: 'text',
 				index: 15,
-				optionIndex: 1
-			}
+				optionIndex: 1,
+			},
 		]
 		const options = [
-			{markup:  '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
-			{markup:  '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}
+			{markup: '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
+			{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]},
 		]
 
 		const result = toString(marks, options)
@@ -154,13 +146,11 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '[user@domain.com](click here)',
 				input: 'text',
 				index: 5,
-				optionIndex: 0
+				optionIndex: 0,
 			},
-			{label: ' says hello'}
+			{label: ' says hello'},
 		]
-		const options = [
-			{markup:  '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}
-		]
+		const options = [{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}]
 
 		const result = toString(marks, options)
 
@@ -175,12 +165,10 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '@[]()',
 				input: 'text',
 				index: 0,
-				optionIndex: 0
-			}
+				optionIndex: 0,
+			},
 		]
-		const options = [
-			{markup:  '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}
-		]
+		const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}]
 
 		const result = toString(marks, options)
 
@@ -198,13 +186,11 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '*C*',
 				input: 'text',
 				index: 2,
-				optionIndex: 0
+				optionIndex: 0,
 			},
-			{label: 'D'}
+			{label: 'D'},
 		]
-		const options = [
-			{markup:  '*__label__*' as Markup, trigger: '*', data: [] as string[]}
-		]
+		const options = [{markup: '*__label__*' as Markup, trigger: '*', data: [] as string[]}]
 
 		const result = toString(marks, options)
 
@@ -232,12 +218,10 @@ describe(`Utility: ${toString.name}`, () => {
 				annotation: '[🚀](launch)',
 				input: 'text',
 				index: 9,
-				optionIndex: 0
-			}
+				optionIndex: 0,
+			},
 		]
-		const options = [
-			{markup:  '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}
-		]
+		const options = [{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}]
 
 		const result = toString(marks, options)
 

@@ -33,9 +33,7 @@ describe(`Utility: ${Parser.name}`, () => {
 			const mockRegex1 = /test1/
 			const mockRegex2 = /test2/
 
-			mockMarkupToRegex
-				.mockReturnValueOnce(mockRegex1)
-				.mockReturnValueOnce(mockRegex2)
+			mockMarkupToRegex.mockReturnValueOnce(mockRegex1).mockReturnValueOnce(mockRegex2)
 
 			const parser = new Parser(markups)
 
@@ -73,14 +71,14 @@ describe(`Utility: ${Parser.name}`, () => {
 	describe('static split', () => {
 		it('should parse text with provided options and return MarkStruct array', () => {
 			const value = 'Hello @[world](value) test'
-		const options = [
-			{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []},
-			{markup: '#[__label__]' as Markup, trigger: '#', data: []}
-		]
+			const options = [
+				{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []},
+				{markup: '#[__label__]' as Markup, trigger: '#', data: []},
+			]
 
 			const mockPieces: any[] = ['Hello ', {annotation: '@[world](value)', label: 'world', value: 'value'}]
 			const mockParserInstance = {
-				split: vi.fn().mockReturnValue(mockPieces)
+				split: vi.fn().mockReturnValue(mockPieces),
 			}
 
 			// Mock the Parser constructor
@@ -89,10 +87,7 @@ describe(`Utility: ${Parser.name}`, () => {
 
 			const result = Parser.split(value, options)
 
-			expect(result).toEqual([
-				{label: 'Hello '},
-				{annotation: '@[world](value)', label: 'world', value: 'value'}
-			])
+			expect(result).toEqual([{label: 'Hello '}, {annotation: '@[world](value)', label: 'world', value: 'value'}])
 			expect(parserSpy).toHaveBeenCalledWith(value)
 			expect(mockIsObject).toHaveBeenCalledTimes(2)
 		})
@@ -133,9 +128,7 @@ describe(`Utility: ${Parser.name}`, () => {
 
 		it('should handle options with undefined markup', () => {
 			const value = 'Hello @[world](value) test'
-		const options = [
-			{markup: undefined as any, trigger: '@', data: []}
-		]
+			const options = [{markup: undefined as any, trigger: '@', data: []}]
 
 			// Options with undefined markup results in [undefined] markups
 			const mockPieces = ['Hello @[world](value) test']
@@ -151,7 +144,17 @@ describe(`Utility: ${Parser.name}`, () => {
 			const value = 'test'
 			const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []}]
 
-			const mockPieces = ['text', {label: 'mark', value: 'val', annotation: '@[mark](val)', input: '@[mark](val)', index: 0, optionIndex: 0}]
+			const mockPieces = [
+				'text',
+				{
+					label: 'mark',
+					value: 'val',
+					annotation: '@[mark](val)',
+					input: '@[mark](val)',
+					index: 0,
+					optionIndex: 0,
+				},
+			]
 			const parserSpy = vi.spyOn(Parser.prototype, 'split').mockReturnValue(mockPieces)
 
 			mockIsObject.mockReturnValueOnce(false).mockReturnValueOnce(true)
@@ -160,7 +163,14 @@ describe(`Utility: ${Parser.name}`, () => {
 
 			expect(result).toEqual([
 				{label: 'text'},
-				{label: 'mark', value: 'val', annotation: '@[mark](val)', input: '@[mark](val)', index: 0, optionIndex: 0}
+				{
+					label: 'mark',
+					value: 'val',
+					annotation: '@[mark](val)',
+					input: '@[mark](val)',
+					index: 0,
+					optionIndex: 0,
+				},
 			])
 		})
 	})
@@ -183,7 +193,7 @@ describe(`Utility: ${Parser.name}`, () => {
 				value: 'world',
 				optionIndex: 0,
 				input: '@[hello](world)',
-				index: 6
+				index: 6,
 			}
 			const mockMark2 = {
 				annotation: '#[test]',
@@ -191,7 +201,7 @@ describe(`Utility: ${Parser.name}`, () => {
 				value: undefined,
 				optionIndex: 1,
 				input: '#[test]',
-				index: 20
+				index: 20,
 			}
 
 			const mockNormalizedMark1 = {...mockMark1}
@@ -200,25 +210,19 @@ describe(`Utility: ${Parser.name}`, () => {
 			// Mock the iterator
 			const mockIterator = {
 				[Symbol.iterator]: () => mockIterator,
-				next: vi.fn()
+				next: vi
+					.fn()
 					.mockReturnValueOnce({done: false, value: ['Hello ', mockMark1]})
 					.mockReturnValueOnce({done: false, value: [' world ', mockMark2]})
-					.mockReturnValueOnce({done: true, value: null})
+					.mockReturnValueOnce({done: true, value: null}),
 			}
 
 			mockParserMatches.mockImplementation(() => mockIterator)
-			mockNormalizeMark
-				.mockReturnValueOnce(mockNormalizedMark1)
-				.mockReturnValueOnce(mockNormalizedMark2)
+			mockNormalizeMark.mockReturnValueOnce(mockNormalizedMark1).mockReturnValueOnce(mockNormalizedMark2)
 
 			const result = parser.iterateMatches('Hello @[hello](world) world #[test]')
 
-			expect(result).toEqual([
-				'Hello ',
-				mockNormalizedMark1,
-				' world ',
-				mockNormalizedMark2
-			])
+			expect(result).toEqual(['Hello ', mockNormalizedMark1, ' world ', mockNormalizedMark2])
 
 			expect(mockParserMatches).toHaveBeenCalledWith(
 				'Hello @[hello](world) world #[test]',
@@ -240,10 +244,11 @@ describe(`Utility: ${Parser.name}`, () => {
 
 			const mockIterator = {
 				[Symbol.iterator]: () => mockIterator,
-				next: vi.fn()
+				next: vi
+					.fn()
 					.mockReturnValueOnce({done: false, value: ['Hello ', {annotation: 'test'}]})
 					.mockReturnValueOnce({done: false, value: [' world', null]})
-					.mockReturnValueOnce({done: true, value: null})
+					.mockReturnValueOnce({done: true, value: null}),
 			}
 
 			mockParserMatches.mockImplementation(() => mockIterator)
@@ -253,7 +258,7 @@ describe(`Utility: ${Parser.name}`, () => {
 				value: undefined,
 				optionIndex: 0,
 				input: '@[test]',
-				index: 6
+				index: 6,
 			})
 
 			const result = parser.iterateMatches('Hello @[test] world')
@@ -261,7 +266,7 @@ describe(`Utility: ${Parser.name}`, () => {
 			expect(result).toEqual([
 				'Hello ',
 				{annotation: '@[test]', label: 'test', value: undefined, optionIndex: 0, input: '@[test]', index: 6},
-				' world'
+				' world',
 			])
 		})
 	})

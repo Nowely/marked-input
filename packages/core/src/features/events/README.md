@@ -22,7 +22,7 @@ import {EventKey} from '@core/shared/types'
 const EVENT_UPDATE = Symbol('update') as EventKey<string>
 
 const bus = new EventBus()
-const unsubscribe = bus.on(EVENT_UPDATE, (data) => console.log(data))
+const unsubscribe = bus.on(EVENT_UPDATE, data => console.log(data))
 
 bus.send(EVENT_UPDATE, 'new data')
 unsubscribe()

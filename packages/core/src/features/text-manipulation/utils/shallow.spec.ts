@@ -194,7 +194,7 @@ describe(`Utility: ${shallow.name}`, () => {
 				null: null,
 				undefined: undefined,
 				array: sharedArray,
-				object: sharedObject
+				object: sharedObject,
 			}
 
 			const obj2 = {
@@ -204,7 +204,7 @@ describe(`Utility: ${shallow.name}`, () => {
 				null: null,
 				undefined: undefined,
 				array: sharedArray,
-				object: sharedObject
+				object: sharedObject,
 			}
 
 			expect(shallow(obj1, obj2)).toBe(true)
