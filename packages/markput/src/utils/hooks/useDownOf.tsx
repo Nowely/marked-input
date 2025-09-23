@@ -1,6 +1,6 @@
 import {DependencyList} from 'react'
-import {KEYBOARD} from '../../constants'
 import {useListener} from './useListener'
+import {KEYBOARD} from '@markput/core'
 
 export function useDownOf(key: KEYBOARD, callback: (event: KeyboardEvent) => void, deps: DependencyList = []) {
 	useListener(

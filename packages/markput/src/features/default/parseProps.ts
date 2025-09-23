@@ -1,7 +1,13 @@
 import {MarkedInputProps} from '../../components/MarkedInput'
 import {Option} from '../../types'
-import {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER} from './constants'
-import {InnerMarkedInputProps, InnerOption} from './types'
+import {
+	DEFAULT_CLASS_NAME,
+	DEFAULT_MARKUP,
+	DEFAULT_OPTIONS,
+	DEFAULT_TRIGGER,
+	InnerMarkedInputProps,
+	InnerOption,
+} from '@markput/core'
 
 export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps {
 	return {

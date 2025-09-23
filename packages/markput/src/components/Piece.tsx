@@ -1,4 +1,4 @@
-import {assertAnnotated} from '../utils/checkers/assertAnnotated'
+import {assertAnnotated} from '@markput/core'
 import {useStore} from '../utils/hooks/useStore'
 import {useToken} from '../utils/providers/TokenProvider'
 
@@ -9,6 +9,8 @@ export function Piece() {
 	assertAnnotated(node)
 
 	const defaultProps = {label: node.label, value: node.value}
+	// TODO correct typing
+	// @ts-expect-error
 	const props = options[node.optionIndex].initMark?.(defaultProps) ?? defaultProps
 
 	//TODO correct typing

@@ -1,6 +1,5 @@
 import {memo} from 'react'
-import {MarkStruct} from '../types'
-import {isAnnotated} from '../utils/checkers/isAnnotated'
+import {isAnnotated, MarkStruct} from '@markput/core'
 import {TokenProvider} from '../utils/providers/TokenProvider'
 import {EditableSpan} from './EditableSpan'
 import {Piece} from './Piece'

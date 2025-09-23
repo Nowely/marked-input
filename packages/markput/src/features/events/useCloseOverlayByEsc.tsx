@@ -1,6 +1,6 @@
 import {useEffect} from 'react'
-import {KEYBOARD, SystemEvent} from '../../constants'
 import {useStore} from '../../utils/hooks/useStore'
+import {KEYBOARD, SystemEvent} from '@markput/core'
 
 export function useCloseOverlayByEsc() {
 	const {match, bus} = useStore(

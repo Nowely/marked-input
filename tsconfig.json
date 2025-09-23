@@ -11,8 +11,5 @@
     "emitDeclarationOnly": true,
     "declaration": true,
     "declarationMap": true
-  },
-  "references": [
-    { "path": "./packages/**/*" }
-  ]
+  }
 }

@@ -1,0 +1,30 @@
+{
+  "name": "@markput/core",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build -w",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:related": "vitest related",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:bench:watch": "vitest bench"
+  },
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts"
+    },
+    "./styles.css": {
+      "import": "./styles.css"
+    }
+  },
+  "devDependencies": {
+    "@faker-js/faker": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "vitest": "catalog:"
+  }
+}

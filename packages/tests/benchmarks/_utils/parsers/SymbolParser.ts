@@ -1,5 +1,5 @@
-import {PLACEHOLDER} from 'rc-marked-input'
 import {MarkMatch, Markup, Option, PieceType} from 'rc-marked-input/types'
+import {PLACEHOLDER} from '@markput/core'
 
 export class SymbolParser {
 	private readonly markups: Markup[]

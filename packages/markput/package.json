@@ -1,17 +1,24 @@
 {
   "name": "rc-marked-input",
+  "type": "module",
   "version": "3.1.0",
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nowely/marked-input.git"
+  },
   "scripts": {
     "build": "vite build && tsc && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json"
   },
+  "dependencies": {
+    "@markput/core": "workspace:*"
+  },
   "peerDependencies": {
     "react": ">=17.0.0"
   },
-  "type": "module",
   "module": "./index.js",
   "main": "./index.umd.cjs",
   "types": "./index.d.ts",

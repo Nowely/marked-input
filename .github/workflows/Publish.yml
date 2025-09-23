@@ -20,8 +20,7 @@ jobs:
               shell: bash
               run: pnpm run publish
               env:
-                NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 #            - if: steps.publish.outputs.type != 'none'
 #              run: |
 #                  echo "Version changed: ${{ steps.publish.outputs.old-version }} => ${{ steps.publish.outputs.version }}"

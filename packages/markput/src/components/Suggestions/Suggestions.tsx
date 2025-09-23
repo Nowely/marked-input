@@ -1,7 +1,7 @@
 import {RefObject, useMemo, useState} from 'react'
-import {KEYBOARD} from '../../constants'
 import {useDownOf} from '../../utils/hooks/useDownOf'
 import {useOverlay} from '../../utils/hooks/useOverlay'
+import {KEYBOARD} from '@markput/core'
 
 export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()
