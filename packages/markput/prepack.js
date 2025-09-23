@@ -23,7 +23,7 @@ function copyReadme() {
 function prepareAndCopyPackage() {
 	const mainPackage = getPackageCopy()
 	//const libPackage = getPackageCopy('lib')
-	//deleteUnnecessaryProperties(mainPackage)
+	deleteUnnecessaryProperties(mainPackage)
 	//mainPackage.peerDependencies = libPackage.peerDependencies
 	//mainPackage.name = libPackage.name
 	paste(mainPackage, err => {
