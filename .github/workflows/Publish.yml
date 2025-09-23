@@ -15,12 +15,15 @@ jobs:
             - name: Build Package
               run: pnpm run build
 
+            - name: Setup npm registry
+              run: |
+                echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+                npm config set registry https://registry.npmjs.org/
+
             - id: publish
               name: Publish to npm
               shell: bash
               run: pnpm run publish
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 #            - if: steps.publish.outputs.type != 'none'
 #              run: |
 #                  echo "Version changed: ${{ steps.publish.outputs.old-version }} => ${{ steps.publish.outputs.version }}"
