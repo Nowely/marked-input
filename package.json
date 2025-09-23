@@ -24,6 +24,8 @@
     "test:watch": "pnpm -r run test:watch",
     "test:integration": "pnpm -r run test:integration",
     "test:coverage": "pnpm -r run test:coverage",
+    "use:local": "sed -i '' 's/\"rc-marked-input\": \"workspace:\\*\"/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/g' packages/tests/package.json packages/storybook/package.json && pnpm install",
+    "use:workspace": "sed -i '' 's/\"rc-marked-input\": \"file:..\\\/markput\\\/dist\"/\"rc-marked-input\": \"workspace:*\"/g' packages/tests/package.json packages/storybook/package.json && pnpm install",
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F rc-marked-input run publish"
   },
