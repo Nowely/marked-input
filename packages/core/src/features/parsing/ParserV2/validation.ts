@@ -68,13 +68,13 @@ export const validateTreeStructure = (tokens: NestedToken[]): ValidationResult =
 
 		// Проверка типа mark
 		if (node.type === 'mark') {
-			if (!node.markData) {
-				errors.push(`Missing markData for mark node at path ${path.join('.')}`)
+			if (!node.data) {
+				errors.push(`Missing data for mark node at path ${path.join('.')}`)
 			} else {
-				if (typeof node.markData.label !== 'string') {
+				if (typeof node.data.label !== 'string') {
 					errors.push(`Invalid label for mark node at path ${path.join('.')}`)
 				}
-				if (typeof node.markData.optionIndex !== 'number') {
+				if (typeof node.data.optionIndex !== 'number') {
 					errors.push(`Invalid optionIndex for mark node at path ${path.join('.')}`)
 				}
 			}

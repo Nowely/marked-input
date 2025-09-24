@@ -34,8 +34,8 @@ interface MarkToken {
   type: 'mark'
   content: string
   children: NestedToken[]
-  markData: {
-    label: string
+  data: {
+    label: string        // Текст без вложенных маркеров
     value?: string
     optionIndex: number
   }
@@ -50,8 +50,12 @@ interface MarkToken {
 
 1. **Инициализация**: Создание массива для хранения токенов верхнего уровня
 2. **Поиск markup**: Поиск открывающих конструкций в тексте
-3. **Рекурсивная обработка**: Для каждого найденного маркера извлекается внутренний контент и рекурсивно парсится
-4. **Построение дерева**: Создание иерархической структуры с MarkToken, содержащими children
+3. **Рекурсивная обработка**: Для каждого найденного маркера:
+   - Извлекается внутренний контент для рекурсивного парсинга
+   - Внутренний контент парсится рекурсивно, результат фильтруется (только маркеры попадают в children)
+   - Создается MarkToken с children, содержащими только вложенные маркеры
+   - label содержит только текст без вложенных маркеров
+4. **Предотвращение дублирования**: Внутренние маркеры не появляются в основном результате
 5. **Валидация**: Финальная проверка корректности структуры
 
 ## Использование
@@ -71,7 +75,7 @@ console.log(result)
 //     type: 'mark',
 //     content: '@[world](test)',
 //     children: [],
-//     markData: { label: 'world', value: 'test', optionIndex: 0 }
+//     data: { label: 'world', value: 'test', optionIndex: 0 }
 //   },
 //   { type: 'text', content: '!' }
 // ]
@@ -153,7 +157,7 @@ interface MarkToken {
   type: 'mark'
   content: string
   children: NestedToken[]   // Обязательно присутствует для вложенности
-  markData: {               // Обязательно присутствует
+  data: {               // Обязательно присутствует
     label: string
     value?: string
     optionIndex: number
@@ -162,7 +166,7 @@ interface MarkToken {
 }
 ```
 
-Узел, представляющий распознанный маркер с метаданными и обязательным массивом дочерних элементов.
+Узел, представляющий распознанный маркер с метаданными. `children` содержит только вложенные маркеры (текст остается в `label`).
 
 ### TextToken
 ```typescript
@@ -185,7 +189,7 @@ for (const token of matches) {
   if (token.type === 'text') {
     console.log(`Text token: "${token.content}"`)
   } else if (token.type === 'mark') {
-    console.log(`Mark token: ${token.markData?.label}`)
+    console.log(`Mark token: ${token.data?.label}`)
   }
 }
 ```
@@ -312,14 +316,14 @@ function flattenTree(root: NestedToken): PieceType[] {
   function traverse(node: NestedToken) {
     if (node.type === 'text') {
       if (node.content) result.push(node.content)
-    } else if (node.type === 'mark' && node.markData) {
+    } else if (node.type === 'mark' && node.data) {
       result.push({
         annotation: node.content,
-        label: node.markData.label,
-        value: node.markData.value,
+        label: node.data.label,
+        value: node.data.value,
         input: node.content,
         index: node.position.start,
-        optionIndex: node.markData.optionIndex
+        optionIndex: node.data.optionIndex
       })
     }
 

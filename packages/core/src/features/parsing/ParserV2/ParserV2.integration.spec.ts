@@ -24,8 +24,8 @@ describe('ParserV2 Integration', () => {
 
 			const boldMark = result.children![1] as any
 			expect(boldMark.type).toBe('mark')
-			expect(boldMark.markData?.label).toBe('bold text with *italic* inside')
-			expect(boldMark.markData?.optionIndex).toBe(2) // bold markup
+			expect(boldMark.data?.label).toBe('bold text with *italic* inside')
+			expect(boldMark.data?.optionIndex).toBe(2) // bold markup
 
 			// В реальной реализации bold mark должен содержать вложенный italic mark
 			// Но текущая простая реализация парсит как плоский текст
@@ -38,13 +38,13 @@ describe('ParserV2 Integration', () => {
 			expect(result).toHaveLength(5) // text + mention + text + tag + text
 
 			const mention = result[1]
-			expect(mention.markData?.label).toBe('john')
-			expect(mention.markData?.value).toBe('John Doe')
-			expect(mention.markData?.optionIndex).toBe(0)
+			expect(mention.data?.label).toBe('john')
+			expect(mention.data?.value).toBe('John Doe')
+			expect(mention.data?.optionIndex).toBe(0)
 
 			const tag = result[3]
-			expect(tag.markData?.label).toBe('urgent')
-			expect(tag.markData?.optionIndex).toBe(1)
+			expect(tag.data?.label).toBe('urgent')
+			expect(tag.data?.optionIndex).toBe(1)
 		})
 	})
 
@@ -144,8 +144,8 @@ describe('ParserV2 Integration', () => {
 
 			expect(result.children).toHaveLength(1)
 			const mark = result.children![0] as any
-			expect(mark.markData?.label).toBe('test [with] brackets')
-			expect(mark.markData?.value).toBe('value')
+			expect(mark.data?.label).toBe('test [with] brackets')
+			expect(mark.data?.value).toBe('value')
 		})
 
 		it.skip('should handle escaped characters', () => {
@@ -167,15 +167,15 @@ describe('ParserV2 Integration', () => {
 			expect(marks).toHaveLength(5)
 
 			// Проверяем упоминания пользователей
-			const mentions = marks.filter((m: any) => m.markData?.optionIndex === 0)
+			const mentions = marks.filter((m: any) => m.data?.optionIndex === 0)
 			expect(mentions).toHaveLength(2)
-			expect((mentions[0] as any).markData?.label).toBe('john')
-			expect((mentions[1] as any).markData?.label).toBe('jane')
+			expect((mentions[0] as any).data?.label).toBe('john')
+			expect((mentions[1] as any).data?.label).toBe('jane')
 
 			// Проверяем хэштеги
-			const hashtags = marks.filter((m: any) => m.markData?.optionIndex === 1)
+			const hashtags = marks.filter((m: any) => m.data?.optionIndex === 1)
 			expect(hashtags).toHaveLength(3)
-			expect(hashtags.map((h: any) => h.markData?.label)).toEqual(['react', 'typescript', 'webdev'])
+			expect(hashtags.map((h: any) => h.data?.label)).toEqual(['react', 'typescript', 'webdev'])
 		})
 
 		it.skip('should parse markdown-style formatting', () => {
@@ -185,14 +185,14 @@ describe('ParserV2 Integration', () => {
 			const marks = result.children!.filter((c: any) => c.type === 'mark')
 			expect(marks).toHaveLength(3)
 
-			const boldMark = marks.find((m: any) => m.markData?.optionIndex === 2)
-			expect((boldMark as any)?.markData?.label).toBe('important')
+			const boldMark = marks.find((m: any) => m.data?.optionIndex === 2)
+			expect((boldMark as any)?.data?.label).toBe('important')
 
-			const italicMark = marks.find((m: any) => m.markData?.optionIndex === 3)
-			expect((italicMark as any)?.markData?.label).toBe('emphasis')
+			const italicMark = marks.find((m: any) => m.data?.optionIndex === 3)
+			expect((italicMark as any)?.data?.label).toBe('emphasis')
 
-			const tagMark = marks.find((m: any) => m.markData?.optionIndex === 1)
-			expect((tagMark as any)?.markData?.label).toBe('tags')
+			const tagMark = marks.find((m: any) => m.data?.optionIndex === 1)
+			expect((tagMark as any)?.data?.label).toBe('tags')
 		})
 	})
 })

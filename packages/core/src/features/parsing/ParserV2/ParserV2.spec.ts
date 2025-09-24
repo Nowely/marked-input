@@ -75,9 +75,9 @@ describe('ParserV2', () => {
 			expect(result).toHaveLength(1)
 			const mark = result[0] as MarkToken
 			expect(mark.type).toBe('mark')
-			expect(mark.markData.label).toBe('hello')
-			expect(mark.markData.value).toBe('world')
-			expect(mark.markData.optionIndex).toBe(0)
+			expect(mark.data.label).toBe('hello')
+			expect(mark.data.value).toBe('world')
+			expect(mark.data.optionIndex).toBe(0)
 		})
 
 		it('should parse simple mark without value', () => {
@@ -88,9 +88,9 @@ describe('ParserV2', () => {
 			expect(result).toHaveLength(1)
 			const mark = result[0] as MarkToken
 			expect(mark.type).toBe('mark')
-			expect(mark.markData.label).toBe('tag')
-			expect(mark.markData.value).toBeUndefined()
-			expect(mark.markData.optionIndex).toBe(1)
+			expect(mark.data.label).toBe('tag')
+			expect(mark.data.value).toBeUndefined()
+			expect(mark.data.optionIndex).toBe(1)
 		})
 
 		it('should parse mixed text and marks', () => {
@@ -106,8 +106,8 @@ describe('ParserV2', () => {
 
 			// Первый mark
 			expect(result[1].type).toBe('mark')
-			expect((result[1] as MarkToken).markData.label).toBe('world')
-			expect((result[1] as MarkToken).markData.value).toBe('test')
+			expect((result[1] as MarkToken).data.label).toBe('world')
+			expect((result[1] as MarkToken).data.value).toBe('test')
 
 			// Второй текстовый кусок
 			expect(result[2].type).toBe('text')
@@ -115,7 +115,7 @@ describe('ParserV2', () => {
 
 			// Второй mark
 			expect(result[3].type).toBe('mark')
-			expect((result[3] as MarkToken).markData.label).toBe('tag')
+			expect((result[3] as MarkToken).data.label).toBe('tag')
 		})
 
 		it('should handle empty input', () => {
@@ -169,8 +169,8 @@ describe('ParserV2', () => {
 			const result = parser.split(input)
 
 			expect(result).toHaveLength(2)
-			expect((result[0] as MarkToken).markData.label).toBe('first')
-			expect((result[1] as MarkToken).markData.label).toBe('second')
+			expect((result[0] as MarkToken).data.label).toBe('first')
+			expect((result[1] as MarkToken).data.label).toBe('second')
 		})
 
 		it('should handle marks at string boundaries', () => {
@@ -189,8 +189,151 @@ describe('ParserV2', () => {
 			expect(result.length).toBeGreaterThanOrEqual(2)
 			const markNode = result.find((child) => child.type === 'mark')
 			// В текущей реализации специальные символы могут быть ограничены
-			expect(markNode?.markData?.label).toBe('special chars')
-			expect(markNode?.markData?.value).toMatch(/^!@#/)
+			expect(markNode?.data?.label).toBe('special chars')
+			expect(markNode?.data?.value).toMatch(/^!@#/)
+		})
+
+		it('should support nested parsing in mark content', () => {
+			// Создаем парсер только с @[__label__] для простоты тестирования
+			const simpleParser = new ParserV2(['@[__label__]'])
+			const input = '@[hello @[world]]'
+			const result = simpleParser.split(input)
+
+		// Получаем только внешний маркер (весь input - это маркер)
+		expect(result).toHaveLength(1)
+
+		const outerMark = result[0]
+		expect(outerMark.type).toBe('mark')
+		// Label должен содержать только текст без вложенных маркеров
+		expect(outerMark.data?.label).toBe('hello ')
+
+			// Проверяем, что у внешнего маркера есть children с одним маркером
+			expect(outerMark.children).toBeDefined()
+			expect(Array.isArray(outerMark.children)).toBe(true)
+			expect(outerMark.children!.length).toBe(1)
+			expect(outerMark.children![0].type).toBe('mark')
+			expect(outerMark.children![0].data?.label).toBe('world')
+		})
+
+		it('should extract inner content correctly', () => {
+			// Создаем парсер и проверяем, что он правильно извлекает внутренний контент
+			const simpleParser = new ParserV2(['@[__label__]'])
+			const input = '@[hello @[world]]'
+			const result = simpleParser.split(input)
+
+			// Проверяем, что внешний маркер существует
+			expect(result[0].type).toBe('mark')
+			// extractInnerContent должен был сработать и создать children
+			expect(Array.isArray(result[0].children)).toBe(true)
+		})
+
+		it('should handle multiple nested marks', () => {
+			const parser = new ParserV2(['@[__label__]'])
+			const input = '@[hello @[world] and @[universe]]'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const outerMark = result[0] as MarkToken
+			expect(outerMark.type).toBe('mark')
+			expect(outerMark.data?.label).toBe('hello ')
+			expect(outerMark.children).toHaveLength(2)
+
+			expect(outerMark.children![0].type).toBe('mark')
+			expect(outerMark.children![0].data?.label).toBe('world')
+
+			expect(outerMark.children![1].type).toBe('mark')
+			expect(outerMark.children![1].data?.label).toBe('universe')
+		})
+
+		it('should handle deeply nested marks', () => {
+			const parser = new ParserV2(['@[__label__]'])
+			const input = '@[level1 @[level2 @[level3]]]'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const level1 = result[0] as MarkToken
+			expect(level1.type).toBe('mark')
+			expect(level1.data?.label).toBe('level1 ')
+			expect(level1.children).toHaveLength(1)
+
+			const level2 = level1.children![0] as MarkToken
+			expect(level2.type).toBe('mark')
+			expect(level2.data?.label).toBe('level2 ')
+			expect(level2.children).toHaveLength(1)
+
+			const level3 = level2.children![0] as MarkToken
+			expect(level3.type).toBe('mark')
+			expect(level3.data?.label).toBe('level3')
+			expect(level3.children).toHaveLength(0)
+		})
+
+		it('should handle mixed markup types with nesting', () => {
+			const parser = new ParserV2(['@[__label__]', '#[__label__]'])
+			const input = '@[hello #[world]]'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const outerMark = result[0] as MarkToken
+			expect(outerMark.type).toBe('mark')
+			expect(outerMark.data?.label).toBe('hello ')
+			expect(outerMark.children).toHaveLength(1)
+
+			const innerMark = outerMark.children![0] as MarkToken
+			expect(innerMark.type).toBe('mark')
+			expect(innerMark.data?.label).toBe('world')
+			expect(innerMark.children).toHaveLength(0)
+		})
+
+		it('should handle marks with values and nesting', () => {
+			const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
+			const input = '@[hello #[world]](value)'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const outerMark = result[0] as MarkToken
+			expect(outerMark.type).toBe('mark')
+			expect(outerMark.data?.label).toBe('hello ')
+			expect(outerMark.data?.value).toBe('value')
+			expect(outerMark.children).toHaveLength(1)
+
+			const innerMark = outerMark.children![0] as MarkToken
+			expect(innerMark.type).toBe('mark')
+			expect(innerMark.data?.label).toBe('world')
+			expect(innerMark.children).toHaveLength(0)
+		})
+
+		it('should handle nested marks at different positions', () => {
+			const parser = new ParserV2(['@[__label__]'])
+			const input = '@[start @[middle] end]'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const outerMark = result[0] as MarkToken
+			expect(outerMark.type).toBe('mark')
+			expect(outerMark.data?.label).toBe('start ')
+			expect(outerMark.children).toHaveLength(1)
+
+			const innerMark = outerMark.children![0] as MarkToken
+			expect(innerMark.type).toBe('mark')
+			expect(innerMark.data?.label).toBe('middle')
+			expect(innerMark.children).toHaveLength(0)
+		})
+
+
+		it('should handle nested marks with special characters', () => {
+			const parser = new ParserV2(['@[__label__]'])
+			const input = '@[hello @[world with spaces]]'
+			const result = parser.split(input)
+
+			expect(result).toHaveLength(1)
+			const outerMark = result[0] as MarkToken
+			expect(outerMark.type).toBe('mark')
+			expect(outerMark.data?.label).toBe('hello ')
+			expect(outerMark.children).toHaveLength(1)
+
+			const innerMark = outerMark.children![0] as MarkToken
+			expect(innerMark.type).toBe('mark')
+			expect(innerMark.data?.label).toBe('world with spaces')
 		})
 
 	})

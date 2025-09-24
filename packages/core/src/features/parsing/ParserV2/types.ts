@@ -17,7 +17,7 @@ export interface MarkToken {
 	type: 'mark'
 	content: string
 	children: NestedToken[]
-	markData: {
+	data: {
 		label: string
 		value?: string
 		optionIndex: number

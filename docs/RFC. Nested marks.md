@@ -95,7 +95,7 @@ interface NestedToken {
   type: 'text' | 'mark'
   content: string
   children?: NestedToken[]
-  markData?: {
+  data?: {
     label: string
     value?: string
     optionIndex: number
@@ -193,7 +193,7 @@ const renderToken = (token: NestedToken): ReactElement => {
   }
 
   return (
-    <TokenProvider value={token.markData}>
+    <TokenProvider value={token.data}>
       <Piece>
         {token.children?.map(renderToken)}
       </Piece>
@@ -449,7 +449,7 @@ class NestedParser {
       type: 'mark',
       content: '',
       children: [],
-      markData: {
+      data: {
         label: '',
         optionIndex: this.getOptionIndex(context.position, options)
       }
@@ -487,9 +487,9 @@ describe('NestedParser', () => {
     const result = parser.parse(input, options)
 
     expect(result.children).toHaveLength(1)
-    expect(result.children[0].markData?.label).toBe('bold *italic* text')
+    expect(result.children[0].data?.label).toBe('bold *italic* text')
     expect(result.children[0].children).toHaveLength(1)
-    expect(result.children[0].children[0].markData?.label).toBe('italic')
+    expect(result.children[0].children[0].data?.label).toBe('italic')
   })
 
   it('should handle malformed markup gracefully', () => {
