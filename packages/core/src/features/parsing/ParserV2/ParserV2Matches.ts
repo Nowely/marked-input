@@ -1,6 +1,6 @@
 import {Markup} from '../../../shared/types'
 import {InnerOption} from '../../default/types'
-import {NestedToken, TextToken, MarkToken} from './types'
+import {NestedToken, TextToken, MarkToken, MarkupDescriptor} from './types'
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	done: boolean = false
@@ -8,10 +8,75 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private markups: Markup[]
 	private position: number = 0
 	private hasReturnedToken: boolean = false
+	private descriptors: MarkupDescriptor[] = []
+	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
 		this.markups = markups
+		this.initializeDescriptors()
+	}
+
+	private initializeDescriptors(): void {
+		this.descriptors = this.markups.map((markup, index) => this.createDescriptor(markup, index))
+
+		// Группировка по trigger
+		this.descriptorsByTrigger.clear()
+		for (const desc of this.descriptors) {
+			if (!this.descriptorsByTrigger.has(desc.trigger)) {
+				this.descriptorsByTrigger.set(desc.trigger, [])
+			}
+			this.descriptorsByTrigger.get(desc.trigger)!.push(desc)
+		}
+	}
+
+	private createDescriptor(markup: string, index: number): MarkupDescriptor {
+		const trigger = markup.charAt(0)
+		const hasValue = markup.includes('__value__')
+
+		// Разбираем markup по частям
+		const labelStartIndex = markup.indexOf('__label__')
+		const beforeLabel = markup.substring(0, labelStartIndex)
+		const afterLabelStart = labelStartIndex + '__label__'.length
+		const labelToEnd = markup.substring(afterLabelStart)
+
+		// trigger + startPattern = beforeLabel
+		const startPattern = beforeLabel.substring(1) // убираем trigger
+
+		let endPattern = ''
+		let valueStartPattern: string | undefined
+		let valueEndPattern: string | undefined
+
+		if (hasValue) {
+			// Формат: trigger[startPattern]__label__[endPattern](valueStartPattern)__value__(valueEndPattern)
+			const valueStartIndex = labelToEnd.indexOf('(')
+			if (valueStartIndex !== -1) {
+				endPattern = labelToEnd.substring(0, valueStartIndex)
+				const afterEndPattern = labelToEnd.substring(valueStartIndex)
+				const valueEndIndex = afterEndPattern.indexOf(')')
+				if (valueEndIndex !== -1) {
+					valueStartPattern = afterEndPattern.substring(0, valueEndIndex + 1)
+					valueEndPattern = afterEndPattern.substring(valueEndIndex + 1)
+				}
+			}
+		} else {
+			// Формат: trigger[startPattern]__label__[endPattern]
+			endPattern = labelToEnd
+		}
+
+		return {
+			index,
+			trigger,
+			startPattern,
+			endPattern,
+			hasValue,
+			valueStartPattern,
+			valueEndPattern,
+			fullStartPattern: trigger + startPattern,
+			fullEndPattern: endPattern,
+			fullValueStartPattern: hasValue ? endPattern + valueStartPattern : undefined,
+			fullValueEndPattern: valueEndPattern
+		}
 	}
 
 	[Symbol.iterator](): IterableIterator<NestedToken> {
@@ -52,25 +117,19 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 
 		const remaining = this.input.substring(this.position)
 
-		// Ищем следующий маркер
-		for (let markupIndex = 0; markupIndex < this.markups.length; markupIndex++) {
-			const markup = this.markups[markupIndex]
-			const option = this.createOptionFromMarkup(markup, markupIndex)
+		// Ищем маркер в любом месте remaining строки
+		for (let i = 0; i < remaining.length; i++) {
+			const char = remaining[i]
+			const candidates = this.descriptorsByTrigger.get(char) || []
 
-			const markupStartIndex = this.findMarkupStart(remaining, markup)
+			for (const desc of candidates) {
+				if (remaining.substring(i).startsWith(desc.fullStartPattern)) {
+					// Нашли маркер на позиции i
+					const markupPosition = this.position + i
 
-			if (markupStartIndex !== -1) {
-				// Нашли маркер
-				const markupPosition = this.position + markupStartIndex
-
-				// Если есть текст перед маркером, возвращаем его сначала
-				if (markupStartIndex > 0) {
-					const textContent = remaining.substring(0, markupStartIndex)
-					// Не возвращаем пустые текстовые токены
-					if (textContent === '') {
-						this.position = markupPosition
-						// Продолжаем к обработке маркера
-					} else {
+					// Если есть текст перед маркером, возвращаем его сначала
+					if (i > 0) {
+						const textContent = remaining.substring(0, i)
 						const textToken: TextToken = {
 							type: 'text',
 							content: textContent,
@@ -82,12 +141,17 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 						this.position = markupPosition
 						return textToken
 					}
-				}
 
-				// Маркер найден на текущей позиции, обрабатываем его
-				const markToken = this.createMarkTokenAtPosition(markupPosition, option, markupIndex)
-				this.position = markupPosition + markToken.content.length
-				return markToken
+					// Маркер найден на текущей позиции, обрабатываем его
+					const option = this.createOptionFromMarkup(this.markups[desc.index], desc.index)
+					const markToken = this.createMarkTokenAtPosition(markupPosition, option, desc.index)
+					if (markToken) {
+						this.position = markupPosition + markToken.content.length
+						return markToken
+					}
+					// Malformed markup - продолжаем поиск как обычный текст
+					break
+				}
 			}
 		}
 
@@ -95,7 +159,8 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		return null
 	}
 
-	private createMarkTokenAtPosition(position: number, option: InnerOption, optionIndex: number): MarkToken {
+
+	private createMarkTokenAtPosition(position: number, option: InnerOption, optionIndex: number): MarkToken | null {
 		const markup = option.markup!
 
 		// Используем специальную логику для извлечения полного маркера
@@ -167,7 +232,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 
 		if (!markupContent) {
-			throw new Error(`Failed to extract markup content at position ${position}`)
+			return null // Malformed markup
 		}
 
 		// Парсим label и value
@@ -215,75 +280,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			markup,
 			trigger: markup.charAt(0),
 			data: []
-		}
-	}
-
-	private findMarkupStart(remaining: string, markup: string): number {
-		// Для маркеров с __label__ используем специальную логику для учета вложенных скобок
-		if (markup.includes('__label__') && !markup.includes('__value__')) {
-			// Ищем trigger + "[" в remaining
-			const trigger = markup.charAt(0)
-			const triggerBracket = trigger + '['
-			const triggerBracketIndex = remaining.indexOf(triggerBracket)
-			if (triggerBracketIndex === -1) return -1
-
-			// Находим соответствующую закрывающую скобку
-			let bracketCount = 1
-			for (let i = triggerBracketIndex + 2; i < remaining.length; i++) {
-				if (remaining[i] === '[') {
-					bracketCount++
-				} else if (remaining[i] === ']') {
-					bracketCount--
-					if (bracketCount === 0) {
-						// Нашли соответствующую ], проверяем, что следующий символ - конец или не часть маркера
-						if (i + 1 >= remaining.length || remaining[i + 1] !== '(') {
-							return triggerBracketIndex
-						}
-					}
-				}
-			}
-			return -1
-		} else if (markup.includes('__label__') && markup.includes('__value__')) {
-			// Ищем trigger + "[" в remaining
-			const trigger = markup.charAt(0)
-			const triggerBracket = trigger + '['
-			const atBracketIndex = remaining.indexOf(triggerBracket)
-			if (atBracketIndex === -1) return -1
-
-			// Находим соответствующую закрывающую скобку перед "("
-			let bracketCount = 1
-			let foundClosingBracket = false
-			let closingBracketIndex = -1
-
-			for (let i = atBracketIndex + 2; i < remaining.length; i++) {
-				if (!foundClosingBracket) {
-					if (remaining[i] === '[') {
-						bracketCount++
-					} else if (remaining[i] === ']') {
-						bracketCount--
-						if (bracketCount === 0) {
-							foundClosingBracket = true
-						}
-					}
-				} else {
-					if (remaining[i] === '(') {
-						// Нашли "(" после закрывающей скобки, проверяем что это наш маркер
-						return atBracketIndex
-					}
-				}
-			}
-			return -1
-		} else {
-			// Для других маркеров используем простой regex
-			const escapedMarkup = markup
-				.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Экранируем специальные символы
-				.replace(/__label__/g, '([^\\]]+)')     // Заменяем __label__ на группу захвата
-				.replace(/__value__/g, '([^)]+)')       // Заменяем __value__ на группу захвата
-
-			const regex = new RegExp(escapedMarkup)
-			const match = remaining.match(regex)
-
-			return match ? match.index! : -1
 		}
 	}
 
@@ -341,12 +337,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 
 		return null
-	}
-
-	private getInnerContentOffset(content: string, markup: string, innerContent: string): number {
-		// Находим позицию innerContent внутри content
-		const index = content.indexOf(innerContent)
-		return index !== -1 ? index : 0
 	}
 
 	private parseMarkupContent(content: string, markup: string): { label: string; value?: string } {
