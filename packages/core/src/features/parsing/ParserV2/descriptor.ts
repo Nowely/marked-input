@@ -54,65 +54,59 @@ function parseMarkupStructure(markup: string): {
 	endPattern: string
 	middlePatterns?: [string] | [string, string]
 } {
-	// Создаем regex для всех плейсхолдеров
-	const placeholderPattern = new RegExp(`(${PLACEHOLDER.LABEL}|${PLACEHOLDER.VALUE})`, 'g')
+	// Разделяем разметку по плейсхолдерам, сохраняя разделители
+	const parts = markup.split(new RegExp(`(${PLACEHOLDER.LABEL}|${PLACEHOLDER.VALUE})`, 'g'))
+		.filter(part => part.length > 0)
 
-	// Разделяем разметку по плейсхолдерам
-	const parts: string[] = []
-	let lastIndex = 0
-	let match
-
-	while ((match = placeholderPattern.exec(markup)) !== null) {
-		// Добавляем часть перед плейсхолдером
-		if (match.index > lastIndex) {
-			parts.push(markup.substring(lastIndex, match.index))
-		}
-		// Добавляем сам плейсхолдер
-		parts.push(match[1])
-		lastIndex = match.index + match[0].length
-	}
-
-	// Добавляем оставшуюся часть
-	if (lastIndex < markup.length) {
-		parts.push(markup.substring(lastIndex))
-	}
-
-	// startPattern - первый префикс
-	const startPattern = parts[0] || ''
-	if (startPattern.length === 0 || startPattern.includes('__label__') || startPattern.includes('__value__')) {
-		throw new Error(`Invalid markup format: "${markup}". Markup must start with a prefix before placeholders`)
-	}
-
-	const trigger = startPattern.charAt(0)
-
-	// endPattern - последний суффикс
+	const startPattern = extractStartPattern(markup, parts)
+	const middlePatterns = extractMiddlePatterns(parts)
 	const endPattern = parts[parts.length - 1] || ''
 
-	// middlePatterns - части между плейсхолдерами
-	const middlePatterns: string[] = []
-
-	for (let i = 2; i < parts.length - 1; i += 2) {
-		const middle = parts[i]
-		// Если middle содержит плейсхолдеры, извлекаем только статические части
-		if (middle.includes('__value__')) {
-			// Для случаев типа ">__value__</" извлекаем ">" и "</"
-			const valueIndex = middle.indexOf('__value__')
-			const beforeValue = middle.substring(0, valueIndex)
-			const afterValue = middle.substring(valueIndex + '__value__'.length)
-			if (beforeValue) middlePatterns.push(beforeValue)
-			if (afterValue) middlePatterns.push(afterValue)
-		} else {
-			// Обычный middle pattern
-			middlePatterns.push(middle)
-		}
-	}
-
 	return {
-		trigger,
+		trigger: startPattern.charAt(0),
 		startPattern,
 		endPattern,
 		middlePatterns: middlePatterns.length > 0 ? (middlePatterns as [string] | [string, string]) : undefined
 	}
+}
+
+/**
+ * Validates and extracts the start pattern from markup parts
+ */
+function extractStartPattern(markup: string, parts: string[]): string {
+	const startPattern = parts[0] || ''
+
+	if (!startPattern || startPattern.includes(PLACEHOLDER.LABEL) || startPattern.includes(PLACEHOLDER.VALUE)) {
+		throw new Error(`Invalid markup format: "${markup}". Markup must start with a prefix before placeholders`)
+	}
+
+	return startPattern
+}
+
+/**
+ * Extracts middle patterns between placeholders
+ */
+function extractMiddlePatterns(parts: string[]): string[] {
+	const middlePatterns: string[] = []
+
+	// Начинаем с индекса 2 (после startPattern и первого placeholder)
+	for (let i = 2; i < parts.length - 1; i += 2) {
+		const middle = parts[i]
+
+		if (middle.includes(PLACEHOLDER.VALUE)) {
+			// Разделяем по __value__ и добавляем части
+			const valueIndex = middle.indexOf(PLACEHOLDER.VALUE)
+			const beforeValue = middle.substring(0, valueIndex)
+			const afterValue = middle.substring(valueIndex + PLACEHOLDER.VALUE.length)
+
+			if (beforeValue) middlePatterns.push(beforeValue)
+			if (afterValue) middlePatterns.push(afterValue)
+		} else {
+			middlePatterns.push(middle)
+		}
+	}
+
+	return middlePatterns
 }
 
 /**
