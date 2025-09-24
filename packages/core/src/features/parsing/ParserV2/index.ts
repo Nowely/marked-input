@@ -1,5 +1,6 @@
 export {ParserV2} from './ParserV2'
 export {ParserV2Matches} from './ParserV2Matches'
+export {createDescriptor, type MarkupDescriptor} from './descriptor'
 export type {NestedToken, TextToken, MarkToken, ParseContext, ValidationResult} from './types'
 export {
 	validateNestedContent,

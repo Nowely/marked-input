@@ -1,6 +1,7 @@
 import {Markup} from '../../../shared/types'
 import {InnerOption} from '../../default/types'
-import {NestedToken, TextToken, MarkToken, MarkupDescriptor} from './types'
+import {NestedToken, TextToken, MarkToken} from './types'
+import {createDescriptor, MarkupDescriptor} from './descriptor'
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	done: boolean = false
@@ -18,7 +19,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	private initializeDescriptors(): void {
-		this.descriptors = this.markups.map((markup, index) => this.createDescriptor(markup, index))
+		this.descriptors = this.markups.map(createDescriptor)
 
 		// Группировка по trigger
 		this.descriptorsByTrigger.clear()
@@ -30,54 +31,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 	}
 
-	private createDescriptor(markup: string, index: number): MarkupDescriptor {
-		const trigger = markup.charAt(0)
-		const hasValue = markup.includes('__value__')
-
-		// Разбираем markup по частям
-		const labelStartIndex = markup.indexOf('__label__')
-		const beforeLabel = markup.substring(0, labelStartIndex)
-		const afterLabelStart = labelStartIndex + '__label__'.length
-		const labelToEnd = markup.substring(afterLabelStart)
-
-		// trigger + startPattern = beforeLabel
-		const startPattern = beforeLabel.substring(1) // убираем trigger
-
-		let endPattern = ''
-		let valueStartPattern: string | undefined
-		let valueEndPattern: string | undefined
-
-		if (hasValue) {
-			// Формат: trigger[startPattern]__label__[endPattern](valueStartPattern)__value__(valueEndPattern)
-			const valueStartIndex = labelToEnd.indexOf('(')
-			if (valueStartIndex !== -1) {
-				endPattern = labelToEnd.substring(0, valueStartIndex)
-				const afterEndPattern = labelToEnd.substring(valueStartIndex)
-				const valueEndIndex = afterEndPattern.indexOf(')')
-				if (valueEndIndex !== -1) {
-					valueStartPattern = afterEndPattern.substring(0, valueEndIndex + 1)
-					valueEndPattern = afterEndPattern.substring(valueEndIndex + 1)
-				}
-			}
-		} else {
-			// Формат: trigger[startPattern]__label__[endPattern]
-			endPattern = labelToEnd
-		}
-
-		return {
-			index,
-			trigger,
-			startPattern,
-			endPattern,
-			hasValue,
-			valueStartPattern,
-			valueEndPattern,
-			fullStartPattern: trigger + startPattern,
-			fullEndPattern: endPattern,
-			fullValueStartPattern: hasValue ? endPattern + valueStartPattern : undefined,
-			fullValueEndPattern: valueEndPattern
-		}
-	}
 
 	[Symbol.iterator](): IterableIterator<NestedToken> {
 		return this
@@ -123,7 +76,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			const candidates = this.descriptorsByTrigger.get(char) || []
 
 			for (const desc of candidates) {
-				if (remaining.substring(i).startsWith(desc.fullStartPattern)) {
+				if (remaining.substring(i).startsWith(desc.startPattern)) {
 					// Нашли маркер на позиции i
 					const markupPosition = this.position + i
 
