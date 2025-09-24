@@ -121,7 +121,9 @@ describe('ParserV2', () => {
 		it('should handle empty input', () => {
 			const result = parser.split('')
 			expect(Array.isArray(result)).toBe(true)
-			expect(result).toHaveLength(0)
+			expect(result).toHaveLength(1)
+			expect(result[0].type).toBe('text')
+			expect(result[0].content).toBe('')
 		})
 
 		it('should handle malformed markup gracefully', () => {
@@ -202,7 +204,7 @@ describe('ParserV2', () => {
 		// Получаем только внешний маркер (весь input - это маркер)
 		expect(result).toHaveLength(1)
 
-		const outerMark = result[0]
+		const outerMark = result[0] as MarkToken
 		expect(outerMark.type).toBe('mark')
 		// Label должен содержать только текст без вложенных маркеров
 		expect(outerMark.data?.label).toBe('hello ')
@@ -211,8 +213,8 @@ describe('ParserV2', () => {
 			expect(outerMark.children).toBeDefined()
 			expect(Array.isArray(outerMark.children)).toBe(true)
 			expect(outerMark.children!.length).toBe(1)
-			expect(outerMark.children![0].type).toBe('mark')
-			expect(outerMark.children![0].data?.label).toBe('world')
+			expect((outerMark.children![0] as MarkToken).type).toBe('mark')
+			expect((outerMark.children![0] as MarkToken).data?.label).toBe('world')
 		})
 
 		it('should extract inner content correctly', () => {
@@ -224,7 +226,7 @@ describe('ParserV2', () => {
 			// Проверяем, что внешний маркер существует
 			expect(result[0].type).toBe('mark')
 			// extractInnerContent должен был сработать и создать children
-			expect(Array.isArray(result[0].children)).toBe(true)
+			expect(Array.isArray((result[0] as MarkToken).children)).toBe(true)
 		})
 
 		it('should handle multiple nested marks', () => {
@@ -238,11 +240,13 @@ describe('ParserV2', () => {
 			expect(outerMark.data?.label).toBe('hello ')
 			expect(outerMark.children).toHaveLength(2)
 
-			expect(outerMark.children![0].type).toBe('mark')
-			expect(outerMark.children![0].data?.label).toBe('world')
+			const child0 = outerMark.children![0] as MarkToken
+			expect(child0.type).toBe('mark')
+			expect(child0.data?.label).toBe('world')
 
-			expect(outerMark.children![1].type).toBe('mark')
-			expect(outerMark.children![1].data?.label).toBe('universe')
+			const child1 = outerMark.children![1] as MarkToken
+			expect(child1.type).toBe('mark')
+			expect(child1.data?.label).toBe('universe')
 		})
 
 		it('should handle deeply nested marks', () => {

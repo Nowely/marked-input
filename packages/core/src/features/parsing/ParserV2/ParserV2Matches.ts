@@ -4,13 +4,14 @@ import {NestedToken, TextToken, MarkToken} from './types'
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	done: boolean = false
-	private tokens: NestedToken[] = []
-	private position: number = 0
+	private input: string
 	private markups: Markup[]
+	private position: number = 0
+	private hasReturnedToken: boolean = false
 
 	constructor(input: string, markups: Markup[]) {
+		this.input = input
 		this.markups = markups
-		this.tokens = this.parseTokens(input, markups, new Set())
 	}
 
 	[Symbol.iterator](): IterableIterator<NestedToken> {
@@ -18,87 +19,196 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	next(): IteratorResult<NestedToken, NestedToken | null> {
-		if (this.done || this.position >= this.tokens.length) {
+		if (this.done) return {done: this.done, value: null}
+
+		const token = this.extractNextNestedToken()
+		if (token === null) {
 			this.done = true
-			return {done: this.done, value: null}
+			// последний токен остаток текста
+			const remainingContent = this.input.substring(this.position)
+			// Для пустой строки или если мы уже вернули токены, возвращаем финальный текст
+			// Но если remainingContent пустой и мы уже вернули токен, не возвращаем пустой текст
+			if (remainingContent === '' && this.hasReturnedToken) {
+				return {done: true, value: null}
+			}
+			return {done: false, value: {
+				type: 'text',
+				content: remainingContent,
+				position: {
+					start: this.position,
+					end: this.input.length
+				}
+			}}
 		}
 
-		const token = this.tokens[this.position]
-		this.position++
-
+		this.hasReturnedToken = true
 		return {done: false, value: token}
 	}
 
-
-	private parseTokens(input: string, markups: Markup[], processedPositions: Set<number>): NestedToken[] {
-		const result: NestedToken[] = []
-
-		if (!input) {
-			return result
+	private extractNextNestedToken(): NestedToken | null {
+		if (this.position >= this.input.length) {
+			return null
 		}
 
-		let position = 0
-		let currentTextStart = 0
+		const remaining = this.input.substring(this.position)
 
-		while (position < input.length) {
-			let foundMarkup = false
+		// Ищем следующий маркер
+		for (let markupIndex = 0; markupIndex < this.markups.length; markupIndex++) {
+			const markup = this.markups[markupIndex]
+			const option = this.createOptionFromMarkup(markup, markupIndex)
 
-			// Ищем подходящий markup, начиная с текущей позиции
-			for (let markupIndex = 0; markupIndex < markups.length; markupIndex++) {
-				const markup = markups[markupIndex]
-				const option = this.createOptionFromMarkup(markup, markupIndex)
+			const markupStartIndex = this.findMarkupStart(remaining, markup)
 
-				const remaining = input.substring(position)
-				const markupStartIndex = this.findMarkupStart(remaining, markup)
+			if (markupStartIndex !== -1) {
+				// Нашли маркер
+				const markupPosition = this.position + markupStartIndex
 
-				if (markupStartIndex !== -1) { // Нашли markup в оставшейся строке
-					const markupPosition = position + markupStartIndex
-
-					// Проверяем, не была ли эта позиция уже обработана (вложенный маркер)
-					if (processedPositions.has(markupPosition)) {
-						position = markupPosition + 1 // Пропускаем этот маркер
-						continue
+				// Если есть текст перед маркером, возвращаем его сначала
+				if (markupStartIndex > 0) {
+					const textContent = remaining.substring(0, markupStartIndex)
+					// Не возвращаем пустые текстовые токены
+					if (textContent === '') {
+						this.position = markupPosition
+						// Продолжаем к обработке маркера
+					} else {
+						const textToken: TextToken = {
+							type: 'text',
+							content: textContent,
+							position: {
+								start: this.position,
+								end: markupPosition
+							}
+						}
+						this.position = markupPosition
+						return textToken
 					}
+				}
 
-					// Добавляем текст перед маркером, если есть
-					if (markupPosition > currentTextStart) {
-						this.addTextToken(
-							result,
-							input.substring(currentTextStart, markupPosition),
-							currentTextStart,
-							markupPosition
-						)
+				// Маркер найден на текущей позиции, обрабатываем его
+				const markToken = this.createMarkTokenAtPosition(markupPosition, option, markupIndex)
+				this.position = markupPosition + markToken.content.length
+				return markToken
+			}
+		}
+
+		// Маркер не найден, возвращаем null чтобы следующий next() вернул оставшийся текст
+		return null
+	}
+
+	private createMarkTokenAtPosition(position: number, option: InnerOption, optionIndex: number): MarkToken {
+		const markup = option.markup!
+
+		// Используем специальную логику для извлечения полного маркера
+		let markupContent = ''
+		let markupLength = 0
+
+		if (markup.includes('__label__') && !markup.includes('__value__')) {
+			// Для "@[__label__]" находим соответствующую закрывающую скобку
+			let bracketCount = 1
+			let endPos = position + 2 // После "@["
+
+			for (let i = endPos; i < this.input.length; i++) {
+				if (this.input[i] === '[') {
+					bracketCount++
+				} else if (this.input[i] === ']') {
+					bracketCount--
+					if (bracketCount === 0) {
+						markupContent = this.input.substring(position, i + 1)
+						markupLength = markupContent.length
+						break
 					}
-
-					// Перемещаемся к позиции маркера
-					position = markupPosition
-
-					// Обрабатываем markup
-					const newPosition = this.handleMarkup(result, input, position, option, markupIndex, processedPositions)
-					position = newPosition
-					currentTextStart = position
-					foundMarkup = true
-					break
 				}
 			}
+		} else if (markup.includes('__label__') && markup.includes('__value__')) {
+			// Для "@[__label__](__value__)" находим "(" после label, затем соответствующую ")"
+			let bracketCount = 1
+			let foundClosingBracket = false
+			let parenStart = -1
+			let parenEnd = -1
 
-			if (!foundMarkup) {
-				position++
+			for (let i = position + 2; i < this.input.length; i++) {
+				if (!foundClosingBracket) {
+					if (this.input[i] === '[') {
+						bracketCount++
+					} else if (this.input[i] === ']') {
+						bracketCount--
+						if (bracketCount === 0) {
+							foundClosingBracket = true
+						}
+					}
+				} else {
+					if (this.input[i] === '(') {
+						parenStart = i
+					} else if (this.input[i] === ')') {
+						parenEnd = i
+						markupContent = this.input.substring(position, parenEnd + 1)
+						markupLength = markupContent.length
+						break
+					}
+				}
+			}
+		} else {
+			// Для других маркеров используем простой regex
+			const escapedMarkup = markup
+				.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+				.replace(/__label__/g, '([^\\]]+)')
+				.replace(/__value__/g, '([^)]+)')
+
+			const regex = new RegExp(escapedMarkup)
+			const remaining = this.input.substring(position)
+			const match = remaining.match(regex)
+
+			if (!match) {
+				throw new Error(`Failed to match markup at position ${position}`)
+			}
+
+			markupContent = match[0]
+			markupLength = markupContent.length
+		}
+
+		if (!markupContent) {
+			throw new Error(`Failed to extract markup content at position ${position}`)
+		}
+
+		// Парсим label и value
+		const { label, value } = this.parseMarkupContent(markupContent, markup)
+
+		// Извлекаем внутренний контент маркера для потенциального рекурсивного парсинга
+		const innerContent = this.extractInnerContent(markupContent, markup)
+
+		// Рекурсивно парсим внутренний контент, но берем только маркеры
+		let children: NestedToken[] = []
+		if (innerContent) {
+			// Создаем новый парсер для внутреннего контента
+			const innerParser = new ParserV2Matches(innerContent, this.markups)
+			const innerTokens: NestedToken[] = []
+			for (const token of innerParser) {
+				innerTokens.push(token)
+			}
+			// Берем только маркеры из распарсенного контента (текст уже в label)
+			children = innerTokens.filter(token => token.type === 'mark')
+		}
+
+		// Создаем mark token
+		const markToken: MarkToken = {
+			type: 'mark',
+			content: markupContent,
+			children,
+			data: {
+				label,
+				value,
+				optionIndex
+			},
+			position: {
+				start: position,
+				end: position + markupLength
 			}
 		}
 
-		// Добавляем оставшийся текст
-		if (currentTextStart < input.length) {
-			this.addTextToken(
-				result,
-				input.substring(currentTextStart),
-				currentTextStart,
-				input.length
-			)
-		}
-
-		return result
+		return markToken
 	}
+
+
 
 	private createOptionFromMarkup(markup: Markup, index: number): InnerOption {
 		return {
@@ -177,129 +287,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 	}
 
-	private addTextToken(result: NestedToken[], text: string, start: number, end: number) {
-		if (!text) return
-
-		const textToken: TextToken = {
-			type: 'text',
-			content: text,
-			position: { start, end }
-		}
-
-		result.push(textToken)
-	}
-
-	private handleMarkup(result: NestedToken[], input: string, position: number, option: InnerOption, optionIndex: number, processedPositions: Set<number>): number {
-		const markup = option.markup!
-
-		// Используем специальную логику для извлечения полного маркера
-		let markupContent = ''
-		let markupLength = 0
-
-		if (markup.includes('__label__') && !markup.includes('__value__')) {
-			// Для "@[__label__]" находим соответствующую закрывающую скобку
-			let bracketCount = 1
-			let endPos = position + 2 // После "@["
-
-			for (let i = endPos; i < input.length; i++) {
-				if (input[i] === '[') {
-					bracketCount++
-				} else if (input[i] === ']') {
-					bracketCount--
-					if (bracketCount === 0) {
-						markupContent = input.substring(position, i + 1)
-						markupLength = markupContent.length
-						break
-					}
-				}
-			}
-		} else if (markup.includes('__label__') && markup.includes('__value__')) {
-			// Для "@[__label__](__value__)" находим "(" после label, затем соответствующую ")"
-			let bracketCount = 1
-			let foundClosingBracket = false
-			let parenStart = -1
-			let parenEnd = -1
-
-			for (let i = position + 2; i < input.length; i++) {
-				if (!foundClosingBracket) {
-					if (input[i] === '[') {
-						bracketCount++
-					} else if (input[i] === ']') {
-						bracketCount--
-						if (bracketCount === 0) {
-							foundClosingBracket = true
-						}
-					}
-				} else {
-					if (input[i] === '(') {
-						parenStart = i
-					} else if (input[i] === ')') {
-						parenEnd = i
-						markupContent = input.substring(position, parenEnd + 1)
-						markupLength = markupContent.length
-						break
-					}
-				}
-			}
-		} else {
-			// Для других маркеров используем простой regex
-			const escapedMarkup = markup
-				.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-				.replace(/__label__/g, '([^\\]]+)')
-				.replace(/__value__/g, '([^)]+)')
-
-			const regex = new RegExp(escapedMarkup)
-			const remaining = input.substring(position)
-			const match = remaining.match(regex)
-
-			if (!match) return position
-
-			markupContent = match[0]
-			markupLength = markupContent.length
-		}
-
-		if (!markupContent) return position
-
-		// Парсим label и value
-		const { label, value } = this.parseMarkupContent(markupContent, markup)
-
-		// Извлекаем внутренний контент маркера для потенциального рекурсивного парсинга
-		const innerContent = this.extractInnerContent(markupContent, markup)
-
-		// Рекурсивно парсим внутренний контент, но берем только маркеры
-		let children: NestedToken[] = []
-		if (innerContent) {
-			// Создаем новый Set для внутреннего контекста парсинга
-			const innerProcessedPositions = new Set<number>()
-
-			// Парсим внутренний контент с новым processedPositions
-			const innerTokens = this.parseTokens(innerContent, this.markups, innerProcessedPositions)
-
-			// Берем только маркеры из распарсенного контента (текст уже в label)
-			children = innerTokens.filter(token => token.type === 'mark')
-		}
-
-		// Создаем mark token
-		const markToken: MarkToken = {
-			type: 'mark',
-			content: markupContent,
-			children,
-			data: {
-				label,
-				value,
-				optionIndex
-			},
-			position: {
-				start: position,
-				end: position + markupLength
-			}
-		}
-
-		result.push(markToken)
-
-		// Возвращаем новую позицию
-		return position + markupLength
-	}
 
 	private extractInnerContent(content: string, markup: string): string | null {
 		// Извлекаем label как внутренний контент для рекурсивного парсинга
@@ -470,18 +457,4 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		return { label: label, value: value?.trim() }
 	}
 
-	private collectNestedMarkPositions(tokens: NestedToken[], baseOffset: number, processedPositions: Set<number>): void {
-		for (const token of tokens) {
-			if (token.type === 'mark') {
-				// Добавляем абсолютную позицию этого маркера как обработанную
-				const absolutePosition = baseOffset + token.position.start
-				processedPositions.add(absolutePosition)
-
-				// Рекурсивно обрабатываем children с новым baseOffset
-				if (token.children) {
-					this.collectNestedMarkPositions(token.children, absolutePosition, processedPositions)
-				}
-			}
-		}
-	}
 }
