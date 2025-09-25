@@ -1,32 +1,37 @@
 import {PLACEHOLDER} from '../../../shared/constants'
 import {Markup} from '../../../shared/types'
 
+/**
+ * Descriptor containing preprocessed information about a markup template.
+ * Used for efficient parsing of text containing this markup pattern.
+ */
 export interface MarkupDescriptor {
-	/** Index in the markups array */
+	/** Original markup template string (e.g., '@[__label__]' or '<__label__>__value__</__label__>') */
+	markup: Markup
+	/** Index of this markup in the original markups array */
 	index: number
-	/** Trigger symbol (first character, used for grouping) */
+	/** First character of startPattern, used for fast grouping/lookup of descriptors */
 	trigger: string
-	/** Start pattern (full prefix before __label__, e.g., '@[') */
+	/** Static text that appears before the first __label__ placeholder */
 	startPattern: string
-	/** End pattern (full suffix after __label__, e.g., ']') */
+	/** Static text that appears after the last placeholder (can be empty for open-ended markups) */
 	endPattern: string
-
-	/** Middle patterns between start and end patterns */
+	/** Static text segments between placeholders (max 2 for current architecture) */
 	middlePatterns?: [string] | [string, string]
-
-	/** Whether the markup has a __value__ part */
+	/** True if this markup template contains a __value__ placeholder */
 	hasValue: boolean
-	/** Whether the markup has two __label__ placeholders */
+	/** True if this markup template contains exactly two __label__ placeholders */
 	hasTwoLabels: boolean
 }
 
 /**
- * Создает дескриптор разметки из строки шаблона разметки
- * @param markup - Строка шаблона разметки (например, '@[__label__](__value__)' или '<__label__>__value__</__label__>')
- * @param index - Индекс разметки в массиве
- * @returns MarkupDescriptor с предобработанными статическими частями
+ * Creates a markup descriptor from a markup template string.
+ * Pre-processes the template to extract static patterns for efficient parsing.
+ * @param markup - Markup template string (e.g., '@[__label__](__value__)' or '<__label__>__value__</__label__>')
+ * @param index - Index of this markup in the markups array
+ * @returns MarkupDescriptor with pre-processed static parts
  */
-export function createDescriptor(markup: Markup, index: number): MarkupDescriptor {
+export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const hasTwoLabels = 2 === getPlaceholderCount(markup, PLACEHOLDER.LABEL, [1, 2])
 	const hasValue = 1 === getPlaceholderCount(markup, PLACEHOLDER.VALUE, [0, 1])
 
@@ -35,6 +40,7 @@ export function createDescriptor(markup: Markup, index: number): MarkupDescripto
 	const parts = parseMarkupStructure(markup)
 
 	return {
+		markup,
 		index,
 		trigger: parts.trigger,
 		startPattern: parts.startPattern,
@@ -46,7 +52,7 @@ export function createDescriptor(markup: Markup, index: number): MarkupDescripto
 }
 
 /**
- * Parses markup structure into components
+ * Parses markup structure into components (start, middle, end patterns and trigger)
  */
 function parseMarkupStructure(markup: string): {
 	trigger: string
@@ -54,59 +60,23 @@ function parseMarkupStructure(markup: string): {
 	endPattern: string
 	middlePatterns?: [string] | [string, string]
 } {
-	// Разделяем разметку по плейсхолдерам, сохраняя разделители
-	const parts = markup.split(new RegExp(`(${PLACEHOLDER.LABEL}|${PLACEHOLDER.VALUE})`, 'g'))
-		.filter(part => part.length > 0)
+	const splitter = new RegExp(`(${PLACEHOLDER.LABEL}|${PLACEHOLDER.VALUE})`, 'g')
+	const parts = markup.split(splitter).filter((part) => part !== PLACEHOLDER.LABEL && part !== PLACEHOLDER.VALUE)
 
-	const startPattern = extractStartPattern(markup, parts)
-	const middlePatterns = extractMiddlePatterns(parts)
-	const endPattern = parts[parts.length - 1] || ''
+	const startPattern = parts.at(0)
+	const middlePatterns = parts.slice(1, -1)
+	const endPattern = parts.at(-1) || ''
+
+	if (!startPattern) {
+		throw new Error(`Invalid markup format: "${markup}". Markup must start with a prefix before placeholders`)
+	}
 
 	return {
 		trigger: startPattern.charAt(0),
 		startPattern,
 		endPattern,
-		middlePatterns: middlePatterns.length > 0 ? (middlePatterns as [string] | [string, string]) : undefined
+		middlePatterns: middlePatterns.length > 0 ? (middlePatterns as [string] | [string, string]) : undefined,
 	}
-}
-
-/**
- * Validates and extracts the start pattern from markup parts
- */
-function extractStartPattern(markup: string, parts: string[]): string {
-	const startPattern = parts[0] || ''
-
-	if (!startPattern || startPattern.includes(PLACEHOLDER.LABEL) || startPattern.includes(PLACEHOLDER.VALUE)) {
-		throw new Error(`Invalid markup format: "${markup}". Markup must start with a prefix before placeholders`)
-	}
-
-	return startPattern
-}
-
-/**
- * Extracts middle patterns between placeholders
- */
-function extractMiddlePatterns(parts: string[]): string[] {
-	const middlePatterns: string[] = []
-
-	// Начинаем с индекса 2 (после startPattern и первого placeholder)
-	for (let i = 2; i < parts.length - 1; i += 2) {
-		const middle = parts[i]
-
-		if (middle.includes(PLACEHOLDER.VALUE)) {
-			// Разделяем по __value__ и добавляем части
-			const valueIndex = middle.indexOf(PLACEHOLDER.VALUE)
-			const beforeValue = middle.substring(0, valueIndex)
-			const afterValue = middle.substring(valueIndex + PLACEHOLDER.VALUE.length)
-
-			if (beforeValue) middlePatterns.push(beforeValue)
-			if (afterValue) middlePatterns.push(afterValue)
-		} else {
-			middlePatterns.push(middle)
-		}
-	}
-
-	return middlePatterns
 }
 
 /**
@@ -148,7 +118,7 @@ function validatePlaceholderOrder(markup: string): void {
 	if (valueIndex < labelIndex) {
 		throw new Error(
 			`Invalid markup format: "${markup}". ` +
-			`"${PLACEHOLDER.VALUE}" cannot appear before "${PLACEHOLDER.LABEL}"`
+				`"${PLACEHOLDER.VALUE}" cannot appear before "${PLACEHOLDER.LABEL}"`
 		)
 	}
 }
