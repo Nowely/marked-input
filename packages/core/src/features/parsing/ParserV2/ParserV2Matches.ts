@@ -1,7 +1,7 @@
 import {Markup} from '../../../shared/types'
 import {InnerOption} from '../../default/types'
 import {NestedToken, TextToken, MarkToken} from './types'
-import {createMarkupDescriptor, MarkupDescriptor} from './descriptor'
+import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	done: boolean = false

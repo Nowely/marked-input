@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest'
-import {createMarkupDescriptor} from './descriptor'
+import {createMarkupDescriptor} from './createMarkupDescriptor'
 
-describe('createDescriptor', () => {
+describe('createMarkupDescriptor', () => {
 	describe('basic markup parsing', () => {
 		it('should parse simple markup with one label', () => {
 			const markup = '@[__label__]'
