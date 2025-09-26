@@ -6,10 +6,11 @@ import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private input: string
 	private markups: Markup[]
+
 	private position: number = 0
 	private descriptors: MarkupDescriptor[] = []
 	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
-	private hasReturnedEmptyTextToken: boolean = false
+	private isTextLastToken: boolean = false
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
@@ -24,7 +25,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 	}
 
-
 	[Symbol.iterator](): IterableIterator<NestedToken> {
 		return this
 	}
@@ -32,6 +32,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	next(): IteratorResult<NestedToken, NestedToken | null> {
 		const token = this.extractNextToken()
 		if (token) {
+			this.isTextLastToken = token.type === 'text'
 			return {done: false, value: token}
 		}
 
@@ -39,21 +40,20 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	private extractNextToken(): NestedToken | null {
-		if (this.position >= this.input.length) {
-			// Для пустой строки возвращаем пустой text токен только один раз
-			if (this.input.length === 0 && !this.hasReturnedEmptyTextToken) {
-				this.hasReturnedEmptyTextToken = true
-				const textToken: TextToken = {
-					type: 'text',
-					content: '',
-					position: {
-						start: 0,
-						end: 0
-					}
-				}
-				return textToken
-			}
+		if (this.position > this.input.length || this.isTextLastToken) {
 			return null
+		}
+
+		if (this.position === this.input.length) {
+			this.position++
+			return {
+				type: 'text',
+				content: '',
+				position: {
+					start: this.input.length,
+					end: this.input.length,
+				},
+			}
 		}
 
 		const remaining = this.input.substring(this.position)
@@ -76,8 +76,8 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 							content: textContent,
 							position: {
 								start: this.position,
-								end: markupPosition
-							}
+								end: markupPosition,
+							},
 						}
 						this.position = markupPosition
 						return textToken
@@ -102,13 +102,12 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			content: remainingContent,
 			position: {
 				start: this.position,
-				end: this.input.length
-			}
+				end: this.input.length,
+			},
 		}
 		this.position = this.input.length
 		return textToken
 	}
-
 
 	private findMarkupEnd(desc: MarkupDescriptor, startPos: number): number {
 		if (desc.endPattern === '') {
@@ -173,7 +172,10 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			// Для простых маркеров используем findMarkupEnd
 			const endPos = this.findMarkupEnd(desc, position)
 			if (endPos === -1) return null
-			markupContent = this.input.substring(position, endPos + (desc.endPattern === '' ? 0 : desc.endPattern.length))
+			markupContent = this.input.substring(
+				position,
+				endPos + (desc.endPattern === '' ? 0 : desc.endPattern.length)
+			)
 			markupLength = markupContent.length
 		}
 
@@ -182,11 +184,11 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		// Создаем InnerOption для совместимости с parseMarkupContent
 		const option: InnerOption = {
 			markup,
-			trigger: desc.trigger
+			trigger: desc.trigger,
 		}
 
 		// Парсим label и value
-		const { label, value } = this.parseMarkupContent(markupContent, option.markup!)
+		const {label, value} = this.parseMarkupContent(markupContent, option.markup!)
 
 		// Извлекаем внутренний контент маркера для потенциального рекурсивного парсинга
 		const innerContent = this.extractInnerContent(markupContent, option.markup!)
@@ -212,27 +214,24 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			data: {
 				label,
 				value,
-				optionIndex: desc.index
+				optionIndex: desc.index,
 			},
 			position: {
 				start: position,
-				end: position + markupLength
-			}
+				end: position + markupLength,
+			},
 		}
 
 		return markToken
 	}
 
-
-
 	private createOptionFromMarkup(markup: Markup, index: number): InnerOption {
 		return {
 			markup,
 			trigger: markup.charAt(0),
-			data: []
+			data: [],
 		}
 	}
-
 
 	private extractInnerContent(content: string, markup: string): string | null {
 		// Извлекаем label как внутренний контент для рекурсивного парсинга
@@ -289,7 +288,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		return null
 	}
 
-	private parseMarkupContent(content: string, markup: string): { label: string; value?: string } {
+	private parseMarkupContent(content: string, markup: string): {label: string; value?: string} {
 		// Парсим на основе структуры шаблона
 		let label = ''
 		let value: string | undefined
@@ -394,7 +393,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			}
 		}
 
-		return { label: label, value: value?.trim() }
+		return {label: label, value: value?.trim()}
 	}
-
 }

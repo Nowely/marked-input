@@ -72,11 +72,15 @@ describe('ParserV2', () => {
 			const result = parser.split(input)
 
 			expect(Array.isArray(result)).toBe(true)
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const mark = result[0] as MarkToken
 			expect(mark.type).toBe('mark')
 			expect(mark.data.label).toBe('hello')
 			expect(mark.data.value).toBe('world')
+
+			const emptyText = result[1] as TextToken
+			expect(emptyText.type).toBe('text')
+			expect(emptyText.content).toBe('')
 			expect(mark.data.optionIndex).toBe(0)
 		})
 
@@ -85,11 +89,15 @@ describe('ParserV2', () => {
 			const result = parser.split(input)
 
 			expect(Array.isArray(result)).toBe(true)
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const mark = result[0] as MarkToken
 			expect(mark.type).toBe('mark')
 			expect(mark.data.label).toBe('tag')
 			expect(mark.data.value).toBeUndefined()
+
+			const emptyText = result[1] as TextToken
+			expect(emptyText.type).toBe('text')
+			expect(emptyText.content).toBe('')
 			expect(mark.data.optionIndex).toBe(1)
 		})
 
@@ -98,7 +106,7 @@ describe('ParserV2', () => {
 			const result = parser.split(input)
 
 			expect(Array.isArray(result)).toBe(true)
-			expect(result).toHaveLength(4) // text + mark + text + mark
+			expect(result).toHaveLength(5) // text + mark + text + mark + empty text
 
 			// Первый текстовый кусок
 			expect(result[0].type).toBe('text')
@@ -116,6 +124,10 @@ describe('ParserV2', () => {
 			// Второй mark
 			expect(result[3].type).toBe('mark')
 			expect((result[3] as MarkToken).data.label).toBe('tag')
+
+			// Пустой text в конце
+			expect(result[4].type).toBe('text')
+			expect(result[4].content).toBe('')
 		})
 
 		it('should handle empty input', () => {
@@ -170,17 +182,21 @@ describe('ParserV2', () => {
 			const input = '@[first](1)@[second](2)'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(2)
+			expect(result).toHaveLength(3) // mark + mark + empty text
 			expect((result[0] as MarkToken).data.label).toBe('first')
 			expect((result[1] as MarkToken).data.label).toBe('second')
+			expect(result[2].type).toBe('text')
+			expect(result[2].content).toBe('')
 		})
 
 		it('should handle marks at string boundaries', () => {
 			const input = '@[start](value)'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			expect(result[0].type).toBe('mark')
+			expect(result[1].type).toBe('text')
+			expect(result[1].content).toBe('')
 		})
 
 		it('should handle special characters in content', () => {
@@ -201,8 +217,8 @@ describe('ParserV2', () => {
 			const input = '@[hello @[world]]'
 			const result = simpleParser.split(input)
 
-		// Получаем только внешний маркер (весь input - это маркер)
-		expect(result).toHaveLength(1)
+		// Получаем внешний маркер + пустой text
+		expect(result).toHaveLength(2)
 
 		const outerMark = result[0] as MarkToken
 		expect(outerMark.type).toBe('mark')
@@ -234,7 +250,7 @@ describe('ParserV2', () => {
 			const input = '@[hello @[world] and @[universe]]'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const outerMark = result[0] as MarkToken
 			expect(outerMark.type).toBe('mark')
 			expect(outerMark.data?.label).toBe('hello ')
@@ -254,7 +270,7 @@ describe('ParserV2', () => {
 			const input = '@[level1 @[level2 @[level3]]]'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const level1 = result[0] as MarkToken
 			expect(level1.type).toBe('mark')
 			expect(level1.data?.label).toBe('level1 ')
@@ -276,7 +292,7 @@ describe('ParserV2', () => {
 			const input = '@[hello #[world]]'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const outerMark = result[0] as MarkToken
 			expect(outerMark.type).toBe('mark')
 			expect(outerMark.data?.label).toBe('hello ')
@@ -293,7 +309,7 @@ describe('ParserV2', () => {
 			const input = '@[hello #[world]](value)'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const outerMark = result[0] as MarkToken
 			expect(outerMark.type).toBe('mark')
 			expect(outerMark.data?.label).toBe('hello ')
@@ -311,7 +327,7 @@ describe('ParserV2', () => {
 			const input = '@[start @[middle] end]'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const outerMark = result[0] as MarkToken
 			expect(outerMark.type).toBe('mark')
 			expect(outerMark.data?.label).toBe('start ')
@@ -329,7 +345,7 @@ describe('ParserV2', () => {
 			const input = '@[hello @[world with spaces]]'
 			const result = parser.split(input)
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(2) // mark + empty text
 			const outerMark = result[0] as MarkToken
 			expect(outerMark.type).toBe('mark')
 			expect(outerMark.data?.label).toBe('hello ')
