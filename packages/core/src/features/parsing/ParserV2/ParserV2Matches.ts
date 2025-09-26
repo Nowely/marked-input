@@ -30,7 +30,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	next(): IteratorResult<NestedToken, NestedToken | null> {
-		const token = this.extractNextNestedToken()
+		const token = this.extractNextToken()
 		if (token) {
 			return {done: false, value: token}
 		}
@@ -38,7 +38,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		return {done: true, value: null}
 	}
 
-	private extractNextNestedToken(): NestedToken | null {
+	private extractNextToken(): NestedToken | null {
 		if (this.position >= this.input.length) {
 			// Для пустой строки возвращаем пустой text токен только один раз
 			if (this.input.length === 0 && !this.hasReturnedEmptyTextToken) {
