@@ -272,12 +272,41 @@ validateNestedContent(content: string): boolean
 
 ## Производительность
 
-### Бенчмарки (после оптимизации итеративного парсинга)
+### Бенчмарки (после оптимизации next() и extractNextToken())
 
-- **10 marks**: ~0.021ms (48K ops/sec)
-- **100 marks**: ~0.198ms (5K ops/sec)
-- **1000 marks**: ~2.058ms (485 ops/sec)
-- **Memory footprint**: < 2x от размера входных данных
+#### Итеративный парсинг (ParserV2)
+```
+iteration 1 (4 marks, 93 chars)     110,993 ops/sec
+iteration 2 (6 marks, 147 chars)      71,729 ops/sec
+iteration 3 (8 marks, 201 chars)      53,216 ops/sec
+iteration 4 (10 marks, 255 chars)     42,018 ops/sec
+iteration 5 (12 marks, 309 chars)     32,090 ops/sec
+iteration 6 (16 marks, 395 chars)     27,829 ops/sec
+iteration 7 (18 marks, 449 chars)     24,391 ops/sec
+iteration 8 (20 marks, 503 chars)     21,329 ops/sec
+iteration 9 (22 marks, 557 chars)     19,594 ops/sec
+iteration 10 (24 marks, 611 chars)    17,706 ops/sec
+```
+
+#### Сравнение с Parser v1 (плоский парсер)
+| Размер документа | Parser v1 | Parser v2 | Отношение |
+|------------------|-----------|-----------|-----------|
+| 10 marks (~227 chars) | 186K ops/sec | 33K ops/sec | **5.7x** медленнее |
+| 50 marks (~1.2K chars) | 38K ops/sec | 6.7K ops/sec | **5.7x** медленнее |
+| 100 marks (~2.4K chars) | 19K ops/sec | 3.3K ops/sec | **5.8x** медленнее |
+| 500 marks (~12K chars) | 3.8K ops/sec | 653 ops/sec | **5.8x** медленнее |
+
+#### Масштабируемость ParserV2
+```
+scalability: 10 marks    187K ops/sec
+scalability: 25 marks     74K ops/sec  (2.5x медленнее)
+scalability: 50 marks     38K ops/sec  (4.9x медленнее)
+scalability: 100 marks    18K ops/sec  (10.5x медленнее)
+scalability: 250 marks     7.5K ops/sec (25x медленнее)
+scalability: 500 marks     3.8K ops/sec (49x медленнее)
+```
+
+**Memory footprint**: Стабильное потребление, < 2x от размера входных данных
 
 ### Гарантии структуры и производительность
 
