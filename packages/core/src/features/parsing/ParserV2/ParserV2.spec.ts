@@ -118,6 +118,14 @@ describe('ParserV2', () => {
 			expect(result).toMatchInlineSnapshot(`
 				[
 				  {
+				    "content": "",
+				    "position": {
+				      "end": 0,
+				      "start": 0,
+				    },
+				    "type": "text",
+				  },
+				  {
 				    "children": [],
 				    "content": "@[hello](world)",
 				    "data": {
@@ -149,6 +157,14 @@ describe('ParserV2', () => {
 
 			expect(result).toMatchInlineSnapshot(`
 				[
+				  {
+				    "content": "",
+				    "position": {
+				      "end": 0,
+				      "start": 0,
+				    },
+				    "type": "text",
+				  },
 				  {
 				    "children": [],
 				    "content": "#[tag]",
@@ -283,6 +299,14 @@ describe('ParserV2', () => {
 				expect(result).toMatchInlineSnapshot(`
 					[
 					  {
+					    "content": "",
+					    "position": {
+					      "end": 0,
+					      "start": 0,
+					    },
+					    "type": "text",
+					  },
+					  {
 					    "children": [
 					      {
 					        "children": [],
@@ -330,6 +354,14 @@ describe('ParserV2', () => {
 
 				expect(result).toMatchInlineSnapshot(`
 					[
+					  {
+					    "content": "",
+					    "position": {
+					      "end": 0,
+					      "start": 0,
+					    },
+					    "type": "text",
+					  },
 					  {
 					    "children": [
 					      {
@@ -394,6 +426,14 @@ describe('ParserV2', () => {
 				expect(result).toMatchInlineSnapshot(`
 					[
 					  {
+					    "content": "",
+					    "position": {
+					      "end": 0,
+					      "start": 0,
+					    },
+					    "type": "text",
+					  },
+					  {
 					    "children": [
 					      {
 					        "children": [],
@@ -441,6 +481,14 @@ describe('ParserV2', () => {
 
 				expect(result).toMatchInlineSnapshot(`
 					[
+					  {
+					    "content": "",
+					    "position": {
+					      "end": 0,
+					      "start": 0,
+					    },
+					    "type": "text",
+					  },
 					  {
 					    "children": [
 					      {
@@ -523,6 +571,14 @@ describe('ParserV2', () => {
 				expect(result).toMatchInlineSnapshot(`
 					[
 					  {
+					    "content": "",
+					    "position": {
+					      "end": 0,
+					      "start": 0,
+					    },
+					    "type": "text",
+					  },
+					  {
 					    "children": [],
 					    "content": "@[first](1)",
 					    "data": {
@@ -535,6 +591,14 @@ describe('ParserV2', () => {
 					      "start": 0,
 					    },
 					    "type": "mark",
+					  },
+					  {
+					    "content": "",
+					    "position": {
+					      "end": 11,
+					      "start": 11,
+					    },
+					    "type": "text",
 					  },
 					  {
 					    "children": [],

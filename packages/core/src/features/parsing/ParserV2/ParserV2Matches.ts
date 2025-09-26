@@ -12,7 +12,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private position: number = 0
 	private descriptors: MarkupDescriptor[] = []
 	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
-	private lastTokenWasText: boolean = true // Начинаем с true, так как первый токен всегда text
+	private lastTokenWasText: boolean = false // Начинаем с false, чтобы первый токен был text
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
@@ -42,34 +42,16 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	private extractNextToken(): NestedToken | null {
-		if (this.position > this.input.length) {
-			return null
-		}
-
-		if (this.position === this.input.length) {
-			// Мы в конце строки. Если последний токен был mark, возвращаем пустой text
+		// Если мы в конце строки и последний токен был mark, возвращаем пустой text
+		if (this.position >= this.input.length) {
 			if (!this.lastTokenWasText) {
 				this.lastTokenWasText = true
-				this.position++ // Увеличиваем позицию, чтобы не зациклиться
 				return {
 					type: 'text',
 					content: '',
 					position: {
 						start: this.input.length,
 						end: this.input.length,
-					},
-				}
-			}
-			// Если это пустая строка и мы еще не вернули токен, возвращаем пустой text
-			if (this.input.length === 0 && this.lastTokenWasText) {
-				this.lastTokenWasText = false
-				this.position++ // Увеличиваем позицию
-				return {
-					type: 'text',
-					content: '',
-					position: {
-						start: 0,
-						end: 0,
 					},
 				}
 			}
@@ -82,43 +64,64 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private processNextToken(): NestedToken | null {
 		const rest = this.input.substring(this.position)
 
-		// Ищем маркер в любом месте rest строки
-		for (let i = 0; i < rest.length; i++) {
-			const char = rest[i]
-			const candidates = this.descriptorsByTrigger.get(char) || []
+		// Всегда ищем маркер на текущей позиции
+		const char = rest[0]
+		const candidates = this.descriptorsByTrigger.get(char) || []
 
-			for (const desc of candidates) {
-				if (rest.substring(i).startsWith(desc.startPattern)) {
-					// Нашли маркер на позиции i
-					const markupPosition = this.position + i
-
-					// Если есть текст перед маркером, возвращаем его сначала
-					if (i > 0) {
-						const textContent = rest.substring(0, i)
+		for (const desc of candidates) {
+			if (rest.startsWith(desc.startPattern)) {
+				// Попытаться создать mark токен
+				const markToken = this.createMarkTokenAtPosition(this.position, desc)
+				if (markToken) {
+					// Маркер валидный
+					// Если последний токен был mark, возвращаем text токен перед mark
+					if (!this.lastTokenWasText) {
 						const textToken: TextToken = {
 							type: 'text',
-							content: textContent,
+							content: '',
 							position: {
 								start: this.position,
-								end: markupPosition,
+								end: this.position,
 							},
 						}
-						this.position = markupPosition
 						return textToken
-					}
-
-					// Маркер найден на текущей позиции, обрабатываем его
-					const markToken = this.createMarkTokenAtPosition(markupPosition, desc)
-					if (markToken) {
-						this.position = markupPosition + markToken.content.length
+					} else {
+						// Последний токен был text, возвращаем mark токен
+						this.position += markToken.content.length
 						return markToken
 					}
-					// Malformed markup - продолжаем поиск как обычный текст
+				} else {
+					// Маркер malformed - не возвращаем пустой text токен,
+					// а переходим к поиску в остальной части строки
 					break
 				}
 			}
 		}
 
+		// Маркера на позиции 0 нет, ищем следующий маркер
+		for (let i = 1; i < rest.length; i++) {
+			const char = rest[i]
+			const candidates = this.descriptorsByTrigger.get(char) || []
+
+			for (const desc of candidates) {
+				if (rest.substring(i).startsWith(desc.startPattern)) {
+					// Возвращаем text токен от текущей позиции до маркера
+					const textContent = rest.substring(0, i)
+					const textToken: TextToken = {
+						type: 'text',
+						content: textContent,
+						position: {
+							start: this.position,
+							end: this.position + i,
+						},
+					}
+					this.position += i
+					return textToken
+				}
+			}
+		}
+
+		// Маркеров больше нет, возвращаем оставшийся текст
 		return this.createRestTextToken()
 	}
 
