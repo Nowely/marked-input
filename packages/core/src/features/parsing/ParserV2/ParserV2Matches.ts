@@ -3,7 +3,14 @@ import {InnerOption} from '../../default/types'
 import {NestedToken, TextToken, MarkToken} from './types'
 import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
 
-// TODO: Реализовать новый алгоритм с состояниями кандидатов для дальнейшей оптимизации
+// Структура для отслеживания состояния парсинга маркера
+interface MarkupParseState {
+	descriptor: MarkupDescriptor
+	startPosition: number // Позиция в исходной строке, где начался маркер
+	phase: 'start' | 'middle' | 'end' // Текущая фаза парсинга
+	patternIndex: number // Индекс в текущем паттерне
+	middlePatternIndex?: number // Индекс в массиве middlePatterns (если в фазе middle)
+}
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private input: string
@@ -64,46 +71,52 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private processNextToken(): NestedToken | null {
 		const rest = this.input.substring(this.position)
 
-		// Всегда ищем маркер на текущей позиции
-		const char = rest[0]
-		const candidates = this.descriptorsByTrigger.get(char) || []
+		// Ищем маркер на текущей позиции - выбираем самый длинный завершенный маркер
+		let bestMarkToken: MarkToken | null = null
+		let bestEndPosition = -1
 
-		for (const desc of candidates) {
-			if (rest.startsWith(desc.startPattern)) {
-				// Попытаться создать mark токен
-				const markToken = this.createMarkTokenAtPosition(this.position, desc)
-				if (markToken) {
-					// Маркер валидный
-					// Если последний токен был mark, возвращаем text токен перед mark
-					if (!this.lastTokenWasText) {
-						const textToken: TextToken = {
-							type: 'text',
-							content: '',
-							position: {
-								start: this.position,
-								end: this.position,
-							},
+		for (const [trigger, descriptors] of this.descriptorsByTrigger) {
+			for (const desc of descriptors) {
+				if (rest.startsWith(desc.startPattern)) {
+					// Нашли начало маркера, проверяем можем ли завершить парсинг
+					const endPosition = this.findMarkupEnd(desc, this.position)
+					if (endPosition !== -1 && endPosition > bestEndPosition) {
+						const markToken = this.createMarkTokenAtPosition(this.position, desc)
+						if (markToken) {
+							bestMarkToken = markToken
+							bestEndPosition = endPosition
 						}
-						return textToken
-					} else {
-						// Последний токен был text, возвращаем mark токен
-						this.position += markToken.content.length
-						return markToken
 					}
-				} else {
-					// Маркер malformed - не возвращаем пустой text токен,
-					// а переходим к поиску в остальной части строки
-					break
 				}
+			}
+		}
+
+		// Если нашли маркер, возвращаем его
+		if (bestMarkToken) {
+			// Если последний токен был mark, возвращаем text токен перед mark
+			if (!this.lastTokenWasText) {
+				const textToken: TextToken = {
+					type: 'text',
+					content: '',
+					position: {
+						start: this.position,
+						end: this.position,
+					},
+				}
+				return textToken
+			} else {
+				// Последний токен был text, возвращаем mark токен
+				this.position = bestEndPosition
+				return bestMarkToken
 			}
 		}
 
 		// Маркера на позиции 0 нет, ищем следующий маркер
 		for (let i = 1; i < rest.length; i++) {
 			const char = rest[i]
-			const candidates = this.descriptorsByTrigger.get(char) || []
+			const descriptors = this.descriptorsByTrigger.get(char) || []
 
-			for (const desc of candidates) {
+			for (const desc of descriptors) {
 				if (rest.substring(i).startsWith(desc.startPattern)) {
 					// Возвращаем text токен от текущей позиции до маркера
 					const textContent = rest.substring(0, i)
@@ -145,29 +158,53 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	private findMarkupEnd(desc: MarkupDescriptor, startPos: number): number {
-		if (desc.endPattern === '') {
-			// Разметка заканчивается на плейсхолдер, конец - конец строки
-			return this.input.length
-		}
+		if (desc.hasValue) {
+			// Для маркеров со значением используем специальную логику
+			let bracketCount = 1
+			let foundClosingBracket = false
 
-		let bracketCount = 0
-		for (let i = startPos; i < this.input.length; i++) {
-			// Проверяем, начинается ли здесь любой startPattern
-			const isStart = this.descriptors.some(d => this.input.startsWith(d.startPattern, i))
-			if (isStart) {
-				bracketCount++
-			} else if (this.input.startsWith(desc.endPattern, i)) {
-				bracketCount--
-				if (bracketCount === 0) {
-					return i
+			for (let i = startPos + desc.startPattern.length; i < this.input.length; i++) {
+				if (!foundClosingBracket) {
+					if (this.input[i] === '[') {
+						bracketCount++
+					} else if (this.input[i] === ']') {
+						bracketCount--
+						if (bracketCount === 0) {
+							foundClosingBracket = true
+						}
+					}
+				} else {
+					if (this.input[i] === ')') {
+						return i + 1 // позиция после ')'
+					}
 				}
 			}
+			return -1
+		} else {
+			// Для простых маркеров используем общую логику
+			if (desc.endPattern === '') {
+				return this.input.length
+			}
+
+			let bracketCount = 0
+			for (let i = startPos; i < this.input.length; i++) {
+				const isStart = this.descriptors.some(d => this.input.startsWith(d.startPattern, i))
+				if (isStart) {
+					bracketCount++
+				} else if (this.input.startsWith(desc.endPattern, i)) {
+					bracketCount--
+					if (bracketCount === 0) {
+						return i + desc.endPattern.length
+					}
+				}
+			}
+			return -1
 		}
-		return -1
 	}
 
 	private createMarkTokenAtPosition(position: number, desc: MarkupDescriptor): MarkToken | null {
 		const markup = this.markups[desc.index]
+
 
 		// Используем специальную логику для извлечения полного маркера
 		let markupContent = ''
@@ -207,10 +244,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			// Для простых маркеров используем findMarkupEnd
 			const endPos = this.findMarkupEnd(desc, position)
 			if (endPos === -1) return null
-			markupContent = this.input.substring(
-				position,
-				endPos + (desc.endPattern === '' ? 0 : desc.endPattern.length)
-			)
+			markupContent = this.input.substring(position, endPos)
 			markupLength = markupContent.length
 		}
 
