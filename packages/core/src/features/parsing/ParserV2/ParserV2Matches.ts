@@ -3,6 +3,8 @@ import {InnerOption} from '../../default/types'
 import {NestedToken, TextToken, MarkToken} from './types'
 import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
 
+// TODO: Реализовать новый алгоритм с состояниями кандидатов для дальнейшей оптимизации
+
 export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private input: string
 	private markups: Markup[]
@@ -10,7 +12,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	private position: number = 0
 	private descriptors: MarkupDescriptor[] = []
 	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
-	private isTextLastToken: boolean = false
+	private lastTokenWasText: boolean = true // Начинаем с true, так как первый токен всегда text
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
@@ -32,7 +34,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	next(): IteratorResult<NestedToken, NestedToken | null> {
 		const token = this.extractNextToken()
 		if (token) {
-			this.isTextLastToken = token.type === 'text'
+			this.lastTokenWasText = token.type === 'text'
 			return {done: false, value: token}
 		}
 
@@ -40,37 +42,59 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	private extractNextToken(): NestedToken | null {
-		if (this.position > this.input.length || this.isTextLastToken) {
+		if (this.position > this.input.length) {
 			return null
 		}
 
 		if (this.position === this.input.length) {
-			this.position++
-			return {
-				type: 'text',
-				content: '',
-				position: {
-					start: this.input.length,
-					end: this.input.length,
-				},
+			// Мы в конце строки. Если последний токен был mark, возвращаем пустой text
+			if (!this.lastTokenWasText) {
+				this.lastTokenWasText = true
+				this.position++ // Увеличиваем позицию, чтобы не зациклиться
+				return {
+					type: 'text',
+					content: '',
+					position: {
+						start: this.input.length,
+						end: this.input.length,
+					},
+				}
 			}
+			// Если это пустая строка и мы еще не вернули токен, возвращаем пустой text
+			if (this.input.length === 0 && this.lastTokenWasText) {
+				this.lastTokenWasText = false
+				this.position++ // Увеличиваем позицию
+				return {
+					type: 'text',
+					content: '',
+					position: {
+						start: 0,
+						end: 0,
+					},
+				}
+			}
+			return null
 		}
 
-		const remaining = this.input.substring(this.position)
+		return this.processNextToken()
+	}
 
-		// Ищем маркер в любом месте remaining строки
-		for (let i = 0; i < remaining.length; i++) {
-			const char = remaining[i]
+	private processNextToken(): NestedToken | null {
+		const rest = this.input.substring(this.position)
+
+		// Ищем маркер в любом месте rest строки
+		for (let i = 0; i < rest.length; i++) {
+			const char = rest[i]
 			const candidates = this.descriptorsByTrigger.get(char) || []
 
 			for (const desc of candidates) {
-				if (remaining.substring(i).startsWith(desc.startPattern)) {
+				if (rest.substring(i).startsWith(desc.startPattern)) {
 					// Нашли маркер на позиции i
 					const markupPosition = this.position + i
 
 					// Если есть текст перед маркером, возвращаем его сначала
 					if (i > 0) {
-						const textContent = remaining.substring(0, i)
+						const textContent = rest.substring(0, i)
 						const textToken: TextToken = {
 							type: 'text',
 							content: textContent,
@@ -95,7 +119,15 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			}
 		}
 
-		// Маркер не найден, возвращаем оставшийся текст как text токен
+		return this.createRestTextToken()
+	}
+
+
+
+	/**
+	 * Создает text токен из оставшегося содержимого строки
+	 */
+	private createRestTextToken(): TextToken {
 		const remainingContent = this.input.substring(this.position)
 		const textToken: TextToken = {
 			type: 'text',
@@ -185,6 +217,7 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		const option: InnerOption = {
 			markup,
 			trigger: desc.trigger,
+			data: [],
 		}
 
 		// Парсим label и value
@@ -223,14 +256,6 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 		}
 
 		return markToken
-	}
-
-	private createOptionFromMarkup(markup: Markup, index: number): InnerOption {
-		return {
-			markup,
-			trigger: markup.charAt(0),
-			data: [],
-		}
 	}
 
 	private extractInnerContent(content: string, markup: string): string | null {
