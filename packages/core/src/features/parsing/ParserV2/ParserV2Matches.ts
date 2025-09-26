@@ -4,25 +4,18 @@ import {NestedToken, TextToken, MarkToken} from './types'
 import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
 
 export class ParserV2Matches implements IterableIterator<NestedToken> {
-	done: boolean = false
 	private input: string
 	private markups: Markup[]
 	private position: number = 0
-	private hasReturnedToken: boolean = false
 	private descriptors: MarkupDescriptor[] = []
 	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
+	private hasReturnedEmptyTextToken: boolean = false
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
 		this.markups = markups
-		this.initializeDescriptors()
-	}
-
-	private initializeDescriptors(): void {
 		this.descriptors = this.markups.map(createMarkupDescriptor)
 
-		// Группировка по trigger
-		this.descriptorsByTrigger.clear()
 		for (const desc of this.descriptors) {
 			if (!this.descriptorsByTrigger.has(desc.trigger)) {
 				this.descriptorsByTrigger.set(desc.trigger, [])
@@ -37,34 +30,29 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 	}
 
 	next(): IteratorResult<NestedToken, NestedToken | null> {
-		if (this.done) return {done: this.done, value: null}
-
 		const token = this.extractNextNestedToken()
-		if (token === null) {
-			this.done = true
-			// последний токен остаток текста
-			const remainingContent = this.input.substring(this.position)
-			// Для пустой строки или если мы уже вернули токены, возвращаем финальный текст
-			// Но если remainingContent пустой и мы уже вернули токен, не возвращаем пустой текст
-			if (remainingContent === '' && this.hasReturnedToken) {
-				return {done: true, value: null}
-			}
-			return {done: false, value: {
-				type: 'text',
-				content: remainingContent,
-				position: {
-					start: this.position,
-					end: this.input.length
-				}
-			}}
+		if (token) {
+			return {done: false, value: token}
 		}
 
-		this.hasReturnedToken = true
-		return {done: false, value: token}
+		return {done: true, value: null}
 	}
 
 	private extractNextNestedToken(): NestedToken | null {
 		if (this.position >= this.input.length) {
+			// Для пустой строки возвращаем пустой text токен только один раз
+			if (this.input.length === 0 && !this.hasReturnedEmptyTextToken) {
+				this.hasReturnedEmptyTextToken = true
+				const textToken: TextToken = {
+					type: 'text',
+					content: '',
+					position: {
+						start: 0,
+						end: 0
+					}
+				}
+				return textToken
+			}
 			return null
 		}
 
@@ -107,8 +95,18 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			}
 		}
 
-		// Маркер не найден, возвращаем null чтобы следующий next() вернул оставшийся текст
-		return null
+		// Маркер не найден, возвращаем оставшийся текст как text токен
+		const remainingContent = this.input.substring(this.position)
+		const textToken: TextToken = {
+			type: 'text',
+			content: remainingContent,
+			position: {
+				start: this.position,
+				end: this.input.length
+			}
+		}
+		this.position = this.input.length
+		return textToken
 	}
 
 
