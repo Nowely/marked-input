@@ -223,13 +223,10 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			data: [],
 		}
 
-		// Парсим label и value
-		const {label, value} = this.parseMarkupContent(markupContent, option.markup!)
-
-		// Извлекаем внутренний контент маркера для потенциального рекурсивного парсинга
+		// Извлекаем внутренний контент маркера для рекурсивного парсинга
 		const innerContent = this.extractInnerContent(markupContent, option.markup!)
 
-		// Рекурсивно парсим внутренний контент, но берем только маркеры
+		// Рекурсивно парсим внутренний контент
 		let children: NestedToken[] = []
 		if (innerContent) {
 			// Создаем новый парсер для внутреннего контента
@@ -238,8 +235,28 @@ export class ParserV2Matches implements IterableIterator<NestedToken> {
 			for (const token of innerParser) {
 				innerTokens.push(token)
 			}
-			// Берем только маркеры из распарсенного контента (текст уже в label)
-			children = innerTokens.filter(token => token.type === 'mark')
+
+			// Если среди токенов есть маркеры, сохраняем все токены как children
+			// Если все токены - текст, то children остается пустым
+			const hasMarks = innerTokens.some(token => token.type === 'mark')
+			if (hasMarks) {
+				children = innerTokens
+			}
+		}
+
+		// Парсим label и value
+		let label: string
+		let value: string | undefined
+
+		if (desc.hasValue) {
+			// Для маркеров с value используем специальную логику парсинга
+			const parsed = this.parseMarkupContent(markupContent, option.markup!)
+			label = parsed.label
+			value = parsed.value
+		} else {
+			// Для простых маркеров label - это полный внутренний контент
+			label = innerContent || ''
+			value = undefined
 		}
 
 		// Создаем mark token

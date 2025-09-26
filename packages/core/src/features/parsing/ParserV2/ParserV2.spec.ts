@@ -309,6 +309,14 @@ describe('ParserV2', () => {
 					  {
 					    "children": [
 					      {
+					        "content": "hello ",
+					        "position": {
+					          "end": 6,
+					          "start": 0,
+					        },
+					        "type": "text",
+					      },
+					      {
 					        "children": [],
 					        "content": "@[world]",
 					        "data": {
@@ -322,10 +330,18 @@ describe('ParserV2', () => {
 					        },
 					        "type": "mark",
 					      },
+					      {
+					        "content": "",
+					        "position": {
+					          "end": 14,
+					          "start": 14,
+					        },
+					        "type": "text",
+					      },
 					    ],
 					    "content": "@[hello @[world]]",
 					    "data": {
-					      "label": "hello ",
+					      "label": "hello @[world]",
 					      "optionIndex": 0,
 					      "value": undefined,
 					    },
@@ -365,7 +381,23 @@ describe('ParserV2', () => {
 					  {
 					    "children": [
 					      {
+					        "content": "level1 ",
+					        "position": {
+					          "end": 7,
+					          "start": 0,
+					        },
+					        "type": "text",
+					      },
+					      {
 					        "children": [
+					          {
+					            "content": "level2 ",
+					            "position": {
+					              "end": 7,
+					              "start": 0,
+					            },
+					            "type": "text",
+					          },
 					          {
 					            "children": [],
 					            "content": "@[level3]",
@@ -380,10 +412,18 @@ describe('ParserV2', () => {
 					            },
 					            "type": "mark",
 					          },
+					          {
+					            "content": "",
+					            "position": {
+					              "end": 16,
+					              "start": 16,
+					            },
+					            "type": "text",
+					          },
 					        ],
 					        "content": "@[level2 @[level3]]",
 					        "data": {
-					          "label": "level2 ",
+					          "label": "level2 @[level3]",
 					          "optionIndex": 0,
 					          "value": undefined,
 					        },
@@ -393,10 +433,18 @@ describe('ParserV2', () => {
 					        },
 					        "type": "mark",
 					      },
+					      {
+					        "content": "",
+					        "position": {
+					          "end": 26,
+					          "start": 26,
+					        },
+					        "type": "text",
+					      },
 					    ],
 					    "content": "@[level1 @[level2 @[level3]]]",
 					    "data": {
-					      "label": "level1 ",
+					      "label": "level1 @[level2 @[level3]]",
 					      "optionIndex": 0,
 					      "value": undefined,
 					    },
@@ -436,6 +484,14 @@ describe('ParserV2', () => {
 					  {
 					    "children": [
 					      {
+					        "content": "hello ",
+					        "position": {
+					          "end": 6,
+					          "start": 0,
+					        },
+					        "type": "text",
+					      },
+					      {
 					        "children": [],
 					        "content": "#[world]",
 					        "data": {
@@ -449,10 +505,18 @@ describe('ParserV2', () => {
 					        },
 					        "type": "mark",
 					      },
+					      {
+					        "content": "",
+					        "position": {
+					          "end": 14,
+					          "start": 14,
+					        },
+					        "type": "text",
+					      },
 					    ],
 					    "content": "@[hello #[world]]",
 					    "data": {
-					      "label": "hello ",
+					      "label": "hello #[world]",
 					      "optionIndex": 0,
 					      "value": undefined,
 					    },
@@ -492,6 +556,14 @@ describe('ParserV2', () => {
 					  {
 					    "children": [
 					      {
+					        "content": "hello ",
+					        "position": {
+					          "end": 6,
+					          "start": 0,
+					        },
+					        "type": "text",
+					      },
+					      {
 					        "children": [],
 					        "content": "#[world]",
 					        "data": {
@@ -504,6 +576,14 @@ describe('ParserV2', () => {
 					          "start": 6,
 					        },
 					        "type": "mark",
+					      },
+					      {
+					        "content": "",
+					        "position": {
+					          "end": 14,
+					          "start": 14,
+					        },
+					        "type": "text",
 					      },
 					    ],
 					    "content": "@[hello #[world]](value)",
