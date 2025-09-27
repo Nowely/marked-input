@@ -365,7 +365,7 @@ export class ParserV2Matches {
 					// Переходим к следующей фазе
 					this.transitionToNextPhase(state)
 					// Обновляем isActive
-					state.isActive = state.phase !== 'content' && !this.isParseStateComplete(state)
+					state.isActive = (state.phase as string) !== 'content' && !this.isParseStateComplete(state)
 					return true
 				}
 				break
@@ -382,7 +382,7 @@ export class ParserV2Matches {
 						if (state.nestingLevel === 0) {
 							// Нашли закрывающую скобку на уровне 0 - это конец маркера
 							this.transitionToNextPhase(state)
-							state.isActive = state.phase !== 'content' && !this.isParseStateComplete(state)
+							state.isActive = (state.phase as string) !== 'content' && !this.isParseStateComplete(state)
 							return this.advanceParseState(state, char, position)
 						} else {
 							state.nestingLevel--
@@ -394,7 +394,7 @@ export class ParserV2Matches {
 					if (nextPattern && this.input.startsWith(nextPattern, position)) {
 						// Нашли начало следующего паттерна - переходим к нему
 						this.transitionToNextPhase(state)
-						state.isActive = state.phase !== 'content' && !this.isParseStateComplete(state)
+						state.isActive = (state.phase as string) !== 'content' && !this.isParseStateComplete(state)
 						return this.advanceParseState(state, char, position)
 					}
 				}
@@ -419,7 +419,7 @@ export class ParserV2Matches {
 					if (state.middlePatternIndex! >= middlePatterns.length) {
 						this.transitionToNextPhase(state)
 					}
-					state.isActive = state.phase !== 'content' && !this.isParseStateComplete(state)
+					state.isActive = (state.phase as string) !== 'content' && !this.isParseStateComplete(state)
 					return true
 				}
 				break
@@ -440,7 +440,7 @@ export class ParserV2Matches {
 		}
 
 		// Символ не соответствует
-		if (state.phase === 'content' || state.phase === 'end') {
+		if ((state.phase as string) === 'content' || (state.phase as string) === 'end') {
 			// В content и end фазах несоответствие означает, что мы продолжаем ожидать правильный символ/паттерн
 			return true
 		} else {
@@ -552,24 +552,6 @@ export class ParserV2Matches {
 	}
 
 
-
-
-	/**
-	 * Создает text токен из оставшегося содержимого строки
-	 */
-	private createRestTextToken(): TextToken {
-		const remainingContent = this.input.substring(this.position)
-		const textToken: TextToken = {
-			type: 'text',
-			content: remainingContent,
-			position: {
-				start: this.position,
-				end: this.input.length,
-			},
-		}
-		this.position = this.input.length
-		return textToken
-	}
 
 	private findMarkupEnd(desc: MarkupDescriptor, startPos: number): number {
 		if (desc.hasValue) {
