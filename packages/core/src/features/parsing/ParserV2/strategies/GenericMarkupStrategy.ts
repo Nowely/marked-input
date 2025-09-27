@@ -15,21 +15,39 @@ export class GenericMarkupStrategy implements MarkupStrategy {
 		const startPos = position
 		let currentPos = position + descriptor.startPattern.length
 
-		// Для простых паттернов без value ищем endPattern
-		if (!descriptor.hasValue) {
-			const endPatternIndex = input.indexOf(descriptor.endPattern, currentPos)
-			if (endPatternIndex === -1) {
-				return null
-			}
-			currentPos = endPatternIndex + descriptor.endPattern.length
+		// Специальная обработка для паттернов типа <__label__>__value__<__label__>
+		if (descriptor.markup.includes('<__label__>__value__<__label__>')) {
+			// Для HTML-стиля: <tag>content</tag>
+			// Ищем соответствующий закрывающий тег
+			const tagStart = position + descriptor.startPattern.length
+			const tagEnd = input.indexOf(descriptor.endPattern, tagStart)
+			if (tagEnd === -1) return null
+
+			const tagName = input.substring(tagStart, tagEnd)
+			const closingTag = descriptor.startPattern + tagName + descriptor.endPattern
+
+			// Ищем закрывающий тег после содержимого
+			const contentEnd = input.indexOf(closingTag, tagEnd + descriptor.endPattern.length)
+			if (contentEnd === -1) return null
+
+			currentPos = contentEnd + closingTag.length
 		} else {
-			// Для паттернов с value нужно найти соответствующую закрывающую конструкцию
-			// Это упрощенная логика - находим endPattern после startPattern
-			const endPatternIndex = input.indexOf(descriptor.endPattern, currentPos)
-			if (endPatternIndex === -1) {
-				return null
+			// Для простых паттернов без value ищем endPattern
+			if (!descriptor.hasValue) {
+				const endPatternIndex = input.indexOf(descriptor.endPattern, currentPos)
+				if (endPatternIndex === -1) {
+					return null
+				}
+				currentPos = endPatternIndex + descriptor.endPattern.length
+			} else {
+				// Для паттернов с value нужно найти соответствующую закрывающую конструкцию
+				// Это упрощенная логика - находим endPattern после startPattern
+				const endPatternIndex = input.indexOf(descriptor.endPattern, currentPos)
+				if (endPatternIndex === -1) {
+					return null
+				}
+				currentPos = endPatternIndex + descriptor.endPattern.length
 			}
-			currentPos = endPatternIndex + descriptor.endPattern.length
 		}
 
 		const endPos = currentPos
@@ -49,53 +67,78 @@ export class GenericMarkupStrategy implements MarkupStrategy {
 		const content = match.content
 		const markup = match.descriptor.markup
 
-		// Находим позицию __label__ в шаблоне
-		const labelPlaceholder = '__label__'
-		const labelIndex = markup.indexOf(labelPlaceholder)
-
-		if (labelIndex === -1) {
-			return { label: '' }
-		}
-
-		// Вычисляем позицию label в контенте относительно startPattern
+		// Удаляем startPattern и endPattern из контента для анализа
 		const startPattern = match.descriptor.startPattern
-		const labelStart = startPattern.length
-		const labelLength = content.length - startPattern.length - match.descriptor.endPattern.length
+		const endPattern = match.descriptor.endPattern
+		const innerContent = content.substring(startPattern.length, content.length - endPattern.length)
 
 		let label: string
 		let value: string | undefined
 
 		if (match.descriptor.hasValue) {
-			// Для паттернов с value нужно найти границы
-			const valuePlaceholder = '__value__'
-			const valueIndex = markup.indexOf(valuePlaceholder)
+			// Специальная обработка для паттернов типа <__label__>__value__<__label__>
+			if (markup.includes('<__label__>__value__<__label__>')) {
+				// Для HTML-стиля: <tag>content</tag>
+				// innerContent = 'tag>content<tag'
+				const firstCloseIndex = innerContent.indexOf('>')
+				if (firstCloseIndex !== -1) {
+					label = innerContent.substring(0, firstCloseIndex)
 
-			if (valueIndex > labelIndex) {
-				// __value__ идет после __label__
-				const middlePattern = markup.substring(labelIndex + labelPlaceholder.length, valueIndex)
-				const labelEndPattern = middlePattern || match.descriptor.endPattern
-
-				// Ищем конец label
-				const labelEndIndex = content.indexOf(labelEndPattern, labelStart)
-				if (labelEndIndex !== -1) {
-					label = content.substring(labelStart, labelEndIndex)
-
-					// Ищем value
-					const valueStart = labelEndIndex + labelEndPattern.length
-					const valueEndIndex = content.indexOf(match.descriptor.endPattern, valueStart)
-					if (valueEndIndex !== -1) {
-						value = content.substring(valueStart, valueEndIndex)
+					const contentStart = firstCloseIndex + 1
+					const secondOpenIndex = innerContent.indexOf('<', contentStart)
+					if (secondOpenIndex !== -1) {
+						value = innerContent.substring(contentStart, secondOpenIndex)
 					}
-				} else {
-					label = content.substring(labelStart, labelStart + labelLength)
 				}
 			} else {
-				// Упрощенная логика для паттернов без сложной структуры
-				label = content.substring(labelStart, labelStart + labelLength)
+				// Для паттернов с value разбираем структуру
+				const labelPlaceholder = '__label__'
+				const valuePlaceholder = '__value__'
+
+				// Разбираем шаблон на части
+				const parts = markup.split(new RegExp(`(${labelPlaceholder}|${valuePlaceholder})`, 'g'))
+					.filter(part => part && part !== labelPlaceholder && part !== valuePlaceholder)
+
+				if (parts.length >= 2) {
+					// У нас есть и label, и value
+					const labelStart = 0
+					const labelEndPattern = parts[1] // текст между __label__ и __value__
+
+					if (labelEndPattern) {
+						const labelEndIndex = innerContent.indexOf(labelEndPattern)
+						if (labelEndIndex !== -1) {
+							label = innerContent.substring(labelStart, labelEndIndex)
+
+							// Ищем value после разделителя
+							const valueStart = labelEndIndex + labelEndPattern.length
+							const valueEndPattern = parts[2] || '' // текст после __value__
+
+							let valueEndIndex: number
+							if (valueEndPattern) {
+								valueEndIndex = innerContent.indexOf(valueEndPattern, valueStart)
+							} else {
+								valueEndIndex = innerContent.length
+							}
+
+							if (valueEndIndex !== -1) {
+								value = innerContent.substring(valueStart, valueEndIndex)
+							}
+						} else {
+							// Не нашли разделитель, берем весь контент как label
+							label = innerContent
+						}
+					} else {
+						// Нет разделителя, весь контент - label
+						label = innerContent
+					}
+				} else {
+					// Простой случай: весь контент - label
+					label = innerContent
+				}
 			}
 		} else {
-			// Для простых паттернов весь контент между start и end - это label
-			label = content.substring(labelStart, labelStart + labelLength)
+			// Для паттернов без value весь innerContent - это label
+			label = innerContent
 		}
 
 		return { label: label || '', value }
