@@ -44,41 +44,55 @@ interface MarkToken {
     end: number
   }
 }
+
+interface MatchResult {
+  start: number
+  end: number
+  content: string
+  label: string
+  value?: string
+  descriptor: MarkupDescriptor
+}
+
+interface TokenCandidate {
+  match: MatchResult
+  conflicts: Set<TokenCandidate>
+}
+```
+
+### Компонентная архитектура
+
+ParserV2 использует принципы **Composition over Inheritance** и **Single Responsibility Principle**:
+
+```
+ParserV2 (главный класс)
+├── PatternMatcher - находит все матчи маркеров в тексте
+├── ConflictResolver - разрешает конфликты между пересекающимися маркерами
+└── TokenSequenceBuilder - строит гарантированную последовательность токенов
+    └── Markup Strategies:
+        ├── BracketMarkupStrategy - для #[__label__]
+        └── ParenMarkupStrategy - для @[__label__](__value__)
 ```
 
 ### Алгоритм работы
 
-ParserV2 использует однопроходный алгоритм парсинга на основе состояний кандидатов:
+1. **Поиск матчей**: `PatternMatcher` находит все потенциальные маркеры в тексте
+2. **Разрешение конфликтов**: `ConflictResolver` выбирает непересекающиеся маркеры, предпочитая более длинные
+3. **Построение последовательности**: `TokenSequenceBuilder` создает гарантированную структуру `text-mark-text-mark-text...`
 
-1. **Инициализация**: Создание дескрипторов разметки и группировка по триггерным символам
-2. **Однопроходный разбор**: Полная обработка текста за один проход:
-   - Последовательная обработка каждого символа входной строки
-   - Управление множественными активными состояниями парсинга одновременно
-   - Для каждого символа: обработка активных состояний + создание новых кандидатов
-3. **Обработка состояний**:
-   - `MarkupParseState` отслеживает прогресс каждого потенциального маркера
-   - Фазы парсинга: `start` → `content` → `middle` → `end`
-   - Поддержка вложенности через счетчик `nestingLevel` для скобочных конструкций
-   - Завершенные маркеры собираются как кандидаты для постобработки
-4. **Постобработка кандидатов**:
-   - Разрешение конфликтов: приоритет длинным маркерам
-   - Рекурсивная обработка внутренних контентов маркеров
-   - Формирование финальной древовидной структуры без лишних пустых токенов
+### Стратегии парсинга
 
-### Структура MarkupParseState
+Для поддержки разных типов маркеров используются стратегии парсинга:
 
 ```typescript
-interface MarkupParseState {
-  descriptor: MarkupDescriptor    // Описание паттерна маркера
-  startPosition: number          // Позиция начала в исходном тексте
-  phase: 'start' | 'content' | 'middle' | 'end'  // Текущая фаза парсинга
-  patternIndex: number           // Индекс в текущем паттерне
-  middlePatternIndex?: number    // Индекс в массиве middlePatterns
-  contentPhase?: 'label' | 'value'  // Фаза контента для маркеров с двумя плейсхолдерами
-  nestingLevel?: number          // Уровень вложенности для скобочных конструкций
-  isActive: boolean              // Флаг активности состояния
+interface MarkupStrategy {
+  matches(descriptor: MarkupDescriptor, input: string, position: number): MatchResult | null
+  extractContent(match: MatchResult): { label: string; value?: string }
 }
 ```
+
+- **BracketMarkupStrategy**: Для маркеров типа `#[__label__]`
+- **ParenMarkupStrategy**: Для маркеров типа `@[__label__](__value__)`
 
 ## Использование
 
@@ -145,32 +159,60 @@ constructor(markups: Markup[])
 #### Методы экземпляра
 
 ```typescript
-split(value: string): NestedToken
+split(value: string): NestedToken[]
 ```
 
 Разбирает входную строку и возвращает древовидную структуру NestedToken.
-
-### ParserV2Matches
-
-Класс, реализующий полный однопроходный парсинг с гарантией структуры `text - mark - text - mark - text...`.
-
-```typescript
-class ParserV2Matches {
-  constructor(input: string, markups: Markup[])
-  parse(): NestedToken[]
-}
-```
 
 **Гарантии структуры:**
 - После каждого `MarkToken` всегда следует `TextToken` (даже пустой)
 - Последовательность всегда: `text - mark - text - mark - text...`
 - Структура поддерживается на всех уровнях рекурсии
 
-**Алгоритм работы:**
-1. Однопроходный разбор: последовательная обработка каждого символа
-2. Управление активными состояниями парсинга для всех потенциальных маркеров
-3. Сбор завершенных маркеров как кандидатов
-4. Постобработка: разрешение конфликтов и формирование гарантированной структуры
+### Компоненты
+
+#### PatternMatcher
+
+Отвечает за поиск всех потенциальных матчей маркеров в тексте.
+
+```typescript
+class PatternMatcher {
+  constructor(input: string, markups: Markup[])
+  findAllMatches(): MatchResult[]
+}
+```
+
+#### ConflictResolver
+
+Разрешает конфликты между пересекающимися маркерами, предпочитая более длинные.
+
+```typescript
+class ConflictResolver {
+  resolve(matches: MatchResult[]): TokenCandidate[]
+}
+```
+
+#### TokenSequenceBuilder
+
+Строит гарантированную последовательность токенов из разрешенных кандидатов.
+
+```typescript
+class TokenSequenceBuilder {
+  constructor(input: string, markups: Markup[])
+  buildGuaranteedSequence(candidates: TokenCandidate[]): NestedToken[]
+}
+```
+
+#### MarkupStrategy
+
+Интерфейс для стратегий парсинга разных типов маркеров.
+
+```typescript
+interface MarkupStrategy {
+  matches(descriptor: MarkupDescriptor, input: string, position: number): MatchResult | null
+  extractContent(match: MatchResult): { label: string; value?: string }
+}
+```
 
 ## Типы NestedToken
 
@@ -202,25 +244,6 @@ interface TextToken {
 
 Узел, представляющий обычный текст без маркеров.
 
-#### Использование ParserV2Matches напрямую
-
-```typescript
-const matches = new ParserV2Matches('Hello @[world](test)!', ['@[__label__](__value__)'], true)
-const result = matches.parse()
-
-console.log(result)
-// Результат: гарантированная последовательность text-mark-text-mark-text...
-```
-
-**Пример с маркером в конце строки:**
-```typescript
-const matches = new ParserV2Matches('Start @[end]', ['@[__label__]'], true)
-const result = matches.parse()
-
-console.log(result)
-// Вывод:
-// [text: '', text: 'Start ', mark: '@[end]', text: '']  // Гарантированный text после mark
-```
 
 ### Опции конфигурации
 
@@ -265,56 +288,30 @@ validateNestedContent(content: string): boolean
 
 ## Производительность
 
-### Бенчмарки (после оптимизации next() и extractNextToken())
+### Преимущества рефакторинга
 
-#### Итеративный парсинг (ParserV2)
-```
-iteration 1 (4 marks, 93 chars)     110,993 ops/sec
-iteration 2 (6 marks, 147 chars)      71,729 ops/sec
-iteration 3 (8 marks, 201 chars)      53,216 ops/sec
-iteration 4 (10 marks, 255 chars)     42,018 ops/sec
-iteration 5 (12 marks, 309 chars)     32,090 ops/sec
-iteration 6 (16 marks, 395 chars)     27,829 ops/sec
-iteration 7 (18 marks, 449 chars)     24,391 ops/sec
-iteration 8 (20 marks, 503 chars)     21,329 ops/sec
-iteration 9 (22 marks, 557 chars)     19,594 ops/sec
-iteration 10 (24 marks, 611 chars)    17,706 ops/sec
-```
+После рефакторинга ParserV2 демонстрирует значительные улучшения в поддерживаемости и читаемости кода:
 
-#### Сравнение с Parser v1 (плоский парсер)
-| Размер документа | Parser v1 | Parser v2 | Отношение |
-|------------------|-----------|-----------|-----------|
-| 10 marks (~227 chars) | 186K ops/sec | 33K ops/sec | **5.7x** медленнее |
-| 50 marks (~1.2K chars) | 38K ops/sec | 6.7K ops/sec | **5.7x** медленнее |
-| 100 marks (~2.4K chars) | 19K ops/sec | 3.3K ops/sec | **5.8x** медленнее |
-| 500 marks (~12K chars) | 3.8K ops/sec | 653 ops/sec | **5.8x** медленнее |
+- **Читаемость**: Главный класс уменьшился с 871 строки до 33 строк
+- **Модульность**: Логика разделена на специализированные компоненты
+- **Тестируемость**: Каждый компонент можно тестировать изолированно
+- **Расширяемость**: Легко добавлять новые стратегии парсинга
 
-#### Масштабируемость ParserV2
-```
-scalability: 10 marks    187K ops/sec
-scalability: 25 marks     74K ops/sec  (2.5x медленнее)
-scalability: 50 marks     38K ops/sec  (4.9x медленнее)
-scalability: 100 marks    18K ops/sec  (10.5x медленнее)
-scalability: 250 marks     7.5K ops/sec (25x медленнее)
-scalability: 500 marks     3.8K ops/sec (49x медленнее)
-```
+### Характеристики производительности
 
-**Memory footprint**: Стабильное потребление, < 2x от размера входных данных
+ParserV2 гарантирует структуру `text - mark - text - mark - text...` с следующими характеристиками:
 
-### Гарантии структуры и производительность
-
-Новая логика гарантирует структуру `text - mark - text - mark - text...`:
 - **Однопроходная обработка**: Каждый символ читается только один раз
 - **Линейная сложность**: O(n) для размера входных данных
 - **Оптимизированный поиск**: Группировка маркеров по триггерам ускоряет поиск
 - **Гарантия структуры**: Упрощает постобработку и валидацию результатов
 
-### Оптимизации
+### Компонентная оптимизация
 
-1. **Кеширование дескрипторов**: Переиспользование скомпилированных шаблонов разметки
-2. **Однопроходный алгоритм**: Каждый символ обрабатывается только один раз
-3. **Параллельная обработка**: Одновременное управление множественными состояниями
-4. **Гарантия структуры**: Упрощает постобработку и валидацию результатов
+1. **PatternMatcher**: Эффективный поиск матчей с предварительной группировкой по триггерам
+2. **ConflictResolver**: Быстрое разрешение конфликтов с приоритетом длинных маркеров
+3. **TokenSequenceBuilder**: Гарантированное построение последовательности без лишних проверок
+4. **MarkupStrategy**: Специализированные стратегии для разных типов маркеров
 
 ## Гарантии структуры
 
@@ -450,13 +447,16 @@ function flattenTree(root: NestedToken): PieceType[] {
 - ✅ **Однопроходный парсинг**: Каждый символ читается только один раз
 - ✅ **Древовидная структура**: Оптимизированная обработка вложенных маркеров
 - ✅ **Рекурсивная обработка**: Полная поддержка вложенных маркеров
+- ✅ **Компонентная архитектура**: Разделение на PatternMatcher, ConflictResolver, TokenSequenceBuilder
+- ✅ **Стратегии парсинга**: BracketMarkupStrategy и ParenMarkupStrategy для разных типов маркеров
 
 ### Краткосрочные цели (v2.1)
 
-- [ ] Поддержка кастомных парсеров для сложных markup
-- [ ] Улучшенная обработка ошибок разметки
+- [ ] Поддержка дополнительных стратегий парсинга для кастомных markup форматов
+- [ ] Улучшенная обработка ошибок разметки с детальными сообщениями
 - [ ] Streaming API для очень больших файлов
-- [ ] Кеширование экземпляров парсера
+- [ ] Кеширование экземпляров парсера и стратегий
+- [ ] Расширенные тесты производительности
 
 ### Долгосрочные цели (v3.0)
 
@@ -464,6 +464,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 - [ ] Визуальный редактор разметки
 - [ ] Интеграция с популярными форматами (Markdown, HTML, XML)
 - [ ] Плагины для расширения функциональности
+- [ ] WebAssembly версия для браузера
 
 ## Troubleshooting
 
@@ -471,15 +472,28 @@ function flattenTree(root: NestedToken): PieceType[] {
 
 1. **Некорректный markup**: Проверьте синтаксис плейсхолдеров (`__label__`, `__value__`)
 2. **Гарантия структуры**: Помните о последовательности `text - mark - text - mark - text...`
-3. **Однопроходный парсинг**: Алгоритм обрабатывает каждый символ только один раз
-4. **Вложенные маркеры**: Рекурсивная обработка через отдельные экземпляры парсера
+3. **Стратегии парсинга**: Убедитесь, что для вашего типа маркеров существует подходящая стратегия
+4. **Вложенные маркеры**: Рекурсивная обработка через отдельные экземпляры парсера в TokenSequenceBuilder
 
-### Debug режим
+### Debug компонентов
+
+Для отладки отдельных компонентов:
 
 ```typescript
-const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
-const result = parser.parse(input)
-// Логирует детальную информацию о процессе парсинга
+// Отладка поиска матчей
+const patternMatcher = new PatternMatcher(input, markups)
+const matches = patternMatcher.findAllMatches()
+console.log('Найденные матчи:', matches)
+
+// Отладка разрешения конфликтов
+const conflictResolver = new ConflictResolver()
+const resolved = conflictResolver.resolve(matches)
+console.log('Разрешенные кандидаты:', resolved)
+
+// Отладка построения последовательности
+const tokenBuilder = new TokenSequenceBuilder(input, markups)
+const tokens = tokenBuilder.buildGuaranteedSequence(resolved)
+console.log('Итоговые токены:', tokens)
 ```
 
 ## Contributing
@@ -487,10 +501,13 @@ const result = parser.parse(input)
 Приветствуются contributions! Пожалуйста:
 
 1. **Тестируйте гарантию структуры**: Убедитесь, что после каждого `mark` идет `text`
-2. **Добавляйте тесты**: Для новых функций и edge cases
-3. **Соблюдайте code style**: ESLint + Prettier
-4. **Обновляйте документацию**: README и JSDoc
-5. **Проверяйте производительность**: Бенчмарки должны показывать улучшения
+2. **Добавляйте стратегии**: Для новых типов маркеров создавайте отдельные Strategy классы
+3. **Тестируйте компоненты**: Каждый компонент должен иметь полное покрытие unit тестами
+4. **Соблюдайте архитектуру**: Следуйте принципам Single Responsibility и Composition over Inheritance
+5. **Добавляйте тесты**: Для новых функций и edge cases
+6. **Соблюдайте code style**: ESLint + Prettier
+7. **Обновляйте документацию**: README и JSDoc
+8. **Проверяйте интеграцию**: Убедитесь, что новые компоненты корректно работают вместе
 
 ## Лицензия
 

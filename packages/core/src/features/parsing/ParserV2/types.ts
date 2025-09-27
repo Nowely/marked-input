@@ -39,3 +39,25 @@ export interface ValidationResult {
 	isValid: boolean
 	errors: string[]
 }
+
+// Результат матчинга маркера
+export interface MatchResult {
+	start: number
+	end: number
+	content: string
+	label: string
+	value?: string
+	descriptor: MarkupDescriptor
+}
+
+// Кандидат на токен с информацией о конфликтах
+export interface TokenCandidate {
+	match: MatchResult
+	conflicts: Set<TokenCandidate>
+}
+
+// Стратегия парсинга для разных типов маркеров
+export interface MarkupStrategy {
+	matches(descriptor: MarkupDescriptor, input: string, position: number): MatchResult | null
+	extractContent(match: MatchResult): { label: string; value?: string }
+}
