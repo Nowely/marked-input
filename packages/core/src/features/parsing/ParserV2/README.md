@@ -156,7 +156,7 @@ split(value: string): NestedToken
 
 ```typescript
 class ParserV2Matches {
-  constructor(input: string, markups: Markup[], isRoot?: boolean)
+  constructor(input: string, markups: Markup[])
   parse(): NestedToken[]
 }
 ```
@@ -173,18 +173,6 @@ class ParserV2Matches {
 4. Постобработка: разрешение конфликтов и формирование гарантированной структуры
 
 ## Типы NestedToken
-
-### RootToken
-```typescript
-interface RootToken {
-  type: 'root'
-  content: string
-  children: NestedToken[]  // Обязательно присутствует
-  position: { start: number; end: number }
-}
-```
-
-Корневой узел дерева с обязательным массивом дочерних элементов.
 
 ### MarkToken
 ```typescript

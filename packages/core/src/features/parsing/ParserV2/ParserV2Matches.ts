@@ -23,17 +23,30 @@ interface TokenCandidate {
 	endPosition?: number
 }
 
+enum State {
+	Text,
+	Markup,
+}
+
+enum Phase {
+	Start,
+	Label,
+	Middle,
+	Value,
+	End,
+}
+
+
 export class ParserV2Matches {
 	private input: string
 	private markups: Markup[]
 	private descriptors: MarkupDescriptor[] = []
 	private descriptorsByTrigger: Map<string, MarkupDescriptor[]> = new Map()
-	private isRoot: boolean
+	state = State.Text
 
-	constructor(input: string, markups: Markup[], isRoot = false) {
+	constructor(input: string, markups: Markup[]) {
 		this.input = input
 		this.markups = markups
-		this.isRoot = isRoot
 		this.descriptors = this.markups.map(createMarkupDescriptor)
 
 		for (const desc of this.descriptors) {
