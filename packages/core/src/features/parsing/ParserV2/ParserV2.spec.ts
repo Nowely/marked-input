@@ -23,12 +23,12 @@ describe('ParserV2', () => {
 			const result = ParserV2.split(value, options)
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "Hello " [0-6]
-					1: MARK @[world(test)] [6-20]
-					2: TEXT " and " [20-25]
-					3: MARK @[tag] [25-31]
-					4: TEXT "" [31-31]"
-				`)
+				"0: TEXT "Hello " [0-6]
+				 1: MARK "@[world](test)" [6-20] [label="world", value="test"]
+				 2: TEXT " and " [20-25]
+				 3: MARK "#[tag]" [25-31] [label="tag"]
+				 4: TEXT "" [31-31]"
+			`)
 		})
 
 		it('should handle text without options', () => {
@@ -45,9 +45,7 @@ describe('ParserV2', () => {
 				const input = 'Hello world'
 				const result = parser.split(input)
 
-				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "Hello world" [0-11]"
-				`)
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "Hello world" [0-11]"`)
 			})
 
 			it('parses single mark with value', () => {
@@ -56,8 +54,8 @@ describe('ParserV2', () => {
 
 				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
-					1: MARK @[hello(world)] [0-15]
-					2: TEXT "" [15-15]"
+					 1: MARK "@[hello](world)" [0-15] [label="hello", value="world"]
+					 2: TEXT "" [15-15]"
 				`)
 			})
 
@@ -67,8 +65,8 @@ describe('ParserV2', () => {
 
 				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
-					1: MARK @[tag] [0-6]
-					2: TEXT "" [6-6]"
+					 1: MARK "#[tag]" [0-6] [label="tag"]
+					 2: TEXT "" [6-6]"
 				`)
 			})
 
@@ -77,30 +75,26 @@ describe('ParserV2', () => {
 				const result = parser.split(input)
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "Hello " [0-6]
-					1: MARK @[world(test)] [6-20]
-					2: TEXT " and " [20-25]
-					3: MARK @[tag] [25-31]
-					4: TEXT "" [31-31]"
-				`)
+				"0: TEXT "Hello " [0-6]
+				 1: MARK "@[world](test)" [6-20] [label="world", value="test"]
+				 2: TEXT " and " [20-25]
+				 3: MARK "#[tag]" [25-31] [label="tag"]
+				 4: TEXT "" [31-31]"
+			`)
 			})
 
 			describe('error handling', () => {
 				it('handles empty input', () => {
 					const result = parser.split('')
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "" [0-0]"
-				`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "" [0-0]"`)
 				})
 
 				it('handles malformed markup gracefully', () => {
 					const input = '@[unclosed markup'
 					const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "@[unclosed markup" [0-17]"
-					`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "@[unclosed markup" [0-17]"`)
 				})
 
 				describe('complex parsing', () => {
@@ -112,11 +106,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							1: MARK @[hello @[world]] [0-17]
+							 1: MARK "@[hello @[world]]" [0-17] [label="hello @[world]"]
 							├── 1.0: TEXT "hello " [0-6]
-							├── 1.1: MARK @[world] [6-14]
+							├── 1.1: MARK "@[world]" [6-14] [label="world"]
 							└── 1.2: TEXT "" [14-14]
-							2: TEXT "" [17-17]"
+							 2: TEXT "" [17-17]"
 						`)
 					})
 
@@ -127,14 +121,14 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							1: MARK @[level1 @[level2 @[level3]]] [0-29]
+							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [label="level1 @[level2 @[level3]]"]
 							├── 1.0: TEXT "level1 " [0-7]
-							├── 1.1: MARK @[level2 @[level3]] [7-26]
+							├── 1.1: MARK "@[level2 @[level3]]" [7-26] [label="level2 @[level3]"]
 							│   ├── 1.1.0: TEXT "level2 " [0-7]
-							│   ├── 1.1.1: MARK @[level3] [7-16]
+							│   ├── 1.1.1: MARK "@[level3]" [7-16] [label="level3"]
 							│   └── 1.1.2: TEXT "" [16-16]
 							└── 1.2: TEXT "" [26-26]
-							2: TEXT "" [29-29]"
+							 2: TEXT "" [29-29]"
 						`)
 					})
 
@@ -145,11 +139,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							1: MARK @[hello #[world]] [0-17]
+							 1: MARK "@[hello #[world]]" [0-17] [label="hello #[world]"]
 							├── 1.0: TEXT "hello " [0-6]
-							├── 1.1: MARK @[world] [6-14]
+							├── 1.1: MARK "#[world]" [6-14] [label="world"]
 							└── 1.2: TEXT "" [14-14]
-							2: TEXT "" [17-17]"
+							 2: TEXT "" [17-17]"
 						`)
 					})
 
@@ -160,11 +154,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							1: MARK @[hello #[world](value)] [0-24]
+							 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value"]
 							├── 1.0: TEXT "hello " [0-6]
-							├── 1.1: MARK @[world] [6-14]
+							├── 1.1: MARK "#[world]" [6-14] [label="world"]
 							└── 1.2: TEXT "" [14-14]
-							2: TEXT "" [24-24]"
+							 2: TEXT "" [24-24]"
 						`)
 					})
 				})
@@ -208,10 +202,10 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						1: MARK @[first(1)] [0-11]
-						2: TEXT "" [11-11]
-						3: MARK @[second(2)] [11-23]
-						4: TEXT "" [23-23]"
+						 1: MARK "@[first](1)" [0-11] [label="first", value="1"]
+						 2: TEXT "" [11-11]
+						 3: MARK "@[second](2)" [11-23] [label="second", value="2"]
+						 4: TEXT "" [23-23]"
 					`)
 				})
 			})
@@ -225,12 +219,12 @@ describe('ParserV2', () => {
 
 				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "Hello " [0-6]
-					1: MARK @[user(admin)] [6-20]
-					2: TEXT " welcome to " [20-32]
-					3: MARK @[project] [32-42]
-					4: TEXT "! Check " [42-50]
-					5: MARK @[docs(https://example.com)] [50-78]
-					6: TEXT " for more info." [78-93]"
+					 1: MARK "@[user](admin)" [6-20] [label="user", value="admin"]
+					 2: TEXT " welcome to " [20-32]
+					 3: MARK "#[project]" [32-42] [label="project"]
+					 4: TEXT "! Check " [42-50]
+					 5: MARK "@[docs](https://example.com)" [50-78] [label="docs", value="https://example.com"]
+					 6: TEXT " for more info." [78-93]"
 				`)
 			})
 		})
@@ -244,15 +238,16 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 		const currentPrefix = prefix + (prefix ? '.' : '') + index
 		const isLast = index === tokens.length - 1
 		const indent = level > 0 ? '│   '.repeat(level - 1) + (isLast ? '└── ' : '├── ') : ''
+		const paddedPrefix = level === 0 && index > 0 ? ` ${currentPrefix}` : currentPrefix
 
 		if (token.type === 'text') {
 			const content = token.content.length > 30 ? `"${token.content.slice(0, 27)}..."` : `"${token.content}"`
-			lines.push(`${indent}${currentPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
+			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
 		} else {
-			// Показываем метку и значение отдельно
-			const markInfo =
-				token.data.value !== undefined ? `${token.data.label}(${token.data.value})` : token.data.label
-			lines.push(`${indent}${currentPrefix}: MARK @[${markInfo}] [${token.position.start}-${token.position.end}]`)
+			const labelValueInfo = token.data.value !== undefined
+				? `[label="${token.data.label}", value="${token.data.value}"]`
+				: `[label="${token.data.label}"]`
+			lines.push(`${indent}${paddedPrefix}: MARK "${token.content}" [${token.position.start}-${token.position.end}] ${labelValueInfo}`)
 
 			if (token.children.length > 0) {
 				const childLines = tokensToDebugTree(token.children, level + 1, currentPrefix)
