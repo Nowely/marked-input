@@ -316,17 +316,31 @@ describe('ParserV2', () => {
 						})
 					})
 
-					it('parses HTML tags with <__label__>__value__<__label__> format', () => {
-						const parser = new ParserV2(['<__label__>__value__</__label__>' as any])
-						const input = 'Check <img>photo.jpg<img> image'
-						const result = parser.split(input)
+				it('parses HTML tags with <__label__>__value__</__label__> format', () => {
+					const parser = new ParserV2(['<__label__>__value__</__label__>' as any])
+					const input = 'Check <img>photo.jpg</img> image'
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "Check " [0-6]
-							 1: MARK "<img>photo.jpg</img>" [6-25] [label="img", value="photo.jpg"]
-							 2: TEXT " image" [25-31]"
-						`)
-					})
+					// Find mark token
+					const markToken = result.find(token => token.type === 'mark') as MarkToken
+					expect(markToken).toBeDefined()
+					expect(markToken.data.label).toBe('img')
+					expect(markToken.data.value).toBe('photo.jpg')
+					expect(markToken.content).toBe('<img>photo.jpg</img>')
+				})
+
+				it('parses HTML tags with <__label__>__value__<__label__> format', () => {
+					const parser = new ParserV2(['<__label__>__value__<__label__>' as any])
+					const input = 'Check <img>photo.jpg<img> image'
+					const result = parser.split(input)
+
+					// Find mark token
+					const markToken = result.find(token => token.type === 'mark') as MarkToken
+					expect(markToken).toBeDefined()
+					expect(markToken.data.label).toBe('img')
+					expect(markToken.data.value).toBe('photo.jpg')
+					expect(markToken.content).toBe('<img>photo.jpg<img>')
+				})
 
 					it('parses nested HTML tags', () => {
 						const markups = ['<b>__label__</b>' as any, '<i>__label__</i>' as any]

@@ -15,22 +15,41 @@ export class GenericMarkupStrategy implements MarkupStrategy {
 		const startPos = position
 		let currentPos = position + descriptor.startPattern.length
 
-		// Специальная обработка для паттернов типа <__label__>__value__<__label__>
-		if (descriptor.markup.includes('<__label__>__value__<__label__>')) {
-			// Для HTML-стиля: <tag>content</tag>
-			// Ищем соответствующий закрывающий тег
-			const tagStart = position + descriptor.startPattern.length
-			const tagEnd = input.indexOf(descriptor.endPattern, tagStart)
-			if (tagEnd === -1) return null
+		// Специальная обработка для паттернов с повторяющимся __label__
+		const labelCount = (descriptor.markup.match(/__label__/g) || []).length
+		if (labelCount > 1 && descriptor.hasValue) {
+			// Паттерн типа <tag>content</tag> - разбираем структуру паттерна
+			const parts = descriptor.markup.split(/__label__|__value__/).filter(p => p)
+			if (parts.length >= 3) {
+				// parts[0] - перед первым __label__ (<)
+				// parts[1] - между первым __label__ и __value__ (>)
+				// parts[2] - между __value__ и вторым __label__ (</)
+				// parts[3] - после второго __label__ (>) - может отсутствовать
 
-			const tagName = input.substring(tagStart, tagEnd)
-			const closingTag = descriptor.startPattern + tagName + descriptor.endPattern
+				const openingPrefix = parts[0] // '<'
+				const openingSuffix = parts[1] // '>'
+				const closingPrefix = parts[2] // '</'
+				const closingSuffix = parts[3] || parts[1] // '>' или тот же суффикс что и открывающий
 
-			// Ищем закрывающий тег после содержимого
-			const contentEnd = input.indexOf(closingTag, tagEnd + descriptor.endPattern.length)
-			if (contentEnd === -1) return null
+				// Ищем открывающий тег
+				const tagStart = position + openingPrefix.length
+				const tagEnd = input.indexOf(openingSuffix, tagStart)
+				if (tagEnd === -1) return null
 
-			currentPos = contentEnd + closingTag.length
+				const tagName = input.substring(tagStart, tagEnd)
+				const closingTag = closingPrefix + tagName + closingSuffix
+
+				// Ищем закрывающий тег после содержимого
+				const contentEnd = input.indexOf(closingTag, tagEnd + openingSuffix.length)
+				if (contentEnd === -1) return null
+
+				currentPos = contentEnd + closingTag.length
+			} else {
+				// Fallback для простых случаев
+				const endPatternIndex = input.indexOf(descriptor.endPattern, currentPos)
+				if (endPatternIndex === -1) return null
+				currentPos = endPatternIndex + descriptor.endPattern.length
+			}
 		} else {
 			// Для простых паттернов без value ищем endPattern
 			if (!descriptor.hasValue) {
@@ -76,18 +95,26 @@ export class GenericMarkupStrategy implements MarkupStrategy {
 		let value: string | undefined
 
 		if (match.descriptor.hasValue) {
-			// Специальная обработка для паттернов типа <__label__>__value__<__label__>
-			if (markup.includes('<__label__>__value__<__label__>')) {
-				// Для HTML-стиля: <tag>content</tag>
-				// innerContent = 'tag>content<tag'
-				const firstCloseIndex = innerContent.indexOf('>')
-				if (firstCloseIndex !== -1) {
-					label = innerContent.substring(0, firstCloseIndex)
+			// Специальная обработка для паттернов с повторяющимся __label__
+			const labelCount = (markup.match(/__label__/g) || []).length
+			if (labelCount > 1) {
+				// Для паттернов типа <tag>content</tag>
+				// innerContent = 'tag>content</tag'
+				// Разбираем структуру паттерна
+				const parts = markup.split(/__label__|__value__/).filter(p => p)
+				if (parts.length >= 3) {
+					const firstSeparator = parts[1] // между первым __label__ и __value__
+					const secondSeparator = parts[2] // между __value__ и вторым __label__
 
-					const contentStart = firstCloseIndex + 1
-					const secondOpenIndex = innerContent.indexOf('<', contentStart)
-					if (secondOpenIndex !== -1) {
-						value = innerContent.substring(contentStart, secondOpenIndex)
+					const firstSepIndex = innerContent.indexOf(firstSeparator)
+					if (firstSepIndex !== -1) {
+						label = innerContent.substring(0, firstSepIndex)
+
+						const valueStart = firstSepIndex + firstSeparator.length
+						const secondSepIndex = innerContent.indexOf(secondSeparator, valueStart)
+						if (secondSepIndex !== -1) {
+							value = innerContent.substring(valueStart, secondSepIndex)
+						}
 					}
 				}
 			} else {
