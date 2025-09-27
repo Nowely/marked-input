@@ -16,13 +16,8 @@ export class ParserV2 {
 	}
 
 	split(value: string): NestedToken[] {
-		const result: NestedToken[] = []
-
-		for (const token of new ParserV2Matches(value, this.markups)) {
-			result.push(token)
-		}
-
-		return result
+		const parser = new ParserV2Matches(value, this.markups, true)
+		return parser.parse()
 	}
 
 }

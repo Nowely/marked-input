@@ -588,7 +588,7 @@ describe('ParserV2', () => {
 					    ],
 					    "content": "@[hello #[world]](value)",
 					    "data": {
-					      "label": "hello ",
+					      "label": "hello #[world]",
 					      "optionIndex": 0,
 					      "value": "value",
 					    },
