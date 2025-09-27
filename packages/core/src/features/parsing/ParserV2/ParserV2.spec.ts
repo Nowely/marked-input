@@ -1,17 +1,14 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {ParserV2} from './ParserV2'
 import {validateTreeStructure, countMarks, findMaxDepth} from './validation'
-import {MarkToken} from './types'
+import {MarkToken, NestedToken} from './types'
 
 describe('ParserV2', () => {
 	let parser: ParserV2
 	let markups: any[]
 
 	beforeEach(() => {
-		markups = [
-			'@[__label__](__value__)',
-			'#[__label__]'
-		]
+		markups = ['@[__label__](__value__)', '#[__label__]']
 		parser = new ParserV2(markups)
 	})
 
@@ -25,773 +22,246 @@ describe('ParserV2', () => {
 
 			const result = ParserV2.split(value, options)
 
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "Hello ",
-				    "position": {
-				      "end": 6,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "@[world](test)",
-				    "data": {
-				      "label": "world",
-				      "optionIndex": 0,
-				      "value": "test",
-				    },
-				    "position": {
-				      "end": 20,
-				      "start": 6,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": " and ",
-				    "position": {
-				      "end": 25,
-				      "start": 20,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "#[tag]",
-				    "data": {
-				      "label": "tag",
-				      "optionIndex": 1,
-				      "value": undefined,
-				    },
-				    "position": {
-				      "end": 31,
-				      "start": 25,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 31,
-				      "start": 31,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "Hello " [0-6]
+					1: MARK @[world(test)] [6-20]
+					2: TEXT " and " [20-25]
+					3: MARK @[tag] [25-31]
+					4: TEXT "" [31-31]"
+				`)
 		})
 
 		it('should handle text without options', () => {
 			const value = 'Hello world'
 			const result = ParserV2.split(value)
 
-			expect(result).toMatchInlineSnapshot(`[]`)
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`""`)
 		})
 	})
 
 	describe('parsing', () => {
 		describe('basic functionality', () => {
-		it('parses plain text without markups', () => {
-			const input = 'Hello world'
-			const result = parser.split(input)
-
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "Hello world",
-				    "position": {
-				      "end": 11,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
-		})
-
-		it('parses single mark with value', () => {
-			const input = '@[hello](world)'
-			const result = parser.split(input)
-
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 0,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "@[hello](world)",
-				    "data": {
-				      "label": "hello",
-				      "optionIndex": 0,
-				      "value": "world",
-				    },
-				    "position": {
-				      "end": 15,
-				      "start": 0,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 15,
-				      "start": 15,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
-		})
-
-		it('parses single mark without value', () => {
-			const input = '#[tag]'
-			const result = parser.split(input)
-
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 0,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "#[tag]",
-				    "data": {
-				      "label": "tag",
-				      "optionIndex": 1,
-				      "value": undefined,
-				    },
-				    "position": {
-				      "end": 6,
-				      "start": 0,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 6,
-				      "start": 6,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
-		})
-
-		it('parses mixed text and multiple marks', () => {
-			const input = 'Hello @[world](test) and #[tag]'
-			const result = parser.split(input)
-
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "Hello ",
-				    "position": {
-				      "end": 6,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "@[world](test)",
-				    "data": {
-				      "label": "world",
-				      "optionIndex": 0,
-				      "value": "test",
-				    },
-				    "position": {
-				      "end": 20,
-				      "start": 6,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": " and ",
-				    "position": {
-				      "end": 25,
-				      "start": 20,
-				    },
-				    "type": "text",
-				  },
-				  {
-				    "children": [],
-				    "content": "#[tag]",
-				    "data": {
-				      "label": "tag",
-				      "optionIndex": 1,
-				      "value": undefined,
-				    },
-				    "position": {
-				      "end": 31,
-				      "start": 25,
-				    },
-				    "type": "mark",
-				  },
-				  {
-				    "content": "",
-				    "position": {
-				      "end": 31,
-				      "start": 31,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
-		})
-
-		describe('error handling', () => {
-			it('handles empty input', () => {
-				const result = parser.split('')
-
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					]
-				`)
-			})
-
-			it('handles malformed markup gracefully', () => {
-			const input = '@[unclosed markup'
-			const result = parser.split(input)
-
-			expect(result).toMatchInlineSnapshot(`
-				[
-				  {
-				    "content": "@[unclosed markup",
-				    "position": {
-				      "end": 17,
-				      "start": 0,
-				    },
-				    "type": "text",
-				  },
-				]
-			`)
-		})
-
-		describe('complex parsing', () => {
-			it('handles nested marks', () => {
-				// Test basic nested parsing
-				const simpleParser = new ParserV2(['@[__label__]'])
-				const input = '@[hello @[world]]'
-				const result = simpleParser.split(input)
-
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [
-					      {
-					        "content": "hello ",
-					        "position": {
-					          "end": 6,
-					          "start": 0,
-					        },
-					        "type": "text",
-					      },
-					      {
-					        "children": [],
-					        "content": "@[world]",
-					        "data": {
-					          "label": "world",
-					          "optionIndex": 0,
-					          "value": undefined,
-					        },
-					        "position": {
-					          "end": 14,
-					          "start": 6,
-					        },
-					        "type": "mark",
-					      },
-					      {
-					        "content": "",
-					        "position": {
-					          "end": 14,
-					          "start": 14,
-					        },
-					        "type": "text",
-					      },
-					    ],
-					    "content": "@[hello @[world]]",
-					    "data": {
-					      "label": "hello @[world]",
-					      "optionIndex": 0,
-					      "value": undefined,
-					    },
-					    "position": {
-					      "end": 17,
-					      "start": 0,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 17,
-					      "start": 17,
-					    },
-					    "type": "text",
-					  },
-					]
-				`)
-			})
-
-			it('handles multiple and deeply nested marks', () => {
-				const parser = new ParserV2(['@[__label__]'])
-				const input = '@[level1 @[level2 @[level3]]]'
+			it('parses plain text without markups', () => {
+				const input = 'Hello world'
 				const result = parser.split(input)
 
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [
-					      {
-					        "content": "level1 ",
-					        "position": {
-					          "end": 7,
-					          "start": 0,
-					        },
-					        "type": "text",
-					      },
-					      {
-					        "children": [
-					          {
-					            "content": "level2 ",
-					            "position": {
-					              "end": 7,
-					              "start": 0,
-					            },
-					            "type": "text",
-					          },
-					          {
-					            "children": [],
-					            "content": "@[level3]",
-					            "data": {
-					              "label": "level3",
-					              "optionIndex": 0,
-					              "value": undefined,
-					            },
-					            "position": {
-					              "end": 16,
-					              "start": 7,
-					            },
-					            "type": "mark",
-					          },
-					          {
-					            "content": "",
-					            "position": {
-					              "end": 16,
-					              "start": 16,
-					            },
-					            "type": "text",
-					          },
-					        ],
-					        "content": "@[level2 @[level3]]",
-					        "data": {
-					          "label": "level2 @[level3]",
-					          "optionIndex": 0,
-					          "value": undefined,
-					        },
-					        "position": {
-					          "end": 26,
-					          "start": 7,
-					        },
-					        "type": "mark",
-					      },
-					      {
-					        "content": "",
-					        "position": {
-					          "end": 26,
-					          "start": 26,
-					        },
-					        "type": "text",
-					      },
-					    ],
-					    "content": "@[level1 @[level2 @[level3]]]",
-					    "data": {
-					      "label": "level1 @[level2 @[level3]]",
-					      "optionIndex": 0,
-					      "value": undefined,
-					    },
-					    "position": {
-					      "end": 29,
-					      "start": 0,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 29,
-					      "start": 29,
-					    },
-					    "type": "text",
-					  },
-					]
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "Hello world" [0-11]"
 				`)
 			})
 
-			it('handles mixed markup types with nesting', () => {
-				const parser = new ParserV2(['@[__label__]', '#[__label__]'])
-				const input = '@[hello #[world]]'
+			it('parses single mark with value', () => {
+				const input = '@[hello](world)'
 				const result = parser.split(input)
 
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [
-					      {
-					        "content": "hello ",
-					        "position": {
-					          "end": 6,
-					          "start": 0,
-					        },
-					        "type": "text",
-					      },
-					      {
-					        "children": [],
-					        "content": "#[world]",
-					        "data": {
-					          "label": "world",
-					          "optionIndex": 1,
-					          "value": undefined,
-					        },
-					        "position": {
-					          "end": 14,
-					          "start": 6,
-					        },
-					        "type": "mark",
-					      },
-					      {
-					        "content": "",
-					        "position": {
-					          "end": 14,
-					          "start": 14,
-					        },
-					        "type": "text",
-					      },
-					    ],
-					    "content": "@[hello #[world]]",
-					    "data": {
-					      "label": "hello #[world]",
-					      "optionIndex": 0,
-					      "value": undefined,
-					    },
-					    "position": {
-					      "end": 17,
-					      "start": 0,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 17,
-					      "start": 17,
-					    },
-					    "type": "text",
-					  },
-					]
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					1: MARK @[hello(world)] [0-15]
+					2: TEXT "" [15-15]"
 				`)
 			})
 
-			it('handles marks with values and nesting', () => {
-				const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
-				const input = '@[hello #[world]](value)'
+			it('parses single mark without value', () => {
+				const input = '#[tag]'
 				const result = parser.split(input)
 
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [
-					      {
-					        "content": "hello ",
-					        "position": {
-					          "end": 6,
-					          "start": 0,
-					        },
-					        "type": "text",
-					      },
-					      {
-					        "children": [],
-					        "content": "#[world]",
-					        "data": {
-					          "label": "world",
-					          "optionIndex": 1,
-					          "value": undefined,
-					        },
-					        "position": {
-					          "end": 14,
-					          "start": 6,
-					        },
-					        "type": "mark",
-					      },
-					      {
-					        "content": "",
-					        "position": {
-					          "end": 14,
-					          "start": 14,
-					        },
-					        "type": "text",
-					      },
-					    ],
-					    "content": "@[hello #[world]](value)",
-					    "data": {
-					      "label": "hello #[world]",
-					      "optionIndex": 0,
-					      "value": "value",
-					    },
-					    "position": {
-					      "end": 24,
-					      "start": 0,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 24,
-					      "start": 24,
-					    },
-					    "type": "text",
-					  },
-					]
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					1: MARK @[tag] [0-6]
+					2: TEXT "" [6-6]"
 				`)
 			})
-		})
-	})
 
-	describe('validation', () => {
-		it('should validate correct tree structure', () => {
-			const input = 'Hello @[world](test)'
-			const result = parser.split(input)
-			const validation = validateTreeStructure(result)
+			it('parses mixed text and multiple marks', () => {
+				const input = 'Hello @[world](test) and #[tag]'
+				const result = parser.split(input)
 
-			expect(validation).toMatchInlineSnapshot(`
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "Hello " [0-6]
+					1: MARK @[world(test)] [6-20]
+					2: TEXT " and " [20-25]
+					3: MARK @[tag] [25-31]
+					4: TEXT "" [31-31]"
+				`)
+			})
+
+			describe('error handling', () => {
+				it('handles empty input', () => {
+					const result = parser.split('')
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]"
+				`)
+				})
+
+				it('handles malformed markup gracefully', () => {
+					const input = '@[unclosed markup'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "@[unclosed markup" [0-17]"
+					`)
+				})
+
+				describe('complex parsing', () => {
+					it('handles nested marks', () => {
+						// Test basic nested parsing
+						const simpleParser = new ParserV2(['@[__label__]'])
+						const input = '@[hello @[world]]'
+						const result = simpleParser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							1: MARK @[hello @[world]] [0-17]
+							├── 1.0: TEXT "hello " [0-6]
+							├── 1.1: MARK @[world] [6-14]
+							└── 1.2: TEXT "" [14-14]
+							2: TEXT "" [17-17]"
+						`)
+					})
+
+					it('handles multiple and deeply nested marks', () => {
+						const parser = new ParserV2(['@[__label__]'])
+						const input = '@[level1 @[level2 @[level3]]]'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							1: MARK @[level1 @[level2 @[level3]]] [0-29]
+							├── 1.0: TEXT "level1 " [0-7]
+							├── 1.1: MARK @[level2 @[level3]] [7-26]
+							│   ├── 1.1.0: TEXT "level2 " [0-7]
+							│   ├── 1.1.1: MARK @[level3] [7-16]
+							│   └── 1.1.2: TEXT "" [16-16]
+							└── 1.2: TEXT "" [26-26]
+							2: TEXT "" [29-29]"
+						`)
+					})
+
+					it('handles mixed markup types with nesting', () => {
+						const parser = new ParserV2(['@[__label__]', '#[__label__]'])
+						const input = '@[hello #[world]]'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							1: MARK @[hello #[world]] [0-17]
+							├── 1.0: TEXT "hello " [0-6]
+							├── 1.1: MARK @[world] [6-14]
+							└── 1.2: TEXT "" [14-14]
+							2: TEXT "" [17-17]"
+						`)
+					})
+
+					it('handles marks with values and nesting', () => {
+						const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
+						const input = '@[hello #[world]](value)'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							1: MARK @[hello #[world](value)] [0-24]
+							├── 1.0: TEXT "hello " [0-6]
+							├── 1.1: MARK @[world] [6-14]
+							└── 1.2: TEXT "" [14-14]
+							2: TEXT "" [24-24]"
+						`)
+					})
+				})
+			})
+
+			describe('validation', () => {
+				it('should validate correct tree structure', () => {
+					const input = 'Hello @[world](test)'
+					const result = parser.split(input)
+					const validation = validateTreeStructure(result)
+
+					expect(validation).toMatchInlineSnapshot(`
 				{
 				  "errors": [],
 				  "isValid": true,
 				}
 			`)
-		})
+				})
 
-		it('should count marks correctly', () => {
-			const input = 'Hello @[world](test) and #[tag1] #[tag2]'
-			const result = parser.split(input)
-			const markCount = countMarks(result)
+				it('should count marks correctly', () => {
+					const input = 'Hello @[world](test) and #[tag1] #[tag2]'
+					const result = parser.split(input)
+					const markCount = countMarks(result)
 
-			expect(markCount).toMatchInlineSnapshot(`3`)
-		})
+					expect(markCount).toMatchInlineSnapshot(`3`)
+				})
 
-		it('should calculate max depth correctly', () => {
-			const input = 'Hello @[world](test)'
-			const result = parser.split(input)
-			const maxDepth = findMaxDepth(result)
+				it('should calculate max depth correctly', () => {
+					const input = 'Hello @[world](test)'
+					const result = parser.split(input)
+					const maxDepth = findMaxDepth(result)
 
-			expect(maxDepth).toMatchInlineSnapshot(`1`)
-		})
-	})
+					expect(maxDepth).toMatchInlineSnapshot(`1`)
+				})
+			})
 
-		describe('edge cases', () => {
-			it('handles adjacent marks', () => {
-				const input = '@[first](1)@[second](2)'
-				const result = parser.split(input)
+			describe('edge cases', () => {
+				it('handles adjacent marks', () => {
+					const input = '@[first](1)@[second](2)'
+					const result = parser.split(input)
 
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 0,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [],
-					    "content": "@[first](1)",
-					    "data": {
-					      "label": "first",
-					      "optionIndex": 0,
-					      "value": "1",
-					    },
-					    "position": {
-					      "end": 11,
-					      "start": 0,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 11,
-					      "start": 11,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [],
-					    "content": "@[second](2)",
-					    "data": {
-					      "label": "second",
-					      "optionIndex": 0,
-					      "value": "2",
-					    },
-					    "position": {
-					      "end": 23,
-					      "start": 11,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "",
-					    "position": {
-					      "end": 23,
-					      "start": 23,
-					    },
-					    "type": "text",
-					  },
-					]
-				`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						1: MARK @[first(1)] [0-11]
+						2: TEXT "" [11-11]
+						3: MARK @[second(2)] [11-23]
+						4: TEXT "" [23-23]"
+					`)
+				})
 			})
 		})
-	})
 
-	describe('integration', () => {
+		describe('integration', () => {
 			it('handles complex real-world scenarios', () => {
-				const input = 'Hello @[user](admin) welcome to #[project]! Check @[docs](https://example.com) for more info.'
+				const input =
+					'Hello @[user](admin) welcome to #[project]! Check @[docs](https://example.com) for more info.'
 				const result = parser.split(input)
 
-				expect(result).toMatchInlineSnapshot(`
-					[
-					  {
-					    "content": "Hello ",
-					    "position": {
-					      "end": 6,
-					      "start": 0,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [],
-					    "content": "@[user](admin)",
-					    "data": {
-					      "label": "user",
-					      "optionIndex": 0,
-					      "value": "admin",
-					    },
-					    "position": {
-					      "end": 20,
-					      "start": 6,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": " welcome to ",
-					    "position": {
-					      "end": 32,
-					      "start": 20,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [],
-					    "content": "#[project]",
-					    "data": {
-					      "label": "project",
-					      "optionIndex": 1,
-					      "value": undefined,
-					    },
-					    "position": {
-					      "end": 42,
-					      "start": 32,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": "! Check ",
-					    "position": {
-					      "end": 50,
-					      "start": 42,
-					    },
-					    "type": "text",
-					  },
-					  {
-					    "children": [],
-					    "content": "@[docs](https://example.com)",
-					    "data": {
-					      "label": "docs",
-					      "optionIndex": 0,
-					      "value": "https://example.com",
-					    },
-					    "position": {
-					      "end": 78,
-					      "start": 50,
-					    },
-					    "type": "mark",
-					  },
-					  {
-					    "content": " for more info.",
-					    "position": {
-					      "end": 93,
-					      "start": 78,
-					    },
-					    "type": "text",
-					  },
-					]
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "Hello " [0-6]
+					1: MARK @[user(admin)] [6-20]
+					2: TEXT " welcome to " [20-32]
+					3: MARK @[project] [32-42]
+					4: TEXT "! Check " [42-50]
+					5: MARK @[docs(https://example.com)] [50-78]
+					6: TEXT " for more info." [78-93]"
 				`)
 			})
 		})
 	})
 })
+
+function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): string {
+	const lines: string[] = []
+
+	tokens.forEach((token, index) => {
+		const currentPrefix = prefix + (prefix ? '.' : '') + index
+		const isLast = index === tokens.length - 1
+		const indent = level > 0 ? '│   '.repeat(level - 1) + (isLast ? '└── ' : '├── ') : ''
+
+		if (token.type === 'text') {
+			const content = token.content.length > 30 ? `"${token.content.slice(0, 27)}..."` : `"${token.content}"`
+			lines.push(`${indent}${currentPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
+		} else {
+			// Показываем метку и значение отдельно
+			const markInfo =
+				token.data.value !== undefined ? `${token.data.label}(${token.data.value})` : token.data.label
+			lines.push(`${indent}${currentPrefix}: MARK @[${markInfo}] [${token.position.start}-${token.position.end}]`)
+
+			if (token.children.length > 0) {
+				const childLines = tokensToDebugTree(token.children, level + 1, currentPrefix)
+				if (childLines.trim()) {
+					lines.push(childLines)
+				}
+			}
+		}
+	})
+
+	return lines.join('\n')
+}
