@@ -1,16 +1,17 @@
 import {Markup} from '../../../shared/types'
 import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
-import {MatchResult, MarkupStrategy} from './types'
-import {BracketMarkupStrategy, ParenMarkupStrategy, GenericMarkupStrategy} from './strategies'
+import {MatchResult} from './types'
+import {GenericMarkupStrategy} from './GenericMarkupStrategy'
 
 /**
  * Компонент для нахождения всех матчей маркеров в тексте
+ * Использует единую универсальную стратегию для всех типов маркеров
  */
 export class PatternMatcher {
 	private readonly input: string
 	private readonly descriptors: MarkupDescriptor[]
 	private readonly descriptorsByTrigger: Map<string, MarkupDescriptor[]>
-	private readonly strategies: Map<MarkupDescriptor, MarkupStrategy>
+	private readonly strategy: GenericMarkupStrategy
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
@@ -25,12 +26,8 @@ export class PatternMatcher {
 			this.descriptorsByTrigger.get(desc.trigger)!.push(desc)
 		}
 
-		// Создаем стратегии для каждого дескриптора
-		this.strategies = new Map()
-		for (const desc of this.descriptors) {
-			const strategy = this.createStrategyForDescriptor(desc)
-			this.strategies.set(desc, strategy)
-		}
+		// Используем единую стратегию для всех маркеров
+		this.strategy = new GenericMarkupStrategy()
 	}
 
 	/**
@@ -48,12 +45,11 @@ export class PatternMatcher {
 
 			// Для каждого дескриптора с этим триггером пытаемся найти матч
 			for (const desc of candidates) {
-				const strategy = this.strategies.get(desc)!
-				const match = strategy.matches(desc, this.input, i)
+				const match = this.strategy.matches(desc, this.input, i)
 
 				if (match) {
 					// Заполняем label и value с помощью стратегии
-					const content = strategy.extractContent(match)
+					const content = this.strategy.extractContent(match)
 					match.label = content.label
 					match.value = content.value
 
@@ -69,25 +65,4 @@ export class PatternMatcher {
 		return matches
 	}
 
-	/**
-	 * Создает подходящую стратегию для дескриптора
-	 */
-	private createStrategyForDescriptor(desc: MarkupDescriptor): MarkupStrategy {
-		// Определяем тип стратегии на основе структуры маркера
-		const markup = desc.markup
-
-		// Проверяем, использует ли markup квадратные скобки для label
-		if (markup.includes('[') && markup.includes(']')) {
-			if (desc.hasValue && markup.includes('(') && markup.includes(')')) {
-				// Маркер с value в круглых скобках: @[__label__](__value__)
-				return new ParenMarkupStrategy()
-			} else {
-				// Маркер без value или с другим форматом: #[__label__]
-				return new BracketMarkupStrategy()
-			}
-		} else {
-			// Для других форматов используем универсальную стратегию
-			return new GenericMarkupStrategy()
-		}
-	}
 }
