@@ -228,7 +228,237 @@ describe('ParserV2', () => {
 				`)
 			})
 		})
-	})
+
+		describe('generated markup patterns', () => {
+			// Генераторы различных типов markup для тестирования
+			const generateSimpleMarkup = (prefix: string, suffix: string = '') =>
+				`${prefix}[__label__]${suffix}`
+
+			const generateValueMarkup = (prefix: string, middle: string = '', suffix: string = '') =>
+				`${prefix}[__label__]${middle}(__value__)${suffix}`
+
+			const generateCustomMarkup = (prefix: string, pattern: string) =>
+				`${prefix}${pattern}`
+
+			describe('single character prefixes', () => {
+				const prefixes = ['@', '#', '$', '%', '^', '&', '*', '+', '-', '=', '|', '\\', '/', '?', '<', '>', ':', ';']
+
+				prefixes.forEach(prefix => {
+					it(`parses markup with prefix "${prefix}"`, () => {
+						const markup = generateSimpleMarkup(prefix)
+						const parser = new ParserV2([markup as any])
+						const input = `Hello ${prefix}[world]!`
+						const result = parser.split(input)
+
+						expect(result).toHaveLength(4) // text, mark, text, text (guaranteed)
+						expect(result[0].type).toBe('text')
+						expect(result[0].content).toBe('Hello ')
+						expect(result[1].type).toBe('mark')
+						expect((result[1] as MarkToken).data.label).toBe('world')
+						expect(result[2].type).toBe('text')
+						expect(result[2].content).toBe('!')
+						expect(result[3].type).toBe('text')
+						expect(result[3].content).toBe('')
+					})
+				})
+			})
+
+			describe('multi-character prefixes', () => {
+				const prefixes = ['__', '***', '```', '~~~', '[[[', '(((', '<<<', '---', '===', '+++']
+
+				prefixes.forEach(prefix => {
+					it(`parses markup with multi-char prefix "${prefix}"`, () => {
+						const markup = generateSimpleMarkup(prefix)
+						const parser = new ParserV2([markup as any])
+						const input = `Start ${prefix}[content] end`
+						const result = parser.split(input)
+
+						expect(result).toHaveLength(4)
+						expect(result[0].type).toBe('text')
+						expect(result[0].content).toBe('Start ')
+						expect(result[1].type).toBe('mark')
+						expect((result[1] as MarkToken).data.label).toBe('content')
+						expect(result[2].type).toBe('text')
+						expect(result[2].content).toBe(' end')
+					})
+				})
+			})
+
+			describe('markup with values', () => {
+				const testCases = [
+					{ prefix: '@', middle: '', suffix: '', expected: '@[label](value)' },
+					{ prefix: '##', middle: '::', suffix: ';;', expected: '##[label]::(value);;' },
+					{ prefix: '```', middle: '===', suffix: '~~~', expected: '```[label]===(value)~~~' },
+				]
+
+				testCases.forEach(({ prefix, middle, suffix, expected }) => {
+					it(`parses value markup "${expected}"`, () => {
+						const markup = generateValueMarkup(prefix, middle, suffix)
+						const parser = new ParserV2([markup as any])
+						const input = `Before ${expected} after`
+						const result = parser.split(input)
+
+						expect(result).toHaveLength(4)
+						expect(result[1].type).toBe('mark')
+						expect((result[1] as MarkToken).data.label).toBe('label')
+						expect((result[1] as MarkToken).data.value).toBe('value')
+						expect(result[1].content).toBe(expected)
+					})
+				})
+			})
+
+			describe('custom patterns', () => {
+				const customPatterns = [
+					{ pattern: '**__label__**', input: 'Hello **bold** text', expectedLabel: 'bold' },
+					{ pattern: '~~__label__~~', input: 'Some ~~strikethrough~~ content', expectedLabel: 'strikethrough' },
+					{ pattern: '`__label__`', input: 'Code `variable` here', expectedLabel: 'variable' },
+					{ pattern: '<__label__>', input: 'Tag <component> used', expectedLabel: 'component' },
+					{ pattern: '{__label__}', input: 'Object {key} value', expectedLabel: 'key' },
+				]
+
+				customPatterns.forEach(({ pattern, input, expectedLabel }) => {
+					it(`parses custom pattern "${pattern}"`, () => {
+						const parser = new ParserV2([pattern as any])
+						const result = parser.split(input)
+
+						// Находим mark токен
+						const markToken = result.find(token => token.type === 'mark') as MarkToken
+						expect(markToken).toBeDefined()
+						expect(markToken.data.label).toBe(expectedLabel)
+					})
+				})
+			})
+
+			describe('complex combinations', () => {
+				it('parses multiple different markup types together', () => {
+					const markups = [
+						'@[__label__](__value__)', // with value
+						'#[__label__]',            // simple
+						'**__label__**',           // custom
+						'~~__label__~~'            // custom
+					]
+
+					const parser = new ParserV2(markups as any)
+					const input = 'Text @[user](admin) more #[tag] and **bold** with ~~strike~~ end'
+					const result = parser.split(input)
+
+					// Проверяем структуру
+					expect(result.length).toBeGreaterThan(3) // text-mark-text-mark-...-text
+
+					// Проверяем, что все маркеры найдены
+					const markTokens = result.filter(token => token.type === 'mark') as MarkToken[]
+					expect(markTokens).toHaveLength(4)
+
+					// Проверяем конкретные маркеры
+					const userMark = markTokens.find(m => m.data.label === 'user')
+					expect(userMark?.data.value).toBe('admin')
+
+					const tagMark = markTokens.find(m => m.data.label === 'tag')
+					expect(tagMark?.data.value).toBeUndefined()
+
+					const boldMark = markTokens.find(m => m.data.label === 'bold')
+					expect(boldMark?.data.value).toBeUndefined()
+
+					const strikeMark = markTokens.find(m => m.data.label === 'strike')
+					expect(strikeMark?.data.value).toBeUndefined()
+				})
+
+				it('handles nested content in labels', () => {
+					const markups = ['@[__label__](__value__)', '#[__label__]']
+					const parser = new ParserV2(markups as any)
+					const input = '@[Hello #[world]!](greeting)'
+					const result = parser.split(input)
+
+					expect(result).toHaveLength(4) // text, mark, text, text
+					expect(result[1].type).toBe('mark')
+					const mainMark = result[1] as MarkToken
+					expect(mainMark.data.label).toBe('Hello #[world]!')
+					expect(mainMark.data.value).toBe('greeting')
+
+					// Проверяем, что вложенный контент распарсился
+					expect(mainMark.children).toHaveLength(4) // text, mark, text, text
+					const nestedMark = mainMark.children.find(child => child.type === 'mark') as MarkToken
+					expect(nestedMark.data.label).toBe('world')
+				})
+			})
+
+			describe('edge cases', () => {
+				it('handles markup at string boundaries', () => {
+					const parser = new ParserV2(['@[__label__]' as any])
+					const result = parser.split('@[start]')
+
+					expect(result).toHaveLength(4) // text, mark, text, text
+					expect(result[0].content).toBe('') // empty text before
+					expect((result[1] as MarkToken).data.label).toBe('start')
+					expect(result[2].content).toBe('') // empty text after
+					expect(result[3].content).toBe('') // guaranteed empty text
+				})
+
+				it('handles multiple consecutive markups', () => {
+					const parser = new ParserV2(['@[__label__]' as any, '#[__label__]' as any])
+					const result = parser.split('@[first]#[second]')
+
+					expect(result.length).toBeGreaterThanOrEqual(6) // text, mark, text, mark, text, text
+
+					const marks = result.filter(token => token.type === 'mark') as MarkToken[]
+					expect(marks).toHaveLength(2)
+					expect(marks[0].data.label).toBe('first')
+					expect(marks[1].data.label).toBe('second')
+				})
+
+				it('handles empty labels gracefully', () => {
+					const parser = new ParserV2(['@[__label__]' as any])
+					const result = parser.split('@[]')
+
+					expect(result).toHaveLength(4)
+					const mark = result[1] as MarkToken
+					expect(mark.data.label).toBe('')
+				})
+
+				it('ignores malformed markup', () => {
+					const parser = new ParserV2(['@[__label__]' as any])
+					const result = parser.split('@[unclosed')
+
+					// Не должно распарситься как маркер
+					const marks = result.filter(token => token.type === 'mark')
+					expect(marks).toHaveLength(0)
+
+					// Весь текст должен быть в одном text токене
+					expect(result).toHaveLength(1)
+					expect(result[0].type).toBe('text')
+					expect(result[0].content).toBe('@[unclosed')
+				})
+			})
+
+			describe('validation', () => {
+				it('validates tree structure for generated markups', () => {
+					const markups = ['@[__label__](__value__)', '#[__label__]', '**__label__**']
+					const parser = new ParserV2(markups as any)
+					const input = 'Complex @[test](value) and #[tag] with **bold** text'
+					const result = parser.split(input)
+
+					const validation = validateTreeStructure(result)
+					expect(validation.isValid).toBe(true)
+					expect(validation.errors).toHaveLength(0)
+				})
+
+				it('maintains guaranteed text-mark-text sequence', () => {
+					const markups = ['___[__label__]___', '###__label__###']
+					const parser = new ParserV2(markups as any)
+					const input = '___[first]___ middle ###second###'
+					const result = parser.split(input)
+
+					// Проверяем гарантированную структуру
+					for (let i = 0; i < result.length; i++) {
+						if (result[i].type === 'mark') {
+							// После каждого mark должен идти text (даже пустой)
+							expect(result[i + 1]).toBeDefined()
+							expect(result[i + 1].type).toBe('text')
+						}
+					}
+				})
+			})
+		})
 })
 
 function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): string {
@@ -258,5 +488,6 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 		}
 	})
 
-	return lines.join('\n')
+	return lines.join('
+')
 }

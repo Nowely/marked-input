@@ -1,7 +1,7 @@
 import {Markup} from '../../../shared/types'
 import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
 import {MatchResult, MarkupStrategy} from './types'
-import {BracketMarkupStrategy, ParenMarkupStrategy} from './strategies'
+import {BracketMarkupStrategy, ParenMarkupStrategy, GenericMarkupStrategy} from './strategies'
 
 /**
  * Компонент для нахождения всех матчей маркеров в тексте
@@ -74,12 +74,20 @@ export class PatternMatcher {
 	 */
 	private createStrategyForDescriptor(desc: MarkupDescriptor): MarkupStrategy {
 		// Определяем тип стратегии на основе структуры маркера
-		if (desc.hasValue) {
-			// Маркер с value: @[__label__](__value__)
-			return new ParenMarkupStrategy()
+		const markup = desc.markup
+
+		// Проверяем, использует ли markup квадратные скобки для label
+		if (markup.includes('[') && markup.includes(']')) {
+			if (desc.hasValue && markup.includes('(') && markup.includes(')')) {
+				// Маркер с value в круглых скобках: @[__label__](__value__)
+				return new ParenMarkupStrategy()
+			} else {
+				// Маркер без value или с другим форматом: #[__label__]
+				return new BracketMarkupStrategy()
+			}
 		} else {
-			// Маркер без value: #[__label__]
-			return new BracketMarkupStrategy()
+			// Для других форматов используем универсальную стратегию
+			return new GenericMarkupStrategy()
 		}
 	}
 }
