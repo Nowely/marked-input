@@ -113,12 +113,13 @@ export class PatternBuilder {
 
 	/**
 	 * Clones a chain for branching
-	 * Uses shallow copy for better performance
 	 */
 	private cloneChain(chain: PatternChain): PatternChain {
 		return {
-			...chain,
-			parts: [...chain.parts]
+			descriptorIndex: chain.descriptorIndex,
+			nextSegmentIndex: chain.nextSegmentIndex,
+			pos: chain.pos,
+			parts: chain.parts.map(p => ({ ...p }))
 		}
 	}
 }

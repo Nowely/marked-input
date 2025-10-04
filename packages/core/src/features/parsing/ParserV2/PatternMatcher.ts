@@ -57,7 +57,6 @@ export class PatternMatcher {
 
 	/**
 	 * Removes overlapping matches using greedy approach: longest match wins
-	 * Materializes gaps ONLY for non-overlapping matches (optimization)
 	 */
 	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
@@ -72,7 +71,7 @@ export class PatternMatcher {
 				continue
 			}
 
-			// Materialize gaps ONLY for non-overlapping matches
+			// Materialize gaps for all valid matches (original behavior)
 			materializeGaps(patternMatch, input)
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
