@@ -9,11 +9,4 @@ export {PatternBuilder} from './utils/PatternBuilder'
 export {SegmentMatcher} from './utils/SegmentMatcher'
 export {PatternChainManager, type PatternChain, type MatchSegment} from './utils/PatternChainManager'
 export {buildTokenSequence, createTextToken, extractInnerContent, createMarkToken} from './utils/TokenBuilder'
-export type {NestedToken, TextToken, MarkToken, ParseContext, ValidationResult, BaseMarkupDescriptor} from './types'
-export {
-	validateNestedContent,
-	validateTreeStructure,
-	validateMarkup,
-	countMarks,
-	findMaxDepth
-} from './utils/validation'
+export type {NestedToken, TextToken, MarkToken, ParseContext} from './types'

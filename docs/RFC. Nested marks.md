@@ -636,7 +636,6 @@ describe('Performance Benchmarks', () => {
     const end = performance.now()
 
     expect(end - start).toBeLessThan(100) // < 100ms
-    expect(countMarks(result)).toBe(1000)
   })
 
   it('should handle rapid edits without degradation', async () => {

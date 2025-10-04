@@ -1,6 +1,5 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {ParserV2} from './ParserV2'
-import {validateTreeStructure, countMarks, findMaxDepth} from './utils/validation'
 import {MarkToken, NestedToken} from './types'
 import {Markup} from '../../../shared/types'
 import {InnerOption} from '../../default/types'
@@ -100,39 +99,39 @@ describe('ParserV2', () => {
 				})
 
 				describe('complex parsing', () => {
-				it('handles nested marks', () => {
-					// Test basic nested parsing
-					// Note: Self-nesting is not supported (pattern cannot nest within itself)
-					// This is by design to eliminate bracket counting complexity
-					const simpleParser = new ParserV2(['@[__label__]'])
-					const input = '@[hello @[world]]'
-					const result = simpleParser.split(input)
+					it('handles nested marks', () => {
+						// Test basic nested parsing
+						// Note: Self-nesting is not supported (pattern cannot nest within itself)
+						// This is by design to eliminate bracket counting complexity
+						const simpleParser = new ParserV2(['@[__label__]'])
+						const input = '@[hello @[world]]'
+						const result = simpleParser.split(input)
 
-					// Without self-nesting support, the first closing ] ends the outer pattern
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						// Without self-nesting support, the first closing ] ends the outer pattern
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
 						 1: MARK "@[hello @[world]" [0-16] [label="hello @[world"]
 						 2: TEXT "]" [16-17]"
 					`)
-				})
+					})
 
-				it('handles multiple and deeply nested marks', () => {
-					const parser = new ParserV2(['@[__label__]'])
-					const input = '@[level1 @[level2 @[level3]]]'
-					const result = parser.split(input)
+					it('handles multiple and deeply nested marks', () => {
+						const parser = new ParserV2(['@[__label__]'])
+						const input = '@[level1 @[level2 @[level3]]]'
+						const result = parser.split(input)
 
-					// Without self-nesting support, the first closing ] ends the outer pattern
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						// Without self-nesting support, the first closing ] ends the outer pattern
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
 						 1: MARK "@[level1 @[level2 @[level3]" [0-27] [label="level1 @[level2 @[level3"]
 						 2: TEXT "]]" [27-29]"
 					`)
-				})
+					})
 
-				it('handles mixed markup types with nesting', () => {
-					const parser = new ParserV2(['@[__label__]', '#[__label__]'])
-					const input = '@[hello #[world]]'
-					const result = parser.split(input)
+					it('handles mixed markup types with nesting', () => {
+						const parser = new ParserV2(['@[__label__]', '#[__label__]'])
+						const input = '@[hello #[world]]'
+						const result = parser.split(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
@@ -162,19 +161,6 @@ describe('ParserV2', () => {
 			})
 
 			describe('validation', () => {
-				it('should validate correct tree structure', () => {
-					const input = 'Hello @[world](test)'
-					const result = parser.split(input)
-					const validation = validateTreeStructure(result)
-
-					expect(validation).toMatchInlineSnapshot(`
-				{
-				  "errors": [],
-				  "isValid": true,
-				}
-			`)
-				})
-
 				it('should count marks correctly', () => {
 					const input = 'Hello @[world](test) and #[tag1] #[tag2]'
 					const result = parser.split(input)
@@ -258,8 +244,8 @@ describe('ParserV2', () => {
 				]
 
 				// Filter out problematic prefixes that may conflict with parsing logic
-				const safePrefixes = prefixes.filter(prefix =>
-					prefix !== '<' && prefix !== '>' && prefix !== '\\' && prefix !== '|'
+				const safePrefixes = prefixes.filter(
+					prefix => prefix !== '<' && prefix !== '>' && prefix !== '\\' && prefix !== '|'
 				)
 
 				safePrefixes.forEach(prefix => {
@@ -287,31 +273,31 @@ describe('ParserV2', () => {
 			})
 
 			describe('HTML tags (without attributes)', () => {
-					const htmlTags = [
-						{tag: 'b', description: 'bold'},
-						{tag: 'i', description: 'italic'},
-						{tag: 'strong', description: 'strong'},
-						{tag: 'em', description: 'emphasis'},
-						{tag: 'code', description: 'code'},
-						{tag: 'span', description: 'span'},
-						{tag: 'div', description: 'division'},
-						{tag: 'p', description: 'paragraph'},
-					]
+				const htmlTags = [
+					{tag: 'b', description: 'bold'},
+					{tag: 'i', description: 'italic'},
+					{tag: 'strong', description: 'strong'},
+					{tag: 'em', description: 'emphasis'},
+					{tag: 'code', description: 'code'},
+					{tag: 'span', description: 'span'},
+					{tag: 'div', description: 'division'},
+					{tag: 'p', description: 'paragraph'},
+				]
 
-					htmlTags.forEach(({tag, description}) => {
-						it(`parses HTML <${tag}> tag`, () => {
-							const markup = `<${tag}>__label__</${tag}>`
-							const parser = new ParserV2([markup as any])
-							const input = `This is <${tag}>content</${tag}> text`
-							const result = parser.split(input)
+				htmlTags.forEach(({tag, description}) => {
+					it(`parses HTML <${tag}> tag`, () => {
+						const markup = `<${tag}>__label__</${tag}>`
+						const parser = new ParserV2([markup as any])
+						const input = `This is <${tag}>content</${tag}> text`
+						const result = parser.split(input)
 
-							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
-							expect(markToken.data.label).toBe('content')
-							expect(markToken.content).toBe(`<${tag}>content</${tag}>`)
-						})
+						// Find mark token
+						const markToken = result.find(token => token.type === 'mark') as MarkToken
+						expect(markToken).toBeDefined()
+						expect(markToken.data.label).toBe('content')
+						expect(markToken.content).toBe(`<${tag}>content</${tag}>`)
 					})
+				})
 
 				it('parses HTML tags with <__label__>__value__</__label__> format', () => {
 					const parser = new ParserV2(['<__label__>__value__</__label__>' as any])
@@ -339,13 +325,13 @@ describe('ParserV2', () => {
 					expect(markToken.content).toBe('<img>photo.jpg<img>')
 				})
 
-					it('parses nested HTML tags', () => {
-						const markups = ['<b>__label__</b>' as any, '<i>__label__</i>' as any]
-						const parser = new ParserV2(markups)
-						const input = '<b>Bold <i>italic</i> text</b>'
-						const result = parser.split(input)
+				it('parses nested HTML tags', () => {
+					const markups = ['<b>__label__</b>' as any, '<i>__label__</i>' as any]
+					const parser = new ParserV2(markups)
+					const input = '<b>Bold <i>italic</i> text</b>'
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
 							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text"]
 							├── 1.0: TEXT "Bold " [0-5]
@@ -353,119 +339,118 @@ describe('ParserV2', () => {
 							└── 1.2: TEXT " text" [18-23]
 							 2: TEXT "" [30-30]"
 						`)
+				})
+			})
+
+			describe('Markdown formatting', () => {
+				const markdownPatterns = [
+					{pattern: '**__label__**', input: 'This is **bold** text', expectedLabel: 'bold'},
+					{pattern: '*__label__*', input: 'This is *italic* text', expectedLabel: 'italic'},
+					{
+						pattern: '~~__label__~~',
+						input: 'This is ~~strikethrough~~ text',
+						expectedLabel: 'strikethrough',
+					},
+					{pattern: '`__label__`', input: 'This is `code` text', expectedLabel: 'code'},
+					{
+						pattern: '```__label__```',
+						input: 'This is ```block code``` text',
+						expectedLabel: 'block code',
+					},
+				]
+
+				markdownPatterns.forEach(({pattern, input, expectedLabel}) => {
+					it(`parses markdown pattern ${pattern}`, () => {
+						const parser = new ParserV2([pattern as any])
+						const result = parser.split(input)
+
+						// Find mark token
+						const markToken = result.find(token => token.type === 'mark') as MarkToken
+						expect(markToken).toBeDefined()
+						expect(markToken.data.label).toBe(expectedLabel)
 					})
 				})
 
-				describe('Markdown formatting', () => {
-					const markdownPatterns = [
-						{pattern: '**__label__**', input: 'This is **bold** text', expectedLabel: 'bold'},
-						{pattern: '*__label__*', input: 'This is *italic* text', expectedLabel: 'italic'},
-						{
-							pattern: '~~__label__~~',
-							input: 'This is ~~strikethrough~~ text',
-							expectedLabel: 'strikethrough',
-						},
-						{pattern: '`__label__`', input: 'This is `code` text', expectedLabel: 'code'},
-						{
-							pattern: '```__label__```',
-							input: 'This is ```block code``` text',
-							expectedLabel: 'block code',
-						},
-					]
+				it('parses markdown links', () => {
+					const parser = new ParserV2(['[__label__](__value__)' as any])
+					const input = 'Check [Google](https://google.com) for search'
+					const result = parser.split(input)
 
-					markdownPatterns.forEach(({pattern, input, expectedLabel}) => {
-						it(`parses markdown pattern ${pattern}`, () => {
-							const parser = new ParserV2([pattern as any])
-							const result = parser.split(input)
-
-							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
-							expect(markToken.data.label).toBe(expectedLabel)
-						})
-					})
-
-					it('parses markdown links', () => {
-						const parser = new ParserV2(['[__label__](__value__)' as any])
-						const input = 'Check [Google](https://google.com) for search'
-						const result = parser.split(input)
-
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "Check " [0-6]
 							 1: MARK "[Google](https://google.com)" [6-34] [label="Google", value="https://google.com"]
 							 2: TEXT " for search" [34-45]"
 						`)
-					})
+				})
 
-					it('parses markdown images', () => {
-						const parser = new ParserV2(['![__label__](__value__)' as any])
-						const input = 'See ![cat](cat.jpg) image'
-						const result = parser.split(input)
+				it('parses markdown images', () => {
+					const parser = new ParserV2(['![__label__](__value__)' as any])
+					const input = 'See ![cat](cat.jpg) image'
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "See " [0-4]
 							 1: MARK "![cat](cat.jpg)" [4-19] [label="cat", value="cat.jpg"]
 							 2: TEXT " image" [19-25]"
 						`)
-					})
-
-					it('parses mixed markdown formatting', () => {
-						const markups = [
-							'**__label__**' as any, // bold
-							'*__label__*' as any, // italic
-							'`__label__`' as any, // code
-						]
-						const parser = new ParserV2(markups)
-						const input = '**Bold** and *italic* with `code`'
-						const result = parser.split(input)
-
-						// Check structure
-						expect(result.length).toBeGreaterThan(3)
-
-						// Find all mark tokens
-						const markTokens = result.filter(token => token.type === 'mark') as MarkToken[]
-						expect(markTokens).toHaveLength(3)
-
-						// Check specific marks
-						const boldMark = markTokens.find(m => m.data.label === 'Bold')
-						expect(boldMark).toBeDefined()
-
-						const italicMark = markTokens.find(m => m.data.label === 'italic')
-						expect(italicMark).toBeDefined()
-
-						const codeMark = markTokens.find(m => m.data.label === 'code')
-						expect(codeMark).toBeDefined()
-					})
 				})
 
-				describe('custom patterns', () => {
-					const customPatterns = [
-						{
-							pattern: '___[__label__]___',
-							input: 'This is ___[underlined]___ text',
-							expectedLabel: 'underlined',
-						},
-						{pattern: '```__label__```', input: 'Code ```block``` here', expectedLabel: 'block'},
-						{pattern: '{{__label__}}', input: 'Template {{variable}} used', expectedLabel: 'variable'},
-						{pattern: '||__label__||', input: 'Spoiler ||hidden|| content', expectedLabel: 'hidden'},
+				it('parses mixed markdown formatting', () => {
+					const markups = [
+						'**__label__**' as any, // bold
+						'*__label__*' as any, // italic
+						'`__label__`' as any, // code
 					]
+					const parser = new ParserV2(markups)
+					const input = '**Bold** and *italic* with `code`'
+					const result = parser.split(input)
 
-					customPatterns.forEach(({pattern, input, expectedLabel}) => {
-						it(`parses custom pattern "${pattern}"`, () => {
-							const parser = new ParserV2([pattern as any])
-							const result = parser.split(input)
+					// Check structure
+					expect(result.length).toBeGreaterThan(3)
 
-							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
-							expect(markToken.data.label).toBe(expectedLabel)
-						})
+					// Find all mark tokens
+					const markTokens = result.filter(token => token.type === 'mark') as MarkToken[]
+					expect(markTokens).toHaveLength(3)
+
+					// Check specific marks
+					const boldMark = markTokens.find(m => m.data.label === 'Bold')
+					expect(boldMark).toBeDefined()
+
+					const italicMark = markTokens.find(m => m.data.label === 'italic')
+					expect(italicMark).toBeDefined()
+
+					const codeMark = markTokens.find(m => m.data.label === 'code')
+					expect(codeMark).toBeDefined()
+				})
+			})
+
+			describe('custom patterns', () => {
+				const customPatterns = [
+					{
+						pattern: '___[__label__]___',
+						input: 'This is ___[underlined]___ text',
+						expectedLabel: 'underlined',
+					},
+					{pattern: '```__label__```', input: 'Code ```block``` here', expectedLabel: 'block'},
+					{pattern: '{{__label__}}', input: 'Template {{variable}} used', expectedLabel: 'variable'},
+					{pattern: '||__label__||', input: 'Spoiler ||hidden|| content', expectedLabel: 'hidden'},
+				]
+
+				customPatterns.forEach(({pattern, input, expectedLabel}) => {
+					it(`parses custom pattern "${pattern}"`, () => {
+						const parser = new ParserV2([pattern as any])
+						const result = parser.split(input)
+
+						// Find mark token
+						const markToken = result.find(token => token.type === 'mark') as MarkToken
+						expect(markToken).toBeDefined()
+						expect(markToken.data.label).toBe(expectedLabel)
 					})
 				})
 			})
 		})
 	})
-
+})
 
 function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): string {
 	const lines: string[] = []
@@ -498,4 +483,50 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 	})
 
 	return lines.join('\n')
+}
+
+/**
+ * Подсчитывает общее количество marks в дереве
+ */
+function countMarks(tokens: NestedToken[]): number {
+	// Рекурсивно считаем только mark типы
+	const countInNode = (node: NestedToken): number => {
+		let nodeCount = node.type === 'mark' ? 1 : 0
+
+		if (node.type === 'mark' && node.children) {
+			nodeCount += node.children.reduce((sum, child) => sum + countInNode(child), 0)
+		}
+
+		return nodeCount
+	}
+
+	return tokens.reduce((sum, token) => sum + countInNode(token), 0)
+}
+
+/**
+ * Находит максимальную глубину вложенности
+ */
+function findMaxDepth(tokens: NestedToken[]): number {
+	// Находим максимальную глубину среди всех токенов
+	const findDepth = (node: NestedToken): number => {
+		if (node.type === 'text') {
+			return 0
+		}
+
+		if (node.type !== 'mark' || !node.children || node.children.length === 0) {
+			return 1 // mark без детей имеет глубину 1
+		}
+
+		const childrenDepths = node.children.map(child => findDepth(child))
+		const maxChildDepth = childrenDepths.length > 0 ? Math.max(...childrenDepths) : 0
+
+		return maxChildDepth + 1
+	}
+
+	if (tokens.length === 0) {
+		return 0
+	}
+
+	const depths = tokens.map(token => findDepth(token))
+	return Math.max(...depths)
 }

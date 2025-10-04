@@ -1,6 +1,59 @@
 import {bench, describe} from 'vitest'
 import {ParserV2} from '../../core/src/features/parsing/ParserV2/'
-import {countMarks, findMaxDepth} from '../../core/src/features/parsing/ParserV2/validation'
+import {NestedToken, MarkToken} from '../../core/src/features/parsing/ParserV2/types'
+
+/**
+ * Type guard to check if token is a MarkToken with children
+ */
+const isMarkToken = (token: NestedToken): token is MarkToken => {
+	return token.type === 'mark'
+}
+
+/**
+ * Подсчитывает общее количество marks в дереве
+ */
+const countMarks = (tokens: NestedToken[]): number => {
+	// Рекурсивно считаем только mark типы
+	const countInNode = (node: NestedToken): number => {
+		let nodeCount = node.type === 'mark' ? 1 : 0
+
+		if (isMarkToken(node) && node.children) {
+			nodeCount += node.children.reduce((sum, child) => sum + countInNode(child), 0)
+		}
+
+		return nodeCount
+	}
+
+	return tokens.reduce((sum, token) => sum + countInNode(token), 0)
+}
+
+/**
+ * Находит максимальную глубину вложенности
+ */
+const findMaxDepth = (tokens: NestedToken[]): number => {
+	// Находим максимальную глубину среди всех токенов
+	const findDepth = (node: NestedToken): number => {
+		if (node.type === 'text') {
+			return 0
+		}
+
+		if (!isMarkToken(node) || !node.children || node.children.length === 0) {
+			return 1 // mark без детей имеет глубину 1
+		}
+
+		const childrenDepths = node.children.map(child => findDepth(child))
+		const maxChildDepth = childrenDepths.length > 0 ? Math.max(...childrenDepths) : 0
+
+		return maxChildDepth + 1
+	}
+
+	if (tokens.length === 0) {
+		return 0
+	}
+
+	const depths = tokens.map(token => findDepth(token))
+	return Math.max(...depths)
+}
 
 // Test data generators
 function generateSimpleText(size: number): string {

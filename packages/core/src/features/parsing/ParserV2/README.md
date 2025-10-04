@@ -77,15 +77,6 @@ class ParserV2 {
 ParserV2.split(input: string, options: InnerOption[]): NestedToken[] // Статический метод
 ```
 
-### Валидация
-
-```typescript
-import { validateTreeStructure, countMarks, findMaxDepth } from './utils/validation'
-
-validateTreeStructure(tokens)    // Полная валидация структуры
-countMarks(tokens)              // Подсчет количества маркеров
-findMaxDepth(tokens)            // Максимальная глубина вложенности
-```
 
 ## Производительность
 
