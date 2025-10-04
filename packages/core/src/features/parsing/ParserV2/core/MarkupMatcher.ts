@@ -18,14 +18,7 @@ export class MarkupMatcher {
 	}
 
 	/**
-	 * Finds all matches in the input text (PatternMatcher functionality)
-	 */
-	findAllMatches(input: string): MatchResult[] {
-		return this.getAllMatches(input)
-	}
-
-	/**
-	 * Gets all matches in the input text (optimized for PatternMatcher)
+	 * Gets all matches in the input text
 	 * Filters overlapping matches - greedy approach: longest match wins
 	 */
 	getAllMatches(input: string): MatchResult[] {
@@ -101,7 +94,7 @@ export class MarkupMatcher {
 
 	/**
 	 * Extracts label and value from a match result
-	 * Used as fallback for compatibility (when not using getAllMatches)
+	 * Used as fallback for compatibility
 	 */
 	extractContent(match: MatchResult): { label: string; value?: string } {
 		const descriptor = match.descriptor as MarkupDescriptor

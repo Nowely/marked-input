@@ -1,5 +1,10 @@
-import {NestedToken, ValidationResult, MarkToken} from './types'
-import {InnerOption} from '../../default/types'
+import {NestedToken, ValidationResult, MarkToken} from '../types'
+import {InnerOption} from '../../../default/types'
+
+/**
+ * Default maximum nesting depth for security validation
+ */
+const DEFAULT_MAX_DEPTH = 10
 
 /**
  * Type guard to check if token is a MarkToken with children
@@ -31,7 +36,7 @@ export const validateNestedContent = (content: string): boolean => {
 /**
  * Проверяет максимальную глубину вложенности для защиты от DoS
  */
-export const validateNestingDepth = (token: NestedToken, maxDepth: number = 10): boolean => {
+export const validateNestingDepth = (token: NestedToken, maxDepth: number = DEFAULT_MAX_DEPTH): boolean => {
 	const checkDepth = (node: NestedToken, currentDepth: number): boolean => {
 		if (currentDepth > maxDepth) return false
 

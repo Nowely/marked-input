@@ -23,7 +23,7 @@ export class ParserV2 {
 
 	split(value: string): NestedToken[] {
 		// Находим все матчи маркеров
-		const matches = this.strategy.findAllMatches(value)
+		const matches = this.strategy.getAllMatches(value)
 
 		// Строим последовательность токенов
 		return buildTokenSequence(value, this.markups, this, matches)

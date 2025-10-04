@@ -1,6 +1,6 @@
-import {Markup} from '../../../shared/types'
-import {NestedToken, TextToken, MarkToken, MatchResult} from './types'
-import {ParserV2} from './ParserV2'
+import {Markup} from '../../../../shared/types'
+import {NestedToken, TextToken, MarkToken, MatchResult} from '../types'
+import {ParserV2} from '../ParserV2'
 
 /**
  * Creates a text token
