@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {ParserV2} from './ParserV2'
-import {validateTreeStructure, countMarks, findMaxDepth} from './validation'
+import {validateTreeStructure, countMarks, findMaxDepth} from './utils/validation'
 import {MarkToken, NestedToken} from './types'
 import {Markup} from '../../../shared/types'
 import {InnerOption} from '../../default/types'

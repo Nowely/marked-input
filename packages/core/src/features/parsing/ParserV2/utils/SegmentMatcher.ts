@@ -1,6 +1,6 @@
 import {AhoCorasick, SegmentMatch} from './AhoCorasick'
-import {MarkupDescriptor} from './MarkupDescriptor'
-import {UniqueMatch} from './types'
+import {MarkupDescriptor} from '../core/MarkupDescriptor'
+import {UniqueMatch} from '../types'
 
 /**
  * Segment matcher using Aho-Corasick algorithm

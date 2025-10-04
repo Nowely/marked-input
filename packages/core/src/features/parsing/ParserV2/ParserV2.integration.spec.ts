@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {ParserV2} from './ParserV2'
-import {validateTreeStructure, validateNestedContent} from './validation'
+import {validateTreeStructure, validateNestedContent} from './utils/validation'
 import {Markup} from '../../../shared/types'
 import {MarkToken} from './types'
 

@@ -1,12 +1,12 @@
 export {ParserV2} from './ParserV2'
-export {createMarkupDescriptor, type MarkupDescriptor} from './MarkupDescriptor'
-export {MarkupMatcher} from './MarkupMatcher'
-export {PatternEngine} from './PatternEngine'
-export type {PatternMatch} from './PatternBuilder'
-export {PatternBuilder} from './PatternBuilder'
-export {SegmentMatcher} from './SegmentMatcher'
-export {PatternChainManager, type PatternChain, type MatchSegment} from './PatternChainManager'
-export {buildTokenSequence, createTextToken, extractInnerContent, createMarkToken} from './TokenBuilder'
+export {createMarkupDescriptor, type MarkupDescriptor} from './core/MarkupDescriptor'
+export {MarkupMatcher} from './core/MarkupMatcher'
+export {PatternEngine} from './core/PatternEngine'
+export type {PatternMatch} from './utils/PatternBuilder'
+export {PatternBuilder} from './utils/PatternBuilder'
+export {SegmentMatcher} from './utils/SegmentMatcher'
+export {PatternChainManager, type PatternChain, type MatchSegment} from './utils/PatternChainManager'
+export {buildTokenSequence, createTextToken, extractInnerContent, createMarkToken} from './utils/TokenBuilder'
 export type {NestedToken, TextToken, MarkToken, ParseContext, ValidationResult, BaseMarkupDescriptor} from './types'
 export {
 	validateNestedContent,
@@ -14,4 +14,4 @@ export {
 	validateMarkup,
 	countMarks,
 	findMaxDepth
-} from './validation'
+} from './utils/validation'

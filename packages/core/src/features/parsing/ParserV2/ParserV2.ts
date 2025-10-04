@@ -1,9 +1,9 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
 import {NestedToken, MatchResult} from './types'
-import {MarkupMatcher} from './MarkupMatcher'
-import {createMarkupDescriptor} from './MarkupDescriptor'
-import {buildTokenSequence} from './TokenBuilder'
+import {MarkupMatcher} from './core/MarkupMatcher'
+import {createMarkupDescriptor} from './core/MarkupDescriptor'
+import {buildTokenSequence} from './utils/TokenBuilder'
 
 export class ParserV2 {
 	private readonly markups: Markup[]

@@ -1,8 +1,8 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {PatternChainManager} from './PatternChainManager'
-import {PatternBuilder, PatternMatch} from './PatternBuilder'
-import {SegmentMatcher} from './SegmentMatcher'
-import {UniqueMatch} from './types'
+import {PatternChainManager} from '../utils/PatternChainManager'
+import {PatternBuilder, PatternMatch} from '../utils/PatternBuilder'
+import {SegmentMatcher} from '../utils/SegmentMatcher'
+import {UniqueMatch} from '../types'
 
 /**
  * Pattern engine using segment-based matching with Aho-Corasick algorithm

@@ -1,6 +1,6 @@
-import {MarkupDescriptor} from './MarkupDescriptor'
+import {MarkupDescriptor} from '../core/MarkupDescriptor'
 import {PatternChain, MatchSegment} from './PatternChainManager'
-import {UniqueMatch} from './types'
+import {UniqueMatch} from '../types'
 
 /**
  * Complete match of a pattern with all its parts

@@ -1,8 +1,8 @@
-import {MatchResult} from './types'
+import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternEngine} from './PatternEngine'
-import {PatternMatch} from './PatternBuilder'
-import {MatchSegment} from './PatternChainManager'
+import {PatternMatch} from '../utils/PatternBuilder'
+import {MatchSegment} from '../utils/PatternChainManager'
 
 /**
  * Markup matching strategy using Aho-Corasick algorithm
