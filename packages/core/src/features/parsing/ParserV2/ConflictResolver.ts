@@ -42,21 +42,87 @@ export class ConflictResolver {
 
 	/**
 	 * Проверяет, конфликтуют ли два кандидата
+	 * Вложенные кандидаты НЕ конфликтуют друг с другом
 	 */
 	private doCandidatesConflict(candidate1: TokenCandidate, candidate2: TokenCandidate): boolean {
 		const match1 = candidate1.match
 		const match2 = candidate2.match
 
-		// Проверяем пересечение диапазонов
+		// Если один кандидат полностью содержится в другом - это вложенность, не конфликт
+		if (this.isContainedIn(match1, match2) || this.isContainedIn(match2, match1)) {
+			return false
+		}
+
+		// Проверяем пересечение диапазонов (частичное перекрытие)
 		return match1.start < match2.end && match2.start < match1.end
 	}
 
 	/**
-	 * Выбирает непересекающиеся кандидаты, предпочитая более длинные
+	 * Проверяет, полностью ли inner содержится в outer
+	 */
+	private isContainedIn(inner: MatchResult, outer: MatchResult): boolean {
+		return inner.start >= outer.start && 
+		       inner.end <= outer.end && 
+		       (inner.start > outer.start || inner.end < outer.end)
+	}
+
+	/**
+	 * Выбирает непересекающиеся кандидаты с поддержкой вложенности
+	 * Вложенные кандидаты сохраняются вместе с содержащими их
 	 */
 	private selectNonConflicting(candidates: TokenCandidate[]): TokenCandidate[] {
-		// Сортируем по позиции начала, затем по длине (длинные первыми)
-		candidates.sort((a, b) => {
+		// Группируем кандидаты по вложенности
+		const nestingGroups = this.groupByNesting(candidates)
+		
+		const selected: TokenCandidate[] = []
+		const usedRanges: Array<{start: number, end: number}> = []
+
+		for (const group of nestingGroups) {
+			// Проверяем, можем ли добавить группу
+			// Группа конфликтует только если ВНЕШНИЙ элемент пересекается с уже использованными
+			const outerCandidate = group[0] // Первый элемент - всегда внешний (самый длинный)
+			const outerMatch = outerCandidate.match
+			
+			let hasConflict = false
+			for (const used of usedRanges) {
+				// Проверяем частичное перекрытие (не вложенность)
+				if (outerMatch.start < used.end && used.start < outerMatch.end) {
+					// Это перекрытие, если не полное вложение
+					const isNested = (outerMatch.start >= used.start && outerMatch.end <= used.end) ||
+					                 (used.start >= outerMatch.start && used.end <= outerMatch.end)
+					if (!isNested) {
+						hasConflict = true
+						break
+					}
+				}
+			}
+
+			if (!hasConflict) {
+				// Добавляем всю группу
+				for (const candidate of group) {
+					selected.push(candidate)
+				}
+				// Помечаем только ВНЕШНИЙ диапазон как использованный
+				usedRanges.push({
+					start: outerMatch.start,
+					end: outerMatch.end
+				})
+			}
+		}
+
+		// Сортируем выбранные по позиции
+		selected.sort((a, b) => a.match.start - b.match.start)
+
+		return selected
+	}
+
+	/**
+	 * Группирует кандидаты по вложенности
+	 * Каждая группа содержит внешний кандидат и все вложенные в него
+	 */
+	private groupByNesting(candidates: TokenCandidate[]): TokenCandidate[][] {
+		// Сортируем: сначала по start (ранние первыми), затем по длине (длинные первыми)
+		const sorted = [...candidates].sort((a, b) => {
 			const matchA = a.match
 			const matchB = b.match
 
@@ -66,38 +132,32 @@ export class ConflictResolver {
 
 			const lengthA = matchA.end - matchA.start
 			const lengthB = matchB.end - matchB.start
-			return lengthB - lengthA // Длинные первыми
+			return lengthB - lengthA // Длинные (внешние) первыми
 		})
 
-		const selected: TokenCandidate[] = []
-		const usedPositions = new Set<number>()
+		const groups: TokenCandidate[][] = []
+		const processed = new Set<TokenCandidate>()
 
-		for (const candidate of candidates) {
-			const match = candidate.match
-			const start = match.start
-			const end = match.end
+		for (const candidate of sorted) {
+			if (processed.has(candidate)) continue
 
-			// Проверяем, пересекается ли с уже выбранными
-			let hasConflict = false
-			for (let pos = start; pos < end; pos++) {
-				if (usedPositions.has(pos)) {
-					hasConflict = true
-					break
+			// Создаем новую группу с этим кандидатом как внешним
+			const group: TokenCandidate[] = [candidate]
+			processed.add(candidate)
+
+			// Находим все кандидаты, вложенные в этот
+			for (const other of sorted) {
+				if (processed.has(other)) continue
+
+				if (this.isContainedIn(other.match, candidate.match)) {
+					group.push(other)
+					processed.add(other)
 				}
 			}
 
-			if (!hasConflict) {
-				selected.push(candidate)
-				// Помечаем позиции как занятые
-				for (let pos = start; pos < end; pos++) {
-					usedPositions.add(pos)
-				}
-			}
+			groups.push(group)
 		}
 
-		// Сортируем выбранные по позиции
-		selected.sort((a, b) => a.match.start - b.match.start)
-
-		return selected
+		return groups
 	}
 }

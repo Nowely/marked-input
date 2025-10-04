@@ -60,124 +60,164 @@ export class SegmentPatternMatcher {
 
 	/**
 	 * Finds all complete pattern matches in text
-	 * Uses pattern exclusivity: a pattern cannot start a new match while already active
+	 * Uses pattern exclusivity: a pattern cannot start a new match while already active (prevents self-nesting)
+	 * Uses position-based matching with segment value grouping for proper nesting
 	 */
 	search(text: string): PatternMatch[] {
 		// Find all segment occurrences
 		const rawMatches = this.ac.search(text)
 
-		// Convert to matches with descriptor/segment info
-		const matches = rawMatches.map(r => {
-			const mapInfo = this.segmentMap[r.segIndex]
-			return {
-				descriptorIndex: mapInfo.descriptorIndex,
-				segmentIndex: mapInfo.segmentIndex,
-				start: r.start,
-				end: r.end,
-				value: r.value
-			}
-		})
+		// Convert to matches with descriptor/segment info, then deduplicate by position+value
+		// We group by position and value to handle multiple descriptors sharing same segments
+		const matchesByPosValue = new Map<string, {
+			start: number
+			end: number
+			value: string
+			descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
+		}>()
 
-		// Sort by position (start, then end for determinism)
-		matches.sort((a, b) => (a.start - b.start) || (a.end - b.end))
+		for (const r of rawMatches) {
+			const mapInfo = this.segmentMap[r.segIndex]
+			const key = `${r.start}:${r.value}`
+			
+			if (!matchesByPosValue.has(key)) {
+				matchesByPosValue.set(key, {
+					start: r.start,
+					end: r.end,
+					value: r.value,
+					descriptors: []
+				})
+			}
+			matchesByPosValue.get(key)!.descriptors.push({
+				descriptorIndex: mapInfo.descriptorIndex,
+				segmentIndex: mapInfo.segmentIndex
+			})
+		}
+
+		// Convert to array and sort by position
+		const uniqueMatches = Array.from(matchesByPosValue.values())
+		uniqueMatches.sort((a, b) => (a.start - b.start) || (a.end - b.end))
 
 		const results: PatternMatch[] = []
 
-		// Map: "descriptorIndex:segmentIndex" -> chains waiting for that segment
-		const activeByExpected = new Map<string, Chain[]>()
+		// Map: segment value -> chains waiting for that segment
+		// This allows ANY chain to use ANY occurrence of the segment value
+		const activeBySegmentValue = new Map<string, Chain[]>()
 		
 		// Track active patterns: a pattern cannot start while already active
-		// This prevents self-nesting and eliminates the need for bracket counting
 		const activePatterns = new Set<number>() // descriptorIndex
 
-		const pushToMap = (key: string, chain: Chain) => {
-			if (!activeByExpected.has(key)) {
-				activeByExpected.set(key, [])
+		const pushToMap = (segmentValue: string, chain: Chain) => {
+			if (!activeBySegmentValue.has(segmentValue)) {
+				activeBySegmentValue.set(segmentValue, [])
 			}
-			activeByExpected.get(key)!.push(chain)
+			activeBySegmentValue.get(segmentValue)!.push(chain)
 		}
 
-		for (const match of matches) {
-			const key = `${match.descriptorIndex}:${match.segmentIndex}`
-			const waiting = activeByExpected.get(key) || []
+		// Process each unique segment occurrence
+		for (const match of uniqueMatches) {
+			const waiting = activeBySegmentValue.get(match.value) || []
 
-			// Process chains waiting for this segment (use array copy to avoid modification issues)
-			for (const chain of Array.from(waiting)) {
-				// Check if match position is valid (at or after expected position)
-				if (match.start >= chain.pos) {
-					const descriptor = this.descriptors[chain.descriptorIndex]
-					
-					// Clone chain to create new branch
-					const newChain = this.cloneChain(chain)
+			if (waiting.length > 0) {
+				// Sort waiting chains: later start = inner = higher priority (LIFO)
+				// This ensures inner patterns complete before outer patterns
+				const sortedWaiting = Array.from(waiting).sort((a, b) => {
+					const startPosA = a.parts[0].start
+					const startPosB = b.parts[0].start
+					return startPosB - startPosA
+				})
 
-					// Add gap if there's space before this segment
-					if (match.start > newChain.pos) {
-						const gapIndex = newChain.nextSegmentIndex > 0 ? newChain.nextSegmentIndex - 1 : 0
-						const gapType = descriptor.gapTypes[gapIndex]
+				// Try to match with the first valid chain
+				for (const chain of sortedWaiting) {
+					if (match.start >= chain.pos) {
+						const descriptor = this.descriptors[chain.descriptorIndex]
+						
+						// Check if this segment is the expected next segment for this chain
+						const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
+						if (expectedSegment !== match.value) {
+							continue // This segment doesn't match what this chain expects
+						}
 
+						const newChain = this.cloneChain(chain)
+
+						// Add gap if needed
+						if (match.start > newChain.pos) {
+							const gapIndex = newChain.nextSegmentIndex > 0 ? newChain.nextSegmentIndex - 1 : 0
+							const gapType = descriptor.gapTypes[gapIndex]
+
+							newChain.parts.push({
+								type: 'gap',
+								start: newChain.pos,
+								end: match.start - 1,
+								gapType
+							})
+						}
+
+						// Add segment
 						newChain.parts.push({
-							type: 'gap',
-							start: newChain.pos,
-							end: match.start - 1,
-							gapType
+							type: 'segment',
+							start: match.start,
+							end: match.end,
+							value: match.value
 						})
-					}
 
-					// Add segment
-					newChain.parts.push({
-						type: 'segment',
-						start: match.start,
-						end: match.end,
-						value: match.value
-					})
+						newChain.pos = match.end + 1
+						newChain.nextSegmentIndex++
 
-					newChain.pos = match.end + 1
-					newChain.nextSegmentIndex++
+						// Check if pattern is complete
+						if (newChain.nextSegmentIndex === descriptor.segments.length) {
+							results.push({
+								descriptorIndex: newChain.descriptorIndex,
+								parts: newChain.parts.map(p => ({ ...p }))
+							})
+							activePatterns.delete(newChain.descriptorIndex)
+						} else {
+							// Continue chain - wait for next segment value
+							const nextSegmentValue = descriptor.segments[newChain.nextSegmentIndex]
+							pushToMap(nextSegmentValue, newChain)
+						}
 
-					// Check if pattern is complete
-					if (newChain.nextSegmentIndex === descriptor.segments.length) {
-						// Complete match - save it and free the pattern
-						results.push({
-							descriptorIndex: newChain.descriptorIndex,
-							parts: newChain.parts.map(p => ({ ...p })) // Deep copy
-						})
-						// Free this pattern - it can start new matches now
-						activePatterns.delete(newChain.descriptorIndex)
-					} else {
-						// Continue chain - wait for next segment
-						const nextKey = `${newChain.descriptorIndex}:${newChain.nextSegmentIndex}`
-						pushToMap(nextKey, newChain)
+						// Remove this chain from waiting list
+						const chainIndex = waiting.indexOf(chain)
+						if (chainIndex !== -1) {
+							waiting.splice(chainIndex, 1)
+						}
+
+						// This segment occurrence has been consumed by this chain
+						break
 					}
 				}
 			}
 
-			// Start new chains if this is the first segment of a pattern
-			// BUT only if the pattern is not already active (prevents self-nesting)
-			if (match.segmentIndex === 0 && !activePatterns.has(match.descriptorIndex)) {
-				const newChain: Chain = {
-					descriptorIndex: match.descriptorIndex,
-					nextSegmentIndex: 1,
-					pos: match.end + 1,
-					parts: [{
-						type: 'segment',
-						start: match.start,
-						end: match.end,
-						value: match.value
-					}]
-				}
+			// Check if this can start new chains (first segment of any pattern)
+			for (const descInfo of match.descriptors) {
+				if (descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex)) {
+					const descriptor = this.descriptors[descInfo.descriptorIndex]
+					
+					const newChain: Chain = {
+						descriptorIndex: descInfo.descriptorIndex,
+						nextSegmentIndex: 1,
+						pos: match.end + 1,
+						parts: [{
+							type: 'segment',
+							start: match.start,
+							end: match.end,
+							value: match.value
+						}]
+					}
 
-				const descriptor = this.descriptors[match.descriptorIndex]
-				if (newChain.nextSegmentIndex === descriptor.segments.length) {
-					// Single-segment pattern (edge case)
-					results.push({
-						descriptorIndex: newChain.descriptorIndex,
-						parts: newChain.parts
-					})
-				} else {
-					const nextKey = `${match.descriptorIndex}:1`
-					pushToMap(nextKey, newChain)
-					// Mark this pattern as active
-					activePatterns.add(match.descriptorIndex)
+					if (newChain.nextSegmentIndex === descriptor.segments.length) {
+						// Single-segment pattern
+						results.push({
+							descriptorIndex: newChain.descriptorIndex,
+							parts: newChain.parts
+						})
+					} else {
+						// Continue chain - wait for next segment value
+						const nextSegmentValue = descriptor.segments[newChain.nextSegmentIndex]
+						pushToMap(nextSegmentValue, newChain)
+						activePatterns.add(descInfo.descriptorIndex)
+					}
 				}
 			}
 		}
