@@ -5,8 +5,8 @@ describe('ParserV2 Performance Benchmark', () => {
 	const markups = ['@[__label__](__value__)', '#[__label__]']
 
 	it('should benchmark simple parsing (100 marks)', () => {
-		const parser = new ParserV2(markups as any)
-		
+		const parser = new ParserV2(markups)
+
 		// Generate input with 100 marks
 		let input = 'Start '
 		for (let i = 0; i < 100; i++) {
@@ -26,18 +26,18 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark nested parsing', () => {
-		const parser = new ParserV2(markups as any)
-		
+		const parser = new ParserV2(markups)
+
 		// Generate input with nested marks
 		const input = '@[outer1 #[inner1] text] and @[outer2 #[inner2] #[inner3] more] end'
 
 		const iterations = 100
 		const start = performance.now()
-		
+
 		for (let i = 0; i < iterations; i++) {
 			parser.split(input)
 		}
-		
+
 		const end = performance.now()
 		const duration = end - start
 		const avgDuration = duration / iterations
@@ -65,17 +65,17 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark mixed patterns', () => {
-		const parser = new ParserV2(markups as any)
-		
+		const parser = new ParserV2(markups)
+
 		const input = 'Text @[user1](val1) #[tag1] more @[user2](val2) #[tag2] and @[user3](val3) end'
 
 		const iterations = 1000
 		const start = performance.now()
-		
+
 		for (let i = 0; i < iterations; i++) {
 			parser.split(input)
 		}
-		
+
 		const end = performance.now()
 		const duration = end - start
 		const avgDuration = duration / iterations
@@ -86,19 +86,19 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark long text with sparse marks', () => {
-		const parser = new ParserV2(markups as any)
-		
+		const parser = new ParserV2(markups)
+
 		// Long text with only 5 marks
 		const longText = 'Lorem ipsum '.repeat(100)
 		const input = `${longText}@[user1](val1) ${longText}#[tag] ${longText}@[user2](val2) ${longText}#[tag2] ${longText}@[user3](val3)`
 
 		const iterations = 100
 		const start = performance.now()
-		
+
 		for (let i = 0; i < iterations; i++) {
 			parser.split(input)
 		}
-		
+
 		const end = performance.now()
 		const duration = end - start
 		const avgDuration = duration / iterations
@@ -109,4 +109,3 @@ describe('ParserV2 Performance Benchmark', () => {
 		expect(avgDuration).toBeLessThan(10)
 	})
 })
-

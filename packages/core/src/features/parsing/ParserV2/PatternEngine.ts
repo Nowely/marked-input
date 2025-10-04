@@ -1,87 +1,23 @@
 import {AhoCorasick, SegmentMatch} from './AhoCorasick'
 import {SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
-
-/**
- * Part of a matched pattern - either a static segment or a gap
- */
-export interface MatchPart {
-	type: 'segment' | 'gap'
-	start: number
-	end: number
-	value?: string // Lazy - only materialized when needed
-	gapType?: 'label' | 'value' // For gaps only
-}
+import {PatternChainManager, PatternChain, MatchSegment} from './PatternChainManager'
 
 /**
  * Complete match of a pattern with all its parts
  */
 export interface PatternMatch {
 	descriptorIndex: number
-	parts: MatchPart[]
+	parts: MatchSegment[]
 }
 
 /**
- * Active chain tracking partial pattern matches
+ * Unique segment match with descriptor info
  */
-interface Chain {
-	descriptorIndex: number
-	nextSegmentIndex: number
-	pos: number // Next expected position in text
-	parts: MatchPart[]
-}
-
-/**
- * Deduplicated segment match with descriptor info
- */
-interface DeduplicatedMatch {
+interface UniqueMatch {
 	start: number
 	end: number
 	value: string
 	descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
-}
-
-/**
- * Chain manager for tracking active pattern chains
- */
-class ChainManager {
-	private activeChains = new Map<string, Chain[]>()
-
-	/**
-	 * Adds a chain to waiting list for specific segment value
-	 */
-	addToWaiting(segmentValue: string, chain: Chain): void {
-		if (!this.activeChains.has(segmentValue)) {
-			this.activeChains.set(segmentValue, [])
-		}
-		this.activeChains.get(segmentValue)!.push(chain)
-	}
-
-	/**
-	 * Gets chains waiting for specific segment value
-	 */
-	getWaiting(segmentValue: string): Chain[] {
-		return this.activeChains.get(segmentValue) || []
-	}
-
-	/**
-	 * Removes a specific chain from waiting list
-	 */
-	removeFromWaiting(segmentValue: string, chain: Chain): void {
-		const waiting = this.activeChains.get(segmentValue)
-		if (waiting) {
-			const index = waiting.indexOf(chain)
-			if (index !== -1) {
-				waiting.splice(index, 1)
-			}
-		}
-	}
-
-	/**
-	 * Clears all active chains
-	 */
-	clear(): void {
-		this.activeChains.clear()
-	}
 }
 
 /**
@@ -96,9 +32,9 @@ class PatternAssembler {
 
 	/**
 	 * Tries to extend a chain with a new segment match
-	 * Returns {completed: PatternMatch | null, extended: Chain | null}
+	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
 	 */
-	tryExtendChain(chain: Chain, match: DeduplicatedMatch): { completed: PatternMatch | null; extended: Chain | null } {
+	tryExtendChain(chain: PatternChain, match: UniqueMatch): { completed: PatternMatch | null; extended: PatternChain | null } {
 		const descriptor = this.descriptors[chain.descriptorIndex]
 
 		// Check if this segment matches what this chain expects
@@ -107,51 +43,51 @@ class PatternAssembler {
 			return { completed: null, extended: null } // This segment doesn't match what this chain expects
 		}
 
-		const newChain = this.cloneChain(chain)
+		const newPatternChain = this.cloneChain(chain)
 
 		// Add gap if needed
-		if (match.start > newChain.pos) {
-			const gapIndex = newChain.nextSegmentIndex > 0 ? newChain.nextSegmentIndex - 1 : 0
+		if (match.start > newPatternChain.pos) {
+			const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
 			const gapType = descriptor.gapTypes[gapIndex]
 
-			newChain.parts.push({
+			newPatternChain.parts.push({
 				type: 'gap',
-				start: newChain.pos,
+				start: newPatternChain.pos,
 				end: match.start - 1,
 				gapType
 			})
 		}
 
 		// Add segment
-		newChain.parts.push({
+		newPatternChain.parts.push({
 			type: 'segment',
 			start: match.start,
 			end: match.end,
 			value: match.value
 		})
 
-		newChain.pos = match.end + 1
-		newChain.nextSegmentIndex++
+		newPatternChain.pos = match.end + 1
+		newPatternChain.nextSegmentIndex++
 
 		// Check if pattern is complete
-		if (newChain.nextSegmentIndex === descriptor.segments.length) {
+		if (newPatternChain.nextSegmentIndex === descriptor.segments.length) {
 			return {
 				completed: {
-					descriptorIndex: newChain.descriptorIndex,
-					parts: newChain.parts.map(p => ({ ...p }))
+					descriptorIndex: newPatternChain.descriptorIndex,
+					parts: newPatternChain.parts.map(p => ({ ...p }))
 				},
 				extended: null
 			}
 		}
 
-		return { completed: null, extended: newChain } // Chain extended but not complete
+		return { completed: null, extended: newPatternChain } // Chain extended but not complete
 	}
 
 	/**
 	 * Creates a new chain for starting pattern
-	 * Returns {completed: PatternMatch | null, chain: Chain | null}
+	 * Returns {completed: PatternMatch | null, chain: PatternChain | null}
 	 */
-	createNewChain(descriptorIndex: number, match: DeduplicatedMatch): { completed: PatternMatch | null; chain: Chain | null } {
+	createNewChain(descriptorIndex: number, match: UniqueMatch): { completed: PatternMatch | null; chain: PatternChain | null } {
 		const descriptor = this.descriptors[descriptorIndex]
 
 		// Only start chains at first segment
@@ -159,7 +95,7 @@ class PatternAssembler {
 			return { completed: null, chain: null }
 		}
 
-		const newChain: Chain = {
+		const newPatternChain: PatternChain = {
 			descriptorIndex,
 			nextSegmentIndex: 1,
 			pos: match.end + 1,
@@ -172,23 +108,23 @@ class PatternAssembler {
 		}
 
 		// Single-segment pattern is immediately complete
-		if (newChain.nextSegmentIndex === descriptor.segments.length) {
+		if (newPatternChain.nextSegmentIndex === descriptor.segments.length) {
 			return {
 				completed: {
-					descriptorIndex: newChain.descriptorIndex,
-					parts: newChain.parts
+					descriptorIndex: newPatternChain.descriptorIndex,
+					parts: newPatternChain.parts
 				},
 				chain: null
 			}
 		}
 
-		return { completed: null, chain: newChain }
+		return { completed: null, chain: newPatternChain }
 	}
 
 	/**
 	 * Clones a chain for branching
 	 */
-	private cloneChain(chain: Chain): Chain {
+	private cloneChain(chain: PatternChain): PatternChain {
 		return {
 			descriptorIndex: chain.descriptorIndex,
 			nextSegmentIndex: chain.nextSegmentIndex,
@@ -226,11 +162,11 @@ class SegmentMatcher {
 	/**
 	 * Finds all segment matches and groups them by position+value
 	 */
-	findDeduplicatedMatches(text: string): DeduplicatedMatch[] {
+	findDeduplicatedMatches(text: string): UniqueMatch[] {
 		const rawMatches = this.ac.search(text)
 
 		// Group by position and value to handle multiple descriptors sharing same segments
-		const matchesByPosValue = new Map<string, DeduplicatedMatch>()
+		const matchesByPosValue = new Map<string, UniqueMatch>()
 
 		for (const r of rawMatches) {
 			const mapInfo = this.segmentMap[r.segIndex]
@@ -259,20 +195,20 @@ class SegmentMatcher {
 }
 
 /**
- * Segment-based pattern matcher using Aho-Corasick algorithm
+ * Pattern engine using segment-based matching with Aho-Corasick algorithm
  * Efficiently finds all occurrences of markup patterns by treating them as segment sequences
  */
-export class SegmentPatternMatcher {
+export class PatternEngine {
 	private readonly descriptors: SegmentMarkupDescriptor[]
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternAssembler: PatternAssembler
-	private readonly chainManager: ChainManager
+	private readonly chainManager: PatternChainManager
 
 	constructor(descriptors: SegmentMarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.segmentMatcher = new SegmentMatcher(descriptors)
 		this.patternAssembler = new PatternAssembler(descriptors)
-		this.chainManager = new ChainManager()
+		this.chainManager = new PatternChainManager()
 	}
 
 	/**
@@ -281,12 +217,12 @@ export class SegmentPatternMatcher {
 	 * Uses position-based matching with segment value grouping for proper nesting
 	 */
 	search(text: string): PatternMatch[] {
-		const deduplicatedMatches = this.segmentMatcher.findDeduplicatedMatches(text)
+		const uniqueMatches = this.segmentMatcher.findDeduplicatedMatches(text)
 		const results: PatternMatch[] = []
 		const activePatterns = new Set<number>() // descriptorIndex
 
 		// Process each unique segment occurrence
-		for (const match of deduplicatedMatches) {
+		for (const match of uniqueMatches) {
 			this.processWaitingChains(match, results, activePatterns)
 			this.startNewChains(match, results, activePatterns)
 		}
@@ -297,7 +233,7 @@ export class SegmentPatternMatcher {
 	/**
 	 * Processes chains waiting for current segment match
 	 */
-	private processWaitingChains(match: DeduplicatedMatch, results: PatternMatch[], activePatterns: Set<number>): void {
+	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>): void {
 		const waiting = this.chainManager.getWaiting(match.value)
 
 		if (waiting.length === 0) {
@@ -336,7 +272,7 @@ export class SegmentPatternMatcher {
 	/**
 	 * Starts new chains for patterns that begin with current segment
 	 */
-	private startNewChains(match: DeduplicatedMatch, results: PatternMatch[], activePatterns: Set<number>): void {
+	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>): void {
 		for (const descInfo of match.descriptors) {
 			if (descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex)) {
 				const { completed, chain } = this.patternAssembler.createNewChain(descInfo.descriptorIndex, match)
@@ -365,4 +301,3 @@ export class SegmentPatternMatcher {
 		}
 	}
 }
-

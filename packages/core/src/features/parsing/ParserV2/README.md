@@ -66,18 +66,20 @@ ParserV2 использует принципы **Composition over Inheritance** 
 
 ```
 ParserV2 (главный класс)
-├── AhoCorasickMarkupStrategy (кешируется) - стратегия на основе Aho-Corasick
-│   ├── SegmentPatternMatcher - сегментный матчер с цепочками
+├── AhoCorasickStrategy (кешируется) - стратегия на основе Aho-Corasick
+│   ├── PatternEngine - движок паттернов с цепочками
+│   │   ├── PatternChainManager - менеджер цепочек паттернов
 │   │   └── AhoCorasick - автомат для multi-pattern поиска
 │   └── SegmentMarkupDescriptor - дескриптор сегментов паттерна
 └── buildGuaranteedSequence() - статическая функция для построения последовательности
 ```
 
-**Изменения после рефакторинга v2.1.2-v2.2:**
-- ❌ **Удалён PatternMatcher** - объединён с AhoCorasickMarkupStrategy
-- ❌ **Удалён TokenSequenceBuilder класс** - преобразован в статические функции
-- ✅ AhoCorasickMarkupStrategy теперь содержит `findAllMatches()`
+**Изменения после рефакторинга v2.2:**
+- ❌ **Удалён PatternMatcher** - объединён с AhoCorasickStrategy
+- ❌ **Удалён TokenSequenceBuilder класс** - преобразован в TokenAssembler
+- ✅ AhoCorasickStrategy теперь содержит `findAllMatches()`
 - ✅ `buildGuaranteedSequence()` - чистая функция без состояния
+- ✅ **Декомпозиция PatternEngine** - вынесен PatternChainManager
 
 ### Эволюция архитектуры
 
@@ -113,9 +115,9 @@ ParserV2 (главный класс)
 - ❌ Хардкод конкретных символов в коде
 
 **Добавлено:**
-- ✅ `AhoCorasickMarkupStrategy` - универсальная стратегия без хардкода
+- ✅ `AhoCorasickStrategy` - универсальная стратегия без хардкода
 - ✅ `AhoCorasick` - классический автомат для multi-pattern поиска O(n + m + z)
-- ✅ `SegmentPatternMatcher` - сегментный матчер с цепочками
+- ✅ `PatternEngine` - движок паттернов с цепочками
 - ✅ `SegmentMarkupDescriptor` - дескриптор на основе сегментов
 - ✅ **Эксклюзивность паттернов**: паттерн не может начать новое совпадение, пока активен
 - ✅ **Отсутствие хардкода**: никаких жестко закодированных символов
@@ -129,9 +131,9 @@ ParserV2 (главный класс)
 
 ### Алгоритм работы
 
-1. **Поиск матчей**: `PatternMatcher` находит все потенциальные маркеры в тексте
-2. **Разрешение конфликтов**: `ConflictResolver` выбирает непересекающиеся маркеры, предпочитая более длинные
-3. **Построение последовательности**: `TokenSequenceBuilder` создает гарантированную структуру `text-mark-text-mark-text...`
+1. **Поиск матчей**: `PatternEngine` находит все потенциальные маркеры в тексте
+2. **Разрешение конфликтов**: `AhoCorasickStrategy` выбирает непересекающиеся маркеры, предпочитая более длинные
+3. **Построение последовательности**: `TokenAssembler` создает гарантированную структуру `text-mark-text-mark-text...`
 
 ### Стратегия парсинга: Aho-Corasick
 
@@ -146,7 +148,7 @@ interface MarkupStrategy {
 
 #### Архитектура стратегии
 
-**AhoCorasickMarkupStrategy** преобразует markup паттерны в сегменты и использует автомат для поиска:
+**AhoCorasickStrategy** преобразует markup паттерны в сегменты и использует автомат для поиска:
 
 ```typescript
 // Пример преобразования:
@@ -167,9 +169,9 @@ interface MarkupStrategy {
    - Использует failure links для эффективного перехода
    - Находит все вхождения за один проход по тексту
 
-2. **SegmentPatternMatcher** - собирает цепочки сегментов в полные паттерны
+2. **PatternEngine** - собирает цепочки сегментов в полные паттерны
    - Streaming assembly: обрабатывает сегменты по мере нахождения
-   - Chain branching: поддерживает ветвление для перекрывающихся паттернов
+   - PatternChainManager: управляет активными цепочками паттернов
    - **Pattern exclusivity**: паттерн не может начаться, пока уже активен
    - Lazy gap materialization: сохраняет только индексы, не копирует строки
 
@@ -323,15 +325,17 @@ class ConflictResolver {
 }
 ```
 
-#### TokenSequenceBuilder
+#### TokenAssembler
 
 Строит гарантированную последовательность токенов из разрешенных кандидатов.
 
 ```typescript
-class TokenSequenceBuilder {
-  constructor(input: string, markups: Markup[])
-  buildGuaranteedSequence(candidates: TokenCandidate[]): NestedToken[]
-}
+function buildGuaranteedSequence(
+  input: string,
+  markups: Markup[],
+  parser: ParserV2,
+  matches: MatchResult[]
+): NestedToken[]
 ```
 
 #### MarkupStrategy
@@ -440,9 +444,9 @@ ParserV2 гарантирует структуру `text - mark - text - mark - 
 
 ### Компонентная оптимизация
 
-1. **PatternMatcher**: Эффективный поиск матчей с предварительной группировкой по триггерам
-2. **ConflictResolver**: Быстрое разрешение конфликтов с приоритетом длинных маркеров
-3. **TokenSequenceBuilder**: Гарантированное построение последовательности без лишних проверок
+1. **PatternEngine**: Эффективный поиск матчей с предварительной группировкой по триггерам
+2. **AhoCorasickStrategy**: Быстрое разрешение конфликтов с приоритетом длинных маркеров
+3. **TokenAssembler**: Гарантированное построение последовательности без лишних проверок
 4. **GenericMarkupStrategy**: Универсальная стратегия, оптимизированная для всех типов маркеров
 
 ## Гарантии структуры
@@ -579,7 +583,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 - ✅ **Однопроходный парсинг**: Каждый символ читается только один раз
 - ✅ **Древовидная структура**: Оптимизированная обработка вложенных маркеров
 - ✅ **Рекурсивная обработка**: Полная поддержка вложенных маркеров
-- ✅ **Компонентная архитектура**: Разделение на PatternMatcher, ConflictResolver, TokenSequenceBuilder
+- ✅ **Компонентная архитектура**: Разделение на PatternEngine, AhoCorasickStrategy, TokenAssembler
 - ✅ **Стратегии парсинга**: BracketMarkupStrategy и ParenMarkupStrategy для разных типов маркеров
 
 ### Достигнуто в v2.0.1 (рефакторинг архитектуры)
@@ -622,9 +626,11 @@ function flattenTree(root: NestedToken): PieceType[] {
 
 ### Достигнуто в v2.2 (Финальная архитектурная чистка)
 
-- ✅ **Удалён PatternMatcher класс** (~42 строки) - объединён с AhoCorasickMarkupStrategy
-- ✅ **Удалён TokenSequenceBuilder класс** (~143 строки) - преобразован в статические функции
-- ✅ **AhoCorasickMarkupStrategy.findAllMatches()** - единая точка входа для поиска
+- ✅ **Переименован AhoCorasickMarkupStrategy → AhoCorasickStrategy** - короче и понятнее
+- ✅ **Переименован SegmentPatternMatcher → PatternEngine** - отражает суть движка паттернов
+- ✅ **Переименован TokenSequenceBuilder → TokenAssembler** - функция сборки токенов
+- ✅ **Декомпозиция PatternEngine** - вынесен PatternChainManager в отдельный файл
+- ✅ **Улучшены названия сущностей**: MatchPart → MatchSegment, Chain → PatternChain
 - ✅ **buildGuaranteedSequence()** - чистая функция без состояния и мутабельных полей
 - ✅ **Упрощена архитектура** - меньше классов, больше функций
 - ✅ **Производительность**: улучшилась на 2-5% (общее ускорение до 4.4x)
@@ -644,13 +650,20 @@ function flattenTree(root: NestedToken): PieceType[] {
 - Убраны утечки памяти и deprecated код
 - Все 64 теста проходят ✅
 
-### Краткосрочные цели (v2.3)
+### Достигнуто в v2.3 (Рефакторинг именования)
+
+- ✅ **Улучшенное именование**: Переименованы файлы и сущности для лучшей читаемости
+- ✅ **Декомпозиция компонентов**: PatternChainManager вынесен в отдельный файл
+- ✅ **Чистая архитектура**: Улучшена модульность и Single Responsibility Principle
+- ✅ **Обновлена документация**: README синхронизирован с новыми названиями
+
+### Краткосрочные цели (v2.4)
 
 - [x] Оптимизация производительности (✅ достигнуто: 2.11ms для 100 marks)
 - [ ] Опциональная самовложенность через конфигурацию
 - [ ] Улучшенная обработка ошибок разметки с детальными сообщениями
 - [ ] Streaming API для очень больших файлов
-- [ ] Unit-тесты для SegmentPatternMatcher, AhoCorasick
+- [ ] Unit-тесты для PatternEngine, AhoCorasick
 - [ ] Разбить README на ARCHITECTURE.md и CHANGELOG.md
 
 ### Долгосрочные цели (v3.0)
@@ -667,7 +680,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 
 1. **Некорректный markup**: Проверьте синтаксис плейсхолдеров (`__label__`, `__value__`)
 2. **Гарантия структуры**: Помните о последовательности `text - mark - text - mark - text...`
-3. **Вложенные маркеры**: Рекурсивная обработка через отдельные экземпляры парсера в TokenSequenceBuilder
+3. **Вложенные маркеры**: Рекурсивная обработка через отдельные экземпляры парсера в TokenAssembler
 4. **Кастомные форматы**: GenericMarkupStrategy поддерживает большинство форматов, но проверьте синтаксис
 
 ### Debug компонентов
@@ -686,8 +699,7 @@ const resolved = conflictResolver.resolve(matches)
 console.log('Разрешенные кандидаты:', resolved)
 
 // Отладка построения последовательности
-const tokenBuilder = new TokenSequenceBuilder(input, markups)
-const tokens = tokenBuilder.buildGuaranteedSequence(resolved)
+const tokens = buildGuaranteedSequence(input, markups, parser, matches)
 console.log('Итоговые токены:', tokens)
 ```
 

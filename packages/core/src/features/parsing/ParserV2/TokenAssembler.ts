@@ -22,7 +22,7 @@ function createTextToken(input: string, start: number, end: number): TextToken {
  */
 function extractInnerContent(match: MatchResult): string | null {
 	// label уже содержит текст между первой парой сегментов (gap типа 'label')
-	// Это было извлечено в AhoCorasickMarkupStrategy.extractFromParts()
+	// Это было извлечено в AhoCorasickStrategy.extractFromParts()
 	return match.label || null
 }
 
