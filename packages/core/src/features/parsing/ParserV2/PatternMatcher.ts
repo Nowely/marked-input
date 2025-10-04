@@ -1,21 +1,21 @@
 import {Markup} from '../../../shared/types'
-import {createMarkupDescriptor, MarkupDescriptor} from './createMarkupDescriptor'
+import {createSegmentMarkupDescriptor, SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
 import {MatchResult} from './types'
-import {GenericMarkupStrategy} from './GenericMarkupStrategy'
+import {AhoCorasickMarkupStrategy} from './AhoCorasickMarkupStrategy'
 
 /**
  * Компонент для нахождения всех матчей маркеров в тексте
- * Использует единую универсальную стратегию для всех типов маркеров
+ * Использует Aho-Corasick стратегию для эффективного поиска паттернов
  */
 export class PatternMatcher {
 	private readonly input: string
-	private readonly descriptors: MarkupDescriptor[]
-	private readonly descriptorsByTrigger: Map<string, MarkupDescriptor[]>
-	private readonly strategy: GenericMarkupStrategy
+	private readonly descriptors: SegmentMarkupDescriptor[]
+	private readonly descriptorsByTrigger: Map<string, SegmentMarkupDescriptor[]>
+	private readonly strategy: AhoCorasickMarkupStrategy
 
 	constructor(input: string, markups: Markup[]) {
 		this.input = input
-		this.descriptors = markups.map(createMarkupDescriptor)
+		this.descriptors = markups.map(createSegmentMarkupDescriptor)
 
 		// Группируем дескрипторы по триггерным символам для быстрого доступа
 		this.descriptorsByTrigger = new Map()
@@ -26,8 +26,8 @@ export class PatternMatcher {
 			this.descriptorsByTrigger.get(desc.trigger)!.push(desc)
 		}
 
-		// Используем единую стратегию для всех маркеров
-		this.strategy = new GenericMarkupStrategy()
+		// Используем Aho-Corasick стратегию для всех маркеров
+		this.strategy = new AhoCorasickMarkupStrategy(this.descriptors)
 	}
 
 	/**

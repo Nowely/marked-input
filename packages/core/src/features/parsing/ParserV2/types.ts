@@ -40,6 +40,13 @@ export interface ValidationResult {
 	errors: string[]
 }
 
+// Базовый интерфейс для дескрипторов
+export interface BaseMarkupDescriptor {
+	markup: string
+	index: number
+	trigger: string
+}
+
 // Результат матчинга маркера
 export interface MatchResult {
 	start: number
@@ -47,7 +54,7 @@ export interface MatchResult {
 	content: string
 	label: string
 	value?: string
-	descriptor: MarkupDescriptor
+	descriptor: BaseMarkupDescriptor
 }
 
 // Кандидат на токен с информацией о конфликтах
@@ -58,6 +65,6 @@ export interface TokenCandidate {
 
 // Стратегия парсинга для разных типов маркеров
 export interface MarkupStrategy {
-	matches(descriptor: MarkupDescriptor, input: string, position: number): MatchResult | null
+	matches(descriptor: BaseMarkupDescriptor, input: string, position: number): MatchResult | null
 	extractContent(match: MatchResult): { label: string; value?: string }
 }
