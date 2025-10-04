@@ -36,6 +36,6 @@ export class ParserV2 {
 		const matches = this.matcher.getAllMatches(value)
 
 		// Build token sequence
-		return buildTokenSequence(value, this.markups, this, matches)
+		return buildTokenSequence(value, this, matches)
 	}
 }

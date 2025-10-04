@@ -1,48 +1,41 @@
-import {Markup} from '../../../shared/types'
-import {NestedToken, TextToken, MarkToken, MatchResult} from './types'
+import {TextToken, MarkToken, MatchResult, NestedToken} from './types'
 import {ParserV2} from './ParserV2'
 
 /**
- * Creates a text token
+ * Creates a text token from input substring
  */
-function createTextToken(input: string, start: number, end: number): TextToken {
-	return {
-		type: 'text',
-		content: input.substring(start, end),
-		position: {start, end}
-	}
-}
+const createTextToken = (input: string, start: number, end: number): TextToken => ({
+	type: 'text',
+	content: input.substring(start, end),
+	position: { start, end }
+})
 
 /**
- * Creates a mark token from a match with recursive parsing
+ * Creates a mark token from match with nested parsing
  */
-function createMarkToken(input: string, markups: Markup[], parser: ParserV2, match: MatchResult): MarkToken {
-	// Recursively parse inner content (label contains text between markup segments)
+const createMarkToken = (parser: ParserV2, match: MatchResult): MarkToken => {
 	const innerTokens = match.label ? parser.split(match.label) : []
-	const hasMarks = innerTokens.some((token: NestedToken) => token.type === 'mark')
+	const hasNestedMarks = innerTokens.some(token => token.type === 'mark')
 
 	return {
 		type: 'mark',
 		content: match.content,
-		children: hasMarks ? innerTokens : [],
+		children: hasNestedMarks ? innerTokens : [],
 		data: {
 			label: match.label,
 			value: match.value,
 			optionIndex: match.descriptor.index
 		},
-		position: {
-			start: match.start,
-			end: match.end
-		}
+		position: { start: match.start, end: match.end }
 	}
 }
 
 /**
- * Builds sequence of tokens: text-mark-text-mark-text...
+ * Builds token sequence: text-mark-text-mark-text...
+ * Always alternates between text and mark tokens
  */
 export function buildTokenSequence(
 	input: string,
-	markups: Markup[],
 	parser: ParserV2,
 	matches: MatchResult[]
 ): NestedToken[] {
@@ -53,22 +46,20 @@ export function buildTokenSequence(
 	const tokens: NestedToken[] = []
 	let pos = 0
 
-	for (let i = 0; i < matches.length; i++) {
-		const match = matches[i]
-
-		// Add text before mark (or empty text if at start/adjacent)
-		if (match.start > pos) {
+	for (const match of matches) {
+		// Add text before mark (may be empty)
+		if (pos < match.start) {
 			tokens.push(createTextToken(input, pos, match.start))
 		} else if (tokens.length === 0) {
-			// First token is a mark starting at position 0, add empty text
+			// First token starts at position 0, add empty text
 			tokens.push(createTextToken(input, 0, 0))
-		} else if (match.start === pos && pos > 0) {
+		} else if (match.start === pos) {
 			// Adjacent marks, add empty text between them
 			tokens.push(createTextToken(input, pos, pos))
 		}
 
 		// Add mark token
-		tokens.push(createMarkToken(input, markups, parser, match))
+		tokens.push(createMarkToken(parser, match))
 		pos = match.end
 	}
 
