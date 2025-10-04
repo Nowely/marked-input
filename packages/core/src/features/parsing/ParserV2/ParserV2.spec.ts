@@ -346,6 +346,9 @@ describe('ParserV2', () => {
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
 							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text"]
+							├── 1.0: TEXT "Bold " [0-5]
+							├── 1.1: MARK "<i>italic</i>" [5-18] [label="italic"]
+							└── 1.2: TEXT " text" [18-23]
 							 2: TEXT "" [30-30]"
 						`)
 					})

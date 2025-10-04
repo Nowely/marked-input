@@ -3,14 +3,6 @@ import {SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
 import {SegmentPatternMatcher, PatternMatch, MatchPart} from './SegmentPatternMatcher'
 
 /**
- * Extended match result that includes pattern match data
- */
-interface ExtendedMatchResult extends MatchResult {
-	_patternMatch?: PatternMatch
-	_originalInput?: string
-}
-
-/**
  * Aho-Corasick based markup strategy
  * Uses segment pattern matching for efficient multi-pattern parsing without hardcoded logic
  */
@@ -21,6 +13,13 @@ export class AhoCorasickMarkupStrategy {
 	constructor(descriptors: SegmentMarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.matcher = new SegmentPatternMatcher(descriptors)
+	}
+
+	/**
+	 * Finds all matches in the input text (PatternMatcher functionality)
+	 */
+	findAllMatches(input: string): MatchResult[] {
+		return this.getAllMatches(input)
 	}
 
 	/**
@@ -82,56 +81,13 @@ export class AhoCorasickMarkupStrategy {
 	}
 
 	/**
-	 * Finds a match for the given descriptor at the specified position
-	 * @deprecated Use getAllMatches instead for better performance
-	 */
-	matches(descriptor: SegmentMarkupDescriptor, input: string, position: number): MatchResult | null {
-		// Get all matches for this input
-		const allMatches = this.matcher.search(input)
-
-		// Find first match that:
-		// 1. Belongs to this descriptor
-		// 2. Starts at the specified position
-		for (const match of allMatches) {
-			if (match.descriptorIndex === descriptor.index && this.getMatchStart(match) === position) {
-				// Materialize gap values
-				this.matcher.materializeGaps(match, input)
-
-				const start = this.getMatchStart(match)
-				const end = this.getMatchEnd(match)
-				const content = input.substring(start, end)
-
-				const result: ExtendedMatchResult = {
-					start,
-					end,
-					content,
-					label: '', // Will be filled by extractContent
-					value: undefined,
-					descriptor,
-					_patternMatch: match,
-					_originalInput: input
-				}
-
-				return result
-			}
-		}
-
-		return null
-	}
-
-	/**
 	 * Extracts label and value from a match result
+	 * Used as fallback for compatibility (when not using getAllMatches)
 	 */
 	extractContent(match: MatchResult): { label: string; value?: string } {
 		const descriptor = match.descriptor as SegmentMarkupDescriptor
-		const extendedMatch = match as ExtendedMatchResult
 		
-		// Try to get the stored pattern match first
-		if (extendedMatch._patternMatch) {
-			return this.extractFromParts(extendedMatch._patternMatch.parts, descriptor)
-		}
-
-		// Fallback: search for the match in the content
+		// Search for the match in the content
 		const inputMatches = this.matcher.search(match.content)
 		const fallbackMatch = inputMatches.find(m => m.descriptorIndex === descriptor.index)
 		

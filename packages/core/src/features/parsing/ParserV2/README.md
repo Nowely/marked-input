@@ -60,20 +60,24 @@ interface TokenCandidate {
 }
 ```
 
-### Компонентная архитектура
+### Компонентная архитектура (v2.2)
 
 ParserV2 использует принципы **Composition over Inheritance** и **Single Responsibility Principle**:
 
 ```
 ParserV2 (главный класс)
-├── PatternMatcher - находит все матчи маркеров в тексте
-│   └── AhoCorasickMarkupStrategy - стратегия на основе Aho-Corasick
-│       ├── SegmentPatternMatcher - сегментный матчер с цепочками
-│       │   └── AhoCorasick - автомат для multi-pattern поиска
-│       └── SegmentMarkupDescriptor - дескриптор сегментов паттерна
-├── ConflictResolver - разрешает конфликты между пересекающимися маркерами
-└── TokenSequenceBuilder - строит гарантированную последовательность токенов
+├── AhoCorasickMarkupStrategy (кешируется) - стратегия на основе Aho-Corasick
+│   ├── SegmentPatternMatcher - сегментный матчер с цепочками
+│   │   └── AhoCorasick - автомат для multi-pattern поиска
+│   └── SegmentMarkupDescriptor - дескриптор сегментов паттерна
+└── buildGuaranteedSequence() - статическая функция для построения последовательности
 ```
+
+**Изменения после рефакторинга v2.1.2-v2.2:**
+- ❌ **Удалён PatternMatcher** - объединён с AhoCorasickMarkupStrategy
+- ❌ **Удалён TokenSequenceBuilder класс** - преобразован в статические функции
+- ✅ AhoCorasickMarkupStrategy теперь содержит `findAllMatches()`
+- ✅ `buildGuaranteedSequence()` - чистая функция без состояния
 
 ### Эволюция архитектуры
 
@@ -601,14 +605,39 @@ function flattenTree(root: NestedToken): PieceType[] {
 - ✅ **Кросс-паттернная вложенность**: Разные паттерны корректно вкладываются друг в друга
 - ✅ **Универсальность**: Работает с любыми символами без специальной обработки
 
-### Краткосрочные цели (v2.2)
+### Достигнуто в v2.1.1-v2.1.2 (Рефакторинг и оптимизация)
 
-- [ ] Оптимизация производительности Aho-Corasick (цель: <50ms для 100 marks)
+- ✅ **Удалён ConflictResolver** (~164 строки) - избыточен, PatternMatcher не создаёт пересечений
+- ✅ **Удалён createMarkupDescriptor** (~253 строки) - мёртвый код
+- ✅ **Удалён MarkupStrategy interface** - YAGNI
+- ✅ **Удалён matchCache** - утечка памяти
+- ✅ **Удалён deprecated matches()** (~35 строк)
+- ✅ **Упрощён TokenCandidate** - убрано поле conflicts
+- ✅ **Оптимизирован PatternMatcher** - один вызов search()
+- ✅ **Убран хардкод extractInnerContent()** - с 56 строк до 4
+- ✅ **Кеширование strategy** на уровне ParserV2
+- ✅ **Переиспользование ParserV2** при рекурсии
+- ✅ **Производительность**: +89% до +251% (2-3.5x быстрее)
+- ✅ **Код**: -519 строк
+
+### Достигнуто в v2.2 (Финальная архитектурная чистка)
+
+- ✅ **Удалён PatternMatcher класс** (~42 строки) - объединён с AhoCorasickMarkupStrategy
+- ✅ **Удалён TokenSequenceBuilder класс** (~143 строки) - преобразован в статические функции
+- ✅ **AhoCorasickMarkupStrategy.findAllMatches()** - единая точка входа для поиска
+- ✅ **buildGuaranteedSequence()** - чистая функция без состояния и мутабельных полей
+- ✅ **Упрощена архитектура** - меньше классов, больше функций
+- ✅ **Производительность**: стабильна (даже улучшилась на 2-5%)
+- ✅ **Код**: -185 строк (всего удалено -704 строки избыточного кода)
+
+### Краткосрочные цели (v2.3)
+
+- [x] Оптимизация производительности (✅ достигнуто: 2.11ms для 100 marks)
 - [ ] Опциональная самовложенность через конфигурацию
 - [ ] Улучшенная обработка ошибок разметки с детальными сообщениями
 - [ ] Streaming API для очень больших файлов
-- [ ] Кеширование результатов поиска сегментов
-- [ ] Расширенные тесты производительности
+- [ ] Unit-тесты для SegmentPatternMatcher, AhoCorasick
+- [ ] Разбить README на ARCHITECTURE.md и CHANGELOG.md
 
 ### Долгосрочные цели (v3.0)
 

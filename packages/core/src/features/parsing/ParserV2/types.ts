@@ -57,8 +57,7 @@ export interface MatchResult {
 	descriptor: BaseMarkupDescriptor
 }
 
-// Кандидат на токен с информацией о конфликтах
+// Кандидат на токен (упрощен после удаления ConflictResolver)
 export interface TokenCandidate {
 	match: MatchResult
-	conflicts: Set<TokenCandidate>
 }
