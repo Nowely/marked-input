@@ -22,7 +22,7 @@ export function createTextToken(input: string, start: number, end: number): Text
  */
 export function extractInnerContent(match: MatchResult): string | null {
 	// label already contains text between the first pair of segments (gap of type 'label')
-	// This was extracted in MarkupMatchingStrategy.extractFromParts()
+	// This was extracted in MarkupMatcher.extractFromParts()
 	return match.label || null
 }
 

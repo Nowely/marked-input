@@ -8,7 +8,7 @@ import {MatchSegment} from './PatternChainManager'
  * Markup matching strategy using Aho-Corasick algorithm
  * Uses segment pattern matching for efficient multi-pattern parsing without hardcoded logic
  */
-export class MarkupMatchingStrategy {
+export class MarkupMatcher {
 	private readonly descriptors: MarkupDescriptor[]
 	private readonly matcher: PatternEngine
 

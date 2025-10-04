@@ -66,7 +66,7 @@ ParserV2 использует принципы **Composition over Inheritance** 
 
 ```
 ParserV2 (главный класс)
-├── MarkupMatchingStrategy (кешируется) - стратегия матчинга разметки
+├── MarkupMatcher (кешируется) - стратегия матчинга разметки
 │   ├── PatternEngine - движок паттернов с цепочками
 │   │   ├── PatternBuilder - строитель паттернов
 │   │   ├── PatternChainManager - менеджер цепочек паттернов
@@ -134,7 +134,7 @@ ParserV2 (главный класс)
 ### Алгоритм работы
 
 1. **Поиск матчей**: `PatternEngine` находит все потенциальные маркеры в тексте
-2. **Разрешение конфликтов**: `MarkupMatchingStrategy` выбирает непересекающиеся маркеры, предпочитая более длинные
+2. **Разрешение конфликтов**: `MarkupMatcher` выбирает непересекающиеся маркеры, предпочитая более длинные
 3. **Построение последовательности**: `TokenAssembler` создает гарантированную структуру `text-mark-text-mark-text...`
 
 ### Стратегия парсинга: Aho-Corasick
@@ -150,7 +150,7 @@ interface MarkupStrategy {
 
 #### Архитектура стратегии
 
-**MarkupMatchingStrategy** преобразует markup паттерны в сегменты и использует автомат для поиска:
+**MarkupMatcher** преобразует markup паттерны в сегменты и использует автомат для поиска:
 
 ```typescript
 // Пример преобразования:
@@ -306,12 +306,12 @@ split(value: string): NestedToken[]
 
 ### Компоненты
 
-#### MarkupMatchingStrategy
+#### MarkupMatcher
 
 Отвечает за поиск всех потенциальных матчей маркеров в тексте с использованием Aho-Corasick алгоритма.
 
 ```typescript
-class MarkupMatchingStrategy {
+class MarkupMatcher {
   constructor(descriptors: MarkupDescriptor[])
   findAllMatches(input: string): MatchResult[]
   getAllMatches(input: string): MatchResult[]
@@ -449,7 +449,7 @@ ParserV2 гарантирует структуру `text - mark - text - mark - 
 ### Компонентная оптимизация
 
 1. **PatternEngine**: Эффективный поиск матчей с предварительной группировкой по триггерам
-2. **MarkupMatchingStrategy**: Быстрое разрешение конфликтов с приоритетом длинных маркеров
+2. **MarkupMatcher**: Быстрое разрешение конфликтов с приоритетом длинных маркеров
 3. **TokenAssembler**: Гарантированное построение последовательности без лишних проверок
 4. **GenericMarkupStrategy**: Универсальная стратегия, оптимизированная для всех типов маркеров
 
@@ -587,7 +587,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 - ✅ **Однопроходный парсинг**: Каждый символ читается только один раз
 - ✅ **Древовидная структура**: Оптимизированная обработка вложенных маркеров
 - ✅ **Рекурсивная обработка**: Полная поддержка вложенных маркеров
-- ✅ **Компонентная архитектура**: Разделение на PatternEngine, MarkupMatchingStrategy, TokenAssembler
+- ✅ **Компонентная архитектура**: Разделение на PatternEngine, MarkupMatcher, TokenAssembler
 - ✅ **Стратегии парсинга**: BracketMarkupStrategy и ParenMarkupStrategy для разных типов маркеров
 
 ### Достигнуто в v2.0.1 (рефакторинг архитектуры)
@@ -630,7 +630,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 
 ### Достигнуто в v2.2 (Финальная архитектурная чистка)
 
-- ✅ **Переименован AhoCorasickStrategy → MarkupMatchingStrategy** - более описательное имя
+- ✅ **Переименован AhoCorasickStrategy → MarkupMatcher** - более описательное имя
 - ✅ **Переименован SegmentPatternMatcher → PatternEngine** - отражает суть движка паттернов
 - ✅ **Переименован TokenSequenceBuilder → TokenAssembler** - функция сборки токенов
 - ✅ **Декомпозиция PatternEngine** - вынесен PatternChainManager в отдельный файл
@@ -704,7 +704,7 @@ function flattenTree(root: NestedToken): PieceType[] {
 ```typescript
 // Отладка поиска матчей
 const descriptors = markups.map(createMarkupDescriptor)
-const strategy = new MarkupMatchingStrategy(descriptors)
+const strategy = new MarkupMatcher(descriptors)
 const matches = strategy.findAllMatches(input)
 console.log('Найденные матчи:', matches)
 

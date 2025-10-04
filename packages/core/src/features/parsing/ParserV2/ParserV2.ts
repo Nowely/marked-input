@@ -1,19 +1,19 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
 import {NestedToken, MatchResult} from './types'
-import {MarkupMatchingStrategy} from './MarkupMatcher'
+import {MarkupMatcher} from './MarkupMatcher'
 import {createMarkupDescriptor} from './MarkupDescriptor'
 import {buildTokenSequence} from './TokenBuilder'
 
 export class ParserV2 {
 	private readonly markups: Markup[]
-	private readonly strategy: MarkupMatchingStrategy
+	private readonly strategy: MarkupMatcher
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
 		// Кешируем стратегию на уровне парсера для переиспользования
 		const descriptors = markups.map(createMarkupDescriptor)
-		this.strategy = new MarkupMatchingStrategy(descriptors)
+		this.strategy = new MarkupMatcher(descriptors)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {

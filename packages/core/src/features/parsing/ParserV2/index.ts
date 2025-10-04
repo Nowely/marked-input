@@ -1,6 +1,6 @@
 export {ParserV2} from './ParserV2'
 export {createMarkupDescriptor, type MarkupDescriptor} from './MarkupDescriptor'
-export {MarkupMatchingStrategy} from './MarkupMatcher'
+export {MarkupMatcher} from './MarkupMatcher'
 export {PatternEngine} from './PatternEngine'
 export type {PatternMatch} from './PatternBuilder'
 export {PatternBuilder} from './PatternBuilder'
