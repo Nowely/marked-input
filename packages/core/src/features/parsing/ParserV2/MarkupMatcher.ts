@@ -1,16 +1,18 @@
 import {MatchResult} from './types'
-import {SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
-import {PatternEngine, PatternMatch, MatchSegment} from './PatternEngine'
+import {MarkupDescriptor} from './MarkupDescriptor'
+import {PatternEngine} from './PatternEngine'
+import {PatternMatch} from './PatternBuilder'
+import {MatchSegment} from './PatternChainManager'
 
 /**
- * Aho-Corasick based markup strategy
+ * Markup matching strategy using Aho-Corasick algorithm
  * Uses segment pattern matching for efficient multi-pattern parsing without hardcoded logic
  */
-export class AhoCorasickStrategy {
-	private readonly descriptors: SegmentMarkupDescriptor[]
+export class MarkupMatchingStrategy {
+	private readonly descriptors: MarkupDescriptor[]
 	private readonly matcher: PatternEngine
 
-	constructor(descriptors: SegmentMarkupDescriptor[]) {
+	constructor(descriptors: MarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.matcher = new PatternEngine(descriptors)
 	}
@@ -102,7 +104,7 @@ export class AhoCorasickStrategy {
 	 * Used as fallback for compatibility (when not using getAllMatches)
 	 */
 	extractContent(match: MatchResult): { label: string; value?: string } {
-		const descriptor = match.descriptor as SegmentMarkupDescriptor
+		const descriptor = match.descriptor as MarkupDescriptor
 
 		// Search for the match in the content
 		const inputMatches = this.matcher.search(match.content)
@@ -120,7 +122,7 @@ export class AhoCorasickStrategy {
 	/**
 	 * Extracts label and value from match parts based on gap types
 	 */
-	private extractFromParts(parts: MatchSegment[], descriptor: SegmentMarkupDescriptor): { label: string; value?: string } {
+	private extractFromParts(parts: MatchSegment[], descriptor: MarkupDescriptor): { label: string; value?: string } {
 		const gaps = this.getGapParts(parts)
 
 		if (descriptor.hasTwoLabels) {

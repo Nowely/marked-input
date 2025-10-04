@@ -1,19 +1,19 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
 import {NestedToken, MatchResult} from './types'
-import {AhoCorasickStrategy} from './AhoCorasickStrategy'
-import {createSegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
-import {buildGuaranteedSequence} from './TokenAssembler'
+import {MarkupMatchingStrategy} from './MarkupMatcher'
+import {createMarkupDescriptor} from './MarkupDescriptor'
+import {buildTokenSequence} from './TokenBuilder'
 
 export class ParserV2 {
 	private readonly markups: Markup[]
-	private readonly strategy: AhoCorasickStrategy
+	private readonly strategy: MarkupMatchingStrategy
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
 		// Кешируем стратегию на уровне парсера для переиспользования
-		const descriptors = markups.map(createSegmentMarkupDescriptor)
-		this.strategy = new AhoCorasickStrategy(descriptors)
+		const descriptors = markups.map(createMarkupDescriptor)
+		this.strategy = new MarkupMatchingStrategy(descriptors)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
@@ -25,8 +25,8 @@ export class ParserV2 {
 		// Находим все матчи маркеров
 		const matches = this.strategy.findAllMatches(value)
 
-		// Строим гарантированную последовательность токенов
-		return buildGuaranteedSequence(value, this.markups, this, matches)
+		// Строим последовательность токенов
+		return buildTokenSequence(value, this.markups, this, matches)
 	}
 
 }

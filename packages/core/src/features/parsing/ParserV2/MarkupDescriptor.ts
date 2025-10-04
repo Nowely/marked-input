@@ -6,7 +6,7 @@ import {BaseMarkupDescriptor} from './types'
  * Descriptor for segment-based markup parsing
  * Converts markup templates into arrays of static segments
  */
-export interface SegmentMarkupDescriptor extends BaseMarkupDescriptor {
+export interface MarkupDescriptor extends BaseMarkupDescriptor {
 	/** Original markup template string */
 	markup: Markup
 	/** Index of this markup in the original markups array */
@@ -31,7 +31,7 @@ export interface SegmentMarkupDescriptor extends BaseMarkupDescriptor {
  * - `@[__label__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "value"]
  * - `<__label__>__value__</__label__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["label", "value", "label"]
  */
-export function createSegmentMarkupDescriptor(markup: Markup, index: number): SegmentMarkupDescriptor {
+export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const hasTwoLabels = countPlaceholder(markup, PLACEHOLDER.LABEL) === 2
 	const hasValue = countPlaceholder(markup, PLACEHOLDER.VALUE) === 1
 
@@ -145,4 +145,3 @@ function countPlaceholder(markup: string, placeholder: string): number {
 
 	return count
 }
-

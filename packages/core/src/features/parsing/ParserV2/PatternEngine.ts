@@ -1,213 +1,23 @@
-import {AhoCorasick, SegmentMatch} from './AhoCorasick'
-import {SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
-import {PatternChainManager, PatternChain, MatchSegment} from './PatternChainManager'
-
-/**
- * Complete match of a pattern with all its parts
- */
-export interface PatternMatch {
-	descriptorIndex: number
-	parts: MatchSegment[]
-}
-
-/**
- * Unique segment match with descriptor info
- */
-interface UniqueMatch {
-	start: number
-	end: number
-	value: string
-	descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
-}
-
-/**
- * Pattern assembler for building complete patterns from chains
- */
-class PatternAssembler {
-	private readonly descriptors: SegmentMarkupDescriptor[]
-
-	constructor(descriptors: SegmentMarkupDescriptor[]) {
-		this.descriptors = descriptors
-	}
-
-	/**
-	 * Tries to extend a chain with a new segment match
-	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
-	 */
-	tryExtendChain(chain: PatternChain, match: UniqueMatch): { completed: PatternMatch | null; extended: PatternChain | null } {
-		const descriptor = this.descriptors[chain.descriptorIndex]
-
-		// Check if this segment matches what this chain expects
-		const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
-		if (expectedSegment !== match.value) {
-			return { completed: null, extended: null } // This segment doesn't match what this chain expects
-		}
-
-		const newPatternChain = this.cloneChain(chain)
-
-		// Add gap if needed
-		if (match.start > newPatternChain.pos) {
-			const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
-			const gapType = descriptor.gapTypes[gapIndex]
-
-			newPatternChain.parts.push({
-				type: 'gap',
-				start: newPatternChain.pos,
-				end: match.start - 1,
-				gapType
-			})
-		}
-
-		// Add segment
-		newPatternChain.parts.push({
-			type: 'segment',
-			start: match.start,
-			end: match.end,
-			value: match.value
-		})
-
-		newPatternChain.pos = match.end + 1
-		newPatternChain.nextSegmentIndex++
-
-		// Check if pattern is complete
-		if (newPatternChain.nextSegmentIndex === descriptor.segments.length) {
-			return {
-				completed: {
-					descriptorIndex: newPatternChain.descriptorIndex,
-					parts: newPatternChain.parts.map(p => ({ ...p }))
-				},
-				extended: null
-			}
-		}
-
-		return { completed: null, extended: newPatternChain } // Chain extended but not complete
-	}
-
-	/**
-	 * Creates a new chain for starting pattern
-	 * Returns {completed: PatternMatch | null, chain: PatternChain | null}
-	 */
-	createNewChain(descriptorIndex: number, match: UniqueMatch): { completed: PatternMatch | null; chain: PatternChain | null } {
-		const descriptor = this.descriptors[descriptorIndex]
-
-		// Only start chains at first segment
-		if (match.descriptors.find(d => d.descriptorIndex === descriptorIndex)?.segmentIndex !== 0) {
-			return { completed: null, chain: null }
-		}
-
-		const newPatternChain: PatternChain = {
-			descriptorIndex,
-			nextSegmentIndex: 1,
-			pos: match.end + 1,
-			parts: [{
-				type: 'segment',
-				start: match.start,
-				end: match.end,
-				value: match.value
-			}]
-		}
-
-		// Single-segment pattern is immediately complete
-		if (newPatternChain.nextSegmentIndex === descriptor.segments.length) {
-			return {
-				completed: {
-					descriptorIndex: newPatternChain.descriptorIndex,
-					parts: newPatternChain.parts
-				},
-				chain: null
-			}
-		}
-
-		return { completed: null, chain: newPatternChain }
-	}
-
-	/**
-	 * Clones a chain for branching
-	 */
-	private cloneChain(chain: PatternChain): PatternChain {
-		return {
-			descriptorIndex: chain.descriptorIndex,
-			nextSegmentIndex: chain.nextSegmentIndex,
-			pos: chain.pos,
-			parts: chain.parts.map(p => ({ ...p }))
-		}
-	}
-}
-
-/**
- * Segment matcher using Aho-Corasick algorithm
- */
-class SegmentMatcher {
-	private readonly segmentList: string[]
-	private readonly segmentMap: Array<{ descriptorIndex: number; segmentIndex: number }>
-	private readonly ac: AhoCorasick
-
-	constructor(descriptors: SegmentMarkupDescriptor[]) {
-		this.segmentList = []
-		this.segmentMap = []
-
-		// Build unified segment list and mapping
-		for (let di = 0; di < descriptors.length; di++) {
-			const descriptor = descriptors[di]
-			for (let si = 0; si < descriptor.segments.length; si++) {
-				this.segmentList.push(descriptor.segments[si])
-				this.segmentMap.push({ descriptorIndex: di, segmentIndex: si })
-			}
-		}
-
-		// Build Aho-Corasick automaton
-		this.ac = new AhoCorasick(this.segmentList)
-	}
-
-	/**
-	 * Finds all segment matches and groups them by position+value
-	 */
-	findDeduplicatedMatches(text: string): UniqueMatch[] {
-		const rawMatches = this.ac.search(text)
-
-		// Group by position and value to handle multiple descriptors sharing same segments
-		const matchesByPosValue = new Map<string, UniqueMatch>()
-
-		for (const r of rawMatches) {
-			const mapInfo = this.segmentMap[r.segIndex]
-			const key = `${r.start}:${r.value}`
-
-			if (!matchesByPosValue.has(key)) {
-				matchesByPosValue.set(key, {
-					start: r.start,
-					end: r.end,
-					value: r.value,
-					descriptors: []
-				})
-			}
-			matchesByPosValue.get(key)!.descriptors.push({
-				descriptorIndex: mapInfo.descriptorIndex,
-				segmentIndex: mapInfo.segmentIndex
-			})
-		}
-
-		// Convert to array and sort by position
-		const uniqueMatches = Array.from(matchesByPosValue.values())
-		uniqueMatches.sort((a, b) => (a.start - b.start) || (a.end - b.end))
-
-		return uniqueMatches
-	}
-}
+import {MarkupDescriptor} from './MarkupDescriptor'
+import {PatternChainManager} from './PatternChainManager'
+import {PatternBuilder, PatternMatch} from './PatternBuilder'
+import {SegmentMatcher} from './SegmentMatcher'
+import {UniqueMatch} from './types'
 
 /**
  * Pattern engine using segment-based matching with Aho-Corasick algorithm
  * Efficiently finds all occurrences of markup patterns by treating them as segment sequences
  */
 export class PatternEngine {
-	private readonly descriptors: SegmentMarkupDescriptor[]
+	private readonly descriptors: MarkupDescriptor[]
 	private readonly segmentMatcher: SegmentMatcher
-	private readonly patternAssembler: PatternAssembler
+	private readonly patternBuilder: PatternBuilder
 	private readonly chainManager: PatternChainManager
 
-	constructor(descriptors: SegmentMarkupDescriptor[]) {
+	constructor(descriptors: MarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.segmentMatcher = new SegmentMatcher(descriptors)
-		this.patternAssembler = new PatternAssembler(descriptors)
+		this.patternBuilder = new PatternBuilder(descriptors)
 		this.chainManager = new PatternChainManager()
 	}
 
@@ -253,7 +63,7 @@ export class PatternEngine {
 				continue // Segment appears before chain expects it
 			}
 
-			const { completed, extended } = this.patternAssembler.tryExtendChain(chain, match)
+			const { completed, extended } = this.patternBuilder.tryExtendChain(chain, match)
 
 			if (completed) {
 				results.push(completed)
@@ -275,7 +85,7 @@ export class PatternEngine {
 	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>): void {
 		for (const descInfo of match.descriptors) {
 			if (descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex)) {
-				const { completed, chain } = this.patternAssembler.createNewChain(descInfo.descriptorIndex, match)
+				const { completed, chain } = this.patternBuilder.createNewChain(descInfo.descriptorIndex, match)
 
 				if (completed) {
 					// Single-segment pattern was completed immediately

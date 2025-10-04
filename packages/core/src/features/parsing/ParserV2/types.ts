@@ -57,3 +57,13 @@ export interface MatchResult {
 	descriptor: BaseMarkupDescriptor
 }
 
+/**
+ * Unique segment match with descriptor info
+ */
+export interface UniqueMatch {
+	start: number
+	end: number
+	value: string
+	descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
+}
+
