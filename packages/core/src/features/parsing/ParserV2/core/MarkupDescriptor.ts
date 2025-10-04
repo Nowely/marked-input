@@ -76,22 +76,34 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 }
 
 /**
+ * Placeholder information extracted from markup
+ */
+interface PlaceholderInfo {
+	type: 'label' | 'value'
+	pos: number
+	length: number
+}
+
+/**
  * Parses markup template into segments and gap types
  */
 function parseSegmentsAndGaps(markup: string): {
 	segments: string[]
 	gapTypes: Array<'label' | 'value'>
 } {
-	const segments: string[] = []
-	const gapTypes: Array<'label' | 'value'> = []
+	const placeholders = extractPlaceholders(markup)
+	const result = buildSegments(markup, placeholders)
+	validateParseResult(result)
+	return result
+}
 
-	let currentPos = 0
-	let lastSegmentEnd = 0
-
-	// Find all placeholders in order
-	const placeholders: Array<{ type: 'label' | 'value'; pos: number; length: number }> = []
-
+/**
+ * Extracts all placeholders from markup string in order
+ */
+function extractPlaceholders(markup: string): PlaceholderInfo[] {
+	const placeholders: PlaceholderInfo[] = []
 	let pos = 0
+
 	while (pos < markup.length) {
 		const labelPos = markup.indexOf(PLACEHOLDER.LABEL, pos)
 		const valuePos = markup.indexOf(PLACEHOLDER.VALUE, pos)
@@ -99,16 +111,37 @@ function parseSegmentsAndGaps(markup: string): {
 		if (labelPos === -1 && valuePos === -1) break
 
 		if (labelPos !== -1 && (valuePos === -1 || labelPos < valuePos)) {
-			placeholders.push({ type: 'label', pos: labelPos, length: PLACEHOLDER.LABEL.length })
+			placeholders.push({
+				type: 'label',
+				pos: labelPos,
+				length: PLACEHOLDER.LABEL.length
+			})
 			pos = labelPos + PLACEHOLDER.LABEL.length
 		} else if (valuePos !== -1) {
-			placeholders.push({ type: 'value', pos: valuePos, length: PLACEHOLDER.VALUE.length })
+			placeholders.push({
+				type: 'value',
+				pos: valuePos,
+				length: PLACEHOLDER.VALUE.length
+			})
 			pos = valuePos + PLACEHOLDER.VALUE.length
 		}
 	}
 
+	return placeholders
+}
+
+/**
+ * Builds segments and gap types from markup and extracted placeholders
+ */
+function buildSegments(
+	markup: string,
+	placeholders: PlaceholderInfo[]
+): { segments: string[]; gapTypes: Array<'label' | 'value'> } {
+	const segments: string[] = []
+	const gapTypes: Array<'label' | 'value'> = []
+	let currentPos = 0
+
 	// Extract segments between placeholders
-	currentPos = 0
 	for (const placeholder of placeholders) {
 		// Segment before this placeholder
 		const segment = markup.substring(currentPos, placeholder.pos)
@@ -129,6 +162,20 @@ function parseSegmentsAndGaps(markup: string): {
 	}
 
 	return { segments, gapTypes }
+}
+
+/**
+ * Validates the result of parsing segments and gaps
+ */
+function validateParseResult(result: { segments: string[]; gapTypes: Array<'label' | 'value'> }): void {
+	if (result.segments.length === 0) {
+		throw new Error('Parsed markup must contain at least one segment')
+	}
+
+	// Gap types should be one less than segments (except when markup ends with placeholder)
+	if (result.gapTypes.length > result.segments.length) {
+		throw new Error('Invalid markup structure: more gaps than segments')
+	}
 }
 
 /**

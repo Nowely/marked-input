@@ -3,6 +3,7 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternEngine} from './PatternEngine'
 import {PatternMatch} from '../utils/PatternBuilder'
 import {MatchSegment} from '../utils/PatternChainManager'
+import {ContentExtractor} from '../utils/ContentExtractor'
 
 /**
  * Markup matching strategy using Aho-Corasick algorithm
@@ -11,10 +12,12 @@ import {MatchSegment} from '../utils/PatternChainManager'
 export class MarkupMatcher {
 	private readonly descriptors: MarkupDescriptor[]
 	private readonly matcher: PatternEngine
+	private readonly contentExtractor: ContentExtractor
 
 	constructor(descriptors: MarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.matcher = new PatternEngine(descriptors)
+		this.contentExtractor = new ContentExtractor()
 	}
 
 	/**
@@ -22,15 +25,22 @@ export class MarkupMatcher {
 	 * Filters overlapping matches - greedy approach: longest match wins
 	 */
 	getAllMatches(input: string): MatchResult[] {
-		const allPatternMatches = this.matcher.search(input)
-		const sortedMatches = this.sortPatternMatches(allPatternMatches)
-		return this.filterOverlappingMatches(sortedMatches, input)
+		const patternMatches = this.findPatternMatches(input)
+		const sortedMatches = this.sortByPositionAndLength(patternMatches)
+		return this.removeOverlaps(sortedMatches, input)
+	}
+
+	/**
+	 * Finds all pattern matches in the input text
+	 */
+	private findPatternMatches(input: string): PatternMatch[] {
+		return this.matcher.search(input)
 	}
 
 	/**
 	 * Sorts pattern matches by start position, then by length (longest first)
 	 */
-	private sortPatternMatches(matches: PatternMatch[]): PatternMatch[] {
+	private sortByPositionAndLength(matches: PatternMatch[]): PatternMatch[] {
 		return matches.sort((a, b) => {
 			const startA = this.getMatchStart(a)
 			const startB = this.getMatchStart(b)
@@ -45,9 +55,9 @@ export class MarkupMatcher {
 	}
 
 	/**
-	 * Filters overlapping matches using greedy approach: longest match wins
+	 * Removes overlapping matches using greedy approach: longest match wins
 	 */
-	private filterOverlappingMatches(sortedMatches: PatternMatch[], input: string): MatchResult[] {
+	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
 		let lastEnd = 0
 
@@ -80,7 +90,7 @@ export class MarkupMatcher {
 		const descriptor = this.descriptors[patternMatch.descriptorIndex]
 
 		// Extract label and value
-		const extracted = this.extractFromParts(patternMatch.parts, descriptor)
+		const extracted = this.contentExtractor.extractFromParts(patternMatch.parts, descriptor)
 
 		return {
 			start,
@@ -105,70 +115,13 @@ export class MarkupMatcher {
 
 		if (fallbackMatch) {
 			this.matcher.materializeGaps(fallbackMatch, match.content)
-			return this.extractFromParts(fallbackMatch.parts, descriptor)
+			return this.contentExtractor.extractFromParts(fallbackMatch.parts, descriptor)
 		}
 
 		// Last resort: return empty label
 		return { label: '' }
 	}
 
-	/**
-	 * Extracts label and value from match parts based on gap types
-	 */
-	private extractFromParts(parts: MatchSegment[], descriptor: MarkupDescriptor): { label: string; value?: string } {
-		const gaps = this.getGapParts(parts)
-
-		if (descriptor.hasTwoLabels) {
-			return this.extractTwoLabelPattern(gaps)
-		} else if (descriptor.hasValue) {
-			return this.extractValuePattern(gaps)
-		} else {
-			return this.extractSimplePattern(gaps)
-		}
-	}
-
-	/**
-	 * Gets all gap parts from match parts
-	 */
-	private getGapParts(parts: MatchSegment[]): MatchSegment[] {
-		return parts.filter(p => p.type === 'gap')
-	}
-
-	/**
-	 * Extracts for two-label patterns like <__label__>__value__</__label__>
-	 */
-	private extractTwoLabelPattern(gaps: MatchSegment[]): { label: string; value?: string } {
-		const labelGap = gaps.find(g => g.gapType === 'label')
-		const valueGap = gaps.find(g => g.gapType === 'value')
-
-		return {
-			label: labelGap?.value || '',
-			value: valueGap?.value
-		}
-	}
-
-	/**
-	 * Extracts for value patterns like @[__label__](__value__)
-	 */
-	private extractValuePattern(gaps: MatchSegment[]): { label: string; value?: string } {
-		const labelGap = gaps.find(g => g.gapType === 'label')
-		const valueGap = gaps.find(g => g.gapType === 'value')
-
-		return {
-			label: labelGap?.value || '',
-			value: valueGap?.value
-		}
-	}
-
-	/**
-	 * Extracts for simple patterns like #[__label__]
-	 */
-	private extractSimplePattern(gaps: MatchSegment[]): { label: string; value?: string } {
-		const labelGap = gaps.find(g => g.gapType === 'label')
-		return {
-			label: labelGap?.value || ''
-		}
-	}
 
 	/**
 	 * Gets the start position of a pattern match

@@ -72,15 +72,7 @@ export function buildTokenSequence(
 	matches: MatchResult[]
 ): NestedToken[] {
 	if (matches.length === 0) {
-		// If no markers, return single text token
-		return [{
-			type: 'text',
-			content: input,
-			position: {
-				start: 0,
-				end: input.length
-			}
-		}]
+		return [createFullTextToken(input)]
 	}
 
 	const tokens: NestedToken[] = []
@@ -90,43 +82,108 @@ export function buildTokenSequence(
 		const match = matches[i]
 		const nextMatch = matches[i + 1]
 
-		// Add text before marker (if any)
-		if (match.start > currentPosition) {
-			tokens.push(createTextToken(input, currentPosition, match.start))
-		} else if (tokens.length === 0) {
-			// First marker starts at position 0, add empty text
-			tokens.push(createTextToken(input, 0, 0))
-		}
-
-		// Add marker
-		tokens.push(createMarkToken(input, markups, parser, match))
-
-		// Update current position
-		currentPosition = match.end
-
-		// Add text between markers (if there's a next match)
-		if (nextMatch) {
-			const nextStart = nextMatch.start
-
-			if (nextStart > currentPosition) {
-				// There's text between markers
-				tokens.push(createTextToken(input, currentPosition, nextStart))
-				currentPosition = nextStart
-			} else {
-				// Next marker starts immediately, add empty text
-				tokens.push(createTextToken(input, currentPosition, currentPosition))
-			}
-		} else {
-			// This is the last marker
-			if (currentPosition < input.length) {
-				// There's remaining text after marker
-				tokens.push(createTextToken(input, currentPosition, input.length))
-			} else {
-				// Marker at end of string, add empty text
-				tokens.push(createTextToken(input, currentPosition, currentPosition))
-			}
-		}
+		currentPosition = processMatch(tokens, input, markups, parser, match, nextMatch, currentPosition)
 	}
 
 	return tokens
+}
+
+/**
+ * Creates a single text token for input without any matches
+ */
+function createFullTextToken(input: string): TextToken {
+	return {
+		type: 'text',
+		content: input,
+		position: {
+			start: 0,
+			end: input.length
+		}
+	}
+}
+
+/**
+ * Processes a single match and adds appropriate tokens
+ */
+function processMatch(
+	tokens: NestedToken[],
+	input: string,
+	markups: Markup[],
+	parser: ParserV2,
+	match: MatchResult,
+	nextMatch: MatchResult | undefined,
+	currentPosition: number
+): number {
+	let pos = currentPosition
+
+	// Add text before marker (if any)
+	pos = addLeadingText(tokens, input, match, pos)
+
+	// Add marker
+	tokens.push(createMarkToken(input, markups, parser, match))
+
+	// Update current position
+	pos = match.end
+
+	// Add text between markers or after last marker
+	pos = addTrailingText(tokens, input, nextMatch, pos)
+
+	return pos
+}
+
+/**
+ * Adds text token before a marker if needed
+ */
+function addLeadingText(tokens: NestedToken[], input: string, match: MatchResult, currentPosition: number): number {
+	if (match.start > currentPosition) {
+		tokens.push(createTextToken(input, currentPosition, match.start))
+		return currentPosition
+	} else if (tokens.length === 0) {
+		// First marker starts at position 0, add empty text
+		tokens.push(createTextToken(input, 0, 0))
+		return 0
+	}
+	return currentPosition
+}
+
+/**
+ * Adds text token after marker (between markers or at end)
+ */
+function addTrailingText(tokens: NestedToken[], input: string, nextMatch: MatchResult | undefined, currentPosition: number): number {
+	if (nextMatch) {
+		return addInterMarkerText(tokens, input, nextMatch, currentPosition)
+	} else {
+		return addFinalText(tokens, input, currentPosition)
+	}
+}
+
+/**
+ * Adds text between two markers
+ */
+function addInterMarkerText(tokens: NestedToken[], input: string, nextMatch: MatchResult, currentPosition: number): number {
+	const nextStart = nextMatch.start
+
+	if (nextStart > currentPosition) {
+		// There's text between markers
+		tokens.push(createTextToken(input, currentPosition, nextStart))
+		return nextStart
+	} else {
+		// Next marker starts immediately, add empty text
+		tokens.push(createTextToken(input, currentPosition, currentPosition))
+		return currentPosition
+	}
+}
+
+/**
+ * Adds final text after the last marker
+ */
+function addFinalText(tokens: NestedToken[], input: string, currentPosition: number): number {
+	if (currentPosition < input.length) {
+		// There's remaining text after marker
+		tokens.push(createTextToken(input, currentPosition, input.length))
+	} else {
+		// Marker at end of string, add empty text
+		tokens.push(createTextToken(input, currentPosition, currentPosition))
+	}
+	return currentPosition
 }
