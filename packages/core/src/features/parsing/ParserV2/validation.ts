@@ -1,4 +1,5 @@
 import {NestedToken, ValidationResult, MarkToken} from './types'
+import {InnerOption} from '../../default/types'
 
 /**
  * Type guard to check if token is a MarkToken with children
@@ -116,7 +117,7 @@ export const validateTreeStructure = (tokens: NestedToken[]): ValidationResult =
 /**
  * Проверяет корректность разметки
  */
-export const validateMarkup = (content: string, options: any[]): ValidationResult => {
+export const validateMarkup = (content: string, options: InnerOption[]): ValidationResult => {
 	const errors: string[] = []
 
 	// Проверка на незакрытые markup

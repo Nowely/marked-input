@@ -57,7 +57,3 @@ export interface MatchResult {
 	descriptor: BaseMarkupDescriptor
 }
 
-// Кандидат на токен (упрощен после удаления ConflictResolver)
-export interface TokenCandidate {
-	match: MatchResult
-}

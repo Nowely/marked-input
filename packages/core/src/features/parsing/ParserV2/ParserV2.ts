@@ -1,6 +1,6 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
-import {NestedToken, TokenCandidate} from './types'
+import {NestedToken, MatchResult} from './types'
 import {AhoCorasickMarkupStrategy} from './AhoCorasickMarkupStrategy'
 import {createSegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
 import {buildGuaranteedSequence} from './TokenSequenceBuilder'
@@ -25,11 +25,8 @@ export class ParserV2 {
 		// Находим все матчи маркеров
 		const matches = this.strategy.findAllMatches(value)
 
-		// Преобразуем matches в кандидаты (ConflictResolver больше не нужен)
-		const candidates: TokenCandidate[] = matches.map(match => ({match}))
-
 		// Строим гарантированную последовательность токенов
-		return buildGuaranteedSequence(value, this.markups, this, candidates)
+		return buildGuaranteedSequence(value, this.markups, this, matches)
 	}
 
 }

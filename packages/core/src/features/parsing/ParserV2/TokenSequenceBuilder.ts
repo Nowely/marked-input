@@ -1,5 +1,6 @@
 import {Markup} from '../../../shared/types'
-import {NestedToken, TextToken, MarkToken, TokenCandidate, MatchResult} from './types'
+import {NestedToken, TextToken, MarkToken, MatchResult} from './types'
+import {ParserV2} from './ParserV2'
 
 /**
  * Создает text токен
@@ -28,7 +29,7 @@ function extractInnerContent(match: MatchResult): string | null {
 /**
  * Создает mark токен из матча
  */
-function createMarkToken(input: string, markups: Markup[], parser: any, match: MatchResult): MarkToken {
+function createMarkToken(input: string, markups: Markup[], parser: ParserV2, match: MatchResult): MarkToken {
 	const children: NestedToken[] = []
 
 	// Извлекаем внутренний контент для рекурсивного парсинга
@@ -67,10 +68,10 @@ function createMarkToken(input: string, markups: Markup[], parser: any, match: M
 export function buildGuaranteedSequence(
 	input: string,
 	markups: Markup[],
-	parser: any,
-	candidates: TokenCandidate[]
+	parser: ParserV2,
+	matches: MatchResult[]
 ): NestedToken[] {
-	if (candidates.length === 0) {
+	if (matches.length === 0) {
 		// Если нет маркеров, возвращаем один text токен
 		return [{
 			type: 'text',
@@ -85,10 +86,9 @@ export function buildGuaranteedSequence(
 	const tokens: NestedToken[] = []
 	let currentPosition = 0
 
-	for (let i = 0; i < candidates.length; i++) {
-		const candidate = candidates[i]
-		const nextCandidate = candidates[i + 1]
-		const match = candidate.match
+	for (let i = 0; i < matches.length; i++) {
+		const match = matches[i]
+		const nextMatch = matches[i + 1]
 
 		// Добавляем текст перед маркером (если есть)
 		if (match.start > currentPosition) {
@@ -104,9 +104,9 @@ export function buildGuaranteedSequence(
 		// Обновляем текущую позицию
 		currentPosition = match.end
 
-		// Добавляем текст между маркерами (если есть следующий кандидат)
-		if (nextCandidate) {
-			const nextStart = nextCandidate.match.start
+		// Добавляем текст между маркерами (если есть следующий матч)
+		if (nextMatch) {
+			const nextStart = nextMatch.start
 
 			if (nextStart > currentPosition) {
 				// Есть текст между маркерами

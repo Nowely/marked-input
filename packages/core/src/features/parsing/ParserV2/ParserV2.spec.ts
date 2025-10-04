@@ -2,10 +2,12 @@ import {describe, it, expect, beforeEach} from 'vitest'
 import {ParserV2} from './ParserV2'
 import {validateTreeStructure, countMarks, findMaxDepth} from './validation'
 import {MarkToken, NestedToken} from './types'
+import {Markup} from '../../../shared/types'
+import {InnerOption} from '../../default/types'
 
 describe('ParserV2', () => {
 	let parser: ParserV2
-	let markups: any[]
+	let markups: Markup[]
 
 	beforeEach(() => {
 		markups = ['@[__label__](__value__)', '#[__label__]']
@@ -15,9 +17,9 @@ describe('ParserV2', () => {
 	describe('static split', () => {
 		it('should parse text with provided options and return NestedToken[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options = [
-				{markup: '@[__label__](__value__)' as any, trigger: '@', data: []},
-				{markup: '#[__label__]' as any, trigger: '#', data: []},
+			const options: InnerOption[] = [
+				{markup: '@[__label__](__value__)', trigger: '@', data: []},
+				{markup: '#[__label__]', trigger: '#', data: []},
 			]
 
 			const result = ParserV2.split(value, options)

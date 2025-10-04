@@ -27,11 +27,16 @@ export class AhoCorasickMarkupStrategy {
 	 * Filters overlapping matches - greedy approach: longest match wins
 	 */
 	getAllMatches(input: string): MatchResult[] {
-		// One search call for all patterns!
 		const allPatternMatches = this.matcher.search(input)
-		
-		// Sort by start position, then by length (longest first)
-		allPatternMatches.sort((a, b) => {
+		const sortedMatches = this.sortPatternMatches(allPatternMatches)
+		return this.filterOverlappingMatches(sortedMatches, input)
+	}
+
+	/**
+	 * Sorts pattern matches by start position, then by length (longest first)
+	 */
+	private sortPatternMatches(matches: PatternMatch[]): PatternMatch[] {
+		return matches.sort((a, b) => {
 			const startA = this.getMatchStart(a)
 			const startB = this.getMatchStart(b)
 			if (startA !== startB) {
@@ -42,42 +47,54 @@ export class AhoCorasickMarkupStrategy {
 			const lengthB = this.getMatchEnd(b) - startB
 			return lengthB - lengthA
 		})
-		
+	}
+
+	/**
+	 * Filters overlapping matches using greedy approach: longest match wins
+	 */
+	private filterOverlappingMatches(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
 		let lastEnd = 0
 
-		for (const patternMatch of allPatternMatches) {
+		for (const patternMatch of sortedMatches) {
 			const start = this.getMatchStart(patternMatch)
 			const end = this.getMatchEnd(patternMatch)
-			
+
 			// Skip overlapping matches (greedy: longest match wins)
 			if (start < lastEnd) {
 				continue
 			}
-			
-			// Materialize gap values
-			this.matcher.materializeGaps(patternMatch, input)
 
-			const content = input.substring(start, end)
-			const descriptor = this.descriptors[patternMatch.descriptorIndex]
-
-			// Extract label and value
-			const extracted = this.extractFromParts(patternMatch.parts, descriptor)
-
-			const result: MatchResult = {
-				start,
-				end,
-				content,
-				label: extracted.label,
-				value: extracted.value,
-				descriptor
-			}
-
-			results.push(result)
+			results.push(this.createMatchResult(patternMatch, input))
 			lastEnd = end
 		}
 
 		return results
+	}
+
+	/**
+	 * Creates a MatchResult from a PatternMatch
+	 */
+	private createMatchResult(patternMatch: PatternMatch, input: string): MatchResult {
+		// Materialize gap values
+		this.matcher.materializeGaps(patternMatch, input)
+
+		const start = this.getMatchStart(patternMatch)
+		const end = this.getMatchEnd(patternMatch)
+		const content = input.substring(start, end)
+		const descriptor = this.descriptors[patternMatch.descriptorIndex]
+
+		// Extract label and value
+		const extracted = this.extractFromParts(patternMatch.parts, descriptor)
+
+		return {
+			start,
+			end,
+			content,
+			label: extracted.label,
+			value: extracted.value,
+			descriptor
+		}
 	}
 
 	/**
@@ -104,36 +121,58 @@ export class AhoCorasickMarkupStrategy {
 	 * Extracts label and value from match parts based on gap types
 	 */
 	private extractFromParts(parts: MatchPart[], descriptor: SegmentMarkupDescriptor): { label: string; value?: string } {
-		let label = ''
-		let value: string | undefined
+		const gaps = this.getGapParts(parts)
 
-		// Extract gaps according to their types
-		const gaps = parts.filter(p => p.type === 'gap')
-		
 		if (descriptor.hasTwoLabels) {
-			// Pattern like <__label__>__value__</__label__>
-			// First gap is label, second is value, third is label again (should match first)
-			const labelGap = gaps.find(g => g.gapType === 'label')
-			const valueGap = gaps.find(g => g.gapType === 'value')
-			
-			label = labelGap?.value || ''
-			value = valueGap?.value
+			return this.extractTwoLabelPattern(gaps)
 		} else if (descriptor.hasValue) {
-			// Pattern like @[__label__](__value__)
-			// First gap is label, second is value
-			const labelGap = gaps.find(g => g.gapType === 'label')
-			const valueGap = gaps.find(g => g.gapType === 'value')
-			
-			label = labelGap?.value || ''
-			value = valueGap?.value
+			return this.extractValuePattern(gaps)
 		} else {
-			// Pattern like #[__label__]
-			// Single gap is label
-			const labelGap = gaps.find(g => g.gapType === 'label')
-			label = labelGap?.value || ''
+			return this.extractSimplePattern(gaps)
 		}
+	}
 
-		return { label, value }
+	/**
+	 * Gets all gap parts from match parts
+	 */
+	private getGapParts(parts: MatchPart[]): MatchPart[] {
+		return parts.filter(p => p.type === 'gap')
+	}
+
+	/**
+	 * Extracts for two-label patterns like <__label__>__value__</__label__>
+	 */
+	private extractTwoLabelPattern(gaps: MatchPart[]): { label: string; value?: string } {
+		const labelGap = gaps.find(g => g.gapType === 'label')
+		const valueGap = gaps.find(g => g.gapType === 'value')
+
+		return {
+			label: labelGap?.value || '',
+			value: valueGap?.value
+		}
+	}
+
+	/**
+	 * Extracts for value patterns like @[__label__](__value__)
+	 */
+	private extractValuePattern(gaps: MatchPart[]): { label: string; value?: string } {
+		const labelGap = gaps.find(g => g.gapType === 'label')
+		const valueGap = gaps.find(g => g.gapType === 'value')
+
+		return {
+			label: labelGap?.value || '',
+			value: valueGap?.value
+		}
+	}
+
+	/**
+	 * Extracts for simple patterns like #[__label__]
+	 */
+	private extractSimplePattern(gaps: MatchPart[]): { label: string; value?: string } {
+		const labelGap = gaps.find(g => g.gapType === 'label')
+		return {
+			label: labelGap?.value || ''
+		}
 	}
 
 	/**
