@@ -1,6 +1,5 @@
 import {Markup} from '../../../shared/types'
-import {NestedToken, TextToken, MarkToken, TokenCandidate} from './types'
-import {ParserV2} from './ParserV2'
+import {NestedToken, TextToken, MarkToken, TokenCandidate, MatchResult} from './types'
 
 /**
  * Компонент для построения гарантированной последовательности токенов text-mark-text-mark-text...
@@ -8,10 +7,12 @@ import {ParserV2} from './ParserV2'
 export class TokenSequenceBuilder {
 	private readonly input: string
 	private readonly markups: Markup[]
+	private readonly parser: any // ParserV2 instance for recursion
 
-	constructor(input: string, markups: Markup[]) {
+	constructor(input: string, markups: Markup[], parser?: any) {
 		this.input = input
 		this.markups = markups
+		this.parser = parser
 	}
 
 	/**
@@ -102,13 +103,12 @@ export class TokenSequenceBuilder {
 		// Извлекаем внутренний контент для рекурсивного парсинга
 		const innerContent = this.extractInnerContent(match.content, match.descriptor.markup)
 
-		if (innerContent) {
-			// Рекурсивно парсим внутренний контент
-			const innerParser = new ParserV2(this.markups)
-			const innerTokens = innerParser.split(innerContent)
+		if (innerContent && this.parser) {
+			// Рекурсивно парсим внутренний контент (переиспользуем ParserV2 инстанс)
+			const innerTokens = this.parser.split(innerContent)
 
 			// Добавляем children только если среди них есть маркеры
-			const hasMarks = innerTokens.some(token => token.type === 'mark')
+			const hasMarks = innerTokens.some((token: NestedToken) => token.type === 'mark')
 			if (hasMarks) {
 				children.push(...innerTokens)
 			}

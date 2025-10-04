@@ -1,4 +1,4 @@
-import {MarkupStrategy, MatchResult} from './types'
+import {MatchResult} from './types'
 import {SegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
 import {SegmentPatternMatcher, PatternMatch, MatchPart} from './SegmentPatternMatcher'
 
@@ -14,27 +14,80 @@ interface ExtendedMatchResult extends MatchResult {
  * Aho-Corasick based markup strategy
  * Uses segment pattern matching for efficient multi-pattern parsing without hardcoded logic
  */
-export class AhoCorasickMarkupStrategy implements MarkupStrategy {
+export class AhoCorasickMarkupStrategy {
 	private readonly descriptors: SegmentMarkupDescriptor[]
 	private readonly matcher: SegmentPatternMatcher
-	private matchCache: Map<string, PatternMatch[]>
 
 	constructor(descriptors: SegmentMarkupDescriptor[]) {
 		this.descriptors = descriptors
 		this.matcher = new SegmentPatternMatcher(descriptors)
-		this.matchCache = new Map()
+	}
+
+	/**
+	 * Gets all matches in the input text (optimized for PatternMatcher)
+	 * Filters overlapping matches - greedy approach: longest match wins
+	 */
+	getAllMatches(input: string): MatchResult[] {
+		// One search call for all patterns!
+		const allPatternMatches = this.matcher.search(input)
+		
+		// Sort by start position, then by length (longest first)
+		allPatternMatches.sort((a, b) => {
+			const startA = this.getMatchStart(a)
+			const startB = this.getMatchStart(b)
+			if (startA !== startB) {
+				return startA - startB
+			}
+			// Same start: prefer longer match
+			const lengthA = this.getMatchEnd(a) - startA
+			const lengthB = this.getMatchEnd(b) - startB
+			return lengthB - lengthA
+		})
+		
+		const results: MatchResult[] = []
+		let lastEnd = 0
+
+		for (const patternMatch of allPatternMatches) {
+			const start = this.getMatchStart(patternMatch)
+			const end = this.getMatchEnd(patternMatch)
+			
+			// Skip overlapping matches (greedy: longest match wins)
+			if (start < lastEnd) {
+				continue
+			}
+			
+			// Materialize gap values
+			this.matcher.materializeGaps(patternMatch, input)
+
+			const content = input.substring(start, end)
+			const descriptor = this.descriptors[patternMatch.descriptorIndex]
+
+			// Extract label and value
+			const extracted = this.extractFromParts(patternMatch.parts, descriptor)
+
+			const result: MatchResult = {
+				start,
+				end,
+				content,
+				label: extracted.label,
+				value: extracted.value,
+				descriptor
+			}
+
+			results.push(result)
+			lastEnd = end
+		}
+
+		return results
 	}
 
 	/**
 	 * Finds a match for the given descriptor at the specified position
+	 * @deprecated Use getAllMatches instead for better performance
 	 */
 	matches(descriptor: SegmentMarkupDescriptor, input: string, position: number): MatchResult | null {
-		// Get all matches for this input (cached)
-		let allMatches = this.matchCache.get(input)
-		if (!allMatches) {
-			allMatches = this.matcher.search(input)
-			this.matchCache.set(input, allMatches)
-		}
+		// Get all matches for this input
+		const allMatches = this.matcher.search(input)
 
 		// Find first match that:
 		// 1. Belongs to this descriptor

@@ -62,9 +62,3 @@ export interface TokenCandidate {
 	match: MatchResult
 	conflicts: Set<TokenCandidate>
 }
-
-// Стратегия парсинга для разных типов маркеров
-export interface MarkupStrategy {
-	matches(descriptor: BaseMarkupDescriptor, input: string, position: number): MatchResult | null
-	extractContent(match: MatchResult): { label: string; value?: string }
-}

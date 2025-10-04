@@ -2,14 +2,19 @@ import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
 import {NestedToken} from './types'
 import {PatternMatcher} from './PatternMatcher'
-import {ConflictResolver} from './ConflictResolver'
 import {TokenSequenceBuilder} from './TokenSequenceBuilder'
+import {AhoCorasickMarkupStrategy} from './AhoCorasickMarkupStrategy'
+import {createSegmentMarkupDescriptor} from './SegmentMarkupDescriptor'
 
 export class ParserV2 {
 	private readonly markups: Markup[]
+	private readonly strategy: AhoCorasickMarkupStrategy
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
+		// Кешируем стратегию на уровне парсера для переиспользования
+		const descriptors = markups.map(createSegmentMarkupDescriptor)
+		this.strategy = new AhoCorasickMarkupStrategy(descriptors)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
@@ -18,17 +23,19 @@ export class ParserV2 {
 	}
 
 	split(value: string): NestedToken[] {
-		// Находим все матчи маркеров
-		const patternMatcher = new PatternMatcher(value, this.markups)
+		// Находим все матчи маркеров (переиспользуем strategy)
+		const patternMatcher = new PatternMatcher(value, this.markups, this.strategy)
 		const matches = patternMatcher.findAllMatches()
 
-		// Разрешаем конфликты между пересекающимися маркерами
-		const conflictResolver = new ConflictResolver()
-		const resolvedCandidates = conflictResolver.resolve(matches)
+		// Преобразуем matches в кандидаты (ConflictResolver больше не нужен)
+		const candidates = matches.map(match => ({
+			match,
+			conflicts: new Set()
+		}))
 
 		// Строим гарантированную последовательность токенов
-		const tokenBuilder = new TokenSequenceBuilder(value, this.markups)
-		return tokenBuilder.buildGuaranteedSequence(resolvedCandidates)
+		const tokenBuilder = new TokenSequenceBuilder(value, this.markups, this)
+		return tokenBuilder.buildGuaranteedSequence(candidates)
 	}
 
 }
