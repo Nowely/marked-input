@@ -1,5 +1,5 @@
-import {MarkupDescriptor} from '../core/MarkupDescriptor'
-import {PatternChain, MatchSegment} from './PatternChainManager'
+import {MarkupDescriptor} from '../MarkupDescriptor'
+import {PatternChain, MatchSegment} from '../structures/PatternChainManager'
 import {UniqueMatch} from '../types'
 
 /**
@@ -113,13 +113,12 @@ export class PatternBuilder {
 
 	/**
 	 * Clones a chain for branching
+	 * Uses shallow copy for better performance
 	 */
 	private cloneChain(chain: PatternChain): PatternChain {
 		return {
-			descriptorIndex: chain.descriptorIndex,
-			nextSegmentIndex: chain.nextSegmentIndex,
-			pos: chain.pos,
-			parts: chain.parts.map(p => ({ ...p }))
+			...chain,
+			parts: [...chain.parts]
 		}
 	}
 }

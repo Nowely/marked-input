@@ -28,18 +28,6 @@ export interface MarkToken {
 	}
 }
 
-export interface ParseContext {
-	stack: NestedToken[]
-	current: MarkToken
-	position: number
-	input: string
-}
-
-export interface ValidationResult {
-	isValid: boolean
-	errors: string[]
-}
-
 // Базовый интерфейс для дескрипторов
 export interface BaseMarkupDescriptor {
 	markup: string

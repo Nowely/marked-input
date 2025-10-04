@@ -1,6 +1,6 @@
-import {PLACEHOLDER} from '../../../../shared/constants'
-import {Markup} from '../../../../shared/types'
-import {BaseMarkupDescriptor} from '../types'
+import {PLACEHOLDER} from '../../../shared/constants'
+import {Markup} from '../../../shared/types'
+import {BaseMarkupDescriptor} from './types'
 
 /**
  * Descriptor for segment-based markup parsing

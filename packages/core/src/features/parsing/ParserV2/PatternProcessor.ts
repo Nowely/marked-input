@@ -1,7 +1,7 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {PatternChainManager} from '../utils/PatternChainManager'
-import {PatternBuilder, PatternMatch} from '../utils/PatternBuilder'
-import {UniqueMatch} from '../types'
+import {PatternChainManager} from './structures/PatternChainManager'
+import {PatternBuilder, PatternMatch} from './algorithms/PatternBuilder'
+import {UniqueMatch} from './types'
 
 /**
  * Pattern processor responsible for managing pattern matching chains
@@ -46,11 +46,7 @@ export class PatternProcessor {
 		}
 
 		// Sort waiting chains: later start = inner = higher priority (LIFO)
-		const sortedWaiting = Array.from(waiting).sort((a, b) => {
-			const startPosA = a.parts[0].start
-			const startPosB = b.parts[0].start
-			return startPosB - startPosA
-		})
+		const sortedWaiting = [...waiting].sort((a, b) => b.parts[0].start - a.parts[0].start)
 
 		// Try to match with the first valid chain
 		for (const chain of sortedWaiting) {
@@ -58,7 +54,7 @@ export class PatternProcessor {
 				continue // Segment appears before chain expects it
 			}
 
-			const { completed, extended } = this.patternBuilder.tryExtendChain(chain, match)
+			const {completed, extended} = this.patternBuilder.tryExtendChain(chain, match)
 
 			if (completed) {
 				results.push(completed)
@@ -80,7 +76,7 @@ export class PatternProcessor {
 	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>): void {
 		for (const descInfo of match.descriptors) {
 			if (descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex)) {
-				const { completed, chain } = this.patternBuilder.createNewChain(descInfo.descriptorIndex, match)
+				const {completed, chain} = this.patternBuilder.createNewChain(descInfo.descriptorIndex, match)
 
 				if (completed) {
 					// Single-segment pattern was completed immediately
@@ -95,3 +91,4 @@ export class PatternProcessor {
 		}
 	}
 }
+

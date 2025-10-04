@@ -1,32 +1,41 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
-import {NestedToken, MatchResult} from './types'
-import {MarkupMatcher} from './core/MarkupMatcher'
-import {createMarkupDescriptor} from './core/MarkupDescriptor'
-import {buildTokenSequence} from './utils/TokenBuilder'
+import {NestedToken} from './types'
+import {PatternMatcher} from './PatternMatcher'
+import {createMarkupDescriptor} from './MarkupDescriptor'
+import {buildTokenSequence} from './TokenBuilder'
 
+/**
+ * Tree-based parser for processing nested markup constructions in text
+ * Uses Aho-Corasick algorithm for efficient multi-pattern matching
+ */
 export class ParserV2 {
 	private readonly markups: Markup[]
-	private readonly strategy: MarkupMatcher
+	private readonly matcher: PatternMatcher
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
-		// Кешируем стратегию на уровне парсера для переиспользования
+		// Cache matcher at parser level for reuse
 		const descriptors = markups.map(createMarkupDescriptor)
-		this.strategy = new MarkupMatcher(descriptors)
+		this.matcher = new PatternMatcher(descriptors)
 	}
 
+	/**
+	 * Static method for parsing with options
+	 */
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
 		const markups = options?.map(c => c.markup!)
 		return markups ? new ParserV2(markups).split(value) : []
 	}
 
+	/**
+	 * Splits text into tokens with nested markup support
+	 */
 	split(value: string): NestedToken[] {
-		// Находим все матчи маркеров
-		const matches = this.strategy.getAllMatches(value)
+		// Find all pattern matches
+		const matches = this.matcher.getAllMatches(value)
 
-		// Строим последовательность токенов
+		// Build token sequence
 		return buildTokenSequence(value, this.markups, this, matches)
 	}
-
 }
