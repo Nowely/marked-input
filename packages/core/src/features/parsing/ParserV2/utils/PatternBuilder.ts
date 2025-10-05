@@ -1,5 +1,5 @@
 import {MarkupDescriptor} from '../MarkupDescriptor'
-import {PatternChain, MatchSegment} from '../structures/PatternChainManager'
+import {PatternChain, MatchSegment} from './PatternChainManager'
 import {UniqueMatch} from '../types'
 
 /**

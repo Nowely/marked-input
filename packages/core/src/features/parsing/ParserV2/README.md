@@ -58,8 +58,7 @@ ParserV2/
 │   ├── PatternProcessor.ts  # Обработка цепочек паттернов
 │   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
 │   ├── SegmentMatcher.ts    # Матчинг сегментов текста
-│   ├── TokenBuilder.ts      # Построение токенов (77 строк)
-│   └── utils.ts             # Утилиты (materializeGaps, extractContent)
+│   └── TokenBuilder.ts      # Построение токенов (77 строк)
 ├── algorithms/              # Алгоритмы
 │   ├── AhoCorasick.ts       # Эффективный поиск паттернов
 │   └── PatternBuilder.ts    # Построение паттернов из цепочек
@@ -113,7 +112,8 @@ pnpm run lint
 ## История изменений
 
 ### v2.5 (Текущая - Оптимизированная)
-- ✅ **Удален мертвый код**: ParseContext, ValidationResult, extractContent fallback
+- ✅ **Удален мертвый код**: ParseContext, ValidationResult
+- ✅ **Перемещены утилиты**: materializeGaps и extractContent в PatternMatcher
 - ✅ **Упрощен ContentExtractor**: 3 дублирующиеся функции → 1 single-pass функция
 - ✅ **Убран PatternEngine**: Лишний проксирующий слой удален
 - ✅ **GapMaterializer → функция**: Класс из 5 строк преобразован в утилиту
@@ -123,8 +123,8 @@ pnpm run lint
 - ✅ **Оптимизации**: Материализация gaps только для валидных матчей, shallow copy
 
 **Метрики качества v2.5:**
-- Строк кода: ~1008 (было ~1400, **-28%**)
-- Количество файлов: 12 (было 14, **-14%**)
+- Строк кода: ~985 (было ~1400, **-30%**)
+- Количество файлов: 11 (было 14, **-21%**)
 - Классов: 7 (было 11, **-36%**)
 - Средняя CC: 1.5 (было 1.9, **-21%**)
 - Линтер ошибок: 0

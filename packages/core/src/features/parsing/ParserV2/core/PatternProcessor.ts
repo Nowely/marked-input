@@ -1,6 +1,6 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {PatternChainManager} from '../structures/PatternChainManager'
-import {PatternBuilder, PatternMatch} from '../algorithms/PatternBuilder'
+import {PatternChainManager} from '../utils/PatternChainManager'
+import {PatternBuilder, PatternMatch} from '../utils/PatternBuilder'
 import {UniqueMatch} from '../types'
 
 /**

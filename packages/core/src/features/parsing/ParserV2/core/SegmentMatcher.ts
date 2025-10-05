@@ -1,4 +1,4 @@
-import {AhoCorasick, SegmentMatch} from '../algorithms/AhoCorasick'
+import {AhoCorasick, SegmentMatch} from '../utils/AhoCorasick'
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {UniqueMatch} from '../types'
 

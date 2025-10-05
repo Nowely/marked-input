@@ -2,8 +2,8 @@ import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {SegmentMatcher} from './SegmentMatcher'
 import {PatternProcessor} from './PatternProcessor'
-import {PatternMatch} from '../algorithms/PatternBuilder'
-import {materializeGaps, extractContent} from './utils'
+import {PatternMatch} from '../utils/PatternBuilder'
+import {MatchSegment} from '../utils/PatternChainManager'
 
 /**
  * Pattern matching strategy using Aho-Corasick algorithm
@@ -72,10 +72,10 @@ export class PatternMatcher {
 			}
 
 			// Materialize gaps for all valid matches (original behavior)
-			materializeGaps(patternMatch, input)
+			PatternMatcher.materializeGaps(patternMatch, input)
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
-			const {label, value} = extractContent(patternMatch.parts, descriptor)
+			const {label, value} = PatternMatcher.extractContent(patternMatch.parts, descriptor)
 
 			results.push({
 				start,
@@ -104,6 +104,39 @@ export class PatternMatcher {
 	 */
 	private getMatchEnd(match: PatternMatch): number {
 		return match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
+	}
+
+	/**
+	 * Materializes gap values from text (lazy evaluation)
+	 * Converts undefined gap values to actual string content
+	 */
+	private static materializeGaps(match: PatternMatch, text: string): void {
+		for (const part of match.parts) {
+			if (part.type === 'gap' && part.value === undefined) {
+				part.value = text.slice(part.start, part.end + 1)
+			}
+		}
+	}
+
+	/**
+	 * Extracts label and value from match parts based on gap types
+	 * Single pass through gaps for optimal performance
+	 */
+	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {label: string; value?: string} {
+		let label = ''
+		let value: string | undefined
+
+		for (const part of parts) {
+			if (part.type === 'gap') {
+				if (part.gapType === 'label' && !label) {
+					label = part.value || ''
+				} else if (part.gapType === 'value') {
+					value = part.value
+				}
+			}
+		}
+
+		return {label, value}
 	}
 }
 
