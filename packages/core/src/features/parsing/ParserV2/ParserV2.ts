@@ -1,9 +1,9 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from '../../../shared/types'
 import {NestedToken} from './types'
-import {PatternMatcher} from './PatternMatcher'
-import {createMarkupDescriptor} from './MarkupDescriptor'
-import {buildTokenSequence} from './TokenBuilder'
+import {PatternMatcher} from './core/PatternMatcher'
+import {createMarkupDescriptor} from './core/MarkupDescriptor'
+import {buildTokenSequence} from './core/TokenBuilder'
 
 /**
  * Tree-based parser for processing nested markup constructions in text

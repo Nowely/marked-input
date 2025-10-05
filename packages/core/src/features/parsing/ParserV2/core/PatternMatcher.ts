@@ -1,8 +1,8 @@
-import {MatchResult} from './types'
+import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {SegmentMatcher} from './SegmentMatcher'
 import {PatternProcessor} from './PatternProcessor'
-import {PatternMatch} from './algorithms/PatternBuilder'
+import {PatternMatch} from '../algorithms/PatternBuilder'
 import {materializeGaps, extractContent} from './utils'
 
 /**

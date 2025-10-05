@@ -1,5 +1,5 @@
-import {TextToken, MarkToken, MatchResult, NestedToken} from './types'
-import {ParserV2} from './ParserV2'
+import {TextToken, MarkToken, MatchResult, NestedToken} from '../types'
+import {ParserV2} from '../ParserV2'
 
 /**
  * Creates a text token from input substring

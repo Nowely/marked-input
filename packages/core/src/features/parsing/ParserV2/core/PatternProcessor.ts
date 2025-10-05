@@ -1,7 +1,7 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {PatternChainManager} from './structures/PatternChainManager'
-import {PatternBuilder, PatternMatch} from './algorithms/PatternBuilder'
-import {UniqueMatch} from './types'
+import {PatternChainManager} from '../structures/PatternChainManager'
+import {PatternBuilder, PatternMatch} from '../algorithms/PatternBuilder'
+import {UniqueMatch} from '../types'
 
 /**
  * Pattern processor responsible for managing pattern matching chains

@@ -53,12 +53,13 @@ ParserV2/
 ├── ParserV2.ts              # Главный класс парсера
 ├── types.ts                 # Типы и интерфейсы
 ├── index.ts                 # Публичные экспорты
-├── PatternMatcher.ts        # Стратегия матчинга паттернов
-├── PatternProcessor.ts      # Обработка цепочек паттернов
-├── MarkupDescriptor.ts      # Создание дескрипторов разметки
-├── SegmentMatcher.ts        # Матчинг сегментов текста
-├── TokenBuilder.ts          # Построение токенов (77 строк)
-├── utils.ts                 # Утилиты (materializeGaps, extractContent)
+├── core/                    # Ядро функциональности
+│   ├── PatternMatcher.ts    # Стратегия матчинга паттернов
+│   ├── PatternProcessor.ts  # Обработка цепочек паттернов
+│   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
+│   ├── SegmentMatcher.ts    # Матчинг сегментов текста
+│   ├── TokenBuilder.ts      # Построение токенов (77 строк)
+│   └── utils.ts             # Утилиты (materializeGaps, extractContent)
 ├── algorithms/              # Алгоритмы
 │   ├── AhoCorasick.ts       # Эффективный поиск паттернов
 │   └── PatternBuilder.ts    # Построение паттернов из цепочек

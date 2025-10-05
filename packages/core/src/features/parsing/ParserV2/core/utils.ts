@@ -1,6 +1,6 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {PatternMatch} from './algorithms/PatternBuilder'
-import {MatchSegment} from './structures/PatternChainManager'
+import {PatternMatch} from '../algorithms/PatternBuilder'
+import {MatchSegment} from '../structures/PatternChainManager'
 
 /**
  * Materializes gap values from text (lazy evaluation)
