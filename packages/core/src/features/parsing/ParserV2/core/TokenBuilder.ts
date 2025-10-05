@@ -47,18 +47,8 @@ export function buildTokenSequence(
 	let pos = 0
 
 	for (const match of matches) {
-		// Add text before mark (may be empty)
-		if (pos < match.start) {
-			tokens.push(createTextToken(input, pos, match.start))
-		} else if (tokens.length === 0) {
-			// First token starts at position 0, add empty text
-			tokens.push(createTextToken(input, 0, 0))
-		} else if (match.start === pos) {
-			// Adjacent marks, add empty text between them
-			tokens.push(createTextToken(input, pos, pos))
-		}
-
-		// Add mark token
+		// Always add text before mark (may be empty)
+		tokens.push(createTextToken(input, pos, match.start))
 		tokens.push(createMarkToken(parser, match))
 		pos = match.end
 	}
