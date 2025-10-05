@@ -208,14 +208,18 @@ describe('ParserV2', () => {
 					`)
 				})
 
-				//TODOErroring behavior
 				it('handles marks with empty labels', () => {
-					// Note: Parser behavior with empty labels depends on implementation
-					// Some parsers may skip empty labels, others may create marks
+					const parser = new ParserV2(['@[__label__]'])
 					const input = '@[] @[content]'
 					const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "@[] @[content]" [0-14]"`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[]" [0-3] [label=""]
+						 2: TEXT " " [3-4]
+						 3: MARK "@[content]" [4-14] [label="content"]
+						 4: TEXT "" [14-14]"
+					`)
 				})
 
 				//TODO Erroring behavior. 1 contains empty value
@@ -223,13 +227,13 @@ describe('ParserV2', () => {
 					const input = '@[label]() @[label2](value)'
 					const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[label]()" [0-10] [label="label"]
-						 2: TEXT " " [10-11]
-						 3: MARK "@[label2](value)" [11-27] [label="label2", value="value"]
-						 4: TEXT "" [27-27]"
-					`)
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					 1: MARK "@[label]()" [0-10] [label="label", value=""]
+					 2: TEXT " " [10-11]
+					 3: MARK "@[label2](value)" [11-27] [label="label2", value="value"]
+					 4: TEXT "" [27-27]"
+				`)
 				})
 
 				it('handles unicode and emoji content', () => {

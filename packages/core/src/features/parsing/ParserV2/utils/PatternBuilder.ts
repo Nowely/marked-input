@@ -35,18 +35,16 @@ export class PatternBuilder {
 
 		const newPatternChain = this.cloneChain(chain)
 
-		// Add gap if needed
-		if (match.start > newPatternChain.pos) {
-			const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
-			const gapType = descriptor.gapTypes[gapIndex]
+		// Always add gap between segments (may be empty)
+		const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
+		const gapType = descriptor.gapTypes[gapIndex]
 
-			newPatternChain.parts.push({
-				type: 'gap',
-				start: newPatternChain.pos,
-				end: match.start - 1,
-				gapType
-			})
-		}
+		newPatternChain.parts.push({
+			type: 'gap',
+			start: newPatternChain.pos,
+			end: match.start - 1,
+			gapType
+		})
 
 		// Add segment
 		newPatternChain.parts.push({
