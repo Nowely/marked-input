@@ -1,8 +1,9 @@
 import {describe, it, expect} from 'vitest'
 import {ParserV2} from './ParserV2'
+import {Markup} from '../../../shared/types'
 
 describe('ParserV2 Performance Benchmark', () => {
-	const markups = ['@[__label__](__value__)', '#[__label__]']
+	const markups: Markup[] = ['@[__label__](__value__)', '#[__label__]']
 
 	it('should benchmark simple parsing (100 marks)', () => {
 		const parser = new ParserV2(markups)
