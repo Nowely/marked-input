@@ -10,6 +10,16 @@ interface MarkNode {
 }
 
 /**
+ * Context for tree building process
+ */
+interface TreeBuildContext {
+	input: string
+	rootTokens: NestedToken[]
+	stack: MarkNode[]
+	rootTextPos: number
+}
+
+/**
  * Creates a text token for a range in the input
  */
 function createTextToken(input: string, start: number, end: number): TextToken {
@@ -56,23 +66,84 @@ function addTextToken(
 
 /**
  * Determines if matchB is contained within matchA's label
- * Note: match.end is exclusive, labelEnd is inclusive
+ * All positions are exclusive (end points to next char after last)
  */
 function isContainedInLabel(matchB: MatchResult, matchA: MatchResult): boolean {
-	// matchB must start at or after label start, and end at or before label end + 1 (since labelEnd is inclusive)
-	return matchB.start >= matchA.labelStart && matchB.end <= matchA.labelEnd + 1
+	// matchB must start at or after label start, and end at or before label end
+	// Since both are exclusive, this is straightforward comparison
+	return matchB.start >= matchA.labelStart && matchB.end <= matchA.labelEnd
+}
+
+/**
+ * Finalizes a completed mark node and adds it to parent or root
+ */
+function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
+	// Add any remaining text in this mark's label
+	addTextToken(ctx.input, node.children, node.textPos, node.match.labelEnd)
+	
+	const token = createMarkToken(node.match, node.children)
+	
+	if (ctx.stack.length > 0) {
+		// Add to parent's children
+		const parent = ctx.stack[ctx.stack.length - 1]
+		addTextToken(ctx.input, parent.children, parent.textPos, node.match.start)
+		parent.children.push(token)
+		parent.textPos = node.match.end
+	} else {
+		// Add to root
+		addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, node.match.start)
+		ctx.rootTokens.push(token)
+		ctx.rootTextPos = node.match.end
+	}
+}
+
+/**
+ * Pops completed parent marks from stack and finalizes them
+ */
+function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
+	while (ctx.stack.length > 0) {
+		const parent = ctx.stack[ctx.stack.length - 1]
+		
+		// Check if current match is inside parent's label
+		if (isContainedInLabel(match, parent.match)) {
+			// This match is nested inside parent
+			break
+		}
+		
+		// Parent is complete - finalize it
+		const completed = ctx.stack.pop()!
+		finalizeMarkNode(completed, ctx)
+	}
 }
 
 /**
  * Builds nested token tree in a single pass without recursive parsing
  * 
  * Algorithm:
- * 1. Sort matches by position (already done by PatternMatcher)
- * 2. Use a stack to track parent-child relationships
- * 3. For each match, determine if it's nested within previous matches
- * 4. Build tree structure while maintaining text tokens
+ * 1. Iterate through sorted matches (PatternMatcher already sorted them)
+ * 2. Use stack to track parent-child relationships based on position containment
+ * 3. Pop completed parents when current match is not inside their label
+ * 4. Add current match to stack for potential children
+ * 5. Finalize remaining stack at the end
  * 
- * Complexity: O(N) where N is number of matches
+ * @complexity O(N) where N is number of matches
+ * @param input - Original input text
+ * @param matches - Sorted matches with position tracking
+ * @returns Nested token tree
+ * 
+ * @example
+ * ```typescript
+ * // Input: "@[hello #[world]]"
+ * // Matches: [
+ * //   { start: 0, end: 17, label: "hello #[world]", labelStart: 2, labelEnd: 16 },
+ * //   { start: 8, end: 16, label: "world", labelStart: 10, labelEnd: 15 }
+ * // ]
+ * // Result: [
+ * //   TextToken(""),
+ * //   MarkToken{ children: [TextToken("hello "), MarkToken("world"), TextToken("")] },
+ * //   TextToken("")
+ * // ]
+ * ```
  */
 export function buildTreeSinglePass(
 	input: string,
@@ -82,52 +153,20 @@ export function buildTreeSinglePass(
 		return [createTextToken(input, 0, input.length)]
 	}
 
-	const rootTokens: NestedToken[] = []
-	const stack: MarkNode[] = []
-	let rootTextPos = 0
+	const ctx: TreeBuildContext = {
+		input,
+		rootTokens: [],
+		stack: [],
+		rootTextPos: 0
+	}
 
+	// Process each match
 	for (const match of matches) {
-		// Find the appropriate parent for this match
-		// Pop stack until we find a parent that contains this match in its label
-		while (stack.length > 0) {
-			const parent = stack[stack.length - 1]
-			
-			// Check if current match is inside parent's label
-			if (isContainedInLabel(match, parent.match)) {
-				// This match is nested inside parent
-				break
-			} else {
-				// Parent is complete - finalize it
-				const completed = stack.pop()!
-				
-				// Add any remaining text in parent's label
-				// Note: labelEnd is inclusive, so we need to add 1 to include the last character
-				addTextToken(
-					input,
-					completed.children,
-					completed.textPos,
-					completed.match.labelEnd + 1
-				)
-				
-				const token = createMarkToken(completed.match, completed.children)
-				
-				if (stack.length > 0) {
-				// Add to parent's children
-				const newParent = stack[stack.length - 1]
-				addTextToken(input, newParent.children, newParent.textPos, completed.match.start)
-				newParent.children.push(token)
-				newParent.textPos = completed.match.end
-				} else {
-					// Add to root
-					addTextToken(input, rootTokens, rootTextPos, completed.match.start)
-					rootTokens.push(token)
-					rootTextPos = completed.match.end
-				}
-			}
-		}
+		// Pop completed parents that don't contain this match
+		popCompletedParents(match, ctx)
 		
-		// Add this match to the stack
-		stack.push({
+		// Add this match to the stack for potential children
+		ctx.stack.push({
 			match,
 			children: [],
 			textPos: match.labelStart
@@ -135,37 +174,14 @@ export function buildTreeSinglePass(
 	}
 	
 	// Finalize all remaining marks in stack
-	while (stack.length > 0) {
-		const completed = stack.pop()!
-		
-		// Add any remaining text in this mark's label
-		// Note: labelEnd is inclusive, so we need to add 1 to include the last character
-		addTextToken(
-			input,
-			completed.children,
-			completed.textPos,
-			completed.match.labelEnd + 1
-		)
-		
-		const token = createMarkToken(completed.match, completed.children)
-		
-		if (stack.length > 0) {
-			// Add to parent's children
-			const parent = stack[stack.length - 1]
-			addTextToken(input, parent.children, parent.textPos, completed.match.start)
-			parent.children.push(token)
-			parent.textPos = completed.match.end
-		} else {
-			// Add to root
-			addTextToken(input, rootTokens, rootTextPos, completed.match.start)
-			rootTokens.push(token)
-			rootTextPos = completed.match.end
-		}
+	while (ctx.stack.length > 0) {
+		const completed = ctx.stack.pop()!
+		finalizeMarkNode(completed, ctx)
 	}
 	
 	// Add final text after all marks
-	addTextToken(input, rootTokens, rootTextPos, input.length)
+	addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, input.length)
 	
-	return rootTokens
+	return ctx.rootTokens
 }
 

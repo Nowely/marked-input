@@ -6,8 +6,18 @@ import {PatternMatch} from '../utils/PatternBuilder'
 import {MatchSegment} from '../utils/PatternChainManager'
 
 /**
- * Pattern matching strategy using Aho-Corasick algorithm
- * Uses segment pattern matching for efficient multi-pattern parsing
+ * Pattern matching engine using Aho-Corasick algorithm
+ * 
+ * Finds ALL matches in text (including overlapping ones) for nested parsing.
+ * Uses segment-based matching with position tracking for efficient tree building.
+ * 
+ * @example
+ * ```typescript
+ * const descriptors = markups.map(createMarkupDescriptor)
+ * const matcher = new PatternMatcher(descriptors)
+ * const matches = matcher.getAllMatches("@[hello #[world]]")
+ * // Returns both outer and inner matches with precise positions
+ * ```
  */
 export class PatternMatcher {
 	private readonly descriptors: MarkupDescriptor[]
@@ -21,8 +31,14 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Gets all matches in the input text
-	 * Filters overlapping matches - greedy approach: longest match wins
+	 * Finds all pattern matches in the input text
+	 * 
+	 * Unlike traditional parsers, this includes overlapping matches
+	 * (e.g., both outer and nested marks) to enable tree building.
+	 * 
+	 * @complexity O(N + M + Z) where N = text length, M = patterns, Z = matches
+	 * @param input - Text to search for patterns
+	 * @returns Array of matches with position tracking (sorted by position)
 	 */
 	getAllMatches(input: string): MatchResult[] {
 		// 1. Find all unique segment matches
@@ -58,21 +74,49 @@ export class PatternMatcher {
 
 	/**
 	 * Converts pattern matches to match results
-	 * For nested parser, we include ALL matches (even overlapping ones)
-	 * The tree builder will determine parent-child relationships
+	 * 
+	 * Includes overlapping matches for nested parsing, but filters out
+	 * invalid partial matches (e.g., "**" from "*__label__*" when "**__label__**" exists)
 	 */
 	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
+		const matchesWithPositions: Array<{match: PatternMatch; start: number; end: number}> = []
 
+		// First pass: collect all matches with positions
 		for (const patternMatch of sortedMatches) {
-			// Materialize gaps for all matches
 			PatternMatcher.materializeGaps(patternMatch, input)
+			const start = this.getMatchStart(patternMatch)
+			const end = this.getMatchEnd(patternMatch)
+			matchesWithPositions.push({match: patternMatch, start, end})
+		}
+
+		// Second pass: filter out partial/invalid matches
+		for (const item of matchesWithPositions) {
+			const {match: patternMatch, start, end} = item
+			
+			// Check if this match is a partial match of a longer pattern at same position
+			const isPartialMatch = matchesWithPositions.some(other => {
+				if (other === item) return false
+				
+				// Same start position and this match is shorter = partial match
+				if (other.start === start && end < other.end) {
+					return true
+				}
+				
+				// Same end position and this match is shorter = partial match
+				if (other.end === end && start > other.start) {
+					return true
+				}
+				
+				return false
+			})
+			
+			if (isPartialMatch) {
+				continue // Skip partial matches
+			}
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
 			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
-
-			const start = this.getMatchStart(patternMatch)
-			const end = this.getMatchEnd(patternMatch)
 
 			results.push({
 				start,
@@ -120,6 +164,8 @@ export class PatternMatcher {
 	/**
 	 * Extracts label and value from match parts with position tracking
 	 * Single pass through gaps for optimal performance
+	 * 
+	 * Returns exclusive end positions (compatible with substring)
 	 */
 	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
 		label: string
@@ -141,11 +187,13 @@ export class PatternMatcher {
 				if (part.gapType === 'label' && !label) {
 					label = part.value || ''
 					labelStart = part.start
-					labelEnd = part.end
+					// part.end is inclusive (last char of gap), so add 1 for exclusive
+					labelEnd = part.end + 1
 				} else if (part.gapType === 'value') {
 					value = part.value
 					valueStart = part.start
-					valueEnd = part.end
+					// part.end is inclusive (last char of gap), so add 1 for exclusive
+					valueEnd = part.end + 1
 				}
 			}
 		}

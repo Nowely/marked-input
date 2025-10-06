@@ -28,17 +28,35 @@ export interface MarkToken {
 	}
 }
 
-// Результат матчинга маркера
+/**
+ * Result of pattern matching with position tracking
+ * 
+ * All positions follow standard JavaScript convention:
+ * - start positions are inclusive (point to first character)
+ * - end positions are exclusive (point to character after last)
+ * 
+ * This allows direct use with substring(): input.substring(start, end)
+ */
 export interface MatchResult {
+	/** Start position of entire match (inclusive) */
 	start: number
+	/** End position of entire match (exclusive) */
 	end: number
+	/** Full matched content */
 	content: string
+	/** Label text extracted from match */
 	label: string
-	labelStart: number  // Position of label in original text
-	labelEnd: number    // Position of label in original text (inclusive)
+	/** Start position of label in original text (inclusive) */
+	labelStart: number
+	/** End position of label in original text (exclusive) */
+	labelEnd: number
+	/** Value text extracted from match (if present) */
 	value?: string
-	valueStart?: number // Position of value in original text
-	valueEnd?: number   // Position of value in original text (inclusive)
+	/** Start position of value in original text (inclusive) */
+	valueStart?: number
+	/** End position of value in original text (exclusive) */
+	valueEnd?: number
+	/** Index of markup descriptor that matched */
 	descriptorIndex: number
 }
 
