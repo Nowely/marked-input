@@ -39,7 +39,7 @@ export class PatternProcessor {
 
 	/**
 	 * Processes chains waiting for current segment match
-	 * Context-aware: considers nesting level and whether pattern has nested content
+	 * Simplified logic: prioritize chains without nested patterns, then by LIFO order
 	 */
 	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[]): void {
 		const waiting = this.chainManager.getWaiting(match.value)
@@ -48,28 +48,23 @@ export class PatternProcessor {
 			return
 		}
 
-		// Sort waiting chains: later start = inner = higher priority (LIFO)
-		const sortedWaiting = [...waiting].sort((a, b) => b.parts[0].start - a.parts[0].start)
-
-		// Context-aware: prioritize chains without nested patterns for immediate closure
-		// Separate chains into those with and without nested patterns
-		const chainsWithoutNesting = sortedWaiting.filter(chain => {
-			const descriptor = this.descriptors[chain.descriptorIndex]
-			const isLastSegment = chain.nextSegmentIndex === descriptor.segments.length - 1
-			return isLastSegment && !chain.hasNestedPatterns && !descriptor.isSymmetric
+		// Sort waiting chains by priority:
+		// 1. Chains without nested patterns (ready to close immediately)
+		// 2. Later start = inner = higher priority (LIFO)
+		const sortedWaiting = [...waiting].sort((a, b) => {
+			const aHasNested = a.hasNestedPatterns
+			const bHasNested = b.hasNestedPatterns
+			
+			// Prioritize chains without nested patterns
+			if (!aHasNested && bHasNested) return -1
+			if (aHasNested && !bHasNested) return 1
+			
+			// Same nesting status: later start = higher priority
+			return b.parts[0].start - a.parts[0].start
 		})
-		
-		const otherChains = sortedWaiting.filter(chain => {
-			const descriptor = this.descriptors[chain.descriptorIndex]
-			const isLastSegment = chain.nextSegmentIndex === descriptor.segments.length - 1
-			return !(isLastSegment && !chain.hasNestedPatterns && !descriptor.isSymmetric)
-		})
-
-		// Prioritize chains without nesting for immediate closure
-		const prioritizedChains = [...chainsWithoutNesting, ...otherChains]
 
 		// Try to match with the first valid chain
-		for (const chain of prioritizedChains) {
+		for (const chain of sortedWaiting) {
 			if (match.start < chain.pos) {
 				continue // Segment appears before chain expects it
 			}
@@ -84,30 +79,6 @@ export class PatternProcessor {
 				const stackIndex = nestingStack.indexOf(chain)
 				if (stackIndex !== -1) {
 					nestingStack.splice(stackIndex, 1)
-				}
-				
-				// Context-aware: when a non-nested asymmetric pattern completes, 
-				// remove all other patterns that started at the same position
-				// This prevents longer patterns from capturing the same content
-				// Symmetric patterns (like **text**) are excluded from this logic
-				const descriptor = this.descriptors[chain.descriptorIndex]
-				if (!descriptor.isSymmetric && !chain.hasNestedPatterns) {
-					const completedStart = completed.parts[0].start
-					// Need to check all active chains, not just those waiting for current segment
-					for (const otherChain of [...nestingStack]) {
-						if (otherChain.parts[0].start === completedStart && otherChain !== chain) {
-							const otherDescriptor = this.descriptors[otherChain.descriptorIndex]
-							// Only remove if the other chain is also asymmetric and has the same trigger
-							if (!otherDescriptor.isSymmetric && otherDescriptor.trigger === descriptor.trigger) {
-								this.chainManager.removeChainFromAll(otherChain)
-								activePatterns.delete(otherChain.descriptorIndex)
-								const stackIdx = nestingStack.indexOf(otherChain)
-								if (stackIdx !== -1) {
-									nestingStack.splice(stackIdx, 1)
-								}
-							}
-						}
-					}
 				}
 			} else if (extended) {
 				// Chain was extended but not completed - add back to waiting
@@ -141,7 +112,18 @@ export class PatternProcessor {
 				return lengthA - lengthB // shorter patterns first
 			})
 		
+		// Track which triggers have been started at this position
+		const startedTriggers = new Set<string>()
+		
 		for (const descInfo of sortedDescriptors) {
+			const descriptor = this.descriptors[descInfo.descriptorIndex]
+			
+			// Only start one pattern per trigger at the same position
+			// This prevents conflicting patterns from competing
+			if (startedTriggers.has(descriptor.trigger)) {
+				continue
+			}
+			
 			// Determine nesting level based on current stack
 			const nestingLevel = nestingStack.length
 			
@@ -150,6 +132,7 @@ export class PatternProcessor {
 			if (completed) {
 				// Single-segment pattern was completed immediately
 				results.push(completed)
+				startedTriggers.add(descriptor.trigger)
 			} else if (chain) {
 				// Mark all parent chains as having nested patterns
 				for (const parentChain of nestingStack) {
@@ -163,6 +146,7 @@ export class PatternProcessor {
 				this.chainManager.addToWaiting(nextSegmentValue, chain)
 				activePatterns.add(descInfo.descriptorIndex)
 				nestingStack.push(chain)
+				startedTriggers.add(descriptor.trigger)
 			}
 		}
 	}

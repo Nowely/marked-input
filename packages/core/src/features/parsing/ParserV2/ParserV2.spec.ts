@@ -701,6 +701,76 @@ Visit our [documentation](https://docs.example.com) for more details.
 							 30: TEXT " and will be removed in v3.0." [681-710]"
 						`)
 					})
+
+					it('isolated test: parses "**strong emphasis**" correctly', () => {
+						const parser = new ParserV2(['**__label__**'])
+						const input = '**strong emphasis**'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "**strong emphasis**" [0-19] [label="strong emphasis"]
+							 2: TEXT "" [19-19]"
+						`)
+					})
+
+					it('isolated test: parses two adjacent bold marks correctly', () => {
+						const parser = new ParserV2(['**__label__**'])
+						const input = '**Bold text** with **strong emphasis**'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "**Bold text**" [0-13] [label="Bold text"]
+							 2: TEXT " with " [13-19]
+							 3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
+							 4: TEXT "" [38-38]"
+						`)
+					})
+
+					it('isolated test: parses "*emphasis*" correctly', () => {
+						const parser = new ParserV2(['*__label__*'])
+						const input = '*emphasis*'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "*emphasis*" [0-10] [label="emphasis"]
+							 2: TEXT "" [10-10]"
+						`)
+					})
+
+					it('isolated test: parses two adjacent italic marks correctly', () => {
+						const parser = new ParserV2(['*__label__*'])
+						const input = '*Italic text* and *emphasis*'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "*Italic text*" [0-13] [label="Italic text"]
+							 2: TEXT " and " [13-18]
+							 3: MARK "*emphasis*" [18-28] [label="emphasis"]
+							 4: TEXT "" [28-28]"
+						`)
+					})
+
+					it('isolated test: parses nested bold marks in list item', () => {
+						const parser = new ParserV2(['- __label__\n', '**__label__**'])
+						const input = '- **Bold text** with **strong emphasis**\n'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "- **Bold text** with **strong emphasis**
+							" [0-41] [label="**Bold text** with **strong emphasis**"]
+							├── 1.0: TEXT "" [0-0]
+							├── 1.1: MARK "**Bold text**" [0-13] [label="Bold text"]
+							├── 1.2: TEXT " with " [13-19]
+							├── 1.3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
+							└── 1.4: TEXT "" [38-38]
+							 2: TEXT "" [41-41]"
+						`)
+					})
 				})
 
 				describe('custom patterns', () => {
