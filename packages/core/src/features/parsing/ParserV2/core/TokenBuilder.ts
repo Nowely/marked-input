@@ -1,10 +1,7 @@
 import {TextToken, MarkToken, MatchResult, NestedToken} from '../types'
 import {ParserV2} from '../ParserV2'
 
-/**
- * Creates a text token from input substring
- */
-const createTextToken = (input: string, start: number, end: number): TextToken => ({
+export const createTextToken = (input: string, start = 0, end = input.length): TextToken => ({
 	type: 'text',
 	content: input.substring(start, end),
 	position: { start, end }
@@ -40,7 +37,7 @@ export function buildTokenSequence(
 	matches: MatchResult[]
 ): NestedToken[] {
 	if (matches.length === 0) {
-		return [createTextToken(input, 0, input.length)]
+		return [createTextToken(input)]
 	}
 
 	const tokens: NestedToken[] = []
