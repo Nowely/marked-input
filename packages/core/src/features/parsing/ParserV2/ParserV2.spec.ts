@@ -137,9 +137,9 @@ describe('ParserV2', () => {
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
 							 1: MARK "@[hello #[world]]" [0-17] [label="hello #[world]"]
-							├── 1.0: TEXT "hello " [0-6]
-							├── 1.1: MARK "#[world]" [6-14] [label="world"]
-							└── 1.2: TEXT "" [14-14]
+							├── 1.0: TEXT "hello " [2-8]
+							├── 1.1: MARK "#[world]" [8-16] [label="world"]
+							└── 1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
 					})
@@ -152,9 +152,9 @@ describe('ParserV2', () => {
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
 							 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value"]
-							├── 1.0: TEXT "hello " [0-6]
-							├── 1.1: MARK "#[world]" [6-14] [label="world"]
-							└── 1.2: TEXT "" [14-14]
+							├── 1.0: TEXT "hello " [2-8]
+							├── 1.1: MARK "#[world]" [8-16] [label="world"]
+							└── 1.2: TEXT "" [16-16]
 							 2: TEXT "" [24-24]"
 						`)
 					})
@@ -476,13 +476,13 @@ describe('ParserV2', () => {
 						const result = parser.split(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-								"0: TEXT "" [0-0]
-								 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text"]
-								├── 1.0: TEXT "Bold " [0-5]
-								├── 1.1: MARK "<i>italic</i>" [5-18] [label="italic"]
-								└── 1.2: TEXT " text" [18-23]
-								 2: TEXT "" [30-30]"
-							`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text"]
+							├── 1.0: TEXT "Bold " [3-8]
+							├── 1.1: MARK "<i>italic</i>" [8-21] [label="italic"]
+							└── 1.2: TEXT " text" [21-26]
+							 2: TEXT "" [30-30]"
+						`)
 					})
 				})
 
@@ -552,11 +552,15 @@ describe('ParserV2', () => {
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
 							 1: MARK "**Bold**" [0-8] [label="Bold"]
-							 2: TEXT " and " [8-13]
-							 3: MARK "*italic*" [13-21] [label="italic"]
-							 4: TEXT " with " [21-27]
-							 5: MARK "\`code\`" [27-33] [label="code"]
-							 6: TEXT "" [33-33]"
+							 2: TEXT "**Bold**" [8-0]
+							 3: MARK "**" [0-2] [label=""]
+							 4: TEXT "Bold" [2-6]
+							 5: MARK "**" [6-8] [label=""]
+							 6: TEXT " and " [8-13]
+							 7: MARK "*italic*" [13-21] [label="italic"]
+							 8: TEXT " with " [21-27]
+							 9: MARK "\`code\`" [27-33] [label="code"]
+							 10: TEXT "" [33-33]"
 						`)
 					})
 
@@ -605,95 +609,156 @@ Visit our [documentation](https://docs.example.com) for more details.
 							"0: TEXT "" [0-0]
 							 1: MARK "# Welcome to **Marked Input**
 							" [0-30] [label="Welcome to **Marked Input**"]
-							├── 1.0: TEXT "Welcome to " [0-11]
-							├── 1.1: MARK "**Marked Input**" [11-27] [label="Marked Input"]
-							└── 1.2: TEXT "" [27-27]
+							├── 1.0: TEXT "Welcome to " [2-13]
+							├── 1.1: MARK "**Marked Input**" [13-29] [label="Marked Input"]
+							├── 1.2: TEXT "**Marked Input**" [29-13]
+							├── 1.3: MARK "**" [13-15] [label=""]
+							├── 1.4: TEXT "Marked Input" [15-27]
+							├── 1.5: MARK "**" [27-29] [label=""]
+							└── 1.6: TEXT "" [29-29]
 							 2: TEXT "
 							This is a " [30-41]
 							 3: MARK "*powerful*" [41-51] [label="powerful"]
 							 4: TEXT " library for parsing " [51-72]
 							 5: MARK "**rich text**" [72-85] [label="rich text"]
-							 6: TEXT " with " [85-91]
-							 7: MARK "*markdown*" [91-101] [label="markdown"]
-							 8: TEXT " formatting.
+							 6: TEXT "**rich text**" [85-72]
+							 7: MARK "**" [72-74] [label=""]
+							 8: TEXT "rich text" [74-83]
+							 9: MARK "**" [83-85] [label=""]
+							 10: TEXT " with " [85-91]
+							 11: MARK "*markdown*" [91-101] [label="markdown"]
+							 12: TEXT " formatting.
 							You can use " [101-126]
-							 9: MARK "\`inline code\`" [126-139] [label="inline code"]
-							 10: TEXT " snippets like " [139-154]
-							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
-							 12: TEXT " in your text.
+							 13: MARK "\`inline code\`" [126-139] [label="inline code"]
+							 14: TEXT " snippets like " [139-154]
+							 15: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
+							 16: TEXT " in your text.
 
 							" [185-201]
-							 13: MARK "## Features
+							 17: MARK "## Features
 
 							" [201-214] [label="Features
 							"]
-							 14: TEXT "" [214-214]
-							 15: MARK "- **Bold text** with **strong emphasis**
+							 18: TEXT "# Features
+
+							" [214-202]
+							 19: MARK "# Features
+							" [202-213] [label="Features"]
+							 20: TEXT "
+							" [213-214]
+							 21: MARK "- **Bold text** with **strong emphasis**
 							" [214-255] [label="**Bold text** with **strong emphasis**"]
-							├── 15.0: TEXT "" [0-0]
-							├── 15.1: MARK "**Bold text**" [0-13] [label="Bold text"]
-							├── 15.2: TEXT " with " [13-19]
-							├── 15.3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
-							└── 15.4: TEXT "" [38-38]
-							 16: TEXT "" [255-255]
-							 17: MARK "- *Italic text* and *emphasis* support
+							├── 21.0: TEXT "" [216-216]
+							├── 21.1: MARK "**Bold text**" [216-229] [label="Bold text"]
+							├── 21.2: TEXT "**Bold text**" [229-216]
+							├── 21.3: MARK "**" [216-218] [label=""]
+							├── 21.4: TEXT "Bold text" [218-227]
+							├── 21.5: MARK "**" [227-229] [label=""]
+							├── 21.6: TEXT " with " [229-235]
+							├── 21.7: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
+							├── 21.8: TEXT "**strong emphasis**" [254-235]
+							├── 21.9: MARK "**" [235-237] [label=""]
+							├── 21.10: TEXT "strong emphasis" [237-252]
+							├── 21.11: MARK "**" [252-254] [label=""]
+							└── 21.12: TEXT "" [254-254]
+							 22: TEXT "" [255-255]
+							 23: MARK "- *Italic text* and *emphasis* support
 							" [255-294] [label="*Italic text* and *emphasis* support"]
-							├── 17.0: TEXT "" [0-0]
-							├── 17.1: MARK "*Italic text*" [0-13] [label="Italic text"]
-							├── 17.2: TEXT " and " [13-18]
-							├── 17.3: MARK "*emphasis*" [18-28] [label="emphasis"]
-							└── 17.4: TEXT " support" [28-36]
-							 18: TEXT "" [294-294]
-							 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`
+							├── 23.0: TEXT "" [257-257]
+							├── 23.1: MARK "*Italic text*" [257-270] [label="Italic text"]
+							├── 23.2: TEXT " and " [270-275]
+							├── 23.3: MARK "*emphasis*" [275-285] [label="emphasis"]
+							└── 23.4: TEXT " support" [285-293]
+							 24: TEXT "" [294-294]
+							 25: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`
 							" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
-							├── 19.0: TEXT "" [0-0]
-							├── 19.1: MARK "\`Code snippets\`" [0-15] [label="Code snippets"]
-							├── 19.2: TEXT " and " [15-20]
-							├── 19.3: MARK "\`\`\`code blocks\`\`\`" [20-37] [label="code blocks"]
-							└── 19.4: TEXT "" [37-37]
-							 20: TEXT "" [334-334]
-							 21: MARK "- ~~Strikethrough~~ for deleted content
+							├── 25.0: TEXT "" [296-296]
+							├── 25.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
+							├── 25.2: TEXT " and " [311-316]
+							├── 25.3: MARK "\`\`\`code blocks\`\`\`" [316-333] [label="code blocks"]
+							├── 25.4: TEXT "\`\`\`code blocks\`\`\`" [333-316]
+							├── 25.5: MARK "\`\`" [316-318] [label=""]
+							├── 25.6: TEXT "" [318-318]
+							├── 25.7: MARK "\`code blocks\`" [318-331] [label="code blocks"]
+							└── 25.8: TEXT "\`\`" [331-333]
+							 26: TEXT "" [334-334]
+							 27: MARK "- ~~Strikethrough~~ for deleted content
 							" [334-374] [label="~~Strikethrough~~ for deleted content"]
-							├── 21.0: TEXT "" [0-0]
-							├── 21.1: MARK "~~Strikethrough~~" [0-17] [label="Strikethrough"]
-							└── 21.2: TEXT " for deleted content" [17-37]
-							 22: TEXT "" [374-374]
-							 23: MARK "- Links like [GitHub](https://github.com)
+							├── 27.0: TEXT "" [336-336]
+							├── 27.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
+							└── 27.2: TEXT " for deleted content" [353-373]
+							 28: TEXT "" [374-374]
+							 29: MARK "- Links like [GitHub](https://github.com)
 							" [374-416] [label="Links like [GitHub](https://github.com)"]
-							├── 23.0: TEXT "Links like " [0-11]
-							├── 23.1: MARK "[GitHub](https://github.com)" [11-39] [label="GitHub", value="https://github.com"]
-							└── 23.2: TEXT "" [39-39]
-							 24: TEXT "
+							├── 29.0: TEXT "Links like " [376-387]
+							├── 29.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
+							└── 29.2: TEXT "" [415-415]
+							 30: TEXT "
 							" [416-417]
-							 25: MARK "## Example
+							 31: MARK "## Example
 
 							" [417-429] [label="Example
 							"]
-							 26: TEXT "Here's how to use it:
+							 32: TEXT "# Example
 
-							" [429-452]
-							 27: MARK "\`\`\`javascript
+							" [429-418]
+							 33: MARK "# Example
+							" [418-428] [label="Example"]
+							 34: TEXT "
+							Here's how to use it:
+
+							" [428-452]
+							 35: MARK "\`\`\`javascript
 							const parser = new ParserV2(['**__label__**', '*__label__*'])
 							const result = parser.split('Hello **world**!')
 							\`\`\`" [452-579] [label="javascript
 							const parser = new ParserV2(['**__label__**', '*__label__*'])
 							const result = parser.split('Hello **world**!')
 							"]
-							├── 27.0: TEXT "javascript
-							const parser = n..." [0-41]
-							├── 27.1: MARK "**__label__**" [41-54] [label="__label__"]
-							├── 27.2: TEXT "', '" [54-58]
-							├── 27.3: MARK "*__label__*" [58-69] [label="__label__"]
-							├── 27.4: TEXT "'])
-							const result = parser.s..." [69-108]
-							├── 27.5: MARK "**world**" [108-117] [label="world"]
-							└── 27.6: TEXT "!')
-							" [117-121]
-							 28: TEXT "
+							 36: TEXT "\`\`\`javascript
+							const parser ..." [579-452]
+							 37: MARK "\`\`" [452-454] [label=""]
+							 38: TEXT "" [454-454]
+							 39: MARK "\`javascript
+							const parser = new ParserV2(['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							\`" [454-577] [label="javascript
+							const parser = new ParserV2(['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							"]
+							 40: TEXT "['**__label__**', '*__label..." [577-494]
+							 41: MARK "['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							\`\`\`
 
-							Visit our [documentation]..." [579-651]
-							 29: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
-							 30: TEXT " and will be removed in v3.0." [681-710]"
+							Visit our [documentation](https://docs.example.com)" [494-632] [label="'**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							\`\`\`
+
+							Visit our [documentation", value="https://docs.example.com"]
+							├── 41.0: TEXT "'" [495-496]
+							├── 41.1: MARK "**__label__**" [496-509] [label="__label__"]
+							├── 41.2: TEXT "**__label__**" [509-496]
+							├── 41.3: MARK "**" [496-498] [label=""]
+							├── 41.4: TEXT "__label__" [498-507]
+							├── 41.5: MARK "**" [507-509] [label=""]
+							├── 41.6: TEXT "', '" [509-513]
+							├── 41.7: MARK "*__label__*" [513-524] [label="__label__"]
+							├── 41.8: TEXT "'])
+							const result = parser.s..." [524-563]
+							├── 41.9: MARK "**world**" [563-572] [label="world"]
+							├── 41.10: TEXT "**world**" [572-563]
+							├── 41.11: MARK "**" [563-565] [label=""]
+							├── 41.12: TEXT "world" [565-570]
+							├── 41.13: MARK "**" [570-572] [label=""]
+							└── 41.14: TEXT "!')
+							\`\`\`
+
+							Visit our [documen..." [572-605]
+							 42: TEXT " for more details.
+							" [632-651]
+							 43: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
+							 44: TEXT " and will be removed in v3.0." [681-710]"
 						`)
 					})
 
@@ -758,11 +823,11 @@ Visit our [documentation](https://docs.example.com) for more details.
 							"0: TEXT "" [0-0]
 							 1: MARK "- **Bold text** with **strong emphasis**
 							" [0-41] [label="**Bold text** with **strong emphasis**"]
-							├── 1.0: TEXT "" [0-0]
-							├── 1.1: MARK "**Bold text**" [0-13] [label="Bold text"]
-							├── 1.2: TEXT " with " [13-19]
-							├── 1.3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
-							└── 1.4: TEXT "" [38-38]
+							├── 1.0: TEXT "" [2-2]
+							├── 1.1: MARK "**Bold text**" [2-15] [label="Bold text"]
+							├── 1.2: TEXT " with " [15-21]
+							├── 1.3: MARK "**strong emphasis**" [21-40] [label="strong emphasis"]
+							└── 1.4: TEXT "" [40-40]
 							 2: TEXT "" [41-41]"
 						`)
 					})

@@ -57,37 +57,35 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Removes overlapping matches using greedy approach: longest match wins
+	 * Converts pattern matches to match results
+	 * For nested parser, we include ALL matches (even overlapping ones)
+	 * The tree builder will determine parent-child relationships
 	 */
 	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
-		let lastEnd = 0
 
 		for (const patternMatch of sortedMatches) {
-			const start = this.getMatchStart(patternMatch)
-			const end = this.getMatchEnd(patternMatch)
-
-			// Skip overlapping matches
-			if (start < lastEnd) {
-				continue
-			}
-
-			// Materialize gaps for all valid matches (original behavior)
+			// Materialize gaps for all matches
 			PatternMatcher.materializeGaps(patternMatch, input)
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
-			const {label, value} = PatternMatcher.extractContent(patternMatch.parts, descriptor)
+			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
+
+			const start = this.getMatchStart(patternMatch)
+			const end = this.getMatchEnd(patternMatch)
 
 			results.push({
 				start,
 				end,
 				content: input.substring(start, end),
-				label,
-				value,
-				descriptor
+				label: extracted.label,
+				labelStart: extracted.labelStart,
+				labelEnd: extracted.labelEnd,
+				value: extracted.value,
+				valueStart: extracted.valueStart,
+				valueEnd: extracted.valueEnd,
+				descriptorIndex: patternMatch.descriptorIndex
 			})
-
-			lastEnd = end
 		}
 
 		return results
@@ -120,24 +118,39 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Extracts label and value from match parts based on gap types
+	 * Extracts label and value from match parts with position tracking
 	 * Single pass through gaps for optimal performance
 	 */
-	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {label: string; value?: string} {
+	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
+		label: string
+		labelStart: number
+		labelEnd: number
+		value?: string
+		valueStart?: number
+		valueEnd?: number
+	} {
 		let label = ''
+		let labelStart = -1
+		let labelEnd = -1
 		let value: string | undefined
+		let valueStart: number | undefined
+		let valueEnd: number | undefined
 
 		for (const part of parts) {
 			if (part.type === 'gap') {
 				if (part.gapType === 'label' && !label) {
 					label = part.value || ''
+					labelStart = part.start
+					labelEnd = part.end
 				} else if (part.gapType === 'value') {
 					value = part.value
+					valueStart = part.start
+					valueEnd = part.end
 				}
 			}
 		}
 
-		return {label, value}
+		return {label, labelStart, labelEnd, value, valueStart, valueEnd}
 	}
 }
 

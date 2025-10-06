@@ -1,58 +1,26 @@
-import {TextToken, MarkToken, MatchResult, NestedToken} from '../types'
-import {ParserV2} from '../ParserV2'
+import {TextToken, MatchResult, NestedToken} from '../types'
+import {buildTreeSinglePass} from './TreeBuilder'
 
-export const createTextToken = (input: string, start = 0, end = input.length): TextToken => ({
-	type: 'text',
-	content: input.substring(start, end),
-	position: { start, end }
-})
-
-/**
- * Creates a mark token from match with nested parsing
- */
-const createMarkToken = (parser: ParserV2, match: MatchResult): MarkToken => {
-	const innerTokens = match.label ? parser.split(match.label) : []
-	const hasNestedMarks = innerTokens.some(token => token.type === 'mark')
-
+export const createTextToken = (input: string, start = 0, end = input.length): TextToken => {
 	return {
-		type: 'mark',
-		content: match.content,
-		children: hasNestedMarks ? innerTokens : [],
-		data: {
-			label: match.label,
-			value: match.value,
-			optionIndex: match.descriptor.index
-		},
-		position: { start: match.start, end: match.end }
+		type: 'text',
+		content: input.substring(start, end),
+		position: { start, end }
 	}
 }
 
 /**
- * Builds token sequence: text-mark-text-mark-text...
- * Always alternates between text and mark tokens
+ * Builds nested token tree using single-pass algorithm
+ * No recursive parsing - all structure is built from match positions
+ * 
+ * @param input - Original input text
+ * @param matches - All matches found by PatternMatcher (with position info)
+ * @returns Nested token tree with proper parent-child relationships
  */
 export function buildTokenSequence(
 	input: string,
-	parser: ParserV2,
 	matches: MatchResult[]
 ): NestedToken[] {
-	if (matches.length === 0) {
-		return [createTextToken(input)]
-	}
-
-	const tokens: NestedToken[] = []
-	let pos = 0
-
-	for (const match of matches) {
-		// Always add text before mark (may be empty)
-		tokens.push(createTextToken(input, pos, match.start))
-		tokens.push(createMarkToken(parser, match))
-		pos = match.end
-	}
-
-	// Add final text after last mark
-	tokens.push(createTextToken(input, pos, input.length))
-
-	return tokens
+	return buildTreeSinglePass(input, matches)
 }
 

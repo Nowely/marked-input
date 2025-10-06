@@ -1,12 +1,11 @@
 import {PLACEHOLDER} from '../../../../shared/constants'
 import {Markup} from '../../../../shared/types'
-import {BaseMarkupDescriptor} from '../types'
 
 /**
  * Descriptor for segment-based markup parsing
  * Converts markup templates into arrays of static segments
  */
-export interface MarkupDescriptor extends BaseMarkupDescriptor {
+export interface MarkupDescriptor {
 	/** Original markup template string */
 	markup: Markup
 	/** Index of this markup in the original markups array */

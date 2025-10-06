@@ -28,21 +28,18 @@ export interface MarkToken {
 	}
 }
 
-// Базовый интерфейс для дескрипторов
-export interface BaseMarkupDescriptor {
-	markup: string
-	index: number
-	trigger: string
-}
-
 // Результат матчинга маркера
 export interface MatchResult {
 	start: number
 	end: number
 	content: string
 	label: string
+	labelStart: number  // Position of label in original text
+	labelEnd: number    // Position of label in original text (inclusive)
 	value?: string
-	descriptor: BaseMarkupDescriptor
+	valueStart?: number // Position of value in original text
+	valueEnd?: number   // Position of value in original text (inclusive)
+	descriptorIndex: number
 }
 
 /**
