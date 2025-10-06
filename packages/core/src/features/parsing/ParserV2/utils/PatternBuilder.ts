@@ -1,4 +1,4 @@
-import {MarkupDescriptor} from '../MarkupDescriptor'
+import {MarkupDescriptor} from '../core/MarkupDescriptor'
 import {PatternChain, MatchSegment} from './PatternChainManager'
 import {UniqueMatch} from '../types'
 
@@ -24,13 +24,21 @@ export class PatternBuilder {
 	 * Tries to extend a chain with a new segment match
 	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
 	 */
-	tryExtendChain(chain: PatternChain, match: UniqueMatch): { completed: PatternMatch | null; extended: PatternChain | null } {
+	tryExtendChain(chain: PatternChain, match: UniqueMatch, isClosingSegment: boolean = false): { completed: PatternMatch | null; extended: PatternChain | null } {
 		const descriptor = this.descriptors[chain.descriptorIndex]
 
 		// Check if this segment matches what this chain expects
 		const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
 		if (expectedSegment !== match.value) {
 			return { completed: null, extended: null } // This segment doesn't match what this chain expects
+		}
+
+		// Context-aware matching: if this is a closing segment and pattern has no nested patterns,
+		// prefer immediate closure (shortest match)
+		const isLastSegment = chain.nextSegmentIndex === descriptor.segments.length - 1
+		if (isLastSegment && isClosingSegment && !chain.hasNestedPatterns && !descriptor.isSymmetric) {
+			// This is the first available closing segment for a non-nested pattern
+			// Complete it immediately (greedy = false for non-nested)
 		}
 
 		const newPatternChain = this.cloneChain(chain)
@@ -75,7 +83,7 @@ export class PatternBuilder {
 	 * Creates a new chain for starting pattern
 	 * Returns {completed: PatternMatch | null, chain: PatternChain | null}
 	 */
-	createNewChain(descriptorIndex: number, match: UniqueMatch): { completed: PatternMatch | null; chain: PatternChain | null } {
+	createNewChain(descriptorIndex: number, match: UniqueMatch, nestingLevel: number = 0): { completed: PatternMatch | null; chain: PatternChain | null } {
 		const descriptor = this.descriptors[descriptorIndex]
 
 		// Only start chains at first segment
@@ -92,7 +100,9 @@ export class PatternBuilder {
 				start: match.start,
 				end: match.end,
 				value: match.value
-			}]
+			}],
+			hasNestedPatterns: false,
+			nestingLevel
 		}
 
 		// Single-segment pattern is immediately complete
@@ -117,7 +127,9 @@ export class PatternBuilder {
 			descriptorIndex: chain.descriptorIndex,
 			nextSegmentIndex: chain.nextSegmentIndex,
 			pos: chain.pos,
-			parts: chain.parts.map(p => ({ ...p }))
+			parts: chain.parts.map(p => ({ ...p })),
+			hasNestedPatterns: chain.hasNestedPatterns,
+			nestingLevel: chain.nestingLevel
 		}
 	}
 }

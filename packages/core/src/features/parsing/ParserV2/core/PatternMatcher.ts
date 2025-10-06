@@ -39,7 +39,8 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Sorts pattern matches by start position, then by length (longest first)
+	 * Sorts pattern matches by start position, then by length
+	 * Simplified: context-aware matching is now handled in PatternProcessor
 	 */
 	private sortByPositionAndLength(matches: PatternMatch[]): PatternMatch[] {
 		return matches.sort((a, b) => {
@@ -48,7 +49,7 @@ export class PatternMatcher {
 			if (startA !== startB) {
 				return startA - startB
 			}
-			// Same start: prefer longer match
+			// Same start: prefer longer match (greedy by default)
 			const lengthA = this.getMatchEnd(a) - startA
 			const lengthB = this.getMatchEnd(b) - startB
 			return lengthB - lengthA
@@ -66,7 +67,7 @@ export class PatternMatcher {
 			const start = this.getMatchStart(patternMatch)
 			const end = this.getMatchEnd(patternMatch)
 
-			// Skip overlapping matches (greedy: longest match wins)
+			// Skip overlapping matches
 			if (start < lastEnd) {
 				continue
 			}

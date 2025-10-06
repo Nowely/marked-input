@@ -17,6 +17,8 @@ export interface PatternChain {
 	nextSegmentIndex: number
 	pos: number // Next expected position in text
 	parts: MatchSegment[]
+	hasNestedPatterns: boolean // True if any nested pattern has started inside this chain
+	nestingLevel: number // Depth of nesting (0 = root level)
 }
 
 /**
@@ -51,6 +53,18 @@ export class PatternChainManager {
 			const index = waiting.indexOf(chain)
 			if (index !== -1) {
 				waiting.splice(index, 1)
+			}
+		}
+	}
+
+	/**
+	 * Removes a chain from all waiting lists
+	 */
+	removeChainFromAll(chain: PatternChain): void {
+		for (const [, chains] of this.activeChains) {
+			const index = chains.indexOf(chain)
+			if (index !== -1) {
+				chains.splice(index, 1)
 			}
 		}
 	}

@@ -21,6 +21,8 @@ export interface MarkupDescriptor extends BaseMarkupDescriptor {
 	hasValue: boolean
 	/** True if this markup contains exactly two __label__ placeholders */
 	hasTwoLabels: boolean
+	/** True if opening and closing segments are the same (symmetric patterns like **text**) */
+	isSymmetric: boolean
 }
 
 /**
@@ -64,6 +66,8 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		throw new Error(`Invalid markup format: "${markup}". Must have at least one static segment`)
 	}
 
+	const isSymmetric = segments.length >= 2 && segments[0] === segments[segments.length - 1]
+
 	return {
 		markup,
 		index,
@@ -71,7 +75,8 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		segments,
 		gapTypes,
 		hasValue,
-		hasTwoLabels
+		hasTwoLabels,
+		isSymmetric
 	}
 }
 

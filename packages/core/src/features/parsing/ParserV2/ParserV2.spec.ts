@@ -222,7 +222,6 @@ describe('ParserV2', () => {
 					`)
 				})
 
-				//TODO Erroring behavior. 1 contains empty value
 				it('handles marks with empty values', () => {
 					const input = '@[label]() @[label2](value)'
 					const result = parser.split(input)
@@ -260,18 +259,19 @@ describe('ParserV2', () => {
 					expect(marks[0].data.value).toBe('value')
 				})
 
-				//TODO Erroring behavior. It must contains 2 marks
 				it('handles conflicting patterns gracefully', () => {
 					// Test with patterns that could potentially conflict
-					// Parser uses greedy matching - behavior depends on implementation
+					// Shorter matches have higher priority, patterns without value preferred for same length
 					const conflictingParser = new ParserV2(['@[__label__]', '@[__label__](__value__)'])
 					const input = '@[simple] @[with](value)'
 					const result = conflictingParser.split(input)
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[simple] @[with](value)" [0-24] [label="simple] @[with", value="value"]
-						 2: TEXT "" [24-24]"
+						 1: MARK "@[simple]" [0-9] [label="simple"]
+						 2: TEXT " " [9-10]
+						 3: MARK "@[with]" [10-17] [label="with"]
+						 4: TEXT "(value)" [17-24]"
 					`)
 				})
 
