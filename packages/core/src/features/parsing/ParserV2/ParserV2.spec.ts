@@ -634,7 +634,7 @@ Visit our [documentation](https://docs.example.com) for more details.
 							├── 15.1: MARK "**Bold text**" [0-13] [label="Bold text"]
 							├── 15.2: TEXT " with " [13-19]
 							├── 15.3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
-							├── 15.4: TEXT "" [38-38]
+							└── 15.4: TEXT "" [38-38]
 							 16: TEXT "" [255-255]
 							 17: MARK "- *Italic text* and *emphasis* support
 							" [255-294] [label="*Italic text* and *emphasis* support"]
@@ -680,18 +680,13 @@ Visit our [documentation](https://docs.example.com) for more details.
 							const result = parser.split('Hello **world**!')
 							"]
 							├── 27.0: TEXT "javascript
-							const parser = n..." [0-36]
-							├── 27.1: MARK "V2(['**" [36-43] [label="(['"]
-							├── 27.2: TEXT "__label__" [43-52]
-							├── 27.3: MARK "**', '*__label__*'])
-							const result = parser.split('Hello **" [52-110] [label="', '*__label__*'])
-							const result = parser.split('Hello "]
-							│   ├── 27.3.0: TEXT "', '" [0-4]
-							│   ├── 27.3.1: MARK "*__label__*" [4-15] [label="__label__"]
-							│   └── 27.3.2: TEXT "'])
-							const result = parser.s..." [15-54]
-							├── 27.4: TEXT "world" [110-115]
-							├── 27.5: MARK "**" [115-117] [label=""]
+							const parser = n..." [0-41]
+							├── 27.1: MARK "**__label__**" [41-54] [label="__label__"]
+							├── 27.2: TEXT "', '" [54-58]
+							├── 27.3: MARK "*__label__*" [58-69] [label="__label__"]
+							├── 27.4: TEXT "'])
+							const result = parser.s..." [69-108]
+							├── 27.5: MARK "**world**" [108-117] [label="world"]
 							└── 27.6: TEXT "!')
 							" [117-121]
 							 28: TEXT "
