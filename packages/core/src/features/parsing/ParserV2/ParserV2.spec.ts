@@ -275,7 +275,6 @@ describe('ParserV2', () => {
 					`)
 				})
 
-				//TODO Erroring behavior. It must contains 4 marks
 				it('handles marks at string boundaries', () => {
 					const input = `
 						'@[start]',
@@ -283,12 +282,25 @@ describe('ParserV2', () => {
 						'@[start]@[end]',
 						' @[middle] ',
 					`
-
+					const parser = new ParserV2(['@[__label__]'])
 					const result = parser.split(input)
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "
-												'@[start]',
-												'@..." [0-85]"
+												'" [0-8]
+						 1: MARK "@[start]" [8-16] [label="start"]
+						 2: TEXT "',
+												'" [16-26]
+						 3: MARK "@[end]" [26-32] [label="end"]
+						 4: TEXT "',
+												'" [32-42]
+						 5: MARK "@[start]" [42-50] [label="start"]
+						 6: TEXT "" [50-50]
+						 7: MARK "@[end]" [50-56] [label="end"]
+						 8: TEXT "',
+												' " [56-67]
+						 9: MARK "@[middle]" [67-76] [label="middle"]
+						 10: TEXT " ',
+											" [76-85]"
 					`)
 				})
 
@@ -545,6 +557,148 @@ describe('ParserV2', () => {
 							 4: TEXT " with " [21-27]
 							 5: MARK "\`code\`" [27-33] [label="code"]
 							 6: TEXT "" [33-33]"
+						`)
+					})
+
+					it('parses complex realistic markdown document', () => {
+						const markups: Markup[] = [
+							'# __label__\n', // h1 header
+							'## __label__\n', // h2 header
+							'- __label__\n', // list item
+							'**__label__**', // bold
+							'*__label__*', // italic
+							'`__label__`', // inline code
+							'```__label__```', // code block
+							'[__label__](__value__)', // link
+							'~~__label__~~', // strikethrough
+						]
+						const parser = new ParserV2(markups)
+
+						const input = `# Welcome to **Marked Input**
+
+This is a *powerful* library for parsing **rich text** with *markdown* formatting.
+You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
+
+## Features
+
+- **Bold text** with **strong emphasis**
+- *Italic text* and *emphasis* support
+- \`Code snippets\` and \`\`\`code blocks\`\`\`
+- ~~Strikethrough~~ for deleted content
+- Links like [GitHub](https://github.com)
+
+## Example
+
+Here's how to use it:
+
+\`\`\`javascript
+const parser = new ParserV2(['**__label__**', '*__label__*'])
+const result = parser.split('Hello **world**!')
+\`\`\`
+
+Visit our [documentation](https://docs.example.com) for more details.
+~~This feature is deprecated~~ and will be removed in v3.0.`
+
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "# Welcome to **Marked Input**
+							" [0-30] [label="Welcome to **Marked Input**"]
+							├── 1.0: TEXT "Welcome to " [0-11]
+							├── 1.1: MARK "**Marked Input**" [11-27] [label="Marked Input"]
+							└── 1.2: TEXT "" [27-27]
+							 2: TEXT "
+							This is a " [30-41]
+							 3: MARK "*powerful*" [41-51] [label="powerful"]
+							 4: TEXT " library for parsing " [51-72]
+							 5: MARK "**rich text**" [72-85] [label="rich text"]
+							 6: TEXT " with " [85-91]
+							 7: MARK "*markdown*" [91-101] [label="markdown"]
+							 8: TEXT " formatting.
+							You can use " [101-126]
+							 9: MARK "\`inline code\`" [126-139] [label="inline code"]
+							 10: TEXT " snippets like " [139-154]
+							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
+							 12: TEXT " in your text.
+
+							" [185-201]
+							 13: MARK "## Features
+
+							" [201-214] [label="Features
+							"]
+							 14: TEXT "" [214-214]
+							 15: MARK "- **Bold text** with **strong emphasis**
+							" [214-255] [label="**Bold text** with **strong emphasis**"]
+							├── 15.0: TEXT "" [0-0]
+							├── 15.1: MARK "**Bold text**" [0-13] [label="Bold text"]
+							├── 15.2: TEXT " with " [13-19]
+							├── 15.3: MARK "**strong emphasis**" [19-38] [label="strong emphasis"]
+							├── 15.4: TEXT "" [38-38]
+							 16: TEXT "" [255-255]
+							 17: MARK "- *Italic text* and *emphasis* support
+							" [255-294] [label="*Italic text* and *emphasis* support"]
+							├── 17.0: TEXT "" [0-0]
+							├── 17.1: MARK "*Italic text*" [0-13] [label="Italic text"]
+							├── 17.2: TEXT " and " [13-18]
+							├── 17.3: MARK "*emphasis*" [18-28] [label="emphasis"]
+							└── 17.4: TEXT " support" [28-36]
+							 18: TEXT "" [294-294]
+							 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`
+							" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
+							├── 19.0: TEXT "" [0-0]
+							├── 19.1: MARK "\`Code snippets\`" [0-15] [label="Code snippets"]
+							├── 19.2: TEXT " and " [15-20]
+							├── 19.3: MARK "\`\`\`code blocks\`\`\`" [20-37] [label="code blocks"]
+							└── 19.4: TEXT "" [37-37]
+							 20: TEXT "" [334-334]
+							 21: MARK "- ~~Strikethrough~~ for deleted content
+							" [334-374] [label="~~Strikethrough~~ for deleted content"]
+							├── 21.0: TEXT "" [0-0]
+							├── 21.1: MARK "~~Strikethrough~~" [0-17] [label="Strikethrough"]
+							└── 21.2: TEXT " for deleted content" [17-37]
+							 22: TEXT "" [374-374]
+							 23: MARK "- Links like [GitHub](https://github.com)
+							" [374-416] [label="Links like [GitHub](https://github.com)"]
+							├── 23.0: TEXT "Links like " [0-11]
+							├── 23.1: MARK "[GitHub](https://github.com)" [11-39] [label="GitHub", value="https://github.com"]
+							└── 23.2: TEXT "" [39-39]
+							 24: TEXT "
+							" [416-417]
+							 25: MARK "## Example
+
+							" [417-429] [label="Example
+							"]
+							 26: TEXT "Here's how to use it:
+
+							" [429-452]
+							 27: MARK "\`\`\`javascript
+							const parser = new ParserV2(['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							\`\`\`" [452-579] [label="javascript
+							const parser = new ParserV2(['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							"]
+							├── 27.0: TEXT "javascript
+							const parser = n..." [0-36]
+							├── 27.1: MARK "V2(['**" [36-43] [label="(['"]
+							├── 27.2: TEXT "__label__" [43-52]
+							├── 27.3: MARK "**', '*__label__*'])
+							const result = parser.split('Hello **" [52-110] [label="', '*__label__*'])
+							const result = parser.split('Hello "]
+							│   ├── 27.3.0: TEXT "', '" [0-4]
+							│   ├── 27.3.1: MARK "*__label__*" [4-15] [label="__label__"]
+							│   └── 27.3.2: TEXT "'])
+							const result = parser.s..." [15-54]
+							├── 27.4: TEXT "world" [110-115]
+							├── 27.5: MARK "**" [115-117] [label=""]
+							└── 27.6: TEXT "!')
+							" [117-121]
+							 28: TEXT "
+
+							Visit our [documentation]..." [579-651]
+							 29: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
+							 30: TEXT " and will be removed in v3.0." [681-710]"
 						`)
 					})
 				})
