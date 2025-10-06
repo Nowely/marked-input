@@ -10,12 +10,9 @@ import {buildTokenSequence} from './core/TokenBuilder'
  * Uses Aho-Corasick algorithm for efficient multi-pattern matching
  */
 export class ParserV2 {
-	private readonly markups: Markup[]
 	private readonly matcher: PatternMatcher
 
 	constructor(markups: Markup[]) {
-		this.markups = markups
-		// Cache matcher at parser level for reuse
 		const descriptors = markups.map(createMarkupDescriptor)
 		this.matcher = new PatternMatcher(descriptors)
 	}
@@ -24,8 +21,15 @@ export class ParserV2 {
 	 * Static method for parsing with options
 	 */
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
-		const markups = options?.map(c => c.markup!)
-		return markups ? new ParserV2(markups).split(value) : []
+		const markups = options?.map(c => c.markup)
+		return markups ? new ParserV2(markups).split(value) : [{
+			type: 'text',
+			content: value,
+			position: {
+				start: 0,
+				end: value.length
+			}
+		}]
 	}
 
 	/**

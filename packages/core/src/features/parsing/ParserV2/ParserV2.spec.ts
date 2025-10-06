@@ -37,7 +37,7 @@ describe('ParserV2', () => {
 			const value = 'Hello world'
 			const result = ParserV2.split(value)
 
-			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`""`)
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "Hello world" [0-11]"`)
 		})
 	})
 
