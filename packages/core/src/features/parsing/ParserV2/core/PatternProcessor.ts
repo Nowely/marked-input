@@ -28,11 +28,12 @@ export class PatternProcessor {
 		const activePatterns = new Set<number>() // descriptorIndex
 		const nestingStack: PatternChain[] = [] // Stack of active chains for tracking nesting
 		const consumedPositions = new Set<number>() // Track positions consumed by pattern segments
+		const consumedStartPositions = new Map<number, number>() // Track prefix conflicts: position -> segment length
 
 		// Process each unique segment occurrence
 		for (const match of uniqueMatches) {
-			this.processWaitingChains(match, results, activePatterns, nestingStack, consumedPositions)
-			this.startNewChains(match, results, activePatterns, nestingStack, consumedPositions)
+			this.processWaitingChains(match, results, activePatterns, nestingStack, consumedPositions, uniqueMatches)
+			this.startNewChains(match, results, activePatterns, nestingStack, consumedPositions, consumedStartPositions)
 		}
 
 		return results
@@ -40,27 +41,56 @@ export class PatternProcessor {
 
 	/**
 	 * Processes chains waiting for current segment match
-	 * Simplified logic: prioritize chains without nested patterns, then by LIFO order
+	 * Priority logic with lookahead:
+	 * 1. Chains without nested patterns (ready to close immediately)
+	 * 2. Use lookahead to decide between completing and extending
+	 * 3. Later start = inner = higher priority (LIFO)
 	 */
-	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>): void {
+	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>, allMatches: UniqueMatch[]): void {
 		const waiting = this.chainManager.getWaiting(match.value)
 
 		if (waiting.length === 0) {
 			return
 		}
 
-		// Sort waiting chains by priority:
-		// 1. Chains without nested patterns (ready to close immediately)
-		// 2. Later start = inner = higher priority (LIFO)
+		// Find next match after current position for lookahead
+		const currentIndex = allMatches.indexOf(match)
+		const nextMatch = currentIndex >= 0 && currentIndex < allMatches.length - 1 ? allMatches[currentIndex + 1] : null
+
+		// Sort waiting chains by priority
 		const sortedWaiting = [...waiting].sort((a, b) => {
 			const aHasNested = a.hasNestedPatterns
 			const bHasNested = b.hasNestedPatterns
 			
-			// Prioritize chains without nested patterns
+			// Prioritize chains without nested patterns (they should close first)
 			if (!aHasNested && bHasNested) return -1
 			if (aHasNested && !bHasNested) return 1
 			
-			// Same nesting status: later start = higher priority
+			const aDescriptor = this.descriptors[a.descriptorIndex]
+			const bDescriptor = this.descriptors[b.descriptorIndex]
+			
+			// Check if chains would be complete after this segment
+			const aWouldComplete = a.nextSegmentIndex === aDescriptor.segments.length - 1
+			const bWouldComplete = b.nextSegmentIndex === bDescriptor.segments.length - 1
+			
+			// Use lookahead to decide priority
+			// If a chain can be extended and the next segment is available, prioritize it
+			if (!aWouldComplete && bWouldComplete) {
+				const nextSegment = aDescriptor.segments[a.nextSegmentIndex + 1]
+				if (nextMatch && nextMatch.value === nextSegment && nextMatch.start === match.end + 1) {
+					return -1 // Prioritize extendable chain if next segment is immediately available
+				}
+				return 1 // Otherwise, prioritize completing chain
+			}
+			if (aWouldComplete && !bWouldComplete) {
+				const nextSegment = bDescriptor.segments[b.nextSegmentIndex + 1]
+				if (nextMatch && nextMatch.value === nextSegment && nextMatch.start === match.end + 1) {
+					return 1 // Prioritize extendable chain if next segment is immediately available
+				}
+				return -1 // Otherwise, prioritize completing chain
+			}
+			
+			// Same completion status: later start = higher priority (LIFO)
 			return b.parts[0].start - a.parts[0].start
 		})
 
@@ -70,8 +100,17 @@ export class PatternProcessor {
 				continue // Segment appears before chain expects it
 			}
 
-			const {completed, extended} = this.patternBuilder.tryExtendChain(chain, match, false)
+			// Check if chain expects exactly this segment
+			const descriptor = this.descriptors[chain.descriptorIndex]
+			const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
+			
+			// If current match doesn't exactly match expected segment, skip this chain
+			if (expectedSegment !== match.value) {
+				continue // Chain expects a different segment
+			}
 
+			const {completed, extended} = this.patternBuilder.tryExtendChain(chain, match, false)
+		
 			if (completed) {
 				results.push(completed)
 				activePatterns.delete(chain.descriptorIndex)
@@ -87,6 +126,35 @@ export class PatternProcessor {
 				const stackIndex = nestingStack.indexOf(chain)
 				if (stackIndex !== -1) {
 					nestingStack.splice(stackIndex, 1)
+				}
+				
+				// Cancel any other chains that start at the same position and are waiting for segments
+				// within the completed pattern's range
+				// This handles cases like @[simple] completing while @[simple](value) is still waiting
+				const chainsToCancel: PatternChain[] = []
+				for (const otherChain of nestingStack) {
+					const otherStart = otherChain.parts[0].start
+					// Only cancel chains that start at exactly the same position
+					if (otherStart === completeStart) {
+						const otherDescriptor = this.descriptors[otherChain.descriptorIndex]
+						const completedDescriptor = this.descriptors[chain.descriptorIndex]
+						// Check if they share the same first segment (trigger)
+						if (otherDescriptor.segments[0] === completedDescriptor.segments[0]) {
+							// Check if other chain is waiting for a segment that would be inside completed pattern
+							// otherChain.pos is where it expects the next segment to start
+							if (otherChain.pos <= completeEnd) {
+								chainsToCancel.push(otherChain)
+							}
+						}
+					}
+				}
+				for (const cancelChain of chainsToCancel) {
+					activePatterns.delete(cancelChain.descriptorIndex)
+					const cancelIndex = nestingStack.indexOf(cancelChain)
+					if (cancelIndex !== -1) {
+						nestingStack.splice(cancelIndex, 1)
+					}
+					this.chainManager.removeChainFromAll(cancelChain)
 				}
 			} else if (extended) {
 				// Chain was extended but not completed - add back to waiting
@@ -113,7 +181,7 @@ export class PatternProcessor {
 	 * Context-aware: tracks nesting level and marks parent chains as having nested content
 	 * Prioritizes more specific patterns (longer triggers, more complex patterns) to prevent conflicts
 	 */
-	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>): void {
+	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>, consumedStartPositions: Map<number, number>): void {
 		// Sort descriptors by pattern priority (shorter patterns first, but avoid conflicts)
 		const sortedDescriptors = match.descriptors
 			.filter(descInfo => descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex))
@@ -121,7 +189,7 @@ export class PatternProcessor {
 				const descA = this.descriptors[a.descriptorIndex]
 				const descB = this.descriptors[b.descriptorIndex]
 
-				// Special case: prefer longer first segments to avoid conflicts like * vs **
+				// Special case: prefer longer first segments to avoid conflicts like * vs ** or # vs ##
 				const firstSegmentLenA = descA.segments[0].length
 				const firstSegmentLenB = descB.segments[0].length
 				if (firstSegmentLenA !== firstSegmentLenB) {
@@ -134,13 +202,10 @@ export class PatternProcessor {
 				return segmentsA - segmentsB // fewer segments first
 			})
 		
-		// Track which triggers have been started at this position
-		const startedTriggers = new Set<string>()
-		
 		for (const descInfo of sortedDescriptors) {
 			const descriptor = this.descriptors[descInfo.descriptorIndex]
 
-			// Skip if any position in this segment is already consumed by another pattern
+			// Skip if any position in this segment is already consumed by a COMPLETED pattern
 			let isPositionConsumed = false
 			for (let i = match.start; i <= match.end; i++) {
 				if (consumedPositions.has(i)) {
@@ -152,12 +217,19 @@ export class PatternProcessor {
 				continue
 			}
 
-			// Only start one pattern per trigger at the same position
-			// This prevents conflicting patterns from competing
-			if (startedTriggers.has(descriptor.trigger)) {
-				continue
+			// Check for prefix conflicts: if a longer pattern already started and overlaps with this position
+			// For example, if "##" started at position 201-202, don't start "#" at position 202
+			let hasOverlappingLongerPattern = false
+			for (let i = match.start; i <= match.end; i++) {
+				const existingSegmentLength = consumedStartPositions.get(i)
+				if (existingSegmentLength !== undefined && existingSegmentLength > descriptor.segments[0].length) {
+					hasOverlappingLongerPattern = true
+					break
+				}
 			}
-
+			if (hasOverlappingLongerPattern) {
+				continue // Skip shorter pattern - longer one already claimed overlapping position
+			}
 			
 			// Determine nesting level based on current stack
 			const nestingLevel = nestingStack.length
@@ -175,7 +247,7 @@ export class PatternProcessor {
 					consumedPositions.add(i)
 				}
 				
-				startedTriggers.add(descriptor.trigger)
+				consumedStartPositions.set(match.start, descriptor.segments[0].length)
 			} else if (chain) {
 				// Mark all parent chains as having nested patterns
 				for (const parentChain of nestingStack) {
@@ -186,13 +258,17 @@ export class PatternProcessor {
 				
 				// DO NOT mark positions as consumed when starting a chain
 				// Only mark them when the chain completes
+				// This allows nested patterns like **bold** to work correctly
 				
 				// Chain was created and needs to wait for next segment
 				const nextSegmentValue = this.descriptors[descInfo.descriptorIndex].segments[chain.nextSegmentIndex]
 				this.chainManager.addToWaiting(nextSegmentValue, chain)
 				activePatterns.add(descInfo.descriptorIndex)
 				nestingStack.push(chain)
-				startedTriggers.add(descriptor.trigger)
+				// Mark all positions in the starting segment to prevent overlapping prefix patterns
+				for (let i = match.start; i <= match.end; i++) {
+					consumedStartPositions.set(i, descriptor.segments[0].length)
+				}
 			}
 		}
 	}

@@ -624,86 +624,63 @@ Visit our [documentation](https://docs.example.com) for more details.
 
 							" [185-201]
 							 13: MARK "## Features
-
-							" [201-214] [label="Features
-							"]
-							 14: TEXT "# Features
-
-							" [214-202]
-							 15: MARK "# Features
-							" [202-213] [label="Features"]
-							 16: TEXT "
+							" [201-213] [label="Features"]
+							 14: TEXT "
 							" [213-214]
-							 17: MARK "- **Bold text** with **strong emphasis**
+							 15: MARK "- **Bold text** with **strong emphasis**
 							" [214-255] [label="**Bold text** with **strong emphasis**"]
-							├── 17.0: TEXT "" [216-216]
-							├── 17.1: MARK "**Bold text**" [216-229] [label="Bold text"]
-							├── 17.2: TEXT " with " [229-235]
-							├── 17.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
-							└── 17.4: TEXT "" [254-254]
-							 18: TEXT "" [255-255]
-							 19: MARK "- *Italic text* and *emphasis* support
+							├── 15.0: TEXT "" [216-216]
+							├── 15.1: MARK "**Bold text**" [216-229] [label="Bold text"]
+							├── 15.2: TEXT " with " [229-235]
+							├── 15.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
+							└── 15.4: TEXT "" [254-254]
+							 16: TEXT "" [255-255]
+							 17: MARK "- *Italic text* and *emphasis* support
 							" [255-294] [label="*Italic text* and *emphasis* support"]
-							├── 19.0: TEXT "" [257-257]
-							├── 19.1: MARK "*Italic text*" [257-270] [label="Italic text"]
-							├── 19.2: TEXT " and " [270-275]
-							├── 19.3: MARK "*emphasis*" [275-285] [label="emphasis"]
-							└── 19.4: TEXT " support" [285-293]
-							 20: TEXT "" [294-294]
-							 21: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`
+							├── 17.0: TEXT "" [257-257]
+							├── 17.1: MARK "*Italic text*" [257-270] [label="Italic text"]
+							├── 17.2: TEXT " and " [270-275]
+							├── 17.3: MARK "*emphasis*" [275-285] [label="emphasis"]
+							└── 17.4: TEXT " support" [285-293]
+							 18: TEXT "" [294-294]
+							 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`
 							" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
-							├── 21.0: TEXT "" [296-296]
-							├── 21.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
-							├── 21.2: TEXT " and " [311-316]
-							├── 21.3: MARK "\`\`\`code blocks\`\`\`" [316-333] [label="code blocks"]
-							├── 21.4: TEXT "\`code blocks\`\`\`" [333-318]
-							├── 21.5: MARK "\`code blocks\`" [318-331] [label="code blocks"]
-							└── 21.6: TEXT "\`\`" [331-333]
-							 22: TEXT "" [334-334]
-							 23: MARK "- ~~Strikethrough~~ for deleted content
+							├── 19.0: TEXT "" [296-296]
+							├── 19.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
+							├── 19.2: TEXT " and " [311-316]
+							├── 19.3: MARK "\`\`\`code blocks\`\`\`" [316-333] [label="code blocks"]
+							├── 19.4: TEXT "\`\`\`" [333-330]
+							├── 19.5: MARK "\`\`" [330-332] [label=""]
+							└── 19.6: TEXT "\`" [332-333]
+							 20: TEXT "" [334-334]
+							 21: MARK "- ~~Strikethrough~~ for deleted content
 							" [334-374] [label="~~Strikethrough~~ for deleted content"]
-							├── 23.0: TEXT "" [336-336]
-							├── 23.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
-							└── 23.2: TEXT " for deleted content" [353-373]
-							 24: TEXT "" [374-374]
-							 25: MARK "- Links like [GitHub](https://github.com)
+							├── 21.0: TEXT "" [336-336]
+							├── 21.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
+							└── 21.2: TEXT " for deleted content" [353-373]
+							 22: TEXT "" [374-374]
+							 23: MARK "- Links like [GitHub](https://github.com)
 							" [374-416] [label="Links like [GitHub](https://github.com)"]
-							├── 25.0: TEXT "Links like " [376-387]
-							├── 25.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
-							└── 25.2: TEXT "" [415-415]
-							 26: TEXT "
+							├── 23.0: TEXT "Links like " [376-387]
+							├── 23.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
+							└── 23.2: TEXT "" [415-415]
+							 24: TEXT "
 							" [416-417]
-							 27: MARK "## Example
-
-							" [417-429] [label="Example
-							"]
-							 28: TEXT "# Example
-
-							" [429-418]
-							 29: MARK "# Example
-							" [418-428] [label="Example"]
-							 30: TEXT "
+							 25: MARK "## Example
+							" [417-428] [label="Example"]
+							 26: TEXT "
 							Here's how to use it:
 
 							" [428-452]
-							 31: MARK "\`\`\`javascript
+							 27: MARK "\`\`\`javascript
 							const parser = new ParserV2(['**__label__**', '*__label__*'])
 							const result = parser.split('Hello **world**!')
 							\`\`\`" [452-579] [label="javascript
 							const parser = new ParserV2(['**__label__**', '*__label__*'])
 							const result = parser.split('Hello **world**!')
 							"]
-							 32: TEXT "\`javascript
-							const parser = ..." [579-454]
-							 33: MARK "\`javascript
-							const parser = new ParserV2(['**__label__**', '*__label__*'])
-							const result = parser.split('Hello **world**!')
-							\`" [454-577] [label="javascript
-							const parser = new ParserV2(['**__label__**', '*__label__*'])
-							const result = parser.split('Hello **world**!')
-							"]
-							 34: TEXT "['**__label__**', '*__label..." [577-494]
-							 35: MARK "['**__label__**', '*__label__*'])
+							 28: TEXT "['**__label__**', '*__label..." [579-494]
+							 29: MARK "['**__label__**', '*__label__*'])
 							const result = parser.split('Hello **world**!')
 							\`\`\`
 
@@ -712,21 +689,23 @@ Visit our [documentation](https://docs.example.com) for more details.
 							\`\`\`
 
 							Visit our [documentation", value="https://docs.example.com"]
-							├── 35.0: TEXT "'" [495-496]
-							├── 35.1: MARK "**__label__**" [496-509] [label="__label__"]
-							├── 35.2: TEXT "', '" [509-513]
-							├── 35.3: MARK "*__label__*" [513-524] [label="__label__"]
-							├── 35.4: TEXT "'])
+							├── 29.0: TEXT "'" [495-496]
+							├── 29.1: MARK "**__label__**" [496-509] [label="__label__"]
+							├── 29.2: TEXT "', '" [509-513]
+							├── 29.3: MARK "*__label__*" [513-524] [label="__label__"]
+							├── 29.4: TEXT "'])
 							const result = parser.s..." [524-563]
-							├── 35.5: MARK "**world**" [563-572] [label="world"]
-							└── 35.6: TEXT "!')
-							\`\`\`
+							├── 29.5: MARK "**world**" [563-572] [label="world"]
+							├── 29.6: TEXT "!')
+							" [572-576]
+							├── 29.7: MARK "\`\`" [576-578] [label=""]
+							└── 29.8: TEXT "\`
 
-							Visit our [documen..." [572-605]
-							 36: TEXT " for more details.
+							Visit our [documentation" [578-605]
+							 30: TEXT " for more details.
 							" [632-651]
-							 37: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
-							 38: TEXT " and will be removed in v3.0." [681-710]"
+							 31: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
+							 32: TEXT " and will be removed in v3.0." [681-710]"
 						`)
 					})
 
