@@ -226,7 +226,7 @@ describe('ParserV2', () => {
 					const input = '@[label]() @[label2](value)'
 					const result = parser.split(input)
 
-				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
 					 1: MARK "@[label]()" [0-10] [label="label", value=""]
 					 2: TEXT " " [10-11]
@@ -929,7 +929,10 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 		const paddedPrefix = level === 0 && index > 0 ? ` ${currentPrefix}` : currentPrefix
 
 		if (token.type === 'text') {
-			const content = token.content.length > 30 ? `"${escapeString(token.content.slice(0, 27))}..."` : `"${escapeString(token.content)}"`
+			const content =
+				token.content.length > 30
+					? `"${escapeString(token.content.slice(0, 27))}..."`
+					: `"${escapeString(token.content)}"`
 			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
 		} else {
 			const labelValueInfo =
@@ -950,16 +953,13 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 	})
 
 	return lines.join('\n')
-}
 
-/**
- * Экранирует специальные символы в строке для отображения в debug tree
- */
-function escapeString(str: string): string {
-	return str
-		.replace(/\n/g, '↲')    // Новая строка (стрелка вниз-влево)
-		.replace(/\r/g, '⏎')    // Возврат каретки (стрелка влево)
-		.replace(/\t/g, '⇥')    // Табуляция (стрелка вправо-вверх)
+	function escapeString(str: string): string {
+		return str
+			.replace(/\n/g, '↲') // Новая строка (стрелка вниз-влево)
+			.replace(/\r/g, '⏎') // Возврат каретки (стрелка влево)
+			.replace(/\t/g, '⇥') // Табуляция (стрелка вправо-вверх)
+	}
 }
 
 /**
