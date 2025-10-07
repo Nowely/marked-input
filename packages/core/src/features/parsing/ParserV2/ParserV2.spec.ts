@@ -569,30 +569,32 @@ describe('ParserV2', () => {
 						]
 						const parser = new ParserV2(markups)
 
-						const input = `# Welcome to **Marked Input**
+						const input = dedent`
+							# Welcome to **Marked Input**
 
-This is a *powerful* library for parsing **rich text** with *markdown* formatting.
-You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
+							This is a *powerful* library for parsing **rich text** with *markdown* formatting.
+							You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
 
-## Features
+							## Features
 
-- **Bold text** with **strong emphasis**
-- *Italic text* and *emphasis* support
-- \`Code snippets\` and \`\`\`code blocks\`\`\`
-- ~~Strikethrough~~ for deleted content
-- Links like [GitHub](https://github.com)
+							- **Bold text** with **strong emphasis**
+							- *Italic text* and *emphasis* support
+							- \`Code snippets\` and \`\`\`code blocks\`\`\`
+							- ~~Strikethrough~~ for deleted content
+							- Links like [GitHub](https://github.com)
 
-## Example
+							## Example
 
-Here's how to use it:
+							Here's how to use it:
 
-\`\`\`javascript
-const parser = new ParserV2(['**__label__**', '*__label__*'])
-const result = parser.split('Hello **world**!')
-\`\`\`
+							\`\`\`javascript
+							const parser = new ParserV2(['**__label__**', '*__label__*'])
+							const result = parser.split('Hello **world**!')
+							\`\`\`
 
-Visit our [documentation](https://docs.example.com) for more details.
-~~This feature is deprecated~~ and will be removed in v3.0.`
+							Visit our [documentation](https://docs.example.com) for more details.
+							~~This feature is deprecated~~ and will be removed in v3.0.
+						`
 
 						const result = parser.split(input)
 
@@ -1006,4 +1008,81 @@ function findMaxDepth(tokens: NestedToken[]): number {
 
 	const depths = tokens.map(token => findDepth(token))
 	return Math.max(...depths)
+}
+
+/**
+ * Tagged template function that removes common leading whitespace from each line
+ * and trims empty lines from the beginning and end.
+ *
+ * @param strings - Template strings array
+ * @param values - Interpolation values
+ * @returns The dedented string
+ *
+ * @example
+ * ```typescript
+ * const text = dedent`
+ *   Hello world
+ *   This is indented
+ *   And this too
+ * `;
+ * // Result: "Hello world\nThis is indented\nAnd this too"
+ * ```
+ */
+function dedent(strings: TemplateStringsArray, ...values: unknown[]): string {
+	// Combine template strings with interpolated values
+	let result = strings[0]
+	for (let i = 0; i < values.length; i++) {
+		result += String(values[i]) + strings[i + 1]
+	}
+
+	// Split into lines
+	const lines = result.split('\n')
+
+	// Remove empty lines from start and end
+	let startIndex = 0
+	let endIndex = lines.length - 1
+
+	// Find first non-empty line
+	while (startIndex < lines.length && lines[startIndex].trim() === '') {
+		startIndex++
+	}
+
+	// Find last non-empty line
+	while (endIndex >= 0 && lines[endIndex].trim() === '') {
+		endIndex--
+	}
+
+	// If all lines are empty, return empty string
+	if (startIndex > endIndex) {
+		return ''
+	}
+
+	// Extract the content lines
+	const contentLines = lines.slice(startIndex, endIndex + 1)
+
+	// Find the minimum indentation (excluding empty lines)
+	let minIndent = Infinity
+	for (const line of contentLines) {
+		if (line.trim() === '') continue
+
+		const indent = line.length - line.trimStart().length
+		if (indent < minIndent) {
+			minIndent = indent
+		}
+	}
+
+	// If no indentation found, return as is
+	if (minIndent === Infinity || minIndent === 0) {
+		return contentLines.join('\n')
+	}
+
+	// Remove common indentation from each line
+	const dedentedLines = contentLines.map(line => {
+		if (line.trim() === '') {
+			return ''
+		}
+		return line.slice(minIndent)
+	})
+
+	return dedentedLines.join('\n')
 }
