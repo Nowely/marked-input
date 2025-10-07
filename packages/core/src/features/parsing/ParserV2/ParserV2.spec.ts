@@ -555,119 +555,113 @@ describe('ParserV2', () => {
 						`)
 					})
 
-					it('parses complex realistic markdown document', () => {
-						const markups: Markup[] = [
-							'# __label__\n', // h1 header
-							'## __label__\n', // h2 header
-							'- __label__\n', // list item
-							'**__label__**', // bold
-							'*__label__*', // italic
-							'`__label__`', // inline code
-							'```__label__```', // code block
-							'[__label__](__value__)', // link
-							'~~__label__~~', // strikethrough
-						]
-						const parser = new ParserV2(markups)
+				it('parses complex realistic markdown document', () => {
+					const markups: Markup[] = [
+						'# __label__\n', // h1 header
+						'## __label__\n', // h2 header
+						'- __label__\n', // list item
+						'**__label__**', // bold
+						'*__label__*', // italic
+						'`__label__`', // inline code
+						'```__label__\n__value__```', // code block
+						'[__label__](__value__)', // link
+						'~~__label__~~', // strikethrough
+					]
+					const parser = new ParserV2(markups)
 
-						const input = dedent`
-							# Welcome to **Marked Input**
+					const input = dedent`
+						# Welcome to **Marked Input**
 
-							This is a *powerful* library for parsing **rich text** with *markdown* formatting.
-							You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
+						This is a *powerful* library for parsing **rich text** with *markdown* formatting.
+						You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
 
-							## Features
+						## Features
 
-							- **Bold text** with **strong emphasis**
-							- *Italic text* and *emphasis* support
-							- \`Code snippets\` and \`\`\`code blocks\`\`\`
-							- ~~Strikethrough~~ for deleted content
-							- Links like [GitHub](https://github.com)
+						- **Bold text** with **strong emphasis**
+						- *Italic text* and *emphasis* support
+						- \`Code snippets\` and \`\`\`code blocks\`\`\`
+						- ~~Strikethrough~~ for deleted content
+						- Links like [GitHub](https://github.com)
 
-							## Example
+						## Example
 
-							Here's how to use it:
+						Here's how to use it:
 
-							\`\`\`javascript
-							const parser = new ParserV2(['**__label__**', '*__label__*'])
-							const result = parser.split('Hello **world**!')
-							\`\`\`
+						\`\`\`javascript
+						const parser = new ParserV2(['**__label__**', '*__label__*'])
+						const result = parser.split('Hello **world**!')
+						\`\`\`
 
-							Visit our [documentation](https://docs.example.com) for more details.
-							~~This feature is deprecated~~ and will be removed in v3.0.
-						`
+						Visit our [documentation](https://docs.example.com) for more details.
+						~~This feature is deprecated~~ and will be removed in v3.0.
+					`
 
-						const result = parser.split(input)
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "" [0-0]
-							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [label="Welcome to **Marked Input**"]
-								1.0: TEXT "Welcome to " [2-13]
-								1.1: MARK "**Marked Input**" [13-29] [label="Marked Input"]
-								1.2: TEXT "" [29-29]
-							 2: TEXT "↲This is a " [30-41]
-							 3: MARK "*powerful*" [41-51] [label="powerful"]
-							 4: TEXT " library for parsing " [51-72]
-							 5: MARK "**rich text**" [72-85] [label="rich text"]
-							 6: TEXT " with " [85-91]
-							 7: MARK "*markdown*" [91-101] [label="markdown"]
-							 8: TEXT " formatting.↲You can use " [101-126]
-							 9: MARK "\`inline code\`" [126-139] [label="inline code"]
-							 10: TEXT " snippets like " [139-154]
-							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
-							 12: TEXT " in your text.↲↲" [185-201]
-							 13: MARK "## Features↲" [201-213] [label="Features"]
-							 14: TEXT "↲" [213-214]
-							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [label="**Bold text** with **strong emphasis**"]
-								15.0: TEXT "" [216-216]
-								15.1: MARK "**Bold text**" [216-229] [label="Bold text"]
-								15.2: TEXT " with " [229-235]
-								15.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
-								15.4: TEXT "" [254-254]
-							 16: TEXT "" [255-255]
-							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [label="*Italic text* and *emphasis* support"]
-								17.0: TEXT "" [257-257]
-								17.1: MARK "*Italic text*" [257-270] [label="Italic text"]
-								17.2: TEXT " and " [270-275]
-								17.3: MARK "*emphasis*" [275-285] [label="emphasis"]
-								17.4: TEXT " support" [285-293]
-							 18: TEXT "" [294-294]
-							 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`↲" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
-								19.0: TEXT "" [296-296]
-								19.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
-								19.2: TEXT " and " [311-316]
-								19.3: MARK "\`\`\`code blocks\`\`\`" [316-333] [label="code blocks"]
-								19.4: TEXT "\`\`\`" [333-330]
-								19.5: MARK "\`\`" [330-332] [label=""]
-								19.6: TEXT "\`" [332-333]
-							 20: TEXT "" [334-334]
-							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [334-374] [label="~~Strikethrough~~ for deleted content"]
-								21.0: TEXT "" [336-336]
-								21.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
-								21.2: TEXT " for deleted content" [353-373]
-							 22: TEXT "" [374-374]
-							 23: MARK "- Links like [GitHub](https://github.com)↲" [374-416] [label="Links like [GitHub](https://github.com)"]
-								23.0: TEXT "Links like " [376-387]
-								23.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
-								23.2: TEXT "" [415-415]
-							 24: TEXT "↲" [416-417]
-							 25: MARK "## Example↲" [417-428] [label="Example"]
-							 26: TEXT "↲Here's how to use it:↲↲" [428-452]
-							 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`" [452-579] [label="javascript↲const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲"]
-							 28: TEXT "['**__label__**', '*__label..." [579-494]
-							 29: MARK "['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation](https://docs.example.com)" [494-632] [label="'**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation", value="https://docs.example.com"]
-								29.0: TEXT "'" [495-496]
-								29.1: MARK "**__label__**" [496-509] [label="__label__"]
-								29.2: TEXT "', '" [509-513]
-								29.3: MARK "*__label__*" [513-524] [label="__label__"]
-								29.4: TEXT "'])↲const result = parser.s..." [524-563]
-								29.5: MARK "**world**" [563-572] [label="world"]
-								29.6: TEXT "!')↲" [572-576]
-								29.7: MARK "\`\`" [576-578] [label=""]
-								29.8: TEXT "\`↲↲Visit our [documentation" [578-605]
-							 30: TEXT " for more details.↲" [632-651]
-							 31: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
-							 32: TEXT " and will be removed in v3.0." [681-710]"
-						`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "# Welcome to **Marked Input**↲" [0-30] [label="Welcome to **Marked Input**"]
+							1.0: TEXT "Welcome to " [2-13]
+							1.1: MARK "**Marked Input**" [13-29] [label="Marked Input"]
+							1.2: TEXT "" [29-29]
+						 2: TEXT "↲This is a " [30-41]
+						 3: MARK "*powerful*" [41-51] [label="powerful"]
+						 4: TEXT " library for parsing " [51-72]
+						 5: MARK "**rich text**" [72-85] [label="rich text"]
+						 6: TEXT " with " [85-91]
+						 7: MARK "*markdown*" [91-101] [label="markdown"]
+						 8: TEXT " formatting.↲You can use " [101-126]
+						 9: MARK "\`inline code\`" [126-139] [label="inline code"]
+						 10: TEXT " snippets like " [139-154]
+						 11: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
+						 12: TEXT " in your text.↲↲" [185-201]
+						 13: MARK "## Features↲" [201-213] [label="Features"]
+						 14: TEXT "↲" [213-214]
+						 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [label="**Bold text** with **strong emphasis**"]
+							15.0: TEXT "" [216-216]
+							15.1: MARK "**Bold text**" [216-229] [label="Bold text"]
+							15.2: TEXT " with " [229-235]
+							15.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
+							15.4: TEXT "" [254-254]
+						 16: TEXT "" [255-255]
+						 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [label="*Italic text* and *emphasis* support"]
+							17.0: TEXT "" [257-257]
+							17.1: MARK "*Italic text*" [257-270] [label="Italic text"]
+							17.2: TEXT " and " [270-275]
+							17.3: MARK "*emphasis*" [275-285] [label="emphasis"]
+							17.4: TEXT " support" [285-293]
+						 18: TEXT "" [294-294]
+						 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`↲" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
+							19.0: TEXT "" [296-296]
+							19.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
+							19.2: TEXT " and \`\`\`code blocks\`\`\`" [311-333]
+						 20: TEXT "" [334-334]
+						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [334-374] [label="~~Strikethrough~~ for deleted content"]
+							21.0: TEXT "" [336-336]
+							21.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
+							21.2: TEXT " for deleted content" [353-373]
+						 22: TEXT "" [374-374]
+						 23: MARK "- Links like [GitHub](https://github.com)↲" [374-416] [label="Links like [GitHub](https://github.com)"]
+							23.0: TEXT "Links like " [376-387]
+							23.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
+							23.2: TEXT "" [415-415]
+						 24: TEXT "↲" [416-417]
+						 25: MARK "## Example↲" [417-428] [label="Example"]
+						 26: TEXT "↲Here's how to use it:↲↲\`\`\`..." [428-494]
+						 27: MARK "['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation](https://docs.example.com)" [494-632] [label="'**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation", value="https://docs.example.com"]
+							27.0: TEXT "'" [495-496]
+							27.1: MARK "**__label__**" [496-509] [label="__label__"]
+							27.2: TEXT "', '" [509-513]
+							27.3: MARK "*__label__*" [513-524] [label="__label__"]
+							27.4: TEXT "'])↲const result = parser.s..." [524-563]
+							27.5: MARK "**world**" [563-572] [label="world"]
+							27.6: TEXT "!')↲" [572-576]
+							27.7: MARK "\`\`" [576-578] [label=""]
+							27.8: TEXT "\`↲↲Visit our [documentation" [578-605]
+						 28: TEXT " for more details.↲" [632-651]
+						 29: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
+						 30: TEXT " and will be removed in v3.0." [681-710]"
+					`)
 					})
 
 					it('isolated test: parses "**strong emphasis**" correctly', () => {
@@ -722,22 +716,73 @@ describe('ParserV2', () => {
 						`)
 					})
 
-					it('isolated test: parses nested bold marks in list item', () => {
-						const parser = new ParserV2(['- __label__\n', '**__label__**'])
-						const input = '- **Bold text** with **strong emphasis**\n'
-						const result = parser.split(input)
+				it('isolated test: parses nested bold marks in list item', () => {
+					const parser = new ParserV2(['- __label__\n', '**__label__**'])
+					const input = '- **Bold text** with **strong emphasis**\n'
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "" [0-0]
-							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [label="**Bold text** with **strong emphasis**"]
-								1.0: TEXT "" [2-2]
-								1.1: MARK "**Bold text**" [2-15] [label="Bold text"]
-								1.2: TEXT " with " [15-21]
-								1.3: MARK "**strong emphasis**" [21-40] [label="strong emphasis"]
-								1.4: TEXT "" [40-40]
-							 2: TEXT "" [41-41]"
-						`)
-					})
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [label="**Bold text** with **strong emphasis**"]
+							1.0: TEXT "" [2-2]
+							1.1: MARK "**Bold text**" [2-15] [label="Bold text"]
+							1.2: TEXT " with " [15-21]
+							1.3: MARK "**strong emphasis**" [21-40] [label="strong emphasis"]
+							1.4: TEXT "" [40-40]
+						 2: TEXT "" [41-41]"
+					`)
+				})
+
+				it('isolated test: multiline code block pattern', () => {
+					const parser = new ParserV2(['```__label__\n__value__```'])
+					const input = '```javascript\nconst x = 1\n```'
+					const result = parser.split(input)
+
+					// Validate that no tokens have start > end
+					const validatePositions = (tokens: NestedToken[]): void => {
+						for (const token of tokens) {
+							expect(token.position.start).toBeLessThanOrEqual(token.position.end)
+							if (token.type === 'mark' && token.children.length > 0) {
+								validatePositions(token.children)
+							}
+						}
+					}
+					validatePositions(result)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "\`\`\`javascript↲const x = 1↲\`\`\`" [0-29] [label="javascript", value="const x = 1↲"]
+						 2: TEXT "" [29-29]"
+					`)
+				})
+
+				it('isolated test: multiline code block with other patterns', () => {
+					const parser = new ParserV2([
+						'```__label__\n__value__```', // code block
+						'`__label__`', // inline code
+					])
+					const input = 'Before `inline` and ```js\ncode\n``` after'
+					const result = parser.split(input)
+
+					// Validate that no tokens have start > end
+					const validatePositions = (tokens: NestedToken[]): void => {
+						for (const token of tokens) {
+							expect(token.position.start).toBeLessThanOrEqual(token.position.end)
+							if (token.type === 'mark' && token.children.length > 0) {
+								validatePositions(token.children)
+							}
+						}
+					}
+					validatePositions(result)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "Before " [0-7]
+						 1: MARK "\`inline\`" [7-15] [label="inline"]
+						 2: TEXT " and " [15-20]
+						 3: MARK "\`\`\`js↲code↲\`\`\`" [20-34] [label="js", value="code↲"]
+						 4: TEXT " after" [34-40]"
+					`)
+				})
 				})
 
 				describe('custom patterns', () => {

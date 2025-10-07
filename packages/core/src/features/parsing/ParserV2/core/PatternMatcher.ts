@@ -152,11 +152,17 @@ export class PatternMatcher {
 	/**
 	 * Materializes gap values from text (lazy evaluation)
 	 * Converts undefined gap values to actual string content
+	 * Handles empty gaps (when start > end)
 	 */
 	private static materializeGaps(match: PatternMatch, text: string): void {
 		for (const part of match.parts) {
 			if (part.type === 'gap' && part.value === undefined) {
-				part.value = text.slice(part.start, part.end + 1)
+				// Handle empty gaps (adjacent segments)
+				if (part.start > part.end) {
+					part.value = ''
+				} else {
+					part.value = text.slice(part.start, part.end + 1)
+				}
 			}
 		}
 	}
@@ -166,6 +172,7 @@ export class PatternMatcher {
 	 * Single pass through gaps for optimal performance
 	 * 
 	 * Returns exclusive end positions (compatible with substring)
+	 * Handles empty gaps (when start > end) by creating empty positions
 	 */
 	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
 		label: string
@@ -187,13 +194,23 @@ export class PatternMatcher {
 				if (part.gapType === 'label' && !label) {
 					label = part.value || ''
 					labelStart = part.start
-					// part.end is inclusive (last char of gap), so add 1 for exclusive
-					labelEnd = part.end + 1
+					// Handle empty gaps (adjacent segments)
+					if (part.start > part.end) {
+						labelEnd = part.start // Empty range: [start, start)
+					} else {
+						// part.end is inclusive (last char of gap), so add 1 for exclusive
+						labelEnd = part.end + 1
+					}
 				} else if (part.gapType === 'value') {
 					value = part.value
 					valueStart = part.start
-					// part.end is inclusive (last char of gap), so add 1 for exclusive
-					valueEnd = part.end + 1
+					// Handle empty gaps (adjacent segments)
+					if (part.start > part.end) {
+						valueEnd = part.start // Empty range: [start, start)
+					} else {
+						// part.end is inclusive (last char of gap), so add 1 for exclusive
+						valueEnd = part.end + 1
+					}
 				}
 			}
 		}

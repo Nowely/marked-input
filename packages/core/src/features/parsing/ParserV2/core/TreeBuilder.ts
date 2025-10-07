@@ -21,8 +21,17 @@ interface TreeBuildContext {
 
 /**
  * Creates a text token for a range in the input
+ * Validates that start <= end to prevent invalid tokens
  */
 function createTextToken(input: string, start: number, end: number): TextToken {
+	// Validate positions
+	if (start > end) {
+		throw new Error(
+			`Invalid text token positions: start (${start}) > end (${end}). ` +
+			`This indicates a bug in the tree building logic.`
+		)
+	}
+	
 	return {
 		type: 'text',
 		content: input.substring(start, end),
@@ -54,6 +63,7 @@ function createMarkToken(match: MatchResult, children: NestedToken[]): MarkToken
 /**
  * Adds text token between positions (always adds, even if empty)
  * This maintains compatibility with the old behavior where empty text tokens are always present
+ * Skips adding token if positions are invalid (fromPos > toPos)
  */
 function addTextToken(
 	input: string,
@@ -61,6 +71,11 @@ function addTextToken(
 	fromPos: number,
 	toPos: number
 ): void {
+	// Skip if positions would be invalid
+	// This can happen when patterns overlap or are adjacent
+	if (fromPos > toPos) {
+		return
+	}
 	tokens.push(createTextToken(input, fromPos, toPos))
 }
 
@@ -164,6 +179,14 @@ export function buildTreeSinglePass(
 	for (const match of matches) {
 		// Pop completed parents that don't contain this match
 		popCompletedParents(match, ctx)
+		
+		// Check if this match would conflict with an already added match
+		// Skip matches that start before or at the current root text position
+		// This handles cases where patterns find matches inside already-processed content
+		if (ctx.stack.length === 0 && match.start < ctx.rootTextPos) {
+			// This match starts before where we currently are - skip it
+			continue
+		}
 		
 		// Add this match to the stack for potential children
 		ctx.stack.push({

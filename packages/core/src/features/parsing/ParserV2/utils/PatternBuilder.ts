@@ -47,10 +47,16 @@ export class PatternBuilder {
 		const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
 		const gapType = descriptor.gapTypes[gapIndex]
 
+		// Calculate gap positions
+		const gapStart = newPatternChain.pos
+		const gapEnd = match.start - 1
+		
+		// If gap would have invalid positions (start > end), make it empty
+		// This happens when two segments are adjacent (no gap between them)
 		newPatternChain.parts.push({
 			type: 'gap',
-			start: newPatternChain.pos,
-			end: match.start - 1,
+			start: gapStart,
+			end: gapStart > gapEnd ? gapStart - 1 : gapEnd, // Ensure start <= end
 			gapType
 		})
 
