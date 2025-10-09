@@ -2,6 +2,8 @@
 
 Высокопроизводительный древовидный парсер для обработки вложенных markup конструкций в тексте с однопроходным алгоритмом построения дерева.
 
+> 📖 **[RULES.md](./RULES.md)** - Подробный набор правил работы парсера
+
 ## Обзор
 
 ParserV2 - оптимизированный парсер для обработки вложенных markup конструкций. Использует:
@@ -55,16 +57,18 @@ interface MarkToken {
 
 ```
 ParserV2/
-├── ParserV2.ts              # Главный класс парсера (32 строки)
+├── ParserV2.ts              # Главный класс парсера (60 строк)
 ├── types.ts                 # Типы и интерфейсы (MatchResult с position tracking)
 ├── index.ts                 # Публичные экспорты
+├── RULES.md                 # 📖 Правила работы парсера
+├── README.md                # Документация и обзор
 ├── core/                    # Ядро функциональности
 │   ├── PatternMatcher.ts    # Поиск всех matches (включая overlapping)
 │   ├── PatternProcessor.ts  # Обработка цепочек паттернов
 │   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
 │   ├── SegmentMatcher.ts    # Матчинг сегментов (Aho-Corasick)
-│   ├── TokenBuilder.ts      # Обертка над TreeBuilder (25 строк)
-│   └── TreeBuilder.ts       # 🆕 Single-pass tree building (169 строк)
+│   ├── TokenBuilder.ts      # Создание токенов
+│   └── TreeBuilder.ts       # 🆕 Single-pass tree building (210 строк)
 ├── utils/                   # Утилиты
 │   ├── AhoCorasick.ts       # Эффективный multi-pattern поиск
 │   ├── PatternBuilder.ts    # Построение паттернов из цепочек
