@@ -579,7 +579,7 @@ describe('ParserV2', () => {
 
 						- **Bold text** with **strong emphasis**
 						- *Italic text* and *emphasis* support
-						- \`Code snippets\` and \`\`\`code blocks\`\`\`
+						- \`Code snippets\` and \`code blocks\`
 						- ~~Strikethrough~~ for deleted content
 						- Links like [GitHub](https://github.com)
 
@@ -631,36 +631,29 @@ describe('ParserV2', () => {
 							17.3: MARK "*emphasis*" [275-285] [label="emphasis"]
 							17.4: TEXT " support" [285-293]
 						 18: TEXT "" [294-294]
-						 19: MARK "- \`Code snippets\` and \`\`\`code blocks\`\`\`↲" [294-334] [label="\`Code snippets\` and \`\`\`code blocks\`\`\`"]
+						 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [label="\`Code snippets\` and \`code blocks\`"]
 							19.0: TEXT "" [296-296]
 							19.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
-							19.2: TEXT " and \`\`\`code blocks\`\`\`" [311-333]
-						 20: TEXT "" [334-334]
-						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [334-374] [label="~~Strikethrough~~ for deleted content"]
-							21.0: TEXT "" [336-336]
-							21.1: MARK "~~Strikethrough~~" [336-353] [label="Strikethrough"]
-							21.2: TEXT " for deleted content" [353-373]
-						 22: TEXT "" [374-374]
-						 23: MARK "- Links like [GitHub](https://github.com)↲" [374-416] [label="Links like [GitHub](https://github.com)"]
-							23.0: TEXT "Links like " [376-387]
-							23.1: MARK "[GitHub](https://github.com)" [387-415] [label="GitHub", value="https://github.com"]
-							23.2: TEXT "" [415-415]
-						 24: TEXT "↲" [416-417]
-						 25: MARK "## Example↲" [417-428] [label="Example"]
-						 26: TEXT "↲Here's how to use it:↲↲\`\`\`..." [428-494]
-						 27: MARK "['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation](https://docs.example.com)" [494-632] [label="'**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`↲↲Visit our [documentation", value="https://docs.example.com"]
-							27.0: TEXT "'" [495-496]
-							27.1: MARK "**__label__**" [496-509] [label="__label__"]
-							27.2: TEXT "', '" [509-513]
-							27.3: MARK "*__label__*" [513-524] [label="__label__"]
-							27.4: TEXT "'])↲const result = parser.s..." [524-563]
-							27.5: MARK "**world**" [563-572] [label="world"]
-							27.6: TEXT "!')↲" [572-576]
-							27.7: MARK "\`\`" [576-578] [label=""]
-							27.8: TEXT "\`↲↲Visit our [documentation" [578-605]
-						 28: TEXT " for more details.↲" [632-651]
-						 29: MARK "~~This feature is deprecated~~" [651-681] [label="This feature is deprecated"]
-						 30: TEXT " and will be removed in v3.0." [681-710]"
+							19.2: TEXT " and " [311-316]
+							19.3: MARK "\`code blocks\`" [316-329] [label="code blocks"]
+							19.4: TEXT "" [329-329]
+						 20: TEXT "" [330-330]
+						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [label="~~Strikethrough~~ for deleted content"]
+							21.0: TEXT "" [332-332]
+							21.1: MARK "~~Strikethrough~~" [332-349] [label="Strikethrough"]
+							21.2: TEXT " for deleted content" [349-369]
+						 22: TEXT "" [370-370]
+						 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [label="Links like [GitHub](https://github.com)"]
+							23.0: TEXT "Links like " [372-383]
+							23.1: MARK "[GitHub](https://github.com)" [383-411] [label="GitHub", value="https://github.com"]
+							23.2: TEXT "" [411-411]
+						 24: TEXT "↲" [412-413]
+						 25: MARK "## Example↲" [413-424] [label="Example"]
+						 26: TEXT "↲Here's how to use it:↲↲" [424-448]
+						 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`" [448-575] [label="javascript", value="const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲"]
+						 28: TEXT "↲↲Visit our [documentation](https://docs.example.com) for more details.↲" [575-647]
+						 29: MARK "~~This feature is deprecated~~" [647-677] [label="This feature is deprecated"]
+						 30: TEXT " and will be removed in v3.0." [677-706]"
 					`)
 					})
 
@@ -976,10 +969,7 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 		const paddedPrefix = level === 0 && index > 0 ? ` ${currentPrefix}` : currentPrefix
 
 		if (token.type === 'text') {
-			const content =
-				token.content.length > 30
-					? `"${escapeString(token.content.slice(0, 27))}..."`
-					: `"${escapeString(token.content)}"`
+			const content = `"${escapeString(token.content)}"`
 			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
 		} else {
 			const labelValueInfo =

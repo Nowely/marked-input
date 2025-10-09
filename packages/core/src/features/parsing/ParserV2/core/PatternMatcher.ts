@@ -75,24 +75,40 @@ export class PatternMatcher {
 	/**
 	 * Converts pattern matches to match results
 	 * 
-	 * Includes overlapping matches for nested parsing, but filters out
-	 * invalid partial matches (e.g., "**" from "*__label__*" when "**__label__**" exists)
+	 * Includes overlapping matches for nested parsing, but filters out:
+	 * - Invalid partial matches (e.g., "**" from "*__label__*" when "**__label__**" exists)
+	 * - Matches inside __value__ sections of other matches (values are not parsed)
 	 */
 	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
-		const matchesWithPositions: Array<{match: PatternMatch; start: number; end: number}> = []
+		const matchesWithPositions: Array<{
+			match: PatternMatch
+			start: number
+			end: number
+			valueStart?: number
+			valueEnd?: number
+		}> = []
 
-		// First pass: collect all matches with positions
+		// First pass: collect all matches with positions and extract content
 		for (const patternMatch of sortedMatches) {
 			PatternMatcher.materializeGaps(patternMatch, input)
 			const start = this.getMatchStart(patternMatch)
 			const end = this.getMatchEnd(patternMatch)
-			matchesWithPositions.push({match: patternMatch, start, end})
+			const descriptor = this.descriptors[patternMatch.descriptorIndex]
+			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
+			
+			matchesWithPositions.push({
+				match: patternMatch,
+				start,
+				end,
+				valueStart: extracted.valueStart,
+				valueEnd: extracted.valueEnd
+			})
 		}
 
-		// Second pass: filter out partial/invalid matches
+		// Second pass: filter out partial/invalid matches and matches inside __value__
 		for (const item of matchesWithPositions) {
-			const {match: patternMatch, start, end} = item
+			const {match: patternMatch, start, end, valueStart, valueEnd} = item
 			
 			// Check if this match is a partial match of a longer pattern at same position
 			const isPartialMatch = matchesWithPositions.some(other => {
@@ -113,6 +129,27 @@ export class PatternMatcher {
 			
 			if (isPartialMatch) {
 				continue // Skip partial matches
+			}
+
+			// Check if this match is inside or overlaps with __value__ of another match
+			// __value__ sections should not be parsed for nested patterns
+			const isInsideOrOverlapsValue = matchesWithPositions.some(other => {
+				if (other === item) return false
+				
+				// Check if this match starts inside other's __value__ range
+				// Even if it extends beyond, we should skip it because it's invalid
+				if (other.valueStart !== undefined && other.valueEnd !== undefined) {
+					// Match overlaps with value if it starts inside the value range
+					if (start >= other.valueStart && start < other.valueEnd) {
+						return true
+					}
+				}
+				
+				return false
+			})
+			
+			if (isInsideOrOverlapsValue) {
+				continue // Skip matches inside or overlapping __value__
 			}
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
