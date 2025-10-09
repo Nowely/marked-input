@@ -449,15 +449,17 @@ describe('ParserV2', () => {
 						})
 					})
 
-					it('parses HTML tags with <__label__>__value__</__label__> format', () => {
-						const parser = new ParserV2(['<__label__>__value__</__label__>' as any])
-						const input = 'Check <img>photo.jpg</img> image'
-						const result = parser.split(input)
+				it('parses HTML tags with <__label__>__value__</__label__> format', () => {
+					const parser = new ParserV2(['<__label__>__value__</__label__>' as any])
+					const input = 'Check <img>photo.jpg</img> image'
+					const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "Check <img>photo.jpg</img> image" [0-32]"
-						`)
-					})
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "Check " [0-6]
+						 1: MARK "<img>photo.jpg</img>" [6-26] [label="img", value="photo.jpg"]
+						 2: TEXT " image" [26-32]"
+					`)
+				})
 
 					it('parses HTML tags with <__label__>__value__<__label__> format', () => {
 						const parser = new ParserV2(['<__label__>__value__<__label__>' as any])

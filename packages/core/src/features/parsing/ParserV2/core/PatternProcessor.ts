@@ -38,8 +38,13 @@ export class PatternProcessor {
 			this.startNewChains(match, results, nestingStack, consumedPositions, consumedStartPositions)
 		}
 
-		// Filter: remove matches that start inside __value__ of other matches
-		return this.filterMatchesInsideValue(results)
+		// Filter stage 1: remove matches that start inside __value__ of other matches
+		let filtered = this.filterMatchesInsideValue(results)
+
+		// Filter stage 2: remove incomplete/overlapping matches of the same descriptor
+		filtered = this.filterOverlappingMatches(filtered)
+
+		return filtered
 	}
 
 	/**
@@ -66,6 +71,59 @@ export class PatternProcessor {
 	}
 
 	/**
+	 * Filters out incomplete/overlapping matches of the same descriptor.
+	 * This handles cases like <__label__>__value__</__label__> where multiple chains
+	 * might be created for the same descriptor at overlapping positions.
+	 * 
+	 * Strategy: Keep the most complete match when there are CONFLICTING matches
+	 * of the same descriptor that start at the same position.
+	 * 
+	 * IMPORTANT: This does NOT filter nested matches (matches inside __label__ sections).
+	 * Only filters matches that share the same starting position and are of the same descriptor.
+	 */
+	private filterOverlappingMatches(matches: PatternMatch[]): PatternMatch[] {
+		return matches.filter(match => {
+			const matchStart = match.parts[0].start
+			const matchEnd = match.parts[match.parts.length - 1].end
+			const matchDescriptor = this.descriptors[match.descriptorIndex]
+			const matchSegmentCount = match.parts.filter(p => p.type === 'segment').length
+			
+			// Check if there's a more complete match of the same descriptor starting at the SAME position
+			for (const other of matches) {
+				if (other === match) continue
+				if (match.descriptorIndex !== other.descriptorIndex) continue // Only compare same descriptors
+				
+				const otherStart = other.parts[0].start
+				const otherEnd = other.parts[other.parts.length - 1].end
+				const otherSegmentCount = other.parts.filter(p => p.type === 'segment').length
+				
+				// ONLY consider matches that start at the SAME position (not nested, but conflicting)
+				if (matchStart !== otherStart) continue
+				
+				// If other match has more segments (is more complete), remove this one
+				if (otherSegmentCount > matchSegmentCount) {
+					return false
+				}
+				
+				// If they have same segment count but other is longer (more complete), remove this one
+				if (otherSegmentCount === matchSegmentCount && (otherEnd - otherStart) > (matchEnd - matchStart)) {
+					return false
+				}
+				
+				// If they have same segment count and same length but different end positions,
+				// keep the one that ends later (more inclusive)
+				if (otherSegmentCount === matchSegmentCount && 
+					(otherEnd - otherStart) === (matchEnd - matchStart) && 
+					otherEnd > matchEnd) {
+					return false
+				}
+			}
+			
+			return true
+		})
+	}
+
+	/**
 	 * Processes chains waiting for current segment match
 	 * Priority logic with lookahead:
 	 * 1. Chains without nested patterns (ready to close immediately)
@@ -83,49 +141,25 @@ export class PatternProcessor {
 		const currentIndex = allMatches.indexOf(match)
 		const nextMatch = currentIndex >= 0 && currentIndex < allMatches.length - 1 ? allMatches[currentIndex + 1] : null
 
-		// Sort waiting chains by priority
+		// Sort waiting chains by priority - prioritize completing chains first
 		const sortedWaiting = [...waiting].sort((a, b) => {
-			const aHasNested = a.hasNestedPatterns
-			const bHasNested = b.hasNestedPatterns
-			
-			// Prioritize chains without nested patterns (they should close first)
-			if (!aHasNested && bHasNested) return -1
-			if (aHasNested && !bHasNested) return 1
-			
 			const aDescriptor = this.descriptors[a.descriptorIndex]
 			const bDescriptor = this.descriptors[b.descriptorIndex]
-			
+
 			// Check if chains would be complete after this segment
 			const aWouldComplete = a.nextSegmentIndex === aDescriptor.segments.length - 1
 			const bWouldComplete = b.nextSegmentIndex === bDescriptor.segments.length - 1
-			
-			// Use lookahead to decide priority
-			// If a chain can be extended and the next segment is available, prioritize it
-			if (!aWouldComplete && bWouldComplete) {
-				const nextSegment = aDescriptor.segments[a.nextSegmentIndex + 1]
-				if (nextMatch && nextMatch.value === nextSegment && nextMatch.start === match.end + 1) {
-					return -1 // Prioritize extendable chain if next segment is immediately available
-				}
-				return 1 // Otherwise, prioritize completing chain
-			}
-			if (aWouldComplete && !bWouldComplete) {
-				const nextSegment = bDescriptor.segments[b.nextSegmentIndex + 1]
-				if (nextMatch && nextMatch.value === nextSegment && nextMatch.start === match.end + 1) {
-					return 1 // Prioritize extendable chain if next segment is immediately available
-				}
-				return -1 // Otherwise, prioritize completing chain
-			}
-			
-			// Same completion status: later start = higher priority (LIFO)
+
+			// Prioritize completing chains over extending ones
+			if (aWouldComplete && !bWouldComplete) return -1
+			if (!aWouldComplete && bWouldComplete) return 1
+
+			// Both complete or both extend: later start = higher priority (LIFO)
 			return b.parts[0].start - a.parts[0].start
 		})
 
 		// Try to match with the first valid chain
 		for (const chain of sortedWaiting) {
-			if (match.start < chain.pos) {
-				continue // Segment appears before chain expects it
-			}
-
 			// Check if chain expects exactly this segment
 			const descriptor = this.descriptors[chain.descriptorIndex]
 			const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
@@ -133,6 +167,12 @@ export class PatternProcessor {
 			// If current match doesn't exactly match expected segment, skip this chain
 			if (expectedSegment !== match.value) {
 				continue // Chain expects a different segment
+			}
+
+			// For patterns with __value__ gaps, segments can be far apart
+			// So we only check that segment doesn't appear BEFORE expected position
+			if (match.start < chain.pos - 1) {
+				continue // Segment appears significantly before chain expects it
 			}
 
 			const {completed, extended} = this.patternBuilder.tryExtendChain(chain, match, false)
