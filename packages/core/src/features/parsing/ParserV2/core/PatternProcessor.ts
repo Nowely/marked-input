@@ -20,23 +20,49 @@ export class PatternProcessor {
 
 	/**
 	 * Processes all unique segment matches and returns completed pattern matches
-	 * Uses pattern exclusivity: a pattern cannot start a new match while already active
-	 * Implements context-aware matching: tracks nesting and adjusts matching behavior
+	 * 
+	 * Strategy: Create ALL possible matches on first pass (even invalid ones),
+	 * then filter out matches that start inside __value__ of other matches.
+	 * This ensures we don't miss valid matches due to premature blocking.
 	 */
 	processMatches(uniqueMatches: UniqueMatch[]): PatternMatch[] {
 		const results: PatternMatch[] = []
-		const activePatterns = new Set<number>() // descriptorIndex
 		const nestingStack: PatternChain[] = [] // Stack of active chains for tracking nesting
 		const consumedPositions = new Set<number>() // Track positions consumed by pattern segments
 		const consumedStartPositions = new Map<number, number>() // Track prefix conflicts: position -> segment length
 
 		// Process each unique segment occurrence
+		// NOTE: We removed activePatterns check to allow creating ALL possible matches
 		for (const match of uniqueMatches) {
-			this.processWaitingChains(match, results, activePatterns, nestingStack, consumedPositions, uniqueMatches)
-			this.startNewChains(match, results, activePatterns, nestingStack, consumedPositions, consumedStartPositions)
+			this.processWaitingChains(match, results, nestingStack, consumedPositions, uniqueMatches)
+			this.startNewChains(match, results, nestingStack, consumedPositions, consumedStartPositions)
 		}
 
-		return results
+		// Filter: remove matches that start inside __value__ of other matches
+		return this.filterMatchesInsideValue(results)
+	}
+
+	/**
+	 * Filters out matches that start inside __value__ of other matches
+	 */
+	private filterMatchesInsideValue(matches: PatternMatch[]): PatternMatch[] {
+		return matches.filter(match => {
+			const matchStart = match.parts[0].start
+			
+			// Check if this match starts inside __value__ of any other match
+			for (const other of matches) {
+				if (other === match) continue
+				
+				const valueGap = other.parts.find(p => p.type === 'gap' && p.gapType === 'value')
+				if (valueGap && valueGap.start !== undefined && valueGap.end !== undefined) {
+					if (matchStart >= valueGap.start && matchStart <= valueGap.end) {
+						return false // This match starts inside another's __value__
+					}
+				}
+			}
+			
+			return true
+		})
 	}
 
 	/**
@@ -46,7 +72,7 @@ export class PatternProcessor {
 	 * 2. Use lookahead to decide between completing and extending
 	 * 3. Later start = inner = higher priority (LIFO)
 	 */
-	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>, allMatches: UniqueMatch[]): void {
+	private processWaitingChains(match: UniqueMatch, results: PatternMatch[], nestingStack: PatternChain[], consumedPositions: Set<number>, allMatches: UniqueMatch[]): void {
 		const waiting = this.chainManager.getWaiting(match.value)
 
 		if (waiting.length === 0) {
@@ -113,8 +139,7 @@ export class PatternProcessor {
 		
 			if (completed) {
 				results.push(completed)
-				activePatterns.delete(chain.descriptorIndex)
-				
+
 				// Mark ALL positions in the completed pattern as consumed (including gaps)
 				const completeStart = completed.parts[0].start
 				const completeEnd = completed.parts[completed.parts.length - 1].end
@@ -149,7 +174,6 @@ export class PatternProcessor {
 					}
 				}
 				for (const cancelChain of chainsToCancel) {
-					activePatterns.delete(cancelChain.descriptorIndex)
 					const cancelIndex = nestingStack.indexOf(cancelChain)
 					if (cancelIndex !== -1) {
 						nestingStack.splice(cancelIndex, 1)
@@ -180,11 +204,14 @@ export class PatternProcessor {
 	 * Starts new chains for patterns that begin with current segment
 	 * Context-aware: tracks nesting level and marks parent chains as having nested content
 	 * Prioritizes more specific patterns (longer triggers, more complex patterns) to prevent conflicts
+	 * 
+	 * NOTE: activePatterns check removed to allow ALL possible matches to be created.
+	 * Invalid matches will be filtered later.
 	 */
-	private startNewChains(match: UniqueMatch, results: PatternMatch[], activePatterns: Set<number>, nestingStack: PatternChain[], consumedPositions: Set<number>, consumedStartPositions: Map<number, number>): void {
+	private startNewChains(match: UniqueMatch, results: PatternMatch[], nestingStack: PatternChain[], consumedPositions: Set<number>, consumedStartPositions: Map<number, number>): void {
 		// Sort descriptors by pattern priority (shorter patterns first, but avoid conflicts)
 		const sortedDescriptors = match.descriptors
-			.filter(descInfo => descInfo.segmentIndex === 0 && !activePatterns.has(descInfo.descriptorIndex))
+			.filter(descInfo => descInfo.segmentIndex === 0)
 			.sort((a, b) => {
 				const descA = this.descriptors[a.descriptorIndex]
 				const descB = this.descriptors[b.descriptorIndex]
@@ -263,7 +290,6 @@ export class PatternProcessor {
 				// Chain was created and needs to wait for next segment
 				const nextSegmentValue = this.descriptors[descInfo.descriptorIndex].segments[chain.nextSegmentIndex]
 				this.chainManager.addToWaiting(nextSegmentValue, chain)
-				activePatterns.add(descInfo.descriptorIndex)
 				nestingStack.push(chain)
 				// Mark all positions in the starting segment to prevent overlapping prefix patterns
 				for (let i = match.start; i <= match.end; i++) {

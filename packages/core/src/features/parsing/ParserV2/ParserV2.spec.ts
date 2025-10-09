@@ -111,8 +111,11 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[hello @[world]" [0-16] [label="hello @[world"]
-						 2: TEXT "]" [16-17]"
+						 1: MARK "@[hello @[world]]" [0-17] [label="hello @[world]"]
+							1.0: TEXT "hello " [2-8]
+							1.1: MARK "@[world]" [8-16] [label="world"]
+							1.2: TEXT "" [16-16]
+						 2: TEXT "" [17-17]"
 					`)
 					})
 
@@ -124,8 +127,14 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[level1 @[level2 @[level3]" [0-27] [label="level1 @[level2 @[level3"]
-						 2: TEXT "]]" [27-29]"
+						 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [label="level1 @[level2 @[level3]]"]
+							1.0: TEXT "level1 " [2-9]
+							1.1: MARK "@[level2 @[level3]]" [9-28] [label="level2 @[level3]"]
+								1.1.0: TEXT "level2 " [11-18]
+								1.1.1: MARK "@[level3]" [18-27] [label="level3"]
+								1.1.2: TEXT "" [27-27]
+							1.2: TEXT "" [28-28]
+						 2: TEXT "" [29-29]"
 					`)
 					})
 
@@ -446,9 +455,7 @@ describe('ParserV2', () => {
 						const result = parser.split(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "Check " [0-6]
-							 1: MARK "<img>photo.jpg</img>" [6-26] [label="img", value="photo.jpg"]
-							 2: TEXT " image" [26-32]"
+							"0: TEXT "Check <img>photo.jpg</img> image" [0-32]"
 						`)
 					})
 
@@ -651,9 +658,11 @@ describe('ParserV2', () => {
 						 25: MARK "## Example↲" [413-424] [label="Example"]
 						 26: TEXT "↲Here's how to use it:↲↲" [424-448]
 						 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`" [448-575] [label="javascript", value="const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲"]
-						 28: TEXT "↲↲Visit our [documentation](https://docs.example.com) for more details.↲" [575-647]
-						 29: MARK "~~This feature is deprecated~~" [647-677] [label="This feature is deprecated"]
-						 30: TEXT " and will be removed in v3.0." [677-706]"
+						 28: TEXT "↲↲Visit our " [575-587]
+						 29: MARK "[documentation](https://docs.example.com)" [587-628] [label="documentation", value="https://docs.example.com"]
+						 30: TEXT " for more details.↲" [628-647]
+						 31: MARK "~~This feature is deprecated~~" [647-677] [label="This feature is deprecated"]
+						 32: TEXT " and will be removed in v3.0." [677-706]"
 					`)
 					})
 
