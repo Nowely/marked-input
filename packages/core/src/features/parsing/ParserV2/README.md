@@ -2,6 +2,8 @@
 
 Высокопроизводительный древовидный парсер для обработки вложенных markup конструкций в тексте с однопроходным алгоритмом построения дерева.
 
+**📋 RFC:** [Nested marks](docs/RFC.%20Nested%20marks.md) - подробное описание требований и архитектурных решений.
+
 ## 📋 Содержание
 
 - [🚀 Быстрый старт](#-быстрый-старт)
@@ -33,8 +35,9 @@ const result = parser.split('Hello @[world](test) and #[tag]')
 | 3 | 47,923 ops/sec |
 
 **Характеристики:**
-- **Сложность**: O(N log N) для nested parsing
-- **Алгоритм**: Single-pass tree building + Aho-Corasick
+- **Сложность**: O(N log N) для nested parsing (sorting + single-pass building)
+- **Алгоритм**: Single-pass tree building + Aho-Corasick multi-pattern matching
+- **Memory**: O(N) space complexity (no duplicate parsing)
 
 ## 🏗️ Архитектура
 
@@ -79,6 +82,81 @@ ParserV2/
     └── PatternChainManager.ts # Управление активными цепочками
 ```
 
+## 🎨 Визуализация
+
+### Структура NestedToken
+
+```typescript
+// Простое дерево токенов
+"Hello @[world](test) and #[tag]"
+     ↓
+[
+  TextToken("Hello ", 0, 6),
+  MarkToken("@[world](test)", 6, 20, data={label:"world", value:"test"}, children=[]),
+  TextToken(" and ", 20, 25),
+  MarkToken("#[tag]", 25, 31, data={label:"tag"}, children=[]),
+  TextToken("", 31, 31)
+]
+```
+
+### Дерево с вложенностью
+
+```typescript
+// Вложенная структура: @[hello #[world]]
+"@[hello #[world]]"
+     ↓
+[
+  TextToken("", 0, 0),
+  MarkToken("@[hello #[world]]", 0, 17, data={label:"hello #[world]"}, children=[
+    TextToken("hello ", 2, 8),
+    MarkToken("#[world]", 8, 16, data={label:"world"}, children=[
+      TextToken("", 10, 10),
+      // ... пустые TextToken по краям
+    ]),
+    TextToken("", 16, 16)
+  ]),
+  TextToken("", 17, 17)
+]
+```
+
+### Position Semantics
+
+```typescript
+// Пример: "@[world](test)"
+// Индексы:  012345678901234 (длина 15)
+// Текст:    @[world](test)
+// Match:    ^^^^^^^^^^^^^^^
+// Label:       ^^^^^
+// Value:             ^^^^
+
+// Все позиции exclusive (JavaScript convention)
+match.start = 0, match.end = 15      // substring(0, 15) = "@[world](test)"
+match.labelStart = 2, match.labelEnd = 7  // substring(2, 7) = "world"
+match.valueStart = 9, match.valueEnd = 14 // substring(9, 14) = "test"
+```
+
+### Алгоритм Flow
+
+```
+Input Text → Aho-Corasick → UniqueMatches
+                              ↓
+                      PatternProcessor
+                              ↓
+              PatternChain Management (LIFO stack)
+                              ↓
+                      Filter Overlaps
+                      - Remove matches inside __value__
+                      - Remove partial matches
+                              ↓
+                        MatchResults
+                              ↓
+                TreeBuilder (single-pass)
+                - Stack-based parent-child detection
+                - Position containment check
+                              ↓
+                      NestedToken[]
+```
+
 ## 📋 API
 
 ```typescript
@@ -102,9 +180,23 @@ ParserV2.split(input: string, markups: Markup[]): NestedToken[]
 
 #### Позиционная семантика
 - Все позиции относятся к **оригинальному тексту**
-- `start` - **inclusive** (указывает на первый символ)
-- `end` - **exclusive** (указывает на символ после последнего)
-- Совместимость с `substring(start, end)`
+- **Все позиции следуют JavaScript convention**: `start` - inclusive, `end` - **exclusive**
+- Совместимы с `substring(start, end)` для всех типов позиций
+
+**Пример:**
+```typescript
+// Текст: "@[world](test)"
+// Индексы:  012345678901234 (длина 15)
+
+// Match позиции:
+match.start = 0, match.end = 15  // substring(0, 15) = "@[world](test)"
+
+// Label позиции:
+match.labelStart = 2, match.labelEnd = 7  // substring(2, 7) = "world"
+
+// Value позиции:
+match.valueStart = 9, match.valueEnd = 14  // substring(9, 14) = "test"
+```
 
 #### Структура токенов
 ```typescript
@@ -127,6 +219,21 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 - `__value__` может встречаться **0 или 1 раз**
 - `__value__` **не может** появляться раньше первого `__label__`
 - Паттерн должен содержать **хотя бы один статический сегмент**
+
+**Примеры ошибок валидации:**
+```typescript
+// ❌ Слишком много __label__ плейсхолдеров
+"__label____label____label__"  // Error: Expected 1 or 2 "__label__" placeholders, but found 3
+
+// ❌ Слишком много __value__ плейсхолдеров
+"@[__label__](__value__)(__value__)"  // Error: Expected 0 or 1 "__value__" placeholder, but found 2
+
+// ❌ __value__ перед __label__
+"(__value__)@[__label__]"  // Error: "__value__" cannot appear before "__label__"
+
+// ❌ Нет статических сегментов
+"__label__"  // Error: Must have at least one static segment
+```
 
 #### Trigger и симметрия
 - **Trigger** = первый символ первого сегмента (используется для группировки)
@@ -170,6 +277,47 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 Сохраняются:
 - **Вложенные совпадения** в label-секциях (для построения дерева)
+
+#### Advanced Algorithm Details
+
+**Lazy Gap Materialization:**
+```typescript
+// Gaps в PatternMatch изначально undefined для оптимизации памяти
+part.value === undefined  // еще не материализован
+
+// При необходимости выполняется materialization:
+if (part.start > part.end) {
+  part.value = ''  // пустой gap (смежные сегменты)
+} else {
+  part.value = input.slice(part.start, part.end + 1)
+}
+```
+
+**Value Filtering Strategy:**
+Совпадения внутри `__value__` секций фильтруются, потому что value рассматривается как plain text:
+```typescript
+// Проверка: matchB начинается внутри value секции matchA?
+if (matchA.valueStart !== undefined && matchA.valueEnd !== undefined) {
+  if (matchB.start >= matchA.valueStart && matchB.start <= matchA.valueEnd) {
+    // matchB фильтруется - он внутри value
+  }
+}
+```
+
+**Nesting Stack Management:**
+PatternProcessor использует LIFO stack для отслеживания активных цепочек:
+```typescript
+const nestingStack: PatternChain[] = []
+
+for (const match of uniqueMatches) {
+  // 1. Обработать завершенные цепочки
+  processWaitingChains(match, results, nestingStack)
+
+  // 2. Начать новые цепочки
+  startNewChains(match, results, nestingStack)
+}
+```
+Цепочки управляются по принципу "последний вошел - первый вышел" для правильной обработки вложенности.
 
 ### 4. Построение дерева токенов
 
@@ -259,5 +407,61 @@ Output: [
   TextToken("Check ", 0, 6),
   MarkToken("<img>photo.jpg</img>", 6, 26, children=[], data={label:"img", value:"photo.jpg"}),
   TextToken(" image", 26, 32)
+]
+```
+
+#### Adjacent marks
+```typescript
+Input:  "@[first](1)@[second](2)"
+Markups: ["@[__label__](__value__)"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("@[first](1)", 0, 11, children=[], data={label:"first", value:"1"}),
+  TextToken("", 11, 11),
+  MarkToken("@[second](2)", 11, 23, children=[], data={label:"second", value:"2"}),
+  TextToken("", 23, 23)
+]
+```
+
+#### Empty labels and values
+```typescript
+Input:  "@[] @[content] @[label]() @[another](value)"
+Markups: ["@[__label__]", "@[__label__](__value__)"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("@[]", 0, 3, children=[], data={label:""}),  // пустой label
+  TextToken(" ", 3, 4),
+  MarkToken("@[content]", 4, 14, children=[], data={label:"content"}),
+  TextToken(" ", 14, 15),
+  MarkToken("@[label]()", 15, 25, children=[], data={label:"label", value:""}),  // пустой value
+  TextToken(" ", 25, 26),
+  MarkToken("@[another](value)", 26, 42, children=[], data={label:"another", value:"value"}),
+  TextToken("", 42, 42)
+]
+```
+
+#### Symmetric patterns (Markdown-style)
+```typescript
+Input:  "**bold text** and *italic text*"
+Markups: ["**__label__**", "*__label__*"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("**bold text**", 0, 13, children=[], data={label:"bold text"}),
+  TextToken(" and ", 13, 19),
+  MarkToken("*italic text*", 19, 33, children=[], data={label:"italic text"}),
+  TextToken("", 33, 33)
+]
+```
+
+#### Conflicting patterns (shorter wins)
+```typescript
+Input:  "@[simple] @[with](value)"
+Markups: ["@[__label__]", "@[__label__](__value__)"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("@[simple]", 0, 9, children=[], data={label:"simple"}),
+  TextToken(" ", 9, 10),
+  MarkToken("@[with]", 10, 17, children=[], data={label:"with"}),  // короткий паттерн без value
+  TextToken("(value)", 17, 24)  // остаток текста
 ]
 ```
