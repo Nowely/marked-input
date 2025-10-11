@@ -164,8 +164,25 @@ export class PatternProcessor {
 			if (aWouldComplete && !bWouldComplete) return -1
 			if (!aWouldComplete && bWouldComplete) return 1
 
-			// Both complete or both extend: later start = higher priority (LIFO)
-			return b.parts[0].start - a.parts[0].start
+			// Both complete or both extend: check if they started at the same position
+			const aStart = a.parts[0].start
+			const bStart = b.parts[0].start
+			
+			// If chains started at the SAME position (potential conflict), prioritize by progress
+			// More collected segments = more specific pattern = higher priority
+			if (aStart === bStart) {
+				const aProgress = a.nextSegmentIndex // How many segments already collected
+				const bProgress = b.nextSegmentIndex
+				if (aProgress !== bProgress) {
+					return bProgress - aProgress // More progress first
+				}
+				
+				// Same progress: prioritize longer patterns (more total segments = more specific)
+				return bDescriptor.segments.length - aDescriptor.segments.length
+			}
+
+			// Different start positions: later start = inner = higher priority (LIFO)
+			return bStart - aStart
 		})
 
 		// Try to match with the first valid chain
@@ -273,10 +290,12 @@ export class PatternProcessor {
 					return firstSegmentLenB - firstSegmentLenA // longer first segments first
 				}
 
-				// General case: shorter patterns first (fewer segments = higher priority)
-				const segmentsA = descA.segments.length
-				const segmentsB = descB.segments.length
-				return segmentsA - segmentsB // fewer segments first
+			// General case: longer patterns first (more segments = more specific = higher priority)
+			// This ensures that patterns like <__label__ __value__>__nested__</__label__> (5 segments)
+			// are tried before <__label__>__nested__</__label__> (4 segments)
+			const segmentsA = descA.segments.length
+			const segmentsB = descB.segments.length
+			return segmentsB - segmentsA // more segments first
 			})
 		
 		for (const descInfo of sortedDescriptors) {

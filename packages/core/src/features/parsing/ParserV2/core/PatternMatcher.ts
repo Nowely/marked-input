@@ -155,6 +155,15 @@ export class PatternMatcher {
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
 			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
 
+			// For patterns with two __label__ placeholders (like <__label__>text</__label__>),
+			// verify that both labels are equal. If not, skip this match.
+			if (descriptor.hasTwoLabels) {
+				const labels = extracted.allLabels || []
+				if (labels.length === 2 && labels[0] !== labels[1]) {
+					continue // Skip match - opening and closing labels don't match
+				}
+			}
+
 			results.push({
 				start,
 				end,
@@ -227,6 +236,7 @@ export class PatternMatcher {
 		value?: string
 		valueStart?: number
 		valueEnd?: number
+		allLabels?: string[]
 	} {
 		let label = ''
 		let labelStart = -1
@@ -237,6 +247,7 @@ export class PatternMatcher {
 		let value: string | undefined
 		let valueStart: number | undefined
 		let valueEnd: number | undefined
+		const allLabels: string[] = []
 		
 		// Track first gap position for default label positions
 		let firstGapStart = -1
@@ -248,15 +259,21 @@ export class PatternMatcher {
 					firstGapStart = part.start
 				}
 				
-				if (part.gapType === 'label' && labelStart === -1) {
-					label = part.value || ''
-					labelStart = part.start
-					// Handle empty gaps (adjacent segments)
-					if (part.start > part.end) {
-						labelEnd = part.start // Empty range: [start, start)
-					} else {
-						// part.end is inclusive (last char of gap), so add 1 for exclusive
-						labelEnd = part.end + 1
+				if (part.gapType === 'label') {
+					// Collect all labels for validation (in case of two __label__ pattern)
+					allLabels.push(part.value || '')
+					
+					// Use first label as the primary label
+					if (labelStart === -1) {
+						label = part.value || ''
+						labelStart = part.start
+						// Handle empty gaps (adjacent segments)
+						if (part.start > part.end) {
+							labelEnd = part.start // Empty range: [start, start)
+						} else {
+							// part.end is inclusive (last char of gap), so add 1 for exclusive
+							labelEnd = part.end + 1
+						}
 					}
 				} else if (part.gapType === 'nested' && nested === undefined) {
 					nested = part.value || ''
@@ -289,7 +306,7 @@ export class PatternMatcher {
 			labelEnd = labelStart
 		}
 
-		return {label, labelStart, labelEnd, nested, nestedStart, nestedEnd, value, valueStart, valueEnd}
+		return {label, labelStart, labelEnd, nested, nestedStart, nestedEnd, value, valueStart, valueEnd, allLabels}
 	}
 }
 

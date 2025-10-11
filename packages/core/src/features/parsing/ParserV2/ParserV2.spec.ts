@@ -251,26 +251,71 @@ describe('ParserV2', () => {
 					expect(marks[0].data.value).toBe('')
 				})
 
-				it('handles complex HTML-like nested structure', () => {
-					const parser = new ParserV2([
-						'<__label__ __value__>__nested__</__label__>',
-						'<__label__>__nested__</__label__>',
-						'**__nested__**'
-					])
-					const input = '<div class><p>Text **bold**</p></div>'
+			it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
+				// Simpler test: outer pattern with value, inner pattern without value
+				const parser = new ParserV2([
+					'<__label__ __value__>__nested__</__label__>',
+					'<__label__>__nested__</__label__>'
+				])
+				const input = '<div class><p>Text</p></div>'
+				const result = parser.split(input)
+
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: TEXT "" [0-0]
+				 1: MARK "<div class><p>Text</p></div>" [0-28] [label="div", value="class"]
+					1.0: TEXT "" [11-11]
+					1.1: MARK "<p>Text</p>" [11-22] [label="p"]
+					1.2: TEXT "" [22-22]
+				 2: TEXT "" [28-28]"
+			`)
+
+				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				expect(marks[0].data.label).toBe('div')
+				expect(marks[0].data.value).toBe('class')
+			})
+
+			it('handles complex HTML-like nested structure', () => {
+				const parser = new ParserV2([
+					'<__label__ __value__>__nested__</__label__>',
+					'<__label__>__nested__</__label__>',
+					'**__nested__**'
+				])
+				const input = '<div class><p>Text **bold**</p></div>'
+				const result = parser.split(input)
+
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [label="div", value="class"]
+						1.0: TEXT "" [11-11]
+						1.1: MARK "<p>Text **bold**</p>" [11-31] [label="p"]
+							1.1.0: TEXT "Text " [14-19]
+							1.1.1: MARK "**bold**" [19-27] [label="bold"]
+							1.1.2: TEXT "" [27-27]
+						1.2: TEXT "" [31-31]
+					 2: TEXT "" [37-37]"
+				`)
+
+				// Verify correct nesting
+				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				expect(marks[0].data.label).toBe('div')
+				expect(marks[0].data.value).toBe('class')
+				expect(marks[0].children.length).toBeGreaterThan(0)
+			})
+
+				it('does NOT match HTML-like pattern when opening and closing tags differ', () => {
+					// Pattern with two __label__ placeholders requires them to be equal
+					const parser = new ParserV2(['<__label__>__nested__</__label__>'])
+					const input = '<div1>text</div2>'
 					const result = parser.split(input)
 
+					// Should NOT match - opening tag "div1" doesn't match closing tag "div2"
+					// Result should be plain text
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [label="div class"]
-							1.0: TEXT "" [11-11]
-							1.1: MARK "<p>Text **bold**</p>" [11-31] [label="p"]
-								1.1.0: TEXT "Text " [14-19]
-								1.1.1: MARK "**bold**" [19-27] [label="bold"]
-								1.1.2: TEXT "" [27-27]
-							1.2: TEXT "" [31-31]
-						 2: TEXT "" [37-37]"
+						"0: TEXT "<div1>text</div2>" [0-17]"
 					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks).toHaveLength(0)
 				})
 
 				it('does NOT find nested marks in __label__ sections', () => {
