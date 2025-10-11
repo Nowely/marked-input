@@ -46,11 +46,18 @@ function createTextToken(input: string, start: number, end: number): TextToken {
 function createMarkToken(match: MatchResult, children: NestedToken[]): MarkToken {
 	// Check if there are any nested marks (not just text tokens)
 	const hasNestedMarks = children.some(child => child.type === 'mark')
-	
+
 	// Priority: use label if present, otherwise use nested content
 	// This handles combined patterns like @[__label__](__nested__) correctly
 	const labelContent = match.label !== '' ? match.label : (match.nested || '')
-	
+
+	// Store nested content information for debugging
+	const nestedInfo = match.nested ? {
+		content: match.nested,
+		start: match.nestedStart!,
+		end: match.nestedEnd!
+	} : undefined
+
 	return {
 		type: 'mark',
 		content: match.content,
@@ -60,7 +67,8 @@ function createMarkToken(match: MatchResult, children: NestedToken[]): MarkToken
 			value: match.value,
 			optionIndex: match.descriptorIndex
 		},
-		position: { start: match.start, end: match.end }
+		position: { start: match.start, end: match.end },
+		nested: nestedInfo
 	}
 }
 

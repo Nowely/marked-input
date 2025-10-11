@@ -110,13 +110,13 @@ describe('ParserV2', () => {
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[hello @[world]]" [0-17] [label="hello @[world]"]
-							1.0: TEXT "hello " [2-8]
-							1.1: MARK "@[world]" [8-16] [label="world"]
-							1.2: TEXT "" [16-16]
-						 2: TEXT "" [17-17]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[hello @[world]]" [0-17] [label="hello @[world]", nested="hello @[world]"]
+								1.0: TEXT "hello " [2-8]
+								1.1: MARK "@[world]" [8-16] [label="world", nested="world"]
+								1.2: TEXT "" [16-16]
+							 2: TEXT "" [17-17]"
+						`)
 					})
 
 				it('handles multiple and deeply nested marks', () => {
@@ -126,16 +126,16 @@ describe('ParserV2', () => {
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [label="level1 @[level2 @[level3]]"]
-							1.0: TEXT "level1 " [2-9]
-							1.1: MARK "@[level2 @[level3]]" [9-28] [label="level2 @[level3]"]
-								1.1.0: TEXT "level2 " [11-18]
-								1.1.1: MARK "@[level3]" [18-27] [label="level3"]
-								1.1.2: TEXT "" [27-27]
-							1.2: TEXT "" [28-28]
-						 2: TEXT "" [29-29]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [label="level1 @[level2 @[level3]]", nested="level1 @[level2 @[level3]]"]
+								1.0: TEXT "level1 " [2-9]
+								1.1: MARK "@[level2 @[level3]]" [9-28] [label="level2 @[level3]", nested="level2 @[level3]"]
+									1.1.0: TEXT "level2 " [11-18]
+									1.1.1: MARK "@[level3]" [18-27] [label="level3", nested="level3"]
+									1.1.2: TEXT "" [27-27]
+								1.2: TEXT "" [28-28]
+							 2: TEXT "" [29-29]"
+						`)
 					})
 
 				it('handles mixed markup types with nesting', () => {
@@ -145,9 +145,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]]" [0-17] [label="hello #[world]"]
+							 1: MARK "@[hello #[world]]" [0-17] [label="hello #[world]", nested="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [label="world"]
+								1.1: MARK "#[world]" [8-16] [label="world", nested="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
@@ -160,9 +160,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value"]
+						 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value", nested="hello #[world]"]
 							1.0: TEXT "hello " [2-8]
-							1.1: MARK "#[world]" [8-16] [label="world"]
+							1.1: MARK "#[world]" [8-16] [label="world", nested="world"]
 							1.2: TEXT "" [16-16]
 						 2: TEXT "" [24-24]"
 					`)
@@ -175,9 +175,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[user](Hello #[world])" [0-23] [label="user"]
+						 1: MARK "@[user](Hello #[world])" [0-23] [label="user", nested="Hello #[world]"]
 							1.0: TEXT "Hello " [8-14]
-							1.1: MARK "#[world]" [14-22] [label="world"]
+							1.1: MARK "#[world]" [14-22] [label="world", nested="world"]
 							1.2: TEXT "" [22-22]
 						 2: TEXT "" [23-23]"
 					`)
@@ -190,11 +190,11 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [label="user"]
+						 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [label="user", nested="Text with #[tag] and **bold**"]
 							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "#[tag]" [18-24] [label="tag"]
+							1.1: MARK "#[tag]" [18-24] [label="tag", nested="tag"]
 							1.2: TEXT " and " [24-29]
-							1.3: MARK "**bold**" [29-37] [label="bold"]
+							1.3: MARK "**bold**" [29-37] [label="bold", nested="bold"]
 							1.4: TEXT "" [37-37]
 						 2: TEXT "" [38-38]"
 					`)
@@ -220,9 +220,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "<div class>Content with **bold**</div>" [0-38] [label="div", value="class"]
+						 1: MARK "<div class>Content with **bold**</div>" [0-38] [label="div", value="class", nested="Content with **bold**"]
 							1.0: TEXT "Content with " [11-24]
-							1.1: MARK "**bold**" [24-32] [label="bold"]
+							1.1: MARK "**bold**" [24-32] [label="bold", nested="bold"]
 							1.2: TEXT "" [32-32]
 						 2: TEXT "" [38-38]"
 					`)
@@ -239,9 +239,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "<span >Text #[tag]</span>" [0-25] [label="span", value=""]
+						 1: MARK "<span >Text #[tag]</span>" [0-25] [label="span", value="", nested="Text #[tag]"]
 							1.0: TEXT "Text " [7-12]
-							1.1: MARK "#[tag]" [12-18] [label="tag"]
+							1.1: MARK "#[tag]" [12-18] [label="tag", nested="tag"]
 							1.2: TEXT "" [18-18]
 						 2: TEXT "" [25-25]"
 					`)
@@ -262,9 +262,9 @@ describe('ParserV2', () => {
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 				"0: TEXT "" [0-0]
-				 1: MARK "<div class><p>Text</p></div>" [0-28] [label="div", value="class"]
+				 1: MARK "<div class><p>Text</p></div>" [0-28] [label="div", value="class", nested="<p>Text</p>"]
 					1.0: TEXT "" [11-11]
-					1.1: MARK "<p>Text</p>" [11-22] [label="p"]
+					1.1: MARK "<p>Text</p>" [11-22] [label="p", nested="Text"]
 					1.2: TEXT "" [22-22]
 				 2: TEXT "" [28-28]"
 			`)
@@ -285,11 +285,11 @@ describe('ParserV2', () => {
 
 				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
-					 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [label="div", value="class"]
+					 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [label="div", value="class", nested="<p>Text **bold**</p>"]
 						1.0: TEXT "" [11-11]
-						1.1: MARK "<p>Text **bold**</p>" [11-31] [label="p"]
+						1.1: MARK "<p>Text **bold**</p>" [11-31] [label="p", nested="Text **bold**"]
 							1.1.0: TEXT "Text " [14-19]
-							1.1.1: MARK "**bold**" [19-27] [label="bold"]
+							1.1.1: MARK "**bold**" [19-27] [label="bold", nested="bold"]
 							1.1.2: TEXT "" [27-27]
 						1.2: TEXT "" [31-31]
 					 2: TEXT "" [37-37]"
@@ -346,7 +346,7 @@ describe('ParserV2', () => {
 				// Should have only one mark, with #[world] as plain text in value
 				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
-					 1: MARK "@[hello](#[world])" [0-18] [label="hello", value="#[world]"]
+					 1: MARK "@[hello](#[world])" [0-18] [label="hello", value="#[world]", nested="hello"]
 					 2: TEXT "" [18-18]"
 				`)
 
@@ -377,9 +377,9 @@ describe('ParserV2', () => {
 				// Second case: nesting in __nested__
 				expect(tokensToDebugTree(result2)).toMatchInlineSnapshot(`
 					"0: TEXT "" [0-0]
-					 1: MARK "#[**bold**]" [0-11] [label="**bold**"]
+					 1: MARK "#[**bold**]" [0-11] [label="**bold**", nested="**bold**"]
 						1.0: TEXT "" [2-2]
-						1.1: MARK "**bold**" [2-10] [label="bold"]
+						1.1: MARK "**bold**" [2-10] [label="bold", nested="bold"]
 						1.2: TEXT "" [10-10]
 					 2: TEXT "" [11-11]"
 				`)
@@ -561,9 +561,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "(note)#[Text with **bold**]" [0-27] [label="Text with **bold**", value="note"]
+						 1: MARK "(note)#[Text with **bold**]" [0-27] [label="Text with **bold**", value="note", nested="Text with **bold**"]
 							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "**bold**" [18-26] [label="bold"]
+							1.1: MARK "**bold**" [18-26] [label="bold", nested="bold"]
 							1.2: TEXT "" [26-26]
 						 2: TEXT "" [27-27]"
 					`)
@@ -580,9 +580,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "[name](url)(Content **bold**)" [0-29] [label="name", value="url"]
+						 1: MARK "[name](url)(Content **bold**)" [0-29] [label="name", value="url", nested="Content **bold**"]
 							1.0: TEXT "Content " [12-20]
-							1.1: MARK "**bold**" [20-28] [label="bold"]
+							1.1: MARK "**bold**" [20-28] [label="bold", nested="bold"]
 							1.2: TEXT "" [28-28]
 						 2: TEXT "" [29-29]"
 					`)
@@ -754,9 +754,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text"]
+							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [label="Bold <i>italic</i> text", nested="Bold <i>italic</i> text"]
 								1.0: TEXT "Bold " [3-8]
-								1.1: MARK "<i>italic</i>" [8-21] [label="italic"]
+								1.1: MARK "<i>italic</i>" [8-21] [label="italic", nested="italic"]
 								1.2: TEXT " text" [21-26]
 							 2: TEXT "" [30-30]"
 						`)
@@ -882,55 +882,55 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "# Welcome to **Marked Input**↲" [0-30] [label="Welcome to **Marked Input**"]
+						 1: MARK "# Welcome to **Marked Input**↲" [0-30] [label="Welcome to **Marked Input**", nested="Welcome to **Marked Input**"]
 							1.0: TEXT "Welcome to " [2-13]
-							1.1: MARK "**Marked Input**" [13-29] [label="Marked Input"]
+							1.1: MARK "**Marked Input**" [13-29] [label="Marked Input", nested="Marked Input"]
 							1.2: TEXT "" [29-29]
 						 2: TEXT "↲This is a " [30-41]
-						 3: MARK "*powerful*" [41-51] [label="powerful"]
+						 3: MARK "*powerful*" [41-51] [label="powerful", nested="powerful"]
 						 4: TEXT " library for parsing " [51-72]
-						 5: MARK "**rich text**" [72-85] [label="rich text"]
+						 5: MARK "**rich text**" [72-85] [label="rich text", nested="rich text"]
 						 6: TEXT " with " [85-91]
-						 7: MARK "*markdown*" [91-101] [label="markdown"]
+						 7: MARK "*markdown*" [91-101] [label="markdown", nested="markdown"]
 						 8: TEXT " formatting.↲You can use " [101-126]
 						 9: MARK "\`inline code\`" [126-139] [label="inline code"]
 						 10: TEXT " snippets like " [139-154]
 						 11: MARK "\`const parser = new ParserV2()\`" [154-185] [label="const parser = new ParserV2()"]
 						 12: TEXT " in your text.↲↲" [185-201]
-						 13: MARK "## Features↲" [201-213] [label="Features"]
+						 13: MARK "## Features↲" [201-213] [label="Features", nested="Features"]
 						 14: TEXT "↲" [213-214]
-						 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [label="**Bold text** with **strong emphasis**"]
+						 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [label="**Bold text** with **strong emphasis**", nested="**Bold text** with **strong emphasis**"]
 							15.0: TEXT "" [216-216]
-							15.1: MARK "**Bold text**" [216-229] [label="Bold text"]
+							15.1: MARK "**Bold text**" [216-229] [label="Bold text", nested="Bold text"]
 							15.2: TEXT " with " [229-235]
-							15.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis"]
+							15.3: MARK "**strong emphasis**" [235-254] [label="strong emphasis", nested="strong emphasis"]
 							15.4: TEXT "" [254-254]
 						 16: TEXT "" [255-255]
-						 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [label="*Italic text* and *emphasis* support"]
+						 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [label="*Italic text* and *emphasis* support", nested="*Italic text* and *emphasis* support"]
 							17.0: TEXT "" [257-257]
-							17.1: MARK "*Italic text*" [257-270] [label="Italic text"]
+							17.1: MARK "*Italic text*" [257-270] [label="Italic text", nested="Italic text"]
 							17.2: TEXT " and " [270-275]
-							17.3: MARK "*emphasis*" [275-285] [label="emphasis"]
+							17.3: MARK "*emphasis*" [275-285] [label="emphasis", nested="emphasis"]
 							17.4: TEXT " support" [285-293]
 						 18: TEXT "" [294-294]
-						 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [label="\`Code snippets\` and \`code blocks\`"]
+						 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [label="\`Code snippets\` and \`code blocks\`", nested="\`Code snippets\` and \`code blocks\`"]
 							19.0: TEXT "" [296-296]
 							19.1: MARK "\`Code snippets\`" [296-311] [label="Code snippets"]
 							19.2: TEXT " and " [311-316]
 							19.3: MARK "\`code blocks\`" [316-329] [label="code blocks"]
 							19.4: TEXT "" [329-329]
 						 20: TEXT "" [330-330]
-						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [label="~~Strikethrough~~ for deleted content"]
+						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [label="~~Strikethrough~~ for deleted content", nested="~~Strikethrough~~ for deleted content"]
 							21.0: TEXT "" [332-332]
 							21.1: MARK "~~Strikethrough~~" [332-349] [label="Strikethrough"]
 							21.2: TEXT " for deleted content" [349-369]
 						 22: TEXT "" [370-370]
-						 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [label="Links like [GitHub](https://github.com)"]
+						 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [label="Links like [GitHub](https://github.com)", nested="Links like [GitHub](https://github.com)"]
 							23.0: TEXT "Links like " [372-383]
 							23.1: MARK "[GitHub](https://github.com)" [383-411] [label="GitHub", value="https://github.com"]
 							23.2: TEXT "" [411-411]
 						 24: TEXT "↲" [412-413]
-						 25: MARK "## Example↲" [413-424] [label="Example"]
+						 25: MARK "## Example↲" [413-424] [label="Example", nested="Example"]
 						 26: TEXT "↲Here's how to use it:↲↲" [424-448]
 						 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲\`\`\`" [448-575] [label="javascript", value="const parser = new ParserV2(['**__label__**', '*__label__*'])↲const result = parser.split('Hello **world**!')↲"]
 						 28: TEXT "↲↲Visit our " [575-587]
@@ -1000,11 +1000,11 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [label="**Bold text** with **strong emphasis**"]
+						 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [label="**Bold text** with **strong emphasis**", nested="**Bold text** with **strong emphasis**"]
 							1.0: TEXT "" [2-2]
-							1.1: MARK "**Bold text**" [2-15] [label="Bold text"]
+							1.1: MARK "**Bold text**" [2-15] [label="Bold text", nested="Bold text"]
 							1.2: TEXT " with " [15-21]
-							1.3: MARK "**strong emphasis**" [21-40] [label="strong emphasis"]
+							1.3: MARK "**strong emphasis**" [21-40] [label="strong emphasis", nested="strong emphasis"]
 							1.4: TEXT "" [40-40]
 						 2: TEXT "" [41-41]"
 					`)
@@ -1256,10 +1256,18 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 			const content = `"${escapeString(token.content)}"`
 			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
 		} else {
-			const labelValueInfo =
-				token.data.value !== undefined
-					? `[label="${escapeString(token.data.label)}", value="${escapeString(token.data.value)}"]`
-					: `[label="${escapeString(token.data.label)}"]`
+			let infoParts = [`label="${escapeString(token.data.label)}"`]
+
+			if (token.data.value !== undefined) {
+				infoParts.push(`value="${escapeString(token.data.value)}"`)
+			}
+
+			if (token.nested) {
+				infoParts.push(`nested="${escapeString(token.nested.content)}"`)
+			}
+
+			const labelValueInfo = `[${infoParts.join(', ')}]`
+
 			lines.push(
 				`${indent}${paddedPrefix}: MARK "${escapeString(token.content)}" [${token.position.start}-${token.position.end}] ${labelValueInfo}`
 			)

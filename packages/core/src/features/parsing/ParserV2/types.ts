@@ -26,6 +26,12 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
+	/** Nested content information (for debugging) */
+	nested?: {
+		content: string
+		start: number
+		end: number
+	}
 }
 
 /**
