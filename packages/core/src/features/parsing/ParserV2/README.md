@@ -19,7 +19,7 @@ const markups = ['@[__label__](__value__)', '#[__label__]']
 const parser = new ParserV2(markups)
 
 const result = parser.split('Hello @[world](test) and #[tag]')
-// result: [TextToken, MarkToken{label: 'world', value: 'test'}, TextToken, MarkToken{label: 'tag'}]
+// result: [TextToken('Hello '), MarkToken{label: 'world', value: 'test'}, TextToken(' and '), MarkToken{label: 'tag'}]
 ```
 
 ## 📊 Производительность
@@ -60,22 +60,23 @@ interface MarkToken {
 
 ```
 ParserV2/
-├── ParserV2.ts              # Главный класс парсера (60 строк)
-├── types.ts                 # Типы и интерфейсы
-├── index.ts                 # Публичные экспорты
+├── ParserV2.ts              # Главный класс парсера
+├── ParserV2.bench.ts        # Бенчмарки производительности
+├── ParserV2.spec.ts         # Тесты
 ├── README.md                # 📖 Документация и правила работы парсера
+├── index.ts                 # Публичные экспорты
+├── types.ts                 # Типы и интерфейсы
 ├── core/                    # Ядро функциональности
+│   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
 │   ├── PatternMatcher.ts    # Поиск всех matches
 │   ├── PatternProcessor.ts  # Обработка цепочек паттернов
-│   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
 │   ├── SegmentMatcher.ts    # Матчинг сегментов (Aho-Corasick)
 │   ├── TokenBuilder.ts      # Создание токенов
-│   └── TreeBuilder.ts       # 🆕 Single-pass tree building
-├── utils/                   # Утилиты
-│   ├── AhoCorasick.ts       # Эффективный multi-pattern поиск
-│   ├── PatternBuilder.ts    # Построение паттернов из цепочек
-│   └── PatternChainManager.ts # Управление активными цепочками
-└── tests/                   # Тесты
+│   └── TreeBuilder.ts       # Single-pass tree building
+└── utils/                   # Утилиты
+    ├── AhoCorasick.ts       # Эффективный multi-pattern поиск
+    ├── PatternBuilder.ts    # Построение паттернов из цепочек
+    └── PatternChainManager.ts # Управление активными цепочками
 ```
 
 ## 📋 API
