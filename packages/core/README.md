@@ -101,7 +101,7 @@ const store = new Store()
 - `DEFAULT_OPTIONS` - Default configuration options
 - `DEFAULT_TRIGGER` - Default trigger character
 - `KEYBOARD` - Keyboard constants
-- `PLACEHOLDER` - Placeholder constants
+- `PLACEHOLDER` - Placeholder constants (`__label__`, `__value__`, `__nested__`)
 
 ## Development
 

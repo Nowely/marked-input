@@ -17,11 +17,19 @@
 ```typescript
 import { ParserV2 } from './ParserV2'
 
-const markups = ['@[__label__](__value__)', '#[__label__]']
-const parser = new ParserV2(markups)
+// Patterns with __label__ - no nesting support
+const simpleMarkups = ['@[__label__](__value__)', '#[__label__]']
+const parser = new ParserV2(simpleMarkups)
 
 const result = parser.split('Hello @[world](test) and #[tag]')
 // result: [TextToken('Hello '), MarkToken{label: 'world', value: 'test'}, TextToken(' and '), MarkToken{label: 'tag'}]
+
+// Patterns with __nested__ - supports nesting
+const nestedMarkups = ['@[__nested__]', '#[__nested__]']
+const nestedParser = new ParserV2(nestedMarkups)
+
+const nestedResult = nestedParser.split('@[hello #[world]]')
+// result: [TextToken(''), MarkToken{label: 'hello #[world]', children: [...]}, TextToken('')]
 ```
 
 ## 📊 Производительность
@@ -208,28 +216,39 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 #### Формат паттернов
 Паттерн состоит из **статических сегментов** и **плейсхолдеров**:
-- **Плейсхолдеры**: `__label__` и `__value__`
+- **Плейсхолдеры**: `__label__`, `__value__`, и `__nested__`
 - **Примеры валидных паттернов**:
-  - `@[__label__]` - один label
+  - `@[__label__]` - label без поддержки вложенности
+  - `@[__nested__]` - content с поддержкой вложенности
   - `@[__label__](__value__)` - label и value
+  - `@[__nested__](__value__)` - nested content и value
   - `<__label__>__value__</__label__>` - два label (полностью поддерживается)
 
 #### Валидация паттернов
-- `__label__` может встречаться **1 или 2 раза**
+- `__label__` может встречаться **0, 1 или 2 раза**
+- `__nested__` может встречаться **0 или 1 раз**
+- `__label__` и `__nested__` **взаимоисключающие** - нельзя использовать оба в одном паттерне
+- Паттерн должен содержать **хотя бы один** `__label__` или `__nested__`
 - `__value__` может встречаться **0 или 1 раз**
-- `__value__` **не может** появляться раньше первого `__label__`
+- `__value__` **не может** появляться раньше первого контент-плейсхолдера (`__label__` или `__nested__`)
 - Паттерн должен содержать **хотя бы один статический сегмент**
 
 **Примеры ошибок валидации:**
 ```typescript
-// ❌ Слишком много __label__ плейсхолдеров
-"__label____label____label__"  // Error: Expected 1 or 2 "__label__" placeholders, but found 3
+// ❌ Использование __label__ и __nested__ вместе
+"@[__label__](__nested__)"  // Error: Cannot use both "__label__" and "__nested__" in the same pattern
+
+// ❌ Нет контент-плейсхолдера
+"@[](__value__)"  // Error: Must have at least one "__label__" or "__nested__" placeholder
+
+// ❌ Слишком много __nested__ плейсхолдеров
+"@[__nested__](__nested__)"  // Error: Expected 0 or 1 "__nested__" placeholder, but found 2
 
 // ❌ Слишком много __value__ плейсхолдеров
 "@[__label__](__value__)(__value__)"  // Error: Expected 0 or 1 "__value__" placeholder, but found 2
 
-// ❌ __value__ перед __label__
-"(__value__)@[__label__]"  // Error: "__value__" cannot appear before "__label__"
+// ❌ __value__ перед контент-плейсхолдером
+"(__value__)@[__label__]"  // Error: "__value__" cannot appear before the first content placeholder
 
 // ❌ Нет статических сегментов
 "__label__"  // Error: Must have at least one static segment
@@ -273,10 +292,11 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 После построения всех совпадений удаляются:
 - **Partial matches** - совпадения, являющиеся частью более длинного с тем же началом/концом
 - **Matches inside __value__** - совпадения внутри value-секции другого совпадения
+- **Matches inside __label__** - совпадения внутри label-секции другого совпадения (labels не поддерживают вложенность)
 - **Overlapping matches** - конфликтующие совпадения одного descriptor, начинающиеся в одной позиции
 
 Сохраняются:
-- **Вложенные совпадения** в label-секциях (для построения дерева)
+- **Вложенные совпадения** в __nested__ секциях (для построения дерева)
 
 #### Advanced Algorithm Details
 
@@ -293,14 +313,18 @@ if (part.start > part.end) {
 }
 ```
 
-**Value Filtering Strategy:**
-Совпадения внутри `__value__` секций фильтруются, потому что value рассматривается как plain text:
+**Non-Nested Gap Filtering Strategy:**
+Совпадения внутри `__value__` и `__label__` секций фильтруются, потому что они рассматриваются как plain text.
+Только `__nested__` секции поддерживают вложенность:
 ```typescript
-// Проверка: matchB начинается внутри value секции matchA?
-if (matchA.valueStart !== undefined && matchA.valueEnd !== undefined) {
-  if (matchB.start >= matchA.valueStart && matchB.start <= matchA.valueEnd) {
-    // matchB фильтруется - он внутри value
+// Проверка: matchB начинается внутри non-nested gap (value или label) matchA?
+for (const part of matchA.parts) {
+  if (part.type === 'gap' && (part.gapType === 'value' || part.gapType === 'label')) {
+    if (matchB.start >= part.start && matchB.start <= part.end) {
+      // matchB фильтруется - он внутри non-nested gap
+    }
   }
+  // Если gapType === 'nested', вложенность разрешена
 }
 ```
 
@@ -336,8 +360,9 @@ Finalize remaining stack
 **Сложность:** O(N log N) для сортировки + O(N) для построения
 
 #### Правила вложенности
-- **Parent-child связь**: child полностью содержится в **labelStart..labelEnd** родителя
-- **Value-секции не парсятся**: совпадения внутри value игнорируются
+- **Parent-child связь**: child полностью содержится в **nestedStart..nestedEnd** родителя (или **labelStart..labelEnd** для обратной совместимости)
+- **__nested__ секции поддерживают вложенность**: совпадения внутри `__nested__` сохраняются и формируют дерево
+- **__label__ и __value__ секции не парсятся**: совпадения внутри этих секций игнорируются
 - **Self-nesting не поддерживается**: паттерн не может быть вложен сам в себя
 
 #### Структура children
@@ -360,16 +385,39 @@ Finalize remaining stack
 - ✅ **Unicode/Emoji** → полная поддержка
 - ✅ **Вложенные скобки в content** → `@[text [with] brackets]` работает
 
-#### Гарантии безопасности
-- 🛡️ **XSS защита** - валидация опасных паттернов
-- 🛡️ **DoS prevention** - защита от бесконечных циклов
-- 🛡️ **Валидация структуры** - проверка корректности дескрипторов
-- 🛡️ **Position validation** - start ≤ end для всех токенов
-
 #### Не поддерживается
 - ❌ **Self-nesting** - `@[outer @[inner]]` не создаст вложенность для одного паттерна
 - ❌ **Parsing inside __value__** - value рассматривается как plain text
+- ❌ **Parsing inside __label__** - label рассматривается как plain text (используйте `__nested__` для вложенности)
 - ❌ **Bracket counting** - паттерн закрывается первым закрывающим сегментом
+
+#### __nested__ vs __label__
+**Ключевое различие:**
+- `__label__` - содержимое рассматривается как **plain text**, вложенные паттерны игнорируются
+- `__nested__` - содержимое **поддерживает вложенность**, вложенные паттерны парсятся
+
+**Когда использовать `__label__`:**
+- Для простого текстового контента без вложенности
+- Для ссылок, тегов, меток, имен
+- Когда нужна гарантия, что контент будет plain text
+
+**Когда использовать `__nested__`:**
+- Для форматированного текста (markdown, HTML)
+- Когда нужна поддержка вложенных конструкций
+- Для контейнеров с произвольным контентом
+
+**Пример:**
+```typescript
+// ❌ С __label__ - вложенность НЕ работает
+const parser1 = new ParserV2(['@[__label__]', '#[__label__]'])
+parser1.split('@[hello #[world]]')
+// → [MarkToken{label: "hello #[world]", children: []}] - нет вложенности
+
+// ✅ С __nested__ - вложенность работает
+const parser2 = new ParserV2(['@[__nested__]', '#[__nested__]'])
+parser2.split('@[hello #[world]]')
+// → [MarkToken{label: "hello #[world]", children: [MarkToken{label: "world"}]}] - есть вложенность
+```
 
 ### 6. Примеры
 
@@ -384,10 +432,10 @@ Output: [
 ]
 ```
 
-#### Вложенность
+#### Вложенность (с __nested__)
 ```typescript
 Input:  "@[hello #[world]]"
-Markups: ["@[__label__]", "#[__label__]"]
+Markups: ["@[__nested__]", "#[__nested__]"]
 Output: [
   TextToken("", 0, 0),
   MarkToken("@[hello #[world]]", 0, 17, children=[
@@ -397,6 +445,18 @@ Output: [
   ], data={label:"hello #[world]"}),
   TextToken("", 17, 17)
 ]
+```
+
+#### Без вложенности (с __label__)
+```typescript
+Input:  "@[hello #[world]]"
+Markups: ["@[__label__]", "#[__label__]"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("@[hello #[world]]", 0, 17, children=[], data={label:"hello #[world]"}),
+  TextToken("", 17, 17)
+]
+// Обратите внимание: children пустой, #[world] остался plain text в label
 ```
 
 #### HTML-подобные паттерны с двумя labels

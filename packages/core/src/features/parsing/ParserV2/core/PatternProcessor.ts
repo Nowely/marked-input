@@ -22,7 +22,10 @@ export class PatternProcessor {
 	 * Processes all unique segment matches and returns completed pattern matches
 	 * 
 	 * Strategy: Create ALL possible matches on first pass (even invalid ones),
-	 * then filter out matches that start inside __value__ of other matches.
+	 * then filter out matches based on gap types:
+	 * - Matches inside __value__ gaps are removed (values are plain text)
+	 * - Matches inside __label__ gaps are removed (labels don't support nesting)
+	 * - Matches inside __nested__ gaps are kept (nested patterns allowed)
 	 * This ensures we don't miss valid matches due to premature blocking.
 	 */
 	processMatches(uniqueMatches: UniqueMatch[]): PatternMatch[] {
@@ -38,8 +41,8 @@ export class PatternProcessor {
 			this.startNewChains(match, results, nestingStack, consumedPositions, consumedStartPositions)
 		}
 
-		// Filter stage 1: remove matches that start inside __value__ of other matches
-		let filtered = this.filterMatchesInsideValue(results)
+		// Filter stage 1: remove matches that start inside __value__ or __label__ gaps
+		let filtered = this.filterMatchesInsideNonNestedGaps(results)
 
 		// Filter stage 2: remove incomplete/overlapping matches of the same descriptor
 		filtered = this.filterOverlappingMatches(filtered)
@@ -48,20 +51,27 @@ export class PatternProcessor {
 	}
 
 	/**
-	 * Filters out matches that start inside __value__ of other matches
+	 * Filters out matches that start inside __value__ or __label__ gaps of other matches.
+	 * Only __nested__ gaps allow nested patterns.
 	 */
-	private filterMatchesInsideValue(matches: PatternMatch[]): PatternMatch[] {
+	private filterMatchesInsideNonNestedGaps(matches: PatternMatch[]): PatternMatch[] {
 		return matches.filter(match => {
 			const matchStart = match.parts[0].start
 			
-			// Check if this match starts inside __value__ of any other match
+			// Check if this match starts inside a non-nested gap (__value__ or __label__) of any other match
 			for (const other of matches) {
 				if (other === match) continue
 				
-				const valueGap = other.parts.find(p => p.type === 'gap' && p.gapType === 'value')
-				if (valueGap && valueGap.start !== undefined && valueGap.end !== undefined) {
-					if (matchStart >= valueGap.start && matchStart <= valueGap.end) {
-						return false // This match starts inside another's __value__
+				// Check all gaps in the other match
+				for (const part of other.parts) {
+					if (part.type === 'gap' && part.start !== undefined && part.end !== undefined) {
+						// Only filter if the gap is NOT a nested gap
+						if (part.gapType === 'value' || part.gapType === 'label') {
+							if (matchStart >= part.start && matchStart <= part.end) {
+								return false // This match starts inside a non-nested gap
+							}
+						}
+						// If gapType is 'nested', allow the match (nesting is permitted)
 					}
 				}
 			}
@@ -78,7 +88,7 @@ export class PatternProcessor {
 	 * Strategy: Keep the most complete match when there are CONFLICTING matches
 	 * of the same descriptor that start at the same position.
 	 * 
-	 * IMPORTANT: This does NOT filter nested matches (matches inside __label__ sections).
+	 * IMPORTANT: This does NOT filter nested matches (matches inside __nested__ sections).
 	 * Only filters matches that share the same starting position and are of the same descriptor.
 	 */
 	private filterOverlappingMatches(matches: PatternMatch[]): PatternMatch[] {
@@ -126,7 +136,7 @@ export class PatternProcessor {
 	/**
 	 * Processes chains waiting for current segment match
 	 * Priority logic with lookahead:
-	 * 1. Chains without nested patterns (ready to close immediately)
+	 * 1. Chains without nested patterns in __nested__ gaps (ready to close immediately)
 	 * 2. Use lookahead to decide between completing and extending
 	 * 3. Later start = inner = higher priority (LIFO)
 	 */

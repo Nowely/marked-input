@@ -162,6 +162,9 @@ export class PatternMatcher {
 				label: extracted.label,
 				labelStart: extracted.labelStart,
 				labelEnd: extracted.labelEnd,
+				nested: extracted.nested,
+				nestedStart: extracted.nestedStart,
+				nestedEnd: extracted.nestedEnd,
 				value: extracted.value,
 				valueStart: extracted.valueStart,
 				valueEnd: extracted.valueEnd,
@@ -205,16 +208,22 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Extracts label and value from match parts with position tracking
+	 * Extracts label, nested content, and value from match parts with position tracking
 	 * Single pass through gaps for optimal performance
 	 * 
 	 * Returns exclusive end positions (compatible with substring)
 	 * Handles empty gaps (when start > end) by creating empty positions
+	 * 
+	 * Note: label is optional - if pattern uses only __nested__, label will be empty string
+	 * with positions set to the start of the match
 	 */
 	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
 		label: string
 		labelStart: number
 		labelEnd: number
+		nested?: string
+		nestedStart?: number
+		nestedEnd?: number
 		value?: string
 		valueStart?: number
 		valueEnd?: number
@@ -222,13 +231,24 @@ export class PatternMatcher {
 		let label = ''
 		let labelStart = -1
 		let labelEnd = -1
+		let nested: string | undefined
+		let nestedStart: number | undefined
+		let nestedEnd: number | undefined
 		let value: string | undefined
 		let valueStart: number | undefined
 		let valueEnd: number | undefined
+		
+		// Track first gap position for default label positions
+		let firstGapStart = -1
 
 		for (const part of parts) {
 			if (part.type === 'gap') {
-				if (part.gapType === 'label' && !label) {
+				// Track first gap position if not set
+				if (firstGapStart === -1) {
+					firstGapStart = part.start
+				}
+				
+				if (part.gapType === 'label' && labelStart === -1) {
 					label = part.value || ''
 					labelStart = part.start
 					// Handle empty gaps (adjacent segments)
@@ -237,6 +257,16 @@ export class PatternMatcher {
 					} else {
 						// part.end is inclusive (last char of gap), so add 1 for exclusive
 						labelEnd = part.end + 1
+					}
+				} else if (part.gapType === 'nested' && nested === undefined) {
+					nested = part.value || ''
+					nestedStart = part.start
+					// Handle empty gaps (adjacent segments)
+					if (part.start > part.end) {
+						nestedEnd = part.start // Empty range: [start, start)
+					} else {
+						// part.end is inclusive (last char of gap), so add 1 for exclusive
+						nestedEnd = part.end + 1
 					}
 				} else if (part.gapType === 'value') {
 					value = part.value
@@ -251,8 +281,15 @@ export class PatternMatcher {
 				}
 			}
 		}
+		
+		// If no label was found (pattern uses only __nested__), 
+		// set label positions to empty range at the start
+		if (labelStart === -1) {
+			labelStart = firstGapStart !== -1 ? firstGapStart : 0
+			labelEnd = labelStart
+		}
 
-		return {label, labelStart, labelEnd, value, valueStart, valueEnd}
+		return {label, labelStart, labelEnd, nested, nestedStart, nestedEnd, value, valueStart, valueEnd}
 	}
 }
 

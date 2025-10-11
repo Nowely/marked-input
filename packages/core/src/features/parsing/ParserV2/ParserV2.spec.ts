@@ -100,13 +100,13 @@ describe('ParserV2', () => {
 				})
 
 				describe('complex parsing', () => {
-					it('handles nested marks', () => {
-						// Test basic nested parsing
-						// Note: Self-nesting is not supported (pattern cannot nest within itself)
-						// This is by design to eliminate bracket counting complexity
-						const simpleParser = new ParserV2(['@[__label__]'])
-						const input = '@[hello @[world]]'
-						const result = simpleParser.split(input)
+				it('handles nested marks', () => {
+					// Test basic nested parsing
+					// Note: Self-nesting is not supported (pattern cannot nest within itself)
+					// This is by design to eliminate bracket counting complexity
+					const simpleParser = new ParserV2(['@[__nested__]'])
+					const input = '@[hello @[world]]'
+					const result = simpleParser.split(input)
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
@@ -119,10 +119,10 @@ describe('ParserV2', () => {
 					`)
 					})
 
-					it('handles multiple and deeply nested marks', () => {
-						const parser = new ParserV2(['@[__label__]'])
-						const input = '@[level1 @[level2 @[level3]]]'
-						const result = parser.split(input)
+				it('handles multiple and deeply nested marks', () => {
+					const parser = new ParserV2(['@[__nested__]'])
+					const input = '@[level1 @[level2 @[level3]]]'
+					const result = parser.split(input)
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
@@ -138,10 +138,10 @@ describe('ParserV2', () => {
 					`)
 					})
 
-					it('handles mixed markup types with nesting', () => {
-						const parser = new ParserV2(['@[__label__]', '#[__label__]'])
-						const input = '@[hello #[world]]'
-						const result = parser.split(input)
+				it('handles mixed markup types with nesting', () => {
+					const parser = new ParserV2(['@[__nested__]', '#[__nested__]'])
+					const input = '@[hello #[world]]'
+					const result = parser.split(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
@@ -153,22 +153,89 @@ describe('ParserV2', () => {
 						`)
 					})
 
-					it('handles marks with values and nesting', () => {
-						const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
-						const input = '@[hello #[world]](value)'
-						const result = parser.split(input)
+			it('handles marks with values and nesting', () => {
+				const parser = new ParserV2(['@[__nested__](__value__)', '#[__nested__]'])
+				const input = '@[hello #[world]](value)'
+				const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value"]
-								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [label="world"]
-								1.2: TEXT "" [16-16]
-							 2: TEXT "" [24-24]"
-						`)
-					})
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[hello #[world]](value)" [0-24] [label="hello #[world]", value="value"]
+							1.0: TEXT "hello " [2-8]
+							1.1: MARK "#[world]" [8-16] [label="world"]
+							1.2: TEXT "" [16-16]
+						 2: TEXT "" [24-24]"
+					`)
+				})
+
+				it('does NOT find nested marks in __label__ sections', () => {
+					// Pattern uses __label__ (not __nested__), so no nesting should be found
+					const parser = new ParserV2(['@[__label__]', '#[__label__]'])
+					const input = '@[hello #[world]]'
+					const result = parser.split(input)
+
+					// Should parse as a single mark with no children
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[hello #[world]]" [0-17] [label="hello #[world]"]
+						 2: TEXT "" [17-17]"
+					`)
+
+					// Verify no nested marks
+					const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(markTokens).toHaveLength(1)
+					expect(markTokens[0].children).toEqual([])
+				})
+
+				it('does NOT find nested marks in __value__ sections', () => {
+					// Nested patterns should not be found inside value sections
+					const parser = new ParserV2(['@[__nested__](__value__)', '#[__nested__]'])
+					const input = '@[hello](#[world])'
+					const result = parser.split(input)
+
+				// Should have only one mark, with #[world] as plain text in value
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					 1: MARK "@[hello](#[world])" [0-18] [label="hello", value="#[world]"]
+					 2: TEXT "" [18-18]"
+				`)
+
+					// Verify no nested marks
+					const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(markTokens).toHaveLength(1)
+					expect(markTokens[0].children).toEqual([])
+					expect(markTokens[0].data.value).toBe('#[world]')
+				})
+
+				it('correctly distinguishes between __label__ and __nested__ in mixed patterns', () => {
+					// Pattern with __label__ should not support nesting
+					// Pattern with __nested__ should support nesting
+					const parser = new ParserV2(['@[__label__]', '#[__nested__]', '**__nested__**'])
+					const input1 = '@[#[tag]]'  // __label__ pattern - no nesting
+					const input2 = '#[**bold**]'  // __nested__ pattern - with nesting
+					
+					const result1 = parser.split(input1)
+					const result2 = parser.split(input2)
+
+					// First case: no nesting in __label__
+					expect(tokensToDebugTree(result1)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[#[tag]]" [0-9] [label="#[tag]"]
+						 2: TEXT "" [9-9]"
+					`)
+
+				// Second case: nesting in __nested__
+				expect(tokensToDebugTree(result2)).toMatchInlineSnapshot(`
+					"0: TEXT "" [0-0]
+					 1: MARK "#[**bold**]" [0-11] [label="**bold**"]
+						1.0: TEXT "" [2-2]
+						1.1: MARK "**bold**" [2-10] [label="bold"]
+						1.2: TEXT "" [10-10]
+					 2: TEXT "" [11-11]"
+				`)
 				})
 			})
+		})
 
 			describe('validation', () => {
 				it('should count marks correctly', () => {
@@ -473,11 +540,11 @@ describe('ParserV2', () => {
 						`)
 					})
 
-					it('parses nested HTML tags', () => {
-						const markups = ['<b>__label__</b>' as any, '<i>__label__</i>' as any]
-						const parser = new ParserV2(markups)
-						const input = '<b>Bold <i>italic</i> text</b>'
-						const result = parser.split(input)
+				it('parses nested HTML tags', () => {
+					const markups = ['<b>__nested__</b>' as any, '<i>__nested__</i>' as any]
+					const parser = new ParserV2(markups)
+					const input = '<b>Bold <i>italic</i> text</b>'
+					const result = parser.split(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
@@ -564,19 +631,19 @@ describe('ParserV2', () => {
 						`)
 					})
 
-				it('parses complex realistic markdown document', () => {
-					const markups: Markup[] = [
-						'# __label__\n', // h1 header
-						'## __label__\n', // h2 header
-						'- __label__\n', // list item
-						'**__label__**', // bold
-						'*__label__*', // italic
-						'`__label__`', // inline code
-						'```__label__\n__value__```', // code block
-						'[__label__](__value__)', // link
-						'~~__label__~~', // strikethrough
-					]
-					const parser = new ParserV2(markups)
+			it('parses complex realistic markdown document', () => {
+				const markups: Markup[] = [
+					'# __nested__\n', // h1 header
+					'## __nested__\n', // h2 header
+					'- __nested__\n', // list item
+					'**__nested__**', // bold
+					'*__nested__*', // italic
+					'`__label__`', // inline code (no nesting in code)
+					'```__label__\n__value__```', // code block (no nesting)
+					'[__label__](__value__)', // link (no nesting in link text)
+					'~~__label__~~', // strikethrough (no nesting)
+				]
+				const parser = new ParserV2(markups)
 
 					const input = dedent`
 						# Welcome to **Marked Input**
@@ -720,10 +787,10 @@ describe('ParserV2', () => {
 						`)
 					})
 
-				it('isolated test: parses nested bold marks in list item', () => {
-					const parser = new ParserV2(['- __label__\n', '**__label__**'])
-					const input = '- **Bold text** with **strong emphasis**\n'
-					const result = parser.split(input)
+			it('isolated test: parses nested bold marks in list item', () => {
+				const parser = new ParserV2(['- __nested__\n', '**__nested__**'])
+				const input = '- **Bold text** with **strong emphasis**\n'
+				const result = parser.split(input)
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]

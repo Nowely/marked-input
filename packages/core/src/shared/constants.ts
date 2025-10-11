@@ -30,4 +30,5 @@ export const wordRegex = new RegExp(/^\w*/)
 export enum PLACEHOLDER {
 	LABEL = '__label__',
 	VALUE = '__value__',
+	NESTED = '__nested__',
 }

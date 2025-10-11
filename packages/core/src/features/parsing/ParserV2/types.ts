@@ -50,6 +50,12 @@ export interface MatchResult {
 	labelStart: number
 	/** End position of label in original text (exclusive) */
 	labelEnd: number
+	/** Nested content text extracted from match (if pattern uses __nested__) */
+	nested?: string
+	/** Start position of nested content in original text (inclusive) */
+	nestedStart?: number
+	/** End position of nested content in original text (exclusive) */
+	nestedEnd?: number
 	/** Value text extracted from match (if present) */
 	value?: string
 	/** Start position of value in original text (inclusive) */
