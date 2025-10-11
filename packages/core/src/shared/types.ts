@@ -15,12 +15,17 @@ export type nested = `${string}__nested__${string}`
 // - nested with value: "@[__nested__](__value__)"
 // - label with nested: "@[__label__](__nested__)"
 // - two labels (HTML-like): "<__label__>__value__</__label__>"
+// - HTML-like with nested: "<__label__ __value__>__nested__</__label__>"
+// - value before content: "(__value__)@[__label__]"
+// And any other combination with at least one content placeholder
 export type Markup = 
 	| `${label}${value}` 
 	| `${label}${nested}` 
 	| `${label}` 
 	| `${nested}${value}` 
 	| `${nested}`
+	| `${value}${label}`
+	| `${value}${nested}`
 
 /** Piece of marked text: fragment of text or mark definition */
 export type PieceType = string | MarkMatch

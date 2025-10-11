@@ -223,7 +223,9 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
   - `@[__label__](__value__)` - label и value
   - `@[__nested__](__value__)` - nested content и value
   - `@[__label__](__nested__)` - label и nested content (комбинированный паттерн)
-  - `<__label__>__value__</__label__>` - два label (полностью поддерживается)
+  - `<__label__>__value__</__label__>` - два label (HTML-подобный)
+  - `<__label__ __value__>__nested__</__label__>` - HTML-подобный с вложенностью
+  - `(__value__)@[__label__]` - value перед content (любой порядок разрешен)
 
 #### Валидация паттернов
 - `__label__` может встречаться **0, 1 или 2 раза**
@@ -231,7 +233,7 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 - `__label__` и `__nested__` **могут использоваться вместе** в одном паттерне (например, `@[__label__](__nested__)`)
 - Паттерн должен содержать **хотя бы один** `__label__` или `__nested__`
 - `__value__` может встречаться **0 или 1 раз**
-- `__value__` **не может** появляться раньше первого контент-плейсхолдера (`__label__` или `__nested__`)
+- `__value__` **может появляться в любой позиции** - до, между или после контент-плейсхолдеров
 - Паттерн должен содержать **хотя бы один статический сегмент**
 
 **Примеры ошибок валидации:**
@@ -244,9 +246,6 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 // ❌ Слишком много __value__ плейсхолдеров
 "@[__label__](__value__)(__value__)"  // Error: Expected 0 or 1 "__value__" placeholder, but found 2
-
-// ❌ __value__ перед контент-плейсхолдером
-"(__value__)@[__label__]"  // Error: "__value__" cannot appear before the first content placeholder
 
 // ❌ Нет статических сегментов
 "__label__"  // Error: Must have at least one static segment
@@ -262,6 +261,13 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 // ✅ Комбинация __nested__ и __value__
 "@[__nested__](__value__)"  // nested контент и простое значение
+
+// ✅ HTML-подобный с label, value и nested
+"<__label__ __value__>__nested__</__label__>"  // полноценный HTML-подобный тег с атрибутами и контентом
+
+// ✅ Value перед контент-плейсхолдером
+"(__value__)@[__label__]"   // value может быть в любой позиции
+"[__label__](__value__)(__nested__)"  // value между label и nested
 ```
 
 #### Trigger и симметрия
@@ -494,6 +500,34 @@ Output: [
   TextToken("", 23, 23)
 ]
 // Обратите внимание: label="user" идентифицирует токен, а nested контент содержит вложенную разметку
+```
+
+#### HTML-подобный паттерн с label, value и nested
+```typescript
+Input:  "<div class>Content with **bold**</div>"
+Markups: ["<__label__ __value__>__nested__</__label__>", "**__nested__**"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("<div class>Content with **bold**</div>", 0, 39, children=[
+    TextToken("Content with ", 11, 24),
+    MarkToken("**bold**", 24, 32, children=[], data={label:"bold"}),
+    TextToken("", 32, 32)
+  ], data={label:"div", value:"class"}),
+  TextToken("", 39, 39)
+]
+// HTML-подобная разметка с атрибутом (value) и вложенным форматированным контентом
+```
+
+#### Value перед контент-плейсхолдером
+```typescript
+Input:  "(url)@[link]"
+Markup: "(__value__)@[__label__]"
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("(url)@[link]", 0, 12, children=[], data={label:"link", value:"url"}),
+  TextToken("", 12, 12)
+]
+// Value может появляться перед label - порядок не ограничен
 ```
 
 #### Adjacent marks

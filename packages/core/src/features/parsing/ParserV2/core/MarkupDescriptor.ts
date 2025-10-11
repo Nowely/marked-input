@@ -36,6 +36,7 @@ export interface MarkupDescriptor {
  * - `@[__nested__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "value"]
  * - `@[__label__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "nested"]
  * - `<__label__>__value__</__label__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["label", "value", "label"]
+ * - `<__label__ __value__>__nested__</__label__>` -> segments: ["<", " ", ">", "</", ">"], gapTypes: ["label", "value", "nested", "label"]
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const hasTwoLabels = countPlaceholder(markup, PLACEHOLDER.LABEL) === 2
@@ -70,25 +71,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		throw new Error(
 			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.VALUE}" placeholder, but found ${valueCount}`
 		)
-	}
-
-	// __value__ cannot appear before the first content placeholder
-	const firstLabelPos = markup.indexOf(PLACEHOLDER.LABEL)
-	const firstNestedPos = markup.indexOf(PLACEHOLDER.NESTED)
-	const valuePos = markup.indexOf(PLACEHOLDER.VALUE)
-	
-	if (hasValue) {
-		const firstContentPos = firstLabelPos !== -1 && firstNestedPos !== -1 
-			? Math.min(firstLabelPos, firstNestedPos)
-			: firstLabelPos !== -1 
-			? firstLabelPos 
-			: firstNestedPos
-		
-		if (valuePos < firstContentPos) {
-			throw new Error(
-				`Invalid markup format: "${markup}". "${PLACEHOLDER.VALUE}" cannot appear before the first content placeholder`
-			)
-		}
 	}
 
 	// Parse segments and gap types

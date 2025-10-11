@@ -212,6 +212,67 @@ describe('ParserV2', () => {
 					`)
 				})
 
+				it('handles HTML-like pattern with label, value and nested', () => {
+					// Pattern: <__label__ __value__>__nested__</__label__>
+					const parser = new ParserV2(['<__label__ __value__>__nested__</__label__>', '**__nested__**'])
+					const input = '<div class>Content with **bold**</div>'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "<div class>Content with **bold**</div>" [0-38] [label="div", value="class"]
+							1.0: TEXT "Content with " [11-24]
+							1.1: MARK "**bold**" [24-32] [label="bold"]
+							1.2: TEXT "" [32-32]
+						 2: TEXT "" [38-38]"
+					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks[0].data.label).toBe('div')
+					expect(marks[0].data.value).toBe('class')
+				})
+
+				it('handles HTML-like pattern with empty value', () => {
+					const parser = new ParserV2(['<__label__ __value__>__nested__</__label__>', '#[__nested__]'])
+					const input = '<span >Text #[tag]</span>'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "<span >Text #[tag]</span>" [0-25] [label="span", value=""]
+							1.0: TEXT "Text " [7-12]
+							1.1: MARK "#[tag]" [12-18] [label="tag"]
+							1.2: TEXT "" [18-18]
+						 2: TEXT "" [25-25]"
+					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks[0].data.label).toBe('span')
+					expect(marks[0].data.value).toBe('')
+				})
+
+				it('handles complex HTML-like nested structure', () => {
+					const parser = new ParserV2([
+						'<__label__ __value__>__nested__</__label__>',
+						'<__label__>__nested__</__label__>',
+						'**__nested__**'
+					])
+					const input = '<div class><p>Text **bold**</p></div>'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [label="div class"]
+							1.0: TEXT "" [11-11]
+							1.1: MARK "<p>Text **bold**</p>" [11-31] [label="p"]
+								1.1.0: TEXT "Text " [14-19]
+								1.1.1: MARK "**bold**" [19-27] [label="bold"]
+								1.1.2: TEXT "" [27-27]
+							1.2: TEXT "" [31-31]
+						 2: TEXT "" [37-37]"
+					`)
+				})
+
 				it('does NOT find nested marks in __label__ sections', () => {
 					// Pattern uses __label__ (not __nested__), so no nesting should be found
 					const parser = new ParserV2(['@[__label__]', '#[__label__]'])
@@ -428,6 +489,62 @@ describe('ParserV2', () => {
 						 1: MARK "@[content [with] brackets](value)" [0-33] [label="content [with] brackets", value="value"]
 						 2: TEXT "" [33-33]"
 					`)
+				})
+
+				it('handles __value__ before content placeholder', () => {
+					// Pattern with value before label: (__value__)@[__label__]
+					const parser = new ParserV2(['(__value__)@[__label__]'])
+					const input = '(url)@[link]'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "(url)@[link]" [0-12] [label="link", value="url"]
+						 2: TEXT "" [12-12]"
+					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks[0].data.label).toBe('link')
+					expect(marks[0].data.value).toBe('url')
+				})
+
+				it('handles __value__ before nested placeholder', () => {
+					// Pattern with value before nested: (__value__)#[__nested__]
+					const parser = new ParserV2(['(__value__)#[__nested__]', '**__nested__**'])
+					const input = '(note)#[Text with **bold**]'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "(note)#[Text with **bold**]" [0-27] [label="Text with **bold**", value="note"]
+							1.0: TEXT "Text with " [8-18]
+							1.1: MARK "**bold**" [18-26] [label="bold"]
+							1.2: TEXT "" [26-26]
+						 2: TEXT "" [27-27]"
+					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks[0].data.value).toBe('note')
+				})
+
+				it('handles complex pattern with value in middle', () => {
+					// Pattern: [__label__](__value__)(__nested__)
+					const parser = new ParserV2(['[__label__](__value__)(__nested__)', '**__nested__**'])
+					const input = '[name](url)(Content **bold**)'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "[name](url)(Content **bold**)" [0-29] [label="name", value="url"]
+							1.0: TEXT "Content " [12-20]
+							1.1: MARK "**bold**" [20-28] [label="bold"]
+							1.2: TEXT "" [28-28]
+						 2: TEXT "" [29-29]"
+					`)
+
+					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+					expect(marks[0].data.label).toBe('name')
+					expect(marks[0].data.value).toBe('url')
 				})
 			})
 		})
