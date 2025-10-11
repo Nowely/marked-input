@@ -47,8 +47,9 @@ function createMarkToken(match: MatchResult, children: NestedToken[]): MarkToken
 	// Check if there are any nested marks (not just text tokens)
 	const hasNestedMarks = children.some(child => child.type === 'mark')
 	
-	// Use nested content for label if available (pattern uses __nested__), otherwise use label
-	const labelContent = match.nested !== undefined ? match.nested : match.label
+	// Priority: use label if present, otherwise use nested content
+	// This handles combined patterns like @[__label__](__nested__) correctly
+	const labelContent = match.label !== '' ? match.label : (match.nested || '')
 	
 	return {
 		type: 'mark',
@@ -84,17 +85,17 @@ function addTextToken(
 
 /**
  * Determines if matchB is contained within matchA's nestable content.
- * Checks nested gap first (if present), otherwise checks label gap.
+ * Priority: nested gap (if present), otherwise label gap.
  * All positions are exclusive (end points to next char after last)
  */
 function isContainedInNestableContent(matchB: MatchResult, matchA: MatchResult): boolean {
-	// If matchA has a nested gap, check if matchB is contained in it
+	// Priority: use nested gap if present, otherwise use label gap
+	// This handles both pure __nested__ patterns and combined __label__/__nested__ patterns
 	if (matchA.nestedStart !== undefined && matchA.nestedEnd !== undefined) {
 		return matchB.start >= matchA.nestedStart && matchB.end <= matchA.nestedEnd
 	}
 	
-	// Fallback to label for backward compatibility (old patterns without __nested__)
-	// This allows existing tests to pass
+	// Fallback to label for patterns that don't have __nested__
 	return matchB.start >= matchA.labelStart && matchB.end <= matchA.labelEnd
 }
 
@@ -102,7 +103,8 @@ function isContainedInNestableContent(matchB: MatchResult, matchA: MatchResult):
  * Finalizes a completed mark node and adds it to parent or root
  */
 function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
-	// Add any remaining text in this mark's nestable content (nested or label)
+	// Add any remaining text in this mark's nestable content
+	// Priority: use nested end if present, otherwise use label end
 	const contentEnd = node.match.nestedEnd !== undefined ? node.match.nestedEnd : node.match.labelEnd
 	addTextToken(ctx.input, node.children, node.textPos, contentEnd)
 	
@@ -199,7 +201,7 @@ export function buildTreeSinglePass(
 		}
 		
 		// Add this match to the stack for potential children
-		// Use nested start if available, otherwise use label start for backward compatibility
+		// Priority: use nested start if present, otherwise use label start
 		const contentStart = match.nestedStart !== undefined ? match.nestedStart : match.labelStart
 		ctx.stack.push({
 			match,

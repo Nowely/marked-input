@@ -5,7 +5,22 @@ import {NodeProxy} from './classes/NodeProxy'
 export type label = `${string}__label__${string}`
 
 export type value = `${string}__value__${string}`
-export type Markup = `${label}${value}` | `${label}`
+
+export type nested = `${string}__nested__${string}`
+
+// Markup can be:
+// - label only: "@[__label__]"
+// - label with value: "@[__label__](__value__)"
+// - nested only: "@[__nested__]"
+// - nested with value: "@[__nested__](__value__)"
+// - label with nested: "@[__label__](__nested__)"
+// - two labels (HTML-like): "<__label__>__value__</__label__>"
+export type Markup = 
+	| `${label}${value}` 
+	| `${label}${nested}` 
+	| `${label}` 
+	| `${nested}${value}` 
+	| `${nested}`
 
 /** Piece of marked text: fragment of text or mark definition */
 export type PieceType = string | MarkMatch

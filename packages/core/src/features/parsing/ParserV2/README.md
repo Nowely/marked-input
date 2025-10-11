@@ -222,12 +222,13 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
   - `@[__nested__]` - content с поддержкой вложенности
   - `@[__label__](__value__)` - label и value
   - `@[__nested__](__value__)` - nested content и value
+  - `@[__label__](__nested__)` - label и nested content (комбинированный паттерн)
   - `<__label__>__value__</__label__>` - два label (полностью поддерживается)
 
 #### Валидация паттернов
 - `__label__` может встречаться **0, 1 или 2 раза**
 - `__nested__` может встречаться **0 или 1 раз**
-- `__label__` и `__nested__` **взаимоисключающие** - нельзя использовать оба в одном паттерне
+- `__label__` и `__nested__` **могут использоваться вместе** в одном паттерне (например, `@[__label__](__nested__)`)
 - Паттерн должен содержать **хотя бы один** `__label__` или `__nested__`
 - `__value__` может встречаться **0 или 1 раз**
 - `__value__` **не может** появляться раньше первого контент-плейсхолдера (`__label__` или `__nested__`)
@@ -235,9 +236,6 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 **Примеры ошибок валидации:**
 ```typescript
-// ❌ Использование __label__ и __nested__ вместе
-"@[__label__](__nested__)"  // Error: Cannot use both "__label__" and "__nested__" in the same pattern
-
 // ❌ Нет контент-плейсхолдера
 "@[](__value__)"  // Error: Must have at least one "__label__" or "__nested__" placeholder
 
@@ -252,6 +250,18 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 // ❌ Нет статических сегментов
 "__label__"  // Error: Must have at least one static segment
+```
+
+**Примеры валидных комбинаций:**
+```typescript
+// ✅ Комбинация __label__ и __nested__
+"@[__label__](__nested__)"  // label для идентификации, nested для вложенного контента
+
+// ✅ Комбинация __label__ и __value__
+"@[__label__](__value__)"   // label для идентификации, value для простого значения
+
+// ✅ Комбинация __nested__ и __value__
+"@[__nested__](__value__)"  // nested контент и простое значение
 ```
 
 #### Trigger и симметрия
@@ -468,6 +478,22 @@ Output: [
   MarkToken("<img>photo.jpg</img>", 6, 26, children=[], data={label:"img", value:"photo.jpg"}),
   TextToken(" image", 26, 32)
 ]
+```
+
+#### Комбинированный паттерн (__label__ и __nested__)
+```typescript
+Input:  "@[user](Hello #[world])"
+Markups: ["@[__label__](__nested__)", "#[__nested__]"]
+Output: [
+  TextToken("", 0, 0),
+  MarkToken("@[user](Hello #[world])", 0, 23, children=[
+    TextToken("Hello ", 7, 13),
+    MarkToken("#[world]", 13, 21, children=[], data={label:"world"}),
+    TextToken("", 21, 21)
+  ], data={label:"user"}),
+  TextToken("", 23, 23)
+]
+// Обратите внимание: label="user" идентифицирует токен, а nested контент содержит вложенную разметку
 ```
 
 #### Adjacent marks

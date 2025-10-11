@@ -34,6 +34,7 @@ export interface MarkupDescriptor {
  * - `#[__nested__]` -> segments: ["#[", "]"], gapTypes: ["nested"]
  * - `@[__label__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "value"]
  * - `@[__nested__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "value"]
+ * - `@[__label__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "nested"]
  * - `<__label__>__value__</__label__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["label", "value", "label"]
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
@@ -45,13 +46,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	const labelCount = countPlaceholder(markup, PLACEHOLDER.LABEL)
 	const valueCount = countPlaceholder(markup, PLACEHOLDER.VALUE)
 	const nestedCount = countPlaceholder(markup, PLACEHOLDER.NESTED)
-
-	// __label__ and __nested__ are mutually exclusive for the first content placeholder
-	if (labelCount > 0 && nestedCount > 0) {
-		throw new Error(
-			`Invalid markup format: "${markup}". Cannot use both "${PLACEHOLDER.LABEL}" and "${PLACEHOLDER.NESTED}" in the same pattern`
-		)
-	}
 
 	// Must have at least one content placeholder (__label__ or __nested__)
 	if (labelCount === 0 && nestedCount === 0) {

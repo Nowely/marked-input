@@ -168,6 +168,50 @@ describe('ParserV2', () => {
 					`)
 				})
 
+				it('handles combined __label__ and __nested__ pattern', () => {
+					const parser = new ParserV2(['@[__label__](__nested__)', '#[__nested__]'])
+					const input = '@[user](Hello #[world])'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[user](Hello #[world])" [0-23] [label="user"]
+							1.0: TEXT "Hello " [8-14]
+							1.1: MARK "#[world]" [14-22] [label="world"]
+							1.2: TEXT "" [22-22]
+						 2: TEXT "" [23-23]"
+					`)
+				})
+
+				it('handles combined __label__ and __nested__ with complex nesting', () => {
+					const parser = new ParserV2(['@[__label__](__nested__)', '#[__nested__]', '**__nested__**'])
+					const input = '@[user](Text with #[tag] and **bold**)'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [label="user"]
+							1.0: TEXT "Text with " [8-18]
+							1.1: MARK "#[tag]" [18-24] [label="tag"]
+							1.2: TEXT " and " [24-29]
+							1.3: MARK "**bold**" [29-37] [label="bold"]
+							1.4: TEXT "" [37-37]
+						 2: TEXT "" [38-38]"
+					`)
+				})
+
+				it('handles __label__ and __nested__ with empty nested content', () => {
+					const parser = new ParserV2(['@[__label__](__nested__)', '#[__nested__]'])
+					const input = '@[user]()'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "@[user]()" [0-9] [label="user"]
+						 2: TEXT "" [9-9]"
+					`)
+				})
+
 				it('does NOT find nested marks in __label__ sections', () => {
 					// Pattern uses __label__ (not __nested__), so no nesting should be found
 					const parser = new ParserV2(['@[__label__]', '#[__label__]'])
