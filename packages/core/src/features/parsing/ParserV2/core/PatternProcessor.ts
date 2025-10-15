@@ -23,8 +23,8 @@ export class PatternProcessor {
 	 * 
 	 * Strategy: Create ALL possible matches on first pass (even invalid ones),
 	 * then filter out matches based on gap types:
-	 * - Matches inside __value__ gaps are removed (values are plain text)
-	 * - Matches inside __label__ gaps are removed (labels don't support nesting)
+	 * - Matches inside __meta__ gaps are removed (meta data is plain text)
+	 * - Matches inside __value__ gaps are removed (values don't support nesting)
 	 * - Matches inside __nested__ gaps are kept (nested patterns allowed)
 	 * This ensures we don't miss valid matches due to premature blocking.
 	 */
@@ -51,14 +51,14 @@ export class PatternProcessor {
 	}
 
 	/**
-	 * Filters out matches that start inside __value__ or __label__ gaps of other matches.
+	 * Filters out matches that start inside __meta__ or __value__ gaps of other matches.
 	 * Only __nested__ gaps allow nested patterns.
 	 */
 	private filterMatchesInsideNonNestedGaps(matches: PatternMatch[]): PatternMatch[] {
 		return matches.filter(match => {
 			const matchStart = match.parts[0].start
 			
-			// Check if this match starts inside a non-nested gap (__value__ or __label__) of any other match
+			// Check if this match starts inside a non-nested gap (__meta__ or __value__) of any other match
 			for (const other of matches) {
 				if (other === match) continue
 				
@@ -66,7 +66,7 @@ export class PatternProcessor {
 				for (const part of other.parts) {
 					if (part.type === 'gap' && part.start !== undefined && part.end !== undefined) {
 						// Only filter if the gap is NOT a nested gap
-						if (part.gapType === 'value' || part.gapType === 'label') {
+						if (part.gapType === 'meta' || part.gapType === 'value') {
 							if (matchStart >= part.start && matchStart <= part.end) {
 								return false // This match starts inside a non-nested gap
 							}
@@ -82,7 +82,7 @@ export class PatternProcessor {
 
 	/**
 	 * Filters out incomplete/overlapping matches of the same descriptor.
-	 * This handles cases like <__label__>__value__</__label__> where multiple chains
+	 * This handles cases like <__value__>__meta__</__value__> where multiple chains
 	 * might be created for the same descriptor at overlapping positions.
 	 * 
 	 * Strategy: Keep the most complete match when there are CONFLICTING matches

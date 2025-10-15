@@ -6,7 +6,7 @@ export interface MatchSegment {
 	start: number
 	end: number
 	value?: string // Lazy - only materialized when needed
-	gapType?: 'label' | 'value' | 'nested' // For gaps only
+	gapType?: 'value' | 'meta' | 'nested' // For gaps only
 }
 
 /**

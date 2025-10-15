@@ -1,4 +1,5 @@
 import {InnerOption} from '../../default/types'
+import {PLACEHOLDER} from './constants'
 
 export type NestedToken =
 	| TextToken
@@ -18,8 +19,8 @@ export interface MarkToken {
 	content: string
 	children: NestedToken[]
 	data: {
-		label: string
-		value?: string
+		value: string
+		meta?: string
 		optionIndex: number
 	}
 	position: {
@@ -50,24 +51,24 @@ export interface MatchResult {
 	end: number
 	/** Full matched content */
 	content: string
-	/** Label text extracted from match */
-	label: string
-	/** Start position of label in original text (inclusive) */
-	labelStart: number
-	/** End position of label in original text (exclusive) */
-	labelEnd: number
+	/** Value text extracted from match */
+	value: string
+	/** Start position of value in original text (inclusive) */
+	valueStart: number
+	/** End position of value in original text (exclusive) */
+	valueEnd: number
 	/** Nested content text extracted from match (if pattern uses __nested__) */
 	nested?: string
 	/** Start position of nested content in original text (inclusive) */
 	nestedStart?: number
 	/** End position of nested content in original text (exclusive) */
 	nestedEnd?: number
-	/** Value text extracted from match (if present) */
-	value?: string
-	/** Start position of value in original text (inclusive) */
-	valueStart?: number
-	/** End position of value in original text (exclusive) */
-	valueEnd?: number
+	/** Meta text extracted from match (if present) */
+	meta?: string
+	/** Start position of meta in original text (inclusive) */
+	metaStart?: number
+	/** End position of meta in original text (exclusive) */
+	metaEnd?: number
 	/** Index of markup descriptor that matched */
 	descriptorIndex: number
 }
@@ -81,4 +82,30 @@ export interface UniqueMatch {
 	value: string
 	descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
 }
+
+/**
+ * Template literal types for markup placeholders
+ */
+export type value = `${string}${typeof PLACEHOLDER.VALUE}${string}`
+export type meta = `${string}${typeof PLACEHOLDER.META}${string}`
+export type nested = `${string}${typeof PLACEHOLDER.NESTED}${string}`
+
+/**
+ * Modern Markup type supporting value, meta, and nested placeholders
+ *
+ * Examples:
+ * - "@[__value__]" - simple value
+ * - "@[__value__](__meta__)" - value with metadata
+ * - "@[__nested__]" - nested content
+ * - "@[__value__](__nested__)" - value with nested content
+ * - "<__value__ __meta__>__nested__</__value__>" - HTML-like with all features
+ */
+export type Markup =
+	| `${value}${meta}`
+	| `${value}${nested}`
+	| `${value}`
+	| `${nested}${meta}`
+	| `${nested}`
+	| `${meta}${value}`
+	| `${meta}${nested}`
 

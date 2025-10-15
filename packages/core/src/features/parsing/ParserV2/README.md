@@ -18,19 +18,19 @@
 ```typescript
 import { ParserV2 } from './ParserV2'
 
-// Patterns with __label__ - no nesting support
-const simpleMarkups = ['@[__label__](__value__)', '#[__label__]']
+// Patterns with __meta__ - no nesting support
+const simpleMarkups = ['@[__meta__](__meta__)', '#[__meta__]']
 const parser = new ParserV2(simpleMarkups)
 
 const result = parser.split('Hello @[world](test) and #[tag]')
-// result: [TextToken('Hello '), MarkToken{label: 'world', value: 'test'}, TextToken(' and '), MarkToken{label: 'tag'}]
+// result: [TextToken('Hello '), MarkToken{meta: 'world', meta: 'test'}, TextToken(' and '), MarkToken{meta: 'tag'}]
 
 // Patterns with __nested__ - supports nesting
 const nestedMarkups = ['@[__nested__]', '#[__nested__]']
 const nestedParser = new ParserV2(nestedMarkups)
 
 const nestedResult = nestedParser.split('@[hello #[world]]')
-// result: [TextToken(''), MarkToken{label: 'hello #[world]', children: [...]}, TextToken('')]
+// result: [TextToken(''), MarkToken{meta: 'hello #[world]', children: [...]}, TextToken('')]
 ```
 
 ## 📊 Производительность
@@ -60,7 +60,7 @@ interface MarkToken {
   content: string
   children: NestedToken[]     // Вложенные токены
   data: {
-    label: string             // Текст между сегментами
+    meta: string             // Текст между сегментами
     value?: string
     optionIndex: number
   }
@@ -101,9 +101,9 @@ ParserV2/
      ↓
 [
   TextToken("Hello ", 0, 6),
-  MarkToken("@[world](test)", 6, 20, data={label:"world", value:"test"}, children=[]),
+  MarkToken("@[world](test)", 6, 20, data={meta:"world", meta:"test"}, children=[]),
   TextToken(" and ", 20, 25),
-  MarkToken("#[tag]", 25, 31, data={label:"tag"}, children=[]),
+  MarkToken("#[tag]", 25, 31, data={meta:"tag"}, children=[]),
   TextToken("", 31, 31)
 ]
 ```
@@ -116,9 +116,9 @@ ParserV2/
      ↓
 [
   TextToken("", 0, 0),
-  MarkToken("@[hello #[world]]", 0, 17, data={label:"hello #[world]"}, children=[
+  MarkToken("@[hello #[world]]", 0, 17, data={meta:"hello #[world]"}, children=[
     TextToken("hello ", 2, 8),
-    MarkToken("#[world]", 8, 16, data={label:"world"}, children=[
+    MarkToken("#[world]", 8, 16, data={meta:"world"}, children=[
       TextToken("", 10, 10),
       // ... пустые TextToken по краям
     ]),
@@ -154,7 +154,7 @@ Input Text → Aho-Corasick → UniqueMatches
               PatternChain Management (LIFO stack)
                               ↓
                       Filter Overlaps
-                      - Remove matches inside __value__
+                      - Remove matches inside __meta__
                       - Remove partial matches
                               ↓
                         MatchResults
@@ -217,59 +217,59 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 
 #### Формат паттернов
 Паттерн состоит из **статических сегментов** и **плейсхолдеров**:
-- **Плейсхолдеры**: `__label__`, `__value__`, и `__nested__`
+- **Плейсхолдеры**: `__meta__`, `__meta__`, и `__nested__`
 - **Примеры валидных паттернов**:
-  - `@[__label__]` - label без поддержки вложенности
+  - `@[__meta__]` - value без поддержки вложенности
   - `@[__nested__]` - content с поддержкой вложенности
-  - `@[__label__](__value__)` - label и value
-  - `@[__nested__](__value__)` - nested content и value
-  - `@[__label__](__nested__)` - label и nested content (комбинированный паттерн)
-  - `<__label__>__value__</__label__>` - два label (HTML-подобный)
-  - `<__label__ __value__>__nested__</__label__>` - HTML-подобный с вложенностью
-  - `(__value__)@[__label__]` - value перед content (любой порядок разрешен)
+  - `@[__meta__](__meta__)` - value и value
+  - `@[__nested__](__meta__)` - nested content и value
+  - `@[__meta__](__nested__)` - value и nested content (комбинированный паттерн)
+  - `<__meta__>__meta__</__meta__>` - два value (HTML-подобный)
+  - `<__meta__ __meta__>__nested__</__meta__>` - HTML-подобный с вложенностью
+  - `(__meta__)@[__meta__]` - value перед content (любой порядок разрешен)
 
 #### Валидация паттернов
-- `__label__` может встречаться **0, 1 или 2 раза**
+- `__meta__` может встречаться **0, 1 или 2 раза**
 - `__nested__` может встречаться **0 или 1 раз**
-- `__label__` и `__nested__` **могут использоваться вместе** в одном паттерне (например, `@[__label__](__nested__)`)
-- Паттерн должен содержать **хотя бы один** `__label__` или `__nested__`
-- `__value__` может встречаться **0 или 1 раз**
-- `__value__` **может появляться в любой позиции** - до, между или после контент-плейсхолдеров
+- `__meta__` и `__nested__` **могут использоваться вместе** в одном паттерне (например, `@[__meta__](__nested__)`)
+- Паттерн должен содержать **хотя бы один** `__meta__` или `__nested__`
+- `__meta__` может встречаться **0 или 1 раз**
+- `__meta__` **может появляться в любой позиции** - до, между или после контент-плейсхолдеров
 - Паттерн должен содержать **хотя бы один статический сегмент**
-- **Для паттернов с двумя `__label__`** (например, `<__label__>__nested__</__label__>`): оба label должны быть **идентичны**, иначе паттерн не матчится
+- **Для паттернов с двумя `__meta__`** (например, `<__meta__>__nested__</__meta__>`): оба value должны быть **идентичны**, иначе паттерн не матчится
 
 **Примеры ошибок валидации:**
 ```typescript
 // ❌ Нет контент-плейсхолдера
-"@[](__value__)"  // Error: Must have at least one "__label__" or "__nested__" placeholder
+"@[](__meta__)"  // Error: Must have at least one "__meta__" or "__nested__" placeholder
 
 // ❌ Слишком много __nested__ плейсхолдеров
 "@[__nested__](__nested__)"  // Error: Expected 0 or 1 "__nested__" placeholder, but found 2
 
-// ❌ Слишком много __value__ плейсхолдеров
-"@[__label__](__value__)(__value__)"  // Error: Expected 0 or 1 "__value__" placeholder, but found 2
+// ❌ Слишком много __meta__ плейсхолдеров
+"@[__meta__](__meta__)(__meta__)"  // Error: Expected 0 or 1 "__meta__" placeholder, but found 2
 
 // ❌ Нет статических сегментов
-"__label__"  // Error: Must have at least one static segment
+"__meta__"  // Error: Must have at least one static segment
 ```
 
 **Примеры валидных комбинаций:**
 ```typescript
-// ✅ Комбинация __label__ и __nested__
-"@[__label__](__nested__)"  // label для идентификации, nested для вложенного контента
+// ✅ Комбинация __meta__ и __nested__
+"@[__meta__](__nested__)"  // value для идентификации, nested для вложенного контента
 
-// ✅ Комбинация __label__ и __value__
-"@[__label__](__value__)"   // label для идентификации, value для простого значения
+// ✅ Комбинация __meta__ и __meta__
+"@[__meta__](__meta__)"   // value для идентификации, value для простого значения
 
-// ✅ Комбинация __nested__ и __value__
-"@[__nested__](__value__)"  // nested контент и простое значение
+// ✅ Комбинация __nested__ и __meta__
+"@[__nested__](__meta__)"  // nested контент и простое значение
 
 // ✅ HTML-подобный с label, value и nested
-"<__label__ __value__>__nested__</__label__>"  // полноценный HTML-подобный тег с атрибутами и контентом
+"<__meta__ __meta__>__nested__</__meta__>"  // полноценный HTML-подобный тег с атрибутами и контентом
 
 // ✅ Value перед контент-плейсхолдером
-"(__value__)@[__label__]"   // value может быть в любой позиции
-"[__label__](__value__)(__nested__)"  // value между label и nested
+"(__meta__)@[__meta__]"   // value может быть в любой позиции
+"[__meta__](__meta__)(__nested__)"  // value между value и nested
 ```
 
 #### Trigger и симметрия
@@ -313,8 +313,8 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 #### Фильтрация overlaps
 После построения всех совпадений удаляются:
 - **Partial matches** - совпадения, являющиеся частью более длинного с тем же началом/концом
-- **Matches inside __value__** - совпадения внутри value-секции другого совпадения
-- **Matches inside __label__** - совпадения внутри label-секции другого совпадения (labels не поддерживают вложенность)
+- **Matches inside __meta__** - совпадения внутри value-секции другого совпадения
+- **Matches inside __meta__** - совпадения внутри label-секции другого совпадения (values не поддерживают вложенность)
 - **Overlapping matches** - конфликтующие совпадения одного descriptor, начинающиеся в одной позиции
 
 Сохраняются:
@@ -336,7 +336,7 @@ if (part.start > part.end) {
 ```
 
 **Non-Nested Gap Filtering Strategy:**
-Совпадения внутри `__value__` и `__label__` секций фильтруются, потому что они рассматриваются как plain text.
+Совпадения внутри `__meta__` и `__meta__` секций фильтруются, потому что они рассматриваются как plain text.
 Только `__nested__` секции поддерживают вложенность:
 ```typescript
 // Проверка: matchB начинается внутри non-nested gap (value или label) matchA?
@@ -384,7 +384,7 @@ Finalize remaining stack
 #### Правила вложенности
 - **Parent-child связь**: child полностью содержится в **nestedStart..nestedEnd** родителя (или **labelStart..labelEnd** для обратной совместимости)
 - **__nested__ секции поддерживают вложенность**: совпадения внутри `__nested__` сохраняются и формируют дерево
-- **__label__ и __value__ секции не парсятся**: совпадения внутри этих секций игнорируются
+- **__meta__ и __meta__ секции не парсятся**: совпадения внутри этих секций игнорируются
 - **Self-nesting не поддерживается**: паттерн не может быть вложен сам в себя
 
 #### Структура children
@@ -409,16 +409,16 @@ Finalize remaining stack
 
 #### Не поддерживается
 - ❌ **Self-nesting** - `@[outer @[inner]]` не создаст вложенность для одного паттерна
-- ❌ **Parsing inside __value__** - value рассматривается как plain text
-- ❌ **Parsing inside __label__** - label рассматривается как plain text (используйте `__nested__` для вложенности)
+- ❌ **Parsing inside __meta__** - value рассматривается как plain text
+- ❌ **Parsing inside __meta__** - value рассматривается как plain text (используйте `__nested__` для вложенности)
 - ❌ **Bracket counting** - паттерн закрывается первым закрывающим сегментом
 
-#### __nested__ vs __label__
+#### __nested__ vs __meta__
 **Ключевое различие:**
-- `__label__` - содержимое рассматривается как **plain text**, вложенные паттерны игнорируются
+- `__meta__` - содержимое рассматривается как **plain text**, вложенные паттерны игнорируются
 - `__nested__` - содержимое **поддерживает вложенность**, вложенные паттерны парсятся
 
-**Когда использовать `__label__`:**
+**Когда использовать `__meta__`:**
 - Для простого текстового контента без вложенности
 - Для ссылок, тегов, меток, имен
 - Когда нужна гарантия, что контент будет plain text
@@ -430,15 +430,15 @@ Finalize remaining stack
 
 **Пример:**
 ```typescript
-// ❌ С __label__ - вложенность НЕ работает
-const parser1 = new ParserV2(['@[__label__]', '#[__label__]'])
+// ❌ С __meta__ - вложенность НЕ работает
+const parser1 = new ParserV2(['@[__meta__]', '#[__meta__]'])
 parser1.split('@[hello #[world]]')
-// → [MarkToken{label: "hello #[world]", children: []}] - нет вложенности
+// → [MarkToken{meta: "hello #[world]", children: []}] - нет вложенности
 
 // ✅ С __nested__ - вложенность работает
 const parser2 = new ParserV2(['@[__nested__]', '#[__nested__]'])
 parser2.split('@[hello #[world]]')
-// → [MarkToken{label: "hello #[world]", children: [MarkToken{label: "world"}]}] - есть вложенность
+// → [MarkToken{meta: "hello #[world]", children: [MarkToken{meta: "world"}]}] - есть вложенность
 ```
 
 ### 6. Примеры
@@ -446,10 +446,10 @@ parser2.split('@[hello #[world]]')
 #### Простой случай
 ```typescript
 Input:  "Hello @[world](test)"
-Markup: "@[__label__](__value__)"
+Markup: "@[__meta__](__meta__)"
 Output: [
   TextToken("Hello ", 0, 6),
-  MarkToken("@[world](test)", 6, 20, children=[], data={label:"world", value:"test"}),
+  MarkToken("@[world](test)", 6, 20, children=[], data={meta:"world", meta:"test"}),
   TextToken("", 20, 20)
 ]
 ```
@@ -462,63 +462,63 @@ Output: [
   TextToken("", 0, 0),
   MarkToken("@[hello #[world]]", 0, 17, children=[
     TextToken("hello ", 2, 8),
-    MarkToken("#[world]", 8, 16, children=[], data={label:"world"}),
+    MarkToken("#[world]", 8, 16, children=[], data={meta:"world"}),
     TextToken("", 16, 16)
-  ], data={label:"hello #[world]"}),
+  ], data={meta:"hello #[world]"}),
   TextToken("", 17, 17)
 ]
 ```
 
-#### Без вложенности (с __label__)
+#### Без вложенности (с __meta__)
 ```typescript
 Input:  "@[hello #[world]]"
-Markups: ["@[__label__]", "#[__label__]"]
+Markups: ["@[__meta__]", "#[__meta__]"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("@[hello #[world]]", 0, 17, children=[], data={label:"hello #[world]"}),
+  MarkToken("@[hello #[world]]", 0, 17, children=[], data={meta:"hello #[world]"}),
   TextToken("", 17, 17)
 ]
 // Обратите внимание: children пустой, #[world] остался plain text в label
 ```
 
-#### HTML-подобные паттерны с двумя labels
+#### HTML-подобные паттерны с двумя values
 ```typescript
 Input:  "Check <img>photo.jpg</img> image"
-Markup: "<__label__>__value__</__label__>"
+Markup: "<__meta__>__meta__</__meta__>"
 Output: [
   TextToken("Check ", 0, 6),
-  MarkToken("<img>photo.jpg</img>", 6, 26, children=[], data={label:"img", value:"photo.jpg"}),
+  MarkToken("<img>photo.jpg</img>", 6, 26, children=[], data={meta:"img", meta:"photo.jpg"}),
   TextToken(" image", 26, 32)
 ]
 ```
 
-#### Комбинированный паттерн (__label__ и __nested__)
+#### Комбинированный паттерн (__meta__ и __nested__)
 ```typescript
 Input:  "@[user](Hello #[world])"
-Markups: ["@[__label__](__nested__)", "#[__nested__]"]
+Markups: ["@[__meta__](__nested__)", "#[__nested__]"]
 Output: [
   TextToken("", 0, 0),
   MarkToken("@[user](Hello #[world])", 0, 23, children=[
     TextToken("Hello ", 7, 13),
-    MarkToken("#[world]", 13, 21, children=[], data={label:"world"}),
+    MarkToken("#[world]", 13, 21, children=[], data={meta:"world"}),
     TextToken("", 21, 21)
-  ], data={label:"user"}),
+  ], data={meta:"user"}),
   TextToken("", 23, 23)
 ]
-// Обратите внимание: label="user" идентифицирует токен, а nested контент содержит вложенную разметку
+// Обратите внимание: value="user" идентифицирует токен, а nested контент содержит вложенную разметку
 ```
 
 #### HTML-подобный паттерн с label, value и nested
 ```typescript
 Input:  "<div class>Content with **bold**</div>"
-Markups: ["<__label__ __value__>__nested__</__label__>", "**__nested__**"]
+Markups: ["<__meta__ __meta__>__nested__</__meta__>", "**__nested__**"]
 Output: [
   TextToken("", 0, 0),
   MarkToken("<div class>Content with **bold**</div>", 0, 39, children=[
     TextToken("Content with ", 11, 24),
-    MarkToken("**bold**", 24, 32, children=[], data={label:"bold"}),
+    MarkToken("**bold**", 24, 32, children=[], data={meta:"bold"}),
     TextToken("", 32, 32)
-  ], data={label:"div", value:"class"}),
+  ], data={meta:"div", meta:"class"}),
   TextToken("", 39, 39)
 ]
 // HTML-подобная разметка с атрибутом (value) и вложенным форматированным контентом
@@ -527,52 +527,52 @@ Output: [
 #### Value перед контент-плейсхолдером
 ```typescript
 Input:  "(url)@[link]"
-Markup: "(__value__)@[__label__]"
+Markup: "(__meta__)@[__meta__]"
 Output: [
   TextToken("", 0, 0),
-  MarkToken("(url)@[link]", 0, 12, children=[], data={label:"link", value:"url"}),
+  MarkToken("(url)@[link]", 0, 12, children=[], data={meta:"link", meta:"url"}),
   TextToken("", 12, 12)
 ]
-// Value может появляться перед label - порядок не ограничен
+// Value может появляться перед value - порядок не ограничен
 ```
 
 #### Валидация совпадения открывающих и закрывающих тегов
 ```typescript
 Input:  "<div1>text</div2>"
-Markup: "<__label__>__nested__</__label__>"
+Markup: "<__meta__>__nested__</__meta__>"
 Output: [
   TextToken("<div1>text</div2>", 0, 17)
 ]
 // НЕ матчится - открывающий тег "div1" не совпадает с закрывающим "div2"
-// Паттерны с двумя __label__ требуют идентичности обоих label
+// Паттерны с двумя __meta__ требуют идентичности обоих label
 ```
 
 #### Adjacent marks
 ```typescript
 Input:  "@[first](1)@[second](2)"
-Markups: ["@[__label__](__value__)"]
+Markups: ["@[__meta__](__meta__)"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("@[first](1)", 0, 11, children=[], data={label:"first", value:"1"}),
+  MarkToken("@[first](1)", 0, 11, children=[], data={meta:"first", meta:"1"}),
   TextToken("", 11, 11),
-  MarkToken("@[second](2)", 11, 23, children=[], data={label:"second", value:"2"}),
+  MarkToken("@[second](2)", 11, 23, children=[], data={meta:"second", meta:"2"}),
   TextToken("", 23, 23)
 ]
 ```
 
-#### Empty labels and values
+#### Empty values and values
 ```typescript
 Input:  "@[] @[content] @[label]() @[another](value)"
-Markups: ["@[__label__]", "@[__label__](__value__)"]
+Markups: ["@[__meta__]", "@[__meta__](__meta__)"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("@[]", 0, 3, children=[], data={label:""}),  // пустой label
+  MarkToken("@[]", 0, 3, children=[], data={meta:""}),  // пустой label
   TextToken(" ", 3, 4),
-  MarkToken("@[content]", 4, 14, children=[], data={label:"content"}),
+  MarkToken("@[content]", 4, 14, children=[], data={meta:"content"}),
   TextToken(" ", 14, 15),
-  MarkToken("@[label]()", 15, 25, children=[], data={label:"label", value:""}),  // пустой value
+  MarkToken("@[label]()", 15, 25, children=[], data={meta:"label", meta:""}),  // пустой value
   TextToken(" ", 25, 26),
-  MarkToken("@[another](value)", 26, 42, children=[], data={label:"another", value:"value"}),
+  MarkToken("@[another](value)", 26, 42, children=[], data={meta:"another", meta:"value"}),
   TextToken("", 42, 42)
 ]
 ```
@@ -580,12 +580,12 @@ Output: [
 #### Symmetric patterns (Markdown-style)
 ```typescript
 Input:  "**bold text** and *italic text*"
-Markups: ["**__label__**", "*__label__*"]
+Markups: ["**__meta__**", "*__meta__*"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("**bold text**", 0, 13, children=[], data={label:"bold text"}),
+  MarkToken("**bold text**", 0, 13, children=[], data={meta:"bold text"}),
   TextToken(" and ", 13, 19),
-  MarkToken("*italic text*", 19, 33, children=[], data={label:"italic text"}),
+  MarkToken("*italic text*", 19, 33, children=[], data={meta:"italic text"}),
   TextToken("", 33, 33)
 ]
 ```
@@ -606,12 +606,12 @@ ParserV2 использует сложную систему приоритето
 #### Conflicting patterns (shorter wins)
 ```typescript
 Input:  "@[simple] @[with](value)"
-Markups: ["@[__label__]", "@[__label__](__value__)"]
+Markups: ["@[__meta__]", "@[__meta__](__meta__)"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("@[simple]", 0, 9, children=[], data={label:"simple"}),
+  MarkToken("@[simple]", 0, 9, children=[], data={meta:"simple"}),
   TextToken(" ", 9, 10),
-  MarkToken("@[with]", 10, 17, children=[], data={label:"with"}),  // короткий паттерн без value
+  MarkToken("@[with]", 10, 17, children=[], data={meta:"with"}),  // короткий паттерн без value
   TextToken("(value)", 17, 24)  // остаток текста
 ]
 ```
@@ -620,16 +620,16 @@ Output: [
 ```typescript
 Input:  "<div class><p>Text</p></div>"
 Markups: [
-  "<__label__>__nested__</__label__>",        // 4 сегмента
-  "<__label__ __value__>__nested__</__label__>" // 5 сегментов - выше приоритет
+  "<__meta__>__nested__</__meta__>",        // 4 сегмента
+  "<__meta__ __meta__>__nested__</__meta__>" // 5 сегментов - выше приоритет
 ]
 Output: [
   TextToken("", 0, 0),
   MarkToken("<div class><p>Text</p></div>", 0, 28, children=[
     TextToken("", 11, 11),
-    MarkToken("<p>Text</p>", 11, 22, children=[], data={label:"p"}),
+    MarkToken("<p>Text</p>", 11, 22, children=[], data={meta:"p"}),
     TextToken("", 22, 22)
-  ], data={label:"div", value:"class"}),
+  ], data={meta:"div", meta:"class"}),
   TextToken("", 28, 28)
 ]
 // Паттерн с 5 сегментами получает приоритет над паттерном с 4 сегментами
@@ -639,12 +639,12 @@ Output: [
 ```typescript
 Input:  "<div class><p>Text</p></div>"
 Markups: [
-  "<__label__ __value__>__nested__</__label__>", // 5 сегментов, 2 собранных в начале
-  "<__label__>__nested__</__label__>"           // 4 сегмента, 1 собранный в начале
+  "<__meta__ __meta__>__nested__</__meta__>", // 5 сегментов, 2 собранных в начале
+  "<__meta__>__nested__</__meta__>"           // 4 сегмента, 1 собранный в начале
 ]
 Output: [
   TextToken("<div class>", 0, 11),
-  MarkToken("<p>Text</p>", 11, 22, children=[], data={label:"p"}),
+  MarkToken("<p>Text</p>", 11, 22, children=[], data={meta:"p"}),
   TextToken("</div>", 22, 28)
 ]
 // Паттерн с больше собранными сегментами (2) получает приоритет над паттерном с 1 собранным сегментом
@@ -654,12 +654,12 @@ Output: [
 ```typescript
 Input:  "**bold**"
 Markups: [
-  "**__label__**",  // 3 сегмента
-  "*__label__*"     // 3 сегмента (симметричный)
+  "**__meta__**",  // 3 сегмента
+  "*__meta__*"     // 3 сегмента (симметричный)
 ]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("**bold**", 0, 8, children=[], data={label:"bold"}),
+  MarkToken("**bold**", 0, 8, children=[], data={meta:"bold"}),
   TextToken("", 8, 8)
 ]
 // При равном прогрессе выбирается первый паттерн из списка
@@ -667,8 +667,8 @@ Output: [
 
 ### Рекомендации по работе с конфликтами
 
-- **Размещайте более специфичные паттерны перед общими**: Паттерны с `__value__` или большим количеством сегментов должны идти первыми
+- **Размещайте более специфичные паттерны перед общими**: Паттерны с `__meta__` или большим количеством сегментов должны идти первыми
 - **Используйте `__nested__` для вложенного контента**: Это позволяет создавать иерархическую структуру
-- **Используйте `__label__` для простого текста**: Когда вложенность не нужна
+- **Используйте `__meta__` для простого текста**: Когда вложенность не нужна
 - **Тестируйте порядок паттернов**: При добавлении новых правил разметки проверяйте, как они взаимодействуют с существующими
 - **Документируйте приоритеты**: В сложных приложениях документируйте порядок паттернов для будущих разработчиков

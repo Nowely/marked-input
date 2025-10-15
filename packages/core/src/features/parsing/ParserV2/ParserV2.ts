@@ -1,5 +1,5 @@
 import {InnerOption} from '../../default/types'
-import {Markup} from '../../../shared/types'
+import {Markup} from './types'
 import {NestedToken} from './types'
 import {PatternMatcher} from './core/PatternMatcher'
 import {createMarkupDescriptor} from './core/MarkupDescriptor'
@@ -14,7 +14,7 @@ import {createTextToken} from './core/TokenBuilder'
  * 
  * @example
  * ```typescript
- * const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
+ * const parser = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
  * const tokens = parser.split('Hello @[world](test) and #[tag]')
  * ```
  */

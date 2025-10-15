@@ -1,5 +1,5 @@
-import {PLACEHOLDER} from '../../../../shared/constants'
-import {Markup} from '../../../../shared/types'
+import {PLACEHOLDER} from '../constants'
+import {Markup} from '../types'
 
 /**
  * Descriptor for segment-based markup parsing
@@ -15,13 +15,13 @@ export interface MarkupDescriptor {
 	/** Array of static text segments (2-4 segments depending on pattern) */
 	segments: string[]
 	/** Type of content in each gap between segments */
-	gapTypes: Array<'label' | 'value' | 'nested'>
-	/** True if this markup contains a __value__ placeholder */
-	hasValue: boolean
+	gapTypes: Array<'value' | 'meta' | 'nested'>
+	/** True if this markup contains a __meta__ placeholder */
+	hasMeta: boolean
 	/** True if this markup contains a __nested__ placeholder */
 	hasNested: boolean
-	/** True if this markup contains exactly two __label__ placeholders */
-	hasTwoLabels: boolean
+	/** True if this markup contains exactly two __value__ placeholders */
+	hasTwoValues: boolean
 	/** True if opening and closing segments are the same (symmetric patterns like **text**) */
 	isSymmetric: boolean
 }
@@ -30,34 +30,34 @@ export interface MarkupDescriptor {
  * Creates a segment-based markup descriptor from a markup template
  * 
  * Examples:
- * - `#[__label__]` -> segments: ["#[", "]"], gapTypes: ["label"]
+ * - `#[__value__]` -> segments: ["#[", "]"], gapTypes: ["value"]
  * - `#[__nested__]` -> segments: ["#[", "]"], gapTypes: ["nested"]
- * - `@[__label__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "value"]
- * - `@[__nested__](__value__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "value"]
- * - `@[__label__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["label", "nested"]
- * - `<__label__>__value__</__label__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["label", "value", "label"]
- * - `<__label__ __value__>__nested__</__label__>` -> segments: ["<", " ", ">", "</", ">"], gapTypes: ["label", "value", "nested", "label"]
+ * - `@[__value__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "meta"]
+ * - `@[__nested__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "meta"]
+ * - `@[__value__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "nested"]
+ * - `<__value__>__meta__</__value__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["value", "meta", "value"]
+ * - `<__value__ __meta__>__nested__</__value__>` -> segments: ["<", " ", ">", "</", ">"], gapTypes: ["value", "meta", "nested", "value"]
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
-	const hasTwoLabels = countPlaceholder(markup, PLACEHOLDER.LABEL) === 2
-	const hasValue = countPlaceholder(markup, PLACEHOLDER.VALUE) === 1
+	const hasTwoValues = countPlaceholder(markup, PLACEHOLDER.VALUE) === 2
+	const hasMeta = countPlaceholder(markup, PLACEHOLDER.META) === 1
 	const hasNested = countPlaceholder(markup, PLACEHOLDER.NESTED) === 1
 
 	// Validate placeholder counts
-	const labelCount = countPlaceholder(markup, PLACEHOLDER.LABEL)
 	const valueCount = countPlaceholder(markup, PLACEHOLDER.VALUE)
+	const metaCount = countPlaceholder(markup, PLACEHOLDER.META)
 	const nestedCount = countPlaceholder(markup, PLACEHOLDER.NESTED)
 
-	// Must have at least one content placeholder (__label__ or __nested__)
-	if (labelCount === 0 && nestedCount === 0) {
+	// Must have at least one content placeholder (__value__ or __nested__)
+	if (valueCount === 0 && nestedCount === 0) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Must have at least one "${PLACEHOLDER.LABEL}" or "${PLACEHOLDER.NESTED}" placeholder`
+			`Invalid markup format: "${markup}". Must have at least one "${PLACEHOLDER.VALUE}" or "${PLACEHOLDER.NESTED}" placeholder`
 		)
 	}
 
-	if (labelCount < 0 || labelCount > 2) {
+	if (valueCount < 0 || valueCount > 2) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.LABEL}" placeholders, but found ${labelCount}`
+			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.VALUE}" placeholders, but found ${valueCount}`
 		)
 	}
 
@@ -67,9 +67,9 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		)
 	}
 
-	if (valueCount > 1) {
+	if (metaCount > 1) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.VALUE}" placeholder, but found ${valueCount}`
+			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.META}" placeholder, but found ${metaCount}`
 		)
 	}
 
@@ -88,9 +88,9 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		trigger: segments[0].charAt(0),
 		segments,
 		gapTypes,
-		hasValue,
+		hasMeta,
 		hasNested,
-		hasTwoLabels,
+		hasTwoValues,
 		isSymmetric
 	}
 }
@@ -99,7 +99,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
  * Placeholder information extracted from markup
  */
 interface PlaceholderInfo {
-	type: 'label' | 'value' | 'nested'
+	type: 'value' | 'meta' | 'nested'
 	pos: number
 	length: number
 }
@@ -109,7 +109,7 @@ interface PlaceholderInfo {
  */
 function parseSegmentsAndGaps(markup: string): {
 	segments: string[]
-	gapTypes: Array<'label' | 'value' | 'nested'>
+	gapTypes: Array<'value' | 'meta' | 'nested'>
 } {
 	const placeholders = extractPlaceholders(markup)
 	const result = buildSegments(markup, placeholders)
@@ -125,16 +125,16 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 	let pos = 0
 
 	while (pos < markup.length) {
-		const labelPos = markup.indexOf(PLACEHOLDER.LABEL, pos)
 		const valuePos = markup.indexOf(PLACEHOLDER.VALUE, pos)
+		const metaPos = markup.indexOf(PLACEHOLDER.META, pos)
 		const nestedPos = markup.indexOf(PLACEHOLDER.NESTED, pos)
 
-		if (labelPos === -1 && valuePos === -1 && nestedPos === -1) break
+		if (valuePos === -1 && metaPos === -1 && nestedPos === -1) break
 
 		// Find the earliest placeholder
 		const positions = [
-			{type: 'label' as const, pos: labelPos, length: PLACEHOLDER.LABEL.length},
 			{type: 'value' as const, pos: valuePos, length: PLACEHOLDER.VALUE.length},
+			{type: 'meta' as const, pos: metaPos, length: PLACEHOLDER.META.length},
 			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.NESTED.length}
 		].filter(p => p.pos !== -1)
 
@@ -161,9 +161,9 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 function buildSegments(
 	markup: string,
 	placeholders: PlaceholderInfo[]
-): { segments: string[]; gapTypes: Array<'label' | 'value' | 'nested'> } {
+): { segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'> } {
 	const segments: string[] = []
-	const gapTypes: Array<'label' | 'value' | 'nested'> = []
+	const gapTypes: Array<'value' | 'meta' | 'nested'> = []
 	let currentPos = 0
 
 	// Extract segments between placeholders
@@ -192,7 +192,7 @@ function buildSegments(
 /**
  * Validates the result of parsing segments and gaps
  */
-function validateParseResult(result: { segments: string[]; gapTypes: Array<'label' | 'value' | 'nested'> }): void {
+function validateParseResult(result: { segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'> }): void {
 	if (result.segments.length === 0) {
 		throw new Error('Parsed markup must contain at least one segment')
 	}

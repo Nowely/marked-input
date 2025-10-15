@@ -76,8 +76,8 @@ export class PatternMatcher {
 	 * Converts pattern matches to match results
 	 * 
 	 * Includes overlapping matches for nested parsing, but filters out:
-	 * - Invalid partial matches (e.g., "**" from "*__label__*" when "**__label__**" exists)
-	 * - Matches inside __value__ sections of other matches (values are not parsed)
+	 * - Invalid partial matches (e.g., "**" from "*__value__*" when "**__value__**" exists)
+	 * - Matches inside __meta__ sections of other matches (meta data is not parsed)
 	 */
 	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
 		const results: MatchResult[] = []
@@ -149,18 +149,18 @@ export class PatternMatcher {
 			})
 			
 			if (isInsideOrOverlapsValue) {
-				continue // Skip matches inside or overlapping __value__
+				continue // Skip matches inside or overlapping __meta__
 			}
 
 			const descriptor = this.descriptors[patternMatch.descriptorIndex]
 			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
 
-			// For patterns with two __label__ placeholders (like <__label__>text</__label__>),
-			// verify that both labels are equal. If not, skip this match.
-			if (descriptor.hasTwoLabels) {
-				const labels = extracted.allLabels || []
-				if (labels.length === 2 && labels[0] !== labels[1]) {
-					continue // Skip match - opening and closing labels don't match
+			// For patterns with two __value__ placeholders (like <__value__>text</__value__>),
+			// verify that both values are equal. If not, skip this match.
+			if (descriptor.hasTwoValues) {
+				const values = extracted.allValues || []
+				if (values.length === 2 && values[0] !== values[1]) {
+					continue // Skip match - opening and closing values don't match
 				}
 			}
 
@@ -168,15 +168,15 @@ export class PatternMatcher {
 				start,
 				end,
 				content: input.substring(start, end),
-				label: extracted.label,
-				labelStart: extracted.labelStart,
-				labelEnd: extracted.labelEnd,
-				nested: extracted.nested,
-				nestedStart: extracted.nestedStart,
-				nestedEnd: extracted.nestedEnd,
 				value: extracted.value,
 				valueStart: extracted.valueStart,
 				valueEnd: extracted.valueEnd,
+				nested: extracted.nested,
+				nestedStart: extracted.nestedStart,
+				nestedEnd: extracted.nestedEnd,
+				meta: extracted.meta,
+				metaStart: extracted.metaStart,
+				metaEnd: extracted.metaEnd,
 				descriptorIndex: patternMatch.descriptorIndex
 			})
 		}
@@ -217,39 +217,39 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Extracts label, nested content, and value from match parts with position tracking
+	 * Extracts value, nested content, and meta from match parts with position tracking
 	 * Single pass through gaps for optimal performance
 	 * 
 	 * Returns exclusive end positions (compatible with substring)
 	 * Handles empty gaps (when start > end) by creating empty positions
 	 * 
-	 * Note: label is optional - if pattern uses only __nested__, label will be empty string
+	 * Note: value is optional - if pattern uses only __nested__, value will be empty string
 	 * with positions set to the start of the match
 	 */
 	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
-		label: string
-		labelStart: number
-		labelEnd: number
+		value: string
+		valueStart: number
+		valueEnd: number
 		nested?: string
 		nestedStart?: number
 		nestedEnd?: number
-		value?: string
-		valueStart?: number
-		valueEnd?: number
-		allLabels?: string[]
+		meta?: string
+		metaStart?: number
+		metaEnd?: number
+		allValues?: string[]
 	} {
-		let label = ''
-		let labelStart = -1
-		let labelEnd = -1
+		let value = ''
+		let valueStart = -1
+		let valueEnd = -1
 		let nested: string | undefined
 		let nestedStart: number | undefined
 		let nestedEnd: number | undefined
-		let value: string | undefined
-		let valueStart: number | undefined
-		let valueEnd: number | undefined
-		const allLabels: string[] = []
+		let meta: string | undefined
+		let metaStart: number | undefined
+		let metaEnd: number | undefined
+		const allValues: string[] = []
 		
-		// Track first gap position for default label positions
+		// Track first gap position for default value positions
 		let firstGapStart = -1
 
 		for (const part of parts) {
@@ -259,20 +259,20 @@ export class PatternMatcher {
 					firstGapStart = part.start
 				}
 				
-				if (part.gapType === 'label') {
-					// Collect all labels for validation (in case of two __label__ pattern)
-					allLabels.push(part.value || '')
+				if (part.gapType === 'value') {
+					// Collect all values for validation (in case of two __value__ pattern)
+					allValues.push(part.value || '')
 					
-					// Use first label as the primary label
-					if (labelStart === -1) {
-						label = part.value || ''
-						labelStart = part.start
+					// Use first value as the primary value
+					if (valueStart === -1) {
+						value = part.value || ''
+						valueStart = part.start
 						// Handle empty gaps (adjacent segments)
 						if (part.start > part.end) {
-							labelEnd = part.start // Empty range: [start, start)
+							valueEnd = part.start // Empty range: [start, start)
 						} else {
 							// part.end is inclusive (last char of gap), so add 1 for exclusive
-							labelEnd = part.end + 1
+							valueEnd = part.end + 1
 						}
 					}
 				} else if (part.gapType === 'nested' && nested === undefined) {
@@ -285,28 +285,28 @@ export class PatternMatcher {
 						// part.end is inclusive (last char of gap), so add 1 for exclusive
 						nestedEnd = part.end + 1
 					}
-				} else if (part.gapType === 'value') {
-					value = part.value
-					valueStart = part.start
+				} else if (part.gapType === 'meta') {
+					meta = part.value
+					metaStart = part.start
 					// Handle empty gaps (adjacent segments)
 					if (part.start > part.end) {
-						valueEnd = part.start // Empty range: [start, start)
+						metaEnd = part.start // Empty range: [start, start)
 					} else {
 						// part.end is inclusive (last char of gap), so add 1 for exclusive
-						valueEnd = part.end + 1
+						metaEnd = part.end + 1
 					}
 				}
 			}
 		}
 		
-		// If no label was found (pattern uses only __nested__), 
-		// set label positions to empty range at the start
-		if (labelStart === -1) {
-			labelStart = firstGapStart !== -1 ? firstGapStart : 0
-			labelEnd = labelStart
+		// If no value was found (pattern uses only __nested__), 
+		// set value positions to empty range at the start
+		if (valueStart === -1) {
+			valueStart = firstGapStart !== -1 ? firstGapStart : 0
+			valueEnd = valueStart
 		}
 
-		return {label, labelStart, labelEnd, nested, nestedStart, nestedEnd, value, valueStart, valueEnd, allLabels}
+		return {value, valueStart, valueEnd, nested, nestedStart, nestedEnd, meta, metaStart, metaEnd, allValues}
 	}
 }
 
