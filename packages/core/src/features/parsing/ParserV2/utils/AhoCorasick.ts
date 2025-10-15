@@ -1,3 +1,5 @@
+import {MarkupDescriptor} from '../core/MarkupDescriptor'
+
 /**
  * Node in the Aho-Corasick automaton trie
  */
@@ -41,6 +43,20 @@ export class AhoCorasick {
 		this.root = new AhoNode()
 		this.buildTrie()
 		this.buildFailures()
+	}
+
+	/**
+	 * Creates AhoCorasick automaton from markup descriptors
+	 * Extracts all segments from descriptors and builds the automaton
+	 */
+	static Create(descriptors: MarkupDescriptor[]): AhoCorasick {
+		// Build unified segment list from descriptors
+		const patterns: string[] = []
+		for (const descriptor of descriptors) {
+			patterns.push(...descriptor.segments)
+		}
+
+		return new AhoCorasick(patterns)
 	}
 
 	/**

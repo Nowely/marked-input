@@ -1,5 +1,21 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {AhoCorasick, SegmentMatch} from './AhoCorasick'
+import {MarkupDescriptor} from '../core/MarkupDescriptor'
+
+// Helper function to create descriptors for testing
+function createTestDescriptors(patterns: string[]): MarkupDescriptor[] {
+	return patterns.map((pattern, index) => ({
+		markup: pattern as any,
+		index,
+		trigger: pattern[0],
+		segments: [pattern],
+		gapTypes: [],
+		hasMeta: false,
+		hasNested: false,
+		hasTwoValues: false,
+		isSymmetric: false
+	}))
+}
 
 describe('AhoCorasick', () => {
 	describe('constructor', () => {
@@ -68,10 +84,10 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello world')
 
 			expect(results).toHaveLength(2)
-			
+
 			// Sort results by start position for consistent testing
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toEqual({
 				index: 0,
 				start: 0,

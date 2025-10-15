@@ -4,13 +4,20 @@ import {SegmentMatcher} from './SegmentMatcher'
 import {PatternProcessor} from './PatternProcessor'
 import {PatternMatch} from '../utils/PatternBuilder'
 import {MatchSegment} from '../utils/PatternChainManager'
+import {AhoCorasick} from '../utils/AhoCorasick'
 
 /**
  * Pattern matching engine using Aho-Corasick algorithm
- * 
+ *
+ * Orchestrates the complete pattern matching pipeline:
+ * 1. Searches for all segments using Aho-Corasick
+ * 2. Deduplicates and groups matches by position
+ * 3. Builds complete patterns from segment matches
+ * 4. Handles overlaps and nested structures
+ *
  * Finds ALL matches in text (including overlapping ones) for nested parsing.
  * Uses segment-based matching with position tracking for efficient tree building.
- * 
+ *
  * @example
  * ```typescript
  * const descriptors = markups.map(createMarkupDescriptor)
@@ -21,11 +28,14 @@ import {MatchSegment} from '../utils/PatternChainManager'
  */
 export class PatternMatcher {
 	private readonly descriptors: MarkupDescriptor[]
+	private readonly ac: AhoCorasick
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternProcessor: PatternProcessor
 
 	constructor(descriptors: MarkupDescriptor[]) {
 		this.descriptors = descriptors
+
+		this.ac = AhoCorasick.Create(descriptors)
 		this.segmentMatcher = new SegmentMatcher(descriptors)
 		this.patternProcessor = new PatternProcessor(descriptors)
 	}
@@ -41,16 +51,19 @@ export class PatternMatcher {
 	 * @returns Array of matches with position tracking (sorted by position)
 	 */
 	getAllMatches(input: string): MatchResult[] {
-		// 1. Find all unique segment matches
-		const uniqueMatches = this.segmentMatcher.findDeduplicatedMatches(input)
+		// 1. Find all raw segment matches using Aho-Corasick
+		const rawMatches = this.ac.search(input)
 
-		// 2. Build complete pattern matches
+		// 2. Deduplicate matches by position and value
+		const uniqueMatches = this.segmentMatcher.deduplicateMatches(rawMatches)
+
+		// 3. Build complete pattern matches
 		const patternMatches = this.patternProcessor.processMatches(uniqueMatches)
 
-		// 3. Sort by position and length (longest first)
+		// 4. Sort by position and length (longest first)
 		const sortedMatches = this.sortByPositionAndLength(patternMatches)
 
-		// 4. Remove overlaps and create results
+		// 5. Remove overlaps and create results
 		return this.removeOverlaps(sortedMatches, input)
 	}
 
