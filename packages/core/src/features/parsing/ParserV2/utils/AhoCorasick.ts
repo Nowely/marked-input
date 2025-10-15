@@ -22,7 +22,7 @@ export interface SegmentMatch {
 	end: number // end position in text (inclusive)
 	value: string // matched text
 }
-
+//TODO add support Unicode code points?
 /**
  * Aho-Corasick automaton for efficient multi-pattern string matching
  * Finds all occurrences of multiple patterns in O(|text| + |patterns| + |matches|) time
