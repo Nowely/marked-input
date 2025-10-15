@@ -56,7 +56,7 @@ describe('AhoCorasick', () => {
 
 			expect(results).toHaveLength(1)
 			expect(results[0]).toEqual({
-				segIndex: 0,
+				index: 0,
 				start: 0,
 				end: 4,
 				value: 'hello'
@@ -73,13 +73,13 @@ describe('AhoCorasick', () => {
 			const sorted = results.sort((a, b) => a.start - b.start)
 			
 			expect(sorted[0]).toEqual({
-				segIndex: 0,
+				index: 0,
 				start: 0,
 				end: 4,
 				value: 'hello'
 			})
 			expect(sorted[1]).toEqual({
-				segIndex: 1,
+				index: 1,
 				start: 6,
 				end: 10,
 				value: 'world'
@@ -144,7 +144,7 @@ describe('AhoCorasick', () => {
 
 			expect(results).toHaveLength(1)
 			expect(results[0]).toEqual({
-				segIndex: 0,
+				index: 0,
 				start: 0,
 				end: 4,
 				value: 'hello'
@@ -350,7 +350,7 @@ describe('AhoCorasick', () => {
 	})
 
 	describe('search - pattern indices', () => {
-		it('should return correct segIndex for each pattern', () => {
+		it('should return correct index for each pattern', () => {
 			const patterns = ['first', 'second', 'third']
 			const ac = new AhoCorasick(patterns)
 			const results = ac.search('first second third')
@@ -361,9 +361,9 @@ describe('AhoCorasick', () => {
 			const secondMatch = results.find(r => r.value === 'second')
 			const thirdMatch = results.find(r => r.value === 'third')
 			
-			expect(firstMatch?.segIndex).toBe(0)
-			expect(secondMatch?.segIndex).toBe(1)
-			expect(thirdMatch?.segIndex).toBe(2)
+			expect(firstMatch?.index).toBe(0)
+			expect(secondMatch?.index).toBe(1)
+			expect(thirdMatch?.index).toBe(2)
 		})
 
 		it('should handle duplicate patterns with correct indices', () => {
@@ -373,7 +373,7 @@ describe('AhoCorasick', () => {
 
 			// Should find matches for both pattern indices 0 and 2
 			expect(results.length).toBeGreaterThanOrEqual(1)
-			const indices = results.map(r => r.segIndex)
+			const indices = results.map(r => r.index)
 			expect(indices).toContain(0)
 		})
 	})
@@ -764,12 +764,12 @@ describe('AhoCorasick', () => {
 			expect(results).toHaveLength(1)
 			
 			const match = results[0]
-			expect(match).toHaveProperty('segIndex')
+			expect(match).toHaveProperty('index')
 			expect(match).toHaveProperty('start')
 			expect(match).toHaveProperty('end')
 			expect(match).toHaveProperty('value')
 			
-			expect(typeof match.segIndex).toBe('number')
+			expect(typeof match.index).toBe('number')
 			expect(typeof match.start).toBe('number')
 			expect(typeof match.end).toBe('number')
 			expect(typeof match.value).toBe('string')
@@ -781,7 +781,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello world test')
 
 			results.forEach(result => {
-				expect(patterns[result.segIndex]).toBe(result.value)
+				expect(patterns[result.index]).toBe(result.value)
 			})
 		})
 	})

@@ -37,7 +37,7 @@ export class SegmentMatcher {
 		const matchesByPosValue = new Map<string, UniqueMatch>()
 
 		for (const r of rawMatches) {
-			const mapInfo = this.segmentMap[r.segIndex]
+			const mapInfo = this.segmentMap[r.index]
 			const key = `${r.start}:${r.value}`
 
 			if (!matchesByPosValue.has(key)) {

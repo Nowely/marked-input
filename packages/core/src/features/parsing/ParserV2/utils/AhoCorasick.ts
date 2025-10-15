@@ -17,11 +17,16 @@ class AhoNode {
  * Result of a segment match in the text
  */
 export interface SegmentMatch {
-	segIndex: number // index in the patterns array
-	start: number // start position in text
-	end: number // end position in text (inclusive)
-	value: string // matched text
+	/** Index in the patterns array */
+	index: number
+	/** Start position in text */
+	start: number
+	/** End position in text (inclusive) */
+	end: number
+	/** Matched text */
+	value: string
 }
+
 //TODO add support Unicode code points?
 /**
  * Aho-Corasick automaton for efficient multi-pattern string matching
@@ -36,6 +41,47 @@ export class AhoCorasick {
 		this.root = new AhoNode()
 		this.buildTrie()
 		this.buildFailures()
+	}
+
+	/**
+	 * Searches for all pattern occurrences in the text
+	 * @param text - Text to search in
+	 * @returns Array of matches (unsorted)
+	 */
+	search(text: string): SegmentMatch[] {
+		const results: SegmentMatch[] = []
+		let node = this.root
+
+		for (let i = 0; i < text.length; i++) {
+			const char = text[i]
+
+			// Follow failure links until we find a transition or reach root
+			while (node !== this.root && !node.next.has(char)) {
+				node = node.fail!
+			}
+
+			// Take the transition if it exists
+			if (node.next.has(char)) {
+				node = node.next.get(char)!
+			}
+
+			// Report all patterns that end at this position
+			if (node.out.length > 0) {
+				for (const index of node.out) {
+					const pattern = this.patterns[index]
+					const start = i - pattern.length + 1
+
+					results.push({
+						index,
+						start,
+						end: i,
+						value: pattern,
+					})
+				}
+			}
+		}
+
+		return results
 	}
 
 	/**
@@ -96,46 +142,4 @@ export class AhoCorasick {
 			}
 		}
 	}
-
-	/**
-	 * Searches for all pattern occurrences in the text
-	 * @param text - Text to search in
-	 * @returns Array of matches (unsorted)
-	 */
-	search(text: string): SegmentMatch[] {
-		const results: SegmentMatch[] = []
-		let node = this.root
-
-		for (let i = 0; i < text.length; i++) {
-			const char = text[i]
-
-			// Follow failure links until we find a transition or reach root
-			while (node !== this.root && !node.next.has(char)) {
-				node = node.fail!
-			}
-
-			// Take the transition if it exists
-			if (node.next.has(char)) {
-				node = node.next.get(char)!
-			}
-
-			// Report all patterns that end at this position
-			if (node.out.length > 0) {
-				for (const segIdx of node.out) {
-					const pattern = this.patterns[segIdx]
-					const start = i - pattern.length + 1
-
-					results.push({
-						segIndex: segIdx,
-						start,
-						end: i,
-						value: pattern
-					})
-				}
-			}
-		}
-
-		return results
-	}
 }
-
