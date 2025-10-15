@@ -24,6 +24,3 @@ export enum KEYBOARD {
 	// UI Keys
 	ESC = 'Escape',
 }
-
-export const wordRegex = new RegExp(/^\w*/)
-
