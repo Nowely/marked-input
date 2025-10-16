@@ -180,7 +180,7 @@ function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
  * // ]
  * ```
  */
-export function buildTreeSinglePass(
+export function buildTree(
 	input: string,
 	matches: MatchResult[]
 ): NestedToken[] {

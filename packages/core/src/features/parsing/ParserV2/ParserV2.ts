@@ -6,7 +6,7 @@ import {SegmentMatcher} from './core/SegmentMatcher'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
 import {AhoCorasick} from './utils/AhoCorasick'
-import {buildTreeSinglePass} from './core/TreeBuilder'
+import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 
 export class ParserV2 {
@@ -34,13 +34,12 @@ export class ParserV2 {
 	}
 
 	split(value: string): NestedToken[] {
-		// Execute explicit pipeline
-		const rawMatches = this.ac.search(value)
-		const uniqueMatches = this.segmentMatcher.deduplicateMatches(rawMatches)
+		const segmentMatches = this.ac.search(value)
+		const uniqueMatches = this.segmentMatcher.deduplicateMatches(segmentMatches)
 		const patternMatches = this.patternProcessor.processMatches(uniqueMatches)
-		const sortedMatches = MatchPostProcessor.sortByPositionAndLength(patternMatches)
-		const filteredMatches = MatchPostProcessor.removeOverlaps(sortedMatches, value, this.descriptors)
+		const sortedPatternMatches = MatchPostProcessor.sortByPositionAndLength(patternMatches)
+		const resolvedMatches = MatchPostProcessor.removeOverlaps(sortedPatternMatches, value, this.descriptors)
 
-		return buildTreeSinglePass(value, filteredMatches)
+		return buildTree(value, resolvedMatches)
 	}
 }
