@@ -16,10 +16,7 @@ export class ParserV2 {
 	private readonly patternProcessor: PatternProcessor
 
 	constructor(markups: Markup[]) {
-		// Compile markups to descriptors
 		this.descriptors = markups.map(createMarkupDescriptor)
-
-		// Initialize pipeline components
 		this.ac = AhoCorasick.Create(this.descriptors)
 		this.segmentMatcher = new SegmentMatcher(this.descriptors)
 		this.patternProcessor = new PatternProcessor(this.descriptors)
