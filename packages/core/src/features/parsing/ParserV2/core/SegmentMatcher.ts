@@ -4,11 +4,6 @@ import {UniqueMatch} from '../types'
 
 /**
  * Segment matcher that deduplicates raw matches and maps them to descriptors
- *
- * Takes raw segment matches from Aho-Corasick and:
- * - Groups matches by position and value to eliminate duplicates
- * - Maps segment indices to descriptor and segment indices
- * - Returns unique matches ready for pattern building
  */
 export class SegmentMatcher {
 	private readonly segmentMap: Array<{descriptorIndex: number; segmentIndex: number}>
@@ -42,7 +37,8 @@ export class SegmentMatcher {
 			}
 		}
 
-		//also sort by position
+		//also sort by position 
+		//TODO remove sorting?
 		return Array.from(matchesByPosValue.values()).sort((a, b) => a.start - b.start || a.end - b.end)
 	}
 }

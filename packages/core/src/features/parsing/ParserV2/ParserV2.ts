@@ -33,10 +33,9 @@ export class ParserV2 {
 	split(value: string): NestedToken[] {
 		const segmentMatches = this.ac.search(value)
 		const uniqueMatches = this.segmentMatcher.deduplicateMatches(segmentMatches)
-		const patternMatches = this.patternProcessor.processMatches(uniqueMatches)
-		const sortedPatternMatches = MatchPostProcessor.sortByPositionAndLength(patternMatches)
-		const resolvedMatches = MatchPostProcessor.removeOverlaps(sortedPatternMatches, value, this.descriptors)
+		const sortedValidatedMatches = this.patternProcessor.processMatches(uniqueMatches, value)
+		const matchResults = MatchPostProcessor.convertToResults(sortedValidatedMatches, value, this.descriptors)
 
-		return buildTree(value, resolvedMatches)
+		return buildTree(value, matchResults)
 	}
 }

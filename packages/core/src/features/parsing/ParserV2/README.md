@@ -80,14 +80,17 @@ ParserV2/
 ├── types.ts                 # Типы и интерфейсы
 ├── core/                    # Ядро функциональности
 │   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
-│   ├── PatternMatcher.ts    # Поиск всех matches
-│   ├── PatternProcessor.ts  # Обработка цепочек паттернов
-│   ├── SegmentMatcher.ts    # Матчинг сегментов (Aho-Corasick)
+│   ├── SegmentMatcher.ts    # Дедупликация сегментов
+│   ├── PatternProcessor.ts  # Координатор обработки паттернов
+│   ├── ChainMatcher.ts      # Построение цепочек паттернов
+│   ├── MatchValidator.ts    # Валидация и фильтрация matches
+│   ├── MatchPostProcessor.ts # Конверсия в MatchResult
 │   ├── TokenBuilder.ts      # Создание токенов
 │   └── TreeBuilder.ts       # Single-pass tree building
 └── utils/                   # Утилиты
     ├── AhoCorasick.ts       # Эффективный multi-pattern поиск
     ├── PatternBuilder.ts    # Построение паттернов из цепочек
+    ├── PatternSorting.ts    # Статические методы сортировки
     └── PatternChainManager.ts # Управление активными цепочками
 ```
 
@@ -147,17 +150,29 @@ match.valueStart = 9, match.valueEnd = 14 // substring(9, 14) = "test"
 ### Алгоритм Flow
 
 ```
-Input Text → Aho-Corasick → UniqueMatches
+Input Text → Aho-Corasick → SegmentMatches
                               ↓
-                      PatternProcessor
+                      SegmentMatcher
+                      (deduplicate + sort)
                               ↓
-              PatternChain Management (LIFO stack)
+                       UniqueMatches
                               ↓
-                      Filter Overlaps
-                      - Remove matches inside __meta__
-                      - Remove partial matches
+                    PatternProcessor
+                    (координатор)
                               ↓
-                        MatchResults
+        ┌─────────────────────┼─────────────────────┐
+        ↓                     ↓                     ↓
+   ChainMatcher      MatchValidator       PriorityResolver
+   (build chains)    (validate+filter)    (sort)
+        │                     │                     │
+        └─────────────────────┴─────────────────────┘
+                              ↓
+                   Validated PatternMatches
+                              ↓
+                   MatchPostProcessor
+                   (convert to MatchResult)
+                              ↓
+                       MatchResults
                               ↓
                 TreeBuilder (single-pass)
                 - Stack-based parent-child detection
@@ -165,6 +180,35 @@ Input Text → Aho-Corasick → UniqueMatches
                               ↓
                       NestedToken[]
 ```
+
+### Разделение ответственностей
+
+**PatternProcessor** - минимальный координатор (всего 3 строки логики):
+- `ChainMatcher` - построение цепочек паттернов из сегментов
+- `MatchValidator` - валидация и фильтрация matches
+- `PatternSorting` - статические методы для сортировки
+
+**ChainMatcher** - полная изоляция логики построения цепочек:
+- Создает `PatternBuilder` и `PatternChainManager` внутри себя
+- Обработка ожидающих цепочек с `PatternSorting.sortWaitingChains()`
+- Запуск новых цепочек с `PatternSorting.sortDescriptors()`
+- Отслеживание вложенности через `nestingStack`
+
+**PatternSorting** - статические методы сортировки:
+- `sortWaitingChains()` - приоритизация цепочек при расширении
+- `sortDescriptors()` - приоритизация паттернов при старте
+- `sortPatternMatches()` - финальная сортировка для tree building
+
+**MatchValidator** - пятиэтапный pipeline фильтрации:
+1. Фильтрация matches внутри non-nested gaps (`__meta__`, `__value__`)
+2. Фильтрация конфликтов одного descriptor на одной позиции
+3. Материализация gaps из текста
+4. Фильтрация partial matches (с общими границами)
+5. Валидация двух `__value__` для HTML-подобных паттернов
+
+**MatchPostProcessor** - конверсия в финальный формат:
+- Извлечение контента (value, nested, meta)
+- Создание `MatchResult[]` с позициями
 
 ## 📋 API
 
@@ -672,3 +716,37 @@ Output: [
 - **Используйте `__meta__` для простого текста**: Когда вложенность не нужна
 - **Тестируйте порядок паттернов**: При добавлении новых правил разметки проверяйте, как они взаимодействуют с существующими
 - **Документируйте приоритеты**: В сложных приложениях документируйте порядок паттернов для будущих разработчиков
+
+## Файлы для изменения
+
+```
+Новые файлы:
++ packages/core/src/features/parsing/ParserV2/utils/PatternSorting.ts
++ packages/core/src/features/parsing/ParserV2/core/ChainMatcher.ts
++ packages/core/src/features/parsing/ParserV2/core/MatchValidator.ts
+
+Изменяемые файлы:
+~ packages/core/src/features/parsing/ParserV2/core/SegmentMatcher.ts
+  - Убрать .sort() из строки 42
+~ packages/core/src/features/parsing/ParserV2/core/PatternProcessor.ts
+  - Упростить до минимального координатора (3 строки логики)
+  - Удалить создание patternBuilder/chainManager (переехало в ChainMatcher)
+  - Удалить методы фильтрации (переехали в MatchValidator)
+  - Удалить внутренние сортировки (переехали в PatternSorting)
+~ packages/core/src/features/parsing/ParserV2/core/MatchPostProcessor.ts
+  - Убрать sortByPositionAndLength (переехало в PatternSorting)
+  - Убрать логику фильтрации из removeOverlaps (переехала в MatchValidator)
+  - Переименовать removeOverlaps → convertToResults
+  - Оставить только материализацию и извлечение контента
+~ packages/core/src/features/parsing/ParserV2/ParserV2.ts
+  - Изменить сигнатуру: processMatches(uniqueMatches, value)
+  - Удалить вызов sortByPositionAndLength
+  - Переименовать вызов: removeOverlaps → convertToResults
+~ packages/core/src/features/parsing/ParserV2/index.ts
+  - Добавить экспорт PatternSorting
+~ packages/core/src/features/parsing/ParserV2/README.md
+  - Обновить архитектуру и разделение ответственностей
+
+Удаленные файлы:
+- packages/core/src/features/parsing/ParserV2/core/PriorityResolver.ts
+```

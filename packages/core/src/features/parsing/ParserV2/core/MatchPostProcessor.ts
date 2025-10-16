@@ -1,117 +1,31 @@
 import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {SegmentMatcher} from './SegmentMatcher'
-import {PatternProcessor} from './PatternProcessor'
 import {PatternMatch} from '../utils/PatternBuilder'
 import {PatternPart} from '../utils/PatternChainManager'
-import {AhoCorasick} from '../utils/AhoCorasick'
 
 /**
- * Post-processor for pattern matches
- * Handles sorting, overlap removal, and content extraction
+ * Post-processor for pattern matches - simplified to only handle conversion
+ * Filtering and sorting logic moved to MatchValidator and PriorityResolver
  */
 export class MatchPostProcessor {
 	/**
-	 * Sorts pattern matches by start position, then by length (longest first)
+	 * Converts validated, sorted PatternMatch[] to MatchResult[]
+	 * No filtering - matches are already validated by MatchValidator
+	 * No sorting - matches are already sorted by PriorityResolver
 	 */
-	static sortByPositionAndLength(matches: PatternMatch[]): PatternMatch[] {
-		return matches.sort((a, b) => {
-			const startA = this.getMatchStart(a)
-			const startB = this.getMatchStart(b)
-			if (startA !== startB) {
-				return startA - startB
-			}
-			// Same start: prefer longer match (greedy by default)
-			const lengthA = this.getMatchEnd(a) - startA
-			const lengthB = this.getMatchEnd(b) - startB
-			return lengthB - lengthA
-		})
-	}
-
-	/**
-	 * Converts pattern matches to match results with overlap filtering
-	 */
-	static removeOverlaps(sortedMatches: PatternMatch[], input: string, descriptors: MarkupDescriptor[]): MatchResult[] {
+	static convertToResults(
+		matches: PatternMatch[],
+		input: string,
+		descriptors: MarkupDescriptor[]
+	): MatchResult[] {
 		const results: MatchResult[] = []
-		const matchesWithPositions: Array<{
-			match: PatternMatch
-			start: number
-			end: number
-			valueStart?: number
-			valueEnd?: number
-		}> = []
 
-		// First pass: collect all matches with positions and extract content
-		for (const patternMatch of sortedMatches) {
-			this.materializeGaps(patternMatch, input)
+		for (const patternMatch of matches) {
+			// Gaps are already materialized by MatchValidator
 			const start = this.getMatchStart(patternMatch)
 			const end = this.getMatchEnd(patternMatch)
 			const descriptor = descriptors[patternMatch.descriptorIndex]
 			const extracted = this.extractContent(patternMatch.parts, descriptor)
-
-			matchesWithPositions.push({
-				match: patternMatch,
-				start,
-				end,
-				valueStart: extracted.valueStart,
-				valueEnd: extracted.valueEnd
-			})
-		}
-
-		// Second pass: filter out partial/invalid matches and matches inside __value__
-		for (const item of matchesWithPositions) {
-			const {match: patternMatch, start, end, valueStart, valueEnd} = item
-
-			// Check if this match is a partial match of a longer pattern at same position
-			const isPartialMatch = matchesWithPositions.some(other => {
-				if (other === item) return false
-
-				// Same start position and this match is shorter = partial match
-				if (other.start === start && end < other.end) {
-					return true
-				}
-
-				// Same end position and this match is shorter = partial match
-				if (other.end === end && start > other.start) {
-					return true
-				}
-
-				return false
-			})
-
-			if (isPartialMatch) {
-				continue // Skip partial matches
-			}
-
-			// Check if this match is inside or overlaps with __value__ of another match
-			const isInsideOrOverlapsValue = matchesWithPositions.some(other => {
-				if (other === item) return false
-
-				// Check if this match starts inside other's __value__ range
-				if (other.valueStart !== undefined && other.valueEnd !== undefined) {
-					// Match overlaps with value if it starts inside the value range
-					if (start >= other.valueStart && start < other.valueEnd) {
-						return true
-					}
-				}
-
-				return false
-			})
-
-			if (isInsideOrOverlapsValue) {
-				continue // Skip matches inside or overlapping __meta__
-			}
-
-			const descriptor = descriptors[patternMatch.descriptorIndex]
-			const extracted = this.extractContent(patternMatch.parts, descriptor)
-
-			// For patterns with two __value__ placeholders, verify that both values are equal
-			if (descriptor.hasTwoValues) {
-				const values = extracted.allValues || []
-				if (values.length === 2 && values[0] !== values[1]) {
-					continue // Skip match - opening and closing values don't match
-				}
-			}
 
 			results.push({
 				start,
@@ -131,22 +45,6 @@ export class MatchPostProcessor {
 		}
 
 		return results
-	}
-
-	/**
-	 * Materializes gap values from text (lazy evaluation)
-	 */
-	static materializeGaps(match: PatternMatch, text: string): void {
-		for (const part of match.parts) {
-			if (part.type === 'gap' && part.value === undefined) {
-				// Handle empty gaps (adjacent segments)
-				if (part.start > part.end) {
-					part.value = ''
-				} else {
-					part.value = text.slice(part.start, part.end + 1)
-				}
-			}
-		}
 	}
 
 	/**
@@ -239,7 +137,7 @@ export class MatchPostProcessor {
 	}
 
 	/**
-	 * Gets the end position of a pattern match (inclusive)
+	 * Gets the end position of a pattern match (exclusive)
 	 */
 	private static getMatchEnd(match: PatternMatch): number {
 		return match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
