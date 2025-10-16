@@ -5,7 +5,7 @@ import {createMarkupDescriptor, MarkupDescriptor} from './core/MarkupDescriptor'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
-import {AhoCorasick} from './utils/AhoCorasick'
+import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 
@@ -37,5 +37,45 @@ export class ParserV2 {
 		const matchResults = MatchPostProcessor.convertToResults(sortedValidatedMatches, value, this.descriptors)
 
 		return buildTree(value, matchResults)
+	}
+
+	/**
+	 * Escapes markup segments in the given text
+	 * @param text Text to escape segments in
+	 * @param escaper Function that receives a segment string and returns the escaped version
+	 * @returns Text with escaped segments
+	 * TODO use AhoCorasick to find all segments and escape them
+	 */
+	escape(text: string, escaper?: (segment: string) => string): string {
+		// If no escaper provided, return text unchanged
+		if (!escaper) {
+			return text
+		}
+
+		let result = text
+		// Collect all unique segments
+		const allSegments = new Set<string>()
+		this.descriptors.forEach(descriptor => {
+			descriptor.segments.forEach(segment => {
+				if (segment.length > 0) {
+					allSegments.add(segment)
+				}
+			})
+		})
+
+		// Sort segments by length ascending to handle shorter segments first
+		const sortedSegments = Array.from(allSegments).sort((a, b) => a.length - b.length)
+
+		for (const segment of sortedSegments) {
+			const escaped = escaper(segment)
+			// Use global replace to escape all occurrences
+			result = result.replace(new RegExp(escapeRegExp(segment), 'g'), escaped)
+		}
+
+		return result
+
+		function escapeRegExp(string: string): string {
+			return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+		}
 	}
 }
