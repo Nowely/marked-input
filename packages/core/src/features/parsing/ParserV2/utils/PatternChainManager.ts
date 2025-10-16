@@ -1,7 +1,7 @@
 /**
  * Part of a matched pattern - either a static segment or a gap
  */
-export interface MatchSegment {
+export interface PatternPart {
 	type: 'segment' | 'gap'
 	start: number
 	end: number
@@ -16,7 +16,7 @@ export interface PatternChain {
 	descriptorIndex: number
 	nextSegmentIndex: number
 	pos: number // Next expected position in text
-	parts: MatchSegment[]
+	parts: PatternPart[]
 	hasNestedPatterns: boolean // True if any nested pattern has started inside this chain
 	nestingLevel: number // Depth of nesting (0 = root level)
 }

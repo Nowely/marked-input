@@ -30,6 +30,7 @@ export interface SegmentMatch {
 }
 
 //TODO add support Unicode code points?
+//TODO optimize. Deduplicate segments => less memory usage, faster search
 /**
  * Aho-Corasick automaton for efficient multi-pattern string matching
  * Finds all occurrences of multiple patterns in O(|text| + |patterns| + |matches|) time

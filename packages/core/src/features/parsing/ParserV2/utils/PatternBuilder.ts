@@ -1,5 +1,5 @@
 import {MarkupDescriptor} from '../core/MarkupDescriptor'
-import {PatternChain, MatchSegment} from './PatternChainManager'
+import {PatternChain, PatternPart} from './PatternChainManager'
 import {UniqueMatch} from '../types'
 
 /**
@@ -7,7 +7,7 @@ import {UniqueMatch} from '../types'
  */
 export interface PatternMatch {
 	descriptorIndex: number
-	parts: MatchSegment[]
+	parts: PatternPart[]
 }
 
 /**

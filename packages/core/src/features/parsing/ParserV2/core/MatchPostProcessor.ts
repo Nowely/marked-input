@@ -3,7 +3,7 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 import {SegmentMatcher} from './SegmentMatcher'
 import {PatternProcessor} from './PatternProcessor'
 import {PatternMatch} from '../utils/PatternBuilder'
-import {MatchSegment} from '../utils/PatternChainManager'
+import {PatternPart} from '../utils/PatternChainManager'
 import {AhoCorasick} from '../utils/AhoCorasick'
 
 /**
@@ -152,7 +152,7 @@ export class MatchPostProcessor {
 	/**
 	 * Extracts value, nested content, and meta from match parts
 	 */
-	static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
+	static extractContent(parts: PatternPart[], descriptor: MarkupDescriptor): {
 		value: string
 		valueStart: number
 		valueEnd: number

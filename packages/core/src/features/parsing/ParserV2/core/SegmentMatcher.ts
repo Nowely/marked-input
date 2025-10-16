@@ -28,19 +28,19 @@ export class SegmentMatcher {
 	/**
 	 * Deduplicates raw matches and groups them by position+value
 	 */
-	deduplicateMatches(rawMatches: SegmentMatch[]): UniqueMatch[] {
+	deduplicateMatches(segments: SegmentMatch[]): UniqueMatch[] {
 		// Group by position and value to handle multiple descriptors sharing same segments
 		const matchesByPosValue = new Map<string, UniqueMatch>()
 
-		for (const r of rawMatches) {
-			const mapInfo = this.segmentMap[r.index]
-			const key = `${r.start}:${r.value}`
+		for (const segment of segments) {
+			const mapInfo = this.segmentMap[segment.index]
+			const key = `${segment.start}:${segment.value}`
 
 			if (!matchesByPosValue.has(key)) {
 				matchesByPosValue.set(key, {
-					start: r.start,
-					end: r.end,
-					value: r.value,
+					start: segment.start,
+					end: segment.end,
+					value: segment.value,
 					descriptors: [],
 				})
 			}
