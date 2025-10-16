@@ -7,71 +7,14 @@ import {MatchSegment} from '../utils/PatternChainManager'
 import {AhoCorasick} from '../utils/AhoCorasick'
 
 /**
- * Pattern matching engine using Aho-Corasick algorithm
- *
- * Orchestrates the complete pattern matching pipeline:
- * 1. Searches for all segments using Aho-Corasick
- * 2. Deduplicates and groups matches by position
- * 3. Builds complete patterns from segment matches
- * 4. Handles overlaps and nested structures
- *
- * Finds ALL matches in text (including overlapping ones) for nested parsing.
- * Uses segment-based matching with position tracking for efficient tree building.
- *
- * @example
- * ```typescript
- * const descriptors = markups.map(createMarkupDescriptor)
- * const matcher = new PatternMatcher(descriptors)
- * const matches = matcher.getAllMatches("@[hello #[world]]")
- * // Returns both outer and inner matches with precise positions
- * ```
+ * Post-processor for pattern matches
+ * Handles sorting, overlap removal, and content extraction
  */
-export class PatternMatcher {
-	private readonly descriptors: MarkupDescriptor[]
-	private readonly ac: AhoCorasick
-	private readonly segmentMatcher: SegmentMatcher
-	private readonly patternProcessor: PatternProcessor
-
-	constructor(descriptors: MarkupDescriptor[]) {
-		this.descriptors = descriptors
-
-		this.ac = AhoCorasick.Create(descriptors)
-		this.segmentMatcher = new SegmentMatcher(descriptors)
-		this.patternProcessor = new PatternProcessor(descriptors)
-	}
-
+export class MatchPostProcessor {
 	/**
-	 * Finds all pattern matches in the input text
-	 * 
-	 * Unlike traditional parsers, this includes overlapping matches
-	 * (e.g., both outer and nested marks) to enable tree building.
-	 * 
-	 * @complexity O(N + M + Z) where N = text length, M = patterns, Z = matches
-	 * @param input - Text to search for patterns
-	 * @returns Array of matches with position tracking (sorted by position)
+	 * Sorts pattern matches by start position, then by length (longest first)
 	 */
-	getAllMatches(input: string): MatchResult[] {
-		// 1. Find all raw segment matches using Aho-Corasick
-		const rawMatches = this.ac.search(input)
-
-		// 2. Deduplicate matches by position and value
-		const uniqueMatches = this.segmentMatcher.deduplicateMatches(rawMatches)
-
-		// 3. Build complete pattern matches
-		const patternMatches = this.patternProcessor.processMatches(uniqueMatches)
-
-		// 4. Sort by position and length (longest first)
-		const sortedMatches = this.sortByPositionAndLength(patternMatches)
-
-		// 5. Remove overlaps and create results
-		return this.removeOverlaps(sortedMatches, input)
-	}
-
-	/**
-	 * Sorts pattern matches by start position, then by length
-	 * Simplified: context-aware matching is now handled in PatternProcessor
-	 */
-	private sortByPositionAndLength(matches: PatternMatch[]): PatternMatch[] {
+	static sortByPositionAndLength(matches: PatternMatch[]): PatternMatch[] {
 		return matches.sort((a, b) => {
 			const startA = this.getMatchStart(a)
 			const startB = this.getMatchStart(b)
@@ -86,13 +29,9 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Converts pattern matches to match results
-	 * 
-	 * Includes overlapping matches for nested parsing, but filters out:
-	 * - Invalid partial matches (e.g., "**" from "*__value__*" when "**__value__**" exists)
-	 * - Matches inside __meta__ sections of other matches (meta data is not parsed)
+	 * Converts pattern matches to match results with overlap filtering
 	 */
-	private removeOverlaps(sortedMatches: PatternMatch[], input: string): MatchResult[] {
+	static removeOverlaps(sortedMatches: PatternMatch[], input: string, descriptors: MarkupDescriptor[]): MatchResult[] {
 		const results: MatchResult[] = []
 		const matchesWithPositions: Array<{
 			match: PatternMatch
@@ -104,12 +43,12 @@ export class PatternMatcher {
 
 		// First pass: collect all matches with positions and extract content
 		for (const patternMatch of sortedMatches) {
-			PatternMatcher.materializeGaps(patternMatch, input)
+			this.materializeGaps(patternMatch, input)
 			const start = this.getMatchStart(patternMatch)
 			const end = this.getMatchEnd(patternMatch)
-			const descriptor = this.descriptors[patternMatch.descriptorIndex]
-			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
-			
+			const descriptor = descriptors[patternMatch.descriptorIndex]
+			const extracted = this.extractContent(patternMatch.parts, descriptor)
+
 			matchesWithPositions.push({
 				match: patternMatch,
 				start,
@@ -122,54 +61,51 @@ export class PatternMatcher {
 		// Second pass: filter out partial/invalid matches and matches inside __value__
 		for (const item of matchesWithPositions) {
 			const {match: patternMatch, start, end, valueStart, valueEnd} = item
-			
+
 			// Check if this match is a partial match of a longer pattern at same position
 			const isPartialMatch = matchesWithPositions.some(other => {
 				if (other === item) return false
-				
+
 				// Same start position and this match is shorter = partial match
 				if (other.start === start && end < other.end) {
 					return true
 				}
-				
+
 				// Same end position and this match is shorter = partial match
 				if (other.end === end && start > other.start) {
 					return true
 				}
-				
+
 				return false
 			})
-			
+
 			if (isPartialMatch) {
 				continue // Skip partial matches
 			}
 
 			// Check if this match is inside or overlaps with __value__ of another match
-			// __value__ sections should not be parsed for nested patterns
 			const isInsideOrOverlapsValue = matchesWithPositions.some(other => {
 				if (other === item) return false
-				
+
 				// Check if this match starts inside other's __value__ range
-				// Even if it extends beyond, we should skip it because it's invalid
 				if (other.valueStart !== undefined && other.valueEnd !== undefined) {
 					// Match overlaps with value if it starts inside the value range
 					if (start >= other.valueStart && start < other.valueEnd) {
 						return true
 					}
 				}
-				
+
 				return false
 			})
-			
+
 			if (isInsideOrOverlapsValue) {
 				continue // Skip matches inside or overlapping __meta__
 			}
 
-			const descriptor = this.descriptors[patternMatch.descriptorIndex]
-			const extracted = PatternMatcher.extractContent(patternMatch.parts, descriptor)
+			const descriptor = descriptors[patternMatch.descriptorIndex]
+			const extracted = this.extractContent(patternMatch.parts, descriptor)
 
-			// For patterns with two __value__ placeholders (like <__value__>text</__value__>),
-			// verify that both values are equal. If not, skip this match.
+			// For patterns with two __value__ placeholders, verify that both values are equal
 			if (descriptor.hasTwoValues) {
 				const values = extracted.allValues || []
 				if (values.length === 2 && values[0] !== values[1]) {
@@ -198,25 +134,9 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Gets the start position of a pattern match
-	 */
-	private getMatchStart(match: PatternMatch): number {
-		return match.parts.length > 0 ? match.parts[0].start : 0
-	}
-
-	/**
-	 * Gets the end position of a pattern match (inclusive)
-	 */
-	private getMatchEnd(match: PatternMatch): number {
-		return match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
-	}
-
-	/**
 	 * Materializes gap values from text (lazy evaluation)
-	 * Converts undefined gap values to actual string content
-	 * Handles empty gaps (when start > end)
 	 */
-	private static materializeGaps(match: PatternMatch, text: string): void {
+	static materializeGaps(match: PatternMatch, text: string): void {
 		for (const part of match.parts) {
 			if (part.type === 'gap' && part.value === undefined) {
 				// Handle empty gaps (adjacent segments)
@@ -230,16 +150,9 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Extracts value, nested content, and meta from match parts with position tracking
-	 * Single pass through gaps for optimal performance
-	 * 
-	 * Returns exclusive end positions (compatible with substring)
-	 * Handles empty gaps (when start > end) by creating empty positions
-	 * 
-	 * Note: value is optional - if pattern uses only __nested__, value will be empty string
-	 * with positions set to the start of the match
+	 * Extracts value, nested content, and meta from match parts
 	 */
-	private static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
+	static extractContent(parts: MatchSegment[], descriptor: MarkupDescriptor): {
 		value: string
 		valueStart: number
 		valueEnd: number
@@ -261,7 +174,7 @@ export class PatternMatcher {
 		let metaStart: number | undefined
 		let metaEnd: number | undefined
 		const allValues: string[] = []
-		
+
 		// Track first gap position for default value positions
 		let firstGapStart = -1
 
@@ -271,11 +184,11 @@ export class PatternMatcher {
 				if (firstGapStart === -1) {
 					firstGapStart = part.start
 				}
-				
+
 				if (part.gapType === 'value') {
-					// Collect all values for validation (in case of two __value__ pattern)
+					// Collect all values for validation
 					allValues.push(part.value || '')
-					
+
 					// Use first value as the primary value
 					if (valueStart === -1) {
 						value = part.value || ''
@@ -284,7 +197,6 @@ export class PatternMatcher {
 						if (part.start > part.end) {
 							valueEnd = part.start // Empty range: [start, start)
 						} else {
-							// part.end is inclusive (last char of gap), so add 1 for exclusive
 							valueEnd = part.end + 1
 						}
 					}
@@ -295,7 +207,6 @@ export class PatternMatcher {
 					if (part.start > part.end) {
 						nestedEnd = part.start // Empty range: [start, start)
 					} else {
-						// part.end is inclusive (last char of gap), so add 1 for exclusive
 						nestedEnd = part.end + 1
 					}
 				} else if (part.gapType === 'meta') {
@@ -305,15 +216,13 @@ export class PatternMatcher {
 					if (part.start > part.end) {
 						metaEnd = part.start // Empty range: [start, start)
 					} else {
-						// part.end is inclusive (last char of gap), so add 1 for exclusive
 						metaEnd = part.end + 1
 					}
 				}
 			}
 		}
-		
-		// If no value was found (pattern uses only __nested__), 
-		// set value positions to empty range at the start
+
+		// If no value was found, set value positions to empty range at the start
 		if (valueStart === -1) {
 			valueStart = firstGapStart !== -1 ? firstGapStart : 0
 			valueEnd = valueStart
@@ -321,5 +230,18 @@ export class PatternMatcher {
 
 		return {value, valueStart, valueEnd, nested, nestedStart, nestedEnd, meta, metaStart, metaEnd, allValues}
 	}
-}
 
+	/**
+	 * Gets the start position of a pattern match
+	 */
+	private static getMatchStart(match: PatternMatch): number {
+		return match.parts.length > 0 ? match.parts[0].start : 0
+	}
+
+	/**
+	 * Gets the end position of a pattern match (inclusive)
+	 */
+	private static getMatchEnd(match: PatternMatch): number {
+		return match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
+	}
+}

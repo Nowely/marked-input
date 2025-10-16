@@ -1,28 +1,46 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {NestedToken} from './types'
-import {PatternMatcher} from './core/PatternMatcher'
-import {createMarkupDescriptor} from './core/MarkupDescriptor'
+import {createMarkupDescriptor, MarkupDescriptor} from './core/MarkupDescriptor'
+import {SegmentMatcher} from './core/SegmentMatcher'
+import {PatternProcessor} from './core/PatternProcessor'
+import {MatchPostProcessor} from './core/MatchPostProcessor'
+import {AhoCorasick} from './utils/AhoCorasick'
 import {buildTreeSinglePass} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 
 export class ParserV2 {
-	private readonly matcher: PatternMatcher
+	private readonly descriptors: MarkupDescriptor[]
+	private readonly ac: AhoCorasick
+	private readonly segmentMatcher: SegmentMatcher
+	private readonly patternProcessor: PatternProcessor
 
 	constructor(markups: Markup[]) {
-		const descriptors = markups.map(createMarkupDescriptor)
-		this.matcher = new PatternMatcher(descriptors)
+		// Compile markups to descriptors
+		this.descriptors = markups.map(createMarkupDescriptor)
+
+		// Initialize pipeline components
+		this.ac = AhoCorasick.Create(this.descriptors)
+		this.segmentMatcher = new SegmentMatcher(this.descriptors)
+		this.patternProcessor = new PatternProcessor(this.descriptors)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
 		const markups = options?.map(c => c.markup)
-		return markups
-			? new ParserV2(markups).split(value)
-			: [createTextToken(value)]
+		if (!markups || markups.length === 0) {
+			return [createTextToken(value)]
+		}
+		return new ParserV2(markups).split(value)
 	}
 
 	split(value: string): NestedToken[] {
-		const matches = this.matcher.getAllMatches(value)
-		return buildTreeSinglePass(value, matches)
+		// Execute explicit pipeline
+		const rawMatches = this.ac.search(value)
+		const uniqueMatches = this.segmentMatcher.deduplicateMatches(rawMatches)
+		const patternMatches = this.patternProcessor.processMatches(uniqueMatches)
+		const sortedMatches = MatchPostProcessor.sortByPositionAndLength(patternMatches)
+		const filteredMatches = MatchPostProcessor.removeOverlaps(sortedMatches, value, this.descriptors)
+
+		return buildTreeSinglePass(value, filteredMatches)
 	}
 }
