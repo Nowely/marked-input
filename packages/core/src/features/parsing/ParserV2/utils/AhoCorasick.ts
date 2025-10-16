@@ -35,12 +35,11 @@ export interface SegmentMatch {
  * Finds all occurrences of multiple patterns in O(|text| + |patterns| + |matches|) time
  */
 export class AhoCorasick {
-	private readonly patterns: string[]
-	private readonly root: AhoNode
+	private readonly segments: string[]
+	private readonly root = new AhoNode()
 
-	constructor(patterns: string[]) {
-		this.patterns = patterns.slice()
-		this.root = new AhoNode()
+	constructor(segments: string[]) {
+		this.segments = segments.slice()
 		this.buildTrie()
 		this.buildFailures()
 	}
@@ -50,13 +49,8 @@ export class AhoCorasick {
 	 * Extracts all segments from descriptors and builds the automaton
 	 */
 	static Create(descriptors: MarkupDescriptor[]): AhoCorasick {
-		// Build unified segment list from descriptors
-		const patterns: string[] = []
-		for (const descriptor of descriptors) {
-			patterns.push(...descriptor.segments)
-		}
-
-		return new AhoCorasick(patterns)
+		const segments = descriptors.flatMap(c => c.segments)
+		return new AhoCorasick(segments)
 	}
 
 	/**
@@ -84,7 +78,7 @@ export class AhoCorasick {
 			// Report all patterns that end at this position
 			if (node.out.length > 0) {
 				for (const index of node.out) {
-					const pattern = this.patterns[index]
+					const pattern = this.segments[index]
 					const start = i - pattern.length + 1
 
 					results.push({
@@ -104,8 +98,8 @@ export class AhoCorasick {
 	 * Builds the trie structure from patterns
 	 */
 	private buildTrie(): void {
-		for (let i = 0; i < this.patterns.length; i++) {
-			const pattern = this.patterns[i]
+		for (let i = 0; i < this.segments.length; i++) {
+			const pattern = this.segments[i]
 			let node = this.root
 
 			for (const char of pattern) {
