@@ -1,7 +1,7 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {NestedToken} from './types'
-import {createMarkupDescriptor, MarkupDescriptor} from './core/MarkupDescriptor'
+import {MarkupRegistry} from './utils/MarkupRegistry'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
@@ -10,16 +10,16 @@ import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 
 export class ParserV2 {
-	private readonly descriptors: MarkupDescriptor[]
+	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternProcessor: PatternProcessor
 
 	constructor(markups: Markup[]) {
-		this.descriptors = markups.map(createMarkupDescriptor)
-		this.ac = AhoCorasick.Create(this.descriptors)
-		this.segmentMatcher = new SegmentMatcher(this.descriptors)
-		this.patternProcessor = new PatternProcessor(this.descriptors)
+		this.registry = new MarkupRegistry(markups)
+		this.ac = AhoCorasick.Create(this.registry.descriptors)
+		this.segmentMatcher = new SegmentMatcher(this.registry.descriptors)
+		this.patternProcessor = new PatternProcessor(this.registry.descriptors)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
@@ -34,7 +34,7 @@ export class ParserV2 {
 		const segmentMatches = this.ac.search(value)
 		const uniqueMatches = this.segmentMatcher.deduplicateMatches(segmentMatches)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(uniqueMatches, value)
-		const matchResults = MatchPostProcessor.convertToResults(sortedValidatedMatches, value, this.descriptors)
+		const matchResults = MatchPostProcessor.convertToResults(sortedValidatedMatches, value, this.registry.descriptors)
 
 		return buildTree(value, matchResults)
 	}
@@ -53,15 +53,8 @@ export class ParserV2 {
 		}
 
 		let result = text
-		// Collect all unique segments
-		const allSegments = new Set<string>()
-		this.descriptors.forEach(descriptor => {
-			descriptor.segments.forEach(segment => {
-				if (segment.length > 0) {
-					allSegments.add(segment)
-				}
-			})
-		})
+		// Use pre-computed segments from registry
+		const allSegments = this.registry.segments
 
 		// Sort segments by length ascending to handle shorter segments first
 		const sortedSegments = Array.from(allSegments).sort((a, b) => a.length - b.length)
