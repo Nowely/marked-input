@@ -63,10 +63,8 @@ function createMarkToken(match: MatchResult, children: NestedToken[]): MarkToken
 		content: match.content,
 		children: hasNestedMarks ? children : [],
 		optionIndex: match.descriptorIndex,
-		data: {
-			value: valueContent,
-			meta: match.meta
-		},
+		value: valueContent,
+		meta: match.meta,
 		position: { start: match.start, end: match.end },
 		nested: nestedInfo
 	}

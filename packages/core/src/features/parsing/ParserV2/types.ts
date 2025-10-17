@@ -14,29 +14,6 @@ export interface TextToken {
 	}
 }
 
-/** TODO to
- * interface MarkToken {
-	type: 'mark'
-	content: string
-	position: {
-		start: number
-		end: number
-	}
-	optionIndex: number
-
-	value: string
-	meta?: string
-
-	nested?: {
-		content: string
-		position: {
-			start: number
-			end: number
-		}
-		tokens: NestedToken[]
-	}
-}
- */
 export interface MarkToken {
 	type: 'mark'
 	content: string
@@ -45,10 +22,8 @@ export interface MarkToken {
 		end: number
 	}
 	optionIndex: number
-	data: {
-		value: string
-		meta?: string
-	}
+	value: string
+	meta?: string
 	nested?: {
 		content: string
 		start: number

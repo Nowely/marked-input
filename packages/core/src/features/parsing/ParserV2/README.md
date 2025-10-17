@@ -60,10 +60,8 @@ interface MarkToken {
   content: string
   children: NestedToken[]     // Вложенные токены
   optionIndex: number         // Индекс markup descriptor
-  data: {
-    meta: string             // Текст между сегментами
-    value?: string
-  }
+  value: string               // Текст между сегментами
+  meta?: string               // Дополнительные метаданные
   position: { start: number, end: number }
 }
 ```
@@ -249,7 +247,7 @@ match.valueStart = 9, match.valueEnd = 14  // substring(9, 14) = "test"
 #### Структура токенов
 ```typescript
 TextToken: { type: 'text', content, position: {start, end} }
-MarkToken: { type: 'mark', content, children: [], optionIndex, data: {label, value?}, position: {start, end} }
+MarkToken: { type: 'mark', content, children: [], optionIndex, value, meta?, position: {start, end} }
 ```
 
 ### 2. Markup Pattern Rules

@@ -227,8 +227,8 @@ describe('ParserV2', () => {
 					`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].data.value).toBe('div')
-						expect(marks[0].data.meta).toBe('class')
+						expect(marks[0].value).toBe('div')
+						expect(marks[0].meta).toBe('class')
 					})
 
 					it('handles HTML-like pattern with empty value', () => {
@@ -246,8 +246,8 @@ describe('ParserV2', () => {
 					`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].data.value).toBe('span')
-						expect(marks[0].data.meta).toBe('')
+						expect(marks[0].value).toBe('span')
+						expect(marks[0].meta).toBe('')
 					})
 
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
@@ -269,8 +269,8 @@ describe('ParserV2', () => {
 			`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].data.value).toBe('div')
-						expect(marks[0].data.meta).toBe('class')
+						expect(marks[0].value).toBe('div')
+						expect(marks[0].meta).toBe('class')
 					})
 
 					it('handles complex HTML-like nested structure', () => {
@@ -296,8 +296,8 @@ describe('ParserV2', () => {
 
 						// Verify correct nesting
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].data.value).toBe('div')
-						expect(marks[0].data.meta).toBe('class')
+						expect(marks[0].value).toBe('div')
+						expect(marks[0].meta).toBe('class')
 						expect(marks[0].children.length).toBeGreaterThan(0)
 					})
 
@@ -353,7 +353,7 @@ describe('ParserV2', () => {
 						const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
 						expect(markTokens).toHaveLength(1)
 						expect(markTokens[0].children).toEqual([])
-						expect(markTokens[0].data.meta).toBe('#[world]')
+						expect(markTokens[0].meta).toBe('#[world]')
 					})
 
 					it('correctly distinguishes between __label__ and __nested__ in mixed patterns', () => {
@@ -480,8 +480,8 @@ describe('ParserV2', () => {
 
 					const marks = result.filter(token => token.type === 'mark') as MarkToken[]
 					expect(marks).toHaveLength(1)
-					expect(marks[0].data.value).toBe(longText)
-					expect(marks[0].data.meta).toBe('value')
+					expect(marks[0].value).toBe(longText)
+					expect(marks[0].meta).toBe('value')
 				})
 
 				it('handles conflicting patterns gracefully', () => {
@@ -548,8 +548,8 @@ describe('ParserV2', () => {
 					`)
 
 					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].data.value).toBe('link')
-					expect(marks[0].data.meta).toBe('url')
+					expect(marks[0].value).toBe('link')
+					expect(marks[0].meta).toBe('url')
 				})
 
 				it('handles __value__ before nested placeholder', () => {
@@ -568,7 +568,7 @@ describe('ParserV2', () => {
 					`)
 
 					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].data.meta).toBe('note')
+					expect(marks[0].meta).toBe('note')
 				})
 
 				it('handles complex pattern with value in middle', () => {
@@ -587,8 +587,8 @@ describe('ParserV2', () => {
 					`)
 
 					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].data.value).toBe('name')
-					expect(marks[0].data.meta).toBe('url')
+					expect(marks[0].value).toBe('name')
+					expect(marks[0].meta).toBe('url')
 				})
 			})
 		})
@@ -747,7 +747,7 @@ describe('ParserV2', () => {
 							// Find mark token
 							const markToken = result.find(token => token.type === 'mark') as MarkToken
 							expect(markToken).toBeDefined()
-							expect(markToken.data.value).toBe('world')
+							expect(markToken.value).toBe('world')
 							expect(markToken.content).toBe(`${prefix}[world]`)
 
 							// Check that we have text before mark
@@ -783,7 +783,7 @@ describe('ParserV2', () => {
 							// Find mark token
 							const markToken = result.find(token => token.type === 'mark') as MarkToken
 							expect(markToken).toBeDefined()
-							expect(markToken.data.value).toBe('content')
+							expect(markToken.value).toBe('content')
 							expect(markToken.content).toBe(`<${tag}>content</${tag}>`)
 						})
 					})
@@ -854,7 +854,7 @@ describe('ParserV2', () => {
 							// Find mark token
 							const markToken = result.find(token => token.type === 'mark') as MarkToken
 							expect(markToken).toBeDefined()
-							expect(markToken.data.value).toBe(expectedLabel)
+							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
 
@@ -1148,7 +1148,7 @@ describe('ParserV2', () => {
 							// Find mark token
 							const markToken = result.find(token => token.type === 'mark') as MarkToken
 							expect(markToken).toBeDefined()
-							expect(markToken.data.value).toBe(expectedLabel)
+							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
 				})
@@ -1179,8 +1179,8 @@ describe('ParserV2', () => {
 				expect(marks).toHaveLength(1)
 
 				const mark = marks[0]
-				expect(mark.data.value).toBe(userName)
-				expect(mark.data.meta).toBe(userValue)
+				expect(mark.value).toBe(userName)
+				expect(mark.meta).toBe(userValue)
 			})
 		})
 
@@ -1200,8 +1200,8 @@ describe('ParserV2', () => {
 				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 				expect(marks).toHaveLength(2)
 
-				expect(marks[0].data.value).toBe(hashtag1)
-				expect(marks[1].data.value).toBe(hashtag2)
+				expect(marks[0].value).toBe(hashtag1)
+				expect(marks[1].value).toBe(hashtag2)
 			})
 		})
 
@@ -1221,11 +1221,11 @@ describe('ParserV2', () => {
 				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 				expect(marks).toHaveLength(2)
 
-				const userMark = marks.find(m => m.data.meta === 'user')
-				const projectMark = marks.find(m => m.data.value === project)
+				const userMark = marks.find(m => m.meta === 'user')
+				const projectMark = marks.find(m => m.value === project)
 
 				expect(userMark).toBeDefined()
-				expect(userMark?.data.value).toBe(userName)
+				expect(userMark?.value).toBe(userName)
 				expect(projectMark).toBeDefined()
 			})
 		})
@@ -1247,8 +1247,8 @@ describe('ParserV2', () => {
 				expect(marks).toHaveLength(1)
 
 				const mark = marks[0]
-				expect(mark.data.value).toBe(city)
-				expect(mark.data.meta).toBe(country)
+				expect(mark.value).toBe(city)
+				expect(mark.meta).toBe(country)
 			})
 		})
 
@@ -1301,9 +1301,8 @@ describe('ParserV2', () => {
 
 				// Verify all marks have required properties
 				marks.forEach(mark => {
-					expect(mark.data).toBeDefined()
-					expect(mark.data.value).toBeDefined()
-					expect(typeof mark.data.value).toBe('string')
+					expect(mark.value).toBeDefined()
+					expect(typeof mark.value).toBe('string')
 				})
 			})
 		})
@@ -1323,10 +1322,10 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 			const content = `"${escapeString(token.content)}"`
 			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
 		} else {
-			let infoParts = [`value="${escapeString(token.data.value)}"`]
+			let infoParts = [`value="${escapeString(token.value)}"`]
 
-			if (token.data.meta !== undefined) {
-				infoParts.push(`meta="${escapeString(token.data.meta)}"`)
+			if (token.meta !== undefined) {
+				infoParts.push(`meta="${escapeString(token.meta)}"`)
 			}
 
 			if (token.nested) {
