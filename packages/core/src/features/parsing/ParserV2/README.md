@@ -1,19 +1,19 @@
 # ParserV2
 
-Высокопроизводительный древовидный парсер для обработки вложенных markup конструкций в тексте с однопроходным алгоритмом построения дерева.
+High-performance tree-based parser for processing nested markup constructs in text with a single-pass tree-building algorithm.
 
-**📋 RFC:** [Nested marks](docs/RFC.%20Nested%20marks.md) - подробное описание требований и архитектурных решений.
+**RFC:** [Nested marks](../../../../docs/RFC.%20Nested%20marks.md) - detailed requirements and architectural decisions.
 
-## 📋 Содержание
+## Table of Contents
 
-- [🚀 Быстрый старт](#-быстрый-старт)
-- [📊 Производительность](#-производительность)
-- [🏗️ Архитектура](#️-архитектура)
-- [📋 API](#-api)
-- [📚 Правила работы](#-правила-работы)
-- [🎯 Примеры работы с конфликтующими паттернами](#-примеры-работы-с-конфликтующими-паттернами)
+- [Quick Start](#quick-start)
+- [Performance](#performance)
+- [Architecture](#architecture)
+- [API](#api)
+- [Rules](#rules)
+- [Conflicting Pattern Examples](#conflicting-pattern-examples)
 
-## 🚀 Быстрый старт
+## Quick Start
 
 ```typescript
 import { ParserV2 } from './ParserV2'
@@ -33,9 +33,9 @@ const nestedResult = nestedParser.split('@[hello #[world]]')
 // result: [TextToken(''), MarkToken{meta: 'hello #[world]', children: [...]}, TextToken('')]
 ```
 
-## 📊 Производительность
+## Performance
 
-**Benchmark результаты (nested structures):**
+**Benchmark Results (nested structures):**
 
 | Depth | Operations/sec |
 |-------|----------------|
@@ -43,14 +43,14 @@ const nestedResult = nestedParser.split('@[hello #[world]]')
 | 2 | 40,092 ops/sec |
 | 3 | 47,923 ops/sec |
 
-**Характеристики:**
-- **Сложность**: O(N log N) для nested parsing (sorting + single-pass building)
-- **Алгоритм**: Single-pass tree building + Aho-Corasick multi-pattern matching
+**Characteristics:**
+- **Complexity**: O(N log N) for nested parsing (sorting + single-pass building)
+- **Algorithm**: Single-pass tree building + Aho-Corasick multi-pattern matching
 - **Memory**: O(N) space complexity (no duplicate parsing)
 
-## 🏗️ Архитектура
+## Architecture
 
-### Основные компоненты
+### Core Components
 
 ```typescript
 type NestedToken = TextToken | MarkToken
@@ -58,46 +58,46 @@ type NestedToken = TextToken | MarkToken
 interface MarkToken {
   type: 'mark'
   content: string
-  children: NestedToken[]     // Вложенные токены
-  optionIndex: number         // Индекс markup descriptor
-  value: string               // Текст между сегментами
-  meta?: string               // Дополнительные метаданные
+  children: NestedToken[]     // Nested tokens
+  optionIndex: number         // Markup descriptor index
+  value: string               // Text between segments
+  meta?: string               // Additional metadata
   position: { start: number, end: number }
 }
 ```
 
-### Структура модуля
+### Module Structure
 
 ```
 ParserV2/
-├── ParserV2.ts              # Главный класс парсера
-├── ParserV2.bench.ts        # Бенчмарки производительности
-├── ParserV2.spec.ts         # Тесты
-├── README.md                # 📖 Документация и правила работы парсера
-├── index.ts                 # Публичные экспорты
-├── types.ts                 # Типы и интерфейсы
-├── core/                    # Ядро функциональности
-│   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
-│   ├── PatternProcessor.ts  # Координатор обработки паттернов
-│   ├── ChainMatcher.ts      # Построение цепочек паттернов
-│   ├── MatchValidator.ts    # Валидация и фильтрация matches
-│   ├── MatchPostProcessor.ts # Конверсия в MatchResult
-│   ├── TokenBuilder.ts      # Создание токенов
+├── ParserV2.ts              # Main parser class
+├── ParserV2.bench.ts        # Performance benchmarks
+├── ParserV2.spec.ts         # Tests
+├── README.md                # Documentation and parser rules
+├── index.ts                 # Public exports
+├── types.ts                 # Types and interfaces
+├── core/                    # Core functionality
+│   ├── MarkupDescriptor.ts  # Markup descriptor creation
+│   ├── PatternProcessor.ts  # Pattern processing coordinator
+│   ├── ChainMatcher.ts      # Pattern chain building
+│   ├── MatchValidator.ts    # Match validation and filtering
+│   ├── MatchPostProcessor.ts # Conversion to MatchResult
+│   ├── TokenBuilder.ts      # Token creation
 │   └── TreeBuilder.ts       # Single-pass tree building
-└── utils/                   # Утилиты
-    ├── MarkupRegistry.ts    # Реестр дескрипторов + дедуплицированные сегменты
-    ├── AhoCorasick.ts       # Эффективный multi-pattern поиск (использует дедуплицированные сегменты)
-    ├── PatternBuilder.ts    # Построение паттернов из цепочек
-    ├── PatternSorting.ts    # Статические методы сортировки
-    └── PatternChainManager.ts # Управление активными цепочками
+└── utils/                   # Utilities
+    ├── MarkupRegistry.ts    # Descriptor registry + deduplicated segments
+    ├── AhoCorasick.ts       # Efficient multi-pattern search (uses deduplicated segments)
+    ├── PatternBuilder.ts    # Pattern building from chains
+    ├── PatternSorting.ts    # Static sorting methods
+    └── PatternChainManager.ts # Active chain management
 ```
 
-## 🎨 Визуализация
+## Visualization
 
-### Структура NestedToken
+### NestedToken Structure
 
 ```typescript
-// Простое дерево токенов
+// Simple token tree
 "Hello @[world](test) and #[tag]"
      ↓
 [
@@ -109,10 +109,10 @@ ParserV2/
 ]
 ```
 
-### Дерево с вложенностью
+### Tree with Nesting
 
 ```typescript
-// Вложенная структура: @[hello #[world]]
+// Nested structure: @[hello #[world]]
 "@[hello #[world]]"
      ↓
 [
@@ -121,7 +121,7 @@ ParserV2/
     TextToken("hello ", 2, 8),
     MarkToken("#[world]", 8, 16, data={meta:"world"}, children=[
       TextToken("", 10, 10),
-      // ... пустые TextToken по краям
+      // ... empty TextTokens at edges
     ]),
     TextToken("", 16, 16)
   ]),
@@ -132,26 +132,26 @@ ParserV2/
 ### Position Semantics
 
 ```typescript
-// Пример: "@[world](test)"
-// Индексы:  012345678901234 (длина 15)
-// Текст:    @[world](test)
+// Example: "@[world](test)"
+// Indices:  012345678901234 (length 15)
+// Text:     @[world](test)
 // Match:    ^^^^^^^^^^^^^^^
 // Label:       ^^^^^
 // Value:             ^^^^
 
-// Все позиции exclusive (JavaScript convention)
+// All positions are exclusive (JavaScript convention)
 match.start = 0, match.end = 15      // substring(0, 15) = "@[world](test)"
 match.labelStart = 2, match.labelEnd = 7  // substring(2, 7) = "world"
 match.valueStart = 9, match.valueEnd = 14 // substring(9, 14) = "test"
 ```
 
-### Алгоритм Flow
+### Algorithm Flow
 
 ```
 Input Text → Aho-Corasick → SegmentMatches
                               ↓
                     PatternProcessor
-                    (координатор)
+                    (coordinator)
                               ↓
         ┌─────────────────────┼─────────────────────┐
         ↓                     ↓                     ↓
@@ -174,36 +174,36 @@ Input Text → Aho-Corasick → SegmentMatches
                       NestedToken[]
 ```
 
-### Разделение ответственностей
+### Separation of Responsibilities
 
-**PatternProcessor** - минимальный координатор (всего 3 строки логики):
-- `ChainMatcher` - построение цепочек паттернов из сегментов
-- `MatchValidator` - валидация и фильтрация matches
-- `PatternSorting` - статические методы для сортировки
+**PatternProcessor** - minimal coordinator (only 3 lines of logic):
+- `ChainMatcher` - build pattern chains from segments
+- `MatchValidator` - validation and match filtering
+- `PatternSorting` - static sorting methods
 
-**ChainMatcher** - полная изоляция логики построения цепочек:
-- Создает `PatternBuilder` и `PatternChainManager` внутри себя
-- Обработка ожидающих цепочек с `PatternSorting.sortWaitingChains()`
-- Запуск новых цепочек с `PatternSorting.sortDescriptors()`
-- Отслеживание вложенности через `nestingStack`
+**ChainMatcher** - complete chain building logic isolation:
+- Creates `PatternBuilder` and `PatternChainManager` internally
+- Processes waiting chains with `PatternSorting.sortWaitingChains()`
+- Starts new chains with `PatternSorting.sortDescriptors()`
+- Tracks nesting via `nestingStack`
 
-**PatternSorting** - статические методы сортировки:
-- `sortWaitingChains()` - приоритизация цепочек при расширении
-- `sortDescriptors()` - приоритизация паттернов при старте
-- `sortPatternMatches()` - финальная сортировка для tree building
+**PatternSorting** - static sorting methods:
+- `sortWaitingChains()` - prioritize chains during expansion
+- `sortDescriptors()` - prioritize patterns at start
+- `sortPatternMatches()` - final sorting for tree building
 
-**MatchValidator** - пятиэтапный pipeline фильтрации:
-1. Фильтрация matches внутри non-nested gaps (`__meta__`, `__value__`)
-2. Фильтрация конфликтов одного descriptor на одной позиции
-3. Материализация gaps из текста
-4. Фильтрация partial matches (с общими границами)
-5. Валидация двух `__value__` для HTML-подобных паттернов
+**MatchValidator** - five-stage filtering pipeline:
+1. Filter matches inside non-nested gaps (`__meta__`, `__value__`)
+2. Filter conflicts of same descriptor at same position
+3. Materialize gaps from text
+4. Filter partial matches (with shared boundaries)
+5. Validate two `__value__` for HTML-like patterns
 
-**MatchPostProcessor** - конверсия в финальный формат:
-- Извлечение контента (value, nested, meta)
-- Создание `MatchResult[]` с позициями
+**MatchPostProcessor** - conversion to final format:
+- Extract content (value, nested, meta)
+- Create `MatchResult[]` with positions
 
-## 📋 API
+## API
 
 ```typescript
 class ParserV2 {
@@ -211,40 +211,40 @@ class ParserV2 {
   split(input: string): NestedToken[]
 }
 
-// Статический метод
+// Static method
 ParserV2.split(input: string, markups: Markup[]): NestedToken[]
 ```
 
-## 📚 Правила работы
+## Rules
 
-### 1. Архитектурные принципы
+### 1. Architectural Principles
 
-#### Однопроходной алгоритм
-- **Один проход** для поиска всех совпадений
-- **Один проход** для построения дерева токенов
-- **Нет рекурсивного парсинга** содержимого токенов
+#### Single-Pass Algorithm
+- **One pass** to find all matches
+- **One pass** to build token tree
+- **No recursive parsing** of token contents
 
-#### Позиционная семантика
-- Все позиции относятся к **оригинальному тексту**
-- **Все позиции следуют JavaScript convention**: `start` - inclusive, `end` - **exclusive**
-- Совместимы с `substring(start, end)` для всех типов позиций
+#### Position Semantics
+- All positions refer to **original text**
+- **All positions follow JavaScript convention**: `start` - inclusive, `end` - **exclusive**
+- Compatible with `substring(start, end)` for all position types
 
-**Пример:**
+**Example:**
 ```typescript
-// Текст: "@[world](test)"
-// Индексы:  012345678901234 (длина 15)
+// Text: "@[world](test)"
+// Indices:  012345678901234 (length 15)
 
-// Match позиции:
+// Match positions:
 match.start = 0, match.end = 15  // substring(0, 15) = "@[world](test)"
 
-// Label позиции:
+// Label positions:
 match.labelStart = 2, match.labelEnd = 7  // substring(2, 7) = "world"
 
-// Value позиции:
+// Value positions:
 match.valueStart = 9, match.valueEnd = 14  // substring(9, 14) = "test"
 ```
 
-#### Структура токенов
+#### Token Structure
 ```typescript
 TextToken: { type: 'text', content, position: {start, end} }
 MarkToken: { type: 'mark', content, children: [], optionIndex, value, meta?, position: {start, end} }
@@ -252,235 +252,235 @@ MarkToken: { type: 'mark', content, children: [], optionIndex, value, meta?, pos
 
 ### 2. Markup Pattern Rules
 
-#### Формат паттернов
-Паттерн состоит из **статических сегментов** и **плейсхолдеров**:
-- **Плейсхолдеры**: `__meta__`, `__meta__`, и `__nested__`
-- **Примеры валидных паттернов**:
-  - `@[__meta__]` - value без поддержки вложенности
-  - `@[__nested__]` - content с поддержкой вложенности
-  - `@[__meta__](__meta__)` - value и value
-  - `@[__nested__](__meta__)` - nested content и value
-  - `@[__meta__](__nested__)` - value и nested content (комбинированный паттерн)
-  - `<__meta__>__meta__</__meta__>` - два value (HTML-подобный)
-  - `<__meta__ __meta__>__nested__</__meta__>` - HTML-подобный с вложенностью
-  - `(__meta__)@[__meta__]` - value перед content (любой порядок разрешен)
+#### Pattern Format
+Patterns consist of **static segments** and **placeholders**:
+- **Placeholders**: `__meta__`, `__value__`, and `__nested__`
+- **Valid pattern examples**:
+  - `@[__meta__]` - value without nesting support
+  - `@[__nested__]` - content with nesting support
+  - `@[__meta__](__meta__)` - value and value
+  - `@[__nested__](__meta__)` - nested content and value
+  - `@[__meta__](__nested__)` - value and nested content (combined pattern)
+  - `<__meta__>__meta__</__meta__>` - two values (HTML-like)
+  - `<__meta__ __meta__>__nested__</__meta__>` - HTML-like with nesting
+  - `(__meta__)@[__meta__]` - value before content (any order allowed)
 
-#### Валидация паттернов
-- `__meta__` может встречаться **0, 1 или 2 раза**
-- `__nested__` может встречаться **0 или 1 раз**
-- `__meta__` и `__nested__` **могут использоваться вместе** в одном паттерне (например, `@[__meta__](__nested__)`)
-- Паттерн должен содержать **хотя бы один** `__meta__` или `__nested__`
-- `__meta__` может встречаться **0 или 1 раз**
-- `__meta__` **может появляться в любой позиции** - до, между или после контент-плейсхолдеров
-- Паттерн должен содержать **хотя бы один статический сегмент**
-- **Для паттернов с двумя `__meta__`** (например, `<__meta__>__nested__</__meta__>`): оба value должны быть **идентичны**, иначе паттерн не матчится
+#### Pattern Validation
+- `__meta__` can occur **0, 1, or 2 times**
+- `__nested__` can occur **0 or 1 time**
+- `__meta__` and `__nested__` **can be used together** in one pattern (e.g., `@[__meta__](__nested__)`)
+- Pattern must contain **at least one** `__meta__` or `__nested__`
+- `__value__` can occur **0 or 1 time**
+- `__value__` **can appear in any position** - before, between, or after content placeholders
+- Pattern must contain **at least one static segment**
+- **For patterns with two `__meta__`** (e.g., `<__meta__>__nested__</__meta__>`): both values must be **identical**, otherwise pattern doesn't match
 
-**Примеры ошибок валидации:**
+**Validation error examples:**
 ```typescript
-// ❌ Нет контент-плейсхолдера
+// ❌ No content placeholder
 "@[](__meta__)"  // Error: Must have at least one "__meta__" or "__nested__" placeholder
 
-// ❌ Слишком много __nested__ плейсхолдеров
+// ❌ Too many __nested__ placeholders
 "@[__nested__](__nested__)"  // Error: Expected 0 or 1 "__nested__" placeholder, but found 2
 
-// ❌ Слишком много __meta__ плейсхолдеров
+// ❌ Too many __meta__ placeholders
 "@[__meta__](__meta__)(__meta__)"  // Error: Expected 0 or 1 "__meta__" placeholder, but found 2
 
-// ❌ Нет статических сегментов
+// ❌ No static segments
 "__meta__"  // Error: Must have at least one static segment
 ```
 
-**Примеры валидных комбинаций:**
+**Valid combination examples:**
 ```typescript
-// ✅ Комбинация __meta__ и __nested__
-"@[__meta__](__nested__)"  // value для идентификации, nested для вложенного контента
+// ✅ Combination of __meta__ and __nested__
+"@[__meta__](__nested__)"  // value for identification, nested for nested content
 
-// ✅ Комбинация __meta__ и __meta__
-"@[__meta__](__meta__)"   // value для идентификации, value для простого значения
+// ✅ Combination of __meta__ and __meta__
+"@[__meta__](__meta__)"   // value for identification, value for simple value
 
-// ✅ Комбинация __nested__ и __meta__
-"@[__nested__](__meta__)"  // nested контент и простое значение
+// ✅ Combination of __nested__ and __meta__
+"@[__nested__](__meta__)"  // nested content and simple value
 
-// ✅ HTML-подобный с label, value и nested
-"<__meta__ __meta__>__nested__</__meta__>"  // полноценный HTML-подобный тег с атрибутами и контентом
+// ✅ HTML-like with label, value, and nested
+"<__meta__ __meta__>__nested__</__meta__>"  // full HTML-like tag with attributes and content
 
-// ✅ Value перед контент-плейсхолдером
-"(__meta__)@[__meta__]"   // value может быть в любой позиции
-"[__meta__](__meta__)(__nested__)"  // value между value и nested
+// ✅ Value before content placeholder
+"(__meta__)@[__meta__]"   // value can be in any position
+"[__meta__](__meta__)(__nested__)"  // value between value and nested
 ```
 
-#### Trigger и симметрия
-- **Trigger** = первый символ первого сегмента (используется для группировки)
-- **Symmetric pattern** = первый и последний сегменты одинаковые (`**text**`, `*text*`)
+#### Trigger and Symmetry
+- **Trigger** = first character of first segment (used for grouping)
+- **Symmetric pattern** = first and last segments are identical (`**text**`, `*text*`)
 
-### 3. Алгоритм поиска совпадений
+### 3. Match Finding Algorithm
 
 #### Segment Matching (Aho-Corasick)
-- Все статические сегменты из всех паттернов дедуплицируются в `MarkupRegistry`
-- Алгоритм **Aho-Corasick** находит все вхождения сегментов в тексте
-- Результат: `SegmentMatch[]` - найденные сегменты с позициями и индексами
-- **Сложность:** O(N + M), где N = длина текста, M = количество паттернов
+- All static segments from all patterns are deduplicated in `MarkupRegistry`
+- **Aho-Corasick** algorithm finds all segment occurrences in text
+- Result: `SegmentMatch[]` - found segments with positions and indices
+- **Complexity:** O(N + M), where N = text length, M = pattern count
 
 #### Pattern Building (Chain Management)
-- **Pattern Chain** = цепочка сегментов, формирующая один паттерн
-- Цепочка создается при нахождении **первого сегмента** паттерна
-- Цепочка расширяется при нахождении **следующих сегментов**
-- Цепочка завершается при нахождении **последнего сегмента**
+- **Pattern Chain** = chain of segments forming one pattern
+- Chain is created when **first segment** of pattern is found
+- Chain is extended when **next segments** are found
+- Chain is completed when **last segment** is found
 
-#### Правила приоритетов паттернов
+#### Pattern Priority Rules
 
-**При старте новой цепочки:**
-- **Более длинные первые сегменты** имеют приоритет (избежание конфликтов `*` vs `**`)
-- При равной длине - **больше сегментов** = выше приоритет (более специфичные паттерны первыми)
+**When starting new chain:**
+- **Longer first segments** have priority (avoid conflicts `*` vs `**`)
+- If equal length - **more segments** = higher priority (more specific patterns first)
 
-**При расширении/завершении цепочки:**
-- **Цепочки, завершающиеся на текущем сегменте** имеют приоритет (закрываются первыми)
-- **Цепочки без вложений** имеют приоритет (закрываются первыми)
-- **Lookahead**: если следующий сегмент доступен сразу - приоритет расширению
-- **Для цепочек с одинаковой стартовой позицией** (конфликтующих):
-  - **Больше собранных сегментов** = выше приоритет (более специфичный паттерн)
-  - При равенстве - **больше общее количество сегментов** = выше приоритет
-- При прочих равных: **LIFO** - позже начатая = выше приоритет (вложенная)
+**When extending/completing chain:**
+- **Chains completing at current segment** have priority (close first)
+- **Chains without nesting** have priority (close first)
+- **Lookahead**: if next segment is immediately available - prioritize expansion
+- **For chains with same start position** (conflicting):
+  - **More collected segments** = higher priority (more specific pattern)
+  - If equal - **more total segments** = higher priority
+- All else equal: **LIFO** - later started = higher priority (nested)
 
 #### Pattern Exclusivity
-- Паттерн **не может** начать новое совпадение, пока активна его цепочка
-- Пример: `@[simple]` и `@[simple](value)` не могут быть активны одновременно
-- Короткий паттерн, завершившись, **отменяет** более длинный с той же стартовой позицией
+- Pattern **cannot** start new match while its chain is active
+- Example: `@[simple]` and `@[simple](value)` cannot be active simultaneously
+- Short pattern, when completed, **cancels** longer one with same start position
 
-#### Фильтрация overlaps
-После построения всех совпадений удаляются:
-- **Partial matches** - совпадения, являющиеся частью более длинного с тем же началом/концом
-- **Matches inside __meta__** - совпадения внутри value-секции другого совпадения
-- **Matches inside __meta__** - совпадения внутри label-секции другого совпадения (values не поддерживают вложенность)
-- **Overlapping matches** - конфликтующие совпадения одного descriptor, начинающиеся в одной позиции
+#### Overlap Filtering
+After building all matches, remove:
+- **Partial matches** - matches that are part of longer match with same start/end
+- **Matches inside __meta__** - matches inside value section of another match
+- **Matches inside __meta__** - matches inside label section of another match (values don't support nesting)
+- **Overlapping matches** - conflicting matches of same descriptor starting at same position
 
-Сохраняются:
-- **Вложенные совпадения** в __nested__ секциях (для построения дерева)
+Preserve:
+- **Nested matches** in __nested__ sections (for tree building)
 
 #### Advanced Algorithm Details
 
 **Lazy Gap Materialization:**
 ```typescript
-// Gaps в PatternMatch изначально undefined для оптимизации памяти
-part.value === undefined  // еще не материализован
+// Gaps in PatternMatch are initially undefined for memory optimization
+part.value === undefined  // not yet materialized
 
-// При необходимости выполняется materialization:
+// Materialization occurs when needed:
 if (part.start > part.end) {
-  part.value = ''  // пустой gap (смежные сегменты)
+  part.value = ''  // empty gap (adjacent segments)
 } else {
   part.value = input.slice(part.start, part.end + 1)
 }
 ```
 
 **Non-Nested Gap Filtering Strategy:**
-Совпадения внутри `__meta__` и `__meta__` секций фильтруются, потому что они рассматриваются как plain text.
-Только `__nested__` секции поддерживают вложенность:
+Matches inside `__meta__` and `__meta__` sections are filtered because they're treated as plain text.
+Only `__nested__` sections support nesting:
 ```typescript
-// Проверка: matchB начинается внутри non-nested gap (value или label) matchA?
+// Check: does matchB start inside non-nested gap (value or label) of matchA?
 for (const part of matchA.parts) {
   if (part.type === 'gap' && (part.gapType === 'value' || part.gapType === 'label')) {
     if (matchB.start >= part.start && matchB.start <= part.end) {
-      // matchB фильтруется - он внутри non-nested gap
+      // matchB is filtered - it's inside non-nested gap
     }
   }
-  // Если gapType === 'nested', вложенность разрешена
+  // If gapType === 'nested', nesting is allowed
 }
 ```
 
 **Nesting Stack Management:**
-PatternProcessor использует LIFO stack для отслеживания активных цепочек:
+PatternProcessor uses LIFO stack to track active chains:
 ```typescript
 const nestingStack: PatternChain[] = []
 
 for (const match of uniqueMatches) {
-  // 1. Обработать завершенные цепочки
+  // 1. Process completed chains
   processWaitingChains(match, results, nestingStack)
 
-  // 2. Начать новые цепочки
+  // 2. Start new chains
   startNewChains(match, results, nestingStack)
 }
 ```
-Цепочки управляются по принципу "последний вошел - первый вышел" для правильной обработки вложенности.
+Chains are managed by "last in - first out" principle for correct nesting handling.
 
-### 4. Построение дерева токенов
+### 4. Token Tree Building
 
 #### Single-Pass Tree Building
-Алгоритм обходит отсортированные совпадения **один раз** с использованием стека:
+Algorithm traverses sorted matches **once** using a stack:
 
 ```
 for each match in sorted_matches:
-  1. Pop completed parents (match не содержится в их label)
-  2. Skip если match начинается раньше текущей позиции (конфликт)
-  3. Push match в стек для потенциальных children
+  1. Pop completed parents (match not contained in their label)
+  2. Skip if match starts before current position (conflict)
+  3. Push match to stack for potential children
 
 Finalize remaining stack
 ```
 
-**Сложность:** O(N log N) для сортировки + O(N) для построения
+**Complexity:** O(N log N) for sorting + O(N) for building
 
-#### Правила вложенности
-- **Parent-child связь**: child полностью содержится в **nestedStart..nestedEnd** родителя (или **labelStart..labelEnd** для обратной совместимости)
-- **__nested__ секции поддерживают вложенность**: совпадения внутри `__nested__` сохраняются и формируют дерево
-- **__meta__ и __meta__ секции не парсятся**: совпадения внутри этих секций игнорируются
-- **Self-nesting не поддерживается**: паттерн не может быть вложен сам в себя
+#### Nesting Rules
+- **Parent-child relationship**: child is fully contained in parent's **nestedStart..nestedEnd** (or **labelStart..labelEnd** for backward compatibility)
+- **__nested__ sections support nesting**: matches inside `__nested__` are preserved and form tree
+- **__meta__ and __meta__ sections are not parsed**: matches inside these sections are ignored
+- **Self-nesting is not supported**: pattern cannot be nested within itself
 
-#### Структура children
-- `children` содержит **чередование** TextToken и MarkToken
-- Всегда начинается и заканчивается TextToken (даже пустыми)
-- `children` **пустой массив** если нет вложенных MarkToken (только text)
+#### Children Structure
+- `children` contains **alternating** TextToken and MarkToken
+- Always starts and ends with TextToken (even empty ones)
+- `children` is **empty array** if no nested MarkTokens (only text)
 
-#### Позиции текстовых токенов
-- TextToken создается **между** MarkToken
-- Пустые TextToken создаются на границах (совместимость с legacy)
-- Позиции: `{start: prevMarkEnd, end: currentMarkStart}`
+#### Text Token Positions
+- TextToken is created **between** MarkTokens
+- Empty TextTokens are created at boundaries (legacy compatibility)
+- Positions: `{start: prevMarkEnd, end: currentMarkStart}`
 
 ### 5. Edge Cases & Guarantees
 
-#### Обработка граничных случаев
-- ✅ **Пустой ввод** → `[TextToken("", 0, 0)]`
-- ✅ **Текст без markup** → `[TextToken(text, 0, length)]`
-- ✅ **Пустые label/value** → `""` (валидно)
-- ✅ **Adjacent marks** → корректная позиционная семантика
-- ✅ **Unicode/Emoji** → полная поддержка
-- ✅ **Вложенные скобки в content** → `@[text [with] brackets]` работает
+#### Edge Case Handling
+- ✅ **Empty input** → `[TextToken("", 0, 0)]`
+- ✅ **Text without markup** → `[TextToken(text, 0, length)]`
+- ✅ **Empty label/value** → `""` (valid)
+- ✅ **Adjacent marks** → correct position semantics
+- ✅ **Unicode/Emoji** → full support
+- ✅ **Nested brackets in content** → `@[text [with] brackets]` works
 
-#### Не поддерживается
-- ❌ **Self-nesting** - `@[outer @[inner]]` не создаст вложенность для одного паттерна
-- ❌ **Parsing inside __meta__** - value рассматривается как plain text
-- ❌ **Parsing inside __meta__** - value рассматривается как plain text (используйте `__nested__` для вложенности)
-- ❌ **Bracket counting** - паттерн закрывается первым закрывающим сегментом
+#### Not Supported
+- ❌ **Self-nesting** - `@[outer @[inner]]` won't create nesting for same pattern
+- ❌ **Parsing inside __meta__** - value is treated as plain text
+- ❌ **Parsing inside __meta__** - value is treated as plain text (use `__nested__` for nesting)
+- ❌ **Bracket counting** - pattern closes at first closing segment
 
 #### __nested__ vs __meta__
-**Ключевое различие:**
-- `__meta__` - содержимое рассматривается как **plain text**, вложенные паттерны игнорируются
-- `__nested__` - содержимое **поддерживает вложенность**, вложенные паттерны парсятся
+**Key difference:**
+- `__meta__` - content is treated as **plain text**, nested patterns are ignored
+- `__nested__` - content **supports nesting**, nested patterns are parsed
 
-**Когда использовать `__meta__`:**
-- Для простого текстового контента без вложенности
-- Для ссылок, тегов, меток, имен
-- Когда нужна гарантия, что контент будет plain text
+**When to use `__meta__`:**
+- For simple text content without nesting
+- For links, tags, labels, names
+- When you need guarantee that content will be plain text
 
-**Когда использовать `__nested__`:**
-- Для форматированного текста (markdown, HTML)
-- Когда нужна поддержка вложенных конструкций
-- Для контейнеров с произвольным контентом
+**When to use `__nested__`:**
+- For formatted text (markdown, HTML)
+- When nesting support is needed
+- For containers with arbitrary content
 
-**Пример:**
+**Example:**
 ```typescript
-// ❌ С __meta__ - вложенность НЕ работает
+// ❌ With __meta__ - nesting does NOT work
 const parser1 = new ParserV2(['@[__meta__]', '#[__meta__]'])
 parser1.split('@[hello #[world]]')
-// → [MarkToken{meta: "hello #[world]", children: []}] - нет вложенности
+// → [MarkToken{meta: "hello #[world]", children: []}] - no nesting
 
-// ✅ С __nested__ - вложенность работает
+// ✅ With __nested__ - nesting works
 const parser2 = new ParserV2(['@[__nested__]', '#[__nested__]'])
 parser2.split('@[hello #[world]]')
-// → [MarkToken{meta: "hello #[world]", children: [MarkToken{meta: "world"}]}] - есть вложенность
+// → [MarkToken{meta: "hello #[world]", children: [MarkToken{meta: "world"}]}] - has nesting
 ```
 
-### 6. Примеры
+### 6. Examples
 
-#### Простой случай
+#### Simple Case
 ```typescript
 Input:  "Hello @[world](test)"
 Markup: "@[__meta__](__meta__)"
@@ -491,7 +491,7 @@ Output: [
 ]
 ```
 
-#### Вложенность (с __nested__)
+#### Nesting (with __nested__)
 ```typescript
 Input:  "@[hello #[world]]"
 Markups: ["@[__nested__]", "#[__nested__]"]
@@ -506,7 +506,7 @@ Output: [
 ]
 ```
 
-#### Без вложенности (с __meta__)
+#### No Nesting (with __meta__)
 ```typescript
 Input:  "@[hello #[world]]"
 Markups: ["@[__meta__]", "#[__meta__]"]
@@ -515,10 +515,10 @@ Output: [
   MarkToken("@[hello #[world]]", 0, 17, children=[], data={meta:"hello #[world]"}),
   TextToken("", 17, 17)
 ]
-// Обратите внимание: children пустой, #[world] остался plain text в label
+// Note: children is empty, #[world] remains as plain text in label
 ```
 
-#### HTML-подобные паттерны с двумя values
+#### HTML-Like Patterns with Two Values
 ```typescript
 Input:  "Check <img>photo.jpg</img> image"
 Markup: "<__meta__>__meta__</__meta__>"
@@ -529,7 +529,7 @@ Output: [
 ]
 ```
 
-#### Комбинированный паттерн (__meta__ и __nested__)
+#### Combined Pattern (__meta__ and __nested__)
 ```typescript
 Input:  "@[user](Hello #[world])"
 Markups: ["@[__meta__](__nested__)", "#[__nested__]"]
@@ -542,10 +542,10 @@ Output: [
   ], data={meta:"user"}),
   TextToken("", 23, 23)
 ]
-// Обратите внимание: value="user" идентифицирует токен, а nested контент содержит вложенную разметку
+// Note: value="user" identifies token, nested content contains nested markup
 ```
 
-#### HTML-подобный паттерн с label, value и nested
+#### HTML-Like Pattern with Label, Value, and Nested
 ```typescript
 Input:  "<div class>Content with **bold**</div>"
 Markups: ["<__meta__ __meta__>__nested__</__meta__>", "**__nested__**"]
@@ -558,10 +558,10 @@ Output: [
   ], data={meta:"div", meta:"class"}),
   TextToken("", 39, 39)
 ]
-// HTML-подобная разметка с атрибутом (value) и вложенным форматированным контентом
+// HTML-like markup with attribute (value) and nested formatted content
 ```
 
-#### Value перед контент-плейсхолдером
+#### Value Before Content Placeholder
 ```typescript
 Input:  "(url)@[link]"
 Markup: "(__meta__)@[__meta__]"
@@ -570,21 +570,21 @@ Output: [
   MarkToken("(url)@[link]", 0, 12, children=[], data={meta:"link", meta:"url"}),
   TextToken("", 12, 12)
 ]
-// Value может появляться перед value - порядок не ограничен
+// Value can appear before value - order is not restricted
 ```
 
-#### Валидация совпадения открывающих и закрывающих тегов
+#### Validation of Matching Opening and Closing Tags
 ```typescript
 Input:  "<div1>text</div2>"
 Markup: "<__meta__>__nested__</__meta__>"
 Output: [
   TextToken("<div1>text</div2>", 0, 17)
 ]
-// НЕ матчится - открывающий тег "div1" не совпадает с закрывающим "div2"
-// Паттерны с двумя __meta__ требуют идентичности обоих label
+// Does NOT match - opening tag "div1" doesn't match closing tag "div2"
+// Patterns with two __meta__ require identical labels
 ```
 
-#### Adjacent marks
+#### Adjacent Marks
 ```typescript
 Input:  "@[first](1)@[second](2)"
 Markups: ["@[__meta__](__meta__)"]
@@ -597,24 +597,24 @@ Output: [
 ]
 ```
 
-#### Empty values and values
+#### Empty Values and Values
 ```typescript
 Input:  "@[] @[content] @[label]() @[another](value)"
 Markups: ["@[__meta__]", "@[__meta__](__meta__)"]
 Output: [
   TextToken("", 0, 0),
-  MarkToken("@[]", 0, 3, children=[], data={meta:""}),  // пустой label
+  MarkToken("@[]", 0, 3, children=[], data={meta:""}),  // empty label
   TextToken(" ", 3, 4),
   MarkToken("@[content]", 4, 14, children=[], data={meta:"content"}),
   TextToken(" ", 14, 15),
-  MarkToken("@[label]()", 15, 25, children=[], data={meta:"label", meta:""}),  // пустой value
+  MarkToken("@[label]()", 15, 25, children=[], data={meta:"label", meta:""}),  // empty value
   TextToken(" ", 25, 26),
   MarkToken("@[another](value)", 26, 42, children=[], data={meta:"another", meta:"value"}),
   TextToken("", 42, 42)
 ]
 ```
 
-#### Symmetric patterns (Markdown-style)
+#### Symmetric Patterns (Markdown-style)
 ```typescript
 Input:  "**bold text** and *italic text*"
 Markups: ["**__meta__**", "*__meta__*"]
@@ -627,20 +627,20 @@ Output: [
 ]
 ```
 
-## 🎯 Примеры работы с конфликтующими паттернами
+## Conflicting Pattern Examples
 
-ParserV2 использует сложную систему приоритетов для разрешения конфликтов между паттернами, которые могут совпадать на одном сегменте текста.
+ParserV2 uses a complex priority system to resolve conflicts between patterns that can match at the same text segment.
 
-### Основные принципы приоритетов
+### Core Priority Principles
 
-1. **Более специфичные паттерны первыми**: Паттерны с большим количеством сегментов получают приоритет
-2. **Прогресс имеет значение**: Chain с большим количеством собранных сегментов приоритетнее
-3. **Длинные сегменты важнее**: Паттерны с длинными начальными сегментами избегают конфликтов
-4. **LIFO для вложенности**: Более поздние (внутренние) паттерны получают приоритет
+1. **More specific patterns first**: Patterns with more segments get priority
+2. **Progress matters**: Chains with more collected segments are prioritized
+3. **Longer segments matter**: Patterns with longer initial segments avoid conflicts
+4. **LIFO for nesting**: Later (inner) patterns get priority
 
-### Примеры конфликтов
+### Conflict Examples
 
-#### Conflicting patterns (shorter wins)
+#### Conflicting Patterns (Shorter Wins)
 ```typescript
 Input:  "@[simple] @[with](value)"
 Markups: ["@[__meta__]", "@[__meta__](__meta__)"]
@@ -648,17 +648,17 @@ Output: [
   TextToken("", 0, 0),
   MarkToken("@[simple]", 0, 9, children=[], data={meta:"simple"}),
   TextToken(" ", 9, 10),
-  MarkToken("@[with]", 10, 17, children=[], data={meta:"with"}),  // короткий паттерн без value
-  TextToken("(value)", 17, 24)  // остаток текста
+  MarkToken("@[with]", 10, 17, children=[], data={meta:"with"}),  // short pattern without value
+  TextToken("(value)", 17, 24)  // remaining text
 ]
 ```
 
-#### Приоритет по количеству сегментов
+#### Priority by Segment Count
 ```typescript
 Input:  "<div class><p>Text</p></div>"
 Markups: [
-  "<__meta__>__nested__</__meta__>",        // 4 сегмента
-  "<__meta__ __meta__>__nested__</__meta__>" // 5 сегментов - выше приоритет
+  "<__meta__>__nested__</__meta__>",        // 4 segments
+  "<__meta__ __meta__>__nested__</__meta__>" // 5 segments - higher priority
 ]
 Output: [
   TextToken("", 0, 0),
@@ -669,75 +669,43 @@ Output: [
   ], data={meta:"div", meta:"class"}),
   TextToken("", 28, 28)
 ]
-// Паттерн с 5 сегментами получает приоритет над паттерном с 4 сегментами
+// Pattern with 5 segments gets priority over pattern with 4 segments
 ```
 
-#### Конфликт с одинаковой стартовой позицией
+#### Conflict with Same Start Position
 ```typescript
 Input:  "<div class><p>Text</p></div>"
 Markups: [
-  "<__meta__ __meta__>__nested__</__meta__>", // 5 сегментов, 2 собранных в начале
-  "<__meta__>__nested__</__meta__>"           // 4 сегмента, 1 собранный в начале
+  "<__meta__ __meta__>__nested__</__meta__>", // 5 segments, 2 collected at start
+  "<__meta__>__nested__</__meta__>"           // 4 segments, 1 collected at start
 ]
 Output: [
   TextToken("<div class>", 0, 11),
   MarkToken("<p>Text</p>", 11, 22, children=[], data={meta:"p"}),
   TextToken("</div>", 22, 28)
 ]
-// Паттерн с больше собранными сегментами (2) получает приоритет над паттерном с 1 собранным сегментом
+// Pattern with more collected segments (2) gets priority over pattern with 1 collected segment
 ```
 
-#### Разрешение конфликтов при одинаковом прогрессе
+#### Conflict Resolution with Same Progress
 ```typescript
 Input:  "**bold**"
 Markups: [
-  "**__meta__**",  // 3 сегмента
-  "*__meta__*"     // 3 сегмента (симметричный)
+  "**__meta__**",  // 3 segments
+  "*__meta__*"     // 3 segments (symmetric)
 ]
 Output: [
   TextToken("", 0, 0),
   MarkToken("**bold**", 0, 8, children=[], data={meta:"bold"}),
   TextToken("", 8, 8)
 ]
-// При равном прогрессе выбирается первый паттерн из списка
+// With equal progress, first pattern from list is chosen
 ```
 
-### Рекомендации по работе с конфликтами
+### Recommendations for Working with Conflicts
 
-- **Размещайте более специфичные паттерны перед общими**: Паттерны с `__meta__` или большим количеством сегментов должны идти первыми
-- **Используйте `__nested__` для вложенного контента**: Это позволяет создавать иерархическую структуру
-- **Используйте `__meta__` для простого текста**: Когда вложенность не нужна
-- **Тестируйте порядок паттернов**: При добавлении новых правил разметки проверяйте, как они взаимодействуют с существующими
-- **Документируйте приоритеты**: В сложных приложениях документируйте порядок паттернов для будущих разработчиков
-
-## Файлы для изменения
-
-```
-Новые файлы:
-+ packages/core/src/features/parsing/ParserV2/utils/PatternSorting.ts
-+ packages/core/src/features/parsing/ParserV2/core/ChainMatcher.ts
-+ packages/core/src/features/parsing/ParserV2/core/MatchValidator.ts
-
-Изменяемые файлы:
-~ packages/core/src/features/parsing/ParserV2/core/PatternProcessor.ts
-  - Упростить до минимального координатора (3 строки логики)
-  - Удалить создание patternBuilder/chainManager (переехало в ChainMatcher)
-  - Удалить методы фильтрации (переехали в MatchValidator)
-  - Удалить внутренние сортировки (переехали в PatternSorting)
-~ packages/core/src/features/parsing/ParserV2/core/MatchPostProcessor.ts
-  - Убрать sortByPositionAndLength (переехало в PatternSorting)
-  - Убрать логику фильтрации из removeOverlaps (переехала в MatchValidator)
-  - Переименовать removeOverlaps → convertToResults
-  - Оставить только материализацию и извлечение контента
-~ packages/core/src/features/parsing/ParserV2/ParserV2.ts
-  - Изменить сигнатуру: processMatches(uniqueMatches, value)
-  - Удалить вызов sortByPositionAndLength
-  - Переименовать вызов: removeOverlaps → convertToResults
-~ packages/core/src/features/parsing/ParserV2/index.ts
-  - Добавить экспорт PatternSorting
-~ packages/core/src/features/parsing/ParserV2/README.md
-  - Обновить архитектуру и разделение ответственностей
-
-Удаленные файлы:
-- packages/core/src/features/parsing/ParserV2/core/PriorityResolver.ts
-```
+- **Place more specific patterns before general ones**: Patterns with `__meta__` or more segments should come first
+- **Use `__nested__` for nested content**: This allows creating hierarchical structure
+- **Use `__meta__` for simple text**: When nesting is not needed
+- **Test pattern order**: When adding new markup rules, verify how they interact with existing ones
+- **Document priorities**: In complex applications, document pattern order for future developers

@@ -701,9 +701,9 @@ describe('ParserV2', () => {
 				})
 			})
 
-			describe('generated markup patterns', () => {
-				// Генераторы различных типов markup для тестирования
-				const generateSimpleMarkup = (prefix: string, suffix: string = '') => `${prefix}[__value__]${suffix}`
+		describe('generated markup patterns', () => {
+			// Generators for different markup types for testing
+			const generateSimpleMarkup = (prefix: string, suffix: string = '') => `${prefix}[__value__]${suffix}`
 
 				const generateValueMarkup = (prefix: string, middle: string = '', suffix: string = '') =>
 					`${prefix}[__value__]${middle}(__meta__)${suffix}`
@@ -1351,17 +1351,17 @@ function tokensToDebugTree(tokens: NestedToken[], level = 0, prefix = ''): strin
 
 	function escapeString(str: string): string {
 		return str
-			.replace(/\n/g, '↲') // Новая строка (стрелка вниз-влево)
-			.replace(/\r/g, '⏎') // Возврат каретки (стрелка влево)
-			.replace(/\t/g, '⇥') // Табуляция (стрелка вправо-вверх)
+			.replace(/\n/g, '↲') // Newline (down-left arrow)
+			.replace(/\r/g, '⏎') // Carriage return (left arrow)
+			.replace(/\t/g, '⇥') // Tab (right-up arrow)
 	}
 }
 
 /**
- * Подсчитывает общее количество marks в дереве
+ * Counts total number of marks in the tree
  */
 function countMarks(tokens: NestedToken[]): number {
-	// Рекурсивно считаем только mark типы
+	// Recursively count only mark types
 	const countInNode = (node: NestedToken): number => {
 		let nodeCount = node.type === 'mark' ? 1 : 0
 
@@ -1376,17 +1376,17 @@ function countMarks(tokens: NestedToken[]): number {
 }
 
 /**
- * Находит максимальную глубину вложенности
+ * Finds maximum nesting depth
  */
 function findMaxDepth(tokens: NestedToken[]): number {
-	// Находим максимальную глубину среди всех токенов
+	// Find maximum depth among all tokens
 	const findDepth = (node: NestedToken): number => {
 		if (node.type === 'text') {
 			return 0
 		}
 
 		if (node.type !== 'mark' || !node.children || node.children.length === 0) {
-			return 1 // mark без детей имеет глубину 1
+			return 1 // mark without children has depth 1
 		}
 
 		const childrenDepths = node.children.map(child => findDepth(child))
