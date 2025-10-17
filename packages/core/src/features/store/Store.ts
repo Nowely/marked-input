@@ -1,5 +1,6 @@
 import {NodeProxy} from '../../shared/classes'
-import {MarkStruct, OverlayMatch, Recovery} from '../../shared/types'
+import {MarkStruct} from '../parsing/ParserV1/types'
+import {OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes'
 import {InnerMarkedInputProps} from '../default/types'
