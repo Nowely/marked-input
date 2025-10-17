@@ -1,5 +1,5 @@
-import {annotate} from './utils/annotate'
-import {MarkStruct, MarkMatch, Markup} from './types'
+import {annotate} from './annotate'
+import {MarkStruct, MarkMatch, Markup} from '../types'
 
 export const normalizeMark = (mark: MarkMatch, markup: Markup): MarkMatch => {
 	if (mark.annotation !== annotate(markup, mark.label, mark.value))

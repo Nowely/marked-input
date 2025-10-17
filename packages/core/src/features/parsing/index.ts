@@ -1,6 +1,5 @@
 export {Parser} from './ParserV1/Parser'
 export {annotate} from './ParserV1/utils/annotate'
-export {escape} from '../../shared/escape'
 export {denote} from './ParserV1/utils/denote'
 export {getTokensByValue} from './utils/getTokensByValue'
 export {getTokensByUI} from './utils/getTokensByUI'

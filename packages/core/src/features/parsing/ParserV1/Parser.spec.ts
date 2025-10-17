@@ -3,13 +3,13 @@ import {Parser} from './Parser'
 import {Markup} from './types'
 
 // Mock dependencies
-vi.mock('./markupToRegex')
-vi.mock('./normalizeMark')
+vi.mock('./utils/markupToRegex')
+vi.mock('./utils/normalizeMark')
 vi.mock('./ParserMatches')
 vi.mock('../utils/isObject')
 
-import {markupToRegex} from './markupToRegex'
-import {normalizeMark} from './normalizeMark'
+import {markupToRegex} from './utils/markupToRegex'
+import {normalizeMark} from './utils/normalizeMark'
 import {ParserMatches} from './ParserMatches'
 import {isObject} from '../utils/isObject'
 

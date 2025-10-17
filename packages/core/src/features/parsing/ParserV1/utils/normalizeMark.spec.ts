@@ -1,6 +1,6 @@
 import {describe, it, expect} from 'vitest'
 import {normalizeMark} from './normalizeMark'
-import {Markup} from './types'
+import {Markup} from '../types'
 
 describe(`Utility: ${normalizeMark.name}`, () => {
 	it('should return mark unchanged when annotation matches expected format', () => {

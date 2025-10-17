@@ -1,6 +1,6 @@
 import {isObject} from '../utils/isObject'
-import {markupToRegex} from './markupToRegex'
-import {normalizeMark} from './normalizeMark'
+import {markupToRegex} from './utils/markupToRegex'
+import {normalizeMark} from './utils/normalizeMark'
 import {ParserMatches} from './ParserMatches'
 import {Markup, MarkStruct, PieceType} from './types'
 import {InnerOption} from '../../default/types'
