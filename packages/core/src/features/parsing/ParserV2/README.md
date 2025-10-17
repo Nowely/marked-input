@@ -88,8 +88,8 @@ ParserV2/
 │   ├── TokenBuilder.ts      # Создание токенов
 │   └── TreeBuilder.ts       # Single-pass tree building
 └── utils/                   # Утилиты
-    ├── MarkupRegistry.ts    # Реестр дескрипторов разметки + предвычисленные сегменты
-    ├── AhoCorasick.ts       # Эффективный multi-pattern поиск
+    ├── MarkupRegistry.ts    # Реестр дескрипторов + дедуплицированные сегменты
+    ├── AhoCorasick.ts       # Эффективный multi-pattern поиск (использует дедуплицированные сегменты)
     ├── PatternBuilder.ts    # Построение паттернов из цепочек
     ├── PatternSorting.ts    # Статические методы сортировки
     └── PatternChainManager.ts # Управление активными цепочками

@@ -1,40 +1,47 @@
 import {SegmentMatch} from '../utils/AhoCorasick'
-import {MarkupDescriptor} from './MarkupDescriptor'
+import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {UniqueMatch} from '../types'
 
 /**
  * Segment matcher that deduplicates raw matches and maps them to descriptors
  */
 export class SegmentMatcher {
-	private readonly segmentMap: Array<{descriptorIndex: number; segmentIndex: number}>
+	private readonly registry: MarkupRegistry
 
-	constructor(descriptors: MarkupDescriptor[]) {
-		this.segmentMap = descriptors.flatMap((descriptor, di) =>
-			descriptor.segments.map((_, si) => ({descriptorIndex: di, segmentIndex: si}))
-		)
+	constructor(registry: MarkupRegistry) {
+		this.registry = registry
 	}
 
 	/**
 	 * Deduplicates raw matches and groups them by position+value
+	 * Now works with already deduplicated segments from registry
 	 */
 	deduplicateMatches(segments: SegmentMatch[]): UniqueMatch[] {
 		const matchesByPosValue = new Map<string, UniqueMatch>()
 
 		for (const segment of segments) {
-			const mapInfo = this.segmentMap[segment.index]
+			// segment.index is now index in deduplicated segments array
+			const descriptorIndices = this.registry.segmentToDescriptors[segment.index]
 			const key = `${segment.start}:${segment.value}`
 
 			const existing = matchesByPosValue.get(key)
 			if (!existing) {
+				// Build descriptors array with segment indices for each descriptor
+				const descriptors = descriptorIndices.map(descriptorIndex => {
+					const descriptor = this.registry.descriptors[descriptorIndex]
+					// Find which segment index this is within the descriptor
+					const segmentIndex = descriptor.segments.indexOf(segment.value)
+					return {descriptorIndex, segmentIndex}
+				})
+
 				matchesByPosValue.set(key, {
 					start: segment.start,
 					end: segment.end,
 					value: segment.value,
-					descriptors: [mapInfo],
+					descriptors,
 				})
-			} else {
-				existing.descriptors.push(mapInfo)
 			}
+			// No need for else - segments are already deduplicated in AhoCorasick
 		}
 
 		//also sort by position 

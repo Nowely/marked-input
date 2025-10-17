@@ -1,4 +1,3 @@
-import {MarkupDescriptor} from '../core/MarkupDescriptor'
 
 /**
  * Node in the Aho-Corasick automaton trie
@@ -30,29 +29,22 @@ export interface SegmentMatch {
 }
 
 //TODO add support Unicode code points?
-//TODO optimize. Deduplicate segments => less memory usage, faster search. Reduce from 244 to 109 matches for markdown test.
 /**
  * Aho-Corasick automaton for efficient multi-pattern string matching
  * Finds all occurrences of multiple patterns in O(|text| + |patterns| + |matches|) time
+ * 
+ * Note: Expects deduplicated segments from MarkupRegistry for optimal performance
  */
 export class AhoCorasick {
 	private readonly segments: string[]
 	private readonly root = new AhoNode()
 
 	constructor(segments: string[]) {
-		this.segments = segments.slice()
+		this.segments = segments
 		this.buildTrie()
 		this.buildFailures()
 	}
 
-	/**
-	 * Creates AhoCorasick automaton from markup descriptors
-	 * Extracts all segments from descriptors and builds the automaton
-	 */
-	static Create(descriptors: MarkupDescriptor[]): AhoCorasick {
-		const segments = descriptors.flatMap(c => c.segments)
-		return new AhoCorasick(segments)
-	}
 
 	/**
 	 * Searches for all pattern occurrences in the text

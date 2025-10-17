@@ -17,8 +17,8 @@ export class ParserV2 {
 
 	constructor(markups: Markup[]) {
 		this.registry = new MarkupRegistry(markups)
-		this.ac = AhoCorasick.Create(this.registry.descriptors)
-		this.segmentMatcher = new SegmentMatcher(this.registry.descriptors)
+		this.ac = new AhoCorasick(this.registry.segments)
+		this.segmentMatcher = new SegmentMatcher(this.registry)
 		this.patternProcessor = new PatternProcessor(this.registry.descriptors)
 	}
 
