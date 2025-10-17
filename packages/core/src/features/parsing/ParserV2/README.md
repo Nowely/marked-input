@@ -205,6 +205,8 @@ Input Text → Aho-Corasick → SegmentMatches
 
 ## API
 
+### Core Parser
+
 ```typescript
 class ParserV2 {
   constructor(markups: Markup[])
@@ -213,6 +215,134 @@ class ParserV2 {
 
 // Static method
 ParserV2.split(input: string, markups: Markup[]): NestedToken[]
+```
+
+### Utility Functions
+
+#### annotate
+
+Create annotated text from markup pattern by replacing placeholders with values.
+
+```typescript
+function annotate(
+  markup: Markup,
+  params: {
+    value?: string
+    meta?: string
+    nested?: string
+  }
+): string
+```
+
+**Examples:**
+
+```typescript
+import { annotate } from '@markput/core'
+
+// Simple value
+annotate('@[__value__]', { value: 'Hello' })
+// Returns: '@[Hello]'
+
+// Value with meta
+annotate('@[__value__](__meta__)', { value: 'Hello', meta: 'world' })
+// Returns: '@[Hello](world)'
+
+// Nested content
+annotate('@[__nested__]', { nested: 'Hello #[world]' })
+// Returns: '@[Hello #[world]]'
+
+// HTML-like with all placeholders
+annotate('<__value__ __meta__>__nested__</__value__>', {
+  value: 'div',
+  meta: 'class',
+  nested: 'Content'
+})
+// Returns: '<div class>Content</div>'
+```
+
+#### denote
+
+Transform annotated text by recursively processing all tokens (including nested ones).
+
+```typescript
+import { denote } from '@markput/core'
+
+function denote(
+  value: string,
+  callback: (mark: MarkToken) => string,
+  ...markups: Markup[]
+): string
+```
+
+**Examples:**
+
+```typescript
+import { denote } from '@markput/core'
+
+const text = '@[Hello](world) and #[nested @[content]]'
+
+// Extract all values recursively
+denote(
+  text,
+  mark => mark.value,
+  '@[__value__](__meta__)',
+  '#[__nested__]'
+)
+// Returns: 'Hello and nested content'
+
+// Extract meta values
+denote(
+  '@[user](Alice) mentioned @[user](Bob)',
+  mark => mark.meta || mark.value,
+  '@[__value__](__meta__)'
+)
+// Returns: 'Alice mentioned Bob'
+
+// Custom transformation
+denote(
+  '@[Hello](world) and @[Bye](test)',
+  mark => `[${mark.value}: ${mark.meta}]`,
+  '@[__value__](__meta__)'
+)
+// Returns: '[Hello: world] and [Bye: test]'
+```
+
+#### toString
+
+Convert parsed tokens back to annotated string (inverse of `split`).
+
+```typescript
+import { toString } from '@markput/core'
+
+function toString(
+  tokens: NestedToken[],
+  markups: Markup[]
+): string
+```
+
+**Examples:**
+
+```typescript
+import { ParserV2, toString } from '@markput/core'
+
+const markups = ['@[__value__](__meta__)', '#[__nested__]']
+const text = '@[Hello](world) #[test]'
+
+// Parse and reconstruct
+const tokens = new ParserV2(markups).split(text)
+const reconstructed = toString(tokens, markups)
+
+console.log(reconstructed === text) // true
+
+// Useful for round-trip transformations
+const modified = tokens.map(token => {
+  if (token.type === 'mark') {
+    return { ...token, value: token.value.toUpperCase() }
+  }
+  return token
+})
+const result = toString(modified, markups)
+// Result: '@[HELLO](world) #[TEST]'
 ```
 
 ## Rules
