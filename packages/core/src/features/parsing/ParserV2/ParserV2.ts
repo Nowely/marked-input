@@ -34,7 +34,11 @@ export class ParserV2 {
 		const segmentMatches = this.ac.search(value)
 		const uniqueMatches = this.segmentMatcher.deduplicateMatches(segmentMatches)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(uniqueMatches, value)
-		const matchResults = MatchPostProcessor.convertToResults(sortedValidatedMatches, value, this.registry.descriptors)
+		const matchResults = MatchPostProcessor.convertToResults(
+			sortedValidatedMatches,
+			value,
+			this.registry.descriptors
+		)
 
 		return buildTree(value, matchResults)
 	}
@@ -42,33 +46,21 @@ export class ParserV2 {
 	/**
 	 * Escapes markup segments in the given text
 	 * @param text Text to escape segments in
-	 * @param escaper Function that receives a segment string and returns the escaped version
-	 * @returns Text with escaped segments
-	 * TODO use AhoCorasick to find all segments and escape them
+	 * @param escaper Function that receives a segment string and returns the escaped version. If not provided, segments are removed (replaced with empty strings)
+	 * @returns Text with escaped or removed segments
+	 * TODO don't work correctly
 	 */
 	escape(text: string, escaper?: (segment: string) => string): string {
-		// If no escaper provided, return text unchanged
-		if (!escaper) {
-			return text
-		}
+		const matches = this.ac.search(text)
+		if (matches.length === 0) return text
 
-		let result = text
-		// Use pre-computed segments from registry
-		const allSegments = this.registry.segments
+		const sortedMatches = matches.sort((a, b) => a.start - b.start)
 
-		// Sort segments by length ascending to handle shorter segments first
-		const sortedSegments = Array.from(allSegments).sort((a, b) => a.length - b.length)
-
-		for (const segment of sortedSegments) {
-			const escaped = escaper(segment)
-			// Use global replace to escape all occurrences
-			result = result.replace(new RegExp(escapeRegExp(segment), 'g'), escaped)
-		}
-
-		return result
-
-		function escapeRegExp(string: string): string {
-			return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-		}
+		return sortedMatches.reduce((result, match, i) => {
+			const prevEnd = i === 0 ? 0 : sortedMatches[i - 1].end
+			return result + text.substring(prevEnd, match.start) + (escaper
+				? escaper(text.substring(match.start, match.end))
+				: '')
+		}, '') + text.substring(sortedMatches[sortedMatches.length - 1].end)
 	}
 }

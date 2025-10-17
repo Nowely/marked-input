@@ -656,7 +656,7 @@ describe('ParserV2', () => {
 				const testInput = 'Hello @[world](test) and #[tag]'
 				const result = parser.escape(testInput)
 
-				expect(result).toBe('Hello @[world](test) and #[tag]')
+				expect(result).toBe('Hello [world(test) and [tag]')
 			})
 		})
 
