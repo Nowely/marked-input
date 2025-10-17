@@ -1,9 +1,9 @@
-import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternMatch} from '../utils/PatternBuilder'
-import {UniqueMatch} from '../types'
+import {SegmentMatch} from '../utils/AhoCorasick'
 import {PatternSorting} from '../utils/PatternSorting'
 import {ChainMatcher} from './ChainMatcher'
 import {MatchValidator} from './MatchValidator'
+import {MarkupRegistry} from '../utils/MarkupRegistry'
 
 /**
  * Pattern processor coordinator - simplified to orchestrate specialized components
@@ -18,22 +18,22 @@ export class PatternProcessor {
 	private readonly chainMatcher: ChainMatcher
 	private readonly validator: MatchValidator
 
-	constructor(descriptors: MarkupDescriptor[]) {
-		this.chainMatcher = new ChainMatcher(descriptors)
-		this.validator = new MatchValidator(descriptors)
+	constructor(registry: MarkupRegistry) {
+		this.chainMatcher = new ChainMatcher(registry)
+		this.validator = new MatchValidator(registry.descriptors)
 	}
 
 	/**
-	 * Processes all unique segment matches and returns validated, sorted pattern matches
+	 * Processes all segment matches and returns validated, sorted pattern matches
 	 * 
 	 * Pipeline:
 	 * 1. Build ALL possible pattern chains (even invalid ones)
 	 * 2. Validate and filter matches
 	 * 3. Sort matches for tree building
 	 */
-	processMatches(uniqueMatches: UniqueMatch[], input: string): PatternMatch[] {
+	processMatches(segmentMatches: SegmentMatch[], input: string): PatternMatch[] {
 		// 1. Build all possible pattern chains
-		const allMatches = this.chainMatcher.buildChains(uniqueMatches)
+		const allMatches = this.chainMatcher.buildChains(segmentMatches)
 
 		// 2. Validate and filter matches
 		const validated = this.validator.validateAndFilter(allMatches, input)

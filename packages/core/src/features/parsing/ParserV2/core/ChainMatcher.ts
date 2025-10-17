@@ -1,38 +1,41 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternChainManager, PatternChain} from '../utils/PatternChainManager'
 import {PatternBuilder, PatternMatch} from '../utils/PatternBuilder'
-import {UniqueMatch} from '../types'
+import {SegmentMatch} from '../utils/AhoCorasick'
 import {PatternSorting} from '../utils/PatternSorting'
+import {MarkupRegistry} from '../utils/MarkupRegistry'
 
 /**
  * Chain matcher responsible for building pattern chains from segment matches
  * Extracted from PatternProcessor to separate concerns
  */
 export class ChainMatcher {
+	private readonly registry: MarkupRegistry
 	private readonly descriptors: MarkupDescriptor[]
 	private readonly patternBuilder: PatternBuilder
 	private readonly chainManager: PatternChainManager
 
-	constructor(descriptors: MarkupDescriptor[]) {
-		this.descriptors = descriptors
-		this.patternBuilder = new PatternBuilder(descriptors)
+	constructor(registry: MarkupRegistry) {
+		this.registry = registry
+		this.descriptors = registry.descriptors
+		this.patternBuilder = new PatternBuilder(registry.descriptors)
 		this.chainManager = new PatternChainManager()
 	}
 
 	/**
-	 * Builds all possible pattern chains from unique segment matches
+	 * Builds all possible pattern chains from segment matches
 	 * Strategy: Create ALL possible matches (even invalid ones),
 	 * validation/filtering happens later in MatchValidator
 	 */
-	buildChains(uniqueMatches: UniqueMatch[]): PatternMatch[] {
+	buildChains(segmentMatches: SegmentMatch[]): PatternMatch[] {
 		const results: PatternMatch[] = []
 		const nestingStack: PatternChain[] = [] // Stack of active chains for tracking nesting
 		const consumedPositions = new Set<number>() // Track positions consumed by pattern segments
 		const consumedStartPositions = new Map<number, number>() // Track prefix conflicts: position -> segment length
 
-		// Process each unique segment occurrence
-		for (const match of uniqueMatches) {
-			this.processWaitingChains(match, results, nestingStack, consumedPositions, uniqueMatches)
+		// Process each segment occurrence
+		for (const match of segmentMatches) {
+			this.processWaitingChains(match, results, nestingStack, consumedPositions, segmentMatches)
 			this.startNewChains(match, results, nestingStack, consumedPositions, consumedStartPositions)
 		}
 
@@ -47,11 +50,11 @@ export class ChainMatcher {
 	 * 3. Later start = inner = higher priority (LIFO)
 	 */
 	private processWaitingChains(
-		match: UniqueMatch,
+		match: SegmentMatch,
 		results: PatternMatch[],
 		nestingStack: PatternChain[],
 		consumedPositions: Set<number>,
-		allMatches: UniqueMatch[]
+		allMatches: SegmentMatch[]
 	): void {
 		const waiting = this.chainManager.getWaiting(match.value)
 
@@ -153,17 +156,25 @@ export class ChainMatcher {
 	 * Invalid matches will be filtered later.
 	 */
 	private startNewChains(
-		match: UniqueMatch,
+		match: SegmentMatch,
 		results: PatternMatch[],
 		nestingStack: PatternChain[],
 		consumedPositions: Set<number>,
 		consumedStartPositions: Map<number, number>
 	): void {
+		// Get descriptor indices for this segment from registry
+		const descriptorIndices = this.registry.segmentToDescriptors[match.index]
+		
+		//TODO optimize
+		// Create descInfo array with segmentIndex for each descriptor
+		const descInfos = descriptorIndices.map(descriptorIndex => {
+			const descriptor = this.descriptors[descriptorIndex]
+			const segmentIndex = descriptor.segments.indexOf(match.value)
+			return { descriptorIndex, segmentIndex }
+		}).filter(descInfo => descInfo.segmentIndex === 0) // Only start chains at first segment
+		
 		// Sort descriptors by pattern priority
-		const sortedDescriptors = PatternSorting.sortDescriptors(
-			match.descriptors.filter(descInfo => descInfo.segmentIndex === 0),
-			this.descriptors
-		)
+		const sortedDescriptors = PatternSorting.sortDescriptors(descInfos, this.descriptors)
 		
 		for (const descInfo of sortedDescriptors) {
 			const descriptor = this.descriptors[descInfo.descriptorIndex]

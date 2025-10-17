@@ -1,6 +1,6 @@
 import {MarkupDescriptor} from '../core/MarkupDescriptor'
 import {PatternChain, PatternPart} from './PatternChainManager'
-import {UniqueMatch} from '../types'
+import {SegmentMatch} from '../utils/AhoCorasick'
 
 /**
  * Complete match of a pattern with all its parts
@@ -24,7 +24,7 @@ export class PatternBuilder {
 	 * Tries to extend a chain with a new segment match
 	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
 	 */
-	tryExtendChain(chain: PatternChain, match: UniqueMatch, isClosingSegment: boolean = false): { completed: PatternMatch | null; extended: PatternChain | null } {
+	tryExtendChain(chain: PatternChain, match: SegmentMatch, isClosingSegment: boolean = false): { completed: PatternMatch | null; extended: PatternChain | null } {
 		const descriptor = this.descriptors[chain.descriptorIndex]
 
 		// Check if this segment matches what this chain expects
@@ -89,13 +89,8 @@ export class PatternBuilder {
 	 * Creates a new chain for starting pattern
 	 * Returns {completed: PatternMatch | null, chain: PatternChain | null}
 	 */
-	createNewChain(descriptorIndex: number, match: UniqueMatch, nestingLevel: number = 0): { completed: PatternMatch | null; chain: PatternChain | null } {
+	createNewChain(descriptorIndex: number, match: SegmentMatch, nestingLevel: number = 0): { completed: PatternMatch | null; chain: PatternChain | null } {
 		const descriptor = this.descriptors[descriptorIndex]
-
-		// Only start chains at first segment
-		if (match.descriptors.find(d => d.descriptorIndex === descriptorIndex)?.segmentIndex !== 0) {
-			return { completed: null, chain: null }
-		}
 
 		const newPatternChain: PatternChain = {
 			descriptorIndex,

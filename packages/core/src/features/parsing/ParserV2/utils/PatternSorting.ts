@@ -1,7 +1,6 @@
 import {MarkupDescriptor} from '../core/MarkupDescriptor'
 import {PatternChain} from './PatternChainManager'
 import {PatternMatch} from './PatternBuilder'
-import {UniqueMatch} from '../types'
 
 /**
  * Static sorting utilities for pattern matching

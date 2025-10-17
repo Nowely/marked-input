@@ -80,7 +80,6 @@ ParserV2/
 ├── types.ts                 # Типы и интерфейсы
 ├── core/                    # Ядро функциональности
 │   ├── MarkupDescriptor.ts  # Создание дескрипторов разметки
-│   ├── SegmentMatcher.ts    # Дедупликация сегментов
 │   ├── PatternProcessor.ts  # Координатор обработки паттернов
 │   ├── ChainMatcher.ts      # Построение цепочек паттернов
 │   ├── MatchValidator.ts    # Валидация и фильтрация matches
@@ -152,11 +151,6 @@ match.valueStart = 9, match.valueEnd = 14 // substring(9, 14) = "test"
 
 ```
 Input Text → Aho-Corasick → SegmentMatches
-                              ↓
-                      SegmentMatcher
-                      (deduplicate + sort)
-                              ↓
-                       UniqueMatches
                               ↓
                     PatternProcessor
                     (координатор)
@@ -324,9 +318,9 @@ MarkToken: { type: 'mark', content, children: [], data: {label, value?, optionIn
 ### 3. Алгоритм поиска совпадений
 
 #### Segment Matching (Aho-Corasick)
-- Все статические сегменты из всех паттернов собираются в единый список
+- Все статические сегменты из всех паттернов дедуплицируются в `MarkupRegistry`
 - Алгоритм **Aho-Corasick** находит все вхождения сегментов в тексте
-- Результат: `UniqueMatch[]` - уникальные сегменты по позиции+значению
+- Результат: `SegmentMatch[]` - найденные сегменты с позициями и индексами
 - **Сложность:** O(N + M), где N = длина текста, M = количество паттернов
 
 #### Pattern Building (Chain Management)
@@ -727,8 +721,6 @@ Output: [
 + packages/core/src/features/parsing/ParserV2/core/MatchValidator.ts
 
 Изменяемые файлы:
-~ packages/core/src/features/parsing/ParserV2/core/SegmentMatcher.ts
-  - Убрать .sort() из строки 42
 ~ packages/core/src/features/parsing/ParserV2/core/PatternProcessor.ts
   - Упростить до минимального координатора (3 строки логики)
   - Удалить создание patternBuilder/chainManager (переехало в ChainMatcher)

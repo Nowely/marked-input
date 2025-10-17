@@ -2,7 +2,6 @@ import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {NestedToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
-import {SegmentMatcher} from './core/SegmentMatcher'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
 import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
@@ -12,14 +11,12 @@ import {createTextToken} from './core/TokenBuilder'
 export class ParserV2 {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
-	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternProcessor: PatternProcessor
 
 	constructor(markups: Markup[]) {
 		this.registry = new MarkupRegistry(markups)
 		this.ac = new AhoCorasick(this.registry.segments)
-		this.segmentMatcher = new SegmentMatcher(this.registry)
-		this.patternProcessor = new PatternProcessor(this.registry.descriptors)
+		this.patternProcessor = new PatternProcessor(this.registry)
 	}
 
 	static split(value: string, options?: InnerOption[]): NestedToken[] {
@@ -32,8 +29,7 @@ export class ParserV2 {
 
 	split(value: string): NestedToken[] {
 		const segmentMatches = this.ac.search(value)
-		const uniqueMatches = this.segmentMatcher.deduplicateMatches(segmentMatches)
-		const sortedValidatedMatches = this.patternProcessor.processMatches(uniqueMatches, value)
+		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)
 		const matchResults = MatchPostProcessor.convertToResults(
 			sortedValidatedMatches,
 			value,

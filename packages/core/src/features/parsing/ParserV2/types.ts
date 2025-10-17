@@ -97,16 +97,6 @@ export interface MatchResult {
 }
 
 /**
- * Unique segment match with descriptor info
- */
-export interface UniqueMatch {
-	start: number
-	end: number
-	value: string
-	descriptors: Array<{ descriptorIndex: number; segmentIndex: number }>
-}
-
-/**
  * Template literal types for markup placeholders
  */
 export type value = `${string}${typeof PLACEHOLDER.VALUE}${string}`

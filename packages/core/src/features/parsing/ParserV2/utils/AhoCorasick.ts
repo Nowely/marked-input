@@ -84,7 +84,7 @@ export class AhoCorasick {
 			}
 		}
 
-		return results
+		return results.sort((a, b) => a.start - b.start || a.end - b.end)
 	}
 
 	/**
