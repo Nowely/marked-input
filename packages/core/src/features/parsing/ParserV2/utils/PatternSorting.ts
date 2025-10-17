@@ -57,23 +57,15 @@ export class PatternSorting {
 
   /**
    * Sorts descriptors by priority when starting new chains
-   * Extracted from PatternProcessor.startNewChains (lines 279-298)
-   *
    * Priority rules:
    * 1. Longer first segments first (avoid conflicts like * vs **)
    * 2. More segments = more specific patterns = higher priority
    */
-  static sortDescriptors(
-    descInfos: Array<{descriptorIndex: number; segmentIndex: number}>,
-    descriptors: MarkupDescriptor[]
-  ): Array<{descriptorIndex: number; segmentIndex: number}> {
-    return descInfos.sort((a, b) => {
-      const descA = descriptors[a.descriptorIndex]
-      const descB = descriptors[b.descriptorIndex]
-
+  static sortDescriptors(descriptors: MarkupDescriptor[]): MarkupDescriptor[] {
+    return descriptors.sort((a, b) => {
       // Special case: prefer longer first segments to avoid conflicts like * vs ** or # vs ##
-      const firstSegmentLenA = descA.segments[0].length
-      const firstSegmentLenB = descB.segments[0].length
+      const firstSegmentLenA = a.segments[0].length
+      const firstSegmentLenB = b.segments[0].length
       if (firstSegmentLenA !== firstSegmentLenB) {
         return firstSegmentLenB - firstSegmentLenA // longer first segments first
       }
@@ -81,8 +73,8 @@ export class PatternSorting {
       // General case: longer patterns first (more segments = more specific = higher priority)
       // This ensures that patterns like <__label__ __value__>__nested__</__label__> (5 segments)
       // are tried before <__label__>__nested__</__label__> (4 segments)
-      const segmentsA = descA.segments.length
-      const segmentsB = descB.segments.length
+      const segmentsA = a.segments.length
+      const segmentsB = b.segments.length
       return segmentsB - segmentsA // more segments first
     })
   }

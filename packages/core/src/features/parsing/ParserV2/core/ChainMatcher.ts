@@ -165,17 +165,10 @@ export class ChainMatcher {
 		// Get descriptors where this segment is the first segment
 		const descriptors = this.registry.getDescriptorsStartingWithSegment(match.index)
 
-		// Convert to format expected by PatternSorting.sortDescriptors
-		const descInfos = descriptors.map(descriptor => ({
-			descriptorIndex: this.descriptors.indexOf(descriptor),
-			segmentIndex: 0 // Always 0 since this segment is the first one
-		}))
-
 		// Sort descriptors by pattern priority
-		const sortedDescriptors = PatternSorting.sortDescriptors(descInfos, this.descriptors)
-		
-		for (const descInfo of sortedDescriptors) {
-			const descriptor = this.descriptors[descInfo.descriptorIndex]
+		const sortedDescriptors = PatternSorting.sortDescriptors(descriptors)
+
+		for (const descriptor of sortedDescriptors) {
 
 			// Skip if any position in this segment is already consumed by a COMPLETED pattern
 			let isPositionConsumed = false
@@ -204,9 +197,10 @@ export class ChainMatcher {
 			}
 			
 			// Determine nesting level based on current stack
+			const descriptorIndex = this.descriptors.indexOf(descriptor)
 			const nestingLevel = nestingStack.length
-			
-			const {completed, chain} = this.patternBuilder.createNewChain(descInfo.descriptorIndex, match, nestingLevel)
+
+			const {completed, chain} = this.patternBuilder.createNewChain(descriptorIndex, match, nestingLevel)
 
 			if (completed) {
 				// Single-segment pattern was completed immediately
@@ -232,8 +226,8 @@ export class ChainMatcher {
 				// Only mark them when the chain completes
 				// This allows nested patterns like **bold** to work correctly
 				
-				// Chain was created and needs to wait for next segment
-				const nextSegmentValue = this.descriptors[descInfo.descriptorIndex].segments[chain.nextSegmentIndex]
+			// Chain was created and needs to wait for next segment
+			const nextSegmentValue = descriptor.segments[chain.nextSegmentIndex]
 				this.chainManager.addToWaiting(nextSegmentValue, chain)
 				nestingStack.push(chain)
 				// Mark all positions in the starting segment to prevent overlapping prefix patterns
