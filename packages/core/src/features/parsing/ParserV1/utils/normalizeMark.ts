@@ -1,4 +1,4 @@
-import {annotate} from './annotate'
+import {annotate} from './utils/annotate'
 import {MarkStruct, MarkMatch, Markup} from './types'
 
 export const normalizeMark = (mark: MarkMatch, markup: Markup): MarkMatch => {

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {Markup} from './types'
+import {Markup} from '../types'
 import {annotate} from './annotate'
 
 describe(`Utility: ${annotate.name}`, () => {
