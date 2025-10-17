@@ -162,17 +162,15 @@ export class ChainMatcher {
 		consumedPositions: Set<number>,
 		consumedStartPositions: Map<number, number>
 	): void {
-		// Get descriptor indices for this segment from registry
-		const descriptorIndices = this.registry.segmentToDescriptors[match.index]
-		
-		//TODO optimize
-		// Create descInfo array with segmentIndex for each descriptor
-		const descInfos = descriptorIndices.map(descriptorIndex => {
-			const descriptor = this.descriptors[descriptorIndex]
-			const segmentIndex = descriptor.segments.indexOf(match.value)
-			return { descriptorIndex, segmentIndex }
-		}).filter(descInfo => descInfo.segmentIndex === 0) // Only start chains at first segment
-		
+		// Get descriptors where this segment is the first segment
+		const descriptors = this.registry.getDescriptorsStartingWithSegment(match.index)
+
+		// Convert to format expected by PatternSorting.sortDescriptors
+		const descInfos = descriptors.map(descriptor => ({
+			descriptorIndex: this.descriptors.indexOf(descriptor),
+			segmentIndex: 0 // Always 0 since this segment is the first one
+		}))
+
 		// Sort descriptors by pattern priority
 		const sortedDescriptors = PatternSorting.sortDescriptors(descInfos, this.descriptors)
 		
