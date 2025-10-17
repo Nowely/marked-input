@@ -1,4 +1,4 @@
-import {Parser} from '../Parser/Parser'
+import {Parser} from '../ParserV1/Parser'
 import {Store} from '../../store'
 
 /**

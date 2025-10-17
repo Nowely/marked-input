@@ -1,7 +1,7 @@
 import {Caret} from './Caret'
 import {InnerOption} from '../../features/default/types'
 import {OverlayMatch} from '../../shared/types'
-import {escape} from '../../features/parsing/Parser/escape'
+import {escape} from '../../shared/escape'
 
 /** Regex to match word characters from the start of a string */
 const wordRegex = new RegExp(/^\w*/)

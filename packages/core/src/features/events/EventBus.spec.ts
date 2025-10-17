@@ -4,9 +4,9 @@ import {EventKey} from '../../shared/types'
 
 describe(`Utility: ${EventBus.name}`, () => {
 	let eventBus: EventBus
-	let mockListener1: vi.MockedFunction<any>
-	let mockListener2: vi.MockedFunction<any>
-	let mockListener3: vi.MockedFunction<any>
+	let mockListener1: ReturnType<typeof vi.fn>
+	let mockListener2: ReturnType<typeof vi.fn>
+	let mockListener3: ReturnType<typeof vi.fn>
 
 	// Create mock event keys
 	const EVENT_A = Symbol('EVENT_A') as EventKey<string>

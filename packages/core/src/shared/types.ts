@@ -5,8 +5,8 @@ import {NodeProxy} from './classes/NodeProxy'
 export type PieceType = string | MarkStruct
 
 export interface MarkStruct {
-	value: string
-	meta?: string
+	label: string
+	value?: string
 }
 
 export type OverlayMatch = {

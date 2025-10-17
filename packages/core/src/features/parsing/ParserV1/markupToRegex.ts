@@ -1,4 +1,4 @@
-import {escape} from './escape'
+import {escape} from '../../../shared/escape'
 import {PLACEHOLDER} from './constants'
 import {Markup} from './types'
 

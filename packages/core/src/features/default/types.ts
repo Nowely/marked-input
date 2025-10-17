@@ -1,4 +1,4 @@
-import {MarkStruct, Markup, OverlayTrigger} from '../../shared/types'
+import {MarkStruct, OverlayTrigger} from '../../shared/types'
 
 export interface InnerOption {
 	markup: Markup

@@ -1,4 +1,4 @@
-import {MarkStruct, MarkMatch, Markup} from '../../../shared/types'
+import {MarkStruct, MarkMatch, Markup} from '../../parsing/ParserV1/types'
 import {InnerOption} from '../../../features/default/types'
 
 const isAnnotated = (value: unknown): value is MarkMatch => {

@@ -1,6 +1,6 @@
 import {describe, it, expect, vi, beforeEach, MockedFunction} from 'vitest'
 import {Parser} from './Parser'
-import {Markup} from '../../../shared/types'
+import {Markup} from './types'
 
 // Mock dependencies
 vi.mock('./markupToRegex')

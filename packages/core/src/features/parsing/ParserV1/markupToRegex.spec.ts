@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker'
 import {markupToRegex} from './markupToRegex'
 import {describe, expect, it} from 'vitest'
-import {Markup} from '../../../shared/types'
+import {Markup} from './types'
 import {annotate} from './annotate'
 
 describe(`Utility: ${markupToRegex.name}`, () => {
