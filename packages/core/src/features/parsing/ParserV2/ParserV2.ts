@@ -50,13 +50,24 @@ export class ParserV2 {
 		const matches = this.ac.search(text)
 		if (matches.length === 0) return text
 
-		const sortedMatches = matches.sort((a, b) => a.start - b.start)
+		// Sort matches and filter out nested segments in one pass
+		const filteredMatches = matches
+			.filter((match, i, sortedMatches) => {
+				// Check if this segment is completely contained within any previous segment
+				for (let j = 0; j < i; j++) {
+					const prevMatch = sortedMatches[j]
+					if (match.start >= prevMatch.start && match.end <= prevMatch.end) {
+						return false // This segment is nested within a previous segment
+					}
+				}
+				return true
+			})
 
-		return sortedMatches.reduce((result, match, i) => {
-			const prevEnd = i === 0 ? 0 : sortedMatches[i - 1].end
+		return filteredMatches.reduce((result, match, i) => {
+			const prevEnd = i === 0 ? 0 : filteredMatches[i - 1].end
 			return result + text.substring(prevEnd, match.start) + (escaper
 				? escaper(text.substring(match.start, match.end))
 				: '')
-		}, '') + text.substring(sortedMatches[sortedMatches.length - 1].end)
+		}, '') + text.substring(filteredMatches[filteredMatches.length - 1].end)
 	}
 }

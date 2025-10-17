@@ -1,4 +1,3 @@
-
 /**
  * Node in the Aho-Corasick automaton trie
  */
@@ -32,7 +31,7 @@ export interface SegmentMatch {
 /**
  * Aho-Corasick automaton for efficient multi-pattern string matching
  * Finds all occurrences of multiple patterns in O(|text| + |patterns| + |matches|) time
- * 
+ *
  * Note: Expects deduplicated segments from MarkupRegistry for optimal performance
  */
 export class AhoCorasick {
@@ -44,7 +43,6 @@ export class AhoCorasick {
 		this.buildTrie()
 		this.buildFailures()
 	}
-
 
 	/**
 	 * Searches for all pattern occurrences in the text
