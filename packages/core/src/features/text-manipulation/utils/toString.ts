@@ -1,14 +1,7 @@
 import {MarkStruct, MarkMatch, Markup} from '../../parsing/ParserV1/types'
 import {InnerOption} from '../../../features/default/types'
-
-const isAnnotated = (value: unknown): value is MarkMatch => {
-	return value !== null && typeof value === 'object' && 'annotation' in value
-}
-
-const annotate = (markup: Markup, label: string, value?: string): string => {
-	const annotation = markup.replace('__label__', label)
-	return value ? annotation.replace('__value__', value) : annotation
-}
+import {annotate} from '../../parsing/ParserV1/utils/annotate'
+import {isAnnotated} from '../../parsing/ParserV1/utils/isAnnotated'
 
 export function toString(marks: MarkStruct[], options: InnerOption[]) {
 	let result = ''
