@@ -40,22 +40,21 @@ export interface TextToken {
 export interface MarkToken {
 	type: 'mark'
 	content: string
-	children: NestedToken[]
-	data: {
-		value: string
-		meta?: string
-		optionIndex: number
-	}
 	position: {
 		start: number
 		end: number
 	}
-	/** Nested content information (for debugging) */
+	optionIndex: number
+	data: {
+		value: string
+		meta?: string
+	}
 	nested?: {
 		content: string
 		start: number
 		end: number
 	}
+	children: NestedToken[]
 }
 
 /**
