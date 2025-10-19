@@ -1,6 +1,7 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {NestedToken} from './types'
+import {MarkToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
@@ -8,6 +9,7 @@ import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 import {toString as tokensToString} from './utils/toString'
+import {processTokensWithCallback} from './utils/denote'
 
 export class Parser {
 	private readonly registry: MarkupRegistry
@@ -47,6 +49,17 @@ export class Parser {
 
 	join(tokens: NestedToken[]): string {
 		return tokensToString(tokens, this.registry.markups)
+	}
+
+	/**
+	 * Transform annotated text by recursively processing all tokens with a callback
+	 * @param value - Annotated text to process
+	 * @param callback - Function to transform each MarkToken
+	 * @returns Transformed text
+	 */
+	denote(value: string, callback: (mark: MarkToken) => string): string {
+		const tokens = this.split(value)
+		return processTokensWithCallback(tokens, callback)
 	}
 
 	/**
