@@ -7,6 +7,7 @@ import {MatchPostProcessor} from './core/MatchPostProcessor'
 import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
+import {toString as tokensToString} from './utils/toString'
 
 export class Parser {
 	private readonly registry: MarkupRegistry
@@ -27,6 +28,11 @@ export class Parser {
 		return new Parser(markups).split(value)
 	}
 
+	static join(tokens: NestedToken[], options?: {markup: Markup}[]): string {
+		const markups = options?.map(c => c.markup) || []
+		return tokensToString(tokens, markups)
+	}
+
 	split(value: string): NestedToken[] {
 		const segmentMatches = this.ac.search(value)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)
@@ -37,6 +43,10 @@ export class Parser {
 		)
 
 		return buildTree(value, matchResults)
+	}
+
+	join(tokens: NestedToken[]): string {
+		return tokensToString(tokens, this.registry.markups)
 	}
 
 	/**

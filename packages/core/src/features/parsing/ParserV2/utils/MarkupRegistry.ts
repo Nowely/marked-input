@@ -6,6 +6,7 @@ import {createMarkupDescriptor, MarkupDescriptor} from '../core/MarkupDescriptor
  * Centralizes access to all markup patterns and their descriptors
  */
 export class MarkupRegistry {
+	readonly markups: Markup[]
 	readonly descriptors: MarkupDescriptor[]
 	/** Deduplicated list of unique segments */
 	readonly segments: string[]
@@ -13,6 +14,7 @@ export class MarkupRegistry {
 	readonly segmentsMap: Map<string, MarkupDescriptor[]>
 
 	constructor(markups: Markup[]) {
+		this.markups = markups
 		this.segmentsMap = new Map<string, MarkupDescriptor[]>()
 
 		// Create descriptors first

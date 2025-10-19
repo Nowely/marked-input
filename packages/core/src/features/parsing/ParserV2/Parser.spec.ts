@@ -16,9 +16,9 @@ describe('ParserV2', () => {
 	describe('static split', () => {
 		it('should parse text with provided options and return NestedToken[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options: InnerOption[] = [
-				{markup: '@[__value__](__meta__)', trigger: '@', data: []},
-				{markup: '#[__value__]', trigger: '#', data: []},
+			const options: {markup: Markup}[] = [
+				{markup: '@[__value__](__meta__)', },
+				{markup: '#[__value__]'},
 			]
 
 			const result = Parser.split(value, options)
@@ -37,6 +37,29 @@ describe('ParserV2', () => {
 			const result = Parser.split(value)
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "Hello world" [0-11]"`)
+		})
+	})
+
+	describe('static join', () => {
+		it('should convert tokens back to string with provided options', () => {
+			const value = 'Hello @[world](test) and #[tag]'
+			const options: {markup: Markup}[] = [
+				{markup: '@[__value__](__meta__)'},
+				{markup: '#[__value__]'},
+			]
+
+			const tokens = Parser.split(value, options)
+			const result = Parser.join(tokens, options)
+
+			expect(result).toBe(value)
+		})
+
+		it('should handle tokens without options', () => {
+			const value = 'Hello world'
+			const tokens = Parser.split(value)
+			const result = Parser.join(tokens)
+
+			expect(result).toBe(value)
 		})
 	})
 
@@ -1304,6 +1327,38 @@ describe('ParserV2', () => {
 					expect(mark.value).toBeDefined()
 					expect(typeof mark.value).toBe('string')
 				})
+			})
+		})
+
+		describe('join', () => {
+			it('should convert tokens back to original string', () => {
+				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
+				const input = 'Hello @[world](test) and #[tag]'
+
+				const tokens = parser.split(input)
+				const result = parser.join(tokens)
+
+				expect(result).toBe(input)
+			})
+
+			it('should handle nested tokens', () => {
+				const parser = new Parser(['@[__nested__](__meta__)', '#[__value__]'])
+				const input = 'Check @[#[urgent] task](priority)'
+
+				const tokens = parser.split(input)
+				const result = parser.join(tokens)
+
+				expect(result).toBe(input)
+			})
+
+			it('should handle plain text tokens', () => {
+				const parser = new Parser(['@[__value__]'])
+				const input = 'Hello world'
+
+				const tokens = parser.split(input)
+				const result = parser.join(tokens)
+
+				expect(result).toBe(input)
 			})
 		})
 	})
