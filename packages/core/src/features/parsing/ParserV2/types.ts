@@ -72,9 +72,9 @@ export interface MatchResult {
 /**
  * Template literal types for markup placeholders
  */
-export type value = `${string}${typeof PLACEHOLDER.VALUE}${string}`
-export type meta = `${string}${typeof PLACEHOLDER.META}${string}`
-export type nested = `${string}${typeof PLACEHOLDER.NESTED}${string}`
+export type Value = `${string}${typeof PLACEHOLDER.Value}${string}`
+export type Meta = `${string}${typeof PLACEHOLDER.Meta}${string}`
+export type Nested = `${string}${typeof PLACEHOLDER.Nested}${string}`
 
 /**
  * Modern Markup type supporting value, meta, and nested placeholders
@@ -87,11 +87,11 @@ export type nested = `${string}${typeof PLACEHOLDER.NESTED}${string}`
  * - "<__value__ __meta__>__nested__</__value__>" - HTML-like with all features
  */
 export type Markup =
-	| `${value}${meta}`
-	| `${value}${nested}`
-	| `${value}`
-	| `${nested}${meta}`
-	| `${nested}`
-	| `${meta}${value}`
-	| `${meta}${nested}`
+	| `${Value}${Meta}`
+	| `${Value}${Nested}`
+	| `${Value}`
+	| `${Nested}${Meta}`
+	| `${Nested}`
+	| `${Meta}${Value}`
+	| `${Meta}${Nested}`
 

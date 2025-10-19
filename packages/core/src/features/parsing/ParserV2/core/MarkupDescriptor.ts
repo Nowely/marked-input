@@ -39,37 +39,37 @@ export interface MarkupDescriptor {
  * - `<__value__ __meta__>__nested__</__value__>` -> segments: ["<", " ", ">", "</", ">"], gapTypes: ["value", "meta", "nested", "value"]
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
-	const hasTwoValues = countPlaceholder(markup, PLACEHOLDER.VALUE) === 2
-	const hasMeta = countPlaceholder(markup, PLACEHOLDER.META) === 1
-	const hasNested = countPlaceholder(markup, PLACEHOLDER.NESTED) === 1
+	const hasTwoValues = countPlaceholder(markup, PLACEHOLDER.Value) === 2
+	const hasMeta = countPlaceholder(markup, PLACEHOLDER.Meta) === 1
+	const hasNested = countPlaceholder(markup, PLACEHOLDER.Nested) === 1
 
 	// Validate placeholder counts
-	const valueCount = countPlaceholder(markup, PLACEHOLDER.VALUE)
-	const metaCount = countPlaceholder(markup, PLACEHOLDER.META)
-	const nestedCount = countPlaceholder(markup, PLACEHOLDER.NESTED)
+	const valueCount = countPlaceholder(markup, PLACEHOLDER.Value)
+	const metaCount = countPlaceholder(markup, PLACEHOLDER.Meta)
+	const nestedCount = countPlaceholder(markup, PLACEHOLDER.Nested)
 
 	// Must have at least one content placeholder (__value__ or __nested__)
 	if (valueCount === 0 && nestedCount === 0) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Must have at least one "${PLACEHOLDER.VALUE}" or "${PLACEHOLDER.NESTED}" placeholder`
+			`Invalid markup format: "${markup}". Must have at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}" placeholder`
 		)
 	}
 
 	if (valueCount < 0 || valueCount > 2) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.VALUE}" placeholders, but found ${valueCount}`
+			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.Value}" placeholders, but found ${valueCount}`
 		)
 	}
 
 	if (nestedCount > 1) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.NESTED}" placeholder, but found ${nestedCount}`
+			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.Nested}" placeholder, but found ${nestedCount}`
 		)
 	}
 
 	if (metaCount > 1) {
 		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.META}" placeholder, but found ${metaCount}`
+			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.Meta}" placeholder, but found ${metaCount}`
 		)
 	}
 
@@ -125,17 +125,17 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 	let pos = 0
 
 	while (pos < markup.length) {
-		const valuePos = markup.indexOf(PLACEHOLDER.VALUE, pos)
-		const metaPos = markup.indexOf(PLACEHOLDER.META, pos)
-		const nestedPos = markup.indexOf(PLACEHOLDER.NESTED, pos)
+		const valuePos = markup.indexOf(PLACEHOLDER.Value, pos)
+		const metaPos = markup.indexOf(PLACEHOLDER.Meta, pos)
+		const nestedPos = markup.indexOf(PLACEHOLDER.Nested, pos)
 
 		if (valuePos === -1 && metaPos === -1 && nestedPos === -1) break
 
 		// Find the earliest placeholder
 		const positions = [
-			{type: 'value' as const, pos: valuePos, length: PLACEHOLDER.VALUE.length},
-			{type: 'meta' as const, pos: metaPos, length: PLACEHOLDER.META.length},
-			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.NESTED.length}
+			{type: 'value' as const, pos: valuePos, length: PLACEHOLDER.Value.length},
+			{type: 'meta' as const, pos: metaPos, length: PLACEHOLDER.Meta.length},
+			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.Nested.length}
 		].filter(p => p.pos !== -1)
 
 		if (positions.length === 0) break

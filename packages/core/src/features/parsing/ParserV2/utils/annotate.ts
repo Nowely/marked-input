@@ -26,15 +26,15 @@ export function annotate(
 	let annotation = markup as string
 
 	if (params.value !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.VALUE, params.value)
+		annotation = annotation.replaceAll(PLACEHOLDER.Value, params.value)
 	}
 
 	if (params.meta !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.META, params.meta)
+		annotation = annotation.replaceAll(PLACEHOLDER.Meta, params.meta)
 	}
 
 	if (params.nested !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.NESTED, params.nested)
+		annotation = annotation.replaceAll(PLACEHOLDER.Nested, params.nested)
 	}
 
 	return annotation

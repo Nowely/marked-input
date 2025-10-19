@@ -10,8 +10,8 @@
  * For legacy Parser compatibility, see ../Parser/constants.ts
  * For Markup types, see ./types.ts
  */
-export enum PLACEHOLDER {
-	VALUE = '__value__',
-	META = '__meta__',
-	NESTED = '__nested__',
-}
+export const PLACEHOLDER = {
+	Value: '__value__',
+	Meta: '__meta__',
+	Nested: '__nested__',
+} as const
