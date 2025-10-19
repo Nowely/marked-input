@@ -1,4 +1,4 @@
-import {isObject} from '../../utils/isObject'
+import {isObject} from '../../../../shared/checkers/isObject'
 import {Parser} from '../Parser'
 import {MarkMatch, Markup} from '../types'
 

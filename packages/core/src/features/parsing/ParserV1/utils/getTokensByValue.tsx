@@ -1,8 +1,8 @@
-import {findGap} from '../../preparsing/utils/findGap'
-import {getClosestIndexes} from '../../preparsing/utils/getClosestIndexes'
-import {Store} from '../../store'
-import {Parser} from '../ParserV1/Parser'
-import {isAnnotated} from '../ParserV1/utils/isAnnotated'
+import {findGap} from '../../../preparsing/utils/findGap'
+import {getClosestIndexes} from '../../../preparsing/utils/getClosestIndexes'
+import {Store} from '../../../store'
+import {Parser} from '../Parser'
+import {isAnnotated} from './isAnnotated'
 
 export function getTokensByValue(store: Store) {
 	const {
