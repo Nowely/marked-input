@@ -28,3 +28,4 @@ export {toString, shallow, createNewSpan, deleteMark} from './src/features/text-
 export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
 export {Caret, TriggerFinder} from './src/features/caret'
+export type {Markup} from './src/features/parsing/ParserV1'

@@ -19,7 +19,7 @@ export class Parser {
 		this.patternProcessor = new PatternProcessor(this.registry)
 	}
 
-	static split(value: string, options?: InnerOption[]): NestedToken[] {
+	static split(value: string, options?: {markup: Markup}[]): NestedToken[] {
 		const markups = options?.map(c => c.markup)
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]

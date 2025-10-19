@@ -9,7 +9,7 @@ export function denote(value: string, callback: (mark: MarkMatch) => string, ...
 	if (!markups.length) return value
 	const pieces = new Parser(markups).split(value)
 	return pieces.reduce(
-		(previous: string, current) => (previous += isObject(current) ? callback(current) : current),
+		(previous: string, current) => (previous += isObject(current) ? callback(current as MarkMatch) : current),
 		''
 	)
 }
