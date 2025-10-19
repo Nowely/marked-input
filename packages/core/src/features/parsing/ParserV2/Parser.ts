@@ -8,7 +8,7 @@ import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 
-export class ParserV2 {
+export class Parser {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
 	private readonly patternProcessor: PatternProcessor
@@ -24,7 +24,7 @@ export class ParserV2 {
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
 		}
-		return new ParserV2(markups).split(value)
+		return new Parser(markups).split(value)
 	}
 
 	split(value: string): NestedToken[] {

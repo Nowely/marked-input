@@ -1,12 +1,12 @@
 import {describe, it, expect} from 'vitest'
-import {ParserV2} from './ParserV2'
+import {Parser} from './Parser'
 import {Markup} from './types'
 
 describe('ParserV2 Performance Benchmark', () => {
 	const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 
 	it('should benchmark simple parsing (100 marks)', () => {
-		const parser = new ParserV2(markups)
+		const parser = new Parser(markups)
 
 		// Generate input with 100 marks
 		let input = 'Start '
@@ -33,7 +33,7 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark nested parsing', () => {
-		const parser = new ParserV2(markups)
+		const parser = new Parser(markups)
 
 		// Generate input with nested marks
 		const input = '@[outer1 #[inner1] text] and @[outer2 #[inner2] #[inner3] more] end'
@@ -63,7 +63,7 @@ describe('ParserV2 Performance Benchmark', () => {
 		const start = performance.now()
 
 		for (let i = 0; i < iterations; i++) {
-			new ParserV2(markups as any)
+			new Parser(markups as any)
 		}
 
 		const end = performance.now()
@@ -80,7 +80,7 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark mixed patterns', () => {
-		const parser = new ParserV2(markups)
+		const parser = new Parser(markups)
 
 		const input = 'Text @[user1](val1) #[tag1] more @[user2](val2) #[tag2] and @[user3](val3) end'
 
@@ -105,7 +105,7 @@ describe('ParserV2 Performance Benchmark', () => {
 	})
 
 	it('should benchmark long text with sparse marks', () => {
-		const parser = new ParserV2(markups)
+		const parser = new Parser(markups)
 
 		// Long text with only 5 marks
 		const longText = 'Lorem ipsum '.repeat(100)

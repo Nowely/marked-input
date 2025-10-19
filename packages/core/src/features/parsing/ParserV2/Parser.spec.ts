@@ -1,16 +1,16 @@
 import {describe, it, expect, beforeEach} from 'vitest'
-import {ParserV2} from './ParserV2'
+import {Parser} from './Parser'
 import {MarkToken, NestedToken, Markup} from './types'
 import {InnerOption} from '../../default/types'
 import {faker} from '@faker-js/faker'
 
 describe('ParserV2', () => {
-	let parser: ParserV2
+	let parser: Parser
 	let markups: Markup[]
 
 	beforeEach(() => {
 		markups = ['@[__value__](__meta__)', '#[__value__]']
-		parser = new ParserV2(markups)
+		parser = new Parser(markups)
 	})
 
 	describe('static split', () => {
@@ -21,7 +21,7 @@ describe('ParserV2', () => {
 				{markup: '#[__value__]', trigger: '#', data: []},
 			]
 
-			const result = ParserV2.split(value, options)
+			const result = Parser.split(value, options)
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 				"0: TEXT "Hello " [0-6]
@@ -34,7 +34,7 @@ describe('ParserV2', () => {
 
 		it('should handle text without options', () => {
 			const value = 'Hello world'
-			const result = ParserV2.split(value)
+			const result = Parser.split(value)
 
 			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`"0: TEXT "Hello world" [0-11]"`)
 		})
@@ -103,7 +103,7 @@ describe('ParserV2', () => {
 						// Test basic nested parsing
 						// Note: Self-nesting is not supported (pattern cannot nest within itself)
 						// This is by design to eliminate bracket counting complexity
-						const simpleParser = new ParserV2(['@[__nested__]'])
+						const simpleParser = new Parser(['@[__nested__]'])
 						const input = '@[hello @[world]]'
 						const result = simpleParser.split(input)
 
@@ -119,7 +119,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles multiple and deeply nested marks', () => {
-						const parser = new ParserV2(['@[__nested__]'])
+						const parser = new Parser(['@[__nested__]'])
 						const input = '@[level1 @[level2 @[level3]]]'
 						const result = parser.split(input)
 
@@ -138,7 +138,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles mixed markup types with nesting', () => {
-						const parser = new ParserV2(['@[__nested__]', '#[__nested__]'])
+						const parser = new Parser(['@[__nested__]', '#[__nested__]'])
 						const input = '@[hello #[world]]'
 						const result = parser.split(input)
 
@@ -153,7 +153,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles marks with values and nesting', () => {
-						const parser = new ParserV2(['@[__nested__](__meta__)', '#[__nested__]'])
+						const parser = new Parser(['@[__nested__](__meta__)', '#[__nested__]'])
 						const input = '@[hello #[world]](value)'
 						const result = parser.split(input)
 
@@ -168,7 +168,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles combined __label__ and __nested__ pattern', () => {
-						const parser = new ParserV2(['@[__value__](__nested__)', '#[__nested__]'])
+						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]'])
 						const input = '@[user](Hello #[world])'
 						const result = parser.split(input)
 
@@ -183,7 +183,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles combined __label__ and __nested__ with complex nesting', () => {
-						const parser = new ParserV2(['@[__value__](__nested__)', '#[__nested__]', '**__nested__**'])
+						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]', '**__nested__**'])
 						const input = '@[user](Text with #[tag] and **bold**)'
 						const result = parser.split(input)
 
@@ -200,7 +200,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles __label__ and __nested__ with empty nested content', () => {
-						const parser = new ParserV2(['@[__value__](__nested__)', '#[__nested__]'])
+						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]'])
 						const input = '@[user]()'
 						const result = parser.split(input)
 
@@ -213,7 +213,7 @@ describe('ParserV2', () => {
 
 					it('handles HTML-like pattern with label, value and nested', () => {
 						// Pattern: <__value__ __meta__>__nested__</__value__>
-						const parser = new ParserV2(['<__value__ __meta__>__nested__</__value__>', '**__nested__**'])
+						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '**__nested__**'])
 						const input = '<div class>Content with **bold**</div>'
 						const result = parser.split(input)
 
@@ -232,7 +232,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles HTML-like pattern with empty value', () => {
-						const parser = new ParserV2(['<__value__ __meta__>__nested__</__value__>', '#[__nested__]'])
+						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '#[__nested__]'])
 						const input = '<span >Text #[tag]</span>'
 						const result = parser.split(input)
 
@@ -252,7 +252,7 @@ describe('ParserV2', () => {
 
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
 						// Simpler test: outer pattern with value, inner pattern without value
-						const parser = new ParserV2([
+						const parser = new Parser([
 							'<__value__ __meta__>__nested__</__value__>',
 							'<__value__>__nested__</__value__>',
 						])
@@ -274,7 +274,7 @@ describe('ParserV2', () => {
 					})
 
 					it('handles complex HTML-like nested structure', () => {
-						const parser = new ParserV2([
+						const parser = new Parser([
 							'<__value__ __meta__>__nested__</__value__>',
 							'<__value__>__nested__</__value__>',
 							'**__nested__**',
@@ -303,7 +303,7 @@ describe('ParserV2', () => {
 
 					it('does NOT match HTML-like pattern when opening and closing tags differ', () => {
 						// Pattern with two __label__ placeholders requires them to be equal
-						const parser = new ParserV2(['<__value__>__nested__</__value__>'])
+						const parser = new Parser(['<__value__>__nested__</__value__>'])
 						const input = '<div1>text</div2>'
 						const result = parser.split(input)
 
@@ -319,7 +319,7 @@ describe('ParserV2', () => {
 
 					it('does NOT find nested marks in __label__ sections', () => {
 						// Pattern uses __label__ (not __nested__), so no nesting should be found
-						const parser = new ParserV2(['@[__value__]', '#[__value__]'])
+						const parser = new Parser(['@[__value__]', '#[__value__]'])
 						const input = '@[hello #[world]]'
 						const result = parser.split(input)
 
@@ -338,7 +338,7 @@ describe('ParserV2', () => {
 
 					it('does NOT find nested marks in __value__ sections', () => {
 						// Nested patterns should not be found inside value sections
-						const parser = new ParserV2(['@[__nested__](__meta__)', '#[__nested__]'])
+						const parser = new Parser(['@[__nested__](__meta__)', '#[__nested__]'])
 						const input = '@[hello](#[world])'
 						const result = parser.split(input)
 
@@ -359,7 +359,7 @@ describe('ParserV2', () => {
 					it('correctly distinguishes between __label__ and __nested__ in mixed patterns', () => {
 						// Pattern with __label__ should not support nesting
 						// Pattern with __nested__ should support nesting
-						const parser = new ParserV2(['@[__value__]', '#[__nested__]', '**__nested__**'])
+						const parser = new Parser(['@[__value__]', '#[__nested__]', '**__nested__**'])
 						const input1 = '@[#[tag]]' // __label__ pattern - no nesting
 						const input2 = '#[**bold**]' // __nested__ pattern - with nesting
 
@@ -434,7 +434,7 @@ describe('ParserV2', () => {
 				})
 
 				it('handles marks with empty labels', () => {
-					const parser = new ParserV2(['@[__value__]'])
+					const parser = new Parser(['@[__value__]'])
 					const input = '@[] @[content]'
 					const result = parser.split(input)
 
@@ -487,7 +487,7 @@ describe('ParserV2', () => {
 				it('handles conflicting patterns gracefully', () => {
 					// Test with patterns that could potentially conflict
 					// Shorter matches have higher priority, patterns without value preferred for same length
-					const conflictingParser = new ParserV2(['@[__value__]', '@[__value__](__meta__)'])
+					const conflictingParser = new Parser(['@[__value__]', '@[__value__](__meta__)'])
 					const input = '@[simple] @[with](value)'
 					const result = conflictingParser.split(input)
 
@@ -507,7 +507,7 @@ describe('ParserV2', () => {
 						'@[start]@[end]',
 						' @[middle] ',
 					`
-					const parser = new ParserV2(['@[__value__]'])
+					const parser = new Parser(['@[__value__]'])
 					const result = parser.split(input)
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "↲⇥⇥⇥⇥⇥⇥'" [0-8]
@@ -537,7 +537,7 @@ describe('ParserV2', () => {
 
 				it('handles __value__ before content placeholder', () => {
 					// Pattern with value before label: (__meta__)@[__value__]
-					const parser = new ParserV2(['(__meta__)@[__value__]'])
+					const parser = new Parser(['(__meta__)@[__value__]'])
 					const input = '(url)@[link]'
 					const result = parser.split(input)
 
@@ -554,7 +554,7 @@ describe('ParserV2', () => {
 
 				it('handles __value__ before nested placeholder', () => {
 					// Pattern with value before nested: (__meta__)#[__nested__]
-					const parser = new ParserV2(['(__meta__)#[__nested__]', '**__nested__**'])
+					const parser = new Parser(['(__meta__)#[__nested__]', '**__nested__**'])
 					const input = '(note)#[Text with **bold**]'
 					const result = parser.split(input)
 
@@ -573,7 +573,7 @@ describe('ParserV2', () => {
 
 				it('handles complex pattern with value in middle', () => {
 					// Pattern: [__value__](__meta__)(__nested__)
-					const parser = new ParserV2(['[__value__](__meta__)(__nested__)', '**__nested__**'])
+					const parser = new Parser(['[__value__](__meta__)(__nested__)', '**__nested__**'])
 					const input = '[name](url)(Content **bold**)'
 					const result = parser.split(input)
 
@@ -595,7 +595,7 @@ describe('ParserV2', () => {
 
 		describe('escape', () => {
 			it('should escape segments using provided escaper function', () => {
-				const parser = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
+				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 
 				// Escaper that prefixes segments
 				const escaper = (segment: string) => `ESC_${segment}`
@@ -607,7 +607,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle different escaper functions', () => {
-				const parser = new ParserV2(['**[__value__]**'])
+				const parser = new Parser(['**[__value__]**'])
 
 				// Escaper that prefixes segments
 				const escaper = (segment: string) => `ESC_${segment}`
@@ -619,7 +619,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle overlapping segments correctly', () => {
-				const parser = new ParserV2(['@[__value__]', '#[__value__]'])
+				const parser = new Parser(['@[__value__]', '#[__value__]'])
 
 				const escaper = (segment: string) => `ESC_${segment}`
 
@@ -630,7 +630,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle empty text', () => {
-				const parser = new ParserV2(['@[__value__]'])
+				const parser = new Parser(['@[__value__]'])
 
 				const escaper = (segment: string) => `\\${segment}`
 
@@ -640,7 +640,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle text without segments', () => {
-				const parser = new ParserV2(['@[__value__]'])
+				const parser = new Parser(['@[__value__]'])
 
 				const escaper = (segment: string) => `\\${segment}`
 
@@ -651,7 +651,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should work without escaper function', () => {
-				const parser = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
+				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 
 				const testInput = 'Hello @[world](test) and #[tag]'
 				const result = parser.escape(testInput)
@@ -740,7 +740,7 @@ describe('ParserV2', () => {
 					safePrefixes.forEach(prefix => {
 						it(`parses markup with prefix "${prefix}"`, () => {
 							const markup = generateSimpleMarkup(prefix)
-							const parser = new ParserV2([markup as any])
+							const parser = new Parser([markup as any])
 							const input = `Hello ${prefix}[world]!`
 							const result = parser.split(input)
 
@@ -776,7 +776,7 @@ describe('ParserV2', () => {
 					htmlTags.forEach(({tag, description}) => {
 						it(`parses HTML <${tag}> tag`, () => {
 							const markup = `<${tag}>__value__</${tag}>`
-							const parser = new ParserV2([markup as any])
+							const parser = new Parser([markup as any])
 							const input = `This is <${tag}>content</${tag}> text`
 							const result = parser.split(input)
 
@@ -789,7 +789,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__</__value__> format', () => {
-						const parser = new ParserV2(['<__value__>__meta__</__value__>' as any])
+						const parser = new Parser(['<__value__>__meta__</__value__>' as any])
 						const input = 'Check <img>photo.jpg</img> image'
 						const result = parser.split(input)
 
@@ -801,7 +801,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__<__value__> format', () => {
-						const parser = new ParserV2(['<__value__>__meta__<__value__>' as any])
+						const parser = new Parser(['<__value__>__meta__<__value__>' as any])
 						const input = 'Check <img>photo.jpg<img> image'
 						const result = parser.split(input)
 
@@ -814,7 +814,7 @@ describe('ParserV2', () => {
 
 					it('parses nested HTML tags', () => {
 						const markups = ['<b>__nested__</b>' as any, '<i>__nested__</i>' as any]
-						const parser = new ParserV2(markups)
+						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'
 						const result = parser.split(input)
 
@@ -848,7 +848,7 @@ describe('ParserV2', () => {
 
 					markdownPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses markdown pattern ${pattern}`, () => {
-							const parser = new ParserV2([pattern as any])
+							const parser = new Parser([pattern as any])
 							const result = parser.split(input)
 
 							// Find mark token
@@ -859,7 +859,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses markdown links', () => {
-						const parser = new ParserV2(['[__value__](__meta__)' as any])
+						const parser = new Parser(['[__value__](__meta__)' as any])
 						const input = 'Check [Google](https://google.com) for search'
 						const result = parser.split(input)
 
@@ -871,7 +871,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses markdown images', () => {
-						const parser = new ParserV2(['![__value__](__meta__)' as any])
+						const parser = new Parser(['![__value__](__meta__)' as any])
 						const input = 'See ![cat](cat.jpg) image'
 						const result = parser.split(input)
 
@@ -888,7 +888,7 @@ describe('ParserV2', () => {
 							'*__value__*', // italic
 							'`__value__`', // code
 						]
-						const parser = new ParserV2(markups)
+						const parser = new Parser(markups)
 						const input = '**Bold** and *italic* with `code`'
 						const result = parser.split(input)
 
@@ -915,7 +915,7 @@ describe('ParserV2', () => {
 							'[__value__](__meta__)', // link (no nesting in link text)
 							'~~__value__~~', // strikethrough (no nesting)
 						]
-						const parser = new ParserV2(markups)
+						const parser = new Parser(markups)
 
 						const input = dedent`
 						# Welcome to **Marked Input**
@@ -1008,7 +1008,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses "**strong emphasis**" correctly', () => {
-						const parser = new ParserV2(['**__value__**'])
+						const parser = new Parser(['**__value__**'])
 						const input = '**strong emphasis**'
 						const result = parser.split(input)
 
@@ -1020,7 +1020,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses two adjacent bold marks correctly', () => {
-						const parser = new ParserV2(['**__value__**'])
+						const parser = new Parser(['**__value__**'])
 						const input = '**Bold text** with **strong emphasis**'
 						const result = parser.split(input)
 
@@ -1034,7 +1034,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses "*emphasis*" correctly', () => {
-						const parser = new ParserV2(['*__value__*'])
+						const parser = new Parser(['*__value__*'])
 						const input = '*emphasis*'
 						const result = parser.split(input)
 
@@ -1046,7 +1046,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses two adjacent italic marks correctly', () => {
-						const parser = new ParserV2(['*__value__*'])
+						const parser = new Parser(['*__value__*'])
 						const input = '*Italic text* and *emphasis*'
 						const result = parser.split(input)
 
@@ -1060,7 +1060,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses nested bold marks in list item', () => {
-						const parser = new ParserV2(['- __nested__\n', '**__nested__**'])
+						const parser = new Parser(['- __nested__\n', '**__nested__**'])
 						const input = '- **Bold text** with **strong emphasis**\n'
 						const result = parser.split(input)
 
@@ -1077,7 +1077,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: multiline code block pattern', () => {
-						const parser = new ParserV2(['```__value__\n__meta__```'])
+						const parser = new Parser(['```__value__\n__meta__```'])
 						const input = '```javascript\nconst x = 1\n```'
 						const result = parser.split(input)
 
@@ -1100,7 +1100,7 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: multiline code block with other patterns', () => {
-						const parser = new ParserV2([
+						const parser = new Parser([
 							'```__value__\n__meta__```', // code block
 							'`__value__`', // inline code
 						])
@@ -1142,7 +1142,7 @@ describe('ParserV2', () => {
 
 					customPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses custom pattern "${pattern}"`, () => {
-							const parser = new ParserV2([pattern as any])
+							const parser = new Parser([pattern as any])
 							const result = parser.split(input)
 
 							// Find mark token

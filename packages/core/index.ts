@@ -16,7 +16,7 @@ export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER} fr
 export {Parser, annotate, denote, getTokensByValue, getTokensByUI} from './src/features/parsing'
 export {escape} from './src/shared/escape'
 export {
-	ParserV2,
+	Parser as ParserV2,
 	annotate as annotateV2,
 	denote as denoteV2,
 	toString as toStringV2,

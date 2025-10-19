@@ -1,4 +1,4 @@
-import {ParserV2} from '../ParserV2'
+import {Parser} from '../Parser'
 import {MarkToken, Markup, NestedToken} from '../types'
 import {annotate} from './annotate'
 
@@ -24,7 +24,7 @@ export function denote(
 ): string {
 	if (!markups.length) return value
 
-	const tokens = new ParserV2(markups).split(value)
+	const tokens = new Parser(markups).split(value)
 
 	function processTokens(tokens: NestedToken[]): string {
 		let result = ''
