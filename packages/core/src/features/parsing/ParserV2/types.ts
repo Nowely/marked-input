@@ -1,7 +1,6 @@
-import {InnerOption} from '../../default/types'
 import {PLACEHOLDER} from './constants'
 
-export type NestedToken =
+export type MarkputToken =
 	| TextToken
 	| MarkToken
 
@@ -29,7 +28,7 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
-	children: NestedToken[]
+	children: MarkputToken[]
 }
 
 /**

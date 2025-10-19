@@ -1,4 +1,4 @@
-import {NestedToken, Markup} from '../types'
+import {MarkputToken, Markup} from '../types'
 import {annotate} from './annotate'
 
 /**
@@ -19,7 +19,7 @@ import {annotate} from './annotate'
  * // Returns: '@[Hello](world) #[test]'
  * ```
  */
-export function toString(tokens: NestedToken[], markups: Markup[]): string {
+export function toString(tokens: MarkputToken[], markups: Markup[]): string {
 	let result = ''
 
 	for (const token of tokens) {

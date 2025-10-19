@@ -1,5 +1,5 @@
 import {Parser} from '../Parser'
-import {MarkToken, Markup, NestedToken} from '../types'
+import {MarkToken, Markup, MarkputToken} from '../types'
 import {annotate} from './annotate'
 
 /**
@@ -36,7 +36,7 @@ export function denote(
  * @returns Transformed text
  */
 export function processTokensWithCallback(
-	tokens: NestedToken[],
+	tokens: MarkputToken[],
 	callback: (mark: MarkToken) => string
 ): string {
 	let result = ''
