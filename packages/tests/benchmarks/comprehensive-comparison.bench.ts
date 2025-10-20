@@ -1,7 +1,6 @@
 import {bench, describe} from 'vitest'
-import {Parser} from '../../core/src/features/parsing/Parser/Parser'
-import {ParserV2} from '../../core/src/features/parsing/ParserV2/index'
-import {Markup} from '../../core/src/shared/types'
+import {Parser} from '../../core/src/features/parsing/ParserV1/Parser'
+import {Parser as ParserV2} from '../../core/src/features/parsing/ParserV2/index'
 
 // Test data generators
 function generateComparisonText(marks: number): string {
@@ -14,9 +13,8 @@ function generateComparisonText(marks: number): string {
 }
 
 // Parser configurations
-const markups: Markup[] = ['@[__label__](__value__)', '#[__label__]']
-const parserV1 = new Parser(markups)
-const parserV2 = new ParserV2(markups)
+const parserV1 = new Parser(['@[__label__](__value__)', '#[__label__]'])
+const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 
 describe('Comprehensive Parser Comparison: Memory, Scalability & Real-world', () => {
 

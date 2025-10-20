@@ -1,6 +1,6 @@
 import {bench, describe} from 'vitest'
-import {Parser} from '../../core/src/features/parsing/Parser/Parser'
-import {ParserV2} from '../../core/src/features/parsing/ParserV2/index'
+import {Parser} from '../../core/src/features/parsing/ParserV1/Parser'
+import {Parser as ParserV2} from '../../core/src/features/parsing/ParserV2/index'
 import {Markup} from '../../core/src/shared/types'
 
 // Test data generators
@@ -13,29 +13,14 @@ function generateComparisonText(marks: number): string {
 	return result
 }
 
-// Parser configurations
-const options = [
-	{
-		markup: '@[__label__](__value__)',
-		trigger: '@',
-		data: []
-	},
-	{
-		markup: '#[__label__]',
-		trigger: '#',
-		data: []
-	}
-]
-
 // Test cases
 const sizes = [10, 50, 100, 500]
 
 describe('Parser Comparison: v1 vs v2', () => {
 	sizes.forEach(size => {
 		const input = generateComparisonText(size)
-		const markups: Markup[] = ['@[__label__](__value__)', '#[__label__]']
-		const parserV1 = new Parser(markups)
-		const parserV2 = new ParserV2(markups)
+		const parserV1 = new Parser(['@[__label__](__value__)', '#[__label__]'])
+		const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 
 		describe(`Input size: ${size} marks`, () => {
 			bench(`Parser v1 (flat)`, () => {
@@ -56,7 +41,7 @@ describe('Parser Comparison: v1 vs v2', () => {
 })
 
 describe('Parser v2 Features Benchmark', () => {
-	const parser = new ParserV2(['@[__label__](__value__)', '#[__label__]'])
+	const parser = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 
 	describe('Memory Efficiency', () => {
 		const inputs = [
@@ -84,8 +69,8 @@ describe('Parser v2 Features Benchmark', () => {
 	describe('Scalability Test', () => {
 		// Test how performance degrades with input size
 		const sizes = [10, 25, 50, 100, 250, 500]
-		const markups: Markup[] = ['@[__label__](__value__)', '#[__label__]']
-		const parser = new Parser(markups)
+		const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
+		const parser = new ParserV2(markups)
 
 		sizes.forEach(size => {
 			const input = generateComparisonText(size)
@@ -118,8 +103,8 @@ describe('Parser v2 Features Benchmark', () => {
 				text: 'User @[alice](Alice Johnson) shared: "Check **[this amazing article]** about #[AI] and #[machine-learning]!" #[tech] #[news]'
 			}
 		]
-		const markups: Markup[] = ['@[__label__](__value__)', '#[__label__]']
-		const parser = new Parser(markups)
+		const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
+		const parser = new ParserV2(markups)
 
 		scenarios.forEach(({ name, text }) => {
 			bench(`scenario: ${name}`, () => {
