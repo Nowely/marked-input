@@ -1,8 +1,6 @@
 import {PLACEHOLDER} from './constants'
 
-export type MarkputToken =
-	| TextToken
-	| MarkToken
+export type MarkputToken = TextToken | MarkToken
 
 export interface TextToken {
 	type: 'text'
@@ -33,11 +31,11 @@ export interface MarkToken {
 
 /**
  * Result of pattern matching with position tracking
- * 
+ *
  * All positions follow standard JavaScript convention:
  * - start positions are inclusive (point to first character)
  * - end positions are exclusive (point to character after last)
- * 
+ *
  * This allows direct use with substring(): input.substring(start, end)
  */
 export interface MatchResult {
@@ -87,11 +85,19 @@ export type NestedMarkup = `${string}${typeof PLACEHOLDER.Nested}${string}`
  * - "<__value__ __meta__>__nested__</__value__>" - HTML-like with all features
  */
 export type Markup =
-	| `${ValueMarkup}${MetaMarkup}`
-	| `${ValueMarkup}${NestedMarkup}`
 	| `${ValueMarkup}`
-	| `${NestedMarkup}${MetaMarkup}`
-	| `${NestedMarkup}`
-	| `${MetaMarkup}${ValueMarkup}`
-	| `${MetaMarkup}${NestedMarkup}`
+	| `${ValueMarkup}${MetaMarkup}`
+	| `${ValueMarkup}${MetaMarkup}${NestedMarkup}`
+	| `${ValueMarkup}${NestedMarkup}`
+	| `${ValueMarkup}${NestedMarkup}${MetaMarkup}`
 
+	| `${NestedMarkup}`
+	| `${NestedMarkup}${MetaMarkup}`
+	| `${NestedMarkup}${MetaMarkup}${ValueMarkup}`
+	| `${NestedMarkup}${ValueMarkup}`
+	| `${NestedMarkup}${ValueMarkup}${MetaMarkup}`
+
+	| `${MetaMarkup}${ValueMarkup}`
+	| `${MetaMarkup}${ValueMarkup}${NestedMarkup}`
+	| `${MetaMarkup}${NestedMarkup}`
+	| `${MetaMarkup}${NestedMarkup}${ValueMarkup}`
