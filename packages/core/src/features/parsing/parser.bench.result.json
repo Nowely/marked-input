@@ -1,0 +1,534 @@
+[
+  {
+    "timestamp": "2025-10-22T18:07:44.157Z",
+    "overall": {
+      "parserV1": 566741,
+      "parserV2": 101630,
+      "avgRatio": 33.01428571428571,
+      "v1Wins": 7,
+      "v2Wins": 0
+    },
+    "summary": {
+      "testComparison": {
+        "(10 marks)": {
+          "parserV1": {
+            "avgHz": 56874,
+            "minHz": 56874,
+            "maxHz": 56874,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 3365,
+            "minHz": 3365,
+            "maxHz": 3365,
+            "samples": 1
+          },
+          "ratio": 16.9,
+          "winner": "v1",
+          "performanceGap": "1590% faster"
+        },
+        "(50 marks)": {
+          "parserV1": {
+            "avgHz": 14317,
+            "minHz": 14317,
+            "maxHz": 14317,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 967,
+            "minHz": 967,
+            "maxHz": 967,
+            "samples": 1
+          },
+          "ratio": 14.81,
+          "winner": "v1",
+          "performanceGap": "1381% faster"
+        },
+        "(100 marks)": {
+          "parserV1": {
+            "avgHz": 6422,
+            "minHz": 6422,
+            "maxHz": 6422,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 355,
+            "minHz": 355,
+            "maxHz": 355,
+            "samples": 1
+          },
+          "ratio": 18.09,
+          "winner": "v1",
+          "performanceGap": "1709% faster"
+        },
+        "(500 marks)": {
+          "parserV1": {
+            "avgHz": 3294,
+            "minHz": 3294,
+            "maxHz": 3294,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 20,
+            "minHz": 20,
+            "maxHz": 20,
+            "samples": 1
+          },
+          "ratio": 164.7,
+          "winner": "v1",
+          "performanceGap": "16370% faster"
+        },
+        "social media": {
+          "parserV1": {
+            "avgHz": 813149,
+            "minHz": 813149,
+            "maxHz": 813149,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 144116,
+            "minHz": 144116,
+            "maxHz": 144116,
+            "samples": 1
+          },
+          "ratio": 5.64,
+          "winner": "v1",
+          "performanceGap": "464% faster"
+        },
+        "markdown-like": {
+          "parserV1": {
+            "avgHz": 1602578,
+            "minHz": 1602578,
+            "maxHz": 1602578,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 271836,
+            "minHz": 271836,
+            "maxHz": 271836,
+            "samples": 1
+          },
+          "ratio": 5.9,
+          "winner": "v1",
+          "performanceGap": "490% faster"
+        },
+        "code comments": {
+          "parserV1": {
+            "avgHz": 1470555,
+            "minHz": 1470555,
+            "maxHz": 1470555,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 290750,
+            "minHz": 290750,
+            "maxHz": 290750,
+            "samples": 1
+          },
+          "ratio": 5.06,
+          "winner": "v1",
+          "performanceGap": "406% faster"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-10-22T18:05:51.079Z",
+    "overall": {
+      "parserV1": 508169,
+      "parserV2": 97734,
+      "avgRatio": 32.33571428571428,
+      "v1Wins": 7,
+      "v2Wins": 0
+    },
+    "summary": {
+      "testComparison": {
+        "(10 marks)": {
+          "parserV1": {
+            "avgHz": 53193,
+            "minHz": 53193,
+            "maxHz": 53193,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 3459,
+            "minHz": 3459,
+            "maxHz": 3459,
+            "samples": 1
+          },
+          "ratio": 15.38,
+          "winner": "v1",
+          "performanceGap": "1438% faster"
+        },
+        "(50 marks)": {
+          "parserV1": {
+            "avgHz": 14198,
+            "minHz": 14198,
+            "maxHz": 14198,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 1043,
+            "minHz": 1043,
+            "maxHz": 1043,
+            "samples": 1
+          },
+          "ratio": 13.61,
+          "winner": "v1",
+          "performanceGap": "1261% faster"
+        },
+        "(100 marks)": {
+          "parserV1": {
+            "avgHz": 5732,
+            "minHz": 5732,
+            "maxHz": 5732,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 360,
+            "minHz": 360,
+            "maxHz": 360,
+            "samples": 1
+          },
+          "ratio": 15.92,
+          "winner": "v1",
+          "performanceGap": "1492% faster"
+        },
+        "(500 marks)": {
+          "parserV1": {
+            "avgHz": 3153,
+            "minHz": 3153,
+            "maxHz": 3153,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 19,
+            "minHz": 19,
+            "maxHz": 19,
+            "samples": 1
+          },
+          "ratio": 165.95,
+          "winner": "v1",
+          "performanceGap": "16495% faster"
+        },
+        "social media": {
+          "parserV1": {
+            "avgHz": 793736,
+            "minHz": 793736,
+            "maxHz": 793736,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 149805,
+            "minHz": 149805,
+            "maxHz": 149805,
+            "samples": 1
+          },
+          "ratio": 5.3,
+          "winner": "v1",
+          "performanceGap": "430% faster"
+        },
+        "markdown-like": {
+          "parserV1": {
+            "avgHz": 1332349,
+            "minHz": 1332349,
+            "maxHz": 1332349,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 247548,
+            "minHz": 247548,
+            "maxHz": 247548,
+            "samples": 1
+          },
+          "ratio": 5.38,
+          "winner": "v1",
+          "performanceGap": "438% faster"
+        },
+        "code comments": {
+          "parserV1": {
+            "avgHz": 1354825,
+            "minHz": 1354825,
+            "maxHz": 1354825,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 281905,
+            "minHz": 281905,
+            "maxHz": 281905,
+            "samples": 1
+          },
+          "ratio": 4.81,
+          "winner": "v1",
+          "performanceGap": "381% faster"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-10-20T19:38:48.118Z",
+    "overall": {
+      "parserV1": 522740,
+      "parserV2": 93771,
+      "avgRatio": 34.26571428571429,
+      "v1Wins": 7,
+      "v2Wins": 0
+    },
+    "summary": {
+      "testComparison": {
+        "(10 marks)": {
+          "parserV1": {
+            "avgHz": 63668,
+            "minHz": 63668,
+            "maxHz": 63668,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 3339,
+            "minHz": 3339,
+            "maxHz": 3339,
+            "samples": 1
+          },
+          "ratio": 19.07,
+          "winner": "v1",
+          "performanceGap": "1807% faster"
+        },
+        "(50 marks)": {
+          "parserV1": {
+            "avgHz": 14185,
+            "minHz": 14185,
+            "maxHz": 14185,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 964,
+            "minHz": 964,
+            "maxHz": 964,
+            "samples": 1
+          },
+          "ratio": 14.71,
+          "winner": "v1",
+          "performanceGap": "1371% faster"
+        },
+        "(100 marks)": {
+          "parserV1": {
+            "avgHz": 5562,
+            "minHz": 5562,
+            "maxHz": 5562,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 342,
+            "minHz": 342,
+            "maxHz": 342,
+            "samples": 1
+          },
+          "ratio": 16.26,
+          "winner": "v1",
+          "performanceGap": "1526% faster"
+        },
+        "(500 marks)": {
+          "parserV1": {
+            "avgHz": 3122,
+            "minHz": 3122,
+            "maxHz": 3122,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 18,
+            "minHz": 18,
+            "maxHz": 18,
+            "samples": 1
+          },
+          "ratio": 173.44,
+          "winner": "v1",
+          "performanceGap": "17244% faster"
+        },
+        "social media": {
+          "parserV1": {
+            "avgHz": 743599,
+            "minHz": 743599,
+            "maxHz": 743599,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 140595,
+            "minHz": 140595,
+            "maxHz": 140595,
+            "samples": 1
+          },
+          "ratio": 5.29,
+          "winner": "v1",
+          "performanceGap": "429% faster"
+        },
+        "markdown-like": {
+          "parserV1": {
+            "avgHz": 1436161,
+            "minHz": 1436161,
+            "maxHz": 1436161,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 247148,
+            "minHz": 247148,
+            "maxHz": 247148,
+            "samples": 1
+          },
+          "ratio": 5.81,
+          "winner": "v1",
+          "performanceGap": "481% faster"
+        },
+        "code comments": {
+          "parserV1": {
+            "avgHz": 1392884,
+            "minHz": 1392884,
+            "maxHz": 1392884,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 263989,
+            "minHz": 263989,
+            "maxHz": 263989,
+            "samples": 1
+          },
+          "ratio": 5.28,
+          "winner": "v1",
+          "performanceGap": "428% faster"
+        }
+      }
+    }
+  },
+  {
+    "timestamp": "2025-10-20T19:38:01.142Z",
+    "overall": {
+      "parserV1": 521787,
+      "parserV2": 88715,
+      "avgRatio": 35.21142857142856,
+      "v1Wins": 7,
+      "v2Wins": 0
+    },
+    "summary": {
+      "testComparison": {
+        "(10 marks)": {
+          "parserV1": {
+            "avgHz": 51056,
+            "minHz": 51056,
+            "maxHz": 51056,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 3147,
+            "minHz": 3147,
+            "maxHz": 3147,
+            "samples": 1
+          },
+          "ratio": 16.22,
+          "winner": "v1",
+          "performanceGap": "1522% faster"
+        },
+        "(50 marks)": {
+          "parserV1": {
+            "avgHz": 14365,
+            "minHz": 14365,
+            "maxHz": 14365,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 1016,
+            "minHz": 1016,
+            "maxHz": 1016,
+            "samples": 1
+          },
+          "ratio": 14.14,
+          "winner": "v1",
+          "performanceGap": "1314% faster"
+        },
+        "(100 marks)": {
+          "parserV1": {
+            "avgHz": 6975,
+            "minHz": 6975,
+            "maxHz": 6975,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 343,
+            "minHz": 343,
+            "maxHz": 343,
+            "samples": 1
+          },
+          "ratio": 20.34,
+          "winner": "v1",
+          "performanceGap": "1934% faster"
+        },
+        "(500 marks)": {
+          "parserV1": {
+            "avgHz": 3212,
+            "minHz": 3212,
+            "maxHz": 3212,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 18,
+            "minHz": 18,
+            "maxHz": 18,
+            "samples": 1
+          },
+          "ratio": 178.44,
+          "winner": "v1",
+          "performanceGap": "17744% faster"
+        },
+        "social media": {
+          "parserV1": {
+            "avgHz": 730532,
+            "minHz": 730532,
+            "maxHz": 730532,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 140409,
+            "minHz": 140409,
+            "maxHz": 140409,
+            "samples": 1
+          },
+          "ratio": 5.2,
+          "winner": "v1",
+          "performanceGap": "420% faster"
+        },
+        "markdown-like": {
+          "parserV1": {
+            "avgHz": 1478884,
+            "minHz": 1478884,
+            "maxHz": 1478884,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 213199,
+            "minHz": 213199,
+            "maxHz": 213199,
+            "samples": 1
+          },
+          "ratio": 6.94,
+          "winner": "v1",
+          "performanceGap": "594% faster"
+        },
+        "code comments": {
+          "parserV1": {
+            "avgHz": 1367488,
+            "minHz": 1367488,
+            "maxHz": 1367488,
+            "samples": 1
+          },
+          "parserV2": {
+            "avgHz": 262874,
+            "minHz": 262874,
+            "maxHz": 262874,
+            "samples": 1
+          },
+          "ratio": 5.2,
+          "winner": "v1",
+          "performanceGap": "420% faster"
+        }
+      }
+    }
+  }
+]
