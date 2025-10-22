@@ -9,8 +9,7 @@
     "test:related": "vitest related",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:bench": "vitest run src/features/parsing/parser.bench.test.ts",
-    "test:bench:history": "node -e \"import('./src/features/parsing/parser.bench.test.ts').then(m => m.showHistory())\"",
+    "test:bench": "vitest bench --run",
     "test:bench:watch": "vitest bench"
   },
   "module": "./index.ts",
