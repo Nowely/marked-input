@@ -23,6 +23,8 @@ export class PatternBuilder {
 	/**
 	 * Tries to extend a chain with a new segment match
 	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
+	 * 
+	 * OPTIMIZATION: Structural sharing - reuse existing parts array, only append new parts
 	 */
 	tryExtendChain(chain: PatternChain, match: SegmentMatch, isClosingSegment: boolean = false): { completed: PatternMatch | null; extended: PatternChain | null } {
 		const descriptor = this.descriptors[chain.descriptorIndex]
@@ -41,48 +43,53 @@ export class PatternBuilder {
 			// Complete it immediately (greedy = false for non-nested)
 		}
 
-		const newPatternChain = this.cloneChain(chain)
-
-		// Always add gap between segments (may be empty)
-		const gapIndex = newPatternChain.nextSegmentIndex > 0 ? newPatternChain.nextSegmentIndex - 1 : 0
+		// OPTIMIZATION: Structural sharing instead of full clone
+		// Reuse existing parts, only create new gap and segment
+		const gapIndex = chain.nextSegmentIndex > 0 ? chain.nextSegmentIndex - 1 : 0
 		const gapType = descriptor.gapTypes[gapIndex]
 
 		// Calculate gap positions
-		const gapStart = newPatternChain.pos
+		const gapStart = chain.pos
 		const gapEnd = match.start - 1
 		
-		// If gap would have invalid positions (start > end), make it empty
-		// This happens when two segments are adjacent (no gap between them)
-		newPatternChain.parts.push({
+		const newGap: PatternPart = {
 			type: 'gap',
 			start: gapStart,
 			end: gapStart > gapEnd ? gapStart - 1 : gapEnd, // Ensure start <= end
 			gapType
-		})
+		}
 
-		// Add segment
-		newPatternChain.parts.push({
+		const newSegment: PatternPart = {
 			type: 'segment',
 			start: match.start,
 			end: match.end,
 			value: match.value
-		})
+		}
 
-		newPatternChain.pos = match.end + 1
-		newPatternChain.nextSegmentIndex++
+		// Create new parts array with structural sharing
+		const newParts = [...chain.parts, newGap, newSegment]
+
+		const newChain: PatternChain = {
+			descriptorIndex: chain.descriptorIndex,
+			nextSegmentIndex: chain.nextSegmentIndex + 1,
+			pos: match.end + 1,
+			parts: newParts,
+			hasNestedPatterns: chain.hasNestedPatterns,
+			nestingLevel: chain.nestingLevel
+		}
 
 		// Check if pattern is complete
-		if (newPatternChain.nextSegmentIndex === descriptor.segments.length) {
+		if (newChain.nextSegmentIndex === descriptor.segments.length) {
 			return {
 				completed: {
-					descriptorIndex: newPatternChain.descriptorIndex,
-					parts: newPatternChain.parts.map(p => ({ ...p }))
+					descriptorIndex: newChain.descriptorIndex,
+					parts: newChain.parts // No need to copy, we just created a new array
 				},
 				extended: null
 			}
 		}
 
-		return { completed: null, extended: newPatternChain } // Chain extended but not complete
+		return { completed: null, extended: newChain }
 	}
 
 	/**
@@ -118,19 +125,5 @@ export class PatternBuilder {
 		}
 
 		return { completed: null, chain: newPatternChain }
-	}
-
-	/**
-	 * Clones a chain for branching
-	 */
-	private cloneChain(chain: PatternChain): PatternChain {
-		return {
-			descriptorIndex: chain.descriptorIndex,
-			nextSegmentIndex: chain.nextSegmentIndex,
-			pos: chain.pos,
-			parts: chain.parts.map(p => ({ ...p })),
-			hasNestedPatterns: chain.hasNestedPatterns,
-			nestingLevel: chain.nestingLevel
-		}
 	}
 }

@@ -28,26 +28,8 @@ interface GapInterval {
 	match: PatternMatch
 }
 
-/**
- * Helper to get match start position
- */
-function getMatchStart(match: PatternMatch): number {
-	return match.parts.length > 0 ? match.parts[0].start : 0
-}
-
-/**
- * Helper to get match end position (exclusive)
- */
-function getMatchEnd(match: PatternMatch): number {
-	return match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
-}
-
-/**
- * Helper to get segment count in match
- */
-function getSegmentCount(match: PatternMatch): number {
-	return match.parts.filter(p => p.type === 'segment').length
-}
+// Inline helpers for performance (avoid function call overhead)
+// These are used in hot loops, so inlining improves performance
 
 /**
  * Sweep line filter for efficient match filtering
@@ -127,7 +109,8 @@ export class SweepLineFilter {
 		const groups = new Map<string, PatternMatch[]>()
 
 		for (const match of matches) {
-			const start = getMatchStart(match)
+			// Inline getMatchStart for performance
+			const start = match.parts.length > 0 ? match.parts[0].start : 0
 			const key = `${start}_${match.descriptorIndex}`
 			if (!groups.has(key)) {
 				groups.set(key, [])
@@ -167,8 +150,9 @@ export class SweepLineFilter {
 		const byEnd = new Map<number, PatternMatch[]>()
 
 		for (const match of matches) {
-			const start = getMatchStart(match)
-			const end = getMatchEnd(match)
+			// Inline for performance
+			const start = match.parts.length > 0 ? match.parts[0].start : 0
+			const end = match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
 
 			if (!byStart.has(start)) byStart.set(start, [])
 			byStart.get(start)!.push(match)
@@ -203,10 +187,10 @@ export class SweepLineFilter {
 		const events: MatchEvent[] = []
 
 		matches.forEach((match, index) => {
-			// Add match start event
+			// Add match start event (inline for performance)
 			events.push({
 				type: 'match_start',
-				pos: getMatchStart(match),
+				pos: match.parts.length > 0 ? match.parts[0].start : 0,
 				match,
 				matchIndex: index
 			})
@@ -257,13 +241,19 @@ export class SweepLineFilter {
 	 */
 	private findMostComplete(group: PatternMatch[]): PatternMatch {
 		let best = group[0]
-		let bestSegments = getSegmentCount(best)
-		let bestLength = getMatchEnd(best) - getMatchStart(best)
+		// Inline segment counting for performance
+		let bestSegments = best.parts.filter(p => p.type === 'segment').length
+		const bestStart = best.parts.length > 0 ? best.parts[0].start : 0
+		const bestEndPos = best.parts.length > 0 ? best.parts[best.parts.length - 1].end + 1 : 0
+		let bestLength = bestEndPos - bestStart
 
 		for (let i = 1; i < group.length; i++) {
 			const match = group[i]
-			const segments = getSegmentCount(match)
-			const length = getMatchEnd(match) - getMatchStart(match)
+			// Inline for performance
+			const segments = match.parts.filter(p => p.type === 'segment').length
+			const start = match.parts.length > 0 ? match.parts[0].start : 0
+			const end = match.parts.length > 0 ? match.parts[match.parts.length - 1].end + 1 : 0
+			const length = end - start
 
 			if (segments > bestSegments || (segments === bestSegments && length > bestLength)) {
 				best = match
@@ -271,9 +261,7 @@ export class SweepLineFilter {
 				bestLength = length
 			} else if (segments === bestSegments && length === bestLength) {
 				// Same completeness - prefer the one that ends later
-				const bestEnd = getMatchEnd(best)
-				const matchEnd = getMatchEnd(match)
-				if (matchEnd > bestEnd) {
+				if (end > bestEndPos) {
 					best = match
 				}
 			}
@@ -288,12 +276,17 @@ export class SweepLineFilter {
 	 */
 	private markPartialAtSameStart(group: PatternMatch[], filtered: Set<PatternMatch>): void {
 		// Sort by end position (descending - longest first)
-		const sorted = [...group].sort((a, b) => getMatchEnd(b) - getMatchEnd(a))
+		// Inline for performance
+		const sorted = [...group].sort((a, b) => {
+			const endA = a.parts.length > 0 ? a.parts[a.parts.length - 1].end + 1 : 0
+			const endB = b.parts.length > 0 ? b.parts[b.parts.length - 1].end + 1 : 0
+			return endB - endA
+		})
 
 		// First one is the longest - others are partial if shorter
-		const longestEnd = getMatchEnd(sorted[0])
+		const longestEnd = sorted[0].parts.length > 0 ? sorted[0].parts[sorted[0].parts.length - 1].end + 1 : 0
 		for (let i = 1; i < sorted.length; i++) {
-			const matchEnd = getMatchEnd(sorted[i])
+			const matchEnd = sorted[i].parts.length > 0 ? sorted[i].parts[sorted[i].parts.length - 1].end + 1 : 0
 			if (matchEnd < longestEnd) {
 				filtered.add(sorted[i])
 			}
@@ -306,12 +299,17 @@ export class SweepLineFilter {
 	 */
 	private markPartialAtSameEnd(group: PatternMatch[], filtered: Set<PatternMatch>): void {
 		// Sort by start position (ascending - earliest/longest first)
-		const sorted = [...group].sort((a, b) => getMatchStart(a) - getMatchStart(b))
+		// Inline for performance
+		const sorted = [...group].sort((a, b) => {
+			const startA = a.parts.length > 0 ? a.parts[0].start : 0
+			const startB = b.parts.length > 0 ? b.parts[0].start : 0
+			return startA - startB
+		})
 
 		// First one starts earliest - others are partial if start later
-		const earliestStart = getMatchStart(sorted[0])
+		const earliestStart = sorted[0].parts.length > 0 ? sorted[0].parts[0].start : 0
 		for (let i = 1; i < sorted.length; i++) {
-			const matchStart = getMatchStart(sorted[i])
+			const matchStart = sorted[i].parts.length > 0 ? sorted[i].parts[0].start : 0
 			if (matchStart > earliestStart) {
 				filtered.add(sorted[i])
 			}

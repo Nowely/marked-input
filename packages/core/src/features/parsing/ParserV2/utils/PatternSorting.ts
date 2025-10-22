@@ -8,75 +8,25 @@ import {PatternMatch} from './PatternBuilder'
  */
 export class PatternSorting {
   /**
-   * Sorts waiting chains by priority for processing
-   * Extracted from PatternProcessor.processWaitingChains (lines 154-185)
-   *
-   * Priority rules:
-   * 1. Chains completing on this segment first (highest priority)
-   * 2. For chains at same start position: more progress = higher priority
-   * 3. For different start positions: later start (inner) = higher priority (LIFO)
-   */
-  static sortWaitingChains(
-    waiting: PatternChain[],
-    nextMatch: {value: string; start: number},
-    descriptors: MarkupDescriptor[]
-  ): PatternChain[] {
-    return [...waiting].sort((a, b) => {
-      const aDescriptor = descriptors[a.descriptorIndex]
-      const bDescriptor = descriptors[b.descriptorIndex]
-
-      // Check if chains would be complete after this segment
-      const aWouldComplete = a.nextSegmentIndex === aDescriptor.segments.length - 1
-      const bWouldComplete = b.nextSegmentIndex === bDescriptor.segments.length - 1
-
-      // Prioritize completing chains over extending ones
-      if (aWouldComplete && !bWouldComplete) return -1
-      if (!aWouldComplete && bWouldComplete) return 1
-
-      // Both complete or both extend: check if they started at the same position
-      const aStart = a.parts[0].start
-      const bStart = b.parts[0].start
-
-      // If chains started at the SAME position (potential conflict), prioritize by progress
-      // More collected segments = more specific pattern = higher priority
-      if (aStart === bStart) {
-        const aProgress = a.nextSegmentIndex // How many segments already collected
-        const bProgress = b.nextSegmentIndex
-        if (aProgress !== bProgress) {
-          return bProgress - aProgress // More progress first
-        }
-
-        // Same progress: prioritize longer patterns (more total segments = more specific)
-        return bDescriptor.segments.length - aDescriptor.segments.length
-      }
-
-      // Different start positions: later start = inner = higher priority (LIFO)
-      return bStart - aStart
-    })
-  }
-
-  /**
-   * Sorts descriptors by priority when starting new chains
+   * Comparator for descriptor priority (used for pre-sorting in MarkupRegistry)
    * Priority rules:
    * 1. Longer first segments first (avoid conflicts like * vs **)
    * 2. More segments = more specific patterns = higher priority
+   * 
+   * Returns: negative if a has higher priority, positive if b has higher priority
    */
-  static sortDescriptors(descriptors: MarkupDescriptor[]): MarkupDescriptor[] {
-    return descriptors.sort((a, b) => {
-      // Special case: prefer longer first segments to avoid conflicts like * vs ** or # vs ##
-      const firstSegmentLenA = a.segments[0].length
-      const firstSegmentLenB = b.segments[0].length
-      if (firstSegmentLenA !== firstSegmentLenB) {
-        return firstSegmentLenB - firstSegmentLenA // longer first segments first
-      }
+  static compareDescriptorPriority(a: MarkupDescriptor, b: MarkupDescriptor): number {
+    // Special case: prefer longer first segments to avoid conflicts like * vs ** or # vs ##
+    const firstSegmentLenA = a.segments[0].length
+    const firstSegmentLenB = b.segments[0].length
+    if (firstSegmentLenA !== firstSegmentLenB) {
+      return firstSegmentLenB - firstSegmentLenA // longer first segments first
+    }
 
-      // General case: longer patterns first (more segments = more specific = higher priority)
-      // This ensures that patterns like <__label__ __value__>__nested__</__label__> (5 segments)
-      // are tried before <__label__>__nested__</__label__> (4 segments)
-      const segmentsA = a.segments.length
-      const segmentsB = b.segments.length
-      return segmentsB - segmentsA // more segments first
-    })
+    // General case: longer patterns first (more segments = more specific = higher priority)
+    const segmentsA = a.segments.length
+    const segmentsB = b.segments.length
+    return segmentsB - segmentsA // more segments first
   }
 
   /**

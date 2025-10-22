@@ -2,8 +2,8 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternChainManager, PatternChain} from '../utils/PatternChainManager'
 import {PatternBuilder, PatternMatch} from '../utils/PatternBuilder'
 import {SegmentMatch} from '../utils/AhoCorasick'
-import {PatternSorting} from '../utils/PatternSorting'
 import {MarkupRegistry} from '../utils/MarkupRegistry'
+import {IntervalSet} from '../utils/IntervalSet'
 
 /**
  * Chain matcher responsible for building pattern chains from segment matches
@@ -26,20 +26,63 @@ export class ChainMatcher {
 	 * Builds all possible pattern chains from segment matches
 	 * Strategy: Create ALL possible matches (even invalid ones),
 	 * validation/filtering happens later in MatchValidator
+	 * 
+	 * OPTIMIZATION: Use IntervalSet instead of Set<number> for O(log N) overlap checks
 	 */
 	buildChains(segmentMatches: SegmentMatch[]): PatternMatch[] {
 		const results: PatternMatch[] = []
 		const nestingStack: PatternChain[] = [] // Stack of active chains for tracking nesting
-		const consumedPositions = new Set<number>() // Track positions consumed by pattern segments
+		const consumedRanges = new IntervalSet() // Track ranges consumed by completed patterns
 		const consumedStartPositions = new Map<number, number>() // Track prefix conflicts: position -> segment length
 
 		// Process each segment occurrence
 		for (const match of segmentMatches) {
-			this.processWaitingChains(match, results, nestingStack, consumedPositions, segmentMatches)
-			this.startNewChains(match, results, nestingStack, consumedPositions, consumedStartPositions)
+			this.processWaitingChains(match, results, nestingStack, consumedRanges, segmentMatches)
+			this.startNewChains(match, results, nestingStack, consumedRanges, consumedStartPositions)
 		}
 
 		return results
+	}
+
+	/**
+	 * Compares two chains for priority sorting
+	 * Extracted from PatternSorting.sortWaitingChains for in-place sorting
+	 * Returns: negative if a has higher priority, positive if b has higher priority
+	 */
+	private compareChainPriority(
+		a: PatternChain,
+		b: PatternChain,
+		nextMatch: {value: string; start: number}
+	): number {
+		const aDescriptor = this.descriptors[a.descriptorIndex]
+		const bDescriptor = this.descriptors[b.descriptorIndex]
+
+		// Check if chains would be complete after this segment
+		const aWouldComplete = a.nextSegmentIndex === aDescriptor.segments.length - 1
+		const bWouldComplete = b.nextSegmentIndex === bDescriptor.segments.length - 1
+
+		// Prioritize completing chains over extending ones
+		if (aWouldComplete && !bWouldComplete) return -1
+		if (!aWouldComplete && bWouldComplete) return 1
+
+		// Both complete or both extend: check if they started at the same position
+		const aStart = a.parts[0].start
+		const bStart = b.parts[0].start
+
+		// If chains started at the SAME position (potential conflict), prioritize by progress
+		if (aStart === bStart) {
+			const aProgress = a.nextSegmentIndex
+			const bProgress = b.nextSegmentIndex
+			if (aProgress !== bProgress) {
+				return bProgress - aProgress // More progress first
+			}
+
+			// Same progress: prioritize longer patterns
+			return bDescriptor.segments.length - aDescriptor.segments.length
+		}
+
+		// Different start positions: later start = inner = higher priority (LIFO)
+		return bStart - aStart
 	}
 
 	/**
@@ -48,12 +91,14 @@ export class ChainMatcher {
 	 * 1. Chains without nested patterns in __nested__ gaps (ready to close immediately)
 	 * 2. Use lookahead to decide between completing and extending
 	 * 3. Later start = inner = higher priority (LIFO)
+	 * 
+	 * OPTIMIZATION: Sort only once per segment, reuse sorted list + use IntervalSet
 	 */
 	private processWaitingChains(
 		match: SegmentMatch,
 		results: PatternMatch[],
 		nestingStack: PatternChain[],
-		consumedPositions: Set<number>,
+		consumedRanges: IntervalSet,
 		allMatches: SegmentMatch[]
 	): void {
 		const waiting = this.chainManager.getWaiting(match.value)
@@ -62,8 +107,18 @@ export class ChainMatcher {
 			return
 		}
 
-		// Sort waiting chains by priority
-		const sortedWaiting = PatternSorting.sortWaitingChains(waiting, match, this.descriptors)
+		// Sort waiting chains by priority only if needed (lazy sorting)
+		// Once sorted, list stays sorted until new chains are added
+		let sortedWaiting: PatternChain[]
+		if (this.chainManager.needsSortingFor(match.value)) {
+			// In-place sort to avoid array copy
+			waiting.sort((a, b) => this.compareChainPriority(a, b, match))
+			this.chainManager.markAsSorted(match.value)
+			sortedWaiting = waiting
+		} else {
+			// Already sorted, use as-is
+			sortedWaiting = waiting
+		}
 
 		// Try to match with the first valid chain
 		for (const chain of sortedWaiting) {
@@ -87,12 +142,10 @@ export class ChainMatcher {
 			if (completed) {
 				results.push(completed)
 
-				// Mark ALL positions in the completed pattern as consumed (including gaps)
+				// Mark entire range of completed pattern as consumed
 				const completeStart = completed.parts[0].start
 				const completeEnd = completed.parts[completed.parts.length - 1].end
-				for (let i = completeStart; i <= completeEnd; i++) {
-					consumedPositions.add(i)
-				}
+				consumedRanges.addRange(completeStart, completeEnd)
 				
 				// Remove from nesting stack
 				const stackIndex = nestingStack.indexOf(chain)
@@ -154,35 +207,28 @@ export class ChainMatcher {
 	 * 
 	 * NOTE: activePatterns check removed to allow ALL possible matches to be created.
 	 * Invalid matches will be filtered later.
+	 * 
+	 * OPTIMIZATION: Descriptors are pre-sorted, use IntervalSet for range checks
 	 */
 	private startNewChains(
 		match: SegmentMatch,
 		results: PatternMatch[],
 		nestingStack: PatternChain[],
-		consumedPositions: Set<number>,
+		consumedRanges: IntervalSet,
 		consumedStartPositions: Map<number, number>
 	): void {
-		// Get descriptors where this segment is the first segment
+		// Get pre-sorted descriptors where this segment is the first segment
 		const descriptors = this.registry.getDescriptorsStartingWithSegment(match.index)
 
-		// Sort descriptors by pattern priority
-		const sortedDescriptors = PatternSorting.sortDescriptors(descriptors)
+		// Descriptors are already sorted by priority in MarkupRegistry
+		for (const descriptor of descriptors) {
 
-		for (const descriptor of sortedDescriptors) {
-
-			// Skip if any position in this segment is already consumed by a COMPLETED pattern
-			let isPositionConsumed = false
-			for (let i = match.start; i <= match.end; i++) {
-				if (consumedPositions.has(i)) {
-					isPositionConsumed = true
-					break
-				}
-			}
-			if (isPositionConsumed) {
+			// Skip if this segment range overlaps with any consumed range (O(log N) instead of O(M))
+			if (consumedRanges.overlaps(match.start, match.end)) {
 				continue
 			}
 
-			// Check for prefix conflicts: if a longer pattern already started and overlaps with this position
+			// Check for prefix conflicts: if a longer pattern already started and overlaps
 			// For example, if "##" started at position 201-202, don't start "#" at position 202
 			let hasOverlappingLongerPattern = false
 			for (let i = match.start; i <= match.end; i++) {
@@ -206,12 +252,10 @@ export class ChainMatcher {
 				// Single-segment pattern was completed immediately
 				results.push(completed)
 				
-				// Mark ALL positions in the completed pattern as consumed (including gaps)
+				// Mark entire range of completed pattern as consumed
 				const completeStart = completed.parts[0].start
 				const completeEnd = completed.parts[completed.parts.length - 1].end
-				for (let i = completeStart; i <= completeEnd; i++) {
-					consumedPositions.add(i)
-				}
+				consumedRanges.addRange(completeStart, completeEnd)
 				
 				consumedStartPositions.set(match.start, descriptor.segments[0].length)
 			} else if (chain) {
