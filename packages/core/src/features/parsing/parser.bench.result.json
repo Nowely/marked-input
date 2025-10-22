@@ -1,768 +1,130 @@
 [
   {
-    "timestamp": "2025-10-22T19:08:14.859Z",
+    "timestamp": "2025-10-22T19:18:09.821Z",
     "trends": {
       "v1": {
-        "changeFromLast": "-2.2%",
-        "regressions": []
-      },
-      "v2": {
-        "changeFromLast": "-2.0%",
-        "regressions": []
-      }
-    },
-    "summary": {
-      "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
-      "overallPerformance": {
-        "v1": {
-          "avgOps": 495261,
-          "medianOps": 495261
-        },
-        "v2": {
-          "avgOps": 107839,
-          "medianOps": 107839
-        }
-      },
-      "performanceRatio": 4.59
-    },
-    "categories": {
-      "scalability": {
-        "tests": [
-          {
-            "name": "10 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 20,
-              "complexity": "simple"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 159139,
-                  "min": 36642,
-                  "max": 188964,
-                  "p95": 188964,
-                  "p99": 188964
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 27015,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "v2": {
-                "ops": {
-                  "avg": 24197,
-                  "min": 22663,
-                  "max": 24717,
-                  "p95": 24717,
-                  "p99": 24717
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 27903,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 6.58,
-                "winner": "v1",
-                "performanceGap": "558%",
-                "latencyDiff": null,
-                "memoryRatio": 1.03
-              }
-            }
-          },
-          {
-            "name": "50 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 100,
-              "complexity": "simple"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 36891,
-                  "min": 22039,
-                  "max": 39088,
-                  "p95": 39088,
-                  "p99": 39088
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 27097,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "v2": {
-                "ops": {
-                  "avg": 2034,
-                  "min": 1688,
-                  "max": 2173,
-                  "p95": 2173,
-                  "p99": 2173
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 1,
-                  "p95": 1,
-                  "p99": 1,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 33543,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 18.14,
-                "winner": "v1",
-                "performanceGap": "1714%",
-                "latencyDiff": null,
-                "memoryRatio": 1.24
-              }
-            }
-          },
-          {
-            "name": "100 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 200,
-              "complexity": "simple"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 18953,
-                  "min": 16337,
-                  "max": 19465,
-                  "p95": 19465,
-                  "p99": 19465
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 32997,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "v2": {
-                "ops": {
-                  "avg": 490,
-                  "min": 458,
-                  "max": 526,
-                  "p95": 526,
-                  "p99": 526
-                },
-                "latency": {
-                  "avg": 2,
-                  "min": 2,
-                  "max": 2,
-                  "p95": 2,
-                  "p99": 2,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 34806,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 38.68,
-                "winner": "v1",
-                "performanceGap": "3768%",
-                "latencyDiff": null,
-                "memoryRatio": 1.05
-              }
-            }
-          },
-          {
-            "name": "500 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 1000,
-              "complexity": "simple"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 3812,
-                  "min": 3691,
-                  "max": 3905,
-                  "p95": 3905,
-                  "p99": 3905
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 36759,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
-              },
-              "v2": {
-                "ops": {
-                  "avg": 19,
-                  "min": 18,
-                  "max": 20,
-                  "p95": 20,
-                  "p99": 20
-                },
-                "latency": {
-                  "avg": 54,
-                  "min": 51,
-                  "max": 55,
-                  "p95": 55,
-                  "p99": 55,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 40999,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
-              },
-              "comparison": {
-                "ratio": 200.63,
-                "winner": "v1",
-                "performanceGap": "19963%",
-                "latencyDiff": null,
-                "memoryRatio": 1.12
-              }
-            }
-          }
-        ]
-      },
-      "realWorld": {
-        "tests": [
-          {
-            "name": "social media",
-            "category": "realWorld",
-            "input": {
-              "marks": 4,
-              "complexity": "real-world"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 769307,
-                  "min": 76435,
-                  "max": 888889,
-                  "p95": 888889,
-                  "p99": 888889
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 45040,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "v2": {
-                "ops": {
-                  "avg": 174954,
-                  "min": 123716,
-                  "max": 183217,
-                  "p95": 183217,
-                  "p99": 183217
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 45337,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.4,
-                "winner": "v1",
-                "performanceGap": "340%",
-                "latencyDiff": null,
-                "memoryRatio": 1.01
-              }
-            }
-          },
-          {
-            "name": "markdown-like",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1233360,
-                  "min": 67604,
-                  "max": 1501502,
-                  "p95": 1501502,
-                  "p99": 1501502
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 162649,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "v2": {
-                "ops": {
-                  "avg": 270630,
-                  "min": 112145,
-                  "max": 292654,
-                  "p95": 292654,
-                  "p99": 292654
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 162845,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.56,
-                "winner": "v1",
-                "performanceGap": "356%",
-                "latencyDiff": null,
-                "memoryRatio": 1
-              }
-            }
-          },
-          {
-            "name": "code comments",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
-            },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1245366,
-                  "min": 118821,
-                  "max": 1412429,
-                  "p95": 1412429,
-                  "p99": 1412429
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 88130,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "v2": {
-                "ops": {
-                  "avg": 282549,
-                  "min": 190476,
-                  "max": 300030,
-                  "p95": 300030,
-                  "p99": 300030
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 88326,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.41,
-                "winner": "v1",
-                "performanceGap": "341%",
-                "latencyDiff": null,
-                "memoryRatio": 1
-              }
-            }
-          }
-        ]
-      }
-    }
-  },
-  {
-    "timestamp": "2025-10-22T19:07:01.391Z",
-    "trends": {
-      "v1": {
-        "changeFromLast": "+6.7%",
+        "changeFromLast": "+0.4%",
         "regressions": [
           "50 marks"
         ]
       },
       "v2": {
-        "changeFromLast": "+13.7%",
-        "regressions": []
+        "changeFromLast": "-1.6%",
+        "regressions": [
+          "500 marks",
+          "social media"
+        ]
       }
     },
     "summary": {
       "totalTests": 7,
       "v1Wins": 7,
       "v2Wins": 0,
-      "overallPerformance": {
+      "performance": {
         "v1": {
-          "avgOps": 506396,
-          "medianOps": 506396
+          "avgOps": 515590
         },
         "v2": {
-          "avgOps": 110036,
-          "medianOps": 110036
-        }
+          "avgOps": 109340
+        },
+        "ratio": 4.72
       },
-      "performanceRatio": 4.6
+      "memory": {
+        "v1": {
+          "avgHeapKB": 53937
+        },
+        "v2": {
+          "avgHeapKB": 52757
+        },
+        "ratio": 0.98
+      }
     },
     "categories": {
       "scalability": {
         "tests": [
           {
             "name": "10 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 20,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 152893,
+                "min": 47714,
+                "max": 181818
+              },
+              "memoryKB": 27345
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 159702,
-                  "min": 57554,
-                  "max": 186047,
-                  "p95": 186047,
-                  "p99": 186047
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 30696,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 23182,
+                "min": 20583,
+                "max": 24743
               },
-              "v2": {
-                "ops": {
-                  "avg": 24696,
-                  "min": 22018,
-                  "max": 25370,
-                  "p95": 25370,
-                  "p99": 25370
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 31582,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 6.47,
-                "winner": "v1",
-                "performanceGap": "547%",
-                "latencyDiff": null,
-                "memoryRatio": 1.03
-              }
-            }
+              "memoryKB": 28227
+            },
+            "ratio": 6.6,
+            "winner": "v1"
           },
           {
             "name": "50 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 100,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 34367,
+                "min": 19370,
+                "max": 37796
+              },
+              "memoryKB": 34043
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 34134,
-                  "min": 23032,
-                  "max": 39473,
-                  "p95": 39473,
-                  "p99": 39473
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 31614,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 1910,
+                "min": 1440,
+                "max": 2021
               },
-              "v2": {
-                "ops": {
-                  "avg": 1936,
-                  "min": 1565,
-                  "max": 2095,
-                  "p95": 2095,
-                  "p99": 2095
-                },
-                "latency": {
-                  "avg": 1,
-                  "min": 0,
-                  "max": 1,
-                  "p95": 1,
-                  "p99": 1,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 33242,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 17.63,
-                "winner": "v1",
-                "performanceGap": "1663%",
-                "latencyDiff": null,
-                "memoryRatio": 1.05
-              }
-            }
+              "memoryKB": 30837
+            },
+            "ratio": 17.99,
+            "winner": "v1"
           },
           {
             "name": "100 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 200,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 18802,
+                "min": 15180,
+                "max": 19689
+              },
+              "memoryKB": 38139
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 18997,
-                  "min": 16194,
-                  "max": 20185,
-                  "p95": 20185,
-                  "p99": 20185
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 40778,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 493,
+                "min": 452,
+                "max": 520
               },
-              "v2": {
-                "ops": {
-                  "avg": 504,
-                  "min": 477,
-                  "max": 525,
-                  "p95": 525,
-                  "p99": 525
-                },
-                "latency": {
-                  "avg": 2,
-                  "min": 2,
-                  "max": 2,
-                  "p95": 2,
-                  "p99": 2,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 34508,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 37.69,
-                "winner": "v1",
-                "performanceGap": "3669%",
-                "latencyDiff": null,
-                "memoryRatio": 0.85
-              }
-            }
+              "memoryKB": 30359
+            },
+            "ratio": 38.14,
+            "winner": "v1"
           },
           {
             "name": "500 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 1000,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 3713,
+                "min": 3467,
+                "max": 3975
+              },
+              "memoryKB": 35460
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 3916,
-                  "min": 3533,
-                  "max": 4020,
-                  "p95": 4020,
-                  "p99": 4020
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 34195,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
+            "v2": {
+              "ops": {
+                "avg": 17,
+                "min": 16,
+                "max": 18
               },
-              "v2": {
-                "ops": {
-                  "avg": 18,
-                  "min": 18,
-                  "max": 20,
-                  "p95": 20,
-                  "p99": 20
-                },
-                "latency": {
-                  "avg": 55,
-                  "min": 51,
-                  "max": 56,
-                  "p95": 56,
-                  "p99": 56,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 41771,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
-              },
-              "comparison": {
-                "ratio": 217.56,
-                "winner": "v1",
-                "performanceGap": "21656%",
-                "latencyDiff": null,
-                "memoryRatio": 1.22
-              }
-            }
+              "memoryKB": 36636
+            },
+            "ratio": 218.41,
+            "winner": "v1"
           }
         ]
       },
@@ -770,199 +132,73 @@
         "tests": [
           {
             "name": "social media",
-            "category": "realWorld",
-            "input": {
-              "marks": 4,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 801109,
+                "min": 74766,
+                "max": 923361
+              },
+              "memoryKB": 64520
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 798960,
-                  "min": 80000,
-                  "max": 923361,
-                  "p95": 923361,
-                  "p99": 923361
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 50565,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 176039,
+                "min": 97962,
+                "max": 187512
               },
-              "v2": {
-                "ops": {
-                  "avg": 184007,
-                  "min": 139548,
-                  "max": 192012,
-                  "p95": 192012,
-                  "p99": 192012
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 50861,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.34,
-                "winner": "v1",
-                "performanceGap": "334%",
-                "latencyDiff": null,
-                "memoryRatio": 1.01
-              }
-            }
+              "memoryKB": 64809
+            },
+            "ratio": 4.55,
+            "winner": "v1"
           },
           {
             "name": "markdown-like",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 1353794,
+                "min": 76435,
+                "max": 1600000
+              },
+              "memoryKB": 94701
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1266266,
-                  "min": 97962,
-                  "max": 1501502,
-                  "p95": 1501502,
-                  "p99": 1501502
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 88172,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 272604,
+                "min": 139528,
+                "max": 292740
               },
-              "v2": {
-                "ops": {
-                  "avg": 268985,
-                  "min": 184638,
-                  "max": 285714,
-                  "p95": 285714,
-                  "p99": 285714
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 88368,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.71,
-                "winner": "v1",
-                "performanceGap": "371%",
-                "latencyDiff": null,
-                "memoryRatio": 1
-              }
-            }
+              "memoryKB": 94890
+            },
+            "ratio": 4.97,
+            "winner": "v1"
           },
           {
             "name": "code comments",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 1244453,
+                "min": 76429,
+                "max": 1412429
+              },
+              "memoryKB": 83352
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1262800,
-                  "min": 119403,
-                  "max": 1412429,
-                  "p95": 1412429,
-                  "p99": 1412429
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 85370,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 291133,
+                "min": 176460,
+                "max": 311721
               },
-              "v2": {
-                "ops": {
-                  "avg": 290108,
-                  "min": 214270,
-                  "max": 307692,
-                  "p95": 307692,
-                  "p99": 307692
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 85565,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.35,
-                "winner": "v1",
-                "performanceGap": "335%",
-                "latencyDiff": null,
-                "memoryRatio": 1
-              }
-            }
+              "memoryKB": 83540
+            },
+            "ratio": 4.27,
+            "winner": "v1"
           }
         ]
       }
     }
   },
   {
-    "timestamp": "2025-10-22T19:06:13.207Z",
+    "timestamp": "2025-10-22T19:16:04.967Z",
     "trends": {
       "v1": {
         "changeFromLast": "N/A",
@@ -977,272 +213,111 @@
       "totalTests": 7,
       "v1Wins": 7,
       "v2Wins": 0,
-      "overallPerformance": {
+      "performance": {
         "v1": {
-          "avgOps": 474561,
-          "medianOps": 474561
+          "avgOps": 513488
         },
         "v2": {
-          "avgOps": 96740,
-          "medianOps": 96740
-        }
+          "avgOps": 111163
+        },
+        "ratio": 4.62
       },
-      "performanceRatio": 4.91
+      "memory": {
+        "v1": {
+          "avgHeapKB": 51696
+        },
+        "v2": {
+          "avgHeapKB": 52774
+        },
+        "ratio": 1.02
+      }
     },
     "categories": {
       "scalability": {
         "tests": [
           {
             "name": "10 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 20,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 152239,
+                "min": 56738,
+                "max": 179115
+              },
+              "memoryKB": 24920
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 156120,
-                  "min": 52173,
-                  "max": 183217,
-                  "p95": 183217,
-                  "p99": 183217
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 23458,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 24169,
+                "min": 20253,
+                "max": 25370
               },
-              "v2": {
-                "ops": {
-                  "avg": 21378,
-                  "min": 18209,
-                  "max": 23976,
-                  "p95": 23976,
-                  "p99": 23976
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 24345,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 7.3,
-                "winner": "v1",
-                "performanceGap": "630%",
-                "latencyDiff": null,
-                "memoryRatio": 1.04
-              }
-            }
+              "memoryKB": 25803
+            },
+            "ratio": 6.3,
+            "winner": "v1"
           },
           {
             "name": "50 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 100,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 36924,
+                "min": 23301,
+                "max": 39024
+              },
+              "memoryKB": 26237
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 36203,
-                  "min": 16484,
-                  "max": 38835,
-                  "p95": 38835,
-                  "p99": 38835
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 39510,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 1906,
+                "min": 1440,
+                "max": 2079
               },
-              "v2": {
-                "ops": {
-                  "avg": 1784,
-                  "min": 1259,
-                  "max": 1949,
-                  "p95": 1949,
-                  "p99": 1949
-                },
-                "latency": {
-                  "avg": 1,
-                  "min": 1,
-                  "max": 1,
-                  "p95": 1,
-                  "p99": 1,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 31529,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 20.29,
-                "winner": "v1",
-                "performanceGap": "1929%",
-                "latencyDiff": null,
-                "memoryRatio": 0.8
-              }
-            }
+              "memoryKB": 32670
+            },
+            "ratio": 19.37,
+            "winner": "v1"
           },
           {
             "name": "100 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 200,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 16757,
+                "min": 11326,
+                "max": 18779
+              },
+              "memoryKB": 34028
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 18736,
-                  "min": 15894,
-                  "max": 19624,
-                  "p95": 19624,
-                  "p99": 19624
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 39710,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
+            "v2": {
+              "ops": {
+                "avg": 494,
+                "min": 453,
+                "max": 522
               },
-              "v2": {
-                "ops": {
-                  "avg": 500,
-                  "min": 431,
-                  "max": 543,
-                  "p95": 543,
-                  "p99": 543
-                },
-                "latency": {
-                  "avg": 2,
-                  "min": 2,
-                  "max": 2,
-                  "p95": 2,
-                  "p99": 2,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 31978,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 10
-              },
-              "comparison": {
-                "ratio": 37.47,
-                "winner": "v1",
-                "performanceGap": "3647%",
-                "latencyDiff": null,
-                "memoryRatio": 0.81
-              }
-            }
+              "memoryKB": 32626
+            },
+            "ratio": 33.92,
+            "winner": "v1"
           },
           {
             "name": "500 marks",
-            "category": "scalability",
-            "input": {
-              "marks": 1000,
-              "complexity": "simple"
+            "v1": {
+              "ops": {
+                "avg": 3689,
+                "min": 2994,
+                "max": 4010
+              },
+              "memoryKB": 39939
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 3484,
-                  "min": 2034,
-                  "max": 3994,
-                  "p95": 3994,
-                  "p99": 3994
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 36678,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
+            "v2": {
+              "ops": {
+                "avg": 18,
+                "min": 18,
+                "max": 18
               },
-              "v2": {
-                "ops": {
-                  "avg": 18,
-                  "min": 18,
-                  "max": 18,
-                  "p95": 18,
-                  "p99": 18
-                },
-                "latency": {
-                  "avg": 56,
-                  "min": 56,
-                  "max": 57,
-                  "p95": 57,
-                  "p99": 57,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 40830,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 5
-              },
-              "comparison": {
-                "ratio": 193.56,
-                "winner": "v1",
-                "performanceGap": "19256%",
-                "latencyDiff": null,
-                "memoryRatio": 1.11
-              }
-            }
+              "memoryKB": 40902
+            },
+            "ratio": 204.94,
+            "winner": "v1"
           }
         ]
       },
@@ -1250,192 +325,66 @@
         "tests": [
           {
             "name": "social media",
-            "category": "realWorld",
-            "input": {
-              "marks": 4,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 823100,
+                "min": 73621,
+                "max": 923361
+              },
+              "memoryKB": 50073
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 829447,
-                  "min": 88558,
-                  "max": 960615,
-                  "p95": 960615,
-                  "p99": 960615
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 57973,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 186195,
+                "min": 147232,
+                "max": 195122
               },
-              "v2": {
-                "ops": {
-                  "avg": 182914,
-                  "min": 127665,
-                  "max": 193573,
-                  "p95": 193573,
-                  "p99": 193573
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 58270,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.53,
-                "winner": "v1",
-                "performanceGap": "353%",
-                "latencyDiff": null,
-                "memoryRatio": 1.01
-              }
-            }
+              "memoryKB": 50362
+            },
+            "ratio": 4.42,
+            "winner": "v1"
           },
           {
             "name": "markdown-like",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 1338197,
+                "min": 78691,
+                "max": 1600000
+              },
+              "memoryKB": 99697
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1269461,
-                  "min": 85404,
-                  "max": 1600000,
-                  "p95": 1600000,
-                  "p99": 1600000
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 94795,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 275802,
+                "min": 163265,
+                "max": 296296
               },
-              "v2": {
-                "ops": {
-                  "avg": 229311,
-                  "min": 71638,
-                  "max": 285714,
-                  "p95": 285714,
-                  "p99": 285714
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 86938,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 5.54,
-                "winner": "v1",
-                "performanceGap": "454%",
-                "latencyDiff": null,
-                "memoryRatio": 0.92
-              }
-            }
+              "memoryKB": 99886
+            },
+            "ratio": 4.85,
+            "winner": "v1"
           },
           {
             "name": "code comments",
-            "category": "realWorld",
-            "input": {
-              "marks": 2,
-              "complexity": "real-world"
+            "v1": {
+              "ops": {
+                "avg": 1223507,
+                "min": 85712,
+                "max": 1412429
+              },
+              "memoryKB": 86979
             },
-            "results": {
-              "v1": {
-                "ops": {
-                  "avg": 1008477,
-                  "min": 71008,
-                  "max": 1333333,
-                  "p95": 1333333,
-                  "p99": 1333333
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 66586,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
+            "v2": {
+              "ops": {
+                "avg": 289558,
+                "min": 153846,
+                "max": 311721
               },
-              "v2": {
-                "ops": {
-                  "avg": 241277,
-                  "min": 169005,
-                  "max": 292740,
-                  "p95": 292740,
-                  "p99": 292740
-                },
-                "latency": {
-                  "avg": 0,
-                  "min": 0,
-                  "max": 0,
-                  "p95": 0,
-                  "p99": 0,
-                  "unit": "ms"
-                },
-                "memory": {
-                  "heapUsed": 66781,
-                  "external": 2080,
-                  "unit": "KB"
-                },
-                "samples": 20
-              },
-              "comparison": {
-                "ratio": 4.18,
-                "winner": "v1",
-                "performanceGap": "318%",
-                "latencyDiff": null,
-                "memoryRatio": 1
-              }
-            }
+              "memoryKB": 87168
+            },
+            "ratio": 4.23,
+            "winner": "v1"
           }
         ]
       }

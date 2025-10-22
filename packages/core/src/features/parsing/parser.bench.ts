@@ -18,32 +18,20 @@ function generateComparisonText(marks: number): string {
 const parserV1 = new ParserV1(['@[__label__](__value__)', '#[__label__]'])
 const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 
-// Results storage for saving to JSON
+// Simplified results storage for saving to JSON
 interface TestResult {
 	name: string
-	category: 'scalability' | 'realWorld'
-	input: { marks: number; complexity: string }
-	results: {
-		v1: {
-			ops: { avg: number; min: number; max: number; p95: number; p99: number }
-			latency: { avg: number; min: number; max: number; p95: number; p99: number; unit: string }
-			memory: { heapUsed: number; external: number; unit: string }
-			samples: number
-		}
-		v2: {
-			ops: { avg: number; min: number; max: number; p95: number; p99: number }
-			latency: { avg: number; min: number; max: number; p95: number; p99: number; unit: string }
-			memory: { heapUsed: number; external: number; unit: string }
-			samples: number
-		}
-		comparison: {
-			ratio: number
-			winner: string
-			performanceGap: string
-			latencyDiff: number
-			memoryRatio: number
-		}
+	category: 'scalability' | 'realWorld' // Internal only, not saved to JSON
+	v1: {
+		ops: { avg: number; min: number; max: number }
+		memoryKB: number
 	}
+	v2: {
+		ops: { avg: number; min: number; max: number }
+		memoryKB: number
+	}
+	ratio: number
+	winner: string
 }
 
 const testResults: TestResult[] = []
@@ -58,9 +46,7 @@ function calculateStats(values: number[]) {
 	return {
 		avg: Math.round(values.reduce((a, b) => a + b, 0) / len),
 		min: Math.round(sorted[0]),
-		max: Math.round(sorted[len - 1]),
-		p95: Math.round(sorted[Math.floor(len * 0.95)]),
-		p99: Math.round(sorted[Math.floor(len * 0.99)])
+		max: Math.round(sorted[len - 1])
 	}
 }
 
@@ -74,11 +60,9 @@ function getMemoryUsage() {
 
 function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: number) {
 	const ops: number[] = []
-	const latency: number[] = []
 	const memory: ReturnType<typeof getMemoryUsage>[] = []
 
 	for (let i = 0; i < iterations; i++) {
-		const startMem = getMemoryUsage()
 		const startTime = process.hrtime.bigint()
 
 		parser.split(input)
@@ -90,23 +74,22 @@ function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: nu
 		const hz = 1000 / timeMs
 
 		ops.push(Math.round(hz))
-		latency.push(timeMs)
 		memory.push(endMem)
 	}
 
-	return { ops, latency, memory }
+	return { ops, memory }
 }
 
 function calculateTrends(currentRun: any, previousRun: any | null): any {
-	if (!previousRun || !previousRun.summary || !previousRun.summary.overallPerformance) {
+	if (!previousRun || !previousRun.summary || !previousRun.summary.performance) {
 		return {
 			v1: { changeFromLast: 'N/A', regressions: [] },
 			v2: { changeFromLast: 'N/A', regressions: [] }
 		}
 	}
 
-	const prevV1Ops = previousRun.summary.overallPerformance.v1?.avgOps
-	const prevV2Ops = previousRun.summary.overallPerformance.v2?.avgOps
+	const prevV1Ops = previousRun.summary.performance.v1?.avgOps
+	const prevV2Ops = previousRun.summary.performance.v2?.avgOps
 
 	if (!prevV1Ops || !prevV2Ops) {
 		return {
@@ -115,8 +98,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 		}
 	}
 
-	const v1Change = ((currentRun.summary.overallPerformance.v1.avgOps - prevV1Ops) / prevV1Ops) * 100
-	const v2Change = ((currentRun.summary.overallPerformance.v2.avgOps - prevV2Ops) / prevV2Ops) * 100
+	const v1Change = ((currentRun.summary.performance.v1.avgOps - prevV1Ops) / prevV1Ops) * 100
+	const v2Change = ((currentRun.summary.performance.v2.avgOps - prevV2Ops) / prevV2Ops) * 100
 
 	// Find regressions (>5% slowdown)
 	const v1Regressions: string[] = []
@@ -126,8 +109,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 		currentRun.categories[category].tests.forEach((test: any) => {
 			const prevTest = previousRun.categories[category]?.tests.find((t: any) => t.name === test.name)
 			if (prevTest) {
-				const v1Diff = ((test.results.v1.ops.avg - prevTest.results.v1.ops.avg) / prevTest.results.v1.ops.avg) * 100
-				const v2Diff = ((test.results.v2.ops.avg - prevTest.results.v2.ops.avg) / prevTest.results.v2.ops.avg) * 100
+				const v1Diff = ((test.v1.ops.avg - prevTest.v1.ops.avg) / prevTest.v1.ops.avg) * 100
+				const v2Diff = ((test.v2.ops.avg - prevTest.v2.ops.avg) / prevTest.v2.ops.avg) * 100
 
 				if (v1Diff < -5) v1Regressions.push(test.name)
 				if (v2Diff < -5) v2Regressions.push(test.name)
@@ -163,25 +146,36 @@ function saveResults() {
 		}
 
 		testResults.forEach(result => {
-			categories[result.category].tests.push(result)
+			// Remove category field before saving (it's redundant)
+			const { category, ...testData } = result
+			categories[category].tests.push(testData)
 		})
 
 		// Calculate summary
-		const allV1Ops = testResults.flatMap(t => t.results.v1.ops.avg)
-		const allV2Ops = testResults.flatMap(t => t.results.v2.ops.avg)
+		const allV1Ops = testResults.map(t => t.v1.ops.avg)
+		const allV2Ops = testResults.map(t => t.v2.ops.avg)
+		const allV1Mem = testResults.map(t => t.v1.memoryKB)
+		const allV2Mem = testResults.map(t => t.v2.memoryKB)
 
 		const v1AvgOps = Math.round(allV1Ops.reduce((a, b) => a + b, 0) / allV1Ops.length)
 		const v2AvgOps = Math.round(allV2Ops.reduce((a, b) => a + b, 0) / allV2Ops.length)
+		const v1AvgMem = Math.round(allV1Mem.reduce((a, b) => a + b, 0) / allV1Mem.length)
+		const v2AvgMem = Math.round(allV2Mem.reduce((a, b) => a + b, 0) / allV2Mem.length)
 
 		const summary = {
 			totalTests: testResults.length,
-			v1Wins: testResults.filter(t => t.results.comparison.winner === 'v1').length,
-			v2Wins: testResults.filter(t => t.results.comparison.winner === 'v2').length,
-			overallPerformance: {
-				v1: { avgOps: v1AvgOps, medianOps: v1AvgOps },
-				v2: { avgOps: v2AvgOps, medianOps: v2AvgOps }
+			v1Wins: testResults.filter(t => t.winner === 'v1').length,
+			v2Wins: testResults.filter(t => t.winner === 'v2').length,
+			performance: {
+				v1: { avgOps: v1AvgOps },
+				v2: { avgOps: v2AvgOps },
+				ratio: Math.round((v1AvgOps / v2AvgOps) * 100) / 100
 			},
-			performanceRatio: Math.round((v1AvgOps / v2AvgOps) * 100) / 100
+			memory: {
+				v1: { avgHeapKB: v1AvgMem },
+				v2: { avgHeapKB: v2AvgMem },
+				ratio: Math.round((v2AvgMem / v1AvgMem) * 100) / 100
+			}
 		}
 
 		// Load previous results for trends
@@ -234,9 +228,9 @@ function saveResults() {
 		console.log(`✅ Results saved to ${resultsPath}`)
 		console.log(`📊 Total runs in history: ${existingResults.length}`)
 		console.log(`\n📈 Summary:`)
-		console.log(`   v1: ${currentRun.summary.overallPerformance.v1.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast})`)
-		console.log(`   v2: ${currentRun.summary.overallPerformance.v2.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`)
-		console.log(`   Ratio: ${currentRun.summary.performanceRatio}x`)
+		console.log(`   Performance: v1=${currentRun.summary.performance.v1.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`)
+		console.log(`   Memory: v1=${currentRun.summary.memory.v1.avgHeapKB.toLocaleString()} KB, v2=${currentRun.summary.memory.v2.avgHeapKB.toLocaleString()} KB`)
+		console.log(`   Ratio: ${currentRun.summary.performance.ratio}x performance, ${currentRun.summary.memory.ratio}x memory`)
 		console.log(`   Winner: v${currentRun.summary.v1Wins > currentRun.summary.v2Wins ? '1' : '2'} (${currentRun.summary.v1Wins}:${currentRun.summary.v2Wins})`)
 
 		if (currentRun.trends.v1.regressions.length > 0) {
@@ -263,52 +257,26 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 
 	const v1Ops = calculateStats(v1Results.ops)
 	const v2Ops = calculateStats(v2Results.ops)
-	const v1Latency = calculateStats(v1Results.latency)
-	const v2Latency = calculateStats(v2Results.latency)
 
-	const v1MemAvg = {
-		heapUsed: Math.round(v1Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v1Results.memory.length),
-		external: Math.round(v1Results.memory.reduce((sum, m) => sum + m.external, 0) / v1Results.memory.length)
-	}
-	const v2MemAvg = {
-		heapUsed: Math.round(v2Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v2Results.memory.length),
-		external: Math.round(v2Results.memory.reduce((sum, m) => sum + m.external, 0) / v2Results.memory.length)
-	}
+	const v1MemAvg = Math.round(v1Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v1Results.memory.length)
+	const v2MemAvg = Math.round(v2Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v2Results.memory.length)
 
 	const ratio = v1Ops.avg / v2Ops.avg
 	const winner = ratio > 1 ? 'v1' : 'v2'
-	const performanceGap = Math.abs((ratio - 1) * 100)
-	const latencyDiff = v2Latency.avg / v1Latency.avg
-	const memoryRatio = v2MemAvg.heapUsed / v1MemAvg.heapUsed
-
-	// Extract marks count
-	const marks = (input.match(/@\[/g) || []).length + (input.match(/#\[/g) || []).length
 
 	testResults.push({
 		name,
 		category,
-		input: { marks, complexity: category === 'realWorld' ? 'real-world' : 'simple' },
-		results: {
-			v1: {
-				ops: v1Ops,
-				latency: { ...v1Latency, unit: 'ms' },
-				memory: { ...v1MemAvg, unit: 'KB' },
-				samples: iterations
-			},
-			v2: {
-				ops: v2Ops,
-				latency: { ...v2Latency, unit: 'ms' },
-				memory: { ...v2MemAvg, unit: 'KB' },
-				samples: iterations
-			},
-			comparison: {
-				ratio: Math.round(ratio * 100) / 100,
-				winner,
-				performanceGap: `${Math.round(performanceGap)}%`,
-				latencyDiff: Math.round(latencyDiff * 100) / 100,
-				memoryRatio: Math.round(memoryRatio * 100) / 100
-			}
-		}
+		v1: {
+			ops: v1Ops,
+			memoryKB: v1MemAvg
+		},
+		v2: {
+			ops: v2Ops,
+			memoryKB: v2MemAvg
+		},
+		ratio: Math.round(ratio * 100) / 100,
+		winner
 	})
 }
 
