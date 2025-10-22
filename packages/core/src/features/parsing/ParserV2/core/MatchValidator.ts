@@ -1,10 +1,13 @@
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {PatternMatch} from '../utils/PatternBuilder'
 import {PatternPart} from '../utils/PatternChainManager'
+import {SweepLineFilter} from './SweepLineFilter'
 
 /**
  * Match validator responsible for all filtering and validation logic
  * Consolidates validation from PatternProcessor and MatchPostProcessor
+ * 
+ * Uses sweep line algorithm for O(N log N) complexity instead of O(N²)
  */
 export class MatchValidator {
 	constructor(private readonly descriptors: MarkupDescriptor[]) {}
@@ -12,19 +15,27 @@ export class MatchValidator {
 	/**
 	 * Complete validation and filtering pipeline
 	 * All filtering stages in one place for clarity
+	 * 
+	 * Optimized with sweep line algorithm for better performance on large inputs
 	 */
 	validateAndFilter(matches: PatternMatch[], input: string): PatternMatch[] {
+		// Create sweep line filter for optimized filtering
+		const sweepFilter = new SweepLineFilter(this.descriptors)
+		
 		// Stage 1: Filter matches starting inside non-nested gaps (__meta__ and __value__)
-		let filtered = this.filterMatchesInsideNonNestedGaps(matches)
+		// Optimized: O(N²×M) → O(N×M log N)
+		let filtered = sweepFilter.filterByContainment(matches)
 		
 		// Stage 2: Filter overlapping matches of the same descriptor
-		filtered = this.filterOverlappingMatches(filtered)
+		// Optimized: O(N²) → O(N)
+		filtered = sweepFilter.filterByDescriptor(filtered)
 		
 		// Stage 3: Materialize gaps for validation checks that need content
 		this.materializeAllGaps(filtered, input)
 		
 		// Stage 4: Filter partial matches (shorter matches with same boundaries)
-		filtered = this.filterPartialMatches(filtered)
+		// Optimized: O(N²) → O(N log N)
+		filtered = sweepFilter.filterByBoundaries(filtered)
 		
 		// Stage 5: Validate patterns with two __value__ placeholders (HTML-like tags)
 		filtered = this.validateTwoValues(filtered)
@@ -33,12 +44,16 @@ export class MatchValidator {
 	}
 
 	/**
+	 * DEPRECATED: Replaced by SweepLineFilter.filterByContainment()
+	 * Kept for reference and potential fallback
+	 * 
 	 * Filters out matches that start inside __meta__ or __value__ gaps of other matches.
 	 * Only __nested__ gaps allow nested patterns.
 	 * 
 	 * Extracted from PatternProcessor.filterMatchesInsideNonNestedGaps (lines 57-81)
 	 */
-	private filterMatchesInsideNonNestedGaps(matches: PatternMatch[]): PatternMatch[] {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	private filterMatchesInsideNonNestedGaps_OLD(matches: PatternMatch[]): PatternMatch[] {
 		return matches.filter(match => {
 			const matchStart = match.parts[0].start
 			
@@ -65,6 +80,9 @@ export class MatchValidator {
 	}
 
 	/**
+	 * DEPRECATED: Replaced by SweepLineFilter.filterByDescriptor()
+	 * Kept for reference and potential fallback
+	 * 
 	 * Filters out incomplete/overlapping matches of the same descriptor.
 	 * This handles cases like <__value__>__meta__</__value__> where multiple chains
 	 * might be created for the same descriptor at overlapping positions.
@@ -77,7 +95,8 @@ export class MatchValidator {
 	 * 
 	 * Extracted from PatternProcessor.filterOverlappingMatches (lines 93-133)
 	 */
-	private filterOverlappingMatches(matches: PatternMatch[]): PatternMatch[] {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	private filterOverlappingMatches_OLD(matches: PatternMatch[]): PatternMatch[] {
 		return matches.filter(match => {
 			const matchStart = match.parts[0].start
 			const matchEnd = match.parts[match.parts.length - 1].end
@@ -140,6 +159,9 @@ export class MatchValidator {
 	}
 
 	/**
+	 * DEPRECATED: Replaced by SweepLineFilter.filterByBoundaries()
+	 * Kept for reference and potential fallback
+	 * 
 	 * Filters out partial matches - matches that are subsets of longer matches
 	 * A match is partial if another match exists with:
 	 * - Same start position but longer (extends further)
@@ -147,7 +169,8 @@ export class MatchValidator {
 	 * 
 	 * Extracted from MatchPostProcessor.removeOverlaps (lines 66-84)
 	 */
-	private filterPartialMatches(matches: PatternMatch[]): PatternMatch[] {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	private filterPartialMatches_OLD(matches: PatternMatch[]): PatternMatch[] {
 		return matches.filter(match => {
 			const start = this.getMatchStart(match)
 			const end = this.getMatchEnd(match)
