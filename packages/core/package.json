@@ -9,8 +9,7 @@
     "test:related": "vitest related",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "test:bench": "vitest bench --run",
-    "test:bench:watch": "vitest bench"
+    "bench": "vitest bench --run"
   },
   "module": "./index.ts",
   "types": "./index.ts",
