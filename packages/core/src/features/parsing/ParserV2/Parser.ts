@@ -1,6 +1,6 @@
 import {InnerOption} from '../../default/types'
 import {Markup} from './types'
-import {MarkputToken} from './types'
+import {Token} from './types'
 import {MarkToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternProcessor} from './core/PatternProcessor'
@@ -22,7 +22,7 @@ export class Parser {
 		this.patternProcessor = new PatternProcessor(this.registry)
 	}
 
-	static split(value: string, options?: {markup: Markup}[]): MarkputToken[] {
+	static split(value: string, options?: {markup: Markup}[]): Token[] {
 		const markups = options?.map(c => c.markup)
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
@@ -30,12 +30,12 @@ export class Parser {
 		return new Parser(markups).split(value)
 	}
 
-	static join(tokens: MarkputToken[], options?: {markup: Markup}[]): string {
+	static join(tokens: Token[], options?: {markup: Markup}[]): string {
 		const markups = options?.map(c => c.markup) || []
 		return tokensToString(tokens, markups)
 	}
 
-	split(value: string): MarkputToken[] {
+	split(value: string): Token[] {
 		const segmentMatches = this.ac.search(value)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)
 		const matchResults = MatchPostProcessor.convertToResults(
@@ -47,7 +47,7 @@ export class Parser {
 		return buildTree(value, matchResults)
 	}
 
-	join(tokens: MarkputToken[]): string {
+	join(tokens: Token[]): string {
 		return tokensToString(tokens, this.registry.markups)
 	}
 

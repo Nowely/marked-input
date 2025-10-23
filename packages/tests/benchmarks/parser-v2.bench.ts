@@ -1,20 +1,20 @@
 import {bench, describe} from 'vitest'
-import {ParserV2} from '../../core/src/features/parsing/ParserV2/'
-import {MarkputToken, MarkToken} from '../../core/src/features/parsing/ParserV2/types'
+import {Parser as ParserV2} from '../../core/src/features/parsing/ParserV2/'
+import {Token, MarkToken} from '../../core/src/features/parsing/ParserV2/types'
 
 /**
  * Type guard to check if token is a MarkToken with children
  */
-const isMarkToken = (token: MarkputToken): token is MarkToken => {
+const isMarkToken = (token: Token): token is MarkToken => {
 	return token.type === 'mark'
 }
 
 /**
  * Подсчитывает общее количество marks в дереве
  */
-const countMarks = (tokens: MarkputToken[]): number => {
+const countMarks = (tokens: Token[]): number => {
 	// Рекурсивно считаем только mark типы
-	const countInNode = (node: MarkputToken): number => {
+	const countInNode = (node: Token): number => {
 		let nodeCount = node.type === 'mark' ? 1 : 0
 
 		if (isMarkToken(node) && node.children) {
@@ -30,9 +30,9 @@ const countMarks = (tokens: MarkputToken[]): number => {
 /**
  * Находит максимальную глубину вложенности
  */
-const findMaxDepth = (tokens: MarkputToken[]): number => {
+const findMaxDepth = (tokens: Token[]): number => {
 	// Находим максимальную глубину среди всех токенов
-	const findDepth = (node: MarkputToken): number => {
+	const findDepth = (node: Token): number => {
 		if (node.type === 'text') {
 			return 0
 		}

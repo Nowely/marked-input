@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {Parser} from './Parser'
-import {MarkToken, MarkputToken, Markup} from './types'
+import {MarkToken, Token, Markup} from './types'
 import {InnerOption} from '../../default/types'
 import {faker} from '@faker-js/faker'
 
@@ -14,7 +14,7 @@ describe('ParserV2', () => {
 	})
 
 	describe('static split', () => {
-		it('should parse text with provided options and return MarkputToken[]', () => {
+		it('should parse text with provided options and return Token[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
 			const options: {markup: Markup}[] = [
 				{markup: '@[__value__](__meta__)', },
@@ -1105,7 +1105,7 @@ describe('ParserV2', () => {
 						const result = parser.split(input)
 
 						// Validate that no tokens have start > end
-						const validatePositions = (tokens: MarkputToken[]): void => {
+						const validatePositions = (tokens: Token[]): void => {
 							for (const token of tokens) {
 								expect(token.position.start).toBeLessThanOrEqual(token.position.end)
 								if (token.type === 'mark' && token.children.length > 0) {
@@ -1131,7 +1131,7 @@ describe('ParserV2', () => {
 						const result = parser.split(input)
 
 						// Validate that no tokens have start > end
-						const validatePositions = (tokens: MarkputToken[]): void => {
+						const validatePositions = (tokens: Token[]): void => {
 							for (const token of tokens) {
 								expect(token.position.start).toBeLessThanOrEqual(token.position.end)
 								if (token.type === 'mark' && token.children.length > 0) {
@@ -1364,7 +1364,7 @@ describe('ParserV2', () => {
 	})
 })
 
-function tokensToDebugTree(tokens: MarkputToken[], level = 0, prefix = ''): string {
+function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
 	const lines: string[] = []
 
 	tokens.forEach((token, index) => {
@@ -1415,9 +1415,9 @@ function tokensToDebugTree(tokens: MarkputToken[], level = 0, prefix = ''): stri
 /**
  * Counts total number of marks in the tree
  */
-function countMarks(tokens: MarkputToken[]): number {
+function countMarks(tokens: Token[]): number {
 	// Recursively count only mark types
-	const countInNode = (node: MarkputToken): number => {
+	const countInNode = (node: Token): number => {
 		let nodeCount = node.type === 'mark' ? 1 : 0
 
 		if (node.type === 'mark' && node.children) {
@@ -1433,9 +1433,9 @@ function countMarks(tokens: MarkputToken[]): number {
 /**
  * Finds maximum nesting depth
  */
-function findMaxDepth(tokens: MarkputToken[]): number {
+function findMaxDepth(tokens: Token[]): number {
 	// Find maximum depth among all tokens
-	const findDepth = (node: MarkputToken): number => {
+	const findDepth = (node: Token): number => {
 		if (node.type === 'text') {
 			return 0
 		}

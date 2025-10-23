@@ -1,6 +1,6 @@
 import {bench, describe} from 'vitest'
 import {Parser} from '../../core/src/features/parsing/Parser/Parser'
-import {ParserV2} from '../../core/src/features/parsing/ParserV2/index'
+import {Parser as ParserV2} from '../../core/src/features/parsing/ParserV2/index'
 
 // Создаем текст с настоящей вложенностью
 function createNestedText(depth = 2, marks = 5): string {

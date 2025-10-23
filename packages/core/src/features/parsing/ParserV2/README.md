@@ -53,12 +53,12 @@ const nestedResult = nestedParser.split('@[hello #[world]]')
 ### Core Components
 
 ```typescript
-type MarkputToken = TextToken | MarkToken
+type Token = TextToken | MarkToken
 
 interface MarkToken {
   type: 'mark'
   content: string
-  children: MarkputToken[]    // Nested tokens
+	children: Token[]    // Nested tokens
   optionIndex: number         // Markup descriptor index
   value: string               // Text between segments
   meta?: string               // Additional metadata
@@ -94,7 +94,7 @@ ParserV2/
 
 ## Visualization
 
-### MarkputToken Structure
+### Token Structure
 
 ```typescript
 // Simple token tree
@@ -171,7 +171,7 @@ Input Text → Aho-Corasick → SegmentMatches
                 - Stack-based parent-child detection
                 - Position containment check
                               ↓
-                      MarkputToken[]
+                      Token[]
 ```
 
 ### Separation of Responsibilities
@@ -210,11 +210,11 @@ Input Text → Aho-Corasick → SegmentMatches
 ```typescript
 class ParserV2 {
   constructor(markups: Markup[])
-  split(input: string): MarkputToken[]
+  split(input: string): Token[]
 }
 
 // Static method
-ParserV2.split(input: string, markups: Markup[]): MarkputToken[]
+ParserV2.split(input: string, markups: Markup[]): Token[]
 ```
 
 ### Utility Functions
@@ -315,7 +315,7 @@ Convert parsed tokens back to annotated string (inverse of `split`).
 import { toString } from '@markput/core'
 
 function toString(
-  tokens: MarkputToken[],
+  tokens: Token[],
   markups: Markup[]
 ): string
 ```

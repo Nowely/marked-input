@@ -1,5 +1,5 @@
 export {Parser} from './Parser'
-export type {MarkputToken, TextToken, MarkToken, MatchResult, Markup} from './types'
+export type {Token, TextToken, MarkToken, MatchResult, Markup} from './types'
 export type {MarkupDescriptor} from './core/MarkupDescriptor'
 export {PLACEHOLDER} from './constants'
 export {annotate} from './utils/annotate'

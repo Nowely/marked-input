@@ -1,11 +1,11 @@
-import {TextToken, MarkToken, MatchResult, MarkputToken} from '../types'
+import {TextToken, MarkToken, MatchResult, Token} from '../types'
 
 /**
  * Helper structure for tracking parent marks during tree building
  */
 interface MarkNode {
 	match: MatchResult
-	children: MarkputToken[]
+	children: Token[]
 	textPos: number  // Current position for adding text tokens
 }
 
@@ -14,7 +14,7 @@ interface MarkNode {
  */
 interface TreeBuildContext {
 	input: string
-	rootTokens: MarkputToken[]
+	rootTokens: Token[]
 	stack: MarkNode[]
 	rootTextPos: number
 }
@@ -43,7 +43,7 @@ function createTextToken(input: string, start: number, end: number): TextToken {
  * Creates a mark token from match and collected children
  * Only includes children if there are actual nested marks
  */
-function createMarkToken(match: MatchResult, children: MarkputToken[]): MarkToken {
+function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
 	// Check if there are any nested marks (not just text tokens)
 	const hasNestedMarks = children.some(child => child.type === 'mark')
 
@@ -77,7 +77,7 @@ function createMarkToken(match: MatchResult, children: MarkputToken[]): MarkToke
  */
 function addTextToken(
 	input: string,
-	tokens: MarkputToken[],
+	tokens: Token[],
 	fromPos: number,
 	toPos: number
 ): void {
@@ -181,7 +181,7 @@ function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
 export function buildTree(
 	input: string,
 	matches: MatchResult[]
-): MarkputToken[] {
+): Token[] {
 	if (matches.length === 0) {
 		return [createTextToken(input, 0, input.length)]
 	}

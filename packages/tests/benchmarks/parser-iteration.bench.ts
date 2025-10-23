@@ -1,5 +1,5 @@
 import {bench, describe} from 'vitest'
-import {ParserV2} from '../../core/src/features/parsing/ParserV2/'
+import {Parser as ParserV2} from '../../core/src/features/parsing/ParserV2/'
 import {performance} from 'perf_hooks'
 
 // Test data generators

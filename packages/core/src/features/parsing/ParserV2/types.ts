@@ -1,6 +1,6 @@
 import {PLACEHOLDER} from './constants'
 
-export type MarkputToken = TextToken | MarkToken
+export type Token = TextToken | MarkToken
 
 export interface TextToken {
 	type: 'text'
@@ -26,7 +26,7 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
-	children: MarkputToken[]
+	children: Token[]
 }
 
 /**

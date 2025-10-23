@@ -1,5 +1,5 @@
 import {Parser} from '../Parser'
-import {MarkToken, Markup, MarkputToken} from '../types'
+import {MarkToken, Markup, Token} from '../types'
 import {annotate} from './annotate'
 
 /**
@@ -36,7 +36,7 @@ export function denote(
  * @returns Transformed text
  */
 export function processTokensWithCallback(
-	tokens: MarkputToken[],
+	tokens: Token[],
 	callback: (mark: MarkToken) => string
 ): string {
 	let result = ''
