@@ -6,7 +6,7 @@ import {TextToken, MarkToken, MatchResult, Token} from '../types'
 interface MarkNode {
 	match: MatchResult
 	children: Token[]
-	textPos: number  // Current position for adding text tokens
+	textPos: number // Current position for adding text tokens
 }
 
 /**
@@ -28,14 +28,14 @@ function createTextToken(input: string, start: number, end: number): TextToken {
 	if (start > end) {
 		throw new Error(
 			`Invalid text token positions: start (${start}) > end (${end}). ` +
-			`This indicates a bug in the tree building logic.`
+				`This indicates a bug in the tree building logic.`
 		)
 	}
-	
+
 	return {
 		type: 'text',
 		content: input.substring(start, end),
-		position: { start, end }
+		position: {start, end},
 	}
 }
 
@@ -49,14 +49,16 @@ function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
 
 	// Priority: use value if present, otherwise use nested content
 	// This handles combined patterns like @[__value__](__nested__) correctly
-	const valueContent = match.value !== '' ? match.value : (match.nested || '')
+	const valueContent = match.value !== '' ? match.value : match.nested || ''
 
 	// Store nested content information for debugging
-	const nestedInfo = match.nested ? {
-		content: match.nested,
-		start: match.nestedStart!,
-		end: match.nestedEnd!
-	} : undefined
+	const nestedInfo = match.nested
+		? {
+				content: match.nested,
+				start: match.nestedStart!,
+				end: match.nestedEnd!,
+			}
+		: undefined
 
 	return {
 		type: 'mark',
@@ -65,8 +67,8 @@ function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
 		optionIndex: match.descriptorIndex,
 		value: valueContent,
 		meta: match.meta,
-		position: { start: match.start, end: match.end },
-		nested: nestedInfo
+		position: {start: match.start, end: match.end},
+		nested: nestedInfo,
 	}
 }
 
@@ -75,12 +77,7 @@ function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
  * This maintains compatibility with the old behavior where empty text tokens are always present
  * Skips adding token if positions are invalid (fromPos > toPos)
  */
-function addTextToken(
-	input: string,
-	tokens: Token[],
-	fromPos: number,
-	toPos: number
-): void {
+function addTextToken(input: string, tokens: Token[], fromPos: number, toPos: number): void {
 	// Skip if positions would be invalid
 	// This can happen when patterns overlap or are adjacent
 	if (fromPos > toPos) {
@@ -100,7 +97,7 @@ function isContainedInNestableContent(matchB: MatchResult, matchA: MatchResult):
 	if (matchA.nestedStart !== undefined && matchA.nestedEnd !== undefined) {
 		return matchB.start >= matchA.nestedStart && matchB.end <= matchA.nestedEnd
 	}
-	
+
 	// Fallback to value for patterns that don't have __nested__
 	return matchB.start >= matchA.valueStart && matchB.end <= matchA.valueEnd
 }
@@ -113,9 +110,9 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 	// Priority: use nested end if present, otherwise use value end
 	const contentEnd = node.match.nestedEnd !== undefined ? node.match.nestedEnd : node.match.valueEnd
 	addTextToken(ctx.input, node.children, node.textPos, contentEnd)
-	
+
 	const token = createMarkToken(node.match, node.children)
-	
+
 	if (ctx.stack.length > 0) {
 		// Add to parent's children
 		const parent = ctx.stack[ctx.stack.length - 1]
@@ -136,13 +133,13 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
 	while (ctx.stack.length > 0) {
 		const parent = ctx.stack[ctx.stack.length - 1]
-		
+
 		// Check if current match is inside parent's nestable content (nested or value gap)
 		if (isContainedInNestableContent(match, parent.match)) {
 			// This match is nested inside parent
 			break
 		}
-		
+
 		// Parent is complete - finalize it
 		const completed = ctx.stack.pop()!
 		finalizeMarkNode(completed, ctx)
@@ -151,19 +148,19 @@ function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
 
 /**
  * Builds nested token tree in a single pass without recursive parsing
- * 
+ *
  * Algorithm:
  * 1. Iterate through sorted matches (PatternMatcher already sorted them)
  * 2. Use stack to track parent-child relationships based on position containment
  * 3. Pop completed parents when current match is not inside their label
  * 4. Add current match to stack for potential children
  * 5. Finalize remaining stack at the end
- * 
+ *
  * @complexity O(N) where N is number of matches
  * @param input - Original input text
  * @param matches - Sorted matches with position tracking
  * @returns Nested token tree
- * 
+ *
  * @example
  * ```typescript
  * // Input: "@[hello #[world]]"
@@ -178,10 +175,7 @@ function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
  * // ]
  * ```
  */
-export function buildTree(
-	input: string,
-	matches: MatchResult[]
-): Token[] {
+export function buildTree(input: string, matches: MatchResult[]): Token[] {
 	if (matches.length === 0) {
 		return [createTextToken(input, 0, input.length)]
 	}
@@ -190,14 +184,14 @@ export function buildTree(
 		input,
 		rootTokens: [],
 		stack: [],
-		rootTextPos: 0
+		rootTextPos: 0,
 	}
 
 	// Process each match
 	for (const match of matches) {
 		// Pop completed parents that don't contain this match
 		popCompletedParents(match, ctx)
-		
+
 		// Check if this match would conflict with an already added match
 		// Skip matches that start before or at the current root text position
 		// This handles cases where patterns find matches inside already-processed content
@@ -205,26 +199,25 @@ export function buildTree(
 			// This match starts before where we currently are - skip it
 			continue
 		}
-		
+
 		// Add this match to the stack for potential children
 		// Priority: use nested start if present, otherwise use value start
 		const contentStart = match.nestedStart !== undefined ? match.nestedStart : match.valueStart
 		ctx.stack.push({
 			match,
 			children: [],
-			textPos: contentStart
+			textPos: contentStart,
 		})
 	}
-	
+
 	// Finalize all remaining marks in stack
 	while (ctx.stack.length > 0) {
 		const completed = ctx.stack.pop()!
 		finalizeMarkNode(completed, ctx)
 	}
-	
+
 	// Add final text after all marks
 	addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, input.length)
-	
+
 	return ctx.rootTokens
 }
-

@@ -17,11 +17,7 @@ import {annotate} from './annotate'
  * // Returns: 'Hello and nested content'
  * ```
  */
-export function denote(
-	value: string,
-	callback: (mark: MarkToken) => string,
-	markups: Markup[]
-): string {
+export function denote(value: string, callback: (mark: MarkToken) => string, markups: Markup[]): string {
 	if (!markups.length) return value
 
 	const tokens = new Parser(markups).split(value)
@@ -35,10 +31,7 @@ export function denote(
  * @param callback - Function to transform each MarkToken
  * @returns Transformed text
  */
-export function processTokensWithCallback(
-	tokens: Token[],
-	callback: (mark: MarkToken) => string
-): string {
+export function processTokensWithCallback(tokens: Token[], callback: (mark: MarkToken) => string): string {
 	let result = ''
 	for (const token of tokens) {
 		if (token.type === 'text') {
@@ -56,7 +49,7 @@ export function processTokensWithCallback(
 				// This allows the callback to use the already-processed nested content
 				const modifiedToken: MarkToken = {
 					...token,
-					value: processedChildren
+					value: processedChildren,
 				}
 				result += callback(modifiedToken)
 			} else {
@@ -66,4 +59,3 @@ export function processTokensWithCallback(
 	}
 	return result
 }
-

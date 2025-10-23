@@ -10,7 +10,7 @@ interface Interval {
 /**
  * Efficient interval-based set for tracking consumed positions
  * Replaces Set<number> with O(log N) overlap checks instead of O(M) position loops
- * 
+ *
  * Maintains sorted, non-overlapping intervals for optimal performance
  */
 export class IntervalSet {
@@ -38,7 +38,7 @@ export class IntervalSet {
 		}
 
 		// Merge overlapping intervals
-		const newInterval: Interval = { start, end }
+		const newInterval: Interval = {start, end}
 		let mergeStart = left
 
 		// Find all intervals that overlap with the new one
@@ -104,4 +104,3 @@ export class IntervalSet {
 		this.intervals = []
 	}
 }
-

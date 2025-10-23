@@ -4,15 +4,11 @@
     "trends": {
       "v1": {
         "changeFromLast": "-1.4%",
-        "regressions": [
-          "code comments"
-        ]
+        "regressions": ["code comments"]
       },
       "v2": {
         "changeFromLast": "+4.8%",
-        "regressions": [
-          "100 marks"
-        ]
+        "regressions": ["100 marks"]
       }
     },
     "summary": {
@@ -201,11 +197,7 @@
     "trends": {
       "v1": {
         "changeFromLast": "-3.3%",
-        "regressions": [
-          "10 marks",
-          "50 marks",
-          "social media"
-        ]
+        "regressions": ["10 marks", "50 marks", "social media"]
       },
       "v2": {
         "changeFromLast": "+33.5%",
@@ -402,10 +394,7 @@
       },
       "v2": {
         "changeFromLast": "-7.5%",
-        "regressions": [
-          "markdown-like",
-          "code comments"
-        ]
+        "regressions": ["markdown-like", "code comments"]
       }
     },
     "summary": {
@@ -594,16 +583,11 @@
     "trends": {
       "v1": {
         "changeFromLast": "+0.4%",
-        "regressions": [
-          "50 marks"
-        ]
+        "regressions": ["50 marks"]
       },
       "v2": {
         "changeFromLast": "-1.6%",
-        "regressions": [
-          "500 marks",
-          "social media"
-        ]
+        "regressions": ["500 marks", "social media"]
       }
     },
     "summary": {

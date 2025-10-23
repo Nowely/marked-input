@@ -13,7 +13,7 @@ function createTestDescriptors(patterns: string[]): MarkupDescriptor[] {
 		hasMeta: false,
 		hasNested: false,
 		hasTwoValues: false,
-		isSymmetric: false
+		isSymmetric: false,
 	}))
 }
 
@@ -75,7 +75,7 @@ describe('AhoCorasick', () => {
 				index: 0,
 				start: 0,
 				end: 4,
-				value: 'hello'
+				value: 'hello',
 			})
 		})
 
@@ -92,13 +92,13 @@ describe('AhoCorasick', () => {
 				index: 0,
 				start: 0,
 				end: 4,
-				value: 'hello'
+				value: 'hello',
 			})
 			expect(sorted[1]).toEqual({
 				index: 1,
 				start: 6,
 				end: 10,
-				value: 'world'
+				value: 'world',
 			})
 		})
 
@@ -107,9 +107,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('test test test')
 
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 3, value: 'test'})
 			expect(sorted[1]).toMatchObject({start: 5, end: 8, value: 'test'})
 			expect(sorted[2]).toMatchObject({start: 10, end: 13, value: 'test'})
@@ -163,7 +163,7 @@ describe('AhoCorasick', () => {
 				index: 0,
 				start: 0,
 				end: 4,
-				value: 'hello'
+				value: 'hello',
 			})
 		})
 
@@ -172,9 +172,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('helloworld')
 
 			expect(results).toHaveLength(2)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
 			expect(sorted[1]).toMatchObject({start: 5, end: 9, value: 'world'})
 		})
@@ -184,9 +184,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('abc')
 
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 0, value: 'a'})
 			expect(sorted[1]).toMatchObject({start: 1, end: 1, value: 'b'})
 			expect(sorted[2]).toMatchObject({start: 2, end: 2, value: 'c'})
@@ -202,7 +202,7 @@ describe('AhoCorasick', () => {
 			expect(results[0]).toMatchObject({
 				start: 100,
 				end: 1099,
-				value: longPattern
+				value: longPattern,
 			})
 		})
 
@@ -215,7 +215,7 @@ describe('AhoCorasick', () => {
 			expect(results[0]).toMatchObject({
 				start: 30000,
 				end: 30005,
-				value: 'needle'
+				value: 'needle',
 			})
 		})
 	})
@@ -226,9 +226,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello')
 
 			expect(results).toHaveLength(2)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 1, value: 'he'})
 			expect(sorted[1]).toMatchObject({start: 0, end: 4, value: 'hello'})
 		})
@@ -238,9 +238,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello')
 
 			expect(results).toHaveLength(2)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
 			expect(sorted[1]).toMatchObject({start: 3, end: 4, value: 'lo'})
 		})
@@ -250,9 +250,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello')
 
 			expect(results).toHaveLength(2)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
 			expect(sorted[1]).toMatchObject({start: 1, end: 3, value: 'ell'})
 		})
@@ -262,9 +262,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('abcde')
 
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 2, value: 'abc'})
 			expect(sorted[1]).toMatchObject({start: 1, end: 3, value: 'bcd'})
 			expect(sorted[2]).toMatchObject({start: 2, end: 4, value: 'cde'})
@@ -275,13 +275,13 @@ describe('AhoCorasick', () => {
 			const results = ac.search('testing tester')
 
 			expect(results).toHaveLength(4)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
-			
+
 			// "testing" contains "test"
 			expect(sorted[0]).toMatchObject({start: 0, end: 3, value: 'test'})
 			expect(sorted[1]).toMatchObject({start: 0, end: 6, value: 'testing'})
-			
+
 			// "tester" contains "test"
 			expect(sorted[2]).toMatchObject({start: 8, end: 11, value: 'test'})
 			expect(sorted[3]).toMatchObject({start: 8, end: 13, value: 'tester'})
@@ -294,9 +294,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('@[hello](world)')
 
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({value: '@['})
 			expect(sorted[1]).toMatchObject({value: ']('})
 			expect(sorted[2]).toMatchObject({value: ')'})
@@ -311,29 +311,29 @@ describe('AhoCorasick', () => {
 			expect(results[1]).toMatchObject({value: 'мир'})
 		})
 
-	it('should find emoji patterns', () => {
-		const ac = new AhoCorasick(['🚀', '🌍', '👋'])
-		const results = ac.search('Hello 👋 from Earth 🌍 to space 🚀')
+		it('should find emoji patterns', () => {
+			const ac = new AhoCorasick(['🚀', '🌍', '👋'])
+			const results = ac.search('Hello 👋 from Earth 🌍 to space 🚀')
 
-		// Note: Emojis may be multi-byte characters, so matching might be affected
-		// At minimum, we should find the patterns if they exist
-		expect(results.length).toBeGreaterThanOrEqual(0)
-		
-		// If we find results, they should be valid emojis
-		if (results.length > 0) {
-			const values = results.map(r => r.value)
-			values.forEach(v => {
-				expect(['🚀', '🌍', '👋']).toContain(v)
-			})
-		}
-	})
+			// Note: Emojis may be multi-byte characters, so matching might be affected
+			// At minimum, we should find the patterns if they exist
+			expect(results.length).toBeGreaterThanOrEqual(0)
+
+			// If we find results, they should be valid emojis
+			if (results.length > 0) {
+				const values = results.map(r => r.value)
+				values.forEach(v => {
+					expect(['🚀', '🌍', '👋']).toContain(v)
+				})
+			}
+		})
 
 		it('should find mixed unicode and ASCII patterns', () => {
 			const ac = new AhoCorasick(['hello', 'привет', '世界'])
 			const results = ac.search('hello привет 世界')
 
 			expect(results).toHaveLength(3)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('hello')
 			expect(values).toContain('привет')
@@ -372,11 +372,11 @@ describe('AhoCorasick', () => {
 			const results = ac.search('first second third')
 
 			expect(results).toHaveLength(3)
-			
+
 			const firstMatch = results.find(r => r.value === 'first')
 			const secondMatch = results.find(r => r.value === 'second')
 			const thirdMatch = results.find(r => r.value === 'third')
-			
+
 			expect(firstMatch?.index).toBe(0)
 			expect(secondMatch?.index).toBe(1)
 			expect(thirdMatch?.index).toBe(2)
@@ -443,7 +443,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('@[user](John Doe)')
 
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('@[')
 			expect(values).toContain(']')
@@ -457,7 +457,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search(text)
 
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('**')
 			expect(values).toContain('*')
@@ -471,7 +471,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search(text)
 
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('<')
 			expect(values).toContain('>')
@@ -491,20 +491,20 @@ describe('AhoCorasick', () => {
 	})
 
 	describe('search - performance characteristics', () => {
-	it('should handle many patterns efficiently', () => {
-		// Generate 1000 different patterns
-		const patterns = Array.from({length: 1000}, (_, i) => `pattern${i}`)
-		const ac = new AhoCorasick(patterns)
-		
-		const text = 'Some text with pattern42 and pattern137 in it'
-		const results = ac.search(text)
+		it('should handle many patterns efficiently', () => {
+			// Generate 1000 different patterns
+			const patterns = Array.from({length: 1000}, (_, i) => `pattern${i}`)
+			const ac = new AhoCorasick(patterns)
 
-		// Should find at least the two exact patterns
-		// Note: may also find subpattern matches like "pattern1" in "pattern137"
-		expect(results.length).toBeGreaterThanOrEqual(2)
-		expect(results.some(r => r.value === 'pattern42')).toBe(true)
-		expect(results.some(r => r.value === 'pattern137')).toBe(true)
-	})
+			const text = 'Some text with pattern42 and pattern137 in it'
+			const results = ac.search(text)
+
+			// Should find at least the two exact patterns
+			// Note: may also find subpattern matches like "pattern1" in "pattern137"
+			expect(results.length).toBeGreaterThanOrEqual(2)
+			expect(results.some(r => r.value === 'pattern42')).toBe(true)
+			expect(results.some(r => r.value === 'pattern137')).toBe(true)
+		})
 
 		it('should handle many occurrences efficiently', () => {
 			const ac = new AhoCorasick(['a', 'b'])
@@ -519,7 +519,7 @@ describe('AhoCorasick', () => {
 		it('should handle text with no matches efficiently', () => {
 			const patterns = Array.from({length: 100}, (_, i) => `pattern${i}`)
 			const ac = new AhoCorasick(patterns)
-			
+
 			const text = 'x'.repeat(10000)
 			const results = ac.search(text)
 
@@ -530,7 +530,7 @@ describe('AhoCorasick', () => {
 	describe('search - case sensitivity', () => {
 		it('should be case sensitive by default', () => {
 			const ac = new AhoCorasick(['Hello'])
-			
+
 			const results1 = ac.search('Hello')
 			const results2 = ac.search('hello')
 			const results3 = ac.search('HELLO')
@@ -545,7 +545,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('test Test TEST')
 
 			expect(results).toHaveLength(3)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('test')
 			expect(values).toContain('Test')
@@ -558,7 +558,7 @@ describe('AhoCorasick', () => {
 			const ac = new AhoCorasick(['aaa', 'aa', 'a'])
 			const results = ac.search('aaaa')
 
-			// Should find: 'aaa' at 0-2, 'aa' at 0-1, 'aa' at 1-2, 'aa' at 2-3, 
+			// Should find: 'aaa' at 0-2, 'aa' at 0-1, 'aa' at 1-2, 'aa' at 2-3,
 			// 'a' at 0, 'a' at 1, 'a' at 2, 'a' at 3, and 'aaa' at 1-3
 			expect(results.length).toBeGreaterThan(0)
 			expect(results.some(r => r.value === 'aaa')).toBe(true)
@@ -580,9 +580,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('aba abba abcba')
 
 			expect(results).toHaveLength(3)
-			expect(results.map(r => r.value)).toEqual(
-				expect.arrayContaining(['aba', 'abba', 'abcba'])
-			)
+			expect(results.map(r => r.value)).toEqual(expect.arrayContaining(['aba', 'abba', 'abcba']))
 		})
 
 		it('should handle patterns with common suffixes', () => {
@@ -590,12 +588,10 @@ describe('AhoCorasick', () => {
 			const results = ac.search('string')
 
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
-			
-			expect(sorted.map(r => r.value)).toEqual(
-				expect.arrayContaining(['string', 'ring', 'ing'])
-			)
+
+			expect(sorted.map(r => r.value)).toEqual(expect.arrayContaining(['string', 'ring', 'ing']))
 		})
 
 		it('should handle interleaved patterns', () => {
@@ -603,9 +599,9 @@ describe('AhoCorasick', () => {
 			const results = ac.search('abcdef')
 
 			expect(results).toHaveLength(4)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({value: 'abc'})
 			expect(sorted[1]).toMatchObject({value: 'bcd'})
 			expect(sorted[2]).toMatchObject({value: 'cde'})
@@ -619,16 +615,19 @@ describe('AhoCorasick', () => {
 				'**', // bold
 				'*', // italic
 				'`', // code
-				'[', ']', '(', ')', // links
+				'[',
+				']',
+				'(',
+				')', // links
 				'#', // headers
-				'\n'
+				'\n',
 			])
-			
+
 			const text = `# Header\n**bold** and *italic* with \`code\` and [link](url)`
 			const results = ac.search(text)
 
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			// Should find all delimiters
 			const values = results.map(r => r.value)
 			expect(values).toContain('**')
@@ -646,20 +645,21 @@ describe('AhoCorasick', () => {
 				'@[', // user mention start
 				'#[', // tag start
 				']', // closing bracket
-				'(', ')', // parentheses for meta
+				'(',
+				')', // parentheses for meta
 			])
-			
+
 			const text = 'Hello @[John Doe](john) and #[javascript] @[Jane](jane)'
 			const results = ac.search(text)
 
 			// Should find all markup delimiters in correct positions
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const atBrackets = results.filter(r => r.value === '@[')
 			const hashBrackets = results.filter(r => r.value === '#[')
 			const closeBrackets = results.filter(r => r.value === ']')
 			const parens = results.filter(r => r.value === '(' || r.value === ')')
-			
+
 			expect(atBrackets).toHaveLength(2)
 			expect(hashBrackets).toHaveLength(1)
 			expect(closeBrackets).toHaveLength(3)
@@ -672,10 +672,10 @@ describe('AhoCorasick', () => {
 			const results = ac.search(text)
 
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const openTags = results.filter(r => r.value === '<')
 			const closeTags = results.filter(r => r.value === '>')
-			
+
 			expect(openTags.length).toBeGreaterThan(0)
 			expect(closeTags.length).toBeGreaterThan(0)
 		})
@@ -697,7 +697,7 @@ describe('AhoCorasick', () => {
 			expect(results[0]).toMatchObject({
 				start: 0,
 				end: 3,
-				value: 'test'
+				value: 'test',
 			})
 		})
 
@@ -707,9 +707,9 @@ describe('AhoCorasick', () => {
 
 			// Should find overlapping 'aa' at positions 0-1, 1-2, 2-3
 			expect(results).toHaveLength(3)
-			
+
 			const sorted = results.sort((a, b) => a.start - b.start)
-			
+
 			expect(sorted[0]).toMatchObject({start: 0, end: 1})
 			expect(sorted[1]).toMatchObject({start: 1, end: 2})
 			expect(sorted[2]).toMatchObject({start: 2, end: 3})
@@ -727,7 +727,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('abcde')
 
 			expect(results).toHaveLength(5)
-			
+
 			const values = results.map(r => r.value).sort((a, b) => a.length - b.length)
 			expect(values).toEqual(['a', 'ab', 'abc', 'abcd', 'abcde'])
 		})
@@ -740,7 +740,7 @@ describe('AhoCorasick', () => {
 
 			// Should find: 'she' at 0-2, 'he' at 1-2, 'her' at 1-3, 'hers' at 1-4
 			expect(results.length).toBeGreaterThan(0)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('she')
 			expect(values).toContain('he')
@@ -764,7 +764,7 @@ describe('AhoCorasick', () => {
 
 			// Should find all three patterns
 			expect(results).toHaveLength(3)
-			
+
 			const values = results.map(r => r.value)
 			expect(values).toContain('aaab')
 			expect(values).toContain('aab')
@@ -778,13 +778,13 @@ describe('AhoCorasick', () => {
 			const results = ac.search('test')
 
 			expect(results).toHaveLength(1)
-			
+
 			const match = results[0]
 			expect(match).toHaveProperty('index')
 			expect(match).toHaveProperty('start')
 			expect(match).toHaveProperty('end')
 			expect(match).toHaveProperty('value')
-			
+
 			expect(typeof match.index).toBe('number')
 			expect(typeof match.start).toBe('number')
 			expect(typeof match.end).toBe('number')
@@ -806,9 +806,9 @@ describe('AhoCorasick', () => {
 		it('should handle large number of patterns', () => {
 			const patterns = Array.from({length: 10000}, (_, i) => `p${i}`)
 			const ac = new AhoCorasick(patterns)
-			
+
 			expect(ac).toBeDefined()
-			
+
 			const results = ac.search('p5000')
 			// Should find at least the exact pattern "p5000"
 			// Note: may also find subpatterns like "p5", "p50", "p500" which are also in the pattern array
@@ -819,9 +819,9 @@ describe('AhoCorasick', () => {
 		it('should handle large text efficiently', () => {
 			const ac = new AhoCorasick(['needle'])
 			const largeText = 'x'.repeat(1000000) + 'needle' + 'y'.repeat(1000000)
-			
+
 			const results = ac.search(largeText)
-			
+
 			expect(results).toHaveLength(1)
 			expect(results[0].value).toBe('needle')
 			expect(results[0].start).toBe(1000000)
@@ -831,12 +831,11 @@ describe('AhoCorasick', () => {
 			const patterns = ['a', 'b', 'c', 'd', 'e']
 			const ac = new AhoCorasick(patterns)
 			const text = 'abcde'.repeat(1000)
-			
+
 			const results = ac.search(text)
-			
+
 			// Should find 5000 matches (1000 of each pattern)
 			expect(results).toHaveLength(5000)
 		})
 	})
 })
-

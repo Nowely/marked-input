@@ -57,4 +57,3 @@ describe(`Utility: ${annotate.name}`, () => {
 		expect(result).toBe('@[Hello #[world]]')
 	})
 })
-

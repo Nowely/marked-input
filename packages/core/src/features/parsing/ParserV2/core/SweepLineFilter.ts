@@ -41,7 +41,7 @@ export class SweepLineFilter {
 	/**
 	 * Filter matches that start inside non-nested gaps (__value__ or __meta__)
 	 * Uses sweep line algorithm to track active non-nested gaps
-	 * 
+	 *
 	 * Complexity: O(N × M log(N × M)) where N = matches, M = parts per match
 	 * Previous: O(N² × M)
 	 */
@@ -68,13 +68,12 @@ export class SweepLineFilter {
 				activeGaps.push({
 					start: event.pos,
 					end: event.gapEnd!,
-					match: event.match
+					match: event.match,
 				})
 			} else if (event.type === 'gap_end') {
 				// Remove gap from active list
-				const index = activeGaps.findIndex(g => 
-					g.start === event.pos - (event.gapEnd! - event.pos + 1) && 
-					g.match === event.match
+				const index = activeGaps.findIndex(
+					g => g.start === event.pos - (event.gapEnd! - event.pos + 1) && g.match === event.match
 				)
 				if (index !== -1) {
 					activeGaps.splice(index, 1)
@@ -98,7 +97,7 @@ export class SweepLineFilter {
 	/**
 	 * Filter overlapping matches of same descriptor at same position
 	 * Keep only the most complete match for each (start, descriptorIndex) pair
-	 * 
+	 *
 	 * Complexity: O(N)
 	 * Previous: O(N²)
 	 */
@@ -138,7 +137,7 @@ export class SweepLineFilter {
 	 * A match is partial if another match has:
 	 * - Same start but longer (extends further)
 	 * - Same end but longer (starts earlier)
-	 * 
+	 *
 	 * Complexity: O(N log N)
 	 * Previous: O(N²)
 	 */
@@ -192,7 +191,7 @@ export class SweepLineFilter {
 				type: 'match_start',
 				pos: match.parts.length > 0 ? match.parts[0].start : 0,
 				match,
-				matchIndex: index
+				matchIndex: index,
 			})
 
 			// Add gap events for non-nested gaps
@@ -205,7 +204,7 @@ export class SweepLineFilter {
 						match,
 						matchIndex: index,
 						gapType: part.gapType,
-						gapEnd: part.end
+						gapEnd: part.end,
 					})
 					events.push({
 						type: 'gap_end',
@@ -213,7 +212,7 @@ export class SweepLineFilter {
 						match,
 						matchIndex: index,
 						gapType: part.gapType,
-						gapEnd: part.end
+						gapEnd: part.end,
 					})
 				}
 			}
@@ -227,11 +226,16 @@ export class SweepLineFilter {
 	 */
 	private getEventPriority(type: EventType): number {
 		switch (type) {
-			case 'gap_start': return 0
-			case 'match_start': return 1
-			case 'gap_end': return 2
-			case 'boundary_start': return 3
-			case 'boundary_end': return 4
+			case 'gap_start':
+				return 0
+			case 'match_start':
+				return 1
+			case 'gap_end':
+				return 2
+			case 'boundary_start':
+				return 3
+			case 'boundary_end':
+				return 4
 		}
 	}
 
@@ -316,4 +320,3 @@ export class SweepLineFilter {
 		}
 	}
 }
-

@@ -16,10 +16,7 @@ describe('ParserV2', () => {
 	describe('static split', () => {
 		it('should parse text with provided options and return Token[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup}[] = [
-				{markup: '@[__value__](__meta__)', },
-				{markup: '#[__value__]'},
-			]
+			const options: {markup: Markup}[] = [{markup: '@[__value__](__meta__)'}, {markup: '#[__value__]'}]
 
 			const result = Parser.split(value, options)
 
@@ -43,10 +40,7 @@ describe('ParserV2', () => {
 	describe('static join', () => {
 		it('should convert tokens back to string with provided options', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup}[] = [
-				{markup: '@[__value__](__meta__)'},
-				{markup: '#[__value__]'},
-			]
+			const options: {markup: Markup}[] = [{markup: '@[__value__](__meta__)'}, {markup: '#[__value__]'}]
 
 			const tokens = Parser.split(value, options)
 			const result = Parser.join(tokens, options)
@@ -724,9 +718,9 @@ describe('ParserV2', () => {
 				})
 			})
 
-		describe('generated markup patterns', () => {
-			// Generators for different markup types for testing
-			const generateSimpleMarkup = (prefix: string, suffix: string = '') => `${prefix}[__value__]${suffix}`
+			describe('generated markup patterns', () => {
+				// Generators for different markup types for testing
+				const generateSimpleMarkup = (prefix: string, suffix: string = '') => `${prefix}[__value__]${suffix}`
 
 				const generateValueMarkup = (prefix: string, middle: string = '', suffix: string = '') =>
 					`${prefix}[__value__]${middle}(__meta__)${suffix}`

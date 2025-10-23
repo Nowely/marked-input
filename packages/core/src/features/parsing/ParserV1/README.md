@@ -5,12 +5,14 @@
 ## Deprecated Placeholders
 
 Parser uses the old placeholder scheme:
+
 - `__label__` - main content (deprecated, use `__value__` in ParserV2)
 - `__value__` - additional value (deprecated, use `__meta__` in ParserV2)
 
 ## File Structure
 
 To isolate from the new naming scheme, Parser has its own file structure:
+
 - `constants.ts` - PLACEHOLDER enum with LABEL and VALUE
 - `types.ts` - types: Markup, MarkStruct, PieceType, MarkMatch
 

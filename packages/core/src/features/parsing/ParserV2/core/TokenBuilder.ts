@@ -2,7 +2,7 @@ import {TextToken} from '../types'
 
 /**
  * Creates a text token for a range in the input
- * 
+ *
  * @param input - Original input text
  * @param start - Start position (inclusive)
  * @param end - End position (exclusive)
@@ -12,7 +12,6 @@ export const createTextToken = (input: string, start = 0, end = input.length): T
 	return {
 		type: 'text',
 		content: input.substring(start, end),
-		position: { start, end }
+		position: {start, end},
 	}
 }
-

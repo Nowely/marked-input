@@ -25,7 +25,7 @@ export class PatternProcessor {
 
 	/**
 	 * Processes all segment matches and returns validated, sorted pattern matches
-	 * 
+	 *
 	 * Pipeline:
 	 * 1. Build ALL possible pattern chains (even invalid ones)
 	 * 2. Validate and filter matches
