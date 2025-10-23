@@ -12,7 +12,8 @@ describe('API: Overlay and Triggers', () => {
 	it.todo('should typed with default values of options', async () => {
 		const {container, getByText} = render(<DefaultOverlay options={[]} />)
 
-		await user.type(container.firstElementChild?.firstElementChild, 'abc')
+		const element = container.firstElementChild?.firstElementChild as HTMLElement
+		await user.type(element, 'abc')
 
 		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
@@ -20,7 +21,8 @@ describe('API: Overlay and Triggers', () => {
 	it('should typed with default values of options', async () => {
 		const {container, getByText} = render(<DefaultOverlay />)
 
-		await user.type(container.firstElementChild?.firstElementChild, 'abc')
+		const element = container.firstElementChild?.firstElementChild as HTMLElement
+		await user.type(element, 'abc')
 
 		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})

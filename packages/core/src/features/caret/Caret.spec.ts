@@ -9,7 +9,7 @@ const mockGetRangeAt = vi.fn()
 const mockSelection = {
 	isCollapsed: true,
 	anchorOffset: 5,
-	anchorNode: {textContent: 'Hello world'},
+	anchorNode: {textContent: 'Hello world'} as {textContent: string} | null,
 	getRangeAt: mockGetRangeAt,
 	setPosition: vi.fn(),
 	rangeCount: 1,
