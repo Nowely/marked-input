@@ -1,8 +1,10 @@
 import {Caret} from './Caret'
 import {InnerOption} from '../../features/default/types'
-import {wordRegex} from '../../shared/constants'
 import {OverlayMatch} from '../../shared/types'
-import {escape} from '../../features/parsing/Parser/escape'
+import {escape} from '../../shared/escape'
+
+/** Regex to match word characters from the start of a string */
+const wordRegex = new RegExp(/^\w*/)
 
 export class TriggerFinder {
 	span: string

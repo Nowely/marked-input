@@ -1,0 +1,377 @@
+import { bench, describe, afterAll } from 'vitest'
+import { Parser as ParserV1 } from './ParserV1/Parser'
+import { Parser as ParserV2 } from './ParserV2/index'
+import * as fs from 'fs'
+import * as path from 'path'
+
+// Test data generators
+function generateComparisonText(marks: number): string {
+	let result = 'Text with marks:'
+	for (let i = 0; i < marks; i++) {
+		result += ` @[user${i}](User ${i}) and #[tag${i}]`
+	}
+	result += ' end of text.'
+	return result
+}
+
+// Parser configurations
+const parserV1 = new ParserV1(['@[__label__](__value__)', '#[__label__]'])
+const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
+
+// Simplified results storage for saving to JSON
+interface TestResult {
+	name: string
+	category: 'scalability' | 'realWorld' // Internal only, not saved to JSON
+	v1: {
+		ops: { avg: number; min: number; max: number }
+		memoryKB: number
+	}
+	v2: {
+		ops: { avg: number; min: number; max: number }
+		memoryKB: number
+	}
+	ratio: number
+	winner: string
+}
+
+const testResults: TestResult[] = []
+const resultsPath = path.join(__dirname, 'parser.bench.result.json')
+let isCollecting = false // Prevent duplicate collection
+let hasSaved = false // Prevent duplicate saves
+
+// Utility functions
+function calculateStats(values: number[]) {
+	const sorted = [...values].sort((a, b) => a - b)
+	const len = sorted.length
+	return {
+		avg: Math.round(values.reduce((a, b) => a + b, 0) / len),
+		min: Math.round(sorted[0]),
+		max: Math.round(sorted[len - 1])
+	}
+}
+
+function getMemoryUsage() {
+	const usage = process.memoryUsage()
+	return {
+		heapUsed: Math.round(usage.heapUsed / 1024), // KB
+		external: Math.round(usage.external / 1024) // KB
+	}
+}
+
+function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: number) {
+	const ops: number[] = []
+	const memory: ReturnType<typeof getMemoryUsage>[] = []
+
+	for (let i = 0; i < iterations; i++) {
+		const startTime = process.hrtime.bigint()
+
+		parser.split(input)
+
+		const endTime = process.hrtime.bigint()
+		const endMem = getMemoryUsage()
+
+		const timeMs = Number(endTime - startTime) / 1e6
+		const hz = 1000 / timeMs
+
+		ops.push(Math.round(hz))
+		memory.push(endMem)
+	}
+
+	return { ops, memory }
+}
+
+function calculateTrends(currentRun: any, previousRun: any | null): any {
+	if (!previousRun || !previousRun.summary || !previousRun.summary.performance) {
+		return {
+			v1: { changeFromLast: 'N/A', regressions: [] },
+			v2: { changeFromLast: 'N/A', regressions: [] }
+		}
+	}
+
+	const prevV1Ops = previousRun.summary.performance.v1?.avgOps
+	const prevV2Ops = previousRun.summary.performance.v2?.avgOps
+
+	if (!prevV1Ops || !prevV2Ops) {
+		return {
+			v1: { changeFromLast: 'N/A', regressions: [] },
+			v2: { changeFromLast: 'N/A', regressions: [] }
+		}
+	}
+
+	const v1Change = ((currentRun.summary.performance.v1.avgOps - prevV1Ops) / prevV1Ops) * 100
+	const v2Change = ((currentRun.summary.performance.v2.avgOps - prevV2Ops) / prevV2Ops) * 100
+
+	// Find regressions (>5% slowdown)
+	const v1Regressions: string[] = []
+	const v2Regressions: string[] = []
+
+	Object.keys(currentRun.categories).forEach(category => {
+		currentRun.categories[category].tests.forEach((test: any) => {
+			const prevTest = previousRun.categories[category]?.tests.find((t: any) => t.name === test.name)
+			if (prevTest) {
+				const v1Diff = ((test.v1.ops.avg - prevTest.v1.ops.avg) / prevTest.v1.ops.avg) * 100
+				const v2Diff = ((test.v2.ops.avg - prevTest.v2.ops.avg) / prevTest.v2.ops.avg) * 100
+
+				if (v1Diff < -5) v1Regressions.push(test.name)
+				if (v2Diff < -5) v2Regressions.push(test.name)
+			}
+		})
+	})
+
+	return {
+		v1: {
+			changeFromLast: v1Change >= 0 ? `+${v1Change.toFixed(1)}%` : `${v1Change.toFixed(1)}%`,
+			regressions: v1Regressions
+		},
+		v2: {
+			changeFromLast: v2Change >= 0 ? `+${v2Change.toFixed(1)}%` : `${v2Change.toFixed(1)}%`,
+			regressions: v2Regressions
+		}
+	}
+}
+
+function saveResults() {
+	if (testResults.length === 0 || hasSaved) {
+		return
+	}
+	hasSaved = true
+
+	console.log('\n💾 Saving benchmark results...')
+
+	try {
+		// Group by category
+		const categories: any = {
+			scalability: { tests: [] },
+			realWorld: { tests: [] }
+		}
+
+		testResults.forEach(result => {
+			// Remove category field before saving (it's redundant)
+			const { category, ...testData } = result
+			categories[category].tests.push(testData)
+		})
+
+		// Calculate summary
+		const allV1Ops = testResults.map(t => t.v1.ops.avg)
+		const allV2Ops = testResults.map(t => t.v2.ops.avg)
+		const allV1Mem = testResults.map(t => t.v1.memoryKB)
+		const allV2Mem = testResults.map(t => t.v2.memoryKB)
+
+		const v1AvgOps = Math.round(allV1Ops.reduce((a, b) => a + b, 0) / allV1Ops.length)
+		const v2AvgOps = Math.round(allV2Ops.reduce((a, b) => a + b, 0) / allV2Ops.length)
+		const v1AvgMem = Math.round(allV1Mem.reduce((a, b) => a + b, 0) / allV1Mem.length)
+		const v2AvgMem = Math.round(allV2Mem.reduce((a, b) => a + b, 0) / allV2Mem.length)
+
+		const summary = {
+			totalTests: testResults.length,
+			v1Wins: testResults.filter(t => t.winner === 'v1').length,
+			v2Wins: testResults.filter(t => t.winner === 'v2').length,
+			performance: {
+				v1: { avgOps: v1AvgOps },
+				v2: { avgOps: v2AvgOps },
+				ratio: Math.round((v1AvgOps / v2AvgOps) * 100) / 100
+			},
+			memory: {
+				v1: { avgHeapKB: v1AvgMem },
+				v2: { avgHeapKB: v2AvgMem },
+				ratio: Math.round((v2AvgMem / v1AvgMem) * 100) / 100
+			}
+		}
+
+		// Load previous results for trends
+		let previousRun = null
+		try {
+			const existingData = fs.readFileSync(resultsPath, 'utf8')
+			const existingResults = JSON.parse(existingData)
+			if (Array.isArray(existingResults) && existingResults.length > 0) {
+				previousRun = existingResults[0]
+			}
+		} catch (error) {
+			// No previous results
+		}
+
+		const currentRun: any = {
+			timestamp: new Date().toISOString(),
+			trends: {},
+			summary,
+			categories
+		}
+
+		currentRun.trends = calculateTrends(currentRun, previousRun)
+
+		// Load existing results
+		let existingResults = []
+		try {
+			const existingData = fs.readFileSync(resultsPath, 'utf8')
+			if (existingData.trim()) {
+				existingResults = JSON.parse(existingData)
+				if (!Array.isArray(existingResults)) {
+					existingResults = []
+				}
+			}
+		} catch (error) {
+			existingResults = []
+		}
+
+		// Add new run to the beginning
+		existingResults.unshift(currentRun)
+
+		// Keep only last 10 runs
+		if (existingResults.length > 10) {
+			existingResults = existingResults.slice(0, 10)
+		}
+
+		// Save
+		const jsonData = JSON.stringify(existingResults, null, 2)
+		fs.writeFileSync(resultsPath, jsonData)
+
+		console.log(`✅ Results saved to ${resultsPath}`)
+		console.log(`📊 Total runs in history: ${existingResults.length}`)
+		console.log(`\n📈 Summary:`)
+		console.log(`   Performance: v1=${currentRun.summary.performance.v1.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`)
+		console.log(`   Memory: v1=${currentRun.summary.memory.v1.avgHeapKB.toLocaleString()} KB, v2=${currentRun.summary.memory.v2.avgHeapKB.toLocaleString()} KB`)
+		console.log(`   Ratio: ${currentRun.summary.performance.ratio}x performance, ${currentRun.summary.memory.ratio}x memory`)
+		console.log(`   Winner: v${currentRun.summary.v1Wins > currentRun.summary.v2Wins ? '1' : '2'} (${currentRun.summary.v1Wins}:${currentRun.summary.v2Wins})`)
+
+		if (currentRun.trends.v1.regressions.length > 0) {
+			console.log(`\n⚠️  v1 regressions: ${currentRun.trends.v1.regressions.join(', ')}`)
+		}
+		if (currentRun.trends.v2.regressions.length > 0) {
+			console.log(`⚠️  v2 regressions: ${currentRun.trends.v2.regressions.join(', ')}`)
+		}
+
+	} catch (error) {
+		console.error('❌ Failed to save results:', error)
+	}
+}
+
+// Collect results after benchmarks complete
+function collectResult(name: string, category: 'scalability' | 'realWorld', input: string, iterations: number) {
+	// Check if already collected to prevent duplicates
+	if (testResults.find(r => r.name === name && r.category === category)) {
+		return
+	}
+
+	const v1Results = runBenchmark(parserV1, input, iterations)
+	const v2Results = runBenchmark(parserV2, input, iterations)
+
+	const v1Ops = calculateStats(v1Results.ops)
+	const v2Ops = calculateStats(v2Results.ops)
+
+	const v1MemAvg = Math.round(v1Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v1Results.memory.length)
+	const v2MemAvg = Math.round(v2Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v2Results.memory.length)
+
+	const ratio = v1Ops.avg / v2Ops.avg
+	const winner = ratio > 1 ? 'v1' : 'v2'
+
+	testResults.push({
+		name,
+		category,
+		v1: {
+			ops: v1Ops,
+			memoryKB: v1MemAvg
+		},
+		v2: {
+			ops: v2Ops,
+			memoryKB: v2MemAvg
+		},
+		ratio: Math.round(ratio * 100) / 100,
+		winner
+	})
+}
+
+describe('Parser Performance Benchmark Suite', () => {
+	// Scalability tests
+	const sizes = [10, 50, 100, 500]
+
+	sizes.forEach(size => {
+		const input = generateComparisonText(size)
+		const iterations = size <= 100 ? 10 : 5
+
+		describe(`Scalability: ${size} marks`, () => {
+			bench(`Parser v1 (${size} marks)`, () => {
+				parserV1.split(input)
+			}, {
+				time: 1000,
+				iterations
+			})
+
+			bench(`Parser v2 (${size} marks)`, () => {
+				parserV2.split(input)
+			}, {
+				time: 1000,
+				iterations,
+				teardown() {
+					// Collect results after this benchmark completes
+					if (!isCollecting) {
+						isCollecting = true
+						collectResult(`${size} marks`, 'scalability', input, iterations)
+						isCollecting = false
+					}
+				}
+			})
+		})
+	})
+
+	// Real-world scenarios
+	const scenarios = [
+		{
+			name: 'social media',
+			text: 'Hey @[john](John Doe)! Check out #[react] and #[javascript] for #[webdev] projects.'
+		},
+		{
+			name: 'markdown-like',
+			text: 'This is **[bold text]** with @[links](https://example.com) and #[hashtags]!'
+		},
+		{
+			name: 'code comments',
+			text: 'TODO: Fix @[bug123](null pointer) in #[authentication] module.'
+		}
+	]
+
+	scenarios.forEach(({ name, text }) => {
+		describe(`Real-world: ${name}`, () => {
+			bench(`Parser v1: ${name}`, () => {
+				parserV1.split(text)
+			}, {
+				time: 1000,
+				iterations: 20
+			})
+
+			bench(`Parser v2: ${name}`, () => {
+				parserV2.split(text)
+			}, {
+				time: 1000,
+				iterations: 20,
+				teardown() {
+					// Collect results after this benchmark completes
+					if (!isCollecting) {
+						isCollecting = true
+						collectResult(name, 'realWorld', text, 20)
+						isCollecting = false
+					}
+				}
+			})
+		})
+	})
+
+	// Save results at the end - using a final bench to ensure it runs
+	describe('📊 Results', () => {
+		bench('Save to JSON', () => {
+			// Benchmark that saves results
+		}, {
+			setup() {
+				// Save happens once in setup
+				if (testResults.length > 0) {
+					saveResults()
+				}
+			},
+			time: 1,
+			iterations: 1
+		})
+	})
+})
+
+// Export for external usage
+export { saveResults }
+

@@ -1,4 +1,5 @@
-import {EventKey, MarkStruct, OverlayMatch} from '../../shared/types'
+import {MarkStruct} from '../parsing/ParserV1/types'
+import {EventKey, OverlayMatch} from '../../shared/types'
 
 export const SystemEvent = {
 	STORE_UPDATED: Symbol() as EventKey,

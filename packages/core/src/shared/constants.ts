@@ -1,4 +1,4 @@
-import {EventKey, MarkStruct, OverlayMatch} from './types'
+
 
 export enum KEYBOARD {
 	// Navigation Keys
@@ -23,11 +23,4 @@ export enum KEYBOARD {
 
 	// UI Keys
 	ESC = 'Escape',
-}
-
-export const wordRegex = new RegExp(/^\w*/)
-
-export enum PLACEHOLDER {
-	LABEL = '__label__',
-	VALUE = '__value__',
 }

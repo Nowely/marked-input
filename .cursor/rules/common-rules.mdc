@@ -1,0 +1,66 @@
+---
+description: List of Rules
+alwaysApply: false
+---
+# List of Rules
+
+## Dependency Management
+1. The project uses **only pnpm** - this is a strict requirement (protected by preinstall script)
+2. Use `pnpm install` instead of `npm install` or `yarn`
+3. For running scripts, use `pnpm run <script>` or shortcuts `pnpm <script>`
+
+## Code Style and Quality
+4. **Linting**: use `oxlint` to check code before commits
+   - `pnpm lint` - check
+   - `pnpm lint:fix` - automatic fix
+   - `pnpm lint:fix:suggest` - fix with suggestions
+   - `pnpm lint:fix:danger` - fix with risks (use cautiously)
+5. **Formatting**: use `prettier` for code formatting
+   - `pnpm format` - check formatting
+   - `pnpm format:write` - automatic formatting
+6. **Typing**: use TypeScript strictly - all files must be typed
+   - `pnpm typecheck` - type checking
+
+## Testing
+7. **Required tests**: write tests for all new features and bug fixes
+   - `pnpm test` - run all tests
+   - `pnpm test:ui` - UI tests
+   - `pnpm test:watch` - tests in watch mode
+   - `pnpm test:integration` - integration tests
+   - `pnpm test:coverage` - tests with coverage
+8. **Benchmarks**: run benchmarks for critical performance changes
+   - `pnpm bench` - run benchmarks
+
+## Project Architecture
+9. **Monorepo**: project is divided into packages in the `packages/` directory
+   - `core` - main parsing and text processing logic
+   - `markput` - React components (main package for publishing)
+   - `app` - demo application
+   - `storybook` - component documentation
+   - `tests` - tests and benchmarks
+10. **Exports**: when changing API, update `packages/markput/index.ts` for correct export
+11. **Internal dependencies**: use workspace references (`workspace:*`) for dependencies between packages
+
+## Documentation
+15. **README**: update README files when changing API or functionality
+    - Root README.md - main documentation
+    - README in packages/*/README.md - package documentation
+16. **Storybook**: add new components to storybook for demonstration
+    - `pnpm storybook:dev` - development
+    - `pnpm storybook:build` - build
+
+## Development Process
+17. **Local development**: use `pnpm dev` to run the demo application
+18. **Building**: test builds before publishing
+    - `pnpm build` - build main package
+    - `pnpm build:all` - build all packages
+19. **Publishing**: use `pnpm publish` to publish the package (rc-marked-input)
+
+## Task Completion
+20. When completing a task, add the following sections:
+    - **Encountered Issues** - to share experience
+    - **Questions and Suggestions** - inaccuracies noticed and suggestions for improvement can be formulated as questions for future application
+
+## Communication
+21. Ask if you have questions - better to clarify than to assume
+22. Suggest updating the related README if it exists. Often in the same logical directory next to the file being changed there is a README that needs to be updated.

@@ -1,4 +1,6 @@
-import {MarkStruct, Markup, OverlayTrigger} from '../../shared/types'
+import {MarkStruct} from '../parsing/ParserV1/types'
+import {OverlayTrigger} from '../../shared/types'
+import {Markup} from '../parsing/ParserV1'
 
 export interface InnerOption {
 	markup: Markup
