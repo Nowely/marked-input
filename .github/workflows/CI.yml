@@ -45,12 +45,33 @@ jobs:
     format:
         name: Check Formatting
         runs-on: ubuntu-latest
+        if: github.event_name == 'pull_request'
+        permissions:
+            contents: write
         steps:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
 
-            - name: Check Format
-              run: pnpm run format
+            - name: Apply Formatting
+              run: pnpm run format:write
+
+            - name: Check for Changes
+              id: verify
+              run: |
+                  if ! git diff --quiet; then
+                      echo "changes=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "changes=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Commit and Push Changes
+              if: steps.verify.outputs.changes == 'true'
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add .
+                  git commit -m "chore: apply automatic formatting [skip ci]"
+                  git push
 
     build:
         name: Build Package
