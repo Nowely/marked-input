@@ -11,8 +11,7 @@ export class Caret {
 	}
 
 	//TODO get span from state?
-	static getFocusedSpan() {
-		return window.getSelection()?.anchorNode?.textContent ?? ''
+	static getFocusedSpan() {return window.getSelection()?.anchorNode?.textContent ?? ''
 	}
 
 	static getSelectedNode() {
