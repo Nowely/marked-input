@@ -56,6 +56,7 @@ jobs:
               run: |
                   git fetch origin ${{ github.head_ref }}
                   git checkout ${{ github.head_ref }}
+                  git pull origin ${{ github.head_ref }}
 
             - name: Apply Formatting
               run: pnpm run format:write
@@ -74,7 +75,6 @@ jobs:
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git pull --rebase origin ${{ github.head_ref }}
                   git add .
                   git commit -m "chore: apply automatic formatting [skip ci]"
                   git push origin ${{ github.head_ref }}
