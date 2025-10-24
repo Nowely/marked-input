@@ -45,23 +45,36 @@ jobs:
     format:
         name: Check Formatting
         runs-on: ubuntu-latest
-        if: github.event_name == 'pull_request' && !contains(github.event.head_commit.message, 'chore: apply automatic formatting')
+        if: github.event_name == 'pull_request'
         permissions:
             contents: write
         steps:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
 
-            - name: Checkout PR Branch
+            - name: Check if Last Commit is Auto-format
+              id: check_commit
               run: |
                   git fetch origin ${{ github.head_ref }}
+                  LAST_COMMIT_MSG=$(git log origin/${{ github.head_ref }} -1 --pretty=%B)
+                  if [[ "$LAST_COMMIT_MSG" == "chore: apply automatic formatting" ]]; then
+                      echo "skip=true" >> $GITHUB_OUTPUT
+                  else
+                      echo "skip=false" >> $GITHUB_OUTPUT
+                  fi
+
+            - name: Checkout PR Branch
+              if: steps.check_commit.outputs.skip == 'false'
+              run: |
                   git checkout ${{ github.head_ref }}
                   git pull origin ${{ github.head_ref }}
 
             - name: Apply Formatting
+              if: steps.check_commit.outputs.skip == 'false'
               run: pnpm run format:write
 
             - name: Check for Changes
+              if: steps.check_commit.outputs.skip == 'false'
               id: verify
               run: |
                   if ! git diff --quiet; then
@@ -71,7 +84,7 @@ jobs:
                   fi
 
             - name: Commit and Push Changes
-              if: steps.verify.outputs.changes == 'true'
+              if: steps.check_commit.outputs.skip == 'false' && steps.verify.outputs.changes == 'true'
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
