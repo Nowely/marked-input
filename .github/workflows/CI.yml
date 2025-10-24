@@ -52,6 +52,11 @@ jobs:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
 
+            - name: Checkout PR Branch
+              run: |
+                  git fetch origin ${{ github.head_ref }}
+                  git checkout ${{ github.head_ref }}
+
             - name: Apply Formatting
               run: pnpm run format:write
 
@@ -69,9 +74,10 @@ jobs:
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git pull --rebase origin ${{ github.head_ref }}
                   git add .
                   git commit -m "chore: apply automatic formatting [skip ci]"
-                  git push origin HEAD:${{ github.head_ref }}
+                  git push origin ${{ github.head_ref }}
 
     build:
         name: Build Package
