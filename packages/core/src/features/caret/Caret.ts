@@ -1,7 +1,6 @@
 //TODO refact caret
 export class Caret {
-	static get isSelectedPosition() {
-		const selection = window.getSelection()
+	static get isSelectedPosition() {const selection = window.getSelection()
 		if (!selection) return
 		return selection.isCollapsed
 	}
