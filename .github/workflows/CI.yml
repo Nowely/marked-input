@@ -51,43 +51,12 @@ jobs:
 
             - name: Run Build
               run: pnpm run build
-
     format:
-        name: Auto Format
+        name: Check Formatting
         runs-on: ubuntu-latest
-        needs: [tests, typecheck, lint, build]
-        if: >-
-            github.event_name == 'pull_request' && success() &&
-            !contains(github.event.head_commit.message, 'chore: apply automatic formatting')
-        permissions:
-            contents: write
         steps:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
 
-            - name: Checkout PR Branch
-              run: |
-                  git fetch origin ${{ github.head_ref }}
-                  git checkout ${{ github.head_ref }}
-                  git pull origin ${{ github.head_ref }}
-
-            - name: Apply Formatting
-              run: pnpm run format:write
-
-            - name: Check for Changes
-              id: verify
-              run: |
-                  if ! git diff --quiet; then
-                      echo "changes=true" >> $GITHUB_OUTPUT
-                  else
-                      echo "changes=false" >> $GITHUB_OUTPUT
-                  fi
-
-            - name: Commit and Push Changes
-              if: steps.verify.outputs.changes == 'true'
-              run: |
-                  git config user.name "github-actions[bot]"
-                  git config user.email "github-actions[bot]@users.noreply.github.com"
-                  git add .
-                  git commit -m "chore: apply automatic formatting"
-                  git push origin ${{ github.head_ref }}
+            - name: Check Code Formatting
+              run: pnpm run format
