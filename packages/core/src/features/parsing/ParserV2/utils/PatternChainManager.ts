@@ -102,6 +102,18 @@ export class PatternChainManager {
 	}
 
 	/**
+	 * Gets all active chains across all waiting lists
+	 * Used for cancellation logic when a pattern completes
+	 */
+	getAllChains(): PatternChain[] {
+		const allChains: PatternChain[] = []
+		for (const [, chains] of this.activeChains) {
+			allChains.push(...chains)
+		}
+		return allChains
+	}
+
+	/**
 	 * Clears all active chains
 	 */
 	clear(): void {

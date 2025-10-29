@@ -47,7 +47,7 @@ export class AhoCorasick {
 	/**
 	 * Searches for all pattern occurrences in the text
 	 * @param text - Text to search in
-	 * @returns Array of matches (unsorted)
+	 * @returns Array of matches (order may vary - depends on text traversal and trie structure)
 	 */
 	search(text: string): SegmentMatch[] {
 		const results: SegmentMatch[] = []
@@ -82,7 +82,7 @@ export class AhoCorasick {
 			}
 		}
 
-		return results.sort((a, b) => a.start - b.start || a.end - b.end)
+		return results // No sorting - PatternProcessor handles order-independence
 	}
 
 	/**

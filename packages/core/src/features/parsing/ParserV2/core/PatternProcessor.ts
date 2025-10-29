@@ -27,13 +27,21 @@ export class PatternProcessor {
 	 * Processes all segment matches and returns validated, sorted pattern matches
 	 *
 	 * Pipeline:
+	 * 0. Sort segment matches to ensure deterministic processing (order-independent)
 	 * 1. Build ALL possible pattern chains (even invalid ones)
 	 * 2. Validate and filter matches
 	 * 3. Sort matches for tree building
 	 */
 	processMatches(segmentMatches: SegmentMatch[], input: string): PatternMatch[] {
+		// 0. Sort segment matches to ensure deterministic processing
+		// This makes PatternProcessor independent of AhoCorasick output order
+		// Sort by: start position, then end position, then pattern index
+		const sortedSegments = [...segmentMatches].sort((a, b) => 
+			a.start - b.start || a.end - b.end || a.index - b.index
+		)
+
 		// 1. Build all possible pattern chains
-		const allMatches = this.chainMatcher.buildChains(segmentMatches)
+		const allMatches = this.chainMatcher.buildChains(sortedSegments)
 
 		// 2. Validate and filter matches
 		const validated = this.validator.validateAndFilter(allMatches, input)
