@@ -45,11 +45,10 @@ export function toString(tokens: Token[], markups: Markup[]): string {
 			result += annotate(markup, {
 				value: token.value,
 				meta: token.meta,
-				nested: nestedContent
+				nested: nestedContent,
 			})
 		}
 	}
 
 	return result
 }
-

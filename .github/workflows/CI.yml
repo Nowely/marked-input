@@ -2,7 +2,10 @@ name: CI
 
 on:
     workflow_dispatch:
+    pull_request:
+        branches: ['**']
     push:
+        branches: [main, master]
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +22,26 @@ jobs:
             - name: Run Tests
               run: pnpm test
 
+    typecheck:
+        name: Type Check
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup Environment
+              uses: nowely/action-setup-node@v1
+
+            - name: Run Typecheck
+              run: pnpm run typecheck
+
+    lint:
+        name: Lint Code
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup Environment
+              uses: nowely/action-setup-node@v1
+
+            - name: Run Lint
+              run: pnpm run lint
+
     build:
         name: Build Package
         runs-on: ubuntu-latest
@@ -28,3 +51,12 @@ jobs:
 
             - name: Run Build
               run: pnpm run build
+    format:
+        name: Check Formatting
+        runs-on: ubuntu-latest
+        steps:
+            - name: Setup Environment
+              uses: nowely/action-setup-node@v1
+
+            - name: Check Code Formatting
+              run: pnpm run format

@@ -41,7 +41,7 @@ export class MarkupRegistry {
 		})
 
 		this.segments = Array.from(this.segmentsMap.keys())
-		
+
 		// Pre-sort descriptors by first segment for optimization
 		this.buildSortedDescriptorMaps()
 	}
@@ -53,10 +53,8 @@ export class MarkupRegistry {
 	private buildSortedDescriptorMaps(): void {
 		for (const [segment, descriptors] of this.segmentsMap) {
 			// Find descriptors where this segment is the first one
-			const descriptorsWithFirstSegment = descriptors.filter(
-				descriptor => descriptor.segments[0] === segment
-			)
-			
+			const descriptorsWithFirstSegment = descriptors.filter(descriptor => descriptor.segments[0] === segment)
+
 			// Sort them once by priority
 			if (descriptorsWithFirstSegment.length > 0) {
 				const sorted = [...descriptorsWithFirstSegment].sort(PatternSorting.compareDescriptorPriority)

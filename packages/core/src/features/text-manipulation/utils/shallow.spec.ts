@@ -52,7 +52,7 @@ describe(`Utility: ${shallow.name}`, () => {
 
 		it('should return false for objects with different properties', () => {
 			const obj1 = {a: 1, b: 2}
-			const obj2 = {a: 1, c: 2}
+			const obj2 = {a: 1, c: 2} as Record<string, number>
 			expect(shallow(obj1, obj2)).toBe(false)
 		})
 
@@ -101,10 +101,10 @@ describe(`Utility: ${shallow.name}`, () => {
 
 	describe('mixed types', () => {
 		it('should return false when comparing object to non-object', () => {
-			expect(shallow({}, null)).toBe(false)
-			expect(shallow({}, undefined)).toBe(false)
-			expect(shallow({}, 5)).toBe(false)
-			expect(shallow({}, 'string')).toBe(false)
+			expect(shallow({}, null as any)).toBe(false)
+			expect(shallow({}, undefined as any)).toBe(false)
+			expect(shallow({}, 5 as any)).toBe(false)
+			expect(shallow({}, 'string' as any)).toBe(false)
 		})
 
 		it('should return true when comparing empty array and empty object', () => {
@@ -124,12 +124,12 @@ describe(`Utility: ${shallow.name}`, () => {
 
 	describe('prototype and inheritance', () => {
 		it('should only compare own properties', () => {
-			function Constructor() {
+			function Constructor(this: any) {
 				this.ownProp = 'value'
 			}
 			Constructor.prototype.inheritedProp = 'inherited'
 
-			const obj1 = new Constructor()
+			const obj1 = new (Constructor as any)()
 			const obj2 = {ownProp: 'value'}
 
 			expect(shallow(obj1, obj2)).toBe(true)

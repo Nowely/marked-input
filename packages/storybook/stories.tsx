@@ -6,7 +6,7 @@ import * as MaterialStories from './stories/Material.stories'
 import * as OverlayStories from './stories/Overlay.stories'
 import * as RsuiteStories from './stories/Rsuite.stories'
 
-export const Story = {
+export const Story: Record<string, Record<string, any>> = {
 	Ant: composeStories(AntStories),
 	Base: composeStories(BaseStories),
 	Dynamic: composeStories(DynamicStories),

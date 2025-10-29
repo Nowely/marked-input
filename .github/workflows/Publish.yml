@@ -17,8 +17,8 @@ jobs:
 
             - name: Setup npm registry
               run: |
-                echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-                npm config set registry https://registry.npmjs.org/
+                  echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+                  npm config set registry https://registry.npmjs.org/
 
             - id: publish
               name: Publish to npm

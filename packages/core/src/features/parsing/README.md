@@ -61,6 +61,7 @@ pnpm -F core run test:bench:watch
 Каждый тест включает следующие метрики:
 
 **Operations (ops)**
+
 - `avg` - среднее количество операций в секунду
 - `min` - минимальное значение
 - `max` - максимальное значение
@@ -68,14 +69,17 @@ pnpm -F core run test:bench:watch
 - `p99` - 99-й перцентиль
 
 **Latency (latency)**
+
 - Время выполнения одной операции в миллисекундах
 - Те же статистики: avg, min, max, p95, p99
 
 **Memory (memory)**
+
 - `heapUsed` - используемая heap память в KB
 - `external` - внешняя память в KB
 
 **Comparison**
+
 - `ratio` - соотношение производительности v1/v2
 - `winner` - какой парсер быстрее
 - `performanceGap` - разница в процентах
@@ -89,6 +93,7 @@ pnpm -F core run test:bench:watch
 
 **realWorld**
 Реальные сценарии использования:
+
 - social media - посты с упоминаниями и хэштегами
 - markdown-like - текст с markdown-подобной разметкой
 - code comments - комментарии кода с аннотациями
@@ -96,6 +101,7 @@ pnpm -F core run test:bench:watch
 #### Trends
 
 Автоматический анализ изменений производительности между запусками:
+
 - `changeFromLast` - процентное изменение с последнего запуска
 - `regressions` - список тестов с деградацией производительности (>5%)
 

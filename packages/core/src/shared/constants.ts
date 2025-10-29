@@ -1,5 +1,3 @@
-
-
 export enum KEYBOARD {
 	// Navigation Keys
 	UP = 'ArrowUp',

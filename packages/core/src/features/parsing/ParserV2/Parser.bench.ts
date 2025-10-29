@@ -21,7 +21,9 @@ describe('ParserV2 Performance Benchmark', () => {
 
 		const duration = end - start
 		console.log(`\n📊 Simple parsing (100 marks): ${duration.toFixed(2)}ms`)
-		console.log(`   Input length: ${input.length} chars, marks found: ${result.filter(t => t.type === 'mark').length}`)
+		console.log(
+			`   Input length: ${input.length} chars, marks found: ${result.filter(t => t.type === 'mark').length}`
+		)
 
 		expect(result.filter(t => t.type === 'mark')).toHaveLength(100)
 
@@ -100,7 +102,9 @@ describe('ParserV2 Performance Benchmark', () => {
 		// Performance check: should be fast (less than 5ms per iteration on modern hardware)
 		// This is a soft check to avoid flaky tests on slower machines
 		if (avgDuration > 20) {
-			console.warn(`⚠️  Mixed patterns parsing took longer than expected: ${avgDuration.toFixed(3)}ms per iteration`)
+			console.warn(
+				`⚠️  Mixed patterns parsing took longer than expected: ${avgDuration.toFixed(3)}ms per iteration`
+			)
 		}
 	})
 

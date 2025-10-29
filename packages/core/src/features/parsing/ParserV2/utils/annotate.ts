@@ -3,11 +3,11 @@ import {Markup} from '../types'
 
 /**
  * Make annotation from the markup for ParserV2
- * 
+ *
  * @param markup - Markup pattern with __value__, __meta__, and/or __nested__ placeholders
  * @param params - Object with optional value, meta, and nested strings
  * @returns Annotated string with placeholders replaced
- * 
+ *
  * @example
  * ```typescript
  * annotate('@[__value__]', { value: 'Hello' }) // '@[Hello]'
@@ -39,4 +39,3 @@ export function annotate(
 
 	return annotation
 }
-

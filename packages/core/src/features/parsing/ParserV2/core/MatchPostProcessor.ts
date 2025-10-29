@@ -13,11 +13,7 @@ export class MatchPostProcessor {
 	 * No filtering - matches are already validated by MatchValidator
 	 * No sorting - matches are already sorted by PriorityResolver
 	 */
-	static convertToResults(
-		matches: PatternMatch[],
-		input: string,
-		descriptors: MarkupDescriptor[]
-	): MatchResult[] {
+	static convertToResults(matches: PatternMatch[], input: string, descriptors: MarkupDescriptor[]): MatchResult[] {
 		const results: MatchResult[] = []
 
 		for (const patternMatch of matches) {
@@ -40,7 +36,7 @@ export class MatchPostProcessor {
 				meta: extracted.meta,
 				metaStart: extracted.metaStart,
 				metaEnd: extracted.metaEnd,
-				descriptorIndex: patternMatch.descriptorIndex
+				descriptorIndex: patternMatch.descriptorIndex,
 			})
 		}
 
@@ -50,7 +46,10 @@ export class MatchPostProcessor {
 	/**
 	 * Extracts value, nested content, and meta from match parts
 	 */
-	static extractContent(parts: PatternPart[], descriptor: MarkupDescriptor): {
+	static extractContent(
+		parts: PatternPart[],
+		descriptor: MarkupDescriptor
+	): {
 		value: string
 		valueStart: number
 		valueEnd: number

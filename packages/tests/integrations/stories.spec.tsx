@@ -1,6 +1,7 @@
+/// <reference types="vitest" />
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
-import {describe, expect} from 'vitest'
+import {describe, expect, it} from 'vitest'
 import {Story} from '../../storybook/stories'
 
 //TODO correct type

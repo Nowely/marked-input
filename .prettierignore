@@ -1,0 +1,17 @@
+# Lock files - generated automatically
+pnpm-lock.yaml
+package.json
+
+# Build outputs
+dist/
+coverage/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

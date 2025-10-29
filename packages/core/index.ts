@@ -3,12 +3,7 @@ export {assertAnnotated} from './src/shared/checkers/assertAnnotated'
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
 export {isAnnotated} from './src/features/parsing/ParserV1/utils/isAnnotated'
 export {KEYBOARD} from './src/shared/constants'
-export type {
-	OverlayMatch,
-	EventKey,
-	Listener,
-	OverlayTrigger,
-} from './src/shared/types'
+export type {OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'
 
 // Feature exports
 export type {InnerOption, InnerMarkedInputProps} from './src/features/default'
@@ -21,7 +16,14 @@ export {
 	denote as denoteV2,
 	toString as toStringV2,
 } from './src/features/parsing/ParserV2'
-export type {Markup as ParserMarkup, label, value, MarkMatch, MarkStruct, PieceType} from './src/features/parsing/ParserV1/types'
+export type {
+	Markup as ParserMarkup,
+	label,
+	value,
+	MarkMatch,
+	MarkStruct,
+	PieceType,
+} from './src/features/parsing/ParserV1/types'
 export type {Markup as ParserV2Markup} from './src/features/parsing/ParserV2'
 export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString, shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'

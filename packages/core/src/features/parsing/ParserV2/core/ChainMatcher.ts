@@ -26,7 +26,7 @@ export class ChainMatcher {
 	 * Builds all possible pattern chains from segment matches
 	 * Strategy: Create ALL possible matches (even invalid ones),
 	 * validation/filtering happens later in MatchValidator
-	 * 
+	 *
 	 * OPTIMIZATION: Use IntervalSet instead of Set<number> for O(log N) overlap checks
 	 */
 	buildChains(segmentMatches: SegmentMatch[]): PatternMatch[] {
@@ -49,11 +49,7 @@ export class ChainMatcher {
 	 * Extracted from PatternSorting.sortWaitingChains for in-place sorting
 	 * Returns: negative if a has higher priority, positive if b has higher priority
 	 */
-	private compareChainPriority(
-		a: PatternChain,
-		b: PatternChain,
-		nextMatch: {value: string; start: number}
-	): number {
+	private compareChainPriority(a: PatternChain, b: PatternChain, nextMatch: {value: string; start: number}): number {
 		const aDescriptor = this.descriptors[a.descriptorIndex]
 		const bDescriptor = this.descriptors[b.descriptorIndex]
 
@@ -91,7 +87,7 @@ export class ChainMatcher {
 	 * 1. Chains without nested patterns in __nested__ gaps (ready to close immediately)
 	 * 2. Use lookahead to decide between completing and extending
 	 * 3. Later start = inner = higher priority (LIFO)
-	 * 
+	 *
 	 * OPTIMIZATION: Sort only once per segment, reuse sorted list + use IntervalSet
 	 */
 	private processWaitingChains(
@@ -125,7 +121,7 @@ export class ChainMatcher {
 			// Check if chain expects exactly this segment
 			const descriptor = this.descriptors[chain.descriptorIndex]
 			const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
-			
+
 			// If current match doesn't exactly match expected segment, skip this chain
 			if (expectedSegment !== match.value) {
 				continue // Chain expects a different segment
@@ -138,7 +134,7 @@ export class ChainMatcher {
 			}
 
 			const {completed, extended} = this.patternBuilder.tryExtendChain(chain, match, false)
-		
+
 			if (completed) {
 				results.push(completed)
 
@@ -146,13 +142,13 @@ export class ChainMatcher {
 				const completeStart = completed.parts[0].start
 				const completeEnd = completed.parts[completed.parts.length - 1].end
 				consumedRanges.addRange(completeStart, completeEnd)
-				
+
 				// Remove from nesting stack
 				const stackIndex = nestingStack.indexOf(chain)
 				if (stackIndex !== -1) {
 					nestingStack.splice(stackIndex, 1)
 				}
-				
+
 				// Cancel any other chains that start at the same position and are waiting for segments
 				// within the completed pattern's range
 				// This handles cases like @[simple] completing while @[simple](value) is still waiting
@@ -184,10 +180,10 @@ export class ChainMatcher {
 				// Chain was extended but not completed - add back to waiting
 				const nextSegmentValue = this.descriptors[extended.descriptorIndex].segments[extended.nextSegmentIndex]
 				this.chainManager.addToWaiting(nextSegmentValue, extended)
-				
+
 				// DO NOT mark positions as consumed when extending a chain
 				// Only mark them when the chain completes
-				
+
 				// Update in nesting stack
 				const stackIndex = nestingStack.indexOf(chain)
 				if (stackIndex !== -1) {
@@ -204,10 +200,10 @@ export class ChainMatcher {
 	 * Starts new chains for patterns that begin with current segment
 	 * Context-aware: tracks nesting level and marks parent chains as having nested content
 	 * Prioritizes more specific patterns (longer triggers, more complex patterns) to prevent conflicts
-	 * 
+	 *
 	 * NOTE: activePatterns check removed to allow ALL possible matches to be created.
 	 * Invalid matches will be filtered later.
-	 * 
+	 *
 	 * OPTIMIZATION: Descriptors are pre-sorted, use IntervalSet for range checks
 	 */
 	private startNewChains(
@@ -222,7 +218,6 @@ export class ChainMatcher {
 
 		// Descriptors are already sorted by priority in MarkupRegistry
 		for (const descriptor of descriptors) {
-
 			// Skip if this segment range overlaps with any consumed range (O(log N) instead of O(M))
 			if (consumedRanges.overlaps(match.start, match.end)) {
 				continue
@@ -241,7 +236,7 @@ export class ChainMatcher {
 			if (hasOverlappingLongerPattern) {
 				continue // Skip shorter pattern - longer one already claimed overlapping position
 			}
-			
+
 			// Determine nesting level based on current stack
 			const descriptorIndex = this.descriptors.indexOf(descriptor)
 			const nestingLevel = nestingStack.length
@@ -251,12 +246,12 @@ export class ChainMatcher {
 			if (completed) {
 				// Single-segment pattern was completed immediately
 				results.push(completed)
-				
+
 				// Mark entire range of completed pattern as consumed
 				const completeStart = completed.parts[0].start
 				const completeEnd = completed.parts[completed.parts.length - 1].end
 				consumedRanges.addRange(completeStart, completeEnd)
-				
+
 				consumedStartPositions.set(match.start, descriptor.segments[0].length)
 			} else if (chain) {
 				// Mark all parent chains as having nested patterns
@@ -265,13 +260,13 @@ export class ChainMatcher {
 						parentChain.hasNestedPatterns = true
 					}
 				}
-				
+
 				// DO NOT mark positions as consumed when starting a chain
 				// Only mark them when the chain completes
 				// This allows nested patterns like **bold** to work correctly
-				
-			// Chain was created and needs to wait for next segment
-			const nextSegmentValue = descriptor.segments[chain.nextSegmentIndex]
+
+				// Chain was created and needs to wait for next segment
+				const nextSegmentValue = descriptor.segments[chain.nextSegmentIndex]
 				this.chainManager.addToWaiting(nextSegmentValue, chain)
 				nestingStack.push(chain)
 				// Mark all positions in the starting segment to prevent overlapping prefix patterns
@@ -282,4 +277,3 @@ export class ChainMatcher {
 		}
 	}
 }
-

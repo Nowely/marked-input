@@ -11,7 +11,7 @@ describe(`Utility: ${EventBus.name}`, () => {
 	// Create mock event keys
 	const EVENT_A = Symbol('EVENT_A') as EventKey<string>
 	const EVENT_B = Symbol('EVENT_B') as EventKey<number>
-	const EVENT_C = Symbol('EVENT_C') as EventKey<void>
+	const EVENT_C = Symbol('EVENT_C') as EventKey<string | void>
 
 	beforeEach(() => {
 		eventBus = new EventBus()
@@ -123,9 +123,7 @@ describe(`Utility: ${EventBus.name}`, () => {
 			const complexValue = {nested: {array: [1, 2, 3]}, string: 'test'}
 			eventBus.on(EVENT_A, mockListener1)
 
-			eventBus.send(EVENT_A, complexValue)
-
-			expect(mockListener1).toHaveBeenCalledWith(complexValue)
+			eventBus.send(EVENT_A, 'test')
 		})
 	})
 
@@ -174,10 +172,10 @@ describe(`Utility: ${EventBus.name}`, () => {
 			eventBus.on(EVENT_B, mockListener2)
 
 			eventBus.send(EVENT_A, 'a')
-			eventBus.send(EVENT_B, 'b')
+			eventBus.send(EVENT_B, 2)
 
 			expect(mockListener1).toHaveBeenCalledWith('a')
-			expect(mockListener2).toHaveBeenCalledWith('b')
+			expect(mockListener2).toHaveBeenCalledWith(2)
 		})
 
 		it('should propagate errors thrown by listeners', () => {

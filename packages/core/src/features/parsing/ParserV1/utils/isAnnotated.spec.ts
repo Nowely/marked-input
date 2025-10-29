@@ -84,12 +84,12 @@ describe(`Utility: ${isAnnotated.name}`, () => {
 	})
 
 	it('should return false for objects where annotation is inherited', () => {
-		function TestObject() {
+		function TestObject(this: any) {
 			this.otherProp = 'value'
 		}
 		TestObject.prototype.annotation = 'inherited'
 
-		const obj = new TestObject()
+		const obj = new (TestObject as any)()
 
 		// 'in' operator checks prototype chain, so this should return true
 		expect(isAnnotated(obj)).toBe(true)

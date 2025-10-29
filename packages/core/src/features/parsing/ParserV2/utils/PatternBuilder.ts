@@ -23,16 +23,20 @@ export class PatternBuilder {
 	/**
 	 * Tries to extend a chain with a new segment match
 	 * Returns {completed: PatternMatch | null, extended: PatternChain | null}
-	 * 
+	 *
 	 * OPTIMIZATION: Structural sharing - reuse existing parts array, only append new parts
 	 */
-	tryExtendChain(chain: PatternChain, match: SegmentMatch, isClosingSegment: boolean = false): { completed: PatternMatch | null; extended: PatternChain | null } {
+	tryExtendChain(
+		chain: PatternChain,
+		match: SegmentMatch,
+		isClosingSegment: boolean = false
+	): {completed: PatternMatch | null; extended: PatternChain | null} {
 		const descriptor = this.descriptors[chain.descriptorIndex]
 
 		// Check if this segment matches what this chain expects
 		const expectedSegment = descriptor.segments[chain.nextSegmentIndex]
 		if (expectedSegment !== match.value) {
-			return { completed: null, extended: null } // This segment doesn't match what this chain expects
+			return {completed: null, extended: null} // This segment doesn't match what this chain expects
 		}
 
 		// Context-aware matching: if this is a closing segment and pattern has no nested patterns,
@@ -51,19 +55,19 @@ export class PatternBuilder {
 		// Calculate gap positions
 		const gapStart = chain.pos
 		const gapEnd = match.start - 1
-		
+
 		const newGap: PatternPart = {
 			type: 'gap',
 			start: gapStart,
 			end: gapStart > gapEnd ? gapStart - 1 : gapEnd, // Ensure start <= end
-			gapType
+			gapType,
 		}
 
 		const newSegment: PatternPart = {
 			type: 'segment',
 			start: match.start,
 			end: match.end,
-			value: match.value
+			value: match.value,
 		}
 
 		// Create new parts array with structural sharing
@@ -75,7 +79,7 @@ export class PatternBuilder {
 			pos: match.end + 1,
 			parts: newParts,
 			hasNestedPatterns: chain.hasNestedPatterns,
-			nestingLevel: chain.nestingLevel
+			nestingLevel: chain.nestingLevel,
 		}
 
 		// Check if pattern is complete
@@ -83,34 +87,40 @@ export class PatternBuilder {
 			return {
 				completed: {
 					descriptorIndex: newChain.descriptorIndex,
-					parts: newChain.parts // No need to copy, we just created a new array
+					parts: newChain.parts, // No need to copy, we just created a new array
 				},
-				extended: null
+				extended: null,
 			}
 		}
 
-		return { completed: null, extended: newChain }
+		return {completed: null, extended: newChain}
 	}
 
 	/**
 	 * Creates a new chain for starting pattern
 	 * Returns {completed: PatternMatch | null, chain: PatternChain | null}
 	 */
-	createNewChain(descriptorIndex: number, match: SegmentMatch, nestingLevel: number = 0): { completed: PatternMatch | null; chain: PatternChain | null } {
+	createNewChain(
+		descriptorIndex: number,
+		match: SegmentMatch,
+		nestingLevel: number = 0
+	): {completed: PatternMatch | null; chain: PatternChain | null} {
 		const descriptor = this.descriptors[descriptorIndex]
 
 		const newPatternChain: PatternChain = {
 			descriptorIndex,
 			nextSegmentIndex: 1,
 			pos: match.end + 1,
-			parts: [{
-				type: 'segment',
-				start: match.start,
-				end: match.end,
-				value: match.value
-			}],
+			parts: [
+				{
+					type: 'segment',
+					start: match.start,
+					end: match.end,
+					value: match.value,
+				},
+			],
 			hasNestedPatterns: false,
-			nestingLevel
+			nestingLevel,
 		}
 
 		// Single-segment pattern is immediately complete
@@ -118,12 +128,12 @@ export class PatternBuilder {
 			return {
 				completed: {
 					descriptorIndex: newPatternChain.descriptorIndex,
-					parts: newPatternChain.parts
+					parts: newPatternChain.parts,
 				},
-				chain: null
+				chain: null,
 			}
 		}
 
-		return { completed: null, chain: newPatternChain }
+		return {completed: null, chain: newPatternChain}
 	}
 }

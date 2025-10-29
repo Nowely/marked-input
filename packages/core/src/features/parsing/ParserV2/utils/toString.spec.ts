@@ -86,4 +86,3 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 })
-

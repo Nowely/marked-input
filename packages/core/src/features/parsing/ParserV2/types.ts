@@ -90,13 +90,11 @@ export type Markup =
 	| `${ValueMarkup}${MetaMarkup}${NestedMarkup}`
 	| `${ValueMarkup}${NestedMarkup}`
 	| `${ValueMarkup}${NestedMarkup}${MetaMarkup}`
-
 	| `${NestedMarkup}`
 	| `${NestedMarkup}${MetaMarkup}`
 	| `${NestedMarkup}${MetaMarkup}${ValueMarkup}`
 	| `${NestedMarkup}${ValueMarkup}`
 	| `${NestedMarkup}${ValueMarkup}${MetaMarkup}`
-
 	| `${MetaMarkup}${ValueMarkup}`
 	| `${MetaMarkup}${ValueMarkup}${NestedMarkup}`
 	| `${MetaMarkup}${NestedMarkup}`

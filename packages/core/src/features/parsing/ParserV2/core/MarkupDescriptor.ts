@@ -28,7 +28,7 @@ export interface MarkupDescriptor {
 
 /**
  * Creates a segment-based markup descriptor from a markup template
- * 
+ *
  * Examples:
  * - `#[__value__]` -> segments: ["#[", "]"], gapTypes: ["value"]
  * - `#[__nested__]` -> segments: ["#[", "]"], gapTypes: ["nested"]
@@ -74,7 +74,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	}
 
 	// Parse segments and gap types
-	const { segments, gapTypes } = parseSegmentsAndGaps(markup)
+	const {segments, gapTypes} = parseSegmentsAndGaps(markup)
 
 	if (segments.length === 0) {
 		throw new Error(`Invalid markup format: "${markup}". Must have at least one static segment`)
@@ -91,7 +91,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		hasMeta,
 		hasNested,
 		hasTwoValues,
-		isSymmetric
+		isSymmetric,
 	}
 }
 
@@ -135,7 +135,7 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 		const positions = [
 			{type: 'value' as const, pos: valuePos, length: PLACEHOLDER.Value.length},
 			{type: 'meta' as const, pos: metaPos, length: PLACEHOLDER.Meta.length},
-			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.Nested.length}
+			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.Nested.length},
 		].filter(p => p.pos !== -1)
 
 		if (positions.length === 0) break
@@ -147,7 +147,7 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 		placeholders.push({
 			type: next.type,
 			pos: next.pos,
-			length: next.length
+			length: next.length,
 		})
 		pos = next.pos + next.length
 	}
@@ -161,7 +161,7 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 function buildSegments(
 	markup: string,
 	placeholders: PlaceholderInfo[]
-): { segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'> } {
+): {segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'>} {
 	const segments: string[] = []
 	const gapTypes: Array<'value' | 'meta' | 'nested'> = []
 	let currentPos = 0
@@ -186,13 +186,13 @@ function buildSegments(
 		segments.push(finalSegment)
 	}
 
-	return { segments, gapTypes }
+	return {segments, gapTypes}
 }
 
 /**
  * Validates the result of parsing segments and gaps
  */
-function validateParseResult(result: { segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'> }): void {
+function validateParseResult(result: {segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'>}): void {
 	if (result.segments.length === 0) {
 		throw new Error('Parsed markup must contain at least one segment')
 	}

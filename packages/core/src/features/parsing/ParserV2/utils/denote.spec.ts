@@ -45,7 +45,7 @@ describe('Utility: denote', () => {
 	it('should handle multiple markups', () => {
 		const markup1: Markup = '@[__value__](__meta__)'
 		const markup2: Markup = '#[__value__]'
-		const annotatedText = "Text @[Hello](world) and #[tag]"
+		const annotatedText = 'Text @[Hello](world) and #[tag]'
 		const result = denote(annotatedText, mark => mark.value, [markup1, markup2])
 		expect(result).toBe('Text Hello and tag')
 	})
@@ -56,4 +56,3 @@ describe('Utility: denote', () => {
 		expect(result).toBe('world')
 	})
 })
-

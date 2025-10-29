@@ -11,10 +11,7 @@ export type value = `${string}${typeof PLACEHOLDER.VALUE}${string}`
  * Legacy Markup type - supports only __label__ and __value__ placeholders
  * For new code, use ParserV2 which supports __value__, __meta__, and __nested__
  */
-export type Markup =
-	| `${label}${value}`
-	| `${label}`
-	| `${value}${label}`
+export type Markup = `${label}${value}` | `${label}` | `${value}${label}`
 
 /**
  * Legacy MarkStruct interface
