@@ -7,6 +7,7 @@ interface MarkNode {
 	match: MatchResult
 	children: Token[]
 	textPos: number // Current position for adding text tokens
+	hasNestedMarks: boolean // Track if any nested marks were added (optimization)
 }
 
 /**
@@ -41,12 +42,9 @@ function createTextToken(input: string, start: number, end: number): TextToken {
 
 /**
  * Creates a mark token from match and collected children
- * Only includes children if there are actual nested marks
+ * Uses pre-computed hasNestedMarks flag for efficiency
  */
-function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
-	// Check if there are any nested marks (not just text tokens)
-	const hasNestedMarks = children.some(child => child.type === 'mark')
-
+function createMarkToken(match: MatchResult, children: Token[], hasNestedMarks: boolean): MarkToken {
 	// Priority: use value if present, otherwise use nested content
 	// This handles combined patterns like @[__value__](__nested__) correctly
 	const valueContent = match.value !== '' ? match.value : match.nested || ''
@@ -104,6 +102,7 @@ function isContainedInNestableContent(matchB: MatchResult, matchA: MatchResult):
 
 /**
  * Finalizes a completed mark node and adds it to parent or root
+ * Optimized to minimize redundant checks
  */
 function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 	// Add any remaining text in this mark's nestable content
@@ -111,14 +110,16 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 	const contentEnd = node.match.nestedEnd !== undefined ? node.match.nestedEnd : node.match.valueEnd
 	addTextToken(ctx.input, node.children, node.textPos, contentEnd)
 
-	const token = createMarkToken(node.match, node.children)
-
-	if (ctx.stack.length > 0) {
+	const token = createMarkToken(node.match, node.children, node.hasNestedMarks)
+	
+	const stackLen = ctx.stack.length
+	if (stackLen > 0) {
 		// Add to parent's children
-		const parent = ctx.stack[ctx.stack.length - 1]
+		const parent = ctx.stack[stackLen - 1]
 		addTextToken(ctx.input, parent.children, parent.textPos, node.match.start)
 		parent.children.push(token)
 		parent.textPos = node.match.end
+		parent.hasNestedMarks = true // Mark parent as having nested marks
 	} else {
 		// Add to root
 		addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, node.match.start)
@@ -129,20 +130,32 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 
 /**
  * Pops completed parent marks from stack and finalizes them
+ * Optimized to minimize function calls and checks
  */
 function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
-	while (ctx.stack.length > 0) {
-		const parent = ctx.stack[ctx.stack.length - 1]
+	let stackLen = ctx.stack.length
+	while (stackLen > 0) {
+		const parent = ctx.stack[stackLen - 1]
 
 		// Check if current match is inside parent's nestable content (nested or value gap)
-		if (isContainedInNestableContent(match, parent.match)) {
+		// Inline the isContainedInNestableContent check for performance
+		const parentMatch = parent.match
+		let isContained: boolean
+		if (parentMatch.nestedStart !== undefined && parentMatch.nestedEnd !== undefined) {
+			isContained = match.start >= parentMatch.nestedStart && match.end <= parentMatch.nestedEnd
+		} else {
+			isContained = match.start >= parentMatch.valueStart && match.end <= parentMatch.valueEnd
+		}
+
+		if (isContained) {
 			// This match is nested inside parent
 			break
 		}
 
 		// Parent is complete - finalize it
-		const completed = ctx.stack.pop()!
-		finalizeMarkNode(completed, ctx)
+		ctx.stack.pop()
+		finalizeMarkNode(parent, ctx)
+		stackLen--
 	}
 }
 
@@ -155,6 +168,11 @@ function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
  * 3. Pop completed parents when current match is not inside their label
  * 4. Add current match to stack for potential children
  * 5. Finalize remaining stack at the end
+ *
+ * Optimizations:
+ * - Track hasNestedMarks flag to avoid repeated child array scanning
+ * - Cache stack.length to reduce property access
+ * - Inline hot path checks to reduce function call overhead
  *
  * @complexity O(N) where N is number of matches
  * @param input - Original input text
@@ -188,7 +206,10 @@ export function buildTree(input: string, matches: MatchResult[]): Token[] {
 	}
 
 	// Process each match
-	for (const match of matches) {
+	const matchCount = matches.length
+	for (let i = 0; i < matchCount; i++) {
+		const match = matches[i]
+		
 		// Pop completed parents that don't contain this match
 		popCompletedParents(match, ctx)
 
@@ -207,10 +228,11 @@ export function buildTree(input: string, matches: MatchResult[]): Token[] {
 			match,
 			children: [],
 			textPos: contentStart,
+			hasNestedMarks: false,
 		})
 	}
 
-	// Finalize all remaining marks in stack
+	// Finalize all remaining marks in stack (process from innermost to outermost)
 	while (ctx.stack.length > 0) {
 		const completed = ctx.stack.pop()!
 		finalizeMarkNode(completed, ctx)
