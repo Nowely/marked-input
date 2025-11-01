@@ -5,21 +5,27 @@ import {MarkToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternProcessor} from './core/PatternProcessor'
 import {MatchPostProcessor} from './core/MatchPostProcessor'
+import {OptimizedParser} from './core/OptimizedParser'
 import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {buildTree} from './core/TreeBuilder'
 import {createTextToken} from './core/TokenBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
+// Feature flag for testing optimized parser
+const USE_OPTIMIZED = process.env.USE_OPTIMIZED_PARSER === 'true'
+
 export class Parser {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
 	private readonly patternProcessor: PatternProcessor
+	private readonly optimizedParser: OptimizedParser
 
 	constructor(markups: Markup[]) {
 		this.registry = new MarkupRegistry(markups)
 		this.ac = new AhoCorasick(this.registry.segments)
 		this.patternProcessor = new PatternProcessor(this.registry)
+		this.optimizedParser = new OptimizedParser(this.registry)
 	}
 
 	static split(value: string, options?: {markup: Markup}[]): Token[] {
@@ -36,6 +42,12 @@ export class Parser {
 	}
 
 	split(value: string): Token[] {
+		// Use optimized parser if feature flag is set
+		if (USE_OPTIMIZED) {
+			return this.optimizedParser.parse(value)
+		}
+		
+		// Original implementation
 		const segmentMatches = this.ac.search(value)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)
 		const matchResults = MatchPostProcessor.convertToResults(
@@ -44,6 +56,27 @@ export class Parser {
 			this.registry.descriptors
 		)
 
+		return buildTree(value, matchResults)
+	}
+	
+	/**
+	 * Explicitly use optimized parser (for benchmarking)
+	 */
+	splitOptimized(value: string): Token[] {
+		return this.optimizedParser.parse(value)
+	}
+	
+	/**
+	 * Explicitly use original parser (for benchmarking)
+	 */
+	splitOriginal(value: string): Token[] {
+		const segmentMatches = this.ac.search(value)
+		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)
+		const matchResults = MatchPostProcessor.convertToResults(
+			sortedValidatedMatches,
+			value,
+			this.registry.descriptors
+		)
 		return buildTree(value, matchResults)
 	}
 
