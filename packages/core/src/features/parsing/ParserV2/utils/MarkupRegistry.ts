@@ -1,6 +1,5 @@
 import {Markup} from '../types'
 import {createMarkupDescriptor, MarkupDescriptor} from '../core/MarkupDescriptor'
-import {PatternSorting} from './PatternSorting'
 
 /**
  * Registry for managing markup descriptors
@@ -57,10 +56,32 @@ export class MarkupRegistry {
 
 			// Sort them once by priority
 			if (descriptorsWithFirstSegment.length > 0) {
-				const sorted = [...descriptorsWithFirstSegment].sort(PatternSorting.compareDescriptorPriority)
+				const sorted = [...descriptorsWithFirstSegment].sort(this.compareDescriptorPriority)
 				this.sortedDescriptorsByFirstSegment.set(segment, sorted)
 			}
 		}
+	}
+
+	/**
+	 * Comparator for descriptor priority
+	 * Priority rules:
+	 * 1. Longer first segments first (avoid conflicts like * vs **)
+	 * 2. More segments = more specific patterns = higher priority
+	 *
+	 * Returns: negative if a has higher priority, positive if b has higher priority
+	 */
+	private compareDescriptorPriority(a: MarkupDescriptor, b: MarkupDescriptor): number {
+		// Special case: prefer longer first segments to avoid conflicts like * vs ** or # vs ##
+		const firstSegmentLenA = a.segments[0].length
+		const firstSegmentLenB = b.segments[0].length
+		if (firstSegmentLenA !== firstSegmentLenB) {
+			return firstSegmentLenB - firstSegmentLenA // longer first segments first
+		}
+
+		// General case: longer patterns first (more segments = more specific = higher priority)
+		const segmentsA = a.segments.length
+		const segmentsB = b.segments.length
+		return segmentsB - segmentsA // more segments first
 	}
 
 	/**
