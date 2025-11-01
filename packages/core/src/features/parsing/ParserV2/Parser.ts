@@ -12,9 +12,6 @@ import {createTextToken} from './core/TokenBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
-// Feature flag for testing optimized parser
-const USE_OPTIMIZED = process.env.USE_OPTIMIZED_PARSER === 'true'
-
 export class Parser {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
@@ -42,11 +39,12 @@ export class Parser {
 	}
 
 	split(value: string): Token[] {
-		// Use optimized parser if feature flag is set
-		if (USE_OPTIMIZED) {
-			return this.optimizedParser.parse(value)
-		}
-		
+		// Use optimized parser by default
+		return this.optimizedParser.parse(value)
+	}
+	
+	/** @deprecated For benchmarking only - use original parser implementation */
+	private splitOriginalImpl(value: string): Token[] {
 		// Original implementation
 		const segmentMatches = this.ac.search(value)
 		const sortedValidatedMatches = this.patternProcessor.processMatches(segmentMatches, value)

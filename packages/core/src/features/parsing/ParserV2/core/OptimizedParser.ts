@@ -164,7 +164,62 @@ export class OptimizedParser {
 
 		// Check if pattern is complete
 		if (best.segmentIndex >= descriptor.segments.length) {
-			// Pattern complete - create match directly
+			// Pattern complete - validate and create match
+			
+		// For patterns with two __value__ placeholders (e.g., <__value__>__nested__</__value__>)
+		// both values must be equal (opening and closing tags must match)
+		if (descriptor.hasTwoValues) {
+			// We need to extract both values from the input
+			// The last value is in best.valueStart/valueEnd
+			// We need to find the first value
+			
+			// Find which gaps are values
+			let firstValueGapIdx = -1
+			let secondValueGapIdx = -1
+			for (let i = 0; i < descriptor.gapTypes.length; i++) {
+				if (descriptor.gapTypes[i] === 'value') {
+					if (firstValueGapIdx === -1) {
+						firstValueGapIdx = i
+					} else {
+						secondValueGapIdx = i
+						break
+					}
+				}
+			}
+			
+			if (firstValueGapIdx !== -1 && secondValueGapIdx !== -1) {
+				// Second value we already have
+				const value2 = input.substring(best.valueStart, best.valueEnd)
+				
+				// First value: find it by parsing from the start
+				// Position after first segment
+				let pos = best.startPos + descriptor.segments[0].length
+				
+				// Skip gaps before the first value gap
+				for (let i = 0; i < firstValueGapIdx; i++) {
+					// Find next segment
+					const nextSeg = descriptor.segments[i + 1]
+					const nextPos = input.indexOf(nextSeg, pos)
+					if (nextPos === -1) break
+					pos = nextPos + nextSeg.length
+				}
+				
+				// Now pos is at the start of first value gap
+				// Find the end of this gap (next segment)
+				const nextSeg = descriptor.segments[firstValueGapIdx + 1]
+				const endPos = input.indexOf(nextSeg, pos)
+				const value1 = endPos !== -1 ? input.substring(pos, endPos) : ''
+				
+				// Validate
+				if (value1 !== value2) {
+					// Values don't match - reject
+					waiting.splice(bestIdx, 1)
+					this.releaseState(best)
+					return
+				}
+			}
+		}
+			
 			const match = this.acquireMatch()
 			match.start = best.startPos
 			match.end = segment.end + 1
@@ -372,22 +427,24 @@ export class OptimizedParser {
 						console.log(`\nCase 2: match [${match.start},${match.end}] inside existing [${existing.start},${existing.end}]`)
 						console.log(`  Match nested: [${match.nestedStart}, ${match.nestedEnd}]`)
 						console.log(`  Existing nested: [${existing.nestedStart}, ${existing.nestedEnd}]`)
+						console.log(`  Existing hasNested: ${existingDesc.hasNested}`)
 					}
 					
 					// Check if match is inside existing's nestable content
-					// For __nested__ patterns, check if match is within nestedStart/nestedEnd
-					// For __value__ patterns, check if match is within valueStart/valueEnd
+					// IMPORTANT: Only patterns with __nested__ support nesting
+					// Patterns with only __value__ (no __nested__) should NOT allow nested marks
 					let isInNestableContent = false
 					
-					if (existing.nestedStart !== undefined && existing.nestedEnd !== undefined) {
-						// Existing has nested content
-						// Match must be COMPLETELY inside the nested region
+					if (existingDesc.hasNested && existing.nestedStart !== undefined && existing.nestedEnd !== undefined) {
+						// Existing has __nested__ placeholder - check if match is within nestedStart/nestedEnd
 						isInNestableContent = match.start >= existing.nestedStart && match.end <= existing.nestedEnd
 						if (DEBUG) console.log(`  isInNestableContent (nested): ${isInNestableContent}`)
-					} else if (existing.valueStart !== -1 && existing.valueEnd !== -1) {
-						// Fallback to value content
-						isInNestableContent = match.start >= existing.valueStart && match.end <= existing.valueEnd
-						if (DEBUG) console.log(`  isInNestableContent (value): ${isInNestableContent}`)
+					} else {
+						// Existing has NO __nested__ placeholder (only __value__ or __meta__)
+						// No nesting is allowed - filter any nested match immediately
+						if (DEBUG) console.log(`  No __nested__ in existing pattern => FILTER nested match`)
+						shouldFilter = true
+						break
 					}
 					
 					// Additional check: match should not partially overlap with existing's segments
