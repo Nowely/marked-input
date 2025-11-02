@@ -3,7 +3,7 @@ import {Markup} from './types'
 import {Token} from './types'
 import {MarkToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
-import {OptimizedParser} from './core/OptimizedParser'
+import {PatternProcessor} from './core/PatternProcessor'
 import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {createTextToken} from './core/TokenBuilder'
 import {toString as tokensToString} from './utils/toString'
@@ -12,12 +12,12 @@ import {processTokensWithCallback} from './utils/denote'
 export class Parser {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
-	private readonly optimizedParser: OptimizedParser
+	private readonly patternProcessor: PatternProcessor
 
 	constructor(markups: Markup[]) {
 		this.registry = new MarkupRegistry(markups)
 		this.ac = new AhoCorasick(this.registry.segments)
-		this.optimizedParser = new OptimizedParser(this.registry)
+		this.patternProcessor = new PatternProcessor(this.registry)
 	}
 
 	static split(value: string, options?: {markup: Markup}[]): Token[] {
@@ -34,7 +34,7 @@ export class Parser {
 	}
 
 	split(value: string): Token[] {
-		return this.optimizedParser.parse(value)
+		return this.patternProcessor.parse(value)
 	}
 
 	join(tokens: Token[]): string {

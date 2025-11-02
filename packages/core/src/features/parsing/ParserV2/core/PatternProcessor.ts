@@ -53,7 +53,7 @@ interface ActiveState {
 /**
  * Optimized parser using state machine approach
  */
-export class OptimizedParser {
+export class PatternProcessor {
 	private readonly registry: MarkupRegistry
 	private readonly ac: AhoCorasick
 	private readonly descriptors: MarkupDescriptor[]
