@@ -1,6 +1,5 @@
 ---
-description: List of Rules
-alwaysApply: false
+alwaysApply: true
 ---
 # List of Rules
 
