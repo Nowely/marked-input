@@ -2,10 +2,12 @@ import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {Token} from './types'
 import {MarkToken} from './types'
+import {MatchResult} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternProcessor} from './core/PatternProcessor'
 import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
 import {createTextToken} from './core/TokenBuilder'
+import {buildTree} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
@@ -34,7 +36,9 @@ export class Parser {
 	}
 
 	split(value: string): Token[] {
-		return this.patternProcessor.parse(value)
+		const segments = this.ac.search(value)
+		const matchResults = this.patternProcessor.processSegments(segments, value)
+		return buildTree(value, matchResults)
 	}
 
 	join(tokens: Token[]): string {

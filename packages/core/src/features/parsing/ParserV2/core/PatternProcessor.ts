@@ -12,10 +12,9 @@
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
-import {AhoCorasick, SegmentMatch} from '../utils/AhoCorasick'
+import {SegmentMatch} from '../utils/AhoCorasick'
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {Token, MatchResult} from '../types'
-import {buildTree} from './TreeBuilder'
+import {MatchResult} from '../types'
 
 /**
  * Minimal match structure - no intermediate conversions
@@ -55,13 +54,12 @@ interface ActiveState {
  */
 export class PatternProcessor {
 	private readonly registry: MarkupRegistry
-	private readonly ac: AhoCorasick
 	private readonly descriptors: MarkupDescriptor[]
-	
+
 	// Object pools for zero-allocation parsing
 	private readonly statePool: ActiveState[] = []
 	private readonly matchPool: DirectMatch[] = []
-	
+
 	// Reusable arrays to avoid allocations
 	private readonly activeStates: ActiveState[] = []
 	private readonly completedMatches: DirectMatch[] = []
@@ -69,39 +67,33 @@ export class PatternProcessor {
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
-		this.ac = new AhoCorasick(registry.segments)
 		this.descriptors = registry.descriptors
 	}
 
 	/**
-	 * Main parse method - single pass with minimal allocations
+	 * Process segments with state machine to create match results
+	 * Main method that converts found segments into structured match results
 	 */
-	parse(input: string): Token[] {
+	processSegments(segments: SegmentMatch[], input: string): MatchResult[] {
 		// Clear previous state
 		this.activeStates.length = 0
 		this.completedMatches.length = 0
 		this.waitingStates.clear()
 
-		// Get all segments in one pass - O(N)
-		const segments = this.ac.search(input)
-		
 		// Process segments with state machine - O(N * M)
-		this.processSegments(segments, input)
-		
+		this.processSegmentsInternal(segments, input)
+
 		// Filter overlapping matches - O(N log N)
 		const filtered = this.filterOverlappingMatches()
-		
+
 		// Convert matches to MatchResults for tree builder
-		const matchResults = this.convertToMatchResults(input, filtered)
-		
-		// Build tree - O(N log N)
-		return buildTree(input, matchResults)
+		return this.convertToMatchResults(input, filtered)
 	}
 
 	/**
 	 * Process all segments with state machine approach
 	 */
-	private processSegments(segments: SegmentMatch[], input: string): void {
+	private processSegmentsInternal(segments: SegmentMatch[], input: string): void {
 		// Sort segments by position for correct processing order
 		segments.sort((a, b) => a.start - b.start)
 
