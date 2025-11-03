@@ -22,8 +22,8 @@ interface DirectMatch {
 	end: number
 	descriptor: MarkupDescriptor
 	// Positions for content extraction
-	valueStart: number
-	valueEnd: number
+	valueStart?: number
+	valueEnd?: number
 	nestedStart?: number
 	nestedEnd?: number
 	metaStart?: number
@@ -39,12 +39,12 @@ interface ActiveState {
 	startPos: number // Where pattern started
 	lastPos: number // Last segment end position
 	// Track gap positions inline (no separate parts array)
-	valueStart: number
-	valueEnd: number
-	nestedStart: number
-	nestedEnd: number
-	metaStart: number
-	metaEnd: number
+	valueStart?: number
+	valueEnd?: number
+	nestedStart?: number
+	nestedEnd?: number
+	metaStart?: number
+	metaEnd?: number
 }
 
 /**
@@ -155,7 +155,7 @@ export class PatternProcessor {
 					}
 				}
 
-				if (firstValueGapIdx !== -1 && secondValueGapIdx !== -1) {
+				if (firstValueGapIdx !== -1 && secondValueGapIdx !== -1 && best.valueStart !== undefined && best.valueEnd !== undefined) {
 					// Second value we already have
 					const value2 = input.substring(best.valueStart, best.valueEnd)
 
@@ -193,10 +193,10 @@ export class PatternProcessor {
 				descriptor: best.descriptor,
 				valueStart: best.valueStart,
 				valueEnd: best.valueEnd,
-				nestedStart: best.nestedStart !== -1 ? best.nestedStart : undefined,
-				nestedEnd: best.nestedEnd !== -1 ? best.nestedEnd : undefined,
-				metaStart: best.metaStart !== -1 ? best.metaStart : undefined,
-				metaEnd: best.metaEnd !== -1 ? best.metaEnd : undefined,
+				nestedStart: best.nestedStart,
+				nestedEnd: best.nestedEnd,
+				metaStart: best.metaStart,
+				metaEnd: best.metaEnd,
 			}
 
 			this.completedMatches.push(match)
@@ -291,12 +291,7 @@ export class PatternProcessor {
 				segmentIndex: 1, // Next segment to look for
 				startPos: segment.start,
 				lastPos: segment.end,
-				valueStart: -1,
-				valueEnd: -1,
-				nestedStart: -1,
-				nestedEnd: -1,
-				metaStart: -1,
-				metaEnd: -1,
+				// valueStart, valueEnd, nestedStart, nestedEnd, metaStart, metaEnd - undefined by default
 			}
 
 			// Add to waiting list for next segment
@@ -527,7 +522,7 @@ export class PatternProcessor {
 		for (const match of matches) {
 			// Extract content inline
 			const value =
-				match.valueStart !== -1 && match.valueEnd !== -1
+				match.valueStart !== undefined && match.valueEnd !== undefined
 					? input.substring(match.valueStart, match.valueEnd)
 					: ''
 
@@ -546,8 +541,8 @@ export class PatternProcessor {
 				end: match.end,
 				content: input.substring(match.start, match.end),
 				value,
-				valueStart: match.valueStart !== -1 ? match.valueStart : match.start,
-				valueEnd: match.valueEnd !== -1 ? match.valueEnd : match.start,
+				valueStart: match.valueStart ?? match.start,
+				valueEnd: match.valueEnd ?? match.start,
 				nested,
 				nestedStart: match.nestedStart,
 				nestedEnd: match.nestedEnd,
