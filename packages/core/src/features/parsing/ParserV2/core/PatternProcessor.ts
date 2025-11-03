@@ -32,13 +32,20 @@ interface DirectMatch {
 
 /**
  * Active pattern state - minimal structure for state machine
+ *
+ * Represents the current state of a pattern matching process in the parser's state machine.
+ * Tracks progress through pattern segments and positions of different content types.
  */
 interface ActiveState {
+	/** Descriptor defining the markup pattern being matched */
 	descriptor: MarkupDescriptor
-	segmentIndex: number // Current segment we're waiting for
-	startPos: number // Where pattern started
-	lastPos: number // Last segment end position
-	// Track gap positions inline (no separate parts array)
+	/** Index of the next expected segment in the pattern sequence */
+	expectedSegmentIndex: number
+	/** Starting position of the pattern in the input text */
+	start: number
+	/** End position of the last processed segment */
+	end: number
+	/** Track gap positions inline (no separate parts array) */
 	valueStart?: number
 	valueEnd?: number
 	nestedStart?: number
@@ -106,14 +113,14 @@ export class PatternProcessor {
 		const descriptor = best.descriptor
 
 		// Check if segment matches expected
-		if (descriptor.segments[best.segmentIndex] !== segment.value) {
+		if (descriptor.segments[best.expectedSegmentIndex] !== segment.value) {
 			return
 		}
 
 		// Update state with new segment
-		const gapStart = best.lastPos
+		const gapStart = best.end
 		const gapEnd = segment.start
-		const gapType = descriptor.gapTypes[best.segmentIndex - 1]
+		const gapType = descriptor.gapTypes[best.expectedSegmentIndex - 1]
 
 		// INLINE: Update gap positions based on type
 		if (gapType === 'value') {
@@ -127,11 +134,11 @@ export class PatternProcessor {
 			best.metaEnd = gapEnd
 		}
 
-		best.lastPos = segment.end
-		best.segmentIndex++
+		best.end = segment.end
+		best.expectedSegmentIndex++
 
 		// Check if pattern is complete
-		if (best.segmentIndex >= descriptor.segments.length) {
+		if (best.expectedSegmentIndex >= descriptor.segments.length) {
 			// Pattern complete - validate and create match
 
 			// For patterns with two __value__ placeholders (e.g., <__value__>__nested__</__value__>)
@@ -161,7 +168,7 @@ export class PatternProcessor {
 
 					// First value: find it by parsing from the start
 					// Position after first segment
-					let pos = best.startPos + descriptor.segments[0].length
+					let pos = best.start + descriptor.segments[0].length
 
 					// Skip gaps before the first value gap
 					for (let i = 0; i < firstValueGapIdx; i++) {
@@ -188,7 +195,7 @@ export class PatternProcessor {
 			}
 
 			const match: DirectMatch = {
-				start: best.startPos,
+				start: best.start,
 				end: segment.end,
 				descriptor: best.descriptor,
 				valueStart: best.valueStart,
@@ -209,7 +216,7 @@ export class PatternProcessor {
 		} else {
 			// Pattern continues - update waiting list
 			waiting.splice(bestIdx, 1)
-			const nextSegment = descriptor.segments[best.segmentIndex]
+			const nextSegment = descriptor.segments[best.expectedSegmentIndex]
 			if (!this.waitingStates.has(nextSegment)) {
 				this.waitingStates.set(nextSegment, [])
 			}
@@ -220,14 +227,14 @@ export class PatternProcessor {
 	/** Priority calculation. Higher = better priority */
 	private calculatePriority(state: ActiveState): number {
 		const descriptor = state.descriptor
-		const isCompleting = state.segmentIndex === descriptor.segments.length - 1
+		const isCompleting = state.expectedSegmentIndex === descriptor.segments.length - 1
 		const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
 
 		return (
 			(isCompleting ? 10_000_000 : 0) + // Completing patterns first
 			firstSegLength * 100_000 + // Longer first segments (** > *)
-			state.startPos * 1000 + // Later starts (LIFO)
-			state.segmentIndex * 100 + // More progress
+			state.start * 1000 + // Later starts (LIFO)
+			state.expectedSegmentIndex * 100 + // More progress
 			descriptor.segments.length * 10 // Longer patterns
 		)
 	}
@@ -242,7 +249,7 @@ export class PatternProcessor {
 			for (let i = states.length - 1; i >= 0; i--) {
 				const state = states[i]
 
-				if (state.startPos !== startPos) continue
+				if (state.start !== startPos) continue
 
 				const stateDescriptor = state.descriptor
 				const stateFirstSeg = stateDescriptor.segments[0]
@@ -288,9 +295,9 @@ export class PatternProcessor {
 			// Multi-segment pattern - create state
 			const state: ActiveState = {
 				descriptor,
-				segmentIndex: 1, // Next segment to look for
-				startPos: segment.start,
-				lastPos: segment.end,
+				expectedSegmentIndex: 1, // Next segment to look for
+				start: segment.start,
+				end: segment.end,
 			}
 
 			// Add to waiting list for next segment
