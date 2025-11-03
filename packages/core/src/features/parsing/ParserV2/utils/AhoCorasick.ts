@@ -82,7 +82,7 @@ export class AhoCorasick {
 			}
 		}
 
-		return results // No sorting - PatternProcessor handles order-independence
+		return results
 	}
 
 	/**
