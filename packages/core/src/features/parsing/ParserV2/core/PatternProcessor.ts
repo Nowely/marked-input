@@ -270,7 +270,7 @@ export class PatternProcessor {
 	 * Try to start new pattern states
 	 */
 	private tryStartNewStates(segment: SegmentMatch): void {
-		const descriptors = this.registry.getDescriptorsStartingWithSegment(segment.index)
+		const descriptors = this.registry.getDescriptorsStartingWithSegment(segment.value)
 
 		for (const descriptor of descriptors) {
 			const descriptorIndex = this.registry.descriptors.indexOf(descriptor)
