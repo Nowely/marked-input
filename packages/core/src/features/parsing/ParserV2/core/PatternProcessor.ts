@@ -291,7 +291,6 @@ export class PatternProcessor {
 				segmentIndex: 1, // Next segment to look for
 				startPos: segment.start,
 				lastPos: segment.end,
-				// valueStart, valueEnd, nestedStart, nestedEnd, metaStart, metaEnd - undefined by default
 			}
 
 			// Add to waiting list for next segment
