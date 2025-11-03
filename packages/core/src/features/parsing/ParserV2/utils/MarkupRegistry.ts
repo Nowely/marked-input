@@ -4,7 +4,6 @@ import {createMarkupDescriptor, MarkupDescriptor} from '../core/MarkupDescriptor
 /**
  * Registry for managing markup descriptors
  * Centralizes access to all markup patterns and their descriptors
- * Optimization: Pre-sorts descriptors by priority to avoid repeated sorting
  */
 export class MarkupRegistry {
 	readonly markups: Markup[]
@@ -21,10 +20,12 @@ export class MarkupRegistry {
 		this.segmentsMap = new Map<string, MarkupDescriptor[]>()
 		this.firstSegmentsMap = new Map<string, MarkupDescriptor[]>()
 
-		// Create descriptors first
+		// Create descriptors and build maps
 		this.descriptors = markups.map((markup, index) => {
 			const descriptor = createMarkupDescriptor(markup, index)
+			const firstSegment = descriptor.segments[0]
 
+			// Build segmentsMap for all segments
 			descriptor.segments.forEach(segment => {
 				if (segment.length > 0) {
 					const descriptors = this.segmentsMap.get(segment)
@@ -36,28 +37,22 @@ export class MarkupRegistry {
 				}
 			})
 
+			// Build firstSegmentsMap for first segment only
+			if (firstSegment.length > 0) {
+				const firstDescriptors = this.firstSegmentsMap.get(firstSegment)
+				if (firstDescriptors) {
+					firstDescriptors.push(descriptor)
+				} else {
+					this.firstSegmentsMap.set(firstSegment, [descriptor])
+				}
+			}
+
 			return descriptor
 		})
 
 		this.segments = Array.from(this.segmentsMap.keys())
-
-		this.buildFirstSegmentsMap()
 	}
 
-	/**
-	 * Pre-sorts descriptors by priority for each first segment
-	 * This eliminates the need to sort on every segment match
-	 */
-	private buildFirstSegmentsMap(): void {
-		for (const [segment, descriptors] of this.segmentsMap) {
-			// Find descriptors where this segment is the first one
-			const descriptorsWithFirstSegment = descriptors.filter(descriptor => descriptor.segments[0] === segment)
-
-			if (descriptorsWithFirstSegment.length > 0) {
-				this.firstSegmentsMap.set(segment, descriptorsWithFirstSegment)
-			}
-		}
-	}
 
 	/**
 	 * Gets all descriptors where the segment at the given index is the first segment
