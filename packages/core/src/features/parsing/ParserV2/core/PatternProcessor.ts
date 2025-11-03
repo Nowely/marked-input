@@ -271,6 +271,7 @@ export class PatternProcessor {
 
 		for (const descriptor of descriptors) {
 			// Single segment pattern - complete immediately
+			//TODO it's not correct. need tests
 			if (descriptor.segments.length === 1) {
 				const match: DirectMatch = {
 					start: segment.start,
