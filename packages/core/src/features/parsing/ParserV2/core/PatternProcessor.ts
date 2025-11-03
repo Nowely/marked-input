@@ -69,7 +69,7 @@ export class PatternProcessor {
 	 * Process segments with state machine to create match results
 	 * Main method that converts found segments into structured match results
 	 */
-	processSegments(segments: SegmentMatch[], input: string): MatchResult[] {
+	process(segments: SegmentMatch[], input: string): MatchResult[] {
 		// Clear previous state
 		this.activeStates.length = 0
 		this.completedMatches.length = 0
