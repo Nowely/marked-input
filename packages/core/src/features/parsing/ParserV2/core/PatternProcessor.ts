@@ -75,27 +75,14 @@ export class PatternProcessor {
 		this.completedMatches.length = 0
 		this.waitingStates.clear()
 
-		// Process segments with state machine - O(N * M)
-		this.processSegmentsInternal(segments, input)
-
-		// Filter overlapping matches - O(N log N)
-		const filtered = this.filterOverlappingMatches()
-
-		// Convert matches to MatchResults for tree builder
-		return this.convertToMatchResults(input, filtered)
-	}
-
-	/**
-	 * Process all segments with state machine approach
-	 */
-	private processSegmentsInternal(segments: SegmentMatch[], input: string): void {
 		for (const segment of segments) {
-			// Process waiting states first
 			this.processWaitingStates(segment, input)
 			
-			// Try to start new states
 			this.tryStartNewStates(segment)
 		}
+
+		const filtered = this.filterOverlappingMatches()
+		return this.convertToMatchResults(input, filtered)
 	}
 
 	/**
