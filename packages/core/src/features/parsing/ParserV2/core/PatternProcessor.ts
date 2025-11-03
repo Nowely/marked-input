@@ -55,7 +55,6 @@ export class PatternProcessor {
 
 	// Object pools for zero-allocation parsing
 	private readonly statePool: ActiveState[] = []
-	private readonly matchPool: DirectMatch[] = []
 
 	// Reusable arrays to avoid allocations
 	private readonly activeStates: ActiveState[] = []
@@ -192,16 +191,17 @@ export class PatternProcessor {
 				}
 			}
 
-			const match = this.acquireMatch()
-			match.start = best.startPos
-			match.end = segment.end
-			match.descriptor = best.descriptor
-			match.valueStart = best.valueStart
-			match.valueEnd = best.valueEnd
-			match.nestedStart = best.nestedStart !== -1 ? best.nestedStart : undefined
-			match.nestedEnd = best.nestedEnd !== -1 ? best.nestedEnd : undefined
-			match.metaStart = best.metaStart !== -1 ? best.metaStart : undefined
-			match.metaEnd = best.metaEnd !== -1 ? best.metaEnd : undefined
+			const match: DirectMatch = {
+				start: best.startPos,
+				end: segment.end,
+				descriptor: best.descriptor,
+				valueStart: best.valueStart,
+				valueEnd: best.valueEnd,
+				nestedStart: best.nestedStart !== -1 ? best.nestedStart : undefined,
+				nestedEnd: best.nestedEnd !== -1 ? best.nestedEnd : undefined,
+				metaStart: best.metaStart !== -1 ? best.metaStart : undefined,
+				metaEnd: best.metaEnd !== -1 ? best.metaEnd : undefined,
+			}
 
 			this.completedMatches.push(match)
 
@@ -243,7 +243,7 @@ export class PatternProcessor {
 	 * Example: ** should cancel * when they start at same position
 	 */
 	private cancelConflictingStates(startPos: number, firstSegment: string): void {
-		for (const [segment, states] of this.waitingStates) {
+		for (const [, states] of this.waitingStates) {
 			for (let i = states.length - 1; i >= 0; i--) {
 				const state = states[i]
 
@@ -276,12 +276,13 @@ export class PatternProcessor {
 		for (const descriptor of descriptors) {
 			// Single segment pattern - complete immediately
 			if (descriptor.segments.length === 1) {
-				const match = this.acquireMatch()
-				match.start = segment.start
-				match.end = segment.end
-				match.descriptor = descriptor
-				match.valueStart = segment.start
-				match.valueEnd = segment.end
+				const match: DirectMatch = {
+					start: segment.start,
+					end: segment.end,
+					descriptor,
+					valueStart: segment.start,
+					valueEnd: segment.end,
+				}
 
 				this.completedMatches.push(match)
 				continue
@@ -526,8 +527,6 @@ export class PatternProcessor {
 		const results: MatchResult[] = []
 
 		for (const match of matches) {
-			const descriptor = match.descriptor
-
 			// Extract content inline
 			const value =
 				match.valueStart !== -1 && match.valueEnd !== -1
@@ -593,15 +592,4 @@ export class PatternProcessor {
 		this.statePool.push(state)
 	}
 
-	private acquireMatch(): DirectMatch {
-		return (
-			this.matchPool.pop() || {
-				start: 0,
-				end: 0,
-				descriptor: null as any, // Will be set when acquired
-				valueStart: 0,
-				valueEnd: 0,
-			}
-		)
-	}
 }
