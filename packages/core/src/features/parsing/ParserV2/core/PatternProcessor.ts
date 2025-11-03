@@ -89,9 +89,6 @@ export class PatternProcessor {
 	 * Process all segments with state machine approach
 	 */
 	private processSegmentsInternal(segments: SegmentMatch[], input: string): void {
-		// Sort segments by position for correct processing order
-		segments.sort((a, b) => a.start - b.start)
-
 		for (const segment of segments) {
 			// Process waiting states first
 			this.processWaitingStates(segment, input)
