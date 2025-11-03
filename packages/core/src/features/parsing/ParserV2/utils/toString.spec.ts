@@ -58,7 +58,7 @@ describe('Utility: toString', () => {
 		const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 		const text = '@[Hello](world) and #[tag]'
 		const tokens = new Parser(markups).split(text)
-		const result = toString(tokens, markups)
+		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
 
