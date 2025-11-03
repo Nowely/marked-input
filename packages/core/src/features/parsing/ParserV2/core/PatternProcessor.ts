@@ -15,32 +15,17 @@ import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
- * Minimal match structure - no intermediate conversions
- */
-interface DirectMatch {
-	start: number
-	end: number
-	descriptor: MarkupDescriptor
-	// Positions for content extraction
-	valueStart?: number
-	valueEnd?: number
-	nestedStart?: number
-	nestedEnd?: number
-	metaStart?: number
-	metaEnd?: number
-}
-
-/**
- * Active pattern state - minimal structure for state machine
+ * Unified match state structure for both active pattern matching and completed matches
  *
- * Represents the current state of a pattern matching process in the parser's state machine.
- * Tracks progress through pattern segments and positions of different content types.
+ * Represents the state of a pattern matching process in the parser's state machine.
+ * For active states: tracks progress through pattern segments with expectedSegmentIndex
+ * For completed matches: contains final positions without expectedSegmentIndex
  */
-interface ActiveState {
+interface MatchState {
 	/** Descriptor defining the markup pattern being matched */
 	descriptor: MarkupDescriptor
-	/** Index of the next expected segment in the pattern sequence */
-	expectedSegmentIndex: number
+	/** Index of the next expected segment (undefined for completed matches) */
+	expectedSegmentIndex?: number
 	/** Starting position of the pattern in the input text */
 	start: number
 	/** End position of the last processed segment */
@@ -61,9 +46,9 @@ export class PatternProcessor {
 	private readonly registry: MarkupRegistry
 
 	// Reusable arrays to avoid allocations
-	private readonly activeStates: ActiveState[] = []
-	private readonly completedMatches: DirectMatch[] = []
-	private readonly waitingStates: Map<string, ActiveState[]> = new Map()
+	private readonly activeStates: MatchState[] = []
+	private readonly completedMatches: MatchState[] = []
+	private readonly waitingStates: Map<string, MatchState[]> = new Map()
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
@@ -113,7 +98,7 @@ export class PatternProcessor {
 		const descriptor = best.descriptor
 
 		// Check if segment matches expected
-		if (descriptor.segments[best.expectedSegmentIndex] !== segment.value) {
+		if (best.expectedSegmentIndex === undefined || descriptor.segments[best.expectedSegmentIndex] !== segment.value) {
 			return
 		}
 
@@ -194,25 +179,17 @@ export class PatternProcessor {
 				}
 			}
 
-			const match: DirectMatch = {
-				start: best.start,
-				end: segment.end,
-				descriptor: best.descriptor,
-				valueStart: best.valueStart,
-				valueEnd: best.valueEnd,
-				nestedStart: best.nestedStart,
-				nestedEnd: best.nestedEnd,
-				metaStart: best.metaStart,
-				metaEnd: best.metaEnd,
-			}
+			// Complete the match by clearing expectedSegmentIndex
+			best.expectedSegmentIndex = undefined
+			best.end = segment.end
 
-			this.completedMatches.push(match)
+			this.completedMatches.push(best)
 
 			// Remove from waiting
 			waiting.splice(bestIdx, 1)
 
 			// Cancel conflicting states
-			this.cancelConflictingStates(match.start, descriptor.segments[0])
+			this.cancelConflictingStates(best.start, descriptor.segments[0])
 		} else {
 			// Pattern continues - update waiting list
 			waiting.splice(bestIdx, 1)
@@ -225,16 +202,18 @@ export class PatternProcessor {
 	}
 
 	/** Priority calculation. Higher = better priority */
-	private calculatePriority(state: ActiveState): number {
+	private calculatePriority(state: MatchState): number {
 		const descriptor = state.descriptor
-		const isCompleting = state.expectedSegmentIndex === descriptor.segments.length - 1
+		const expectedIndex = state.expectedSegmentIndex
+
+		const isCompleting = expectedIndex === undefined || expectedIndex === descriptor.segments.length - 1
 		const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
 
 		return (
 			(isCompleting ? 10_000_000 : 0) + // Completing patterns first
 			firstSegLength * 100_000 + // Longer first segments (** > *)
 			state.start * 1000 + // Later starts (LIFO)
-			state.expectedSegmentIndex * 100 + // More progress
+			(expectedIndex ?? 0) * 100 + // More progress
 			descriptor.segments.length * 10 // Longer patterns
 		)
 	}
@@ -280,10 +259,10 @@ export class PatternProcessor {
 			// Single segment pattern - complete immediately
 			//TODO it's not correct. need tests
 			if (descriptor.segments.length === 1) {
-				const match: DirectMatch = {
+				const match: MatchState = {
+					descriptor,
 					start: segment.start,
 					end: segment.end,
-					descriptor,
 					valueStart: segment.start,
 					valueEnd: segment.end,
 				}
@@ -293,7 +272,7 @@ export class PatternProcessor {
 			}
 
 			// Multi-segment pattern - create state
-			const state: ActiveState = {
+			const state: MatchState = {
 				descriptor,
 				expectedSegmentIndex: 1, // Next segment to look for
 				start: segment.start,
@@ -324,7 +303,7 @@ export class PatternProcessor {
 	 *
 	 * Complexity: O(N log N) for sort + O(N²) for filtering
 	 */
-	private filterOverlappingMatches(): DirectMatch[] {
+	private filterOverlappingMatches(): MatchState[] {
 		if (this.completedMatches.length === 0) return []
 
 		const DEBUG = false
@@ -357,7 +336,7 @@ export class PatternProcessor {
 			return bDesc.segments.length - aDesc.segments.length
 		})
 
-		const filtered: DirectMatch[] = []
+		const filtered: MatchState[] = []
 
 		for (const match of this.completedMatches) {
 			let shouldFilter = false
@@ -522,7 +501,7 @@ export class PatternProcessor {
 	/**
 	 * Convert direct matches to MatchResult format for tree builder
 	 */
-	private convertToMatchResults(input: string, matches: DirectMatch[]): MatchResult[] {
+	private convertToMatchResults(input: string, matches: MatchState[]): MatchResult[] {
 		const results: MatchResult[] = []
 
 		for (const match of matches) {
