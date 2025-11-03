@@ -53,9 +53,6 @@ interface ActiveState {
 export class PatternProcessor {
 	private readonly registry: MarkupRegistry
 
-	// Object pools for zero-allocation parsing
-	private readonly statePool: ActiveState[] = []
-
 	// Reusable arrays to avoid allocations
 	private readonly activeStates: ActiveState[] = []
 	private readonly completedMatches: DirectMatch[] = []
@@ -185,7 +182,6 @@ export class PatternProcessor {
 					if (value1 !== value2) {
 						// Values don't match - reject
 						waiting.splice(bestIdx, 1)
-						this.releaseState(best)
 						return
 					}
 				}
@@ -207,7 +203,6 @@ export class PatternProcessor {
 
 			// Remove from waiting
 			waiting.splice(bestIdx, 1)
-			this.releaseState(best)
 
 			// Cancel conflicting states
 			this.cancelConflictingStates(match.start, descriptor.segments[0])
@@ -260,8 +255,7 @@ export class PatternProcessor {
 					(firstSegment.startsWith(stateFirstSeg) && firstSegment.length > stateFirstSeg.length)
 
 				if (shouldCancel) {
-					const cancelled = states.splice(i, 1)[0]
-					this.releaseState(cancelled)
+					states.splice(i, 1)
 				}
 			}
 		}
@@ -289,17 +283,18 @@ export class PatternProcessor {
 			}
 
 			// Multi-segment pattern - create state
-			const state = this.acquireState()
-			state.descriptor = descriptor
-			state.segmentIndex = 1 // Next segment to look for
-			state.startPos = segment.start
-			state.lastPos = segment.end
-			state.valueStart = -1
-			state.valueEnd = -1
-			state.nestedStart = -1
-			state.nestedEnd = -1
-			state.metaStart = -1
-			state.metaEnd = -1
+			const state: ActiveState = {
+				descriptor,
+				segmentIndex: 1, // Next segment to look for
+				startPos: segment.start,
+				lastPos: segment.end,
+				valueStart: -1,
+				valueEnd: -1,
+				nestedStart: -1,
+				nestedEnd: -1,
+				metaStart: -1,
+				metaEnd: -1,
+			}
 
 			// Add to waiting list for next segment
 			const nextSegment = descriptor.segments[1]
@@ -565,31 +560,4 @@ export class PatternProcessor {
 
 		return results
 	}
-
-	/**
-	 * Object pool management - actual reuse
-	 */
-	private acquireState(): ActiveState {
-		return (
-			this.statePool.pop() || {
-				descriptor: null as any, // Will be set when acquired
-				segmentIndex: 0,
-				startPos: 0,
-				lastPos: 0,
-				valueStart: -1,
-				valueEnd: -1,
-				nestedStart: -1,
-				nestedEnd: -1,
-				metaStart: -1,
-				metaEnd: -1,
-			}
-		)
-	}
-
-	private releaseState(state: ActiveState): void {
-		// Reset for reuse
-		state.segmentIndex = 0
-		this.statePool.push(state)
-	}
-
 }
