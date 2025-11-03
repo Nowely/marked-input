@@ -12,6 +12,7 @@
 import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentMatch} from '../utils/AhoCorasick'
 import {MatchResult} from '../types'
+import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
  * Minimal match structure - no intermediate conversions
@@ -19,7 +20,7 @@ import {MatchResult} from '../types'
 interface DirectMatch {
 	start: number
 	end: number
-	descriptorIndex: number
+	descriptor: MarkupDescriptor
 	// Positions for content extraction
 	valueStart: number
 	valueEnd: number
@@ -33,7 +34,7 @@ interface DirectMatch {
  * Active pattern state - minimal structure for state machine
  */
 interface ActiveState {
-	descriptorIndex: number
+	descriptor: MarkupDescriptor
 	segmentIndex: number // Current segment we're waiting for
 	startPos: number // Where pattern started
 	lastPos: number // Last segment end position
@@ -106,7 +107,7 @@ export class PatternProcessor {
 		}
 
 		const best = waiting[bestIdx]
-		const descriptor = this.registry.descriptors[best.descriptorIndex]
+		const descriptor = best.descriptor
 
 		// Check if segment matches expected
 		if (descriptor.segments[best.segmentIndex] !== segment.value) {
@@ -194,7 +195,7 @@ export class PatternProcessor {
 			const match = this.acquireMatch()
 			match.start = best.startPos
 			match.end = segment.end + 1
-			match.descriptorIndex = best.descriptorIndex
+			match.descriptor = best.descriptor
 			match.valueStart = best.valueStart
 			match.valueEnd = best.valueEnd
 			match.nestedStart = best.nestedStart !== -1 ? best.nestedStart : undefined
@@ -223,7 +224,7 @@ export class PatternProcessor {
 
 	/** Priority calculation. Higher = better priority */
 	private calculatePriority(state: ActiveState): number {
-		const descriptor = this.registry.descriptors[state.descriptorIndex]
+		const descriptor = state.descriptor
 		const isCompleting = state.segmentIndex === descriptor.segments.length - 1
 		const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
 
@@ -248,7 +249,7 @@ export class PatternProcessor {
 
 				if (state.startPos !== startPos) continue
 
-				const stateDescriptor = this.registry.descriptors[state.descriptorIndex]
+				const stateDescriptor = state.descriptor
 				const stateFirstSeg = stateDescriptor.segments[0]
 
 				// Cancel if:
@@ -273,14 +274,12 @@ export class PatternProcessor {
 		const descriptors = this.registry.getDescriptorsStartingWithSegment(segment.value)
 
 		for (const descriptor of descriptors) {
-			const descriptorIndex = this.registry.descriptors.indexOf(descriptor)
-
 			// Single segment pattern - complete immediately
 			if (descriptor.segments.length === 1) {
 				const match = this.acquireMatch()
 				match.start = segment.start
 				match.end = segment.end + 1
-				match.descriptorIndex = descriptorIndex
+				match.descriptor = descriptor
 				match.valueStart = segment.start
 				match.valueEnd = segment.end + 1
 
@@ -290,7 +289,7 @@ export class PatternProcessor {
 
 			// Multi-segment pattern - create state
 			const state = this.acquireState()
-			state.descriptorIndex = descriptorIndex
+			state.descriptor = descriptor
 			state.segmentIndex = 1 // Next segment to look for
 			state.startPos = segment.start
 			state.lastPos = segment.end + 1
@@ -335,7 +334,7 @@ export class PatternProcessor {
 				'Completed matches:',
 				this.completedMatches
 					.map(
-						m => `[${m.start},${m.end}] desc=${m.descriptorIndex} nested=[${m.nestedStart},${m.nestedEnd}]`
+						m => `[${m.start},${m.end}] desc=${m.descriptor.index} nested=[${m.nestedStart},${m.nestedEnd}]`
 					)
 					.join(' | ')
 			)
@@ -346,8 +345,8 @@ export class PatternProcessor {
 			if (a.start !== b.start) return a.start - b.start
 			if (a.end !== b.end) return b.end - a.end
 
-			const aDesc = this.registry.descriptors[a.descriptorIndex]
-			const bDesc = this.registry.descriptors[b.descriptorIndex]
+			const aDesc = a.descriptor
+			const bDesc = b.descriptor
 			const aSegLen = aDesc.segments[0].length
 			const bSegLen = bDesc.segments[0].length
 
@@ -366,7 +365,7 @@ export class PatternProcessor {
 			// Pre-filter: Skip TRULY empty matches (nested content has length 0)
 			// But allow empty-content matches (nested length = 0 but segments exist)
 			// Example: "**" can be a valid match for *__nested__* pattern
-			const matchDesc = this.registry.descriptors[match.descriptorIndex]
+			const matchDesc = match.descriptor
 			if (matchDesc.hasNested && match.nestedStart !== undefined && match.nestedEnd !== undefined) {
 				const nestedLength = match.nestedEnd - match.nestedStart
 				// Only filter if nested region has NEGATIVE length (which shouldn't happen but be safe)
@@ -389,8 +388,8 @@ export class PatternProcessor {
 				if (match.start >= existing.start && match.end <= existing.end) {
 					// If strictly inside (not sharing boundaries), check if it's valid nesting
 					if (match.start > existing.start || match.end < existing.end) {
-						const matchDesc = this.registry.descriptors[match.descriptorIndex]
-						const existingDesc = this.registry.descriptors[existing.descriptorIndex]
+						const matchDesc = match.descriptor
+						const existingDesc = existing.descriptor
 
 						if (DEBUG) {
 							console.log(
@@ -503,18 +502,18 @@ export class PatternProcessor {
 			if (!shouldFilter) {
 				filtered.push(match)
 				if (DEBUG) {
-					console.log(`\nADDED to filtered: [${match.start},${match.end}] desc=${match.descriptorIndex}`)
+					console.log(`\nADDED to filtered: [${match.start},${match.end}] desc=${match.descriptor.index}`)
 				}
 			} else {
 				if (DEBUG) {
-					console.log(`\nFILTERED OUT: [${match.start},${match.end}] desc=${match.descriptorIndex}`)
+					console.log(`\nFILTERED OUT: [${match.start},${match.end}] desc=${match.descriptor.index}`)
 				}
 			}
 		}
 
 		if (DEBUG) {
 			console.log('\n=== Final filtered matches ===')
-			console.log(filtered.map(m => `[${m.start},${m.end}] desc=${m.descriptorIndex}`).join(' | '))
+			console.log(filtered.map(m => `[${m.start},${m.end}] desc=${m.descriptor.index}`).join(' | '))
 		}
 
 		return filtered
@@ -527,7 +526,7 @@ export class PatternProcessor {
 		const results: MatchResult[] = []
 
 		for (const match of matches) {
-			const descriptor = this.registry.descriptors[match.descriptorIndex]
+			const descriptor = match.descriptor
 
 			// Extract content inline
 			const value =
@@ -558,7 +557,7 @@ export class PatternProcessor {
 				meta,
 				metaStart: match.metaStart,
 				metaEnd: match.metaEnd,
-				descriptorIndex: match.descriptorIndex,
+				descriptor: match.descriptor,
 			})
 		}
 
@@ -574,7 +573,7 @@ export class PatternProcessor {
 	private acquireState(): ActiveState {
 		return (
 			this.statePool.pop() || {
-				descriptorIndex: 0,
+				descriptor: null as any, // Will be set when acquired
 				segmentIndex: 0,
 				startPos: 0,
 				lastPos: 0,
@@ -599,7 +598,7 @@ export class PatternProcessor {
 			this.matchPool.pop() || {
 				start: 0,
 				end: 0,
-				descriptorIndex: 0,
+				descriptor: null as any, // Will be set when acquired
 				valueStart: 0,
 				valueEnd: 0,
 			}

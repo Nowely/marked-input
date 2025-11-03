@@ -32,7 +32,7 @@ export class Parser {
 
 	static join(tokens: Token[], options?: {markup: Markup}[]): string {
 		const markups = options?.map(c => c.markup) || []
-		return tokensToString(tokens, markups)
+		return tokensToString(tokens)
 	}
 
 	split(value: string): Token[] {
@@ -42,7 +42,7 @@ export class Parser {
 	}
 
 	join(tokens: Token[]): string {
-		return tokensToString(tokens, this.registry.markups)
+		return tokensToString(tokens)
 	}
 
 	/**

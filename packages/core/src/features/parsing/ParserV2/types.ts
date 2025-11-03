@@ -1,4 +1,5 @@
 import {PLACEHOLDER} from './constants'
+import {MarkupDescriptor} from './core/MarkupDescriptor'
 
 export type Token = TextToken | MarkToken
 
@@ -18,7 +19,7 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
-	optionIndex: number
+	descriptor: MarkupDescriptor
 	value: string
 	meta?: string
 	nested?: {
@@ -63,8 +64,8 @@ export interface MatchResult {
 	metaStart?: number
 	/** End position of meta in original text (exclusive) */
 	metaEnd?: number
-	/** Index of markup descriptor that matched */
-	descriptorIndex: number
+	/** Markup descriptor that matched */
+	descriptor: MarkupDescriptor
 }
 
 /**
