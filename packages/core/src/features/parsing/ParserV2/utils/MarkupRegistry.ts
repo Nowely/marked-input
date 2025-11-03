@@ -13,7 +13,7 @@ export class MarkupRegistry {
 	/** Map from segment to descriptors that use this segment */
 	readonly segmentsMap: Map<string, MarkupDescriptor[]>
 	/** Pre-sorted descriptors by first segment (for startNewChains optimization) */
-	private readonly firstSegmentsMap: Map<string, MarkupDescriptor[]>
+	readonly firstSegmentsMap: Map<string, MarkupDescriptor[]>
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
@@ -51,13 +51,5 @@ export class MarkupRegistry {
 		})
 
 		this.segments = Array.from(this.segmentsMap.keys())
-	}
-
-
-	/**
-	 * Gets all descriptors where the segment at the given index is the first segment
-	 */
-	getDescriptorsStartingWithSegment(segmentValue: string): MarkupDescriptor[] {
-		return this.firstSegmentsMap.get(segmentValue) || []
 	}
 }

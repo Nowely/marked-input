@@ -265,7 +265,9 @@ export class PatternProcessor {
 	 * Try to start new pattern states
 	 */
 	private tryStartNewStates(segment: SegmentMatch): void {
-		const descriptors = this.registry.getDescriptorsStartingWithSegment(segment.value)
+		const descriptors = this.registry.firstSegmentsMap.get(segment.value)
+
+		if (!descriptors) return
 
 		for (const descriptor of descriptors) {
 			// Single segment pattern - complete immediately
