@@ -21,7 +21,7 @@ export interface SegmentMatch {
 	index: number
 	/** Start position in text */
 	start: number
-	/** End position in text (inclusive) */
+	/** End position in text (exclusive) */
 	end: number
 	/** Matched text */
 	value: string
@@ -75,7 +75,7 @@ export class AhoCorasick {
 					results.push({
 						index,
 						start,
-						end: i,
+						end: i + 1,
 						value: pattern,
 					})
 				}

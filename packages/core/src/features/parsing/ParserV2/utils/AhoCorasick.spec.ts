@@ -74,7 +74,7 @@ describe('AhoCorasick', () => {
 			expect(results[0]).toEqual({
 				index: 0,
 				start: 0,
-				end: 4,
+				end: 5,
 				value: 'hello',
 			})
 		})
@@ -91,13 +91,13 @@ describe('AhoCorasick', () => {
 			expect(sorted[0]).toEqual({
 				index: 0,
 				start: 0,
-				end: 4,
+				end: 5,
 				value: 'hello',
 			})
 			expect(sorted[1]).toEqual({
 				index: 1,
 				start: 6,
-				end: 10,
+				end: 11,
 				value: 'world',
 			})
 		})
@@ -110,9 +110,9 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 3, value: 'test'})
-			expect(sorted[1]).toMatchObject({start: 5, end: 8, value: 'test'})
-			expect(sorted[2]).toMatchObject({start: 10, end: 13, value: 'test'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'test'})
+			expect(sorted[1]).toMatchObject({start: 5, end: 9, value: 'test'})
+			expect(sorted[2]).toMatchObject({start: 10, end: 14, value: 'test'})
 		})
 
 		it('should return empty array when no patterns match', () => {
@@ -143,7 +143,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello')
 
 			expect(results).toHaveLength(1)
-			expect(results[0]).toMatchObject({start: 0, end: 4})
+			expect(results[0]).toMatchObject({start: 0, end: 5})
 		})
 
 		it('should find pattern at the end of text', () => {
@@ -151,7 +151,7 @@ describe('AhoCorasick', () => {
 			const results = ac.search('hello world')
 
 			expect(results).toHaveLength(1)
-			expect(results[0]).toMatchObject({start: 6, end: 10})
+			expect(results[0]).toMatchObject({start: 6, end: 11})
 		})
 
 		it('should find pattern that is the entire text', () => {
@@ -162,7 +162,7 @@ describe('AhoCorasick', () => {
 			expect(results[0]).toEqual({
 				index: 0,
 				start: 0,
-				end: 4,
+				end: 5,
 				value: 'hello',
 			})
 		})
@@ -175,8 +175,8 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
-			expect(sorted[1]).toMatchObject({start: 5, end: 9, value: 'world'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 5, value: 'hello'})
+			expect(sorted[1]).toMatchObject({start: 5, end: 10, value: 'world'})
 		})
 
 		it('should handle single character patterns', () => {
@@ -187,9 +187,9 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 0, value: 'a'})
-			expect(sorted[1]).toMatchObject({start: 1, end: 1, value: 'b'})
-			expect(sorted[2]).toMatchObject({start: 2, end: 2, value: 'c'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 1, value: 'a'})
+			expect(sorted[1]).toMatchObject({start: 1, end: 2, value: 'b'})
+			expect(sorted[2]).toMatchObject({start: 2, end: 3, value: 'c'})
 		})
 
 		it('should handle very long pattern', () => {
@@ -201,7 +201,7 @@ describe('AhoCorasick', () => {
 			expect(results).toHaveLength(1)
 			expect(results[0]).toMatchObject({
 				start: 100,
-				end: 1099,
+				end: 1100,
 				value: longPattern,
 			})
 		})
@@ -214,7 +214,7 @@ describe('AhoCorasick', () => {
 			expect(results).toHaveLength(1)
 			expect(results[0]).toMatchObject({
 				start: 30000,
-				end: 30005,
+				end: 30006,
 				value: 'needle',
 			})
 		})
@@ -229,8 +229,8 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 1, value: 'he'})
-			expect(sorted[1]).toMatchObject({start: 0, end: 4, value: 'hello'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 2, value: 'he'})
+			expect(sorted[1]).toMatchObject({start: 0, end: 5, value: 'hello'})
 		})
 
 		it('should find overlapping patterns (pattern is suffix of another)', () => {
@@ -241,8 +241,8 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
-			expect(sorted[1]).toMatchObject({start: 3, end: 4, value: 'lo'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 5, value: 'hello'})
+			expect(sorted[1]).toMatchObject({start: 3, end: 5, value: 'lo'})
 		})
 
 		it('should find overlapping patterns (pattern is substring of another)', () => {
@@ -253,8 +253,8 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'hello'})
-			expect(sorted[1]).toMatchObject({start: 1, end: 3, value: 'ell'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 5, value: 'hello'})
+			expect(sorted[1]).toMatchObject({start: 1, end: 4, value: 'ell'})
 		})
 
 		it('should find complex overlapping patterns', () => {
@@ -265,9 +265,9 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 2, value: 'abc'})
-			expect(sorted[1]).toMatchObject({start: 1, end: 3, value: 'bcd'})
-			expect(sorted[2]).toMatchObject({start: 2, end: 4, value: 'cde'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 3, value: 'abc'})
+			expect(sorted[1]).toMatchObject({start: 1, end: 4, value: 'bcd'})
+			expect(sorted[2]).toMatchObject({start: 2, end: 5, value: 'cde'})
 		})
 
 		it('should find patterns with common prefix', () => {
@@ -279,12 +279,12 @@ describe('AhoCorasick', () => {
 			const sorted = results.sort((a, b) => a.start - b.start || a.end - b.end)
 
 			// "testing" contains "test"
-			expect(sorted[0]).toMatchObject({start: 0, end: 3, value: 'test'})
-			expect(sorted[1]).toMatchObject({start: 0, end: 6, value: 'testing'})
+			expect(sorted[0]).toMatchObject({start: 0, end: 4, value: 'test'})
+			expect(sorted[1]).toMatchObject({start: 0, end: 7, value: 'testing'})
 
 			// "tester" contains "test"
-			expect(sorted[2]).toMatchObject({start: 8, end: 11, value: 'test'})
-			expect(sorted[3]).toMatchObject({start: 8, end: 13, value: 'tester'})
+			expect(sorted[2]).toMatchObject({start: 8, end: 12, value: 'test'})
+			expect(sorted[3]).toMatchObject({start: 8, end: 14, value: 'tester'})
 		})
 	})
 
@@ -401,8 +401,8 @@ describe('AhoCorasick', () => {
 
 			expect(results).toHaveLength(1)
 			expect(results[0].start).toBe(4)
-			expect(results[0].end).toBe(8)
-			expect(results[0].end - results[0].start + 1).toBe('hello'.length)
+			expect(results[0].end).toBe(9)
+			expect(results[0].end - results[0].start).toBe('hello'.length)
 		})
 
 		it('should have end >= start for all matches', () => {
@@ -420,20 +420,20 @@ describe('AhoCorasick', () => {
 			const results = ac.search(text)
 
 			results.forEach(result => {
-				const extracted = text.substring(result.start, result.end + 1)
+				const extracted = text.substring(result.start, result.end)
 				expect(extracted).toBe(result.value)
 			})
 		})
 
-		it('should have correct end position (inclusive)', () => {
+		it('should have correct end position (exclusive)', () => {
 			const ac = new AhoCorasick(['test'])
 			const text = 'test'
 			const results = ac.search(text)
 
 			expect(results).toHaveLength(1)
-			// end should be 3 (inclusive) for "test" which is 0-3
-			expect(results[0].end).toBe(3)
-			expect(text.substring(results[0].start, results[0].end + 1)).toBe('test')
+			// end should be 4 (exclusive) for "test" which is 0-3
+			expect(results[0].end).toBe(4)
+			expect(text.substring(results[0].start, results[0].end)).toBe('test')
 		})
 	})
 
@@ -696,7 +696,7 @@ describe('AhoCorasick', () => {
 			expect(results).toHaveLength(1)
 			expect(results[0]).toMatchObject({
 				start: 0,
-				end: 3,
+				end: 4,
 				value: 'test',
 			})
 		})
@@ -710,9 +710,9 @@ describe('AhoCorasick', () => {
 
 			const sorted = results.sort((a, b) => a.start - b.start)
 
-			expect(sorted[0]).toMatchObject({start: 0, end: 1})
-			expect(sorted[1]).toMatchObject({start: 1, end: 2})
-			expect(sorted[2]).toMatchObject({start: 2, end: 3})
+			expect(sorted[0]).toMatchObject({start: 0, end: 2})
+			expect(sorted[1]).toMatchObject({start: 1, end: 3})
+			expect(sorted[2]).toMatchObject({start: 2, end: 4})
 		})
 
 		it('should handle pattern that appears at every position', () => {

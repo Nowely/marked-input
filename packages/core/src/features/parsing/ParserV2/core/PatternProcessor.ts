@@ -131,7 +131,7 @@ export class PatternProcessor {
 			best.metaEnd = gapEnd
 		}
 
-		best.lastPos = segment.end + 1
+		best.lastPos = segment.end
 		best.segmentIndex++
 
 		// Check if pattern is complete
@@ -194,7 +194,7 @@ export class PatternProcessor {
 
 			const match = this.acquireMatch()
 			match.start = best.startPos
-			match.end = segment.end + 1
+			match.end = segment.end
 			match.descriptor = best.descriptor
 			match.valueStart = best.valueStart
 			match.valueEnd = best.valueEnd
@@ -278,10 +278,10 @@ export class PatternProcessor {
 			if (descriptor.segments.length === 1) {
 				const match = this.acquireMatch()
 				match.start = segment.start
-				match.end = segment.end + 1
+				match.end = segment.end
 				match.descriptor = descriptor
 				match.valueStart = segment.start
-				match.valueEnd = segment.end + 1
+				match.valueEnd = segment.end
 
 				this.completedMatches.push(match)
 				continue
@@ -292,7 +292,7 @@ export class PatternProcessor {
 			state.descriptor = descriptor
 			state.segmentIndex = 1 // Next segment to look for
 			state.startPos = segment.start
-			state.lastPos = segment.end + 1
+			state.lastPos = segment.end
 			state.valueStart = -1
 			state.valueEnd = -1
 			state.nestedStart = -1
