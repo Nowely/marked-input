@@ -7,13 +7,10 @@
  * 3. Object pooling with actual reuse
  * 4. Minimal allocations in hot loops
  * 5. State machine approach instead of complex chain management
- * 
- * Target: 3-5x performance improvement over current implementation
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentMatch} from '../utils/AhoCorasick'
-import {MarkupDescriptor} from './MarkupDescriptor'
 import {MatchResult} from '../types'
 
 /**
@@ -54,7 +51,6 @@ interface ActiveState {
  */
 export class PatternProcessor {
 	private readonly registry: MarkupRegistry
-	private readonly descriptors: MarkupDescriptor[]
 
 	// Object pools for zero-allocation parsing
 	private readonly statePool: ActiveState[] = []
@@ -67,7 +63,6 @@ export class PatternProcessor {
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
-		this.descriptors = registry.descriptors
 	}
 
 	/**
@@ -127,7 +122,7 @@ export class PatternProcessor {
 		}
 
 		const best = waiting[bestIdx]
-		const descriptor = this.descriptors[best.descriptorIndex]
+		const descriptor = this.registry.descriptors[best.descriptorIndex]
 		
 		// Check if segment matches expected
 		if (descriptor.segments[best.segmentIndex] !== segment.value) {
@@ -249,7 +244,7 @@ export class PatternProcessor {
 	 * Phase 2 optimization: Added segment length for symmetric pattern handling
 	 */
 	private calculatePriority(state: ActiveState): number {
-		const descriptor = this.descriptors[state.descriptorIndex]
+		const descriptor = this.registry.descriptors[state.descriptorIndex]
 		const isCompleting = state.segmentIndex === descriptor.segments.length - 1
 		const firstSegLength = descriptor.segments[0].length  // ** = 2, * = 1
 		
@@ -269,7 +264,7 @@ export class PatternProcessor {
 		const descriptors = this.registry.getDescriptorsStartingWithSegment(segment.index)
 		
 		for (const descriptor of descriptors) {
-			const descriptorIndex = this.descriptors.indexOf(descriptor)
+			const descriptorIndex = this.registry.descriptors.indexOf(descriptor)
 			
 			// Single segment pattern - complete immediately
 			if (descriptor.segments.length === 1) {
@@ -319,7 +314,7 @@ export class PatternProcessor {
 				
 				if (state.startPos !== startPos) continue
 				
-				const stateDescriptor = this.descriptors[state.descriptorIndex]
+				const stateDescriptor = this.registry.descriptors[state.descriptorIndex]
 				const stateFirstSeg = stateDescriptor.segments[0]
 				
 				// Cancel if:
@@ -369,8 +364,8 @@ export class PatternProcessor {
 			if (a.start !== b.start) return a.start - b.start
 			if (a.end !== b.end) return b.end - a.end
 			
-			const aDesc = this.descriptors[a.descriptorIndex]
-			const bDesc = this.descriptors[b.descriptorIndex]
+			const aDesc = this.registry.descriptors[a.descriptorIndex]
+			const bDesc = this.registry.descriptors[b.descriptorIndex]
 			const aSegLen = aDesc.segments[0].length
 			const bSegLen = bDesc.segments[0].length
 			
@@ -389,7 +384,7 @@ export class PatternProcessor {
 			// Pre-filter: Skip TRULY empty matches (nested content has length 0)
 			// But allow empty-content matches (nested length = 0 but segments exist)
 			// Example: "**" can be a valid match for *__nested__* pattern
-			const matchDesc = this.descriptors[match.descriptorIndex]
+			const matchDesc = this.registry.descriptors[match.descriptorIndex]
 			if (matchDesc.hasNested && match.nestedStart !== undefined && match.nestedEnd !== undefined) {
 				const nestedLength = match.nestedEnd - match.nestedStart
 				// Only filter if nested region has NEGATIVE length (which shouldn't happen but be safe)
@@ -412,8 +407,8 @@ export class PatternProcessor {
 			if (match.start >= existing.start && match.end <= existing.end) {
 				// If strictly inside (not sharing boundaries), check if it's valid nesting
 				if (match.start > existing.start || match.end < existing.end) {
-					const matchDesc = this.descriptors[match.descriptorIndex]
-					const existingDesc = this.descriptors[existing.descriptorIndex]
+					const matchDesc = this.registry.descriptors[match.descriptorIndex]
+					const existingDesc = this.registry.descriptors[existing.descriptorIndex]
 					
 					if (DEBUG) {
 						console.log(`\nCase 2: match [${match.start},${match.end}] inside existing [${existing.start},${existing.end}]`)
@@ -542,7 +537,7 @@ export class PatternProcessor {
 		const results: MatchResult[] = []
 		
 		for (const match of matches) {
-			const descriptor = this.descriptors[match.descriptorIndex]
+			const descriptor = this.registry.descriptors[match.descriptorIndex]
 			
 			// Extract content inline
 			const value = match.valueStart !== -1 && match.valueEnd !== -1
