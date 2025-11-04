@@ -81,109 +81,14 @@ export class PatternProcessor {
 		if (!waiting || waiting.length === 0) return
 
 		const [bestIdx, best] = this.findBestPriorityState(waiting)
-		const descriptor = best.descriptor
 
-		// Update state with new segment
-		const gapStart = best.end
-		const gapEnd = segment.start
-		const gapType = descriptor.gapTypes[best.expectedSegmentIndex - 1]
-
-		// Update gap positions based on type
-		if (gapType === 'value') {
-			best.valueStart = gapStart
-			best.valueEnd = gapEnd
-		} else if (gapType === 'nested') {
-			best.nestedStart = gapStart
-			best.nestedEnd = gapEnd
-		} else if (gapType === 'meta') {
-			best.metaStart = gapStart
-			best.metaEnd = gapEnd
-		}
-
-		best.end = segment.end
-		best.expectedSegmentIndex++
+		this.updateMatchStateWithSegment(best, segment)
 
 		// Check if pattern is complete
-		if (best.expectedSegmentIndex >= descriptor.segments.length) {
-			// Pattern complete - validate and create match
-
-			// For patterns with two __value__ placeholders (e.g., <__value__>__nested__</__value__>)
-			// both values must be equal (opening and closing tags must match)
-			if (descriptor.hasTwoValues) {
-				// We need to extract both values from the input
-				// The last value is in best.valueStart/valueEnd
-				// We need to find the first value
-
-				// Find which gaps are values
-				let firstValueGapIdx = -1
-				let secondValueGapIdx = -1
-				for (let i = 0; i < descriptor.gapTypes.length; i++) {
-					if (descriptor.gapTypes[i] === 'value') {
-						if (firstValueGapIdx === -1) {
-							firstValueGapIdx = i
-						} else {
-							secondValueGapIdx = i
-							break
-						}
-					}
-				}
-
-				if (
-					firstValueGapIdx !== -1 &&
-					secondValueGapIdx !== -1 &&
-					best.valueStart !== undefined &&
-					best.valueEnd !== undefined
-				) {
-					// Second value we already have
-					const value2 = input.substring(best.valueStart, best.valueEnd)
-
-					// First value: find it by parsing from the start
-					// Position after first segment
-					let pos = best.start + descriptor.segments[0].length
-
-					// Skip gaps before the first value gap
-					for (let i = 0; i < firstValueGapIdx; i++) {
-						// Find next segment
-						const nextSeg = descriptor.segments[i + 1]
-						const nextPos = input.indexOf(nextSeg, pos)
-						if (nextPos === -1) break
-						pos = nextPos + nextSeg.length
-					}
-
-					// Now pos is at the start of first value gap
-					// Find the end of this gap (next segment)
-					const nextSeg = descriptor.segments[firstValueGapIdx + 1]
-					const endPos = input.indexOf(nextSeg, pos)
-					const value1 = endPos !== -1 ? input.substring(pos, endPos) : ''
-
-					// Validate
-					if (value1 !== value2) {
-						// Values don't match - reject
-						waiting.splice(bestIdx, 1)
-						return
-					}
-				}
-			}
-
-			// Complete the match by clearing expectedSegmentIndex
-			best.expectedSegmentIndex = NaN
-			best.end = segment.end
-
-			this.completedMatches.push(best)
-
-			// Remove from waiting
-			waiting.splice(bestIdx, 1)
-
-			// Cancel conflicting states
-			this.cancelConflictingStates(best.start, descriptor.segments[0])
+		if (best.expectedSegmentIndex >= best.descriptor.segments.length) {
+			this.handleCompletedPattern(best, segment, input, waiting, bestIdx)
 		} else {
-			// Pattern continues - update waiting list
-			waiting.splice(bestIdx, 1)
-			const nextSegment = descriptor.segments[best.expectedSegmentIndex]
-			if (!this.waitingStates.has(nextSegment)) {
-				this.waitingStates.set(nextSegment, [])
-			}
-			this.waitingStates.get(nextSegment)!.push(best)
+			this.handleIncompletePattern(best, waiting, bestIdx)
 		}
 	}
 
@@ -221,6 +126,130 @@ export class PatternProcessor {
 				descriptor.segments.length * 10 // Longer patterns
 			)
 		}
+	}
+
+	/**
+	 * Update match state with new segment by setting gap positions
+	 */
+	private updateMatchStateWithSegment(best: MatchState, segment: SegmentMatch): void {
+		const gapStart = best.end
+		const gapEnd = segment.start
+		const gapType = best.descriptor.gapTypes[best.expectedSegmentIndex - 1]
+
+		// Set gap positions based on type
+		switch (gapType) {
+			case 'value':
+				best.valueStart = gapStart
+				best.valueEnd = gapEnd
+				break
+			case 'nested':
+				best.nestedStart = gapStart
+				best.nestedEnd = gapEnd
+				break
+			case 'meta':
+				best.metaStart = gapStart
+				best.metaEnd = gapEnd
+				break
+		}
+
+		best.end = segment.end
+		best.expectedSegmentIndex++
+	}
+
+	/**
+	 * Handle completed pattern match
+	 */
+	private handleCompletedPattern(
+		state: MatchState,
+		segment: SegmentMatch,
+		input: string,
+		waiting: MatchState[],
+		bestIdx: number
+	): void {
+		const descriptor = state.descriptor
+
+		// For patterns with two __value__ placeholders (e.g., <__value__>__nested__</__value__>)
+		// both values must be equal (opening and closing tags must match)
+		if (descriptor.hasTwoValues) {
+			// We need to extract both values from the input
+			// The last value is in state.valueStart/valueEnd
+			// We need to find the first value
+
+			// Find which gaps are values
+			let firstValueGapIdx = -1
+			let secondValueGapIdx = -1
+			for (let i = 0; i < descriptor.gapTypes.length; i++) {
+				if (descriptor.gapTypes[i] === 'value') {
+					if (firstValueGapIdx === -1) {
+						firstValueGapIdx = i
+					} else {
+						secondValueGapIdx = i
+						break
+					}
+				}
+			}
+
+			if (
+				firstValueGapIdx !== -1 &&
+				secondValueGapIdx !== -1 &&
+				state.valueStart !== undefined &&
+				state.valueEnd !== undefined
+			) {
+				// Second value we already have
+				const value2 = input.substring(state.valueStart, state.valueEnd)
+
+				// First value: find it by parsing from the start
+				// Position after first segment
+				let pos = state.start + descriptor.segments[0].length
+
+				// Skip gaps before the first value gap
+				for (let i = 0; i < firstValueGapIdx; i++) {
+					// Find next segment
+					const nextSeg = descriptor.segments[i + 1]
+					const nextPos = input.indexOf(nextSeg, pos)
+					if (nextPos === -1) break
+					pos = nextPos + nextSeg.length
+				}
+
+				// Now pos is at the start of first value gap
+				// Find the end of this gap (next segment)
+				const nextSeg = descriptor.segments[firstValueGapIdx + 1]
+				const endPos = input.indexOf(nextSeg, pos)
+				const value1 = endPos !== -1 ? input.substring(pos, endPos) : ''
+
+				// Validate
+				if (value1 !== value2) {
+					// Values don't match - reject
+					waiting.splice(bestIdx, 1)
+					return
+				}
+			}
+		}
+
+		// Complete the match by clearing expectedSegmentIndex
+		state.expectedSegmentIndex = NaN
+		state.end = segment.end
+
+		this.completedMatches.push(state)
+
+		// Remove from waiting
+		waiting.splice(bestIdx, 1)
+
+		// Cancel conflicting states
+		this.cancelConflictingStates(state.start, descriptor.segments[0])
+	}
+
+	/**
+	 * Handle incomplete pattern that needs more segments
+	 */
+	private handleIncompletePattern(state: MatchState, waiting: MatchState[], bestIdx: number): void {
+		// Pattern continues - update waiting list
+		waiting.splice(bestIdx, 1)
+		const nextSegment = state.descriptor.segments[state.expectedSegmentIndex]
+		if (!this.waitingStates.has(nextSegment)) {
+			this.waitingStates.set(nextSegment, [])
+		}
+		this.waitingStates.get(nextSegment)!.push(state)
 	}
 
 	/**
