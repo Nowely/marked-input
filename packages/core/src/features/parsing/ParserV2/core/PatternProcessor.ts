@@ -83,13 +83,7 @@ export class PatternProcessor {
 		const [bestIdx, best] = this.findBestPriorityState(waiting)
 		const descriptor = best.descriptor
 
-		// Check if segment matches expected
-		if (
-			best.expectedSegmentIndex === undefined ||
-			descriptor.segments[best.expectedSegmentIndex] !== segment.value
-		) {
-			return
-		}
+		if (best.expectedSegmentIndex === undefined) return
 
 		// Update state with new segment
 		const gapStart = best.end
@@ -218,11 +212,11 @@ export class PatternProcessor {
 			const descriptor = state.descriptor
 			const expectedIndex = state.expectedSegmentIndex
 
-			const isCompleting = expectedIndex === undefined || expectedIndex === descriptor.segments.length - 1
+			const isWaitingForLastSegment = expectedIndex === descriptor.segments.length - 1
 			const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
 
 			return (
-				(isCompleting ? 10_000_000 : 0) + // Completing patterns first
+				(isWaitingForLastSegment ? 10_000_000 : 0) + // Completing patterns first
 				firstSegLength * 100_000 + // Longer first segments (** > *)
 				state.start * 1000 + // Later starts (LIFO)
 				(expectedIndex ?? 0) * 100 + // More progress
