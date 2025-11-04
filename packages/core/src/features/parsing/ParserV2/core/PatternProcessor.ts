@@ -274,13 +274,13 @@ export class PatternProcessor {
 			// Multi-segment pattern - create state
 			const state: MatchState = {
 				descriptor,
-				expectedSegmentIndex: 1, // Next segment to look for
+				expectedSegmentIndex: 1,
 				start: segment.start,
 				end: segment.end,
 			}
 
 			// Add to waiting list for next segment
-			const nextSegment = descriptor.segments[1]
+			const nextSegment = descriptor.segments[state.expectedSegmentIndex!]
 			if (!this.waitingStates.has(nextSegment)) {
 				this.waitingStates.set(nextSegment, [])
 			}
