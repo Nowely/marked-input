@@ -131,29 +131,29 @@ export class PatternProcessor {
 	/**
 	 * Update match state with new segment by setting gap positions
 	 */
-	private updateMatchStateWithSegment(best: MatchState, segment: SegmentMatch): void {
-		const gapStart = best.end
+	private updateMatchStateWithSegment(state: MatchState, segment: SegmentMatch): void {
+		const gapStart = state.end
 		const gapEnd = segment.start
-		const gapType = best.descriptor.gapTypes[best.expectedSegmentIndex - 1]
+		const gapType = state.descriptor.gapTypes[state.expectedSegmentIndex - 1]
 
 		// Set gap positions based on type
 		switch (gapType) {
 			case 'value':
-				best.valueStart = gapStart
-				best.valueEnd = gapEnd
+				state.valueStart = gapStart
+				state.valueEnd = gapEnd
 				break
 			case 'nested':
-				best.nestedStart = gapStart
-				best.nestedEnd = gapEnd
+				state.nestedStart = gapStart
+				state.nestedEnd = gapEnd
 				break
 			case 'meta':
-				best.metaStart = gapStart
-				best.metaEnd = gapEnd
+				state.metaStart = gapStart
+				state.metaEnd = gapEnd
 				break
 		}
 
-		best.end = segment.end
-		best.expectedSegmentIndex++
+		state.end = segment.end
+		state.expectedSegmentIndex++
 	}
 
 	/**
