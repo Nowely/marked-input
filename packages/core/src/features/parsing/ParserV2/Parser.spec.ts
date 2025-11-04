@@ -248,6 +248,22 @@ describe('ParserV2', () => {
 						expect(marks[0].meta).toBe('class')
 					})
 
+				it('handles HTML-like pattern with mismatched closing tags', () => {
+					// Pattern: <__value__ __meta__>__nested__</__value__>
+					const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '**__nested__**'])
+					const input = '<div class>Content with **bold** </span></div>'
+					const result = parser.split(input)
+
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						"0: TEXT "" [0-0]
+						 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", nested="Content with **bold** </span>"]
+							1.0: TEXT "Content with " [11-24]
+							1.1: MARK "**bold**" [24-32] [value="bold", nested="bold"]
+							1.2: TEXT " </span>" [32-40]
+						 2: TEXT "" [46-46]"
+					`)
+				})
+
 					it('handles HTML-like pattern with empty value', () => {
 						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '#[__nested__]'])
 						const input = '<span >Text #[tag]</span>'
