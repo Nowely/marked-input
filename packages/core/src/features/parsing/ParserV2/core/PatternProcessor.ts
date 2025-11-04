@@ -24,8 +24,8 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 interface MatchState {
 	/** Descriptor defining the markup pattern being matched */
 	descriptor: MarkupDescriptor
-	/** Index of the next expected segment (undefined for completed matches) */
-	expectedSegmentIndex?: number
+	/** Index of the next expected segment (NaN for completed matches) */
+	expectedSegmentIndex: number
 	/** Starting position of the pattern in the input text */
 	start: number
 	/** End position of the last processed segment */
@@ -82,8 +82,6 @@ export class PatternProcessor {
 
 		const [bestIdx, best] = this.findBestPriorityState(waiting)
 		const descriptor = best.descriptor
-
-		if (best.expectedSegmentIndex === undefined) return
 
 		// Update state with new segment
 		const gapStart = best.end
@@ -168,7 +166,7 @@ export class PatternProcessor {
 			}
 
 			// Complete the match by clearing expectedSegmentIndex
-			best.expectedSegmentIndex = undefined
+			best.expectedSegmentIndex = NaN
 			best.end = segment.end
 
 			this.completedMatches.push(best)
@@ -219,7 +217,7 @@ export class PatternProcessor {
 				(isWaitingForLastSegment ? 10_000_000 : 0) + // Completing patterns first
 				firstSegLength * 100_000 + // Longer first segments (** > *)
 				state.start * 1000 + // Later starts (LIFO)
-				(expectedIndex ?? 0) * 100 + // More progress
+				expectedIndex * 100 + // More progress
 				descriptor.segments.length * 10 // Longer patterns
 			)
 		}
@@ -268,6 +266,7 @@ export class PatternProcessor {
 			if (descriptor.segments.length === 1) {
 				const match: MatchState = {
 					descriptor,
+					expectedSegmentIndex: NaN, // Single segment pattern - complete immediately
 					start: segment.start,
 					end: segment.end,
 					valueStart: segment.start,
