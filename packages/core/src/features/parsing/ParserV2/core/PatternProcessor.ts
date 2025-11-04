@@ -226,16 +226,11 @@ export class PatternProcessor {
 			}
 		}
 
-		// Complete the match by clearing expectedSegmentIndex
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
-
 		this.completedMatches.push(state)
-
-		// Remove from waiting
 		waiting.splice(bestIdx, 1)
 
-		// Cancel conflicting states
 		this.cancelConflictingStates(state.start, descriptor.segments[0])
 	}
 
