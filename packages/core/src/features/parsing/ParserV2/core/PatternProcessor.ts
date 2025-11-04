@@ -45,7 +45,6 @@ interface MatchState {
 export class PatternProcessor {
 	private readonly registry: MarkupRegistry
 
-	// Reusable arrays to avoid allocations
 	private readonly activeStates: MatchState[] = []
 	private readonly completedMatches: MatchState[] = []
 	private readonly waitingStates: Map<string, MatchState[]> = new Map()
@@ -76,13 +75,12 @@ export class PatternProcessor {
 
 	/**
 	 * Process states waiting for this segment
-	 * INLINED: All priority logic inline for performance
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		// INLINE: Select best state with inline priority calculation
+		// Select best state with inline priority calculation
 		let bestIdx = 0
 		let bestPriority = this.calculatePriority(waiting[0])
 
@@ -107,7 +105,7 @@ export class PatternProcessor {
 		const gapEnd = segment.start
 		const gapType = descriptor.gapTypes[best.expectedSegmentIndex - 1]
 
-		// INLINE: Update gap positions based on type
+		// Update gap positions based on type
 		if (gapType === 'value') {
 			best.valueStart = gapStart
 			best.valueEnd = gapEnd
