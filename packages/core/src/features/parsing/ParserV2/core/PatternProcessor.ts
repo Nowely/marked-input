@@ -80,23 +80,14 @@ export class PatternProcessor {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		// Select best state with inline priority calculation
-		let bestIdx = 0
-		let bestPriority = this.calculatePriority(waiting[0])
-
-		for (let i = 1; i < waiting.length; i++) {
-			const priority = this.calculatePriority(waiting[i])
-			if (priority > bestPriority) {
-				bestIdx = i
-				bestPriority = priority
-			}
-		}
-
-		const best = waiting[bestIdx]
+		const [bestIdx, best] = this.findBestPriorityState(waiting)
 		const descriptor = best.descriptor
 
 		// Check if segment matches expected
-		if (best.expectedSegmentIndex === undefined || descriptor.segments[best.expectedSegmentIndex] !== segment.value) {
+		if (
+			best.expectedSegmentIndex === undefined ||
+			descriptor.segments[best.expectedSegmentIndex] !== segment.value
+		) {
 			return
 		}
 
@@ -145,7 +136,12 @@ export class PatternProcessor {
 					}
 				}
 
-				if (firstValueGapIdx !== -1 && secondValueGapIdx !== -1 && best.valueStart !== undefined && best.valueEnd !== undefined) {
+				if (
+					firstValueGapIdx !== -1 &&
+					secondValueGapIdx !== -1 &&
+					best.valueStart !== undefined &&
+					best.valueEnd !== undefined
+				) {
 					// Second value we already have
 					const value2 = input.substring(best.valueStart, best.valueEnd)
 
@@ -199,21 +195,40 @@ export class PatternProcessor {
 		}
 	}
 
-	/** Priority calculation. Higher = better priority */
-	private calculatePriority(state: MatchState): number {
-		const descriptor = state.descriptor
-		const expectedIndex = state.expectedSegmentIndex
+	/**
+	 * Find the state with the highest priority from the given array
+	 */
+	private findBestPriorityState(states: MatchState[]): [number, MatchState] {
+		const priorities = states.map(calculatePriority)
 
-		const isCompleting = expectedIndex === undefined || expectedIndex === descriptor.segments.length - 1
-		const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
+		let bestIndex = 0
+		let bestPriority = priorities[0]
 
-		return (
-			(isCompleting ? 10_000_000 : 0) + // Completing patterns first
-			firstSegLength * 100_000 + // Longer first segments (** > *)
-			state.start * 1000 + // Later starts (LIFO)
-			(expectedIndex ?? 0) * 100 + // More progress
-			descriptor.segments.length * 10 // Longer patterns
-		)
+		for (let i = 1; i < states.length; i++) {
+			if (priorities[i] > bestPriority) {
+				bestIndex = i
+				bestPriority = priorities[i]
+			}
+		}
+
+		return [bestIndex, states[bestIndex]]
+
+		/** Priority calculation. Higher = better priority */
+		function calculatePriority(state: MatchState): number {
+			const descriptor = state.descriptor
+			const expectedIndex = state.expectedSegmentIndex
+
+			const isCompleting = expectedIndex === undefined || expectedIndex === descriptor.segments.length - 1
+			const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
+
+			return (
+				(isCompleting ? 10_000_000 : 0) + // Completing patterns first
+				firstSegLength * 100_000 + // Longer first segments (** > *)
+				state.start * 1000 + // Later starts (LIFO)
+				(expectedIndex ?? 0) * 100 + // More progress
+				descriptor.segments.length * 10 // Longer patterns
+			)
+		}
 	}
 
 	/**
