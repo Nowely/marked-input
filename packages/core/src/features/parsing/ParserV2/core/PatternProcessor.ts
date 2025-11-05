@@ -283,19 +283,6 @@ export class PatternProcessor {
 	private filterOverlappingMatches(): MatchState[] {
 		if (this.completedMatches.length === 0) return []
 
-		const DEBUG = false
-		if (DEBUG) {
-			console.log('\n=== filterOverlappingMatches ===')
-			console.log(
-				'Completed matches:',
-				this.completedMatches
-					.map(
-						m => `[${m.start},${m.end}] desc=${m.descriptor.index} nested=[${m.nestedStart},${m.nestedEnd}]`
-					)
-					.join(' | ')
-			)
-		}
-
 		// Sort: start ascending, end descending (longer first), then by segment length
 		this.completedMatches.sort((a, b) => {
 			if (a.start !== b.start) return a.start - b.start
@@ -347,15 +334,6 @@ export class PatternProcessor {
 						const matchDesc = match.descriptor
 						const existingDesc = existing.descriptor
 
-						if (DEBUG) {
-							console.log(
-								`\nCase 2: match [${match.start},${match.end}] inside existing [${existing.start},${existing.end}]`
-							)
-							console.log(`  Match nested: [${match.nestedStart}, ${match.nestedEnd}]`)
-							console.log(`  Existing nested: [${existing.nestedStart}, ${existing.nestedEnd}]`)
-							console.log(`  Existing hasNested: ${existingDesc.hasNested}`)
-						}
-
 						// Check if match is inside existing's nestable content
 						// IMPORTANT: Only patterns with __nested__ support nesting
 						// Patterns with only __value__ (no __nested__) should NOT allow nested marks
@@ -368,11 +346,9 @@ export class PatternProcessor {
 						) {
 							// Existing has __nested__ placeholder - check if match is within nestedStart/nestedEnd
 							isInNestableContent = match.start >= existing.nestedStart && match.end <= existing.nestedEnd
-							if (DEBUG) console.log(`  isInNestableContent (nested): ${isInNestableContent}`)
 						} else {
 							// Existing has NO __nested__ placeholder (only __value__ or __meta__)
 							// No nesting is allowed - filter any nested match immediately
-							if (DEBUG) console.log(`  No __nested__ in existing pattern => FILTER nested match`)
 							shouldFilter = true
 							break
 						}
@@ -384,7 +360,6 @@ export class PatternProcessor {
 							(match.end > existing.nestedEnd! && match.end <= existing.end) // ends in closing segment
 
 						if (overlapsWithExistingSegments && existing.nestedStart !== undefined) {
-							if (DEBUG) console.log(`  overlapsWithExistingSegments: true => FILTER`)
 							shouldFilter = true
 							break
 						}
@@ -392,7 +367,6 @@ export class PatternProcessor {
 						if (isInNestableContent) {
 							// Valid nesting - keep both
 							// Example: *inner* inside **outer *inner* text**
-							if (DEBUG) console.log(`  => KEEP (valid nesting)`)
 							// Don't check against this 'existing' anymore, but continue with other filtered matches
 							// We don't want to filter this match
 						} else {
@@ -446,10 +420,6 @@ export class PatternProcessor {
 					!(existing.start >= match.start && existing.end <= match.end) // existing not inside
 
 				if (matchesOverlap) {
-					if (DEBUG)
-						console.log(
-							`\nCase 3: Partial overlap [${match.start},${match.end}] vs [${existing.start},${existing.end}]`
-						)
 					shouldFilter = true
 					break
 				}
@@ -457,19 +427,7 @@ export class PatternProcessor {
 
 			if (!shouldFilter) {
 				filtered.push(match)
-				if (DEBUG) {
-					console.log(`\nADDED to filtered: [${match.start},${match.end}] desc=${match.descriptor.index}`)
-				}
-			} else {
-				if (DEBUG) {
-					console.log(`\nFILTERED OUT: [${match.start},${match.end}] desc=${match.descriptor.index}`)
-				}
 			}
-		}
-
-		if (DEBUG) {
-			console.log('\n=== Final filtered matches ===')
-			console.log(filtered.map(m => `[${m.start},${m.end}] desc=${m.descriptor.index}`).join(' | '))
 		}
 
 		return filtered
