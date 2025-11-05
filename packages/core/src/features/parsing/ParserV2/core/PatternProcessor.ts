@@ -99,9 +99,9 @@ export class PatternProcessor {
 
 			// Check if pattern is complete
 			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
-				this.handleCompletedPattern(state, segment, input, waiting, i)
+				this.handleCompletedPattern(state, segment)
 			} else {
-				this.handleIncompletePattern(state, waiting, i)
+				this.handleIncompletePattern(state)
 			}
 
 			break
@@ -209,30 +209,15 @@ export class PatternProcessor {
 		return true
 	}
 
-	/**
-	 * Handle completed pattern match
-	 */
-	private handleCompletedPattern(
-		state: MatchState,
-		segment: SegmentMatch,
-		input: string,
-		waiting: MatchState[],
-		bestIdx: number
-	): void {
+	private handleCompletedPattern(state: MatchState, segment: SegmentMatch): void {
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
 		this.completedMatches.push(state)
-		waiting.splice(bestIdx, 1)
 
 		this.cancelConflictingStates(state.start, state.descriptor.segments[0])
 	}
 
-	/**
-	 * Handle incomplete pattern that needs more segments
-	 */
-	private handleIncompletePattern(state: MatchState, waiting: MatchState[], bestIdx: number): void {
-		// Pattern continues - update waiting list
-		waiting.splice(bestIdx, 1)
+	private handleIncompletePattern(state: MatchState): void {
 		const nextSegment = state.descriptor.segments[state.expectedSegmentIndex]
 		if (!this.waitingStates.has(nextSegment)) {
 			this.waitingStates.set(nextSegment, [])
