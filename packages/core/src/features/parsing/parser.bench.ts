@@ -88,17 +88,16 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 	const v1Regressions: string[] = []
 	const v2Regressions: string[] = []
 
-	Object.keys(currentRun.categories).forEach(category => {
-		currentRun.categories[category].tests.forEach((test: any) => {
-			const prevTest = previousRun.categories[category]?.tests.find((t: any) => t.name === test.name)
-			if (prevTest) {
-				const v1Diff = ((test.v1[1] - prevTest.v1[1]) / prevTest.v1[1]) * 100
-				const v2Diff = ((test.v2[1] - prevTest.v2[1]) / prevTest.v2[1]) * 100
+	Object.keys(currentRun.tests).forEach(testName => {
+		const test = currentRun.tests[testName]
+		const prevTest = previousRun.tests?.[testName]
+		if (prevTest) {
+			const v1Diff = ((test.v1[1] - prevTest.v1[1]) / prevTest.v1[1]) * 100
+			const v2Diff = ((test.v2[1] - prevTest.v2[1]) / prevTest.v2[1]) * 100
 
-				if (v1Diff < -5) v1Regressions.push(test.name)
-				if (v2Diff < -5) v2Regressions.push(test.name)
-			}
-		})
+			if (v1Diff < -5) v1Regressions.push(testName)
+			if (v2Diff < -5) v2Regressions.push(testName)
+		}
 	})
 
 	return {
@@ -122,16 +121,13 @@ function saveResults() {
 	console.log('\n💾 Saving benchmark results...')
 
 	try {
-		// Group by category
-		const categories: any = {
-			scalability: {tests: []},
-			realWorld: {tests: []},
-		}
+		// Group all tests by name
+		const tests: any = {}
 
 		testResults.forEach(result => {
-			// Remove category field before saving (it's redundant)
-			const {category, ...testData} = result
-			categories[category].tests.push(testData)
+			// Remove category field and use name as key
+			const {category, name, ...testData} = result
+			tests[name] = testData
 		})
 
 		// Calculate summary
@@ -166,7 +162,7 @@ function saveResults() {
 			timestamp: new Date().toISOString(),
 			trends: {},
 			summary,
-			categories,
+			tests,
 		}
 
 		currentRun.trends = calculateTrends(currentRun, previousRun)
