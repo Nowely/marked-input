@@ -82,7 +82,7 @@ export class PatternProcessor {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const sortedStates = waiting.toSorted(this.ascPriorityComparator)
+		const sortedStates = waiting.toSorted((a, b) => this.ascPriorityComparator(a, b))
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
@@ -135,29 +135,41 @@ export class PatternProcessor {
 	}
 
 	/**
-	 * Comparator for sorting states by asc priority
+	 * Comparator for sorting states by priority rules for deterministic behavior
+	 * Higher priority states are processed first to ensure consistent parsing
 	 */
-	private ascPriorityComparator(a: MatchState, b: MatchState) {
-		return calculatePriority(a) - calculatePriority(b)
+	private ascPriorityComparator(a: MatchState, b: MatchState): number {
+		// Calculate priority scores for both states
+		const aPriority = this.calculateDeterministicPriority(a)
+		const bPriority = this.calculateDeterministicPriority(b)
+		return aPriority - bPriority
+	}
 
-		/**
-		 * Calculate priority for a state. Higher = better priority
-		 */
-		function calculatePriority(state: MatchState): number {
-			const descriptor = state.descriptor
-			const expectedIndex = state.expectedSegmentIndex
+	/**
+	 * Calculate deterministic priority score for a match state
+	 * Higher scores = higher priority = processed first
+	 */
+	private calculateDeterministicPriority(state: MatchState): number {
+		const descriptor = state.descriptor
+		const expectedIndex = state.expectedSegmentIndex
 
-			const isWaitingForLastSegment = expectedIndex === descriptor.segments.length - 1
-			const firstSegLength = descriptor.segments[0].length // ** = 2, * = 1
+		// Priority components (higher values = higher priority):
+		// 1. States waiting for last segment get highest boost (10M)
+		const completionBonus = expectedIndex === descriptor.segments.length - 1 ? 10_000_000 : 0
 
-			return (
-				(isWaitingForLastSegment ? 10_000_000 : 0) + // Completing patterns first
-				firstSegLength * 100_000 + // Longer first segments (** > *)
-				state.start * 1000 + // Later starts (LIFO)
-				expectedIndex * 100 + // More progress
-				descriptor.segments.length * 10 // Longer patterns
-			)
-		}
+		// 2. Longer first segments get higher priority (** > *, 100K scale)
+		const firstSegmentBonus = descriptor.segments[0].length * 100_000
+
+		// 3. Later start positions get slight priority (LIFO, 1K scale)
+		const positionBonus = state.start * 1000
+
+		// 4. More progressed states get higher priority (100 scale)
+		const progressBonus = expectedIndex * 100
+
+		// 5. Patterns with more segments get slight priority (10 scale)
+		const complexityBonus = descriptor.segments.length * 10
+
+		return completionBonus + firstSegmentBonus + positionBonus + progressBonus + complexityBonus
 	}
 
 	/**
