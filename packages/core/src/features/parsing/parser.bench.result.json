@@ -19,8 +19,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 543650
@@ -193,8 +191,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 500694
@@ -370,8 +366,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 544090
@@ -540,8 +534,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 528211
@@ -719,8 +711,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 500989
@@ -889,8 +879,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 538611
@@ -1063,8 +1051,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 506895
@@ -1241,8 +1227,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 530151
@@ -1413,8 +1397,6 @@
     },
     "summary": {
       "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
       "performance": {
         "v1": {
           "avgOps": 545792

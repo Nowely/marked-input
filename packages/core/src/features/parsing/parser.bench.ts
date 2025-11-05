@@ -148,8 +148,6 @@ function saveResults() {
 
 		const summary = {
 			totalTests: testResults.length,
-			v1Wins: testResults.filter(t => t.winner === 'v1').length,
-			v2Wins: testResults.filter(t => t.winner === 'v2').length,
 			performance: {
 				v1: {avgOps: v1AvgOps},
 				v2: {avgOps: v2AvgOps},
@@ -212,9 +210,6 @@ function saveResults() {
 		)
 		console.log(
 			`   Ratio: ${currentRun.summary.performance.ratio}x performance`
-		)
-		console.log(
-			`   Winner: v${currentRun.summary.v1Wins > currentRun.summary.v2Wins ? '1' : '2'} (${currentRun.summary.v1Wins}:${currentRun.summary.v2Wins})`
 		)
 
 		if (currentRun.trends.v1.regressions.length > 0) {
