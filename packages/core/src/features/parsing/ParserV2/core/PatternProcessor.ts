@@ -418,9 +418,6 @@ export class PatternProcessor {
 			})
 		}
 
-		// Sort for tree builder
-		results.sort((a, b) => a.start - b.start || a.end - b.end)
-
 		return results
 	}
 }
