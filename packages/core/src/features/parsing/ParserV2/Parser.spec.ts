@@ -528,8 +528,8 @@ describe('ParserV2', () => {
 						"0: TEXT "" [0-0]
 						 1: MARK "@[simple]" [0-9] [value="simple"]
 						 2: TEXT " " [9-10]
-						 3: MARK "@[with]" [10-17] [value="with"]
-						 4: TEXT "(value)" [17-24]"
+						 3: MARK "@[with](value)" [10-24] [value="with", meta="value"]
+						 4: TEXT "" [24-24]"
 					`)
 				})
 

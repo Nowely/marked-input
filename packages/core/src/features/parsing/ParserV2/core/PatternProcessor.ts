@@ -89,7 +89,7 @@ export class PatternProcessor {
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
 			const state = sortedStates[i]
-			waiting.splice(i, 1)
+			waiting.splice(waiting.indexOf(state), 1)
 
 			const isSuccess = this.tryUpdateStateWithSegment(state, segment, input)
 			if (!isSuccess) {
@@ -100,7 +100,6 @@ export class PatternProcessor {
 			// Check if pattern is complete
 			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
 				this.handleCompletedPattern(state, segment)
-				this.cancelConflictingStates(state.start, state.descriptor.segments[0])
 			} else {
 				this.handleIncompletePattern(state)
 			}
@@ -222,35 +221,6 @@ export class PatternProcessor {
 			this.waitingStates.set(nextSegment, [])
 		}
 		this.waitingStates.get(nextSegment)!.push(state)
-	}
-
-	/**
-	 * Cancel states that conflict with completed match
-	 *
-	 * Example: ** should cancel * when they start at same position
-	 */
-	private cancelConflictingStates(startPos: number, firstSegment: string): void {
-		for (const [, states] of this.waitingStates) {
-			for (let i = states.length - 1; i >= 0; i--) {
-				const state = states[i]
-
-				if (state.start !== startPos) continue
-
-				const stateDescriptor = state.descriptor
-				const stateFirstSeg = stateDescriptor.segments[0]
-
-				// Cancel if:
-				// 1. Exact same first segment
-				// 2. Completed segment starts with state's segment (** cancels *)
-				const shouldCancel =
-					stateFirstSeg === firstSegment ||
-					(firstSegment.startsWith(stateFirstSeg) && firstSegment.length > stateFirstSeg.length)
-
-				if (shouldCancel) {
-					states.splice(i, 1)
-				}
-			}
-		}
 	}
 
 	/**
