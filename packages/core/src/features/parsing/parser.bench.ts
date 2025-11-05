@@ -24,11 +24,9 @@ interface TestResult {
 	category: 'scalability' | 'realWorld' // Internal only, not saved to JSON
 	v1: {
 		ops: {avg: number; min: number; max: number}
-		memoryKB: number
 	}
 	v2: {
 		ops: {avg: number; min: number; max: number}
-		memoryKB: number
 	}
 	ratio: number
 	winner: string
@@ -50,17 +48,9 @@ function calculateStats(values: number[]) {
 	}
 }
 
-function getMemoryUsage() {
-	const usage = process.memoryUsage()
-	return {
-		heapUsed: Math.round(usage.heapUsed / 1024), // KB
-		external: Math.round(usage.external / 1024), // KB
-	}
-}
 
 function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: number) {
 	const ops: number[] = []
-	const memory: ReturnType<typeof getMemoryUsage>[] = []
 
 	for (let i = 0; i < iterations; i++) {
 		const startTime = process.hrtime.bigint()
@@ -68,16 +58,14 @@ function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: nu
 		parser.split(input)
 
 		const endTime = process.hrtime.bigint()
-		const endMem = getMemoryUsage()
 
 		const timeMs = Number(endTime - startTime) / 1e6
 		const hz = 1000 / timeMs
 
 		ops.push(Math.round(hz))
-		memory.push(endMem)
 	}
 
-	return {ops, memory}
+	return {ops}
 }
 
 function calculateTrends(currentRun: any, previousRun: any | null): any {
@@ -154,13 +142,9 @@ function saveResults() {
 		// Calculate summary
 		const allV1Ops = testResults.map(t => t.v1.ops.avg)
 		const allV2Ops = testResults.map(t => t.v2.ops.avg)
-		const allV1Mem = testResults.map(t => t.v1.memoryKB)
-		const allV2Mem = testResults.map(t => t.v2.memoryKB)
 
 		const v1AvgOps = Math.round(allV1Ops.reduce((a, b) => a + b, 0) / allV1Ops.length)
 		const v2AvgOps = Math.round(allV2Ops.reduce((a, b) => a + b, 0) / allV2Ops.length)
-		const v1AvgMem = Math.round(allV1Mem.reduce((a, b) => a + b, 0) / allV1Mem.length)
-		const v2AvgMem = Math.round(allV2Mem.reduce((a, b) => a + b, 0) / allV2Mem.length)
 
 		const summary = {
 			totalTests: testResults.length,
@@ -170,11 +154,6 @@ function saveResults() {
 				v1: {avgOps: v1AvgOps},
 				v2: {avgOps: v2AvgOps},
 				ratio: Math.round((v1AvgOps / v2AvgOps) * 100) / 100,
-			},
-			memory: {
-				v1: {avgHeapKB: v1AvgMem},
-				v2: {avgHeapKB: v2AvgMem},
-				ratio: Math.round((v2AvgMem / v1AvgMem) * 100) / 100,
 			},
 		}
 
@@ -232,10 +211,7 @@ function saveResults() {
 			`   Performance: v1=${currentRun.summary.performance.v1.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`
 		)
 		console.log(
-			`   Memory: v1=${currentRun.summary.memory.v1.avgHeapKB.toLocaleString()} KB, v2=${currentRun.summary.memory.v2.avgHeapKB.toLocaleString()} KB`
-		)
-		console.log(
-			`   Ratio: ${currentRun.summary.performance.ratio}x performance, ${currentRun.summary.memory.ratio}x memory`
+			`   Ratio: ${currentRun.summary.performance.ratio}x performance`
 		)
 		console.log(
 			`   Winner: v${currentRun.summary.v1Wins > currentRun.summary.v2Wins ? '1' : '2'} (${currentRun.summary.v1Wins}:${currentRun.summary.v2Wins})`
@@ -265,9 +241,6 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 	const v1Ops = calculateStats(v1Results.ops)
 	const v2Ops = calculateStats(v2Results.ops)
 
-	const v1MemAvg = Math.round(v1Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v1Results.memory.length)
-	const v2MemAvg = Math.round(v2Results.memory.reduce((sum, m) => sum + m.heapUsed, 0) / v2Results.memory.length)
-
 	const ratio = v1Ops.avg / v2Ops.avg
 	const winner = ratio > 1 ? 'v1' : 'v2'
 
@@ -276,11 +249,9 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 		category,
 		v1: {
 			ops: v1Ops,
-			memoryKB: v1MemAvg,
 		},
 		v2: {
 			ops: v2Ops,
-			memoryKB: v2MemAvg,
 		},
 		ratio: Math.round(ratio * 100) / 100,
 		winner,
