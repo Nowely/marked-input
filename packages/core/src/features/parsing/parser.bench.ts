@@ -22,12 +22,8 @@ const parserV2 = new ParserV2(['@[__value__](__meta__)', '#[__value__]'])
 interface TestResult {
 	name: string
 	category: 'scalability' | 'realWorld' // Internal only, not saved to JSON
-	v1: {
-		ops: {avg: number; min: number; max: number}
-	}
-	v2: {
-		ops: {avg: number; min: number; max: number}
-	}
+	v1: [number, number, number] // [min, avg, max]
+	v2: [number, number, number] // [min, avg, max]
 	ratio: number
 	winner: string
 }
@@ -97,8 +93,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 		currentRun.categories[category].tests.forEach((test: any) => {
 			const prevTest = previousRun.categories[category]?.tests.find((t: any) => t.name === test.name)
 			if (prevTest) {
-				const v1Diff = ((test.v1.ops.avg - prevTest.v1.ops.avg) / prevTest.v1.ops.avg) * 100
-				const v2Diff = ((test.v2.ops.avg - prevTest.v2.ops.avg) / prevTest.v2.ops.avg) * 100
+				const v1Diff = ((test.v1[1] - prevTest.v1[1]) / prevTest.v1[1]) * 100
+				const v2Diff = ((test.v2[1] - prevTest.v2[1]) / prevTest.v2[1]) * 100
 
 				if (v1Diff < -5) v1Regressions.push(test.name)
 				if (v2Diff < -5) v2Regressions.push(test.name)
@@ -140,8 +136,8 @@ function saveResults() {
 		})
 
 		// Calculate summary
-		const allV1Ops = testResults.map(t => t.v1.ops.avg)
-		const allV2Ops = testResults.map(t => t.v2.ops.avg)
+		const allV1Ops = testResults.map(t => t.v1[1]) // avg is at index 1
+		const allV2Ops = testResults.map(t => t.v2[1]) // avg is at index 1
 
 		const v1AvgOps = Math.round(allV1Ops.reduce((a, b) => a + b, 0) / allV1Ops.length)
 		const v2AvgOps = Math.round(allV2Ops.reduce((a, b) => a + b, 0) / allV2Ops.length)
@@ -242,12 +238,8 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 	testResults.push({
 		name,
 		category,
-		v1: {
-			ops: v1Ops,
-		},
-		v2: {
-			ops: v2Ops,
-		},
+		v1: [v1Ops.min, v1Ops.avg, v1Ops.max],
+		v2: [v2Ops.min, v2Ops.avg, v2Ops.max],
 		ratio: Math.round(ratio * 100) / 100,
 		winner,
 	})
