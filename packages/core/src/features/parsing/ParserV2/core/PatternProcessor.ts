@@ -100,6 +100,7 @@ export class PatternProcessor {
 			// Check if pattern is complete
 			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
 				this.handleCompletedPattern(state, segment)
+				this.cancelConflictingStates(state.start, state.descriptor.segments[0])
 			} else {
 				this.handleIncompletePattern(state)
 			}
@@ -213,8 +214,6 @@ export class PatternProcessor {
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
 		this.completedMatches.push(state)
-
-		this.cancelConflictingStates(state.start, state.descriptor.segments[0])
 	}
 
 	private handleIncompletePattern(state: MatchState): void {
