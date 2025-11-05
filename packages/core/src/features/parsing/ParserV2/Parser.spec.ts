@@ -42,8 +42,8 @@ describe('ParserV2', () => {
 			const value = 'Hello @[world](test) and #[tag]'
 			const options: {markup: Markup}[] = [{markup: '@[__value__](__meta__)'}, {markup: '#[__value__]'}]
 
-			const tokens = Parser.split(value, options)
-			const result = Parser.join(tokens, options)
+		const tokens = Parser.split(value, options)
+		const result = Parser.join(tokens)
 
 			expect(result).toBe(value)
 		})
@@ -269,18 +269,18 @@ describe('ParserV2', () => {
 						const input = '<span >Text #[tag]</span>'
 						const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", nested="Text #[tag]"]
-							1.0: TEXT "Text " [7-12]
-							1.1: MARK "#[tag]" [12-18] [value="tag", nested="tag"]
-							1.2: TEXT "" [18-18]
-						 2: TEXT "" [25-25]"
-					`)
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: TEXT "" [0-0]
+				 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", nested="Text #[tag]"]
+					1.0: TEXT "Text " [7-12]
+					1.1: MARK "#[tag]" [12-18] [value="tag", nested="tag"]
+					1.2: TEXT "" [18-18]
+				 2: TEXT "" [25-25]"
+			`)
 
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].value).toBe('span')
-						expect(marks[0].meta).toBe('')
+				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				expect(marks[0].value).toBe('span')
+				expect(marks[0].meta).toBe('')
 					})
 
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
@@ -484,13 +484,13 @@ describe('ParserV2', () => {
 					const input = '@[label]() @[label2](value)'
 					const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "" [0-0]
-					 1: MARK "@[label]()" [0-10] [value="label", meta=""]
-					 2: TEXT " " [10-11]
-					 3: MARK "@[label2](value)" [11-27] [value="label2", meta="value"]
-					 4: TEXT "" [27-27]"
-				`)
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+			"0: TEXT "" [0-0]
+			 1: MARK "@[label]()" [0-10] [value="label", meta=""]
+			 2: TEXT " " [10-11]
+			 3: MARK "@[label2](value)" [11-27] [value="label2", meta="value"]
+			 4: TEXT "" [27-27]"
+		`)
 				})
 
 				it('handles unicode and emoji content', () => {

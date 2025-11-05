@@ -8,7 +8,14 @@ interface MarkNode {
 	match: MatchState
 	children: Token[]
 	textPos: number // Current position for adding text tokens
-	hasNestedMarks: boolean // Track if any nested marks were added (optimization)
+}
+
+/**
+ * Content boundaries for a match (start and end positions)
+ */
+interface ContentBounds {
+	start: number
+	end: number
 }
 
 /**
@@ -19,6 +26,49 @@ interface TreeBuildContext {
 	rootTokens: Token[]
 	stack: MarkNode[]
 	rootTextPos: number
+}
+
+/**
+ * Gets the content boundaries for a match
+ * Priority: nested content if present, otherwise value content
+ */
+function getContentBounds(match: MatchState): ContentBounds {
+	if (match.nestedStart !== undefined && match.nestedEnd !== undefined) {
+		return {start: match.nestedStart, end: match.nestedEnd}
+	}
+	return {
+		start: match.valueStart ?? match.start,
+		end: match.valueEnd ?? match.start,
+	}
+}
+
+/**
+ * Checks if child match is contained within parent's nestable content
+ */
+function isMatchContained(child: MatchState, parent: MatchState): boolean {
+	const bounds = getContentBounds(parent)
+	return child.start >= bounds.start && child.end <= bounds.end
+}
+
+/**
+ * Extracts substring safely, returns empty string if positions are undefined
+ */
+function extractSubstring(input: string, start: number | undefined, end: number | undefined): string {
+	return start !== undefined && end !== undefined ? input.substring(start, end) : ''
+}
+
+/**
+ * Creates nested info object if nested content exists
+ */
+function createNestedInfo(match: MatchState, nested: string | undefined): MarkToken['nested'] {
+	if (!nested || match.nestedStart === undefined || match.nestedEnd === undefined) {
+		return undefined
+	}
+	return {
+		content: nested,
+		start: match.nestedStart,
+		end: match.nestedEnd,
+	}
 }
 
 /**
@@ -43,40 +93,25 @@ function createTextToken(input: string, start: number, end: number): TextToken {
 
 /**
  * Creates a mark token from match and collected children
- * Uses pre-computed hasNestedMarks flag for efficiency
  * Extracts substrings from input on demand
  */
-function createMarkToken(input: string, match: MatchState, children: Token[], hasNestedMarks: boolean): MarkToken {
-	// Extract value content from input
-	const value =
-		match.valueStart !== undefined && match.valueEnd !== undefined
-			? input.substring(match.valueStart, match.valueEnd)
-			: ''
-
-	// Extract nested content from input
-	const nested =
-		match.nestedStart !== undefined && match.nestedEnd !== undefined
-			? input.substring(match.nestedStart, match.nestedEnd)
-			: undefined
-
-	// Extract meta content from input
-	const meta =
-		match.metaStart !== undefined && match.metaEnd !== undefined
-			? input.substring(match.metaStart, match.metaEnd)
-			: undefined
+function createMarkToken(input: string, match: MatchState, children: Token[]): MarkToken {
+	// Extract content using helper functions
+	const value = extractSubstring(input, match.valueStart, match.valueEnd)
+	const nestedStr = extractSubstring(input, match.nestedStart, match.nestedEnd)
+	const metaStr = extractSubstring(input, match.metaStart, match.metaEnd)
+	
+	// Only convert nested to undefined if it's empty (nested can't be empty string)
+	// But meta CAN be empty string, so we check if positions exist
+	const nested = nestedStr || undefined
+	const meta = match.metaStart !== undefined && match.metaEnd !== undefined ? metaStr : undefined
 
 	// Priority: use value if present, otherwise use nested content
 	// This handles combined patterns like @[__value__](__nested__) correctly
 	const valueContent = value !== '' ? value : nested || ''
 
-	// Store nested content information for debugging
-	const nestedInfo = nested
-		? {
-				content: nested,
-				start: match.nestedStart!,
-				end: match.nestedEnd!,
-			}
-		: undefined
+	// Only include children if there are nested marks (not just text tokens)
+	const hasNestedMarks = children.some(child => child.type === 'mark')
 
 	return {
 		type: 'mark',
@@ -86,7 +121,7 @@ function createMarkToken(input: string, match: MatchState, children: Token[], ha
 		value: valueContent,
 		meta,
 		position: {start: match.start, end: match.end},
-		nested: nestedInfo,
+		nested: createNestedInfo(match, nested),
 	}
 }
 
@@ -106,24 +141,20 @@ function addTextToken(input: string, tokens: Token[], fromPos: number, toPos: nu
 
 /**
  * Finalizes a completed mark node and adds it to parent or root
- * Optimized to minimize redundant checks
  */
 function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 	// Add any remaining text in this mark's nestable content
-	// Priority: use nested end if present, otherwise use value end
-	const contentEnd = node.match.nestedEnd !== undefined ? node.match.nestedEnd : (node.match.valueEnd ?? node.match.start)
-	addTextToken(ctx.input, node.children, node.textPos, contentEnd)
+	const bounds = getContentBounds(node.match)
+	addTextToken(ctx.input, node.children, node.textPos, bounds.end)
 
-	const token = createMarkToken(ctx.input, node.match, node.children, node.hasNestedMarks)
+	const token = createMarkToken(ctx.input, node.match, node.children)
 	
-	const stackLen = ctx.stack.length
-	if (stackLen > 0) {
+	if (ctx.stack.length > 0) {
 		// Add to parent's children
-		const parent = ctx.stack[stackLen - 1]
+		const parent = ctx.stack[ctx.stack.length - 1]
 		addTextToken(ctx.input, parent.children, parent.textPos, node.match.start)
 		parent.children.push(token)
 		parent.textPos = node.match.end
-		parent.hasNestedMarks = true // Mark parent as having nested marks
 	} else {
 		// Add to root
 		addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, node.match.start)
@@ -134,26 +165,13 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 
 /**
  * Pops completed parent marks from stack and finalizes them
- * Optimized to minimize function calls and checks
  */
 function popCompletedParents(match: MatchState, ctx: TreeBuildContext): void {
-	let stackLen = ctx.stack.length
-	while (stackLen > 0) {
-		const parent = ctx.stack[stackLen - 1]
+	while (ctx.stack.length > 0) {
+		const parent = ctx.stack[ctx.stack.length - 1]
 
-		// Check if current match is inside parent's nestable content (nested or value gap)
-		// Inline the isContainedInNestableContent check for performance
-		const parentMatch = parent.match
-		let isContained: boolean
-		if (parentMatch.nestedStart !== undefined && parentMatch.nestedEnd !== undefined) {
-			isContained = match.start >= parentMatch.nestedStart && match.end <= parentMatch.nestedEnd
-		} else {
-			const valueStart = parentMatch.valueStart ?? parentMatch.start
-			const valueEnd = parentMatch.valueEnd ?? parentMatch.start
-			isContained = match.start >= valueStart && match.end <= valueEnd
-		}
-
-		if (isContained) {
+		// Check if current match is inside parent's nestable content
+		if (isMatchContained(match, parent.match)) {
 			// This match is nested inside parent
 			break
 		}
@@ -161,8 +179,35 @@ function popCompletedParents(match: MatchState, ctx: TreeBuildContext): void {
 		// Parent is complete - finalize it
 		ctx.stack.pop()
 		finalizeMarkNode(parent, ctx)
-		stackLen--
 	}
+}
+
+/**
+ * Checks if match has invalid empty nested content (negative length)
+ */
+function hasInvalidNestedContent(match: MatchState): boolean {
+	if (!match.descriptor.hasNested) return false
+	if (match.nestedStart === undefined || match.nestedEnd === undefined) return false
+	return match.nestedEnd - match.nestedStart < 0
+}
+
+/**
+ * Checks if match is valid nesting inside existing match's nested section
+ */
+function isValidNesting(match: MatchState, existing: MatchState): boolean {
+	if (!existing.descriptor.hasNested) return false
+	if (existing.nestedStart === undefined || existing.nestedEnd === undefined) return false
+	return match.start >= existing.nestedStart && match.end <= existing.nestedEnd
+}
+
+/**
+ * Checks if two matches have partial overlap (neither fully contains the other)
+ */
+function hasPartialOverlap(match: MatchState, existing: MatchState): boolean {
+	const overlaps = match.start < existing.end && match.end > existing.start
+	const matchInside = match.start >= existing.start && match.end <= existing.end
+	const existingInside = existing.start >= match.start && existing.end <= match.end
+	return overlaps && !matchInside && !existingInside
 }
 
 /**
@@ -192,17 +237,12 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
 	const filtered: MatchState[] = []
 
 	for (const match of matches) {
-		let shouldFilter = false
-
-		// Pre-filter: Skip TRULY empty matches (nested content has negative length)
-		const matchDesc = match.descriptor
-		if (matchDesc.hasNested && match.nestedStart !== undefined && match.nestedEnd !== undefined) {
-			const nestedLength = match.nestedEnd - match.nestedStart
-			if (nestedLength < 0) {
-				shouldFilter = true
-				continue
-			}
+		// Pre-filter: Skip empty matches with invalid nested content
+		if (hasInvalidNestedContent(match)) {
+			continue
 		}
+
+		let shouldFilter = false
 
 		for (const existing of filtered) {
 			// Case 1: Same start position - keep only the longest (first due to sort)
@@ -213,42 +253,21 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
 
 			// Case 2: Match is completely inside existing
 			if (match.start >= existing.start && match.end <= existing.end) {
-				// If strictly inside (not sharing boundaries), it might be valid nesting
-				if (match.start > existing.start || match.end < existing.end) {
-					// Check if match is inside existing's nested content (valid nesting)
-					const existingDesc = existing.descriptor
-					
-					if (
-						existingDesc.hasNested &&
-						existing.nestedStart !== undefined &&
-						existing.nestedEnd !== undefined &&
-						match.start >= existing.nestedStart &&
-						match.end <= existing.nestedEnd
-					) {
-						// Valid nesting - match is inside existing's __nested__ section
-						// Keep both (don't filter)
-						continue
-					}
-					
-					// Filter to be safe
-					shouldFilter = true
-					break
-				} else {
-					// Same boundaries - filter the shorter/weaker one (already handled by sort)
-					shouldFilter = true
-					break
+				// If strictly inside (not sharing boundaries), check for valid nesting
+				const isStrictlyInside = match.start > existing.start || match.end < existing.end
+				
+				if (isStrictlyInside && isValidNesting(match, existing)) {
+					// Valid nesting - keep both
+					continue
 				}
+				
+				// Otherwise filter this match
+				shouldFilter = true
+				break
 			}
 
-			// Case 3: Partial overlap (neither fully contains the other)
-			// Keep the one that started first
-			const matchesOverlap =
-				match.start < existing.end &&
-				match.end > existing.start && // They overlap
-				!(match.start >= existing.start && match.end <= existing.end) && // match not inside
-				!(existing.start >= match.start && existing.end <= match.end) // existing not inside
-
-			if (matchesOverlap) {
+			// Case 3: Partial overlap - keep the one that started first
+			if (hasPartialOverlap(match, existing)) {
 				shouldFilter = true
 				break
 			}
@@ -336,13 +355,11 @@ export function buildTree(input: string, matches: MatchState[]): Token[] {
 		}
 
 		// Add this match to the stack for potential children
-		// Priority: use nested start if present, otherwise use value start
-		const contentStart = match.nestedStart !== undefined ? match.nestedStart : (match.valueStart ?? match.start)
+		const bounds = getContentBounds(match)
 		ctx.stack.push({
 			match,
 			children: [],
-			textPos: contentStart,
-			hasNestedMarks: false,
+			textPos: bounds.start,
 		})
 	}
 
