@@ -25,7 +25,6 @@ interface TestResult {
 	v1: [number, number, number] // [min, avg, max]
 	v2: [number, number, number] // [min, avg, max]
 	ratio: number
-	winner: string
 }
 
 const testResults: TestResult[] = []
@@ -233,7 +232,6 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 	const v2Ops = calculateStats(v2Results.ops)
 
 	const ratio = v1Ops.avg / v2Ops.avg
-	const winner = ratio > 1 ? 'v1' : 'v2'
 
 	testResults.push({
 		name,
@@ -241,7 +239,6 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 		v1: [v1Ops.min, v1Ops.avg, v1Ops.max],
 		v2: [v2Ops.min, v2Ops.avg, v2Ops.max],
 		ratio: Math.round(ratio * 100) / 100,
-		winner,
 	})
 }
 
