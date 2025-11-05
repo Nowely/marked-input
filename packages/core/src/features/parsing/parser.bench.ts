@@ -71,8 +71,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 		}
 	}
 
-	const prevV1Ops = previousRun.summary.performance.v1?.avgOps
-	const prevV2Ops = previousRun.summary.performance.v2?.avgOps
+	const prevV1Ops = previousRun.summary.performance.v1
+	const prevV2Ops = previousRun.summary.performance.v2
 
 	if (!prevV1Ops || !prevV2Ops) {
 		return {
@@ -81,8 +81,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 		}
 	}
 
-	const v1Change = ((currentRun.summary.performance.v1.avgOps - prevV1Ops) / prevV1Ops) * 100
-	const v2Change = ((currentRun.summary.performance.v2.avgOps - prevV2Ops) / prevV2Ops) * 100
+	const v1Change = ((currentRun.summary.performance.v1 - prevV1Ops) / prevV1Ops) * 100
+	const v2Change = ((currentRun.summary.performance.v2 - prevV2Ops) / prevV2Ops) * 100
 
 	// Find regressions (>5% slowdown)
 	const v1Regressions: string[] = []
@@ -144,8 +144,8 @@ function saveResults() {
 		const summary = {
 			totalTests: testResults.length,
 			performance: {
-				v1: {avgOps: v1AvgOps},
-				v2: {avgOps: v2AvgOps},
+				v1: v1AvgOps,
+				v2: v2AvgOps,
 				ratio: Math.round((v1AvgOps / v2AvgOps) * 100) / 100,
 			},
 		}
@@ -201,7 +201,7 @@ function saveResults() {
 		console.log(`📊 Total runs in history: ${existingResults.length}`)
 		console.log(`\n📈 Summary:`)
 		console.log(
-			`   Performance: v1=${currentRun.summary.performance.v1.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.avgOps.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`
+			`   Performance: v1=${currentRun.summary.performance.v1.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`
 		)
 		console.log(
 			`   Ratio: ${currentRun.summary.performance.ratio}x performance`
@@ -235,10 +235,10 @@ function collectResult(name: string, category: 'scalability' | 'realWorld', inpu
 
 	testResults.push({
 		name,
+		ratio: Math.round(ratio * 100) / 100,
 		category,
 		v1: [v1Ops.min, v1Ops.avg, v1Ops.max],
 		v2: [v2Ops.min, v2Ops.avg, v2Ops.max],
-		ratio: Math.round(ratio * 100) / 100,
 	})
 }
 
