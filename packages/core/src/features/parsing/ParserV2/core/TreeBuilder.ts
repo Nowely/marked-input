@@ -319,7 +319,7 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
  * // ]
  * ```
  */
-export function buildTree(input: string, matches: MatchState[]): Token[] {
+export function buildTree(matches: MatchState[], input: string): Token[] {
 	if (matches.length === 0) {
 		return [createTextToken(input, 0, input.length)]
 	}
