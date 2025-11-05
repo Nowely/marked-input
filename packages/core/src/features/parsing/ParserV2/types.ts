@@ -31,44 +31,6 @@ export interface MarkToken {
 }
 
 /**
- * Result of pattern matching with position tracking
- *
- * All positions follow standard JavaScript convention:
- * - start positions are inclusive (point to first character)
- * - end positions are exclusive (point to character after last)
- *
- * This allows direct use with substring(): input.substring(start, end)
- */
-export interface MatchResult {
-	/** Start position of entire match (inclusive) */
-	start: number
-	/** End position of entire match (exclusive) */
-	end: number
-	/** Full matched content */
-	content: string
-	/** Value text extracted from match */
-	value: string
-	/** Start position of value in original text (inclusive) */
-	valueStart: number
-	/** End position of value in original text (exclusive) */
-	valueEnd: number
-	/** Nested content text extracted from match (if pattern uses __nested__) */
-	nested?: string
-	/** Start position of nested content in original text (inclusive) */
-	nestedStart?: number
-	/** End position of nested content in original text (exclusive) */
-	nestedEnd?: number
-	/** Meta text extracted from match (if present) */
-	meta?: string
-	/** Start position of meta in original text (inclusive) */
-	metaStart?: number
-	/** End position of meta in original text (exclusive) */
-	metaEnd?: number
-	/** Markup descriptor that matched */
-	descriptor: MarkupDescriptor
-}
-
-/**
  * Template literal types for markup placeholders
  */
 export type ValueMarkup = `${string}${typeof PLACEHOLDER.Value}${string}`

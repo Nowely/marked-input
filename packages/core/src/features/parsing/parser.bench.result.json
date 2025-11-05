@@ -1,5 +1,204 @@
 [
   {
+    "timestamp": "2025-11-05T13:11:38.825Z",
+    "trends": {
+      "v1": {
+        "changeFromLast": "+8.6%",
+        "regressions": [
+          "10 marks",
+          "50 marks"
+        ]
+      },
+      "v2": {
+        "changeFromLast": "+15.6%",
+        "regressions": [
+          "50 marks",
+          "100 marks"
+        ]
+      }
+    },
+    "summary": {
+      "totalTests": 7,
+      "v1Wins": 7,
+      "v2Wins": 0,
+      "performance": {
+        "v1": {
+          "avgOps": 543650
+        },
+        "v2": {
+          "avgOps": 266062
+        },
+        "ratio": 2.04
+      },
+      "memory": {
+        "v1": {
+          "avgHeapKB": 41938
+        },
+        "v2": {
+          "avgHeapKB": 41628
+        },
+        "ratio": 0.99
+      }
+    },
+    "categories": {
+      "scalability": {
+        "tests": [
+          {
+            "name": "10 marks",
+            "v1": {
+              "ops": {
+                "avg": 151333,
+                "min": 53214,
+                "max": 181818
+              },
+              "memoryKB": 33733
+            },
+            "v2": {
+              "ops": {
+                "avg": 96234,
+                "min": 74532,
+                "max": 102135
+              },
+              "memoryKB": 33978
+            },
+            "ratio": 1.57,
+            "winner": "v1"
+          },
+          {
+            "name": "50 marks",
+            "v1": {
+              "ops": {
+                "avg": 17908,
+                "min": 11075,
+                "max": 19032
+              },
+              "memoryKB": 23752
+            },
+            "v2": {
+              "ops": {
+                "avg": 7063,
+                "min": 5006,
+                "max": 7467
+              },
+              "memoryKB": 24943
+            },
+            "ratio": 2.54,
+            "winner": "v1"
+          },
+          {
+            "name": "100 marks",
+            "v1": {
+              "ops": {
+                "avg": 20437,
+                "min": 16405,
+                "max": 21071
+              },
+              "memoryKB": 16353
+            },
+            "v2": {
+              "ops": {
+                "avg": 7255,
+                "min": 6740,
+                "max": 7757
+              },
+              "memoryKB": 18771
+            },
+            "ratio": 2.82,
+            "winner": "v1"
+          },
+          {
+            "name": "500 marks",
+            "v1": {
+              "ops": {
+                "avg": 3927,
+                "min": 3800,
+                "max": 4003
+              },
+              "memoryKB": 25208
+            },
+            "v2": {
+              "ops": {
+                "avg": 709,
+                "min": 665,
+                "max": 726
+              },
+              "memoryKB": 18916
+            },
+            "ratio": 5.54,
+            "winner": "v1"
+          }
+        ]
+      },
+      "realWorld": {
+        "tests": [
+          {
+            "name": "social media",
+            "v1": {
+              "ops": {
+                "avg": 909630,
+                "min": 82761,
+                "max": 1000000
+              },
+              "memoryKB": 72782
+            },
+            "v2": {
+              "ops": {
+                "avg": 483167,
+                "min": 142857,
+                "max": 521648
+              },
+              "memoryKB": 72896
+            },
+            "ratio": 1.88,
+            "winner": "v1"
+          },
+          {
+            "name": "markdown-like",
+            "v1": {
+              "ops": {
+                "avg": 1327537,
+                "min": 89558,
+                "max": 1600000
+              },
+              "memoryKB": 97115
+            },
+            "v2": {
+              "ops": {
+                "avg": 598781,
+                "min": 428449,
+                "max": 631712
+              },
+              "memoryKB": 97192
+            },
+            "ratio": 2.22,
+            "winner": "v1"
+          },
+          {
+            "name": "code comments",
+            "v1": {
+              "ops": {
+                "avg": 1374781,
+                "min": 84211,
+                "max": 1600000
+              },
+              "memoryKB": 24621
+            },
+            "v2": {
+              "ops": {
+                "avg": 669222,
+                "min": 369276,
+                "max": 749625
+              },
+              "memoryKB": 24700
+            },
+            "ratio": 2.05,
+            "winner": "v1"
+          }
+        ]
+      }
+    }
+  },
+  {
     "timestamp": "2025-11-05T09:41:04.284Z",
     "trends": {
       "v1": {
@@ -1767,204 +1966,6 @@
               "memoryKB": 25387
             },
             "ratio": 2.18,
-            "winner": "v1"
-          }
-        ]
-      }
-    }
-  },
-  {
-    "timestamp": "2025-10-29T08:51:42.565Z",
-    "trends": {
-      "v1": {
-        "changeFromLast": "+4.3%",
-        "regressions": [
-          "500 marks"
-        ]
-      },
-      "v2": {
-        "changeFromLast": "+10.6%",
-        "regressions": [
-          "100 marks",
-          "500 marks"
-        ]
-      }
-    },
-    "summary": {
-      "totalTests": 7,
-      "v1Wins": 7,
-      "v2Wins": 0,
-      "performance": {
-        "v1": {
-          "avgOps": 541236
-        },
-        "v2": {
-          "avgOps": 154651
-        },
-        "ratio": 3.5
-      },
-      "memory": {
-        "v1": {
-          "avgHeapKB": 53731
-        },
-        "v2": {
-          "avgHeapKB": 54387
-        },
-        "ratio": 1.01
-      }
-    },
-    "categories": {
-      "scalability": {
-        "tests": [
-          {
-            "name": "10 marks",
-            "v1": {
-              "ops": {
-                "avg": 170533,
-                "min": 59404,
-                "max": 198373
-              },
-              "memoryKB": 24701
-            },
-            "v2": {
-              "ops": {
-                "avg": 53154,
-                "min": 46153,
-                "max": 54921
-              },
-              "memoryKB": 25333
-            },
-            "ratio": 3.21,
-            "winner": "v1"
-          },
-          {
-            "name": "50 marks",
-            "v1": {
-              "ops": {
-                "avg": 40830,
-                "min": 25451,
-                "max": 43011
-              },
-              "memoryKB": 33996
-            },
-            "v2": {
-              "ops": {
-                "avg": 8364,
-                "min": 7944,
-                "max": 8502
-              },
-              "memoryKB": 37062
-            },
-            "ratio": 4.88,
-            "winner": "v1"
-          },
-          {
-            "name": "100 marks",
-            "v1": {
-              "ops": {
-                "avg": 20517,
-                "min": 17924,
-                "max": 20869
-              },
-              "memoryKB": 32725
-            },
-            "v2": {
-              "ops": {
-                "avg": 2913,
-                "min": 2202,
-                "max": 3199
-              },
-              "memoryKB": 35646
-            },
-            "ratio": 7.04,
-            "winner": "v1"
-          },
-          {
-            "name": "500 marks",
-            "v1": {
-              "ops": {
-                "avg": 3489,
-                "min": 2215,
-                "max": 3893
-              },
-              "memoryKB": 37801
-            },
-            "v2": {
-              "ops": {
-                "avg": 218,
-                "min": 205,
-                "max": 227
-              },
-              "memoryKB": 35132
-            },
-            "ratio": 16,
-            "winner": "v1"
-          }
-        ]
-      },
-      "realWorld": {
-        "tests": [
-          {
-            "name": "social media",
-            "v1": {
-              "ops": {
-                "avg": 827492,
-                "min": 99582,
-                "max": 923361
-              },
-              "memoryKB": 65334
-            },
-            "v2": {
-              "ops": {
-                "avg": 252501,
-                "min": 180440,
-                "max": 269614
-              },
-              "memoryKB": 65605
-            },
-            "ratio": 3.28,
-            "winner": "v1"
-          },
-          {
-            "name": "markdown-like",
-            "v1": {
-              "ops": {
-                "avg": 1413412,
-                "min": 140351,
-                "max": 1600000
-              },
-              "memoryKB": 93934
-            },
-            "v2": {
-              "ops": {
-                "avg": 360942,
-                "min": 244858,
-                "max": 387147
-              },
-              "memoryKB": 94118
-            },
-            "ratio": 3.92,
-            "winner": "v1"
-          },
-          {
-            "name": "code comments",
-            "v1": {
-              "ops": {
-                "avg": 1312382,
-                "min": 83914,
-                "max": 1600000
-              },
-              "memoryKB": 87625
-            },
-            "v2": {
-              "ops": {
-                "avg": 404467,
-                "min": 300030,
-                "max": 436491
-              },
-              "memoryKB": 87810
-            },
-            "ratio": 3.24,
             "winner": "v1"
           }
         ]

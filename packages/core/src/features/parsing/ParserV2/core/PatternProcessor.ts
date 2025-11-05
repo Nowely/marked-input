@@ -11,7 +11,6 @@
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentMatch} from '../utils/AhoCorasick'
-import {MatchResult} from '../types'
 import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
@@ -21,7 +20,7 @@ import {MarkupDescriptor} from './MarkupDescriptor'
  * For active states: tracks progress through pattern segments with expectedSegmentIndex
  * For completed matches: contains final positions without expectedSegmentIndex
  */
-interface MatchState {
+export interface MatchState {
 	/** Descriptor defining the markup pattern being matched */
 	descriptor: MarkupDescriptor
 	/** Index of the next expected segment (NaN for completed matches) */
@@ -57,10 +56,10 @@ export class PatternProcessor {
 	}
 
 	/**
-	 * Process segments with state machine to create match results
-	 * Main method that converts found segments into structured match results
+	 * Process segments with state machine to create match states
+	 * Main method that converts found segments into structured match states
 	 */
-	process(segments: SegmentMatch[], input: string): MatchResult[] {
+	process(segments: SegmentMatch[], input: string): MatchState[] {
 		// Clear previous state
 		this.activeStates.length = 0
 		this.completedMatches.length = 0
@@ -72,8 +71,7 @@ export class PatternProcessor {
 			this.tryStartNewStates(segment)
 		}
 
-		const filtered = this.filterOverlappingMatches()
-		return this.convertToMatchResults(input, filtered)
+		return this.completedMatches
 	}
 
 	/**
@@ -265,159 +263,4 @@ export class PatternProcessor {
 		}
 	}
 
-	/**
-	 * Filter overlapping and partial matches
-	 *
-	 * Strategy: Filter only TRUE conflicts, preserve valid nesting
-	 * Note: Invalid nested states (outside __nested__ sections) are already canceled
-	 * by cancelInvalidNestedStates() in handleCompletedPattern()
-	 *
-	 * A conflict is when two matches:
-	 * 1. Start at the same position (only one can win)
-	 * 2. One is completely inside another at the same level (shorter match filtered)
-	 * 3. Partial overlap (keep earlier one)
-	 *
-	 * Complexity: O(N log N) for sort + O(N²) for filtering
-	 */
-	private filterOverlappingMatches(): MatchState[] {
-		if (this.completedMatches.length === 0) return []
-
-		// Sort: start ascending, end descending (longer first), then by segment length
-		this.completedMatches.sort((a, b) => {
-			if (a.start !== b.start) return a.start - b.start
-			if (a.end !== b.end) return b.end - a.end
-
-			const aDesc = a.descriptor
-			const bDesc = b.descriptor
-			const aSegLen = aDesc.segments[0].length
-			const bSegLen = bDesc.segments[0].length
-
-			// Longer first segment first (** before *)
-			if (aSegLen !== bSegLen) return bSegLen - aSegLen
-
-			// More segments first
-			return bDesc.segments.length - aDesc.segments.length
-		})
-
-		const filtered: MatchState[] = []
-
-		for (const match of this.completedMatches) {
-			let shouldFilter = false
-
-			// Pre-filter: Skip TRULY empty matches (nested content has negative length)
-			const matchDesc = match.descriptor
-			if (matchDesc.hasNested && match.nestedStart !== undefined && match.nestedEnd !== undefined) {
-				const nestedLength = match.nestedEnd - match.nestedStart
-				if (nestedLength < 0) {
-					shouldFilter = true
-					continue
-				}
-			}
-
-			for (const existing of filtered) {
-				// Case 1: Same start position - keep only the longest (first due to sort)
-				if (match.start === existing.start) {
-					shouldFilter = true
-					break
-				}
-
-				// Case 2: Match is completely inside existing
-				if (match.start >= existing.start && match.end <= existing.end) {
-					// If strictly inside (not sharing boundaries), it might be valid nesting
-					if (match.start > existing.start || match.end < existing.end) {
-						// Check if match is inside existing's nested content (valid nesting)
-						// Invalid nesting (in __value__/__meta__ sections) is already filtered by cancelInvalidNestedStates()
-						const existingDesc = existing.descriptor
-						
-						if (
-							existingDesc.hasNested &&
-							existing.nestedStart !== undefined &&
-							existing.nestedEnd !== undefined &&
-							match.start >= existing.nestedStart &&
-							match.end <= existing.nestedEnd
-						) {
-							// Valid nesting - match is inside existing's __nested__ section
-							// Keep both (don't filter)
-							continue
-						}
-						
-						// If we reach here, either:
-						// - existing has no __nested__ (shouldn't happen - already canceled)
-						// - match is not in nested section (shouldn't happen - already canceled)
-						// - they're competing at same level
-						// Filter to be safe
-						shouldFilter = true
-						break
-					} else {
-						// Same boundaries - filter the shorter/weaker one (already handled by sort)
-						shouldFilter = true
-						break
-					}
-				}
-
-				// Case 3: Partial overlap (neither fully contains the other)
-				// Example: **bold** [0,8] and *italic* [6,14] overlap at [6,8]
-				// Keep the one that started first
-				const matchesOverlap =
-					match.start < existing.end &&
-					match.end > existing.start && // They overlap
-					!(match.start >= existing.start && match.end <= existing.end) && // match not inside
-					!(existing.start >= match.start && existing.end <= match.end) // existing not inside
-
-				if (matchesOverlap) {
-					shouldFilter = true
-					break
-				}
-			}
-
-			if (!shouldFilter) {
-				filtered.push(match)
-			}
-		}
-
-		return filtered
-	}
-
-	/**
-	 * Convert direct matches to MatchResult format for tree builder
-	 */
-	private convertToMatchResults(input: string, matches: MatchState[]): MatchResult[] {
-		const results: MatchResult[] = []
-
-		for (const match of matches) {
-			// Extract content inline
-			const value =
-				match.valueStart !== undefined && match.valueEnd !== undefined
-					? input.substring(match.valueStart, match.valueEnd)
-					: ''
-
-			const nested =
-				match.nestedStart !== undefined && match.nestedEnd !== undefined
-					? input.substring(match.nestedStart, match.nestedEnd)
-					: undefined
-
-			const meta =
-				match.metaStart !== undefined && match.metaEnd !== undefined
-					? input.substring(match.metaStart, match.metaEnd)
-					: undefined
-
-			results.push({
-				start: match.start,
-				end: match.end,
-				content: input.substring(match.start, match.end),
-				value,
-				valueStart: match.valueStart ?? match.start,
-				valueEnd: match.valueEnd ?? match.start,
-				nested,
-				nestedStart: match.nestedStart,
-				nestedEnd: match.nestedEnd,
-				meta,
-				metaStart: match.metaStart,
-				metaEnd: match.metaEnd,
-				descriptor: match.descriptor,
-			})
-		}
-
-		return results
-	}
 }

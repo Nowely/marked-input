@@ -1,11 +1,9 @@
-import {InnerOption} from '../../default/types'
 import {Markup} from './types'
 import {Token} from './types'
 import {MarkToken} from './types'
-import {MatchResult} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternProcessor} from './core/PatternProcessor'
-import {AhoCorasick, SegmentMatch} from './utils/AhoCorasick'
+import {AhoCorasick} from './utils/AhoCorasick'
 import {createTextToken} from './core/TokenBuilder'
 import {buildTree} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
@@ -30,15 +28,14 @@ export class Parser {
 		return new Parser(markups).split(value)
 	}
 
-	static join(tokens: Token[], options?: {markup: Markup}[]): string {
-		const markups = options?.map(c => c.markup) || []
+	static join(tokens: Token[]): string {
 		return tokensToString(tokens)
 	}
 
 	split(value: string): Token[] {
 		const segments = this.ac.search(value)
-		const matchResults = this.patternProcessor.process(segments, value)
-		return buildTree(value, matchResults)
+		const matchStates = this.patternProcessor.process(segments, value)
+		return buildTree(value, matchStates)
 	}
 
 	join(tokens: Token[]): string {
