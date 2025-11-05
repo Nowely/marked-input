@@ -79,7 +79,7 @@ ParserV2/
 ├── types.ts                 # Types and interfaces
 ├── core/                    # Core functionality
 │   ├── MarkupDescriptor.ts  # Markup descriptor creation
-│   ├── PatternProcessor.ts  # Pattern processing coordinator
+│   ├── PatternMatcher.ts    # Pattern processing coordinator
 │   ├── ChainMatcher.ts      # Pattern chain building
 │   ├── MatchValidator.ts    # Match validation and filtering
 │   ├── MatchPostProcessor.ts # Conversion to MatchResult
@@ -151,7 +151,7 @@ ParserV2/
 ```
 Input Text → Aho-Corasick → SegmentMatches
                               ↓
-                    PatternProcessor
+                    PatternMatcher
                     (coordinator)
                               ↓
         ┌─────────────────────┼─────────────────────┐
@@ -177,7 +177,7 @@ Input Text → Aho-Corasick → SegmentMatches
 
 ### Separation of Responsibilities
 
-**PatternProcessor** - minimal coordinator (only 3 lines of logic):
+**PatternMatcher** - minimal coordinator (only 3 lines of logic):
 
 - `ChainMatcher` - build pattern chains from segments
 - `MatchValidator` - validation and match filtering
@@ -524,7 +524,7 @@ for (const part of matchA.parts) {
 ```
 
 **Nesting Stack Management:**
-PatternProcessor uses LIFO stack to track active chains:
+PatternMatcher uses LIFO stack to track active chains:
 
 ```typescript
 const nestingStack: PatternChain[] = []

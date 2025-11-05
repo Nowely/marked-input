@@ -1,5 +1,5 @@
 import {TextToken, MarkToken, Token} from '../types'
-import {MatchState} from './PatternProcessor'
+import {MatchState} from './PatternMatcher'
 
 /**
  * Helper structure for tracking parent marks during tree building
@@ -212,7 +212,7 @@ function hasPartialOverlap(match: MatchState, existing: MatchState): boolean {
 
 /**
  * Sorts and filters match states to prepare for tree building
- * Integrates filtering logic that was previously in PatternProcessor
+ * Integrates filtering logic that was previously in PatternMatcher
  */
 function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
 	if (matches.length === 0) return []
@@ -302,7 +302,7 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
  * Complexity: O(N log N + N²) where N is number of matches (sorting + filtering)
  *
  * @param input - Original input text
- * @param matches - Raw match states from PatternProcessor
+ * @param matches - Raw match states from PatternMatcher
  * @returns Nested token tree
  *
  * @example

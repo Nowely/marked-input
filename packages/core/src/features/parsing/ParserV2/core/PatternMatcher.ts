@@ -44,7 +44,7 @@ export interface MatchState {
 /**
  * Optimized parser using state machine approach
  */
-export class PatternProcessor {
+export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
 	private readonly activeStates: MatchState[] = []
