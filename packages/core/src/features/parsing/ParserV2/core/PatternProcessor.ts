@@ -33,6 +33,9 @@ interface MatchState {
 	/** Track gap positions inline (no separate parts array) */
 	valueStart?: number
 	valueEnd?: number
+	/** For patterns with two __value__ placeholders - store second __value__ separately */
+	secondValueStart?: number
+	secondValueEnd?: number
 	nestedStart?: number
 	nestedEnd?: number
 	metaStart?: number
@@ -75,42 +78,73 @@ export class PatternProcessor {
 
 	/**
 	 * Process states waiting for this segment
+	 * Try states by priority until one is valid, keeping rejected states for later attempts
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const [bestIdx, best] = this.findBestPriorityState(waiting)
+		const sortedStates = waiting.toSorted(this.ascPriorityComparator)
 
-		this.updateMatchStateWithSegment(best, segment)
+		// Try states by priority until one is valid (iterate from end to start for safe removal)
+		for (let i = sortedStates.length - 1; i >= 0; i--) {
+			const state = sortedStates[i]
+			waiting.splice(i, 1)
 
-		// Check if pattern is complete
-		if (best.expectedSegmentIndex >= best.descriptor.segments.length) {
-			this.handleCompletedPattern(best, segment, input, waiting, bestIdx)
-		} else {
-			this.handleIncompletePattern(best, waiting, bestIdx)
+			const isSuccess = this.tryUpdateStateWithSegment(state, segment, input)
+			if (!isSuccess) {
+				this.rollbackState(state)
+				continue
+			}
+
+			// Check if pattern is complete
+			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
+				this.handleCompletedPattern(state, segment, input, waiting, i)
+			} else {
+				this.handleIncompletePattern(state, waiting, i)
+			}
+
+			break
 		}
 	}
 
 	/**
-	 * Find the state with the highest priority from the given array
+	 * Rollback state after validation failure for hasTwoValues patterns
+	 * Returns the state to waiting for the previous segment
 	 */
-	private findBestPriorityState(states: MatchState[]): [number, MatchState] {
-		const priorities = states.map(calculatePriority)
+	private rollbackState(state: MatchState): void {
+		// Rollback: decrement expectedSegmentIndex to wait for previous segment again
+		state.expectedSegmentIndex--
 
-		let bestIndex = 0
-		let bestPriority = priorities[0]
+		// Rollback end position to before the previous segment
+		const previousSegment = state.descriptor.segments[state.expectedSegmentIndex]
+		state.end = state.end - previousSegment.length
 
-		for (let i = 1; i < states.length; i++) {
-			if (priorities[i] > bestPriority) {
-				bestIndex = i
-				bestPriority = priorities[i]
-			}
+		// Clear the gap END position that was set for the segment before this one
+		// Keep the START position so we can extend the gap to the next occurrence
+		const previousGapType = state.descriptor.gapTypes[state.expectedSegmentIndex - 1]
+		if (previousGapType === 'nested') {
+			state.nestedEnd = undefined
+		} else if (previousGapType === 'meta') {
+			state.metaEnd = undefined
 		}
 
-		return [bestIndex, states[bestIndex]]
+		// Put state back to waiting for the previous segment
+		if (!this.waitingStates.has(previousSegment)) {
+			this.waitingStates.set(previousSegment, [])
+		}
+		this.waitingStates.get(previousSegment)!.push(state)
+	}
 
-		/** Priority calculation. Higher = better priority */
+	/**
+	 * Comparator for sorting states by asc priority
+	 */
+	private ascPriorityComparator(a: MatchState, b: MatchState) {
+		return calculatePriority(a) - calculatePriority(b)
+
+		/**
+		 * Calculate priority for a state. Higher = better priority
+		 */
 		function calculatePriority(state: MatchState): number {
 			const descriptor = state.descriptor
 			const expectedIndex = state.expectedSegmentIndex
@@ -130,8 +164,9 @@ export class PatternProcessor {
 
 	/**
 	 * Update match state with new segment by setting gap positions
+	 * Returns true if state is valid, false if validation failed (for hasTwoValues patterns)
 	 */
-	private updateMatchStateWithSegment(state: MatchState, segment: SegmentMatch): void {
+	private tryUpdateStateWithSegment(state: MatchState, segment: SegmentMatch, input: string): boolean {
 		const gapStart = state.end
 		const gapEnd = segment.start
 		const gapType = state.descriptor.gapTypes[state.expectedSegmentIndex - 1]
@@ -139,21 +174,39 @@ export class PatternProcessor {
 		// Set gap positions based on type
 		switch (gapType) {
 			case 'value':
+				if (state.descriptor.hasTwoValues) {
+					if (state.valueStart === undefined) {
+						state.valueStart = gapStart
+						state.valueEnd = gapEnd
+					} else {
+						const firstValue = input.substring(state.valueStart, state.valueEnd)
+						const secondValue = input.substring(gapStart, gapEnd)
+
+						if (firstValue !== secondValue) {
+							return false
+						}
+
+						state.secondValueStart = gapStart
+						state.secondValueEnd = gapEnd
+					}
+					break
+				}
 				state.valueStart = gapStart
 				state.valueEnd = gapEnd
 				break
 			case 'nested':
-				state.nestedStart = gapStart
+				state.nestedStart ??= gapStart
 				state.nestedEnd = gapEnd
 				break
 			case 'meta':
-				state.metaStart = gapStart
+				state.metaStart ??= gapStart
 				state.metaEnd = gapEnd
 				break
 		}
 
 		state.end = segment.end
 		state.expectedSegmentIndex++
+		return true
 	}
 
 	/**
@@ -166,72 +219,12 @@ export class PatternProcessor {
 		waiting: MatchState[],
 		bestIdx: number
 	): void {
-		const descriptor = state.descriptor
-
-		// For patterns with two __value__ placeholders (e.g., <__value__>__nested__</__value__>)
-		// both values must be equal (opening and closing tags must match)
-		if (descriptor.hasTwoValues) {
-			// We need to extract both values from the input
-			// The last value is in state.valueStart/valueEnd
-			// We need to find the first value
-
-			// Find which gaps are values
-			let firstValueGapIdx = -1
-			let secondValueGapIdx = -1
-			for (let i = 0; i < descriptor.gapTypes.length; i++) {
-				if (descriptor.gapTypes[i] === 'value') {
-					if (firstValueGapIdx === -1) {
-						firstValueGapIdx = i
-					} else {
-						secondValueGapIdx = i
-						break
-					}
-				}
-			}
-
-			if (
-				firstValueGapIdx !== -1 &&
-				secondValueGapIdx !== -1 &&
-				state.valueStart !== undefined &&
-				state.valueEnd !== undefined
-			) {
-				// Second value we already have
-				const value2 = input.substring(state.valueStart, state.valueEnd)
-
-				// First value: find it by parsing from the start
-				// Position after first segment
-				let pos = state.start + descriptor.segments[0].length
-
-				// Skip gaps before the first value gap
-				for (let i = 0; i < firstValueGapIdx; i++) {
-					// Find next segment
-					const nextSeg = descriptor.segments[i + 1]
-					const nextPos = input.indexOf(nextSeg, pos)
-					if (nextPos === -1) break
-					pos = nextPos + nextSeg.length
-				}
-
-				// Now pos is at the start of first value gap
-				// Find the end of this gap (next segment)
-				const nextSeg = descriptor.segments[firstValueGapIdx + 1]
-				const endPos = input.indexOf(nextSeg, pos)
-				const value1 = endPos !== -1 ? input.substring(pos, endPos) : ''
-
-				// Validate
-				if (value1 !== value2) {
-					// Values don't match - reject
-					waiting.splice(bestIdx, 1)
-					return
-				}
-			}
-		}
-
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
 		this.completedMatches.push(state)
 		waiting.splice(bestIdx, 1)
 
-		this.cancelConflictingStates(state.start, descriptor.segments[0])
+		this.cancelConflictingStates(state.start, state.descriptor.segments[0])
 	}
 
 	/**
