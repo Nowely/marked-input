@@ -269,14 +269,13 @@ export class PatternProcessor {
 	 * Filter overlapping and partial matches
 	 *
 	 * Strategy: Filter only TRUE conflicts, preserve valid nesting
+	 * Note: Invalid nested states (outside __nested__ sections) are already canceled
+	 * by cancelInvalidNestedStates() in handleCompletedPattern()
 	 *
 	 * A conflict is when two matches:
 	 * 1. Start at the same position (only one can win)
-	 * 2. One is completely inside another (shorter match filtered)
+	 * 2. One is completely inside another at the same level (shorter match filtered)
 	 * 3. Partial overlap (keep earlier one)
-	 *
-	 * Also filters:
-	 * - Empty/minimal patterns (just segments without content)
 	 *
 	 * Complexity: O(N log N) for sort + O(N²) for filtering
 	 */
@@ -305,13 +304,10 @@ export class PatternProcessor {
 		for (const match of this.completedMatches) {
 			let shouldFilter = false
 
-			// Pre-filter: Skip TRULY empty matches (nested content has length 0)
-			// But allow empty-content matches (nested length = 0 but segments exist)
-			// Example: "**" can be a valid match for *__nested__* pattern
+			// Pre-filter: Skip TRULY empty matches (nested content has negative length)
 			const matchDesc = match.descriptor
 			if (matchDesc.hasNested && match.nestedStart !== undefined && match.nestedEnd !== undefined) {
 				const nestedLength = match.nestedEnd - match.nestedStart
-				// Only filter if nested region has NEGATIVE length (which shouldn't happen but be safe)
 				if (nestedLength < 0) {
 					shouldFilter = true
 					continue
@@ -326,83 +322,32 @@ export class PatternProcessor {
 				}
 
 				// Case 2: Match is completely inside existing
-				// Strategy: Keep both if match is inside existing's nested/value content (valid nesting)
-				// Filter only if they're competing at the same level (e.g., *text* vs **text** with same boundaries)
 				if (match.start >= existing.start && match.end <= existing.end) {
-					// If strictly inside (not sharing boundaries), check if it's valid nesting
+					// If strictly inside (not sharing boundaries), it might be valid nesting
 					if (match.start > existing.start || match.end < existing.end) {
-						const matchDesc = match.descriptor
+						// Check if match is inside existing's nested content (valid nesting)
+						// Invalid nesting (in __value__/__meta__ sections) is already filtered by cancelInvalidNestedStates()
 						const existingDesc = existing.descriptor
-
-						// Check if match is inside existing's nestable content
-						// IMPORTANT: Only patterns with __nested__ support nesting
-						// Patterns with only __value__ (no __nested__) should NOT allow nested marks
-						let isInNestableContent = false
-
+						
 						if (
 							existingDesc.hasNested &&
 							existing.nestedStart !== undefined &&
-							existing.nestedEnd !== undefined
+							existing.nestedEnd !== undefined &&
+							match.start >= existing.nestedStart &&
+							match.end <= existing.nestedEnd
 						) {
-							// Existing has __nested__ placeholder - check if match is within nestedStart/nestedEnd
-							isInNestableContent = match.start >= existing.nestedStart && match.end <= existing.nestedEnd
-						} else {
-							// Existing has NO __nested__ placeholder (only __value__ or __meta__)
-							// No nesting is allowed - filter any nested match immediately
-							shouldFilter = true
-							break
+							// Valid nesting - match is inside existing's __nested__ section
+							// Keep both (don't filter)
+							continue
 						}
-
-						// Additional check: match should not partially overlap with existing's segments
-						// e.g., [1,9] in "**outer *inner* text**" starts at position 1, which is inside the "**" segment
-						const overlapsWithExistingSegments =
-							(match.start >= existing.start && match.start < existing.nestedStart!) || // starts in opening segment
-							(match.end > existing.nestedEnd! && match.end <= existing.end) // ends in closing segment
-
-						if (overlapsWithExistingSegments && existing.nestedStart !== undefined) {
-							shouldFilter = true
-							break
-						}
-
-						if (isInNestableContent) {
-							// Valid nesting - keep both
-							// Example: *inner* inside **outer *inner* text**
-							// Don't check against this 'existing' anymore, but continue with other filtered matches
-							// We don't want to filter this match
-						} else {
-							// Not in nestable content - they're competing at same level
-							// Filter if segments conflict and boundaries are very close
-							let segmentsConflict = false
-
-							for (const matchSeg of matchDesc.segments) {
-								for (const existingSeg of existingDesc.segments) {
-									if (matchSeg === existingSeg) {
-										segmentsConflict = true
-										break
-									}
-									if (matchSeg.includes(existingSeg) || existingSeg.includes(matchSeg)) {
-										const matchChars = new Set(matchSeg)
-										const existingChars = new Set(existingSeg)
-										const hasCommon = Array.from(matchChars).some(c => existingChars.has(c))
-										if (hasCommon) {
-											segmentsConflict = true
-											break
-										}
-									}
-								}
-								if (segmentsConflict) break
-							}
-
-							if (segmentsConflict) {
-								const startDist = match.start - existing.start
-								const endDist = existing.end - match.end
-
-								if (startDist <= 2 && endDist <= 2) {
-									shouldFilter = true
-									break
-								}
-							}
-						}
+						
+						// If we reach here, either:
+						// - existing has no __nested__ (shouldn't happen - already canceled)
+						// - match is not in nested section (shouldn't happen - already canceled)
+						// - they're competing at same level
+						// Filter to be safe
+						shouldFilter = true
+						break
 					} else {
 						// Same boundaries - filter the shorter/weaker one (already handled by sort)
 						shouldFilter = true
