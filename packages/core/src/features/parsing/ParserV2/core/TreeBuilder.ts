@@ -101,14 +101,12 @@ function createMarkToken(input: string, match: MatchState, children: Token[]): M
 	const nestedStr = extractSubstring(input, match.nestedStart, match.nestedEnd)
 	const metaStr = extractSubstring(input, match.metaStart, match.metaEnd)
 	
-	// Only convert nested to undefined if it's empty (nested can't be empty string)
-	// But meta CAN be empty string, so we check if positions exist
+	// Convert empty strings to undefined for nested, but meta can be empty string
 	const nested = nestedStr || undefined
 	const meta = match.metaStart !== undefined && match.metaEnd !== undefined ? metaStr : undefined
 
-	// Priority: use value if present, otherwise use nested content
-	// This handles combined patterns like @[__value__](__nested__) correctly
-	const valueContent = value !== '' ? value : nested || ''
+	// Use value if present, otherwise use nested content
+	const valueContent = value || nested || ''
 
 	// Only include children if there are nested marks (not just text tokens)
 	const hasNestedMarks = children.some(child => child.type === 'mark')
@@ -149,16 +147,19 @@ function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
 
 	const token = createMarkToken(ctx.input, node.match, node.children)
 	
-	if (ctx.stack.length > 0) {
-		// Add to parent's children
-		const parent = ctx.stack[ctx.stack.length - 1]
-		addTextToken(ctx.input, parent.children, parent.textPos, node.match.start)
-		parent.children.push(token)
-		parent.textPos = node.match.end
+	// Determine target: parent's children or root tokens
+	const hasParent = ctx.stack.length > 0
+	const targetTokens = hasParent ? ctx.stack[ctx.stack.length - 1].children : ctx.rootTokens
+	const currentPos = hasParent ? ctx.stack[ctx.stack.length - 1].textPos : ctx.rootTextPos
+	
+	// Add text before token and the token itself
+	addTextToken(ctx.input, targetTokens, currentPos, node.match.start)
+	targetTokens.push(token)
+	
+	// Update position
+	if (hasParent) {
+		ctx.stack[ctx.stack.length - 1].textPos = node.match.end
 	} else {
-		// Add to root
-		addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, node.match.start)
-		ctx.rootTokens.push(token)
 		ctx.rootTextPos = node.match.end
 	}
 }
@@ -176,9 +177,8 @@ function popCompletedParents(match: MatchState, ctx: TreeBuildContext): void {
 			break
 		}
 
-		// Parent is complete - finalize it
-		ctx.stack.pop()
-		finalizeMarkNode(parent, ctx)
+		// Parent is complete - pop and finalize
+		finalizeMarkNode(ctx.stack.pop()!, ctx)
 	}
 }
 
@@ -201,16 +201,6 @@ function isValidNesting(match: MatchState, existing: MatchState): boolean {
 }
 
 /**
- * Checks if two matches have partial overlap (neither fully contains the other)
- */
-function hasPartialOverlap(match: MatchState, existing: MatchState): boolean {
-	const overlaps = match.start < existing.end && match.end > existing.start
-	const matchInside = match.start >= existing.start && match.end <= existing.end
-	const existingInside = existing.start >= match.start && existing.end <= match.end
-	return overlaps && !matchInside && !existingInside
-}
-
-/**
  * Filters match states in a single pass with O(N) complexity
  * Matches are already sorted by start position from PatternMatcher
  * 
@@ -220,8 +210,7 @@ function hasPartialOverlap(match: MatchState, existing: MatchState): boolean {
  * Algorithm:
  * - Track last accepted match and its end position
  * - Skip matches at same start position (keep only first/best)
- * - Skip matches that overlap with last accepted match
- * - Allow valid nesting inside nested sections of last match
+ * - Accept valid nesting, reject any other overlaps
  */
 function filterMatchesSinglePass(matches: MatchState[]): MatchState[] {
 	if (matches.length === 0) return []
@@ -244,27 +233,17 @@ function filterMatchesSinglePass(matches: MatchState[]): MatchState[] {
 
 		// Check if this match overlaps with the last accepted match
 		if (lastMatch && match.start < lastMatch.end) {
-			// Check if it's valid nesting inside the last match
+			// If it's valid nesting - accept it
 			if (isValidNesting(match, lastMatch)) {
-				// Valid nesting - accept this match
 				filtered.push(match)
 				lastStart = match.start
 				lastMatch = match // Update for potential deeper nesting
 				continue
 			}
 			
-			// Check for partial overlap
-			if (hasPartialOverlap(match, lastMatch)) {
-				// Partial overlap - skip this match
-				lastStart = match.start
-				continue
-			}
-			
-			// Match is completely inside lastMatch but not in valid nested section - skip it
-			if (match.start >= lastMatch.start && match.end <= lastMatch.end) {
-				lastStart = match.start
-				continue
-			}
+			// Any other overlap - reject this match
+			lastStart = match.start
+			continue
 		}
 
 		// This is a valid root-level match or doesn't overlap
