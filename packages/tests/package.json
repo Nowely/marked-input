@@ -8,11 +8,6 @@
     "test:related": "vitest related",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage",
-    "bench": "vitest bench",
-    "bench:watch": "vitest bench --watch",
-    "bench:v2": "vitest bench benchmarks/parser-v2.bench.ts",
-    "bench:compare": "vitest bench benchmarks/parser-comparison.bench.ts",
-    "bench:iteration": "vitest bench benchmarks/parser-iteration.bench.ts",
     "run": "vite-node benchmarks/index.ts"
   },
   "dependencies": {
