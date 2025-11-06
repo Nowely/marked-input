@@ -1,7 +1,19 @@
-import {SegmentMatch} from './AhoCorasick'
+/**
+ * Result of a segment match in the text
+ */
+export interface SegmentMatch {
+	/** Index in the patterns array */
+	index: number
+	/** Start position in text */
+	start: number
+	/** End position in text (exclusive) */
+	end: number
+	/** Matched text */
+	value: string
+}
 
 /**
- * Regex-based segment matcher for efficient multi-pattern string matching
+ * Segment matcher for efficient multi-pattern string matching
  * Uses regex alternation with length-based sorting to ensure correct precedence
  *
  * Features:
@@ -11,7 +23,7 @@ import {SegmentMatch} from './AhoCorasick'
  *
  * Note: Expects deduplicated segments from MarkupRegistry for optimal performance
  */
-export class RegexSegmentMatcher {
+export class SegmentMatcher {
 	private readonly segments: string[]
 	private readonly regex: RegExp
 	private readonly segmentToIndex: Map<string, number>
