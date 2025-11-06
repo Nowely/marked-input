@@ -47,7 +47,6 @@ export interface MatchState {
 export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
-	private readonly activeStates: MatchState[] = []
 	private readonly waitingStates: Map<string, MatchState[]> = new Map()
 	private readonly completedStates: Map<number, MatchState[]> = new Map()
 
@@ -65,7 +64,6 @@ export class PatternMatcher {
 	 */
 	process(segments: SegmentMatch[], input: string): MatchState[] {
 		// Clear previous state
-		this.activeStates.length = 0
 		this.waitingStates.clear()
 		this.completedStates.clear()
 
