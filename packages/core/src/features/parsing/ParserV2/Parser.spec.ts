@@ -16,7 +16,7 @@ describe('ParserV2', () => {
 	describe('static split', () => {
 		it('should parse text with provided options and return Token[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup}[] = [{markup: '@[__value__](__meta__)'}, {markup: '#[__value__]'}]
+			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
 
 			const result = Parser.split(value, options)
 
