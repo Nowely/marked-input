@@ -48,9 +48,8 @@ export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
 	private readonly activeStates: MatchState[] = []
-	private readonly completedMatches: MatchState[] = []
 	private readonly waitingStates: Map<string, MatchState[]> = new Map()
-	private readonly matchesByPosition: Map<number, MatchState[]> = new Map()
+	private readonly completedStates: Map<number, MatchState[]> = new Map()
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
@@ -67,9 +66,8 @@ export class PatternMatcher {
 	process(segments: SegmentMatch[], input: string): MatchState[] {
 		// Clear previous state
 		this.activeStates.length = 0
-		this.completedMatches.length = 0
 		this.waitingStates.clear()
-		this.matchesByPosition.clear()
+		this.completedStates.clear()
 
 		for (const segment of segments) {
 			this.processWaitingStates(segment, input)
@@ -229,9 +227,8 @@ export class PatternMatcher {
 	private handleCompletedPattern(state: MatchState, segment: SegmentMatch): void {
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
-		this.completedMatches.push(state)
 		
-		// Add to position-indexed array
+		// Add to position-indexed Map
 		this.addToPositionIndex(state)
 	}
 
@@ -264,7 +261,6 @@ export class PatternMatcher {
 					valueEnd: segment.end,
 				}
 
-				this.completedMatches.push(match)
 				this.addToPositionIndex(match)
 				continue
 			}
@@ -292,11 +288,11 @@ export class PatternMatcher {
 	 */
 	private addToPositionIndex(state: MatchState): void {
 		const position = state.start
-		const existing = this.matchesByPosition.get(position)
+		const existing = this.completedStates.get(position)
 
 		if (!existing) {
 			// No collision - create new array with this match
-			this.matchesByPosition.set(position, [state])
+			this.completedStates.set(position, [state])
 			return
 		}
 
@@ -314,16 +310,16 @@ export class PatternMatcher {
 	 * Optimization: Only iterate over actual match positions, not entire input length
 	 */
 	private flattenMatchesByPosition(): MatchState[] {
-		if (this.matchesByPosition.size === 0) {
+		if (this.completedStates.size === 0) {
 			return []
 		}
 
 		// Sort positions once
-		const positions = Array.from(this.matchesByPosition.keys()).sort((a, b) => a - b)
+		const positions = Array.from(this.completedStates.keys()).sort((a, b) => a - b)
 		const result: MatchState[] = []
 		
 		for (const position of positions) {
-			const matches = this.matchesByPosition.get(position)!
+			const matches = this.completedStates.get(position)!
 			
 			if (matches.length === 1) {
 				result.push(matches[0])
