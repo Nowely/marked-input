@@ -50,6 +50,7 @@ export class PatternMatcher {
 	private readonly activeStates: MatchState[] = []
 	private readonly completedMatches: MatchState[] = []
 	private readonly waitingStates: Map<string, MatchState[]> = new Map()
+	private readonly matchesByPosition: Map<number, MatchState[]> = new Map()
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
@@ -58,12 +59,17 @@ export class PatternMatcher {
 	/**
 	 * Process segments with state machine to create match states
 	 * Main method that converts found segments into structured match states
+	 * 
+	 * Optimization: Uses position-indexed Map to store matches by their start position
+	 * This provides natural sorting and enables O(N) filtering in TreeBuilder
+	 * Map is more efficient than sparse array for texts with few matches
 	 */
 	process(segments: SegmentMatch[], input: string): MatchState[] {
 		// Clear previous state
 		this.activeStates.length = 0
 		this.completedMatches.length = 0
 		this.waitingStates.clear()
+		this.matchesByPosition.clear()
 
 		for (const segment of segments) {
 			this.processWaitingStates(segment, input)
@@ -71,7 +77,8 @@ export class PatternMatcher {
 			this.tryStartNewStates(segment)
 		}
 
-		return this.completedMatches
+		// Flatten position-indexed Map into sorted result
+		return this.flattenMatchesByPosition()
 	}
 
 	/**
@@ -223,6 +230,9 @@ export class PatternMatcher {
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
 		this.completedMatches.push(state)
+		
+		// Add to position-indexed array
+		this.addToPositionIndex(state)
 	}
 
 	private handleIncompletePattern(state: MatchState): void {
@@ -255,6 +265,7 @@ export class PatternMatcher {
 				}
 
 				this.completedMatches.push(match)
+				this.addToPositionIndex(match)
 				continue
 			}
 
@@ -273,6 +284,76 @@ export class PatternMatcher {
 			}
 			this.waitingStates.get(nextSegment)!.push(state)
 		}
+	}
+
+	/**
+	 * Add match to position-indexed Map, handling collisions by keeping all matches
+	 * TreeBuilder will filter them based on priority and nesting rules
+	 */
+	private addToPositionIndex(state: MatchState): void {
+		const position = state.start
+		const existing = this.matchesByPosition.get(position)
+
+		if (!existing) {
+			// No collision - create new array with this match
+			this.matchesByPosition.set(position, [state])
+			return
+		}
+
+		// Collision detected - add to array, will be sorted later
+		existing.push(state)
+	}
+
+	/**
+	 * Flatten position-indexed Map into sorted array of matches
+	 * When multiple matches exist at same position, sort by priority:
+	 * - Longer first segment first (** before *)
+	 * - Longer total match first
+	 * - More segments first
+	 * 
+	 * Optimization: Only iterate over actual match positions, not entire input length
+	 */
+	private flattenMatchesByPosition(): MatchState[] {
+		if (this.matchesByPosition.size === 0) {
+			return []
+		}
+
+		// Sort positions once
+		const positions = Array.from(this.matchesByPosition.keys()).sort((a, b) => a - b)
+		const result: MatchState[] = []
+		
+		for (const position of positions) {
+			const matches = this.matchesByPosition.get(position)!
+			
+			if (matches.length === 1) {
+				result.push(matches[0])
+			} else {
+				// Multiple matches at same position - sort by priority
+				matches.sort((a, b) => {
+					// Longer first segment wins (** > *)
+					const aFirstSegLen = a.descriptor.segments[0].length
+					const bFirstSegLen = b.descriptor.segments[0].length
+					if (aFirstSegLen !== bFirstSegLen) {
+						return bFirstSegLen - aFirstSegLen
+					}
+
+					// Longer match wins
+					const aLen = a.end - a.start
+					const bLen = b.end - b.start
+					if (aLen !== bLen) {
+						return bLen - aLen
+					}
+
+					// More segments wins
+					return b.descriptor.segments.length - a.descriptor.segments.length
+				})
+				
+				// Add all matches (TreeBuilder will filter overlaps)
+				result.push(...matches)
+			}
+		}
+		
+		return result
 	}
 
 }

@@ -211,30 +211,25 @@ function hasPartialOverlap(match: MatchState, existing: MatchState): boolean {
 }
 
 /**
- * Sorts and filters match states to prepare for tree building
- * Integrates filtering logic that was previously in PatternMatcher
+ * Filters match states in a single pass with O(N) complexity
+ * Matches are already sorted by start position from PatternMatcher
+ * 
+ * Optimization: Track only the most recent potential parent for nesting checks
+ * instead of scanning all filtered matches
+ * 
+ * Algorithm:
+ * - Track last accepted match and its end position
+ * - Skip matches at same start position (keep only first/best)
+ * - Skip matches that overlap with last accepted match
+ * - Allow valid nesting inside nested sections of last match
  */
-function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
+function filterMatchesSinglePass(matches: MatchState[]): MatchState[] {
 	if (matches.length === 0) return []
 
-	// Sort: start ascending, end descending (longer first), then by segment length
-	matches.sort((a, b) => {
-		if (a.start !== b.start) return a.start - b.start
-		if (a.end !== b.end) return b.end - a.end
-
-		const aDesc = a.descriptor
-		const bDesc = b.descriptor
-		const aSegLen = aDesc.segments[0].length
-		const bSegLen = bDesc.segments[0].length
-
-		// Longer first segment first (** before *)
-		if (aSegLen !== bSegLen) return bSegLen - aSegLen
-
-		// More segments first
-		return bDesc.segments.length - aDesc.segments.length
-	})
-
 	const filtered: MatchState[] = []
+	let lastRootEnd = 0 // Track the end position of the last root-level match
+	let lastStart = -1 // Track the start position of the last processed match
+	let lastMatch: MatchState | null = null // Track the last accepted match for nesting checks
 
 	for (const match of matches) {
 		// Pre-filter: Skip empty matches with invalid nested content
@@ -242,39 +237,44 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
 			continue
 		}
 
-		let shouldFilter = false
+		// Skip matches at the same start position (keep only the first one, which has highest priority)
+		if (match.start === lastStart) {
+			continue
+		}
 
-		for (const existing of filtered) {
-			// Case 1: Same start position - keep only the longest (first due to sort)
-			if (match.start === existing.start) {
-				shouldFilter = true
-				break
+		// Check if this match overlaps with the last accepted match
+		if (lastMatch && match.start < lastMatch.end) {
+			// Check if it's valid nesting inside the last match
+			if (isValidNesting(match, lastMatch)) {
+				// Valid nesting - accept this match
+				filtered.push(match)
+				lastStart = match.start
+				lastMatch = match // Update for potential deeper nesting
+				continue
 			}
-
-			// Case 2: Match is completely inside existing
-			if (match.start >= existing.start && match.end <= existing.end) {
-				// If strictly inside (not sharing boundaries), check for valid nesting
-				const isStrictlyInside = match.start > existing.start || match.end < existing.end
-				
-				if (isStrictlyInside && isValidNesting(match, existing)) {
-					// Valid nesting - keep both
-					continue
-				}
-				
-				// Otherwise filter this match
-				shouldFilter = true
-				break
+			
+			// Check for partial overlap
+			if (hasPartialOverlap(match, lastMatch)) {
+				// Partial overlap - skip this match
+				lastStart = match.start
+				continue
 			}
-
-			// Case 3: Partial overlap - keep the one that started first
-			if (hasPartialOverlap(match, existing)) {
-				shouldFilter = true
-				break
+			
+			// Match is completely inside lastMatch but not in valid nested section - skip it
+			if (match.start >= lastMatch.start && match.end <= lastMatch.end) {
+				lastStart = match.start
+				continue
 			}
 		}
 
-		if (!shouldFilter) {
-			filtered.push(match)
+		// This is a valid root-level match or doesn't overlap
+		filtered.push(match)
+		lastStart = match.start
+		lastMatch = match
+		
+		// Update lastRootEnd if this is at root level (not nested in previous match)
+		if (match.start >= lastRootEnd) {
+			lastRootEnd = match.end
 		}
 	}
 
@@ -282,27 +282,26 @@ function sortAndFilterMatches(matches: MatchState[]): MatchState[] {
 }
 
 /**
- * Builds nested token tree in a single pass without recursive parsing
+ * Builds nested token tree with optimized single-pass filtering
  *
  * Algorithm:
- * 1. Sort and filter matches to remove overlaps and conflicts
+ * 1. Filter matches in O(N) time (matches already sorted by PatternMatcher)
  * 2. Iterate through filtered matches
  * 3. Use stack to track parent-child relationships based on position containment
- * 4. Pop completed parents when current match is not inside their label
+ * 4. Pop completed parents when current match is not inside their nested content
  * 5. Add current match to stack for potential children
  * 6. Finalize remaining stack at the end
  *
  * Optimizations:
- * - Integrated filtering during tree building (one pass)
+ * - Matches arrive pre-sorted from PatternMatcher (no sorting needed)
+ * - Single-pass O(N) filtering instead of O(N²)
  * - Extract substrings from input on demand (no intermediate MatchResult)
- * - Track hasNestedMarks flag to avoid repeated child array scanning
- * - Cache stack.length to reduce property access
- * - Inline hot path checks to reduce function call overhead
+ * - Stack-based tree building without recursion
  *
- * Complexity: O(N log N + N²) where N is number of matches (sorting + filtering)
+ * Complexity: O(N) where N is number of matches (linear filtering + linear tree building)
  *
  * @param input - Original input text
- * @param matches - Raw match states from PatternMatcher
+ * @param matches - Pre-sorted match states from PatternMatcher
  * @returns Nested token tree
  *
  * @example
@@ -324,8 +323,8 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 		return [createTextToken(input, 0, input.length)]
 	}
 
-	// Sort and filter matches
-	const filtered = sortAndFilterMatches(matches)
+	// Filter matches in single pass (O(N) - matches already sorted)
+	const filtered = filterMatchesSinglePass(matches)
 
 	if (filtered.length === 0) {
 		return [createTextToken(input, 0, input.length)]
