@@ -82,7 +82,7 @@ export class PatternMatcher {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const sortedStates = waiting.toSorted(this.ascPriorityComparator)
+		const sortedStates = waiting.toSorted((a, b) => this.ascPriorityComparator(a, b))
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
