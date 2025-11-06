@@ -23,7 +23,7 @@ export class Parser {
 	private readonly patternMatcher: PatternMatcher
 	private readonly matcherType: SegmentMatcherType
 
-	constructor(markups: Markup[], matcherType: SegmentMatcherType = SegmentMatcherType.AHO_CORASICK) {
+	constructor(markups: Markup[], matcherType: SegmentMatcherType = SegmentMatcherType.REGEX) {
 		this.registry = new MarkupRegistry(markups)
 		this.matcherType = matcherType
 
@@ -43,7 +43,7 @@ export class Parser {
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
 		}
-		return new Parser(markups, options?.matcherType ?? SegmentMatcherType.INDEX_OF).split(value)
+		return new Parser(markups, options?.matcherType ?? SegmentMatcherType.REGEX).split(value)
 	}
 
 	static join(tokens: Token[]): string {
