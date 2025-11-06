@@ -4,28 +4,46 @@ import {MarkToken} from './types'
 import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {AhoCorasick} from './utils/AhoCorasick'
+import {RegexSegmentMatcher} from './utils/RegexSegmentMatcher'
+import {IndexOfSegmentMatcher} from './utils/IndexOfSegmentMatcher'
 import {createTextToken} from './core/TokenBuilder'
 import {buildTree} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
+export enum SegmentMatcherType {
+	AHO_CORASICK = 'ahoCorasick',
+	INDEX_OF = 'indexOf',
+	REGEX = 'regex'
+}
+
 export class Parser {
 	private readonly registry: MarkupRegistry
-	private readonly ac: AhoCorasick
+	private readonly segmentMatcher: AhoCorasick | IndexOfSegmentMatcher | RegexSegmentMatcher
 	private readonly patternMatcher: PatternMatcher
+	private readonly matcherType: SegmentMatcherType
 
-	constructor(markups: Markup[]) {
+	constructor(markups: Markup[], matcherType: SegmentMatcherType = SegmentMatcherType.AHO_CORASICK) {
 		this.registry = new MarkupRegistry(markups)
-		this.ac = new AhoCorasick(this.registry.segments)
+		this.matcherType = matcherType
+
+		if (matcherType === SegmentMatcherType.REGEX) {
+			this.segmentMatcher = new RegexSegmentMatcher(this.registry.segments)
+		} else if (matcherType === SegmentMatcherType.INDEX_OF) {
+			this.segmentMatcher = new IndexOfSegmentMatcher(this.registry.segments)
+		} else {
+			this.segmentMatcher = new AhoCorasick(this.registry.segments)
+		}
+
 		this.patternMatcher = new PatternMatcher(this.registry)
 	}
 
-	static split(value: string, options?: {markup: Markup}[]): Token[] {
-		const markups = options?.map(c => c.markup)
+	static split(value: string, options?: {markup: Markup[], matcherType?: SegmentMatcherType}): Token[] {
+		const markups = options?.markup
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
 		}
-		return new Parser(markups).split(value)
+		return new Parser(markups, options?.matcherType ?? SegmentMatcherType.INDEX_OF).split(value)
 	}
 
 	static join(tokens: Token[]): string {
@@ -33,7 +51,7 @@ export class Parser {
 	}
 
 	split(value: string): Token[] {
-		const segments = this.ac.search(value)
+		const segments = this.segmentMatcher.search(value)
 		const matches = this.patternMatcher.process(segments, value)
 		return buildTree(matches, value)
 	}
@@ -61,7 +79,7 @@ export class Parser {
 	 * TODO don't work correctly
 	 */
 	escape(text: string, escaper?: (segment: string) => string): string {
-		const matches = this.ac.search(text)
+		const matches = this.segmentMatcher.search(text)
 		if (matches.length === 0) return text
 
 		// Sort matches by position
