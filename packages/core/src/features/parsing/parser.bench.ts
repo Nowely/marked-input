@@ -66,8 +66,8 @@ function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: nu
 function calculateTrends(currentRun: any, previousRun: any | null): any {
 	if (!previousRun || !previousRun.summary || !previousRun.summary.performance) {
 		return {
-			v1: {changeFromLast: 'N/A', regressions: []},
-			v2: {changeFromLast: 'N/A', regressions: []},
+			v1: {changeFromLastV2: 'N/A', regressions: []},
+			v2: {changeFromLastV2: 'N/A', regressions: []},
 		}
 	}
 
@@ -76,8 +76,8 @@ function calculateTrends(currentRun: any, previousRun: any | null): any {
 
 	if (!prevV1Ops || !prevV2Ops) {
 		return {
-			v1: {changeFromLast: 'N/A', regressions: []},
-			v2: {changeFromLast: 'N/A', regressions: []},
+			v1: {changeFromLastV2: 'N/A', regressions: []},
+			v2: {changeFromLastV2: 'N/A', regressions: []},
 		}
 	}
 
@@ -130,6 +130,7 @@ function saveResults() {
 			tests[name] = testData
 		})
 
+
 		// Calculate summary
 		const allV1Ops = testResults.map(t => t.v1[1]) // avg is at index 1
 		const allV2Ops = testResults.map(t => t.v2[1]) // avg is at index 1
@@ -156,6 +157,32 @@ function saveResults() {
 			}
 		} catch (error) {
 			// No previous results
+		}
+
+		// Add changeFromLastV2 for each test
+		if (previousRun?.tests) {
+			Object.keys(tests).forEach(testName => {
+				const currentTest = tests[testName]
+				const prevTest = previousRun.tests[testName]
+
+				if (prevTest) {
+					// Calculate change based on average value (index 1 in the array)
+					const currentAvg = currentTest.v2[1] // v2 average
+					const prevAvg = prevTest.v2[1]       // previous v2 average
+					const change = ((currentAvg - prevAvg) / prevAvg) * 100
+
+					currentTest.changeFromLastV2 = change >= 0
+						? `+${change.toFixed(1)}%`
+						: `${change.toFixed(1)}%`
+				} else {
+					currentTest.changeFromLastV2 = 'N/A'
+				}
+			})
+		} else {
+			// No previous run, set N/A for all tests
+			Object.keys(tests).forEach(testName => {
+				tests[testName].changeFromLastV2 = 'N/A'
+			})
 		}
 
 		const currentRun: any = {
