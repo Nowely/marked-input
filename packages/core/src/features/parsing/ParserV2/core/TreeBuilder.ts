@@ -2,30 +2,11 @@ import {TextToken, MarkToken, Token} from '../types'
 import {MatchState} from './PatternMatcher'
 
 /**
- * Helper structure for tracking parent marks during tree building
- */
-interface MarkNode {
-	match: MatchState
-	children: Token[]
-	textPos: number // Current position for adding text tokens
-}
-
-/**
  * Content boundaries for a match (start and end positions)
  */
 interface ContentBounds {
 	start: number
 	end: number
-}
-
-/**
- * Context for tree building process
- */
-interface TreeBuildContext {
-	input: string
-	rootTokens: Token[]
-	stack: MarkNode[]
-	rootTextPos: number
 }
 
 /**
@@ -40,14 +21,6 @@ function getContentBounds(match: MatchState): ContentBounds {
 		start: match.valueStart ?? match.start,
 		end: match.valueEnd ?? match.start,
 	}
-}
-
-/**
- * Checks if child match is contained within parent's nestable content
- */
-function isMatchContained(child: MatchState, parent: MatchState): boolean {
-	const bounds = getContentBounds(parent)
-	return child.start >= bounds.start && child.end <= bounds.end
 }
 
 /**
@@ -100,7 +73,7 @@ function createMarkToken(input: string, match: MatchState, children: Token[]): M
 	const value = extractSubstring(input, match.valueStart, match.valueEnd)
 	const nestedStr = extractSubstring(input, match.nestedStart, match.nestedEnd)
 	const metaStr = extractSubstring(input, match.metaStart, match.metaEnd)
-	
+
 	// Convert empty strings to undefined for nested, but meta can be empty string
 	const nested = nestedStr || undefined
 	const meta = match.metaStart !== undefined && match.metaEnd !== undefined ? metaStr : undefined
@@ -124,65 +97,6 @@ function createMarkToken(input: string, match: MatchState, children: Token[]): M
 }
 
 /**
- * Adds text token between positions (always adds, even if empty)
- * This maintains compatibility with the old behavior where empty text tokens are always present
- * Skips adding token if positions are invalid (fromPos > toPos)
- */
-function addTextToken(input: string, tokens: Token[], fromPos: number, toPos: number): void {
-	// Skip if positions would be invalid
-	// This can happen when patterns overlap or are adjacent
-	if (fromPos > toPos) {
-		return
-	}
-	tokens.push(createTextToken(input, fromPos, toPos))
-}
-
-/**
- * Finalizes a completed mark node and adds it to parent or root
- */
-function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
-	// Add any remaining text in this mark's nestable content
-	const bounds = getContentBounds(node.match)
-	addTextToken(ctx.input, node.children, node.textPos, bounds.end)
-
-	const token = createMarkToken(ctx.input, node.match, node.children)
-	
-	// Determine target: parent's children or root tokens
-	const hasParent = ctx.stack.length > 0
-	const targetTokens = hasParent ? ctx.stack[ctx.stack.length - 1].children : ctx.rootTokens
-	const currentPos = hasParent ? ctx.stack[ctx.stack.length - 1].textPos : ctx.rootTextPos
-	
-	// Add text before token and the token itself
-	addTextToken(ctx.input, targetTokens, currentPos, node.match.start)
-	targetTokens.push(token)
-	
-	// Update position
-	if (hasParent) {
-		ctx.stack[ctx.stack.length - 1].textPos = node.match.end
-	} else {
-		ctx.rootTextPos = node.match.end
-	}
-}
-
-/**
- * Pops completed parent marks from stack and finalizes them
- */
-function popCompletedParents(match: MatchState, ctx: TreeBuildContext): void {
-	while (ctx.stack.length > 0) {
-		const parent = ctx.stack[ctx.stack.length - 1]
-
-		// Check if current match is inside parent's nestable content
-		if (isMatchContained(match, parent.match)) {
-			// This match is nested inside parent
-			break
-		}
-
-		// Parent is complete - pop and finalize
-		finalizeMarkNode(ctx.stack.pop()!, ctx)
-	}
-}
-
-/**
  * Checks if match has invalid empty nested content (negative length)
  */
 function hasInvalidNestedContent(match: MatchState): boolean {
@@ -201,154 +115,154 @@ function isValidNesting(match: MatchState, existing: MatchState): boolean {
 }
 
 /**
- * Filters match states in a single pass with O(N) complexity
- * Matches are already sorted by start position from PatternMatcher
- * 
- * Optimization: Track only the most recent potential parent for nesting checks
- * instead of scanning all filtered matches
- * 
- * Algorithm:
- * - Track last accepted match and its end position
- * - Skip matches at same start position (keep only first/best)
- * - Accept valid nesting, reject any other overlaps
- */
-function filterMatchesSinglePass(matches: MatchState[]): MatchState[] {
-	if (matches.length === 0) return []
-
-	const filtered: MatchState[] = []
-	let lastRootEnd = 0 // Track the end position of the last root-level match
-	let lastStart = -1 // Track the start position of the last processed match
-	let lastMatch: MatchState | null = null // Track the last accepted match for nesting checks
-
-	for (const match of matches) {
-		// Pre-filter: Skip empty matches with invalid nested content
-		if (hasInvalidNestedContent(match)) {
-			continue
-		}
-
-		// Skip matches at the same start position (keep only the first one, which has highest priority)
-		if (match.start === lastStart) {
-			continue
-		}
-
-		// Check if this match overlaps with the last accepted match
-		if (lastMatch && match.start < lastMatch.end) {
-			// If it's valid nesting - accept it
-			if (isValidNesting(match, lastMatch)) {
-				filtered.push(match)
-				lastStart = match.start
-				lastMatch = match // Update for potential deeper nesting
-				continue
-			}
-			
-			// Any other overlap - reject this match
-			lastStart = match.start
-			continue
-		}
-
-		// This is a valid root-level match or doesn't overlap
-		filtered.push(match)
-		lastStart = match.start
-		lastMatch = match
-		
-		// Update lastRootEnd if this is at root level (not nested in previous match)
-		if (match.start >= lastRootEnd) {
-			lastRootEnd = match.end
-		}
-	}
-
-	return filtered
-}
-
-/**
- * Builds nested token tree with optimized single-pass filtering
+ * Builds nested token tree with inline filtering and inline finalization
  *
  * Algorithm:
- * 1. Filter matches in O(N) time (matches already sorted by PatternMatcher)
- * 2. Iterate through filtered matches
- * 3. Use stack to track parent-child relationships based on position containment
- * 4. Pop completed parents when current match is not inside their nested content
- * 5. Add current match to stack for potential children
- * 6. Finalize remaining stack at the end
+ * 1. Process matches with inline O(N) filtering (matches already sorted by PatternMatcher)
+ * 2. Iterate through matches using stack-based tree building with inline conflict resolution
+ * 3. Close completed parents when current match is not inside their nested content
+ * 4. Add matches to stack for potential children with proper positioning
+ * 5. Finalize remaining stack at the end
  *
  * Optimizations:
  * - Matches arrive pre-sorted from PatternMatcher (no sorting needed)
- * - Single-pass O(N) filtering instead of O(N²)
+ * - Inline single-pass O(N) filtering with conflict resolution
  * - Extract substrings from input on demand (no intermediate MatchResult)
  * - Stack-based tree building without recursion
+ * - Inline finalization without separate functions
+ * - Proper token positioning without final sorting
  *
  * Complexity: O(N) where N is number of matches (linear filtering + linear tree building)
  *
  * @param input - Original input text
  * @param matches - Pre-sorted match states from PatternMatcher
  * @returns Nested token tree
- *
- * @example
- * ```typescript
- * // Input: "@[hello #[world]]"
- * // Matches: [
- * //   { start: 0, end: 17, valueStart: 2, valueEnd: 16, ... },
- * //   { start: 8, end: 16, valueStart: 10, valueEnd: 15, ... }
- * // ]
- * // Result: [
- * //   TextToken(""),
- * //   MarkToken{ children: [TextToken("hello "), MarkToken("world"), TextToken("")] },
- * //   TextToken("")
- * // ]
- * ```
  */
 export function buildTree(matches: MatchState[], input: string): Token[] {
 	if (matches.length === 0) {
 		return [createTextToken(input, 0, input.length)]
 	}
 
-	// Filter matches in single pass (O(N) - matches already sorted)
-	const filtered = filterMatchesSinglePass(matches)
+	const result: Token[] = []
+	const stack: Array<{match: MatchState; children: Token[]; textPos: number}> = []
+	let currentPos = 0
 
-	if (filtered.length === 0) {
-		return [createTextToken(input, 0, input.length)]
-	}
+	// Inline filtering state (from filterMatchesSinglePass)
+	let lastRootEnd = 0 // Track the end position of the last root-level match
+	let lastStart = -1 // Track the start position of the last processed match
+	let lastMatch: MatchState | null = null // Track the last accepted match for nesting checks
 
-	const ctx: TreeBuildContext = {
-		input,
-		rootTokens: [],
-		stack: [],
-		rootTextPos: 0,
-	}
+	for (const match of matches) {
+		// Inline filtering: Skip empty matches with invalid nested content
+		if (hasInvalidNestedContent(match)) {
+			continue
+		}
 
-	// Process each match
-	const matchCount = filtered.length
-	for (let i = 0; i < matchCount; i++) {
-		const match = filtered[i]
-		
-		// Pop completed parents that don't contain this match
-		popCompletedParents(match, ctx)
+		// Inline filtering: Skip matches at the same start position (keep only the first one)
+		if (match.start === lastStart) {
+			continue
+		}
 
-		// Check if this match would conflict with an already added match
-		// Skip matches that start before or at the current root text position
+		// Inline filtering: Check if this match overlaps with the last accepted match
+		if (lastMatch && match.start < lastMatch.end) {
+			// If it's valid nesting - accept it
+			if (isValidNesting(match, lastMatch)) {
+				lastStart = match.start
+				lastMatch = match // Update for potential deeper nesting
+			} else {
+				// Any other overlap - reject this match
+				lastStart = match.start
+				continue
+			}
+		} else {
+			// This is a valid root-level match or doesn't overlap
+			lastStart = match.start
+			lastMatch = match
+
+			// Update lastRootEnd if this is at root level (not nested in previous match)
+			if (match.start >= lastRootEnd) {
+				lastRootEnd = match.end
+			}
+		}
+		// Close completed parents that don't contain this match
+		while (stack.length > 0) {
+			const top = stack[stack.length - 1]
+			const bounds = getContentBounds(top.match)
+
+			if (bounds.end <= match.start) {
+				// Inline finalization: add remaining text in mark (always, even if empty)
+				top.children.push(createTextToken(input, top.textPos, bounds.end))
+
+				// Create token
+				const token = createMarkToken(input, top.match, top.children)
+
+				// Determine target: parent's children or root tokens
+				const hasParent = stack.length > 1 // After pop will be length - 1
+				const targetTokens = hasParent ? stack[stack.length - 2].children : result
+				const targetPos = hasParent ? stack[stack.length - 2].textPos : currentPos
+
+				// Add text before token (always, even if empty)
+				targetTokens.push(createTextToken(input, targetPos, token.position.start))
+				targetTokens.push(token)
+
+				// Update position
+				if (hasParent) {
+					stack[stack.length - 2].textPos = token.position.end
+				} else {
+					currentPos = token.position.end
+				}
+
+				stack.pop()
+			} else {
+				break
+			}
+		}
+
+		// Skip matches that start before current root position
 		// This handles cases where patterns find matches inside already-processed content
-		if (ctx.stack.length === 0 && match.start < ctx.rootTextPos) {
-			// This match starts before where we currently are - skip it
+		if (stack.length === 0 && match.start < currentPos) {
 			continue
 		}
 
 		// Add this match to the stack for potential children
 		const bounds = getContentBounds(match)
-		ctx.stack.push({
+		stack.push({
 			match,
 			children: [],
 			textPos: bounds.start,
 		})
 	}
 
-	// Finalize all remaining marks in stack (process from innermost to outermost)
-	while (ctx.stack.length > 0) {
-		const completed = ctx.stack.pop()!
-		finalizeMarkNode(completed, ctx)
+	// Finalize all remaining marks in stack
+	while (stack.length > 0) {
+		const node = stack.pop()!
+		const bounds = getContentBounds(node.match)
+
+		// Add remaining text in mark (always, even if empty)
+		node.children.push(createTextToken(input, node.textPos, bounds.end))
+
+		// Create token
+		const token = createMarkToken(input, node.match, node.children)
+
+		// Determine target
+		const hasParent = stack.length > 0
+		const targetTokens = hasParent ? stack[stack.length - 1].children : result
+		const targetPos = hasParent ? stack[stack.length - 1].textPos : currentPos
+
+		// Add text before token (always, even if empty)
+		targetTokens.push(createTextToken(input, targetPos, token.position.start))
+		targetTokens.push(token)
+
+		// Update position
+		if (hasParent) {
+			stack[stack.length - 1].textPos = token.position.end
+		} else {
+			currentPos = token.position.end
+		}
 	}
 
-	// Add final text after all marks
-	addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, input.length)
+	// Add final text after all marks (always, even if empty)
+	result.push(createTextToken(input, currentPos, input.length))
 
-	return ctx.rootTokens
+	return result
 }
