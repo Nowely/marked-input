@@ -3,6 +3,7 @@ import {MatchState} from './PatternMatcher'
 
 /**
  * Content boundaries for a match (start and end positions)
+ * TODO some GapRange
  */
 interface ContentBounds {
 	start: number
@@ -14,12 +15,15 @@ interface ContentBounds {
  * Priority: nested content if present, otherwise value content
  */
 function getContentBounds(match: MatchState): ContentBounds {
-	if (match.nestedStart !== undefined && match.nestedEnd !== undefined) {
-		return {start: match.nestedStart, end: match.nestedEnd}
+	if (match.gaps.nested) {
+		return match.gaps.nested
+	}
+	if (match.gaps.value) {
+		return match.gaps.value
 	}
 	return {
-		start: match.valueStart ?? match.start,
-		end: match.valueEnd ?? match.start,
+		start: match.start,
+		end: match.start,
 	}
 }
 
@@ -34,13 +38,13 @@ function extractSubstring(input: string, start: number | undefined, end: number 
  * Creates nested info object if nested content exists
  */
 function createNestedInfo(match: MatchState, nested: string | undefined): MarkToken['nested'] {
-	if (!nested || match.nestedStart === undefined || match.nestedEnd === undefined) {
+	if (!nested || match.gaps.nested === undefined) {
 		return undefined
 	}
 	return {
 		content: nested,
-		start: match.nestedStart,
-		end: match.nestedEnd,
+		start: match.gaps.nested.start,
+		end: match.gaps.nested.end,
 	}
 }
 
@@ -70,13 +74,13 @@ function createTextToken(input: string, start: number, end: number): TextToken {
  */
 function createMarkToken(input: string, match: MatchState, children: Token[]): MarkToken {
 	// Extract content using helper functions
-	const value = extractSubstring(input, match.valueStart, match.valueEnd)
-	const nestedStr = extractSubstring(input, match.nestedStart, match.nestedEnd)
-	const metaStr = extractSubstring(input, match.metaStart, match.metaEnd)
+	const value = match.gaps.value ? extractSubstring(input, match.gaps.value.start, match.gaps.value.end) : ''
+	const nestedStr = match.gaps.nested ? extractSubstring(input, match.gaps.nested.start, match.gaps.nested.end) : ''
+	const metaStr = match.gaps.meta ? extractSubstring(input, match.gaps.meta.start, match.gaps.meta.end) : ''
 
 	// Convert empty strings to undefined for nested, but meta can be empty string
 	const nested = nestedStr || undefined
-	const meta = match.metaStart !== undefined && match.metaEnd !== undefined ? metaStr : undefined
+	const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
 	// Use value if present, otherwise use nested content
 	const valueContent = value || nested || ''
@@ -101,8 +105,8 @@ function createMarkToken(input: string, match: MatchState, children: Token[]): M
  */
 function hasInvalidNestedContent(match: MatchState): boolean {
 	if (!match.descriptor.hasNested) return false
-	if (match.nestedStart === undefined || match.nestedEnd === undefined) return false
-	return match.nestedEnd - match.nestedStart < 0
+	if (match.gaps.nested === undefined) return false
+	return match.gaps.nested.end - match.gaps.nested.start < 0
 }
 
 /**
@@ -110,8 +114,8 @@ function hasInvalidNestedContent(match: MatchState): boolean {
  */
 function isValidNesting(match: MatchState, existing: MatchState): boolean {
 	if (!existing.descriptor.hasNested) return false
-	if (existing.nestedStart === undefined || existing.nestedEnd === undefined) return false
-	return match.start >= existing.nestedStart && match.end <= existing.nestedEnd
+	if (existing.gaps.nested === undefined) return false
+	return match.start >= existing.gaps.nested.start && match.end <= existing.gaps.nested.end
 }
 
 /**
@@ -126,7 +130,7 @@ interface StackNode {
 /**
  * Finalizes a stack node by creating a mark token and adding it to the target
  * Handles both parent and root-level token placement
- * 
+ *
  * @param node - Stack node to finalize
  * @param input - Original input text
  * @param stack - Current stack (used to determine parent context)

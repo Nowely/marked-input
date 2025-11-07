@@ -14,6 +14,25 @@ import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
+ * Position range for a gap (start and end positions)
+ */
+interface GapRange {
+	start: number
+	end: number
+}
+
+/**
+ * Unified structure for storing positions of all gap types
+ * Replaces individual properties (valueStart/End, nestedStart/End, etc.)
+ */
+interface GapPositions {
+	value?: GapRange
+	secondValue?: GapRange
+	nested?: GapRange
+	meta?: GapRange
+}
+
+/**
  * Unified match state structure for both active pattern matching and completed matches
  *
  * Represents the state of a pattern matching process in the parser's state machine.
@@ -21,19 +40,13 @@ import {MarkupDescriptor} from './MarkupDescriptor'
  * For completed matches: contains final positions without expectedSegmentIndex
  */
 export class MatchState {
+	public readonly gaps: GapPositions = {}
+
 	constructor(
 		public readonly descriptor: MarkupDescriptor,
 		public expectedSegmentIndex: number,
 		public readonly start: number,
-		public end: number,
-		public valueStart?: number,
-		public valueEnd?: number,
-		public secondValueStart?: number,
-		public secondValueEnd?: number,
-		public nestedStart?: number,
-		public nestedEnd?: number,
-		public metaStart?: number,
-		public metaEnd?: number
+		public end: number
 	) {}
 
 	/**
@@ -61,6 +74,46 @@ export class MatchState {
 	}
 
 	/**
+	 * Validates and updates two value positions for hasTwoValues patterns
+	 * Returns true if values match, false otherwise
+	 */
+	private validateTwoValues(gapStart: number, gapEnd: number, input: string): boolean {
+		if (this.gaps.value === undefined) {
+			this.gaps.value = {start: gapStart, end: gapEnd}
+			return true
+		}
+
+		const firstValue = input.substring(this.gaps.value.start, this.gaps.value.end)
+		const secondValue = input.substring(gapStart, gapEnd)
+
+		if (firstValue !== secondValue) {
+			return false
+		}
+
+		this.gaps.secondValue = {start: gapStart, end: gapEnd}
+		return true
+	}
+
+	/**
+	 * Updates gap position for a specific gap type
+	 */
+	private updateGapPosition(gapType: 'value' | 'nested' | 'meta', gapStart: number, gapEnd: number): void {
+		switch (gapType) {
+			case 'value':
+				this.gaps.value = {start: gapStart, end: gapEnd}
+				break
+			case 'nested':
+				this.gaps.nested ??= {start: gapStart, end: gapEnd}
+				this.gaps.nested.end = gapEnd
+				break
+			case 'meta':
+				this.gaps.meta ??= {start: gapStart, end: gapEnd}
+				this.gaps.meta.end = gapEnd
+				break
+		}
+	}
+
+	/**
 	 * Update state with new segment by setting gap positions
 	 * Returns true if state is valid, false if validation failed (for hasTwoValues patterns)
 	 */
@@ -69,44 +122,21 @@ export class MatchState {
 		const gapEnd = segment.start
 		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
 
-		// Set gap positions based on type
-		switch (gapType) {
-			case 'value':
-				if (this.descriptor.hasTwoValues) {
-					if (this.valueStart === undefined) {
-						this.valueStart = gapStart
-						this.valueEnd = gapEnd
-					} else {
-						const firstValue = input.substring(this.valueStart, this.valueEnd)
-						const secondValue = input.substring(gapStart, gapEnd)
-
-						if (firstValue !== secondValue) {
-							return false
-						}
-
-						this.secondValueStart = gapStart
-						this.secondValueEnd = gapEnd
-					}
-					break
-				}
-				this.valueStart = gapStart
-				this.valueEnd = gapEnd
-				break
-			case 'nested':
-				this.nestedStart ??= gapStart
-				this.nestedEnd = gapEnd
-				break
-			case 'meta':
-				this.metaStart ??= gapStart
-				this.metaEnd = gapEnd
-				break
+		// Handle value gap with special validation for hasTwoValues patterns
+		if (gapType === 'value' && this.descriptor.hasTwoValues) {
+			if (!this.validateTwoValues(gapStart, gapEnd, input)) {
+				return false
+			}
+		} else {
+			// Handle other gap types (value without hasTwoValues, nested, meta)
+			this.updateGapPosition(gapType, gapStart, gapEnd)
 		}
 
 		this.end = segment.end
 		this.expectedSegmentIndex++
 		return true
 	}
-
+	
 	/**
 	 * Rollback state after validation failure for hasTwoValues patterns
 	 * Returns the previous segment that this state should wait for
@@ -122,10 +152,12 @@ export class MatchState {
 		// Clear the gap END position that was set for the segment before this one
 		// Keep the START position so we can extend the gap to the next occurrence
 		const previousGapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
-		if (previousGapType === 'nested') {
-			this.nestedEnd = undefined
-		} else if (previousGapType === 'meta') {
-			this.metaEnd = undefined
+		if (previousGapType === 'nested' || previousGapType === 'meta') {
+			if (previousGapType === 'nested' && this.gaps.nested) {
+				this.gaps.nested = {start: this.gaps.nested.start, end: this.gaps.nested.start}
+			} else if (previousGapType === 'meta' && this.gaps.meta) {
+				this.gaps.meta = {start: this.gaps.meta.start, end: this.gaps.meta.start}
+			}
 		}
 
 		return previousSegment
@@ -138,16 +170,47 @@ export class MatchState {
 		this.expectedSegmentIndex = NaN
 		this.end = segment.end
 	}
+}
 
+/**
+ * Priority comparison functions for match states
+ */
+class MatchPriority {
 	/**
-	 * Comparator for sorting states by priority rules for deterministic behavior
-	 * Higher priority states are processed first to ensure consistent parsing
-	 * States that are completing (on last segment) have higher priority
+	 * Compare states by completing priority (states completing have higher priority)
+	 * Used for sorting waiting states to process completing patterns first
 	 */
-	static compareCompletingPriority(a: MatchState, b: MatchState): number {
+	static compareCompleting(a: MatchState, b: MatchState): number {
 		const aCompleting = a.isCompleting() ? 1 : 0
 		const bCompleting = b.isCompleting() ? 1 : 0
 		return aCompleting - bCompleting
+	}
+
+	/**
+	 * Compare matches by overall priority for deterministic ordering
+	 * Priority rules:
+	 * 1. Longer first segment wins (** > *)
+	 * 2. Longer match wins
+	 * 3. More segments wins
+	 * Used for sorting completed matches at the same position
+	 */
+	static compareMatchPriority(a: MatchState, b: MatchState): number {
+		// Longer first segment wins (** > *)
+		const aFirstSegLen = a.descriptor.segments[0].length
+		const bFirstSegLen = b.descriptor.segments[0].length
+		if (aFirstSegLen !== bFirstSegLen) {
+			return bFirstSegLen - aFirstSegLen
+		}
+
+		// Longer match wins
+		const aLen = a.end - a.start
+		const bLen = b.end - b.start
+		if (aLen !== bLen) {
+			return bLen - aLen
+		}
+
+		// More segments wins
+		return b.descriptor.segments.length - a.descriptor.segments.length
 	}
 }
 
@@ -182,6 +245,31 @@ export class PatternMatcher {
 	}
 
 	/**
+	 * Adds a state to the waiting list for a specific segment
+	 */
+	private addToWaitingList(state: MatchState, segment: string): void {
+		if (!this.waitingStates.has(segment)) {
+			this.waitingStates.set(segment, [])
+		}
+		this.waitingStates.get(segment)!.push(state)
+	}
+
+	/**
+	 * Handles a successfully updated state - either completes it or adds to waiting list
+	 */
+	private handleUpdatedState(state: MatchState, segment: SegmentMatch): void {
+		if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
+			// Pattern is complete
+			state.markCompleted(segment)
+			this.addToPositionIndex(state)
+		} else {
+			// Continue waiting for next segment
+			const nextSegment = state.getNextSegment()!
+			this.addToWaitingList(state, nextSegment)
+		}
+	}
+
+	/**
 	 * Process states waiting for this segment
 	 * Try states by priority until one is valid, keeping rejected states for later attempts
 	 */
@@ -189,7 +277,7 @@ export class PatternMatcher {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const sortedStates = waiting.toSorted(MatchState.compareCompletingPriority)
+		const sortedStates = waiting.toSorted(MatchPriority.compareCompleting)
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
@@ -198,26 +286,14 @@ export class PatternMatcher {
 
 			const isSuccess = state.updateWithSegment(segment, input)
 			if (!isSuccess) {
+				// Validation failed - rollback and re-add to waiting list
 				const previousSegment = state.rollback()
-				if (!this.waitingStates.has(previousSegment)) {
-					this.waitingStates.set(previousSegment, [])
-				}
-				this.waitingStates.get(previousSegment)!.push(state)
+				this.addToWaitingList(state, previousSegment)
 				continue
 			}
 
-			// Check if pattern is complete
-			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
-				state.markCompleted(segment)
-				this.addToPositionIndex(state)
-			} else {
-				const nextSegment = state.getNextSegment()!
-				if (!this.waitingStates.has(nextSegment)) {
-					this.waitingStates.set(nextSegment, [])
-				}
-				this.waitingStates.get(nextSegment)!.push(state)
-			}
-
+			// State updated successfully - handle completion or continue waiting
+			this.handleUpdatedState(state, segment)
 			break
 		}
 	}
@@ -231,31 +307,21 @@ export class PatternMatcher {
 		if (!descriptors) return
 
 		for (const descriptor of descriptors) {
-			// Single segment pattern - complete immediately
-			//TODO it's not correct. need tests
-			if (descriptor.segments.length === 1) {
-				const match = new MatchState(
-					descriptor,
-					NaN, // Single segment pattern - complete immediately
-					segment.start,
-					segment.end,
-					segment.start,
-					segment.end
-				)
+			// Create state for pattern (both single and multi-segment)
+			const state = new MatchState(descriptor, 1, segment.start, segment.end)
 
-				this.addToPositionIndex(match)
+			// Single segment pattern - complete immediately through general mechanism
+			if (descriptor.segments.length === 1) {
+				state.markCompleted(segment)
+				// For single segment patterns, the entire segment is the value
+				state.gaps.value = {start: segment.start, end: segment.end}
+				this.addToPositionIndex(state)
 				continue
 			}
 
-			// Multi-segment pattern - create state
-			const state = new MatchState(descriptor, 1, segment.start, segment.end)
-
-			// Add to waiting list for next segment
+			// Multi-segment pattern - add to waiting list for next segment
 			const nextSegment = state.getNextSegment()!
-			if (!this.waitingStates.has(nextSegment)) {
-				this.waitingStates.set(nextSegment, [])
-			}
-			this.waitingStates.get(nextSegment)!.push(state)
+			this.addToWaitingList(state, nextSegment)
 		}
 	}
 
@@ -302,24 +368,7 @@ export class PatternMatcher {
 				result.push(matches[0])
 			} else {
 				// Multiple matches at same position - sort by priority
-				matches.sort((a, b) => {
-					// Longer first segment wins (** > *)
-					const aFirstSegLen = a.descriptor.segments[0].length
-					const bFirstSegLen = b.descriptor.segments[0].length
-					if (aFirstSegLen !== bFirstSegLen) {
-						return bFirstSegLen - aFirstSegLen
-					}
-
-					// Longer match wins
-					const aLen = a.end - a.start
-					const bLen = b.end - b.start
-					if (aLen !== bLen) {
-						return bLen - aLen
-					}
-
-					// More segments wins
-					return b.descriptor.segments.length - a.descriptor.segments.length
-				})
+				matches.sort(MatchPriority.compareMatchPriority)
 
 				// Add all matches (TreeBuilder will filter overlaps)
 				result.push(...matches)
@@ -328,86 +377,4 @@ export class PatternMatcher {
 
 		return result
 	}
-
-	/**
-	 * Check if a waiting state conflicts with a completed state
-	 *
-	 * Conflict rules:
-	 * 1. Completed state that started AFTER waiting state cannot cancel it (younger cannot cancel older)
-	 * 2. If both start at same position - longer completed state wins
-	 * 3. If waiting state has no nested → conflicts (will overlap)
-	 * 4. If waiting state has nested but completed state doesn't fit in expected range → conflicts
-	 */
-	// private isConflicting(waitingState: MatchState, completedState: MatchState): boolean {
-	// 	// Rule 1: Completed state started after waiting state - cannot cancel it
-	// 	// "Younger brother" cannot cancel "older brother"
-	// 	if (completedState.start > waitingState.start) {
-	// 		return false
-	// 	}
-
-	// 	// Rule 2: Same start position - longer completed state wins
-	// 	if (waitingState.start === completedState.start) {
-	// 		// If completed state is longer or equal, cancel the waiting state
-	// 		return completedState.end >= waitingState.end
-	// 	}
-
-	// 	// From here: completedState.start < waitingState.start
-	// 	// Completed state started before waiting state
-
-	// 	// Rule 3: Waiting state has no nested → will conflict with any completed state that overlaps
-	// 	if (!waitingState.descriptor.hasNested) {
-	// 		// Check if completed state overlaps with waiting state
-	// 		return completedState.end > waitingState.start
-	// 	}
-
-	// 	// Rule 4: Waiting state has nested - check if completed state could fit in nested range
-	// 	// We need to check if the completed state would be inside the potential nested range
-	// 	// The nested range would be from waitingState.end (current position) to some future closing segment
-	// 	// If completedState ends before waitingState starts, no conflict
-	// 	if (completedState.end <= waitingState.start) {
-	// 		return false
-	// 	}
-
-	// 	// If we have nestedStart/nestedEnd already set, check if completed state fits
-	// 	if (waitingState.nestedStart !== undefined && waitingState.nestedEnd !== undefined) {
-	// 		// Completed state must be fully inside nested range
-	// 		const fitsInNested =
-	// 			completedState.start >= waitingState.nestedStart &&
-	// 			completedState.end <= waitingState.nestedEnd
-	// 		return !fitsInNested
-	// 	}
-
-	// 	// Completed state overlaps with waiting state's current position
-	// 	// This is a conflict
-	// 	return completedState.end > waitingState.start
-	// }
-
-	/**
-	 * Cancel waiting states that conflict with a newly completed state
-	 *
-	 * This optimization removes states early that will never complete successfully
-	 * due to conflicts with already completed patterns.
-	 *
-	 * Checks all waiting states with start <= completedState.start
-	 */
-	// private cancelInvalidWaitingStates(completedState: MatchState): void {
-	// 	// Iterate over Map entries directly (no need to sort - we filter anyway)
-	// 	for (const [startPos, states] of this.waitingStatesByStart) {
-	// 		// Skip positions that started after the completed state
-	// 		if (startPos > completedState.start) continue
-
-	// 		// Check each state at this position (iterate backwards for safe removal)
-	// 		for (let i = states.length - 1; i >= 0; i--) {
-	// 			const waitingState = states[i]
-
-	// 			// Check if this waiting state conflicts with the completed state
-	// 			if (this.isConflicting(waitingState, completedState)) {
-	// 				// Remove from all indices
-	// 				// We need to find which segment this state is waiting for
-	// 				const nextSegment = waitingState.descriptor.segments[waitingState.expectedSegmentIndex]
-	// 				this.removeWaitingState(waitingState, nextSegment)
-	// 			}
-	// 		}
-	// 	}
-	// }
 }
