@@ -40,10 +40,10 @@ describe('ParserV2', () => {
 	describe('static join', () => {
 		it('should convert tokens back to string with provided options', () => {
 			const value = 'Hello @[world](test) and #[tag]'
-			const options: {markup: Markup}[] = [{markup: '@[__value__](__meta__)'}, {markup: '#[__value__]'}]
+			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
 
 		const tokens = Parser.split(value, options)
-		const result = Parser.join(tokens)
+			const result = Parser.join(tokens)
 
 			expect(result).toBe(value)
 		})
@@ -254,7 +254,7 @@ describe('ParserV2', () => {
 						const input = '<div class>Content with **bold** </span></div>'
 						const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
 						 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", nested="Content with **bold** </span>"]
 							1.0: TEXT "Content with " [11-24]
@@ -262,14 +262,14 @@ describe('ParserV2', () => {
 							1.2: TEXT " </span>" [32-40]
 						 2: TEXT "" [46-46]"
 					`)
-				})
+					})
 
 					it('handles HTML-like pattern with empty value', () => {
 						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '#[__nested__]'])
 						const input = '<span >Text #[tag]</span>'
 						const result = parser.split(input)
 
-				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 				"0: TEXT "" [0-0]
 				 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", nested="Text #[tag]"]
 					1.0: TEXT "Text " [7-12]
@@ -278,9 +278,9 @@ describe('ParserV2', () => {
 				 2: TEXT "" [25-25]"
 			`)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-				expect(marks[0].value).toBe('span')
-				expect(marks[0].meta).toBe('')
+						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+						expect(marks[0].value).toBe('span')
+						expect(marks[0].meta).toBe('')
 					})
 
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
@@ -484,7 +484,7 @@ describe('ParserV2', () => {
 					const input = '@[label]() @[label2](value)'
 					const result = parser.split(input)
 
-			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 			"0: TEXT "" [0-0]
 			 1: MARK "@[label]()" [0-10] [value="label", meta=""]
 			 2: TEXT " " [10-11]
