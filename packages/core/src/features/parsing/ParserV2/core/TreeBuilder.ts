@@ -199,7 +199,6 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 	let currentPos = 0
 
 	// Filtering state for O(N) single-pass overlap detection
-	let lastRootEnd = 0 // Track the end position of the last root-level match
 	let lastStart = -1 // Track last processed match start (skip duplicates at same position)
 	let lastMatch: MatchState | null = null // Track last accepted match for overlap checks
 
@@ -210,6 +209,7 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 		}
 
 		// Filter: Skip duplicate matches at the same start position (keep only first)
+		// PatternMatcher already sorts by priority, so first is best
 		if (match.start === lastStart) {
 			continue
 		}
@@ -230,11 +230,6 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 			// No overlap - accept this match
 			lastStart = match.start
 			lastMatch = match
-
-			// Update lastRootEnd if this is at root level (not nested in previous match)
-			if (match.start >= lastRootEnd) {
-				lastRootEnd = match.end
-			}
 		}
 
 		// Close completed parents that don't contain this match
