@@ -10,7 +10,7 @@
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
-import {SegmentMatch} from '../utils/AhoCorasick'
+import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
@@ -57,7 +57,7 @@ export class PatternMatcher {
 	/**
 	 * Process segments with state machine to create match states
 	 * Main method that converts found segments into structured match states
-	 * 
+	 *
 	 * Optimization: Uses position-indexed Map to store matches by their start position
 	 * This provides natural sorting and enables O(N) filtering in TreeBuilder
 	 * Map is more efficient than sparse array for texts with few matches
@@ -160,19 +160,7 @@ export class PatternMatcher {
 		// 1. States waiting for last segment get highest boost (10M)
 		const completionBonus = expectedIndex === descriptor.segments.length - 1 ? 10_000_000 : 0
 
-		// 2. Longer first segments get higher priority (** > *, 100K scale)
-		const firstSegmentBonus = descriptor.segments[0].length * 100_000
-
-		// 3. Later start positions get slight priority (LIFO, 1K scale)
-		const positionBonus = state.start * 1000
-
-		// 4. More progressed states get higher priority (100 scale)
-		const progressBonus = expectedIndex * 100
-
-		// 5. Patterns with more segments get slight priority (10 scale)
-		const complexityBonus = descriptor.segments.length * 10
-
-		return completionBonus + firstSegmentBonus + positionBonus + progressBonus + complexityBonus
+		return completionBonus
 	}
 
 	/**
@@ -225,7 +213,7 @@ export class PatternMatcher {
 	private handleCompletedPattern(state: MatchState, segment: SegmentMatch): void {
 		state.expectedSegmentIndex = NaN
 		state.end = segment.end
-		
+
 		// Add to position-indexed Map
 		this.addToPositionIndex(state)
 	}
@@ -304,7 +292,7 @@ export class PatternMatcher {
 	 * - Longer first segment first (** before *)
 	 * - Longer total match first
 	 * - More segments first
-	 * 
+	 *
 	 * Optimization: Only iterate over actual match positions, not entire input length
 	 */
 	private flattenMatchesByPosition(): MatchState[] {
@@ -315,10 +303,10 @@ export class PatternMatcher {
 		// Sort positions once
 		const positions = Array.from(this.completedStates.keys()).sort((a, b) => a - b)
 		const result: MatchState[] = []
-		
+
 		for (const position of positions) {
 			const matches = this.completedStates.get(position)!
-			
+
 			if (matches.length === 1) {
 				result.push(matches[0])
 			} else {
@@ -341,13 +329,94 @@ export class PatternMatcher {
 					// More segments wins
 					return b.descriptor.segments.length - a.descriptor.segments.length
 				})
-				
+
 				// Add all matches (TreeBuilder will filter overlaps)
 				result.push(...matches)
 			}
 		}
-		
+
 		return result
 	}
 
+	/**
+	 * Check if a waiting state conflicts with a completed state
+	 *
+	 * Conflict rules:
+	 * 1. Completed state that started AFTER waiting state cannot cancel it (younger cannot cancel older)
+	 * 2. If both start at same position - longer completed state wins
+	 * 3. If waiting state has no nested → conflicts (will overlap)
+	 * 4. If waiting state has nested but completed state doesn't fit in expected range → conflicts
+	 */
+	// private isConflicting(waitingState: MatchState, completedState: MatchState): boolean {
+	// 	// Rule 1: Completed state started after waiting state - cannot cancel it
+	// 	// "Younger brother" cannot cancel "older brother"
+	// 	if (completedState.start > waitingState.start) {
+	// 		return false
+	// 	}
+
+	// 	// Rule 2: Same start position - longer completed state wins
+	// 	if (waitingState.start === completedState.start) {
+	// 		// If completed state is longer or equal, cancel the waiting state
+	// 		return completedState.end >= waitingState.end
+	// 	}
+
+	// 	// From here: completedState.start < waitingState.start
+	// 	// Completed state started before waiting state
+
+	// 	// Rule 3: Waiting state has no nested → will conflict with any completed state that overlaps
+	// 	if (!waitingState.descriptor.hasNested) {
+	// 		// Check if completed state overlaps with waiting state
+	// 		return completedState.end > waitingState.start
+	// 	}
+
+	// 	// Rule 4: Waiting state has nested - check if completed state could fit in nested range
+	// 	// We need to check if the completed state would be inside the potential nested range
+	// 	// The nested range would be from waitingState.end (current position) to some future closing segment
+	// 	// If completedState ends before waitingState starts, no conflict
+	// 	if (completedState.end <= waitingState.start) {
+	// 		return false
+	// 	}
+
+	// 	// If we have nestedStart/nestedEnd already set, check if completed state fits
+	// 	if (waitingState.nestedStart !== undefined && waitingState.nestedEnd !== undefined) {
+	// 		// Completed state must be fully inside nested range
+	// 		const fitsInNested =
+	// 			completedState.start >= waitingState.nestedStart &&
+	// 			completedState.end <= waitingState.nestedEnd
+	// 		return !fitsInNested
+	// 	}
+
+	// 	// Completed state overlaps with waiting state's current position
+	// 	// This is a conflict
+	// 	return completedState.end > waitingState.start
+	// }
+
+	/**
+	 * Cancel waiting states that conflict with a newly completed state
+	 *
+	 * This optimization removes states early that will never complete successfully
+	 * due to conflicts with already completed patterns.
+	 *
+	 * Checks all waiting states with start <= completedState.start
+	 */
+	// private cancelInvalidWaitingStates(completedState: MatchState): void {
+	// 	// Iterate over Map entries directly (no need to sort - we filter anyway)
+	// 	for (const [startPos, states] of this.waitingStatesByStart) {
+	// 		// Skip positions that started after the completed state
+	// 		if (startPos > completedState.start) continue
+
+	// 		// Check each state at this position (iterate backwards for safe removal)
+	// 		for (let i = states.length - 1; i >= 0; i--) {
+	// 			const waitingState = states[i]
+
+	// 			// Check if this waiting state conflicts with the completed state
+	// 			if (this.isConflicting(waitingState, completedState)) {
+	// 				// Remove from all indices
+	// 				// We need to find which segment this state is waiting for
+	// 				const nextSegment = waitingState.descriptor.segments[waitingState.expectedSegmentIndex]
+	// 				this.removeWaitingState(waitingState, nextSegment)
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
