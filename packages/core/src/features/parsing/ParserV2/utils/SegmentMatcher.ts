@@ -90,4 +90,3 @@ export class SegmentMatcher {
 		return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 	}
 }
-

@@ -43,7 +43,6 @@ function calculateStats(values: number[]) {
 	}
 }
 
-
 function runBenchmark(parser: ParserV1 | ParserV2, input: string, iterations: number) {
 	const ops: number[] = []
 
@@ -130,7 +129,6 @@ function saveResults() {
 			tests[name] = testData
 		})
 
-
 		// Calculate summary
 		const allV1Ops = testResults.map(t => t.v1[1]) // avg is at index 1
 		const allV2Ops = testResults.map(t => t.v2[1]) // avg is at index 1
@@ -168,12 +166,10 @@ function saveResults() {
 				if (prevTest) {
 					// Calculate change based on average value (index 1 in the array)
 					const currentAvg = currentTest.v2[1] // v2 average
-					const prevAvg = prevTest.v2[1]       // previous v2 average
+					const prevAvg = prevTest.v2[1] // previous v2 average
 					const change = ((currentAvg - prevAvg) / prevAvg) * 100
 
-					currentTest.changeFromLastV2 = change >= 0
-						? `+${change.toFixed(1)}%`
-						: `${change.toFixed(1)}%`
+					currentTest.changeFromLastV2 = change >= 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`
 				} else {
 					currentTest.changeFromLastV2 = 'N/A'
 				}
@@ -226,9 +222,7 @@ function saveResults() {
 		console.log(
 			`   Performance: v1=${currentRun.summary.performance.v1.toLocaleString()} ops/sec (${currentRun.trends.v1.changeFromLast}), v2=${currentRun.summary.performance.v2.toLocaleString()} ops/sec (${currentRun.trends.v2.changeFromLast})`
 		)
-		console.log(
-			`   Ratio: ${currentRun.summary.performance.ratio}x performance`
-		)
+		console.log(`   Ratio: ${currentRun.summary.performance.ratio}x performance`)
 
 		if (currentRun.trends.v1.regressions.length > 0) {
 			console.log(`\n⚠️  v1 regressions: ${currentRun.trends.v1.regressions.join(', ')}`)

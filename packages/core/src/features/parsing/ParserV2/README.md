@@ -37,23 +37,25 @@ const nestedResult = nestedParser.split('@[hello #[world]]')
 
 **Latest Benchmark Results (ParserV2 vs ParserV1):**
 
-| Test Case | V2 vs V1 Ratio | V2 Performance | Key Improvement |
-| --------- | -------------- | -------------- | --------------- |
-| 10 marks | **2.22x** | 27939-61384 ops/sec | Basic patterns |
-| 50 marks | **2.12x** | 18590-20513 ops/sec | State machine efficiency |
-| 100 marks | **2.20x** | 8377-10354 ops/sec | O(N) filtering |
-| 500 marks | **1.85x** | 1989-2028 ops/sec | Reduced allocations |
-| Social media | **2.06x** | 228571-480077 ops/sec | Complex content |
-| Markdown-like | **2.56x** | 285714-631712 ops/sec | **+207.1%** 🚀 |
-| Code comments | **2.13x** | 303767-727273 ops/sec | **+138.7%** 🚀 |
+| Test Case     | V2 vs V1 Ratio | V2 Performance        | Key Improvement          |
+| ------------- | -------------- | --------------------- | ------------------------ |
+| 10 marks      | **2.22x**      | 27939-61384 ops/sec   | Basic patterns           |
+| 50 marks      | **2.12x**      | 18590-20513 ops/sec   | State machine efficiency |
+| 100 marks     | **2.20x**      | 8377-10354 ops/sec    | O(N) filtering           |
+| 500 marks     | **1.85x**      | 1989-2028 ops/sec     | Reduced allocations      |
+| Social media  | **2.06x**      | 228571-480077 ops/sec | Complex content          |
+| Markdown-like | **2.56x**      | 285714-631712 ops/sec | **+207.1%** 🚀           |
+| Code comments | **2.13x**      | 303767-727273 ops/sec | **+138.7%** 🚀           |
 
 **Overall Performance:**
+
 - **ParserV2 is 2.25x faster** than ParserV1 on average
 - **Exceptional improvements** on complex patterns (+207% on markdown-like)
 - **Consistent 2x+ speedup** across all test cases
 - **Memory efficiency** maintained with reduced allocations
 
 **Key Optimizations:**
+
 - **State machine approach** eliminates complex chain management
 - **O(N) single-pass filtering** replaces multi-stage validation
 - **Direct MatchState → Token pipeline** removes intermediate conversions
@@ -73,7 +75,8 @@ interface MarkToken {
     descriptor: MarkupDescriptor // Markup descriptor (replaces optionIndex)
     value: string // Text between segments
     meta?: string // Additional metadata
-    nested?: { // Nested content information
+    nested?: {
+        // Nested content information
         content: string
         start: number
         end: number
@@ -452,10 +455,11 @@ Patterns consist of **static segments** and **placeholders**:
 - **`completedStates`** - Map<startPosition, MatchState[]> for completed patterns
 
 **Match State Structure:**
+
 ```typescript
 interface MatchState {
     descriptor: MarkupDescriptor
-    expectedSegmentIndex: number  // NaN for completed matches
+    expectedSegmentIndex: number // NaN for completed matches
     start: number
     end: number
     // Gap tracking fields: valueStart/End, nestedStart/End, metaStart/End
@@ -463,6 +467,7 @@ interface MatchState {
 ```
 
 **Processing Flow:**
+
 1. **Process waiting states** - try to advance patterns expecting current segment
 2. **Start new patterns** - initiate patterns that begin with current segment
 3. **Handle completion** - move completed patterns to position-indexed results
@@ -470,6 +475,7 @@ interface MatchState {
 #### Priority System
 
 **Deterministic Priority Calculation:**
+
 ```typescript
 calculateDeterministicPriority(state: MatchState): number {
     const bonus = expectedIndex === descriptor.segments.length - 1 ? 10_000_000 : 0
@@ -482,6 +488,7 @@ calculateDeterministicPriority(state: MatchState): number {
 ```
 
 **Priority Rules (higher = processed first):**
+
 1. **Completion bonus** (10M): States about to complete get highest priority
 2. **First segment length** (100K): Longer initial segments (e.g., `**` > `*`)
 3. **Position** (1K): Later start positions (LIFO for nesting)
@@ -491,11 +498,13 @@ calculateDeterministicPriority(state: MatchState): number {
 #### Special Pattern Handling
 
 **hasTwoValues patterns** (HTML-like):
+
 - Track first and second value occurrences separately
 - Validate that both values are identical
 - Rollback state if validation fails
 
 **Gap Position Tracking:**
+
 - **`value` gaps**: Store start/end positions for content extraction
 - **`nested` gaps**: Track nested content boundaries
 - **`meta` gaps**: Track metadata boundaries
@@ -503,6 +512,7 @@ calculateDeterministicPriority(state: MatchState): number {
 #### Tree Building (O(N) Single-Pass)
 
 **Algorithm Overview:**
+
 ```
 for each match in sorted_matches:
   1. Close completed parents (match.end <= current.start)
@@ -513,11 +523,13 @@ finalize remaining stack
 ```
 
 **Overlap Filtering:**
+
 - **Skip duplicates** at same start position (keep first)
 - **Reject invalid overlaps** unless valid nesting
 - **Track root-level matches** for containment validation
 
 **Nesting Validation:**
+
 ```typescript
 isValidNesting(child: MatchState, parent: MatchState): boolean {
     return parent.nestedStart !== undefined &&
@@ -623,7 +635,7 @@ Input: 'Hello @[world](test)'
 Markup: '@[__value__](__meta__)'
 Output: [
     TextToken('Hello ', 0, 6),
-    MarkToken('@[world](test)', 6, 20, value='world', meta='test', children=[]),
+    MarkToken('@[world](test)', 6, 20, (value = 'world'), (meta = 'test'), (children = [])),
     TextToken('', 20, 20),
 ]
 ```
@@ -639,12 +651,12 @@ Output: [
         '@[hello #[world]]',
         0,
         17,
-        children=[
+        (children = [
             TextToken('hello ', 2, 8),
-            MarkToken('#[world]', 8, 16, value='world', children=[]),
+            MarkToken('#[world]', 8, 16, (value = 'world'), (children = [])),
             TextToken('', 16, 16),
-        ],
-        value='hello #[world]'
+        ]),
+        (value = 'hello #[world]')
     ),
     TextToken('', 17, 17),
 ]
@@ -657,7 +669,7 @@ Input: '@[hello #[world]]'
 Markups: ['@[__value__]', '#[__value__]']
 Output: [
     TextToken('', 0, 0),
-    MarkToken('@[hello #[world]]', 0, 17, value='hello #[world]', children=[]),
+    MarkToken('@[hello #[world]]', 0, 17, (value = 'hello #[world]'), (children = [])),
     TextToken('', 17, 17),
 ]
 // Note: children is empty, #[world] remains as plain text in label
@@ -670,7 +682,7 @@ Input: 'Check <img>photo.jpg</img> image'
 Markup: '<__value__>__value__</__value__>'
 Output: [
     TextToken('Check ', 0, 6),
-    MarkToken('<img>photo.jpg</img>', 6, 26, value='img', meta='photo.jpg', children=[]),
+    MarkToken('<img>photo.jpg</img>', 6, 26, (value = 'img'), (meta = 'photo.jpg'), (children = [])),
     TextToken(' image', 26, 32),
 ]
 ```
@@ -686,12 +698,12 @@ Output: [
         '@[user](Hello #[world])',
         0,
         23,
-        children=[
+        (children = [
             TextToken('Hello ', 7, 13),
-            MarkToken('#[world]', 13, 21, value='world', children=[]),
+            MarkToken('#[world]', 13, 21, (value = 'world'), (children = [])),
             TextToken('', 21, 21),
-        ],
-        value='user'
+        ]),
+        (value = 'user')
     ),
     TextToken('', 23, 23),
 ]
@@ -709,12 +721,13 @@ Output: [
         '<div class>Content with **bold**</div>',
         0,
         39,
-        children=[
+        (children = [
             TextToken('Content with ', 11, 24),
-            MarkToken('**bold**', 24, 32, value='bold', children=[]),
+            MarkToken('**bold**', 24, 32, (value = 'bold'), (children = [])),
             TextToken('', 32, 32),
-        ],
-        value='div', meta='class'
+        ]),
+        (value = 'div'),
+        (meta = 'class')
     ),
     TextToken('', 39, 39),
 ]
@@ -728,7 +741,7 @@ Input: '(url)@[link]'
 Markup: '(__value__)@[__value__]'
 Output: [
     TextToken('', 0, 0),
-    MarkToken('(url)@[link]', 0, 12, value='link', meta='url', children=[]),
+    MarkToken('(url)@[link]', 0, 12, (value = 'link'), (meta = 'url'), (children = [])),
     TextToken('', 12, 12),
 ]
 // Value can appear before value - order is not restricted
@@ -751,9 +764,9 @@ Input: '@[first](1)@[second](2)'
 Markups: ['@[__value__](__meta__)']
 Output: [
     TextToken('', 0, 0),
-    MarkToken('@[first](1)', 0, 11, value='first', meta='1', children=[]),
+    MarkToken('@[first](1)', 0, 11, (value = 'first'), (meta = '1'), (children = [])),
     TextToken('', 11, 11),
-    MarkToken('@[second](2)', 11, 23, value='second', meta='2', children=[]),
+    MarkToken('@[second](2)', 11, 23, (value = 'second'), (meta = '2'), (children = [])),
     TextToken('', 23, 23),
 ]
 ```
@@ -765,13 +778,13 @@ Input: '@[] @[content] @[label]() @[another](value)'
 Markups: ['@[__value__]', '@[__value__](__meta__)']
 Output: [
     TextToken('', 0, 0),
-    MarkToken('@[]', 0, 3, value='', children=[]), // empty value
+    MarkToken('@[]', 0, 3, (value = ''), (children = [])), // empty value
     TextToken(' ', 3, 4),
-    MarkToken('@[content]', 4, 14, value='content', children=[]),
+    MarkToken('@[content]', 4, 14, (value = 'content'), (children = [])),
     TextToken(' ', 14, 15),
-    MarkToken('@[label]()', 15, 25, value='label', meta='', children=[]), // empty meta
+    MarkToken('@[label]()', 15, 25, (value = 'label'), (meta = ''), (children = [])), // empty meta
     TextToken(' ', 25, 26),
-    MarkToken('@[another](value)', 26, 42, value='another', meta='value', children=[]),
+    MarkToken('@[another](value)', 26, 42, (value = 'another'), (meta = 'value'), (children = [])),
     TextToken('', 42, 42),
 ]
 ```
@@ -783,9 +796,9 @@ Input: '**bold text** and *italic text*'
 Markups: ['**__value__**', '*__value__*']
 Output: [
     TextToken('', 0, 0),
-    MarkToken('**bold text**', 0, 13, value='bold text', children=[]),
+    MarkToken('**bold text**', 0, 13, (value = 'bold text'), (children = [])),
     TextToken(' and ', 13, 19),
-    MarkToken('*italic text*', 19, 33, value='italic text', children=[]),
+    MarkToken('*italic text*', 19, 33, (value = 'italic text'), (children = [])),
     TextToken('', 33, 33),
 ]
 ```
@@ -811,9 +824,9 @@ Input: '@[simple] @[with](value)'
 Markups: ['@[__value__]', '@[__value__](__meta__)']
 Output: [
     TextToken('', 0, 0),
-    MarkToken('@[simple]', 0, 9, value='simple', children=[]),
+    MarkToken('@[simple]', 0, 9, (value = 'simple'), (children = [])),
     TextToken(' ', 9, 10),
-    MarkToken('@[with]', 10, 17, value='with', children=[]), // short pattern wins
+    MarkToken('@[with]', 10, 17, (value = 'with'), (children = [])), // short pattern wins
     TextToken('(value)', 17, 24), // remaining text
 ]
 ```
@@ -832,12 +845,13 @@ Output: [
         '<div class><p>Text</p></div>',
         0,
         28,
-        children=[
+        (children = [
             TextToken('', 11, 11),
-            MarkToken('<p>Text</p>', 11, 22, value='p', children=[]),
+            MarkToken('<p>Text</p>', 11, 22, (value = 'p'), (children = [])),
             TextToken('', 22, 22),
-        ],
-        value='div', meta='class'
+        ]),
+        (value = 'div'),
+        (meta = 'class')
     ),
     TextToken('', 28, 28),
 ]
@@ -854,7 +868,7 @@ Markups: [
 ]
 Output: [
     TextToken('<div class>', 0, 11),
-    MarkToken('<p>Text</p>', 11, 22, value='p', children=[]),
+    MarkToken('<p>Text</p>', 11, 22, (value = 'p'), (children = [])),
     TextToken('</div>', 22, 28),
 ]
 // Pattern with more collected segments (2) gets priority over pattern with 1 collected segment
@@ -868,11 +882,7 @@ Markups: [
     '**__value__**', // 3 segments
     '*__value__*', // 3 segments (symmetric)
 ]
-Output: [
-    TextToken('', 0, 0),
-    MarkToken('**bold**', 0, 8, value='bold', children=[]),
-    TextToken('', 8, 8),
-]
+Output: [TextToken('', 0, 0), MarkToken('**bold**', 0, 8, (value = 'bold'), (children = [])), TextToken('', 8, 8)]
 // With equal progress, first pattern from list is chosen
 ```
 
