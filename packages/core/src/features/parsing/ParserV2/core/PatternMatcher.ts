@@ -110,6 +110,33 @@ export class PatternMatcher {
 	}
 
 	/**
+	 * Comparator for sorting states by priority rules for deterministic behavior
+	 * Higher priority states are processed first to ensure consistent parsing
+	 */
+	private ascPriorityComparator(a: MatchState, b: MatchState): number {
+		// Calculate priority scores for both states
+		const aPriority = this.calculateDeterministicPriority(a)
+		const bPriority = this.calculateDeterministicPriority(b)
+		return aPriority - bPriority
+	}
+
+	/**
+	 * Calculate minimal priority score for a match state
+	 * Only provides a small boost for states waiting for the last segment
+	 * Higher scores = higher priority = processed first
+	 */
+	private calculateDeterministicPriority(state: MatchState): number {
+		const descriptor = state.descriptor
+		const expectedIndex = state.expectedSegmentIndex
+
+		// Minimal priority boost for states waiting for last segment
+		// Much smaller than the original 10M to reduce dependency on this mechanism
+		const completionBonus = expectedIndex === descriptor.segments.length - 1 ? 1 : 0
+
+		return completionBonus
+	}
+
+	/**
 	 * Rollback state after validation failure for hasTwoValues patterns
 	 * Returns the state to waiting for the previous segment
 	 */
@@ -137,31 +164,6 @@ export class PatternMatcher {
 		this.waitingStates.get(previousSegment)!.push(state)
 	}
 
-	/**
-	 * Comparator for sorting states by priority rules for deterministic behavior
-	 * Higher priority states are processed first to ensure consistent parsing
-	 */
-	private ascPriorityComparator(a: MatchState, b: MatchState): number {
-		// Calculate priority scores for both states
-		const aPriority = this.calculateDeterministicPriority(a)
-		const bPriority = this.calculateDeterministicPriority(b)
-		return aPriority - bPriority
-	}
-
-	/**
-	 * Calculate deterministic priority score for a match state
-	 * Higher scores = higher priority = processed first
-	 */
-	private calculateDeterministicPriority(state: MatchState): number {
-		const descriptor = state.descriptor
-		const expectedIndex = state.expectedSegmentIndex
-
-		// Priority components (higher values = higher priority):
-		// 1. States waiting for last segment get highest boost (10M)
-		const completionBonus = expectedIndex === descriptor.segments.length - 1 ? 10_000_000 : 0
-
-		return completionBonus
-	}
 
 	/**
 	 * Update match state with new segment by setting gap positions
