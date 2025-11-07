@@ -57,13 +57,8 @@ export class PatternMatcher {
 	/**
 	 * Process segments with state machine to create match states
 	 * Main method that converts found segments into structured match states
-	 *
-	 * Optimization: Uses position-indexed Map to store matches by their start position
-	 * This provides natural sorting and enables O(N) filtering in TreeBuilder
-	 * Map is more efficient than sparse array for texts with few matches
 	 */
 	process(segments: SegmentMatch[], input: string): MatchState[] {
-		// Clear previous state
 		this.waitingStates.clear()
 		this.completedStates.clear()
 
@@ -73,7 +68,6 @@ export class PatternMatcher {
 			this.tryStartNewStates(segment)
 		}
 
-		// Flatten position-indexed Map into sorted result
 		return this.flattenMatchesByPosition()
 	}
 
@@ -85,7 +79,7 @@ export class PatternMatcher {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const sortedStates = waiting.toSorted((a, b) => this.ascPriorityComparator(a, b))
+		const sortedStates = waiting.toSorted(this.ascCompletingPriority)
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
@@ -113,27 +107,11 @@ export class PatternMatcher {
 	 * Comparator for sorting states by priority rules for deterministic behavior
 	 * Higher priority states are processed first to ensure consistent parsing
 	 */
-	private ascPriorityComparator(a: MatchState, b: MatchState): number {
-		// Calculate priority scores for both states
-		const aPriority = this.calculateDeterministicPriority(a)
-		const bPriority = this.calculateDeterministicPriority(b)
-		return aPriority - bPriority
-	}
+	private ascCompletingPriority(a: MatchState, b: MatchState): number {
+		const isCompleting = (state: MatchState) =>
+			state.expectedSegmentIndex === state.descriptor.segments.length - 1 ? 1 : 0
 
-	/**
-	 * Calculate minimal priority score for a match state
-	 * Only provides a small boost for states waiting for the last segment
-	 * Higher scores = higher priority = processed first
-	 */
-	private calculateDeterministicPriority(state: MatchState): number {
-		const descriptor = state.descriptor
-		const expectedIndex = state.expectedSegmentIndex
-
-		// Minimal priority boost for states waiting for last segment
-		// Much smaller than the original 10M to reduce dependency on this mechanism
-		const completionBonus = expectedIndex === descriptor.segments.length - 1 ? 1 : 0
-
-		return completionBonus
+		return isCompleting(a) - isCompleting(b)
 	}
 
 	/**
@@ -163,7 +141,6 @@ export class PatternMatcher {
 		}
 		this.waitingStates.get(previousSegment)!.push(state)
 	}
-
 
 	/**
 	 * Update match state with new segment by setting gap positions
