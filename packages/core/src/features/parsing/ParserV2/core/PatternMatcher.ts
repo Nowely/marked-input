@@ -20,25 +20,135 @@ import {MarkupDescriptor} from './MarkupDescriptor'
  * For active states: tracks progress through pattern segments with expectedSegmentIndex
  * For completed matches: contains final positions without expectedSegmentIndex
  */
-export interface MatchState {
-	/** Descriptor defining the markup pattern being matched */
-	descriptor: MarkupDescriptor
-	/** Index of the next expected segment (NaN for completed matches) */
-	expectedSegmentIndex: number
-	/** Starting position of the pattern in the input text */
-	start: number
-	/** End position of the last processed segment */
-	end: number
-	/** Track gap positions inline (no separate parts array) */
-	valueStart?: number
-	valueEnd?: number
-	/** For patterns with two __value__ placeholders - store second __value__ separately */
-	secondValueStart?: number
-	secondValueEnd?: number
-	nestedStart?: number
-	nestedEnd?: number
-	metaStart?: number
-	metaEnd?: number
+export class MatchState {
+	constructor(
+		public readonly descriptor: MarkupDescriptor,
+		public expectedSegmentIndex: number,
+		public readonly start: number,
+		public end: number,
+		public valueStart?: number,
+		public valueEnd?: number,
+		public secondValueStart?: number,
+		public secondValueEnd?: number,
+		public nestedStart?: number,
+		public nestedEnd?: number,
+		public metaStart?: number,
+		public metaEnd?: number
+	) {}
+
+	/**
+	 * Check if the pattern is completed
+	 */
+	isCompleted(): boolean {
+		return isNaN(this.expectedSegmentIndex)
+	}
+
+	/**
+	 * Check if the pattern is completing (on the last segment)
+	 */
+	isCompleting(): boolean {
+		return this.expectedSegmentIndex === this.descriptor.segments.length - 1
+	}
+
+	/**
+	 * Get the next expected segment
+	 */
+	getNextSegment(): string | undefined {
+		if (this.isCompleted()) {
+			return undefined
+		}
+		return this.descriptor.segments[this.expectedSegmentIndex]
+	}
+
+	/**
+	 * Update state with new segment by setting gap positions
+	 * Returns true if state is valid, false if validation failed (for hasTwoValues patterns)
+	 */
+	updateWithSegment(segment: SegmentMatch, input: string): boolean {
+		const gapStart = this.end
+		const gapEnd = segment.start
+		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
+
+		// Set gap positions based on type
+		switch (gapType) {
+			case 'value':
+				if (this.descriptor.hasTwoValues) {
+					if (this.valueStart === undefined) {
+						this.valueStart = gapStart
+						this.valueEnd = gapEnd
+					} else {
+						const firstValue = input.substring(this.valueStart, this.valueEnd)
+						const secondValue = input.substring(gapStart, gapEnd)
+
+						if (firstValue !== secondValue) {
+							return false
+						}
+
+						this.secondValueStart = gapStart
+						this.secondValueEnd = gapEnd
+					}
+					break
+				}
+				this.valueStart = gapStart
+				this.valueEnd = gapEnd
+				break
+			case 'nested':
+				this.nestedStart ??= gapStart
+				this.nestedEnd = gapEnd
+				break
+			case 'meta':
+				this.metaStart ??= gapStart
+				this.metaEnd = gapEnd
+				break
+		}
+
+		this.end = segment.end
+		this.expectedSegmentIndex++
+		return true
+	}
+
+	/**
+	 * Rollback state after validation failure for hasTwoValues patterns
+	 * Returns the previous segment that this state should wait for
+	 */
+	rollback(): string {
+		// Rollback: decrement expectedSegmentIndex to wait for previous segment again
+		this.expectedSegmentIndex--
+
+		// Rollback end position to before the previous segment
+		const previousSegment = this.descriptor.segments[this.expectedSegmentIndex]
+		this.end = this.end - previousSegment.length
+
+		// Clear the gap END position that was set for the segment before this one
+		// Keep the START position so we can extend the gap to the next occurrence
+		const previousGapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
+		if (previousGapType === 'nested') {
+			this.nestedEnd = undefined
+		} else if (previousGapType === 'meta') {
+			this.metaEnd = undefined
+		}
+
+		return previousSegment
+	}
+
+	/**
+	 * Mark state as completed
+	 */
+	markCompleted(segment: SegmentMatch): void {
+		this.expectedSegmentIndex = NaN
+		this.end = segment.end
+	}
+
+	/**
+	 * Comparator for sorting states by priority rules for deterministic behavior
+	 * Higher priority states are processed first to ensure consistent parsing
+	 * States that are completing (on last segment) have higher priority
+	 */
+	static compareCompletingPriority(a: MatchState, b: MatchState): number {
+		const aCompleting = a.isCompleting() ? 1 : 0
+		const bCompleting = b.isCompleting() ? 1 : 0
+		return aCompleting - bCompleting
+	}
 }
 
 /**
@@ -79,130 +189,37 @@ export class PatternMatcher {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
-		const sortedStates = waiting.toSorted(this.ascCompletingPriority)
+		const sortedStates = waiting.toSorted(MatchState.compareCompletingPriority)
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
 			const state = sortedStates[i]
 			waiting.splice(waiting.indexOf(state), 1)
 
-			const isSuccess = this.tryUpdateStateWithSegment(state, segment, input)
+			const isSuccess = state.updateWithSegment(segment, input)
 			if (!isSuccess) {
-				this.rollbackState(state)
+				const previousSegment = state.rollback()
+				if (!this.waitingStates.has(previousSegment)) {
+					this.waitingStates.set(previousSegment, [])
+				}
+				this.waitingStates.get(previousSegment)!.push(state)
 				continue
 			}
 
 			// Check if pattern is complete
 			if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
-				this.handleCompletedPattern(state, segment)
+				state.markCompleted(segment)
+				this.addToPositionIndex(state)
 			} else {
-				this.handleIncompletePattern(state)
+				const nextSegment = state.getNextSegment()!
+				if (!this.waitingStates.has(nextSegment)) {
+					this.waitingStates.set(nextSegment, [])
+				}
+				this.waitingStates.get(nextSegment)!.push(state)
 			}
 
 			break
 		}
-	}
-
-	/**
-	 * Comparator for sorting states by priority rules for deterministic behavior
-	 * Higher priority states are processed first to ensure consistent parsing
-	 */
-	private ascCompletingPriority(a: MatchState, b: MatchState): number {
-		const isCompleting = (state: MatchState) =>
-			state.expectedSegmentIndex === state.descriptor.segments.length - 1 ? 1 : 0
-
-		return isCompleting(a) - isCompleting(b)
-	}
-
-	/**
-	 * Rollback state after validation failure for hasTwoValues patterns
-	 * Returns the state to waiting for the previous segment
-	 */
-	private rollbackState(state: MatchState): void {
-		// Rollback: decrement expectedSegmentIndex to wait for previous segment again
-		state.expectedSegmentIndex--
-
-		// Rollback end position to before the previous segment
-		const previousSegment = state.descriptor.segments[state.expectedSegmentIndex]
-		state.end = state.end - previousSegment.length
-
-		// Clear the gap END position that was set for the segment before this one
-		// Keep the START position so we can extend the gap to the next occurrence
-		const previousGapType = state.descriptor.gapTypes[state.expectedSegmentIndex - 1]
-		if (previousGapType === 'nested') {
-			state.nestedEnd = undefined
-		} else if (previousGapType === 'meta') {
-			state.metaEnd = undefined
-		}
-
-		// Put state back to waiting for the previous segment
-		if (!this.waitingStates.has(previousSegment)) {
-			this.waitingStates.set(previousSegment, [])
-		}
-		this.waitingStates.get(previousSegment)!.push(state)
-	}
-
-	/**
-	 * Update match state with new segment by setting gap positions
-	 * Returns true if state is valid, false if validation failed (for hasTwoValues patterns)
-	 */
-	private tryUpdateStateWithSegment(state: MatchState, segment: SegmentMatch, input: string): boolean {
-		const gapStart = state.end
-		const gapEnd = segment.start
-		const gapType = state.descriptor.gapTypes[state.expectedSegmentIndex - 1]
-
-		// Set gap positions based on type
-		switch (gapType) {
-			case 'value':
-				if (state.descriptor.hasTwoValues) {
-					if (state.valueStart === undefined) {
-						state.valueStart = gapStart
-						state.valueEnd = gapEnd
-					} else {
-						const firstValue = input.substring(state.valueStart, state.valueEnd)
-						const secondValue = input.substring(gapStart, gapEnd)
-
-						if (firstValue !== secondValue) {
-							return false
-						}
-
-						state.secondValueStart = gapStart
-						state.secondValueEnd = gapEnd
-					}
-					break
-				}
-				state.valueStart = gapStart
-				state.valueEnd = gapEnd
-				break
-			case 'nested':
-				state.nestedStart ??= gapStart
-				state.nestedEnd = gapEnd
-				break
-			case 'meta':
-				state.metaStart ??= gapStart
-				state.metaEnd = gapEnd
-				break
-		}
-
-		state.end = segment.end
-		state.expectedSegmentIndex++
-		return true
-	}
-
-	private handleCompletedPattern(state: MatchState, segment: SegmentMatch): void {
-		state.expectedSegmentIndex = NaN
-		state.end = segment.end
-
-		// Add to position-indexed Map
-		this.addToPositionIndex(state)
-	}
-
-	private handleIncompletePattern(state: MatchState): void {
-		const nextSegment = state.descriptor.segments[state.expectedSegmentIndex]
-		if (!this.waitingStates.has(nextSegment)) {
-			this.waitingStates.set(nextSegment, [])
-		}
-		this.waitingStates.get(nextSegment)!.push(state)
 	}
 
 	/**
@@ -217,29 +234,24 @@ export class PatternMatcher {
 			// Single segment pattern - complete immediately
 			//TODO it's not correct. need tests
 			if (descriptor.segments.length === 1) {
-				const match: MatchState = {
+				const match = new MatchState(
 					descriptor,
-					expectedSegmentIndex: NaN, // Single segment pattern - complete immediately
-					start: segment.start,
-					end: segment.end,
-					valueStart: segment.start,
-					valueEnd: segment.end,
-				}
+					NaN, // Single segment pattern - complete immediately
+					segment.start,
+					segment.end,
+					segment.start,
+					segment.end
+				)
 
 				this.addToPositionIndex(match)
 				continue
 			}
 
 			// Multi-segment pattern - create state
-			const state: MatchState = {
-				descriptor,
-				expectedSegmentIndex: 1,
-				start: segment.start,
-				end: segment.end,
-			}
+			const state = new MatchState(descriptor, 1, segment.start, segment.end)
 
 			// Add to waiting list for next segment
-			const nextSegment = descriptor.segments[state.expectedSegmentIndex!]
+			const nextSegment = state.getNextSegment()!
 			if (!this.waitingStates.has(nextSegment)) {
 				this.waitingStates.set(nextSegment, [])
 			}
