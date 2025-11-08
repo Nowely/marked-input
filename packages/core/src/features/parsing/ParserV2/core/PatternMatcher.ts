@@ -127,27 +127,20 @@ export class PatternMatcher {
 	 * Try to start new pattern states
 	 */
 	private tryStartNewStates(segment: SegmentMatch): void {
-		const descriptors = this.registry.firstSegmentIndexMap.get(segment.index)
-
-		if (!descriptors) return
-
-		for (const descriptor of descriptors) {
-			// Create match for pattern (both single and multi-segment)
+		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
 			const match = new Match(descriptor, 1, segment.start, segment.end)
 
-			// Single segment pattern - complete immediately through general mechanism
+			// TODO, incorrect logic. Single segment pattern - complete immediately through general mechanism
 			if (descriptor.segments.length === 1) {
 				match.markCompleted(segment)
 				// For single segment patterns, the entire segment is the value
 				match.gaps.value = {start: segment.start, end: segment.end}
 				this.addToPositionIndex(match)
-				continue
+				return
 			}
 
-			// Multi-segment pattern - add to waiting list for next segment
-			const nextSegmentIndex = match.getNextSegment()!
-			this.addToWaitingList(match, nextSegmentIndex)
-		}
+			this.addToWaitingList(match, match.getNextSegment()!)
+		})
 	}
 
 	/**
@@ -156,17 +149,19 @@ export class PatternMatcher {
 	 */
 	private addToWaitingList(match: Match, segmentIndex: number): void {
 		if (match.isCompleting()) {
-			if (!this.completingStates.has(segmentIndex)) {
-				this.completingStates.set(segmentIndex, [])
+			const states = this.completingStates.get(segmentIndex) || []
+			if (states.length === 0) {
+				this.completingStates.set(segmentIndex, states)
 			}
 			// Completing states go to the beginning (LIFO order - last added, first processed)
-			this.completingStates.get(segmentIndex)!.unshift(match)
+			states.unshift(match)
 		} else {
-			if (!this.pendingStates.has(segmentIndex)) {
-				this.pendingStates.set(segmentIndex, [])
+			const states = this.pendingStates.get(segmentIndex) || []
+			if (states.length === 0) {
+				this.pendingStates.set(segmentIndex, states)
 			}
 			// Pending states go to the beginning (LIFO order - last added, first processed)
-			this.pendingStates.get(segmentIndex)!.unshift(match)
+			states.unshift(match)
 		}
 	}
 
