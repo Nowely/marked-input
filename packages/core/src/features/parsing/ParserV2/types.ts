@@ -31,6 +31,15 @@ export interface MarkToken {
 }
 
 /**
+ * Position range representing a span in text with start and end positions
+ * Used for various positioning needs throughout the parser
+ */
+export interface PositionRange {
+	start: number
+	end: number
+}
+
+/**
  * Template literal types for markup placeholders
  */
 export type ValueMarkup = `${string}${typeof PLACEHOLDER.Value}${string}`

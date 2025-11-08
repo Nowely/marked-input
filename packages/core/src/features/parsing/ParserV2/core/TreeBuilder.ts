@@ -1,20 +1,11 @@
-import {TextToken, MarkToken, Token} from '../types'
+import {TextToken, MarkToken, Token, PositionRange} from '../types'
 import {MatchState} from './PatternMatcher'
-
-/**
- * Content boundaries for a match (start and end positions)
- * TODO some GapRange
- */
-interface ContentBounds {
-	start: number
-	end: number
-}
 
 /**
  * Gets the content boundaries for a match
  * Priority: nested content if present, otherwise value content
  */
-function getContentBounds(match: MatchState): ContentBounds {
+function getContentBounds(match: MatchState): PositionRange {
 	if (match.gaps.nested) {
 		return match.gaps.nested
 	}

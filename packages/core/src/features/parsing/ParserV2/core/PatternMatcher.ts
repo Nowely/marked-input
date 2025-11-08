@@ -12,24 +12,17 @@
 import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
-
-/**
- * Position range for a gap (start and end positions)
- */
-interface GapRange {
-	start: number
-	end: number
-}
+import {PositionRange} from '../types'
 
 /**
  * Unified structure for storing positions of all gap types
  * Replaces individual properties (valueStart/End, nestedStart/End, etc.)
  */
 interface GapPositions {
-	value?: GapRange
-	secondValue?: GapRange
-	nested?: GapRange
-	meta?: GapRange
+	value?: PositionRange
+	secondValue?: PositionRange
+	nested?: PositionRange
+	meta?: PositionRange
 }
 
 /**
