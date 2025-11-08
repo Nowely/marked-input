@@ -97,7 +97,7 @@ export class PatternMatcher {
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
 				const previousSegmentIndex = match.rollback()
-				this.addToWaitingList(match, previousSegmentIndex)
+				this.addToWaiting(match, previousSegmentIndex)
 			} else {
 				// State updated successfully - handle completion or continue waiting
 				this.handleUpdatedState(match, segment)
@@ -114,12 +114,11 @@ export class PatternMatcher {
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
 				const previousSegmentIndex = match.rollback()
-				this.addToWaitingList(match, previousSegmentIndex)
+				this.addToWaiting(match, previousSegmentIndex)
 			} else {
 				// State updated successfully - handle completion or continue waiting
 				this.handleUpdatedState(match, segment)
 			}
-			// No return here - we already processed one state
 		}
 	}
 
@@ -127,9 +126,9 @@ export class PatternMatcher {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
 			const match = new Match(descriptor, 1, segment.start, segment.end)
 
-			if (match.isCompleted) return this.addToCompletedList(match)
+			if (match.isCompleted) return this.addToCompleted(match)
 
-			this.addToWaitingList(match, match.nextSegment!)
+			this.addToWaiting(match, match.nextSegment!)
 		})
 	}
 
@@ -137,7 +136,7 @@ export class PatternMatcher {
 	 * Adds a state to the waiting list for a specific segment
 	 * Inserts both pending and completing states at the beginning (LIFO order)
 	 */
-	private addToWaitingList(match: Match, segmentIndex: number): void {
+	private addToWaiting(match: Match, segmentIndex: number): void {
 		if (match.isCompleting) {
 			const states = this.completingStates.get(segmentIndex) || []
 			if (states.length === 0) {
@@ -162,11 +161,11 @@ export class PatternMatcher {
 		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
 			// Pattern is complete
 			match.markCompleted(segment)
-			this.addToCompletedList(match)
+			this.addToCompleted(match)
 		} else {
 			// Continue waiting for next segment
 			const nextSegmentIndex = match.nextSegment!
-			this.addToWaitingList(match, nextSegmentIndex)
+			this.addToWaiting(match, nextSegmentIndex)
 		}
 	}
 
@@ -175,7 +174,7 @@ export class PatternMatcher {
 	 * Uses binary search to find insertion point
 	 * TreeBuilder will filter overlaps based on nesting rules
 	 */
-	private addToCompletedList(match: Match): void {
+	private addToCompleted(match: Match): void {
 		const position = match.start
 
 		// Binary search to find the insertion point or existing position
