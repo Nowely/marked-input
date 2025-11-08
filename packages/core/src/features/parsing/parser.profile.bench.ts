@@ -97,6 +97,11 @@ const methodCallStack: string[] = []
 let filteredMatchesCount = 0
 
 /**
+ * History of profiling results for comparison
+ */
+const profilingResultsHistory: ProfilingResult[] = []
+
+/**
  * Update method statistics
  */
 function updateMethodStats(
@@ -703,14 +708,24 @@ function loadExistingHistory(): void {
 	try {
 		if (fs.existsSync(resultsPath)) {
 			const data = fs.readFileSync(resultsPath, 'utf8')
-			const history: ProfilingRun[] = JSON.parse(data)
+			const results: ProfilingResult[] = JSON.parse(data)
 
-			// Restore history from file
+			// Restore results history from file (should already be newest first)
+			profilingResultsHistory.length = 0
+			profilingResultsHistory.push(...results)
+
+			// Also restore profiling runs for comparison (newest first)
 			profilingHistory.length = 0
-			profilingHistory.push(...history)
+			results.forEach(result => {
+				profilingHistory.push({
+					timestamp: result.timestamp,
+					tests: result.tests
+				})
+			})
 		}
 	} catch (error) {
 		// If loading fails, start with empty history
+		profilingResultsHistory.length = 0
 		profilingHistory.length = 0
 	}
 }
@@ -846,7 +861,7 @@ function saveCompleteProfileResults(): void {
 		profilingHistory.splice(MAX_HISTORY_RUNS)
 	}
 
-	console.log(`\n💾 Saving profiling results (${Object.keys(currentRunResults).length} tests, ${profilingHistory.length} runs in history)...`)
+	console.log(`\n💾 Saving profiling results (${Object.keys(currentRunResults).length} tests, ${profilingResultsHistory.length} runs in history)...`)
 
 	try {
 		let comparison: ProfilingComparison | undefined
@@ -854,11 +869,27 @@ function saveCompleteProfileResults(): void {
 			comparison = compareProfilingResults(profilingHistory[1], profilingHistory[0])
 		}
 
-		// Save summary result in legacy format path
+		// Save summary result with history
 		const result = createProfilingResult(currentRun, comparison, profilingHistory)
-		const summaryData = JSON.stringify(result, null, 2)
+		profilingResultsHistory.unshift(result)
+
+		// Keep only last 2 results for comparison (newest first, no sorting needed since we unshift)
+		if (profilingResultsHistory.length > 2) {
+			profilingResultsHistory.splice(2)
+		}
+
+		// Sync profilingHistory with the sorted results
+		profilingHistory.length = 0
+		profilingResultsHistory.forEach(result => {
+			profilingHistory.push({
+				timestamp: result.timestamp,
+				tests: result.tests
+			})
+		})
+
+		const summaryData = JSON.stringify(profilingResultsHistory, null, 2)
 		fs.writeFileSync(resultsPath, summaryData)
-		console.log(`✅ Results saved: ${resultsPath}`)
+		console.log(`✅ Results saved: ${resultsPath} (${profilingResultsHistory.length} runs in history)`)
 
 		// Current run summary
 		console.log('\n📊 CURRENT RUN SUMMARY:')
@@ -935,7 +966,7 @@ function saveCompleteProfileResults(): void {
 describe('ParserV2 Complete Profiling', () => {
 	const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 
-	test('should profile all methods automatically', () => {
+	bench('should profile all methods automatically', () => {
 		// Load existing history if available
 		loadExistingHistory()
 
@@ -957,10 +988,7 @@ describe('ParserV2 Complete Profiling', () => {
 			currentRunResults[testName] = result
 		})
 
-		// Save results with history
-		if (Object.keys(currentRunResults).length > 0) {
-			saveCompleteProfileResults()
-		}
+		// Results will be saved in afterAll hook
 	})
 })
 
