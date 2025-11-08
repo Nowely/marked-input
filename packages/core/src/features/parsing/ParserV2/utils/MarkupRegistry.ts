@@ -14,8 +14,6 @@ export class MarkupRegistry {
 	readonly segmentsMap: Map<string, MarkupDescriptor[]>
 	/** Map from first segment index to descriptors that start with this segment (for O(1) lookup) */
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]>
-	/** Map from segment string to its index in segments array for O(1) lookup */
-	readonly segmentToIndex: Map<string, number>
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
@@ -32,13 +30,13 @@ export class MarkupRegistry {
 			const firstSegment = descriptor.segments[0]
 
 			// Build segmentsMap for all segments and collect unique segments with indices
-			descriptor.segments.forEach(segment => {
+			descriptor.segments.forEach((segment, segmentIndex) => {
 				if (segment.length > 0) {
 					// Assign index to segment if not already assigned
 					if (!segmentIndexMap.has(segment)) {
-						const index = segmentsArray.length
+						const globalIndex = segmentsArray.length
 						segmentsArray.push(segment)
-						segmentIndexMap.set(segment, index)
+						segmentIndexMap.set(segment, globalIndex)
 					}
 
 					// Fill segmentsMap
@@ -48,6 +46,10 @@ export class MarkupRegistry {
 					} else {
 						this.segmentsMap.set(segment, [descriptor])
 					}
+
+					// Set the global index for this segment in descriptor
+					const globalIndex = segmentIndexMap.get(segment)!
+					descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
 				}
 			})
 
@@ -65,8 +67,7 @@ export class MarkupRegistry {
 			return descriptor
 		})
 
-		// Finalize segments and segmentToIndex
+		// Finalize segments
 		this.segments = segmentsArray
-		this.segmentToIndex = segmentIndexMap
 	}
 }

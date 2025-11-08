@@ -24,6 +24,8 @@ export interface MarkupDescriptor {
 	hasTwoValues: boolean
 	/** True if opening and closing segments are the same (symmetric patterns like **text**) */
 	isSymmetric: boolean
+	/** Global indices of segments in registry segments array (parallel to segments array) */
+	segmentGlobalIndices: number[]
 }
 
 /**
@@ -92,6 +94,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		hasNested,
 		hasTwoValues,
 		isSymmetric,
+		segmentGlobalIndices: new Array(segments.length), // Will be populated by MarkupRegistry
 	}
 }
 

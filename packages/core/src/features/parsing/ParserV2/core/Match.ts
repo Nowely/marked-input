@@ -55,8 +55,7 @@ export class Match {
 		if (this.isCompleted()) {
 			return undefined
 		}
-		const segment = this.descriptor.segments[this.expectedSegmentIndex]
-		return this.registry.segmentToIndex.get(segment)
+		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
 	}
 
 	/**
@@ -160,7 +159,7 @@ export class Match {
 			this.resetExtendableGapForRollback(previousGapType)
 		}
 
-		return this.registry.segmentToIndex.get(previousSegment)!
+		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
 	}
 
 	/**
