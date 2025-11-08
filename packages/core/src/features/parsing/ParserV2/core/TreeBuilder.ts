@@ -1,5 +1,5 @@
 import {TextToken, MarkToken, Token, PositionRange} from '../types'
-import {Match} from './PatternMatcher'
+import {Match} from './Match'
 
 /**
  * Gets the content boundaries for a match
@@ -208,7 +208,7 @@ function filterMatches(matches: Match[]): {
 		}
 	}
 
-	return { filteredMatches, lastProcessedStartPosition, lastAcceptedMatch }
+	return {filteredMatches, lastProcessedStartPosition, lastAcceptedMatch}
 }
 
 /**
@@ -302,7 +302,7 @@ export function buildTree(matches: Match[], input: string): Token[] {
 	let currentTextPosition = 0
 
 	// Filter matches using O(N) single-pass algorithm
-	const { filteredMatches } = filterMatches(matches)
+	const {filteredMatches} = filterMatches(matches)
 
 	for (const match of filteredMatches) {
 		// Close completed parents that don't contain this match
