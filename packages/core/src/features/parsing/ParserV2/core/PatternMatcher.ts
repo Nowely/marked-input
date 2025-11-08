@@ -82,41 +82,6 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Adds a state to the waiting list for a specific segment
-	 * Inserts both pending and completing states at the beginning (LIFO order)
-	 */
-	private addToWaitingList(match: Match, segmentIndex: number): void {
-		if (match.isCompleting()) {
-			if (!this.completingStates.has(segmentIndex)) {
-				this.completingStates.set(segmentIndex, [])
-			}
-			// Completing states go to the beginning (LIFO order - last added, first processed)
-			this.completingStates.get(segmentIndex)!.unshift(match)
-		} else {
-			if (!this.pendingStates.has(segmentIndex)) {
-				this.pendingStates.set(segmentIndex, [])
-			}
-			// Pending states go to the beginning (LIFO order - last added, first processed)
-			this.pendingStates.get(segmentIndex)!.unshift(match)
-		}
-	}
-
-	/**
-	 * Handles a successfully updated state - either completes it or adds to waiting list
-	 */
-	private handleUpdatedState(match: Match, segment: SegmentMatch): void {
-		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
-			// Pattern is complete
-			match.markCompleted(segment)
-			this.addToPositionIndex(match)
-		} else {
-			// Continue waiting for next segment
-			const nextSegmentIndex = match.getNextSegment()!
-			this.addToWaitingList(match, nextSegmentIndex)
-		}
-	}
-
-	/**
 	 * Process states waiting for this segment
 	 * Try states by priority until one is valid, keeping rejected states for later attempts
 	 * Process completing states first (higher priority), then pending states
@@ -186,6 +151,41 @@ export class PatternMatcher {
 	}
 
 	/**
+	 * Adds a state to the waiting list for a specific segment
+	 * Inserts both pending and completing states at the beginning (LIFO order)
+	 */
+	private addToWaitingList(match: Match, segmentIndex: number): void {
+		if (match.isCompleting()) {
+			if (!this.completingStates.has(segmentIndex)) {
+				this.completingStates.set(segmentIndex, [])
+			}
+			// Completing states go to the beginning (LIFO order - last added, first processed)
+			this.completingStates.get(segmentIndex)!.unshift(match)
+		} else {
+			if (!this.pendingStates.has(segmentIndex)) {
+				this.pendingStates.set(segmentIndex, [])
+			}
+			// Pending states go to the beginning (LIFO order - last added, first processed)
+			this.pendingStates.get(segmentIndex)!.unshift(match)
+		}
+	}
+
+	/**
+	 * Handles a successfully updated state - either completes it or adds to waiting list
+	 */
+	private handleUpdatedState(match: Match, segment: SegmentMatch): void {
+		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
+			// Pattern is complete
+			match.markCompleted(segment)
+			this.addToPositionIndex(match)
+		} else {
+			// Continue waiting for next segment
+			const nextSegmentIndex = match.getNextSegment()!
+			this.addToWaitingList(match, nextSegmentIndex)
+		}
+	}
+
+	/**
 	 * Add match to position-indexed array, maintaining sorted order
 	 * Uses binary search to find insertion point
 	 * TreeBuilder will filter overlaps based on nesting rules
@@ -231,5 +231,4 @@ export class PatternMatcher {
 			this.completedStates.splice(left, 0, {position, matches: [match]})
 		}
 	}
-
 }
