@@ -123,23 +123,13 @@ export class PatternMatcher {
 		}
 	}
 
-	/**
-	 * Try to start new pattern states
-	 */
 	private tryStartNewStates(segment: SegmentMatch): void {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
 			const match = new Match(descriptor, 1, segment.start, segment.end)
 
-			// TODO, incorrect logic. Single segment pattern - complete immediately through general mechanism
-			if (descriptor.segments.length === 1) {
-				match.markCompleted(segment)
-				// For single segment patterns, the entire segment is the value
-				match.gaps.value = {start: segment.start, end: segment.end}
-				this.addToPositionIndex(match)
-				return
-			}
+			if (match.isCompleted) return this.addToCompletedList(match)
 
-			this.addToWaitingList(match, match.getNextSegment()!)
+			this.addToWaitingList(match, match.nextSegment!)
 		})
 	}
 
@@ -148,7 +138,7 @@ export class PatternMatcher {
 	 * Inserts both pending and completing states at the beginning (LIFO order)
 	 */
 	private addToWaitingList(match: Match, segmentIndex: number): void {
-		if (match.isCompleting()) {
+		if (match.isCompleting) {
 			const states = this.completingStates.get(segmentIndex) || []
 			if (states.length === 0) {
 				this.completingStates.set(segmentIndex, states)
@@ -172,10 +162,10 @@ export class PatternMatcher {
 		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
 			// Pattern is complete
 			match.markCompleted(segment)
-			this.addToPositionIndex(match)
+			this.addToCompletedList(match)
 		} else {
 			// Continue waiting for next segment
-			const nextSegmentIndex = match.getNextSegment()!
+			const nextSegmentIndex = match.nextSegment!
 			this.addToWaitingList(match, nextSegmentIndex)
 		}
 	}
@@ -185,7 +175,7 @@ export class PatternMatcher {
 	 * Uses binary search to find insertion point
 	 * TreeBuilder will filter overlaps based on nesting rules
 	 */
-	private addToPositionIndex(match: Match): void {
+	private addToCompletedList(match: Match): void {
 		const position = match.start
 
 		// Binary search to find the insertion point or existing position

@@ -30,27 +30,34 @@ export class Match {
 		public expectedSegmentIndex: number,
 		public readonly start: number,
 		public end: number
-	) {}
+	) {
+		// Auto-complete single segment patterns
+		if (descriptor.segments.length === 1) {
+			this.expectedSegmentIndex = NaN
+			this.gaps.value = {start, end}
+		}
+	}
 
 	/**
-	 * Check if the pattern is completed
+	 * Check if the pattern is completed (computed property)
 	 */
-	isCompleted(): boolean {
+	get isCompleted(): boolean {
 		return isNaN(this.expectedSegmentIndex)
 	}
+
 
 	/**
 	 * Check if the pattern is completing (on the last segment)
 	 */
-	isCompleting(): boolean {
+	get isCompleting(): boolean {
 		return this.expectedSegmentIndex === this.descriptor.segments.length - 1
 	}
 
 	/**
 	 * Get the next expected segment index
 	 */
-	getNextSegment(): number | undefined {
-		if (this.isCompleted()) {
+	get nextSegment(): number | undefined {
+		if (this.isCompleted) {
 			return undefined
 		}
 		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
