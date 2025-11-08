@@ -188,7 +188,7 @@ Input Text → Aho-Corasick → SegmentMatches
 **MarkupRegistry** - fast pattern lookups:
 
 - Deduplicates segments from all markup patterns
-- Provides `firstSegmentsMap` for starting pattern detection
+- Provides `firstSegmentIndexMap` for O(1) starting pattern detection by index
 - Enables O(1) lookups for pattern initiation
 
 **PatternMatcher** - state machine pattern matching:

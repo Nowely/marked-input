@@ -127,7 +127,7 @@ export class PatternMatcher {
 	 * Try to start new pattern states
 	 */
 	private tryStartNewStates(segment: SegmentMatch): void {
-		const descriptors = this.registry.firstSegmentsMap.get(segment.value)
+		const descriptors = this.registry.firstSegmentIndexMap.get(segment.index)
 
 		if (!descriptors) return
 
