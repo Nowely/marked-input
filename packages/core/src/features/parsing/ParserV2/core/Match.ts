@@ -2,6 +2,7 @@ import {GapType, GAP_TYPE} from '../constants'
 import {PositionRange} from '../types'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
+import {MarkupRegistry} from '../utils/MarkupRegistry'
 
 /**
  * Unified structure for storing positions of all gap types
@@ -29,7 +30,8 @@ export class Match {
 		public readonly descriptor: MarkupDescriptor,
 		public expectedSegmentIndex: number,
 		public readonly start: number,
-		public end: number
+		public end: number,
+		private readonly registry: MarkupRegistry
 	) {}
 
 	/**
@@ -47,13 +49,14 @@ export class Match {
 	}
 
 	/**
-	 * Get the next expected segment
+	 * Get the next expected segment index
 	 */
-	getNextSegment(): string | undefined {
+	getNextSegment(): number | undefined {
 		if (this.isCompleted()) {
 			return undefined
 		}
-		return this.descriptor.segments[this.expectedSegmentIndex]
+		const segment = this.descriptor.segments[this.expectedSegmentIndex]
+		return this.registry.segmentToIndex.get(segment)
 	}
 
 	/**
@@ -138,9 +141,9 @@ export class Match {
 
 	/**
 	 * Rollback state after validation failure for hasTwoValues patterns
-	 * Returns the previous segment that this state should wait for
+	 * Returns the previous segment index that this state should wait for
 	 */
-	rollback(): string {
+	rollback(): number {
 		// Rollback: decrement expectedSegmentIndex to wait for previous segment again
 		this.expectedSegmentIndex--
 
@@ -157,7 +160,7 @@ export class Match {
 			this.resetExtendableGapForRollback(previousGapType)
 		}
 
-		return previousSegment
+		return this.registry.segmentToIndex.get(previousSegment)!
 	}
 
 	/**

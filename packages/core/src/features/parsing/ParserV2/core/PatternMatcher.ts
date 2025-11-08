@@ -54,8 +54,8 @@ class MatchPriority {
 export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
-	private readonly pendingStates: Map<string, Match[]> = new Map()
-	private readonly completingStates: Map<string, Match[]> = new Map()
+	private readonly pendingStates: Map<number, Match[]> = new Map()
+	private readonly completingStates: Map<number, Match[]> = new Map()
 	// Changed from Map to array of {position, matches} to maintain sorted order
 	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
 
@@ -85,19 +85,19 @@ export class PatternMatcher {
 	 * Adds a state to the waiting list for a specific segment
 	 * Inserts both pending and completing states at the beginning (LIFO order)
 	 */
-	private addToWaitingList(match: Match, segment: string): void {
+	private addToWaitingList(match: Match, segmentIndex: number): void {
 		if (match.isCompleting()) {
-			if (!this.completingStates.has(segment)) {
-				this.completingStates.set(segment, [])
+			if (!this.completingStates.has(segmentIndex)) {
+				this.completingStates.set(segmentIndex, [])
 			}
 			// Completing states go to the beginning (LIFO order - last added, first processed)
-			this.completingStates.get(segment)!.unshift(match)
+			this.completingStates.get(segmentIndex)!.unshift(match)
 		} else {
-			if (!this.pendingStates.has(segment)) {
-				this.pendingStates.set(segment, [])
+			if (!this.pendingStates.has(segmentIndex)) {
+				this.pendingStates.set(segmentIndex, [])
 			}
 			// Pending states go to the beginning (LIFO order - last added, first processed)
-			this.pendingStates.get(segment)!.unshift(match)
+			this.pendingStates.get(segmentIndex)!.unshift(match)
 		}
 	}
 
@@ -111,8 +111,8 @@ export class PatternMatcher {
 			this.addToPositionIndex(match)
 		} else {
 			// Continue waiting for next segment
-			const nextSegment = match.getNextSegment()!
-			this.addToWaitingList(match, nextSegment)
+			const nextSegmentIndex = match.getNextSegment()!
+			this.addToWaitingList(match, nextSegmentIndex)
 		}
 	}
 
@@ -124,15 +124,15 @@ export class PatternMatcher {
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
 		// Try completing states first (higher priority) - process only one
-		const completingArray = this.completingStates.get(segment.value)
+		const completingArray = this.completingStates.get(segment.index)
 		if (completingArray && completingArray.length > 0) {
 			const match = completingArray.shift()! // Remove from beginning (LIFO since we unshift)
 
 			const isSuccess = match.updateWithSegment(segment, input)
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
-				const previousSegment = match.rollback()
-				this.addToWaitingList(match, previousSegment)
+				const previousSegmentIndex = match.rollback()
+				this.addToWaitingList(match, previousSegmentIndex)
 			} else {
 				// State updated successfully - handle completion or continue waiting
 				this.handleUpdatedState(match, segment)
@@ -141,15 +141,15 @@ export class PatternMatcher {
 		}
 
 		// If no completing states, try pending states - process only one
-		const pendingArray = this.pendingStates.get(segment.value)
+		const pendingArray = this.pendingStates.get(segment.index)
 		if (pendingArray && pendingArray.length > 0) {
 			const match = pendingArray.shift()! // Remove from beginning (LIFO since we unshift)
 
 			const isSuccess = match.updateWithSegment(segment, input)
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
-				const previousSegment = match.rollback()
-				this.addToWaitingList(match, previousSegment)
+				const previousSegmentIndex = match.rollback()
+				this.addToWaitingList(match, previousSegmentIndex)
 			} else {
 				// State updated successfully - handle completion or continue waiting
 				this.handleUpdatedState(match, segment)
@@ -168,7 +168,7 @@ export class PatternMatcher {
 
 		for (const descriptor of descriptors) {
 			// Create match for pattern (both single and multi-segment)
-			const match = new Match(descriptor, 1, segment.start, segment.end)
+			const match = new Match(descriptor, 1, segment.start, segment.end, this.registry)
 
 			// Single segment pattern - complete immediately through general mechanism
 			if (descriptor.segments.length === 1) {
@@ -180,8 +180,8 @@ export class PatternMatcher {
 			}
 
 			// Multi-segment pattern - add to waiting list for next segment
-			const nextSegment = match.getNextSegment()!
-			this.addToWaitingList(match, nextSegment)
+			const nextSegmentIndex = match.getNextSegment()!
+			this.addToWaitingList(match, nextSegmentIndex)
 		}
 	}
 

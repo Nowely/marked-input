@@ -14,6 +14,8 @@ export class MarkupRegistry {
 	readonly segmentsMap: Map<string, MarkupDescriptor[]>
 	/** Pre-sorted descriptors by first segment (for startNewChains optimization) */
 	readonly firstSegmentsMap: Map<string, MarkupDescriptor[]>
+	/** Map from segment string to its index in segments array for O(1) lookup */
+	readonly segmentToIndex: Map<string, number>
 
 	constructor(markups: Markup[]) {
 		this.markups = markups
@@ -51,5 +53,8 @@ export class MarkupRegistry {
 		})
 
 		this.segments = Array.from(this.segmentsMap.keys())
+
+		// Create mapping from segment to its index for O(1) lookup
+		this.segmentToIndex = new Map(this.segments.map((segment, index) => [segment, index]))
 	}
 }
