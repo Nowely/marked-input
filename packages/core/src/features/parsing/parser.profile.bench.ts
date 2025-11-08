@@ -16,6 +16,7 @@ interface MethodProfile {
 	percentage?: number // percentage of total execution time (optional for main method)
 	complexity: string
 	times: [number, number, number] // [minTime, avgTime, maxTime]
+	firstParamLength?: number // length of first parameter (if applicable)
 	subMethods?: Record<string, MethodProfile>
 }
 
@@ -26,6 +27,7 @@ interface TestProfile {
 	duration: number
 	inputLength: number
 	markCount: number
+	iterations: number
 	performance?: 'good' | 'warning' | 'bad'
 	mainMethod: MethodProfile
 }
@@ -92,7 +94,7 @@ interface ProfilingResult {
 /**
  * Global profiling statistics
  */
-const globalProfileStats = new Map<string, {times: number[]; count: number}>()
+const globalProfileStats = new Map<string, {times: number[]; paramLengths: number[]; count: number}>()
 const methodCallStack: string[] = []
 let filteredMatchesCount = 0
 
@@ -102,16 +104,35 @@ let filteredMatchesCount = 0
 const profilingResultsHistory: ProfilingResult[] = []
 
 /**
+ * Get length of first parameter if it's a string or array
+ */
+function getFirstParamLength(args: any[]): number | undefined {
+	if (args.length === 0) return undefined
+	const firstArg = args[0]
+	if (typeof firstArg === 'string') {
+		return firstArg.length
+	}
+	if (Array.isArray(firstArg)) {
+		return firstArg.length
+	}
+	return undefined
+}
+
+/**
  * Update method statistics
  */
 function updateMethodStats(
 	methodName: string,
 	duration: number,
 	className?: string,
-	complexity?: string
+	complexity?: string,
+	firstParamLength?: number
 ): void {
-	const existing = globalProfileStats.get(methodName) || {times: [], count: 0}
+	const existing = globalProfileStats.get(methodName) || {times: [], paramLengths: [], count: 0}
 	existing.times.push(duration)
+	if (firstParamLength !== undefined) {
+		existing.paramLengths.push(firstParamLength)
+	}
 	existing.count++
 	globalProfileStats.set(methodName, existing)
 }
@@ -130,7 +151,8 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 		const start = performance.now()
 		const result = method(...args)
 		const end = performance.now()
-		updateMethodStats(methodName, end - start, className, complexity)
+		const firstParamLength = getFirstParamLength(args)
+		updateMethodStats(methodName, end - start, className, complexity, firstParamLength)
 		methodCallStack.pop()
 		return result
 	}) as T
@@ -431,16 +453,22 @@ function runCompleteProfiling(
 			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0), 0) / iterations
 			const percentage = totalComponentTime > 0 ? (totalTime / totalComponentTime) * 100 : 0
 
+			// Calculate average parameter length if available (normalized per iteration)
+			const avgParamLength = data.paramLengths.length > 0
+				? Math.round(data.paramLengths.reduce((a, b) => a + b, 0) / data.paramLengths.length / iterations)
+				: undefined
+
 			return {
 				method: methodName,
 				className: methodName.split('.')[0],
 				complexity: getComplexityForMethod(methodName),
 				totalTime,
-				callCount: data.count,
+				callCount: Math.round(data.count / iterations), // Normalized per iteration
 				avgTime,
 				minTime,
 				maxTime,
-				percentage
+				percentage,
+				avgParamLength
 			}
 		})
 		.sort((a, b) => b.totalTime - a.totalTime)
@@ -452,6 +480,7 @@ function runCompleteProfiling(
 		duration: Math.round(avgSplitTime * 1000) / 1000, // round to 3 decimal places
 		inputLength: input.length,
 		markCount: markCountActual,
+		iterations,
 		mainMethod
 	}
 }
@@ -556,6 +585,7 @@ function buildMethodTree(methods: Array<{
 	minTime: number
 	maxTime: number
 	percentage: number
+	avgParamLength?: number
 }>, totalTime: number): MethodProfile {
 
 	// Build hierarchy based on class relationships
@@ -590,7 +620,8 @@ function buildMethodTree(methods: Array<{
 				Math.round(segmentMethod.minTime * 1000) / 1000,
 				Math.round(segmentMethod.avgTime * 1000) / 1000,
 				Math.round(segmentMethod.maxTime * 1000) / 1000
-			] : [0, 0, 0]
+			] : [0, 0, 0],
+			firstParamLength: segmentMethod?.avgParamLength
 			// No subMethods for SegmentMatcher.search
 		}
 	}
@@ -614,6 +645,7 @@ function buildMethodTree(methods: Array<{
 				Math.round(mainPatternMethod.avgTime * 1000) / 1000,
 				Math.round(mainPatternMethod.maxTime * 1000) / 1000
 			] : [0, 0, 0],
+			firstParamLength: mainPatternMethod?.avgParamLength,
 			subMethods: {}
 		}
 
@@ -629,7 +661,8 @@ function buildMethodTree(methods: Array<{
 					Math.round(method.minTime * 1000) / 1000,
 					Math.round(method.avgTime * 1000) / 1000,
 					Math.round(method.maxTime * 1000) / 1000
-				] as [number, number, number]
+				] as [number, number, number],
+				firstParamLength: method.avgParamLength
 				// PatternMatcher sub-methods don't have their own sub-methods
 			}))
 
@@ -666,6 +699,7 @@ function buildMethodTree(methods: Array<{
 				Math.round(mainTreeMethod.avgTime * 1000) / 1000,
 				Math.round(mainTreeMethod.maxTime * 1000) / 1000
 			] : [0, 0, 0],
+			firstParamLength: mainTreeMethod?.avgParamLength,
 			subMethods: {}
 		}
 
@@ -681,7 +715,8 @@ function buildMethodTree(methods: Array<{
 					Math.round(method.minTime * 1000) / 1000,
 					Math.round(method.avgTime * 1000) / 1000,
 					Math.round(method.maxTime * 1000) / 1000
-				] as [number, number, number]
+				] as [number, number, number],
+				firstParamLength: method.avgParamLength
 			}))
 
 		// Only add subMethods if there are any
