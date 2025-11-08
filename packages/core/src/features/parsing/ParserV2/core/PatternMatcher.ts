@@ -232,7 +232,8 @@ export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
 	private readonly waitingStates: Map<string, Match[]> = new Map()
-	private readonly completedStates: Map<number, Match[]> = new Map()
+	// Changed from Map to array of {position, matches} to maintain sorted order
+	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
@@ -244,7 +245,7 @@ export class PatternMatcher {
 	 */
 	process(segments: SegmentMatch[], input: string): Match[] {
 		this.waitingStates.clear()
-		this.completedStates.clear()
+		this.completedStates.length = 0
 
 		for (const segment of segments) {
 			this.processWaitingStates(segment, input)
@@ -288,6 +289,8 @@ export class PatternMatcher {
 		const waiting = this.waitingStates.get(segment.value)
 		if (!waiting || waiting.length === 0) return
 
+		// Sort states by completing priority (completing states should be processed first)
+		// Completing states have higher priority and come at the end after sorting
 		const sortedStates = waiting.toSorted(MatchPriority.compareCompleting)
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
@@ -337,53 +340,66 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Add match to position-indexed Map, handling collisions by keeping all matches
-	 * TreeBuilder will filter them based on priority and nesting rules
+	 * Add match to position-indexed array, maintaining sorted order
+	 * Uses binary search to find insertion point
+	 * TreeBuilder will filter overlaps based on nesting rules
 	 */
 	private addToPositionIndex(match: Match): void {
 		const position = match.start
-		const existing = this.completedStates.get(position)
 
-		if (!existing) {
-			// No collision - create new array with this match
-			this.completedStates.set(position, [match])
-			return
+		// Binary search to find the insertion point or existing position
+		let left = 0
+		let right = this.completedStates.length
+
+		while (left < right) {
+			const mid = Math.floor((left + right) / 2)
+			if (this.completedStates[mid].position < position) {
+				left = mid + 1
+			} else {
+				right = mid
+			}
 		}
 
-		// Collision detected - add to array, will be sorted later
-		existing.push(match)
+		// Check if we found an existing entry at this position
+		if (left < this.completedStates.length && this.completedStates[left].position === position) {
+			// Position exists - insert match in sorted order by priority
+			const matches = this.completedStates[left].matches
+			
+			// Find insertion point in matches array to maintain priority order
+			// compareMatchPriority(a, b) returns positive when b has higher priority
+			// Insert before the first match with higher priority (comparison > 0)
+			// For equal priority (comparison === 0), insert after (stable sort)
+			let insertIdx = 0
+			while (insertIdx < matches.length) {
+				const comparison = MatchPriority.compareMatchPriority(match, matches[insertIdx])
+				if (comparison > 0) {
+					// matches[insertIdx] has higher priority, insert before it
+					break
+				}
+				insertIdx++
+			}
+			
+			matches.splice(insertIdx, 0, match)
+		} else {
+			// New position - insert new entry at the correct position
+			this.completedStates.splice(left, 0, {position, matches: [match]})
+		}
 	}
 
 	/**
-	 * Flatten position-indexed Map into sorted array of matches
-	 * When multiple matches exist at same position, sort by priority:
-	 * - Longer first segment first (** before *)
-	 * - Longer total match first
-	 * - More segments first
-	 *
-	 * Optimization: Only iterate over actual match positions, not entire input length
+	 * Flatten position-indexed array into flat array of matches
+	 * No sorting needed - positions and priorities are already maintained by addToPositionIndex
 	 */
 	private flattenMatchesByPosition(): Match[] {
-		if (this.completedStates.size === 0) {
+		if (this.completedStates.length === 0) {
 			return []
 		}
 
-		// Sort positions once
-		const positions = Array.from(this.completedStates.keys()).sort((a, b) => a - b)
 		const result: Match[] = []
 
-		for (const position of positions) {
-			const matches = this.completedStates.get(position)!
-
-			if (matches.length === 1) {
-				result.push(matches[0])
-			} else {
-				// Multiple matches at same position - sort by priority
-				matches.sort(MatchPriority.compareMatchPriority)
-
-				// Add all matches (TreeBuilder will filter overlaps)
-				result.push(...matches)
-			}
+		// Simply flatten the already-sorted structure
+		for (const entry of this.completedStates) {
+			result.push(...entry.matches)
 		}
 
 		return result
