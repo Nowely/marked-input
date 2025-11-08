@@ -163,6 +163,114 @@ function finalizeStackNode(
 }
 
 /**
+ * Filters matches using O(N) single-pass algorithm
+ * Handles duplicates, overlaps, and invalid content
+ */
+function filterMatches(matches: Match[]): {
+	filteredMatches: Match[]
+	lastProcessedStartPosition: number
+	lastAcceptedMatch: Match | null
+} {
+	let lastProcessedStartPosition = -1
+	let lastAcceptedMatch: Match | null = null
+	const filteredMatches: Match[] = []
+
+	for (const match of matches) {
+		// Skip empty matches with invalid nested content
+		if (hasInvalidNestedContent(match)) {
+			continue
+		}
+
+		// Skip duplicate matches at the same start position (keep only first)
+		// PatternMatcher already sorts by priority, so first is best
+		if (match.start === lastProcessedStartPosition) {
+			continue
+		}
+
+		// Check for overlaps with last accepted match
+		if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
+			// Check if this is valid nesting inside lastAcceptedMatch
+			if (isValidNesting(match, lastAcceptedMatch)) {
+				// Valid nesting - accept this match and update tracking
+				lastProcessedStartPosition = match.start
+				lastAcceptedMatch = match
+				filteredMatches.push(match)
+			} else {
+				// Invalid overlap - reject this match
+				lastProcessedStartPosition = match.start
+				continue
+			}
+		} else {
+			// No overlap - accept this match
+			lastProcessedStartPosition = match.start
+			lastAcceptedMatch = match
+			filteredMatches.push(match)
+		}
+	}
+
+	return { filteredMatches, lastProcessedStartPosition, lastAcceptedMatch }
+}
+
+/**
+ * Closes completed parents that don't contain the current match
+ */
+function closeCompletedParents(
+	stack: StackNode[],
+	match: Match,
+	input: string,
+	result: Token[],
+	currentTextPosition: number
+): number {
+	let position = currentTextPosition
+
+	while (stack.length > 0) {
+		const top = stack[stack.length - 1]
+		const bounds = getContentBounds(top.match)
+
+		if (bounds.end <= match.start) {
+			// Pop before finalizing (so stack.length reflects parent context)
+			const node = stack.pop()!
+			position = finalizeStackNode(node, input, stack, result, position)
+		} else {
+			break
+		}
+	}
+
+	return position
+}
+
+/**
+ * Adds a match to the stack for potential children processing
+ */
+function addMatchToStack(stack: StackNode[], match: Match): void {
+	const bounds = getContentBounds(match)
+	stack.push({
+		match,
+		children: [],
+		textPos: bounds.start,
+	})
+}
+
+/**
+ * Finalizes all remaining marks in the stack
+ */
+function finalizeRemainingStack(
+	stack: StackNode[],
+	input: string,
+	result: Token[],
+	currentTextPosition: number
+): number {
+	let position = currentTextPosition
+
+	while (stack.length > 0) {
+		const node = stack.pop()!
+		position = finalizeStackNode(node, input, stack, result, position)
+	}
+
+	return position
+}
+
+/**
  * Builds nested token tree with O(N) inline filtering
  *
  * Algorithm:
@@ -193,53 +301,12 @@ export function buildTree(matches: Match[], input: string): Token[] {
 	const stack: StackNode[] = []
 	let currentTextPosition = 0
 
-	// Filtering state for O(N) single-pass overlap detection
-	let lastProcessedStartPosition = -1 // Track last processed match start position (skip duplicates at same position)
-	let lastAcceptedMatch: Match | null = null // Track last accepted match for overlap checks
+	// Filter matches using O(N) single-pass algorithm
+	const { filteredMatches } = filterMatches(matches)
 
-	for (const match of matches) {
-		// Skip empty matches with invalid nested content
-		if (hasInvalidNestedContent(match)) {
-			continue
-		}
-
-		// Filter: Skip duplicate matches at the same start position (keep only first)
-		// PatternMatcher already sorts by priority, so first is best
-		if (match.start === lastProcessedStartPosition) {
-			continue
-		}
-
-		// Filter: Check for overlaps with last accepted match
-		if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
-			// Check if this is valid nesting inside lastAcceptedMatch
-			if (isValidNesting(match, lastAcceptedMatch)) {
-				// Valid nesting - accept this match and update tracking
-				lastProcessedStartPosition = match.start
-				lastAcceptedMatch = match // Update for deeper nesting checks
-			} else {
-				// Invalid overlap - reject this match
-				lastProcessedStartPosition = match.start
-				continue
-			}
-		} else {
-			// No overlap - accept this match
-			lastProcessedStartPosition = match.start
-			lastAcceptedMatch = match
-		}
-
+	for (const match of filteredMatches) {
 		// Close completed parents that don't contain this match
-		while (stack.length > 0) {
-			const top = stack[stack.length - 1]
-			const bounds = getContentBounds(top.match)
-
-			if (bounds.end <= match.start) {
-				// Pop before finalizing (so stack.length reflects parent context)
-				const node = stack.pop()!
-				currentTextPosition = finalizeStackNode(node, input, stack, result, currentTextPosition)
-			} else {
-				break
-			}
-		}
+		currentTextPosition = closeCompletedParents(stack, match, input, result, currentTextPosition)
 
 		// Skip matches that start before current root position
 		// This handles cases where patterns find matches inside already-processed content
@@ -248,19 +315,11 @@ export function buildTree(matches: Match[], input: string): Token[] {
 		}
 
 		// Add this match to the stack for potential children
-		const bounds = getContentBounds(match)
-		stack.push({
-			match,
-			children: [],
-			textPos: bounds.start,
-		})
+		addMatchToStack(stack, match)
 	}
 
 	// Finalize all remaining marks in stack
-	while (stack.length > 0) {
-		const node = stack.pop()!
-		currentTextPosition = finalizeStackNode(node, input, stack, result, currentTextPosition)
-	}
+	currentTextPosition = finalizeRemainingStack(stack, input, result, currentTextPosition)
 
 	// Add final text after all marks (always, even if empty)
 	result.push(createTextToken(input, currentTextPosition, input.length))
