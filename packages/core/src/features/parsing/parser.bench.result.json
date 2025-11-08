@@ -1,5 +1,200 @@
 [
   {
+    "timestamp": "2025-11-08T11:06:48.407Z",
+    "trends": {
+      "v1": {
+        "changeFromLast": "-0.2%",
+        "regressions": []
+      },
+      "v2": {
+        "changeFromLast": "+6.8%",
+        "regressions": ["markdown-like"]
+      }
+    },
+    "summary": {
+      "totalTests": 7,
+      "performance": {
+        "v1": 550937,
+        "v2": 378396,
+        "ratio": 1.46
+      }
+    },
+    "tests": {
+      "10 marks": {
+        "ratio": 1.21,
+        "v1": [58824, 174735, 205128],
+        "v2": [100422, 143929, 155836],
+        "changeFromLastV2": "+36.1%"
+      },
+      "50 marks": {
+        "ratio": 1.35,
+        "v1": [20270, 37114, 39344],
+        "v2": [26172, 27398, 27778],
+        "changeFromLastV2": "+43.4%"
+      },
+      "100 marks": {
+        "ratio": 1.43,
+        "v1": [16598, 20365, 21034],
+        "v2": [13423, 14212, 14833],
+        "changeFromLastV2": "+26.7%"
+      },
+      "500 marks": {
+        "ratio": 1.52,
+        "v1": [3860, 3956, 4029],
+        "v2": [1825, 2602, 2894],
+        "changeFromLastV2": "+28.7%"
+      },
+      "social media": {
+        "ratio": 1.35,
+        "v1": [118217, 860251, 959693],
+        "v2": [244858, 636982, 727273],
+        "changeFromLastV2": "+6.9%"
+      },
+      "markdown-like": {
+        "ratio": 1.76,
+        "v1": [109087, 1388687, 1600000],
+        "v2": [235294, 788686, 1000000],
+        "changeFromLastV2": "-6.4%"
+      },
+      "code comments": {
+        "ratio": 1.33,
+        "v1": [121832, 1371449, 1501502],
+        "v2": [282326, 1034962, 1142857],
+        "changeFromLastV2": "+14.7%"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-08T10:31:36.785Z",
+    "trends": {
+      "v1": {
+        "changeFromLast": "+5.5%",
+        "regressions": ["50 marks", "100 marks"]
+      },
+      "v2": {
+        "changeFromLast": "+22.2%",
+        "regressions": ["50 marks"]
+      }
+    },
+    "summary": {
+      "totalTests": 7,
+      "performance": {
+        "v1": 552110,
+        "v2": 354141,
+        "ratio": 1.56
+      }
+    },
+    "tests": {
+      "10 marks": {
+        "ratio": 1.5,
+        "v1": [35190, 158630, 188964],
+        "v2": [53570, 105747, 119403],
+        "changeFromLastV2": "+7.2%"
+      },
+      "50 marks": {
+        "ratio": 1.8,
+        "v1": [20236, 34365, 40066],
+        "v2": [17857, 19106, 21798],
+        "changeFromLastV2": "-13.4%"
+      },
+      "100 marks": {
+        "ratio": 1.55,
+        "v1": [12672, 17370, 19560],
+        "v2": [10274, 11215, 11611],
+        "changeFromLastV2": "+6.6%"
+      },
+      "500 marks": {
+        "ratio": 1.85,
+        "v1": [3547, 3730, 3802],
+        "v2": [1560, 2021, 2180],
+        "changeFromLastV2": "+14.6%"
+      },
+      "social media": {
+        "ratio": 1.47,
+        "v1": [107147, 873995, 960615],
+        "v2": [296296, 595926, 648508],
+        "changeFromLastV2": "+12.9%"
+      },
+      "markdown-like": {
+        "ratio": 1.64,
+        "v1": [131874, 1379673, 1600000],
+        "v2": [380952, 842419, 923361],
+        "changeFromLastV2": "+12.5%"
+      },
+      "code comments": {
+        "ratio": 1.55,
+        "v1": [134844, 1397006, 1600000],
+        "v2": [428633, 902552, 1043841],
+        "changeFromLastV2": "+46.0%"
+      }
+    }
+  },
+  {
+    "timestamp": "2025-11-08T10:20:38.349Z",
+    "trends": {
+      "v1": {
+        "changeFromLast": "-7.9%",
+        "regressions": ["10 marks", "100 marks", "500 marks", "code comments"]
+      },
+      "v2": {
+        "changeFromLast": "-17.1%",
+        "regressions": ["10 marks", "100 marks", "500 marks", "social media", "markdown-like", "code comments"]
+      }
+    },
+    "summary": {
+      "totalTests": 7,
+      "performance": {
+        "v1": 523227,
+        "v2": 289706,
+        "ratio": 1.81
+      }
+    },
+    "tests": {
+      "10 marks": {
+        "ratio": 1.62,
+        "v1": [62336, 160120, 190476],
+        "v2": [52745, 98629, 113740],
+        "changeFromLastV2": "-18.7%"
+      },
+      "50 marks": {
+        "ratio": 1.74,
+        "v1": [26490, 38335, 40066],
+        "v2": [20601, 22050, 22706],
+        "changeFromLastV2": "+0.4%"
+      },
+      "100 marks": {
+        "ratio": 1.85,
+        "v1": [15142, 19437, 20101],
+        "v2": [9057, 10521, 10855],
+        "changeFromLastV2": "-17.2%"
+      },
+      "500 marks": {
+        "ratio": 2.1,
+        "v1": [3566, 3706, 3797],
+        "v2": [1052, 1763, 2001],
+        "changeFromLastV2": "-23.1%"
+      },
+      "social media": {
+        "ratio": 1.69,
+        "v1": [82196, 890699, 1000000],
+        "v2": [260824, 527862, 585138],
+        "changeFromLastV2": "-5.8%"
+      },
+      "markdown-like": {
+        "ratio": 1.9,
+        "v1": [112145, 1426168, 1712329],
+        "v2": [333333, 748832, 827815],
+        "changeFromLastV2": "-6.0%"
+      },
+      "code comments": {
+        "ratio": 1.82,
+        "v1": [86333, 1124122, 1499250],
+        "v2": [258065, 618285, 705716],
+        "changeFromLastV2": "-33.5%"
+      }
+    }
+  },
+  {
     "timestamp": "2025-11-07T14:04:31.894Z",
     "trends": {
       "v1": {

@@ -21,16 +21,6 @@ import {Match} from './Match'
  */
 class MatchPriority {
 	/**
-	 * Compare states by completing priority (states completing have higher priority)
-	 * Used for sorting waiting states to process completing patterns first
-	 */
-	static compareCompleting(a: Match, b: Match): number {
-		const aCompleting = a.isCompleting() ? 1 : 0
-		const bCompleting = b.isCompleting() ? 1 : 0
-		return aCompleting - bCompleting
-	}
-
-	/**
 	 * Compare matches by overall priority for deterministic ordering
 	 * Priority rules:
 	 * 1. Longer first segment wins (** > *)
@@ -64,7 +54,8 @@ class MatchPriority {
 export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
-	private readonly waitingStates: Map<string, Match[]> = new Map()
+	private readonly pendingStates: Map<string, Match[]> = new Map()
+	private readonly completingStates: Map<string, Match[]> = new Map()
 	// Changed from Map to array of {position, matches} to maintain sorted order
 	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
 
@@ -77,7 +68,8 @@ export class PatternMatcher {
 	 * Main method that converts found segments into structured match states
 	 */
 	process(segments: SegmentMatch[], input: string): Match[] {
-		this.waitingStates.clear()
+		this.pendingStates.clear()
+		this.completingStates.clear()
 		this.completedStates.length = 0
 
 		for (const segment of segments) {
@@ -91,12 +83,22 @@ export class PatternMatcher {
 
 	/**
 	 * Adds a state to the waiting list for a specific segment
+	 * Inserts both pending and completing states at the beginning (LIFO order)
 	 */
 	private addToWaitingList(match: Match, segment: string): void {
-		if (!this.waitingStates.has(segment)) {
-			this.waitingStates.set(segment, [])
+		if (match.isCompleting()) {
+			if (!this.completingStates.has(segment)) {
+				this.completingStates.set(segment, [])
+			}
+			// Completing states go to the beginning (LIFO order - last added, first processed)
+			this.completingStates.get(segment)!.unshift(match)
+		} else {
+			if (!this.pendingStates.has(segment)) {
+				this.pendingStates.set(segment, [])
+			}
+			// Pending states go to the beginning (LIFO order - last added, first processed)
+			this.pendingStates.get(segment)!.unshift(match)
 		}
-		this.waitingStates.get(segment)!.push(match)
 	}
 
 	/**
@@ -117,31 +119,42 @@ export class PatternMatcher {
 	/**
 	 * Process states waiting for this segment
 	 * Try states by priority until one is valid, keeping rejected states for later attempts
+	 * Process completing states first (higher priority), then pending states
+	 * Process only one state per call to maintain original behavior
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
-		const waiting = this.waitingStates.get(segment.value)
-		if (!waiting || waiting.length === 0) return
-
-		// Sort states by completing priority (completing states should be processed first)
-		// Completing states have higher priority and come at the end after sorting
-		const sortedStates = waiting.toSorted(MatchPriority.compareCompleting)
-
-		// Try states by priority until one is valid (iterate from end to start for safe removal)
-		for (let i = sortedStates.length - 1; i >= 0; i--) {
-			const match = sortedStates[i]
-			waiting.splice(waiting.indexOf(match), 1)
+		// Try completing states first (higher priority) - process only one
+		const completingArray = this.completingStates.get(segment.value)
+		if (completingArray && completingArray.length > 0) {
+			const match = completingArray.shift()! // Remove from beginning (LIFO since we unshift)
 
 			const isSuccess = match.updateWithSegment(segment, input)
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
 				const previousSegment = match.rollback()
 				this.addToWaitingList(match, previousSegment)
-				continue
+			} else {
+				// State updated successfully - handle completion or continue waiting
+				this.handleUpdatedState(match, segment)
 			}
+			return // Process only one state per call, as before
+		}
 
-			// State updated successfully - handle completion or continue waiting
-			this.handleUpdatedState(match, segment)
-			break
+		// If no completing states, try pending states - process only one
+		const pendingArray = this.pendingStates.get(segment.value)
+		if (pendingArray && pendingArray.length > 0) {
+			const match = pendingArray.shift()! // Remove from beginning (LIFO since we unshift)
+
+			const isSuccess = match.updateWithSegment(segment, input)
+			if (!isSuccess) {
+				// Validation failed - rollback and re-add to waiting list
+				const previousSegment = match.rollback()
+				this.addToWaitingList(match, previousSegment)
+			} else {
+				// State updated successfully - handle completion or continue waiting
+				this.handleUpdatedState(match, segment)
+			}
+			// No return here - we already processed one state
 		}
 	}
 
