@@ -118,6 +118,44 @@ function parseSegmentsAndGaps(markup: string): {
 }
 
 /**
+ * Finds the next placeholder in markup starting from the given position
+ * @param markup - The markup string to search in
+ * @param startPosition - Position to start searching from
+ * @returns Information about the next placeholder, or null if none found
+ */
+function findNextPlaceholder(markup: string, startPosition: number): PlaceholderInfo | null {
+	const valuePos = markup.indexOf(PLACEHOLDER.Value, startPosition)
+	const metaPos = markup.indexOf(PLACEHOLDER.Meta, startPosition)
+	const nestedPos = markup.indexOf(PLACEHOLDER.Nested, startPosition)
+
+	// Check if any placeholders found
+	if (valuePos === -1 && metaPos === -1 && nestedPos === -1) {
+		return null
+	}
+
+	// Find the earliest placeholder
+	const positions = [
+		{type: GAP_TYPE.Value, pos: valuePos, length: PLACEHOLDER.Value.length},
+		{type: GAP_TYPE.Meta, pos: metaPos, length: PLACEHOLDER.Meta.length},
+		{type: GAP_TYPE.Nested, pos: nestedPos, length: PLACEHOLDER.Nested.length},
+	].filter(p => p.pos !== -1)
+
+	if (positions.length === 0) {
+		return null
+	}
+
+	// Sort by position to get the next placeholder
+	positions.sort((a, b) => a.pos - b.pos)
+	const next = positions[0]
+
+	return {
+		type: next.type,
+		pos: next.pos,
+		length: next.length,
+	}
+}
+
+/**
  * Extracts all placeholders from markup string in order
  */
 function extractPlaceholders(markup: string): PlaceholderInfo[] {
@@ -125,31 +163,11 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 	let currentParsePosition = 0
 
 	while (currentParsePosition < markup.length) {
-		const valuePos = markup.indexOf(PLACEHOLDER.Value, currentParsePosition)
-		const metaPos = markup.indexOf(PLACEHOLDER.Meta, currentParsePosition)
-		const nestedPos = markup.indexOf(PLACEHOLDER.Nested, currentParsePosition)
+		const placeholder = findNextPlaceholder(markup, currentParsePosition)
+		if (!placeholder) break
 
-		if (valuePos === -1 && metaPos === -1 && nestedPos === -1) break
-
-		// Find the earliest placeholder
-		const positions = [
-			{type: GAP_TYPE.Value, pos: valuePos, length: PLACEHOLDER.Value.length},
-			{type: GAP_TYPE.Meta, pos: metaPos, length: PLACEHOLDER.Meta.length},
-			{type: GAP_TYPE.Nested, pos: nestedPos, length: PLACEHOLDER.Nested.length},
-		].filter(p => p.pos !== -1)
-
-		if (positions.length === 0) break
-
-		// Sort by position to get the next placeholder
-		positions.sort((a, b) => a.pos - b.pos)
-		const next = positions[0]
-
-		placeholders.push({
-			type: next.type,
-			pos: next.pos,
-			length: next.length,
-		})
-		currentParsePosition = next.pos + next.length
+		placeholders.push(placeholder)
+		currentParsePosition = placeholder.pos + placeholder.length
 	}
 
 	return placeholders
