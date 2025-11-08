@@ -89,6 +89,26 @@ export class Match {
 	}
 
 	/**
+	 * Updates an extendable gap (nested or meta) by extending its end position
+	 */
+	private updateExtendableGap(gapType: GapType, gapStart: number, gapEnd: number): void {
+		const gapKey = gapType === GAP_TYPE.Nested ? 'nested' : 'meta'
+		const gap = this.gaps[gapKey] ??= {start: gapStart, end: gapEnd}
+		gap.end = gapEnd
+	}
+
+	/**
+	 * Resets an extendable gap (nested or meta) to start-only state for rollback
+	 */
+	private resetExtendableGapForRollback(gapType: GapType): void {
+		const gapKey = gapType === GAP_TYPE.Nested ? 'nested' : 'meta'
+		const gap = this.gaps[gapKey]
+		if (gap) {
+			gap.end = gap.start
+		}
+	}
+
+	/**
 	 * Updates gap position for a specific gap type
 	 */
 	private updateGapPosition(gapType: GapType, gapStart: number, gapEnd: number): void {
@@ -97,12 +117,8 @@ export class Match {
 				this.gaps.value = {start: gapStart, end: gapEnd}
 				break
 			case GAP_TYPE.Nested:
-				this.gaps.nested ??= {start: gapStart, end: gapEnd}
-				this.gaps.nested.end = gapEnd
-				break
 			case GAP_TYPE.Meta:
-				this.gaps.meta ??= {start: gapStart, end: gapEnd}
-				this.gaps.meta.end = gapEnd
+				this.updateExtendableGap(gapType, gapStart, gapEnd)
 				break
 		}
 	}
@@ -147,11 +163,7 @@ export class Match {
 		// Keep the START position so we can extend the gap to the next occurrence
 		const previousGapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
 		if (previousGapType === GAP_TYPE.Nested || previousGapType === GAP_TYPE.Meta) {
-			if (previousGapType === GAP_TYPE.Nested && this.gaps.nested) {
-				this.gaps.nested = {start: this.gaps.nested.start, end: this.gaps.nested.start}
-			} else if (previousGapType === GAP_TYPE.Meta && this.gaps.meta) {
-				this.gaps.meta = {start: this.gaps.meta.start, end: this.gaps.meta.start}
-			}
+			this.resetExtendableGapForRollback(previousGapType)
 		}
 
 		return previousSegment
