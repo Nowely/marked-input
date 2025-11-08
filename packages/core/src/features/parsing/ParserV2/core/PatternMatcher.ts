@@ -13,6 +13,7 @@ import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
 import {PositionRange} from '../types'
+import {GapType, GAP_TYPE} from '../constants'
 
 /**
  * Unified structure for storing positions of all gap types
@@ -90,16 +91,16 @@ export class MatchState {
 	/**
 	 * Updates gap position for a specific gap type
 	 */
-	private updateGapPosition(gapType: 'value' | 'nested' | 'meta', gapStart: number, gapEnd: number): void {
+	private updateGapPosition(gapType: GapType, gapStart: number, gapEnd: number): void {
 		switch (gapType) {
-			case 'value':
+			case GAP_TYPE.Value:
 				this.gaps.value = {start: gapStart, end: gapEnd}
 				break
-			case 'nested':
+			case GAP_TYPE.Nested:
 				this.gaps.nested ??= {start: gapStart, end: gapEnd}
 				this.gaps.nested.end = gapEnd
 				break
-			case 'meta':
+			case GAP_TYPE.Meta:
 				this.gaps.meta ??= {start: gapStart, end: gapEnd}
 				this.gaps.meta.end = gapEnd
 				break
@@ -116,7 +117,7 @@ export class MatchState {
 		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
 
 		// Handle value gap with special validation for hasTwoValues patterns
-		if (gapType === 'value' && this.descriptor.hasTwoValues) {
+		if (gapType === GAP_TYPE.Value && this.descriptor.hasTwoValues) {
 			if (!this.validateTwoValues(gapStart, gapEnd, input)) {
 				return false
 			}
@@ -145,10 +146,10 @@ export class MatchState {
 		// Clear the gap END position that was set for the segment before this one
 		// Keep the START position so we can extend the gap to the next occurrence
 		const previousGapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
-		if (previousGapType === 'nested' || previousGapType === 'meta') {
-			if (previousGapType === 'nested' && this.gaps.nested) {
+		if (previousGapType === GAP_TYPE.Nested || previousGapType === GAP_TYPE.Meta) {
+			if (previousGapType === GAP_TYPE.Nested && this.gaps.nested) {
 				this.gaps.nested = {start: this.gaps.nested.start, end: this.gaps.nested.start}
-			} else if (previousGapType === 'meta' && this.gaps.meta) {
+			} else if (previousGapType === GAP_TYPE.Meta && this.gaps.meta) {
 				this.gaps.meta = {start: this.gaps.meta.start, end: this.gaps.meta.start}
 			}
 		}

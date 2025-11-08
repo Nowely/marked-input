@@ -1,4 +1,4 @@
-import {PLACEHOLDER} from '../constants'
+import {PLACEHOLDER, GapType, GAP_TYPE} from '../constants'
 import {Markup} from '../types'
 
 /**
@@ -15,7 +15,7 @@ export interface MarkupDescriptor {
 	/** Array of static text segments (2-4 segments depending on pattern) */
 	segments: string[]
 	/** Type of content in each gap between segments */
-	gapTypes: Array<'value' | 'meta' | 'nested'>
+	gapTypes: GapType[]
 	/** True if this markup contains a __meta__ placeholder */
 	hasMeta: boolean
 	/** True if this markup contains a __nested__ placeholder */
@@ -99,7 +99,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
  * Placeholder information extracted from markup
  */
 interface PlaceholderInfo {
-	type: 'value' | 'meta' | 'nested'
+	type: GapType
 	pos: number
 	length: number
 }
@@ -109,7 +109,7 @@ interface PlaceholderInfo {
  */
 function parseSegmentsAndGaps(markup: string): {
 	segments: string[]
-	gapTypes: Array<'value' | 'meta' | 'nested'>
+	gapTypes: GapType[]
 } {
 	const placeholders = extractPlaceholders(markup)
 	const result = buildSegments(markup, placeholders)
@@ -133,9 +133,9 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 
 		// Find the earliest placeholder
 		const positions = [
-			{type: 'value' as const, pos: valuePos, length: PLACEHOLDER.Value.length},
-			{type: 'meta' as const, pos: metaPos, length: PLACEHOLDER.Meta.length},
-			{type: 'nested' as const, pos: nestedPos, length: PLACEHOLDER.Nested.length},
+			{type: GAP_TYPE.Value, pos: valuePos, length: PLACEHOLDER.Value.length},
+			{type: GAP_TYPE.Meta, pos: metaPos, length: PLACEHOLDER.Meta.length},
+			{type: GAP_TYPE.Nested, pos: nestedPos, length: PLACEHOLDER.Nested.length},
 		].filter(p => p.pos !== -1)
 
 		if (positions.length === 0) break
@@ -161,9 +161,9 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 function buildSegments(
 	markup: string,
 	placeholders: PlaceholderInfo[]
-): {segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'>} {
+): {segments: string[]; gapTypes: GapType[]} {
 	const segments: string[] = []
-	const gapTypes: Array<'value' | 'meta' | 'nested'> = []
+	const gapTypes: GapType[] = []
 	let currentPos = 0
 
 	// Extract segments between placeholders
@@ -192,7 +192,7 @@ function buildSegments(
 /**
  * Validates the result of parsing segments and gaps
  */
-function validateParseResult(result: {segments: string[]; gapTypes: Array<'value' | 'meta' | 'nested'>}): void {
+function validateParseResult(result: {segments: string[]; gapTypes: GapType[]}): void {
 	if (result.segments.length === 0) {
 		throw new Error('Parsed markup must contain at least one segment')
 	}
