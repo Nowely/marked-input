@@ -159,6 +159,8 @@ export class Match {
 		this.expectedSegmentIndex--
 
 		// Rollback end position to before the previous segment
+		// When validation fails, we need to "rewind" the end position back by the length
+		// of the previous segment, so the state can be retried with different input
 		const previousSegment = this.descriptor.segments[this.expectedSegmentIndex]
 		this.end = this.end - previousSegment.length
 
