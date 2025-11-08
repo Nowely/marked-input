@@ -2,7 +2,6 @@ import {GapType, GAP_TYPE} from '../constants'
 import {PositionRange} from '../types'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
-import {MarkupRegistry} from '../utils/MarkupRegistry'
 
 /**
  * Unified structure for storing positions of all gap types
@@ -30,8 +29,7 @@ export class Match {
 		public readonly descriptor: MarkupDescriptor,
 		public expectedSegmentIndex: number,
 		public readonly start: number,
-		public end: number,
-		private readonly registry: MarkupRegistry
+		public end: number
 	) {}
 
 	/**

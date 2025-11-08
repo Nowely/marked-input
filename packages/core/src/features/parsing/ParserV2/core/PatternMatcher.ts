@@ -133,7 +133,7 @@ export class PatternMatcher {
 
 		for (const descriptor of descriptors) {
 			// Create match for pattern (both single and multi-segment)
-			const match = new Match(descriptor, 1, segment.start, segment.end, this.registry)
+			const match = new Match(descriptor, 1, segment.start, segment.end)
 
 			// Single segment pattern - complete immediately through general mechanism
 			if (descriptor.segments.length === 1) {
