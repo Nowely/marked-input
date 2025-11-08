@@ -197,10 +197,10 @@ class MatchPriority {
 		}
 
 		// Longer match wins
-		const aLen = a.end - a.start
-		const bLen = b.end - b.start
-		if (aLen !== bLen) {
-			return bLen - aLen
+		const firstMatchLength = a.end - a.start
+		const secondMatchLength = b.end - b.start
+		if (firstMatchLength !== secondMatchLength) {
+			return secondMatchLength - firstMatchLength
 		}
 
 		// More segments wins

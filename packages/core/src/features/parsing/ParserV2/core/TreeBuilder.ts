@@ -126,15 +126,15 @@ interface StackNode {
  * @param input - Original input text
  * @param stack - Current stack (used to determine parent context)
  * @param result - Root result array
- * @param currentPos - Current position in root context
- * @returns Updated currentPos if at root level, otherwise undefined
+ * @param currentTextPosition - Current text position in root context
+ * @returns Updated currentTextPosition if at root level, otherwise undefined
  */
 function finalizeStackNode(
 	node: StackNode,
 	input: string,
 	stack: StackNode[],
 	result: Token[],
-	currentPos: number
+	currentTextPosition: number
 ): number {
 	const bounds = getContentBounds(node.match)
 
@@ -147,7 +147,7 @@ function finalizeStackNode(
 	// Determine target: parent's children or root tokens
 	const hasParent = stack.length > 0
 	const targetTokens = hasParent ? stack[stack.length - 1].children : result
-	const targetPos = hasParent ? stack[stack.length - 1].textPos : currentPos
+	const targetPos = hasParent ? stack[stack.length - 1].textPos : currentTextPosition
 
 	// Add text before token (always, even if empty)
 	targetTokens.push(createTextToken(input, targetPos, token.position.start))
@@ -156,7 +156,7 @@ function finalizeStackNode(
 	// Update position
 	if (hasParent) {
 		stack[stack.length - 1].textPos = token.position.end
-		return currentPos // No change to root position
+		return currentTextPosition // No change to root position
 	} else {
 		return token.position.end // Update root position
 	}
@@ -191,11 +191,11 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 
 	const result: Token[] = []
 	const stack: StackNode[] = []
-	let currentPos = 0
+	let currentTextPosition = 0
 
 	// Filtering state for O(N) single-pass overlap detection
-	let lastStart = -1 // Track last processed match start (skip duplicates at same position)
-	let lastMatch: MatchState | null = null // Track last accepted match for overlap checks
+	let lastProcessedStartPosition = -1 // Track last processed match start position (skip duplicates at same position)
+	let lastAcceptedMatch: MatchState | null = null // Track last accepted match for overlap checks
 
 	for (const match of matches) {
 		// Skip empty matches with invalid nested content
@@ -205,26 +205,26 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 
 		// Filter: Skip duplicate matches at the same start position (keep only first)
 		// PatternMatcher already sorts by priority, so first is best
-		if (match.start === lastStart) {
+		if (match.start === lastProcessedStartPosition) {
 			continue
 		}
 
 		// Filter: Check for overlaps with last accepted match
-		if (lastMatch && match.start < lastMatch.end) {
-			// Check if this is valid nesting inside lastMatch
-			if (isValidNesting(match, lastMatch)) {
+		if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
+			// Check if this is valid nesting inside lastAcceptedMatch
+			if (isValidNesting(match, lastAcceptedMatch)) {
 				// Valid nesting - accept this match and update tracking
-				lastStart = match.start
-				lastMatch = match // Update for deeper nesting checks
+				lastProcessedStartPosition = match.start
+				lastAcceptedMatch = match // Update for deeper nesting checks
 			} else {
 				// Invalid overlap - reject this match
-				lastStart = match.start
+				lastProcessedStartPosition = match.start
 				continue
 			}
 		} else {
 			// No overlap - accept this match
-			lastStart = match.start
-			lastMatch = match
+			lastProcessedStartPosition = match.start
+			lastAcceptedMatch = match
 		}
 
 		// Close completed parents that don't contain this match
@@ -235,7 +235,7 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 			if (bounds.end <= match.start) {
 				// Pop before finalizing (so stack.length reflects parent context)
 				const node = stack.pop()!
-				currentPos = finalizeStackNode(node, input, stack, result, currentPos)
+				currentTextPosition = finalizeStackNode(node, input, stack, result, currentTextPosition)
 			} else {
 				break
 			}
@@ -243,7 +243,7 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 
 		// Skip matches that start before current root position
 		// This handles cases where patterns find matches inside already-processed content
-		if (stack.length === 0 && match.start < currentPos) {
+		if (stack.length === 0 && match.start < currentTextPosition) {
 			continue
 		}
 
@@ -259,11 +259,11 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 	// Finalize all remaining marks in stack
 	while (stack.length > 0) {
 		const node = stack.pop()!
-		currentPos = finalizeStackNode(node, input, stack, result, currentPos)
+		currentTextPosition = finalizeStackNode(node, input, stack, result, currentTextPosition)
 	}
 
 	// Add final text after all marks (always, even if empty)
-	result.push(createTextToken(input, currentPos, input.length))
+	result.push(createTextToken(input, currentTextPosition, input.length))
 
 	return result
 }

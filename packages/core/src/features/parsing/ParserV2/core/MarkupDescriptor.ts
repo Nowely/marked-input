@@ -122,12 +122,12 @@ function parseSegmentsAndGaps(markup: string): {
  */
 function extractPlaceholders(markup: string): PlaceholderInfo[] {
 	const placeholders: PlaceholderInfo[] = []
-	let pos = 0
+	let currentParsePosition = 0
 
-	while (pos < markup.length) {
-		const valuePos = markup.indexOf(PLACEHOLDER.Value, pos)
-		const metaPos = markup.indexOf(PLACEHOLDER.Meta, pos)
-		const nestedPos = markup.indexOf(PLACEHOLDER.Nested, pos)
+	while (currentParsePosition < markup.length) {
+		const valuePos = markup.indexOf(PLACEHOLDER.Value, currentParsePosition)
+		const metaPos = markup.indexOf(PLACEHOLDER.Meta, currentParsePosition)
+		const nestedPos = markup.indexOf(PLACEHOLDER.Nested, currentParsePosition)
 
 		if (valuePos === -1 && metaPos === -1 && nestedPos === -1) break
 
@@ -149,7 +149,7 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 			pos: next.pos,
 			length: next.length,
 		})
-		pos = next.pos + next.length
+		currentParsePosition = next.pos + next.length
 	}
 
 	return placeholders
@@ -164,12 +164,12 @@ function buildSegments(
 ): {segments: string[]; gapTypes: GapType[]} {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
-	let currentPos = 0
+	let currentSegmentPosition = 0
 
 	// Extract segments between placeholders
 	for (const placeholder of placeholders) {
 		// Segment before this placeholder
-		const segment = markup.substring(currentPos, placeholder.pos)
+		const segment = markup.substring(currentSegmentPosition, placeholder.pos)
 		if (segment.length > 0) {
 			segments.push(segment)
 		}
@@ -177,11 +177,11 @@ function buildSegments(
 		// This placeholder represents a gap
 		gapTypes.push(placeholder.type)
 
-		currentPos = placeholder.pos + placeholder.length
+		currentSegmentPosition = placeholder.pos + placeholder.length
 	}
 
 	// Final segment after last placeholder
-	const finalSegment = markup.substring(currentPos)
+	const finalSegment = markup.substring(currentSegmentPosition)
 	if (finalSegment.length > 0) {
 		segments.push(finalSegment)
 	}
