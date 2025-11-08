@@ -1,12 +1,15 @@
 /**
- * Optimized Parser - Phase 1 & 2 Optimizations
+ * PatternMatcher - State Machine for Markup Pattern Recognition
  *
- * Key improvements:
- * 1. Direct SegmentMatch → Match → Token pipeline (no intermediate conversions)
- * 2. Inlined hot path functions (selectBestChain, priority calculations)
- * 3. Object pooling with actual reuse
- * 4. Minimal allocations in hot loops
- * 5. State machine approach instead of complex chain management
+ * Implements a high-performance state machine that processes segments to identify
+ * and match markup patterns. Manages Match objects representing parsing states
+ * for different markup descriptors, handling gap positions and completion logic.
+ *
+ * Key features:
+ * - State machine approach for pattern matching
+ * - Position-based indexing for efficient lookups
+ * - Priority-based conflict resolution for overlapping matches
+ * - Gap position management for nested content extraction
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
