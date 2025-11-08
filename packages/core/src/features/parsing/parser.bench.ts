@@ -207,9 +207,9 @@ function saveResults() {
 		// Add new run to the beginning
 		existingResults.unshift(currentRun)
 
-		// Keep only last 10 runs
-		if (existingResults.length > 10) {
-			existingResults = existingResults.slice(0, 10)
+		// Keep only last 50 runs
+		if (existingResults.length > 50) {
+			existingResults = existingResults.slice(0, 50)
 		}
 
 		// Save
