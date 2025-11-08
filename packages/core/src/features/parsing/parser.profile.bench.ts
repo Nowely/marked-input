@@ -27,7 +27,6 @@ interface TestProfile {
 	duration: number
 	inputLength: number
 	markCount: number
-	iterations: number
 	performance?: 'good' | 'warning' | 'bad'
 	mainMethod: MethodProfile
 }
@@ -393,8 +392,7 @@ function patchTreeBuilder(parser: Parser): () => void {
 function runCompleteProfiling(
 	parser: Parser,
 	input: string,
-	testName: string,
-	iterations: number = 10
+	testName: string
 ): TestProfile {
 	// Clear statistics
 	globalProfileStats.clear()
@@ -410,26 +408,11 @@ function runCompleteProfiling(
 	const originalSplit = parser.split
 	parser.split = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
 
-	// Execute iterations
-	let totalSplitTime = 0
-	let finalTokens: Token[] = []
-	let finalSegments = 0
-	let finalMatches = 0
-
-	for (let i = 0; i < iterations; i++) {
-		const splitStart = performance.now()
-		finalTokens = parser.split(input)
-		const splitEnd = performance.now()
-		totalSplitTime += (splitEnd - splitStart)
-
-		// Collect metrics on last iteration
-		if (i === iterations - 1) {
-			const segments = (parser as any).segmentMatcher.search(input)
-			const matches = (parser as any).patternMatcher.process(segments, input)
-			finalSegments = segments.length
-			finalMatches = matches.length
-		}
-	}
+	// Execute single iteration
+	const splitStart = performance.now()
+	const finalTokens = parser.split(input)
+	const splitEnd = performance.now()
+	const totalSplitTime = splitEnd - splitStart
 
 	// Restore original methods
 	restoreSegmentMatcher()
@@ -437,7 +420,7 @@ function runCompleteProfiling(
 	restoreTreeBuilder() // This will restore parser.split to treeBuilderPatchedSplit
 
 	// Calculate results
-	const avgSplitTime = totalSplitTime / iterations
+	const splitTime = totalSplitTime // No averaging needed since iterations = 1
 	const markCountActual = countMarks(finalTokens)
 
 	// Convert flat method list to hierarchical structure
@@ -446,16 +429,16 @@ function runCompleteProfiling(
 		.filter(([methodName]) => !methodName.startsWith('Parser.split'))
 		.map(([methodName, data]) => {
 			const times = data.times
-			const totalTime = times.reduce((a, b) => a + b, 0) / iterations
+			const totalTime = times.reduce((a, b) => a + b, 0)
 			const avgTime = totalTime
 			const minTime = Math.min(...times)
 			const maxTime = Math.max(...times)
-			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0), 0) / iterations
+			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0), 0)
 			const percentage = totalComponentTime > 0 ? (totalTime / totalComponentTime) * 100 : 0
 
-			// Calculate average parameter length if available (normalized per iteration)
+			// Calculate average parameter length if available
 			const avgParamLength = data.paramLengths.length > 0
-				? Math.round(data.paramLengths.reduce((a, b) => a + b, 0) / data.paramLengths.length / iterations)
+				? Math.round(data.paramLengths.reduce((a, b) => a + b, 0) / data.paramLengths.length)
 				: undefined
 
 			return {
@@ -463,7 +446,7 @@ function runCompleteProfiling(
 				className: methodName.split('.')[0],
 				complexity: getComplexityForMethod(methodName),
 				totalTime,
-				callCount: Math.round(data.count / iterations), // Normalized per iteration
+				callCount: data.count,
 				avgTime,
 				minTime,
 				maxTime,
@@ -474,13 +457,12 @@ function runCompleteProfiling(
 		.sort((a, b) => b.totalTime - a.totalTime)
 
 	// Build hierarchical method tree
-	const mainMethod = buildMethodTree(methodProfiles, avgSplitTime)
+	const mainMethod = buildMethodTree(methodProfiles, splitTime)
 
 	return {
-		duration: Math.round(avgSplitTime * 1000) / 1000, // round to 3 decimal places
+		duration: Math.round(splitTime * 1000) / 1000, // round to 3 decimal places
 		inputLength: input.length,
 		markCount: markCountActual,
-		iterations,
 		mainMethod
 	}
 }
@@ -1009,17 +991,17 @@ describe('ParserV2 Complete Profiling', () => {
 		Object.keys(currentRunResults).forEach(key => delete currentRunResults[key])
 
 		const testCases = [
-			{name: '10 marks', markCount: 10, iterations: 10},
-			{name: '100 marks', markCount: 100, iterations: 5},
-			{name: '500 marks', markCount: 500, iterations: 2},
+			{name: '10 marks', markCount: 10},
+			{name: '100 marks', markCount: 100},
+			{name: '500 marks', markCount: 500},
 		]
 
-		testCases.forEach(({name, markCount, iterations}) => {
+		testCases.forEach(({name, markCount}) => {
 			const testName = `split: ${name}`
 			const parser = new Parser(markups)
 			const input = generateTestText(markCount)
 
-			const result = runCompleteProfiling(parser, input, testName, iterations)
+			const result = runCompleteProfiling(parser, input, testName)
 			currentRunResults[testName] = result
 		})
 
