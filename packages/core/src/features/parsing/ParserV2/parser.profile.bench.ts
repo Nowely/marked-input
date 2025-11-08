@@ -4,7 +4,6 @@ import {Markup, Token} from './types'
 import {SegmentMatcher} from './utils/SegmentMatcher'
 import {PatternMatcher} from './core/PatternMatcher'
 import {Match} from './core/Match'
-import * as TreeBuilderModule from './core/TreeBuilder'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -167,7 +166,8 @@ function autoProfileObject(
 	excludeMethods: string[] = []
 ): () => void {
 	const discoveredMethods = discoverClassMethods(obj, className)
-	const patchedMethods: Array<{name: string, original: Function}> = []
+	const patchedMethods: Array<{obj: any, name: string, original: Function}> = []
+	const prototype = Object.getPrototypeOf(obj)
 
 	for (const {name, method, original} of discoveredMethods) {
 		// Skip excluded methods
@@ -176,17 +176,24 @@ function autoProfileObject(
 		const complexity = estimateComplexity(name)
 		const profiledMethod = createProfiledMethod(original as (...args: any[]) => any, name, className, complexity)
 
-		// Replace method with profiled version
-		obj[method.name || name.split('.').pop()!] = profiledMethod
-
-		patchedMethods.push({name, original})
+		const methodName = name.split('.').pop()!
+		
+		// Try patching on prototype first (for proper method inheritance)
+		if (prototype[methodName] === method) {
+			// Method is on prototype, patch it there
+			patchedMethods.push({obj: prototype, name: methodName, original: prototype[methodName]})
+			prototype[methodName] = profiledMethod
+		} else {
+			// Method is on instance, patch it there
+			patchedMethods.push({obj, name: methodName, original: obj[methodName]})
+			obj[methodName] = profiledMethod
+		}
 	}
 
 	// Restoration function
 	return () => {
-		for (const {name, original} of patchedMethods) {
-			const methodName = name.split('.').pop()!
-			obj[methodName] = original
+		for (const {obj, name, original} of patchedMethods) {
+			obj[name] = original
 		}
 	}
 }
@@ -243,32 +250,11 @@ function patchPatternMatcher(parser: Parser): () => void {
 }
 
 /**
- * Patch TreeBuilder with inline profiling of buildTree
+ * Patch TreeBuilder with automatic profiling
  */
 function patchTreeBuilder(parser: Parser): () => void {
-	// Save original split
-	const originalSplit = parser.split
-
-	// Redefine split with inline profiling of TreeBuilder.buildTree
-	parser.split = function(value: string) {
-		// @ts-ignore: Access to private properties for profiling
-		const segments = this.segmentMatcher.search(value)
-		// @ts-ignore: Access to private properties for profiling
-		const matches = this.patternMatcher.process(segments, value)
-
-		// Inline profiling of buildTree
-		const buildTreeStart = performance.now()
-		const result = TreeBuilderModule.buildTree(matches, value)
-		const buildTreeEnd = performance.now()
-		updateMethodStats('TreeBuilder.buildTree', buildTreeEnd - buildTreeStart, 'TreeBuilder', 'O(M)')
-
-		return result
-	}.bind(parser)
-
-	return () => {
-		// Restore original split
-		parser.split = originalSplit
-	}
+	const treeBuilder = (parser as any).treeBuilder
+	return autoProfileObject(treeBuilder, 'TreeBuilder')
 }
 
 /**
@@ -288,14 +274,11 @@ function runCompleteProfiling(
 	// Patch class-based components (auto-discovered methods)
 	const restoreSegmentMatcher = patchSegmentMatcher(parser)
 	const restorePatternMatcher = patchPatternMatcher(parser)
-
-	// TreeBuilder is patched separately (module functions)
 	const restoreTreeBuilder = patchTreeBuilder(parser)
 
-	// Parser.split is already profiled through patchTreeBuilder (including TreeBuilder.buildTree)
-	// Create additional profiled wrapper for Parser.split
-	const treeBuilderPatchedSplit = parser.split
-	parser.split = createProfiledMethod(treeBuilderPatchedSplit, 'Parser.split', 'Parser', 'O(T + S + M)')
+	// Create profiled wrapper for Parser.split
+	const originalSplit = parser.split
+	parser.split = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
 
 	// Execute iterations
 	let totalSplitTime = 0
@@ -505,12 +488,18 @@ function buildMethodTree(methods: Array<{
 	}
 
 	if (patternMatcherMethods.length > 0) {
-		const patternTime = patternMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
 		const mainPatternMethod = patternMatcherMethods.find(m => m.method === 'PatternMatcher.process')
+		const subMethodsTime = patternMatcherMethods
+			.filter(m => m.method !== 'PatternMatcher.process')
+			.reduce((sum, m) => sum + m.totalTime, 0)
+
+		// Use the main method's time if available, otherwise estimate from sub-methods
+		const mainMethodTime = mainPatternMethod ? mainPatternMethod.totalTime : subMethodsTime
+
 		const patternMatcherRoot: MethodProfile = {
 			name: 'PatternMatcher.process',
 			calls: mainPatternMethod?.callCount || 0,
-			percentage: Math.round((patternTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(S)',
 			times: mainPatternMethod ? [
 				Math.round(mainPatternMethod.minTime * 1000) / 1000,
@@ -526,7 +515,7 @@ function buildMethodTree(methods: Array<{
 			.map(method => ({
 				name: method.method,
 				calls: method.callCount,
-				percentage: Math.round((method.totalTime / patternTime) * 100 * 10) / 10, // percentage within parent, round to 1 decimal
+				percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
 				complexity: method.complexity,
 				times: [
 					Math.round(method.minTime * 1000) / 1000,
@@ -551,21 +540,54 @@ function buildMethodTree(methods: Array<{
 	}
 
 	if (treeBuilderMethods.length > 0) {
-		const treeTime = treeBuilderMethods.reduce((sum, m) => sum + m.totalTime, 0)
-		const treeMethod = treeBuilderMethods[0]
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
-		rootMethod.subMethods['TreeBuilder.buildTree'] = {
+		const mainTreeMethod = treeBuilderMethods.find(m => m.method === 'TreeBuilder.buildTree')
+		const subMethodsTime = treeBuilderMethods
+			.filter(m => m.method !== 'TreeBuilder.buildTree')
+			.reduce((sum, m) => sum + m.totalTime, 0)
+
+		// Use the main method's time if available, otherwise estimate from sub-methods
+		const mainMethodTime = mainTreeMethod ? mainTreeMethod.totalTime : subMethodsTime
+
+		const treeBuilderRoot: MethodProfile = {
 			name: 'TreeBuilder.buildTree',
-			calls: treeMethod?.callCount || 0,
-			percentage: Math.round((treeTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+			calls: mainTreeMethod?.callCount || 0,
+			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(M)',
-			times: treeMethod ? [
-				Math.round(treeMethod.minTime * 1000) / 1000,
-				Math.round(treeMethod.avgTime * 1000) / 1000,
-				Math.round(treeMethod.maxTime * 1000) / 1000
-			] : [0, 0, 0]
-			// TreeBuilder.buildTree doesn't have profiled sub-methods currently
+			times: mainTreeMethod ? [
+				Math.round(mainTreeMethod.minTime * 1000) / 1000,
+				Math.round(mainTreeMethod.avgTime * 1000) / 1000,
+				Math.round(mainTreeMethod.maxTime * 1000) / 1000
+			] : [0, 0, 0],
+			subMethods: {}
 		}
+
+		// Add sub-methods under TreeBuilder.buildTree
+		const subMethods = treeBuilderMethods
+			.filter(m => m.method !== 'TreeBuilder.buildTree')
+			.map(method => ({
+				name: method.method,
+				calls: method.callCount,
+				percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
+				complexity: method.complexity,
+				times: [
+					Math.round(method.minTime * 1000) / 1000,
+					Math.round(method.avgTime * 1000) / 1000,
+					Math.round(method.maxTime * 1000) / 1000
+				] as [number, number, number]
+			}))
+
+		// Only add subMethods if there are any
+		if (subMethods.length > 0) {
+			if (!treeBuilderRoot.subMethods) treeBuilderRoot.subMethods = {}
+			subMethods.forEach(subMethod => {
+				treeBuilderRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
+			})
+		} else {
+			delete treeBuilderRoot.subMethods
+		}
+
+		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods['TreeBuilder.buildTree'] = treeBuilderRoot
 	}
 
 	return rootMethod

@@ -1,9 +1,9 @@
 [
   {
-    "timestamp": "2025-11-08T13:37:47.568Z",
+    "timestamp": "2025-11-08T13:55:10.399Z",
     "tests": {
       "split: 10 marks": {
-        "duration": 0.204,
+        "duration": 0.269,
         "inputLength": 310,
         "markCount": 20,
         "mainMethod": {
@@ -11,75 +11,75 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            0.204,
-            0.204,
-            0.204
+            0.269,
+            0.269,
+            0.269
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 11,
-              "percentage": 7.5,
+              "percentage": 6.2,
               "complexity": "O(T)",
               "times": [
-                0.007,
-                0.015,
-                0.078
+                0.006,
+                0.017,
+                0.077
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 11,
-              "percentage": 148.1,
+              "percentage": 46.8,
               "complexity": "O(S)",
               "times": [
-                0.075,
-                0.137,
-                0.54
+                0.049,
+                0.126,
+                0.555
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 550,
-                  "percentage": 19.9,
+                  "percentage": 21.5,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.06,
-                    0.059
+                    0.058,
+                    0.065
                   ]
                 },
                 "tryStartNewStates": {
                   "name": "PatternMatcher.tryStartNewStates",
                   "calls": 550,
-                  "percentage": 15.6,
+                  "percentage": 15.9,
                   "complexity": "O(D)",
                   "times": [
                     0,
-                    0.047,
-                    0.063
+                    0.043,
+                    0.064
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 330,
-                  "percentage": 9.5,
+                  "percentage": 9.9,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.029,
-                    0.042
+                    0.027,
+                    0.048
                   ]
                 },
                 "addToWaitingList": {
                   "name": "PatternMatcher.addToWaitingList",
                   "calls": 330,
-                  "percentage": 4.6,
+                  "percentage": 7.1,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.014,
-                    0.046
+                    0.019,
+                    0.053
                   ]
                 },
                 "addToPositionIndex": {
@@ -89,14 +89,14 @@
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.012,
-                    0.025
+                    0.011,
+                    0.027
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 11,
-                  "percentage": 1,
+                  "percentage": 1.1,
                   "complexity": "O(M)",
                   "times": [
                     0.001,
@@ -109,19 +109,142 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 10,
-              "percentage": 26.9,
+              "percentage": 46.7,
               "complexity": "O(M)",
               "times": [
-                0.019,
-                0.055,
-                0.316
-              ]
+                0.057,
+                0.125,
+                0.425
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 200,
+                  "percentage": 31.2,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    0.084,
+                    0.083
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 200,
+                  "percentage": 26.9,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.072,
+                    0.082
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 200,
+                  "percentage": 15.6,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.001,
+                    0.042,
+                    0.074
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 10,
+                  "percentage": 5.2,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.004,
+                    0.014,
+                    0.051
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 200,
+                  "percentage": 4,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.011,
+                    0.015
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 410,
+                  "percentage": 3.7,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.01,
+                    0.012
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 590,
+                  "percentage": 2.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.008,
+                    0.006
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 600,
+                  "percentage": 2.6,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.007,
+                    0.006
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 10,
+                  "percentage": 1.6,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.002,
+                    0.004,
+                    0.012
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 200,
+                  "percentage": 1,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.003,
+                    0.007
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 200,
+                  "percentage": 0.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.002,
+                    0.007
+                  ]
+                }
+              }
             }
           }
         }
       },
       "split: 100 marks": {
-        "duration": 0.71,
+        "duration": 0.912,
         "inputLength": 3190,
         "markCount": 200,
         "mainMethod": {
@@ -129,97 +252,97 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            0.71,
-            0.71,
-            0.71
+            0.912,
+            0.912,
+            0.912
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 6,
-              "percentage": 10.6,
+              "percentage": 12.2,
               "complexity": "O(T)",
               "times": [
-                0.059,
-                0.075,
-                0.066
+                0.055,
+                0.111,
+                0.273
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 6,
-              "percentage": 175.7,
+              "percentage": 50.8,
               "complexity": "O(S)",
               "times": [
                 0.342,
-                0.547,
-                0.584
+                0.463,
+                0.409
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 3000,
-                  "percentage": 21.6,
+                  "percentage": 27.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.27,
-                    0.01
+                    0.252,
+                    0.011
                   ]
                 },
                 "tryStartNewStates": {
                   "name": "PatternMatcher.tryStartNewStates",
                   "calls": 3000,
-                  "percentage": 14.7,
+                  "percentage": 14.2,
                   "complexity": "O(D)",
                   "times": [
                     0,
-                    0.183,
-                    0.239
+                    0.13,
+                    0.011
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 1800,
-                  "percentage": 10.4,
+                  "percentage": 13.2,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.13,
-                    0.009
+                    0.121,
+                    0.011
                   ]
                 },
                 "addToPositionIndex": {
                   "name": "PatternMatcher.addToPositionIndex",
                   "calls": 1200,
-                  "percentage": 4.8,
+                  "percentage": 5.9,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.06,
-                    0.007
+                    0.054,
+                    0.011
                   ]
                 },
                 "addToWaitingList": {
                   "name": "PatternMatcher.addToWaitingList",
                   "calls": 1800,
-                  "percentage": 4,
+                  "percentage": 5.3,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.05,
+                    0.049,
                     0.001
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 6,
-                  "percentage": 0.7,
+                  "percentage": 0.9,
                   "complexity": "O(M)",
                   "times": [
                     0.006,
-                    0.009,
-                    0.009
+                    0.008,
+                    0.008
                   ]
                 }
               }
@@ -227,19 +350,142 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 5,
-              "percentage": 23.7,
+              "percentage": 45.9,
               "complexity": "O(M)",
               "times": [
-                0.144,
-                0.168,
-                0.185
-              ]
+                0.37,
+                0.419,
+                0.586
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 1000,
+                  "percentage": 31.3,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    0.285,
+                    0.017
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 1000,
+                  "percentage": 26,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.237,
+                    0.016
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 1000,
+                  "percentage": 14.1,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.001,
+                    0.128,
+                    0.016
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 1000,
+                  "percentage": 4.6,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.042,
+                    0.007
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 2005,
+                  "percentage": 4.4,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.04,
+                    0.001
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 2995,
+                  "percentage": 3.5,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.031,
+                    0.007
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 3000,
+                  "percentage": 2.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.026,
+                    0.001
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 5,
+                  "percentage": 2.7,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.024,
+                    0.025,
+                    0.025
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 1000,
+                  "percentage": 0.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.008,
+                    0
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 1000,
+                  "percentage": 0.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.007,
+                    0
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 5,
+                  "percentage": 0.1,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.001,
+                    0.001
+                  ]
+                }
+              }
             }
           }
         }
       },
       "split: 500 marks": {
-        "duration": 2.877,
+        "duration": 3.762,
         "inputLength": 17190,
         "markCount": 1000,
         "mainMethod": {
@@ -247,97 +493,97 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            2.877,
-            2.877,
-            2.877
+            3.762,
+            3.762,
+            3.762
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 3,
-              "percentage": 6.5,
+              "percentage": 10.9,
               "complexity": "O(T)",
               "times": [
-                0.106,
-                0.186,
-                0.139
+                0.126,
+                0.411,
+                0.517
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 3,
-              "percentage": 145.9,
+              "percentage": 67.4,
               "complexity": "O(S)",
               "times": [
-                1.133,
-                1.94,
-                1.556
+                1.374,
+                2.535,
+                2.301
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 7500,
-                  "percentage": 23.1,
+                  "percentage": 32.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.971,
-                    0.024
-                  ]
-                },
-                "tryStartNewStates": {
-                  "name": "PatternMatcher.tryStartNewStates",
-                  "calls": 7500,
-                  "percentage": 11.2,
-                  "complexity": "O(D)",
-                  "times": [
-                    0,
-                    0.469,
-                    0.008
+                    1.226,
+                    0.078
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 4500,
-                  "percentage": 10.1,
+                  "percentage": 14.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.424,
-                    0.021
+                    0.551,
+                    0.077
                   ]
                 },
-                "addToWaitingList": {
-                  "name": "PatternMatcher.addToWaitingList",
-                  "calls": 4500,
-                  "percentage": 4.2,
-                  "complexity": "O(log M + P)",
+                "tryStartNewStates": {
+                  "name": "PatternMatcher.tryStartNewStates",
+                  "calls": 7500,
+                  "percentage": 13.1,
+                  "complexity": "O(D)",
                   "times": [
                     0,
-                    0.177,
-                    0.008
+                    0.493,
+                    0.011
                   ]
                 },
                 "addToPositionIndex": {
                   "name": "PatternMatcher.addToPositionIndex",
                   "calls": 3000,
-                  "percentage": 3.8,
+                  "percentage": 6,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.159,
-                    0.021
+                    0.227,
+                    0.077
+                  ]
+                },
+                "addToWaitingList": {
+                  "name": "PatternMatcher.addToWaitingList",
+                  "calls": 4500,
+                  "percentage": 5.5,
+                  "complexity": "O(log M + P)",
+                  "times": [
+                    0,
+                    0.209,
+                    0.011
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 3,
-                  "percentage": 1.4,
+                  "percentage": 1.9,
                   "complexity": "O(M)",
                   "times": [
                     0.035,
-                    0.058,
-                    0.04
+                    0.073,
+                    0.057
                   ]
                 }
               }
@@ -345,13 +591,136 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 2,
-              "percentage": 47.4,
+              "percentage": 42.5,
               "complexity": "O(M)",
               "times": [
-                1.348,
-                1.364,
-                1.38
-              ]
+                1.528,
+                1.598,
+                1.668
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 2000,
+                  "percentage": 30.9,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    1.161,
+                    0.036
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 2000,
+                  "percentage": 24.6,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.924,
+                    0.036
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 2000,
+                  "percentage": 11.3,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.424,
+                    0.036
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 2000,
+                  "percentage": 4.7,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.176,
+                    0.006
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 4002,
+                  "percentage": 3.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.147,
+                    0.006
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 2,
+                  "percentage": 3.4,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.126,
+                    0.13,
+                    0.133
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 6000,
+                  "percentage": 3.2,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.119,
+                    0.035
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 5998,
+                  "percentage": 2.9,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.108,
+                    0.005
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 2000,
+                  "percentage": 1,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.037,
+                    0.002
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 2000,
+                  "percentage": 1,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.036,
+                    0.001
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 2,
+                  "percentage": 0,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.001,
+                    0.002
+                  ]
+                }
+              }
             }
           }
         }
@@ -359,10 +728,10 @@
     }
   },
   {
-    "timestamp": "2025-11-08T13:37:47.565Z",
+    "timestamp": "2025-11-08T13:55:10.396Z",
     "tests": {
       "split: 10 marks": {
-        "duration": 0.204,
+        "duration": 0.269,
         "inputLength": 310,
         "markCount": 20,
         "mainMethod": {
@@ -370,75 +739,75 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            0.204,
-            0.204,
-            0.204
+            0.269,
+            0.269,
+            0.269
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 11,
-              "percentage": 7.5,
+              "percentage": 6.2,
               "complexity": "O(T)",
               "times": [
-                0.007,
-                0.015,
-                0.078
+                0.006,
+                0.017,
+                0.077
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 11,
-              "percentage": 148.1,
+              "percentage": 46.8,
               "complexity": "O(S)",
               "times": [
-                0.075,
-                0.137,
-                0.54
+                0.049,
+                0.126,
+                0.555
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 550,
-                  "percentage": 19.9,
+                  "percentage": 21.5,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.06,
-                    0.059
+                    0.058,
+                    0.065
                   ]
                 },
                 "tryStartNewStates": {
                   "name": "PatternMatcher.tryStartNewStates",
                   "calls": 550,
-                  "percentage": 15.6,
+                  "percentage": 15.9,
                   "complexity": "O(D)",
                   "times": [
                     0,
-                    0.047,
-                    0.063
+                    0.043,
+                    0.064
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 330,
-                  "percentage": 9.5,
+                  "percentage": 9.9,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.029,
-                    0.042
+                    0.027,
+                    0.048
                   ]
                 },
                 "addToWaitingList": {
                   "name": "PatternMatcher.addToWaitingList",
                   "calls": 330,
-                  "percentage": 4.6,
+                  "percentage": 7.1,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.014,
-                    0.046
+                    0.019,
+                    0.053
                   ]
                 },
                 "addToPositionIndex": {
@@ -448,14 +817,14 @@
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.012,
-                    0.025
+                    0.011,
+                    0.027
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 11,
-                  "percentage": 1,
+                  "percentage": 1.1,
                   "complexity": "O(M)",
                   "times": [
                     0.001,
@@ -468,19 +837,142 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 10,
-              "percentage": 26.9,
+              "percentage": 46.7,
               "complexity": "O(M)",
               "times": [
-                0.019,
-                0.055,
-                0.316
-              ]
+                0.057,
+                0.125,
+                0.425
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 200,
+                  "percentage": 31.2,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    0.084,
+                    0.083
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 200,
+                  "percentage": 26.9,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.072,
+                    0.082
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 200,
+                  "percentage": 15.6,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.001,
+                    0.042,
+                    0.074
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 10,
+                  "percentage": 5.2,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.004,
+                    0.014,
+                    0.051
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 200,
+                  "percentage": 4,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.011,
+                    0.015
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 410,
+                  "percentage": 3.7,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.01,
+                    0.012
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 590,
+                  "percentage": 2.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.008,
+                    0.006
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 600,
+                  "percentage": 2.6,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.007,
+                    0.006
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 10,
+                  "percentage": 1.6,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.002,
+                    0.004,
+                    0.012
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 200,
+                  "percentage": 1,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.003,
+                    0.007
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 200,
+                  "percentage": 0.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.002,
+                    0.007
+                  ]
+                }
+              }
             }
           }
         }
       },
       "split: 100 marks": {
-        "duration": 0.71,
+        "duration": 0.912,
         "inputLength": 3190,
         "markCount": 200,
         "mainMethod": {
@@ -488,97 +980,97 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            0.71,
-            0.71,
-            0.71
+            0.912,
+            0.912,
+            0.912
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 6,
-              "percentage": 10.6,
+              "percentage": 12.2,
               "complexity": "O(T)",
               "times": [
-                0.059,
-                0.075,
-                0.066
+                0.055,
+                0.111,
+                0.273
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 6,
-              "percentage": 175.7,
+              "percentage": 50.8,
               "complexity": "O(S)",
               "times": [
                 0.342,
-                0.547,
-                0.584
+                0.463,
+                0.409
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 3000,
-                  "percentage": 21.6,
+                  "percentage": 27.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.27,
-                    0.01
+                    0.252,
+                    0.011
                   ]
                 },
                 "tryStartNewStates": {
                   "name": "PatternMatcher.tryStartNewStates",
                   "calls": 3000,
-                  "percentage": 14.7,
+                  "percentage": 14.2,
                   "complexity": "O(D)",
                   "times": [
                     0,
-                    0.183,
-                    0.239
+                    0.13,
+                    0.011
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 1800,
-                  "percentage": 10.4,
+                  "percentage": 13.2,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.13,
-                    0.009
+                    0.121,
+                    0.011
                   ]
                 },
                 "addToPositionIndex": {
                   "name": "PatternMatcher.addToPositionIndex",
                   "calls": 1200,
-                  "percentage": 4.8,
+                  "percentage": 5.9,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.06,
-                    0.007
+                    0.054,
+                    0.011
                   ]
                 },
                 "addToWaitingList": {
                   "name": "PatternMatcher.addToWaitingList",
                   "calls": 1800,
-                  "percentage": 4,
+                  "percentage": 5.3,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.05,
+                    0.049,
                     0.001
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 6,
-                  "percentage": 0.7,
+                  "percentage": 0.9,
                   "complexity": "O(M)",
                   "times": [
                     0.006,
-                    0.009,
-                    0.009
+                    0.008,
+                    0.008
                   ]
                 }
               }
@@ -586,19 +1078,142 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 5,
-              "percentage": 23.7,
+              "percentage": 45.9,
               "complexity": "O(M)",
               "times": [
-                0.144,
-                0.168,
-                0.185
-              ]
+                0.37,
+                0.419,
+                0.586
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 1000,
+                  "percentage": 31.3,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    0.285,
+                    0.017
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 1000,
+                  "percentage": 26,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.237,
+                    0.016
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 1000,
+                  "percentage": 14.1,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.001,
+                    0.128,
+                    0.016
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 1000,
+                  "percentage": 4.6,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.042,
+                    0.007
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 2005,
+                  "percentage": 4.4,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.04,
+                    0.001
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 2995,
+                  "percentage": 3.5,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.031,
+                    0.007
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 3000,
+                  "percentage": 2.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.026,
+                    0.001
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 5,
+                  "percentage": 2.7,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.024,
+                    0.025,
+                    0.025
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 1000,
+                  "percentage": 0.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.008,
+                    0
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 1000,
+                  "percentage": 0.8,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.007,
+                    0
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 5,
+                  "percentage": 0.1,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.001,
+                    0.001
+                  ]
+                }
+              }
             }
           }
         }
       },
       "split: 500 marks": {
-        "duration": 2.877,
+        "duration": 3.762,
         "inputLength": 17190,
         "markCount": 1000,
         "mainMethod": {
@@ -606,97 +1221,97 @@
           "calls": 1,
           "complexity": "O(T + S + M)",
           "times": [
-            2.877,
-            2.877,
-            2.877
+            3.762,
+            3.762,
+            3.762
           ],
           "subMethods": {
             "SegmentMatcher.search": {
               "name": "SegmentMatcher.search",
               "calls": 3,
-              "percentage": 6.5,
+              "percentage": 10.9,
               "complexity": "O(T)",
               "times": [
-                0.106,
-                0.186,
-                0.139
+                0.126,
+                0.411,
+                0.517
               ]
             },
             "PatternMatcher.process": {
               "name": "PatternMatcher.process",
               "calls": 3,
-              "percentage": 145.9,
+              "percentage": 67.4,
               "complexity": "O(S)",
               "times": [
-                1.133,
-                1.94,
-                1.556
+                1.374,
+                2.535,
+                2.301
               ],
               "subMethods": {
                 "processWaitingStates": {
                   "name": "PatternMatcher.processWaitingStates",
                   "calls": 7500,
-                  "percentage": 23.1,
+                  "percentage": 32.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.971,
-                    0.024
-                  ]
-                },
-                "tryStartNewStates": {
-                  "name": "PatternMatcher.tryStartNewStates",
-                  "calls": 7500,
-                  "percentage": 11.2,
-                  "complexity": "O(D)",
-                  "times": [
-                    0,
-                    0.469,
-                    0.008
+                    1.226,
+                    0.078
                   ]
                 },
                 "handleUpdatedState": {
                   "name": "PatternMatcher.handleUpdatedState",
                   "calls": 4500,
-                  "percentage": 10.1,
+                  "percentage": 14.6,
                   "complexity": "O(1)",
                   "times": [
                     0,
-                    0.424,
-                    0.021
+                    0.551,
+                    0.077
                   ]
                 },
-                "addToWaitingList": {
-                  "name": "PatternMatcher.addToWaitingList",
-                  "calls": 4500,
-                  "percentage": 4.2,
-                  "complexity": "O(log M + P)",
+                "tryStartNewStates": {
+                  "name": "PatternMatcher.tryStartNewStates",
+                  "calls": 7500,
+                  "percentage": 13.1,
+                  "complexity": "O(D)",
                   "times": [
                     0,
-                    0.177,
-                    0.008
+                    0.493,
+                    0.011
                   ]
                 },
                 "addToPositionIndex": {
                   "name": "PatternMatcher.addToPositionIndex",
                   "calls": 3000,
-                  "percentage": 3.8,
+                  "percentage": 6,
                   "complexity": "O(log M + P)",
                   "times": [
                     0,
-                    0.159,
-                    0.021
+                    0.227,
+                    0.077
+                  ]
+                },
+                "addToWaitingList": {
+                  "name": "PatternMatcher.addToWaitingList",
+                  "calls": 4500,
+                  "percentage": 5.5,
+                  "complexity": "O(log M + P)",
+                  "times": [
+                    0,
+                    0.209,
+                    0.011
                   ]
                 },
                 "flattenMatchesByPosition": {
                   "name": "PatternMatcher.flattenMatchesByPosition",
                   "calls": 3,
-                  "percentage": 1.4,
+                  "percentage": 1.9,
                   "complexity": "O(M)",
                   "times": [
                     0.035,
-                    0.058,
-                    0.04
+                    0.073,
+                    0.057
                   ]
                 }
               }
@@ -704,13 +1319,136 @@
             "TreeBuilder.buildTree": {
               "name": "TreeBuilder.buildTree",
               "calls": 2,
-              "percentage": 47.4,
+              "percentage": 42.5,
               "complexity": "O(M)",
               "times": [
-                1.348,
-                1.364,
-                1.38
-              ]
+                1.528,
+                1.598,
+                1.668
+              ],
+              "subMethods": {
+                "closeCompletedParents": {
+                  "name": "TreeBuilder.closeCompletedParents",
+                  "calls": 2000,
+                  "percentage": 30.9,
+                  "complexity": "O(S)",
+                  "times": [
+                    0,
+                    1.161,
+                    0.036
+                  ]
+                },
+                "finalizeStackNode": {
+                  "name": "TreeBuilder.finalizeStackNode",
+                  "calls": 2000,
+                  "percentage": 24.6,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.924,
+                    0.036
+                  ]
+                },
+                "createMarkToken": {
+                  "name": "TreeBuilder.createMarkToken",
+                  "calls": 2000,
+                  "percentage": 11.3,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.424,
+                    0.036
+                  ]
+                },
+                "addMatchToStack": {
+                  "name": "TreeBuilder.addMatchToStack",
+                  "calls": 2000,
+                  "percentage": 4.7,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.176,
+                    0.006
+                  ]
+                },
+                "createTextToken": {
+                  "name": "TreeBuilder.createTextToken",
+                  "calls": 4002,
+                  "percentage": 3.9,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.147,
+                    0.006
+                  ]
+                },
+                "filterMatches": {
+                  "name": "TreeBuilder.filterMatches",
+                  "calls": 2,
+                  "percentage": 3.4,
+                  "complexity": "O(M)",
+                  "times": [
+                    0.126,
+                    0.13,
+                    0.133
+                  ]
+                },
+                "extractSubstring": {
+                  "name": "TreeBuilder.extractSubstring",
+                  "calls": 6000,
+                  "percentage": 3.2,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.119,
+                    0.035
+                  ]
+                },
+                "getContentBounds": {
+                  "name": "TreeBuilder.getContentBounds",
+                  "calls": 5998,
+                  "percentage": 2.9,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.108,
+                    0.005
+                  ]
+                },
+                "hasInvalidNestedContent": {
+                  "name": "TreeBuilder.hasInvalidNestedContent",
+                  "calls": 2000,
+                  "percentage": 1,
+                  "complexity": "O(1)",
+                  "times": [
+                    0,
+                    0.037,
+                    0.002
+                  ]
+                },
+                "createNestedInfo": {
+                  "name": "TreeBuilder.createNestedInfo",
+                  "calls": 2000,
+                  "percentage": 1,
+                  "complexity": "O(M)",
+                  "times": [
+                    0,
+                    0.036,
+                    0.001
+                  ]
+                },
+                "finalizeRemainingStack": {
+                  "name": "TreeBuilder.finalizeRemainingStack",
+                  "calls": 2,
+                  "percentage": 0,
+                  "complexity": "O(S)",
+                  "times": [
+                    0.001,
+                    0.001,
+                    0.002
+                  ]
+                }
+              }
             }
           }
         }
