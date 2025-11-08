@@ -64,9 +64,6 @@ export class Parser {
 		const matches = this.segmentMatcher.search(text)
 		if (matches.length === 0) return text
 
-		// Sort matches by position
-		matches.sort((a, b) => a.start - b.start)
-
 		return (
 			matches.reduce((result, match, i) => {
 				const prevEnd = i === 0 ? 0 : matches[i - 1].end
