@@ -1,0 +1,831 @@
+import {bench, describe, afterAll, test} from 'vitest'
+import {Parser} from './Parser'
+import {Markup, Token} from './types'
+import {SegmentMatcher} from './utils/SegmentMatcher'
+import {PatternMatcher} from './core/PatternMatcher'
+import {Match} from './core/Match'
+import * as TreeBuilderModule from './core/TreeBuilder'
+import * as fs from 'fs'
+import * as path from 'path'
+
+/**
+ * Method profiling data with hierarchical structure
+ */
+interface MethodProfile {
+	name: string
+	calls: number
+	percentage?: number // percentage of total execution time (optional for main method)
+	complexity: string
+	times: [number, number, number] // [minTime, avgTime, maxTime]
+	subMethods?: Record<string, MethodProfile>
+}
+
+/**
+ * Test profiling result
+ */
+interface TestProfile {
+	duration: number
+	inputLength: number
+	markCount: number
+	mainMethod: MethodProfile
+}
+
+/**
+ * Single profiling run results
+ */
+interface ProfilingRun {
+	timestamp: string
+	tests: Record<string, TestProfile>
+}
+
+/**
+ * Comparison data between two profiling runs
+ */
+interface ProfilingComparison {
+	run1Timestamp: string
+	run2Timestamp: string
+	differences: Array<{
+		testName: string
+		durationChange: number
+		durationChangePercent: number
+		inputLength: number
+		markCount: number
+		methodChanges: Record<string, {
+			timeChange: number
+			timeChangePercent: number
+			callsChange: number
+			percentageChange: number
+		}>
+	}>
+	overallTrend: 'improving' | 'degrading' | 'stable'
+	summary: string[]
+}
+
+/**
+ * Global profiling statistics
+ */
+const globalProfileStats = new Map<string, {times: number[]; count: number}>()
+const methodCallStack: string[] = []
+let filteredMatchesCount = 0
+
+/**
+ * Update method statistics
+ */
+function updateMethodStats(
+	methodName: string,
+	duration: number,
+	className?: string,
+	complexity?: string
+): void {
+	const existing = globalProfileStats.get(methodName) || {times: [], count: 0}
+	existing.times.push(duration)
+	existing.count++
+	globalProfileStats.set(methodName, existing)
+}
+
+/**
+ * Create profiled version of a method
+ */
+function createProfiledMethod<T extends (...args: any[]) => any>(
+	method: T,
+	methodName: string,
+	className?: string,
+	complexity?: string
+): T {
+	return ((...args: any[]) => {
+		methodCallStack.push(methodName)
+		const start = performance.now()
+		const result = method(...args)
+		const end = performance.now()
+		updateMethodStats(methodName, end - start, className, complexity)
+		methodCallStack.pop()
+		return result
+	}) as T
+}
+
+/**
+ * AUTOMATIC METHOD PROFILING SYSTEM
+ *
+ * Automatically discovers and profiles all methods in ParserV2 classes and modules
+ * without requiring manual benchmark code updates.
+ *
+ * Benefits:
+ * - New methods are automatically included in profiling
+ * - No need to rewrite benchmarks when adding methods
+ * - Complexity is estimated automatically based on naming patterns
+ *
+ * How it works:
+ * 1. discoverClassMethods() scans prototype and own properties of objects
+ * 2. autoProfileObject() creates profiled versions of all discovered methods
+ * 3. estimateComplexity() determines complexity based on method naming patterns
+ *
+ * Automatic class method discovery
+ */
+function discoverClassMethods(obj: any, className: string): Array<{name: string, method: Function, original: Function}> {
+	const methods: Array<{name: string, method: Function, original: Function}> = []
+	const prototype = Object.getPrototypeOf(obj)
+
+	// Get all methods from prototype
+	const protoMethods = Object.getOwnPropertyNames(prototype)
+		.filter(name => {
+			const descriptor = Object.getOwnPropertyDescriptor(prototype, name)
+			return descriptor && typeof descriptor.value === 'function' && name !== 'constructor'
+		})
+
+	// Get all methods from object itself (if any)
+	const ownMethods = Object.getOwnPropertyNames(obj)
+		.filter(name => {
+			const descriptor = Object.getOwnPropertyDescriptor(obj, name)
+			return descriptor && typeof descriptor.value === 'function'
+		})
+
+	// Combine and remove duplicates
+	const allMethodNames = [...new Set([...protoMethods, ...ownMethods])]
+
+	for (const methodName of allMethodNames) {
+		const fullMethodName = `${className}.${methodName}`
+		const method = obj[methodName]
+
+		if (typeof method === 'function') {
+			methods.push({
+				name: fullMethodName,
+				method: method,
+				original: method.bind(obj)
+			})
+		}
+	}
+
+	return methods
+}
+
+/**
+ * Automatic profiling of all object methods
+ */
+function autoProfileObject(
+	obj: any,
+	className: string,
+	excludeMethods: string[] = []
+): () => void {
+	const discoveredMethods = discoverClassMethods(obj, className)
+	const patchedMethods: Array<{name: string, original: Function}> = []
+
+	for (const {name, method, original} of discoveredMethods) {
+		// Skip excluded methods
+		if (excludeMethods.includes(name)) continue
+
+		const complexity = estimateComplexity(name)
+		const profiledMethod = createProfiledMethod(original as (...args: any[]) => any, name, className, complexity)
+
+		// Replace method with profiled version
+		obj[method.name || name.split('.').pop()!] = profiledMethod
+
+		patchedMethods.push({name, original})
+	}
+
+	// Restoration function
+	return () => {
+		for (const {name, original} of patchedMethods) {
+			const methodName = name.split('.').pop()!
+			obj[methodName] = original
+		}
+	}
+}
+
+/**
+ * Generate test text
+ */
+function generateTestText(markCount: number): string {
+	let result = 'Start text '
+	for (let i = 0; i < markCount; i++) {
+		result += `@[user${i}](User ${i}) and #[tag${i}] `
+	}
+	result += 'end text.'
+	return result
+}
+
+/**
+ * Count marks in tokens
+ */
+function countMarks(tokens: Token[]): number {
+	let count = 0
+	for (const token of tokens) {
+		if (token.type === 'mark') {
+			count++
+			count += countMarks(token.children)
+		}
+	}
+	return count
+}
+
+/**
+ * Format time
+ */
+function formatTime(ms: number): string {
+	if (ms < 0.001) return `${(ms * 1000).toFixed(3)}μs`
+	if (ms < 1) return `${ms.toFixed(3)}ms`
+	return `${ms.toFixed(2)}ms`
+}
+
+/**
+ * Patch SegmentMatcher with automatic profiling
+ */
+function patchSegmentMatcher(parser: Parser): () => void {
+	const segmentMatcher = (parser as any).segmentMatcher
+	return autoProfileObject(segmentMatcher, 'SegmentMatcher')
+}
+
+/**
+ * Patch PatternMatcher with automatic profiling
+ */
+function patchPatternMatcher(parser: Parser): () => void {
+	const patternMatcher = (parser as any).patternMatcher
+	return autoProfileObject(patternMatcher, 'PatternMatcher')
+}
+
+/**
+ * Patch TreeBuilder with inline profiling of buildTree
+ */
+function patchTreeBuilder(parser: Parser): () => void {
+	// Save original split
+	const originalSplit = parser.split
+
+	// Redefine split with inline profiling of TreeBuilder.buildTree
+	parser.split = function(value: string) {
+		// @ts-ignore: Access to private properties for profiling
+		const segments = this.segmentMatcher.search(value)
+		// @ts-ignore: Access to private properties for profiling
+		const matches = this.patternMatcher.process(segments, value)
+
+		// Inline profiling of buildTree
+		const buildTreeStart = performance.now()
+		const result = TreeBuilderModule.buildTree(matches, value)
+		const buildTreeEnd = performance.now()
+		updateMethodStats('TreeBuilder.buildTree', buildTreeEnd - buildTreeStart, 'TreeBuilder', 'O(M)')
+
+		return result
+	}.bind(parser)
+
+	return () => {
+		// Restore original split
+		parser.split = originalSplit
+	}
+}
+
+/**
+ * Execute profiling with complete metrics set
+ */
+function runCompleteProfiling(
+	parser: Parser,
+	input: string,
+	testName: string,
+	iterations: number = 10
+): TestProfile {
+	// Clear statistics
+	globalProfileStats.clear()
+	methodCallStack.length = 0
+	filteredMatchesCount = 0
+
+	// Patch class-based components (auto-discovered methods)
+	const restoreSegmentMatcher = patchSegmentMatcher(parser)
+	const restorePatternMatcher = patchPatternMatcher(parser)
+
+	// TreeBuilder is patched separately (module functions)
+	const restoreTreeBuilder = patchTreeBuilder(parser)
+
+	// Parser.split is already profiled through patchTreeBuilder (including TreeBuilder.buildTree)
+	// Create additional profiled wrapper for Parser.split
+	const treeBuilderPatchedSplit = parser.split
+	parser.split = createProfiledMethod(treeBuilderPatchedSplit, 'Parser.split', 'Parser', 'O(T + S + M)')
+
+	// Execute iterations
+	let totalSplitTime = 0
+	let finalTokens: Token[] = []
+	let finalSegments = 0
+	let finalMatches = 0
+
+	for (let i = 0; i < iterations; i++) {
+		const splitStart = performance.now()
+		finalTokens = parser.split(input)
+		const splitEnd = performance.now()
+		totalSplitTime += (splitEnd - splitStart)
+
+		// Collect metrics on last iteration
+		if (i === iterations - 1) {
+			const segments = (parser as any).segmentMatcher.search(input)
+			const matches = (parser as any).patternMatcher.process(segments, input)
+			finalSegments = segments.length
+			finalMatches = matches.length
+		}
+	}
+
+	// Restore original methods
+	restoreSegmentMatcher()
+	restorePatternMatcher()
+	restoreTreeBuilder() // This will restore parser.split to treeBuilderPatchedSplit
+
+	// Calculate results
+	const avgSplitTime = totalSplitTime / iterations
+	const markCountActual = countMarks(finalTokens)
+
+	// Convert flat method list to hierarchical structure
+	const allMethods = Array.from(globalProfileStats.entries())
+	const methodProfiles = allMethods
+		.filter(([methodName]) => !methodName.startsWith('Parser.split'))
+		.map(([methodName, data]) => {
+			const times = data.times
+			const totalTime = times.reduce((a, b) => a + b, 0) / iterations
+			const avgTime = totalTime
+			const minTime = Math.min(...times)
+			const maxTime = Math.max(...times)
+			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0), 0) / iterations
+			const percentage = totalComponentTime > 0 ? (totalTime / totalComponentTime) * 100 : 0
+
+			return {
+				method: methodName,
+				className: methodName.split('.')[0],
+				complexity: getComplexityForMethod(methodName),
+				totalTime,
+				callCount: data.count,
+				avgTime,
+				minTime,
+				maxTime,
+				percentage
+			}
+		})
+		.sort((a, b) => b.totalTime - a.totalTime)
+
+	// Build hierarchical method tree
+	const mainMethod = buildMethodTree(methodProfiles, avgSplitTime)
+
+	return {
+		duration: Math.round(avgSplitTime * 1000) / 1000, // round to 3 decimal places
+		inputLength: input.length,
+		markCount: markCountActual,
+		mainMethod
+	}
+}
+
+/**
+ * Estimate method complexity based on naming patterns and algorithmic analysis
+ */
+function estimateComplexity(methodName: string): string {
+	// Complexity patterns based on method naming conventions
+	const complexityPatterns: Array<{pattern: RegExp, complexity: string, description: string}> = [
+		// Core algorithm methods
+		{ pattern: /\.search$/, complexity: 'O(T)', description: 'Search operations typically O(T)' },
+		{ pattern: /\.process$/, complexity: 'O(S)', description: 'Main processing typically O(S)' },
+
+		// State management
+		{ pattern: /\.processWaitingStates$/, complexity: 'O(1)', description: 'Waiting states processing' },
+		{ pattern: /\.handleUpdatedState$/, complexity: 'O(1)', description: 'State updates typically O(1)' },
+		{ pattern: /\.tryStartNewStates$/, complexity: 'O(D)', description: 'State initialization O(D)' },
+
+		// Data structure operations
+		{ pattern: /\.addTo(PositionIndex|WaitingList)$/, complexity: 'O(log M + P)', description: 'Indexed insertions' },
+		{ pattern: /\.flattenMatches/, complexity: 'O(M)', description: 'Flattening operations O(M)' },
+		{ pattern: /\.filter/, complexity: 'O(M)', description: 'Filtering operations O(M)' },
+		{ pattern: /\.sort/, complexity: 'O(M log M)', description: 'Sorting operations' },
+		{ pattern: /\.find/, complexity: 'O(M)', description: 'Search in collections O(M)' },
+
+		// Utility operations
+		{ pattern: /\.(create|build)/, complexity: 'O(M)', description: 'Construction operations' },
+		{ pattern: /\.(get|is|has|validate|extract)/, complexity: 'O(1)', description: 'Access/validation operations' },
+		{ pattern: /\.add/, complexity: 'O(1)', description: 'Simple additions O(1)' },
+		{ pattern: /\.remove/, complexity: 'O(M)', description: 'Removals may require shifting' },
+		{ pattern: /\.update/, complexity: 'O(1)', description: 'Updates typically O(1)' },
+		{ pattern: /\.(finalize|close)/, complexity: 'O(S)', description: 'Finalization operations O(S)' },
+	]
+
+	// Check patterns in order of specificity
+	for (const {pattern, complexity} of complexityPatterns) {
+		if (pattern.test(methodName)) {
+			return complexity
+		}
+	}
+
+	return 'O(?)'
+}
+
+/**
+ * Get method complexity (deprecated function, kept for compatibility)
+ */
+function getComplexityForMethod(methodName: string): string {
+	return estimateComplexity(methodName)
+}
+
+/**
+ * Generate optimization recommendations
+ */
+function generateRecommendations(methods: any[]): string[] {
+	const recommendations: string[] = []
+
+	// Analyze top-3 methods
+	const topMethods = methods.slice(0, 3)
+	for (const method of topMethods) {
+		switch (method.method) {
+			case 'TreeBuilder.closeCompletedParents':
+				recommendations.push('Optimize TreeBuilder.closeCompletedParents - consider more efficient stack algorithm')
+				break
+			case 'TreeBuilder.finalizeStackNode':
+				recommendations.push('Reduce intermediate object creation in TreeBuilder.finalizeStackNode')
+				break
+			case 'PatternMatcher.processWaitingStates':
+				recommendations.push('Optimize PatternMatcher.processWaitingStates - critical processing path')
+				break
+			default:
+				recommendations.push(`Optimize ${method.method} (${method.percentage.toFixed(1)}% of time)`)
+		}
+	}
+
+	// General recommendations
+	recommendations.push('Consider caching for frequently used patterns')
+	recommendations.push('Implement lazy initialization for heavy objects')
+
+	return recommendations
+}
+
+/**
+ * Store profiling results for comparison (keeps last 2 runs)
+ */
+const currentRunResults: Record<string, TestProfile> = {}
+const profilingHistory: ProfilingRun[] = []
+const resultsPath = path.join(__dirname, 'parser.profile.json')
+const MAX_HISTORY_RUNS = 2
+
+/**
+ * Build hierarchical method tree from flat method list
+ */
+function buildMethodTree(methods: Array<{
+	method: string
+	className: string
+	complexity: string
+	totalTime: number
+	callCount: number
+	avgTime: number
+	minTime: number
+	maxTime: number
+	percentage: number
+}>, totalTime: number): MethodProfile {
+
+	// Build hierarchy based on class relationships
+	const rootMethod: MethodProfile = {
+		name: 'Parser.split',
+		calls: 1, // Parser.split is called once per test
+		complexity: 'O(T + S + M)',
+		times: [
+			Math.round(totalTime * 1000) / 1000,
+			Math.round(totalTime * 1000) / 1000,
+			Math.round(totalTime * 1000) / 1000
+		], // [min, avg, max] - for main method they're the same, rounded to 3 decimals
+		subMethods: {}
+	}
+
+	// Group methods by component
+	const segmentMatcherMethods = methods.filter(m => m.method.startsWith('SegmentMatcher.'))
+	const patternMatcherMethods = methods.filter(m => m.method.startsWith('PatternMatcher.'))
+	const treeBuilderMethods = methods.filter(m => m.method.startsWith('TreeBuilder.'))
+
+	// Add component roots
+	if (segmentMatcherMethods.length > 0) {
+		const segmentTime = segmentMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
+		const segmentMethod = segmentMatcherMethods[0]
+		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods['SegmentMatcher.search'] = {
+			name: 'SegmentMatcher.search',
+			calls: segmentMethod?.callCount || 0,
+			percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+			complexity: 'O(T)',
+			times: segmentMethod ? [
+				Math.round(segmentMethod.minTime * 1000) / 1000,
+				Math.round(segmentMethod.avgTime * 1000) / 1000,
+				Math.round(segmentMethod.maxTime * 1000) / 1000
+			] : [0, 0, 0]
+			// No subMethods for SegmentMatcher.search
+		}
+	}
+
+	if (patternMatcherMethods.length > 0) {
+		const patternTime = patternMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
+		const mainPatternMethod = patternMatcherMethods.find(m => m.method === 'PatternMatcher.process')
+		const patternMatcherRoot: MethodProfile = {
+			name: 'PatternMatcher.process',
+			calls: mainPatternMethod?.callCount || 0,
+			percentage: Math.round((patternTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+			complexity: 'O(S)',
+			times: mainPatternMethod ? [
+				Math.round(mainPatternMethod.minTime * 1000) / 1000,
+				Math.round(mainPatternMethod.avgTime * 1000) / 1000,
+				Math.round(mainPatternMethod.maxTime * 1000) / 1000
+			] : [0, 0, 0],
+			subMethods: {}
+		}
+
+		// Add sub-methods under PatternMatcher.process
+		const subMethods = patternMatcherMethods
+			.filter(m => m.method !== 'PatternMatcher.process')
+			.map(method => ({
+				name: method.method,
+				calls: method.callCount,
+				percentage: Math.round((method.totalTime / patternTime) * 100 * 10) / 10, // percentage within parent, round to 1 decimal
+				complexity: method.complexity,
+				times: [
+					Math.round(method.minTime * 1000) / 1000,
+					Math.round(method.avgTime * 1000) / 1000,
+					Math.round(method.maxTime * 1000) / 1000
+				] as [number, number, number]
+				// PatternMatcher sub-methods don't have their own sub-methods
+			}))
+
+		// Only add subMethods if there are any
+		if (subMethods.length > 0) {
+			if (!patternMatcherRoot.subMethods) patternMatcherRoot.subMethods = {}
+			subMethods.forEach(subMethod => {
+				patternMatcherRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
+			})
+		} else {
+			delete patternMatcherRoot.subMethods
+		}
+
+		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods['PatternMatcher.process'] = patternMatcherRoot
+	}
+
+	if (treeBuilderMethods.length > 0) {
+		const treeTime = treeBuilderMethods.reduce((sum, m) => sum + m.totalTime, 0)
+		const treeMethod = treeBuilderMethods[0]
+		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods['TreeBuilder.buildTree'] = {
+			name: 'TreeBuilder.buildTree',
+			calls: treeMethod?.callCount || 0,
+			percentage: Math.round((treeTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+			complexity: 'O(M)',
+			times: treeMethod ? [
+				Math.round(treeMethod.minTime * 1000) / 1000,
+				Math.round(treeMethod.avgTime * 1000) / 1000,
+				Math.round(treeMethod.maxTime * 1000) / 1000
+			] : [0, 0, 0]
+			// TreeBuilder.buildTree doesn't have profiled sub-methods currently
+		}
+	}
+
+	return rootMethod
+}
+
+/**
+ * Load existing profiling history from file
+ */
+function loadExistingHistory(): void {
+	try {
+		if (fs.existsSync(resultsPath)) {
+			const data = fs.readFileSync(resultsPath, 'utf8')
+			const history: ProfilingRun[] = JSON.parse(data)
+
+			// Restore history from file
+			profilingHistory.length = 0
+			profilingHistory.push(...history)
+		}
+	} catch (error) {
+		// If loading fails, start with empty history
+		profilingHistory.length = 0
+	}
+}
+
+/**
+ * Compare two profiling runs and calculate differences
+ */
+function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): ProfilingComparison {
+	const differences: ProfilingComparison['differences'] = []
+	let totalTimeChangeSum = 0
+	let totalTimeChangeCount = 0
+
+	// Compare each test case
+	for (const [testName, result2] of Object.entries(run2.tests)) {
+		const result1 = run1.tests[testName]
+		if (!result1) continue
+
+		const durationChange = result2.duration - result1.duration
+		const durationChangePercent = result1.duration > 0 ? (durationChange / result1.duration) * 100 : 0
+
+		// Compare methods recursively
+		const methodChanges: Record<string, {
+			timeChange: number
+			timeChangePercent: number
+			callsChange: number
+			percentageChange: number
+		}> = {}
+
+		function compareMethods(method1: MethodProfile, method2: MethodProfile, prefix = '') {
+			const fullName = prefix ? `${prefix}.${method2.name}` : method2.name
+			const avgTime1 = method1.times[1] // avg time from array
+			const avgTime2 = method2.times[1] // avg time from array
+			const timeChange = avgTime2 - avgTime1
+			const timeChangePercent = avgTime1 > 0 ? (timeChange / avgTime1) * 100 : 0
+			const callsChange = method2.calls - method1.calls
+			const percentageChange = (method2.percentage || 0) - (method1.percentage || 0)
+
+			methodChanges[fullName] = {
+				timeChange,
+				timeChangePercent,
+				callsChange,
+				percentageChange
+			}
+
+			// Compare sub-methods if they exist
+			const subMethods2 = method2.subMethods || {}
+			const subMethods1 = method1.subMethods || {}
+			for (const [subName, subMethod2] of Object.entries(subMethods2)) {
+				const subMethod1 = subMethods1[subName]
+				if (subMethod1) {
+					compareMethods(subMethod1, subMethod2, fullName)
+				}
+			}
+		}
+
+		if (result1.mainMethod && result2.mainMethod) {
+			compareMethods(result1.mainMethod, result2.mainMethod)
+		}
+
+		differences.push({
+			testName,
+			durationChange,
+			durationChangePercent,
+			inputLength: result2.inputLength,
+			markCount: result2.markCount,
+			methodChanges
+		})
+
+		totalTimeChangeSum += durationChangePercent
+		totalTimeChangeCount++
+	}
+
+	// Determine overall trend
+	let overallTrend: ProfilingComparison['overallTrend'] = 'stable'
+	if (totalTimeChangeCount > 0) {
+		const avgChange = totalTimeChangeSum / totalTimeChangeCount
+		if (avgChange < -5) overallTrend = 'improving'
+		else if (avgChange > 5) overallTrend = 'degrading'
+	}
+
+	// Generate summary
+	const summary: string[] = []
+	const improving = differences.filter(d => d.durationChangePercent < -1).length
+	const degrading = differences.filter(d => d.durationChangePercent > 1).length
+
+	if (improving > degrading) {
+		summary.push(`🎉 Performance improved in ${improving} test(s), degraded in ${degrading} test(s)`)
+	} else if (degrading > improving) {
+		summary.push(`⚠️ Performance degraded in ${degrading} test(s), improved in ${improving} test(s)`)
+	} else {
+		summary.push(`➡️ Performance stable with ${improving} improvements and ${degrading} degradations`)
+	}
+
+	// Find biggest changes
+	const biggestImprovement = differences
+		.filter(d => d.durationChangePercent < -1)
+		.sort((a, b) => a.durationChangePercent - b.durationChangePercent)[0]
+
+	const biggestDegradation = differences
+		.filter(d => d.durationChangePercent > 1)
+		.sort((a, b) => b.durationChangePercent - a.durationChangePercent)[0]
+
+	if (biggestImprovement) {
+		summary.push(`🚀 Biggest improvement: ${biggestImprovement.testName} (${biggestImprovement.durationChangePercent.toFixed(1)}%)`)
+	}
+	if (biggestDegradation) {
+		summary.push(`📉 Biggest degradation: ${biggestDegradation.testName} (+${biggestDegradation.durationChangePercent.toFixed(1)}%)`)
+	}
+
+	return {
+		run1Timestamp: run1.timestamp,
+		run2Timestamp: run2.timestamp,
+		differences,
+		overallTrend,
+		summary
+	}
+}
+
+function saveCompleteProfileResults(): void {
+	if (Object.keys(currentRunResults).length === 0) return
+
+	// Create current run
+	const currentRun: ProfilingRun = {
+		timestamp: new Date().toISOString(),
+		tests: { ...currentRunResults }
+	}
+
+	// Add current results to history
+	profilingHistory.unshift(currentRun)
+
+	// Keep only last MAX_HISTORY_RUNS runs
+	if (profilingHistory.length > MAX_HISTORY_RUNS) {
+		profilingHistory.splice(MAX_HISTORY_RUNS)
+	}
+
+	console.log(`\n💾 Saving profiling results (${Object.keys(currentRunResults).length} tests, ${profilingHistory.length} runs in history)...`)
+
+	try {
+		let comparison: ProfilingComparison | undefined
+		if (profilingHistory.length >= 2) {
+			comparison = compareProfilingResults(profilingHistory[1], profilingHistory[0])
+		}
+
+		// Save as array of ProfilingRun
+		const jsonData = JSON.stringify(profilingHistory, null, 2)
+		fs.writeFileSync(resultsPath, jsonData)
+		console.log(`✅ Results saved: ${resultsPath}`)
+
+		// Current run summary
+		console.log('\n📊 CURRENT RUN SUMMARY:')
+		for (const [testName, result] of Object.entries(currentRunResults)) {
+			console.log(`\n🔍 ${testName}:`)
+			console.log(`   Duration: ${formatTime(result.duration)}`)
+			console.log(`   Input: ${result.inputLength} chars, ${result.markCount} marks`)
+			console.log(`   Main method: ${result.mainMethod.name}`)
+
+			function printMethodTree(method: MethodProfile, indent = '   ') {
+				const percentageStr = method.percentage !== undefined ? ` (${method.percentage.toFixed(1)}% of parent)` : ''
+				console.log(`${indent}├─ ${method.name}: ${formatTime(method.times[1])} ${percentageStr}, ${method.calls} calls [${method.complexity}]`)
+				const subMethods = method.subMethods ? Object.values(method.subMethods) : []
+				subMethods.forEach((subMethod, index) => {
+					const isLast = index === subMethods.length - 1
+					const newIndent = indent + (isLast ? '   ' : '│  ')
+					printMethodTree(subMethod, newIndent)
+				})
+			}
+
+			printMethodTree(result.mainMethod)
+		}
+
+		// Comparison summary
+		if (comparison) {
+			console.log('\n📈 PERFORMANCE TREND ANALYSIS:')
+			console.log(`   Overall trend: ${comparison.overallTrend.toUpperCase()}`)
+			for (const summary of comparison.summary) {
+				console.log(`   ${summary}`)
+			}
+
+			console.log('\n📋 DETAILED CHANGES:')
+			for (const diff of comparison.differences) {
+				const changeSymbol = diff.durationChangePercent > 0 ? '🔴' : diff.durationChangePercent < 0 ? '🟢' : '⚪'
+				const changeText = diff.durationChangePercent > 0 ?
+					`+${diff.durationChangePercent.toFixed(1)}%` :
+					`${diff.durationChangePercent.toFixed(1)}%`
+
+				console.log(`   ${changeSymbol} ${diff.testName}: ${changeText} (${formatTime(Math.abs(diff.durationChange))} ${diff.durationChange > 0 ? 'slower' : 'faster'})`)
+
+				// Show top method changes
+				const methodEntries = Object.entries(diff.methodChanges)
+					.filter(([, change]) => Math.abs(change.timeChangePercent) > 1)
+					.sort(([, a], [, b]) => Math.abs(b.timeChangePercent) - Math.abs(a.timeChangePercent))
+					.slice(0, 3)
+
+				for (const [methodName, change] of methodEntries) {
+					const methodSymbol = change.timeChangePercent > 0 ? '↗️' : change.timeChangePercent < 0 ? '↘️' : '➡️'
+					console.log(`      ${methodSymbol} ${methodName}: ${change.timeChangePercent > 0 ? '+' : ''}${change.timeChangePercent.toFixed(1)}%`)
+				}
+			}
+		}
+
+	} catch (error) {
+		console.error('❌ Save error:', error)
+	}
+}
+
+// Profiling scenarios
+describe('ParserV2 Complete Profiling', () => {
+	const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
+
+	test('should profile all methods automatically', () => {
+		// Load existing history if available
+		loadExistingHistory()
+
+		// Clear current results for fresh profiling
+		Object.keys(currentRunResults).forEach(key => delete currentRunResults[key])
+
+		const testCases = [
+			{name: '10 marks', markCount: 10, iterations: 10},
+			{name: '100 marks', markCount: 100, iterations: 5},
+			{name: '500 marks', markCount: 500, iterations: 2},
+		]
+
+		testCases.forEach(({name, markCount, iterations}) => {
+			const testName = `split: ${name}`
+			const parser = new Parser(markups)
+			const input = generateTestText(markCount)
+
+			const result = runCompleteProfiling(parser, input, testName, iterations)
+			currentRunResults[testName] = result
+		})
+
+		// Save results with history
+		if (Object.keys(currentRunResults).length > 0) {
+			saveCompleteProfileResults()
+		}
+	})
+})
+
+afterAll(() => {
+	if (Object.keys(currentRunResults).length > 0) {
+		saveCompleteProfileResults()
+	}
+})
