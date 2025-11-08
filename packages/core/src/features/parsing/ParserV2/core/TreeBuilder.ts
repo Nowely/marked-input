@@ -64,10 +64,10 @@ function createTextToken(input: string, start: number, end: number): TextToken {
  * Extracts substrings from input on demand
  */
 function createMarkToken(input: string, match: Match, children: Token[]): MarkToken {
-	// Extract content using helper functions
-	const value = match.gaps.value ? extractSubstring(input, match.gaps.value.start, match.gaps.value.end) : ''
-	const nestedStr = match.gaps.nested ? extractSubstring(input, match.gaps.nested.start, match.gaps.nested.end) : ''
-	const metaStr = match.gaps.meta ? extractSubstring(input, match.gaps.meta.start, match.gaps.meta.end) : ''
+	// Extract content using helper functions - extractSubstring handles undefined positions
+	const value = extractSubstring(input, match.gaps.value?.start, match.gaps.value?.end)
+	const nestedStr = extractSubstring(input, match.gaps.nested?.start, match.gaps.nested?.end)
+	const metaStr = extractSubstring(input, match.gaps.meta?.start, match.gaps.meta?.end)
 
 	// Convert empty strings to undefined for nested, but meta can be empty string
 	const nested = nestedStr || undefined
