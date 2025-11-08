@@ -52,21 +52,14 @@ class MatchPriority {
  * Optimized parser using state machine approach
  */
 export class PatternMatcher {
-	private readonly registry: MarkupRegistry
-
 	private readonly pendingStates: Map<number, Match[]> = new Map()
 	private readonly completingStates: Map<number, Match[]> = new Map()
 	// Changed from Map to array of {position, matches} to maintain sorted order
 	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
 
-	constructor(registry: MarkupRegistry) {
-		this.registry = registry
-	}
+	constructor(private readonly registry: MarkupRegistry) {}
 
-	/**
-	 * Process segments with state machine to create match states
-	 * Main method that converts found segments into structured match states
-	 */
+	/** Main method that converts found segments into structured matches */
 	process(segments: SegmentMatch[], input: string): Match[] {
 		this.pendingStates.clear()
 		this.completingStates.clear()
@@ -74,7 +67,6 @@ export class PatternMatcher {
 
 		for (const segment of segments) {
 			this.processWaitingStates(segment, input)
-
 			this.tryStartNewStates(segment)
 		}
 
@@ -85,31 +77,11 @@ export class PatternMatcher {
 	 * Process states waiting for this segment
 	 * Try states by priority until one is valid, keeping rejected states for later attempts
 	 * Process completing states first (higher priority), then pending states
-	 * Process only one state per call to maintain original behavior
+	 * Process only one state per call
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
-		// Try completing states first (higher priority) - process only one
-		const completingArray = this.completingStates.get(segment.index)
-		if (completingArray && completingArray.length > 0) {
-			const match = completingArray.shift()! // Remove from beginning (LIFO since we unshift)
-
-			const isSuccess = match.updateWithSegment(segment, input)
-			if (!isSuccess) {
-				// Validation failed - rollback and re-add to waiting list
-				const previousSegmentIndex = match.rollback()
-				this.addToWaiting(match, previousSegmentIndex)
-			} else {
-				// State updated successfully - handle completion or continue waiting
-				this.handleUpdatedState(match, segment)
-			}
-			return // Process only one state per call, as before
-		}
-
-		// If no completing states, try pending states - process only one
-		const pendingArray = this.pendingStates.get(segment.index)
-		if (pendingArray && pendingArray.length > 0) {
-			const match = pendingArray.shift()! // Remove from beginning (LIFO since we unshift)
-
+		const match = this.dequeueWaitingMatch(segment.index)
+		if (match) {
 			const isSuccess = match.updateWithSegment(segment, input)
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
@@ -120,6 +92,27 @@ export class PatternMatcher {
 				this.handleUpdatedState(match, segment)
 			}
 		}
+	}
+
+	/**
+	 * Gets the next waiting match for the given segment index
+	 * Prioritizes completing states over pending states
+	 * Returns undefined if no waiting matches exist
+	 */
+	private dequeueWaitingMatch(segmentIndex: number): Match | undefined {
+		// Try completing states first (higher priority)
+		const completingArray = this.completingStates.get(segmentIndex)
+		if (completingArray?.length) {
+			return completingArray.shift()
+		}
+
+		// Try pending states if no completing states
+		const pendingArray = this.pendingStates.get(segmentIndex)
+		if (pendingArray?.length) {
+			return pendingArray.shift()
+		}
+
+		return undefined
 	}
 
 	private tryStartNewStates(segment: SegmentMatch): void {
