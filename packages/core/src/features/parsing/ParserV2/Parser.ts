@@ -5,7 +5,7 @@ import {MarkupRegistry} from './utils/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {SegmentMatcher} from './utils/SegmentMatcher'
 import {createTextToken} from './core/TokenBuilder'
-import {buildTree} from './core/TreeBuilder'
+import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
@@ -13,11 +13,13 @@ export class Parser {
 	private readonly registry: MarkupRegistry
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternMatcher: PatternMatcher
+	private readonly treeBuilder: TreeBuilder
 
 	constructor(markups: Markup[]) {
 		this.registry = new MarkupRegistry(markups)
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
+		this.treeBuilder = new TreeBuilder()
 	}
 
 	static split(value: string, options?: {markup: Markup[]}): Token[] {
@@ -35,7 +37,7 @@ export class Parser {
 	split(value: string): Token[] {
 		const segments = this.segmentMatcher.search(value)
 		const matches = this.patternMatcher.process(segments, value)
-		return buildTree(matches, value)
+		return this.treeBuilder.buildTree(matches, value)
 	}
 
 	join(tokens: Token[]): string {
