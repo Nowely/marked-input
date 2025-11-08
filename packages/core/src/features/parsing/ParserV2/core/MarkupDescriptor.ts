@@ -133,25 +133,37 @@ function findNextPlaceholder(markup: string, startPosition: number): Placeholder
 		return null
 	}
 
-	// Find the earliest placeholder
-	const positions = [
-		{type: GAP_TYPE.Value, pos: valuePos, length: PLACEHOLDER.Value.length},
-		{type: GAP_TYPE.Meta, pos: metaPos, length: PLACEHOLDER.Meta.length},
-		{type: GAP_TYPE.Nested, pos: nestedPos, length: PLACEHOLDER.Nested.length},
-	].filter(p => p.pos !== -1)
+	// Find the earliest placeholder using simple comparisons (no array creation or sorting)
+	let minPos = Infinity
+	let minType: GapType | null = null
+	let minLength = 0
 
-	if (positions.length === 0) {
+	if (valuePos !== -1 && valuePos < minPos) {
+		minPos = valuePos
+		minType = GAP_TYPE.Value
+		minLength = PLACEHOLDER.Value.length
+	}
+
+	if (metaPos !== -1 && metaPos < minPos) {
+		minPos = metaPos
+		minType = GAP_TYPE.Meta
+		minLength = PLACEHOLDER.Meta.length
+	}
+
+	if (nestedPos !== -1 && nestedPos < minPos) {
+		minPos = nestedPos
+		minType = GAP_TYPE.Nested
+		minLength = PLACEHOLDER.Nested.length
+	}
+
+	if (minType === null) {
 		return null
 	}
 
-	// Sort by position to get the next placeholder
-	positions.sort((a, b) => a.pos - b.pos)
-	const next = positions[0]
-
 	return {
-		type: next.type,
-		pos: next.pos,
-		length: next.length,
+		type: minType,
+		pos: minPos,
+		length: minLength,
 	}
 }
 
