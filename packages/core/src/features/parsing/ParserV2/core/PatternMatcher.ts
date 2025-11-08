@@ -78,7 +78,7 @@ export class PatternMatcher {
 			this.tryStartNewStates(segment)
 		}
 
-		return this.flattenMatchesByPosition()
+		return this.completedStates.flatMap(entry => entry.matches)
 	}
 
 	/**
@@ -232,22 +232,4 @@ export class PatternMatcher {
 		}
 	}
 
-	/**
-	 * Flatten position-indexed array into flat array of matches
-	 * No sorting needed - positions and priorities are already maintained by addToPositionIndex
-	 */
-	private flattenMatchesByPosition(): Match[] {
-		if (this.completedStates.length === 0) {
-			return []
-		}
-
-		const result: Match[] = []
-
-		// Simply flatten the already-sorted structure
-		for (const entry of this.completedStates) {
-			result.push(...entry.matches)
-		}
-
-		return result
-	}
 }
