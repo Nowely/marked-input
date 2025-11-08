@@ -1,9 +1,6 @@
-import {bench, describe, afterAll, test} from 'vitest'
+import {bench, describe, afterAll} from 'vitest'
 import {Parser} from './ParserV2/Parser'
 import {Markup, Token} from './ParserV2/types'
-import {SegmentMatcher} from './ParserV2/utils/SegmentMatcher'
-import {PatternMatcher} from './ParserV2/core/PatternMatcher'
-import {Match} from './ParserV2/core/Match'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -95,7 +92,6 @@ interface ProfilingResult {
  */
 const globalProfileStats = new Map<string, {times: number[]; paramLengths: number[]; count: number}>()
 const methodCallStack: string[] = []
-let filteredMatchesCount = 0
 
 /**
  * History of profiling results for comparison
@@ -162,8 +158,7 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
  */
 function createProfilingResult(
 	currentRun: ProfilingRun,
-	comparison?: ProfilingComparison,
-	history?: ProfilingRun[]
+	comparison?: ProfilingComparison
 ): ProfilingResult {
 	const testNames = Object.keys(currentRun.tests)
 	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
@@ -392,12 +387,12 @@ function patchTreeBuilder(parser: Parser): () => void {
 function runCompleteProfiling(
 	parser: Parser,
 	input: string,
-	testName: string
+	testName: string,
+	iterations: number = 5
 ): TestProfile {
-	// Clear statistics
+	// Clear statistics for fresh run
 	globalProfileStats.clear()
 	methodCallStack.length = 0
-	filteredMatchesCount = 0
 
 	// Patch class-based components (auto-discovered methods)
 	const restoreSegmentMatcher = patchSegmentMatcher(parser)
@@ -408,19 +403,30 @@ function runCompleteProfiling(
 	const originalSplit = parser.split
 	parser.split = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
 
-	// Execute single iteration
-	const splitStart = performance.now()
-	const finalTokens = parser.split(input)
-	const splitEnd = performance.now()
-	const totalSplitTime = splitEnd - splitStart
+	// Execute multiple iterations and collect statistics
+	const splitTimes: number[] = []
+	let finalTokens: any[] = []
+
+	for (let i = 0; i < iterations; i++) {
+		// Clear per-iteration stats
+		methodCallStack.length = 0
+
+		const splitStart = performance.now()
+		finalTokens = parser.split(input)
+		const splitEnd = performance.now()
+		const totalSplitTime = splitEnd - splitStart
+
+		splitTimes.push(totalSplitTime)
+	}
 
 	// Restore original methods
 	restoreSegmentMatcher()
 	restorePatternMatcher()
 	restoreTreeBuilder() // This will restore parser.split to treeBuilderPatchedSplit
 
-	// Calculate results
-	const splitTime = totalSplitTime // No averaging needed since iterations = 1
+	// Calculate results with normalized statistics
+	const avgSplitTime = splitTimes.reduce((a, b) => a + b, 0) / iterations
+
 	const markCountActual = countMarks(finalTokens)
 
 	// Convert flat method list to hierarchical structure
@@ -429,11 +435,14 @@ function runCompleteProfiling(
 		.filter(([methodName]) => !methodName.startsWith('Parser.split'))
 		.map(([methodName, data]) => {
 			const times = data.times
-			const totalTime = times.reduce((a, b) => a + b, 0)
-			const avgTime = totalTime
+			const totalTimeAcrossIterations = times.reduce((a, b) => a + b, 0)
+			const totalTime = totalTimeAcrossIterations / iterations // Average time per iteration
+			const avgTime = totalTime // Since we already averaged totalTime
 			const minTime = Math.min(...times)
 			const maxTime = Math.max(...times)
-			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0), 0)
+
+			// Calculate component times per iteration
+			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + (d.times.reduce((a, b) => a + b, 0) / iterations), 0)
 			const percentage = totalComponentTime > 0 ? (totalTime / totalComponentTime) * 100 : 0
 
 			// Calculate average parameter length if available
@@ -446,7 +455,7 @@ function runCompleteProfiling(
 				className: methodName.split('.')[0],
 				complexity: getComplexityForMethod(methodName),
 				totalTime,
-				callCount: data.count,
+				callCount: Math.round(data.count / iterations), // Average calls per iteration
 				avgTime,
 				minTime,
 				maxTime,
@@ -457,10 +466,10 @@ function runCompleteProfiling(
 		.sort((a, b) => b.totalTime - a.totalTime)
 
 	// Build hierarchical method tree
-	const mainMethod = buildMethodTree(methodProfiles, splitTime)
+	const mainMethod = buildMethodTree(methodProfiles, avgSplitTime)
 
 	return {
-		duration: Math.round(splitTime * 1000) / 1000, // round to 3 decimal places
+		duration: Math.round(avgSplitTime * 1000) / 1000, // round to 3 decimal places - using average across iterations
 		inputLength: input.length,
 		markCount: markCountActual,
 		mainMethod
@@ -887,7 +896,7 @@ function saveCompleteProfileResults(): void {
 		}
 
 		// Save summary result with history
-		const result = createProfilingResult(currentRun, comparison, profilingHistory)
+		const result = createProfilingResult(currentRun, comparison)
 		profilingResultsHistory.unshift(result)
 
 		// Keep only last 2 results for comparison (newest first, no sorting needed since we unshift)
@@ -934,7 +943,7 @@ function saveCompleteProfileResults(): void {
 		}
 
 		// Enhanced summary
-		const enhancedResult = createProfilingResult(currentRun, comparison, profilingHistory)
+		const enhancedResult = createProfilingResult(currentRun, comparison)
 		console.log('\n📈 ENHANCED RUN SUMMARY:')
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}ms`)
