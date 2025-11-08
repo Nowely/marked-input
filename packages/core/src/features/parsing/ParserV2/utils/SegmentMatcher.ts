@@ -46,12 +46,13 @@ export class SegmentMatcher {
 	/**
 	 * Searches for all pattern occurrences in the text using regex alternation
 	 * @param text - Text to search in
-	 * @returns Array of matches sorted by position and priority
+	 * @returns Array of matches sorted by position (matchAll guarantees position order)
 	 */
 	search(text: string): SegmentMatch[] {
 		const results: SegmentMatch[] = []
 
 		// Use matchAll to find all matches
+		// matchAll returns matches in order of their position in text
 		for (const match of text.matchAll(this.regex)) {
 			const matchedText = match[0] // Full match
 			const start = match.index
@@ -70,14 +71,6 @@ export class SegmentMatcher {
 				value: matchedText,
 			})
 		}
-
-		// Sort results by start position, then by index in segments array (higher index first)
-		results.sort((a, b) => {
-			if (a.start !== b.start) {
-				return a.start - b.start
-			}
-			return b.index - a.index // Higher index first for same start position
-		})
 
 		return results
 	}
