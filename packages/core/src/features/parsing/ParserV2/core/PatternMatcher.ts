@@ -27,13 +27,13 @@ interface GapPositions {
 }
 
 /**
- * Unified match state structure for both active pattern matching and completed matches
+ * Unified match structure for both active pattern matching and completed matches
  *
  * Represents the state of a pattern matching process in the parser's state machine.
  * For active states: tracks progress through pattern segments with expectedSegmentIndex
  * For completed matches: contains final positions without expectedSegmentIndex
  */
-export class MatchState {
+export class Match {
 	public readonly gaps: GapPositions = {}
 
 	constructor(
@@ -174,7 +174,7 @@ class MatchPriority {
 	 * Compare states by completing priority (states completing have higher priority)
 	 * Used for sorting waiting states to process completing patterns first
 	 */
-	static compareCompleting(a: MatchState, b: MatchState): number {
+	static compareCompleting(a: Match, b: Match): number {
 		const aCompleting = a.isCompleting() ? 1 : 0
 		const bCompleting = b.isCompleting() ? 1 : 0
 		return aCompleting - bCompleting
@@ -188,7 +188,7 @@ class MatchPriority {
 	 * 3. More segments wins
 	 * Used for sorting completed matches at the same position
 	 */
-	static compareMatchPriority(a: MatchState, b: MatchState): number {
+	static compareMatchPriority(a: Match, b: Match): number {
 		// Longer first segment wins (** > *)
 		const aFirstSegLen = a.descriptor.segments[0].length
 		const bFirstSegLen = b.descriptor.segments[0].length
@@ -214,8 +214,8 @@ class MatchPriority {
 export class PatternMatcher {
 	private readonly registry: MarkupRegistry
 
-	private readonly waitingStates: Map<string, MatchState[]> = new Map()
-	private readonly completedStates: Map<number, MatchState[]> = new Map()
+	private readonly waitingStates: Map<string, Match[]> = new Map()
+	private readonly completedStates: Map<number, Match[]> = new Map()
 
 	constructor(registry: MarkupRegistry) {
 		this.registry = registry
@@ -225,7 +225,7 @@ export class PatternMatcher {
 	 * Process segments with state machine to create match states
 	 * Main method that converts found segments into structured match states
 	 */
-	process(segments: SegmentMatch[], input: string): MatchState[] {
+	process(segments: SegmentMatch[], input: string): Match[] {
 		this.waitingStates.clear()
 		this.completedStates.clear()
 
@@ -241,25 +241,25 @@ export class PatternMatcher {
 	/**
 	 * Adds a state to the waiting list for a specific segment
 	 */
-	private addToWaitingList(state: MatchState, segment: string): void {
+	private addToWaitingList(match: Match, segment: string): void {
 		if (!this.waitingStates.has(segment)) {
 			this.waitingStates.set(segment, [])
 		}
-		this.waitingStates.get(segment)!.push(state)
+		this.waitingStates.get(segment)!.push(match)
 	}
 
 	/**
 	 * Handles a successfully updated state - either completes it or adds to waiting list
 	 */
-	private handleUpdatedState(state: MatchState, segment: SegmentMatch): void {
-		if (state.expectedSegmentIndex >= state.descriptor.segments.length) {
+	private handleUpdatedState(match: Match, segment: SegmentMatch): void {
+		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
 			// Pattern is complete
-			state.markCompleted(segment)
-			this.addToPositionIndex(state)
+			match.markCompleted(segment)
+			this.addToPositionIndex(match)
 		} else {
 			// Continue waiting for next segment
-			const nextSegment = state.getNextSegment()!
-			this.addToWaitingList(state, nextSegment)
+			const nextSegment = match.getNextSegment()!
+			this.addToWaitingList(match, nextSegment)
 		}
 	}
 
@@ -275,19 +275,19 @@ export class PatternMatcher {
 
 		// Try states by priority until one is valid (iterate from end to start for safe removal)
 		for (let i = sortedStates.length - 1; i >= 0; i--) {
-			const state = sortedStates[i]
-			waiting.splice(waiting.indexOf(state), 1)
+			const match = sortedStates[i]
+			waiting.splice(waiting.indexOf(match), 1)
 
-			const isSuccess = state.updateWithSegment(segment, input)
+			const isSuccess = match.updateWithSegment(segment, input)
 			if (!isSuccess) {
 				// Validation failed - rollback and re-add to waiting list
-				const previousSegment = state.rollback()
-				this.addToWaitingList(state, previousSegment)
+				const previousSegment = match.rollback()
+				this.addToWaitingList(match, previousSegment)
 				continue
 			}
 
 			// State updated successfully - handle completion or continue waiting
-			this.handleUpdatedState(state, segment)
+			this.handleUpdatedState(match, segment)
 			break
 		}
 	}
@@ -301,21 +301,21 @@ export class PatternMatcher {
 		if (!descriptors) return
 
 		for (const descriptor of descriptors) {
-			// Create state for pattern (both single and multi-segment)
-			const state = new MatchState(descriptor, 1, segment.start, segment.end)
+			// Create match for pattern (both single and multi-segment)
+			const match = new Match(descriptor, 1, segment.start, segment.end)
 
 			// Single segment pattern - complete immediately through general mechanism
 			if (descriptor.segments.length === 1) {
-				state.markCompleted(segment)
+				match.markCompleted(segment)
 				// For single segment patterns, the entire segment is the value
-				state.gaps.value = {start: segment.start, end: segment.end}
-				this.addToPositionIndex(state)
+				match.gaps.value = {start: segment.start, end: segment.end}
+				this.addToPositionIndex(match)
 				continue
 			}
 
 			// Multi-segment pattern - add to waiting list for next segment
-			const nextSegment = state.getNextSegment()!
-			this.addToWaitingList(state, nextSegment)
+			const nextSegment = match.getNextSegment()!
+			this.addToWaitingList(match, nextSegment)
 		}
 	}
 
@@ -323,18 +323,18 @@ export class PatternMatcher {
 	 * Add match to position-indexed Map, handling collisions by keeping all matches
 	 * TreeBuilder will filter them based on priority and nesting rules
 	 */
-	private addToPositionIndex(state: MatchState): void {
-		const position = state.start
+	private addToPositionIndex(match: Match): void {
+		const position = match.start
 		const existing = this.completedStates.get(position)
 
 		if (!existing) {
 			// No collision - create new array with this match
-			this.completedStates.set(position, [state])
+			this.completedStates.set(position, [match])
 			return
 		}
 
 		// Collision detected - add to array, will be sorted later
-		existing.push(state)
+		existing.push(match)
 	}
 
 	/**
@@ -346,14 +346,14 @@ export class PatternMatcher {
 	 *
 	 * Optimization: Only iterate over actual match positions, not entire input length
 	 */
-	private flattenMatchesByPosition(): MatchState[] {
+	private flattenMatchesByPosition(): Match[] {
 		if (this.completedStates.size === 0) {
 			return []
 		}
 
 		// Sort positions once
 		const positions = Array.from(this.completedStates.keys()).sort((a, b) => a - b)
-		const result: MatchState[] = []
+		const result: Match[] = []
 
 		for (const position of positions) {
 			const matches = this.completedStates.get(position)!

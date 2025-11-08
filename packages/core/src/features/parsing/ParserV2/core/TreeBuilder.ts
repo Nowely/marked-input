@@ -1,11 +1,11 @@
 import {TextToken, MarkToken, Token, PositionRange} from '../types'
-import {MatchState} from './PatternMatcher'
+import {Match} from './PatternMatcher'
 
 /**
  * Gets the content boundaries for a match
  * Priority: nested content if present, otherwise value content
  */
-function getContentBounds(match: MatchState): PositionRange {
+function getContentBounds(match: Match): PositionRange {
 	if (match.gaps.nested) {
 		return match.gaps.nested
 	}
@@ -28,7 +28,7 @@ function extractSubstring(input: string, start: number | undefined, end: number 
 /**
  * Creates nested info object if nested content exists
  */
-function createNestedInfo(match: MatchState, nested: string | undefined): MarkToken['nested'] {
+function createNestedInfo(match: Match, nested: string | undefined): MarkToken['nested'] {
 	if (!nested || match.gaps.nested === undefined) {
 		return undefined
 	}
@@ -63,7 +63,7 @@ function createTextToken(input: string, start: number, end: number): TextToken {
  * Creates a mark token from match and collected children
  * Extracts substrings from input on demand
  */
-function createMarkToken(input: string, match: MatchState, children: Token[]): MarkToken {
+function createMarkToken(input: string, match: Match, children: Token[]): MarkToken {
 	// Extract content using helper functions
 	const value = match.gaps.value ? extractSubstring(input, match.gaps.value.start, match.gaps.value.end) : ''
 	const nestedStr = match.gaps.nested ? extractSubstring(input, match.gaps.nested.start, match.gaps.nested.end) : ''
@@ -94,7 +94,7 @@ function createMarkToken(input: string, match: MatchState, children: Token[]): M
 /**
  * Checks if match has invalid empty nested content (negative length)
  */
-function hasInvalidNestedContent(match: MatchState): boolean {
+function hasInvalidNestedContent(match: Match): boolean {
 	if (!match.descriptor.hasNested) return false
 	if (match.gaps.nested === undefined) return false
 	return match.gaps.nested.end - match.gaps.nested.start < 0
@@ -103,7 +103,7 @@ function hasInvalidNestedContent(match: MatchState): boolean {
 /**
  * Checks if match is valid nesting inside existing match's nested section
  */
-function isValidNesting(match: MatchState, existing: MatchState): boolean {
+function isValidNesting(match: Match, existing: Match): boolean {
 	if (!existing.descriptor.hasNested) return false
 	if (existing.gaps.nested === undefined) return false
 	return match.start >= existing.gaps.nested.start && match.end <= existing.gaps.nested.end
@@ -113,7 +113,7 @@ function isValidNesting(match: MatchState, existing: MatchState): boolean {
  * Stack node structure for tree building
  */
 interface StackNode {
-	match: MatchState
+	match: Match
 	children: Token[]
 	textPos: number
 }
@@ -184,7 +184,7 @@ function finalizeStackNode(
  * @param matches - Pre-sorted match states from PatternMatcher
  * @returns Nested token tree
  */
-export function buildTree(matches: MatchState[], input: string): Token[] {
+export function buildTree(matches: Match[], input: string): Token[] {
 	if (matches.length === 0) {
 		return [createTextToken(input, 0, input.length)]
 	}
@@ -195,7 +195,7 @@ export function buildTree(matches: MatchState[], input: string): Token[] {
 
 	// Filtering state for O(N) single-pass overlap detection
 	let lastProcessedStartPosition = -1 // Track last processed match start position (skip duplicates at same position)
-	let lastAcceptedMatch: MatchState | null = null // Track last accepted match for overlap checks
+	let lastAcceptedMatch: Match | null = null // Track last accepted match for overlap checks
 
 	for (const match of matches) {
 		// Skip empty matches with invalid nested content
