@@ -26,6 +26,7 @@ interface TestProfile {
 	duration: number
 	inputLength: number
 	markCount: number
+	performance?: 'good' | 'warning' | 'bad'
 	mainMethod: MethodProfile
 }
 
@@ -58,6 +59,34 @@ interface ProfilingComparison {
 	}>
 	overallTrend: 'improving' | 'degrading' | 'stable'
 	summary: string[]
+}
+
+/**
+ * Enhanced profiling result with summary and comparison
+ */
+interface ProfilingResult {
+	timestamp: string
+	summary: {
+		totalTests: number
+		totalDuration: number
+		averageDuration: number
+		trend: 'improving' | 'degrading' | 'stable'
+		performanceChange: number
+		worstTest: string
+		bestTest: string
+	}
+	comparison?: {
+		baselineTimestamp: string
+		overallTrend: 'improving' | 'degrading' | 'stable'
+		performanceChange: number
+		significantChanges: string[]
+		testChanges: Record<string, {
+			durationChange: number
+			durationChangePercent: number
+			trend: 'improving' | 'degrading' | 'stable'
+		}>
+	}
+	tests: Record<string, TestProfile>
 }
 
 /**
@@ -100,6 +129,80 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 		methodCallStack.pop()
 		return result
 	}) as T
+}
+
+/**
+ * Create enhanced profiling result with summary and comparison
+ */
+function createProfilingResult(
+	currentRun: ProfilingRun,
+	comparison?: ProfilingComparison,
+	history?: ProfilingRun[]
+): ProfilingResult {
+	const testNames = Object.keys(currentRun.tests)
+	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
+
+	// Определение тренда на основе comparison
+	let trend: 'improving' | 'degrading' | 'stable' = 'stable'
+	let performanceChange = 0
+
+	if (comparison) {
+		const avgChange = comparison.differences.reduce((sum, diff) =>
+			sum + diff.durationChangePercent, 0) / comparison.differences.length
+		performanceChange = avgChange
+		trend = Math.abs(avgChange) < 1 ? 'stable' :
+		       avgChange > 0 ? 'degrading' : 'improving'
+	}
+
+	// Поиск лучшего и худшего теста
+	const testDurations = testNames.map(name => ({
+		name,
+		duration: currentRun.tests[name].duration
+	})).sort((a, b) => b.duration - a.duration)
+
+	// Добавление оценки производительности для каждого теста
+	const updatedTests = { ...currentRun.tests }
+	for (const [testName, testResult] of Object.entries(updatedTests)) {
+		const duration = testResult.duration
+		if (duration < 0.5) {
+			testResult.performance = 'good'
+		} else if (duration < 2.0) {
+			testResult.performance = 'warning'
+		} else {
+			testResult.performance = 'bad'
+		}
+	}
+
+	return {
+		timestamp: currentRun.timestamp,
+		summary: {
+			totalTests: testNames.length,
+			totalDuration: Math.round(totalDuration * 100) / 100,
+			averageDuration: Math.round((totalDuration / testNames.length) * 100) / 100,
+			trend,
+			performanceChange,
+			worstTest: testDurations[0].name,
+			bestTest: testDurations[testDurations.length - 1].name
+		},
+		comparison: comparison ? {
+			baselineTimestamp: comparison.run1Timestamp,
+			overallTrend: comparison.overallTrend,
+			performanceChange,
+			significantChanges: comparison.summary,
+			testChanges: Object.fromEntries(
+				comparison.differences.map(diff => [
+					diff.testName,
+					{
+						durationChange: diff.durationChange,
+						durationChangePercent: diff.durationChangePercent,
+						trend: Math.abs(diff.durationChangePercent) < 1 ? 'stable' :
+							   diff.durationChangePercent > 0 ? 'degrading' : 'improving'
+					}
+				])
+			)
+		} : undefined,
+		tests: updatedTests
+	}
 }
 
 /**
@@ -751,16 +854,20 @@ function saveCompleteProfileResults(): void {
 			comparison = compareProfilingResults(profilingHistory[1], profilingHistory[0])
 		}
 
-		// Save as array of ProfilingRun
-		const jsonData = JSON.stringify(profilingHistory, null, 2)
-		fs.writeFileSync(resultsPath, jsonData)
+		// Save summary result in legacy format path
+		const result = createProfilingResult(currentRun, comparison, profilingHistory)
+		const summaryData = JSON.stringify(result, null, 2)
+		fs.writeFileSync(resultsPath, summaryData)
 		console.log(`✅ Results saved: ${resultsPath}`)
 
 		// Current run summary
 		console.log('\n📊 CURRENT RUN SUMMARY:')
 		for (const [testName, result] of Object.entries(currentRunResults)) {
+			const performance = result.duration < 0.5 ? 'good' : result.duration < 2.0 ? 'warning' : 'bad'
+			const performanceEmoji = performance === 'good' ? '🟢' : performance === 'warning' ? '🟡' : '🔴'
+
 			console.log(`\n🔍 ${testName}:`)
-			console.log(`   Duration: ${formatTime(result.duration)}`)
+			console.log(`   Duration: ${formatTime(result.duration)} ${performanceEmoji}`)
 			console.log(`   Input: ${result.inputLength} chars, ${result.markCount} marks`)
 			console.log(`   Main method: ${result.mainMethod.name}`)
 
@@ -777,6 +884,17 @@ function saveCompleteProfileResults(): void {
 
 			printMethodTree(result.mainMethod)
 		}
+
+		// Enhanced summary
+		const enhancedResult = createProfilingResult(currentRun, comparison, profilingHistory)
+		console.log('\n📈 ENHANCED RUN SUMMARY:')
+		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
+		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}ms`)
+		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}ms`)
+		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
+		console.log(`   Performance change: ${enhancedResult.summary.performanceChange > 0 ? '+' : ''}${enhancedResult.summary.performanceChange.toFixed(1)}%`)
+		console.log(`   Worst performing test: ${enhancedResult.summary.worstTest}`)
+		console.log(`   Best performing test: ${enhancedResult.summary.bestTest}`)
 
 		// Comparison summary
 		if (comparison) {
