@@ -257,11 +257,6 @@ export class TreeBuilder {
 			// Close completed parents that don't contain this match
 			currentTextPosition = this.closeCompletedParents(stack, match, input, result, currentTextPosition)
 
-			// Skip matches that start before current root position
-			if (stack.length === 0 && match.start < currentTextPosition) {
-				continue
-			}
-
 			// Add this match to the stack for potential children
 			this.addMatchToStack(stack, match)
 		}
