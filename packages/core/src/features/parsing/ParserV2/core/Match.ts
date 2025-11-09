@@ -5,15 +5,6 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 
 /**
- * Unified structure for storing positions of all gap types
- */
-export interface GapPositions {
-	value?: PositionRange
-	nested?: PositionRange
-	meta?: PositionRange
-}
-
-/**
  * Unified match structure for both active pattern matching and completed matches
  *
  * Represents the state of a pattern matching process in the parser's state machine.
@@ -22,9 +13,9 @@ export interface GapPositions {
  */
 
 export class Match {
-	public readonly gaps: GapPositions = {}
+	public readonly gaps: Partial<Record<GapType, PositionRange>> = {}
 	/** Captured value from first dynamic segment (for hasTwoValues patterns) */
-	private firstCapturedValue?: string
+	private captured?: string
 
 	public expectedSegmentIndex: number
 	public readonly start: number
@@ -44,18 +35,11 @@ export class Match {
 			this.gaps.value = {start: this.start, end: this.end}
 		}
 
-		// For hasTwoValues patterns with dynamic segments, use pre-calculated captured positions
-		if (descriptor.hasTwoValues && firstSegment?.captured) {
-			// Use ready-made captured positions from SegmentMatch
+		if (descriptor.hasTwoValues && firstSegment.captured) {
+			this.captured = firstSegment.captured
 			if (firstSegment.capturedStart !== undefined && firstSegment.capturedEnd !== undefined) {
-				this.gaps.value = {
-					start: firstSegment.capturedStart,
-					end: firstSegment.capturedEnd,
-				}
+				this.gaps.value = {start: firstSegment.capturedStart, end: firstSegment.capturedEnd}
 			}
-
-			// Store captured value for validating second dynamic segment
-			this.firstCapturedValue = firstSegment.captured
 		}
 	}
 
@@ -86,8 +70,8 @@ export class Match {
 
 		// Only hash for hasTwoValues closing tags that need value-specific matching
 		if (typeof segmentDef === 'object' && this.descriptor.hasTwoValues &&
-		    this.firstCapturedValue && this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
-			const value = segmentDef.template.replace('{}', this.firstCapturedValue)
+		    this.captured && this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
+			const value = segmentDef.template.replace('{}', this.captured)
 			return getSegmentIndex(baseIndex, value)
 		}
 
