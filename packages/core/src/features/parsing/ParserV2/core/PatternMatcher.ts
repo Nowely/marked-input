@@ -8,54 +8,14 @@
  * Key features:
  * - State machine approach for pattern matching
  * - Position-based indexing for efficient lookups
- * - Priority-based conflict resolution for overlapping matches
+ * - Processing order-based conflict resolution for overlapping matches
  * - Gap position management for nested content extraction
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
-import {SegmentDefinition, SegmentMatch} from '../utils/SegmentMatcher'
+import {SegmentMatch} from '../utils/SegmentMatcher'
 import {Match} from './Match'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
-
-/**
- * Gets the length of a segment definition
- * For static segments returns string length, for dynamic segments returns pattern length
- */
-function getSegmentLength(segment: SegmentDefinition): number {
-	return typeof segment === 'string' ? segment.length : segment.pattern.length
-}
-
-/**
- * Priority comparison functions for match states
- */
-class MatchPriority {
-	/**
-	 * Compare matches by overall priority for deterministic ordering
-	 * Priority rules:
-	 * 1. Longer first segment wins (** > *)
-	 * 2. Longer match wins
-	 * 3. More segments wins
-	 * Used for sorting completed matches at the same position
-	 */
-	static compareMatchPriority(a: Match, b: Match): number {
-		// Longer first segment wins (** > *)
-		const aFirstSegLen = getSegmentLength(a.descriptor.segments[0])
-		const bFirstSegLen = getSegmentLength(b.descriptor.segments[0])
-		if (aFirstSegLen !== bFirstSegLen) {
-			return bFirstSegLen - aFirstSegLen
-		}
-
-		// Longer match wins
-		const firstMatchLength = a.end - a.start
-		const secondMatchLength = b.end - b.start
-		if (firstMatchLength !== secondMatchLength) {
-			return secondMatchLength - firstMatchLength
-		}
-
-		// More segments wins
-		return b.descriptor.segments.length - a.descriptor.segments.length
-	}
-}
 
 /**
  * Optimized parser using state machine approach
@@ -140,8 +100,9 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Add match to position-indexed array, keeping only the highest priority match per position
+	 * Add match to position-indexed array, replacing any existing match at the same position
 	 * Uses binary search to find insertion point and maintains sorted order
+	 * Relies on processing order to determine which match to keep
 	 */
 	private addToCompleted(match: Match): void {
 		const position = match.start
@@ -161,11 +122,8 @@ export class PatternMatcher {
 
 		// Check if we found an existing entry at this position
 		if (left < this.completedStates.length && this.completedStates[left].position === position) {
-			// Position exists - compare priorities and keep the better match
-			const existing = this.completedStates[left].match
-			if (MatchPriority.compareMatchPriority(match, existing) > 0) {
-				this.completedStates[left].match = match
-			}
+			// Position exists - replace with the new match
+			this.completedStates[left].match = match
 		} else {
 			// New position - insert new entry at the correct position
 			this.completedStates.splice(left, 0, {position, match})
