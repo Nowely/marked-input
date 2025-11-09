@@ -91,7 +91,7 @@ export class PatternMatcher {
 		const match = this.dequeueWaitingMatch(segment)
 		if (!match) return
 
-		match.updateWithSegment(segment)
+		match.processNext(segment)
 
 		if (match.isCompleted) return this.addToCompleted(match)
 

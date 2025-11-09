@@ -98,7 +98,7 @@ export class Match {
 	/**
 	 * Update state with new segment by setting gap positions
 	 */
-	updateWithSegment(segment: SegmentMatch): void {
+	processNext(segment: SegmentMatch): void {
 		const start = this.end
 		const end = segment.start
 		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
