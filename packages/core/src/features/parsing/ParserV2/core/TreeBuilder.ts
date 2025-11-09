@@ -48,24 +48,16 @@ export class TreeBuilder {
 			return [this.createTextToken(0, input.length)]
 		}
 
+
 		let lastAcceptedMatch: Match | null = null
 
 		// PatternMatcher now guarantees: sorted order, no duplicates, only completed matches with valid gaps
 		for (const match of matches) {
-			// Check for overlaps with last accepted match (filtering logic from filterMatches)
-			if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
-				// Check if this is valid nesting inside lastAcceptedMatch
-				if (this.isValidNesting(match, lastAcceptedMatch)) {
-					// Valid nesting - accept this match and update tracking
-					lastAcceptedMatch = match
-				} else {
-					// Invalid overlap - skip this match
-					continue
-				}
-			} else {
-				// No overlap - accept this match
-				lastAcceptedMatch = match
+			if (!this.shouldAcceptMatch(match, lastAcceptedMatch)) {
+				continue
 			}
+
+			lastAcceptedMatch = match
 
 			// Close completed parents that don't contain this match
 			this.closeCompletedParents(match)
@@ -73,6 +65,7 @@ export class TreeBuilder {
 			// Add this match to the stack for potential children
 			this.addMatchToStack(match)
 		}
+
 
 		// Finalize all remaining marks in stack
 		this.finalizeRemainingStack()
@@ -90,29 +83,15 @@ export class TreeBuilder {
 	 * Handles both parent and root-level token placement
 	 */
 	private finalizeStackNode(node: StackNode): void {
-		const bounds = this.getContentBounds(node.match)
+		this.addRemainingTextToNode(node)
 
-		// Add remaining text in mark (always, even if empty)
-		node.children.push(this.createTextToken(node.textPos, bounds.end))
-
-		// Create token
 		const token = this.createMarkToken(node.match, node.children)
+		const isNested = this.stack.length > 0
 
-		// Determine target: parent's children or root tokens
-		const hasParent = this.stack.length > 0
-		const targetTokens = hasParent ? this.stack[this.stack.length - 1].children : this.result
-		const targetPos = hasParent ? this.stack[this.stack.length - 1].textPos : this.currentTextPosition
-
-		// Add text before token (always, even if empty)
-		targetTokens.push(this.createTextToken(targetPos, token.position.start))
-		targetTokens.push(token)
-
-		// Update position
-		if (hasParent) {
-			this.stack[this.stack.length - 1].textPos = token.position.end
-			// currentTextPosition unchanged for nested tokens
+		if (isNested) {
+			this.addTokenToParent(token, node)
 		} else {
-			this.currentTextPosition = token.position.end
+			this.addTokenToRoot(token)
 		}
 	}
 
@@ -121,8 +100,8 @@ export class TreeBuilder {
 	 */
 	private closeCompletedParents(match: Match): void {
 		while (this.stack.length > 0) {
-			const top = this.stack[this.stack.length - 1]
-			const bounds = this.getContentBounds(top.match)
+			const topNode = this.stack[this.stack.length - 1]
+			const bounds = this.getContentBounds(topNode.match)
 
 			if (bounds.end <= match.start) {
 				// Pop before finalizing (so stack.length reflects parent context)
@@ -257,5 +236,44 @@ export class TreeBuilder {
 	 */
 	private extractSubstring(start: number | undefined, end: number | undefined): string {
 		return start !== undefined && end !== undefined ? this.input.substring(start, end) : ''
+	}
+
+
+	/**
+	 * Determines if a match should be accepted based on overlap filtering rules
+	 */
+	private shouldAcceptMatch(match: Match, lastAcceptedMatch: Match | null): boolean {
+		if (!lastAcceptedMatch || match.start >= lastAcceptedMatch.end) {
+			return true
+		}
+		return this.isValidNesting(match, lastAcceptedMatch)
+	}
+
+
+	/**
+	 * Adds remaining text to a stack node before finalization
+	 */
+	private addRemainingTextToNode(node: StackNode): void {
+		const bounds = this.getContentBounds(node.match)
+		node.children.push(this.createTextToken(node.textPos, bounds.end))
+	}
+
+	/**
+	 * Adds a token to its parent in the stack
+	 */
+	private addTokenToParent(token: MarkToken, node: StackNode): void {
+		const parent = this.stack[this.stack.length - 1]
+		parent.children.push(this.createTextToken(parent.textPos, token.position.start))
+		parent.children.push(token)
+		parent.textPos = token.position.end
+	}
+
+	/**
+	 * Adds a token to the root result array
+	 */
+	private addTokenToRoot(token: MarkToken): void {
+		this.result.push(this.createTextToken(this.currentTextPosition, token.position.start))
+		this.result.push(token)
+		this.currentTextPosition = token.position.end
 	}
 }
