@@ -92,10 +92,8 @@ export class PatternMatcher {
 		if (!match) return
 
 		match.updateWithSegment(segment, input)
-		
-		if (match.isReadyToComplete) {
-			// Pattern is complete
-			match.markCompleted(segment)
+
+		if (match.isCompleted) {
 			this.addToCompleted(match)
 		} else {
 			// Continue waiting for next segment

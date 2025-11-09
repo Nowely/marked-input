@@ -74,13 +74,6 @@ export class Match {
 	}
 
 	/**
-	 * Check if all segments have been processed and match is ready to complete
-	 */
-	get isReadyToComplete(): boolean {
-		return this.expectedSegmentIndex >= this.descriptor.segments.length
-	}
-
-	/**
 	 * Get the next expected segment index
 	 */
 	get nextSegment(): number | undefined {
@@ -114,13 +107,10 @@ export class Match {
 
 		this.end = segment.end
 		this.expectedSegmentIndex++
-	}
 
-	/**
-	 * Mark state as completed
-	 */
-	markCompleted(segment: SegmentMatch): void {
-		this.expectedSegmentIndex = NaN
-		this.end = segment.end
+		// Auto-complete if all segments are processed
+		if (this.expectedSegmentIndex >= this.descriptor.segments.length) {
+			this.expectedSegmentIndex = NaN
+		}
 	}
 }
