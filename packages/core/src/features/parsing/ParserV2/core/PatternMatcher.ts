@@ -62,7 +62,6 @@ class MatchPriority {
 export class PatternMatcher {
 	private readonly pendingStates: Map<number, Match[]> = new Map()
 	private readonly completingStates: Map<number, Match[]> = new Map()
-	// Changed from Map to array of {position, matches} to maintain sorted order
 	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
 
 	constructor(private readonly registry: MarkupRegistry) {}
@@ -89,19 +88,19 @@ export class PatternMatcher {
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
 		const match = this.dequeueWaitingMatch(segment.index)
-		if (match) {
-			// For hasTwoValues patterns, check if segment value matches expected value
-			const expectedValue = match.getExpectedSegmentValue()
-			if (expectedValue !== undefined && segment.value !== expectedValue) {
-				// Expected specific segment value (e.g. "</div>"), but got different value (e.g. "</span>")
-				// Re-add to waiting list to try with next segment with same index
-				this.addToWaiting(match, segment.index)
-				return
-			}
+		if (!match) return
 
-			match.updateWithSegment(segment, input)
-			this.handleUpdatedState(match, segment)
+		// For hasTwoValues patterns, check if segment value matches expected value
+		const expectedValue = match.getExpectedSegmentValue()
+		if (expectedValue !== undefined && segment.value !== expectedValue) {
+			// Expected specific segment value (e.g. "</div>"), but got different value (e.g. "</span>")
+			// Re-add to waiting list to try with next segment with same index
+			this.addToWaiting(match, segment.index)
+			return
 		}
+
+		match.updateWithSegment(segment, input)
+		this.handleUpdatedState(match, segment)
 	}
 
 	private tryStartNewStates(segment: SegmentMatch): void {
@@ -130,7 +129,7 @@ export class PatternMatcher {
 			return pendingArray.pop()
 		}
 	}
-	
+
 	/**
 	 * Adds a state to the waiting list for a specific segment
 	 * Inserts both pending and completing states at the end (FIFO order)
