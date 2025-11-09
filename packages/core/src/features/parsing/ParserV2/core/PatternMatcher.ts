@@ -63,7 +63,7 @@ class MatchPriority {
 export class PatternMatcher {
 	private readonly pendingStates: Map<number, Match[]> = new Map()
 	private readonly completingStates: Map<number, Match[]> = new Map()
-	private readonly completedStates: Array<{position: number; matches: Match[]}> = []
+	private readonly completedStates: Array<{position: number; match: Match}> = []
 
 	constructor(private readonly registry: MarkupRegistry) {}
 
@@ -78,7 +78,7 @@ export class PatternMatcher {
 			this.tryStartNewStates(segment)
 		}
 
-		return this.completedStates.flatMap(entry => entry.matches)
+		return this.completedStates.map(entry => entry.match)
 	}
 
 	/**
@@ -140,9 +140,8 @@ export class PatternMatcher {
 	}
 
 	/**
-	 * Add match to position-indexed array, maintaining sorted order
-	 * Uses binary search to find insertion point
-	 * TreeBuilder will filter overlaps based on nesting rules
+	 * Add match to position-indexed array, keeping only the highest priority match per position
+	 * Uses binary search to find insertion point and maintains sorted order
 	 */
 	private addToCompleted(match: Match): void {
 		const position = match.start
@@ -162,27 +161,14 @@ export class PatternMatcher {
 
 		// Check if we found an existing entry at this position
 		if (left < this.completedStates.length && this.completedStates[left].position === position) {
-			// Position exists - insert match in sorted order by priority
-			const matches = this.completedStates[left].matches
-
-			// Find insertion point in matches array to maintain priority order
-			// compareMatchPriority(a, b) returns positive when b has higher priority
-			// Insert before the first match with higher priority (comparison > 0)
-			// For equal priority (comparison === 0), insert after (stable sort)
-			let insertIdx = 0
-			while (insertIdx < matches.length) {
-				const comparison = MatchPriority.compareMatchPriority(match, matches[insertIdx])
-				if (comparison > 0) {
-					// matches[insertIdx] has higher priority, insert before it
-					break
-				}
-				insertIdx++
+			// Position exists - compare priorities and keep the better match
+			const existing = this.completedStates[left].match
+			if (MatchPriority.compareMatchPriority(match, existing) > 0) {
+				this.completedStates[left].match = match
 			}
-
-			matches.splice(insertIdx, 0, match)
 		} else {
 			// New position - insert new entry at the correct position
-			this.completedStates.splice(left, 0, {position, matches: [match]})
+			this.completedStates.splice(left, 0, {position, match})
 		}
 	}
 }
