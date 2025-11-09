@@ -2,6 +2,7 @@ import {GapType, GAP_TYPE} from '../constants'
 import {PositionRange} from '../types'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'
+import {getSegmentIndex} from '../utils/getSegmentIndex'
 
 /**
  * Unified structure for storing positions of all gap types
@@ -25,17 +26,22 @@ export class Match {
 	/** Captured value from first dynamic segment (for hasTwoValues patterns) */
 	private firstCapturedValue?: string
 
+	public expectedSegmentIndex: number
+	public readonly start: number
+	public end: number
+
 	constructor(
 		public readonly descriptor: MarkupDescriptor,
-		public expectedSegmentIndex: number,
-		public readonly start: number,
-		public end: number,
-		firstSegment?: SegmentMatch
+		firstSegment: SegmentMatch
 	) {
+		this.expectedSegmentIndex = 1
+		this.start = firstSegment.start
+		this.end = firstSegment.end
+
 		// Auto-complete single segment patterns
 		if (descriptor.segments.length === 1) {
 			this.expectedSegmentIndex = NaN
-			this.gaps.value = {start, end}
+			this.gaps.value = {start: this.start, end: this.end}
 		}
 
 		// For hasTwoValues patterns with dynamic segments, use pre-calculated captured positions
@@ -69,37 +75,34 @@ export class Match {
 
 	/**
 	 * Get the next expected segment index
+	 * Returns value-specific index to ensure precise matching
 	 */
 	get nextSegment(): number | undefined {
 		if (this.isCompleted) {
 			return undefined
 		}
-		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
-	}
 
-	/**
-	 * Get the expected segment value for hasTwoValues patterns
-	 * For the second (closing) dynamic segment, returns the concrete value based on first captured value
-	 * Uses template for simple substitution instead of fragile regex replacement
-	 * Returns undefined for non-dynamic segments or first segment
-	 */
-	getExpectedSegmentValue(): string | undefined {
-		if (!this.descriptor.hasTwoValues || !this.firstCapturedValue) {
-			return undefined
+		const baseIndex = this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
+		const segmentDef = this.descriptor.segments[this.expectedSegmentIndex]
+
+		// Get the value to use for hashing
+		let value: string
+
+		if (typeof segmentDef === 'string') {
+			// Static segment - use the segment string itself
+			value = segmentDef
+		} else if (this.descriptor.hasTwoValues && this.firstCapturedValue &&
+		          this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
+			// Dynamic segment with expected value (hasTwoValues closing tag)
+			value = segmentDef.template.replace('{}', this.firstCapturedValue)
+		} else {
+			// Dynamic segment without specific expected value - use base index
+			return baseIndex
 		}
 
-		// Check if current expected segment is the last one (closing dynamic segment)
-		if (this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
-			const lastSegment = this.descriptor.segments[this.expectedSegmentIndex]
-			// If it's a dynamic segment, use template for substitution
-			if (typeof lastSegment !== 'string') {
-				// Simple string substitution using template - no regex needed
-				return lastSegment.template.replace('{}', this.firstCapturedValue)
-			}
-		}
-
-		return undefined
+		return getSegmentIndex(baseIndex, value)
 	}
+
 
 	/**
 	 * Update state with new segment by setting gap positions

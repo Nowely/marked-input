@@ -15,6 +15,7 @@
 import {MarkupRegistry} from '../utils/MarkupRegistry'
 import {SegmentDefinition, SegmentMatch} from '../utils/SegmentMatcher'
 import {Match} from './Match'
+import {getSegmentIndex} from '../utils/getSegmentIndex'
 
 /**
  * Gets the length of a segment definition
@@ -87,17 +88,8 @@ export class PatternMatcher {
 	 * Process only one state per call
 	 */
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
-		const match = this.dequeueWaitingMatch(segment.index)
+		const match = this.dequeueWaitingMatch(segment)
 		if (!match) return
-
-		// For hasTwoValues patterns, check if segment value matches expected value
-		const expectedValue = match.getExpectedSegmentValue()
-		if (expectedValue !== undefined && segment.value !== expectedValue) {
-			// Expected specific segment value (e.g. "</div>"), but got different value (e.g. "</span>")
-			// Re-add to waiting list to try with next segment with same index
-			this.addToWaiting(match, segment.index)
-			return
-		}
 
 		match.updateWithSegment(segment, input)
 		this.handleUpdatedState(match, segment)
@@ -105,49 +97,41 @@ export class PatternMatcher {
 
 	private tryStartNewStates(segment: SegmentMatch): void {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
-			const match = new Match(descriptor, 1, segment.start, segment.end, segment)
+			const match = new Match(descriptor, segment)
 
 			if (match.isCompleted) return this.addToCompleted(match)
 
-			this.addToWaiting(match, match.nextSegment!)
+			this.addToWaiting(match)
 		})
 	}
 
 	/**
-	 * Gets the next waiting match for the given segment index
-	 * Prioritizes completing states over pending states
-	 * Returns undefined if no waiting matches exist
+	 * Gets the next waiting match for the given segment
+	 * Uses value-specific index for precise matching
 	 */
-	private dequeueWaitingMatch(segmentIndex: number): Match | undefined {
-		const completingArray = this.completingStates.get(segmentIndex)
-		if (completingArray?.length) {
-			return completingArray.pop()
-		}
+	private dequeueWaitingMatch(segment: SegmentMatch): Match | undefined {
+		const index = getSegmentIndex(segment.index, segment.value)
 
-		const pendingArray = this.pendingStates.get(segmentIndex)
-		if (pendingArray?.length) {
-			return pendingArray.pop()
-		}
+		const completingArray = this.completingStates.get(index)
+		if (completingArray?.length) return completingArray.pop()
+
+		const pendingArray = this.pendingStates.get(index)
+		if (pendingArray?.length) return pendingArray.pop()
 	}
 
 	/**
-	 * Adds a state to the waiting list for a specific segment
-	 * Inserts both pending and completing states at the end (FIFO order)
+	 * Adds a state to the waiting list for the next expected segment
 	 */
-	private addToWaiting(match: Match, segmentIndex: number): void {
+	private addToWaiting(match: Match): void {
+		const segmentIndex = match.nextSegment!
+
 		if (match.isCompleting) {
 			const states = this.completingStates.get(segmentIndex) || []
-			if (states.length === 0) {
-				this.completingStates.set(segmentIndex, states)
-			}
-			// Completing states go to the end (FIFO order - first added, first processed)
+			if (states.length === 0) this.completingStates.set(segmentIndex, states)
 			states.push(match)
 		} else {
 			const states = this.pendingStates.get(segmentIndex) || []
-			if (states.length === 0) {
-				this.pendingStates.set(segmentIndex, states)
-			}
-			// Pending states go to the end (FIFO order - first added, first processed)
+			if (states.length === 0) this.pendingStates.set(segmentIndex, states)
 			states.push(match)
 		}
 	}
@@ -162,10 +146,10 @@ export class PatternMatcher {
 			this.addToCompleted(match)
 		} else {
 			// Continue waiting for next segment
-			const nextSegmentIndex = match.nextSegment!
-			this.addToWaiting(match, nextSegmentIndex)
+			this.addToWaiting(match)
 		}
 	}
+
 
 	/**
 	 * Add match to position-indexed array, maintaining sorted order

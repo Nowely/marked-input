@@ -334,8 +334,27 @@ describe('ParserV2', () => {
 						expect(marks[0].children.length).toBeGreaterThan(0)
 					})
 
+					it('handles complex HTML-like nested structure', () => {
+						const parser = new Parser([
+							'<__value__ __meta__>__nested__</__value__>',
+							'<__value__>__nested__</__value__>',
+							'**__nested__**',
+						])
+						const input = '<div class><p>Text <span/>bold</p></div>'
+						const result = parser.split(input)
+
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+							"0: TEXT "" [0-0]
+							 1: MARK "<div class><p>Text <span/>bold</p></div>" [0-40] [value="div", meta="class", nested="<p>Text <span/>bold</p>"]
+								1.0: TEXT "" [11-11]
+								1.1: MARK "<p>Text <span/>bold</p>" [11-34] [value="p", nested="Text <span/>bold"]
+								1.2: TEXT "" [34-34]
+							 2: TEXT "" [40-40]"
+						`)
+					})
+
 					it('does NOT match HTML-like pattern when opening and closing tags differ', () => {
-						// Pattern with two __label__ placeholders requires them to be equal
+						// Pattern with two __value__ placeholders requires them to be equal
 						const parser = new Parser(['<__value__>__nested__</__value__>'])
 						const input = '<div1>text</div2>'
 						const result = parser.split(input)
@@ -344,7 +363,7 @@ describe('ParserV2', () => {
 						// Result should be plain text
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "<div1>text</div2>" [0-17]"
-					`)
+						`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 						expect(marks).toHaveLength(0)
