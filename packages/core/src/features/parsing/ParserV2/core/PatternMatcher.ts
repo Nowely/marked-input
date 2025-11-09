@@ -104,27 +104,6 @@ export class PatternMatcher {
 		}
 	}
 
-	/**
-	 * Gets the next waiting match for the given segment index
-	 * Prioritizes completing states over pending states
-	 * Returns undefined if no waiting matches exist
-	 */
-	private dequeueWaitingMatch(segmentIndex: number): Match | undefined {
-		// Try completing states first (higher priority)
-		const completingArray = this.completingStates.get(segmentIndex)
-		if (completingArray?.length) {
-			return completingArray.shift()
-		}
-
-		// Try pending states if no completing states
-		const pendingArray = this.pendingStates.get(segmentIndex)
-		if (pendingArray?.length) {
-			return pendingArray.shift()
-		}
-
-		return undefined
-	}
-
 	private tryStartNewStates(segment: SegmentMatch): void {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
 			const match = new Match(descriptor, 1, segment.start, segment.end, segment)
@@ -136,8 +115,25 @@ export class PatternMatcher {
 	}
 
 	/**
+	 * Gets the next waiting match for the given segment index
+	 * Prioritizes completing states over pending states
+	 * Returns undefined if no waiting matches exist
+	 */
+	private dequeueWaitingMatch(segmentIndex: number): Match | undefined {
+		const completingArray = this.completingStates.get(segmentIndex)
+		if (completingArray?.length) {
+			return completingArray.pop()
+		}
+
+		const pendingArray = this.pendingStates.get(segmentIndex)
+		if (pendingArray?.length) {
+			return pendingArray.pop()
+		}
+	}
+	
+	/**
 	 * Adds a state to the waiting list for a specific segment
-	 * Inserts both pending and completing states at the beginning (LIFO order)
+	 * Inserts both pending and completing states at the end (FIFO order)
 	 */
 	private addToWaiting(match: Match, segmentIndex: number): void {
 		if (match.isCompleting) {
@@ -145,15 +141,15 @@ export class PatternMatcher {
 			if (states.length === 0) {
 				this.completingStates.set(segmentIndex, states)
 			}
-			// Completing states go to the beginning (LIFO order - last added, first processed)
-			states.unshift(match)
+			// Completing states go to the end (FIFO order - first added, first processed)
+			states.push(match)
 		} else {
 			const states = this.pendingStates.get(segmentIndex) || []
 			if (states.length === 0) {
 				this.pendingStates.set(segmentIndex, states)
 			}
-			// Pending states go to the beginning (LIFO order - last added, first processed)
-			states.unshift(match)
+			// Pending states go to the end (FIFO order - first added, first processed)
+			states.push(match)
 		}
 	}
 
