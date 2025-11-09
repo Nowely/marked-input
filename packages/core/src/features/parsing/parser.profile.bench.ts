@@ -541,13 +541,13 @@ function generateRecommendations(methods: any[]): string[] {
 	const topMethods = methods.slice(0, 3)
 	for (const method of topMethods) {
 		switch (method.method) {
-			case 'TreeBuilder.closeCompletedParents':
+			case 'TreeBuilder.buildParentChildRelationships':
 				recommendations.push(
-					'Optimize TreeBuilder.closeCompletedParents - consider more efficient stack algorithm'
+					'Optimize TreeBuilder.buildParentChildRelationships - parent-child linking phase'
 				)
 				break
-			case 'TreeBuilder.finalizeStackNode':
-				recommendations.push('Reduce intermediate object creation in TreeBuilder.finalizeStackNode')
+			case 'TreeBuilder.buildTokensFromRoots':
+				recommendations.push('Optimize TreeBuilder.buildTokensFromRoots - token creation phase')
 				break
 			case 'PatternMatcher.processWaitingStates':
 				recommendations.push('Optimize PatternMatcher.processWaitingStates - critical processing path')
@@ -608,138 +608,138 @@ function buildMethodTree(
 	const patternMatcherMethods = methods.filter(m => m.method.startsWith('PatternMatcher.'))
 	const treeBuilderMethods = methods.filter(m => m.method.startsWith('TreeBuilder.'))
 
-	// Add component roots
-	if (segmentMatcherMethods.length > 0) {
-		const segmentTime = segmentMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
-		const segmentMethod = segmentMatcherMethods[0]
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
-		rootMethod.subMethods['SegmentMatcher.search'] = {
-			name: 'SegmentMatcher.search',
-			calls: segmentMethod?.callCount || 0,
-			percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
-			complexity: 'O(T)',
-			times: segmentMethod
-				? [
-						Math.round(segmentMethod.minTime * 1000) / 1000,
-						Math.round(segmentMethod.avgTime * 1000) / 1000,
-						Math.round(segmentMethod.maxTime * 1000) / 1000,
-					]
-				: [0, 0, 0],
-			firstParamLength: segmentMethod?.avgParamLength,
-			// No subMethods for SegmentMatcher.search
-		}
-	}
-
-	if (patternMatcherMethods.length > 0) {
-		const mainPatternMethod = patternMatcherMethods.find(m => m.method === 'PatternMatcher.process')
-		const subMethodsTime = patternMatcherMethods
-			.filter(m => m.method !== 'PatternMatcher.process')
-			.reduce((sum, m) => sum + m.totalTime, 0)
-
-		// Use the main method's time if available, otherwise estimate from sub-methods
-		const mainMethodTime = mainPatternMethod ? mainPatternMethod.totalTime : subMethodsTime
-
-		const patternMatcherRoot: MethodProfile = {
-			name: 'PatternMatcher.process',
-			calls: mainPatternMethod?.callCount || 0,
-			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
-			complexity: 'O(S)',
-			times: mainPatternMethod
-				? [
-						Math.round(mainPatternMethod.minTime * 1000) / 1000,
-						Math.round(mainPatternMethod.avgTime * 1000) / 1000,
-						Math.round(mainPatternMethod.maxTime * 1000) / 1000,
-					]
-				: [0, 0, 0],
-			firstParamLength: mainPatternMethod?.avgParamLength,
-			subMethods: {},
+		// Add component roots
+		if (segmentMatcherMethods.length > 0) {
+			const segmentTime = segmentMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
+			const segmentMethod = segmentMatcherMethods[0]
+			if (!rootMethod.subMethods) rootMethod.subMethods = {}
+			rootMethod.subMethods['SegmentMatcher.search'] = {
+				name: 'SegmentMatcher.search',
+				calls: segmentMethod?.callCount || 0,
+				percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+				complexity: 'O(T)',
+				times: segmentMethod
+					? [
+							Math.round(segmentMethod.minTime * 1000) / 1000,
+							Math.round(segmentMethod.avgTime * 1000) / 1000,
+							Math.round(segmentMethod.maxTime * 1000) / 1000,
+						]
+					: [0, 0, 0],
+				firstParamLength: segmentMethod?.avgParamLength,
+				// No subMethods for SegmentMatcher.search
+			}
 		}
 
-		// Add sub-methods under PatternMatcher.process
-		const subMethods = patternMatcherMethods
-			.filter(m => m.method !== 'PatternMatcher.process')
-			.map(method => ({
-				name: method.method,
-				calls: method.callCount,
-				percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
-				complexity: method.complexity,
-				times: [
-					Math.round(method.minTime * 1000) / 1000,
-					Math.round(method.avgTime * 1000) / 1000,
-					Math.round(method.maxTime * 1000) / 1000,
-				] as [number, number, number],
-				firstParamLength: method.avgParamLength,
-				// PatternMatcher sub-methods don't have their own sub-methods
-			}))
+		if (patternMatcherMethods.length > 0) {
+			const mainPatternMethod = patternMatcherMethods.find(m => m.method === 'PatternMatcher.process')
+			const subMethodsTime = patternMatcherMethods
+				.filter(m => m.method !== 'PatternMatcher.process')
+				.reduce((sum, m) => sum + m.totalTime, 0)
 
-		// Only add subMethods if there are any
-		if (subMethods.length > 0) {
-			if (!patternMatcherRoot.subMethods) patternMatcherRoot.subMethods = {}
-			subMethods.forEach(subMethod => {
-				patternMatcherRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
-			})
-		} else {
-			delete patternMatcherRoot.subMethods
+			// Use the main method's time if available, otherwise estimate from sub-methods
+			const mainMethodTime = mainPatternMethod ? mainPatternMethod.totalTime : subMethodsTime
+
+			const patternMatcherRoot: MethodProfile = {
+				name: 'PatternMatcher.process',
+				calls: mainPatternMethod?.callCount || 0,
+				percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+				complexity: 'O(S)',
+				times: mainPatternMethod
+					? [
+							Math.round(mainPatternMethod.minTime * 1000) / 1000,
+							Math.round(mainPatternMethod.avgTime * 1000) / 1000,
+							Math.round(mainPatternMethod.maxTime * 1000) / 1000,
+						]
+					: [0, 0, 0],
+				firstParamLength: mainPatternMethod?.avgParamLength,
+				subMethods: {},
+			}
+
+			// Add sub-methods under PatternMatcher.process
+			const subMethods = patternMatcherMethods
+				.filter(m => m.method !== 'PatternMatcher.process')
+				.map(method => ({
+					name: method.method,
+					calls: method.callCount,
+					percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
+					complexity: method.complexity,
+					times: [
+						Math.round(method.minTime * 1000) / 1000,
+						Math.round(method.avgTime * 1000) / 1000,
+						Math.round(method.maxTime * 1000) / 1000,
+					] as [number, number, number],
+					firstParamLength: method.avgParamLength,
+					// PatternMatcher sub-methods don't have their own sub-methods
+				}))
+
+			// Only add subMethods if there are any
+			if (subMethods.length > 0) {
+				if (!patternMatcherRoot.subMethods) patternMatcherRoot.subMethods = {}
+				subMethods.forEach(subMethod => {
+					patternMatcherRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
+				})
+			} else {
+				delete patternMatcherRoot.subMethods
+			}
+
+			if (!rootMethod.subMethods) rootMethod.subMethods = {}
+			rootMethod.subMethods['PatternMatcher.process'] = patternMatcherRoot
 		}
 
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
-		rootMethod.subMethods['PatternMatcher.process'] = patternMatcherRoot
-	}
+		if (treeBuilderMethods.length > 0) {
+			const mainTreeMethod = treeBuilderMethods.find(m => m.method === 'TreeBuilder.build')
+			const subMethodsTime = treeBuilderMethods
+				.filter(m => m.method !== 'TreeBuilder.build')
+				.reduce((sum, m) => sum + m.totalTime, 0)
 
-	if (treeBuilderMethods.length > 0) {
-		const mainTreeMethod = treeBuilderMethods.find(m => m.method === 'TreeBuilder.buildTree')
-		const subMethodsTime = treeBuilderMethods
-			.filter(m => m.method !== 'TreeBuilder.buildTree')
-			.reduce((sum, m) => sum + m.totalTime, 0)
+			// Use the main method's time if available, otherwise estimate from sub-methods
+			const mainMethodTime = mainTreeMethod ? mainTreeMethod.totalTime : subMethodsTime
 
-		// Use the main method's time if available, otherwise estimate from sub-methods
-		const mainMethodTime = mainTreeMethod ? mainTreeMethod.totalTime : subMethodsTime
+			const treeBuilderRoot: MethodProfile = {
+				name: 'TreeBuilder.build',
+				calls: mainTreeMethod?.callCount || 0,
+				percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
+				complexity: 'O(M·D)',
+				times: mainTreeMethod
+					? [
+							Math.round(mainTreeMethod.minTime * 1000) / 1000,
+							Math.round(mainTreeMethod.avgTime * 1000) / 1000,
+							Math.round(mainTreeMethod.maxTime * 1000) / 1000,
+						]
+					: [0, 0, 0],
+				firstParamLength: mainTreeMethod?.avgParamLength,
+				subMethods: {},
+			}
 
-		const treeBuilderRoot: MethodProfile = {
-			name: 'TreeBuilder.buildTree',
-			calls: mainTreeMethod?.callCount || 0,
-			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
-			complexity: 'O(M)',
-			times: mainTreeMethod
-				? [
-						Math.round(mainTreeMethod.minTime * 1000) / 1000,
-						Math.round(mainTreeMethod.avgTime * 1000) / 1000,
-						Math.round(mainTreeMethod.maxTime * 1000) / 1000,
-					]
-				: [0, 0, 0],
-			firstParamLength: mainTreeMethod?.avgParamLength,
-			subMethods: {},
+			// Add sub-methods under TreeBuilder.build
+			const subMethods = treeBuilderMethods
+				.filter(m => m.method !== 'TreeBuilder.build')
+				.map(method => ({
+					name: method.method,
+					calls: method.callCount,
+					percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
+					complexity: method.complexity,
+					times: [
+						Math.round(method.minTime * 1000) / 1000,
+						Math.round(method.avgTime * 1000) / 1000,
+						Math.round(method.maxTime * 1000) / 1000,
+					] as [number, number, number],
+					firstParamLength: method.avgParamLength,
+				}))
+
+			// Only add subMethods if there are any
+			if (subMethods.length > 0) {
+				if (!treeBuilderRoot.subMethods) treeBuilderRoot.subMethods = {}
+				subMethods.forEach(subMethod => {
+					treeBuilderRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
+				})
+			} else {
+				delete treeBuilderRoot.subMethods
+			}
+
+			if (!rootMethod.subMethods) rootMethod.subMethods = {}
+			rootMethod.subMethods['TreeBuilder.build'] = treeBuilderRoot
 		}
-
-		// Add sub-methods under TreeBuilder.buildTree
-		const subMethods = treeBuilderMethods
-			.filter(m => m.method !== 'TreeBuilder.buildTree')
-			.map(method => ({
-				name: method.method,
-				calls: method.callCount,
-				percentage: Math.round((method.totalTime / totalTime) * 100 * 10) / 10, // percentage of total time, round to 1 decimal
-				complexity: method.complexity,
-				times: [
-					Math.round(method.minTime * 1000) / 1000,
-					Math.round(method.avgTime * 1000) / 1000,
-					Math.round(method.maxTime * 1000) / 1000,
-				] as [number, number, number],
-				firstParamLength: method.avgParamLength,
-			}))
-
-		// Only add subMethods if there are any
-		if (subMethods.length > 0) {
-			if (!treeBuilderRoot.subMethods) treeBuilderRoot.subMethods = {}
-			subMethods.forEach(subMethod => {
-				treeBuilderRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
-			})
-		} else {
-			delete treeBuilderRoot.subMethods
-		}
-
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
-		rootMethod.subMethods['TreeBuilder.buildTree'] = treeBuilderRoot
-	}
 
 	return rootMethod
 }

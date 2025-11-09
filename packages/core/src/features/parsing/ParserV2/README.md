@@ -101,7 +101,7 @@ ParserV2/
 ├── core/                    # Core parsing logic
 │   ├── MarkupDescriptor.ts  # Markup descriptor creation and validation
 │   ├── PatternMatcher.ts    # State machine pattern matching
-│   ├── TreeBuilder.ts       # Single-pass tree construction
+│   ├── TreeBuilder.ts       # Optimized tree construction with pre-computed children
 │   └── TokenBuilder.ts      # Token creation utilities
 └── utils/                   # Utilities
     ├── MarkupRegistry.ts    # Descriptor registry with fast lookups
@@ -177,10 +177,11 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
                               ↓
                        MatchStates
                               ↓
-                TreeBuilder (single-pass)
-                - O(N) overlap filtering
-                - Stack-based tree construction
-                - Position containment checks
+                TreeBuilder (optimized)
+                - Phase 1: Build parent-child relationships
+                - Phase 2: Pre-compute children lists
+                - Phase 3: Build tokens recursively
+                - O(M·D + M) complexity where D is nesting depth
                               ↓
                       Token[]
 ```
@@ -513,17 +514,29 @@ calculateDeterministicPriority(state: MatchState): number {
 - **`nested` gaps**: Track nested content boundaries
 - **`meta` gaps**: Track metadata boundaries
 
-#### Tree Building (O(N) Single-Pass)
+#### Tree Building (TreeBuilder - Optimized O(M) Algorithm)
 
-**Algorithm Overview:**
+**TreeBuilder** uses a three-phase approach for optimal performance:
 
+**Phase 1: Build Parent-Child Relationships O(M·D)**
 ```
-for each match in sorted_matches:
-  1. Close completed parents (match.end <= current.start)
-  2. Filter overlaps using lastMatch tracking
-  3. Validate nesting containment
-  4. Push match to stack for children
-finalize remaining stack
+for each match in sorted order:
+  1. Close completed parents (match starts after parent's content ends)
+  2. Skip conflicting matches
+  3. Link match to immediate parent (if exists)
+  4. Add to active parents if has nested content
+```
+
+**Phase 2: Pre-compute Children Lists O(M)**
+```
+for each match:
+  add match index to parent's children list
+```
+
+**Phase 3: Build Tokens Recursively O(M)**
+```
+for each root match (parent = -1):
+  build token with pre-computed children
 ```
 
 **Overlap Filtering:**
@@ -545,20 +558,47 @@ isValidNesting(child: MatchState, parent: MatchState): boolean {
 
 ### 4. Token Tree Building
 
-#### Single-Pass Tree Building
+#### TreeBuilder Algorithm
 
-Algorithm traverses sorted matches **once** using a stack:
+**TreeBuilder** uses a three-phase optimized algorithm:
+
+**Phase 1: Build Parent-Child Relationships (O(M·D))**
+
+Traverse matches once to establish parent-child links:
 
 ```
-for each match in sorted_matches:
-  1. Pop completed parents (match not contained in their label)
-  2. Skip if match starts before current position (conflict)
-  3. Push match to stack for potential children
-
-Finalize remaining stack
+activeParents = [] // Stack of currently open parents (max depth D)
+for each match i:
+  1. Close parents whose content ends before this match
+  2. Skip if conflicts with last accepted match  
+  3. Link to immediate parent: parents[i] = activeParents.top()
+  4. Add to active if has nested content
 ```
 
-**Complexity:** O(N log N) for sorting + O(N) for building
+**Phase 2: Pre-compute Children Lists (O(M))**
+
+Build fast lookup map for children:
+
+```
+childrenLists = Map<parentIdx, childIdx[]>
+for each match i:
+  if parents[i] >= 0:
+    childrenLists[parents[i]].push(i)
+```
+
+**Phase 3: Build Tokens Recursively (O(M))**
+
+Create tokens using pre-computed relationships:
+
+```
+buildTokens(matches with parent = -1):  // roots only
+  for each child using childrenLists:   // O(1) lookup
+    recursively build child tokens
+```
+
+**Complexity:** O(M·D + M + M) = **O(M·D)** where D is typical nesting depth (3-5)
+
+**Memory:** O(M) for parent indices + O(M) for children lists + O(D) for active parents stack
 
 #### Nesting Rules
 
