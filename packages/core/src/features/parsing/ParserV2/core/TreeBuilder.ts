@@ -17,6 +17,62 @@ interface StackNode {
  */
 export class TreeBuilder {
 	/**
+	 * Builds nested token tree from pre-processed matches
+	 *
+	 * Algorithm:
+	 * 1. Process pre-sorted, deduplicated matches from PatternMatcher
+	 * 2. Apply inline overlap filtering to prevent invalid nesting
+	 * 3. Use stack-based tree building to construct nested structure
+	 * 4. Close completed parents when current match is not inside their nested content
+	 * 5. Skip invalid matches with corrupted nested content
+	 * 6. Finalize remaining stack at the end
+	 *
+	 * Complexity: O(N) where N is number of matches
+	 */
+	public buildTree(matches: Match[], input: string): Token[] {
+		if (matches.length === 0) {
+			return [this.createTextToken(input, 0, input.length)]
+		}
+
+		const result: Token[] = []
+		const stack: StackNode[] = []
+		let currentTextPosition = 0
+		let lastAcceptedMatch: Match | null = null
+
+		// PatternMatcher now guarantees: sorted order, no duplicates, only completed matches with valid gaps
+		for (const match of matches) {
+			// Check for overlaps with last accepted match (filtering logic from filterMatches)
+			if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
+				// Check if this is valid nesting inside lastAcceptedMatch
+				if (this.isValidNesting(match, lastAcceptedMatch)) {
+					// Valid nesting - accept this match and update tracking
+					lastAcceptedMatch = match
+				} else {
+					// Invalid overlap - skip this match
+					continue
+				}
+			} else {
+				// No overlap - accept this match
+				lastAcceptedMatch = match
+			}
+
+			// Close completed parents that don't contain this match
+			currentTextPosition = this.closeCompletedParents(stack, match, input, result, currentTextPosition)
+
+			// Add this match to the stack for potential children
+			this.addMatchToStack(stack, match)
+		}
+
+		// Finalize all remaining marks in stack
+		currentTextPosition = this.finalizeRemainingStack(stack, input, result, currentTextPosition)
+
+		// Add final text after all marks (always, even if empty)
+		result.push(this.createTextToken(input, currentTextPosition, input.length))
+
+		return result
+	}
+
+	/**
 	 * Gets the content boundaries for a match
 	 * Priority: nested content if present, otherwise value content
 	 */
@@ -106,7 +162,6 @@ export class TreeBuilder {
 		}
 	}
 
-
 	/**
 	 * Checks if match is valid nesting inside existing match's nested section
 	 */
@@ -152,7 +207,6 @@ export class TreeBuilder {
 			return token.position.end // Update root position
 		}
 	}
-
 
 	/**
 	 * Closes completed parents that don't contain the current match
@@ -211,62 +265,5 @@ export class TreeBuilder {
 		}
 
 		return position
-	}
-
-	/**
-	 * Builds nested token tree from pre-processed matches
-	 *
-	 * Algorithm:
-	 * 1. Process pre-sorted, deduplicated matches from PatternMatcher
-	 * 2. Apply inline overlap filtering to prevent invalid nesting
-	 * 3. Use stack-based tree building to construct nested structure
-	 * 4. Close completed parents when current match is not inside their nested content
-	 * 5. Skip invalid matches with corrupted nested content
-	 * 6. Finalize remaining stack at the end
-	 *
-	 * Complexity: O(N) where N is number of matches
-	 */
-	public buildTree(matches: Match[], input: string): Token[] {
-		if (matches.length === 0) {
-			return [this.createTextToken(input, 0, input.length)]
-		}
-
-		const result: Token[] = []
-		const stack: StackNode[] = []
-		let currentTextPosition = 0
-		let lastAcceptedMatch: Match | null = null
-
-		// PatternMatcher now guarantees: sorted order, no duplicates, only completed matches with valid gaps
-		for (const match of matches) {
-
-			// Check for overlaps with last accepted match (filtering logic from filterMatches)
-			if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
-				// Check if this is valid nesting inside lastAcceptedMatch
-				if (this.isValidNesting(match, lastAcceptedMatch)) {
-					// Valid nesting - accept this match and update tracking
-					lastAcceptedMatch = match
-				} else {
-					// Invalid overlap - skip this match
-					continue
-				}
-			} else {
-				// No overlap - accept this match
-				lastAcceptedMatch = match
-			}
-
-			// Close completed parents that don't contain this match
-			currentTextPosition = this.closeCompletedParents(stack, match, input, result, currentTextPosition)
-
-			// Add this match to the stack for potential children
-			this.addMatchToStack(stack, match)
-		}
-
-		// Finalize all remaining marks in stack
-		currentTextPosition = this.finalizeRemainingStack(stack, input, result, currentTextPosition)
-
-		// Add final text after all marks (always, even if empty)
-		result.push(this.createTextToken(input, currentTextPosition, input.length))
-
-		return result
 	}
 }
