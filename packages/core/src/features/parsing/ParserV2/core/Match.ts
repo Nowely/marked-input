@@ -75,7 +75,6 @@ export class Match {
 
 	/**
 	 * Get the next expected segment index
-	 * Returns value-specific index for dynamic segments, base index for static segments
 	 */
 	get nextSegment(): number | undefined {
 		if (this.isCompleted) {
@@ -85,18 +84,14 @@ export class Match {
 		const baseIndex = this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
 		const segmentDef = this.descriptor.segments[this.expectedSegmentIndex]
 
-		if (typeof segmentDef === 'string') {
-			// Static segment - no hashing needed
-			return getSegmentIndex(baseIndex)
-		} else if (this.descriptor.hasTwoValues && this.firstCapturedValue &&
-		          this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
-			// Dynamic segment with expected value (hasTwoValues closing tag)
+		// Only hash for hasTwoValues closing tags that need value-specific matching
+		if (typeof segmentDef === 'object' && this.descriptor.hasTwoValues &&
+		    this.firstCapturedValue && this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
 			const value = segmentDef.template.replace('{}', this.firstCapturedValue)
 			return getSegmentIndex(baseIndex, value)
-		} else {
-			// Dynamic segment without specific expected value - no hashing needed
-			return getSegmentIndex(baseIndex)
 		}
+
+		return baseIndex
 	}
 
 
