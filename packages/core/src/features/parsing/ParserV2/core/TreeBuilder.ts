@@ -65,6 +65,24 @@ export class TreeBuilder {
 		return [...this.result]
 	}
 
+	/**
+	 * Closes completed parents that don't contain the current match
+	 */
+	private closeCompletedParents(match: Match): void {
+		while (this.stack.length > 0) {
+			const topNode = this.stack[this.stack.length - 1]
+			const bounds = this.getContentBounds(topNode.match)
+
+			if (bounds.end <= match.start) {
+				// Pop before finalizing (so stack.length reflects parent context)
+				const node = this.stack.pop()!
+				this.finalizeStackNode(node)
+			} else {
+				break
+			}
+		}
+	}
+
 	// ===== CORE TREE BUILDING METHODS =====
 
 	/**
@@ -84,23 +102,7 @@ export class TreeBuilder {
 		}
 	}
 
-	/**
-	 * Closes completed parents that don't contain the current match
-	 */
-	private closeCompletedParents(match: Match): void {
-		while (this.stack.length > 0) {
-			const topNode = this.stack[this.stack.length - 1]
-			const bounds = this.getContentBounds(topNode.match)
-
-			if (bounds.end <= match.start) {
-				// Pop before finalizing (so stack.length reflects parent context)
-				const node = this.stack.pop()!
-				this.finalizeStackNode(node)
-			} else {
-				break
-			}
-		}
-	}
+	
 
 	/**
 	 * Adds a match to the stack for potential children processing
