@@ -37,9 +37,9 @@ export class Match {
 
 		if (descriptor.hasTwoValues && firstSegment.captured) {
 			this.captured = firstSegment.captured
-			if (firstSegment.capturedStart !== undefined && firstSegment.capturedEnd !== undefined) {
-				this.gaps.value = {start: firstSegment.capturedStart, end: firstSegment.capturedEnd}
-			}
+			const capturedStart = firstSegment.start + firstSegment.value.indexOf(firstSegment.captured)
+			const capturedEnd = capturedStart + firstSegment.captured.length
+			this.gaps.value = {start: capturedStart, end: capturedEnd}
 		}
 	}
 

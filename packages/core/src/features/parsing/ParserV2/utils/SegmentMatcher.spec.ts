@@ -34,8 +34,6 @@ describe('SegmentMatcher', () => {
 				end: 5,
 				value: '<div>',
 				captured: 'div',
-				capturedStart: 1,
-				capturedEnd: 4,
 			})
 			expect(result[1]).toEqual({
 				index: 1,
@@ -43,8 +41,6 @@ describe('SegmentMatcher', () => {
 				end: 18,
 				value: '</div>',
 				captured: 'div',
-				capturedStart: 14,
-				capturedEnd: 17,
 			})
 		})
 
@@ -63,8 +59,6 @@ describe('SegmentMatcher', () => {
 				end: 5,
 				value: '<img>',
 				captured: 'img',
-				capturedStart: 1,
-				capturedEnd: 4,
 			})
 			expect(result[1]).toEqual({
 				index: 1,
@@ -72,8 +66,6 @@ describe('SegmentMatcher', () => {
 				end: 20,
 				value: '</img>',
 				captured: 'img',
-				capturedStart: 16,
-				capturedEnd: 19,
 			})
 		})
 	})
@@ -96,8 +88,6 @@ describe('SegmentMatcher', () => {
 				end: 5,
 				value: '<div ',
 				captured: 'div',
-				capturedStart: 1,
-				capturedEnd: 4,
 			})
 			expect(result[1]).toEqual({
 				index: 1,
@@ -105,8 +95,6 @@ describe('SegmentMatcher', () => {
 				end: 24,
 				value: '</div>',
 				captured: 'div',
-				capturedStart: 20,
-				capturedEnd: 23,
 			})
 		})
 
@@ -129,8 +117,6 @@ describe('SegmentMatcher', () => {
 				end: 5,
 				value: '<div ',
 				captured: 'div',
-				capturedStart: 1,
-				capturedEnd: 4,
 			})
 			expect(result[1]).toEqual({
 				index: 3,
@@ -138,8 +124,6 @@ describe('SegmentMatcher', () => {
 				end: 11,
 				value: '>',
 				captured: undefined,
-				capturedStart: undefined,
-				capturedEnd: undefined,
 			})
 			expect(result[2]).toEqual({
 				index: 6,
@@ -147,8 +131,6 @@ describe('SegmentMatcher', () => {
 				end: 14,
 				value: '<p>',
 				captured: 'p',
-				capturedStart: 12,
-				capturedEnd: 13,
 			})
 			expect(result[3]).toEqual({
 				index: 2,
@@ -156,8 +138,6 @@ describe('SegmentMatcher', () => {
 				end: 19,
 				value: ' ',
 				captured: undefined,
-				capturedStart: undefined,
-				capturedEnd: undefined,
 			})
 			expect(result[4]).toEqual({
 				index: 7,
@@ -165,8 +145,6 @@ describe('SegmentMatcher', () => {
 				end: 21,
 				value: '**',
 				captured: undefined,
-				capturedStart: undefined,
-				capturedEnd: undefined,
 			})
 			expect(result[5]).toEqual({
 				index: 7,
@@ -174,8 +152,6 @@ describe('SegmentMatcher', () => {
 				end: 27,
 				value: '**',
 				captured: undefined,
-				capturedStart: undefined,
-				capturedEnd: undefined,
 			})
 			expect(result[6]).toEqual({
 				index: 4,
@@ -183,8 +159,6 @@ describe('SegmentMatcher', () => {
 				end: 31,
 				value: '</p>',
 				captured: 'p',
-				capturedStart: 29,
-				capturedEnd: 30,
 			})
 			expect(result[7]).toEqual({
 				index: 4,
@@ -192,8 +166,6 @@ describe('SegmentMatcher', () => {
 				end: 37,
 				value: '</div>',
 				captured: 'div',
-				capturedStart: 33,
-				capturedEnd: 36,
 			})
 		})
 	})

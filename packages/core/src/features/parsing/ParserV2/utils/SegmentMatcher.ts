@@ -12,10 +12,6 @@ export interface SegmentMatch {
 	value: string
 	/** Captured content from dynamic pattern (if any) */
 	captured?: string
-	/** Start position of captured content (if any) */
-	capturedStart?: number
-	/** End position of captured content (if any) */
-	capturedEnd?: number
 }
 
 /**
@@ -159,8 +155,6 @@ export class SegmentMatcher {
 						end: start + matchedText.length,
 						value: matchedText,
 						captured,
-						capturedStart: captured ? start + matchedText.indexOf(captured) : undefined,
-						capturedEnd: captured ? start + matchedText.indexOf(captured) + captured.length : undefined,
 					})
 				}
 			}
