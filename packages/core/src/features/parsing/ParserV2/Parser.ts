@@ -36,7 +36,7 @@ export class Parser {
 
 	split(value: string): Token[] {
 		const segments = this.segmentMatcher.search(value)
-		const matches = this.patternMatcher.process(segments, value)
+		const matches = this.patternMatcher.process(segments)
 		return this.treeBuilder.buildTree(matches, value)
 	}
 

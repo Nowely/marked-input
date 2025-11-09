@@ -68,13 +68,13 @@ export class PatternMatcher {
 	constructor(private readonly registry: MarkupRegistry) {}
 
 	/** Main method that converts found segments into structured matches */
-	process(segments: SegmentMatch[], input: string): Match[] {
+	process(segments: SegmentMatch[]): Match[] {
 		this.pendingStates.clear()
 		this.completingStates.clear()
 		this.completedStates.length = 0
 
 		for (const segment of segments) {
-			this.processWaitingStates(segment, input)
+			this.processWaitingStates(segment)
 			this.tryStartNewStates(segment)
 		}
 
@@ -87,18 +87,15 @@ export class PatternMatcher {
 	 * Process completing states first (higher priority), then pending states
 	 * Process only one state per call
 	 */
-	private processWaitingStates(segment: SegmentMatch, input: string): void {
+	private processWaitingStates(segment: SegmentMatch): void {
 		const match = this.dequeueWaitingMatch(segment)
 		if (!match) return
 
-		match.updateWithSegment(segment, input)
+		match.updateWithSegment(segment)
 
-		if (match.isCompleted) {
-			this.addToCompleted(match)
-		} else {
-			// Continue waiting for next segment
-			this.addToWaiting(match)
-		}
+		if (match.isCompleted) return this.addToCompleted(match)
+
+		this.addToWaiting(match)
 	}
 
 	private tryStartNewStates(segment: SegmentMatch): void {
@@ -141,7 +138,6 @@ export class PatternMatcher {
 			states.push(match)
 		}
 	}
-
 
 	/**
 	 * Add match to position-indexed array, maintaining sorted order
