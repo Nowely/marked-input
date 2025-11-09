@@ -37,7 +37,7 @@ export class TreeBuilder {
 	 *
 	 * Complexity: O(N) where N is number of matches
 	 */
-	public buildTree(matches: Match[], input: string): Token[] {
+	public build(matches: Match[], input: string): Token[] {
 		// Initialize/reset instance fields for this build
 		this.input = input
 		this.result.length = 0 // Clear array without reallocating
