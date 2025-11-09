@@ -5,11 +5,9 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
  * Unified structure for storing positions of all gap types
- * Replaces individual properties (valueStart/End, nestedStart/End, etc.)
  */
 export interface GapPositions {
 	value?: PositionRange
-	secondValue?: PositionRange
 	nested?: PositionRange
 	meta?: PositionRange
 }
@@ -24,17 +22,34 @@ export interface GapPositions {
 
 export class Match {
 	public readonly gaps: GapPositions = {}
+	/** Captured value from first dynamic segment (for hasTwoValues patterns) */
+	private firstCapturedValue?: string
 
 	constructor(
 		public readonly descriptor: MarkupDescriptor,
 		public expectedSegmentIndex: number,
 		public readonly start: number,
-		public end: number
+		public end: number,
+		firstSegment?: SegmentMatch
 	) {
 		// Auto-complete single segment patterns
 		if (descriptor.segments.length === 1) {
 			this.expectedSegmentIndex = NaN
 			this.gaps.value = {start, end}
+		}
+
+		// For hasTwoValues patterns with dynamic segments, use pre-calculated captured positions
+		if (descriptor.hasTwoValues && firstSegment?.captured) {
+			// Use ready-made captured positions from SegmentMatch
+			if (firstSegment.capturedStart !== undefined && firstSegment.capturedEnd !== undefined) {
+				this.gaps.value = {
+					start: firstSegment.capturedStart,
+					end: firstSegment.capturedEnd
+				}
+			}
+
+			// Store captured value for validating second dynamic segment
+			this.firstCapturedValue = firstSegment.captured
 		}
 	}
 
@@ -62,110 +77,45 @@ export class Match {
 		}
 		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
 	}
-
+	
 	/**
-	 * Validates and updates two value positions for hasTwoValues patterns
-	 * Returns true if values match, false otherwise
+	 * Get the expected segment value for hasTwoValues patterns
+	 * For the second (closing) dynamic segment, returns the concrete value based on first captured value
+	 * Uses template for simple substitution instead of fragile regex replacement
+	 * Returns undefined for non-dynamic segments or first segment
 	 */
-	private validateTwoValues(gapStart: number, gapEnd: number, input: string): boolean {
-		if (this.gaps.value === undefined) {
-			this.gaps.value = {start: gapStart, end: gapEnd}
-			return true
+	getExpectedSegmentValue(): string | undefined {
+		if (!this.descriptor.hasTwoValues || !this.firstCapturedValue) {
+			return undefined
 		}
 
-		const firstValue = input.substring(this.gaps.value.start, this.gaps.value.end)
-		const secondValue = input.substring(gapStart, gapEnd)
-
-		if (firstValue !== secondValue) {
-			return false
+		// Check if current expected segment is the last one (closing dynamic segment)
+		if (this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
+			const lastSegment = this.descriptor.segments[this.expectedSegmentIndex]
+			// If it's a dynamic segment, use template for substitution
+			if (typeof lastSegment !== 'string') {
+				// Simple string substitution using template - no regex needed
+				return lastSegment.template.replace('{}', this.firstCapturedValue)
+			}
 		}
 
-		this.gaps.secondValue = {start: gapStart, end: gapEnd}
-		return true
-	}
-
-	/**
-	 * Updates an extendable gap (nested or meta) by extending its end position
-	 */
-	private updateExtendableGap(gapType: GapType, gapStart: number, gapEnd: number): void {
-		const gapKey = gapType === GAP_TYPE.Nested ? 'nested' : 'meta'
-		const gap = (this.gaps[gapKey] ??= {start: gapStart, end: gapEnd})
-		gap.end = gapEnd
-	}
-
-	/**
-	 * Resets an extendable gap (nested or meta) to start-only state for rollback
-	 */
-	private resetExtendableGapForRollback(gapType: GapType): void {
-		const gapKey = gapType === GAP_TYPE.Nested ? 'nested' : 'meta'
-		const gap = this.gaps[gapKey]
-		if (gap) {
-			gap.end = gap.start
-		}
-	}
-
-	/**
-	 * Updates gap position for a specific gap type
-	 */
-	private updateGapPosition(gapType: GapType, gapStart: number, gapEnd: number): void {
-		switch (gapType) {
-			case GAP_TYPE.Value:
-				this.gaps.value = {start: gapStart, end: gapEnd}
-				break
-			case GAP_TYPE.Nested:
-			case GAP_TYPE.Meta:
-				this.updateExtendableGap(gapType, gapStart, gapEnd)
-				break
-		}
+		return undefined
 	}
 
 	/**
 	 * Update state with new segment by setting gap positions
-	 * Returns true if state is valid, false if validation failed (for hasTwoValues patterns)
 	 */
-	updateWithSegment(segment: SegmentMatch, input: string): boolean {
-		const gapStart = this.end
-		const gapEnd = segment.start
+	updateWithSegment(segment: SegmentMatch, input: string): void {
+		const start = this.end
+		const end = segment.start
 		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
 
-		// Handle value gap with special validation for hasTwoValues patterns
-		if (gapType === GAP_TYPE.Value && this.descriptor.hasTwoValues) {
-			if (!this.validateTwoValues(gapStart, gapEnd, input)) {
-				return false
-			}
-		} else {
-			// Handle other gap types (value without hasTwoValues, nested, meta)
-			this.updateGapPosition(gapType, gapStart, gapEnd)
-		}
+		this.gaps[gapType] = {start, end}
 
 		this.end = segment.end
 		this.expectedSegmentIndex++
-		return true
 	}
 
-	/**
-	 * Rollback state after validation failure for hasTwoValues patterns
-	 * Returns the previous segment index that this state should wait for
-	 */
-	rollback(): number {
-		// Rollback: decrement expectedSegmentIndex to wait for previous segment again
-		this.expectedSegmentIndex--
-
-		// Rollback end position to before the previous segment
-		// When validation fails, we need to "rewind" the end position back by the length
-		// of the previous segment, so the state can be retried with different input
-		const previousSegment = this.descriptor.segments[this.expectedSegmentIndex]
-		this.end = this.end - previousSegment.length
-
-		// Clear the gap END position that was set for the segment before this one
-		// Keep the START position so we can extend the gap to the next occurrence
-		const previousGapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
-		if (previousGapType === GAP_TYPE.Nested || previousGapType === GAP_TYPE.Meta) {
-			this.resetExtendableGapForRollback(previousGapType)
-		}
-
-		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
-	}
 
 	/**
 	 * Mark state as completed

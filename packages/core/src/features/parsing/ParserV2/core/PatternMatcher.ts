@@ -13,8 +13,16 @@
  */
 
 import {MarkupRegistry} from '../utils/MarkupRegistry'
-import {SegmentMatch} from '../utils/SegmentMatcher'
+import {SegmentDefinition, SegmentMatch} from '../utils/SegmentMatcher'
 import {Match} from './Match'
+
+/**
+ * Gets the length of a segment definition
+ * For static segments returns string length, for dynamic segments returns pattern length
+ */
+function getSegmentLength(segment: SegmentDefinition): number {
+	return typeof segment === 'string' ? segment.length : segment.pattern.length
+}
 
 /**
  * Priority comparison functions for match states
@@ -30,8 +38,8 @@ class MatchPriority {
 	 */
 	static compareMatchPriority(a: Match, b: Match): number {
 		// Longer first segment wins (** > *)
-		const aFirstSegLen = a.descriptor.segments[0].length
-		const bFirstSegLen = b.descriptor.segments[0].length
+		const aFirstSegLen = getSegmentLength(a.descriptor.segments[0])
+		const bFirstSegLen = getSegmentLength(b.descriptor.segments[0])
 		if (aFirstSegLen !== bFirstSegLen) {
 			return bFirstSegLen - aFirstSegLen
 		}
@@ -82,15 +90,17 @@ export class PatternMatcher {
 	private processWaitingStates(segment: SegmentMatch, input: string): void {
 		const match = this.dequeueWaitingMatch(segment.index)
 		if (match) {
-			const isSuccess = match.updateWithSegment(segment, input)
-			if (!isSuccess) {
-				// Validation failed - rollback and re-add to waiting list
-				const previousSegmentIndex = match.rollback()
-				this.addToWaiting(match, previousSegmentIndex)
-			} else {
-				// State updated successfully - handle completion or continue waiting
-				this.handleUpdatedState(match, segment)
+			// For hasTwoValues patterns, check if segment value matches expected value
+			const expectedValue = match.getExpectedSegmentValue()
+			if (expectedValue !== undefined && segment.value !== expectedValue) {
+				// Expected specific segment value (e.g. "</div>"), but got different value (e.g. "</span>")
+				// Re-add to waiting list to try with next segment with same index
+				this.addToWaiting(match, segment.index)
+				return
 			}
+
+			match.updateWithSegment(segment, input)
+			this.handleUpdatedState(match, segment)
 		}
 	}
 
@@ -117,7 +127,7 @@ export class PatternMatcher {
 
 	private tryStartNewStates(segment: SegmentMatch): void {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
-			const match = new Match(descriptor, 1, segment.start, segment.end)
+			const match = new Match(descriptor, 1, segment.start, segment.end, segment)
 
 			if (match.isCompleted) return this.addToCompleted(match)
 

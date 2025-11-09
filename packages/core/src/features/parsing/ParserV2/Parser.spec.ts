@@ -315,17 +315,17 @@ describe('ParserV2', () => {
 						const input = '<div class><p>Text **bold**</p></div>'
 						const result = parser.split(input)
 
-						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "" [0-0]
-					 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", nested="<p>Text **bold**</p>"]
-						1.0: TEXT "" [11-11]
-						1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", nested="Text **bold**"]
-							1.1.0: TEXT "Text " [14-19]
-							1.1.1: MARK "**bold**" [19-27] [value="bold", nested="bold"]
-							1.1.2: TEXT "" [27-27]
-						1.2: TEXT "" [31-31]
-					 2: TEXT "" [37-37]"
-				`)
+					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: TEXT "" [0-0]
+				 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", nested="<p>Text **bold**</p>"]
+					1.0: TEXT "" [11-11]
+					1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", nested="Text **bold**"]
+						1.1.0: TEXT "Text " [14-19]
+						1.1.1: MARK "**bold**" [19-27] [value="bold", nested="bold"]
+						1.1.2: TEXT "" [27-27]
+					1.2: TEXT "" [31-31]
+				 2: TEXT "" [37-37]"
+			`)
 
 						// Verify correct nesting
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]

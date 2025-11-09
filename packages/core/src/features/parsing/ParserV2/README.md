@@ -60,6 +60,7 @@ const nestedResult = nestedParser.split('@[hello #[world]]')
 - **O(N) single-pass filtering** replaces multi-stage validation
 - **Direct MatchState → Token pipeline** removes intermediate conversions
 - **Deterministic priority system** enables efficient conflict resolution
+- **Dual-matcher strategy** for SegmentMatcher provides 3-7x performance improvement
 
 ## Architecture
 
@@ -93,6 +94,7 @@ ParserV2/
 ├── Parser.spec.ts           # Tests
 ├── Parser.bench.ts          # Performance benchmarks
 ├── README.md                # Documentation and parser rules
+├── OPTIMIZATION_RESULTS.md  # SegmentMatcher optimization summary
 ├── index.ts                 # Public exports
 ├── types.ts                 # Types and interfaces
 ├── constants.ts             # Constants and placeholders
@@ -103,7 +105,7 @@ ParserV2/
 │   └── TokenBuilder.ts      # Token creation utilities
 └── utils/                   # Utilities
     ├── MarkupRegistry.ts    # Descriptor registry with fast lookups
-    ├── AhoCorasick.ts       # Efficient multi-pattern search
+    ├── SegmentMatcher.ts    # Dual-matcher strategy for optimal performance
     ├── toString.ts          # Token serialization
     ├── denote.ts            # Token processing with callbacks
     └── annotate.ts          # Markup template instantiation
@@ -165,7 +167,7 @@ ParserV2/
 ### Algorithm Flow
 
 ```
-Input Text → Aho-Corasick → SegmentMatches
+Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
                               ↓
                     MarkupRegistry
                     (fast lookups by segment)
@@ -440,11 +442,13 @@ Patterns consist of **static segments** and **placeholders**:
 
 ### 3. Match Finding Algorithm
 
-#### Segment Matching (Aho-Corasick)
+#### Segment Matching (SegmentMatcher)
 
 - All static segments from all patterns are deduplicated in `MarkupRegistry`
-- **Aho-Corasick** algorithm finds all segment occurrences in text
-- Result: `SegmentMatch[]` - found segments with positions (now **exclusive end indices**)
+- **SegmentMatcher** uses dual-matcher strategy for optimal performance
+- **Static segments**: Fast Map-based lookup
+- **Dynamic segments**: Named capture groups with overlap filtering
+- Result: `SegmentMatch[]` - found segments with positions (exclusive end indices)
 - **Complexity:** O(N + M), where N = text length, M = pattern count
 
 #### State Machine Pattern Matching

@@ -1,9 +1,19 @@
 import {PLACEHOLDER, GapType, GAP_TYPE} from '../constants'
 import {Markup} from '../types'
+import {SegmentDefinition} from '../utils/SegmentMatcher'
+import {escapeRegexChars, escapeForCharClass} from '../utils/regexUtils'
+
+/**
+ * Gets the string value from a segment definition
+ * For static segments returns the string itself, for dynamic segments returns the pattern
+ */
+function getSegmentValue(segment: SegmentDefinition): string {
+	return typeof segment === 'string' ? segment : segment.pattern
+}
 
 /**
  * Descriptor for segment-based markup parsing
- * Converts markup templates into arrays of static segments
+ * Converts markup templates into arrays of static or dynamic segments
  */
 export interface MarkupDescriptor {
 	/** Original markup template string */
@@ -12,8 +22,8 @@ export interface MarkupDescriptor {
 	index: number
 	/** First character of first segment, used for fast grouping/lookup */
 	trigger: string
-	/** Array of static text segments (2-4 segments depending on pattern) */
-	segments: string[]
+	/** Array of segment definitions (can be static strings or dynamic patterns) */
+	segments: SegmentDefinition[]
 	/** Type of content in each gap between segments */
 	gapTypes: GapType[]
 	/** True if this markup contains a __meta__ placeholder */
@@ -37,8 +47,8 @@ export interface MarkupDescriptor {
  * - `@[__value__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "meta"]
  * - `@[__nested__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "meta"]
  * - `@[__value__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "nested"]
- * - `<__value__>__meta__</__value__>` -> segments: ["<", ">", "</", ">"], gapTypes: ["value", "meta", "value"]
- * - `<__value__ __meta__>__nested__</__value__>` -> segments: ["<", " ", ">", "</", ">"], gapTypes: ["value", "meta", "nested", "value"]
+ * - `<__value__>__meta__</__value__>` -> segments: [{pattern: '<([^>]+)>'}, {pattern: '</([^>]+)>'}], gapTypes: ["value", "meta", "value"] (dynamic)
+ * - `<__value__ __meta__>__nested__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__nested__</([^>]+)>'}], gapTypes: ["value", "meta", "nested", "value"] (dynamic)
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const hasTwoValues = countPlaceholder(markup, PLACEHOLDER.Value) === 2
@@ -76,18 +86,24 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	}
 
 	// Parse segments and gap types
-	const {segments, gapTypes} = parseSegmentsAndGaps(markup)
+	const {segments, gapTypes} = parseSegmentsAndGaps(markup, hasTwoValues)
 
 	if (segments.length === 0) {
 		throw new Error(`Invalid markup format: "${markup}". Must have at least one static segment`)
 	}
 
-	const isSymmetric = segments.length >= 2 && segments[0] === segments[segments.length - 1]
+	// For isSymmetric check, compare the actual segment values (extract from SegmentDefinition)
+	const firstSegmentValue = getSegmentValue(segments[0])
+	const lastSegmentValue = getSegmentValue(segments[segments.length - 1])
+	const isSymmetric = segments.length >= 2 && firstSegmentValue === lastSegmentValue
+
+	// For trigger, use first character of first segment
+	const trigger = firstSegmentValue.charAt(0)
 
 	return {
 		markup,
 		index,
-		trigger: segments[0].charAt(0),
+		trigger,
 		segments,
 		gapTypes,
 		hasMeta,
@@ -109,13 +125,14 @@ interface PlaceholderInfo {
 
 /**
  * Parses markup template into segments and gap types
+ * For hasTwoValues patterns, creates dynamic segments around __value__ placeholders
  */
-function parseSegmentsAndGaps(markup: string): {
-	segments: string[]
+function parseSegmentsAndGaps(markup: string, hasTwoValues: boolean): {
+	segments: SegmentDefinition[]
 	gapTypes: GapType[]
 } {
 	const placeholders = extractPlaceholders(markup)
-	const result = buildSegments(markup, placeholders)
+	const result = buildSegments(markup, placeholders, hasTwoValues)
 	validateParseResult(result)
 	return result
 }
@@ -190,11 +207,13 @@ function extractPlaceholders(markup: string): PlaceholderInfo[] {
 
 /**
  * Builds segments and gap types from markup and extracted placeholders
+ * For hasTwoValues patterns, creates dynamic segments around __value__ placeholders
  */
 function buildSegments(
 	markup: string,
-	placeholders: PlaceholderInfo[]
-): {segments: string[]; gapTypes: GapType[]} {
+	placeholders: PlaceholderInfo[],
+	hasTwoValues: boolean
+): {segments: SegmentDefinition[]; gapTypes: GapType[]} {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	let currentSegmentPosition = 0
@@ -219,13 +238,144 @@ function buildSegments(
 		segments.push(finalSegment)
 	}
 
+	// Convert to dynamic segments if this is a hasTwoValues pattern
+	if (hasTwoValues) {
+		return convertToDynamicSegments(segments, gapTypes, placeholders)
+	}
+
 	return {segments, gapTypes}
+}
+
+/**
+ * Converts static segments around __value__ placeholders to dynamic patterns
+ * For pattern like <__value__>__meta__</__value__>:
+ *   - Original: segments ["<", ">", "</", ">"], gapTypes ["value", "meta", "value"]
+ *   - Result: segments [{template: '<{}>', pattern: '<([^>]+)>'}, {template: '</{}>', pattern: '</([^>]+)>'}], gapTypes ["meta"]
+ * Dynamic segments "absorb" the __value__ gaps they surround
+ */
+function convertToDynamicSegments(
+	segments: string[],
+	gapTypes: GapType[],
+	_placeholders: PlaceholderInfo[]
+): {segments: SegmentDefinition[]; gapTypes: GapType[]} {
+	// Find positions of __value__ gaps
+	const valueGapIndices: number[] = []
+	gapTypes.forEach((type, idx) => {
+		if (type === GAP_TYPE.Value) {
+			valueGapIndices.push(idx)
+		}
+	})
+
+	if (valueGapIndices.length !== 2) {
+		// This shouldn't happen as hasTwoValues should be validated earlier
+		return {segments, gapTypes}
+	}
+
+	const newSegments: SegmentDefinition[] = []
+	const newGapTypes: GapType[] = []
+
+	const firstValueGapIdx = valueGapIndices[0]
+	const secondValueGapIdx = valueGapIndices[1]
+
+	// Create first dynamic segment
+	const beforeFirst = segments[firstValueGapIdx]
+	const afterFirst = segments[firstValueGapIdx + 1]
+	if (beforeFirst && afterFirst) {
+		// Get segments that come after afterFirst to determine exclusions
+		const segmentsAfterFirst = segments.slice(firstValueGapIdx + 2)
+		newSegments.push(createDynamicSegment(beforeFirst, afterFirst, segmentsAfterFirst))
+	}
+
+	// Add middle segments and gaps (between the two value gaps)
+	for (let i = firstValueGapIdx + 2; i < secondValueGapIdx; i++) {
+		newSegments.push(segments[i])
+	}
+
+	// Create second dynamic segment
+	const beforeSecond = segments[secondValueGapIdx]
+	const afterSecond = segments[secondValueGapIdx + 1]
+	if (beforeSecond && afterSecond) {
+		// Get segments that come after afterSecond to determine exclusions
+		const segmentsAfterSecond = segments.slice(secondValueGapIdx + 2)
+		newSegments.push(createDynamicSegment(beforeSecond, afterSecond, segmentsAfterSecond))
+	}
+
+	// Filter out value gaps
+	gapTypes.forEach(type => {
+		if (type !== GAP_TYPE.Value) {
+			newGapTypes.push(type)
+		}
+	})
+
+	return {segments: newSegments, gapTypes: newGapTypes}
+}
+
+/**
+ * Creates a dynamic segment definition with template and pattern
+ * Template is used for value substitution, pattern for regex matching
+ * 
+ * Universal approach - no hardcoded special cases
+ * Uses non-greedy matching to handle complex patterns correctly
+ * Dynamically determines excluded characters based on other segments in the pattern
+ * 
+ * @param beforeSegment - Segment before the captured content (e.g., '<')
+ * @param afterSegment - Segment immediately after the captured content (e.g., '>')
+ * @param segmentsAfter - Segments that come after afterSegment in the pattern to determine exclusions
+ * @returns Object with template (for substitution) and pattern (for matching)
+ * 
+ * @example
+ * createDynamicSegment('</','>', [])
+ * // => {template: '</{}>', pattern: '</([^>]+?)>'}
+ * 
+ * createDynamicSegment('<', ' ', ['>'])
+ * // => {template: '<{} ', pattern: '<([^ >]+?) '}  // excludes '>' to prevent matching <p>Text 
+ */
+function createDynamicSegment(
+	beforeSegment: string,
+	afterSegment: string,
+	segmentsAfter: string[]
+): {template: string; pattern: string} {
+	// Template for simple substitution - no escaping needed
+	const template = `${beforeSegment}{}${afterSegment}`
+
+	// Pattern for regex matching - with proper escaping
+	const escapedBefore = escapeRegexChars(beforeSegment)
+	const escapedAfter = escapeRegexChars(afterSegment)
+
+	// Exclude characters from afterSegment
+	const escapedDelimiters = escapeForCharClass(afterSegment)
+	
+	// Dynamically determine additional exclusions based on segments that come after afterSegment
+	// Exclude characters that start segments after afterSegment, but only if they could appear
+	// between beforeSegment and afterSegment (i.e., they're not part of a longer segment starting with beforeSegment)
+	// For example, if afterSegment is ' ' and there's a segment '>', exclude '>' to prevent matching <p>Text 
+	const additionalExclusions = new Set<string>()
+	for (const segment of segmentsAfter) {
+		if (segment.length > 0) {
+			const firstChar = segment[0]
+			// If this character is not part of afterSegment and the segment doesn't start with beforeSegment,
+			// exclude it to prevent incorrect matches
+			// This handles cases like '<__value__ __meta__>__nested__</__value__>' where '>' should be excluded
+			// from '<([^ ]+?) ' pattern, but not cases like '<__value__>__meta__</__value__>' where
+			// '</' segment shouldn't cause '/' to be excluded from '<([^>]+?)>' pattern
+			if (!afterSegment.includes(firstChar) && !segment.startsWith(beforeSegment)) {
+				additionalExclusions.add(firstChar)
+			}
+		}
+	}
+	
+	const additionalExclusionsEscaped = escapeForCharClass(Array.from(additionalExclusions).join(''))
+	
+	// Non-greedy quantifier to stop at first occurrence of afterSegment
+	const pattern = `${escapedBefore}([^${escapedDelimiters}${additionalExclusionsEscaped}]+?)${escapedAfter}`
+
+	return {template, pattern}
 }
 
 /**
  * Validates the result of parsing segments and gaps
  */
-function validateParseResult(result: {segments: string[]; gapTypes: GapType[]}): void {
+function validateParseResult(result: {segments: SegmentDefinition[]; gapTypes: GapType[]}): void {
 	if (result.segments.length === 0) {
 		throw new Error('Parsed markup must contain at least one segment')
 	}
