@@ -107,10 +107,10 @@ export class PatternMatcher {
 
 	/**
 	 * Gets the next waiting match for the given segment
-	 * Uses value-specific index for precise matching
+	 * Uses value-specific index for dynamic segments, base index for static segments
 	 */
 	private dequeueWaitingMatch(segment: SegmentMatch): Match | undefined {
-		const index = getSegmentIndex(segment.index, segment.value)
+		const index = segment.captured ? getSegmentIndex(segment.index, segment.value) : segment.index
 
 		const completingArray = this.completingStates.get(index)
 		if (completingArray?.length) return completingArray.pop()

@@ -1,13 +1,16 @@
 /**
- * Creates a value-specific index using djb2 hash algorithm
- * This ensures that segments with different values get unique indices,
- * preventing incorrect matches in hasTwoValues patterns
+ * Creates a value-specific index using djb2 hash algorithm for dynamic segments
+ * For static segments, returns the base index directly to avoid unnecessary hashing
  *
  * @param baseIndex - The base index of the segment type
- * @param value - The actual value of the segment
- * @returns Value-specific index for the segment
+ * @param value - The actual value of the segment (optional, for dynamic segments only)
+ * @returns Value-specific index for dynamic segments, or base index for static segments
  */
-export function getSegmentIndex(baseIndex: number, value: string): number {
+export function getSegmentIndex(baseIndex: number, value?: string): number {
+	if (!value) {
+		return baseIndex
+	}
+
 	let hash = 5381
 	for (let i = 0; i < value.length; i++) {
 		hash = (hash * 33) ^ value.charCodeAt(i)
