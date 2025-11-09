@@ -35,7 +35,7 @@ export class MarkupRegistry {
 			descriptor.segments.forEach((segment, segmentIndex) => {
 				// Get a unique key for this segment (string value or pattern)
 				const segmentKey = this.getSegmentKey(segment)
-				
+
 				if (segmentKey.length > 0) {
 					// Assign index to segment if not already assigned
 					if (!segmentIndexMap.has(segmentKey)) {
@@ -55,7 +55,7 @@ export class MarkupRegistry {
 					// Set the global index for this segment in descriptor
 					const globalIndex = segmentIndexMap.get(segmentKey)!
 					descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
-					
+
 					// For dynamic patterns, also register static prefix and suffix as separate segments
 					if (typeof segment !== 'string') {
 						const staticParts = this.extractStaticParts(segment.pattern)
@@ -97,16 +97,16 @@ export class MarkupRegistry {
 	private getSegmentKey(segment: SegmentDefinition): string {
 		return typeof segment === 'string' ? segment : segment.pattern
 	}
-	
+
 	/**
 	 * Extracts static prefix and suffix from a dynamic pattern
-	 * 
+	 *
 	 * Dynamic patterns have the form: `escapedPrefix(captureGroup)escapedSuffix`
 	 * This method extracts and unescapes the prefix and suffix parts.
-	 * 
+	 *
 	 * @param pattern - Dynamic regex pattern (e.g., `<([^ ]+?) ` or `</([^>]+?)>`)
 	 * @returns Array of unescaped static parts [prefix, suffix] (may be empty if invalid)
-	 * 
+	 *
 	 * @example
 	 * extractStaticParts('<([^ ]+?) ') // => ['<', ' ']
 	 * extractStaticParts('</([^>]+?)>') // => ['</', '>']
@@ -116,19 +116,19 @@ export class MarkupRegistry {
 		// Match pattern structure: prefix + (capture group) + suffix
 		// Use named groups for clarity
 		const match = pattern.match(/^(?<prefix>.+?)\([^)]+\)(?<suffix>.+?)$/)
-		
+
 		// Validate match - return empty array if pattern doesn't match expected structure
 		if (!match?.groups) {
 			return []
 		}
-		
+
 		const {prefix, suffix} = match.groups
 		const parts: string[] = []
-		
+
 		// Unescape regex escapes (e.g., '\<' -> '<', '\[' -> '[')
 		const unescapedPrefix = unescapeRegexString(prefix)
 		const unescapedSuffix = unescapeRegexString(suffix)
-		
+
 		// Only add non-empty parts
 		if (unescapedPrefix.length > 0) {
 			parts.push(unescapedPrefix)
@@ -136,7 +136,7 @@ export class MarkupRegistry {
 		if (unescapedSuffix.length > 0) {
 			parts.push(unescapedSuffix)
 		}
-		
+
 		return parts
 	}
 }

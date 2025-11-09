@@ -19,9 +19,7 @@ export function escapeRegexChars(str: string): string {
  * @returns Escaped and deduplicated characters for character class
  */
 export function escapeForCharClass(str: string): string {
-	return [...new Set(str)]
-		.map(ch => ch.replace(/[\\^\-\]]/g, '\\$&'))
-		.join('')
+	return [...new Set(str)].map(ch => ch.replace(/[\\^\-\]]/g, '\\$&')).join('')
 }
 
 /**
@@ -32,4 +30,3 @@ export function escapeForCharClass(str: string): string {
 export function unescapeRegexString(str: string): string {
 	return str.replace(/\\(.)/g, '$1')
 }
-

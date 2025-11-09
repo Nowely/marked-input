@@ -42,7 +42,7 @@ describe('ParserV2', () => {
 			const value = 'Hello @[world](test) and #[tag]'
 			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
 
-		const tokens = Parser.split(value, options)
+			const tokens = Parser.split(value, options)
 			const result = Parser.join(tokens)
 
 			expect(result).toBe(value)
@@ -315,7 +315,7 @@ describe('ParserV2', () => {
 						const input = '<div class><p>Text **bold**</p></div>'
 						const result = parser.split(input)
 
-					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 				"0: TEXT "" [0-0]
 				 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", nested="<p>Text **bold**</p>"]
 					1.0: TEXT "" [11-11]

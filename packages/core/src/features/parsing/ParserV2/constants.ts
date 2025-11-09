@@ -26,4 +26,4 @@ export const GAP_TYPE = {
 	Nested: 'nested',
 } as const
 
-export type GapType = typeof GAP_TYPE[keyof typeof GAP_TYPE]
+export type GapType = (typeof GAP_TYPE)[keyof typeof GAP_TYPE]

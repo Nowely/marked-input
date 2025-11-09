@@ -48,12 +48,15 @@ interface ProfilingComparison {
 		durationChangePercent: number
 		inputLength: number
 		markCount: number
-		methodChanges: Record<string, {
-			timeChange: number
-			timeChangePercent: number
-			callsChange: number
-			percentageChange: number
-		}>
+		methodChanges: Record<
+			string,
+			{
+				timeChange: number
+				timeChangePercent: number
+				callsChange: number
+				percentageChange: number
+			}
+		>
 	}>
 	overallTrend: 'improving' | 'degrading' | 'stable'
 	summary: string[]
@@ -78,11 +81,14 @@ interface ProfilingResult {
 		overallTrend: 'improving' | 'degrading' | 'stable'
 		performanceChange: number
 		significantChanges: string[]
-		testChanges: Record<string, {
-			durationChange: number
-			durationChangePercent: number
-			trend: 'improving' | 'degrading' | 'stable'
-		}>
+		testChanges: Record<
+			string,
+			{
+				durationChange: number
+				durationChangePercent: number
+				trend: 'improving' | 'degrading' | 'stable'
+			}
+		>
 	}
 	tests: Record<string, TestProfile>
 }
@@ -156,10 +162,7 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 /**
  * Create enhanced profiling result with summary and comparison
  */
-function createProfilingResult(
-	currentRun: ProfilingRun,
-	comparison?: ProfilingComparison
-): ProfilingResult {
+function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingComparison): ProfilingResult {
 	const testNames = Object.keys(currentRun.tests)
 	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
 
@@ -168,21 +171,23 @@ function createProfilingResult(
 	let performanceChange = 0
 
 	if (comparison) {
-		const avgChange = comparison.differences.reduce((sum, diff) =>
-			sum + diff.durationChangePercent, 0) / comparison.differences.length
+		const avgChange =
+			comparison.differences.reduce((sum, diff) => sum + diff.durationChangePercent, 0) /
+			comparison.differences.length
 		performanceChange = avgChange
-		trend = Math.abs(avgChange) < 1 ? 'stable' :
-		       avgChange > 0 ? 'degrading' : 'improving'
+		trend = Math.abs(avgChange) < 1 ? 'stable' : avgChange > 0 ? 'degrading' : 'improving'
 	}
 
 	// Поиск лучшего и худшего теста
-	const testDurations = testNames.map(name => ({
-		name,
-		duration: currentRun.tests[name].duration
-	})).sort((a, b) => b.duration - a.duration)
+	const testDurations = testNames
+		.map(name => ({
+			name,
+			duration: currentRun.tests[name].duration,
+		}))
+		.sort((a, b) => b.duration - a.duration)
 
 	// Добавление оценки производительности для каждого теста
-	const updatedTests = { ...currentRun.tests }
+	const updatedTests = {...currentRun.tests}
 	for (const [testName, testResult] of Object.entries(updatedTests)) {
 		const duration = testResult.duration
 		if (duration < 0.5) {
@@ -203,26 +208,32 @@ function createProfilingResult(
 			trend,
 			performanceChange,
 			worstTest: testDurations[0].name,
-			bestTest: testDurations[testDurations.length - 1].name
+			bestTest: testDurations[testDurations.length - 1].name,
 		},
-		comparison: comparison ? {
-			baselineTimestamp: comparison.run1Timestamp,
-			overallTrend: comparison.overallTrend,
-			performanceChange,
-			significantChanges: comparison.summary,
-			testChanges: Object.fromEntries(
-				comparison.differences.map(diff => [
-					diff.testName,
-					{
-						durationChange: diff.durationChange,
-						durationChangePercent: diff.durationChangePercent,
-						trend: Math.abs(diff.durationChangePercent) < 1 ? 'stable' :
-							   diff.durationChangePercent > 0 ? 'degrading' : 'improving'
-					}
-				])
-			)
-		} : undefined,
-		tests: updatedTests
+		comparison: comparison
+			? {
+					baselineTimestamp: comparison.run1Timestamp,
+					overallTrend: comparison.overallTrend,
+					performanceChange,
+					significantChanges: comparison.summary,
+					testChanges: Object.fromEntries(
+						comparison.differences.map(diff => [
+							diff.testName,
+							{
+								durationChange: diff.durationChange,
+								durationChangePercent: diff.durationChangePercent,
+								trend:
+									Math.abs(diff.durationChangePercent) < 1
+										? 'stable'
+										: diff.durationChangePercent > 0
+											? 'degrading'
+											: 'improving',
+							},
+						])
+					),
+				}
+			: undefined,
+		tests: updatedTests,
 	}
 }
 
@@ -244,23 +255,24 @@ function createProfilingResult(
  *
  * Automatic class method discovery
  */
-function discoverClassMethods(obj: any, className: string): Array<{name: string, method: Function, original: Function}> {
-	const methods: Array<{name: string, method: Function, original: Function}> = []
+function discoverClassMethods(
+	obj: any,
+	className: string
+): Array<{name: string; method: Function; original: Function}> {
+	const methods: Array<{name: string; method: Function; original: Function}> = []
 	const prototype = Object.getPrototypeOf(obj)
 
 	// Get all methods from prototype
-	const protoMethods = Object.getOwnPropertyNames(prototype)
-		.filter(name => {
-			const descriptor = Object.getOwnPropertyDescriptor(prototype, name)
-			return descriptor && typeof descriptor.value === 'function' && name !== 'constructor'
-		})
+	const protoMethods = Object.getOwnPropertyNames(prototype).filter(name => {
+		const descriptor = Object.getOwnPropertyDescriptor(prototype, name)
+		return descriptor && typeof descriptor.value === 'function' && name !== 'constructor'
+	})
 
 	// Get all methods from object itself (if any)
-	const ownMethods = Object.getOwnPropertyNames(obj)
-		.filter(name => {
-			const descriptor = Object.getOwnPropertyDescriptor(obj, name)
-			return descriptor && typeof descriptor.value === 'function'
-		})
+	const ownMethods = Object.getOwnPropertyNames(obj).filter(name => {
+		const descriptor = Object.getOwnPropertyDescriptor(obj, name)
+		return descriptor && typeof descriptor.value === 'function'
+	})
 
 	// Combine and remove duplicates
 	const allMethodNames = [...new Set([...protoMethods, ...ownMethods])]
@@ -273,7 +285,7 @@ function discoverClassMethods(obj: any, className: string): Array<{name: string,
 			methods.push({
 				name: fullMethodName,
 				method: method,
-				original: method.bind(obj)
+				original: method.bind(obj),
 			})
 		}
 	}
@@ -284,13 +296,9 @@ function discoverClassMethods(obj: any, className: string): Array<{name: string,
 /**
  * Automatic profiling of all object methods
  */
-function autoProfileObject(
-	obj: any,
-	className: string,
-	excludeMethods: string[] = []
-): () => void {
+function autoProfileObject(obj: any, className: string, excludeMethods: string[] = []): () => void {
 	const discoveredMethods = discoverClassMethods(obj, className)
-	const patchedMethods: Array<{obj: any, name: string, original: Function}> = []
+	const patchedMethods: Array<{obj: any; name: string; original: Function}> = []
 	const prototype = Object.getPrototypeOf(obj)
 
 	for (const {name, method, original} of discoveredMethods) {
@@ -301,7 +309,7 @@ function autoProfileObject(
 		const profiledMethod = createProfiledMethod(original as (...args: any[]) => any, name, className, complexity)
 
 		const methodName = name.split('.').pop()!
-		
+
 		// Try patching on prototype first (for proper method inheritance)
 		if (prototype[methodName] === method) {
 			// Method is on prototype, patch it there
@@ -384,12 +392,7 @@ function patchTreeBuilder(parser: Parser): () => void {
 /**
  * Execute profiling with complete metrics set
  */
-function runCompleteProfiling(
-	parser: Parser,
-	input: string,
-	testName: string,
-	iterations: number = 5
-): TestProfile {
+function runCompleteProfiling(parser: Parser, input: string, testName: string, iterations: number = 5): TestProfile {
 	// Clear statistics for fresh run
 	globalProfileStats.clear()
 	methodCallStack.length = 0
@@ -442,13 +445,17 @@ function runCompleteProfiling(
 			const maxTime = Math.max(...times)
 
 			// Calculate component times per iteration
-			const totalComponentTime = allMethods.reduce((sum, [, d]) => sum + (d.times.reduce((a, b) => a + b, 0) / iterations), 0)
+			const totalComponentTime = allMethods.reduce(
+				(sum, [, d]) => sum + d.times.reduce((a, b) => a + b, 0) / iterations,
+				0
+			)
 			const percentage = totalComponentTime > 0 ? (totalTime / totalComponentTime) * 100 : 0
 
 			// Calculate average parameter length if available
-			const avgParamLength = data.paramLengths.length > 0
-				? Math.round(data.paramLengths.reduce((a, b) => a + b, 0) / data.paramLengths.length)
-				: undefined
+			const avgParamLength =
+				data.paramLengths.length > 0
+					? Math.round(data.paramLengths.reduce((a, b) => a + b, 0) / data.paramLengths.length)
+					: undefined
 
 			return {
 				method: methodName,
@@ -460,7 +467,7 @@ function runCompleteProfiling(
 				minTime,
 				maxTime,
 				percentage,
-				avgParamLength
+				avgParamLength,
 			}
 		})
 		.sort((a, b) => b.totalTime - a.totalTime)
@@ -472,7 +479,7 @@ function runCompleteProfiling(
 		duration: Math.round(avgSplitTime * 1000) / 1000, // round to 3 decimal places - using average across iterations
 		inputLength: input.length,
 		markCount: markCountActual,
-		mainMethod
+		mainMethod,
 	}
 }
 
@@ -481,30 +488,30 @@ function runCompleteProfiling(
  */
 function estimateComplexity(methodName: string): string {
 	// Complexity patterns based on method naming conventions
-	const complexityPatterns: Array<{pattern: RegExp, complexity: string, description: string}> = [
+	const complexityPatterns: Array<{pattern: RegExp; complexity: string; description: string}> = [
 		// Core algorithm methods
-		{ pattern: /\.search$/, complexity: 'O(T)', description: 'Search operations typically O(T)' },
-		{ pattern: /\.process$/, complexity: 'O(S)', description: 'Main processing typically O(S)' },
+		{pattern: /\.search$/, complexity: 'O(T)', description: 'Search operations typically O(T)'},
+		{pattern: /\.process$/, complexity: 'O(S)', description: 'Main processing typically O(S)'},
 
 		// State management
-		{ pattern: /\.processWaitingStates$/, complexity: 'O(1)', description: 'Waiting states processing' },
-		{ pattern: /\.handleUpdatedState$/, complexity: 'O(1)', description: 'State updates typically O(1)' },
-		{ pattern: /\.tryStartNewStates$/, complexity: 'O(D)', description: 'State initialization O(D)' },
+		{pattern: /\.processWaitingStates$/, complexity: 'O(1)', description: 'Waiting states processing'},
+		{pattern: /\.handleUpdatedState$/, complexity: 'O(1)', description: 'State updates typically O(1)'},
+		{pattern: /\.tryStartNewStates$/, complexity: 'O(D)', description: 'State initialization O(D)'},
 
 		// Data structure operations
-		{ pattern: /\.addTo(PositionIndex|WaitingList)$/, complexity: 'O(log M + P)', description: 'Indexed insertions' },
-		{ pattern: /\.flattenMatches/, complexity: 'O(M)', description: 'Flattening operations O(M)' },
-		{ pattern: /\.filter/, complexity: 'O(M)', description: 'Filtering operations O(M)' },
-		{ pattern: /\.sort/, complexity: 'O(M log M)', description: 'Sorting operations' },
-		{ pattern: /\.find/, complexity: 'O(M)', description: 'Search in collections O(M)' },
+		{pattern: /\.addTo(PositionIndex|WaitingList)$/, complexity: 'O(log M + P)', description: 'Indexed insertions'},
+		{pattern: /\.flattenMatches/, complexity: 'O(M)', description: 'Flattening operations O(M)'},
+		{pattern: /\.filter/, complexity: 'O(M)', description: 'Filtering operations O(M)'},
+		{pattern: /\.sort/, complexity: 'O(M log M)', description: 'Sorting operations'},
+		{pattern: /\.find/, complexity: 'O(M)', description: 'Search in collections O(M)'},
 
 		// Utility operations
-		{ pattern: /\.(create|build)/, complexity: 'O(M)', description: 'Construction operations' },
-		{ pattern: /\.(get|is|has|validate|extract)/, complexity: 'O(1)', description: 'Access/validation operations' },
-		{ pattern: /\.add/, complexity: 'O(1)', description: 'Simple additions O(1)' },
-		{ pattern: /\.remove/, complexity: 'O(M)', description: 'Removals may require shifting' },
-		{ pattern: /\.update/, complexity: 'O(1)', description: 'Updates typically O(1)' },
-		{ pattern: /\.(finalize|close)/, complexity: 'O(S)', description: 'Finalization operations O(S)' },
+		{pattern: /\.(create|build)/, complexity: 'O(M)', description: 'Construction operations'},
+		{pattern: /\.(get|is|has|validate|extract)/, complexity: 'O(1)', description: 'Access/validation operations'},
+		{pattern: /\.add/, complexity: 'O(1)', description: 'Simple additions O(1)'},
+		{pattern: /\.remove/, complexity: 'O(M)', description: 'Removals may require shifting'},
+		{pattern: /\.update/, complexity: 'O(1)', description: 'Updates typically O(1)'},
+		{pattern: /\.(finalize|close)/, complexity: 'O(S)', description: 'Finalization operations O(S)'},
 	]
 
 	// Check patterns in order of specificity
@@ -535,7 +542,9 @@ function generateRecommendations(methods: any[]): string[] {
 	for (const method of topMethods) {
 		switch (method.method) {
 			case 'TreeBuilder.closeCompletedParents':
-				recommendations.push('Optimize TreeBuilder.closeCompletedParents - consider more efficient stack algorithm')
+				recommendations.push(
+					'Optimize TreeBuilder.closeCompletedParents - consider more efficient stack algorithm'
+				)
 				break
 			case 'TreeBuilder.finalizeStackNode':
 				recommendations.push('Reduce intermediate object creation in TreeBuilder.finalizeStackNode')
@@ -566,19 +575,21 @@ const MAX_HISTORY_RUNS = 2
 /**
  * Build hierarchical method tree from flat method list
  */
-function buildMethodTree(methods: Array<{
-	method: string
-	className: string
-	complexity: string
+function buildMethodTree(
+	methods: Array<{
+		method: string
+		className: string
+		complexity: string
+		totalTime: number
+		callCount: number
+		avgTime: number
+		minTime: number
+		maxTime: number
+		percentage: number
+		avgParamLength?: number
+	}>,
 	totalTime: number
-	callCount: number
-	avgTime: number
-	minTime: number
-	maxTime: number
-	percentage: number
-	avgParamLength?: number
-}>, totalTime: number): MethodProfile {
-
+): MethodProfile {
 	// Build hierarchy based on class relationships
 	const rootMethod: MethodProfile = {
 		name: 'Parser.split',
@@ -587,9 +598,9 @@ function buildMethodTree(methods: Array<{
 		times: [
 			Math.round(totalTime * 1000) / 1000,
 			Math.round(totalTime * 1000) / 1000,
-			Math.round(totalTime * 1000) / 1000
+			Math.round(totalTime * 1000) / 1000,
 		], // [min, avg, max] - for main method they're the same, rounded to 3 decimals
-		subMethods: {}
+		subMethods: {},
 	}
 
 	// Group methods by component
@@ -607,12 +618,14 @@ function buildMethodTree(methods: Array<{
 			calls: segmentMethod?.callCount || 0,
 			percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(T)',
-			times: segmentMethod ? [
-				Math.round(segmentMethod.minTime * 1000) / 1000,
-				Math.round(segmentMethod.avgTime * 1000) / 1000,
-				Math.round(segmentMethod.maxTime * 1000) / 1000
-			] : [0, 0, 0],
-			firstParamLength: segmentMethod?.avgParamLength
+			times: segmentMethod
+				? [
+						Math.round(segmentMethod.minTime * 1000) / 1000,
+						Math.round(segmentMethod.avgTime * 1000) / 1000,
+						Math.round(segmentMethod.maxTime * 1000) / 1000,
+					]
+				: [0, 0, 0],
+			firstParamLength: segmentMethod?.avgParamLength,
 			// No subMethods for SegmentMatcher.search
 		}
 	}
@@ -631,13 +644,15 @@ function buildMethodTree(methods: Array<{
 			calls: mainPatternMethod?.callCount || 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(S)',
-			times: mainPatternMethod ? [
-				Math.round(mainPatternMethod.minTime * 1000) / 1000,
-				Math.round(mainPatternMethod.avgTime * 1000) / 1000,
-				Math.round(mainPatternMethod.maxTime * 1000) / 1000
-			] : [0, 0, 0],
+			times: mainPatternMethod
+				? [
+						Math.round(mainPatternMethod.minTime * 1000) / 1000,
+						Math.round(mainPatternMethod.avgTime * 1000) / 1000,
+						Math.round(mainPatternMethod.maxTime * 1000) / 1000,
+					]
+				: [0, 0, 0],
 			firstParamLength: mainPatternMethod?.avgParamLength,
-			subMethods: {}
+			subMethods: {},
 		}
 
 		// Add sub-methods under PatternMatcher.process
@@ -651,9 +666,9 @@ function buildMethodTree(methods: Array<{
 				times: [
 					Math.round(method.minTime * 1000) / 1000,
 					Math.round(method.avgTime * 1000) / 1000,
-					Math.round(method.maxTime * 1000) / 1000
+					Math.round(method.maxTime * 1000) / 1000,
 				] as [number, number, number],
-				firstParamLength: method.avgParamLength
+				firstParamLength: method.avgParamLength,
 				// PatternMatcher sub-methods don't have their own sub-methods
 			}))
 
@@ -685,13 +700,15 @@ function buildMethodTree(methods: Array<{
 			calls: mainTreeMethod?.callCount || 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(M)',
-			times: mainTreeMethod ? [
-				Math.round(mainTreeMethod.minTime * 1000) / 1000,
-				Math.round(mainTreeMethod.avgTime * 1000) / 1000,
-				Math.round(mainTreeMethod.maxTime * 1000) / 1000
-			] : [0, 0, 0],
+			times: mainTreeMethod
+				? [
+						Math.round(mainTreeMethod.minTime * 1000) / 1000,
+						Math.round(mainTreeMethod.avgTime * 1000) / 1000,
+						Math.round(mainTreeMethod.maxTime * 1000) / 1000,
+					]
+				: [0, 0, 0],
 			firstParamLength: mainTreeMethod?.avgParamLength,
-			subMethods: {}
+			subMethods: {},
 		}
 
 		// Add sub-methods under TreeBuilder.buildTree
@@ -705,9 +722,9 @@ function buildMethodTree(methods: Array<{
 				times: [
 					Math.round(method.minTime * 1000) / 1000,
 					Math.round(method.avgTime * 1000) / 1000,
-					Math.round(method.maxTime * 1000) / 1000
+					Math.round(method.maxTime * 1000) / 1000,
 				] as [number, number, number],
-				firstParamLength: method.avgParamLength
+				firstParamLength: method.avgParamLength,
 			}))
 
 		// Only add subMethods if there are any
@@ -745,7 +762,7 @@ function loadExistingHistory(): void {
 			results.forEach(result => {
 				profilingHistory.push({
 					timestamp: result.timestamp,
-					tests: result.tests
+					tests: result.tests,
 				})
 			})
 		}
@@ -773,12 +790,15 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		const durationChangePercent = result1.duration > 0 ? (durationChange / result1.duration) * 100 : 0
 
 		// Compare methods recursively
-		const methodChanges: Record<string, {
-			timeChange: number
-			timeChangePercent: number
-			callsChange: number
-			percentageChange: number
-		}> = {}
+		const methodChanges: Record<
+			string,
+			{
+				timeChange: number
+				timeChangePercent: number
+				callsChange: number
+				percentageChange: number
+			}
+		> = {}
 
 		function compareMethods(method1: MethodProfile, method2: MethodProfile, prefix = '') {
 			const fullName = prefix ? `${prefix}.${method2.name}` : method2.name
@@ -793,7 +813,7 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 				timeChange,
 				timeChangePercent,
 				callsChange,
-				percentageChange
+				percentageChange,
 			}
 
 			// Compare sub-methods if they exist
@@ -817,7 +837,7 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			durationChangePercent,
 			inputLength: result2.inputLength,
 			markCount: result2.markCount,
-			methodChanges
+			methodChanges,
 		})
 
 		totalTimeChangeSum += durationChangePercent
@@ -855,10 +875,14 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		.sort((a, b) => b.durationChangePercent - a.durationChangePercent)[0]
 
 	if (biggestImprovement) {
-		summary.push(`🚀 Biggest improvement: ${biggestImprovement.testName} (${biggestImprovement.durationChangePercent.toFixed(1)}%)`)
+		summary.push(
+			`🚀 Biggest improvement: ${biggestImprovement.testName} (${biggestImprovement.durationChangePercent.toFixed(1)}%)`
+		)
 	}
 	if (biggestDegradation) {
-		summary.push(`📉 Biggest degradation: ${biggestDegradation.testName} (+${biggestDegradation.durationChangePercent.toFixed(1)}%)`)
+		summary.push(
+			`📉 Biggest degradation: ${biggestDegradation.testName} (+${biggestDegradation.durationChangePercent.toFixed(1)}%)`
+		)
 	}
 
 	return {
@@ -866,7 +890,7 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		run2Timestamp: run2.timestamp,
 		differences,
 		overallTrend,
-		summary
+		summary,
 	}
 }
 
@@ -876,7 +900,7 @@ function saveCompleteProfileResults(): void {
 	// Create current run
 	const currentRun: ProfilingRun = {
 		timestamp: new Date().toISOString(),
-		tests: { ...currentRunResults }
+		tests: {...currentRunResults},
 	}
 
 	// Add current results to history
@@ -887,7 +911,9 @@ function saveCompleteProfileResults(): void {
 		profilingHistory.splice(MAX_HISTORY_RUNS)
 	}
 
-	console.log(`\n💾 Saving profiling results (${Object.keys(currentRunResults).length} tests, ${profilingResultsHistory.length} runs in history)...`)
+	console.log(
+		`\n💾 Saving profiling results (${Object.keys(currentRunResults).length} tests, ${profilingResultsHistory.length} runs in history)...`
+	)
 
 	try {
 		let comparison: ProfilingComparison | undefined
@@ -909,7 +935,7 @@ function saveCompleteProfileResults(): void {
 		profilingResultsHistory.forEach(result => {
 			profilingHistory.push({
 				timestamp: result.timestamp,
-				tests: result.tests
+				tests: result.tests,
 			})
 		})
 
@@ -929,8 +955,11 @@ function saveCompleteProfileResults(): void {
 			console.log(`   Main method: ${result.mainMethod.name}`)
 
 			function printMethodTree(method: MethodProfile, indent = '   ') {
-				const percentageStr = method.percentage !== undefined ? ` (${method.percentage.toFixed(1)}% of parent)` : ''
-				console.log(`${indent}├─ ${method.name}: ${formatTime(method.times[1])} ${percentageStr}, ${method.calls} calls [${method.complexity}]`)
+				const percentageStr =
+					method.percentage !== undefined ? ` (${method.percentage.toFixed(1)}% of parent)` : ''
+				console.log(
+					`${indent}├─ ${method.name}: ${formatTime(method.times[1])} ${percentageStr}, ${method.calls} calls [${method.complexity}]`
+				)
 				const subMethods = method.subMethods ? Object.values(method.subMethods) : []
 				subMethods.forEach((subMethod, index) => {
 					const isLast = index === subMethods.length - 1
@@ -949,7 +978,9 @@ function saveCompleteProfileResults(): void {
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}ms`)
 		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}ms`)
 		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
-		console.log(`   Performance change: ${enhancedResult.summary.performanceChange > 0 ? '+' : ''}${enhancedResult.summary.performanceChange.toFixed(1)}%`)
+		console.log(
+			`   Performance change: ${enhancedResult.summary.performanceChange > 0 ? '+' : ''}${enhancedResult.summary.performanceChange.toFixed(1)}%`
+		)
 		console.log(`   Worst performing test: ${enhancedResult.summary.worstTest}`)
 		console.log(`   Best performing test: ${enhancedResult.summary.bestTest}`)
 
@@ -963,12 +994,16 @@ function saveCompleteProfileResults(): void {
 
 			console.log('\n📋 DETAILED CHANGES:')
 			for (const diff of comparison.differences) {
-				const changeSymbol = diff.durationChangePercent > 0 ? '🔴' : diff.durationChangePercent < 0 ? '🟢' : '⚪'
-				const changeText = diff.durationChangePercent > 0 ?
-					`+${diff.durationChangePercent.toFixed(1)}%` :
-					`${diff.durationChangePercent.toFixed(1)}%`
+				const changeSymbol =
+					diff.durationChangePercent > 0 ? '🔴' : diff.durationChangePercent < 0 ? '🟢' : '⚪'
+				const changeText =
+					diff.durationChangePercent > 0
+						? `+${diff.durationChangePercent.toFixed(1)}%`
+						: `${diff.durationChangePercent.toFixed(1)}%`
 
-				console.log(`   ${changeSymbol} ${diff.testName}: ${changeText} (${formatTime(Math.abs(diff.durationChange))} ${diff.durationChange > 0 ? 'slower' : 'faster'})`)
+				console.log(
+					`   ${changeSymbol} ${diff.testName}: ${changeText} (${formatTime(Math.abs(diff.durationChange))} ${diff.durationChange > 0 ? 'slower' : 'faster'})`
+				)
 
 				// Show top method changes
 				const methodEntries = Object.entries(diff.methodChanges)
@@ -977,12 +1012,14 @@ function saveCompleteProfileResults(): void {
 					.slice(0, 3)
 
 				for (const [methodName, change] of methodEntries) {
-					const methodSymbol = change.timeChangePercent > 0 ? '↗️' : change.timeChangePercent < 0 ? '↘️' : '➡️'
-					console.log(`      ${methodSymbol} ${methodName}: ${change.timeChangePercent > 0 ? '+' : ''}${change.timeChangePercent.toFixed(1)}%`)
+					const methodSymbol =
+						change.timeChangePercent > 0 ? '↗️' : change.timeChangePercent < 0 ? '↘️' : '➡️'
+					console.log(
+						`      ${methodSymbol} ${methodName}: ${change.timeChangePercent > 0 ? '+' : ''}${change.timeChangePercent.toFixed(1)}%`
+					)
 				}
 			}
 		}
-
 	} catch (error) {
 		console.error('❌ Save error:', error)
 	}

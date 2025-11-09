@@ -22,12 +22,14 @@ export interface SegmentMatch {
  * Segment definition - can be a static string or a dynamic pattern
  * For dynamic patterns, template is used for value substitution, pattern for matching
  */
-export type SegmentDefinition = string | {
-	/** Template with {} placeholder for substitution (e.g., '</{}>') */
-	template: string
-	/** Regex pattern for matching (e.g., '</([^>]+)>') */
-	pattern: string
-}
+export type SegmentDefinition =
+	| string
+	| {
+			/** Template with {} placeholder for substitution (e.g., '</{}>') */
+			template: string
+			/** Regex pattern for matching (e.g., '</([^>]+)>') */
+			pattern: string
+	  }
 
 /**
  * Internal representation of a segment with its regex pattern
@@ -85,14 +87,14 @@ export class SegmentMatcher {
 			const dynamicIndices = new Set<number>()
 			const entries: SegmentEntry[] = []
 
-			dynamics.forEach((segment, i) => {
+			dynamics.forEach((segment) => {
 				const index = segments.indexOf(segment)
 				if (typeof segment === 'string') {
-					entries.push({ index, pattern: escapeRegexChars(segment), definition: segment })
+					entries.push({index, pattern: escapeRegexChars(segment), definition: segment})
 				} else {
 					dynamicIndices.add(index)
 					const pattern = segment.pattern.replace('(', `(?<content${index}>`)
-					entries.push({ index, pattern, definition: segment })
+					entries.push({index, pattern, definition: segment})
 				}
 			})
 
@@ -122,7 +124,7 @@ export class SegmentMatcher {
 						index,
 						start: match.index!,
 						end: match.index! + match[0].length,
-						value: match[0]
+						value: match[0],
 					})
 				}
 			}
@@ -158,7 +160,7 @@ export class SegmentMatcher {
 						value: matchedText,
 						captured,
 						capturedStart: captured ? start + matchedText.indexOf(captured) : undefined,
-						capturedEnd: captured ? start + matchedText.indexOf(captured) + captured.length : undefined
+						capturedEnd: captured ? start + matchedText.indexOf(captured) + captured.length : undefined,
 					})
 				}
 			}
@@ -167,8 +169,8 @@ export class SegmentMatcher {
 		// Filter overlapping static matches and merge
 		const finalResults = [...dynamicResults]
 		for (const staticMatch of results) {
-			const overlaps = dynamicResults.some(dynamic =>
-				staticMatch.start < dynamic.end && staticMatch.end > dynamic.start
+			const overlaps = dynamicResults.some(
+				dynamic => staticMatch.start < dynamic.end && staticMatch.end > dynamic.start
 			)
 			if (!overlaps) {
 				finalResults.push(staticMatch)
@@ -178,5 +180,4 @@ export class SegmentMatcher {
 		finalResults.sort((a, b) => a.start - b.start)
 		return finalResults
 	}
-
 }

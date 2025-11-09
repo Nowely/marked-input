@@ -12,7 +12,7 @@ interface StackNode {
 
 /**
  * TreeBuilder class - builds nested token tree from matches
- * 
+ *
  * Algorithm: O(N) stack-based tree building with inline filtering
  */
 export class TreeBuilder {

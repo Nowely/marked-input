@@ -44,7 +44,7 @@ export class Match {
 			if (firstSegment.capturedStart !== undefined && firstSegment.capturedEnd !== undefined) {
 				this.gaps.value = {
 					start: firstSegment.capturedStart,
-					end: firstSegment.capturedEnd
+					end: firstSegment.capturedEnd,
 				}
 			}
 
@@ -59,7 +59,6 @@ export class Match {
 	get isCompleted(): boolean {
 		return isNaN(this.expectedSegmentIndex)
 	}
-
 
 	/**
 	 * Check if the pattern is completing (on the last segment)
@@ -77,7 +76,7 @@ export class Match {
 		}
 		return this.descriptor.segmentGlobalIndices[this.expectedSegmentIndex]
 	}
-	
+
 	/**
 	 * Get the expected segment value for hasTwoValues patterns
 	 * For the second (closing) dynamic segment, returns the concrete value based on first captured value
@@ -115,7 +114,6 @@ export class Match {
 		this.end = segment.end
 		this.expectedSegmentIndex++
 	}
-
 
 	/**
 	 * Mark state as completed
