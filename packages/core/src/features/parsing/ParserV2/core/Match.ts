@@ -123,4 +123,22 @@ export class Match {
 			this.expectedSegmentIndex = NaN
 		}
 	}
+
+	/**
+	 * Checks if this match conflicts with another match (overlaps and cannot nest properly)
+	 */
+	conflictsWith(previousMatch?: Match | null): boolean {
+		// No conflict if there's no previous match to conflict with
+		if (!previousMatch) return false
+
+		// No conflict if there's no overlap
+		if (this.start >= previousMatch.end) return false
+
+		// If there's overlap, check if it's valid nesting
+		if (!previousMatch.descriptor.hasNested) return true
+		if (previousMatch.gaps.nested === undefined) return true
+
+		// Valid nesting: this match is completely inside the nested section
+		return !(this.start >= previousMatch.gaps.nested.start && this.end <= previousMatch.gaps.nested.end)
+	}
 }

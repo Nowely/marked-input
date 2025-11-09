@@ -38,24 +38,16 @@ export class TreeBuilder {
 	 * Complexity: O(N) where N is number of matches
 	 */
 	public build(matches: Match[], input: string): Token[] {
-		// Initialize/reset instance fields for this build
 		this.input = input
-		this.result.length = 0 // Clear array without reallocating
-		this.stack.length = 0   // Clear array without reallocating
+		this.result.length = 0
+		this.stack.length = 0
 		this.currentTextPosition = 0
 
-		if (matches.length === 0) {
-			return [this.createTextToken(0, input.length)]
-		}
-
+		if (matches.length === 0) return [this.createTextToken(0, input.length)]
 
 		let lastAcceptedMatch: Match | null = null
-
-		// PatternMatcher now guarantees: sorted order, no duplicates, only completed matches with valid gaps
 		for (const match of matches) {
-			if (!this.shouldAcceptMatch(match, lastAcceptedMatch)) {
-				continue
-			}
+			if (match.conflictsWith(lastAcceptedMatch)) continue
 
 			lastAcceptedMatch = match
 
@@ -66,11 +58,8 @@ export class TreeBuilder {
 			this.addMatchToStack(match)
 		}
 
-
-		// Finalize all remaining marks in stack
 		this.finalizeRemainingStack()
 
-		// Add final text after all marks (always, even if empty)
 		this.result.push(this.createTextToken(this.currentTextPosition, input.length))
 
 		return [...this.result]
@@ -206,15 +195,6 @@ export class TreeBuilder {
 	// ===== UTILITY METHODS =====
 
 	/**
-	 * Checks if match is valid nesting inside existing match's nested section
-	 */
-	private isValidNesting(match: Match, existing: Match): boolean {
-		if (!existing.descriptor.hasNested) return false
-		if (existing.gaps.nested === undefined) return false
-		return match.start >= existing.gaps.nested.start && match.end <= existing.gaps.nested.end
-	}
-
-	/**
 	 * Gets the content boundaries for a match
 	 * Priority: nested content if present, otherwise value content
 	 */
@@ -237,18 +217,6 @@ export class TreeBuilder {
 	private extractSubstring(start: number | undefined, end: number | undefined): string {
 		return start !== undefined && end !== undefined ? this.input.substring(start, end) : ''
 	}
-
-
-	/**
-	 * Determines if a match should be accepted based on overlap filtering rules
-	 */
-	private shouldAcceptMatch(match: Match, lastAcceptedMatch: Match | null): boolean {
-		if (!lastAcceptedMatch || match.start >= lastAcceptedMatch.end) {
-			return true
-		}
-		return this.isValidNesting(match, lastAcceptedMatch)
-	}
-
 
 	/**
 	 * Adds remaining text to a stack node before finalization
