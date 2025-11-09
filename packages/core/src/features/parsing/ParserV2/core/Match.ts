@@ -5,11 +5,17 @@ import {MarkupDescriptor} from './MarkupDescriptor'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 
 /**
- * Unified match structure for both active pattern matching and completed matches
+ * Unified match structure for pattern matching states
  *
- * Represents the state of a pattern matching process in the parser's state machine.
- * For active states: tracks progress through pattern segments with expectedSegmentIndex
- * For completed matches: contains final positions without expectedSegmentIndex
+ * Represents the state of a pattern matching process in the parser's state machine:
+ * - Active: tracks progress through pattern segments (expectedSegmentIndex >= 0)
+ * - Completed: all segments found, match is valid (expectedSegmentIndex = NaN)
+ * - Invalid: match cannot be completed due to malformed segments (expectedSegmentIndex = -1)
+ *
+ * State detection:
+ * - isCompleted: expectedSegmentIndex is NaN
+ * - isInvalid: expectedSegmentIndex is -1
+ * - isActive: expectedSegmentIndex >= 0 (not NaN and not -1)
  */
 
 export class Match {
@@ -17,6 +23,12 @@ export class Match {
 	/** Captured value from first dynamic segment (for hasTwoValues patterns) */
 	private captured?: string
 
+	/**
+	 * Index of expected next segment:
+	 * - >= 0: active, waiting for segment at this index
+	 * - NaN: completed successfully
+	 * - -1: invalid, should be discarded
+	 */
 	public expectedSegmentIndex: number
 	public readonly start: number
 	public end: number
@@ -44,6 +56,13 @@ export class Match {
 	}
 
 	/**
+	 * Check if the match is invalid and should be discarded
+	 */
+	get isInvalid(): boolean {
+		return this.expectedSegmentIndex === -1
+	}
+
+	/**
 	 * Check if the pattern is completed (computed property)
 	 */
 	get isCompleted(): boolean {
@@ -61,7 +80,7 @@ export class Match {
 	 * Get the next expected segment index
 	 */
 	get nextSegment(): number | undefined {
-		if (this.isCompleted) {
+		if (this.isCompleted || this.isInvalid) {
 			return undefined
 		}
 
@@ -86,6 +105,13 @@ export class Match {
 		const start = this.end
 		const end = segment.start
 		const gapType = this.descriptor.gapTypes[this.expectedSegmentIndex - 1]
+
+		// VALIDATION: Next segment must start after previous segment ends
+		// If not, this match is permanently invalid
+		if (end < start) {
+			this.expectedSegmentIndex = -1
+			return
+		}
 
 		this.gaps[gapType] = {start, end}
 

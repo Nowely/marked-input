@@ -53,6 +53,8 @@ export class PatternMatcher {
 
 		match.processNext(segment)
 
+		if (match.isInvalid) return
+
 		if (match.isCompleted) return this.addToCompleted(match)
 
 		this.addToWaiting(match)
@@ -61,6 +63,8 @@ export class PatternMatcher {
 	private tryStartNewStates(segment: SegmentMatch): void {
 		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
 			const match = new Match(descriptor, segment)
+
+			if (match.isInvalid) return
 
 			if (match.isCompleted) return this.addToCompleted(match)
 

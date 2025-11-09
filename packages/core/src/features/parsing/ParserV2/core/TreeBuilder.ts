@@ -106,14 +106,6 @@ export class TreeBuilder {
 		}
 	}
 
-	/**
-	 * Checks if match has invalid empty nested content (negative length)
-	 */
-	private hasInvalidNestedContent(match: Match): boolean {
-		if (!match.descriptor.hasNested) return false
-		if (match.gaps.nested === undefined) return false
-		return match.gaps.nested.end - match.gaps.nested.start < 0
-	}
 
 	/**
 	 * Checks if match is valid nesting inside existing match's nested section
@@ -161,53 +153,6 @@ export class TreeBuilder {
 		}
 	}
 
-	/**
-	 * Filters matches using O(N) single-pass algorithm
-	 * Handles duplicates, overlaps, and invalid content
-	 */
-	private filterMatches(matches: Match[]): {
-		filteredMatches: Match[]
-		lastProcessedStartPosition: number
-		lastAcceptedMatch: Match | null
-	} {
-		let lastProcessedStartPosition = -1
-		let lastAcceptedMatch: Match | null = null
-		const filteredMatches: Match[] = []
-
-		for (const match of matches) {
-			// Skip empty matches with invalid nested content
-			if (this.hasInvalidNestedContent(match)) {
-				continue
-			}
-
-			// Skip duplicate matches at the same start position (keep only first)
-			if (match.start === lastProcessedStartPosition) {
-				continue
-			}
-
-			// Check for overlaps with last accepted match
-			if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
-				// Check if this is valid nesting inside lastAcceptedMatch
-				if (this.isValidNesting(match, lastAcceptedMatch)) {
-					// Valid nesting - accept this match and update tracking
-					lastProcessedStartPosition = match.start
-					lastAcceptedMatch = match
-					filteredMatches.push(match)
-				} else {
-					// Invalid overlap - reject this match
-					lastProcessedStartPosition = match.start
-					continue
-				}
-			} else {
-				// No overlap - accept this match
-				lastProcessedStartPosition = match.start
-				lastAcceptedMatch = match
-				filteredMatches.push(match)
-			}
-		}
-
-		return {filteredMatches, lastProcessedStartPosition, lastAcceptedMatch}
-	}
 
 	/**
 	 * Closes completed parents that don't contain the current match
@@ -269,14 +214,15 @@ export class TreeBuilder {
 	}
 
 	/**
-	 * Builds nested token tree with O(N) inline filtering
+	 * Builds nested token tree from pre-processed matches
 	 *
 	 * Algorithm:
-	 * 1. Process pre-sorted matches from PatternMatcher
-	 * 2. Apply O(N) single-pass filtering for overlaps and duplicates
+	 * 1. Process pre-sorted, deduplicated matches from PatternMatcher
+	 * 2. Apply inline overlap filtering to prevent invalid nesting
 	 * 3. Use stack-based tree building to construct nested structure
 	 * 4. Close completed parents when current match is not inside their nested content
-	 * 5. Finalize remaining stack at the end
+	 * 5. Skip invalid matches with corrupted nested content
+	 * 6. Finalize remaining stack at the end
 	 *
 	 * Complexity: O(N) where N is number of matches
 	 */
@@ -288,11 +234,26 @@ export class TreeBuilder {
 		const result: Token[] = []
 		const stack: StackNode[] = []
 		let currentTextPosition = 0
+		let lastAcceptedMatch: Match | null = null
 
-		// Filter matches using O(N) single-pass algorithm
-		const {filteredMatches} = this.filterMatches(matches)
+		// PatternMatcher now guarantees: sorted order, no duplicates, only completed matches with valid gaps
+		for (const match of matches) {
 
-		for (const match of filteredMatches) {
+			// Check for overlaps with last accepted match (filtering logic from filterMatches)
+			if (lastAcceptedMatch && match.start < lastAcceptedMatch.end) {
+				// Check if this is valid nesting inside lastAcceptedMatch
+				if (this.isValidNesting(match, lastAcceptedMatch)) {
+					// Valid nesting - accept this match and update tracking
+					lastAcceptedMatch = match
+				} else {
+					// Invalid overlap - skip this match
+					continue
+				}
+			} else {
+				// No overlap - accept this match
+				lastAcceptedMatch = match
+			}
+
 			// Close completed parents that don't contain this match
 			currentTextPosition = this.closeCompletedParents(stack, match, input, result, currentTextPosition)
 
