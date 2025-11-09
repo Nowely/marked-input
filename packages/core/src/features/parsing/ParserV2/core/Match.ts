@@ -67,10 +67,17 @@ export class Match {
 	}
 
 	/**
-	 * Check if the pattern is completing (on the last segment)
+	 * Check if the match is waiting for the last segment (high priority)
 	 */
-	get isCompleting(): boolean {
+	get isAwaitingLastSegment(): boolean {
 		return this.expectedSegmentIndex === this.descriptor.segments.length - 1
+	}
+
+	/**
+	 * Check if all segments have been processed and match is ready to complete
+	 */
+	get isReadyToComplete(): boolean {
+		return this.expectedSegmentIndex >= this.descriptor.segments.length
 	}
 
 	/**

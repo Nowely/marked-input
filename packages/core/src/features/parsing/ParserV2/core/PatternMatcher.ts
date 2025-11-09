@@ -92,7 +92,15 @@ export class PatternMatcher {
 		if (!match) return
 
 		match.updateWithSegment(segment, input)
-		this.handleUpdatedState(match, segment)
+		
+		if (match.isReadyToComplete) {
+			// Pattern is complete
+			match.markCompleted(segment)
+			this.addToCompleted(match)
+		} else {
+			// Continue waiting for next segment
+			this.addToWaiting(match)
+		}
 	}
 
 	private tryStartNewStates(segment: SegmentMatch): void {
@@ -125,7 +133,7 @@ export class PatternMatcher {
 	private addToWaiting(match: Match): void {
 		const segmentIndex = match.nextSegment!
 
-		if (match.isCompleting) {
+		if (match.isAwaitingLastSegment) {
 			const states = this.completingStates.get(segmentIndex) || []
 			if (states.length === 0) this.completingStates.set(segmentIndex, states)
 			states.push(match)
@@ -133,20 +141,6 @@ export class PatternMatcher {
 			const states = this.pendingStates.get(segmentIndex) || []
 			if (states.length === 0) this.pendingStates.set(segmentIndex, states)
 			states.push(match)
-		}
-	}
-
-	/**
-	 * Handles a successfully updated state - either completes it or adds to waiting list
-	 */
-	private handleUpdatedState(match: Match, segment: SegmentMatch): void {
-		if (match.expectedSegmentIndex >= match.descriptor.segments.length) {
-			// Pattern is complete
-			match.markCompleted(segment)
-			this.addToCompleted(match)
-		} else {
-			// Continue waiting for next segment
-			this.addToWaiting(match)
 		}
 	}
 
