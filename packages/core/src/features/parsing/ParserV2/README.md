@@ -16,21 +16,55 @@ High-performance tree-based parser for processing nested markup constructs in te
 ## Quick Start
 
 ```typescript
-import {ParserV2} from './ParserV2'
+import {Parser} from './ParserV2'
 
-// Patterns with __meta__ - no nesting support
-const simpleMarkups = ['@[__meta__](__meta__)', '#[__meta__]']
-const parser = new ParserV2(simpleMarkups)
+// Patterns with __value__ - no nesting support
+const simpleMarkups = ['@[__value__](__meta__)', '#[__value__]']
+const parser = new Parser(simpleMarkups)
 
-const result = parser.split('Hello @[world](test) and #[tag]')
-// result: [TextToken('Hello '), MarkToken{meta: 'world', meta: 'test'}, TextToken(' and '), MarkToken{meta: 'tag'}]
+// Parse text into tokens
+const tokens = parser.parse('Hello @[world](test) and #[tag]')
+// Returns: [
+//   TextToken('Hello '),
+//   MarkToken{value: 'world', meta: 'test'},
+//   TextToken(' and '),
+//   MarkToken{value: 'tag'}
+// ]
+
+// Convert tokens back to text
+const text = parser.stringify(tokens)
+// Returns: 'Hello @[world](test) and #[tag]'
 
 // Patterns with __nested__ - supports nesting
 const nestedMarkups = ['@[__nested__]', '#[__nested__]']
-const nestedParser = new ParserV2(nestedMarkups)
+const nestedParser = new Parser(nestedMarkups)
 
-const nestedResult = nestedParser.split('@[hello #[world]]')
-// result: [TextToken(''), MarkToken{meta: 'hello #[world]', children: [...]}, TextToken('')]
+const nestedResult = nestedParser.parse('@[hello #[world]]')
+// Returns: [
+//   TextToken(''),
+//   MarkToken{value: 'hello #[world]', children: [...], nested: {...}},
+//   TextToken('')
+// ]
+
+// Transform markup to extract values
+const transformed = parser.transform('Hello @[world](test)', mark => mark.value)
+// Returns: 'Hello world'
+```
+
+### Migration from Old API
+
+The API has been renamed for clarity. Old method names are deprecated but still work:
+
+```typescript
+// ❌ Old API (deprecated, will be removed in v2.0)
+parser.split(text)    // Use parse() instead
+parser.join(tokens)   // Use stringify() instead  
+parser.denote(text, callback)  // Use transform() instead
+
+// ✅ New API (recommended)
+parser.parse(text)
+parser.stringify(tokens)
+parser.transform(text, callback)
 ```
 
 ## Performance
@@ -203,10 +237,11 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
 
 **TreeBuilder** - single-pass tree construction:
 
-- Converts `MatchState[]` to nested `Token[]` tree
-- O(N) filtering with single pass through matches
-- Stack-based parent-child relationship detection
-- Position-based containment validation
+- Converts `Match[]` to nested `Token[]` tree in a single pass
+- O(M) complexity where M is number of matches
+- Stack-based parent tracking with O(D) memory where D is nesting depth
+- Direct token creation eliminates intermediate allocations
+- Simpler algorithm that's easier to understand and maintain
 
 ## API
 
@@ -214,15 +249,77 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
 
 ```typescript
 class Parser {
+  // Constructor
   constructor(markups: Markup[])
-  split(input: string): Token[]
-  join(tokens: Token[]): string
-  denote(value: string, callback: (mark: MarkToken) => string): string
+  
+  // Main methods (recommended)
+  parse(input: string): Token[]
+  stringify(tokens: Token[]): string
+  transform(value: string, callback: (mark: MarkToken) => string): string
+  
+  // Deprecated methods (use new names above)
+  split(input: string): Token[]  // @deprecated Use parse()
+  join(tokens: Token[]): string  // @deprecated Use stringify()
+  denote(value: string, callback: (mark: MarkToken) => string): string  // @deprecated Use transform()
 }
 
 // Static methods
-Parser.split(input: string, markups: Markup[]): Token[]
-Parser.join(tokens: Token[]): string
+Parser.parse(input: string, options?: {markup: Markup[]}): Token[]
+Parser.stringify(tokens: Token[]): string
+
+// Deprecated static methods
+Parser.split(input: string, options?: {markup: Markup[]}): Token[]  // @deprecated Use parse()
+Parser.join(tokens: Token[]): string  // @deprecated Use stringify()
+```
+
+### Method Details
+
+#### `parse(input: string): Token[]`
+
+Parses text into a nested token tree. This is the main parsing method that processes input through three stages:
+1. Segment matching - finds all markup segments (O(N + M))
+2. Pattern matching - builds complete patterns from segments (O(M))
+3. Tree building - constructs nested token tree (O(M))
+
+**Example:**
+```typescript
+const parser = new Parser(['@[__value__](__meta__)'])
+const tokens = parser.parse('Hello @[world](test)')
+// Returns: [
+//   TextToken('Hello '),
+//   MarkToken('@[world](test)', value='world', meta='test'),
+//   TextToken('')
+// ]
+```
+
+#### `stringify(tokens: Token[]): string`
+
+Converts tokens back to the original text. This is the inverse operation of `parse()`.
+
+**Example:**
+```typescript
+const text = 'Hello @[world](test)'
+const tokens = parser.parse(text)
+const reconstructed = parser.stringify(tokens)
+console.log(reconstructed === text) // true
+```
+
+#### `transform(value: string, callback: (mark: MarkToken) => string): string`
+
+Transforms annotated text by processing all mark tokens (including nested ones) with a callback.
+
+**Example:**
+```typescript
+// Extract all values
+const text = '@[Hello](world) and #[tag]'
+const result = parser.transform(text, mark => mark.value)
+// Returns: 'Hello and tag'
+
+// Custom transformation
+const result = parser.transform(text, mark => 
+  mark.meta ? `${mark.value}:${mark.meta}` : mark.value
+)
+// Returns: 'Hello:world and tag'
 ```
 
 ### Utility Functions
@@ -514,30 +611,43 @@ calculateDeterministicPriority(state: MatchState): number {
 - **`nested` gaps**: Track nested content boundaries
 - **`meta` gaps**: Track metadata boundaries
 
-#### Tree Building (TreeBuilder - Optimized O(M) Algorithm)
+#### Tree Building (TreeBuilder - Single-Pass O(M) Algorithm)
 
-**TreeBuilder** uses a three-phase approach for optimal performance:
+**TreeBuilder** uses a single-pass approach for optimal performance:
 
-**Phase 1: Build Parent-Child Relationships O(M·D)**
+**Single-Pass Algorithm O(M)**
 ```
-for each match in sorted order:
-  1. Close completed parents (match starts after parent's content ends)
-  2. Skip conflicting matches
-  3. Link match to immediate parent (if exists)
-  4. Add to active parents if has nested content
+Initialize:
+  - roots: Token[] (root-level tokens)
+  - parentStack: ParentContext[] (active parents)
+  - lastAcceptedMatch: Match | null
+  - rootTextPos: number
+
+for each match in matches:
+  1. Skip if conflicts with last accepted match
+  2. Close parents whose content ends before this match:
+     - Finalize parent token (add final text)
+     - Pop from stack and add to appropriate container
+  3. Add text token before this match (root or parent level)
+  4. Create mark token for this match
+  5. If match has nested content:
+     - Push to parent stack for processing children
+     Else:
+     - Add directly to container (root or parent)
+
+After all matches:
+  - Close remaining parents in stack
+  - Add final text token at root level
+
+Return roots
 ```
 
-**Phase 2: Pre-compute Children Lists O(M)**
-```
-for each match:
-  add match index to parent's children list
-```
-
-**Phase 3: Build Tokens Recursively O(M)**
-```
-for each root match (parent = -1):
-  build token with pre-computed children
-```
+**Key Improvements:**
+- Single pass through matches (no separate relationship building)
+- Direct token creation (no intermediate data structures)
+- O(M) complexity where M is number of matches
+- O(D) memory for parent stack where D is nesting depth (typically 3-5)
+- Simpler and easier to understand than multi-phase approach
 
 **Overlap Filtering:**
 
@@ -560,45 +670,47 @@ isValidNesting(child: MatchState, parent: MatchState): boolean {
 
 #### TreeBuilder Algorithm
 
-**TreeBuilder** uses a three-phase optimized algorithm:
+**TreeBuilder** uses a single-pass optimized algorithm:
 
-**Phase 1: Build Parent-Child Relationships (O(M·D))**
+**Single-Pass Token Building (O(M))**
 
-Traverse matches once to establish parent-child links:
-
-```
-activeParents = [] // Stack of currently open parents (max depth D)
-for each match i:
-  1. Close parents whose content ends before this match
-  2. Skip if conflicts with last accepted match  
-  3. Link to immediate parent: parents[i] = activeParents.top()
-  4. Add to active if has nested content
-```
-
-**Phase 2: Pre-compute Children Lists (O(M))**
-
-Build fast lookup map for children:
+Builds the token tree in one pass through matches:
 
 ```
-childrenLists = Map<parentIdx, childIdx[]>
-for each match i:
-  if parents[i] >= 0:
-    childrenLists[parents[i]].push(i)
+Initialize:
+  roots = []           // Root-level tokens
+  parentStack = []     // Active parent contexts (max depth D)
+  lastAcceptedMatch = null
+  rootTextPos = 0
+
+for each match:
+  1. Skip if conflicts with lastAcceptedMatch
+  2. Close parents whose content ends before this match:
+     - Add final text token to parent
+     - Pop from stack and add to appropriate container
+  3. Add text token before this match (root or parent level)
+  4. Create mark token for this match
+  5. If match has nested content:
+     - Push ParentContext to stack
+     Else:
+     - Add directly to container
+
+After all matches:
+  - Close remaining parents in stack
+  - Add final text token at root level
+
+Return roots
 ```
 
-**Phase 3: Build Tokens Recursively (O(M))**
+**Complexity:** **O(M)** where M is number of matches
 
-Create tokens using pre-computed relationships:
+**Memory:** O(D) for parent stack where D is nesting depth (typically 3-5)
 
-```
-buildTokens(matches with parent = -1):  // roots only
-  for each child using childrenLists:   // O(1) lookup
-    recursively build child tokens
-```
-
-**Complexity:** O(M·D + M + M) = **O(M·D)** where D is typical nesting depth (3-5)
-
-**Memory:** O(M) for parent indices + O(M) for children lists + O(D) for active parents stack
+**Key Improvements:**
+- Single pass eliminates intermediate data structures
+- Direct token creation reduces allocations
+- Stack-based approach is simpler and more efficient
+- No need for parent indices array or children lists
 
 #### Nesting Rules
 

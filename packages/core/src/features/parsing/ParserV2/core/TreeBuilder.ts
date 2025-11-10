@@ -2,168 +2,181 @@ import {TextToken, MarkToken, Token, PositionRange} from '../types'
 import {Match} from './Match'
 
 /**
- * TreeBuilder - Optimized tree building with deferred token creation
+ * Parent context for tracking active nesting during tree building
+ */
+interface ParentContext {
+	match: Match
+	token: MarkToken
+	textPos: number // Current position for adding text tokens
+}
+
+/**
+ * TreeBuilder - Optimized single-pass tree building algorithm
  *
- * Algorithm: Two-phase approach for better performance
- * Phase 1: Build parent-child relationships efficiently (O(M·D) where D is nesting depth)
- * Phase 2: Create tokens recursively from relationships (O(M))
+ * Algorithm: Single-pass approach with direct token creation
+ * - Processes matches in order, maintaining a stack of active parents
+ * - Creates tokens directly without intermediate data structures
+ * - Handles text gaps and nesting in a single traversal
  *
  * Key optimizations:
- * - Deferred token creation eliminates intermediate object churn
- * - Lightweight parent tracking (Int32Array) vs heavy StackNode objects
- * - Batch token creation instead of incremental finalization
- * - Better cache locality with array-based parent indices
- * - Pre-computed children lists for O(1) lookup instead of O(M) scans
+ * - Single pass through matches (no separate relationship building phase)
+ * - Direct token creation eliminates intermediate allocations
+ * - Stack-based parent tracking with O(D) memory where D is nesting depth
+ * - No need for parent indices array or children lists
+ * - Simpler algorithm that's easier to understand and maintain
+ *
+ * Complexity: O(M) where M is number of matches
+ * Memory: O(D) for active parents stack where D is nesting depth (typically 3-5)
  */
 export class TreeBuilder {
-	// Instance fields
+	// Instance fields - only what's needed for single pass
 	private input!: string
-	private matches!: Match[]
-	private parents!: Int32Array // Parent index for each match (-1 = root, -2 = skipped)
-	private childrenLists!: Map<number, number[]> // Map of parent index to list of child indices
 
 	// ===== PUBLIC API =====
 
 	/**
-	 * Builds nested token tree from pre-processed matches
+	 * Builds nested token tree from pre-processed matches in a single pass
 	 *
 	 * Algorithm:
-	 * 1. Build parent-child relationships using active parents stack: O(M·D)
-	 *    - Track currently open parents (matches with nested content)
-	 *    - Close parents when current match is beyond their bounds
-	 *    - Link each match to its immediate parent
-	 * 2. Build tokens recursively from root matches: O(M)
-	 *    - Process only root-level matches
-	 *    - Recursively build children tokens
-	 *    - Fill gaps with text tokens
+	 * 1. Iterate through matches in order
+	 * 2. For each match:
+	 *    - Close any parents whose content ends before this match
+	 *    - Skip matches that conflict with the last accepted match
+	 *    - Add text token before this match
+	 *    - Create mark token and push to appropriate parent
+	 *    - If match has nested content, push to active parents stack
+	 * 3. After all matches, close remaining parents and add final text
 	 *
-	 * Complexity: O(M·D) where D is typical nesting depth (3-5)
-	 * Memory: O(M) for parent indices + O(D) for active parents stack
+	 * Complexity: O(M) where M is number of matches
+	 * Memory: O(D) for active parents stack where D is nesting depth
 	 */
 	public build(matches: Match[], input: string): Token[] {
 		this.input = input
-		this.matches = matches
-		this.parents = new Int32Array(matches.length).fill(-1)
-		this.childrenLists = new Map()
 
 		if (matches.length === 0) {
 			return [this.createTextToken(0, input.length)]
 		}
 
-		// Phase 1: Build parent-child relationships
-		this.buildParentChildRelationships(matches)
-
-		// Phase 1.5: Pre-compute children lists for O(1) lookup
-		this.buildChildrenLists()
-
-		// Phase 2: Build tokens from root matches
-		return this.buildTokensFromRoots()
+		return this.buildSinglePass(matches)
 	}
 
-	// ===== PHASE 1: PARENT-CHILD RELATIONSHIP BUILDING =====
+	// ===== SINGLE-PASS ALGORITHM =====
 
 	/**
-	 * Builds parent-child relationships efficiently using active parents tracking
-	 * Uses conflict detection to filter out overlapping matches
+	 * Builds token tree in a single pass through matches
+	 * 
+	 * This is the core algorithm that processes matches sequentially,
+	 * maintaining a stack of active parents and creating tokens directly.
 	 */
-	private buildParentChildRelationships(matches: Match[]): void {
-		const activeParents: number[] = [] // Stack of match indices
-		let lastAcceptedMatchIdx = -1
+	private buildSinglePass(matches: Match[]): Token[] {
+		const roots: Token[] = []
+		const parentStack: ParentContext[] = []
+		let lastAcceptedMatch: Match | null = null
+		let rootTextPos = 0
 
-		for (let i = 0; i < matches.length; i++) {
-			const match = matches[i]
-
-			// Skip matches that conflict with the last accepted match
-			if (lastAcceptedMatchIdx >= 0 && match.conflictsWith(matches[lastAcceptedMatchIdx])) {
-				this.parents[i] = -2 // Mark as skipped (-2 distinguishes from root -1)
+		for (const match of matches) {
+			// Skip conflicting matches
+			if (lastAcceptedMatch && match.conflictsWith(lastAcceptedMatch)) {
 				continue
 			}
 
-			lastAcceptedMatchIdx = i
+			lastAcceptedMatch = match
 
-			// Close completed parents (those whose nested content ends before this match)
-			while (activeParents.length > 0) {
-				const parentIdx = activeParents[activeParents.length - 1]
-				const parentMatch = matches[parentIdx]
-				const parentBounds = this.getContentBounds(parentMatch)
+			// Close parents whose content ends before this match
+			while (parentStack.length > 0) {
+				const parent = parentStack[parentStack.length - 1]
+				const parentBounds = this.getContentBounds(parent.match)
 
-				// If this match starts at or after parent's content end, parent is complete
 				if (parentBounds.end <= match.start) {
-					activeParents.pop()
+					// Parent is complete - finalize it
+					this.finalizeParent(parent, parentBounds.end)
+					parentStack.pop()
+
+					// Add to appropriate container
+					if (parentStack.length > 0) {
+						parentStack[parentStack.length - 1].token.children.push(parent.token)
+					} else {
+						roots.push(parent.token)
+					}
 				} else {
 					break
 				}
 			}
 
-			// Link to immediate parent if one exists
-			if (activeParents.length > 0) {
-				this.parents[i] = activeParents[activeParents.length - 1]
+			// Determine where to add this match
+			const container = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null
+
+			if (container) {
+				// Add text before this match within parent
+				const textToken = this.createTextToken(container.textPos, match.start)
+				container.token.children.push(textToken)
+				container.textPos = match.end
+			} else {
+				// Add text before this match at root level
+				const textToken = this.createTextToken(rootTextPos, match.start)
+				roots.push(textToken)
+				rootTextPos = match.end
 			}
 
-			// Add this match to active parents if it has nested content
+			// Create mark token for this match
+			const markToken = this.createMarkToken(match)
+
+			// If match has nested content, push to stack for processing children
 			if (this.hasNestedContent(match)) {
-				activeParents.push(i)
+				const bounds = this.getContentBounds(match)
+				parentStack.push({
+					match,
+					token: markToken,
+					textPos: bounds.start,
+				})
+			} else {
+				// No nested content - add directly to container
+				if (container) {
+					container.token.children.push(markToken)
+				} else {
+					roots.push(markToken)
+				}
 			}
 		}
-	}
 
-	/**
-	 * Pre-computes children lists for each parent for O(1) lookup
-	 * This avoids O(M) scans in buildChildrenTokens
-	 */
-	private buildChildrenLists(): void {
-		for (let i = 0; i < this.matches.length; i++) {
-			const parentIdx = this.parents[i]
-			// Skip skipped matches (-2) and root matches (-1)
-			if (parentIdx < 0) continue
+		// Close remaining parents
+		while (parentStack.length > 0) {
+			const parent = parentStack.pop()!
+			const parentBounds = this.getContentBounds(parent.match)
+			this.finalizeParent(parent, parentBounds.end)
 
-			// Get or create children list for this parent
-			let children = this.childrenLists.get(parentIdx)
-			if (!children) {
-				children = []
-				this.childrenLists.set(parentIdx, children)
+			if (parentStack.length > 0) {
+				parentStack[parentStack.length - 1].token.children.push(parent.token)
+			} else {
+				roots.push(parent.token)
 			}
-			children.push(i)
-		}
-	}
-
-	// ===== PHASE 2: TOKEN BUILDING =====
-
-	/**
-	 * Builds tokens from root matches (those with parent = -1)
-	 */
-	private buildTokensFromRoots(): Token[] {
-		const result: Token[] = []
-		let textPos = 0
-
-		for (let i = 0; i < this.matches.length; i++) {
-			// Skip non-root matches and skipped matches
-			if (this.parents[i] !== -1) continue
-
-			const match = this.matches[i]
-
-			// Add text before this match (even if empty)
-			result.push(this.createTextToken(textPos, match.start))
-
-			// Build mark token with children
-			result.push(this.buildMarkToken(i))
-
-			textPos = match.end
 		}
 
-		// Add remaining text (even if empty)
-		result.push(this.createTextToken(textPos, this.input.length))
+		// Add final text token at root level
+		roots.push(this.createTextToken(rootTextPos, this.input.length))
 
-		return result
+		return roots
 	}
 
 	/**
-	 * Builds a mark token for the given match index, including its children
+	 * Finalizes a parent token by adding final text token if needed
 	 */
-	private buildMarkToken(matchIdx: number): MarkToken {
-		const match = this.matches[matchIdx]
-		const children = this.buildChildrenTokens(matchIdx)
+	private finalizeParent(parent: ParentContext, endPos: number): void {
+		// Add final text token within parent's content
+		const finalText = this.createTextToken(parent.textPos, endPos)
+		parent.token.children.push(finalText)
 
+		// If no nested marks, clear children array
+		const hasNestedMarks = parent.token.children.some(child => child.type === 'mark')
+		if (!hasNestedMarks) {
+			parent.token.children = []
+		}
+	}
+
+	/**
+	 * Creates a mark token from a match (without children - those are added later)
+	 */
+	private createMarkToken(match: Match): MarkToken {
 		// Extract content using helper functions
 		const value = this.extractSubstring(match.gaps.value?.start, match.gaps.value?.end)
 		const nestedStr = this.extractSubstring(match.gaps.nested?.start, match.gaps.nested?.end)
@@ -176,56 +189,16 @@ export class TreeBuilder {
 		// Use value if present, otherwise use nested content
 		const valueContent = value || nested || ''
 
-		// Only include children if there are nested marks (not just text tokens)
-		const hasNestedMarks = children.some(child => child.type === 'mark')
-
 		return {
 			type: 'mark',
 			content: this.input.substring(match.start, match.end),
-			children: hasNestedMarks ? children : [],
+			children: [], // Will be populated if match has nested content
 			descriptor: match.descriptor,
 			value: valueContent,
 			meta,
 			position: {start: match.start, end: match.end},
 			nested: this.createNestedInfo(match, nested),
 		}
-	}
-
-	/**
-	 * Builds children tokens for a given parent match
-	 * Uses pre-computed children list for O(1) lookup
-	 */
-	private buildChildrenTokens(parentIdx: number): Token[] {
-		const children: Token[] = []
-		const parentMatch = this.matches[parentIdx]
-		const bounds = this.getContentBounds(parentMatch)
-		let textPos = bounds.start
-
-		// Get pre-computed children list (O(1) lookup)
-		const childIndices = this.childrenLists.get(parentIdx)
-		if (!childIndices) {
-			// No children, just return text token for entire content
-			children.push(this.createTextToken(bounds.start, bounds.end))
-			return children
-		}
-
-		// Process each child in order
-		for (const i of childIndices) {
-			const childMatch = this.matches[i]
-
-			// Add text before this child (even if empty)
-			children.push(this.createTextToken(textPos, childMatch.start))
-
-			// Add child mark token (recursively builds its children)
-			children.push(this.buildMarkToken(i))
-
-			textPos = childMatch.end
-		}
-
-		// Add remaining text within parent's content (even if empty)
-		children.push(this.createTextToken(textPos, bounds.end))
-
-		return children
 	}
 
 	// ===== UTILITY METHODS =====
