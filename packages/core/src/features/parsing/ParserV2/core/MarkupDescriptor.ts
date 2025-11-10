@@ -40,9 +40,8 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 
 	validateMarkup(counts, markup)
 
-	const {value: valueCount, nested: nestedCount} = counts
-	const hasTwoValues = valueCount === 2
-	const hasNested = nestedCount === 1
+	const hasTwoValues = counts.value === 2
+	const hasNested = counts.nested === 1
 
 	let segments: SegmentDefinition[] = rawSegments
 	let gapTypes: GapType[] = rawGapTypes
@@ -75,7 +74,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 /**
  * Parses markup template into segments, gap types and placeholder counts
  */
-function scanMarkupStructure(markup: string){
+function scanMarkupStructure(markup: string) {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	const valueGapIndices: number[] = []
@@ -86,7 +85,7 @@ function scanMarkupStructure(markup: string){
 	}
 
 	// Find all placeholders and sort by position
-	const placeholders: Array<{type: GapType, position: number}> = []
+	const placeholders: Array<{type: GapType; position: number}> = []
 	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
 
 	for (const type of placeholderTypes) {
@@ -202,22 +201,18 @@ function convertTwoValuePattern(
 	const filteredGapTypes = gapTypes.filter(type => type !== GAP_TYPE.Value)
 
 	return {segments: newSegments, gapTypes: filteredGapTypes}
-}
 
-/**
- * Creates a dynamic segment definition as [before, after, exclusions]
- * Exclusions are pre-computed for efficient pattern matching
- */
-function createDynamicDefinition(
-	beforeSegment: string,
-	afterSegment: string,
-	nextSegment?: string
-): [string, string, string] {
-	if (!nextSegment) return [beforeSegment, afterSegment, '']
+	function createDynamicDefinition(
+		beforeSegment: string,
+		afterSegment: string,
+		nextSegment?: string
+	): [string, string, string] {
+		if (!nextSegment) return [beforeSegment, afterSegment, '']
 
-	const firstChar = nextSegment.charAt(0)
-	const exclusion =
-		firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment) ? firstChar : ''
+		const firstChar = nextSegment.charAt(0)
+		const exclusion =
+			firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment) ? firstChar : ''
 
-	return [beforeSegment, afterSegment, exclusion]
+		return [beforeSegment, afterSegment, exclusion]
+	}
 }
