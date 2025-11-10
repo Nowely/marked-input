@@ -111,7 +111,7 @@ function scanMarkupStructure(markup: string) {
 				break
 		}
 
-		currentParsePosition = placeholder.position + getPlaceholderText(placeholder.type).length
+		currentParsePosition = placeholder.position + PLACEHOLDER_TEXT[placeholder.type].length
 	}
 
 	const finalSegment = markup.substring(currentParsePosition)
@@ -159,20 +159,13 @@ interface PlaceholderInfo {
 }
 
 /**
- * Gets the text of a placeholder by its type
+ * Maps placeholder types to their text representations
  */
-function getPlaceholderText(type: GapType): string {
-	switch (type) {
-		case GAP_TYPE.Value:
-			return PLACEHOLDER.Value
-		case GAP_TYPE.Meta:
-			return PLACEHOLDER.Meta
-		case GAP_TYPE.Nested:
-			return PLACEHOLDER.Nested
-		default:
-			return '' // Should never happen
-	}
-}
+const PLACEHOLDER_TEXT: Record<GapType, string> = {
+	[GAP_TYPE.Value]: PLACEHOLDER.Value,
+	[GAP_TYPE.Meta]: PLACEHOLDER.Meta,
+	[GAP_TYPE.Nested]: PLACEHOLDER.Nested,
+} as const
 
 /**
  * Finds all placeholders in markup, returned in order of appearance
@@ -184,7 +177,7 @@ function findAllPlaceholders(markup: string): PlaceholderInfo[] {
 	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
 
 	for (const type of placeholderTypes) {
-		const text = getPlaceholderText(type)
+		const text = PLACEHOLDER_TEXT[type]
 		let position = markup.indexOf(text)
 		while (position !== -1) {
 			placeholders.push({
