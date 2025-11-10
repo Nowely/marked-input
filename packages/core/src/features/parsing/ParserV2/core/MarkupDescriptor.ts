@@ -19,8 +19,6 @@ export interface MarkupDescriptor {
 	markup: Markup
 	/** Index of this markup in the original markups array */
 	index: number
-	/** First character of first segment, used for fast grouping/lookup */
-	trigger: string
 	/** Array of segment definitions (can be static strings or dynamic patterns) */
 	segments: SegmentDefinition[]
 	/** Type of content in each gap between segments */
@@ -110,13 +108,9 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	const lastSegmentValue = getSegmentValue(segments[segments.length - 1])
 	const isSymmetric = segments.length >= 2 && firstSegmentValue === lastSegmentValue
 
-	// For trigger, use first character of first segment
-	const trigger = firstSegmentValue.charAt(0)
-
 	return {
 		markup,
 		index,
-		trigger,
 		segments,
 		gapTypes,
 		hasMeta,
