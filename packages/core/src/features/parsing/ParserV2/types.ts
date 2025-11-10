@@ -1,4 +1,5 @@
 import {PLACEHOLDER} from './constants'
+import {MarkupDescriptor} from './core/MarkupDescriptor'
 
 export type Token = TextToken | MarkToken
 
@@ -18,7 +19,7 @@ export interface MarkToken {
 		start: number
 		end: number
 	}
-	optionIndex: number
+	descriptor: MarkupDescriptor
 	value: string
 	meta?: string
 	nested?: {
@@ -30,41 +31,12 @@ export interface MarkToken {
 }
 
 /**
- * Result of pattern matching with position tracking
- *
- * All positions follow standard JavaScript convention:
- * - start positions are inclusive (point to first character)
- * - end positions are exclusive (point to character after last)
- *
- * This allows direct use with substring(): input.substring(start, end)
+ * Position range representing a span in text with start and end positions
+ * Used for various positioning needs throughout the parser
  */
-export interface MatchResult {
-	/** Start position of entire match (inclusive) */
+export interface PositionRange {
 	start: number
-	/** End position of entire match (exclusive) */
 	end: number
-	/** Full matched content */
-	content: string
-	/** Value text extracted from match */
-	value: string
-	/** Start position of value in original text (inclusive) */
-	valueStart: number
-	/** End position of value in original text (exclusive) */
-	valueEnd: number
-	/** Nested content text extracted from match (if pattern uses __nested__) */
-	nested?: string
-	/** Start position of nested content in original text (inclusive) */
-	nestedStart?: number
-	/** End position of nested content in original text (exclusive) */
-	nestedEnd?: number
-	/** Meta text extracted from match (if present) */
-	meta?: string
-	/** Start position of meta in original text (inclusive) */
-	metaStart?: number
-	/** End position of meta in original text (exclusive) */
-	metaEnd?: number
-	/** Index of markup descriptor that matched */
-	descriptorIndex: number
 }
 
 /**

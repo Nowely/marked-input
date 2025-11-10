@@ -9,13 +9,21 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\')
 	})
 
+	it('should NOT escape normal characters', () => {
+		expect(escape('hello world')).toBe('hello world')
+		expect(escape('#tag')).toBe('#tag')
+		expect(escape('a-b')).toBe('a-b')
+		expect(escape('line1\nline2')).toBe('line1\nline2')
+		expect(escape('tab\there')).toBe('tab\there')
+	})
+
 	it('should escape individual special characters', () => {
 		expect(escape('.')).toBe('\\.')
 		expect(escape('*')).toBe('\\*')
 		expect(escape('+')).toBe('\\+')
 		expect(escape('?')).toBe('\\?')
 		expect(escape('^')).toBe('\\^')
-		expect(escape('$')).toBe('\\$')
+		expect(escape('$')).toBe('\\$') // $ is now always escaped
 		expect(escape('{')).toBe('\\{')
 		expect(escape('}')).toBe('\\}')
 		expect(escape('(')).toBe('\\(')
@@ -24,14 +32,6 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escape('[')).toBe('\\[')
 		expect(escape(']')).toBe('\\]')
 		expect(escape('\\')).toBe('\\\\')
-	})
-
-	it('should escape hyphen in character classes', () => {
-		expect(escape('-')).toBe('\\-')
-		expect(escape('#')).toBe('\\#')
-		expect(escape(' ')).toBe('\\ ')
-		expect(escape('\t')).toBe('\\\t')
-		expect(escape('\n')).toBe('\\\n')
 	})
 
 	it('should not escape normal characters', () => {
@@ -47,7 +47,7 @@ describe(`Utility: ${escape.name}`, () => {
 
 	it('should handle strings with mixed special and normal characters', () => {
 		expect(escape('test.*+')).toBe('test\\.\\*\\+')
-		expect(escape('^start$')).toBe('\\^start\\$')
+		expect(escape('^start$')).toBe('\\^start\\$') // $ is now escaped
 		expect(escape('(group)|[set]')).toBe('\\(group\\)\\|\\[set\\]')
 	})
 
@@ -75,7 +75,8 @@ describe(`Utility: ${escape.name}`, () => {
 		const complexPattern = '^test.*(group1|group2)[0-9]+$'
 		const escaped = escape(complexPattern)
 
-		expect(escaped).toBe('\\^test\\.\\*\\(group1\\|group2\\)\\[0\\-9\\]\\+\\$')
+		// Now $ is always escaped, - is not escaped in character classes
+		expect(escaped).toBe('\\^test\\.\\*\\(group1\\|group2\\)\\[0-9\\]\\+\\$')
 
 		// Verify the escaped pattern works as a literal match
 		const regex = new RegExp(escaped)
@@ -88,8 +89,8 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escape('.')).toBe('\\.')
 
 		// All special characters
-		const allSpecial = '-[]{}()*+?.\\^$|# \t\n'
+		const allSpecial = '.*+?^${}()|[]\\'
 		const escaped = escape(allSpecial)
-		expect(escaped).toBe('\\-\\[\\]\\{\\}\\(\\)\\*\\+\\?\\.\\\\\\^\\$\\|\\#\\ \\\t\\\n')
+		expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\')
 	})
 })

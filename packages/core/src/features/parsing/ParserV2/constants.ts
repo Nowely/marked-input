@@ -15,3 +15,15 @@ export const PLACEHOLDER = {
 	Meta: '__meta__',
 	Nested: '__nested__',
 } as const
+
+/**
+ * Gap types used in markup descriptors
+ * Represents the content type in gaps between segments
+ */
+export const GAP_TYPE = {
+	Value: 'value',
+	Meta: 'meta',
+	Nested: 'nested',
+} as const
+
+export type GapType = (typeof GAP_TYPE)[keyof typeof GAP_TYPE]

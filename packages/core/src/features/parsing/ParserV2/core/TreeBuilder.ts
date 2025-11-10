@@ -1,223 +1,269 @@
-import {TextToken, MarkToken, MatchResult, Token} from '../types'
+import {TextToken, MarkToken, Token, PositionRange} from '../types'
+import {Match} from './Match'
 
 /**
- * Helper structure for tracking parent marks during tree building
+ * Parent context for tracking active nesting during tree building
  */
-interface MarkNode {
-	match: MatchResult
-	children: Token[]
+interface ParentContext {
+	match: Match
+	token: MarkToken
 	textPos: number // Current position for adding text tokens
 }
 
 /**
- * Context for tree building process
+ * TreeBuilder - Optimized single-pass tree building algorithm
+ *
+ * Algorithm: Single-pass approach with direct token creation
+ * - Processes matches in order, maintaining a stack of active parents
+ * - Creates tokens directly without intermediate data structures
+ * - Handles text gaps and nesting in a single traversal
+ *
+ * Key optimizations:
+ * - Single pass through matches (no separate relationship building phase)
+ * - Direct token creation eliminates intermediate allocations
+ * - Stack-based parent tracking with O(D) memory where D is nesting depth
+ * - No need for parent indices array or children lists
+ * - Simpler algorithm that's easier to understand and maintain
+ *
+ * Complexity: O(M) where M is number of matches
+ * Memory: O(D) for active parents stack where D is nesting depth (typically 3-5)
  */
-interface TreeBuildContext {
-	input: string
-	rootTokens: Token[]
-	stack: MarkNode[]
-	rootTextPos: number
-}
+export class TreeBuilder {
+	// Instance fields - only what's needed for single pass
+	private input!: string
 
-/**
- * Creates a text token for a range in the input
- * Validates that start <= end to prevent invalid tokens
- */
-function createTextToken(input: string, start: number, end: number): TextToken {
-	// Validate positions
-	if (start > end) {
-		throw new Error(
-			`Invalid text token positions: start (${start}) > end (${end}). ` +
-				`This indicates a bug in the tree building logic.`
-		)
+	// ===== PUBLIC API =====
+
+	/**
+	 * Builds nested token tree from pre-processed matches in a single pass
+	 *
+	 * Algorithm:
+	 * 1. Iterate through matches in order
+	 * 2. For each match:
+	 *    - Close any parents whose content ends before this match
+	 *    - Skip matches that conflict with the last accepted match
+	 *    - Add text token before this match
+	 *    - Create mark token and push to appropriate parent
+	 *    - If match has nested content, push to active parents stack
+	 * 3. After all matches, close remaining parents and add final text
+	 *
+	 * Complexity: O(M) where M is number of matches
+	 * Memory: O(D) for active parents stack where D is nesting depth
+	 */
+	public build(matches: Match[], input: string): Token[] {
+		this.input = input
+
+		if (matches.length === 0) {
+			return [this.createTextToken(0, input.length)]
+		}
+
+		return this.buildSinglePass(matches)
 	}
 
-	return {
-		type: 'text',
-		content: input.substring(start, end),
-		position: {start, end},
-	}
-}
+	// ===== SINGLE-PASS ALGORITHM =====
 
-/**
- * Creates a mark token from match and collected children
- * Only includes children if there are actual nested marks
- */
-function createMarkToken(match: MatchResult, children: Token[]): MarkToken {
-	// Check if there are any nested marks (not just text tokens)
-	const hasNestedMarks = children.some(child => child.type === 'mark')
+	/**
+	 * Builds token tree in a single pass through matches
+	 *
+	 * This is the core algorithm that processes matches sequentially,
+	 * maintaining a stack of active parents and creating tokens directly.
+	 */
+	private buildSinglePass(matches: Match[]): Token[] {
+		const roots: Token[] = []
+		const parentStack: ParentContext[] = []
+		let lastAcceptedMatch: Match | null = null
+		let rootTextPos = 0
 
-	// Priority: use value if present, otherwise use nested content
-	// This handles combined patterns like @[__value__](__nested__) correctly
-	const valueContent = match.value !== '' ? match.value : match.nested || ''
-
-	// Store nested content information for debugging
-	const nestedInfo = match.nested
-		? {
-				content: match.nested,
-				start: match.nestedStart!,
-				end: match.nestedEnd!,
+		for (const match of matches) {
+			// Skip conflicting matches
+			if (lastAcceptedMatch && match.conflictsWith(lastAcceptedMatch)) {
+				continue
 			}
-		: undefined
 
-	return {
-		type: 'mark',
-		content: match.content,
-		children: hasNestedMarks ? children : [],
-		optionIndex: match.descriptorIndex,
-		value: valueContent,
-		meta: match.meta,
-		position: {start: match.start, end: match.end},
-		nested: nestedInfo,
-	}
-}
+			lastAcceptedMatch = match
 
-/**
- * Adds text token between positions (always adds, even if empty)
- * This maintains compatibility with the old behavior where empty text tokens are always present
- * Skips adding token if positions are invalid (fromPos > toPos)
- */
-function addTextToken(input: string, tokens: Token[], fromPos: number, toPos: number): void {
-	// Skip if positions would be invalid
-	// This can happen when patterns overlap or are adjacent
-	if (fromPos > toPos) {
-		return
-	}
-	tokens.push(createTextToken(input, fromPos, toPos))
-}
+			// Close parents whose content ends before this match
+			while (parentStack.length > 0) {
+				const parent = parentStack[parentStack.length - 1]
+				const parentBounds = this.getContentBounds(parent.match)
 
-/**
- * Determines if matchB is contained within matchA's nestable content.
- * Priority: nested gap (if present), otherwise value gap.
- * All positions are exclusive (end points to next char after last)
- */
-function isContainedInNestableContent(matchB: MatchResult, matchA: MatchResult): boolean {
-	// Priority: use nested gap if present, otherwise use value gap
-	// This handles both pure __nested__ patterns and combined __value__/__nested__ patterns
-	if (matchA.nestedStart !== undefined && matchA.nestedEnd !== undefined) {
-		return matchB.start >= matchA.nestedStart && matchB.end <= matchA.nestedEnd
-	}
+				if (parentBounds.end <= match.start) {
+					// Parent is complete - finalize it
+					this.finalizeParent(parent, parentBounds.end)
+					parentStack.pop()
 
-	// Fallback to value for patterns that don't have __nested__
-	return matchB.start >= matchA.valueStart && matchB.end <= matchA.valueEnd
-}
+					// Add to appropriate container
+					if (parentStack.length > 0) {
+						parentStack[parentStack.length - 1].token.children.push(parent.token)
+					} else {
+						roots.push(parent.token)
+					}
+				} else {
+					break
+				}
+			}
 
-/**
- * Finalizes a completed mark node and adds it to parent or root
- */
-function finalizeMarkNode(node: MarkNode, ctx: TreeBuildContext): void {
-	// Add any remaining text in this mark's nestable content
-	// Priority: use nested end if present, otherwise use value end
-	const contentEnd = node.match.nestedEnd !== undefined ? node.match.nestedEnd : node.match.valueEnd
-	addTextToken(ctx.input, node.children, node.textPos, contentEnd)
+			// Determine where to add this match
+			const container = parentStack.length > 0 ? parentStack[parentStack.length - 1] : null
 
-	const token = createMarkToken(node.match, node.children)
+			if (container) {
+				// Add text before this match within parent
+				const textToken = this.createTextToken(container.textPos, match.start)
+				container.token.children.push(textToken)
+				container.textPos = match.end
+			} else {
+				// Add text before this match at root level
+				const textToken = this.createTextToken(rootTextPos, match.start)
+				roots.push(textToken)
+				rootTextPos = match.end
+			}
 
-	if (ctx.stack.length > 0) {
-		// Add to parent's children
-		const parent = ctx.stack[ctx.stack.length - 1]
-		addTextToken(ctx.input, parent.children, parent.textPos, node.match.start)
-		parent.children.push(token)
-		parent.textPos = node.match.end
-	} else {
-		// Add to root
-		addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, node.match.start)
-		ctx.rootTokens.push(token)
-		ctx.rootTextPos = node.match.end
-	}
-}
+			// Create mark token for this match
+			const markToken = this.createMarkToken(match)
 
-/**
- * Pops completed parent marks from stack and finalizes them
- */
-function popCompletedParents(match: MatchResult, ctx: TreeBuildContext): void {
-	while (ctx.stack.length > 0) {
-		const parent = ctx.stack[ctx.stack.length - 1]
-
-		// Check if current match is inside parent's nestable content (nested or value gap)
-		if (isContainedInNestableContent(match, parent.match)) {
-			// This match is nested inside parent
-			break
+			// If match has nested content, push to stack for processing children
+			if (this.hasNestedContent(match)) {
+				const bounds = this.getContentBounds(match)
+				parentStack.push({
+					match,
+					token: markToken,
+					textPos: bounds.start,
+				})
+			} else {
+				// No nested content - add directly to container
+				if (container) {
+					container.token.children.push(markToken)
+				} else {
+					roots.push(markToken)
+				}
+			}
 		}
 
-		// Parent is complete - finalize it
-		const completed = ctx.stack.pop()!
-		finalizeMarkNode(completed, ctx)
-	}
-}
+		// Close remaining parents
+		while (parentStack.length > 0) {
+			const parent = parentStack.pop()!
+			const parentBounds = this.getContentBounds(parent.match)
+			this.finalizeParent(parent, parentBounds.end)
 
-/**
- * Builds nested token tree in a single pass without recursive parsing
- *
- * Algorithm:
- * 1. Iterate through sorted matches (PatternMatcher already sorted them)
- * 2. Use stack to track parent-child relationships based on position containment
- * 3. Pop completed parents when current match is not inside their label
- * 4. Add current match to stack for potential children
- * 5. Finalize remaining stack at the end
- *
- * @complexity O(N) where N is number of matches
- * @param input - Original input text
- * @param matches - Sorted matches with position tracking
- * @returns Nested token tree
- *
- * @example
- * ```typescript
- * // Input: "@[hello #[world]]"
- * // Matches: [
- * //   { start: 0, end: 17, label: "hello #[world]", labelStart: 2, labelEnd: 16 },
- * //   { start: 8, end: 16, label: "world", labelStart: 10, labelEnd: 15 }
- * // ]
- * // Result: [
- * //   TextToken(""),
- * //   MarkToken{ children: [TextToken("hello "), MarkToken("world"), TextToken("")] },
- * //   TextToken("")
- * // ]
- * ```
- */
-export function buildTree(input: string, matches: MatchResult[]): Token[] {
-	if (matches.length === 0) {
-		return [createTextToken(input, 0, input.length)]
-	}
-
-	const ctx: TreeBuildContext = {
-		input,
-		rootTokens: [],
-		stack: [],
-		rootTextPos: 0,
-	}
-
-	// Process each match
-	for (const match of matches) {
-		// Pop completed parents that don't contain this match
-		popCompletedParents(match, ctx)
-
-		// Check if this match would conflict with an already added match
-		// Skip matches that start before or at the current root text position
-		// This handles cases where patterns find matches inside already-processed content
-		if (ctx.stack.length === 0 && match.start < ctx.rootTextPos) {
-			// This match starts before where we currently are - skip it
-			continue
+			if (parentStack.length > 0) {
+				parentStack[parentStack.length - 1].token.children.push(parent.token)
+			} else {
+				roots.push(parent.token)
+			}
 		}
 
-		// Add this match to the stack for potential children
-		// Priority: use nested start if present, otherwise use value start
-		const contentStart = match.nestedStart !== undefined ? match.nestedStart : match.valueStart
-		ctx.stack.push({
-			match,
-			children: [],
-			textPos: contentStart,
-		})
+		// Add final text token at root level
+		roots.push(this.createTextToken(rootTextPos, this.input.length))
+
+		return roots
 	}
 
-	// Finalize all remaining marks in stack
-	while (ctx.stack.length > 0) {
-		const completed = ctx.stack.pop()!
-		finalizeMarkNode(completed, ctx)
+	/**
+	 * Finalizes a parent token by adding final text token if needed
+	 */
+	private finalizeParent(parent: ParentContext, endPos: number): void {
+		// Add final text token within parent's content
+		const finalText = this.createTextToken(parent.textPos, endPos)
+		parent.token.children.push(finalText)
+
+		// If no nested marks, clear children array
+		const hasNestedMarks = parent.token.children.some(child => child.type === 'mark')
+		if (!hasNestedMarks) {
+			parent.token.children = []
+		}
 	}
 
-	// Add final text after all marks
-	addTextToken(ctx.input, ctx.rootTokens, ctx.rootTextPos, input.length)
+	/**
+	 * Creates a mark token from a match (without children - those are added later)
+	 */
+	private createMarkToken(match: Match): MarkToken {
+		// Extract content using helper functions
+		const value = this.extractSubstring(match.gaps.value?.start, match.gaps.value?.end)
+		const nestedStr = this.extractSubstring(match.gaps.nested?.start, match.gaps.nested?.end)
+		const metaStr = this.extractSubstring(match.gaps.meta?.start, match.gaps.meta?.end)
 
-	return ctx.rootTokens
+		// Convert empty strings to undefined for nested, but meta can be empty string
+		const nested = nestedStr || undefined
+		const meta = match.gaps.meta !== undefined ? metaStr : undefined
+
+		// Use value if present, otherwise use nested content
+		const valueContent = value || nested || ''
+
+		return {
+			type: 'mark',
+			content: this.input.substring(match.start, match.end),
+			children: [], // Will be populated if match has nested content
+			descriptor: match.descriptor,
+			value: valueContent,
+			meta,
+			position: {start: match.start, end: match.end},
+			nested: this.createNestedInfo(match, nested),
+		}
+	}
+
+	// ===== UTILITY METHODS =====
+
+	/**
+	 * Gets the content boundaries for a match
+	 * Priority: nested content if present, otherwise value content
+	 */
+	private getContentBounds(match: Match): PositionRange {
+		if (match.gaps.nested) {
+			return match.gaps.nested
+		}
+		if (match.gaps.value) {
+			return match.gaps.value
+		}
+		return {
+			start: match.start,
+			end: match.start,
+		}
+	}
+
+	/**
+	 * Checks if a match has nested content capability
+	 */
+	private hasNestedContent(match: Match): boolean {
+		return match.gaps.nested !== undefined
+	}
+
+	/**
+	 * Extracts substring safely, returns empty string if positions are undefined
+	 */
+	private extractSubstring(start: number | undefined, end: number | undefined): string {
+		return start !== undefined && end !== undefined ? this.input.substring(start, end) : ''
+	}
+
+	/**
+	 * Creates a text token for a range in the input
+	 */
+	private createTextToken(start: number, end: number): TextToken {
+		// Validate positions
+		if (start > end) {
+			throw new Error(
+				`Invalid text token positions: start (${start}) > end (${end}). ` +
+					`This indicates a bug in the tree building logic.`
+			)
+		}
+
+		return {
+			type: 'text',
+			content: this.input.substring(start, end),
+			position: {start, end},
+		}
+	}
+
+	/**
+	 * Creates nested info object if nested content exists
+	 */
+	private createNestedInfo(match: Match, nested: string | undefined): MarkToken['nested'] {
+		if (!nested || match.gaps.nested === undefined) {
+			return undefined
+		}
+		return {
+			content: nested,
+			start: match.gaps.nested.start,
+			end: match.gaps.nested.end,
+		}
+	}
 }

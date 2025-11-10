@@ -279,7 +279,7 @@ ParserV2/
 ├── constants.ts             # Placeholder constants
 ├── core/                    # Core functionality
 │   ├── MarkupDescriptor.ts  # Markup descriptor creation
-│   ├── PatternProcessor.ts  # Pattern processing coordinator
+│   ├── PatternMatcher.ts    # Pattern processing coordinator
 │   ├── ChainMatcher.ts      # Pattern chain building
 │   ├── MatchValidator.ts    # Match validation and filtering
 │   ├── MatchPostProcessor.ts # Conversion to MatchResult
@@ -298,7 +298,7 @@ ParserV2/
 ```
 Input Text → Aho-Corasick → SegmentMatches
                               ↓
-                    PatternProcessor
+                    PatternMatcher
                     (coordinator)
                               ↓
         ┌─────────────────────┼─────────────────────┐
