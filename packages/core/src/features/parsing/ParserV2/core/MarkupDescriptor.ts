@@ -116,13 +116,13 @@ function scanMarkupStructure(markup: string): ParsedMarkupStructure {
 		nested: 0,
 	}
 
+	// Find all placeholders at once
+	const placeholders = findAllPlaceholders(markup)
+
 	let currentParsePosition = 0
 
-	while (currentParsePosition < markup.length) {
-		const placeholder = findNextPlaceholder(markup, currentParsePosition)
-		if (!placeholder) break
-
-		const segment = markup.substring(currentParsePosition, placeholder.pos)
+	for (const placeholder of placeholders) {
+		const segment = markup.substring(currentParsePosition, placeholder.position)
 		if (segment.length > 0) {
 			segments.push(segment)
 		}
@@ -142,7 +142,7 @@ function scanMarkupStructure(markup: string): ParsedMarkupStructure {
 				break
 		}
 
-		currentParsePosition = placeholder.pos + placeholder.length
+		currentParsePosition = placeholder.position + getPlaceholderText(placeholder.type).length
 	}
 
 	const finalSegment = markup.substring(currentParsePosition)
@@ -163,58 +163,44 @@ function scanMarkupStructure(markup: string): ParsedMarkupStructure {
  */
 interface PlaceholderInfo {
 	type: GapType
-	pos: number
-	length: number
+	position: number
 }
 
 /**
- * Finds the next placeholder in markup starting from the given position
- * @param markup - The markup string to search in
- * @param startPosition - Position to start searching from
- * @returns Information about the next placeholder, or null if none found
+ * Gets the text of a placeholder by its type
  */
-function findNextPlaceholder(markup: string, startPosition: number): PlaceholderInfo | null {
-	const valuePos = markup.indexOf(PLACEHOLDER.Value, startPosition)
-	const metaPos = markup.indexOf(PLACEHOLDER.Meta, startPosition)
-	const nestedPos = markup.indexOf(PLACEHOLDER.Nested, startPosition)
+function getPlaceholderText(type: GapType): string {
+	switch (type) {
+		case GAP_TYPE.Value: return PLACEHOLDER.Value
+		case GAP_TYPE.Meta: return PLACEHOLDER.Meta
+		case GAP_TYPE.Nested: return PLACEHOLDER.Nested
+		default: return '' // Should never happen
+	}
+}
 
-	// Check if any placeholders found
-	if (valuePos === -1 && metaPos === -1 && nestedPos === -1) {
-		return null
+/**
+ * Finds all placeholders in markup, returned in order of appearance
+ * @param markup - The markup string to search in
+ * @returns Array of placeholder information, sorted by position
+ */
+function findAllPlaceholders(markup: string): PlaceholderInfo[] {
+	const placeholders: PlaceholderInfo[] = []
+	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
+
+	for (const type of placeholderTypes) {
+		const text = getPlaceholderText(type)
+		let position = markup.indexOf(text)
+		while (position !== -1) {
+			placeholders.push({
+				type,
+				position
+			})
+			position = markup.indexOf(text, position + text.length)
+		}
 	}
 
-	// Find the earliest placeholder using simple comparisons (no array creation or sorting)
-	let minPos = Infinity
-	let minType: GapType | null = null
-	let minLength = 0
-
-	if (valuePos !== -1 && valuePos < minPos) {
-		minPos = valuePos
-		minType = GAP_TYPE.Value
-		minLength = PLACEHOLDER.Value.length
-	}
-
-	if (metaPos !== -1 && metaPos < minPos) {
-		minPos = metaPos
-		minType = GAP_TYPE.Meta
-		minLength = PLACEHOLDER.Meta.length
-	}
-
-	if (nestedPos !== -1 && nestedPos < minPos) {
-		minPos = nestedPos
-		minType = GAP_TYPE.Nested
-		minLength = PLACEHOLDER.Nested.length
-	}
-
-	if (minType === null) {
-		return null
-	}
-
-	return {
-		type: minType,
-		pos: minPos,
-		length: minLength,
-	}
+	// Sort by position to maintain order
+	return placeholders.sort((a, b) => a.position - b.position)
 }
 
 /**
