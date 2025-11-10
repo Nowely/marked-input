@@ -24,6 +24,27 @@ export interface MarkupDescriptor {
 }
 
 /**
+ * Validates markup placeholder counts
+ */
+function validateMarkup(counts: Record<GapType, number>, markup: string): void {
+	const rules = [
+		{ count: counts.value, max: 2, name: PLACEHOLDER.Value },
+		{ count: counts.meta, max: 1, name: PLACEHOLDER.Meta },
+		{ count: counts.nested, max: 1, name: PLACEHOLDER.Nested }
+	]
+
+	for (const { count, max, name } of rules) {
+		if (count > max) {
+			throw new Error(`Invalid markup: "${markup}". Max ${max} "${name}" placeholders, got ${count}`)
+		}
+	}
+
+	if (counts.value === 0 && counts.nested === 0) {
+		throw new Error(`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}"`)
+	}
+}
+
+/**
  * Creates a segment-based markup descriptor from a markup template
  *
  * Examples:
@@ -38,33 +59,9 @@ export interface MarkupDescriptor {
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const {segments: rawSegments, gapTypes: rawGapTypes, counts, valueGapIndices} = scanMarkupStructure(markup)
 
-	const {value: valueCount, meta: metaCount, nested: nestedCount} = counts
+	validateMarkup(counts, markup)
 
-	// Must have at least one content placeholder (__value__ or __nested__)
-	if (valueCount === 0 && nestedCount === 0) {
-		throw new Error(
-			`Invalid markup format: "${markup}". Must have at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}" placeholder`
-		)
-	}
-
-	if (valueCount > 2) {
-		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.Value}" placeholders, but found ${valueCount}`
-		)
-	}
-
-	if (nestedCount > 1) {
-		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.Nested}" placeholder, but found ${nestedCount}`
-		)
-	}
-
-	if (metaCount > 1) {
-		throw new Error(
-			`Invalid markup format: "${markup}". Expected 0 or 1 "${PLACEHOLDER.Meta}" placeholder, but found ${metaCount}`
-		)
-	}
-
+	const {value: valueCount, nested: nestedCount} = counts
 	const hasTwoValues = valueCount === 2
 	const hasNested = nestedCount === 1
 
@@ -96,17 +93,15 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	}
 }
 
-interface ParsedMarkupStructure {
+/**
+ * Parses markup template into segments, gap types and placeholder counts
+ */
+function scanMarkupStructure(markup: string): {
 	segments: string[]
 	gapTypes: GapType[]
 	counts: Record<GapType, number>
 	valueGapIndices: number[]
-}
-
-/**
- * Parses markup template into segments, gap types and placeholder counts
- */
-function scanMarkupStructure(markup: string): ParsedMarkupStructure {
+} {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	const valueGapIndices: number[] = []
@@ -253,14 +248,12 @@ function createDynamicDefinition(
 	afterSegment: string,
 	nextSegment?: string
 ): [string, string, string] {
-	let exclusion = ''
+	if (!nextSegment) return [beforeSegment, afterSegment, '']
 
-	if (nextSegment) {
-		const firstChar = nextSegment.charAt(0)
-		if (firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)) {
-			exclusion = firstChar
-		}
-	}
+	const firstChar = nextSegment.charAt(0)
+	const exclusion = firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)
+		? firstChar
+		: ''
 
 	return [beforeSegment, afterSegment, exclusion]
 }
