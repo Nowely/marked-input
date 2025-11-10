@@ -36,12 +36,7 @@ export interface MarkupDescriptor {
  * - `<__value__ __meta__>__nested__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__nested__</([^>]+)>'}], gapTypes: ["value", "meta", "nested", "value"] (dynamic)
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
-	const {
-		segments: rawSegments,
-		gapTypes: rawGapTypes,
-		counts,
-		valueGapIndices,
-	} = scanMarkupStructure(markup)
+	const {segments: rawSegments, gapTypes: rawGapTypes, counts, valueGapIndices} = scanMarkupStructure(markup)
 
 	const {value: valueCount, meta: metaCount, nested: nestedCount} = counts
 
@@ -90,7 +85,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		throw new Error('Invalid markup structure: more gaps than segments')
 	}
 
-
 	return {
 		markup,
 		index,
@@ -100,15 +94,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		hasTwoValues,
 		segmentGlobalIndices: new Array(segments.length), // Will be populated by MarkupRegistry
 	}
-}
-
-/**
- * Placeholder information extracted from markup
- */
-interface PlaceholderInfo {
-	type: GapType
-	pos: number
-	length: number
 }
 
 interface ParsedMarkupStructure {
@@ -171,6 +156,15 @@ function scanMarkupStructure(markup: string): ParsedMarkupStructure {
 		counts,
 		valueGapIndices,
 	}
+}
+
+/**
+ * Placeholder information extracted from markup
+ */
+interface PlaceholderInfo {
+	type: GapType
+	pos: number
+	length: number
 }
 
 /**
@@ -246,9 +240,7 @@ function convertTwoValuePattern(
 	const beforeFirst = segments[firstValueGapIdx]
 	const afterFirst = segments[firstValueGapIdx + 1]
 	if (beforeFirst && afterFirst) {
-		newSegments.push(
-			createDynamicDefinition(beforeFirst, afterFirst, segments[firstValueGapIdx + 2])
-		)
+		newSegments.push(createDynamicDefinition(beforeFirst, afterFirst, segments[firstValueGapIdx + 2]))
 	}
 
 	for (let i = firstValueGapIdx + 2; i < secondValueGapIdx; i++) {
@@ -258,9 +250,7 @@ function convertTwoValuePattern(
 	const beforeSecond = segments[secondValueGapIdx]
 	const afterSecond = segments[secondValueGapIdx + 1]
 	if (beforeSecond && afterSecond) {
-		newSegments.push(
-			createDynamicDefinition(beforeSecond, afterSecond, segments[secondValueGapIdx + 2])
-		)
+		newSegments.push(createDynamicDefinition(beforeSecond, afterSecond, segments[secondValueGapIdx + 2]))
 	}
 
 	const filteredGapTypes = gapTypes.filter(type => type !== GAP_TYPE.Value)
@@ -281,11 +271,7 @@ function createDynamicDefinition(
 
 	if (nextSegment) {
 		const firstChar = nextSegment.charAt(0)
-		if (
-			firstChar &&
-			!afterSegment.includes(firstChar) &&
-			!nextSegment.startsWith(beforeSegment)
-		) {
+		if (firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)) {
 			exclusion = firstChar
 		}
 	}
