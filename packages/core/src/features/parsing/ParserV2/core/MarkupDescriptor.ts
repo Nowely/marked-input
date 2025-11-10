@@ -3,14 +3,6 @@ import {Markup} from '../types'
 import {SegmentDefinition} from '../utils/SegmentMatcher'
 
 /**
- * Gets the string value from a segment definition
- * For static segments returns the string itself, for dynamic segments returns the before part
- */
-function getSegmentValue(segment: SegmentDefinition): string {
-	return typeof segment === 'string' ? segment : segment[0] // before part
-}
-
-/**
  * Descriptor for segment-based markup parsing
  * Converts markup templates into arrays of static or dynamic segments
  */
@@ -23,14 +15,10 @@ export interface MarkupDescriptor {
 	segments: SegmentDefinition[]
 	/** Type of content in each gap between segments */
 	gapTypes: GapType[]
-	/** True if this markup contains a __meta__ placeholder */
-	hasMeta: boolean
 	/** True if this markup contains a __nested__ placeholder */
 	hasNested: boolean
 	/** True if this markup contains exactly two __value__ placeholders */
 	hasTwoValues: boolean
-	/** True if opening and closing segments are the same (symmetric patterns like **text**) */
-	isSymmetric: boolean
 	/** Global indices of segments in registry segments array (parallel to segments array) */
 	segmentGlobalIndices: number[]
 }
@@ -83,7 +71,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	}
 
 	const hasTwoValues = valueCount === 2
-	const hasMeta = metaCount === 1
 	const hasNested = nestedCount === 1
 
 	let segments: SegmentDefinition[] = rawSegments
@@ -103,20 +90,14 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		throw new Error('Invalid markup structure: more gaps than segments')
 	}
 
-	// For isSymmetric check, compare the actual segment values (extract from SegmentDefinition)
-	const firstSegmentValue = getSegmentValue(segments[0])
-	const lastSegmentValue = getSegmentValue(segments[segments.length - 1])
-	const isSymmetric = segments.length >= 2 && firstSegmentValue === lastSegmentValue
 
 	return {
 		markup,
 		index,
 		segments,
 		gapTypes,
-		hasMeta,
 		hasNested,
 		hasTwoValues,
-		isSymmetric,
 		segmentGlobalIndices: new Array(segments.length), // Will be populated by MarkupRegistry
 	}
 }
