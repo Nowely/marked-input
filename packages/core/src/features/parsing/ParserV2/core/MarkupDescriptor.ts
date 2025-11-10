@@ -111,16 +111,10 @@ interface PlaceholderInfo {
 	length: number
 }
 
-interface PlaceholderCounts {
-	value: number
-	meta: number
-	nested: number
-}
-
 interface ParsedMarkupStructure {
 	segments: string[]
 	gapTypes: GapType[]
-	counts: PlaceholderCounts
+	counts: Record<GapType, number>
 	valueGapIndices: number[]
 }
 
@@ -131,7 +125,7 @@ function scanMarkupStructure(markup: string): ParsedMarkupStructure {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	const valueGapIndices: number[] = []
-	const counts: PlaceholderCounts = {
+	const counts: Record<GapType, number> = {
 		value: 0,
 		meta: 0,
 		nested: 0,
