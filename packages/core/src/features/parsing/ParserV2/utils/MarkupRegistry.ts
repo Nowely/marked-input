@@ -11,8 +11,6 @@ export class MarkupRegistry {
 	readonly descriptors: MarkupDescriptor[]
 	/** Deduplicated list of unique segment definitions (static strings or dynamic patterns) */
 	readonly segments: SegmentDefinition[] = []
-	/** Map from segment key to descriptors that use this segment */
-	readonly segmentsMap: Map<string, MarkupDescriptor[]> = new Map()
 	/** Map from first segment index to descriptors that start with this segment (for O(1) lookup) */
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]> = new Map()
 
@@ -29,33 +27,24 @@ export class MarkupRegistry {
 				this.processSegment(descriptor, segment, segmentIndex, segmentIndexMap)
 			})
 
-			// Build segmentsMap for this descriptor
-			descriptor.segments.forEach(segment => {
-				const segmentKey = this.getSegmentKey(segment)
-				if (segmentKey) {
-					this.addToMultiMap(this.segmentsMap, segmentKey, descriptor)
-				}
-			})
-
-			// Build firstSegmentIndexMap using pre-computed global index
-			const firstSegmentIndex = descriptor.segmentGlobalIndices[0]
-			if (firstSegmentIndex !== undefined) {
-				this.addToMultiMap(this.firstSegmentIndexMap, firstSegmentIndex, descriptor)
-			}
+			this.addToFirstSegmentIndexMap(descriptor)
 
 			return descriptor
 		})
 	}
 
 	/**
-	 * Adds a value to a Map of arrays (multi-map), creating the array if it doesn't exist
+	 * Adds a descriptor to the firstSegmentIndexMap using its first segment's global index
 	 */
-	private addToMultiMap<K, V>(map: Map<K, V[]>, key: K, value: V): void {
-		const values = map.get(key)
-		if (values) {
-			values.push(value)
+	private addToFirstSegmentIndexMap(descriptor: MarkupDescriptor): void {
+		const firstSegmentIndex = descriptor.segmentGlobalIndices[0]
+		if (firstSegmentIndex === undefined) return
+		
+		const descriptors = this.firstSegmentIndexMap.get(firstSegmentIndex)
+		if (descriptors) {
+			descriptors.push(descriptor)
 		} else {
-			map.set(key, [value])
+			this.firstSegmentIndexMap.set(firstSegmentIndex, [descriptor])
 		}
 	}
 
@@ -73,7 +62,16 @@ export class MarkupRegistry {
 		const globalIndex = segmentIndexMap.get(segmentKey)!
 		descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
 
-		this.registerStaticParts(segment, segmentIndexMap)
+		// Register static parts of dynamic segments
+		if (typeof segment !== 'string') {
+			const [before, after] = segment
+			if (before) {
+				this.registerSegment(before, before, segmentIndexMap)
+			}
+			if (after) {
+				this.registerSegment(after, after, segmentIndexMap)
+			}
+		}
 	}
 
 	private registerSegment(
@@ -85,18 +83,6 @@ export class MarkupRegistry {
 			const globalIndex = this.segments.length
 			this.segments.push(segment)
 			segmentIndexMap.set(segmentKey, globalIndex)
-		}
-	}
-
-	private registerStaticParts(segment: SegmentDefinition, segmentIndexMap: Map<string, number>): void {
-		if (typeof segment === 'string') return
-
-		const [before, after] = segment
-		if (before) {
-			this.registerSegment(before, before, segmentIndexMap)
-		}
-		if (after) {
-			this.registerSegment(after, after, segmentIndexMap)
 		}
 	}
 
