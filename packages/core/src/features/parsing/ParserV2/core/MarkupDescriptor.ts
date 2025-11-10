@@ -75,12 +75,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 /**
  * Parses markup template into segments, gap types and placeholder counts
  */
-function scanMarkupStructure(markup: string): {
-	segments: string[]
-	gapTypes: GapType[]
-	counts: Record<GapType, number>
-	valueGapIndices: number[]
-} {
+function scanMarkupStructure(markup: string) {
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	const valueGapIndices: number[] = []
