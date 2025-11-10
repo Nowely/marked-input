@@ -24,27 +24,6 @@ export interface MarkupDescriptor {
 }
 
 /**
- * Validates markup placeholder counts
- */
-function validateMarkup(counts: Record<GapType, number>, markup: string): void {
-	const rules = [
-		{ count: counts.value, max: 2, name: PLACEHOLDER.Value },
-		{ count: counts.meta, max: 1, name: PLACEHOLDER.Meta },
-		{ count: counts.nested, max: 1, name: PLACEHOLDER.Nested }
-	]
-
-	for (const { count, max, name } of rules) {
-		if (count > max) {
-			throw new Error(`Invalid markup: "${markup}". Max ${max} "${name}" placeholders, got ${count}`)
-		}
-	}
-
-	if (counts.value === 0 && counts.nested === 0) {
-		throw new Error(`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}"`)
-	}
-}
-
-/**
  * Creates a segment-based markup descriptor from a markup template
  *
  * Examples:
@@ -154,6 +133,29 @@ function scanMarkupStructure(markup: string): {
 }
 
 /**
+ * Validates markup placeholder counts
+ */
+function validateMarkup(counts: Record<GapType, number>, markup: string): void {
+	const rules = [
+		{count: counts.value, max: 2, name: PLACEHOLDER.Value},
+		{count: counts.meta, max: 1, name: PLACEHOLDER.Meta},
+		{count: counts.nested, max: 1, name: PLACEHOLDER.Nested},
+	]
+
+	for (const {count, max, name} of rules) {
+		if (count > max) {
+			throw new Error(`Invalid markup: "${markup}". Max ${max} "${name}" placeholders, got ${count}`)
+		}
+	}
+
+	if (counts.value === 0 && counts.nested === 0) {
+		throw new Error(
+			`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}"`
+		)
+	}
+}
+
+/**
  * Placeholder information extracted from markup
  */
 interface PlaceholderInfo {
@@ -166,10 +168,14 @@ interface PlaceholderInfo {
  */
 function getPlaceholderText(type: GapType): string {
 	switch (type) {
-		case GAP_TYPE.Value: return PLACEHOLDER.Value
-		case GAP_TYPE.Meta: return PLACEHOLDER.Meta
-		case GAP_TYPE.Nested: return PLACEHOLDER.Nested
-		default: return '' // Should never happen
+		case GAP_TYPE.Value:
+			return PLACEHOLDER.Value
+		case GAP_TYPE.Meta:
+			return PLACEHOLDER.Meta
+		case GAP_TYPE.Nested:
+			return PLACEHOLDER.Nested
+		default:
+			return '' // Should never happen
 	}
 }
 
@@ -188,7 +194,7 @@ function findAllPlaceholders(markup: string): PlaceholderInfo[] {
 		while (position !== -1) {
 			placeholders.push({
 				type,
-				position
+				position,
 			})
 			position = markup.indexOf(text, position + text.length)
 		}
@@ -251,9 +257,8 @@ function createDynamicDefinition(
 	if (!nextSegment) return [beforeSegment, afterSegment, '']
 
 	const firstChar = nextSegment.charAt(0)
-	const exclusion = firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)
-		? firstChar
-		: ''
+	const exclusion =
+		firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment) ? firstChar : ''
 
 	return [beforeSegment, afterSegment, exclusion]
 }
