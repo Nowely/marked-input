@@ -1,2 +1,6 @@
-// escape RegExp special characters https://stackoverflow.com/a/9310752/5142490
-export const escape = (str: string) => str.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
+// escape RegExp special characters to match RegExp.escape behavior
+// Escapes all characters that have special meaning in regular expressions
+export const escape = (str: string): string => {
+	return str.replace(/[.*+?^${}()|[\]\\\\]/g, '\\$&')
+}
+

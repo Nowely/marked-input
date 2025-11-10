@@ -1,3 +1,5 @@
+import {escape} from '../../../../shared/escape'
+
 /**
  * Result of a segment match in the text
  */
@@ -34,15 +36,14 @@ interface SegmentEntry {
 	definition: SegmentDefinition
 }
 
-import {escapeRegexChars, escapeForCharClass} from './regexUtils'
 
 /**
  * Computes regex pattern for dynamic segment using pre-computed exclusions
  */
 function computeDynamicPattern(before: string, after: string, exclusions: string): string {
-	const escapedBefore = escapeRegexChars(before)
-	const escapedAfter = escapeRegexChars(after)
-	const escapedDelimiters = escapeForCharClass(after + exclusions)
+	const escapedBefore = escape(before)
+	const escapedAfter = escape(after)
+	const escapedDelimiters = escape(after + exclusions)
 
 	// Non-greedy quantifier to stop at first occurrence of after
 	return `${escapedBefore}([^${escapedDelimiters}]+?)${escapedAfter}`
@@ -80,7 +81,7 @@ export class SegmentMatcher {
 		// Create static regex
 		if (statics.length > 0) {
 			const sorted = [...statics].sort((a, b) => b.length - a.length)
-			const escaped = sorted.map(escapeRegexChars)
+			const escaped = sorted.map(escape)
 			this.staticRegex = new RegExp(`(?:${escaped.join('|')})`, 'gu')
 			this.staticToIndex = staticToIndex
 		}
@@ -93,7 +94,7 @@ export class SegmentMatcher {
 			dynamics.forEach((segment) => {
 				const index = segments.indexOf(segment)
 				if (typeof segment === 'string') {
-					entries.push({index, pattern: escapeRegexChars(segment), definition: segment})
+					entries.push({index, pattern: escape(segment), definition: segment})
 				} else {
 					const [before, after, exclusions] = segment
 					dynamicIndices.add(index)
