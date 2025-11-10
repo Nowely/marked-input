@@ -52,14 +52,6 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		gapTypes = conversion.gapTypes
 	}
 
-	if (segments.length === 0) {
-		throw new Error(`Invalid markup format: "${markup}". Must have at least one static segment`)
-	}
-
-	if (gapTypes.length > segments.length) {
-		throw new Error('Invalid markup structure: more gaps than segments')
-	}
-
 	return {
 		markup,
 		index,
