@@ -88,8 +88,12 @@ export class Match {
 		const segmentDef = this.descriptor.segments[this.expectedSegmentIndex]
 
 		// Only hash for hasTwoValues closing tags that need value-specific matching
-		if (typeof segmentDef === 'object' && this.descriptor.hasTwoValues &&
-		    this.captured && this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
+		if (
+			typeof segmentDef === 'object' &&
+			this.descriptor.hasTwoValues &&
+			this.captured &&
+			this.isAwaitingLastSegment
+		) {
 			const [before, after] = segmentDef
 			const value = before + this.captured + after
 			return getSegmentIndex(baseIndex, value)
@@ -97,7 +101,6 @@ export class Match {
 
 		return baseIndex
 	}
-
 
 	/**
 	 * Update state with new segment by setting gap positions
