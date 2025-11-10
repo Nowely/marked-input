@@ -20,9 +20,7 @@ export interface SegmentMatch {
  * Segment definition - can be a static string or a dynamic pattern
  * For dynamic patterns: [before, after, exclusions]
  */
-export type SegmentDefinition =
-	| string
-	| readonly [before: string, after: string, exclusions: string]
+export type SegmentDefinition = string | readonly [before: string, after: string, exclusions: string]
 
 /**
  * Internal representation of a segment with its regex pattern
@@ -35,7 +33,6 @@ interface SegmentEntry {
 	/** Original definition for reference */
 	definition: SegmentDefinition
 }
-
 
 /**
  * Computes regex pattern for dynamic segment using pre-computed exclusions
@@ -91,7 +88,7 @@ export class SegmentMatcher {
 			const dynamicIndices = new Set<number>()
 			const entries: SegmentEntry[] = []
 
-			dynamics.forEach((segment) => {
+			dynamics.forEach(segment => {
 				const index = segments.indexOf(segment)
 				if (typeof segment === 'string') {
 					entries.push({index, pattern: escape(segment), definition: segment})

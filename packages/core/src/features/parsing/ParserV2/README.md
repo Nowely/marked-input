@@ -57,9 +57,9 @@ The API has been renamed for clarity. Old method names are deprecated but still 
 
 ```typescript
 // ❌ Old API (deprecated, will be removed in v2.0)
-parser.split(text)    // Use parse() instead
-parser.join(tokens)   // Use stringify() instead  
-parser.denote(text, callback)  // Use transform() instead
+parser.split(text) // Use parse() instead
+parser.join(tokens) // Use stringify() instead
+parser.denote(text, callback) // Use transform() instead
 
 // ✅ New API (recommended)
 parser.parse(text)
@@ -251,12 +251,12 @@ Input Text → SegmentMatcher (Dual Strategy) → SegmentMatches
 class Parser {
   // Constructor
   constructor(markups: Markup[])
-  
+
   // Main methods (recommended)
   parse(input: string): Token[]
   stringify(tokens: Token[]): string
   transform(value: string, callback: (mark: MarkToken) => string): string
-  
+
   // Deprecated methods (use new names above)
   split(input: string): Token[]  // @deprecated Use parse()
   join(tokens: Token[]): string  // @deprecated Use stringify()
@@ -277,11 +277,13 @@ Parser.join(tokens: Token[]): string  // @deprecated Use stringify()
 #### `parse(input: string): Token[]`
 
 Parses text into a nested token tree. This is the main parsing method that processes input through three stages:
+
 1. Segment matching - finds all markup segments (O(N + M))
 2. Pattern matching - builds complete patterns from segments (O(M))
 3. Tree building - constructs nested token tree (O(M))
 
 **Example:**
+
 ```typescript
 const parser = new Parser(['@[__value__](__meta__)'])
 const tokens = parser.parse('Hello @[world](test)')
@@ -297,6 +299,7 @@ const tokens = parser.parse('Hello @[world](test)')
 Converts tokens back to the original text. This is the inverse operation of `parse()`.
 
 **Example:**
+
 ```typescript
 const text = 'Hello @[world](test)'
 const tokens = parser.parse(text)
@@ -309,6 +312,7 @@ console.log(reconstructed === text) // true
 Transforms annotated text by processing all mark tokens (including nested ones) with a callback.
 
 **Example:**
+
 ```typescript
 // Extract all values
 const text = '@[Hello](world) and #[tag]'
@@ -316,9 +320,7 @@ const result = parser.transform(text, mark => mark.value)
 // Returns: 'Hello and tag'
 
 // Custom transformation
-const result = parser.transform(text, mark => 
-  mark.meta ? `${mark.value}:${mark.meta}` : mark.value
-)
+const result = parser.transform(text, mark => (mark.meta ? `${mark.value}:${mark.meta}` : mark.value))
 // Returns: 'Hello:world and tag'
 ```
 
@@ -616,6 +618,7 @@ calculateDeterministicPriority(state: MatchState): number {
 **TreeBuilder** uses a single-pass approach for optimal performance:
 
 **Single-Pass Algorithm O(M)**
+
 ```
 Initialize:
   - roots: Token[] (root-level tokens)
@@ -643,6 +646,7 @@ Return roots
 ```
 
 **Key Improvements:**
+
 - Single pass through matches (no separate relationship building)
 - Direct token creation (no intermediate data structures)
 - O(M) complexity where M is number of matches
@@ -707,6 +711,7 @@ Return roots
 **Memory:** O(D) for parent stack where D is nesting depth (typically 3-5)
 
 **Key Improvements:**
+
 - Single pass eliminates intermediate data structures
 - Direct token creation reduces allocations
 - Stack-based approach is simpler and more efficient

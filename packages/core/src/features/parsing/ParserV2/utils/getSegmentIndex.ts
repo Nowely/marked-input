@@ -17,5 +17,5 @@ export function getSegmentIndex(baseIndex: number, value?: string): number {
 	}
 	hash = hash >>> 0 // Unsigned 32-bit integer
 
-	return baseIndex * 1000000 + (hash & 0xFFFFF)
+	return baseIndex * 1000000 + (hash & 0xfffff)
 }

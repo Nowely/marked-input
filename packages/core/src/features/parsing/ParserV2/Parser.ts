@@ -11,10 +11,10 @@ import {processTokensWithCallback} from './utils/denote'
 
 /**
  * Parser - High-performance tree-based markup parser
- * 
+ *
  * Parses text with markup patterns into a nested token tree structure.
  * Supports complex patterns with metadata, nesting, and HTML-like constructs.
- * 
+ *
  * @example
  * ```typescript
  * const parser = new Parser(['@[__value__](__meta__)', '#[__nested__]'])
@@ -30,12 +30,12 @@ export class Parser {
 
 	/**
 	 * Creates a new Parser instance with the specified markup patterns
-	 * 
+	 *
 	 * @param markups - Array of markup pattern strings with placeholders:
 	 *   - `__value__` - main content (plain text, no nesting)
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__nested__` - content supporting nested structures
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const parser = new Parser([
@@ -54,11 +54,11 @@ export class Parser {
 
 	/**
 	 * Parses text into tokens (static convenience method)
-	 * 
+	 *
 	 * @param value - Text to parse
 	 * @param options - Options with markup patterns
 	 * @returns Array of tokens (TextToken and MarkToken)
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const tokens = Parser.parse('Hello @[world]', {
@@ -76,10 +76,10 @@ export class Parser {
 
 	/**
 	 * Converts tokens back to text (static convenience method)
-	 * 
+	 *
 	 * @param tokens - Array of tokens to convert
 	 * @returns Reconstructed text string
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const text = Parser.stringify(tokens)
@@ -91,16 +91,16 @@ export class Parser {
 
 	/**
 	 * Parses text into a nested token tree
-	 * 
+	 *
 	 * This is the main parsing method. It processes the input text through
 	 * three stages:
 	 * 1. Segment matching - finds all markup segments (O(N + M))
 	 * 2. Pattern matching - builds complete patterns from segments (O(M))
 	 * 3. Tree building - constructs nested token tree (O(M·D))
-	 * 
+	 *
 	 * @param value - Text to parse
 	 * @returns Array of tokens representing the parsed structure
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const parser = new Parser(['@[__value__](__meta__)'])
@@ -120,13 +120,13 @@ export class Parser {
 
 	/**
 	 * Converts tokens back to the original text
-	 * 
+	 *
 	 * This is the inverse operation of parse(). It reconstructs the original
 	 * text from a token tree, preserving all markup and structure.
-	 * 
+	 *
 	 * @param tokens - Array of tokens to convert
 	 * @returns Reconstructed text string
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * const text = 'Hello @[world](test)'
@@ -141,24 +141,24 @@ export class Parser {
 
 	/**
 	 * Transforms annotated text by processing all mark tokens with a callback
-	 * 
+	 *
 	 * This method parses the text, recursively processes all MarkTokens
 	 * (including nested ones) with the provided callback, and returns
 	 * the transformed text.
-	 * 
+	 *
 	 * @param value - Annotated text to process
 	 * @param callback - Function to transform each MarkToken
 	 * @returns Transformed text
-	 * 
+	 *
 	 * @example
 	 * ```typescript
 	 * // Extract all values
 	 * const text = '@[Hello](world) and #[tag]'
 	 * const result = parser.transform(text, mark => mark.value)
 	 * // Returns: 'Hello and tag'
-	 * 
+	 *
 	 * // Custom transformation
-	 * const result = parser.transform(text, mark => 
+	 * const result = parser.transform(text, mark =>
 	 *   mark.meta ? `${mark.value}:${mark.meta}` : mark.value
 	 * )
 	 * // Returns: 'Hello:world and tag'
@@ -171,12 +171,12 @@ export class Parser {
 
 	/**
 	 * Escapes markup segments in the given text
-	 * 
+	 *
 	 * @param text - Text to escape segments in
 	 * @param escaper - Function that receives a segment string and returns the escaped version.
 	 *                  If not provided, segments are removed (replaced with empty strings)
 	 * @returns Text with escaped or removed segments
-	 * 
+	 *
 	 * @deprecated This method has known issues and will be rewritten in a future version.
 	 * TODO: Rewrite to properly handle complete patterns, not just segments
 	 */

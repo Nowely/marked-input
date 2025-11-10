@@ -23,7 +23,7 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escape('+')).toBe('\\+')
 		expect(escape('?')).toBe('\\?')
 		expect(escape('^')).toBe('\\^')
-		expect(escape('$')).toBe('\\$')  // $ is now always escaped
+		expect(escape('$')).toBe('\\$') // $ is now always escaped
 		expect(escape('{')).toBe('\\{')
 		expect(escape('}')).toBe('\\}')
 		expect(escape('(')).toBe('\\(')
@@ -47,7 +47,7 @@ describe(`Utility: ${escape.name}`, () => {
 
 	it('should handle strings with mixed special and normal characters', () => {
 		expect(escape('test.*+')).toBe('test\\.\\*\\+')
-		expect(escape('^start$')).toBe('\\^start\\$')  // $ is now escaped
+		expect(escape('^start$')).toBe('\\^start\\$') // $ is now escaped
 		expect(escape('(group)|[set]')).toBe('\\(group\\)\\|\\[set\\]')
 	})
 
@@ -94,4 +94,3 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\')
 	})
 })
-

@@ -64,7 +64,7 @@ export class TreeBuilder {
 
 	/**
 	 * Builds token tree in a single pass through matches
-	 * 
+	 *
 	 * This is the core algorithm that processes matches sequentially,
 	 * maintaining a stack of active parents and creating tokens directly.
 	 */
@@ -267,4 +267,3 @@ export class TreeBuilder {
 		}
 	}
 }
-
