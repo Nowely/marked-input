@@ -41,23 +41,17 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 	validateMarkup(counts, markup)
 
 	const hasTwoValues = counts.value === 2
-	const hasNested = counts.nested === 1
 
-	let segments: SegmentDefinition[] = rawSegments
-	let gapTypes: GapType[] = rawGapTypes
-
-	if (hasTwoValues) {
-		const conversion = convertTwoValuePattern(rawSegments, rawGapTypes, valueGapIndices)
-		segments = conversion.segments
-		gapTypes = conversion.gapTypes
-	}
+	const {segments, gapTypes} = hasTwoValues
+		? convertTwoValuePattern(rawSegments, rawGapTypes, valueGapIndices)
+		: {segments: rawSegments, gapTypes: rawGapTypes}
 
 	return {
 		markup,
 		index,
 		segments,
 		gapTypes,
-		hasNested,
+		hasNested: counts.nested === 1,
 		hasTwoValues,
 		segmentGlobalIndices: new Array(segments.length), // Will be populated by MarkupRegistry
 	}
