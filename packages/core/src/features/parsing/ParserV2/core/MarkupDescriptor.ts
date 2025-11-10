@@ -75,7 +75,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 /**
  * Parses markup template into segments, gap types and placeholder counts
  */
-function scanMarkupStructure(markup: string) {
+function scanMarkupStructure(markup: string){
 	const segments: string[] = []
 	const gapTypes: GapType[] = []
 	const valueGapIndices: number[] = []
@@ -85,11 +85,23 @@ function scanMarkupStructure(markup: string) {
 		nested: 0,
 	}
 
-	// Find all placeholders at once
-	const placeholders = findAllPlaceholders(markup)
+	// Find all placeholders and sort by position
+	const placeholders: Array<{type: GapType, position: number}> = []
+	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
 
+	for (const type of placeholderTypes) {
+		const text = PLACEHOLDER_TEXT[type]
+		let position = markup.indexOf(text)
+		while (position !== -1) {
+			placeholders.push({type, position})
+			position = markup.indexOf(text, position + text.length)
+		}
+	}
+
+	placeholders.sort((a, b) => a.position - b.position)
+
+	// Process placeholders in order
 	let currentParsePosition = 0
-
 	for (const placeholder of placeholders) {
 		const segment = markup.substring(currentParsePosition, placeholder.position)
 		if (segment.length > 0) {
@@ -97,18 +109,10 @@ function scanMarkupStructure(markup: string) {
 		}
 
 		gapTypes.push(placeholder.type)
+		counts[placeholder.type]++
 
-		switch (placeholder.type) {
-			case GAP_TYPE.Value:
-				valueGapIndices.push(gapTypes.length - 1)
-				counts.value++
-				break
-			case GAP_TYPE.Meta:
-				counts.meta++
-				break
-			case GAP_TYPE.Nested:
-				counts.nested++
-				break
+		if (placeholder.type === GAP_TYPE.Value) {
+			valueGapIndices.push(gapTypes.length - 1)
 		}
 
 		currentParsePosition = placeholder.position + PLACEHOLDER_TEXT[placeholder.type].length
@@ -151,14 +155,6 @@ function validateMarkup(counts: Record<GapType, number>, markup: string): void {
 }
 
 /**
- * Placeholder information extracted from markup
- */
-interface PlaceholderInfo {
-	type: GapType
-	position: number
-}
-
-/**
  * Maps placeholder types to their text representations
  */
 const PLACEHOLDER_TEXT: Record<GapType, string> = {
@@ -166,31 +162,6 @@ const PLACEHOLDER_TEXT: Record<GapType, string> = {
 	[GAP_TYPE.Meta]: PLACEHOLDER.Meta,
 	[GAP_TYPE.Nested]: PLACEHOLDER.Nested,
 } as const
-
-/**
- * Finds all placeholders in markup, returned in order of appearance
- * @param markup - The markup string to search in
- * @returns Array of placeholder information, sorted by position
- */
-function findAllPlaceholders(markup: string): PlaceholderInfo[] {
-	const placeholders: PlaceholderInfo[] = []
-	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
-
-	for (const type of placeholderTypes) {
-		const text = PLACEHOLDER_TEXT[type]
-		let position = markup.indexOf(text)
-		while (position !== -1) {
-			placeholders.push({
-				type,
-				position,
-			})
-			position = markup.indexOf(text, position + text.length)
-		}
-	}
-
-	// Sort by position to maintain order
-	return placeholders.sort((a, b) => a.position - b.position)
-}
 
 /**
  * Converts static segments around __value__ placeholders to dynamic patterns
