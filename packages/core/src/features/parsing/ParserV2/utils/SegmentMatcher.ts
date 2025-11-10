@@ -16,16 +16,11 @@ export interface SegmentMatch {
 
 /**
  * Segment definition - can be a static string or a dynamic pattern
- * For dynamic patterns, template is used for value substitution, pattern for matching
+ * For dynamic patterns: [before, after, exclusions]
  */
 export type SegmentDefinition =
 	| string
-	| {
-			/** Template with {} placeholder for substitution (e.g., '</{}>') */
-			template: string
-			/** Regex pattern for matching (e.g., '</([^>]+)>') */
-			pattern: string
-	  }
+	| readonly [before: string, after: string, exclusions: string]
 
 /**
  * Internal representation of a segment with its regex pattern
@@ -39,7 +34,19 @@ interface SegmentEntry {
 	definition: SegmentDefinition
 }
 
-import {escapeRegexChars} from './regexUtils'
+import {escapeRegexChars, escapeForCharClass} from './regexUtils'
+
+/**
+ * Computes regex pattern for dynamic segment using pre-computed exclusions
+ */
+function computeDynamicPattern(before: string, after: string, exclusions: string): string {
+	const escapedBefore = escapeRegexChars(before)
+	const escapedAfter = escapeRegexChars(after)
+	const escapedDelimiters = escapeForCharClass(after + exclusions)
+
+	// Non-greedy quantifier to stop at first occurrence of after
+	return `${escapedBefore}([^${escapedDelimiters}]+?)${escapedAfter}`
+}
 
 /**
  * Segment matcher using dual strategy for optimal performance
@@ -88,16 +95,18 @@ export class SegmentMatcher {
 				if (typeof segment === 'string') {
 					entries.push({index, pattern: escapeRegexChars(segment), definition: segment})
 				} else {
+					const [before, after, exclusions] = segment
 					dynamicIndices.add(index)
-					const pattern = segment.pattern.replace('(', `(?<content${index}>`)
-					entries.push({index, pattern, definition: segment})
+					const pattern = computeDynamicPattern(before, after, exclusions)
+					const namedPattern = pattern.replace('(', `(?<content${index}>`)
+					entries.push({index, pattern: namedPattern, definition: segment})
 				}
 			})
 
-			// Sort by pattern length (longest first)
+			// Sort by pattern length (longest first) for optimal matching
 			entries.sort((a, b) => {
-				const aLen = typeof a.definition === 'string' ? a.definition.length : a.definition.pattern.length
-				const bLen = typeof b.definition === 'string' ? b.definition.length : b.definition.pattern.length
+				const aLen = typeof a.definition === 'string' ? a.definition.length : a.pattern.length
+				const bLen = typeof b.definition === 'string' ? b.definition.length : b.pattern.length
 				return bLen - aLen
 			})
 

@@ -5,10 +5,10 @@ import {escapeRegexChars, escapeForCharClass} from '../utils/regexUtils'
 
 /**
  * Gets the string value from a segment definition
- * For static segments returns the string itself, for dynamic segments returns the pattern
+ * For static segments returns the string itself, for dynamic segments returns the before part
  */
 function getSegmentValue(segment: SegmentDefinition): string {
-	return typeof segment === 'string' ? segment : segment.pattern
+	return typeof segment === 'string' ? segment : segment[0] // before part
 }
 
 /**
@@ -314,65 +314,40 @@ function convertToDynamicSegments(
 }
 
 /**
- * Creates a dynamic segment definition with template and pattern
- * Template is used for value substitution, pattern for regex matching
- *
- * Universal approach - no hardcoded special cases
- * Uses non-greedy matching to handle complex patterns correctly
- * Dynamically determines excluded characters based on other segments in the pattern
+ * Creates a dynamic segment definition as [before, after, exclusions]
+ * Exclusions are pre-computed for efficient pattern matching
  *
  * @param beforeSegment - Segment before the captured content (e.g., '<')
  * @param afterSegment - Segment immediately after the captured content (e.g., '>')
- * @param segmentsAfter - Segments that come after afterSegment in the pattern to determine exclusions
- * @returns Object with template (for substitution) and pattern (for matching)
+ * @param segmentsAfter - Segments that come after afterSegment in the pattern
+ * @returns [before, after, exclusions] tuple
  *
  * @example
  * createDynamicSegment('</','>', [])
- * // => {template: '</{}>', pattern: '</([^>]+?)>'}
+ * // => ['</', '>', '']
  *
  * createDynamicSegment('<', ' ', ['>'])
- * // => {template: '<{} ', pattern: '<([^ >]+?) '}  // excludes '>' to prevent matching <p>Text
+ * // => ['<', ' ', '>']
  */
 function createDynamicSegment(
 	beforeSegment: string,
 	afterSegment: string,
 	segmentsAfter: string[]
-): {template: string; pattern: string} {
-	// Template for simple substitution - no escaping needed
-	const template = `${beforeSegment}{}${afterSegment}`
-
-	// Pattern for regex matching - with proper escaping
-	const escapedBefore = escapeRegexChars(beforeSegment)
-	const escapedAfter = escapeRegexChars(afterSegment)
-
-	// Exclude characters from afterSegment
-	const escapedDelimiters = escapeForCharClass(afterSegment)
-
-	// Dynamically determine additional exclusions based on segments that come after afterSegment
-	// Exclude characters that start segments after afterSegment, but only if they could appear
-	// between beforeSegment and afterSegment (i.e., they're not part of a longer segment starting with beforeSegment)
-	// For example, if afterSegment is ' ' and there's a segment '>', exclude '>' to prevent matching <p>Text
+): [string, string, string] {
+	// Compute exclusions based on segmentsAfter
 	const additionalExclusions = new Set<string>()
-	for (const segment of segmentsAfter) {
-		if (segment.length > 0) {
-			const firstChar = segment[0]
-			// If this character is not part of afterSegment and the segment doesn't start with beforeSegment,
-			// exclude it to prevent incorrect matches
-			// This handles cases like '<__value__ __meta__>__nested__</__value__>' where '>' should be excluded
-			// from '<([^ ]+?) ' pattern, but not cases like '<__value__>__meta__</__value__>' where
-			// '</' segment shouldn't cause '/' to be excluded from '<([^>]+?)>' pattern
-			if (!afterSegment.includes(firstChar) && !segment.startsWith(beforeSegment)) {
-				additionalExclusions.add(firstChar)
-			}
+
+	// Use only the next segment for exclusions (same logic as in computeDynamicPattern)
+	if (segmentsAfter.length > 0) {
+		const nextSegment = segmentsAfter[0]
+		const firstChar = nextSegment[0]
+		if (!afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)) {
+			additionalExclusions.add(firstChar)
 		}
 	}
 
-	const additionalExclusionsEscaped = escapeForCharClass(Array.from(additionalExclusions).join(''))
-
-	// Non-greedy quantifier to stop at first occurrence of afterSegment
-	const pattern = `${escapedBefore}([^${escapedDelimiters}${additionalExclusionsEscaped}]+?)${escapedAfter}`
-
-	return {template, pattern}
+	const exclusions = Array.from(additionalExclusions).join('')
+	return [beforeSegment, afterSegment, exclusions]
 }
 
 /**

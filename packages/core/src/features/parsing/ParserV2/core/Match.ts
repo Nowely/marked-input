@@ -90,7 +90,8 @@ export class Match {
 		// Only hash for hasTwoValues closing tags that need value-specific matching
 		if (typeof segmentDef === 'object' && this.descriptor.hasTwoValues &&
 		    this.captured && this.expectedSegmentIndex === this.descriptor.segments.length - 1) {
-			const value = segmentDef.template.replace('{}', this.captured)
+			const [before, after] = segmentDef
+			const value = before + this.captured + after
 			return getSegmentIndex(baseIndex, value)
 		}
 

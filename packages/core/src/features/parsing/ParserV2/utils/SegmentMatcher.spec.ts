@@ -21,8 +21,8 @@ describe('SegmentMatcher', () => {
 	describe('dynamic segments', () => {
 		it('should find dynamic segments in text', () => {
 			const segments: SegmentDefinition[] = [
-				{template: '<{}>', pattern: '<(.+?)>'},
-				{template: '</{}>', pattern: '</(.+?)>'},
+				['<', '>', '</'],
+				['</', '>', ''],
 			]
 			const matcher = new SegmentMatcher(segments)
 			const result = matcher.search('<div>content</div>')
@@ -46,8 +46,8 @@ describe('SegmentMatcher', () => {
 
 		it('should find multiple matches of same dynamic pattern', () => {
 			const segments: SegmentDefinition[] = [
-				{template: '<{}>', pattern: '<(.+?)>'},
-				{template: '</{}>', pattern: '</(.+?)>'},
+				['<', '>', '</'],
+				['</', '>', ''],
 			]
 			const matcher = new SegmentMatcher(segments)
 			const result = matcher.search('<img>photo.jpg</img>')
@@ -73,8 +73,8 @@ describe('SegmentMatcher', () => {
 	describe('mixed segments', () => {
 		it('should find both static and dynamic segments', () => {
 			const segments: SegmentDefinition[] = [
-				{template: '<{} ', pattern: '<([a-zA-Z][^ >]*) '}, // Dynamic: matches "<div " (with space at end, tag name validation)
-				{template: '</{}>', pattern: '</([^>]+)>'}, // Dynamic: matches "</div>"
+				['<', ' ', '>'], // Dynamic: matches "<div " (with space at end, tag name validation)
+				['</', '>', ''], // Dynamic: matches "</div>"
 			]
 			const matcher = new SegmentMatcher(segments)
 			const result = matcher.search('<div class>content</div>')

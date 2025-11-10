@@ -1,7 +1,6 @@
 import {Markup} from '../types'
 import {createMarkupDescriptor, MarkupDescriptor} from '../core/MarkupDescriptor'
 import {SegmentDefinition} from './SegmentMatcher'
-import {unescapeRegexString} from './regexUtils'
 
 /**
  * Registry for managing markup descriptors
@@ -56,9 +55,10 @@ export class MarkupRegistry {
 					const globalIndex = segmentIndexMap.get(segmentKey)!
 					descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
 
-					// For dynamic patterns, also register static prefix and suffix as separate segments
+					// For dynamic segments, also register before and after parts as separate segments
 					if (typeof segment !== 'string') {
-						const staticParts = this.extractStaticParts(segment.pattern)
+						const [before, after] = segment
+						const staticParts = [before, after].filter(part => part.length > 0)
 						staticParts.forEach(staticPart => {
 							if (!segmentIndexMap.has(staticPart)) {
 								const staticGlobalIndex = segmentsArray.length
@@ -92,51 +92,15 @@ export class MarkupRegistry {
 	/**
 	 * Gets a unique key for a segment definition
 	 * For static segments (strings), returns the string itself
-	 * For dynamic segments (objects), returns the pattern
+	 * For dynamic segments (arrays), returns before|after|exclusions
 	 */
 	private getSegmentKey(segment: SegmentDefinition): string {
-		return typeof segment === 'string' ? segment : segment.pattern
+		if (typeof segment === 'string') {
+			return segment
+		}
+		// For dynamic segments, create a key from before+after+exclusions
+		const [before, after, exclusions] = segment
+		return `${before}|${after}|${exclusions}`
 	}
 
-	/**
-	 * Extracts static prefix and suffix from a dynamic pattern
-	 *
-	 * Dynamic patterns have the form: `escapedPrefix(captureGroup)escapedSuffix`
-	 * This method extracts and unescapes the prefix and suffix parts.
-	 *
-	 * @param pattern - Dynamic regex pattern (e.g., `<([^ ]+?) ` or `</([^>]+?)>`)
-	 * @returns Array of unescaped static parts [prefix, suffix] (may be empty if invalid)
-	 *
-	 * @example
-	 * extractStaticParts('<([^ ]+?) ') // => ['<', ' ']
-	 * extractStaticParts('</([^>]+?)>') // => ['</', '>']
-	 * extractStaticParts('invalid') // => []
-	 */
-	private extractStaticParts(pattern: string): string[] {
-		// Match pattern structure: prefix + (capture group) + suffix
-		// Use named groups for clarity
-		const match = pattern.match(/^(?<prefix>.+?)\([^)]+\)(?<suffix>.+?)$/)
-
-		// Validate match - return empty array if pattern doesn't match expected structure
-		if (!match?.groups) {
-			return []
-		}
-
-		const {prefix, suffix} = match.groups
-		const parts: string[] = []
-
-		// Unescape regex escapes (e.g., '\<' -> '<', '\[' -> '[')
-		const unescapedPrefix = unescapeRegexString(prefix)
-		const unescapedSuffix = unescapeRegexString(suffix)
-
-		// Only add non-empty parts
-		if (unescapedPrefix.length > 0) {
-			parts.push(unescapedPrefix)
-		}
-		if (unescapedSuffix.length > 0) {
-			parts.push(unescapedSuffix)
-		}
-
-		return parts
-	}
 }
