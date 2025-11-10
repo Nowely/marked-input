@@ -1,7 +1,6 @@
 import {PLACEHOLDER, GapType, GAP_TYPE} from '../constants'
 import {Markup} from '../types'
 import {SegmentDefinition} from '../utils/SegmentMatcher'
-import {escapeRegexChars, escapeForCharClass} from '../utils/regexUtils'
 
 /**
  * Gets the string value from a segment definition
@@ -51,14 +50,14 @@ export interface MarkupDescriptor {
  * - `<__value__ __meta__>__nested__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__nested__</([^>]+)>'}], gapTypes: ["value", "meta", "nested", "value"] (dynamic)
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
-	const hasTwoValues = countPlaceholder(markup, PLACEHOLDER.Value) === 2
-	const hasMeta = countPlaceholder(markup, PLACEHOLDER.Meta) === 1
-	const hasNested = countPlaceholder(markup, PLACEHOLDER.Nested) === 1
+	const {
+		segments: rawSegments,
+		gapTypes: rawGapTypes,
+		counts,
+		valueGapIndices,
+	} = scanMarkupStructure(markup)
 
-	// Validate placeholder counts
-	const valueCount = countPlaceholder(markup, PLACEHOLDER.Value)
-	const metaCount = countPlaceholder(markup, PLACEHOLDER.Meta)
-	const nestedCount = countPlaceholder(markup, PLACEHOLDER.Nested)
+	const {value: valueCount, meta: metaCount, nested: nestedCount} = counts
 
 	// Must have at least one content placeholder (__value__ or __nested__)
 	if (valueCount === 0 && nestedCount === 0) {
@@ -67,7 +66,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		)
 	}
 
-	if (valueCount < 0 || valueCount > 2) {
+	if (valueCount > 2) {
 		throw new Error(
 			`Invalid markup format: "${markup}". Expected 0, 1 or 2 "${PLACEHOLDER.Value}" placeholders, but found ${valueCount}`
 		)
@@ -85,11 +84,25 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		)
 	}
 
-	// Parse segments and gap types
-	const {segments, gapTypes} = parseSegmentsAndGaps(markup, hasTwoValues)
+	const hasTwoValues = valueCount === 2
+	const hasMeta = metaCount === 1
+	const hasNested = nestedCount === 1
+
+	let segments: SegmentDefinition[] = rawSegments
+	let gapTypes: GapType[] = rawGapTypes
+
+	if (hasTwoValues) {
+		const conversion = convertTwoValuePattern(rawSegments, rawGapTypes, valueGapIndices)
+		segments = conversion.segments
+		gapTypes = conversion.gapTypes
+	}
 
 	if (segments.length === 0) {
 		throw new Error(`Invalid markup format: "${markup}". Must have at least one static segment`)
+	}
+
+	if (gapTypes.length > segments.length) {
+		throw new Error('Invalid markup structure: more gaps than segments')
 	}
 
 	// For isSymmetric check, compare the actual segment values (extract from SegmentDefinition)
@@ -123,21 +136,72 @@ interface PlaceholderInfo {
 	length: number
 }
 
-/**
- * Parses markup template into segments and gap types
- * For hasTwoValues patterns, creates dynamic segments around __value__ placeholders
- */
-function parseSegmentsAndGaps(
-	markup: string,
-	hasTwoValues: boolean
-): {
-	segments: SegmentDefinition[]
+interface PlaceholderCounts {
+	value: number
+	meta: number
+	nested: number
+}
+
+interface ParsedMarkupStructure {
+	segments: string[]
 	gapTypes: GapType[]
-} {
-	const placeholders = extractPlaceholders(markup)
-	const result = buildSegments(markup, placeholders, hasTwoValues)
-	validateParseResult(result)
-	return result
+	counts: PlaceholderCounts
+	valueGapIndices: number[]
+}
+
+/**
+ * Parses markup template into segments, gap types and placeholder counts
+ */
+function scanMarkupStructure(markup: string): ParsedMarkupStructure {
+	const segments: string[] = []
+	const gapTypes: GapType[] = []
+	const valueGapIndices: number[] = []
+	const counts: PlaceholderCounts = {
+		value: 0,
+		meta: 0,
+		nested: 0,
+	}
+
+	let currentParsePosition = 0
+
+	while (currentParsePosition < markup.length) {
+		const placeholder = findNextPlaceholder(markup, currentParsePosition)
+		if (!placeholder) break
+
+		const segment = markup.substring(currentParsePosition, placeholder.pos)
+		if (segment.length > 0) {
+			segments.push(segment)
+		}
+
+		gapTypes.push(placeholder.type)
+
+		switch (placeholder.type) {
+			case GAP_TYPE.Value:
+				valueGapIndices.push(gapTypes.length - 1)
+				counts.value++
+				break
+			case GAP_TYPE.Meta:
+				counts.meta++
+				break
+			case GAP_TYPE.Nested:
+				counts.nested++
+				break
+		}
+
+		currentParsePosition = placeholder.pos + placeholder.length
+	}
+
+	const finalSegment = markup.substring(currentParsePosition)
+	if (finalSegment.length > 0) {
+		segments.push(finalSegment)
+	}
+
+	return {
+		segments,
+		gapTypes,
+		counts,
+		valueGapIndices,
+	}
 }
 
 /**
@@ -191,190 +255,71 @@ function findNextPlaceholder(markup: string, startPosition: number): Placeholder
 }
 
 /**
- * Extracts all placeholders from markup string in order
- */
-function extractPlaceholders(markup: string): PlaceholderInfo[] {
-	const placeholders: PlaceholderInfo[] = []
-	let currentParsePosition = 0
-
-	while (currentParsePosition < markup.length) {
-		const placeholder = findNextPlaceholder(markup, currentParsePosition)
-		if (!placeholder) break
-
-		placeholders.push(placeholder)
-		currentParsePosition = placeholder.pos + placeholder.length
-	}
-
-	return placeholders
-}
-
-/**
- * Builds segments and gap types from markup and extracted placeholders
- * For hasTwoValues patterns, creates dynamic segments around __value__ placeholders
- */
-function buildSegments(
-	markup: string,
-	placeholders: PlaceholderInfo[],
-	hasTwoValues: boolean
-): {segments: SegmentDefinition[]; gapTypes: GapType[]} {
-	const segments: string[] = []
-	const gapTypes: GapType[] = []
-	let currentSegmentPosition = 0
-
-	// Extract segments between placeholders
-	for (const placeholder of placeholders) {
-		// Segment before this placeholder
-		const segment = markup.substring(currentSegmentPosition, placeholder.pos)
-		if (segment.length > 0) {
-			segments.push(segment)
-		}
-
-		// This placeholder represents a gap
-		gapTypes.push(placeholder.type)
-
-		currentSegmentPosition = placeholder.pos + placeholder.length
-	}
-
-	// Final segment after last placeholder
-	const finalSegment = markup.substring(currentSegmentPosition)
-	if (finalSegment.length > 0) {
-		segments.push(finalSegment)
-	}
-
-	// Convert to dynamic segments if this is a hasTwoValues pattern
-	if (hasTwoValues) {
-		return convertToDynamicSegments(segments, gapTypes, placeholders)
-	}
-
-	return {segments, gapTypes}
-}
-
-/**
  * Converts static segments around __value__ placeholders to dynamic patterns
  * For pattern like <__value__>__meta__</__value__>:
  *   - Original: segments ["<", ">", "</", ">"], gapTypes ["value", "meta", "value"]
- *   - Result: segments [{template: '<{}>', pattern: '<([^>]+)>'}, {template: '</{}>', pattern: '</([^>]+)>'}], gapTypes ["meta"]
+ *   - Result: segments [['<', '>', exclusions], ['</', '>', exclusions]], gapTypes ["meta"]
  * Dynamic segments "absorb" the __value__ gaps they surround
  */
-function convertToDynamicSegments(
+function convertTwoValuePattern(
 	segments: string[],
 	gapTypes: GapType[],
-	_placeholders: PlaceholderInfo[]
+	valueGapIndices: number[]
 ): {segments: SegmentDefinition[]; gapTypes: GapType[]} {
-	// Find positions of __value__ gaps
-	const valueGapIndices: number[] = []
-	gapTypes.forEach((type, idx) => {
-		if (type === GAP_TYPE.Value) {
-			valueGapIndices.push(idx)
-		}
-	})
-
 	if (valueGapIndices.length !== 2) {
-		// This shouldn't happen as hasTwoValues should be validated earlier
 		return {segments, gapTypes}
 	}
 
+	const [firstValueGapIdx, secondValueGapIdx] = valueGapIndices
+
 	const newSegments: SegmentDefinition[] = []
-	const newGapTypes: GapType[] = []
 
-	const firstValueGapIdx = valueGapIndices[0]
-	const secondValueGapIdx = valueGapIndices[1]
-
-	// Create first dynamic segment
 	const beforeFirst = segments[firstValueGapIdx]
 	const afterFirst = segments[firstValueGapIdx + 1]
 	if (beforeFirst && afterFirst) {
-		// Get segments that come after afterFirst to determine exclusions
-		const segmentsAfterFirst = segments.slice(firstValueGapIdx + 2)
-		newSegments.push(createDynamicSegment(beforeFirst, afterFirst, segmentsAfterFirst))
+		newSegments.push(
+			createDynamicDefinition(beforeFirst, afterFirst, segments[firstValueGapIdx + 2])
+		)
 	}
 
-	// Add middle segments and gaps (between the two value gaps)
 	for (let i = firstValueGapIdx + 2; i < secondValueGapIdx; i++) {
 		newSegments.push(segments[i])
 	}
 
-	// Create second dynamic segment
 	const beforeSecond = segments[secondValueGapIdx]
 	const afterSecond = segments[secondValueGapIdx + 1]
 	if (beforeSecond && afterSecond) {
-		// Get segments that come after afterSecond to determine exclusions
-		const segmentsAfterSecond = segments.slice(secondValueGapIdx + 2)
-		newSegments.push(createDynamicSegment(beforeSecond, afterSecond, segmentsAfterSecond))
+		newSegments.push(
+			createDynamicDefinition(beforeSecond, afterSecond, segments[secondValueGapIdx + 2])
+		)
 	}
 
-	// Filter out value gaps
-	gapTypes.forEach(type => {
-		if (type !== GAP_TYPE.Value) {
-			newGapTypes.push(type)
-		}
-	})
+	const filteredGapTypes = gapTypes.filter(type => type !== GAP_TYPE.Value)
 
-	return {segments: newSegments, gapTypes: newGapTypes}
+	return {segments: newSegments, gapTypes: filteredGapTypes}
 }
 
 /**
  * Creates a dynamic segment definition as [before, after, exclusions]
  * Exclusions are pre-computed for efficient pattern matching
- *
- * @param beforeSegment - Segment before the captured content (e.g., '<')
- * @param afterSegment - Segment immediately after the captured content (e.g., '>')
- * @param segmentsAfter - Segments that come after afterSegment in the pattern
- * @returns [before, after, exclusions] tuple
- *
- * @example
- * createDynamicSegment('</','>', [])
- * // => ['</', '>', '']
- *
- * createDynamicSegment('<', ' ', ['>'])
- * // => ['<', ' ', '>']
  */
-function createDynamicSegment(
+function createDynamicDefinition(
 	beforeSegment: string,
 	afterSegment: string,
-	segmentsAfter: string[]
+	nextSegment?: string
 ): [string, string, string] {
-	// Compute exclusions based on segmentsAfter
-	const additionalExclusions = new Set<string>()
+	let exclusion = ''
 
-	// Use only the next segment for exclusions (same logic as in computeDynamicPattern)
-	if (segmentsAfter.length > 0) {
-		const nextSegment = segmentsAfter[0]
-		const firstChar = nextSegment[0]
-		if (!afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment)) {
-			additionalExclusions.add(firstChar)
+	if (nextSegment) {
+		const firstChar = nextSegment.charAt(0)
+		if (
+			firstChar &&
+			!afterSegment.includes(firstChar) &&
+			!nextSegment.startsWith(beforeSegment)
+		) {
+			exclusion = firstChar
 		}
 	}
 
-	const exclusions = Array.from(additionalExclusions).join('')
-	return [beforeSegment, afterSegment, exclusions]
-}
-
-/**
- * Validates the result of parsing segments and gaps
- */
-function validateParseResult(result: {segments: SegmentDefinition[]; gapTypes: GapType[]}): void {
-	if (result.segments.length === 0) {
-		throw new Error('Parsed markup must contain at least one segment')
-	}
-
-	// Gap types should be one less than segments (except when markup ends with placeholder)
-	if (result.gapTypes.length > result.segments.length) {
-		throw new Error('Invalid markup structure: more gaps than segments')
-	}
-}
-
-/**
- * Counts occurrences of a placeholder in markup
- */
-function countPlaceholder(markup: string, placeholder: string): number {
-	let count = 0
-	let position = 0
-
-	while ((position = markup.indexOf(placeholder, position)) !== -1) {
-		count++
-		position += placeholder.length
-	}
-
-	return count
+	return [beforeSegment, afterSegment, exclusion]
 }
