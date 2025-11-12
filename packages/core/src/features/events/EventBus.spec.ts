@@ -4,9 +4,9 @@ import {EventKey} from '../../shared/types'
 
 describe(`Utility: ${EventBus.name}`, () => {
 	let eventBus: EventBus
-	let mockListener1: ReturnType<typeof vi.fn>
-	let mockListener2: ReturnType<typeof vi.fn>
-	let mockListener3: ReturnType<typeof vi.fn>
+	let mockListener1: ReturnType<typeof vi.fn<(e: string) => void>>
+	let mockListener2: ReturnType<typeof vi.fn<(e: number) => void>>
+	let mockListener3: ReturnType<typeof vi.fn<(e: any) => void>>
 
 	// Create mock event keys
 	const EVENT_A = Symbol('EVENT_A') as EventKey<string>
@@ -15,9 +15,9 @@ describe(`Utility: ${EventBus.name}`, () => {
 
 	beforeEach(() => {
 		eventBus = new EventBus()
-		mockListener1 = vi.fn()
-		mockListener2 = vi.fn()
-		mockListener3 = vi.fn()
+		mockListener1 = vi.fn<(e: string) => void>()
+		mockListener2 = vi.fn<(e: number) => void>()
+		mockListener3 = vi.fn<(e: any) => void>()
 	})
 
 	describe('constructor', () => {

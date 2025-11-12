@@ -38,12 +38,12 @@
   "devDependencies": {
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@microsoft/api-extractor": "^7.52.13",
-    "@vitejs/plugin-react-swc": "^4.1.0",
-    "oxlint": "^1.16.0",
+    "@microsoft/api-extractor": "^7.55.0",
+    "@vitejs/plugin-react-swc": "^4.2.2",
+    "oxlint": "^1.28.0",
     "prettier": "3.6.2",
     "typescript": "^5.9.2",
-    "vite": "^7.1.6",
+    "vite": "^7.2.2",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   }
 }
