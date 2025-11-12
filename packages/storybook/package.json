@@ -11,7 +11,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.2",
-    "antd": "^5.27.4",
+    "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
     "rsuite": "^5.83.3"
   },
