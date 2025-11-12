@@ -71,15 +71,15 @@ parser.transform(text, callback)
 
 **Benchmark Results (ParserV2):**
 
-| Test Case     | Performance Range       | Key Characteristics     |
-| ------------- | ----------------------- | ---------------------- |
-| 10 marks      | 27939-61384 ops/sec     | Basic patterns         |
-| 50 marks      | 18590-20513 ops/sec     | State machine efficiency |
-| 100 marks     | 8377-10354 ops/sec      | O(N) filtering         |
-| 500 marks     | 1989-2028 ops/sec       | Reduced allocations    |
-| Social media  | 228571-480077 ops/sec   | Complex content        |
-| Markdown-like | 285714-631712 ops/sec   | Exceptional performance |
-| Code comments | 303767-727273 ops/sec   | High-throughput        |
+| Test Case     | Performance Range     | Key Characteristics      |
+| ------------- | --------------------- | ------------------------ |
+| 10 marks      | 27939-61384 ops/sec   | Basic patterns           |
+| 50 marks      | 18590-20513 ops/sec   | State machine efficiency |
+| 100 marks     | 8377-10354 ops/sec    | O(N) filtering           |
+| 500 marks     | 1989-2028 ops/sec     | Reduced allocations      |
+| Social media  | 228571-480077 ops/sec | Complex content          |
+| Markdown-like | 285714-631712 ops/sec | Exceptional performance  |
+| Code comments | 303767-727273 ops/sec | High-throughput          |
 
 **Performance Characteristics:**
 
