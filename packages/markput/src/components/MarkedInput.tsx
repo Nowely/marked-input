@@ -46,7 +46,7 @@ export interface MarkedInputProps<T = Token> {
 }
 
 export interface MarkedInputComponent {
-  <T = Token>(props: MarkedInputProps<T>): JSX.Element | null
+	<T = Token>(props: MarkedInputProps<T>): JSX.Element | null
 
 	displayName?: string
 }

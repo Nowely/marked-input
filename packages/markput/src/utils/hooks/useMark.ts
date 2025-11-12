@@ -13,7 +13,7 @@ export interface MarkHandler<T> {
 	 * @param {Object} options - The options object
 	 * @param {boolean} options.silent - If true, doesn't change itself value and meta, only pass change event.
 	 */
-	change: (props: {value: string, meta?: string}, options?: {silent: boolean}) => void
+	change: (props: {value: string; meta?: string}, options?: {silent: boolean}) => void
 	/**
 	 * Remove itself.
 	 */
@@ -98,7 +98,7 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 		this.#token = param.token
 	}
 
-	change = (props: {value: string, meta?: string}) => {
+	change = (props: {value: string; meta?: string}) => {
 		this.#token.value = props.value
 		this.#token.meta = props.meta
 		this.#store.bus.send(SystemEvent.Change, {node: this.#token})

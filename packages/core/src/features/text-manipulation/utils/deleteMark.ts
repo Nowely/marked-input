@@ -11,11 +11,11 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const {focus} = store
 
 	const [span1, mark, span2] = store.tokens.splice(focus.index - placeIndex, 3)
-	
+
 	// Merge text tokens
 	const content1 = span1.type === 'text' ? span1.content : ''
 	const content2 = span2.type === 'text' ? span2.content : ''
-	
+
 	store.tokens = store.tokens.toSpliced(focus.index - placeIndex, 0, {
 		type: 'text',
 		content: content1 + content2,

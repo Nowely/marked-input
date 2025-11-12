@@ -17,7 +17,7 @@ export interface OverlayHandler {
 	/**
 	 * Used for insert an annotation instead a triggered value.
 	 */
-	select: (value: {value: string, meta?: string}) => void
+	select: (value: {value: string; meta?: string}) => void
 	/**
 	 * Overlay match details
 	 */
@@ -32,7 +32,7 @@ export function useOverlay(): OverlayHandler {
 
 	const close = useCallback(() => store.bus.send(SystemEvent.ClearTrigger), [])
 	const select = useCallback(
-		(value: {value: string, meta?: string}) => {
+		(value: {value: string; meta?: string}) => {
 			// Create a temporary MarkToken for the event
 			const mark: Token = {
 				type: 'mark',

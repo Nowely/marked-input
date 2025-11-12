@@ -33,4 +33,3 @@ function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {
 	const text = e.clipboardData.getData('text')
 	document.execCommand('insertText', false, text)
 }
-

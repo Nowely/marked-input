@@ -33,11 +33,13 @@ export const useValueParser = () => {
 		const inputValue = value ?? store.props.defaultValue ?? ''
 
 		if (!store.parser) {
-			store.tokens = [{
-				type: 'text',
-				content: inputValue,
-				position: {start: 0, end: inputValue.length},
-			}]
+			store.tokens = [
+				{
+					type: 'text',
+					content: inputValue,
+					position: {start: 0, end: inputValue.length},
+				},
+			]
 		} else {
 			store.tokens = store.parser.parse(inputValue)
 		}
@@ -127,11 +129,13 @@ function getRangeMap(store: Store): number[] {
 
 function parseWithParser(store: Store, value: string) {
 	if (!store.parser) {
-		return [{
-			type: 'text' as const,
-			content: value,
-			position: {start: 0, end: value.length},
-		}]
+		return [
+			{
+				type: 'text' as const,
+				content: value,
+				position: {start: 0, end: value.length},
+			},
+		]
 	}
 
 	return store.parser.parse(value)

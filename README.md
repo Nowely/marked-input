@@ -315,14 +315,14 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 
 ### Helpers
 
-| Name              | Type                                                                              | Description                                  |
-| ----------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
-| createMarkedInput | <T = MarkToken>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>           | Create the configured MarkedInput component. |
-| annotate          | (markup: Markup, params: {value: string, meta?: string}) => string                | Make annotation from the markup              |
+| Name              | Type                                                                                | Description                                  |
+| ----------------- | ----------------------------------------------------------------------------------- | -------------------------------------------- |
+| createMarkedInput | <T = MarkToken>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>             | Create the configured MarkedInput component. |
+| annotate          | (markup: Markup, params: {value: string, meta?: string}) => string                  | Make annotation from the markup              |
 | denote            | (value: string, callback: (mark: MarkToken) => string, markups: Markup[]) => string | Transform the annotated text                 |
-| useMark           | () => MarkHandler                                                                 | Allow to use dynamic mark                    |
-| useOverlay        | () => OverlayHandler                                                              | Use overlay props                            |
-| useListener       | (type, listener, deps) => void                                                    | Event listener                               |
+| useMark           | () => MarkHandler                                                                   | Allow to use dynamic mark                    |
+| useOverlay        | () => OverlayHandler                                                                | Use overlay props                            |
+| useListener       | (type, listener, deps) => void                                                      | Event listener                               |
 
 ### Types
 
@@ -336,7 +336,7 @@ interface MarkToken {
     value: string
     meta?: string
     content: string
-    position: {start: number, end: number}
+    position: {start: number; end: number}
     // ... other properties
 }
 ```
@@ -357,7 +357,7 @@ interface OverlayHandler {
     /**
      * Used for insert an annotation instead a triggered value.
      */
-    select: (value: {value: string, meta?: string}) => void
+    select: (value: {value: string; meta?: string}) => void
     /**
      * Overlay match details
      */
@@ -376,7 +376,7 @@ interface MarkHandler<T> {
      * Change mark.
      * @options.silent doesn't change itself value and meta, only pass change event.
      */
-    change: (props: {value: string, meta?: string}, options?: {silent: boolean}) => void
+    change: (props: {value: string; meta?: string}, options?: {silent: boolean}) => void
     /**
      * Remove itself.
      */

@@ -51,15 +51,16 @@ export function useSystemListeners() {
 			} = event
 
 			// Use ParserV2 annotate with new format
-			const annotation = mark.type === 'mark' 
-				? annotate(option.markup, {
-					value: mark.value,
-					meta: mark.meta,
-				})
-				: annotate(option.markup, {
-					value: mark.content,
-				})
-			
+			const annotation =
+				mark.type === 'mark'
+					? annotate(option.markup, {
+							value: mark.value,
+							meta: mark.meta,
+						})
+					: annotate(option.markup, {
+							value: mark.content,
+						})
+
 			const newSpan = createNewSpan(span, annotation, index, source)
 
 			store.recovery = Mark
