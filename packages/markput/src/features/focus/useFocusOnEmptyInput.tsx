@@ -8,7 +8,7 @@ export const useFocusOnEmptyInput = () => {
 	useListener(
 		'click',
 		() => {
-			if (tokens.length === 1 && tokens[0].label === '') {
+			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				const element = store.refs.container.current?.firstElementChild as HTMLElement | undefined
 				element?.focus()
 			}

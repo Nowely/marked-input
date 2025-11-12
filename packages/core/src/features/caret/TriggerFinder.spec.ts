@@ -1,7 +1,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {TriggerFinder} from './TriggerFinder'
 import {Caret} from './Caret'
-import {Markup} from '../parsing/ParserV1/types'
+import {Markup} from '../parsing/ParserV2/types'
 
 // Mock DOM
 const mockCreateTextNode = vi.fn(
@@ -190,9 +190,9 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
 
-			const finder = new TriggerFinder()
-			const options = [{trigger: '@', markup: '@[__label__](__value__)' as Markup, data: []}]
-			const result = finder.find(options)
+		const finder = new TriggerFinder()
+		const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []}]
+		const result = finder.find(options)
 
 			expect(result).toEqual({
 				value: 'world',
@@ -209,8 +209,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello world'))
 			mockGetFocusedSpan.mockReturnValue('Hello world')
 
-			const finder = new TriggerFinder()
-			const result = finder.find([{trigger: '@', markup: '@[__label__](__value__)', data: []}])
+		const finder = new TriggerFinder()
+		const result = finder.find([{trigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []}])
 
 			expect(result).toBeUndefined()
 		})
@@ -220,12 +220,12 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
 
-			const finder = new TriggerFinder()
-			const options = [
-				{trigger: '@', markup: '@[__label__](__value__)' as Markup, data: []},
-				{trigger: '#', markup: '#[__label__](__value__)' as Markup, data: []},
-			]
-			const result = finder.find(options)
+		const finder = new TriggerFinder()
+		const options = [
+			{trigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []},
+			{trigger: '#', markup: '#[__value__](__meta__)' as Markup, data: []},
+		]
+		const result = finder.find(options)
 
 			expect(result?.option).toBe(options[0])
 		})

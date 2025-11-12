@@ -38,7 +38,7 @@ Here are a few examples to get you started:
 ```javascript
 import {MarkedInput} from 'rc-marked-input'
 
-const Mark = props => <mark onClick={_ => alert(props.value)}>{props.label}</mark>
+const Mark = props => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>
 
 const Marked = () => {
     const [value, setValue] = useState('Hello, clickable marked @[world](Hello! Hello!)!')
@@ -55,8 +55,8 @@ Let's declare markups and suggestions data:
 ```tsx
 const Data = ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']
 const AnotherData = ['Seventh', 'Eight', 'Ninth']
-const Primary = '@[__label__](primary:__value__)'
-const Default = '@[__label__](default)'
+const Primary = '@[__value__](primary:__meta__)'
+const Default = '@[__value__](default)'
 ```
 
 Using the components
@@ -78,7 +78,7 @@ export const App = () => {
                 {
                     markup: Primary,
                     data: Data,
-                    initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+                    initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
                 },
                 {
                     trigger: '/',
@@ -102,13 +102,13 @@ const ConfiguredMarkedInput = createMarkedInput({
         {
             markup: Primary,
             data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-            initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+            initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
         },
         {
             markup: Default,
             trigger: '/',
             data: ['Seventh', 'Eight', 'Ninth'],
-            initMark: ({label}) => ({label}),
+            initMark: ({value}) => ({label: value}),
         },
     ],
 })
@@ -262,12 +262,12 @@ The `div` tag for container. The `span` tag for text cell.
 ```tsx
 <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}> option={[{
     trigger: '@',
-    markup: '@[__label__](__value__)',
+    markup: '@[__value__](__meta__)',
     data: Data,
     initMark: getCustomMarkProps,
 }, {
     trigger: '/',
-    markup: '@(__label__)[__value__]',
+    markup: '@(__value__)[__meta__]',
     data: AnotherData,
     initMark: getAnotherCustomMarkProps,
 }]}/>
@@ -317,9 +317,9 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 
 | Name              | Type                                                                              | Description                                  |
 | ----------------- | --------------------------------------------------------------------------------- | -------------------------------------------- |
-| createMarkedInput | <T = MarkStruct>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>          | Create the configured MarkedInput component. |
-| annotate          | (markup: Markup, label: string, value?: string) => string                         | Make annotation from the markup              |
-| denote            | (value: string, callback: (mark: Mark) => string, ...markups: Markup[]) => string | Transform the annotated text                 |
+| createMarkedInput | <T = MarkToken>(configs: MarkedInputProps<T>): ConfiguredMarkedInput<T>           | Create the configured MarkedInput component. |
+| annotate          | (markup: Markup, params: {value: string, meta?: string}) => string                | Make annotation from the markup              |
+| denote            | (value: string, callback: (mark: MarkToken) => string, markups: Markup[]) => string | Transform the annotated text                 |
 | useMark           | () => MarkHandler                                                                 | Allow to use dynamic mark                    |
 | useOverlay        | () => OverlayHandler                                                              | Use overlay props                            |
 | useListener       | (type, listener, deps) => void                                                    | Event listener                               |
@@ -331,9 +331,13 @@ type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectio
 ```
 
 ```typescript
-interface MarkStruct {
-    label: string
-    value?: string
+interface MarkToken {
+    type: 'mark' | 'text'
+    value: string
+    meta?: string
+    content: string
+    position: {start: number, end: number}
+    // ... other properties
 }
 ```
 
@@ -353,7 +357,7 @@ interface OverlayHandler {
     /**
      * Used for insert an annotation instead a triggered value.
      */
-    select: (value: MarkStruct) => void
+    select: (value: {value: string, meta?: string}) => void
     /**
      * Overlay match details
      */
@@ -363,16 +367,16 @@ interface OverlayHandler {
 ```
 
 ```typescript
-interface MarkHandler<T> extends MarkStruct {
+interface MarkHandler<T> {
     /**
-     * MarkStruct ref. Used for focusing and key handling operations.
+     * MarkToken ref. Used for focusing and key handling operations.
      */
     ref: RefObject<T>
     /**
      * Change mark.
-     * @options.silent doesn't change itself label and value, only pass change event.
+     * @options.silent doesn't change itself value and meta, only pass change event.
      */
-    change: (props: MarkStruct, options?: {silent: boolean}) => void
+    change: (props: {value: string, meta?: string}, options?: {silent: boolean}) => void
     /**
      * Remove itself.
      */
@@ -417,8 +421,8 @@ type OverlayMatch = {
 export interface Option<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
-     * Must contain placeholders: `__label__` and optional `__value__`
-     * @default "@[__label__](__value__)"
+     * Must contain placeholders: `__value__` and optional `__meta__`
+     * @default "@[__value__](__meta__)"
      */
     markup?: Markup
     /**
@@ -433,7 +437,7 @@ export interface Option<T = Record<string, any>> {
     /**
      * Function to initialize props for the mark component. Gets arguments from found markup
      */
-    initMark?: (props: MarkStruct) => T
+    initMark?: (props: MarkToken) => T
 }
 ```
 

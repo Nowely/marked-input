@@ -1,4 +1,4 @@
 import {createContext} from '../functions/createContext'
-import {MarkStruct} from '@markput/core'
+import {Token} from '@markput/core'
 
-export const [useToken, TokenProvider] = createContext<MarkStruct>('NodeProvider')
+export const [useToken, TokenProvider] = createContext<Token>('NodeProvider')

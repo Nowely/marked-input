@@ -1,5 +1,5 @@
 import {Chip, Input} from '@mui/material'
-import {MarkedInput, MarkStruct} from 'rc-marked-input'
+import {MarkedInput, MarkToken} from 'rc-marked-input'
 import {useState} from 'react'
 import {MaterialMentions} from '../assets/MaterialMentions'
 import {Text} from '../assets/Text'
@@ -34,12 +34,12 @@ export const Chipped = () => {
 				onChange={setValue}
 				options={[
 					{
-						markup: '@[__label__](outlined:__value__)',
-						initMark: ({label}) => ({label, variant: 'outlined' as const, size: 'small' as const}),
+						markup: '@[__value__](outlined:__meta__)',
+						initMark: ({value}) => ({label: value, variant: 'outlined' as const, size: 'small' as const}),
 					},
 					{
-						markup: '@[__label__](common:__value__)',
-						initMark: ({label}) => ({label, size: 'small' as const}),
+						markup: '@[__value__](common:__meta__)',
+						initMark: ({value}) => ({label: value, size: 'small' as const}),
 					},
 				]}
 			/>
@@ -60,16 +60,16 @@ export const Overridden = () => {
 					Mark: Chip,
 					options: [
 						{
-							markup: '@[__label__](outlined:__value__)',
-							initMark: ({label}: MarkStruct) => ({
-								label,
+							markup: '@[__value__](outlined:__meta__)',
+							initMark: ({value}: MarkToken) => ({
+								label: value,
 								variant: 'outlined' as const,
 								size: 'small' as const,
 							}),
 						},
 						{
-							markup: '@[__label__](common:__value__)',
-							initMark: ({label}: MarkStruct) => ({label, size: 'small' as const}),
+							markup: '@[__value__](common:__meta__)',
+							initMark: ({value}: MarkToken) => ({label: value, size: 'small' as const}),
 						},
 					],
 				}}

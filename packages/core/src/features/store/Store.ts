@@ -1,5 +1,5 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
-import {MarkStruct} from '../parsing/ParserV1/types'
+import {Token} from '../parsing/ParserV2/types'
 import {OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
@@ -20,7 +20,7 @@ export class Store {
 	readonly input = new NodeProxy(undefined, this)
 
 	props: InnerMarkedInputProps
-	tokens: MarkStruct[] = []
+	tokens: Token[] = []
 	recovery?: Recovery
 
 	readonly refs = {

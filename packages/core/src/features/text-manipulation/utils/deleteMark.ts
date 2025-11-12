@@ -11,8 +11,18 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const {focus} = store
 
 	const [span1, mark, span2] = store.tokens.splice(focus.index - placeIndex, 3)
+	
+	// Merge text tokens
+	const content1 = span1.type === 'text' ? span1.content : ''
+	const content2 = span2.type === 'text' ? span2.content : ''
+	
 	store.tokens = store.tokens.toSpliced(focus.index - placeIndex, 0, {
-		label: span1.label + span2.label,
+		type: 'text',
+		content: content1 + content2,
+		position: {
+			start: span1.position.start,
+			end: span2.position.end,
+		},
 	})
 
 	let caretAnchor = focus
@@ -23,5 +33,5 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	store.recovery = {anchor: caretAnchor.prev, caret}
 
-	store.props.onChange?.(toString(store.tokens, store.props.options))
+	store.props.onChange?.(toString(store.tokens))
 }

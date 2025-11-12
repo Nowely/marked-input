@@ -1,9 +1,9 @@
 import {InnerOption} from './types'
-import type {Markup as ParserV1Markup} from '../parsing/ParserV1/types'
+import type {Markup} from '../parsing/ParserV2/types'
 
 export const DEFAULT_TRIGGER = '@'
 
-export const DEFAULT_MARKUP: ParserV1Markup = '@[__label__](__value__)'
+export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
 
 export const DEFAULT_OPTIONS: InnerOption[] = [
 	{
