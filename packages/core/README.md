@@ -80,7 +80,6 @@ const store = new Store()
 
 ### Type Guards & Assertions
 
-- `assertAnnotated(value)` - Assert value is annotated
 - `assertNonNullable(value)` - Assert value is not null/undefined
 - `isAnnotated(value)` - Check if value is annotated
 

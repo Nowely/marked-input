@@ -1,5 +1,4 @@
 // Shared exports
-export {assertAnnotated} from './src/shared/checkers/assertAnnotated'
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
 export {KEYBOARD} from './src/shared/constants'
 export type {OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'

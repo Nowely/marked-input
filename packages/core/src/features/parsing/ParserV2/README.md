@@ -69,24 +69,24 @@ parser.transform(text, callback)
 
 ## Performance
 
-**Latest Benchmark Results (ParserV2 vs ParserV1):**
+**Benchmark Results (ParserV2):**
 
-| Test Case     | V2 vs V1 Ratio | V2 Performance        | Key Improvement          |
-| ------------- | -------------- | --------------------- | ------------------------ |
-| 10 marks      | **2.22x**      | 27939-61384 ops/sec   | Basic patterns           |
-| 50 marks      | **2.12x**      | 18590-20513 ops/sec   | State machine efficiency |
-| 100 marks     | **2.20x**      | 8377-10354 ops/sec    | O(N) filtering           |
-| 500 marks     | **1.85x**      | 1989-2028 ops/sec     | Reduced allocations      |
-| Social media  | **2.06x**      | 228571-480077 ops/sec | Complex content          |
-| Markdown-like | **2.56x**      | 285714-631712 ops/sec | **+207.1%** 🚀           |
-| Code comments | **2.13x**      | 303767-727273 ops/sec | **+138.7%** 🚀           |
+| Test Case     | Performance Range       | Key Characteristics     |
+| ------------- | ----------------------- | ---------------------- |
+| 10 marks      | 27939-61384 ops/sec     | Basic patterns         |
+| 50 marks      | 18590-20513 ops/sec     | State machine efficiency |
+| 100 marks     | 8377-10354 ops/sec      | O(N) filtering         |
+| 500 marks     | 1989-2028 ops/sec       | Reduced allocations    |
+| Social media  | 228571-480077 ops/sec   | Complex content        |
+| Markdown-like | 285714-631712 ops/sec   | Exceptional performance |
+| Code comments | 303767-727273 ops/sec   | High-throughput        |
 
-**Overall Performance:**
+**Performance Characteristics:**
 
-- **ParserV2 is 2.25x faster** than ParserV1 on average
-- **Exceptional improvements** on complex patterns (+207% on markdown-like)
-- **Consistent 2x+ speedup** across all test cases
-- **Memory efficiency** maintained with reduced allocations
+- **Exceptional performance** on complex patterns and nested content
+- **Consistent high throughput** across all test cases
+- **Memory efficiency** with optimized allocations
+- **Scalable architecture** handling large text volumes
 
 **Key Optimizations:**
 
@@ -94,7 +94,7 @@ parser.transform(text, callback)
 - **O(N) single-pass filtering** replaces multi-stage validation
 - **Direct MatchState → Token pipeline** removes intermediate conversions
 - **Deterministic priority system** enables efficient conflict resolution
-- **Dual-matcher strategy** for SegmentMatcher provides 3-7x performance improvement
+- **Dual-matcher strategy** for SegmentMatcher provides optimal performance
 
 ## Architecture
 
