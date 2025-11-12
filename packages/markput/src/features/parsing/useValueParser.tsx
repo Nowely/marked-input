@@ -105,7 +105,7 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 	let span = ''
 	for (const index of indexes) {
 		const token = store.tokens[index]
-		span += token.type === 'text' ? token.content : token.content
+		span += token.content
 	}
 
 	return parseWithParser(span, store.props.options)
