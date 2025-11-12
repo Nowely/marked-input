@@ -8,13 +8,13 @@ vi.mock('./utils/normalizeMark')
 vi.mock('../../../shared/checkers/isObject')
 
 // Mock ParserMatches class
-let currentMockIterator: any;
+let currentMockIterator: any
 vi.mock('./ParserMatches', () => ({
-  ParserMatches: class {
-    constructor() {
-      return currentMockIterator;
-    }
-  },
+	ParserMatches: class {
+		constructor() {
+			return currentMockIterator
+		}
+	},
 }))
 
 import {markupToRegex} from './utils/markupToRegex'
@@ -213,16 +213,17 @@ describe(`Utility: ${Parser.name}`, () => {
 
 			// Simplified mock - just return a simple iterator
 			currentMockIterator = {
-				[Symbol.iterator]: function() { return this; },
-				next: vi.fn()
+				[Symbol.iterator]: function () {
+					return this
+				},
+				next: vi
+					.fn()
 					.mockReturnValueOnce({done: false, value: ['Hello ', mockMark1]})
 					.mockReturnValueOnce({done: false, value: [' world ', mockMark2]})
 					.mockReturnValueOnce({done: true, value: null}),
-			};
+			}
 
-			mockNormalizeMark
-				.mockReturnValueOnce(mockMark1)
-				.mockReturnValueOnce(mockMark2)
+			mockNormalizeMark.mockReturnValueOnce(mockMark1).mockReturnValueOnce(mockMark2)
 
 			const result = parser.iterateMatches('Hello @[hello](world) world #[test]')
 
@@ -250,12 +251,15 @@ describe(`Utility: ${Parser.name}`, () => {
 
 			// Simplified mock for null mark handling
 			currentMockIterator = {
-				[Symbol.iterator]: function() { return this; },
-				next: vi.fn()
+				[Symbol.iterator]: function () {
+					return this
+				},
+				next: vi
+					.fn()
 					.mockReturnValueOnce({done: false, value: ['Hello ', mockMark]})
 					.mockReturnValueOnce({done: false, value: [' world', null]})
 					.mockReturnValueOnce({done: true, value: null}),
-			};
+			}
 
 			mockNormalizeMark.mockReturnValue(normalizedMark)
 
