@@ -1,229 +1,250 @@
 import {describe, it, expect} from 'vitest'
 import {toString} from './toString'
-import {MarkStruct, MarkMatch, Markup} from '../../parsing/ParserV1/types'
+import {Token} from '../../parsing/ParserV2/types'
+import {MarkupDescriptor} from '../../parsing/ParserV2/core/MarkupDescriptor'
+import {Markup} from '../../parsing/ParserV2/types'
+
+// Helper to create mock MarkupDescriptor for tests
+const createMockDescriptor = (markup: Markup, index: number): MarkupDescriptor => ({
+	markup,
+	index,
+	segments: [],
+	gapTypes: [],
+	hasNested: false,
+	hasTwoValues: false,
+	segmentGlobalIndices: [],
+})
 
 describe(`Utility: ${toString.name}`, () => {
-	it('should return empty string for empty marks array', () => {
-		const marks: MarkStruct[] = []
-		const options: any[] = []
+	it('should return empty string for empty tokens array', () => {
+		const tokens: Token[] = []
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('')
 	})
 
-	it('should handle plain text marks', () => {
-		const marks: MarkStruct[] = [{label: 'Hello'}, {label: ' '}, {label: 'world'}]
-		const options: any[] = []
+	it('should handle plain text tokens', () => {
+		const tokens: Token[] = [
+			{type: 'text', content: 'Hello', position: {start: 0, end: 5}},
+			{type: 'text', content: ' ', position: {start: 5, end: 6}},
+			{type: 'text', content: 'world', position: {start: 6, end: 11}},
+		]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('Hello world')
 	})
 
 	it('should handle annotated marks', () => {
-		const marks: MarkMatch[] = [
+		const tokens: Token[] = [
 			{
-				label: 'Hello',
-				value: 'greeting',
-				annotation: '@[Hello](greeting)',
-				input: 'text',
-				index: 0,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'Hello',
+				meta: 'greeting',
+				content: '@[Hello](greeting)',
+				position: {start: 0, end: 18},
+				descriptor: createMockDescriptor('@[__value__](__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
 		]
-		const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('@[Hello](greeting)')
 	})
 
 	it('should handle mix of plain and annotated marks', () => {
-		const marks: (MarkStruct | MarkMatch)[] = [
-			{label: 'Start '},
+		const tokens: Token[] = [
+			{type: 'text', content: 'Start ', position: {start: 0, end: 6}},
 			{
-				label: 'bold',
-				value: 'strong',
-				annotation: '**bold**(strong)',
-				input: 'text',
-				index: 6,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'bold',
+				meta: 'strong',
+				content: '**bold**(strong)',
+				position: {start: 6, end: 23},
+				descriptor: createMockDescriptor('**__value__**(__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
-			{label: ' and '},
+			{type: 'text', content: ' and ', position: {start: 23, end: 28}},
 			{
-				label: 'italic',
-				annotation: '*italic*',
-				input: 'text',
-				index: 15,
-				optionIndex: 1,
+				type: 'mark',
+				value: 'italic',
+				meta: undefined,
+				content: '*italic*',
+				position: {start: 28, end: 37},
+				descriptor: createMockDescriptor('*__value__*' as Markup, 1),
+				children: [],
+				nested: undefined,
 			},
-			{label: ' end'},
-		]
-		const options = [
-			{markup: '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
-			{markup: '*__label__*' as Markup, trigger: '*', data: [] as string[]},
+			{type: 'text', content: ' end', position: {start: 37, end: 41}},
 		]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('Start **bold**(strong) and *italic* end')
 	})
 
-	it('should handle marks with undefined value', () => {
-		const marks: MarkMatch[] = [
+	it('should handle marks with undefined meta', () => {
+		const tokens: Token[] = [
 			{
-				label: 'hashtag',
-				annotation: '#hashtag',
-				input: 'text',
-				index: 0,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'hashtag',
+				meta: undefined,
+				content: '#hashtag',
+				position: {start: 0, end: 8},
+				descriptor: createMockDescriptor('#__value__' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
 		]
-		const options = [{markup: '#__label__' as Markup, trigger: '#', data: [] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('#hashtag')
 	})
 
-	it('should use correct markup based on optionIndex', () => {
-		const marks: MarkMatch[] = [
+	it('should use correct markup based on descriptor', () => {
+		const tokens: Token[] = [
 			{
-				label: 'mention',
-				value: 'user',
-				annotation: '@[mention](user)',
-				input: 'text',
-				index: 0,
-				optionIndex: 1, // Uses second option
+				type: 'mark',
+				value: 'mention',
+				meta: 'user',
+				content: '@[mention](user)',
+				position: {start: 0, end: 16},
+				descriptor: createMockDescriptor('@[__value__](__meta__)' as Markup, 1),
+				children: [],
+				nested: undefined,
 			},
 		]
-		const options = [
-			{markup: '#__label__' as Markup, trigger: '#', data: [] as string[]},
-			{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[]},
-		]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('@[mention](user)')
 	})
 
-	it('should handle multiple marks with different optionIndexes', () => {
-		const marks: MarkMatch[] = [
+	it('should handle multiple marks with different descriptors', () => {
+		const tokens: Token[] = [
 			{
-				label: 'bold',
-				value: 'strong',
-				annotation: '**bold**(strong)',
-				input: 'text',
-				index: 0,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'bold',
+				meta: 'strong',
+				content: '**bold**(strong)',
+				position: {start: 0, end: 17},
+				descriptor: createMockDescriptor('**__value__**(__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
 			{
-				label: 'link',
-				value: 'url',
-				annotation: '[link](url)',
-				input: 'text',
-				index: 15,
-				optionIndex: 1,
+				type: 'mark',
+				value: 'link',
+				meta: 'url',
+				content: '[link](url)',
+				position: {start: 17, end: 28},
+				descriptor: createMockDescriptor('[__value__](__meta__)' as Markup, 1),
+				children: [],
+				nested: undefined,
 			},
-		]
-		const options = [
-			{markup: '**__label__**(__value__)' as Markup, trigger: '**', data: [] as string[]},
-			{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]},
 		]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('**bold**(strong)[link](url)')
 	})
 
 	it('should handle marks with special characters', () => {
-		const marks: (MarkStruct | MarkMatch)[] = [
-			{label: 'User '},
+		const tokens: Token[] = [
+			{type: 'text', content: 'User ', position: {start: 0, end: 5}},
 			{
-				label: 'user@domain.com',
-				value: 'click here',
-				annotation: '[user@domain.com](click here)',
-				input: 'text',
-				index: 5,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'user@domain.com',
+				meta: 'click here',
+				content: '[user@domain.com](click here)',
+				position: {start: 5, end: 33},
+				descriptor: createMockDescriptor('[__value__](__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
-			{label: ' says hello'},
+			{type: 'text', content: ' says hello', position: {start: 33, end: 44}},
 		]
-		const options = [{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('User [user@domain.com](click here) says hello')
 	})
 
-	it('should handle empty label and value', () => {
-		const marks: MarkMatch[] = [
+	it('should handle empty value and meta', () => {
+		const tokens: Token[] = [
 			{
-				label: '',
+				type: 'mark',
 				value: '',
-				annotation: '@[]()',
-				input: 'text',
-				index: 0,
-				optionIndex: 0,
+				meta: '',
+				content: '@[]()',
+				position: {start: 0, end: 4},
+				descriptor: createMockDescriptor('@[__value__](__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
 		]
-		const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: [] as string[] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
-		// annotate('@[__label__](__value__)', '', '') should give '@[](__value__)'
-		// because empty string is truthy, so it replaces __value__ with empty string
-		expect(result).toBe('@[](__value__)')
+		expect(result).toBe('@[]()')
 	})
 
-	it('should concatenate all marks in order', () => {
-		const marks: (MarkStruct | MarkMatch)[] = [
-			{label: 'A'},
-			{label: 'B'},
+	it('should concatenate all tokens in order', () => {
+		const tokens: Token[] = [
+			{type: 'text', content: 'A', position: {start: 0, end: 1}},
+			{type: 'text', content: 'B', position: {start: 1, end: 2}},
 			{
-				label: 'C',
-				annotation: '*C*',
-				input: 'text',
-				index: 2,
-				optionIndex: 0,
+				type: 'mark',
+				value: 'C',
+				meta: undefined,
+				content: '*C*',
+				position: {start: 2, end: 5},
+				descriptor: createMockDescriptor('*__value__*' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
-			{label: 'D'},
+			{type: 'text', content: 'D', position: {start: 5, end: 6}},
 		]
-		const options = [{markup: '*__label__*' as Markup, trigger: '*', data: [] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('AB*C*D')
 	})
 
-	it('should handle large arrays of marks', () => {
-		const marks: MarkStruct[] = Array.from({length: 1000}, (_, i) => ({label: `part${i}`}))
-		const options: any[] = []
+	it('should handle large arrays of tokens', () => {
+		const tokens: Token[] = Array.from({length: 1000}, (_, i) => ({
+			type: 'text' as const,
+			content: `part${i}`,
+			position: {start: i * 6, end: (i + 1) * 6},
+		}))
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
-		expect(result).toBe(marks.map(m => m.label).join(''))
-		// Length varies: part0-part9 (5 chars), part10-part99 (6 chars), part100-part999 (7 chars)
-		// 10 * 5 + 90 * 6 + 900 * 7 = 50 + 540 + 6300 = 6890
+		expect(result).toBe(tokens.map(t => t.content).join(''))
 		expect(result.length).toBe(6890)
 	})
 
-	it('should handle marks with unicode characters', () => {
-		const marks: (MarkStruct | MarkMatch)[] = [
-			{label: 'Hello 🌍 '},
+	it('should handle tokens with unicode characters', () => {
+		const tokens: Token[] = [
+			{type: 'text', content: 'Hello 🌍 ', position: {start: 0, end: 9}},
 			{
-				label: '🚀',
-				value: 'launch',
-				annotation: '[🚀](launch)',
-				input: 'text',
-				index: 9,
-				optionIndex: 0,
+				type: 'mark',
+				value: '🚀',
+				meta: 'launch',
+				content: '[🚀](launch)',
+				position: {start: 9, end: 21},
+				descriptor: createMockDescriptor('[__value__](__meta__)' as Markup, 0),
+				children: [],
+				nested: undefined,
 			},
 		]
-		const options = [{markup: '[__label__](__value__)' as Markup, trigger: '[', data: [] as string[]}]
 
-		const result = toString(marks, options)
+		const result = toString(tokens)
 
 		expect(result).toBe('Hello 🌍 [🚀](launch)')
 	})

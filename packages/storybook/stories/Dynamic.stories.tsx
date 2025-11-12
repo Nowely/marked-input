@@ -9,11 +9,11 @@ export default {
 }
 
 const Mark = () => {
-	const {label, change, ref} = useMark()
+	const {value, ref} = useMark()
 
 	useEffect(() => {
-		if (ref.current) ref.current.textContent = label
-	}, [])
+		if (ref.current) ref.current.textContent = value
+	}, [value, ref])
 
 	return <mark ref={ref} contentEditable />
 }
@@ -24,8 +24,8 @@ export const Dynamic = () => {
 }
 
 const RemovableMark = () => {
-	const {label, remove} = useMark()
-	return <mark onClick={remove} children={label} />
+	const {value, remove} = useMark()
+	return <mark onClick={remove} children={value} />
 }
 
 export const Removable = () => {
@@ -34,16 +34,16 @@ export const Removable = () => {
 }
 
 const Abbr = () => {
-	const {label, value, ref, change} = useMark()
+	const {value, meta, ref} = useMark()
 
 	useEffect(() => {
-		if (ref.current) ref.current.textContent = label
-	}, [])
+		if (ref.current) ref.current.textContent = value
+	}, [value, ref])
 
 	return (
 		<abbr
 			ref={ref}
-			title={value}
+			title={meta}
 			contentEditable
 			style={{
 				outline: 'none',

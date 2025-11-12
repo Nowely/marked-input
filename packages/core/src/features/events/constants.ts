@@ -1,4 +1,4 @@
-import {MarkStruct} from '../parsing/ParserV1/types'
+import {Token} from '../parsing/ParserV2/types'
 import {EventKey, OverlayMatch} from '../../shared/types'
 
 export const SystemEvent = {
@@ -7,6 +7,6 @@ export const SystemEvent = {
 	CheckTrigger: Symbol() as EventKey,
 	Change: Symbol() as EventKey,
 	Parse: Symbol() as EventKey,
-	Delete: Symbol() as EventKey<{token: MarkStruct}>,
-	Select: Symbol() as EventKey<{mark: MarkStruct; match: OverlayMatch}>,
+	Delete: Symbol() as EventKey<{token: Token}>,
+	Select: Symbol() as EventKey<{mark: Token; match: OverlayMatch}>,
 }

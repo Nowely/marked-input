@@ -1,12 +1,12 @@
 import {FunctionComponent} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
-import {MarkStruct, Markup} from '@markput/core'
+import {Markup, MarkToken} from '@markput/core'
 
 export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.
-	 * Must contain placeholders: `__label__` and optional `__value__`
-	 * @default "@[__label__](__value__)"
+	 * Must contain placeholders: `__value__` and optional `__meta__`
+	 * @default "@[__value__](__meta__)"
 	 */
 	markup?: Markup
 	/**
@@ -21,7 +21,7 @@ export interface Option<T = Record<string, any>> {
 	/**
 	 * Function to initialize props for the mark component. Gets arguments from found markup
 	 */
-	initMark?: (props: MarkStruct) => T
+	initMark?: (props: MarkToken) => T
 }
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>

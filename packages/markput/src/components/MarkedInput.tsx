@@ -6,9 +6,9 @@ import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
-import {MarkStruct, OverlayTrigger} from '@markput/core'
+import {Token, OverlayTrigger} from '@markput/core'
 
-export interface MarkedInputProps<T = MarkStruct> {
+export interface MarkedInputProps<T = Token> {
 	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
 	/** Annotated text with markups for mark */
@@ -46,7 +46,7 @@ export interface MarkedInputProps<T = MarkStruct> {
 }
 
 export interface MarkedInputComponent {
-	<T = MarkStruct>(props: MarkedInputProps<T>): JSX.Element | null
+	<T = Token>(props: MarkedInputProps<T>): JSX.Element | null
 
 	displayName?: string
 }

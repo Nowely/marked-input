@@ -1,6 +1,5 @@
-import {MarkStruct} from '../parsing/ParserV1/types'
 import {OverlayTrigger} from '../../shared/types'
-import {Markup} from '../parsing/ParserV1'
+import {Markup, Token} from '../parsing/ParserV2/types'
 
 export interface InnerOption {
 	markup: Markup
@@ -9,7 +8,7 @@ export interface InnerOption {
 }
 
 //TODO Correct inner types
-interface MarkedInputProps<T = MarkStruct> {
+interface MarkedInputProps<T = Token> {
 	/** Ref to handler */
 	ref?: any
 	/** Annotated text with markups for mark */

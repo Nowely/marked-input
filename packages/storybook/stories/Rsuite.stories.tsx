@@ -1,5 +1,6 @@
 import {Meta} from '@storybook/react-vite'
-import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
+import {MarkedInput, useOverlay} from 'rc-marked-input'
+import type {Markup, MarkToken} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
@@ -18,7 +19,7 @@ const Overlay = () => {
 		const handleEnter = (ev: KeyboardEvent) => {
 			if (ev.key === 'Enter') {
 				ev.preventDefault()
-				select({label: match.value})
+				select({value: match.value})
 				close()
 			}
 		}
@@ -51,7 +52,9 @@ export const Overridden = () => {
 				Overlay={Overlay}
 				value={value}
 				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[{markup: '@[__label__](common)', initMark: ({label}: MarkStruct) => ({children: label})}]}
+				options={[
+					{markup: '@[__value__](common)' as Markup, initMark: ({value}: MarkToken) => ({children: value})},
+				]}
 			/>
 
 			<Text label="Plaint text:" value={value} />
@@ -77,8 +80,8 @@ export const TaggedInput = () => {
 				}}
 				options={[
 					{
-						markup: '@[__label__](common)',
-						initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
+						markup: '@[__value__](common)' as Markup,
+						initMark: ({value}) => ({children: value, style: {marginLeft: 0}}),
 					},
 				]}
 			>

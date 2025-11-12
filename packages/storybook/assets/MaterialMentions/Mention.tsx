@@ -1,16 +1,16 @@
 import {Avatar, Chip} from '@mui/material'
-import {MarkStruct} from 'rc-marked-input'
+import {MarkToken} from 'rc-marked-input'
 import {User} from './types'
 import {useFetch} from './utils/useFetch'
 
-export const Mention = ({label}: MarkStruct) => {
-	const [user] = useFetch<User>(`https://api.github.com/users/${label}`, [])
-	const abbr = getAbbr(user?.name) ?? label[0]
+export const Mention = ({value}: MarkToken) => {
+	const [user] = useFetch<User>(`https://api.github.com/users/${value}`, [])
+	const abbr = getAbbr(user?.name) ?? value[0]
 
 	return (
 		<Chip
 			variant="outlined"
-			label={label}
+			label={value}
 			size="small"
 			avatar={<Avatar src={user?.avatar_url} children={abbr} />}
 		/>

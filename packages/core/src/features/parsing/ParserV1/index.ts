@@ -1,7 +1,0 @@
-export {Parser} from './Parser'
-export {annotate} from './utils/annotate'
-export {normalizeMark} from './utils/normalizeMark'
-export {denote} from './utils/denote'
-export {getTokensByValue} from './utils/getTokensByValue'
-export {getTokensByUI} from './utils/getTokensByUI'
-export type {Markup, MarkStruct, PieceType, MarkMatch} from './types'

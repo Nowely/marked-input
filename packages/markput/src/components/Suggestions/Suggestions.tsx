@@ -35,7 +35,7 @@ export const Suggestions = () => {
 		event => {
 			event.preventDefault()
 			const suggestion = filtered[active]
-			select({label: suggestion, value: active.toString()})
+			select({value: suggestion, meta: active.toString()})
 		},
 		[filtered, active]
 	)
@@ -53,7 +53,7 @@ export const Suggestions = () => {
 						key={suggestion}
 						ref={el => className && el?.scrollIntoView(false)}
 						className={className}
-						onClick={_ => select({label: suggestion, value: index.toString()})}
+						onClick={_ => select({value: suggestion, meta: index.toString()})}
 						children={suggestion}
 					/>
 				)

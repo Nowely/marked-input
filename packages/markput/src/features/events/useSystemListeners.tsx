@@ -1,7 +1,6 @@
-import {createNewSpan, toString} from '@markput/core'
+import {createNewSpan, toString, annotate, SystemEvent} from '@markput/core'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {annotate, SystemEvent} from '@markput/core'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -10,13 +9,20 @@ export function useSystemListeners() {
 	useListener(
 		SystemEvent.Change,
 		event => {
-			const {onChange, options} = store.props
+			const {onChange} = store.props
 
 			if (!store.focus.target) return
 
-			store.tokens[store.focus.index].label = store.focus.content
+			// Update token content
+			const token = store.tokens[store.focus.index]
+			if (token.type === 'text') {
+				token.content = store.focus.content
+			} else if (token.type === 'mark') {
+				// Update mark value from the editable content
+				token.value = store.focus.content
+			}
 
-			onChange?.(toString(store.tokens, options))
+			onChange?.(toString(store.tokens))
 			store.bus.send(SystemEvent.Parse)
 			//bus.send(SystemEvent.CheckTrigger) TODO check on value change
 		},
@@ -26,11 +32,11 @@ export function useSystemListeners() {
 	useListener(
 		SystemEvent.Delete,
 		({token}) => {
-			const {onChange, options} = store.props
+			const {onChange} = store.props
 
 			store.tokens.splice(store.tokens.indexOf(token), 1)
 
-			onChange?.(toString(store.tokens, options))
+			onChange?.(toString(store.tokens))
 		},
 		[]
 	)
@@ -44,7 +50,17 @@ export function useSystemListeners() {
 				match: {option, span, index, source, node},
 			} = event
 
-			const annotation = annotate(option.markup, mark.label, mark.value)
+			// Use ParserV2 annotate with new format
+			const annotation =
+				mark.type === 'mark'
+					? annotate(option.markup, {
+							value: mark.value,
+							meta: mark.meta,
+						})
+					: annotate(option.markup, {
+							value: mark.content,
+						})
+
 			const newSpan = createNewSpan(span, annotation, index, source)
 
 			store.recovery = Mark
@@ -53,11 +69,14 @@ export function useSystemListeners() {
 
 			if (store.input.target) {
 				store.input.content = newSpan
-				store.tokens[store.input.index].label = newSpan
+				const inputToken = store.tokens[store.input.index]
+				if (inputToken.type === 'text') {
+					inputToken.content = newSpan
+				}
 
 				store.focus.target = store.input.target
 				store.input.clear()
-				onChange?.(toString(store.tokens, options))
+				onChange?.(toString(store.tokens))
 				store.bus.send(SystemEvent.Parse)
 			}
 		},

@@ -1,5 +1,5 @@
 import {Meta, StoryObj} from '@storybook/react-vite'
-import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
+import {MarkedInput, MarkToken, useOverlay} from 'rc-marked-input'
 import {useState} from 'react'
 
 export default {
@@ -8,9 +8,9 @@ export default {
 	component: MarkedInput,
 }
 
-type Story = StoryObj<Meta<typeof MarkedInput<MarkStruct>>>
+type Story = StoryObj<Meta<typeof MarkedInput<MarkToken>>>
 
-const Mark = (props: MarkStruct) => <mark>{props.label}</mark>
+const Mark = (props: MarkToken) => <mark>{props.value}</mark>
 
 export const DefaultOverlay: Story = {
 	args: {
@@ -46,8 +46,8 @@ const List = () => {
 	const {select} = useOverlay()
 	return (
 		<ul>
-			<li onClick={() => select({label: 'First'})}>Clickable First</li>
-			<li onClick={() => select({label: 'Second'})}>Clickable Second</li>
+			<li onClick={() => select({value: 'First'})}>Clickable First</li>
+			<li onClick={() => select({value: 'Second'})}>Clickable Second</li>
 		</ul>
 	)
 }

@@ -1,5 +1,6 @@
 import {Meta, StoryObj} from '@storybook/react-vite'
-import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
+import {createMarkedInput, MarkedInput, denote} from 'rc-marked-input'
+import type {Markup, MarkToken} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
 import {Text} from '../assets/Text'
@@ -11,17 +12,17 @@ export default {
 	args: {},
 } satisfies Meta<typeof MarkedInput>
 
-type Story = StoryObj<Meta<typeof MarkedInput<MarkStruct>>>
+type Story = StoryObj<Meta<typeof MarkedInput<MarkToken>>>
 
 export const Default: Story = {
 	args: {
-		Mark: props => <mark onClick={_ => alert(props.value)}>{props.label}</mark>,
+		Mark: props => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
 		defaultValue: 'Hello, clickable marked @[world](Hello! Hello!)!',
 	},
 }
 
-const PrimaryMarkup: Markup = '@[__label__](primary:__value__)'
-const DefaultMarkup: Markup = '@[__label__](default:__value__)'
+const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
+const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
 const ConfiguredMarkedInput = createMarkedInput({
 	Mark: Button,
@@ -29,13 +30,13 @@ const ConfiguredMarkedInput = createMarkedInput({
 		{
 			markup: PrimaryMarkup,
 			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			initMark: ({label, value}) => ({label, primary: true, onClick: () => alert(value)}),
+			initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
 		},
 		{
 			markup: DefaultMarkup,
 			trigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],
-			initMark: ({label}) => ({label}),
+			initMark: ({value}) => ({label: value}),
 		},
 	],
 })
@@ -48,7 +49,7 @@ export const Configured: Story = {
 				'For found mark used @[annotations](default:123).'
 		)
 
-		const displayText = denote(value, mark => mark.label, PrimaryMarkup, DefaultMarkup)
+		const displayText = denote(value, (mark: MarkToken) => mark.value, [PrimaryMarkup, DefaultMarkup])
 
 		return (
 			<>
@@ -74,7 +75,7 @@ export const Autocomplete: Story = {
 		defaultValue: 'Hello, clickable marked @world!',
 		options: [
 			{
-				markup: '@__label__',
+				markup: '@__value__' as Markup,
 				data: ['one', 'two', 'three', 'four'],
 			},
 		],

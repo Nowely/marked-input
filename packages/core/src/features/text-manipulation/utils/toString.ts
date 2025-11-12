@@ -1,14 +1,9 @@
-import {MarkStruct, MarkMatch, Markup} from '../../parsing/ParserV1/types'
-import {InnerOption} from '../../../features/default/types'
-import {annotate} from '../../parsing/ParserV1/utils/annotate'
-import {isAnnotated} from '../../parsing/ParserV1/utils/isAnnotated'
+import {Token} from '../../parsing/ParserV2/types'
+import {Parser} from '../../parsing/ParserV2'
 
-export function toString(marks: MarkStruct[], options: InnerOption[]) {
-	let result = ''
-	for (const mark of marks) {
-		result += isAnnotated(mark)
-			? annotate(options[(mark as MarkMatch).optionIndex].markup!, mark.label, mark.value)
-			: mark.label
-	}
-	return result
+/**
+ * Converts Token[] array back to string representation using ParserV2
+ */
+export function toString(tokens: Token[]): string {
+	return Parser.stringify(tokens)
 }

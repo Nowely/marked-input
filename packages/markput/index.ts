@@ -9,5 +9,6 @@ export type {MarkHandler} from './src/utils/hooks/useMark'
 export type {OverlayHandler} from './src/utils/hooks/useOverlay'
 export type {MarkedInputHandler, Option, ConfiguredMarkedInput} from './src/types'
 
+// Re-export ParserV2 functions and types
 export {denote, annotate} from '@markput/core'
-export type {Markup, MarkMatch, MarkStruct, label, value} from '@markput/core'
+export type {Markup, Token, TextToken, MarkToken} from '@markput/core'
