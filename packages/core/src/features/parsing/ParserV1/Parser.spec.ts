@@ -77,22 +77,22 @@ describe(`Utility: ${Parser.name}`, () => {
 
 	describe('static split', () => {
 		it('should parse text with provided options and return MarkStruct array', () => {
-			const value = 'Hello @[world](value) test'
-			const options = [
-				{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []},
-				{markup: '#[__label__]' as Markup, trigger: '#', data: []},
-			]
+		const value = 'Hello @[world](value) test'
+		const options: any = [
+			{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []},
+			{markup: '#[__label__]' as Markup, trigger: '#', data: []},
+		]
 
-			const mockPieces: any[] = ['Hello ', {annotation: '@[world](value)', label: 'world', value: 'value'}]
-			const mockParserInstance = {
-				split: vi.fn().mockReturnValue(mockPieces),
-			}
+		const mockPieces: any[] = ['Hello ', {annotation: '@[world](value)', label: 'world', value: 'value'}]
+		const mockParserInstance = {
+			split: vi.fn().mockReturnValue(mockPieces),
+		}
 
-			// Mock the Parser constructor
-			const parserSpy = vi.spyOn(Parser.prototype, 'split').mockReturnValue(mockPieces)
-			mockIsObject.mockReturnValueOnce(false).mockReturnValueOnce(true)
+		// Mock the Parser constructor
+		const parserSpy = vi.spyOn(Parser.prototype, 'split').mockReturnValue(mockPieces)
+		mockIsObject.mockReturnValueOnce(false).mockReturnValueOnce(true)
 
-			const result = Parser.split(value, options)
+		const result = Parser.split(value, options)
 
 			expect(result).toEqual([{label: 'Hello '}, {annotation: '@[world](value)', label: 'world', value: 'value'}])
 			expect(parserSpy).toHaveBeenCalledWith(value)
@@ -147,26 +147,26 @@ describe(`Utility: ${Parser.name}`, () => {
 			expect(result).toEqual([{label: 'Hello @[world](value) test'}])
 		})
 
-		it('should correctly convert pieces to MarkStruct', () => {
-			const value = 'test'
-			const options = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []}]
+	it('should correctly convert pieces to MarkStruct', () => {
+		const value = 'test'
+		const options: any = [{markup: '@[__label__](__value__)' as Markup, trigger: '@', data: []}]
 
-			const mockPieces = [
-				'text',
-				{
-					label: 'mark',
-					value: 'val',
-					annotation: '@[mark](val)',
-					input: '@[mark](val)',
-					index: 0,
-					optionIndex: 0,
-				},
-			]
-			const parserSpy = vi.spyOn(Parser.prototype, 'split').mockReturnValue(mockPieces)
+		const mockPieces = [
+			'text',
+			{
+				label: 'mark',
+				value: 'val',
+				annotation: '@[mark](val)',
+				input: '@[mark](val)',
+				index: 0,
+				optionIndex: 0,
+			},
+		]
+		const parserSpy = vi.spyOn(Parser.prototype, 'split').mockReturnValue(mockPieces)
 
-			mockIsObject.mockReturnValueOnce(false).mockReturnValueOnce(true)
+		mockIsObject.mockReturnValueOnce(false).mockReturnValueOnce(true)
 
-			const result = Parser.split(value, options)
+		const result = Parser.split(value, options)
 
 			expect(result).toEqual([
 				{label: 'text'},

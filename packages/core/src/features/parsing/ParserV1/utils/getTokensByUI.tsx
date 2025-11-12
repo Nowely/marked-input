@@ -7,7 +7,7 @@ import {Store} from '../../../store'
 export function getTokensByUI(store: Store) {
 	const {focus, props} = store
 	const options = store.props.Mark ? store.props.options : undefined
-	const tokens = Parser.split(focus.content, options)
+	const tokens = Parser.split(focus.content, options) as any
 
 	if (tokens.length === 1) return store.tokens
 

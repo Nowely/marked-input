@@ -17,7 +17,7 @@ export class Parser {
 	}
 
 	static split(value: string, options?: InnerOption[]): MarkStruct[] {
-		const markups = options?.map(c => c.markup)
+		const markups = options?.map(c => c.markup) as any
 		const pieces = markups ? new Parser(markups).split(value) : [value]
 		return pieces.map(piece => {
 			return isObject(piece) ? piece : {label: piece}
