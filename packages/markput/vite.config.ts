@@ -13,7 +13,7 @@ export default defineConfig(({command}) => ({
 		lib: {
 			entry: path.resolve(__dirname, './index.ts'),
 			name: 'MarkedInput',
-			formats: ['es', 'umd'],
+			formats: ['es'],
 			fileName: 'index',
 		},
 		rollupOptions: {

@@ -20,12 +20,10 @@
     "react": ">=17.0.0"
   },
   "module": "./index.js",
-  "main": "./index.umd.cjs",
   "types": "./index.d.ts",
   "exports": {
     ".": {
-      "import": "./index.js",
-      "require": "./index.umd.cjs"
+      "import": "./index.js"
     }
   },
   "keywords": [
