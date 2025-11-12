@@ -1,8 +1,11 @@
 import {useEffect, useRef} from 'react'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {getTokensByUI, getTokensByValue} from '@markput/core'
-import {Parser, SystemEvent} from '@markput/core'
+import {getTokensByUI} from './getTokensByUI'
+import {getTokensByValue} from './getTokensByValue'
+import {Parser as ParserV2, SystemEvent} from '@markput/core'
+import {adaptTokensToMarkStruct} from './adapter'
+import {convertMarkupV1ToV2} from './markupConverter'
 
 export const useValueParser = () => {
 	const store = useStore()
@@ -21,8 +24,18 @@ export const useValueParser = () => {
 			return
 		}
 
-		//Initial parse
-		store.tokens = Parser.split(value ?? store.props.defaultValue ?? '', options)
+		//Initial parse with ParserV2
+		const inputValue = value ?? store.props.defaultValue ?? ''
+		const markupsV2 = options?.map(opt => convertMarkupV1ToV2(opt.markup))
+		
+		if (!markupsV2 || markupsV2.length === 0) {
+			store.tokens = [{label: inputValue}]
+		} else {
+			const parser = new ParserV2(markupsV2)
+			const tokens = parser.parse(inputValue)
+			store.tokens = adaptTokensToMarkStruct(tokens)
+		}
+		
 		isMounted.current = true
 	}, [value, options])
 

@@ -1,5 +1,6 @@
 import {Meta} from '@storybook/react-vite'
 import {MarkedInput, MarkStruct, useOverlay} from 'rc-marked-input'
+import type {ParserV1Markup} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
@@ -51,7 +52,7 @@ export const Overridden = () => {
 				Overlay={Overlay}
 				value={value}
 				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[{markup: '@[__label__](common)', initMark: ({label}: MarkStruct) => ({children: label})}]}
+				options={[{markup: '@[__label__](common)' as ParserV1Markup, initMark: ({label}: MarkStruct) => ({children: label})}]}
 			/>
 
 			<Text label="Plaint text:" value={value} />
@@ -77,7 +78,7 @@ export const TaggedInput = () => {
 				}}
 				options={[
 					{
-						markup: '@[__label__](common)',
+						markup: '@[__label__](common)' as ParserV1Markup,
 						initMark: ({label}) => ({children: label, style: {marginLeft: 0}}),
 					},
 				]}

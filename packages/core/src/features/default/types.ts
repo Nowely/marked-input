@@ -1,9 +1,9 @@
 import {MarkStruct} from '../parsing/ParserV1/types'
 import {OverlayTrigger} from '../../shared/types'
-import {Markup} from '../parsing/ParserV1'
+import {Markup as ParserV1Markup} from '../parsing/ParserV1'
 
 export interface InnerOption {
-	markup: Markup
+	markup: ParserV1Markup
 	trigger: string
 	data: string[]
 }

@@ -1,14 +1,16 @@
 import {FunctionComponent} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
-import {MarkStruct, Markup} from '@markput/core'
+import {MarkStruct, ParserV1Markup} from '@markput/core'
 
 export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.
 	 * Must contain placeholders: `__label__` and optional `__value__`
 	 * @default "@[__label__](__value__)"
+	 * 
+	 * @deprecated ParserV1 markup format. Will migrate to ParserV2 format in v2.0
 	 */
-	markup?: Markup
+	markup?: ParserV1Markup
 	/**
 	 * Sequence of symbols for calling the overlay.
 	 * @default "@"

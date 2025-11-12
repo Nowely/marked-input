@@ -1,5 +1,6 @@
 import {Tag} from 'antd'
 import {MarkedInput} from 'rc-marked-input'
+import type {ParserV1Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Text} from '../assets/Text'
 import {withStyle} from '../assets/withStyle'
@@ -23,7 +24,7 @@ export const Tagged = () => {
 				onChange={setValue}
 				options={[
 					{
-						markup: '@(__label__)',
+						markup: '@(__label__)' as ParserV1Markup,
 						initMark: ({label}) => ({children: label, color: label, style: {marginRight: 0}}),
 					},
 				]}

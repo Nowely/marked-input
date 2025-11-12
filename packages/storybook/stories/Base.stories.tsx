@@ -1,5 +1,6 @@
 import {Meta, StoryObj} from '@storybook/react-vite'
-import {createMarkedInput, denote, MarkedInput, MarkStruct, Markup} from 'rc-marked-input'
+import {createMarkedInput, MarkedInput, MarkStruct, denoteV1} from 'rc-marked-input'
+import type {ParserV1Markup, MarkMatch} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
 import {Text} from '../assets/Text'
@@ -20,8 +21,8 @@ export const Default: Story = {
 	},
 }
 
-const PrimaryMarkup: Markup = '@[__label__](primary:__value__)'
-const DefaultMarkup: Markup = '@[__label__](default:__value__)'
+const PrimaryMarkup: ParserV1Markup = '@[__label__](primary:__value__)'
+const DefaultMarkup: ParserV1Markup = '@[__label__](default:__value__)'
 
 const ConfiguredMarkedInput = createMarkedInput({
 	Mark: Button,
@@ -48,7 +49,7 @@ export const Configured: Story = {
 				'For found mark used @[annotations](default:123).'
 		)
 
-		const displayText = denote(value, mark => mark.label, PrimaryMarkup, DefaultMarkup)
+		const displayText = denoteV1(value, (mark: MarkMatch) => mark.label, PrimaryMarkup, DefaultMarkup)
 
 		return (
 			<>
@@ -74,7 +75,7 @@ export const Autocomplete: Story = {
 		defaultValue: 'Hello, clickable marked @world!',
 		options: [
 			{
-				markup: '@__label__',
+				markup: '@__label__' as ParserV1Markup,
 				data: ['one', 'two', 'three', 'four'],
 			},
 		],

@@ -1,7 +1,8 @@
 import {createNewSpan, toString} from '@markput/core'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {annotate, SystemEvent} from '@markput/core'
+import {annotate as annotateV2, SystemEvent} from '@markput/core'
+import {convertMarkupV1ToV2} from '../parsing/markupConverter'
 
 //TODO upgrade to full members of react events to external
 export function useSystemListeners() {
@@ -44,7 +45,12 @@ export function useSystemListeners() {
 				match: {option, span, index, source, node},
 			} = event
 
-			const annotation = annotate(option.markup, mark.label, mark.value)
+			// Convert ParserV1 markup to ParserV2 format and use ParserV2 annotate
+			const markupV2 = convertMarkupV1ToV2(option.markup)
+			const annotation = annotateV2(markupV2, {
+				value: mark.label,
+				meta: mark.value,
+			})
 			const newSpan = createNewSpan(span, annotation, index, source)
 
 			store.recovery = Mark
