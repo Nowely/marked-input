@@ -16,6 +16,14 @@ export const useValueParser = () => {
 	)
 
 	useEffect(() => {
+		// Update parser when options change
+		const markups = options?.map(opt => opt.markup)
+		if (markups && markups.length > 0) {
+			store.parser = new Parser(markups)
+		} else {
+			store.parser = undefined
+		}
+
 		if (isMounted.current) {
 			store.bus.send(SystemEvent.Parse)
 			return
@@ -23,19 +31,17 @@ export const useValueParser = () => {
 
 		//Initial parse with ParserV2
 		const inputValue = value ?? store.props.defaultValue ?? ''
-		const markups = options?.map(opt => opt.markup)
-		
-		if (!markups || markups.length === 0) {
+
+		if (!store.parser) {
 			store.tokens = [{
 				type: 'text',
 				content: inputValue,
 				position: {start: 0, end: inputValue.length},
 			}]
 		} else {
-			const parser = new Parser(markups)
-			store.tokens = parser.parse(inputValue)
+			store.tokens = store.parser.parse(inputValue)
 		}
-		
+
 		isMounted.current = true
 	}, [value, options])
 
@@ -50,16 +56,13 @@ export const useValueParser = () => {
 
 // Inline getTokensByUI
 function getTokensByUI(store: Store) {
-	const {focus, props} = store
-	const options = store.props.Mark ? store.props.options : undefined
-	const markups = options?.map(opt => opt.markup)
-	
-	if (!markups || markups.length === 0) {
+	const {focus} = store
+
+	if (!store.parser) {
 		return store.tokens
 	}
-	
-	const parser = new Parser(markups)
-	const tokens = parser.parse(focus.content)
+
+	const tokens = store.parser.parse(focus.content)
 
 	if (tokens.length === 1) return store.tokens
 
@@ -97,7 +100,7 @@ function getTokensByValue(store: Store) {
 		}
 		default:
 			//Parse all string
-			return parseWithParser(value ?? '', options)
+			return parseWithParser(store, value ?? '')
 	}
 }
 
@@ -108,7 +111,7 @@ function parseUnionLabels(store: Store, ...indexes: number[]) {
 		span += token.content
 	}
 
-	return parseWithParser(span, store.props.options)
+	return parseWithParser(store, span)
 }
 
 function getRangeMap(store: Store): number[] {
@@ -122,17 +125,14 @@ function getRangeMap(store: Store): number[] {
 	)
 }
 
-function parseWithParser(value: string, options: any[]) {
-	const markups = options?.map(opt => opt.markup)
-	
-	if (!markups || markups.length === 0) {
+function parseWithParser(store: Store, value: string) {
+	if (!store.parser) {
 		return [{
 			type: 'text' as const,
 			content: value,
 			position: {start: 0, end: value.length},
 		}]
 	}
-	
-	const parser = new Parser(markups)
-	return parser.parse(value)
+
+	return store.parser.parse(value)
 }

@@ -4,6 +4,7 @@ import {OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {InnerMarkedInputProps} from '../default/types'
+import {Parser} from '../parsing/ParserV2/Parser'
 
 interface Ref<T> {
 	/**
@@ -22,6 +23,8 @@ export class Store {
 	props: InnerMarkedInputProps
 	tokens: Token[] = []
 	recovery?: Recovery
+
+	parser?: Parser
 
 	readonly refs = {
 		container: {
