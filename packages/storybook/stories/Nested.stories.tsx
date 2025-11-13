@@ -152,11 +152,9 @@ export const MultipleLevels: Story = {
 // ============================================================================
 
 const HtmlMarkup: Markup = '<__value__>__nested__</__value__>'
-//const SpanMarkup: Markup = '<span>__nested__</span>'
-//const BMarkup: Markup = '<b>__nested__</b>'
 
 const HtmlLikeMark = ({children, value, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
-	const Tag = value! as React.ElementType;
+	const Tag = value! as React.ElementType
 	return <Tag>{children || nested}</Tag>
 }
 
@@ -179,13 +177,12 @@ export const HtmlLikeTags: Story = {
 // Example 4: Interactive Nested Marks with Tree Navigation
 // ============================================================================
 
-const InteractiveMark = ({children}: {value?: string; children?: ReactNode}) => {
+const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
 	const mark = useMark()
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
 	return (
 		<span
-			ref={mark.ref}
 			onClick={e => {
 				e.stopPropagation()
 				console.log('Mark clicked:', {
@@ -209,7 +206,7 @@ const InteractiveMark = ({children}: {value?: string; children?: ReactNode}) => 
 			}}
 			title={`Depth: ${mark.depth}, Children: ${mark.children.length}`}
 		>
-			{children}
+			{children || nested}
 		</span>
 	)
 }
@@ -224,15 +221,9 @@ export const InteractiveNested: Story = {
 					Mark={InteractiveMark}
 					value={value}
 					onChange={setValue}
-					options={[{markup: '@[__nested__]', trigger: '@'}]}
+					options={[{markup: '@[__nested__]'}]}
 				/>
 				<Text label="Raw value:" value={value} />
-				<div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-					<p>
-						<strong>Instructions:</strong> Click on any mark to see its tree information in the console.
-						Hover to highlight.
-					</p>
-				</div>
 			</>
 		)
 	},
