@@ -7,8 +7,6 @@ import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
-/** Default escape character for markup segments */
-const ESCAPE_CHAR = '\\'
 
 /**
  * Parser - High-performance tree-based markup parser
@@ -188,22 +186,13 @@ export class Parser {
 	 * ```
 	 */
 	escape(text: string): string {
-		// Use unique static segments from registry
-		const segments = this.registry.segments.filter(segment => typeof segment === 'string') as string[]
-
-		// Sort segments by length (longest first) to avoid partial matches
-		segments.sort((a, b) => b.length - a.length)
-
-		// Escape all segments in the text
-		let result = text
-
-		for (const segment of segments) {
-			// Escape this segment by replacing it with escaped version
-			const escapedSegment = segment.split('').map(char => ESCAPE_CHAR + char).join('')
-			result = result.replaceAll(segment, escapedSegment)
-		}
-
-		return result
+		return this.registry.segments
+			.filter((segment): segment is string => typeof segment === 'string')
+			.sort((a, b) => b.length - a.length)
+			.reduce((result, segment) =>
+				result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')),
+				text
+			)
 	}
 
 	/**
@@ -223,8 +212,7 @@ export class Parser {
 	 * ```
 	 */
 	unescape(text: string): string {
-		const escapeRegex = /\\(.)/g
-		return text.replaceAll(escapeRegex, '$1')
+		return text.replaceAll(/\\(.)/g, '$1')
 	}
 
 }
