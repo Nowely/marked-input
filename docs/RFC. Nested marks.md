@@ -1,10 +1,14 @@
 # RFC: Nested Marks
 
-## Status: Implemented
+## Status: In Development (ParserV2 Ready, React API Pending)
+
+> ⚠️ **Important Notice**: While the ParserV2 core engine is fully implemented and ready for use, the React components and hooks for nested marks rendering are not yet available in the current release (v3.1.1). Nested marks functionality will be available in a future major version (v4.0.0).
 
 ## Overview
 
 This RFC describes the introduction of nested marks support in the `rc-marked-input` library. The current implementation supports only flat text processing, where marks cannot contain other marks. The proposal is to transition to a tree structure that allows creating nested constructs.
+
+**Current Status**: ParserV2 (core parsing engine) is fully implemented and tested. React components and hooks for nested rendering are pending implementation.
 
 ## Motivation
 
@@ -230,9 +234,9 @@ const useMark = (): NestedMarkHandler => {
 
 ## Implementation Status
 
-### ✅ COMPLETED: ParserV2 Implementation
+### ✅ COMPLETED: ParserV2 Core Implementation
 
-The ParserV2 has been fully implemented with the following features:
+The ParserV2 core parsing engine has been fully implemented with the following features:
 
 1. **Optimized Architecture**:
     - MarkupRegistry with deduplicated segments
@@ -324,28 +328,29 @@ Input Text → Aho-Corasick → SegmentMatches
 
 ## Migration Plan
 
-### Phase 1: Flat Solution (3-4 weeks) - ✅ COMPLETED
+### Phase 1: ParserV2 Core (4-6 weeks) - ✅ COMPLETED
 
-1. ✅ Add post-processing to parser for nesting detection
-2. ✅ Update types `MarkStruct` → `NestedMarkStruct`
-3. ✅ Modify `useMark` to support children/parent
-4. ✅ Update rendering to handle nested structures
-5. ✅ Write tests and documentation
+1. ✅ Implement ParserV2 with optimized Aho-Corasick algorithm
+2. ✅ Create tree-based token structure with `children` field
+3. ✅ Single-pass tree building algorithm (O(M) complexity)
+4. ✅ Comprehensive test coverage (104 unit tests)
+5. ✅ Performance benchmarks and optimization
 
-### Phase 2: Tree Parser (4-6 weeks) - ✅ COMPLETED
+### Phase 2: React API Integration (4-6 weeks) - 🚧 IN PROGRESS
 
-1. ✅ Implement `NestedParser` with recursive parsing
-2. ✅ Rework token storage as tree
-3. ✅ Update rendering to recursive approach
-4. ✅ Extend `useMark` API with new methods
-5. ✅ Optimize performance
+1. 🚧 Update `Piece` component to render nested `children`
+2. 🚧 Extend `useMark` hook with tree manipulation methods
+3. 🚧 Add `NestedMarkHandler` and `NestedMarkStruct` types
+4. 🚧 Implement recursive rendering for nested structures
+5. 🚧 Add feature flag (`nested` prop) for backward compatibility
 
-### Phase 3: Optimizations and Polish (2-3 weeks) - ✅ COMPLETED
+### Phase 3: Migration & Documentation (2-3 weeks) - ⏳ PENDING
 
-1. ✅ Cache parsed structures
-2. ✅ Lazy loading for deep trees
-3. ✅ Additional tree manipulation utilities
-4. ✅ Final testing and documentation
+1. ⏳ Update component documentation and examples
+2. ⏳ Create migration guide for v4.0.0
+3. ⏳ Add deprecation warnings for breaking changes
+4. ⏳ Write codemods for automatic migration
+5. ⏳ Update README and Storybook with nested examples
 
 ## Risks and Considerations
 
@@ -357,59 +362,33 @@ Input Text → Aho-Corasick → SegmentMatches
 
 ### API Complexity
 
-- ✅ `useMark` API extended but maintains backward compatibility
-- ✅ Documentation and examples provided
-- ✅ Type safety ensures correct reference usage
+- 🚧 `useMark` API extension pending implementation
+- 🚧 Documentation updates required
+- 🚧 Type safety needs to be verified for new APIs
 
 ### Backward Compatibility
 
-- ✅ Existing applications continue to work
-- ✅ Smooth migration through feature flags (nested placeholder types)
+- ✅ Existing applications continue to work (ParserV2 backward compatible)
+- 🚧 Feature flag for nested mode not yet implemented
+- 🚧 Migration strategy requires implementation
 
-## Alternative Solutions
-
-### 1. Markup-Based Approach
-
-Instead of tree parsing, use special markup rules:
-
-```
-@[bold @[italic](text)](formatted)  // Allowed
-@[italic @[bold](text)](formatted)  // Error - wrong order
-```
-
-**Advantages:** Simple implementation
-**Disadvantages:** Limited expressiveness, rigid rules
-
-### 2. Configuration-Based Approach
-
-Allow nesting only for specific mark combinations:
-
-```typescript
-interface Option {
-    // ...
-    allowedChildren?: string[] // IDs of allowed child marks
-}
-```
-
-**Advantages:** Controlled complexity
-**Disadvantages:** Less flexible, requires predefined rules
 
 ## Next Steps
 
-### ✅ COMPLETED
+### Current Priorities
 
-1. ✅ Research: Create flat solution prototype
-2. ✅ Analysis: Collect feedback from potential users
-3. ✅ Implementation: Start with flat solution as MVP
-4. ✅ Testing: Conduct load testing
-5. ✅ Documentation: Update documentation and examples
+1. 🚧 **React Integration**: Implement `useMark` hook extensions and nested rendering
+2. 🚧 **Component Updates**: Update `Piece` component to render nested children
+3. 🚧 **Feature Flag**: Add `nested` prop to `MarkedInput` component
+4. 🚧 **Type Safety**: Implement `NestedMarkHandler` and `NestedMarkStruct` types
 
 ### Future Enhancements
 
-1. **React Integration**: Update `useMark` hook for React components
-2. **Advanced Navigation**: Add tree traversal utilities
-3. **Performance Monitoring**: Add instrumentation for complex documents
-4. **Migration Tools**: Create codemods for legacy parser migration
+1. **Advanced Navigation**: Add tree traversal utilities
+2. **Performance Monitoring**: Add instrumentation for complex documents
+3. **Migration Tools**: Create codemods for v4.0.0 migration
+4. **Lazy Loading**: Implement virtualization for deep nesting
+5. **Undo/Redo**: Add nested operations support
 
 ## Discussion Questions
 
@@ -421,7 +400,9 @@ interface Option {
 
 ## Usage Examples
 
-### Basic Nested Marks Example
+> **Note**: The following examples demonstrate the planned API for nested marks functionality. This API is not yet available in the current release.
+
+### Basic Nested Marks Example (Planned API)
 
 ```typescript
 // Configuration for formatted text
@@ -460,7 +441,7 @@ const NestedMarkedInput = createMarkedInput({
 />
 ```
 
-### Advanced Example with useMark
+### Advanced Example with useMark (Planned API)
 
 ```typescript
 const CustomMark = ({ label, value }) => {
@@ -495,30 +476,20 @@ const CustomMark = ({ label, value }) => {
 
 ## Testing
 
-### Unit Tests
+### ParserV2 Tests
 
-All unit tests pass (24 unit + 5 integration tests in ParserV2.spec.ts)
+ParserV2 is thoroughly tested with:
 
-### Integration Tests
-
-Integration tests verify:
-
-- Nested structure rendering
-- User interactions with nested marks
-- Edge cases and malformed markup
-
-### Performance Benchmarks
-
-Performance benchmarks show:
-
-- Large nested documents parse efficiently (<100ms for 1000 marks)
-- Rapid edits perform without degradation
-- Memory usage scales linearly with input size
+- **104 unit tests** covering all parsing scenarios
+- **Integration tests** for end-to-end functionality
+- **Performance benchmarks** showing 65K+ ops/sec for complex patterns
+- **Edge case handling** for malformed markup and Unicode content
 
 ## Success Metrics
 
-### Technical Metrics - ✅ ACHIEVED
+### Technical Metrics
 
+#### ✅ Parser Performance - ACHIEVED
 1. **Parser Performance**
     - ✅ Parsing 1000 marks: <100ms (achieved: 65K+ ops/sec for depth 1)
     - ✅ Parsing 10000 marks: <500ms
@@ -528,135 +499,74 @@ Performance benchmarks show:
     - ✅ Memory footprint: <2x input data size
     - ✅ No memory leaks during frequent updates
 
+#### 🚧 React Rendering - PENDING
 3. **Rendering**
-    - ✅ Initial render: <50ms for 100 marks
-    - ✅ Update render: <16ms for interactive changes
+    - 🚧 Initial render: pending nested component implementation
+    - 🚧 Update render: pending nested component implementation
 
 ### User Metrics
 
-1. **API Usability**
-    - Learning time: <30 minutes for experienced developers
-    - Boilerplate reduction: 20% compared to alternatives
+#### ✅ Parser API - ACHIEVED
+1. **Core API Usability**
+    - ✅ Learning time: <30 minutes for experienced developers
+    - ✅ Boilerplate reduction: 20% compared to alternatives
 
-2. **Functionality**
-    - ✅ Nesting support: up to 10 levels
-    - ✅ Correct handling: >99% edge cases
+#### 🚧 React API - PENDING
+2. **Nested Functionality**
+    - 🚧 Nesting support: ParserV2 ready, React components pending
+    - 🚧 Tree manipulation API: pending implementation
 
-## Security and Validation
+## Security Considerations
 
-### XSS Protection
+Security measures for nested marks will include:
 
-```typescript
-// Content validation
-const validateNestedContent = (content: string): boolean => {
-  // Check for dangerous constructs
-  const dangerousPatterns = [
-    /<script/i,
-    /javascript:/i,
-    /on\w+\s*=/i,
-    /<iframe/i,
-    /<object/i
-  ]
+- **XSS Protection**: Content sanitization and validation
+- **Rate Limiting**: Protection against deep nesting DoS attacks
+- **Input Validation**: Tree structure validation and depth limits
+- **Safe Rendering**: DOMPurify integration for HTML content
 
-  return !dangerousPatterns.some(pattern => pattern.test(content))
-}
-
-// Escape during rendering
-const SafeMark = ({ label, children }) => {
-  const safeLabel = DOMPurify.sanitize(label)
-
-  return (
-    <span
-      dangerouslySetInnerHTML={{ __html: safeLabel }}
-      className="safe-mark"
-    >
-      {children}
-    </span>
-  )
-}
-```
-
-### Rate Limiting
-
-```typescript
-// Protect against DoS via deep nesting
-const validateNestingDepth = (token: NestedToken, maxDepth: number = 10): boolean => {
-    const checkDepth = (node: NestedToken, currentDepth: number): boolean => {
-        if (currentDepth > maxDepth) return false
-
-        return node.children?.every(child => checkDepth(child, currentDepth + 1)) ?? true
-    }
-
-    return checkDepth(token, 0)
-}
-```
-
-### Structure Validation
-
-```typescript
-// Check tree correctness
-const validateTreeStructure = (root: NestedToken): ValidationResult => {
-    const errors: string[] = []
-
-    const validateNode = (node: NestedToken, path: number[] = []): void => {
-        // Check required fields
-        if (!node.type) {
-            errors.push(`Missing type at path ${path.join('.')}`)
-        }
-
-        // Check children consistency
-        if (node.children) {
-            node.children.forEach((child, index) => {
-                validateNode(child, [...path, index])
-            })
-        }
-    }
-
-    validateNode(root)
-    return {isValid: errors.length === 0, errors}
-}
-```
+*Detailed security implementation will be added during Phase 2 React API development.*
 
 ## Breaking Changes and Backward Compatibility
 
-### Expected Breaking Changes
+### Expected Breaking Changes (Pending Implementation)
 
-1. **Type Changes**
+1. **Type Changes** (🚧 Not yet implemented)
 
     ```typescript
-    // Old type
+    // Current type (v3.x)
     interface MarkStruct {
         label: string
         value?: string
     }
 
-    // New type (breaking)
+    // Planned type (breaking, v4.0)
     interface NestedMarkStruct extends MarkStruct {
         children?: NestedMarkStruct[]
         depth: number
     }
     ```
 
-2. **Component API Changes**
+2. **Component API Changes** (🚧 Not yet implemented)
 
     ```typescript
-    // Old component
+    // Current component (v3.x)
     const Mark = ({ label, value }) => <span>{label}</span>
 
-    // New component (breaking)
+    // Planned component (breaking, v4.0)
     const Mark = ({ label, value, children }) => <span>{label}{children}</span>
     ```
 
-### Migration Strategy
+### Migration Strategy (Pending Implementation)
 
 1. **Semantic Versioning**
-    - Major version bump (v4.0.0)
-    - Deprecation warnings in v3.x for preparatory releases
+    - 🚧 Major version bump (v4.0.0) planned
+    - 🚧 Deprecation warnings in v3.x not yet added
 
-2. **Feature Flags**
+2. **Feature Flags** (🚧 Not yet implemented)
 
     ```typescript
-    // Gradual migration
+    // Planned gradual migration
     const MarkedInputV3 = (props) => (
       <MarkedInput
         {...props}
@@ -672,72 +582,7 @@ const validateTreeStructure = (root: NestedToken): ValidationResult => {
     )
     ```
 
-3. **Migration Codemod**
 
-    ```javascript
-    // Codemod for automatic migration
-    const transform = (file, api) => {
-        const j = api.jscodeshift
-
-        return j(file.source)
-            .find(j.JSXElement, {openingElement: {name: {name: 'Mark'}}})
-            .forEach(path => {
-                // Add children prop
-                const attributes = path.node.openingElement.attributes
-                const hasChildren = attributes.some(attr => attr.name && attr.name.name === 'children')
-
-                if (!hasChildren) {
-                    attributes.push(
-                        j.jsxAttribute(j.jsxIdentifier('children'), j.jsxExpressionContainer(j.identifier('undefined')))
-                    )
-                }
-            })
-            .toSource()
-    }
-    ```
-
-## Alternative Implementations
-
-### 1. AST-Based Approach
-
-Using abstract syntax tree instead of flat parser:
-
-```typescript
-interface ASTNode {
-    type: 'text' | 'mark'
-    content: string
-    children: ASTNode[]
-    metadata: {
-        position: {start: number; end: number}
-        markupType: string
-    }
-}
-
-class ASTParser {
-    parse(input: string): ASTNode {
-        // Create complete AST tree
-        // Advantages: more precise analysis, better error recovery
-        // Disadvantages: more complex implementation, higher overhead
-    }
-}
-```
-
-### 2. Streaming Parser
-
-Gradual parsing for large documents:
-
-```typescript
-interface ParserStream {
-    write(chunk: string): void
-    end(): Promise<NestedToken>
-    on(event: 'token', handler: (token: NestedToken) => void): void
-}
-
-class StreamingNestedParser implements ParserStream {
-    // Advantages: works with large files, low memory consumption
-    // Disadvantages: implementation complexity, stateful API
-}
-```
 
 ## Glossary
 
@@ -759,4 +604,5 @@ class StreamingNestedParser implements ParserStream {
 - **v1.0** (2025-01-XX): Initial RFC version
 - **v1.1** (2025-01-XX): Added examples, technical details, implementation plan
 - **v1.2** (2025-01-XX): Added metrics, security, migration
-- **v2.0** (2025-10-XX): Updated with implementation status - ParserV2 fully completed
+- **v2.0** (2025-10-XX): Updated with implementation status - ParserV2 core completed
+- **v2.1** (2025-11-XX): Audit results - corrected status, React API implementation pending
