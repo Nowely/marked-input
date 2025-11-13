@@ -1,4 +1,5 @@
 import {Token} from '../types'
+import {PLACEHOLDER} from '../constants'
 import {annotate} from './annotate'
 
 /**
@@ -26,25 +27,16 @@ export function toString(tokens: Token[]): string {
 			result += token.content
 		} else {
 			const markup = token.descriptor.markup
-
-			// Determine what to use for nested content
-			// If markup has __nested__ placeholder, we need to reconstruct from children
-			let nestedContent: string | undefined
-			if (markup.includes('__nested__')) {
-				if (token.children.length > 0) {
-					// Recursively reconstruct nested content from children
-					nestedContent = toString(token.children)
-				} else if (token.nested) {
-					// If no children but nested exists, use nested content directly
-					// (This can happen with empty nested content)
-					nestedContent = token.nested.content
-				}
-			}
+			const nested = markup.includes(PLACEHOLDER.Nested)
+				? token.children.length > 0
+					? toString(token.children)
+					: token.nested?.content
+				: undefined
 
 			result += annotate(markup, {
 				value: token.value,
 				meta: token.meta,
-				nested: nestedContent,
+				nested,
 			})
 		}
 	}
