@@ -1,7 +1,6 @@
 import {memo} from 'react'
 import {Token as TokenType} from '@markput/core'
 import {TokenProvider} from '../utils/providers/TokenProvider'
-import {EditableSpan} from './EditableSpan'
 import {Piece} from './Piece'
 import {TextSpan} from './TextSpan'
 

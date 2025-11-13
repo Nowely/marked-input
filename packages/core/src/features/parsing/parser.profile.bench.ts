@@ -188,7 +188,7 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 
 	// Добавление оценки производительности для каждого теста
 	const updatedTests = {...currentRun.tests}
-	for (const [testName, testResult] of Object.entries(updatedTests)) {
+	for (const [, testResult] of Object.entries(updatedTests)) {
 		const duration = testResult.duration
 		if (duration < 0.5) {
 			testResult.performance = 'good'
@@ -531,36 +531,6 @@ function getComplexityForMethod(methodName: string): string {
 	return estimateComplexity(methodName)
 }
 
-/**
- * Generate optimization recommendations
- */
-function generateRecommendations(methods: any[]): string[] {
-	const recommendations: string[] = []
-
-	// Analyze top-3 methods
-	const topMethods = methods.slice(0, 3)
-	for (const method of topMethods) {
-		switch (method.method) {
-			case 'TreeBuilder.buildParentChildRelationships':
-				recommendations.push('Optimize TreeBuilder.buildParentChildRelationships - parent-child linking phase')
-				break
-			case 'TreeBuilder.buildTokensFromRoots':
-				recommendations.push('Optimize TreeBuilder.buildTokensFromRoots - token creation phase')
-				break
-			case 'PatternMatcher.processWaitingStates':
-				recommendations.push('Optimize PatternMatcher.processWaitingStates - critical processing path')
-				break
-			default:
-				recommendations.push(`Optimize ${method.method} (${method.percentage.toFixed(1)}% of time)`)
-		}
-	}
-
-	// General recommendations
-	recommendations.push('Consider caching for frequently used patterns')
-	recommendations.push('Implement lazy initialization for heavy objects')
-
-	return recommendations
-}
 
 /**
  * Store profiling results for comparison (keeps last 2 runs)
@@ -764,7 +734,7 @@ function loadExistingHistory(): void {
 				})
 			})
 		}
-	} catch (error) {
+	} catch {
 		// If loading fails, start with empty history
 		profilingResultsHistory.length = 0
 		profilingHistory.length = 0

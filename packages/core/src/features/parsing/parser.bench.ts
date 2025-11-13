@@ -1,4 +1,4 @@
-import {bench, describe, afterAll} from 'vitest'
+import {bench, describe} from 'vitest'
 import {Parser as ParserV2} from './ParserV2/index'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -111,7 +111,7 @@ function saveResults() {
 
 		testResults.forEach(result => {
 			// Remove category field and use name as key
-			const {category, name, ...testData} = result
+			const {name, ...testData} = result
 			tests[name] = testData
 		})
 
@@ -133,7 +133,7 @@ function saveResults() {
 			if (Array.isArray(existingResults) && existingResults.length > 0) {
 				previousRun = existingResults[0]
 			}
-		} catch (error) {
+		} catch {
 			// No previous results
 		}
 
@@ -180,7 +180,7 @@ function saveResults() {
 					existingResults = []
 				}
 			}
-		} catch (error) {
+		} catch {
 			existingResults = []
 		}
 

@@ -30,7 +30,8 @@ export type OverlayMatch = {
 
 export type Listener<T = any> = (e: T) => void
 
-export interface EventKey<T = undefined> extends Symbol {}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export interface EventKey<T = any> extends Symbol {}
 
 export type Recovery = {
 	anchor: NodeProxy

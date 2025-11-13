@@ -1,4 +1,4 @@
-import {Token, Markup} from '../types'
+import {Token} from '../types'
 import {annotate} from './annotate'
 
 /**

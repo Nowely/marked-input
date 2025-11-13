@@ -1,7 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 import {Parser} from './Parser'
 import {MarkToken, Token, Markup} from './types'
-import {InnerOption} from '../../default/types'
 import {faker} from '@faker-js/faker'
 
 describe('ParserV2', () => {
@@ -757,11 +756,6 @@ describe('ParserV2', () => {
 				// Generators for different markup types for testing
 				const generateSimpleMarkup = (prefix: string, suffix: string = '') => `${prefix}[__value__]${suffix}`
 
-				const generateValueMarkup = (prefix: string, middle: string = '', suffix: string = '') =>
-					`${prefix}[__value__]${middle}(__meta__)${suffix}`
-
-				const generateCustomMarkup = (prefix: string, pattern: string) => `${prefix}${pattern}`
-
 				describe('single character prefixes', () => {
 					const prefixes = [
 						'@',
@@ -825,7 +819,7 @@ describe('ParserV2', () => {
 						{tag: 'p', description: 'paragraph'},
 					]
 
-					htmlTags.forEach(({tag, description}) => {
+					htmlTags.forEach(({tag}) => {
 						it(`parses HTML <${tag}> tag`, () => {
 							const markup = `<${tag}>__value__</${tag}>`
 							const parser = new Parser([markup as any])
@@ -1209,10 +1203,6 @@ describe('ParserV2', () => {
 	})
 
 	describe('Integration tests with diverse data', () => {
-		// Helper function to generate safe markup content (no brackets or parentheses)
-		const generateSafeContent = (length: number = 10): string => {
-			return faker.string.alpha({length: {min: 1, max: length}}).replace(/[[\]()]/g, '') // Remove any brackets or parentheses that might appear
-		}
 
 		it('should handle diverse user names and content', () => {
 			const testCases = Array.from({length: 20}, () => {
@@ -1398,7 +1388,6 @@ function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
 
 	tokens.forEach((token, index) => {
 		const currentPrefix = prefix + (prefix ? '.' : '') + index
-		const isLast = index === tokens.length - 1
 		const indent = level > 0 ? '\t'.repeat(level) : ''
 		const paddedPrefix = level === 0 && index > 0 ? ` ${currentPrefix}` : currentPrefix
 

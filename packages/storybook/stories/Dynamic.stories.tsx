@@ -12,7 +12,7 @@ const Mark = () => {
 	const {value, ref} = useMark()
 
 	useEffect(() => {
-		if (ref.current) ref.current.textContent = value
+		if (ref.current) ref.current.textContent = value ?? null
 	}, [value, ref])
 
 	return <mark ref={ref} contentEditable />
@@ -37,7 +37,7 @@ const Abbr = () => {
 	const {value, meta, ref} = useMark()
 
 	useEffect(() => {
-		if (ref.current) ref.current.textContent = value
+		if (ref.current) ref.current.textContent = value ?? null
 	}, [value, ref])
 
 	return (

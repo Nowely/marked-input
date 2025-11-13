@@ -1,4 +1,4 @@
-import {GapType, GAP_TYPE} from '../constants'
+import {GapType} from '../constants'
 import {PositionRange} from '../types'
 import {SegmentMatch} from '../utils/SegmentMatcher'
 import {MarkupDescriptor} from './MarkupDescriptor'

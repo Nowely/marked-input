@@ -8,7 +8,7 @@ export function useSystemListeners() {
 
 	useListener(
 		SystemEvent.Change,
-		event => {
+		() => {
 			const {onChange} = store.props
 
 			if (!store.focus.target) return
@@ -44,10 +44,10 @@ export function useSystemListeners() {
 	useListener(
 		SystemEvent.Select,
 		event => {
-			const {Mark, onChange, options} = store.props
+			const {Mark, onChange} = store.props
 			const {
 				mark,
-				match: {option, span, index, source, node},
+				match: {option, span, index, source},
 			} = event
 
 			// Use ParserV2 annotate with new format

@@ -49,7 +49,7 @@ export const useValueParser = () => {
 
 	useListener(
 		SystemEvent.Parse,
-		event => {
+		() => {
 			store.tokens = store.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]
@@ -74,7 +74,7 @@ function getTokensByUI(store: Store) {
 // Inline getTokensByValue
 function getTokensByValue(store: Store) {
 	const {
-		props: {value, options},
+		props: {value},
 	} = store
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.previousValue, value)
