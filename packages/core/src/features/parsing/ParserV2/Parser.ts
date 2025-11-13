@@ -194,28 +194,4 @@ export class Parser {
 		)
 	}
 
-	// ===== BACKWARD COMPATIBILITY ALIASES =====
-	// These methods are deprecated and will be removed in v2.0
-	// Use the new method names instead: parse(), stringify(), transform()
-
-	/**
-	 * @deprecated Use transform() instead. This alias will be removed in v2.0
-	 */
-	denote(value: string, callback: (mark: MarkToken) => string): string {
-		return this.transform(value, callback)
-	}
-
-	/**
-	 * @deprecated Use Parser.parse() instead. This alias will be removed in v2.0
-	 */
-	static split(value: string, options?: {markup: Markup[]}): Token[] {
-		return Parser.parse(value, options)
-	}
-
-	/**
-	 * @deprecated Use Parser.stringify() instead. This alias will be removed in v2.0
-	 */
-	static join(tokens: Token[]): string {
-		return Parser.stringify(tokens)
-	}
 }

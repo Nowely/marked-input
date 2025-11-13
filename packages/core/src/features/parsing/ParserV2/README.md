@@ -360,7 +360,7 @@ Transform annotated text by recursively processing all tokens (including nested 
 ```typescript
 import {denote} from '@markput/core'
 
-function denote(value: string, callback: (mark: MarkToken) => string, ...markups: Markup[]): string
+function transform(value: string, callback: (mark: MarkToken) => string, ...markups: Markup[]): string
 ```
 
 **Examples:**
@@ -371,15 +371,15 @@ import {denote} from '@markput/core'
 const text = '@[Hello](world) and #[nested @[content]]'
 
 // Extract all values recursively
-denote(text, mark => mark.value, '@[__value__](__meta__)', '#[__nested__]')
+transform(text, mark => mark.value, '@[__value__](__meta__)', '#[__nested__]')
 // Returns: 'Hello and nested content'
 
 // Extract meta values
-denote('@[user](Alice) mentioned @[user](Bob)', mark => mark.meta || mark.value, '@[__value__](__meta__)')
+transform('@[user](Alice) mentioned @[user](Bob)', mark => mark.meta || mark.value, '@[__value__](__meta__)')
 // Returns: 'Alice mentioned Bob'
 
 // Custom transformation
-denote('@[Hello](world) and @[Bye](test)', mark => `[${mark.value}: ${mark.meta}]`, '@[__value__](__meta__)')
+transform('@[Hello](world) and @[Bye](test)', mark => `[${mark.value}: ${mark.meta}]`, '@[__value__](__meta__)')
 // Returns: '[Hello: world] and [Bye: test]'
 ```
 
