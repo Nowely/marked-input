@@ -250,17 +250,14 @@ const EditableMark = ({children}: {value?: string; children?: ReactNode}) => {
 				backgroundColor: '#fff9e6',
 				minWidth: '20px',
 			}}
-			onInput={e => {
-				// Update mark value on edit
-				mark.value = e.currentTarget.textContent || ''
-			}}
 		>
 			{children}
 		</span>
 	)
 }
 
-export const EditableNested: Story = {
+//TODO fix it
+ const EditableNested: Story = {
 	render: () => {
 		const [value, setValue] = useState('@[Edit this @[and this @[and even this]]]')
 
@@ -288,144 +285,4 @@ export const EditableNested: Story = {
 // Example 6: Complex Real-World Example (Rich Text Editor)
 // ============================================================================
 
-const RichTextMarkup = {
-	bold: '**__nested__**' as Markup,
-	italic: '*__nested__*' as Markup,
-	underline: '__nested__' as Markup,
-	code: '`__nested__`' as Markup,
-	highlight: '=__nested__=' as Markup,
-}
 
-const RichTextMark = ({children}: {value?: string; children?: ReactNode}) => {
-	const mark = useMark()
-
-	// Determine style based on markup pattern
-	const getStyle = (): React.CSSProperties => {
-		const content = mark.label
-
-		if (content.startsWith('**')) {
-			return {fontWeight: 'bold'}
-		}
-		if (content.startsWith('*') && !content.startsWith('**')) {
-			return {fontStyle: 'italic'}
-		}
-		if (content.startsWith('_')) {
-			return {textDecoration: 'underline'}
-		}
-		if (content.startsWith('`')) {
-			return {
-				fontFamily: 'monospace',
-				backgroundColor: '#f4f4f4',
-				padding: '2px 4px',
-				borderRadius: '3px',
-				fontSize: '0.9em',
-			}
-		}
-		if (content.startsWith('=')) {
-			return {backgroundColor: '#ffeb3b', padding: '2px 4px'}
-		}
-
-		return {}
-	}
-
-	return (
-		<span ref={mark.ref} style={getStyle()}>
-			{children}
-		</span>
-	)
-}
-
-const RichTextInput = createMarkedInput({
-	Mark: RichTextMark,
-	options: [
-		{markup: RichTextMarkup.bold, trigger: '**'},
-		{markup: RichTextMarkup.italic, trigger: '*'},
-		{markup: RichTextMarkup.underline, trigger: '_'},
-		{markup: RichTextMarkup.code, trigger: '`'},
-		{markup: RichTextMarkup.highlight, trigger: '='},
-	],
-})
-
-export const RichTextEditor: Story = {
-	render: () => {
-		const [value, setValue] = useState(
-			'This is **bold with *italic* inside** and _underlined with `code` inside_ and =highlighted with **bold**= text.'
-		)
-
-		return (
-			<>
-				<div style={{marginBottom: '10px', fontSize: '14px', color: '#666'}}>
-					<p>
-						<strong>Formatting syntax:</strong>
-					</p>
-					<ul style={{margin: '5px 0', paddingLeft: '20px'}}>
-						<li>
-							<code>**text**</code> - bold
-						</li>
-						<li>
-							<code>*text*</code> - italic
-						</li>
-						<li>
-							<code>_text_</code> - underline
-						</li>
-						<li>
-							<code>`text`</code> - code
-						</li>
-						<li>
-							<code>=text=</code> - highlight
-						</li>
-					</ul>
-				</div>
-				<RichTextInput value={value} onChange={setValue} />
-				<Text label="Raw value:" value={value} />
-			</>
-		)
-	},
-}
-
-// ============================================================================
-// Example 7: Backward Compatibility (Flat Marks)
-// ============================================================================
-
-const FlatMarkup: Markup = '@[__value__](__meta__)'
-
-const FlatMark = ({value, meta}: {value?: string; meta?: string; children?: ReactNode}) => {
-	return (
-		<span
-			style={{
-				backgroundColor: '#e8f5e9',
-				padding: '2px 6px',
-				borderRadius: '3px',
-				border: '1px solid #4caf50',
-			}}
-			title={meta}
-		>
-			{value}
-		</span>
-	)
-}
-
-export const BackwardCompatibility: Story = {
-	render: () => {
-		const [value, setValue] = useState('This is a @[flat](tooltip) mark without nesting support.')
-
-		return (
-			<>
-				<MarkedInput
-					Mark={FlatMark}
-					value={value}
-					onChange={setValue}
-					options={[{markup: FlatMarkup, trigger: '@'}]}
-				/>
-				<Text label="Raw value:" value={value} />
-				<div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-					<p>
-						<strong>Note:</strong> This example uses <code>__value__</code> instead of{' '}
-						<code>__nested__</code>, so nesting is not supported. Existing flat marks continue to work
-						without changes.
-					</p>
-				</div>
-			</>
-		)
-	},
-}
