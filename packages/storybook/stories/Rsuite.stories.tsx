@@ -53,7 +53,7 @@ export const Overridden = () => {
 				value={value}
 				onChange={(_, value) => setValue(value as unknown as string)}
 				options={[
-					{markup: '@[__value__](common)' as Markup, initMark: ({value}: MarkToken) => ({children: value})},
+					{markup: '@[__value__](common)' as Markup, initMark: ({value}) => ({children: value})},
 				]}
 			/>
 

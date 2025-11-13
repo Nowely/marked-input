@@ -30,13 +30,13 @@ const ConfiguredMarkedInput = createMarkedInput({
 		{
 			markup: PrimaryMarkup,
 			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+			initMark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
 		},
 		{
 			markup: DefaultMarkup,
 			trigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],
-			initMark: ({value}) => ({label: value}),
+			initMark: ({value}) => ({label: value || ''}),
 		},
 	],
 })
