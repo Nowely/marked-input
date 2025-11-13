@@ -200,7 +200,7 @@ export class Parser {
 		for (const segment of segments) {
 			// Escape this segment by replacing it with escaped version
 			const escapedSegment = segment.split('').map(char => ESCAPE_CHAR + char).join('')
-			result = result.split(segment).join(escapedSegment)
+			result = result.replaceAll(segment, escapedSegment)
 		}
 
 		return result
@@ -223,7 +223,7 @@ export class Parser {
 	 * ```
 	 */
 	unescape(text: string): string {
-		const escapeRegex = new RegExp(`${ESCAPE_CHAR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\w\\W])`, 'g')
+		const escapeRegex = /\\(.)/g
 		return text.replaceAll(escapeRegex, '$1')
 	}
 
