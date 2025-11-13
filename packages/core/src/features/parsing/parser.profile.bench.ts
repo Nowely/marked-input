@@ -78,8 +78,8 @@ interface ProfilingResult {
 		testChanges: Record<
 			string,
 			{
-				durationChange: number
-				durationChangePercent: number
+				durationChange: string
+				durationChangePercent: string
 				trend: 'improving' | 'degrading' | 'stable'
 			}
 		>
@@ -203,14 +203,14 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 						comparison.differences.map(diff => [
 							diff.testName,
 							{
-								durationChange: diff.durationChange,
-								durationChangePercent: diff.durationChangePercent,
+								durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
+								durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
 								trend:
 									Math.abs(diff.durationChangePercent) < 1
 										? 'stable'
-										: diff.durationChangePercent > 0
-											? 'degrading'
-											: 'improving',
+										: diff.durationChangePercent <= 0
+											? 'improving'
+											: 'degrading',
 							},
 						])
 					),
@@ -803,11 +803,11 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 	const degrading = differences.filter(d => d.durationChangePercent > 1).length
 
 	if (improving > degrading) {
-		summary.push(`🎉 Performance improved in ${improving} test(s), degraded in ${degrading} test(s)`)
+		summary.push(`Performance improved in ${improving} tests, degraded in ${degrading} tests`)
 	} else if (degrading > improving) {
-		summary.push(`⚠️ Performance degraded in ${degrading} test(s), improved in ${improving} test(s)`)
+		summary.push(`Performance degraded in ${degrading} tests, improved in ${improving} tests`)
 	} else {
-		summary.push(`➡️ Performance stable with ${improving} improvements and ${degrading} degradations`)
+		summary.push(`Performance stable with ${improving} improvements and ${degrading} degradations`)
 	}
 
 	// Find biggest changes
@@ -821,12 +821,12 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 
 	if (biggestImprovement) {
 		summary.push(
-			`🚀 Biggest improvement: ${biggestImprovement.testName} (${biggestImprovement.durationChangePercent.toFixed(1)}%)`
+			`Best improvement: ${biggestImprovement.testName} (+${Math.abs(biggestImprovement.durationChangePercent).toFixed(0)}%)`
 		)
 	}
 	if (biggestDegradation) {
 		summary.push(
-			`📉 Biggest degradation: ${biggestDegradation.testName} (+${biggestDegradation.durationChangePercent.toFixed(1)}%)`
+			`Worst degradation: ${biggestDegradation.testName} (-${biggestDegradation.durationChangePercent.toFixed(0)}%)`
 		)
 	}
 
