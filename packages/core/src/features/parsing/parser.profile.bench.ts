@@ -58,7 +58,6 @@ interface ProfilingComparison {
 			}
 		>
 	}>
-	overallTrend: 'improving' | 'degrading' | 'stable'
 	summary: string[]
 }
 
@@ -69,17 +68,12 @@ interface ProfilingResult {
 	timestamp: string
 	summary: {
 		totalTests: number
-		totalDuration: number
-		averageDuration: number
+		totalDuration: string
+		averageDuration: string
 		trend: 'improving' | 'degrading' | 'stable'
-		performanceChange: number
-		worstTest: string
-		bestTest: string
+		performanceDelta: string
 	}
 	comparison?: {
-		baselineTimestamp: string
-		overallTrend: 'improving' | 'degrading' | 'stable'
-		performanceChange: number
 		significantChanges: string[]
 		testChanges: Record<
 			string,
@@ -168,23 +162,17 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 
 	// Определение тренда на основе comparison
 	let trend: 'improving' | 'degrading' | 'stable' = 'stable'
-	let performanceChange = 0
+	let performanceDelta = '0.0%'
 
 	if (comparison) {
 		const avgChange =
 			comparison.differences.reduce((sum, diff) => sum + diff.durationChangePercent, 0) /
 			comparison.differences.length
-		performanceChange = avgChange
+		// Инвертируем знак: положительное значение означает улучшение производительности
+		const performanceValue = -avgChange
+		performanceDelta = `${performanceValue >= 0 ? '+' : ''}${performanceValue.toFixed(1)}%`
 		trend = Math.abs(avgChange) < 1 ? 'stable' : avgChange > 0 ? 'degrading' : 'improving'
 	}
-
-	// Поиск лучшего и худшего теста
-	const testDurations = testNames
-		.map(name => ({
-			name,
-			duration: currentRun.tests[name].duration,
-		}))
-		.sort((a, b) => b.duration - a.duration)
 
 	// Добавление оценки производительности для каждого теста
 	const updatedTests = {...currentRun.tests}
@@ -203,18 +191,13 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 		timestamp: currentRun.timestamp,
 		summary: {
 			totalTests: testNames.length,
-			totalDuration: Math.round(totalDuration * 100) / 100,
-			averageDuration: Math.round((totalDuration / testNames.length) * 100) / 100,
+			totalDuration: formatTime(totalDuration),
+			averageDuration: formatTime(totalDuration / testNames.length),
 			trend,
-			performanceChange,
-			worstTest: testDurations[0].name,
-			bestTest: testDurations[testDurations.length - 1].name,
+			performanceDelta,
 		},
 		comparison: comparison
 			? {
-					baselineTimestamp: comparison.run1Timestamp,
-					overallTrend: comparison.overallTrend,
-					performanceChange,
 					significantChanges: comparison.summary,
 					testChanges: Object.fromEntries(
 						comparison.differences.map(diff => [
@@ -812,13 +795,7 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		totalTimeChangeCount++
 	}
 
-	// Determine overall trend
-	let overallTrend: ProfilingComparison['overallTrend'] = 'stable'
-	if (totalTimeChangeCount > 0) {
-		const avgChange = totalTimeChangeSum / totalTimeChangeCount
-		if (avgChange < -5) overallTrend = 'improving'
-		else if (avgChange > 5) overallTrend = 'degrading'
-	}
+	// Determine overall trend (removed - using summary.trend instead)
 
 	// Generate summary
 	const summary: string[] = []
@@ -857,7 +834,6 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		run1Timestamp: run1.timestamp,
 		run2Timestamp: run2.timestamp,
 		differences,
-		overallTrend,
 		summary,
 	}
 }
@@ -943,19 +919,14 @@ function saveCompleteProfileResults(): void {
 		const enhancedResult = createProfilingResult(currentRun, comparison)
 		console.log('\n📈 ENHANCED RUN SUMMARY:')
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
-		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}ms`)
-		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}ms`)
+		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
+		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}`)
 		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
-		console.log(
-			`   Performance change: ${enhancedResult.summary.performanceChange > 0 ? '+' : ''}${enhancedResult.summary.performanceChange.toFixed(1)}%`
-		)
-		console.log(`   Worst performing test: ${enhancedResult.summary.worstTest}`)
-		console.log(`   Best performing test: ${enhancedResult.summary.bestTest}`)
+		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
 
 		// Comparison summary
 		if (comparison) {
 			console.log('\n📈 PERFORMANCE TREND ANALYSIS:')
-			console.log(`   Overall trend: ${comparison.overallTrend.toUpperCase()}`)
 			for (const summary of comparison.summary) {
 				console.log(`   ${summary}`)
 			}
