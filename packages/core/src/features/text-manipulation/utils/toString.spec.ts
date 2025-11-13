@@ -1,4 +1,4 @@
-import {describe, it, expect} from 'vitest'
+import {describe, expect, it} from 'vitest'
 import {toString} from './toString'
 import {Token} from '../../parsing/ParserV2/types'
 import {MarkupDescriptor} from '../../parsing/ParserV2/core/MarkupDescriptor'

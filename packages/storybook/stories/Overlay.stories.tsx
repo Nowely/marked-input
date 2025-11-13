@@ -1,5 +1,5 @@
 import {Meta, StoryObj} from '@storybook/react-vite'
-import {MarkedInput, MarkToken, useOverlay} from 'rc-marked-input'
+import {MarkToken, MarkedInput, useOverlay} from 'rc-marked-input'
 import {useState} from 'react'
 
 export default {

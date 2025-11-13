@@ -1,5 +1,5 @@
 import {Chip, Input} from '@mui/material'
-import {MarkedInput, MarkToken} from 'rc-marked-input'
+import {MarkToken, MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
 import {MaterialMentions} from '../assets/MaterialMentions'
 import {Text} from '../assets/Text'

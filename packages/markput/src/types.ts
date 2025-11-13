@@ -1,6 +1,6 @@
 import {FunctionComponent} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
-import {Markup, MarkToken} from '@markput/core'
+import {MarkToken, Markup} from '@markput/core'
 
 export interface Option<T = Record<string, any>> {
 	/**

@@ -1,4 +1,4 @@
-import {TextToken, MarkToken, Token, PositionRange} from '../types'
+import {MarkToken, PositionRange, TextToken, Token} from '../types'
 import {Match} from './Match'
 
 /**
