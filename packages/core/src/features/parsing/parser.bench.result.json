@@ -1,5 +1,53 @@
 [
   {
+    "timestamp": "2025-11-13T10:26:13.227Z",
+    "trends": {
+      "changeFromLast": "N/A",
+      "regressions": []
+    },
+    "summary": {
+      "totalTests": 7,
+      "performance": 362951
+    },
+    "tests": {
+      "10 marks": {
+        "category": "scalability",
+        "performance": [88238, 138145, 150943],
+        "changeFromLast": "N/A"
+      },
+      "50 marks": {
+        "category": "scalability",
+        "performance": [17595, 23105, 26875],
+        "changeFromLast": "N/A"
+      },
+      "100 marks": {
+        "category": "scalability",
+        "performance": [12487, 13796, 14226],
+        "changeFromLast": "N/A"
+      },
+      "500 marks": {
+        "category": "scalability",
+        "performance": [1337, 2099, 2390],
+        "changeFromLast": "N/A"
+      },
+      "social media": {
+        "category": "realWorld",
+        "performance": [183217, 643414, 685871],
+        "changeFromLast": "N/A"
+      },
+      "markdown-like": {
+        "category": "realWorld",
+        "performance": [260892, 892163, 1000000],
+        "changeFromLast": "N/A"
+      },
+      "code comments": {
+        "category": "realWorld",
+        "performance": [60916, 827936, 1091703],
+        "changeFromLast": "N/A"
+      }
+    }
+  },
+  {
     "timestamp": "2025-11-10T23:36:23.382Z",
     "trends": {
       "v1": {
