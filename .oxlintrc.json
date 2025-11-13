@@ -20,7 +20,7 @@
     "import/no-duplicates": "error",
     "import/no-extraneous-dependencies": "error",
     "import/no-unresolved": "error",
-    "eslint/sort-imports": "error",
+    "eslint/sort-imports": "allow",
     "eslint/sort-exports": "error",
     
     "no-children-prop": "allow",

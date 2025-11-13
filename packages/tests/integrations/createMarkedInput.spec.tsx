@@ -10,7 +10,8 @@ const {Configured} = Story.Base
 
 describe(`Utility: createMarkedInput`, () => {
 	it('should render', () => {
-		render(<Configured />)
+		const {container} = render(<Configured />)
+		expect(container).toBeInTheDocument()
 	})
 
 	it('should support to pass a forward overlay', async () => {

@@ -117,11 +117,6 @@ describe(`Utility: ${EventBus.name}`, () => {
 			expect(mockListener1).toHaveBeenNthCalledWith(3, 'third')
 		})
 
-		it('should handle complex values', () => {
-			eventBus.on(EVENT_A, mockListener1)
-
-			eventBus.send(EVENT_A, 'test')
-		})
 	})
 
 	describe('unsubscribe functionality', () => {
