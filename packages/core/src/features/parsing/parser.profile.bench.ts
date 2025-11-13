@@ -174,16 +174,18 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 			totalTests: testNames.length,
 			totalDuration: formatTime(totalDuration),
 			performanceDelta,
-			tests: comparison ? Object.fromEntries(
-				comparison.differences.map(diff => [
-					diff.testName,
-					{
-						duration: formatTime(currentRun.tests[diff.testName].duration),
-						durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
-						durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
-					},
-				])
-			) : {},
+			tests: comparison
+				? Object.fromEntries(
+						comparison.differences.map(diff => [
+							diff.testName,
+							{
+								duration: formatTime(currentRun.tests[diff.testName].duration),
+								durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
+								durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
+							},
+						])
+					)
+				: {},
 		},
 		tests: currentRun.tests,
 	}
@@ -484,7 +486,6 @@ function estimateComplexity(methodName: string): string {
 function getComplexityForMethod(methodName: string): string {
 	return estimateComplexity(methodName)
 }
-
 
 /**
  * Store profiling results for comparison (keeps last 2 runs)
@@ -892,7 +893,6 @@ function saveCompleteProfileResults(): void {
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
 		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
-
 	} catch (error) {
 		console.error('❌ Save error:', error)
 	}

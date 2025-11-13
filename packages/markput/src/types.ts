@@ -20,26 +20,26 @@ export interface Option<T = Record<string, any>> {
 	/**
 	 * Template string instead of which the mark is rendered.
 	 * Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
-	 * 
+	 *
 	 * Placeholder types:
 	 * - `__value__` - main content (plain text, no nesting)
 	 * - `__meta__` - additional metadata (plain text, no nesting)
 	 * - `__nested__` - content supporting nested structures
-	 * 
+	 *
 	 * @default "@[__value__](__meta__)"
-	 * 
+	 *
 	 * @example
 	 * // Simple value
 	 * "@[__value__]"
-	 * 
+	 *
 	 * @example
 	 * // Value with metadata
 	 * "@[__value__](__meta__)"
-	 * 
+	 *
 	 * @example
 	 * // Nested content support
 	 * "@[__nested__]"
-	 * 
+	 *
 	 * @example
 	 * // HTML-like with nesting
 	 * "<__value__>__nested__</__value__>"

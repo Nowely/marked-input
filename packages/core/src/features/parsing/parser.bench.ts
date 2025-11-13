@@ -58,7 +58,6 @@ function runBenchmark(parser: ParserV2, input: string, iterations: number) {
 	return {ops}
 }
 
-
 function saveResults() {
 	if (testResults.length === 0 || hasSaved) {
 		return
@@ -134,7 +133,7 @@ function saveResults() {
 			timestamp: new Date().toISOString(),
 			trends: {
 				changeFromLast: 'N/A',
-				regressions: []
+				regressions: [],
 			},
 			summary,
 			tests,

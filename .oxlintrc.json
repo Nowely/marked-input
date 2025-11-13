@@ -22,7 +22,7 @@
     "import/no-unresolved": "error",
     "eslint/sort-imports": "allow",
     "eslint/sort-exports": "error",
-    
+
     "no-children-prop": "allow",
     "for-direction": "warn",
     "no-async-promise-executor": "warn",

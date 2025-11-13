@@ -7,7 +7,6 @@ import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
-
 /**
  * Parser - High-performance tree-based markup parser
  *
@@ -189,10 +188,7 @@ export class Parser {
 		return this.registry.segments
 			.filter((segment): segment is string => typeof segment === 'string')
 			.sort((a, b) => b.length - a.length)
-			.reduce((result, segment) =>
-				result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')),
-				text
-			)
+			.reduce((result, segment) => result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')), text)
 	}
 
 	/**
@@ -214,5 +210,4 @@ export class Parser {
 	unescape(text: string): string {
 		return text.replaceAll(/\\(.)/g, '$1')
 	}
-
 }

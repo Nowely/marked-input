@@ -663,7 +663,6 @@ describe('ParserV2', () => {
 				expect(result).toBe('\\@\\[user **bold** text\\]')
 			})
 
-
 			it('should handle empty text', () => {
 				const parser = new Parser(['**__nested__**'])
 
@@ -698,7 +697,6 @@ describe('ParserV2', () => {
 
 				expect(result).toBe('@[user **bold** text]')
 			})
-
 
 			it('should round-trip correctly', () => {
 				const parser = new Parser(['**__nested__**', '@[__value__](__meta__)'])
@@ -1212,7 +1210,6 @@ describe('ParserV2', () => {
 	})
 
 	describe('Integration tests with diverse data', () => {
-
 		it('should handle diverse user names and content', () => {
 			const testCases = Array.from({length: 20}, () => {
 				const userName = faker.person.firstName()

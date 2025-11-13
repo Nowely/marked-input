@@ -163,7 +163,7 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 	readonly #token: MarkToken
 
 	readOnly?: boolean
-	
+
 	// Tree navigation properties (set by useMark hook)
 	depth: number = 0
 	hasChildren: boolean = false

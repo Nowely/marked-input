@@ -5,13 +5,13 @@ import {Token} from './Token'
 
 /**
  * Piece component - renders a MarkToken with its custom Mark component
- * 
+ *
  * This component:
  * 1. Retrieves the MarkToken from context
  * 2. Constructs props for the Mark component (value, meta, children)
  * 3. Recursively renders nested children if present
  * 4. Passes everything to the custom Mark component
- * 
+ *
  * Children rendering:
  * - If token.children is empty: children prop is undefined (backward compatible)
  * - If token.children has items: recursively renders them as ReactNode
@@ -43,7 +43,7 @@ export function Piece() {
 		value: node.value,
 		meta: node.meta,
 		nested: node.nested?.content,
-		children
+		children,
 	}
 	// TODO correct typing
 	// @ts-expect-error

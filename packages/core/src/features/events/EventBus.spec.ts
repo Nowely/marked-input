@@ -116,7 +116,6 @@ describe(`Utility: ${EventBus.name}`, () => {
 			expect(mockListener1).toHaveBeenNthCalledWith(2, 'second')
 			expect(mockListener1).toHaveBeenNthCalledWith(3, 'third')
 		})
-
 	})
 
 	describe('unsubscribe functionality', () => {

@@ -182,6 +182,7 @@ const FlatMarkup = '@[__value__]'
 ```
 
 **Key Differences:**
+
 - `__value__` - Content is treated as plain text, nested patterns are ignored
 - `__nested__` - Content supports nested structures, nested patterns are parsed
 
@@ -208,17 +209,17 @@ const App = () => {
                     initMark: ({value, children}) => ({
                         value,
                         children,
-                        style: {fontWeight: 'bold'}
-                    })
+                        style: {fontWeight: 'bold'},
+                    }),
                 },
                 {
                     markup: '*__nested__*',
                     initMark: ({value, children}) => ({
                         value,
                         children,
-                        style: {fontStyle: 'italic'}
-                    })
-                }
+                        style: {fontStyle: 'italic'},
+                    }),
+                },
             ]}
         />
     )
@@ -248,7 +249,7 @@ const App = () => {
             onChange={setValue}
             options={[
                 // Two values pattern: both __value__ must be identical
-                {markup: '<__value__>__nested__</__value__>'}
+                {markup: '<__value__>__nested__</__value__>'},
             ]}
         />
     )
@@ -256,12 +257,14 @@ const App = () => {
 ```
 
 **Two Values Pattern Rules:**
+
 - Contains exactly two `__value__` placeholders
 - Both values must be identical (e.g., `<div>` and `</div>`)
 - If values don't match, the pattern won't be recognized
 - Perfect for HTML/XML-like structures where tags must match
 
 **Examples of valid two values patterns:**
+
 - `<__value__>__nested__</__value__>` - HTML tags
 - `[__value__]__nested__[/__value__]` - BBCode-style tags
 - `{{__value__}}__nested__{{/__value__}}` - Template tags
@@ -561,12 +564,12 @@ export interface Option<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
-     * 
+     *
      * Placeholder types:
      * - `__value__` - main content (plain text, no nesting)
      * - `__meta__` - additional metadata (plain text, no nesting)
      * - `__nested__` - content supporting nested structures
-     * 
+     *
      * @default "@[__value__](__meta__)"
      */
     markup?: Markup

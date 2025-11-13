@@ -57,9 +57,9 @@ The API uses clear method names:
 
 ```typescript
 // ✅ Parser API
-parser.parse(text)        // Parse text into tokens
-parser.stringify(tokens)  // Convert tokens back to text
-parser.transform(text, callback)  // Transform annotated text
+parser.parse(text) // Parse text into tokens
+parser.stringify(tokens) // Convert tokens back to text
+parser.transform(text, callback) // Transform annotated text
 ```
 
 ## Performance

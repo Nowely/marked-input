@@ -31,7 +31,7 @@ describe('API: Overlay and Triggers', () => {
 		//override event listener because 'selectionchange' don't work in here
 		const events: Record<string, EventListenerOrEventListenerObject> = {}
 		document.addEventListener = vi.fn((event, callback) => (events[event] = callback))
-		document.removeEventListener = vi.fn((event) => delete events[event])
+		document.removeEventListener = vi.fn(event => delete events[event])
 
 		const {getByText, findByText} = render(
 			<Default
