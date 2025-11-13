@@ -168,30 +168,134 @@ export class Parser {
 	}
 
 	/**
-	 * Escapes markup segments in the given text
+	 * Escapes complete markup patterns in the given text using backslash
 	 *
-	 * @param text - Text to escape segments in
-	 * @param escaper - Function that receives a segment string and returns the escaped version.
-	 *                  If not provided, segments are removed (replaced with empty strings)
-	 * @returns Text with escaped or removed segments
+	 * This method finds all complete patterns in the text and escapes their segments
+	 * by adding a backslash before each segment, preventing them from being parsed
+	 * as markup when the text is processed again.
 	 *
-	 * @deprecated This method has known issues and will be rewritten in a future version.
-	 * TODO: Rewrite to properly handle complete patterns, not just segments
+	 * @param text - Text to escape patterns in
+	 * @param escapeChar - Character to use for escaping (default: '\')
+	 * @returns Text with escaped patterns
+	 *
+	 * @example
+	 * ```typescript
+	 * const parser = new Parser(['**__nested__**', '@[__value__]'])
+	 * const escaped = parser.escape('Hello **world** and @[user]')
+	 * // Returns: 'Hello \*\*world\*\* and \@[user]'
+	 * ```
 	 */
-	escape(text: string, escaper?: (segment: string) => string): string {
-		const matches = this.segmentMatcher.search(text)
-		if (matches.length === 0) return text
+	escape(text: string, escapeChar: string = '\\'): string {
+		// Parse the text to find all complete patterns
+		const tokens = this.parse(text)
 
-		return (
-			matches.reduce((result, match, i) => {
-				const prevEnd = i === 0 ? 0 : matches[i - 1].end
-				return (
-					result +
-					text.substring(prevEnd, match.start) +
-					(escaper ? escaper(text.substring(match.start, match.end)) : '')
-				)
-			}, '') + text.substring(matches[matches.length - 1].end)
-		)
+		if (tokens.length === 0 || (tokens.length === 1 && tokens[0].type === 'text')) {
+			return text // No patterns found
+		}
+
+		// Collect all pattern positions that need to be escaped
+		const patternsToEscape: Array<{start: number, end: number, content: string, descriptor: any}> = []
+
+		// Helper function to collect pattern positions recursively (depth-first)
+		const collectPatterns = (tokens: Token[]) => {
+			for (const token of tokens) {
+				if (token.type === 'mark') {
+					// First collect nested patterns (depth-first)
+					if (token.children) {
+						collectPatterns(token.children)
+					}
+					// Then add this pattern
+					patternsToEscape.push({
+						start: token.position.start,
+						end: token.position.end,
+						content: token.content,
+						descriptor: token.descriptor
+					})
+				}
+			}
+		}
+
+		collectPatterns(tokens)
+
+		// Sort patterns by position from end to start to avoid position shifts
+		patternsToEscape.sort((a, b) => b.start - a.start)
+
+		// Process patterns from end to start, modifying the text in place
+		let result = text
+
+		for (const pattern of patternsToEscape) {
+			// Create escaped version of this pattern
+			const patternText = result.substring(pattern.start, pattern.end)
+			const descriptor = pattern.descriptor
+
+			let escapedPattern = patternText
+
+			// Collect all positions of static segments that need to be escaped
+			const segmentsToEscape: Array<{index: number, segment: string}> = []
+			const usedPositions = new Set<number>()
+
+			// Find positions of static segments in the pattern text
+			let currentPos = 0
+			if (descriptor && descriptor.segments) {
+				for (const segment of descriptor.segments) {
+					if (typeof segment === 'string') {
+						const index = patternText.indexOf(segment, currentPos)
+						if (index !== -1 && !usedPositions.has(index)) {
+							segmentsToEscape.push({index, segment})
+							usedPositions.add(index)
+							currentPos = index + segment.length
+						}
+					}
+				}
+			}
+
+			// Sort by position (reverse order to avoid position shifts within pattern)
+			segmentsToEscape.sort((a, b) => b.index - a.index)
+
+			// Escape segments within this pattern
+			for (const {index, segment} of segmentsToEscape) {
+				const escapedSegment = segment.split('').map(char => escapeChar + char).join('')
+				escapedPattern =
+					escapedPattern.substring(0, index) +
+					escapedSegment +
+					escapedPattern.substring(index + segment.length)
+			}
+
+			// Replace the pattern in result
+			result =
+				result.substring(0, pattern.start) +
+				escapedPattern +
+				result.substring(pattern.end)
+		}
+
+		return result
+	}
+
+	/**
+	 * Unescapes markup patterns in the given text
+	 *
+	 * This method removes escape characters from segments that were previously
+	 * escaped using escape(), allowing the patterns to be parsed normally.
+	 *
+	 * @param text - Text to unescape patterns in
+	 * @param escapeChar - Character used for escaping (default: '\')
+	 * @returns Text with unescaped patterns
+	 *
+	 * @example
+	 * ```typescript
+	 * const parser = new Parser(['**__nested__**', '@[__value__]'])
+	 * const unescaped = parser.unescape('Hello \*\*world\*\* and \@[user]')
+	 * // Returns: 'Hello **world** and @[user]'
+	 * ```
+	 */
+	unescape(text: string, escapeChar: string = '\\'): string {
+		let result = text
+		const escapeRegex = new RegExp(`${escapeChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\w\\W])`, 'g')
+
+		// Replace escaped characters with their unescaped versions
+		result = result.replace(escapeRegex, '$1')
+
+		return result
 	}
 
 }

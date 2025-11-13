@@ -644,70 +644,95 @@ describe('ParserV2', () => {
 			})
 		})
 
-		describe('escape', () => {
-			it.todo('should escape segments using provided escaper function', () => {
-				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
+		describe('escape and unescape', () => {
+			it('should escape complete patterns using backslash', () => {
+				const parser = new Parser(['**__nested__**', '@[__value__]'])
 
-				// Escaper that prefixes segments
-				const escaper = (segment: string) => `ESC_${segment}`
+				const testInput = 'Hello **world** and @[user]'
+				const result = parser.escape(testInput)
 
-				const testInput = 'Hello @[world](test) and #[tag]'
-				const result = parser.escape(testInput, escaper)
-
-				expect(result).toBe('Hello ESC_@[worldESC_ESC_](testESC_) and ESC_#[tagESC_]')
+				expect(result).toBe('Hello \\*\\*world\\*\\* and \\@\\[user\\]')
 			})
 
-			it('should handle different escaper functions', () => {
-				const parser = new Parser(['**[__value__]**'])
+			it('should escape patterns with nested content', () => {
+				const parser = new Parser(['@[__nested__]'])
 
-				// Escaper that prefixes segments
-				const escaper = (segment: string) => `ESC_${segment}`
+				const testInput = '@[user **bold** text]'
+				const result = parser.escape(testInput)
 
-				const testInput = 'Bold **[text]** here'
-				const result = parser.escape(testInput, escaper)
-
-				expect(result).toBe('Bold ESC_**[textESC_]** here')
+				expect(result).toBe('\\@\\[user **bold** text\\]')
 			})
 
-			it('should handle overlapping segments correctly', () => {
-				const parser = new Parser(['@[__value__]', '#[__value__]'])
+			it('should handle custom escape character', () => {
+				const parser = new Parser(['**__nested__**'])
 
-				const escaper = (segment: string) => `ESC_${segment}`
+				const testInput = 'Text **bold** text'
+				const result = parser.escape(testInput, '#')
 
-				const testInput = '@[hello] #[world]'
-				const result = parser.escape(testInput, escaper)
-
-				expect(result).toBe('ESC_@[helloESC_] ESC_#[worldESC_]')
+				expect(result).toBe('Text #*#*bold#*#* text')
 			})
 
 			it('should handle empty text', () => {
-				const parser = new Parser(['@[__value__]'])
+				const parser = new Parser(['**__nested__**'])
 
-				const escaper = (segment: string) => `\\${segment}`
-
-				const result = parser.escape('', escaper)
+				const result = parser.escape('')
 
 				expect(result).toBe('')
 			})
 
-			it('should handle text without segments', () => {
-				const parser = new Parser(['@[__value__]'])
-
-				const escaper = (segment: string) => `\\${segment}`
+			it('should handle text without patterns', () => {
+				const parser = new Parser(['**__nested__**'])
 
 				const testInput = 'Hello world'
-				const result = parser.escape(testInput, escaper)
+				const result = parser.escape(testInput)
 
 				expect(result).toBe('Hello world')
 			})
 
-			it.todo('should work without escaper function', () => {
-				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
+			it('should unescape patterns', () => {
+				const parser = new Parser(['**__nested__**', '@[__value__]'])
 
-				const testInput = 'Hello @[world](test) and #[tag]'
+				const escapedInput = 'Hello \\*\\*world\\*\\* and \\@[user]'
+				const result = parser.unescape(escapedInput)
+
+				expect(result).toBe('Hello **world** and @[user]')
+			})
+
+			it('should unescape nested patterns', () => {
+				const parser = new Parser(['**__nested__**', '@[__nested__]'])
+
+				const escapedInput = '\\@[user \\*\\*bold\\*\\* text]'
+				const result = parser.unescape(escapedInput)
+
+				expect(result).toBe('@[user **bold** text]')
+			})
+
+			it('should handle custom escape character in unescape', () => {
+				const parser = new Parser(['**__nested__**'])
+
+				const escapedInput = 'Text #*#*bold#*#* text'
+				const result = parser.unescape(escapedInput, '#')
+
+				expect(result).toBe('Text **bold** text')
+			})
+
+			it('should round-trip correctly', () => {
+				const parser = new Parser(['**__nested__**', '@[__value__](__meta__)'])
+
+				const original = 'Hello **world** and @[user](admin)'
+				const escaped = parser.escape(original)
+				const unescaped = parser.unescape(escaped)
+
+				expect(unescaped).toBe(original)
+			})
+
+			it('should handle multiple patterns correctly', () => {
+				const parser = new Parser(['**__nested__**', '@[__value__]', '#[__value__]'])
+
+				const testInput = '**bold** @[user] #[tag]'
 				const result = parser.escape(testInput)
 
-				expect(result).toBe('Hello [world(test) and [tag]')
+				expect(result).toBe('\\*\\*bold\\*\\* \\@\\[user\\] \\#\\[tag\\]')
 			})
 		})
 
