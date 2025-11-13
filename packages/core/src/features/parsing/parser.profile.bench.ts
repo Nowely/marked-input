@@ -68,7 +68,6 @@ interface ProfilingResult {
 	summary: {
 		totalTests: number
 		totalDuration: string
-		trend: 'improving' | 'degrading' | 'stable'
 		performanceDelta: string
 	}
 	comparison?: {
@@ -78,7 +77,6 @@ interface ProfilingResult {
 			{
 				durationChange: string
 				durationChangePercent: string
-				trend: 'improving' | 'degrading' | 'stable'
 			}
 		>
 	}
@@ -158,8 +156,7 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 	const testNames = Object.keys(currentRun.tests)
 	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
 
-	// Определение тренда на основе comparison
-	let trend: 'improving' | 'degrading' | 'stable' = 'stable'
+	// Расчет performance delta на основе comparison
 	let performanceDelta = '0.0%'
 
 	if (comparison) {
@@ -169,7 +166,6 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 		// Инвертируем знак: положительное значение означает улучшение производительности
 		const performanceValue = -avgChange
 		performanceDelta = `${performanceValue >= 0 ? '+' : ''}${performanceValue.toFixed(1)}%`
-		trend = Math.abs(avgChange) < 1 ? 'stable' : avgChange > 0 ? 'degrading' : 'improving'
 	}
 
 	// Tests are updated in place, no additional processing needed
@@ -179,7 +175,6 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 		summary: {
 			totalTests: testNames.length,
 			totalDuration: formatTime(totalDuration),
-			trend,
 			performanceDelta,
 		},
 		comparison: comparison
@@ -191,12 +186,6 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 							{
 								durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
 								durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
-								trend:
-									Math.abs(diff.durationChangePercent) < 1
-										? 'stable'
-										: diff.durationChangePercent <= 0
-											? 'improving'
-											: 'degrading',
 							},
 						])
 					),
@@ -908,7 +897,6 @@ function saveCompleteProfileResults(): void {
 		console.log('\n📈 ENHANCED RUN SUMMARY:')
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
-		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
 		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
 
 		// Comparison summary
