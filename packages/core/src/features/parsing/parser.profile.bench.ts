@@ -69,12 +69,10 @@ interface ProfilingResult {
 		totalTests: number
 		totalDuration: string
 		performanceDelta: string
-	}
-	comparison?: {
-		significantChanges: string[]
-		testChanges: Record<
+		tests: Record<
 			string,
 			{
+				duration: string
 				durationChange: string
 				durationChangePercent: string
 			}
@@ -176,21 +174,17 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 			totalTests: testNames.length,
 			totalDuration: formatTime(totalDuration),
 			performanceDelta,
+			tests: comparison ? Object.fromEntries(
+				comparison.differences.map(diff => [
+					diff.testName,
+					{
+						duration: formatTime(currentRun.tests[diff.testName].duration),
+						durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
+						durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
+					},
+				])
+			) : {},
 		},
-		comparison: comparison
-			? {
-					significantChanges: comparison.summary,
-					testChanges: Object.fromEntries(
-						comparison.differences.map(diff => [
-							diff.testName,
-							{
-								durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
-								durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
-							},
-						])
-					),
-				}
-			: undefined,
 		tests: currentRun.tests,
 	}
 }
@@ -899,41 +893,6 @@ function saveCompleteProfileResults(): void {
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
 		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
 
-		// Comparison summary
-		if (comparison) {
-			console.log('\n📈 PERFORMANCE TREND ANALYSIS:')
-			for (const summary of comparison.summary) {
-				console.log(`   ${summary}`)
-			}
-
-			console.log('\n📋 DETAILED CHANGES:')
-			for (const diff of comparison.differences) {
-				const changeSymbol =
-					diff.durationChangePercent > 0 ? '🔴' : diff.durationChangePercent < 0 ? '🟢' : '⚪'
-				const changeText =
-					diff.durationChangePercent > 0
-						? `+${diff.durationChangePercent.toFixed(1)}%`
-						: `${diff.durationChangePercent.toFixed(1)}%`
-
-				console.log(
-					`   ${changeSymbol} ${diff.testName}: ${changeText} (${formatTime(Math.abs(diff.durationChange))} ${diff.durationChange > 0 ? 'slower' : 'faster'})`
-				)
-
-				// Show top method changes
-				const methodEntries = Object.entries(diff.methodChanges)
-					.filter(([, change]) => Math.abs(change.timeChangePercent) > 1)
-					.sort(([, a], [, b]) => Math.abs(b.timeChangePercent) - Math.abs(a.timeChangePercent))
-					.slice(0, 3)
-
-				for (const [methodName, change] of methodEntries) {
-					const methodSymbol =
-						change.timeChangePercent > 0 ? '↗️' : change.timeChangePercent < 0 ? '↘️' : '➡️'
-					console.log(
-						`      ${methodSymbol} ${methodName}: ${change.timeChangePercent > 0 ? '+' : ''}${change.timeChangePercent.toFixed(1)}%`
-					)
-				}
-			}
-		}
 	} catch (error) {
 		console.error('❌ Save error:', error)
 	}
