@@ -7,6 +7,9 @@ import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
 
+/** Default escape character for markup segments */
+const ESCAPE_CHAR = '\\'
+
 /**
  * Parser - High-performance tree-based markup parser
  *
@@ -175,7 +178,6 @@ export class Parser {
 	 * parsed as markup when the text is processed again.
 	 *
 	 * @param text - Text to escape segments in
-	 * @param escapeChar - Character to use for escaping (default: '\')
 	 * @returns Text with escaped segments
 	 *
 	 * @example
@@ -185,7 +187,7 @@ export class Parser {
 	 * // Returns: 'Hello \*\*world\*\* and \@[user]'
 	 * ```
 	 */
-	escape(text: string, escapeChar: string = '\\'): string {
+	escape(text: string): string {
 		// Use unique static segments from registry
 		const segments = this.registry.segments.filter(segment => typeof segment === 'string') as string[]
 
@@ -197,7 +199,7 @@ export class Parser {
 
 		for (const segment of segments) {
 			// Escape this segment by replacing it with escaped version
-			const escapedSegment = segment.split('').map(char => escapeChar + char).join('')
+			const escapedSegment = segment.split('').map(char => ESCAPE_CHAR + char).join('')
 			result = result.split(segment).join(escapedSegment)
 		}
 
@@ -211,7 +213,6 @@ export class Parser {
 	 * escaped using escape(), allowing the patterns to be parsed normally.
 	 *
 	 * @param text - Text to unescape patterns in
-	 * @param escapeChar - Character used for escaping (default: '\')
 	 * @returns Text with unescaped patterns
 	 *
 	 * @example
@@ -221,14 +222,9 @@ export class Parser {
 	 * // Returns: 'Hello **world** and @[user]'
 	 * ```
 	 */
-	unescape(text: string, escapeChar: string = '\\'): string {
-		let result = text
-		const escapeRegex = new RegExp(`${escapeChar.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\w\\W])`, 'g')
-
-		// Replace escaped characters with their unescaped versions
-		result = result.replace(escapeRegex, '$1')
-
-		return result
+	unescape(text: string): string {
+		const escapeRegex = new RegExp(`${ESCAPE_CHAR.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\w\\W])`, 'g')
+		return text.replaceAll(escapeRegex, '$1')
 	}
 
 }

@@ -663,14 +663,6 @@ describe('ParserV2', () => {
 				expect(result).toBe('\\@\\[user **bold** text\\]')
 			})
 
-			it('should handle custom escape character', () => {
-				const parser = new Parser(['**__nested__**'])
-
-				const testInput = 'Text **bold** text'
-				const result = parser.escape(testInput, '#')
-
-				expect(result).toBe('Text #*#*bold#*#* text')
-			})
 
 			it('should handle empty text', () => {
 				const parser = new Parser(['**__nested__**'])
@@ -707,14 +699,6 @@ describe('ParserV2', () => {
 				expect(result).toBe('@[user **bold** text]')
 			})
 
-			it('should handle custom escape character in unescape', () => {
-				const parser = new Parser(['**__nested__**'])
-
-				const escapedInput = 'Text #*#*bold#*#* text'
-				const result = parser.unescape(escapedInput, '#')
-
-				expect(result).toBe('Text **bold** text')
-			})
 
 			it('should round-trip correctly', () => {
 				const parser = new Parser(['**__nested__**', '@[__value__](__meta__)'])
