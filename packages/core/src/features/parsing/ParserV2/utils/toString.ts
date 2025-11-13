@@ -25,20 +25,21 @@ export function toString(tokens: Token[]): string {
 	for (const token of tokens) {
 		if (token.type === 'text') {
 			result += token.content
-		} else {
-			const markup = token.descriptor.markup
-			const nested = markup.includes(PLACEHOLDER.Nested)
-				? token.children.length > 0
-					? toString(token.children)
-					: token.nested?.content
-				: undefined
-
-			result += annotate(markup, {
-				value: token.value,
-				meta: token.meta,
-				nested,
-			})
+			continue
 		}
+
+		const markup = token.descriptor.markup
+		const nested = markup.includes(PLACEHOLDER.Nested)
+			? token.children.length > 0
+				? toString(token.children)
+				: token.nested?.content
+			: undefined
+
+		result += annotate(markup, {
+			value: token.value,
+			meta: token.meta,
+			nested,
+		})
 	}
 
 	return result
