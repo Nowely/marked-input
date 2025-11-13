@@ -403,8 +403,8 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 	const restoreTreeBuilder = patchTreeBuilder(parser)
 
 	// Create profiled wrapper for Parser.split
-	const originalSplit = parser.split
-	parser.split = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
+	const originalSplit = parser.parse
+	parser.parse = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
 
 	// Execute multiple iterations and collect statistics
 	const splitTimes: number[] = []
@@ -415,7 +415,7 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 		methodCallStack.length = 0
 
 		const splitStart = performance.now()
-		finalTokens = parser.split(input)
+		finalTokens = parser.parse(input)
 		const splitEnd = performance.now()
 		const totalSplitTime = splitEnd - splitStart
 
@@ -425,7 +425,7 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 	// Restore original methods
 	restoreSegmentMatcher()
 	restorePatternMatcher()
-	restoreTreeBuilder() // This will restore parser.split to treeBuilderPatchedSplit
+	restoreTreeBuilder() // This will restore parser.parse to treeBuilderPatchedSplit
 
 	// Calculate results with normalized statistics
 	const avgSplitTime = splitTimes.reduce((a, b) => a + b, 0) / iterations

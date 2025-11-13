@@ -7,7 +7,7 @@ describe('Utility: toString', () => {
 	it('should reconstruct simple annotated text', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[Hello](world)'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -15,7 +15,7 @@ describe('Utility: toString', () => {
 	it('should reconstruct text with multiple annotations', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[First](1) and @[Second](2)'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -24,7 +24,7 @@ describe('Utility: toString', () => {
 		const markup1: Markup = '@[__nested__]'
 		const markup2: Markup = '#[__nested__]'
 		const text = '@[Hello #[world]]'
-		const tokens = new Parser([markup1, markup2]).split(text)
+		const tokens = new Parser([markup1, markup2]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -32,7 +32,7 @@ describe('Utility: toString', () => {
 	it('should handle plain text', () => {
 		const markup: Markup = '@[__value__]'
 		const text = 'Plain text without markup'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -40,7 +40,7 @@ describe('Utility: toString', () => {
 	it('should handle empty text', () => {
 		const markup: Markup = '@[__value__]'
 		const text = ''
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -49,7 +49,7 @@ describe('Utility: toString', () => {
 		const markup1: Markup = '@[__value__](__nested__)'
 		const markup2: Markup = '#[__nested__]'
 		const text = '@[user](Hello #[world])'
-		const tokens = new Parser([markup1, markup2]).split(text)
+		const tokens = new Parser([markup1, markup2]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -57,7 +57,7 @@ describe('Utility: toString', () => {
 	it('should handle mixed value and nested', () => {
 		const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 		const text = '@[Hello](world) and #[tag]'
-		const tokens = new Parser(markups).split(text)
+		const tokens = new Parser(markups).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -65,7 +65,7 @@ describe('Utility: toString', () => {
 	it('should reconstruct HTML-like patterns', () => {
 		const markup: Markup = '<__value__>__nested__</__value__>'
 		const text = '<div>Content here</div>'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -73,7 +73,7 @@ describe('Utility: toString', () => {
 	it('should handle adjacent annotations', () => {
 		const markup: Markup = '@[__value__]'
 		const text = '@[First]@[Second]'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})
@@ -81,7 +81,7 @@ describe('Utility: toString', () => {
 	it('should handle empty values', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[]() @[label]()'
-		const tokens = new Parser([markup]).split(text)
+		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)
 		expect(result).toBe(text)
 	})

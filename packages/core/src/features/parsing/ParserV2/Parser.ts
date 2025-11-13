@@ -199,20 +199,6 @@ export class Parser {
 	// Use the new method names instead: parse(), stringify(), transform()
 
 	/**
-	 * @deprecated Use parse() instead. This alias will be removed in v2.0
-	 */
-	split(value: string): Token[] {
-		return this.parse(value)
-	}
-
-	/**
-	 * @deprecated Use stringify() instead. This alias will be removed in v2.0
-	 */
-	join(tokens: Token[]): string {
-		return this.stringify(tokens)
-	}
-
-	/**
 	 * @deprecated Use transform() instead. This alias will be removed in v2.0
 	 */
 	denote(value: string, callback: (mark: MarkToken) => string): string {
