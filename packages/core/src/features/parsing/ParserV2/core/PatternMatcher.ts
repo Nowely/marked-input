@@ -12,10 +12,11 @@
  * - Gap position management for nested content extraction
  */
 
-import {MarkupRegistry} from '../utils/MarkupRegistry'
-import {SegmentMatch} from '../utils/SegmentMatcher'
+import {MarkupRegistry} from './MarkupRegistry'
+import {SegmentMatch} from './SegmentMatcher'
 import {Match} from './Match'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
+import type {MarkupDescriptor} from './MarkupDescriptor'
 
 /**
  * Optimized parser using state machine approach
@@ -61,7 +62,7 @@ export class PatternMatcher {
 	}
 
 	private tryStartNewStates(segment: SegmentMatch): void {
-		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach(descriptor => {
+		this.registry.firstSegmentIndexMap.get(segment.index)?.forEach((descriptor: MarkupDescriptor) => {
 			const match = new Match(descriptor, segment)
 
 			if (match.isInvalid) return
