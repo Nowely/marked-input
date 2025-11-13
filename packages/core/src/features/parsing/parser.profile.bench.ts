@@ -24,7 +24,6 @@ interface TestProfile {
 	duration: number
 	inputLength: number
 	markCount: number
-	performance?: 'good' | 'warning' | 'bad'
 	mainMethod: MethodProfile
 }
 
@@ -69,7 +68,6 @@ interface ProfilingResult {
 	summary: {
 		totalTests: number
 		totalDuration: string
-		averageDuration: string
 		trend: 'improving' | 'degrading' | 'stable'
 		performanceDelta: string
 	}
@@ -174,25 +172,13 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 		trend = Math.abs(avgChange) < 1 ? 'stable' : avgChange > 0 ? 'degrading' : 'improving'
 	}
 
-	// Добавление оценки производительности для каждого теста
-	const updatedTests = {...currentRun.tests}
-	for (const [, testResult] of Object.entries(updatedTests)) {
-		const duration = testResult.duration
-		if (duration < 0.5) {
-			testResult.performance = 'good'
-		} else if (duration < 2.0) {
-			testResult.performance = 'warning'
-		} else {
-			testResult.performance = 'bad'
-		}
-	}
+	// Tests are updated in place, no additional processing needed
 
 	return {
 		timestamp: currentRun.timestamp,
 		summary: {
 			totalTests: testNames.length,
 			totalDuration: formatTime(totalDuration),
-			averageDuration: formatTime(totalDuration / testNames.length),
 			trend,
 			performanceDelta,
 		},
@@ -216,7 +202,7 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 					),
 				}
 			: undefined,
-		tests: updatedTests,
+		tests: currentRun.tests,
 	}
 }
 
@@ -479,9 +465,11 @@ function estimateComplexity(methodName: string): string {
 		// State management
 		{pattern: /\.processWaitingStates$/, complexity: 'O(1)', description: 'Waiting states processing'},
 		{pattern: /\.handleUpdatedState$/, complexity: 'O(1)', description: 'State updates typically O(1)'},
-		{pattern: /\.tryStartNewStates$/, complexity: 'O(D)', description: 'State initialization O(D)'},
+		{pattern: /\.tryStartNewStates$/, complexity: 'O(S × D)', description: 'State initialization O(S × D)'},
+		{pattern: /\.dequeueWaitingMatch$/, complexity: 'O(1)', description: 'Queue dequeue operation O(1)'},
 
 		// Data structure operations
+		{pattern: /\.addToCompleted$/, complexity: 'O(log M)', description: 'Binary search insertion O(log M)'},
 		{pattern: /\.addTo(PositionIndex|WaitingList)$/, complexity: 'O(log M + P)', description: 'Indexed insertions'},
 		{pattern: /\.flattenMatches/, complexity: 'O(M)', description: 'Flattening operations O(M)'},
 		{pattern: /\.filter/, complexity: 'O(M)', description: 'Filtering operations O(M)'},
@@ -650,7 +638,7 @@ function buildMethodTree(
 			name: 'TreeBuilder.build',
 			calls: mainTreeMethod?.callCount || 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
-			complexity: 'O(M·D)',
+			complexity: getComplexityForMethod('TreeBuilder.build'),
 			times: mainTreeMethod
 				? [
 						Math.round(mainTreeMethod.minTime * 1000) / 1000,
@@ -920,7 +908,6 @@ function saveCompleteProfileResults(): void {
 		console.log('\n📈 ENHANCED RUN SUMMARY:')
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
 		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
-		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}`)
 		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
 		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
 
