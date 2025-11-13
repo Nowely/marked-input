@@ -168,15 +168,15 @@ export class Parser {
 	}
 
 	/**
-	 * Escapes complete markup patterns in the given text using backslash
+	 * Escapes markup segments in the given text using backslash
 	 *
-	 * This method finds all complete patterns in the text and escapes their segments
-	 * by adding a backslash before each segment, preventing them from being parsed
-	 * as markup when the text is processed again.
+	 * This method uses the registry's unique segments and escapes them by adding
+	 * a backslash before each character of each segment, preventing them from being
+	 * parsed as markup when the text is processed again.
 	 *
-	 * @param text - Text to escape patterns in
+	 * @param text - Text to escape segments in
 	 * @param escapeChar - Character to use for escaping (default: '\')
-	 * @returns Text with escaped patterns
+	 * @returns Text with escaped segments
 	 *
 	 * @example
 	 * ```typescript
@@ -186,86 +186,19 @@ export class Parser {
 	 * ```
 	 */
 	escape(text: string, escapeChar: string = '\\'): string {
-		// Parse the text to find all complete patterns
-		const tokens = this.parse(text)
+		// Use unique static segments from registry
+		const segments = this.registry.segments.filter(segment => typeof segment === 'string') as string[]
 
-		if (tokens.length === 0 || (tokens.length === 1 && tokens[0].type === 'text')) {
-			return text // No patterns found
-		}
+		// Sort segments by length (longest first) to avoid partial matches
+		segments.sort((a, b) => b.length - a.length)
 
-		// Collect all pattern positions that need to be escaped
-		const patternsToEscape: Array<{start: number, end: number, content: string, descriptor: any}> = []
-
-		// Helper function to collect pattern positions recursively (depth-first)
-		const collectPatterns = (tokens: Token[]) => {
-			for (const token of tokens) {
-				if (token.type === 'mark') {
-					// First collect nested patterns (depth-first)
-					if (token.children) {
-						collectPatterns(token.children)
-					}
-					// Then add this pattern
-					patternsToEscape.push({
-						start: token.position.start,
-						end: token.position.end,
-						content: token.content,
-						descriptor: token.descriptor
-					})
-				}
-			}
-		}
-
-		collectPatterns(tokens)
-
-		// Sort patterns by position from end to start to avoid position shifts
-		patternsToEscape.sort((a, b) => b.start - a.start)
-
-		// Process patterns from end to start, modifying the text in place
+		// Escape all segments in the text
 		let result = text
 
-		for (const pattern of patternsToEscape) {
-			// Create escaped version of this pattern
-			const patternText = result.substring(pattern.start, pattern.end)
-			const descriptor = pattern.descriptor
-
-			let escapedPattern = patternText
-
-			// Collect all positions of static segments that need to be escaped
-			const segmentsToEscape: Array<{index: number, segment: string}> = []
-			const usedPositions = new Set<number>()
-
-			// Find positions of static segments in the pattern text
-			let currentPos = 0
-			if (descriptor && descriptor.segments) {
-				for (const segment of descriptor.segments) {
-					if (typeof segment === 'string') {
-						const index = patternText.indexOf(segment, currentPos)
-						if (index !== -1 && !usedPositions.has(index)) {
-							segmentsToEscape.push({index, segment})
-							usedPositions.add(index)
-							currentPos = index + segment.length
-						}
-					}
-				}
-			}
-
-			// Sort by position (reverse order to avoid position shifts within pattern)
-			segmentsToEscape.sort((a, b) => b.index - a.index)
-
-			// Escape segments within this pattern
-			for (const {index, segment} of segmentsToEscape) {
-				const escapedSegment = segment.split('').map(char => escapeChar + char).join('')
-				escapedPattern =
-					escapedPattern.substring(0, index) +
-					escapedSegment +
-					escapedPattern.substring(index + segment.length)
-			}
-
-			// Replace the pattern in result
-			result =
-				result.substring(0, pattern.start) +
-				escapedPattern +
-				result.substring(pattern.end)
+		for (const segment of segments) {
+			// Escape this segment by replacing it with escaped version
+			const escapedSegment = segment.split('').map(char => escapeChar + char).join('')
+			result = result.split(segment).join(escapedSegment)
 		}
 
 		return result
