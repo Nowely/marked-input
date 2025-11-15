@@ -1,5 +1,5 @@
 import {Markup} from '../types'
-import {createMarkupDescriptor, MarkupDescriptor} from '../core/MarkupDescriptor'
+import {MarkupDescriptor, createMarkupDescriptor} from '../core/MarkupDescriptor'
 import {SegmentDefinition} from './SegmentMatcher'
 
 /**

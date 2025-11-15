@@ -1,4 +1,4 @@
-import {ComponentType, CSSProperties, ForwardedRef, forwardRef, ReactElement} from 'react'
+import {CSSProperties, ComponentType, ForwardedRef, ReactElement, forwardRef} from 'react'
 import '@markput/core/styles.css'
 import {parseProps} from '../features/default'
 import {MarkedInputHandler, Option} from '../types'
@@ -6,7 +6,7 @@ import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
-import {Token, OverlayTrigger} from '@markput/core'
+import {OverlayTrigger, Token} from '@markput/core'
 
 export interface MarkedInputProps<T = Token> {
 	/** Ref to handler */

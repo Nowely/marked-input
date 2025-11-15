@@ -3,7 +3,23 @@ import {getChildProps} from '../utils/functions/getChildProps'
 import {useStore} from '../utils/hooks/useStore'
 import {useToken} from '../utils/providers/TokenProvider'
 
-// TextSpan - renders text tokens (non-annotated text)
+/**
+ * TextSpan - renders text tokens (non-annotated text)
+ *
+ * This component renders editable text content. In nested contexts, text tokens
+ * render as plain text without contentEditable to maintain atomic mark behavior.
+ *
+ * Editing Behavior:
+ * - Root-level TextSpan: contentEditable enabled for direct text editing
+ * - Nested TextSpan: renders as plain text (non-editable) within marks
+ * - Native browser caret movement works between editable zones
+ * - Marks are treated as atomic blocks from text editing perspective
+ *
+ * The hybrid model (atomic blocks with internal editing) works naturally:
+ * - Text level: Marks are atomic units (Del/Backspace removes entire mark)
+ * - Mark level: Each Mark component is independent and can be editable
+ * - Nested text: Plain text content within nested marks
+ */
 export const TextSpan = () => {
 	const token = useToken()
 	const ref = useRef<HTMLSpanElement>(null)

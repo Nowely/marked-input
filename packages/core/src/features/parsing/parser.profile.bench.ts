@@ -1,4 +1,4 @@
-import {bench, describe, afterAll} from 'vitest'
+import {afterAll, bench, describe} from 'vitest'
 import {Parser} from './ParserV2/Parser'
 import {Markup, Token} from './ParserV2/types'
 import * as fs from 'fs'
@@ -24,7 +24,6 @@ interface TestProfile {
 	duration: number
 	inputLength: number
 	markCount: number
-	performance?: 'good' | 'warning' | 'bad'
 	mainMethod: MethodProfile
 }
 
@@ -58,7 +57,6 @@ interface ProfilingComparison {
 			}
 		>
 	}>
-	overallTrend: 'improving' | 'degrading' | 'stable'
 	summary: string[]
 }
 
@@ -69,24 +67,14 @@ interface ProfilingResult {
 	timestamp: string
 	summary: {
 		totalTests: number
-		totalDuration: number
-		averageDuration: number
-		trend: 'improving' | 'degrading' | 'stable'
-		performanceChange: number
-		worstTest: string
-		bestTest: string
-	}
-	comparison?: {
-		baselineTimestamp: string
-		overallTrend: 'improving' | 'degrading' | 'stable'
-		performanceChange: number
-		significantChanges: string[]
-		testChanges: Record<
+		totalDuration: string
+		performanceDelta: string
+		tests: Record<
 			string,
 			{
-				durationChange: number
-				durationChangePercent: number
-				trend: 'improving' | 'degrading' | 'stable'
+				duration: string
+				durationChange: string
+				durationChangePercent: string
 			}
 		>
 	}
@@ -166,74 +154,40 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 	const testNames = Object.keys(currentRun.tests)
 	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
 
-	// Определение тренда на основе comparison
-	let trend: 'improving' | 'degrading' | 'stable' = 'stable'
-	let performanceChange = 0
+	// Расчет performance delta на основе comparison
+	let performanceDelta = '0.0%'
 
 	if (comparison) {
 		const avgChange =
 			comparison.differences.reduce((sum, diff) => sum + diff.durationChangePercent, 0) /
 			comparison.differences.length
-		performanceChange = avgChange
-		trend = Math.abs(avgChange) < 1 ? 'stable' : avgChange > 0 ? 'degrading' : 'improving'
+		// Инвертируем знак: положительное значение означает улучшение производительности
+		const performanceValue = -avgChange
+		performanceDelta = `${performanceValue >= 0 ? '+' : ''}${performanceValue.toFixed(1)}%`
 	}
 
-	// Поиск лучшего и худшего теста
-	const testDurations = testNames
-		.map(name => ({
-			name,
-			duration: currentRun.tests[name].duration,
-		}))
-		.sort((a, b) => b.duration - a.duration)
-
-	// Добавление оценки производительности для каждого теста
-	const updatedTests = {...currentRun.tests}
-	for (const [testName, testResult] of Object.entries(updatedTests)) {
-		const duration = testResult.duration
-		if (duration < 0.5) {
-			testResult.performance = 'good'
-		} else if (duration < 2.0) {
-			testResult.performance = 'warning'
-		} else {
-			testResult.performance = 'bad'
-		}
-	}
+	// Tests are updated in place, no additional processing needed
 
 	return {
 		timestamp: currentRun.timestamp,
 		summary: {
 			totalTests: testNames.length,
-			totalDuration: Math.round(totalDuration * 100) / 100,
-			averageDuration: Math.round((totalDuration / testNames.length) * 100) / 100,
-			trend,
-			performanceChange,
-			worstTest: testDurations[0].name,
-			bestTest: testDurations[testDurations.length - 1].name,
-		},
-		comparison: comparison
-			? {
-					baselineTimestamp: comparison.run1Timestamp,
-					overallTrend: comparison.overallTrend,
-					performanceChange,
-					significantChanges: comparison.summary,
-					testChanges: Object.fromEntries(
+			totalDuration: formatTime(totalDuration),
+			performanceDelta,
+			tests: comparison
+				? Object.fromEntries(
 						comparison.differences.map(diff => [
 							diff.testName,
 							{
-								durationChange: diff.durationChange,
-								durationChangePercent: diff.durationChangePercent,
-								trend:
-									Math.abs(diff.durationChangePercent) < 1
-										? 'stable'
-										: diff.durationChangePercent > 0
-											? 'degrading'
-											: 'improving',
+								duration: formatTime(currentRun.tests[diff.testName].duration),
+								durationChange: `${diff.durationChange >= 0 ? '+' : '-'}${formatTime(Math.abs(diff.durationChange))}`,
+								durationChangePercent: `${diff.durationChangePercent <= 0 ? '+' : '-'}${Math.abs(diff.durationChangePercent).toFixed(1)}%`,
 							},
 						])
-					),
-				}
-			: undefined,
-		tests: updatedTests,
+					)
+				: {},
+		},
+		tests: currentRun.tests,
 	}
 }
 
@@ -403,8 +357,8 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 	const restoreTreeBuilder = patchTreeBuilder(parser)
 
 	// Create profiled wrapper for Parser.split
-	const originalSplit = parser.split
-	parser.split = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
+	const originalSplit = parser.parse
+	parser.parse = createProfiledMethod(originalSplit.bind(parser), 'Parser.split', 'Parser', 'O(T + S + M)')
 
 	// Execute multiple iterations and collect statistics
 	const splitTimes: number[] = []
@@ -415,7 +369,7 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 		methodCallStack.length = 0
 
 		const splitStart = performance.now()
-		finalTokens = parser.split(input)
+		finalTokens = parser.parse(input)
 		const splitEnd = performance.now()
 		const totalSplitTime = splitEnd - splitStart
 
@@ -425,7 +379,7 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 	// Restore original methods
 	restoreSegmentMatcher()
 	restorePatternMatcher()
-	restoreTreeBuilder() // This will restore parser.split to treeBuilderPatchedSplit
+	restoreTreeBuilder() // This will restore parser.parse to treeBuilderPatchedSplit
 
 	// Calculate results with normalized statistics
 	const avgSplitTime = splitTimes.reduce((a, b) => a + b, 0) / iterations
@@ -496,9 +450,11 @@ function estimateComplexity(methodName: string): string {
 		// State management
 		{pattern: /\.processWaitingStates$/, complexity: 'O(1)', description: 'Waiting states processing'},
 		{pattern: /\.handleUpdatedState$/, complexity: 'O(1)', description: 'State updates typically O(1)'},
-		{pattern: /\.tryStartNewStates$/, complexity: 'O(D)', description: 'State initialization O(D)'},
+		{pattern: /\.tryStartNewStates$/, complexity: 'O(S × D)', description: 'State initialization O(S × D)'},
+		{pattern: /\.dequeueWaitingMatch$/, complexity: 'O(1)', description: 'Queue dequeue operation O(1)'},
 
 		// Data structure operations
+		{pattern: /\.addToCompleted$/, complexity: 'O(log M)', description: 'Binary search insertion O(log M)'},
 		{pattern: /\.addTo(PositionIndex|WaitingList)$/, complexity: 'O(log M + P)', description: 'Indexed insertions'},
 		{pattern: /\.flattenMatches/, complexity: 'O(M)', description: 'Flattening operations O(M)'},
 		{pattern: /\.filter/, complexity: 'O(M)', description: 'Filtering operations O(M)'},
@@ -529,37 +485,6 @@ function estimateComplexity(methodName: string): string {
  */
 function getComplexityForMethod(methodName: string): string {
 	return estimateComplexity(methodName)
-}
-
-/**
- * Generate optimization recommendations
- */
-function generateRecommendations(methods: any[]): string[] {
-	const recommendations: string[] = []
-
-	// Analyze top-3 methods
-	const topMethods = methods.slice(0, 3)
-	for (const method of topMethods) {
-		switch (method.method) {
-			case 'TreeBuilder.buildParentChildRelationships':
-				recommendations.push('Optimize TreeBuilder.buildParentChildRelationships - parent-child linking phase')
-				break
-			case 'TreeBuilder.buildTokensFromRoots':
-				recommendations.push('Optimize TreeBuilder.buildTokensFromRoots - token creation phase')
-				break
-			case 'PatternMatcher.processWaitingStates':
-				recommendations.push('Optimize PatternMatcher.processWaitingStates - critical processing path')
-				break
-			default:
-				recommendations.push(`Optimize ${method.method} (${method.percentage.toFixed(1)}% of time)`)
-		}
-	}
-
-	// General recommendations
-	recommendations.push('Consider caching for frequently used patterns')
-	recommendations.push('Implement lazy initialization for heavy objects')
-
-	return recommendations
 }
 
 /**
@@ -697,7 +622,7 @@ function buildMethodTree(
 			name: 'TreeBuilder.build',
 			calls: mainTreeMethod?.callCount || 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
-			complexity: 'O(M·D)',
+			complexity: getComplexityForMethod('TreeBuilder.build'),
 			times: mainTreeMethod
 				? [
 						Math.round(mainTreeMethod.minTime * 1000) / 1000,
@@ -764,7 +689,7 @@ function loadExistingHistory(): void {
 				})
 			})
 		}
-	} catch (error) {
+	} catch {
 		// If loading fails, start with empty history
 		profilingResultsHistory.length = 0
 		profilingHistory.length = 0
@@ -776,8 +701,6 @@ function loadExistingHistory(): void {
  */
 function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): ProfilingComparison {
 	const differences: ProfilingComparison['differences'] = []
-	let totalTimeChangeSum = 0
-	let totalTimeChangeCount = 0
 
 	// Compare each test case
 	for (const [testName, result2] of Object.entries(run2.tests)) {
@@ -837,18 +760,9 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			markCount: result2.markCount,
 			methodChanges,
 		})
-
-		totalTimeChangeSum += durationChangePercent
-		totalTimeChangeCount++
 	}
 
-	// Determine overall trend
-	let overallTrend: ProfilingComparison['overallTrend'] = 'stable'
-	if (totalTimeChangeCount > 0) {
-		const avgChange = totalTimeChangeSum / totalTimeChangeCount
-		if (avgChange < -5) overallTrend = 'improving'
-		else if (avgChange > 5) overallTrend = 'degrading'
-	}
+	// Determine overall trend (removed - using summary.trend instead)
 
 	// Generate summary
 	const summary: string[] = []
@@ -856,11 +770,11 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 	const degrading = differences.filter(d => d.durationChangePercent > 1).length
 
 	if (improving > degrading) {
-		summary.push(`🎉 Performance improved in ${improving} test(s), degraded in ${degrading} test(s)`)
+		summary.push(`Performance improved in ${improving} tests, degraded in ${degrading} tests`)
 	} else if (degrading > improving) {
-		summary.push(`⚠️ Performance degraded in ${degrading} test(s), improved in ${improving} test(s)`)
+		summary.push(`Performance degraded in ${degrading} tests, improved in ${improving} tests`)
 	} else {
-		summary.push(`➡️ Performance stable with ${improving} improvements and ${degrading} degradations`)
+		summary.push(`Performance stable with ${improving} improvements and ${degrading} degradations`)
 	}
 
 	// Find biggest changes
@@ -874,12 +788,12 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 
 	if (biggestImprovement) {
 		summary.push(
-			`🚀 Biggest improvement: ${biggestImprovement.testName} (${biggestImprovement.durationChangePercent.toFixed(1)}%)`
+			`Best improvement: ${biggestImprovement.testName} (+${Math.abs(biggestImprovement.durationChangePercent).toFixed(0)}%)`
 		)
 	}
 	if (biggestDegradation) {
 		summary.push(
-			`📉 Biggest degradation: ${biggestDegradation.testName} (+${biggestDegradation.durationChangePercent.toFixed(1)}%)`
+			`Worst degradation: ${biggestDegradation.testName} (-${biggestDegradation.durationChangePercent.toFixed(0)}%)`
 		)
 	}
 
@@ -887,7 +801,6 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		run1Timestamp: run1.timestamp,
 		run2Timestamp: run2.timestamp,
 		differences,
-		overallTrend,
 		summary,
 	}
 }
@@ -973,51 +886,8 @@ function saveCompleteProfileResults(): void {
 		const enhancedResult = createProfilingResult(currentRun, comparison)
 		console.log('\n📈 ENHANCED RUN SUMMARY:')
 		console.log(`   Total tests: ${enhancedResult.summary.totalTests}`)
-		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}ms`)
-		console.log(`   Average duration: ${enhancedResult.summary.averageDuration}ms`)
-		console.log(`   Performance trend: ${enhancedResult.summary.trend.toUpperCase()}`)
-		console.log(
-			`   Performance change: ${enhancedResult.summary.performanceChange > 0 ? '+' : ''}${enhancedResult.summary.performanceChange.toFixed(1)}%`
-		)
-		console.log(`   Worst performing test: ${enhancedResult.summary.worstTest}`)
-		console.log(`   Best performing test: ${enhancedResult.summary.bestTest}`)
-
-		// Comparison summary
-		if (comparison) {
-			console.log('\n📈 PERFORMANCE TREND ANALYSIS:')
-			console.log(`   Overall trend: ${comparison.overallTrend.toUpperCase()}`)
-			for (const summary of comparison.summary) {
-				console.log(`   ${summary}`)
-			}
-
-			console.log('\n📋 DETAILED CHANGES:')
-			for (const diff of comparison.differences) {
-				const changeSymbol =
-					diff.durationChangePercent > 0 ? '🔴' : diff.durationChangePercent < 0 ? '🟢' : '⚪'
-				const changeText =
-					diff.durationChangePercent > 0
-						? `+${diff.durationChangePercent.toFixed(1)}%`
-						: `${diff.durationChangePercent.toFixed(1)}%`
-
-				console.log(
-					`   ${changeSymbol} ${diff.testName}: ${changeText} (${formatTime(Math.abs(diff.durationChange))} ${diff.durationChange > 0 ? 'slower' : 'faster'})`
-				)
-
-				// Show top method changes
-				const methodEntries = Object.entries(diff.methodChanges)
-					.filter(([, change]) => Math.abs(change.timeChangePercent) > 1)
-					.sort(([, a], [, b]) => Math.abs(b.timeChangePercent) - Math.abs(a.timeChangePercent))
-					.slice(0, 3)
-
-				for (const [methodName, change] of methodEntries) {
-					const methodSymbol =
-						change.timeChangePercent > 0 ? '↗️' : change.timeChangePercent < 0 ? '↘️' : '➡️'
-					console.log(
-						`      ${methodSymbol} ${methodName}: ${change.timeChangePercent > 0 ? '+' : ''}${change.timeChangePercent.toFixed(1)}%`
-					)
-				}
-			}
-		}
+		console.log(`   Total duration: ${enhancedResult.summary.totalDuration}`)
+		console.log(`   Performance delta: ${enhancedResult.summary.performanceDelta}`)
 	} catch (error) {
 		console.error('❌ Save error:', error)
 	}

@@ -1,6 +1,6 @@
 import {Meta} from '@storybook/react-vite'
 import {MarkedInput, useOverlay} from 'rc-marked-input'
-import type {Markup, MarkToken} from 'rc-marked-input'
+import type {Markup} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../assets/Text'
@@ -52,9 +52,7 @@ export const Overridden = () => {
 				Overlay={Overlay}
 				value={value}
 				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[
-					{markup: '@[__value__](common)' as Markup, initMark: ({value}: MarkToken) => ({children: value})},
-				]}
+				options={[{markup: '@[__value__](common)' as Markup, initMark: ({value}) => ({children: value})}]}
 			/>
 
 			<Text label="Plaint text:" value={value} />

@@ -1,5 +1,5 @@
 import {DependencyList, useContext, useEffect} from 'react'
-import {assertNonNullable, EventKey, Listener} from '@markput/core'
+import {EventKey, Listener, assertNonNullable} from '@markput/core'
 import {StoreContext} from '../providers/StoreContext'
 import {useStore} from './useStore'
 

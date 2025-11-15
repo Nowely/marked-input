@@ -7,6 +7,7 @@ A React component that lets you combine editable text with any component using a
 ## Feature
 
 - Powerful annotations tool: add, edit, remove, visualize
+- Nested marks support
 - TypeScript
 - Support for any components
 - Flexible and customizable
@@ -163,6 +164,110 @@ export const Removable = () => {
 #### Focusable
 
 If passed the `ref` prop of the `useMark` hook in ref of a component then it component can be focused by key operations.
+
+### Nested Marks
+
+Marked Input supports nested marks, allowing you to create rich, hierarchical text structures. Nested marks enable complex formatting scenarios like markdown-style text, HTML-like tags, and multi-level annotations.
+
+#### Enabling Nested Marks
+
+To enable nesting, use the `__nested__` placeholder in your markup pattern instead of `__value__`:
+
+```tsx
+// ✅ Supports nesting
+const NestedMarkup = '@[__nested__]'
+
+// ❌ Does not support nesting (plain text only)
+const FlatMarkup = '@[__value__]'
+```
+
+**Key Differences:**
+
+- `__value__` - Content is treated as plain text, nested patterns are ignored
+- `__nested__` - Content supports nested structures, nested patterns are parsed
+
+#### Simple Nesting Example
+
+```tsx
+import {MarkedInput} from 'rc-marked-input'
+
+const NestedMark = ({children, style}: {value?: string; children?: ReactNode; style?: React.CSSProperties}) => (
+    <span style={style}>{children}</span>
+)
+
+const App = () => {
+    const [value, setValue] = useState('This is **bold with *italic* inside**')
+
+    return (
+        <MarkedInput
+            Mark={NestedMark}
+            value={value}
+            onChange={setValue}
+            options={[
+                {
+                    markup: '**__nested__**',
+                    initMark: ({value, children}) => ({
+                        value,
+                        children,
+                        style: {fontWeight: 'bold'},
+                    }),
+                },
+                {
+                    markup: '*__nested__*',
+                    initMark: ({value, children}) => ({
+                        value,
+                        children,
+                        style: {fontStyle: 'italic'},
+                    }),
+                },
+            ]}
+        />
+    )
+}
+```
+
+#### HTML-like Tags with Two Values
+
+ParserV2 supports **two values** patterns where a markup contains two `__value__` placeholders that must match. This is perfect for HTML-like tags where opening and closing tags should be identical.
+
+```tsx
+const HtmlLikeMark = ({children, value, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
+    // Use value as HTML element name (e.g., "div", "span", "mark")
+    const Tag = value! as React.ElementType
+    return <Tag>{children || nested}</Tag>
+}
+
+const App = () => {
+    const [value, setValue] = useState(
+        '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>'
+    )
+
+    return (
+        <MarkedInput
+            Mark={HtmlLikeMark}
+            value={value}
+            onChange={setValue}
+            options={[
+                // Two values pattern: both __value__ must be identical
+                {markup: '<__value__>__nested__</__value__>'},
+            ]}
+        />
+    )
+}
+```
+
+**Two Values Pattern Rules:**
+
+- Contains exactly two `__value__` placeholders
+- Both values must be identical (e.g., `<div>` and `</div>`)
+- If values don't match, the pattern won't be recognized
+- Perfect for HTML/XML-like structures where tags must match
+
+**Examples of valid two values patterns:**
+
+- `<__value__>__nested__</__value__>` - HTML tags
+- `[__value__]__nested__[/__value__]` - BBCode-style tags
+- `{{__value__}}__nested__{{/__value__}}` - Template tags
 
 ### Overlay
 
@@ -332,13 +437,34 @@ type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectio
 
 ```typescript
 interface MarkToken {
-    type: 'mark' | 'text'
-    value: string
-    meta?: string
+    type: 'mark'
     content: string
     position: {start: number; end: number}
-    // ... other properties
+    descriptor: MarkupDescriptor
+    value: string
+    meta?: string
+    nested?: {
+        content: string
+        start: number
+        end: number
+    }
+    children: Token[] // Nested tokens (empty array if no nesting)
 }
+
+interface TextToken {
+    type: 'text'
+    content: string
+    position: {start: number; end: number}
+}
+
+interface MarkProps {
+    value?: string
+    meta?: string
+    nested?: string // Raw nested content as string
+    children?: ReactNode // Rendered nested content
+}
+
+type Token = TextToken | MarkToken
 ```
 
 ```typescript
@@ -385,6 +511,22 @@ interface MarkHandler<T> {
      * Passed the readOnly prop value
      */
     readOnly?: boolean
+    /**
+     * Nesting depth of this mark (0 for root-level marks)
+     */
+    depth: number
+    /**
+     * Whether this mark has nested children
+     */
+    hasChildren: boolean
+    /**
+     * Parent mark token (undefined for root-level marks)
+     */
+    parent?: MarkToken
+    /**
+     * Array of child tokens (read-only)
+     */
+    children: Token[]
 }
 ```
 
@@ -421,7 +563,13 @@ type OverlayMatch = {
 export interface Option<T = Record<string, any>> {
     /**
      * Template string instead of which the mark is rendered.
-     * Must contain placeholders: `__value__` and optional `__meta__`
+     * Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
+     *
+     * Placeholder types:
+     * - `__value__` - main content (plain text, no nesting)
+     * - `__meta__` - additional metadata (plain text, no nesting)
+     * - `__nested__` - content supporting nested structures
+     *
      * @default "@[__value__](__meta__)"
      */
     markup?: Markup
@@ -435,7 +583,8 @@ export interface Option<T = Record<string, any>> {
      */
     data?: string[]
     /**
-     * Function to initialize props for the mark component. Gets arguments from found markup
+     * Function to initialize props for the mark component. Gets arguments from found markup.
+     * The MarkToken includes value, meta, children (if using __nested__), and descriptor.
      */
     initMark?: (props: MarkToken) => T
 }

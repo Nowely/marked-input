@@ -1,8 +1,7 @@
-import {deleteMark} from '@markput/core'
+import {deleteMark, KEYBOARD} from '@markput/core'
 import {useDownOf} from '../../utils/hooks/useDownOf'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {KEYBOARD} from '@markput/core'
 
 //TODO Focus on mark and attribute for this
 //TODO different rules for editable

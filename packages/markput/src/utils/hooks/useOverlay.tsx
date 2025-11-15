@@ -1,5 +1,5 @@
 import {RefObject, useCallback} from 'react'
-import {Caret, Token, OverlayMatch, SystemEvent} from '@markput/core'
+import {Caret, OverlayMatch, SystemEvent, Token} from '@markput/core'
 import {useStore} from './useStore'
 
 export interface OverlayHandler {

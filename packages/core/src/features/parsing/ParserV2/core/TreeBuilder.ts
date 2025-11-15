@@ -1,5 +1,6 @@
-import {TextToken, MarkToken, Token, PositionRange} from '../types'
+import {MarkToken, PositionRange, TextToken, Token} from '../types'
 import {Match} from './Match'
+import {createTextToken} from '../utils/createTextToken'
 
 /**
  * Parent context for tracking active nesting during tree building
@@ -238,19 +239,7 @@ export class TreeBuilder {
 	 * Creates a text token for a range in the input
 	 */
 	private createTextToken(start: number, end: number): TextToken {
-		// Validate positions
-		if (start > end) {
-			throw new Error(
-				`Invalid text token positions: start (${start}) > end (${end}). ` +
-					`This indicates a bug in the tree building logic.`
-			)
-		}
-
-		return {
-			type: 'text',
-			content: this.input.substring(start, end),
-			position: {start, end},
-		}
+		return createTextToken(this.input, start, end)
 	}
 
 	/**

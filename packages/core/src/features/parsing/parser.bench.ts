@@ -1,4 +1,4 @@
-import {bench, describe, afterAll} from 'vitest'
+import {bench, describe} from 'vitest'
 import {Parser as ParserV2} from './ParserV2/index'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -58,45 +58,6 @@ function runBenchmark(parser: ParserV2, input: string, iterations: number) {
 	return {ops}
 }
 
-function calculateTrends(currentRun: any, previousRun: any | null): any {
-	if (!previousRun || !previousRun.summary || !previousRun.summary.performance) {
-		return {
-			changeFromLast: 'N/A',
-			regressions: [],
-		}
-	}
-
-	const prevOps = previousRun.summary.performance
-	const currentOps = currentRun.summary.performance
-
-	if (!prevOps || !currentOps) {
-		return {
-			changeFromLast: 'N/A',
-			regressions: [],
-		}
-	}
-
-	const change = ((currentOps - prevOps) / prevOps) * 100
-
-	// Find regressions (>5% slowdown)
-	const regressions: string[] = []
-
-	Object.keys(currentRun.tests).forEach(testName => {
-		const test = currentRun.tests[testName]
-		const prevTest = previousRun.tests?.[testName]
-		if (prevTest) {
-			const diff = ((test.performance[1] - prevTest.performance[1]) / prevTest.performance[1]) * 100
-
-			if (diff < -5) regressions.push(testName)
-		}
-	})
-
-	return {
-		changeFromLast: change >= 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`,
-		regressions,
-	}
-}
-
 function saveResults() {
 	if (testResults.length === 0 || hasSaved) {
 		return
@@ -111,7 +72,7 @@ function saveResults() {
 
 		testResults.forEach(result => {
 			// Remove category field and use name as key
-			const {category, name, ...testData} = result
+			const {name, ...testData} = result
 			tests[name] = testData
 		})
 
@@ -131,9 +92,15 @@ function saveResults() {
 			const existingData = fs.readFileSync(resultsPath, 'utf8')
 			const existingResults = JSON.parse(existingData)
 			if (Array.isArray(existingResults) && existingResults.length > 0) {
-				previousRun = existingResults[0]
+				// Find the most recent run with the new format (single parser)
+				for (const run of existingResults) {
+					if (run.summary && typeof run.summary.performance === 'number') {
+						previousRun = run
+						break
+					}
+				}
 			}
-		} catch (error) {
+		} catch {
 			// No previous results
 		}
 
@@ -143,7 +110,7 @@ function saveResults() {
 				const currentTest = tests[testName]
 				const prevTest = previousRun.tests[testName]
 
-				if (prevTest) {
+				if (prevTest && prevTest.performance && Array.isArray(prevTest.performance)) {
 					// Calculate change based on average value (index 1 in the array)
 					const currentAvg = currentTest.performance[1] // current average
 					const prevAvg = prevTest.performance[1] // previous average
@@ -161,14 +128,39 @@ function saveResults() {
 			})
 		}
 
+		// Calculate trends for single parser
 		const currentRun: any = {
 			timestamp: new Date().toISOString(),
-			trends: {},
+			trends: {
+				changeFromLast: 'N/A',
+				regressions: [],
+			},
 			summary,
 			tests,
 		}
 
-		currentRun.trends = calculateTrends(currentRun, previousRun)
+		// Calculate trends if we have previous run
+		if (previousRun) {
+			const prevOps = previousRun.summary.performance
+			const currentOps = currentRun.summary.performance
+
+			if (prevOps && currentOps) {
+				const change = ((currentOps - prevOps) / prevOps) * 100
+				currentRun.trends.changeFromLast = change >= 0 ? `+${change.toFixed(1)}%` : `${change.toFixed(1)}%`
+
+				// Find regressions (>5% slowdown)
+				const regressions: string[] = []
+				Object.keys(currentRun.tests).forEach(testName => {
+					const test = currentRun.tests[testName]
+					const prevTest = previousRun.tests?.[testName]
+					if (prevTest && prevTest.performance && Array.isArray(prevTest.performance)) {
+						const diff = ((test.performance[1] - prevTest.performance[1]) / prevTest.performance[1]) * 100
+						if (diff < -5) regressions.push(testName)
+					}
+				})
+				currentRun.trends.regressions = regressions
+			}
+		}
 
 		// Load existing results
 		let existingResults = []
@@ -180,7 +172,7 @@ function saveResults() {
 					existingResults = []
 				}
 			}
-		} catch (error) {
+		} catch {
 			existingResults = []
 		}
 
@@ -203,7 +195,7 @@ function saveResults() {
 			`   Performance: ${currentRun.summary.performance.toLocaleString()} ops/sec (${currentRun.trends.changeFromLast})`
 		)
 
-		if (currentRun.trends.regressions.length > 0) {
+		if (currentRun.trends.regressions && currentRun.trends.regressions.length > 0) {
 			console.log(`⚠️  Regressions: ${currentRun.trends.regressions.join(', ')}`)
 		}
 	} catch (error) {

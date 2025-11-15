@@ -1,5 +1,5 @@
 import {ForwardedRef, forwardRef} from 'react'
-import {_MarkedInput, MarkedInputProps} from '../../components/MarkedInput'
+import {MarkedInputProps, _MarkedInput} from '../../components/MarkedInput'
 import {ConfiguredMarkedInput} from '../../types'
 import {Token} from '@markput/core'
 

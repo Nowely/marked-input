@@ -1,5 +1,5 @@
-import {describe, it, expect} from 'vitest'
-import {SegmentMatcher, SegmentDefinition} from './SegmentMatcher'
+import {describe, expect, it} from 'vitest'
+import {SegmentDefinition, SegmentMatcher} from './SegmentMatcher'
 import {MarkupRegistry} from './MarkupRegistry'
 import {Markup} from '../types'
 

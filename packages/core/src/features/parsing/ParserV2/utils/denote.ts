@@ -1,6 +1,5 @@
 import {Parser} from '../Parser'
 import {MarkToken, Markup, Token} from '../types'
-import {annotate} from './annotate'
 
 /**
  * Transform annotated text to another text by recursively processing all tokens
@@ -20,7 +19,7 @@ import {annotate} from './annotate'
 export function denote(value: string, callback: (mark: MarkToken) => string, markups: Markup[]): string {
 	if (!markups.length) return value
 
-	const tokens = new Parser(markups).split(value)
+	const tokens = new Parser(markups).parse(value)
 
 	return processTokensWithCallback(tokens, callback)
 }

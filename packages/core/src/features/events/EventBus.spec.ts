@@ -1,4 +1,4 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {EventBus} from '.'
 import {EventKey} from '../../shared/types'
 
@@ -6,7 +6,6 @@ describe(`Utility: ${EventBus.name}`, () => {
 	let eventBus: EventBus
 	let mockListener1: ReturnType<typeof vi.fn<(e: string) => void>>
 	let mockListener2: ReturnType<typeof vi.fn<(e: number) => void>>
-	let mockListener3: ReturnType<typeof vi.fn<(e: any) => void>>
 
 	// Create mock event keys
 	const EVENT_A = Symbol('EVENT_A') as EventKey<string>
@@ -17,7 +16,6 @@ describe(`Utility: ${EventBus.name}`, () => {
 		eventBus = new EventBus()
 		mockListener1 = vi.fn<(e: string) => void>()
 		mockListener2 = vi.fn<(e: number) => void>()
-		mockListener3 = vi.fn<(e: any) => void>()
 	})
 
 	describe('constructor', () => {
@@ -118,13 +116,6 @@ describe(`Utility: ${EventBus.name}`, () => {
 			expect(mockListener1).toHaveBeenNthCalledWith(2, 'second')
 			expect(mockListener1).toHaveBeenNthCalledWith(3, 'third')
 		})
-
-		it('should handle complex values', () => {
-			const complexValue = {nested: {array: [1, 2, 3]}, string: 'test'}
-			eventBus.on(EVENT_A, mockListener1)
-
-			eventBus.send(EVENT_A, 'test')
-		})
 	})
 
 	describe('unsubscribe functionality', () => {
@@ -142,7 +133,7 @@ describe(`Utility: ${EventBus.name}`, () => {
 
 		it('should allow unsubscribing specific listeners while keeping others', () => {
 			const unsubscribe1 = eventBus.on(EVENT_A, mockListener1)
-			const unsubscribe2 = eventBus.on(EVENT_A, mockListener2)
+			eventBus.on(EVENT_A, mockListener2)
 
 			eventBus.send(EVENT_A, 'both')
 			expect(mockListener1).toHaveBeenCalledTimes(1)

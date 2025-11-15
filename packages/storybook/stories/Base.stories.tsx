@@ -1,6 +1,6 @@
 import {Meta, StoryObj} from '@storybook/react-vite'
-import {createMarkedInput, MarkedInput, denote} from 'rc-marked-input'
-import type {Markup, MarkToken} from 'rc-marked-input'
+import {MarkedInput, createMarkedInput, denote} from 'rc-marked-input'
+import type {MarkToken, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../assets/Button'
 import {Text} from '../assets/Text'
@@ -30,13 +30,13 @@ const ConfiguredMarkedInput = createMarkedInput({
 		{
 			markup: PrimaryMarkup,
 			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+			initMark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
 		},
 		{
 			markup: DefaultMarkup,
 			trigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],
-			initMark: ({value}) => ({label: value}),
+			initMark: ({value}) => ({label: value || ''}),
 		},
 	],
 })

@@ -1,10 +1,8 @@
-import {Markup} from './types'
-import {Token} from './types'
-import {MarkToken} from './types'
-import {MarkupRegistry} from './utils/MarkupRegistry'
+import {Markup, Token, MarkToken} from './types'
+import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
-import {SegmentMatcher} from './utils/SegmentMatcher'
-import {createTextToken} from './core/TokenBuilder'
+import {SegmentMatcher} from './core/SegmentMatcher'
+import {createTextToken} from './utils/createTextToken'
 import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
 import {processTokensWithCallback} from './utils/denote'
@@ -170,68 +168,46 @@ export class Parser {
 	}
 
 	/**
-	 * Escapes markup segments in the given text
+	 * Escapes markup segments in the given text using backslash
+	 *
+	 * This method uses the registry's unique segments and escapes them by adding
+	 * a backslash before each character of each segment, preventing them from being
+	 * parsed as markup when the text is processed again.
 	 *
 	 * @param text - Text to escape segments in
-	 * @param escaper - Function that receives a segment string and returns the escaped version.
-	 *                  If not provided, segments are removed (replaced with empty strings)
-	 * @returns Text with escaped or removed segments
+	 * @returns Text with escaped segments
 	 *
-	 * @deprecated This method has known issues and will be rewritten in a future version.
-	 * TODO: Rewrite to properly handle complete patterns, not just segments
+	 * @example
+	 * ```typescript
+	 * const parser = new Parser(['**__nested__**', '@[__value__]'])
+	 * const escaped = parser.escape('Hello **world** and @[user]')
+	 * // Returns: 'Hello \*\*world\*\* and \@[user]'
+	 * ```
 	 */
-	escape(text: string, escaper?: (segment: string) => string): string {
-		const matches = this.segmentMatcher.search(text)
-		if (matches.length === 0) return text
-
-		return (
-			matches.reduce((result, match, i) => {
-				const prevEnd = i === 0 ? 0 : matches[i - 1].end
-				return (
-					result +
-					text.substring(prevEnd, match.start) +
-					(escaper ? escaper(text.substring(match.start, match.end)) : '')
-				)
-			}, '') + text.substring(matches[matches.length - 1].end)
-		)
-	}
-
-	// ===== BACKWARD COMPATIBILITY ALIASES =====
-	// These methods are deprecated and will be removed in v2.0
-	// Use the new method names instead: parse(), stringify(), transform()
-
-	/**
-	 * @deprecated Use parse() instead. This alias will be removed in v2.0
-	 */
-	split(value: string): Token[] {
-		return this.parse(value)
+	escape(text: string): string {
+		return this.registry.segments
+			.filter((segment): segment is string => typeof segment === 'string')
+			.sort((a, b) => b.length - a.length)
+			.reduce((result, segment) => result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')), text)
 	}
 
 	/**
-	 * @deprecated Use stringify() instead. This alias will be removed in v2.0
+	 * Unescapes markup patterns in the given text
+	 *
+	 * This method removes escape characters from segments that were previously
+	 * escaped using escape(), allowing the patterns to be parsed normally.
+	 *
+	 * @param text - Text to unescape patterns in
+	 * @returns Text with unescaped patterns
+	 *
+	 * @example
+	 * ```typescript
+	 * const parser = new Parser(['**__nested__**', '@[__value__]'])
+	 * const unescaped = parser.unescape('Hello \*\*world\*\* and \@[user]')
+	 * // Returns: 'Hello **world** and @[user]'
+	 * ```
 	 */
-	join(tokens: Token[]): string {
-		return this.stringify(tokens)
-	}
-
-	/**
-	 * @deprecated Use transform() instead. This alias will be removed in v2.0
-	 */
-	denote(value: string, callback: (mark: MarkToken) => string): string {
-		return this.transform(value, callback)
-	}
-
-	/**
-	 * @deprecated Use Parser.parse() instead. This alias will be removed in v2.0
-	 */
-	static split(value: string, options?: {markup: Markup[]}): Token[] {
-		return Parser.parse(value, options)
-	}
-
-	/**
-	 * @deprecated Use Parser.stringify() instead. This alias will be removed in v2.0
-	 */
-	static join(tokens: Token[]): string {
-		return Parser.stringify(tokens)
+	unescape(text: string): string {
+		return text.replaceAll(/\\(.)/g, '$1')
 	}
 }

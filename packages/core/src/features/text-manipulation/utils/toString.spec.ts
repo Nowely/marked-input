@@ -1,8 +1,7 @@
-import {describe, it, expect} from 'vitest'
+import {describe, expect, it} from 'vitest'
 import {toString} from './toString'
-import {Token} from '../../parsing/ParserV2/types'
+import {Token, Markup} from '../../parsing/ParserV2/types'
 import {MarkupDescriptor} from '../../parsing/ParserV2/core/MarkupDescriptor'
-import {Markup} from '../../parsing/ParserV2/types'
 
 // Helper to create mock MarkupDescriptor for tests
 const createMockDescriptor = (markup: Markup, index: number): MarkupDescriptor => ({

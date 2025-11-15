@@ -22,7 +22,7 @@ export const Container = memo(() => {
 
 	useListener(
 		'input',
-		e => {
+		() => {
 			bus.send(SystemEvent.Change)
 		},
 		[]
