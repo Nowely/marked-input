@@ -8,7 +8,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 		next: 0,
 	}
 	const placeIndex = placeMap[place]
-	const {focus} = store
+	const {focus} = store.nodes
 
 	const [span1, , span2] = store.tokens.splice(focus.index - placeIndex, 3)
 	const content1 = span1.type === 'text' ? span1.content : span1.content

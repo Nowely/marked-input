@@ -9,9 +9,11 @@ import {Parser} from '../parsing/ParserV2/Parser'
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
-	readonly focus = new NodeProxy(undefined, this)
-	//TODO rename to input node?
-	readonly input = new NodeProxy(undefined, this)
+
+	readonly nodes = {
+		focus: new NodeProxy(undefined, this),
+		input: new NodeProxy(undefined, this),
+	}
 
 	props: TProps
 	tokens: Token[] = []
@@ -46,8 +48,7 @@ function set<TProps extends CoreMarkputProps>(target: Store<TProps>, prop: keyof
 	switch (prop) {
 		case 'bus':
 		case 'refs':
-		case 'focus':
-		case 'input':
+		case 'nodes':
 		case 'key':
 			return false
 	}

@@ -20,7 +20,7 @@ export function useKeyDown() {
 	useListener('keydown', selectAllText, [])
 
 	function shiftFocusPrev(event: KeyboardEvent) {
-		const {focus} = store
+		const {focus} = store.nodes
 		if ((focus.isMark && !focus.isEditable) || focus.isCaretAtBeginning) {
 			const prev = focus.prev
 			prev.focus()
@@ -33,7 +33,7 @@ export function useKeyDown() {
 	}
 
 	function shiftFocusNext(event: KeyboardEvent) {
-		const {focus} = store
+		const {focus} = store.nodes
 		if ((focus.isMark && !focus.isEditable) || focus.isCaretAtEnd) {
 			const next = focus.next
 			next.focus()
@@ -45,20 +45,20 @@ export function useKeyDown() {
 	}
 
 	function deleteSelfMark() {
-		if (store.focus.isMark) deleteMark('self', store)
+		if (store.nodes.focus.isMark) deleteMark('self', store)
 	}
 
 	function deletePrevMark(event: KeyboardEvent) {
-		if (store.focus.isSpan && store.focus.isCaretAtBeginning && store.focus.prev.target) {
+		if (store.nodes.focus.isSpan && store.nodes.focus.isCaretAtBeginning && store.nodes.focus.prev.target) {
 			event.preventDefault()
 			deleteMark('prev', store)
 		}
 	}
 
 	//TODO pass focus
-	//TODO on && !store.focus.next.isEditable remove first symbol
+	//TODO on && !store.nodes.focus.next.isEditable remove first symbol
 	function deleteNextMark(event: KeyboardEvent) {
-		if (store.focus.isSpan && store.focus.isCaretAtEnd && store.focus.next.target) {
+		if (store.nodes.focus.isSpan && store.nodes.focus.isCaretAtEnd && store.nodes.focus.next.target) {
 			event.preventDefault()
 			deleteMark('next', store)
 		}

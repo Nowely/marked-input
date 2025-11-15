@@ -11,7 +11,7 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 		return store.refs.overlay
 	},
 	focus() {
-		store.focus.head?.focus()
+		store.nodes.focus.head?.focus()
 	},
 })
 

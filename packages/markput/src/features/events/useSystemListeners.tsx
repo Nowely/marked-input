@@ -11,15 +11,15 @@ export function useSystemListeners() {
 		() => {
 			const {onChange} = store.props
 
-			if (!store.focus.target) return
+			if (!store.nodes.focus.target) return
 
 			// Update token content
-			const token = store.tokens[store.focus.index]
+			const token = store.tokens[store.nodes.focus.index]
 			if (token.type === 'text') {
-				token.content = store.focus.content
+				token.content = store.nodes.focus.content
 			} else if (token.type === 'mark') {
 				// Update mark value from the editable content
-				token.value = store.focus.content
+				token.value = store.nodes.focus.content
 			}
 
 			onChange?.(toString(store.tokens))
@@ -64,18 +64,18 @@ export function useSystemListeners() {
 			const newSpan = createNewSpan(span, annotation, index, source)
 
 			store.recovery = Mark
-				? {caret: 0, anchor: store.input.next, isNext: true}
-				: {caret: index + annotation.length, anchor: store.input}
+				? {caret: 0, anchor: store.nodes.input.next, isNext: true}
+				: {caret: index + annotation.length, anchor: store.nodes.input}
 
-			if (store.input.target) {
-				store.input.content = newSpan
-				const inputToken = store.tokens[store.input.index]
+			if (store.nodes.input.target) {
+				store.nodes.input.content = newSpan
+				const inputToken = store.tokens[store.nodes.input.index]
 				if (inputToken.type === 'text') {
 					inputToken.content = newSpan
 				}
 
-				store.focus.target = store.input.target
-				store.input.clear()
+				store.nodes.focus.target = store.nodes.input.target
+				store.nodes.input.clear()
 				onChange?.(toString(store.tokens))
 				store.bus.send(SystemEvent.Parse)
 			}

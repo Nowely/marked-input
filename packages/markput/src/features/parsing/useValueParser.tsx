@@ -49,7 +49,7 @@ export const useValueParser = () => {
 	useListener(
 		SystemEvent.Parse,
 		() => {
-			store.tokens = store.focus.target ? getTokensByUI(store) : getTokensByValue(store)
+			store.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]
 	)
@@ -57,7 +57,7 @@ export const useValueParser = () => {
 
 // Inline getTokensByUI
 function getTokensByUI(store: Store) {
-	const {focus} = store
+	const {focus} = store.nodes
 
 	if (!store.parser) {
 		return store.tokens
