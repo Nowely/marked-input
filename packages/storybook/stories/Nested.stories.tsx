@@ -3,6 +3,7 @@ import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import {ReactNode, useState} from 'react'
 import {Text} from '../assets/Text'
+import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
 	title: 'MarkedInput/Nested',
@@ -295,6 +296,11 @@ const MarkdownMark = ({
 	style?: React.CSSProperties
 }) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
 
+const MarkdownInput = createMarkedInput({
+	Mark: MarkdownMark,
+	options: MarkdownOptions,
+})
+
 export const ComplexMarkdown: Story = {
 	render: () => {
 		const [value, setValue] = useState(`# Welcome to **Marked Input**
@@ -324,103 +330,7 @@ Visit our [documentation](https://docs.example.com) for more details.
 
 		return (
 			<>
-				<MarkedInput
-					Mark={MarkdownMark}
-					value={value}
-					onChange={setValue}
-					options={[
-						{
-							markup: '# __nested__\n',
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'},
-							}),
-						},
-						{
-							markup: '## __nested__\n',
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {display: 'block', fontSize: '1.5em', fontWeight: 'bold', margin: '0.4em 0'},
-							}),
-						},
-						{
-							markup: '- __nested__\n',
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {display: 'block', paddingLeft: '1em'},
-							}),
-						},
-						{
-							markup: '**__nested__**',
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontWeight: 'bold'},
-							}),
-						},
-						{
-							markup: '*__nested__*',
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontStyle: 'italic'},
-							}),
-						},
-						{
-							markup: '`__value__`',
-							initMark: ({value}) => ({
-								value,
-								style: {
-									backgroundColor: '#f6f8fa',
-									padding: '2px 6px',
-									borderRadius: '3px',
-									fontFamily: 'monospace',
-									fontSize: '0.9em',
-								},
-							}),
-						},
-						{
-							markup: '```__meta__\n__value__```',
-							initMark: ({value, meta}) => ({
-								value,
-								meta,
-								style: {
-									display: 'block',
-									backgroundColor: '#f6f8fa',
-									padding: '12px',
-									borderRadius: '6px',
-									fontFamily: 'monospace',
-									fontSize: '0.9em',
-									whiteSpace: 'pre-wrap',
-									border: '1px solid #d1d9e0',
-									margin: '8px 0',
-								},
-							}),
-						},
-						{
-							markup: '[__value__](__meta__)',
-							initMark: ({value, meta}) => ({
-								value,
-								meta,
-								style: {
-									color: '#0969da',
-									textDecoration: 'underline',
-									cursor: 'pointer',
-								},
-							}),
-						},
-						{
-							markup: '~~__value__~~',
-							initMark: ({value}) => ({
-								value,
-								style: {textDecoration: 'line-through', opacity: 0.7},
-							}),
-						},
-					]}
-				/>
+				<MarkdownInput value={value} onChange={setValue} />
 				<Text label="Raw value:" value={value} />
 			</>
 		)
