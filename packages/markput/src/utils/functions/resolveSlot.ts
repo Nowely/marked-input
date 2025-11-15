@@ -41,10 +41,7 @@ export function resolveSlot(slotName: SlotName, state: Store): ElementType {
  * @param state - Store state
  * @returns Props object to spread onto the component
  */
-export function resolveSlotProps(
-	slotName: SlotName,
-	state: Store
-): HTMLAttributes<HTMLElement> | undefined {
+export function resolveSlotProps(slotName: SlotName, state: Store): HTMLAttributes<HTMLElement> | undefined {
 	const props = state.props.slotProps?.[slotName]
 	return props ? convertDataAttrs(props) : undefined
 }
@@ -75,4 +72,3 @@ export function mergeStyles(...styles: (CSSProperties | undefined | null | false
 
 	return Object.keys(merged).length > 0 ? merged : undefined
 }
-

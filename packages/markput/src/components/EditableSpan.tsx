@@ -14,14 +14,7 @@ export const EditableSpan = () => {
 		true
 	)
 
-	return (
-		<SpanComponent
-			{...spanProps}
-			ref={mark.ref}
-			contentEditable={!mark.readOnly}
-			onPaste={handlePaste}
-		/>
-	)
+	return <SpanComponent {...spanProps} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
 }
 
 function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {

@@ -177,8 +177,8 @@ export const StyleMerging: Story = {
 			<>
 				<h3>Style Merging</h3>
 				<p>
-					When using both slots and slotProps, styles merge intelligently.
-					slotProps styles override slot styles:
+					When using both slots and slotProps, styles merge intelligently. slotProps styles override slot
+					styles:
 				</p>
 
 				<MarkedInput
@@ -241,8 +241,9 @@ export const DataAttributes: Story = {
 
 				<div style={{marginTop: '16px', padding: '12px', backgroundColor: '#f0f0f0', borderRadius: '4px'}}>
 					<p style={{marginTop: 0}}>
-						<strong>Try inspecting the element:</strong> You'll see data-test-id, data-module, data-user-id attributes on the container.
-						These are automatically converted from camelCase (dataTestId → data-test-id).
+						<strong>Try inspecting the element:</strong> You'll see data-test-id, data-module, data-user-id
+						attributes on the container. These are automatically converted from camelCase (dataTestId →
+						data-test-id).
 					</p>
 				</div>
 

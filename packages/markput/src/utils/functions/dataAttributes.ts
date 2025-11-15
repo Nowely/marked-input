@@ -20,7 +20,10 @@ export function convertDataAttrs(obj: Record<string, any> | undefined): Record<s
 	return Object.fromEntries(
 		Object.entries(obj).map(([key, value]) => {
 			if (key.startsWith('data') && key.length > 4 && key[4] === key[4].toUpperCase()) {
-				const kebab = key.slice(4).replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+				const kebab = key
+					.slice(4)
+					.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+					.toLowerCase()
 				return [`data-${kebab}`, value]
 			}
 			return [key, value]

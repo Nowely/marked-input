@@ -9,9 +9,7 @@ describe('Slots API', () => {
 
 	describe('Container slot', () => {
 		it('should use default div component when no slot is provided', () => {
-			const {container} = render(
-				<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />
-			)
+			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />)
 
 			const containerDiv = container.querySelector('div')
 			expect(containerDiv).toBeInTheDocument()
@@ -274,22 +272,14 @@ describe('Slots API', () => {
 			))
 			CustomSpan.displayName = 'CustomSpan'
 
-			render(
-				<MarkedInput
-					Mark={TestMark}
-					value="Hello world"
-					slots={{span: CustomSpan}}
-				/>
-			)
+			render(<MarkedInput Mark={TestMark} value="Hello world" slots={{span: CustomSpan}} />)
 
 			const span = screen.getByTestId('custom-span')
 			expect(span).toHaveAttribute('contenteditable', 'true')
 		})
 
 		it('should respect suppressContentEditableWarning when set', () => {
-			const {container} = render(
-				<MarkedInput Mark={TestMark} value="Hello world" />
-			)
+			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
 			const textSpan = container.querySelector('span[contenteditable]')
 			// Should not throw warning during render
@@ -424,13 +414,7 @@ describe('Slots API', () => {
 		})
 
 		it('should handle undefined slotProps gracefully', () => {
-			const {container} = render(
-				<MarkedInput
-					Mark={TestMark}
-					value="Hello world"
-					slotProps={undefined}
-				/>
-			)
+			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" slotProps={undefined} />)
 
 			const div = container.querySelector('div')
 			expect(div).toBeInTheDocument()
@@ -459,9 +443,9 @@ describe('Slots API', () => {
 					Mark={TestMark}
 					value="@[hello] world @[test]"
 					slots={{
-						span: forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
-							(props, ref) => <span {...props} ref={ref} data-testid="text-span" />,
-						),
+						span: forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
+							<span {...props} ref={ref} data-testid="text-span" />
+						)),
 					}}
 				/>
 			)
@@ -476,16 +460,9 @@ describe('Slots API', () => {
 			))
 			CustomContainer.displayName = 'CustomContainer'
 
-			render(
-				<MarkedInput
-					Mark={TestMark}
-					value="Hello world"
-					slots={{container: CustomContainer}}
-				/>
-			)
+			render(<MarkedInput Mark={TestMark} value="Hello world" slots={{container: CustomContainer}} />)
 
 			expect(screen.getByTestId('custom-container')).toBeInTheDocument()
 		})
 	})
 })
-
