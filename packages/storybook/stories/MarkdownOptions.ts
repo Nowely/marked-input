@@ -1,5 +1,5 @@
-import type {CSSProperties, ReactNode} from 'react'
-import type {Markup, Option, MarkProps} from 'rc-marked-input'
+import type {CSSProperties} from 'react'
+import type {Markup, Option} from 'rc-marked-input'
 
 /**
  * Preset configuration for a single markdown markup

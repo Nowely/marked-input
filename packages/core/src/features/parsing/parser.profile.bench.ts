@@ -701,8 +701,6 @@ function loadExistingHistory(): void {
  */
 function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): ProfilingComparison {
 	const differences: ProfilingComparison['differences'] = []
-	let totalTimeChangeSum = 0
-	let totalTimeChangeCount = 0
 
 	// Compare each test case
 	for (const [testName, result2] of Object.entries(run2.tests)) {
@@ -762,9 +760,6 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			markCount: result2.markCount,
 			methodChanges,
 		})
-
-		totalTimeChangeSum += durationChangePercent
-		totalTimeChangeCount++
 	}
 
 	// Determine overall trend (removed - using summary.trend instead)

@@ -1,6 +1,6 @@
 import {FunctionComponent, ReactNode} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
-import {MarkToken, Markup} from '@markput/core'
+import {Markup} from '@markput/core'
 
 /**
  * Simplified props passed to Mark components via initMark

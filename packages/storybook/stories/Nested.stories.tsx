@@ -234,53 +234,53 @@ export const InteractiveNested: Story = {
 // Example 5: Editable Nested Content
 // ============================================================================
 
-const EditableMark = ({children}: {value?: string; children?: ReactNode}) => {
-	const mark = useMark()
+// const EditableMark = ({children}: {value?: string; children?: ReactNode}) => {
+// 	const mark = useMark()
+//
+// 	return (
+// 		<span
+// 			ref={mark.ref}
+// 			contentEditable
+// 			suppressContentEditableWarning
+// 			style={{
+// 				display: 'inline-block',
+// 				padding: '4px 8px',
+// 				margin: '2px',
+// 				border: '1px dashed #999',
+// 				borderRadius: '4px',
+// 				backgroundColor: '#fff9e6',
+// 				minWidth: '20px',
+// 			}}
+// 		>
+// 			{children}
+// 		</span>
+// 	)
+// }
 
-	return (
-		<span
-			ref={mark.ref}
-			contentEditable
-			suppressContentEditableWarning
-			style={{
-				display: 'inline-block',
-				padding: '4px 8px',
-				margin: '2px',
-				border: '1px dashed #999',
-				borderRadius: '4px',
-				backgroundColor: '#fff9e6',
-				minWidth: '20px',
-			}}
-		>
-			{children}
-		</span>
-	)
-}
-
-//TODO fix it
-const EditableNested: Story = {
-	render: () => {
-		const [value, setValue] = useState('@[Edit this @[and this @[and even this]]]')
-
-		return (
-			<>
-				<MarkedInput
-					Mark={EditableMark}
-					value={value}
-					onChange={setValue}
-					options={[{markup: '@[__nested__]', trigger: '@'}]}
-				/>
-				<Text label="Raw value:" value={value} />
-				<div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-					<p>
-						<strong>Instructions:</strong> Click inside any mark to edit its content. Nested marks are
-						independently editable.
-					</p>
-				</div>
-			</>
-		)
-	},
-}
+// TODO fix editable nested marks support
+// const EditableNested: Story = {
+// 	render: () => {
+// 		const [value, setValue] = useState('@[Edit this @[and this @[and even this]]]')
+//
+// 		return (
+// 			<>
+// 				<MarkedInput
+// 					Mark={EditableMark}
+// 					value={value}
+// 					onChange={setValue}
+// 					options={[{markup: '@[__nested__]', trigger: '@'}]}
+// 				/>
+// 				<Text label="Raw value:" value={value} />
+// 				<div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
+// 					<p>
+// 						<strong>Instructions:</strong> Click inside any mark to edit its content. Nested marks are
+// 						independently editable.
+// 					</p>
+// 				</div>
+// 			</>
+// 		)
+// 	},
+// }
 
 // ============================================================================
 // Example 6: Complex Markdown Document
