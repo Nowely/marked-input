@@ -1,4 +1,4 @@
-import {FunctionComponent, ReactNode} from 'react'
+import {ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {Markup} from '@markput/core'
 
@@ -84,6 +84,51 @@ export interface Option<T = Record<string, any>> {
 }
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
+
+/**
+ * Available slots for customizing MarkedInput internal components
+ */
+export interface Slots {
+	/**
+	 * Root container component
+	 * @default 'div'
+	 */
+	container?: ElementType<HTMLAttributes<HTMLDivElement>>
+	/**
+	 * Text span component for rendering text tokens
+	 * @default 'span'
+	 */
+	span?: ElementType<HTMLAttributes<HTMLSpanElement>>
+}
+
+/**
+ * Data attributes with automatic camelCase to kebab-case conversion
+ * Keys starting with 'data' followed by camelCase will be converted to data-* attributes
+ *
+ * @example
+ * // Input
+ * { dataUserId: '123', dataUserName: 'John' }
+ * // Output: data-user-id="123" data-user-name="John"
+ */
+export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
+
+/**
+ * Props for each slot component
+ */
+export interface SlotProps {
+	/**
+	 * Props to pass to the container slot.
+	 * Supports all standard HTML attributes.
+	 * Data attributes can be passed using camelCase keys starting with 'data'.
+	 */
+	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
+	/**
+	 * Props to pass to the span slot.
+	 * Supports all standard HTML attributes.
+	 * Data attributes can be passed using camelCase keys starting with 'data'.
+	 */
+	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
+}
 
 export interface MarkedInputHandler {
 	/**

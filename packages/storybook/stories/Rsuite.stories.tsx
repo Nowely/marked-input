@@ -82,19 +82,22 @@ export const TaggedInput = () => {
 						initMark: ({value}) => ({children: value, style: {marginLeft: 0}}),
 					},
 				]}
-			>
-				<div onKeyDown={e => e.key === 'Enter' && e.preventDefault()} />
-				<span
-					className="rs-tag rs-tag-md"
-					style={{
-						backgroundColor: 'white',
-						paddingLeft: 0,
-						paddingRight: 0,
-						whiteSpace: 'pre-wrap',
-						minWidth: 5,
-					}}
-				/>
-			</MarkedInput>
+				slotProps={{
+					container: {
+						onKeyDown: e => e.key === 'Enter' && e.preventDefault(),
+					},
+					span: {
+						className: 'rs-tag rs-tag-md',
+						style: {
+							backgroundColor: 'white',
+							paddingLeft: 0,
+							paddingRight: 0,
+							whiteSpace: 'pre-wrap',
+							minWidth: 5,
+						},
+					},
+				}}
+			/>
 
 			<br />
 			<Text label="Plaint text:" value={value} />

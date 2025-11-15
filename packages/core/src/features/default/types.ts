@@ -27,11 +27,13 @@ interface MarkedInputProps<T = any> {
 	/** Additional style */
 	style?: any
 	/**
-	 * Override props of internal components via react elements
-	 * @param div - container
-	 * @param span - span
+	 * Override internal components using slots
 	 */
-	children?: any
+	slots?: any
+	/**
+	 * Props to pass to slot components
+	 */
+	slotProps?: any
 }
 
 export interface InnerMarkedInputProps extends MarkedInputProps<unknown> {

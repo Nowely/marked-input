@@ -1,12 +1,12 @@
 import {memo} from 'react'
-import {getChildProps} from '../utils/functions/getChildProps'
+import {resolveSlot, resolveSlotProps, mergeClassNames, mergeStyles} from '../utils/functions/resolveSlot'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {Token} from './Token'
 import {SystemEvent} from '@markput/core'
 
 export const Container = memo(() => {
-	const {className, style, refs, tokens, bus, key} = useStore(
+	const {className, style, refs, tokens, bus, key, ContainerComponent, containerProps} = useStore(
 		store => ({
 			className: store.props.className,
 			style: store.props.style,
@@ -14,11 +14,11 @@ export const Container = memo(() => {
 			tokens: store.tokens,
 			bus: store.bus,
 			key: store.key,
+			ContainerComponent: resolveSlot('container', store),
+			containerProps: resolveSlotProps('container', store),
 		}),
 		true
 	)
-
-	const divOverride = useStore(getChildProps('div'), true)
 
 	useListener(
 		'input',
@@ -29,11 +29,16 @@ export const Container = memo(() => {
 	)
 
 	return (
-		<div {...divOverride} ref={refs.container} className={className} style={style}>
+		<ContainerComponent
+			ref={refs.container}
+			{...containerProps}
+			className={mergeClassNames(className, containerProps?.className)}
+			style={mergeStyles(style, containerProps?.style)}
+		>
 			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />
 			))}
-		</div>
+		</ContainerComponent>
 	)
 })
 

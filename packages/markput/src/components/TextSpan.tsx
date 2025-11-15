@@ -1,5 +1,5 @@
 import {ClipboardEvent, useRef} from 'react'
-import {getChildProps} from '../utils/functions/getChildProps'
+import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
 import {useStore} from '../utils/hooks/useStore'
 import {useToken} from '../utils/providers/TokenProvider'
 
@@ -23,8 +23,14 @@ import {useToken} from '../utils/providers/TokenProvider'
 export const TextSpan = () => {
 	const token = useToken()
 	const ref = useRef<HTMLSpanElement>(null)
-	const readOnly = useStore(state => state.props.readOnly)
-	const spanOverride = useStore(getChildProps('span'), true)
+	const {readOnly, SpanComponent, spanProps} = useStore(
+		state => ({
+			readOnly: state.props.readOnly,
+			SpanComponent: resolveSlot('span', state),
+			spanProps: resolveSlotProps('span', state),
+		}),
+		true
+	)
 
 	// Ensure it's a TextToken
 	if (token.type !== 'text') {
@@ -32,15 +38,15 @@ export const TextSpan = () => {
 	}
 
 	return (
-		<span
-			{...spanOverride}
+		<SpanComponent
+			{...spanProps}
 			ref={ref}
 			contentEditable={!readOnly}
 			onPaste={handlePaste}
 			suppressContentEditableWarning
 		>
 			{token.content}
-		</span>
+		</SpanComponent>
 	)
 }
 

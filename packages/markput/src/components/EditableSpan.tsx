@@ -1,14 +1,20 @@
 import {ClipboardEvent} from 'react'
-import {getChildProps} from '../utils/functions/getChildProps'
+import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
 import {useMark} from '../utils/hooks/useMark'
 import {useStore} from '../utils/hooks/useStore'
 
 //Editable block - edit text here
 export const EditableSpan = () => {
 	const mark = useMark()
-	const spanOverride = useStore(getChildProps('span'), true)
+	const {SpanComponent, spanProps} = useStore(
+		state => ({
+			SpanComponent: resolveSlot('span', state),
+			spanProps: resolveSlotProps('span', state),
+		}),
+		true
+	)
 
-	return <span {...spanOverride} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
+	return <SpanComponent {...spanProps} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
 }
 
 function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {

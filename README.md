@@ -343,24 +343,61 @@ export const SelectableOverlay = () => {
 
 > **Note:** Recommend to pass the `ref` for an overlay component. It used to detect outside click.
 
-### Overriding internal components
+### Slots
 
-The `children` prop allows to pass elements to overrides internal components.
-The `div` tag for container. The `span` tag for text cell.
+The `slots` and `slotProps` props allow you to customize internal components with type safety and flexibility.
+
+#### Available Slots
+
+- **container** - Root div wrapper for the entire component
+- **span** - Text span elements for rendering text tokens
+
+#### Basic Usage
 
 ```tsx
-<ConfiguredMarkedInput value={value} onChange={setValue}>
-    <div
-        onClick={(e) => console.log('onCLick')}
-        onInput={(e) => console.log('onInput')}
-        /* other props */
-        onBlur={(e) => console.log('onBlur')}
-        onFocus={(e) => console.log('onFocus')}
-        onKeyDown={(e) => console.log('onKeyDown')}
-    />
-    <span className='span-class'/>
-</>
+<MarkedInput
+    Mark={Mark}
+    value={value}
+    onChange={setValue}
+    slotProps={{
+        container: {
+            onKeyDown: e => console.log('onKeyDown'),
+            onFocus: e => console.log('onFocus'),
+            style: {border: '1px solid #ccc', padding: '8px'},
+        },
+        span: {
+            className: 'custom-text-span',
+            style: {fontSize: '14px'},
+        },
+    }}
+/>
 ```
+
+#### Custom Components
+
+You can also replace the default components entirely using the `slots` prop:
+
+```tsx
+const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => (
+    <div {...props} ref={ref} style={{...props.style, border: '2px solid blue'}} />
+))
+
+const CustomSpan = forwardRef<HTMLSpanElement, HTMLAttributes<HTMLSpanElement>>((props, ref) => (
+    <span {...props} ref={ref} style={{...props.style, fontWeight: 'bold'}} />
+))
+
+<MarkedInput
+    Mark={Mark}
+    value={value}
+    onChange={setValue}
+    slots={{
+        container: CustomContainer,
+        span: CustomSpan,
+    }}
+/>
+```
+
+See the [MUI documentation](https://mui.com/material-ui/customization/overriding-component-structure/) for more information about the slots pattern.
 
 ### Overall view
 
@@ -407,16 +444,18 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 
 ### MarkedInput
 
-| Name         | Type                         | Default       | Description                            |
-| ------------ | ---------------------------- | ------------- | -------------------------------------- |
-| value        | string                       | `undefined`   | Annotated text with markups for mark   |
-| defaultValue | string                       | `undefined`   | Default value                          |
-| onChange     | (value: string) => void      | `undefined`   | Change event                           |
-| Mark         | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups |
-| Overlay      | ComponentType                | `Suggestions` | Component that is rendered by trigger  |
-| readOnly     | boolean                      | `undefined`   | Prevents from changing the value       |
-| options      | OptionProps[]                | `[{}]`        | Passed options for configure           |
-| trigger      | OverlayTrigger               | `change`      | Triggering events for overlay          |
+| Name         | Type                         | Default       | Description                                    |
+| ------------ | ---------------------------- | ------------- | ---------------------------------------------- |
+| value        | string                       | `undefined`   | Annotated text with markups for mark           |
+| defaultValue | string                       | `undefined`   | Default value                                  |
+| onChange     | (value: string) => void      | `undefined`   | Change event                                   |
+| Mark         | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups         |
+| Overlay      | ComponentType                | `Suggestions` | Component that is rendered by trigger          |
+| readOnly     | boolean                      | `undefined`   | Prevents from changing the value               |
+| options      | OptionProps[]                | `[{}]`        | Passed options for configure                   |
+| trigger      | OverlayTrigger               | `change`      | Triggering events for overlay                  |
+| slots        | Slots                        | `undefined`   | Override internal components (container, span) |
+| slotProps    | SlotProps                    | `undefined`   | Props to pass to slot components               |
 
 ### Helpers
 

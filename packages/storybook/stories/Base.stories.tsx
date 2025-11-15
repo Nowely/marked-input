@@ -53,15 +53,19 @@ export const Configured: Story = {
 
 		return (
 			<>
-				<ConfiguredMarkedInput value={value} onChange={setValue}>
-					<div
-						onClick={_ => console.log('onCLick')}
-						onInput={_ => console.log('onInput')}
-						onBlur={_ => console.log('onBlur')}
-						onFocus={_ => console.log('onFocus')}
-						onKeyDown={_ => console.log('onKeyDown')}
-					/>
-				</ConfiguredMarkedInput>
+				<ConfiguredMarkedInput
+					value={value}
+					onChange={setValue}
+					slotProps={{
+						container: {
+							onClick: _ => console.log('onCLick'),
+							onInput: _ => console.log('onInput'),
+							onBlur: _ => console.log('onBlur'),
+							onFocus: _ => console.log('onFocus'),
+							onKeyDown: _ => console.log('onKeyDown'),
+						},
+					}}
+				/>
 
 				<Text label="Plaint text:" value={value} />
 				<Text label="Display text (denoted):" value={displayText} />
