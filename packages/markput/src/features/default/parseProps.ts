@@ -5,16 +5,24 @@ import {
 	DEFAULT_MARKUP,
 	DEFAULT_OPTIONS,
 	DEFAULT_TRIGGER,
-	InnerMarkedInputProps,
 	InnerOption,
 } from '@markput/core'
+import {StoreProps} from '../../utils/providers/StoreContext'
 
-export function parseProps(props: MarkedInputProps<any>): InnerMarkedInputProps {
+export function parseProps(props: MarkedInputProps<any>): StoreProps {
 	return {
-		...props,
+		value: props.value,
+		defaultValue: props.defaultValue,
+		onChange: props.onChange,
+		readOnly: props.readOnly,
 		options: props.options ? props.options.map(parseOption) : DEFAULT_OPTIONS,
 		trigger: props.trigger ?? 'change',
 		className: props.className ? DEFAULT_CLASS_NAME + ' ' + props.className : DEFAULT_CLASS_NAME,
+		style: props.style,
+		Mark: props.Mark,
+		Overlay: props.Overlay,
+		slots: props.slots,
+		slotProps: props.slotProps,
 	}
 }
 

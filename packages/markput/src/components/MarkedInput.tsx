@@ -6,23 +6,15 @@ import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
-import {OverlayTrigger, Token} from '@markput/core'
+import {CoreMarkputProps, Token, OverlayTrigger} from '@markput/core'
 
-export interface MarkedInputProps<T = Token> {
+export interface MarkedInputProps<T = Token> extends Omit<CoreMarkputProps, 'options' | 'trigger'> {
 	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
-	/** Annotated text with markups for mark */
-	value?: string
-	/** Default value */
-	defaultValue?: string
-	/** Change event */
-	onChange?: (value: string) => void
 	/** Component that used for render markups */
 	Mark?: ComponentType<T>
 	/** Component that used for render overlays such as suggestions, mentions, autocomplete, modal, tooltip and etc */
 	Overlay?: ComponentType
-	/** Prevents from changing the value */
-	readOnly?: boolean
 	/**
 	 * Passed options for configure
 	 * @default [{trigger: '@', markup: '@[__label__](__value__)', data: []}]

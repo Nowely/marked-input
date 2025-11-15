@@ -1,9 +1,9 @@
 import {ReactNode, useEffect, useState} from 'react'
-import {InnerMarkedInputProps, Store} from '@markput/core'
-import {StoreContext} from '../utils/providers/StoreContext'
+import {Store} from '@markput/core'
+import {StoreContext, StoreProps} from '../utils/providers/StoreContext'
 
 interface StoreProviderProps {
-	props: InnerMarkedInputProps
+	props: StoreProps
 	children: ReactNode
 }
 

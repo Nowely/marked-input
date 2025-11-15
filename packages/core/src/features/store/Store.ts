@@ -3,7 +3,7 @@ import {Token} from '../parsing/ParserV2/types'
 import {OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
-import {InnerMarkedInputProps} from '../default/types'
+import {CoreMarkputProps} from '../default/types'
 import {Parser} from '../parsing/ParserV2/Parser'
 
 interface Ref<T> {
@@ -13,14 +13,14 @@ interface Ref<T> {
 	readonly current: T | null
 }
 
-export class Store {
+export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
 	readonly focus = new NodeProxy(undefined, this)
 	//TODO rename to input node?
 	readonly input = new NodeProxy(undefined, this)
 
-	props: InnerMarkedInputProps
+	props: TProps
 	tokens: Token[] = []
 	recovery?: Recovery
 
@@ -40,14 +40,14 @@ export class Store {
 	previousValue?: string
 	overlayMatch?: OverlayMatch
 
-	private constructor(props: InnerMarkedInputProps) {
+	private constructor(props: TProps) {
 		this.props = props
 	}
 
-	static create = (props: InnerMarkedInputProps) => new Proxy(new Store(props), {set})
+	static create = <TProps extends CoreMarkputProps>(props: TProps) => new Proxy(new Store<TProps>(props), {set})
 }
 
-function set(target: Store, prop: keyof Store, newValue: any, receiver: any): boolean {
+function set<TProps extends CoreMarkputProps>(target: Store<TProps>, prop: keyof Store<TProps>, newValue: any, receiver: any): boolean {
 	switch (prop) {
 		case 'bus':
 		case 'refs':

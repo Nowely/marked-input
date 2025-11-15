@@ -1,5 +1,14 @@
 import {createContext} from 'react'
-import {Store} from '@markput/core'
+import {Store, CoreMarkputProps} from '@markput/core'
+import {MarkedInputProps} from '../../components/MarkedInput'
 
-export const StoreContext = createContext<Store | undefined>(undefined)
+/**
+ * Store props type: MarkedInputProps with all required fields
+ * Used internally after parseProps transforms optional props to required
+ */
+export type StoreProps = Omit<MarkedInputProps, 'options' | 'trigger'> & CoreMarkputProps & {
+	className: string
+}
+
+export const StoreContext = createContext<Store<StoreProps> | undefined>(undefined)
 StoreContext.displayName = 'StoreContext'
