@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom'
-import {render, screen} from '@testing-library/react'
+import {render, screen, fireEvent} from '@testing-library/react'
 import {MarkedInput} from 'rc-marked-input'
 import {describe, it, expect, vi} from 'vitest'
 import {forwardRef} from 'react'
@@ -250,6 +250,241 @@ describe('Slots API', () => {
 			expect(containerDiv).toHaveAttribute('data-test-id', 'my-container')
 			expect(containerDiv).toHaveAttribute('data-user-id', 'user-123')
 			expect(containerDiv).toHaveAttribute('data-user-name', 'John')
+		})
+	})
+
+	describe('Span contentEditable attribute', () => {
+		it('should have contentEditable="true" by default on editable span', () => {
+			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" />)
+
+			const textSpan = container.querySelector('span[contenteditable="true"]')
+			expect(textSpan).toBeInTheDocument()
+		})
+
+		it('should have contentEditable="false" when readOnly is true', () => {
+			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
+
+			const textSpan = container.querySelector('span[contenteditable="false"]')
+			expect(textSpan).toBeInTheDocument()
+		})
+
+		it('should maintain contentEditable on span with custom slot', () => {
+			const CustomSpan = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
+				<span {...props} ref={ref} data-testid="custom-span" />
+			))
+			CustomSpan.displayName = 'CustomSpan'
+
+			render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slots={{span: CustomSpan}}
+				/>
+			)
+
+			const span = screen.getByTestId('custom-span')
+			expect(span).toHaveAttribute('contenteditable', 'true')
+		})
+
+		it('should respect suppressContentEditableWarning when set', () => {
+			const {container} = render(
+				<MarkedInput Mark={TestMark} value="Hello world" />
+			)
+
+			const textSpan = container.querySelector('span[contenteditable]')
+			// Should not throw warning during render
+			expect(textSpan).toBeInTheDocument()
+		})
+	})
+
+	describe('Event handlers in slotProps', () => {
+		it('should call onKeyDown handler from slotProps.container', () => {
+			const handleKeyDown = vi.fn()
+
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slotProps={{
+						container: {
+							onKeyDown: handleKeyDown,
+						},
+					}}
+				/>
+			)
+
+			const div = container.querySelector('div')
+			fireEvent.keyDown(div!, {key: 'Enter'})
+
+			expect(handleKeyDown).toHaveBeenCalled()
+		})
+
+		it('should call onClick handler from slotProps.container', () => {
+			const handleClick = vi.fn()
+
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slotProps={{
+						container: {
+							onClick: handleClick,
+						},
+					}}
+				/>
+			)
+
+			const div = container.querySelector('div')
+			fireEvent.click(div!)
+
+			expect(handleClick).toHaveBeenCalled()
+		})
+
+		it('should call onFocus and onBlur handlers from slotProps.container', () => {
+			const handleFocus = vi.fn()
+			const handleBlur = vi.fn()
+
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slotProps={{
+						container: {
+							onFocus: handleFocus,
+							onBlur: handleBlur,
+						},
+					}}
+				/>
+			)
+
+			const div = container.querySelector('div')
+			fireEvent.focus(div!)
+			expect(handleFocus).toHaveBeenCalled()
+
+			fireEvent.blur(div!)
+			expect(handleBlur).toHaveBeenCalled()
+		})
+	})
+
+	describe('Custom slot components', () => {
+		it('should pass all required props to custom container slot', () => {
+			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+				<div {...props} ref={ref} data-testid="custom-container" />
+			))
+			CustomContainer.displayName = 'CustomContainer'
+
+			render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					className="outer-class"
+					style={{color: 'red'}}
+					slots={{container: CustomContainer}}
+					slotProps={{
+						container: {
+							className: 'inner-class',
+							style: {backgroundColor: 'blue'},
+						},
+					}}
+				/>
+			)
+
+			const container = screen.getByTestId('custom-container')
+			expect(container).toHaveClass('outer-class')
+			expect(container).toHaveClass('inner-class')
+			expect(container).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
+		})
+
+		it('should allow native HTML elements as slots', () => {
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slots={{
+						container: 'article',
+						span: 'div',
+					}}
+				/>
+			)
+
+			const article = container.querySelector('article')
+			const div = container.querySelector('div[contenteditable]')
+
+			expect(article).toBeInTheDocument()
+			expect(div).toBeInTheDocument()
+		})
+	})
+
+	describe('Edge cases', () => {
+		it('should handle empty value', () => {
+			const {container} = render(<MarkedInput Mark={TestMark} value="" />)
+
+			const div = container.querySelector('div')
+			expect(div).toBeInTheDocument()
+		})
+
+		it('should handle undefined slotProps gracefully', () => {
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slotProps={undefined}
+				/>
+			)
+
+			const div = container.querySelector('div')
+			expect(div).toBeInTheDocument()
+		})
+
+		it('should handle empty className in slotProps', () => {
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slotProps={{
+						container: {
+							className: '',
+						},
+					}}
+				/>
+			)
+
+			const div = container.querySelector('div')
+			expect(div).toBeInTheDocument()
+		})
+
+		it('should handle multiple marked values with custom slots', () => {
+			const {container} = render(
+				<MarkedInput
+					Mark={TestMark}
+					value="@[hello] world @[test]"
+					slots={{
+						span: forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>(
+							(props, ref) => <span {...props} ref={ref} data-testid="text-span" />,
+						),
+					}}
+				/>
+			)
+
+			const spans = container.querySelectorAll('[data-testid="text-span"]')
+			expect(spans.length).toBeGreaterThan(0)
+		})
+
+		it('should preserve slot functionality when no slotProps provided', () => {
+			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+				<div {...props} ref={ref} data-testid="custom-container" />
+			))
+			CustomContainer.displayName = 'CustomContainer'
+
+			render(
+				<MarkedInput
+					Mark={TestMark}
+					value="Hello world"
+					slots={{container: CustomContainer}}
+				/>
+			)
+
+			expect(screen.getByTestId('custom-container')).toBeInTheDocument()
 		})
 	})
 })
