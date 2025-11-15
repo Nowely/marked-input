@@ -104,7 +104,7 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>): Option[] {
 	return Object.values(theme).map((preset: MarkupPreset) => {
 		return {
 			markup: preset.markup,
-			initMark: (props) => ({...props, style: preset.style}),
+			initMark: props => ({...props, style: preset.style}),
 		}
 	})
 }
