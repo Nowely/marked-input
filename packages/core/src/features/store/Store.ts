@@ -6,13 +6,6 @@ import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {CoreMarkputProps} from '../default/types'
 import {Parser} from '../parsing/ParserV2/Parser'
 
-interface Ref<T> {
-	/**
-	 * The current value of the ref.
-	 */
-	readonly current: T | null
-}
-
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
@@ -27,12 +20,14 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	parser?: Parser
 
 	readonly refs = {
-		container: {
-			current: null,
-		} as Ref<HTMLDivElement>,
-		overlay: {
-			current: null,
-		} as Ref<HTMLElement>,
+		container: null as HTMLDivElement | null,
+		overlay: null as HTMLElement | null,
+		setContainer: (element: HTMLDivElement | null) => {
+			this.refs.container = element
+		},
+		setOverlay: (element: HTMLElement | null) => {
+			this.refs.overlay = element
+		},
 	}
 
 	selecting?: boolean

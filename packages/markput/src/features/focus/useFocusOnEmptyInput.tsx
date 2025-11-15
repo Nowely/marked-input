@@ -9,7 +9,7 @@ export const useFocusOnEmptyInput = () => {
 		'click',
 		() => {
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const element = store.refs.container.current?.firstElementChild as HTMLElement | undefined
+				const element = store.refs.container?.firstElementChild as HTMLElement | undefined
 				element?.focus()
 			}
 		},

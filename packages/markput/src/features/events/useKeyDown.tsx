@@ -69,8 +69,8 @@ export function useKeyDown() {
 			event.preventDefault()
 
 			const selection = window.getSelection()
-			const anchorNode = store.refs.container.current?.firstChild
-			const focusNode = store.refs.container.current?.lastChild
+			const anchorNode = store.refs.container?.firstChild
+			const focusNode = store.refs.container?.lastChild
 
 			if (!selection || !anchorNode || !focusNode) return
 			selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)

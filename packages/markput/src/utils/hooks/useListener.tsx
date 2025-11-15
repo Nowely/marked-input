@@ -31,7 +31,7 @@ function useContainerListener<K extends keyof HTMLElementEventMap>(
 ) {
 	const store = useStore()
 	useEffect(() => {
-		store.refs.container.current?.addEventListener(key, listener)
-		return () => store.refs.container.current?.removeEventListener(key, listener)
+		store.refs.container?.addEventListener(key, listener)
+		return () => store.refs.container?.removeEventListener(key, listener)
 	}, deps)
 }

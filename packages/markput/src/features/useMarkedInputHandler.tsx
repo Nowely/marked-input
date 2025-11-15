@@ -5,10 +5,10 @@ import {useStore} from '../utils/hooks/useStore'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {
-		return store.refs.container.current
+		return store.refs.container
 	},
 	get overlay() {
-		return store.refs.overlay.current
+		return store.refs.overlay
 	},
 	focus() {
 		store.focus.head?.focus()
@@ -17,5 +17,5 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 
 export function useMarkedInputHandler(ref: ForwardedRef<MarkedInputHandler>) {
 	const store = useStore()
-	useImperativeHandle(ref, initHandler.bind(null, store), [])
+	useImperativeHandle(ref, () => initHandler(store), [store])
 }
