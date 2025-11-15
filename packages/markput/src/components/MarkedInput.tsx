@@ -1,7 +1,7 @@
-import {CSSProperties, ComponentType, ForwardedRef, ReactElement, forwardRef} from 'react'
+import {CSSProperties, ComponentType, ForwardedRef, forwardRef} from 'react'
 import '@markput/core/styles.css'
 import {parseProps} from '../features/default'
-import {MarkedInputHandler, Option} from '../types'
+import {MarkedInputHandler, Option, Slots, SlotProps} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
@@ -33,11 +33,17 @@ export interface MarkedInputProps<T = Token> {
 	/** Additional style */
 	style?: CSSProperties
 	/**
-	 * Override props of internal components via react elements
-	 * @param div - container
-	 * @param span - span
+	 * Override internal components using slots
+	 * @example
+	 * slots={{ container: 'div', span: 'span' }}
 	 */
-	children?: ReactElement | ReactElement[]
+	slots?: Slots
+	/**
+	 * Props to pass to slot components
+	 * @example
+	 * slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
+	 */
+	slotProps?: SlotProps
 	/**
 	 * Triggering events for overlay
 	 * @default 'change'
