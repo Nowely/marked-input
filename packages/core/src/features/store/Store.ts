@@ -7,20 +7,26 @@ import {CoreMarkputProps} from '../default/types'
 import {Parser} from '../parsing/ParserV2/Parser'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
+	// Utils domain
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
 
+	// Config domain
+	props: TProps
+
+	// Document domain
+	tokens: Token[] = []
+	parser?: Parser
+	previousValue?: string
+
+	// Navigation domain
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
 		input: new NodeProxy(undefined, this),
 	}
-
-	props: TProps
-	tokens: Token[] = []
 	recovery?: Recovery
 
-	parser?: Parser
-
+	// UI domain
 	readonly refs = {
 		container: null as HTMLDivElement | null,
 		overlay: null as HTMLElement | null,
@@ -31,10 +37,9 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 			this.refs.overlay = element
 		},
 	}
-
 	selecting?: boolean
 
-	previousValue?: string
+	// Overlay domain
 	overlayMatch?: OverlayMatch
 
 	private constructor(props: TProps) {
