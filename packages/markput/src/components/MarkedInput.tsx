@@ -1,6 +1,5 @@
 import {CSSProperties, ComponentType, ForwardedRef, forwardRef} from 'react'
 import '@markput/core/styles.css'
-import {parseProps} from '../features/default'
 import {MarkedInputHandler, Option, Slots, SlotProps} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
@@ -50,10 +49,8 @@ export interface MarkedInputComponent {
 }
 
 export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
-	const propsWithDefault = parseProps(props)
-
 	return (
-		<StoreProvider props={propsWithDefault}>
+		<StoreProvider props={props}>
 			<Container />
 			<Whisper />
 			<Featurer inRef={ref} />

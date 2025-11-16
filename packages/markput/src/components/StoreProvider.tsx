@@ -1,17 +1,20 @@
 import {ReactNode, useEffect, useState} from 'react'
 import {Store} from '@markput/core'
-import {StoreContext, StoreProps} from '../utils/providers/StoreContext'
+import {parseProps} from '../features/default'
+import {MarkedInputProps} from './MarkedInput'
+import {StoreContext} from '../utils/providers/StoreContext'
 
 interface StoreProviderProps {
-	props: StoreProps
+	props: MarkedInputProps
 	children: ReactNode
 }
 
 export const StoreProvider = ({props, children}: StoreProviderProps) => {
-	const [store] = useState(() => Store.create(props))
+	const storeProps = parseProps(props)
+	const [store] = useState(() => Store.create(storeProps))
 
 	useEffect(() => {
-		store.props = props
+		store.props = storeProps
 	})
 
 	return <StoreContext.Provider value={store} children={children} />
