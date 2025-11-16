@@ -635,33 +635,6 @@ export interface Option<T = Record<string, any>> {
 }
 ```
 
-### Framework-Agnostic Core Types
-
-For framework-agnostic usage or creating bindings for other frameworks, use the core types exported from `@markput/core`:
-
-```typescript
-import {CoreOption, CoreMarkputProps} from '@markput/core'
-
-// CoreOption - Framework-agnostic option configuration
-interface CoreOption {
-    markup?: Markup
-    overlayTrigger?: string
-    data?: string[]
-}
-
-// CoreMarkputProps - Framework-agnostic props interface
-interface CoreMarkputProps {
-    value?: string
-    defaultValue?: string
-    onChange?: (value: string) => void
-    readOnly?: boolean
-    options?: CoreOption[]
-    showOverlayOn?: OverlayTrigger
-}
-```
-
-The React-specific `Option` interface extends `CoreOption` and adds the `initMark` function for React component initialization.
-
 ## Contributing
 
 If you want to contribute, you are welcome! Create an issue or start a discussion.
