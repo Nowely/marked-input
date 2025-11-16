@@ -49,17 +49,22 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	static create = <TProps extends CoreMarkputProps>(props: TProps) => new Proxy(new Store<TProps>(props), {set})
 }
 
-function set<TProps extends CoreMarkputProps>(target: Store<TProps>, prop: keyof Store<TProps>, newValue: any, receiver: any): boolean {
-	switch (prop) {
-		case 'bus':
-		case 'refs':
-		case 'nodes':
-		case 'key':
-			return false
+const IMMUTABLE_KEYS = new Set(['bus', 'refs', 'nodes', 'key'])
+
+function set<TProps extends CoreMarkputProps, K extends keyof Store<TProps>>(
+	target: Store<TProps>,
+	prop: K,
+	newValue: Store<TProps>[K],
+	receiver: Store<TProps>
+): boolean {
+	if (IMMUTABLE_KEYS.has(String(prop))) {
+		return false
 	}
 
-	//TODO don't send event if not updated
-	// @ts-expect-error TODO fix type
+	if (target[prop] === newValue) {
+		return true
+	}
+
 	target[prop] = newValue
 	target.bus.send(SystemEvent.STORE_UPDATED, receiver)
 	return true
