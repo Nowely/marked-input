@@ -578,9 +578,15 @@ export const ComplexHtmlDocument: Story = {
 				<Tab />
 
 				{activeTab === 'preview' ? (
-					<MarkedInput key={activeTab} Mark={HtmlDocMark} value={value} readOnly={true} options={[{markup: HtmlMarkup}]} />
+					<MarkedInput
+						key={activeTab}
+						Mark={HtmlDocMark}
+						value={value}
+						readOnly={true}
+						options={[{markup: HtmlMarkup}]}
+					/>
 				) : (
-					<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]}/>
+					<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
 				)}
 			</>
 		)
