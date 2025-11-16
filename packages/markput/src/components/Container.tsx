@@ -29,12 +29,7 @@ export const Container = memo(() => {
 	)
 
 	return (
-		<ContainerComponent
-			ref={refs.setContainer}
-			{...containerProps}
-			className={className}
-			style={style}
-		>
+		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>
 			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />
 			))}

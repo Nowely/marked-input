@@ -42,7 +42,10 @@ export function resolveSlot(slotName: SlotName, state: Store<MarkedInputProps>):
  * @param state - Store state
  * @returns Props object to spread onto the component
  */
-export function resolveSlotProps(slotName: SlotName, state: Store<MarkedInputProps>): HTMLAttributes<HTMLElement> | undefined {
+export function resolveSlotProps(
+	slotName: SlotName,
+	state: Store<MarkedInputProps>
+): HTMLAttributes<HTMLElement> | undefined {
 	const props = state.props.slotProps?.[slotName]
 	return props ? convertDataAttrs(props) : undefined
 }

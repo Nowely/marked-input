@@ -18,7 +18,8 @@ export class TriggerFinder {
 		this.dividedText = this.getDividedTextBy(caretPosition)
 	}
 
-	static find(options: CoreOption[]) {
+	static find(options: CoreOption[] | undefined) {
+		if (!options) return
 		if (Caret.isSelectedPosition) return new TriggerFinder().find(options)
 	}
 

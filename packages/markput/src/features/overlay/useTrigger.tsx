@@ -6,5 +6,5 @@ export const useTrigger = () => {
 	const store = useStore()
 
 	useListener(SystemEvent.ClearTrigger, _ => (store.overlayMatch = undefined), [])
-	useListener(SystemEvent.CheckTrigger, _ => (store.overlayMatch = TriggerFinder.find(store.props.options ?? DEFAULT_OPTIONS)), [])
+	useListener(SystemEvent.CheckTrigger, _ => (store.overlayMatch = TriggerFinder.find(store.props.options)), [])
 }

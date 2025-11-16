@@ -29,7 +29,13 @@ export const CustomOverlay = () => {
 export const CustomTrigger = () => {
 	const [value, setValue] = useState('Hello, custom overlay by trigger /!')
 	return (
-		<MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{overlayTrigger: '/'}]} />
+		<MarkedInput
+			Mark={() => null}
+			Overlay={Overlay}
+			value={value}
+			onChange={setValue}
+			options={[{overlayTrigger: '/'}]}
+		/>
 	)
 }
 
