@@ -1,4 +1,4 @@
-import {DEFAULT_OPTIONS, SystemEvent, TriggerFinder} from '@markput/core'
+import {SystemEvent, TriggerFinder} from '@markput/core'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
 
