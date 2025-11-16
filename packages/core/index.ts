@@ -14,7 +14,8 @@ export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing/P
 // Utilities
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/preparsing'
-export {toString, shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
+export {toString} from './src/features/parsing/ParserV2'
+export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
 export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
 export {Caret, TriggerFinder} from './src/features/caret'
