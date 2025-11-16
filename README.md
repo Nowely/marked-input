@@ -82,7 +82,7 @@ export const App = () => {
                     initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
                 },
                 {
-                    trigger: '/',
+                    overlayTrigger: '/',
                     markup: Default,
                     data: AnotherData,
                 },
@@ -107,7 +107,7 @@ const ConfiguredMarkedInput = createMarkedInput({
         },
         {
             markup: Default,
-            trigger: '/',
+            overlayTrigger: '/',
             data: ['Seventh', 'Eight', 'Ninth'],
             initMark: ({value}) => ({label: value}),
         },
@@ -300,7 +300,13 @@ export const CustomOverlay = () => {
 export const CustomTrigger = () => {
     const [value, setValue] = useState('Hello, custom overlay by trigger /!')
     return (
-        <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} options={[{trigger: '/'}]} />
+        <MarkedInput
+            Mark={() => null}
+            Overlay={Overlay}
+            value={value}
+            onChange={setValue}
+            options={[{overlayTrigger: '/'}]}
+        />
     )
 }
 ```
@@ -403,12 +409,12 @@ See the [MUI documentation](https://mui.com/material-ui/customization/overriding
 
 ```tsx
 <MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}> option={[{
-    trigger: '@',
+    overlayTrigger: '@',
     markup: '@[__value__](__meta__)',
     data: Data,
     initMark: getCustomMarkProps,
 }, {
-    trigger: '/',
+    overlayTrigger: '/',
     markup: '@(__value__)[__meta__]',
     data: AnotherData,
     initMark: getAnotherCustomMarkProps,
@@ -423,13 +429,13 @@ const MarkedInput = createMarkedInput({
     Overlay,
     options: [
         {
-            trigger: '@',
+            overlayTrigger: '@',
             markup: '@[__label__](__value__)',
             data: Data,
             initMark: getCustomMarkProps,
         },
         {
-            trigger: '/',
+            overlayTrigger: '/',
             markup: '@(__label__)[__value__]',
             data: AnotherData,
             initMark: getAnotherCustomMarkProps,
@@ -444,18 +450,18 @@ const App = () => <MarkedInput value={value} onChange={setValue} />
 
 ### MarkedInput
 
-| Name         | Type                         | Default       | Description                                    |
-| ------------ | ---------------------------- | ------------- | ---------------------------------------------- |
-| value        | string                       | `undefined`   | Annotated text with markups for mark           |
-| defaultValue | string                       | `undefined`   | Default value                                  |
-| onChange     | (value: string) => void      | `undefined`   | Change event                                   |
-| Mark         | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups         |
-| Overlay      | ComponentType                | `Suggestions` | Component that is rendered by trigger          |
-| readOnly     | boolean                      | `undefined`   | Prevents from changing the value               |
-| options      | OptionProps[]                | `[{}]`        | Passed options for configure                   |
-| trigger      | OverlayTrigger               | `change`      | Triggering events for overlay                  |
-| slots        | Slots                        | `undefined`   | Override internal components (container, span) |
-| slotProps    | SlotProps                    | `undefined`   | Props to pass to slot components               |
+| Name          | Type                         | Default       | Description                                    |
+| ------------- | ---------------------------- | ------------- | ---------------------------------------------- |
+| value         | string                       | `undefined`   | Annotated text with markups for mark           |
+| defaultValue  | string                       | `undefined`   | Default value                                  |
+| onChange      | (value: string) => void      | `undefined`   | Change event                                   |
+| Mark          | ComponentType<T = MarkProps> | `undefined`   | Component that used for render markups         |
+| Overlay       | ComponentType                | `Suggestions` | Component that is rendered by trigger          |
+| readOnly      | boolean                      | `undefined`   | Prevents from changing the value               |
+| options       | OptionProps[]                | `[{}]`        | Passed options for configure                   |
+| showOverlayOn | OverlayTrigger               | `change`      | Triggering events for overlay                  |
+| slots         | Slots                        | `undefined`   | Override internal components (container, span) |
+| slotProps     | SlotProps                    | `undefined`   | Props to pass to slot components               |
 
 ### Helpers
 
@@ -616,7 +622,7 @@ export interface Option<T = Record<string, any>> {
      * Sequence of symbols for calling the overlay.
      * @default "@"
      */
-    trigger?: string
+    overlayTrigger?: string
     /**
      * Data for an overlay component. By default, it is suggestions.
      */
@@ -627,6 +633,75 @@ export interface Option<T = Record<string, any>> {
      */
     initMark?: (props: MarkToken) => T
 }
+```
+
+### Framework-Agnostic Core Types
+
+For framework-agnostic usage or creating bindings for other frameworks, use the core types exported from `@markput/core`:
+
+```typescript
+import {CoreOption, CoreMarkputProps} from '@markput/core'
+
+// CoreOption - Framework-agnostic option configuration
+interface CoreOption {
+    markup?: Markup
+    overlayTrigger?: string
+    data?: string[]
+}
+
+// CoreMarkputProps - Framework-agnostic props interface
+interface CoreMarkputProps {
+    value?: string
+    defaultValue?: string
+    onChange?: (value: string) => void
+    readOnly?: boolean
+    options?: CoreOption[]
+    showOverlayOn?: OverlayTrigger
+}
+```
+
+The React-specific `Option` interface extends `CoreOption` and adds the `initMark` function for React component initialization.
+
+## Migration Guide
+
+### Migrating from Previous Versions
+
+This version introduces breaking changes to improve clarity and establish a framework-agnostic architecture. Follow these steps to migrate your code:
+
+#### 1. Update Option Configuration
+
+**Change:** `trigger` property renamed to `overlayTrigger` in option objects.
+
+```typescript
+// Before
+const options = [
+    {
+        trigger: '@',
+        markup: '@[__value__](__meta__)',
+        data: ['Alice', 'Bob'],
+    },
+]
+
+// After
+const options = [
+    {
+        overlayTrigger: '@',
+        markup: '@[__value__](__meta__)',
+        data: ['Alice', 'Bob'],
+    },
+]
+```
+
+#### 2. Update Component Props
+
+**Change:** `trigger` prop renamed to `showOverlayOn` in MarkedInput component.
+
+```typescript
+// Before
+<MarkedInput trigger="change" value={value} onChange={setValue} />
+
+// After
+<MarkedInput showOverlayOn="change" value={value} onChange={setValue} />
 ```
 
 ## Contributing
