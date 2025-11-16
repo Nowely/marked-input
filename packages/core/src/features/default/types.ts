@@ -7,7 +7,7 @@ import {Markup} from '../parsing/ParserV2/types'
  */
 export interface CoreOption {
 	markup?: Markup
-	trigger?: string
+	overlayTrigger?: string
 	data?: string[]
 }
 
@@ -26,6 +26,6 @@ export interface CoreMarkputProps {
 	readOnly?: boolean
 	/** Configuration options for markups and overlays */
 	options?: CoreOption[]
-	/** Triggering events for overlay */
-	trigger?: OverlayTrigger
+	/** Events that trigger overlay display */
+	showOverlayOn?: OverlayTrigger
 }

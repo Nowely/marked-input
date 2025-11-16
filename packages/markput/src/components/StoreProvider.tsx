@@ -30,7 +30,7 @@ function normalizeProps(props: MarkedInputProps<any>): MarkedInputProps {
 		onChange: props.onChange,
 		readOnly: props.readOnly,
 		options: props.options ? props.options : DEFAULT_OPTIONS,
-		trigger: props.trigger ?? 'change',
+		showOverlayOn: props.showOverlayOn ?? 'change',
 		className,
 		style,
 		Mark: props.Mark,

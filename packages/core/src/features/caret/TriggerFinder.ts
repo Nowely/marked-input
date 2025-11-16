@@ -28,7 +28,7 @@ export class TriggerFinder {
 
 	find(options: CoreOption[]): OverlayMatch | undefined {
 		for (const option of options) {
-			const match = this.matchInTextVia(option.trigger)
+			const match = this.matchInTextVia(option.overlayTrigger)
 			if (match)
 				return {
 					value: match.word,

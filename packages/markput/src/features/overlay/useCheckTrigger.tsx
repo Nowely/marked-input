@@ -7,10 +7,10 @@ export function useCheckTrigger() {
 	const store = useStore()
 
 	const sendCheckTrigger = useCallback(() => {
-		const trigger = store.props.trigger!
+		const showOverlayOn = store.props.showOverlayOn!
 		const type = 'selectionChange' satisfies OverlayTrigger
 
-		if (trigger === type || trigger.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
+		if (showOverlayOn === type || showOverlayOn.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
 	}, [])
 
 	useListener(
@@ -32,10 +32,10 @@ export function useCheckTrigger() {
 	useListener(
 		SystemEvent.Change,
 		() => {
-			const trigger = store.props.trigger!
+			const showOverlayOn = store.props.showOverlayOn!
 			const type = 'change' satisfies OverlayTrigger
 
-			if (trigger === type || trigger.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
+			if (showOverlayOn === type || showOverlayOn.includes(type)) store.bus.send(SystemEvent.CheckTrigger)
 		},
 		[]
 	)

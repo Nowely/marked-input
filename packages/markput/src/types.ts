@@ -49,7 +49,7 @@ export interface Option<T = Record<string, any>> extends CoreOption {
 	 * Sequence of symbols for calling the overlay.
 	 * @default "@"
 	 */
-	trigger?: string //| RegExp
+	overlayTrigger?: string //| RegExp
 	/**
 	 * Data for an overlay component. By default, it is suggestions.
 	 */

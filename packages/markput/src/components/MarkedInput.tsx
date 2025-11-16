@@ -7,7 +7,7 @@ import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
 import {CoreMarkputProps, Token, OverlayTrigger} from '@markput/core'
 
-export interface MarkedInputProps<T = Token> extends Omit<CoreMarkputProps, 'options' | 'trigger'> {
+export interface MarkedInputProps<T = Token> extends Omit<CoreMarkputProps, 'options' | 'showOverlayOn'> {
 	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
 	/** Component that used for render markups */
@@ -16,7 +16,7 @@ export interface MarkedInputProps<T = Token> extends Omit<CoreMarkputProps, 'opt
 	Overlay?: ComponentType
 	/**
 	 * Passed options for configure
-	 * @default [{trigger: '@', markup: '@[__label__](__value__)', data: []}]
+	 * @default [{overlayTrigger: '@', markup: '@[__label__](__value__)', data: []}]
 	 */
 	options?: Option<T>[]
 	/** Additional classes */
@@ -36,10 +36,10 @@ export interface MarkedInputProps<T = Token> extends Omit<CoreMarkputProps, 'opt
 	 */
 	slotProps?: SlotProps
 	/**
-	 * Triggering events for overlay
+	 * Events that trigger overlay display
 	 * @default 'change'
 	 */
-	trigger?: OverlayTrigger
+	showOverlayOn?: OverlayTrigger
 }
 
 export interface MarkedInputComponent {

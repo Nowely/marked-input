@@ -1,13 +1,13 @@
 import {CoreOption} from './types'
 import type {Markup} from '../parsing/ParserV2/types'
 
-export const DEFAULT_TRIGGER = '@'
+export const DEFAULT_OVERLAY_TRIGGER = '@'
 
 export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
 
 export const DEFAULT_OPTIONS: CoreOption[] = [
 	{
-		trigger: DEFAULT_TRIGGER,
+		overlayTrigger: DEFAULT_OVERLAY_TRIGGER,
 		markup: DEFAULT_MARKUP,
 		data: [],
 	},
