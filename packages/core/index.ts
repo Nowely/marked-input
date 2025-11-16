@@ -4,7 +4,7 @@ export {KEYBOARD} from './src/shared/constants'
 export type {OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'
 
 // Feature exports
-export type {InnerOption, CoreMarkputProps} from './src/features/default'
+export type {CoreOption, CoreMarkputProps} from './src/features/default'
 export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_TRIGGER} from './src/features/default'
 
 // ParserV2 exports (modern API)

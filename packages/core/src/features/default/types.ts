@@ -1,10 +1,14 @@
 import {OverlayTrigger} from '../../shared/types'
 import {Markup} from '../parsing/ParserV2/types'
 
-export interface InnerOption {
-	markup: Markup
-	trigger: string
-	data: string[]
+/**
+ * Core option for markups - used internally by core for parsing and triggering
+ * Includes data for overlay/suggestions
+ */
+export interface CoreOption {
+	markup?: Markup
+	trigger?: string
+	data?: string[]
 }
 
 /**
@@ -21,7 +25,7 @@ export interface CoreMarkputProps {
 	/** Prevents from changing the value */
 	readOnly?: boolean
 	/** Configuration options for markups and overlays */
-	options: InnerOption[]
+	options?: CoreOption[]
 	/** Triggering events for overlay */
 	trigger?: OverlayTrigger
 }

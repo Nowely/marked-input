@@ -1,4 +1,4 @@
-import {InnerOption} from '../features/default/types'
+import {CoreOption} from '../features/default/types'
 import {NodeProxy} from './classes/NodeProxy'
 
 export type OverlayMatch = {
@@ -25,7 +25,7 @@ export type OverlayMatch = {
 	/**
 	 * OverlayMatch's option
 	 */
-	option: InnerOption
+	option: CoreOption
 }
 
 export type Listener<T = any> = (e: T) => void

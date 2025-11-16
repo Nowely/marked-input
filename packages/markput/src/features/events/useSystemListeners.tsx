@@ -53,11 +53,11 @@ export function useSystemListeners() {
 			// Use ParserV2 annotate with new format
 			const annotation =
 				mark.type === 'mark'
-					? annotate(option.markup, {
+					? annotate(option.markup!, {
 							value: mark.value,
 							meta: mark.meta,
 						})
-					: annotate(option.markup, {
+					: annotate(option.markup!, {
 							value: mark.content,
 						})
 

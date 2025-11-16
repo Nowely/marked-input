@@ -123,7 +123,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
 
-			const result = TriggerFinder.find([{trigger: '@', markup: '@[__label__](__value__)', data: []}])
+			const result = TriggerFinder.find([{trigger: '@', markup: '@[__label__](__value__)'}])
 
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
@@ -133,7 +133,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		it('should return undefined when position is not selected', () => {
 			isSelectedPositionValue = false
 
-			const result = TriggerFinder.find([{trigger: '@', markup: '@[__label__](__value__)', data: []}])
+			const result = TriggerFinder.find([{trigger: '@', markup: '@[__label__](__value__)'}])
 
 			expect(result).toBeUndefined()
 		})
@@ -210,7 +210,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetFocusedSpan.mockReturnValue('Hello world')
 
 			const finder = new TriggerFinder()
-			const result = finder.find([{trigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []}])
+			const result = finder.find([{trigger: '@', markup: '@[__value__](__meta__)' as Markup}])
 
 			expect(result).toBeUndefined()
 		})

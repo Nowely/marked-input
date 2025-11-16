@@ -1,6 +1,6 @@
 import {ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
-import {Markup} from '@markput/core'
+import {CoreOption, Markup} from '@markput/core'
 
 /**
  * Simplified props passed to Mark components via initMark
@@ -16,7 +16,7 @@ export interface MarkProps {
 	children?: ReactNode
 }
 
-export interface Option<T = Record<string, any>> {
+export interface Option<T = Record<string, any>> extends CoreOption {
 	/**
 	 * Template string instead of which the mark is rendered.
 	 * Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
