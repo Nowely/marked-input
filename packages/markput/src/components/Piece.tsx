@@ -60,7 +60,14 @@ export function Piece() {
 			: optionMarkProps
 		: markPropsData
 
-	//TODO correct typing
-	// @ts-ignore
-	return <Mark {...props} />
+	// Type assertion needed: props can be either T (from markProps object/function) or MarkProps (fallback).
+	// Since Mark expects ComponentType<T>, and we cannot infer T at runtime, we use type assertion here.
+	// This is safe because:
+	// 1. If markProps is defined, it returns T (correct type for Mark)
+	// 2. If markProps is undefined, MarkProps is passed (backward compatible fallback)
+	if (!Mark) {
+		throw new Error('Mark component is required but not provided')
+	}
+
+	return <Mark {...(props as any)} />
 }
