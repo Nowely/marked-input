@@ -662,48 +662,6 @@ interface CoreMarkputProps {
 
 The React-specific `Option` interface extends `CoreOption` and adds the `initMark` function for React component initialization.
 
-## Migration Guide
-
-### Migrating from Previous Versions
-
-This version introduces breaking changes to improve clarity and establish a framework-agnostic architecture. Follow these steps to migrate your code:
-
-#### 1. Update Option Configuration
-
-**Change:** `trigger` property renamed to `overlayTrigger` in option objects.
-
-```typescript
-// Before
-const options = [
-    {
-        trigger: '@',
-        markup: '@[__value__](__meta__)',
-        data: ['Alice', 'Bob'],
-    },
-]
-
-// After
-const options = [
-    {
-        overlayTrigger: '@',
-        markup: '@[__value__](__meta__)',
-        data: ['Alice', 'Bob'],
-    },
-]
-```
-
-#### 2. Update Component Props
-
-**Change:** `trigger` prop renamed to `showOverlayOn` in MarkedInput component.
-
-```typescript
-// Before
-<MarkedInput trigger="change" value={value} onChange={setValue} />
-
-// After
-<MarkedInput showOverlayOn="change" value={value} onChange={setValue} />
-```
-
 ## Contributing
 
 If you want to contribute, you are welcome! Create an issue or start a discussion.
