@@ -35,9 +35,9 @@ describe('API: Overlay and Triggers', () => {
 
 		const {getByText, findByText} = render(
 			<Default
-				trigger="selectionChange"
+				showOverlayOn="selectionChange"
 				defaultValue="@ @[mark](1)!"
-				options={[{markup: '@[__label__](__value__)', data: ['Item']}]}
+				options={[{markup: '@[__label__](__value__)', overlayTrigger: '@', data: ['Item']}]}
 			/>
 		)
 		const span = getByText(/@/i)

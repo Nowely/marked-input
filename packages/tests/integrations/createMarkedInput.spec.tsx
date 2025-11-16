@@ -23,7 +23,7 @@ describe(`Utility: createMarkedInput`, () => {
 		const Overlay = forwardRef(() => <span>I'm here!</span>)
 		const Input = createMarkedInput({Mark: () => null, Overlay})
 
-		const {queryByText, getByText} = render(<Input trigger="selectionChange" defaultValue="Hello @" />)
+		const {queryByText, getByText} = render(<Input showOverlayOn="selectionChange" defaultValue="Hello @" />)
 		const span = getByText(/hello/i)
 		await user.type(span, '{ArrowRight}')
 		expect(span).toHaveFocus()

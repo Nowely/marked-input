@@ -14,19 +14,19 @@ export const useFocusRecovery = () => {
 
 		switch (true) {
 			case isNext && !anchor.target:
-				store.focus.tail.focus()
+				store.nodes.focus.tail.focus()
 				break
 			case isNext:
 				anchor.prev.focus()
 				break
 			case !anchor.target:
-				store.focus.head.focus()
+				store.nodes.focus.head.focus()
 				break
 			default:
 				anchor.next.focus()
 		}
 
-		store.focus.caret = caret
+		store.nodes.focus.caret = caret
 		store.recovery = undefined
 	}, deps)
 }

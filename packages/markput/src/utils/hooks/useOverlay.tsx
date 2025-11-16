@@ -53,5 +53,5 @@ export function useOverlay(): OverlayHandler {
 		[match]
 	)
 
-	return {match, style, select, close, ref: store.refs.overlay}
+	return {match, style, select, close, ref: {current: store.refs.overlay}}
 }

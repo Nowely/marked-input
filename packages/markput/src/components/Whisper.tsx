@@ -8,7 +8,7 @@ export const Whisper = memo(() => {
 	const Overlay = useStore(state => state.props.Overlay ?? Suggestions)
 
 	useEffect(() => {
-		store.input.target = store.focus.target
+		store.nodes.input.target = store.nodes.focus.target
 	}, [key])
 
 	if (key) return <Overlay key={key} />

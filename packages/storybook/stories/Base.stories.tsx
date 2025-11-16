@@ -34,7 +34,7 @@ const ConfiguredMarkedInput = createMarkedInput({
 		},
 		{
 			markup: DefaultMarkup,
-			trigger: '/',
+			overlayTrigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],
 			initMark: ({value}) => ({label: value || ''}),
 		},

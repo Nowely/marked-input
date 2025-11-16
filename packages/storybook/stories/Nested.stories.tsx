@@ -3,6 +3,7 @@ import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import {ReactNode, useState} from 'react'
 import {Text} from '../assets/Text'
+import {useTab} from '../assets/Tabs'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
@@ -327,11 +328,20 @@ const result = parser.parse('Hello **world**!')
 
 Visit our [documentation](https://docs.example.com) for more details.
 ~~This feature is deprecated~~ and will be removed in v3.0.`)
+		const {Tab, activeTab} = useTab([
+			{value: 'preview', label: 'Preview'},
+			{value: 'write', label: 'Write'},
+		])
 
 		return (
 			<>
-				<MarkdownInput value={value} onChange={setValue} />
-				<Text label="Raw value:" value={value} />
+				<Tab />
+
+				{activeTab === 'preview' ? (
+					<MarkdownInput value={value} readOnly={true} />
+				) : (
+					<MarkedInput options={[]} value={value} onChange={setValue} />
+				)}
 			</>
 		)
 	},
@@ -558,18 +568,26 @@ export const ComplexHtmlDocument: Story = {
 <p><small>© 2025 MarkedInput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
 </footer>
 </article>`)
+		const {Tab, activeTab} = useTab([
+			{value: 'preview', label: 'Preview'},
+			{value: 'write', label: 'Write'},
+		])
 
 		return (
 			<>
-				<div style={{maxWidth: '800px', margin: '0 auto'}}>
+				<Tab />
+
+				{activeTab === 'preview' ? (
 					<MarkedInput
+						key={activeTab}
 						Mark={HtmlDocMark}
 						value={value}
-						onChange={setValue}
+						readOnly={true}
 						options={[{markup: HtmlMarkup}]}
 					/>
-				</div>
-				<Text label="Raw value:" value={value} />
+				) : (
+					<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
+				)}
 			</>
 		)
 	},

@@ -1,1 +1,0 @@
-export {parseProps} from './parseProps'

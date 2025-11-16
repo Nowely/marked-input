@@ -17,7 +17,7 @@ export const useValueParser = () => {
 	useEffect(() => {
 		// Update parser when options change
 		const markups = options?.map(opt => opt.markup)
-		if (markups && markups.length > 0) {
+		if (markups && markups.some(Boolean)) {
 			store.parser = new Parser(markups)
 		} else {
 			store.parser = undefined
@@ -49,7 +49,7 @@ export const useValueParser = () => {
 	useListener(
 		SystemEvent.Parse,
 		() => {
-			store.tokens = store.focus.target ? getTokensByUI(store) : getTokensByValue(store)
+			store.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]
 	)
@@ -57,7 +57,7 @@ export const useValueParser = () => {
 
 // Inline getTokensByUI
 function getTokensByUI(store: Store) {
-	const {focus} = store
+	const {focus} = store.nodes
 
 	if (!store.parser) {
 		return store.tokens

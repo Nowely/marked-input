@@ -11,7 +11,7 @@ export function useCloseOverlayByOutsideClick() {
 
 		const handleClick = (event: MouseEvent) => {
 			const target = event.target as HTMLElement | null
-			if (store.refs.overlay.current?.contains(target) || store.refs.container.current?.contains(target)) return
+			if (store.refs.overlay?.contains(target) || store.refs.container?.contains(target)) return
 			store.bus.send(SystemEvent.ClearTrigger)
 		}
 

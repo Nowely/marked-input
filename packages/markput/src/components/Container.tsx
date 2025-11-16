@@ -1,21 +1,21 @@
 import {memo} from 'react'
-import {resolveSlot, resolveSlotProps, mergeClassNames, mergeStyles} from '../utils/functions/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {Token} from './Token'
 import {SystemEvent} from '@markput/core'
 
 export const Container = memo(() => {
-	const {className, style, refs, tokens, bus, key, ContainerComponent, containerProps} = useStore(
-		store => ({
-			className: store.props.className,
-			style: store.props.style,
-			refs: store.refs,
-			tokens: store.tokens,
-			bus: store.bus,
-			key: store.key,
-			ContainerComponent: resolveSlot('container', store),
-			containerProps: resolveSlotProps('container', store),
+	const {className, style, tokens, bus, key, ContainerComponent, containerProps, refs} = useStore(
+		s => ({
+			className: s.props.className,
+			style: s.props.style,
+			tokens: s.tokens,
+			bus: s.bus,
+			key: s.key,
+			refs: s.refs,
+			ContainerComponent: resolveSlot('container', s),
+			containerProps: resolveSlotProps('container', s),
 		}),
 		true
 	)
@@ -29,12 +29,7 @@ export const Container = memo(() => {
 	)
 
 	return (
-		<ContainerComponent
-			ref={refs.container}
-			{...containerProps}
-			className={mergeClassNames(className, containerProps?.className)}
-			style={mergeStyles(style, containerProps?.style)}
-		>
+		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>
 			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />
 			))}
