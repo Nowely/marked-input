@@ -1,9 +1,8 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {Token} from '../parsing/ParserV2/types'
-import {OverlayMatch, Recovery} from '../../shared/types'
+import {OverlayMatch, Recovery, CoreMarkputProps} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
-import {CoreMarkputProps} from '../default/types'
 import {Parser} from '../parsing/ParserV2/Parser'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
