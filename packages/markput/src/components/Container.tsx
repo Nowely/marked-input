@@ -1,5 +1,5 @@
 import {memo} from 'react'
-import {resolveSlot, resolveSlotProps, mergeClassNames, mergeStyles} from '../utils/functions/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
 import {useListener} from '../utils/hooks/useListener'
 import {useStore} from '../utils/hooks/useStore'
 import {Token} from './Token'
@@ -32,8 +32,8 @@ export const Container = memo(() => {
 		<ContainerComponent
 			ref={refs.setContainer}
 			{...containerProps}
-			className={mergeClassNames(className, containerProps?.className)}
-			style={mergeStyles(style, containerProps?.style)}
+			className={className}
+			style={style}
 		>
 			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />

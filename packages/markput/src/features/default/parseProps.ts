@@ -7,9 +7,21 @@ import {
 	DEFAULT_TRIGGER,
 	InnerOption,
 } from '@markput/core'
+import {mergeClassNames, mergeStyles} from '../../utils/functions/resolveSlot'
 import {StoreProps} from '../../utils/providers/StoreContext'
 
 export function parseProps(props: MarkedInputProps<any>): StoreProps {
+	const className = mergeClassNames(
+		DEFAULT_CLASS_NAME,
+		props.className,
+		props.slotProps?.container?.className
+	)
+
+	const style = mergeStyles(
+		props.style,
+		props.slotProps?.container?.style
+	)
+
 	return {
 		value: props.value,
 		defaultValue: props.defaultValue,
@@ -17,8 +29,8 @@ export function parseProps(props: MarkedInputProps<any>): StoreProps {
 		readOnly: props.readOnly,
 		options: props.options ? props.options.map(parseOption) : DEFAULT_OPTIONS,
 		trigger: props.trigger ?? 'change',
-		className: props.className ? DEFAULT_CLASS_NAME + ' ' + props.className : DEFAULT_CLASS_NAME,
-		style: props.style,
+		className,
+		style,
 		Mark: props.Mark,
 		Overlay: props.Overlay,
 		slots: props.slots,
