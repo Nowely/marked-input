@@ -337,10 +337,10 @@ Visit our [documentation](https://docs.example.com) for more details.
 			<>
 				<Tab />
 
-				{activeTab === 'write' ? (
-					<MarkedInput options={[]} value={value} onChange={setValue} />
-				) : (
+				{activeTab === 'preview' ? (
 					<MarkdownInput value={value} readOnly={true} />
+				) : (
+					<MarkedInput options={[]} value={value} onChange={setValue} />
 				)}
 			</>
 		)
@@ -568,18 +568,20 @@ export const ComplexHtmlDocument: Story = {
 <p><small>© 2025 MarkedInput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
 </footer>
 </article>`)
+		const {Tab, activeTab} = useTab([
+			{value: 'preview', label: 'Preview'},
+			{value: 'write', label: 'Write'},
+		])
 
 		return (
 			<>
-				<div style={{maxWidth: '800px', margin: '0 auto'}}>
-					<MarkedInput
-						Mark={HtmlDocMark}
-						value={value}
-						onChange={setValue}
-						options={[{markup: HtmlMarkup}]}
-					/>
-				</div>
-				<Text label="Raw value:" value={value} />
+				<Tab />
+
+				{activeTab === 'preview' ? (
+					<MarkedInput key={activeTab} Mark={HtmlDocMark} value={value} readOnly={true} options={[{markup: HtmlMarkup}]} />
+				) : (
+					<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]}/>
+				)}
 			</>
 		)
 	},
