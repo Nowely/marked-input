@@ -17,7 +17,7 @@ export const useValueParser = () => {
 	useEffect(() => {
 		// Update parser when options change
 		const markups = options?.map(opt => opt.markup)
-		if (markups && markups.length > 0) {
+		if (markups && markups.some(Boolean)) {
 			store.parser = new Parser(markups)
 		} else {
 			store.parser = undefined

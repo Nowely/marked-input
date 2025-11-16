@@ -7,30 +7,37 @@ import {SegmentDefinition} from './SegmentMatcher'
  * Centralizes access to all markup patterns and their descriptors
  */
 export class MarkupRegistry {
-	readonly markups: Markup[]
+	readonly markups: (Markup | undefined)[]
 	readonly descriptors: MarkupDescriptor[]
 	/** Deduplicated list of unique segment definitions (static strings or dynamic patterns) */
 	readonly segments: SegmentDefinition[] = []
 	/** Map from first segment index to descriptors that start with this segment (for O(1) lookup) */
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]> = new Map()
 
-	constructor(markups: Markup[]) {
+	constructor(markups: (Markup | undefined)[]) {
 		this.markups = markups
 
 		const segmentIndexMap = new Map<string, number>()
 
-		this.descriptors = markups.map((markup, index) => {
-			const descriptor = createMarkupDescriptor(markup, index)
+		this.descriptors = markups
+			.map((markup, index) => {
+				// Skip undefined markups but preserve original indices
+				if (markup === undefined) {
+					return null
+				}
 
-			// Process segments and register them
-			descriptor.segments.forEach((segment, segmentIndex) => {
-				this.processSegment(descriptor, segment, segmentIndex, segmentIndexMap)
+				const descriptor = createMarkupDescriptor(markup, index)
+
+				// Process segments and register them
+				descriptor.segments.forEach((segment, segmentIndex) => {
+					this.processSegment(descriptor, segment, segmentIndex, segmentIndexMap)
+				})
+
+				this.addToFirstSegmentIndexMap(descriptor)
+
+				return descriptor
 			})
-
-			this.addToFirstSegmentIndexMap(descriptor)
-
-			return descriptor
-		})
+			.filter((descriptor): descriptor is MarkupDescriptor => descriptor !== null)
 	}
 
 	/**
