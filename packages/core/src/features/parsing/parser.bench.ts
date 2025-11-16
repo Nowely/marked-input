@@ -1,5 +1,5 @@
 import {bench, describe} from 'vitest'
-import {Parser as ParserV2} from './ParserV2/index'
+import {Parser as ParserV2} from './index'
 import * as fs from 'fs'
 import * as path from 'path'
 
