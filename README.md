@@ -79,7 +79,7 @@ export const App = () => {
                 {
                     markup: Primary,
                     data: Data,
-                    initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+                    markProps: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
                 },
                 {
                     overlayTrigger: '/',
@@ -103,13 +103,13 @@ const ConfiguredMarkedInput = createMarkedInput({
         {
             markup: Primary,
             data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-            initMark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+            markProps: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
         },
         {
             markup: Default,
             overlayTrigger: '/',
             data: ['Seventh', 'Eight', 'Ninth'],
-            initMark: ({value}) => ({label: value}),
+            markProps: ({value}) => ({label: value}),
         },
     ],
 })
@@ -120,6 +120,50 @@ const App = () => {
     )
     return <ConfiguredMarkedInput value={value} onChange={setValue} />
 }
+```
+
+#### Static Props with Objects
+
+You can use `markProps` as a static object instead of a function. This is useful when you want to pass fixed props to your Mark component:
+
+```tsx
+import {MarkedInput} from 'rc-marked-input'
+import {Chip} from '@mui/material'
+
+const App = () => {
+    const [value, setValue] = useState('This is a @[static] chip!')
+
+    return (
+        <MarkedInput
+            Mark={Chip}
+            value={value}
+            onChange={setValue}
+            options={[
+                {
+                    markup: '@[__value__]',
+                    // Static object - passed directly to Chip
+                    markProps: {
+                        variant: 'outlined',
+                        color: 'primary',
+                        size: 'small'
+                    }
+                }
+            ]}
+        />
+    )
+}
+```
+
+**Key differences:**
+- **Object form**: Props are passed directly to the Mark component (full replacement of MarkProps)
+- **Function form**: You can access and transform `value`, `meta`, `nested`, and `children` from the markup
+
+```tsx
+// Object - static props
+markProps: { label: 'Fixed', color: 'primary' }
+
+// Function - dynamic props based on markup
+markProps: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
 ```
 
 ### Dynamic mark &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/dynamic-mark-w2nj82?file=/src/App.js)
@@ -206,7 +250,7 @@ const App = () => {
             options={[
                 {
                     markup: '**__nested__**',
-                    initMark: ({value, children}) => ({
+                    markProps: ({value, children}) => ({
                         value,
                         children,
                         style: {fontWeight: 'bold'},
@@ -214,7 +258,7 @@ const App = () => {
                 },
                 {
                     markup: '*__nested__*',
-                    initMark: ({value, children}) => ({
+                    markProps: ({value, children}) => ({
                         value,
                         children,
                         style: {fontStyle: 'italic'},
@@ -412,12 +456,12 @@ See the [MUI documentation](https://mui.com/material-ui/customization/overriding
     overlayTrigger: '@',
     markup: '@[__value__](__meta__)',
     data: Data,
-    initMark: getCustomMarkProps,
+    markProps: getCustomMarkProps,
 }, {
     overlayTrigger: '/',
     markup: '@(__value__)[__meta__]',
     data: AnotherData,
-    initMark: getAnotherCustomMarkProps,
+    markProps: getAnotherCustomMarkProps,
 }]}/>
 ```
 
@@ -432,13 +476,13 @@ const MarkedInput = createMarkedInput({
             overlayTrigger: '@',
             markup: '@[__label__](__value__)',
             data: Data,
-            initMark: getCustomMarkProps,
+            markProps: getCustomMarkProps,
         },
         {
             overlayTrigger: '/',
             markup: '@(__label__)[__value__]',
             data: AnotherData,
-            initMark: getAnotherCustomMarkProps,
+            markProps: getAnotherCustomMarkProps,
         },
     ],
 })
@@ -628,10 +672,22 @@ export interface Option<T = Record<string, any>> {
      */
     data?: string[]
     /**
-     * Function to initialize props for the mark component. Gets arguments from found markup.
-     * The MarkToken includes value, meta, children (if using __nested__), and descriptor.
+     * Props for the mark component. Can be either:
+     * - A static object that completely replaces MarkProps
+     * - A function that transforms MarkProps into component-specific props
+     *
+     * When using an object, it will be passed directly to the Mark component.
+     * When using a function, it receives MarkProps and should return props for the Mark component.
+     *
+     * @example
+     * // Static object
+     * markProps: { label: 'Click me', primary: true }
+     *
+     * @example
+     * // Function
+     * markProps: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
      */
-    initMark?: (props: MarkToken) => T
+    markProps?: T | ((props: MarkProps) => T)
 }
 ```
 

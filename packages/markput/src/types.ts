@@ -3,7 +3,7 @@ import {MarkedInputProps} from './components/MarkedInput'
 import {CoreOption} from '@markput/core'
 
 /**
- * Simplified props passed to Mark components via initMark
+ * Simplified props passed to Mark components via markProps
  */
 export interface MarkProps {
 	/** Main content value of the mark */
@@ -26,42 +26,53 @@ export interface MarkProps {
  *
  * @example
  * ```typescript
+ * // With function
  * const option: Option = {
  *   markup: '@[__value__](__meta__)',
  *   overlayTrigger: '@',
  *   data: ['Alice', 'Bob', 'Charlie'],
- *   initMark: ({ value, meta }) => ({ label: value, tooltip: meta })
+ *   markProps: ({ value, meta }) => ({ label: value, tooltip: meta })
+ * }
+ *
+ * // With static object
+ * const option: Option = {
+ *   markup: '[...]',
+ *   markProps: { label: 'Static', primary: true }
  * }
  * ```
  */
 export interface Option<T = Record<string, any>> extends CoreOption {
 	/**
-	 * Function to initialize props for the mark component. Gets simplified props with
-	 * value, meta, nested content (raw string), and rendered children (ReactNode).
+	 * Props for the mark component. Can be either:
+	 * - A static object that completely replaces MarkProps
+	 * - A function that transforms MarkProps into component-specific props
 	 *
-	 * @param props - Simplified MarkProps with value, meta, nested, and children
-	 * @returns Props object for the Mark component
-	 *
-	 * @example
-	 * // Simple props mapping
-	 * initMark: ({ value, meta }) => ({ label: value || '', tooltip: meta })
+	 * When using an object, it will be passed directly to the Mark component (full replacement).
+	 * When using a function, it receives MarkProps and should return props for the Mark component.
 	 *
 	 * @example
-	 * // With nested content awareness
-	 * initMark: ({ value, meta, children }) => ({
+	 * // Static object (full replacement)
+	 * markProps: { label: 'Click me', primary: true }
+	 *
+	 * @example
+	 * // Function for dynamic transformation
+	 * markProps: ({ value, meta }) => ({ label: value || '', tooltip: meta })
+	 *
+	 * @example
+	 * // With nested content support
+	 * markProps: ({ value, children }) => ({
 	 *   label: value || '',
-	 *   tooltip: meta,
 	 *   content: children
 	 * })
 	 *
 	 * @example
 	 * // Access to raw nested content
-	 * initMark: ({ value, nested }) => ({
+	 * markProps: ({ value, nested }) => ({
 	 *   label: value || '',
 	 *   rawNested: nested // raw unparsed nested content
 	 * })
 	 */
-	initMark?: (props: MarkProps) => T
+	markProps?: T | ((props: MarkProps) => T)
 }
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>

@@ -25,7 +25,7 @@ export const Tagged = () => {
 				options={[
 					{
 						markup: '@(__value__)' as Markup,
-						initMark: ({value}) => ({children: value, color: value, style: {marginRight: 0}}),
+						markProps: ({value}) => ({children: value, color: value, style: {marginRight: 0}}),
 					},
 				]}
 			/>

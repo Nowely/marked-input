@@ -8,13 +8,19 @@ import {Token} from './Token'
  *
  * This component:
  * 1. Retrieves the MarkToken from context
- * 2. Constructs props for the Mark component (value, meta, children)
+ * 2. Constructs MarkProps (value, meta, nested, children)
  * 3. Recursively renders nested children if present
- * 4. Passes everything to the custom Mark component
+ * 4. Transforms props using markProps (object or function)
+ * 5. Passes result to the custom Mark component
  *
  * Children rendering:
  * - If token.children is empty: children prop is undefined (backward compatible)
  * - If token.children has items: recursively renders them as ReactNode
+ *
+ * Props transformation:
+ * - If markProps is an object: passes it directly (full replacement)
+ * - If markProps is a function: calls it with MarkProps and uses the result
+ * - If markProps is undefined: passes MarkProps directly (fallback)
  */
 export function Piece() {
 	const node = useToken()
@@ -39,15 +45,20 @@ export function Piece() {
 			? node.children.map(child => <Token key={key.get(child)} mark={child} isNested />)
 			: undefined
 
-	const markProps: import('../types').MarkProps = {
+	const markPropsData: import('../types').MarkProps = {
 		value: node.value,
 		meta: node.meta,
 		nested: node.nested?.content,
 		children,
 	}
-	// TODO correct typing
-	// @ts-expect-error
-	const props = options[node.descriptor.index].initMark?.(markProps) ?? markProps
+
+	// Handle both object and function forms of markProps
+	const optionMarkProps = options?.[node.descriptor.index]?.markProps
+	const props = optionMarkProps
+		? typeof optionMarkProps === 'function'
+			? optionMarkProps(markPropsData)
+			: optionMarkProps
+		: markPropsData
 
 	//TODO correct typing
 	// @ts-ignore

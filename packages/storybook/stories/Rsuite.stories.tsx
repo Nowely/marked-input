@@ -52,7 +52,12 @@ export const Overridden = () => {
 				Overlay={Overlay}
 				value={value}
 				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[{markup: '@[__value__](common)' as Markup, initMark: ({value}) => ({children: value})}]}
+				options={[
+					{
+						markup: '@[__value__](common)' as Markup,
+						markProps: ({value}: {value?: string}) => ({children: value}),
+					},
+				]}
 			/>
 
 			<Text label="Plaint text:" value={value} />
@@ -79,7 +84,7 @@ export const TaggedInput = () => {
 				options={[
 					{
 						markup: '@[__value__](common)' as Markup,
-						initMark: ({value}) => ({children: value, style: {marginLeft: 0}}),
+						markProps: ({value}) => ({children: value, style: {marginLeft: 0}}),
 					},
 				]}
 				slotProps={{

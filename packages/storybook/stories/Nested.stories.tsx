@@ -46,7 +46,7 @@ export const SimpleNesting: Story = {
 					options={[
 						{
 							markup: BoldMarkup,
-							initMark: ({value, children}) => ({
+							markProps: ({value, children}) => ({
 								value,
 								children,
 								style: {fontWeight: 'bold'},
@@ -54,7 +54,7 @@ export const SimpleNesting: Story = {
 						},
 						{
 							markup: ItalicMarkup,
-							initMark: ({value, children}) => ({
+							markProps: ({value, children}) => ({
 								value,
 								children,
 								style: {fontStyle: 'italic'},
@@ -101,7 +101,7 @@ export const MultipleLevels: Story = {
 					options={[
 						{
 							markup: TagMarkup,
-							initMark: ({value, children}) => ({
+							markProps: ({value, children}) => ({
 								value,
 								children,
 								style: {
@@ -115,7 +115,7 @@ export const MultipleLevels: Story = {
 						},
 						{
 							markup: MentionMarkup,
-							initMark: ({value, children}) => ({
+							markProps: ({value, children}) => ({
 								value,
 								children,
 								style: {
@@ -129,7 +129,7 @@ export const MultipleLevels: Story = {
 						},
 						{
 							markup: CodeMarkup,
-							initMark: ({value, children}) => ({
+							markProps: ({value, children}) => ({
 								value,
 								children,
 								style: {
