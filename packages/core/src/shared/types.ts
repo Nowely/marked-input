@@ -1,7 +1,7 @@
 import {CoreOption} from '../features/default/types'
 import {NodeProxy} from './classes/NodeProxy'
 
-export type OverlayMatch = {
+export type OverlayMatch<TOption = CoreOption> = {
 	/**
 	 * Found value via a overlayMatch
 	 */
@@ -25,7 +25,7 @@ export type OverlayMatch = {
 	/**
 	 * OverlayMatch's option
 	 */
-	option: CoreOption
+	option: TOption
 }
 
 export type Listener<T = any> = (e: T) => void

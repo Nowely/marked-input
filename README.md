@@ -78,13 +78,16 @@ export const App = () => {
             options={[
                 {
                     markup: Primary,
-                    data: Data,
-                    markProps: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+                    slotProps: {
+                        mark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+                        overlay: {trigger: '@', data: Data},
+                    },
                 },
                 {
-                    overlayTrigger: '/',
                     markup: Default,
-                    data: AnotherData,
+                    slotProps: {
+                        overlay: {trigger: '/', data: AnotherData},
+                    },
                 },
             ]}
         />
@@ -102,14 +105,17 @@ const ConfiguredMarkedInput = createMarkedInput({
     options: [
         {
             markup: Primary,
-            data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-            markProps: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+            slotProps: {
+                mark: ({value, meta}) => ({label: value, primary: true, onClick: () => alert(meta)}),
+                overlay: {trigger: '@', data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth']},
+            },
         },
         {
             markup: Default,
-            overlayTrigger: '/',
-            data: ['Seventh', 'Eight', 'Ninth'],
-            markProps: ({value}) => ({label: value}),
+            slotProps: {
+                mark: ({value}) => ({label: value}),
+                overlay: {trigger: '/', data: ['Seventh', 'Eight', 'Ninth']},
+            },
         },
     ],
 })
@@ -124,7 +130,7 @@ const App = () => {
 
 #### Static Props with Objects
 
-You can use `markProps` as a static object instead of a function. This is useful when you want to pass fixed props to your Mark component:
+You can use `slotProps.mark` as a static object instead of a function. This is useful when you want to pass fixed props to your Mark component:
 
 ```tsx
 import {MarkedInput} from 'rc-marked-input'
@@ -141,11 +147,13 @@ const App = () => {
             options={[
                 {
                     markup: '@[__value__]',
-                    // Static object - passed directly to Chip
-                    markProps: {
-                        variant: 'outlined',
-                        color: 'primary',
-                        size: 'small'
+                    slotProps: {
+                        // Static object - passed directly to Chip
+                        mark: {
+                            variant: 'outlined',
+                            color: 'primary',
+                            size: 'small'
+                        }
                     }
                 }
             ]}
@@ -160,10 +168,10 @@ const App = () => {
 
 ```tsx
 // Object - static props
-markProps: { label: 'Fixed', color: 'primary' }
+slotProps: { mark: { label: 'Fixed', color: 'primary' } }
 
 // Function - dynamic props based on markup
-markProps: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
+slotProps: { mark: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) }) }
 ```
 
 ### Dynamic mark &middot; [![sandbox](https://user-images.githubusercontent.com/37639183/199624889-6129e303-6b44-4b82-859d-ada79942842c.svg)](https://codesandbox.io/s/dynamic-mark-w2nj82?file=/src/App.js)
@@ -250,7 +258,7 @@ const App = () => {
             options={[
                 {
                     markup: '**__nested__**',
-                    markProps: ({value, children}) => ({
+                    slotProps: { mark: ({value, children}) => ({
                         value,
                         children,
                         style: {fontWeight: 'bold'},
@@ -258,7 +266,7 @@ const App = () => {
                 },
                 {
                     markup: '*__nested__*',
-                    markProps: ({value, children}) => ({
+                    slotProps: { mark: ({value, children}) => ({
                         value,
                         children,
                         style: {fontStyle: 'italic'},
@@ -323,7 +331,7 @@ A default overlay is the suggestion component, but it can be easily replaced for
 export const DefaultOverlay = () => {
     const [value, setValue] = useState('Hello, default - suggestion overlay by trigger @!')
     return (
-        <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{data: ['First', 'Second', 'Third']}]} />
+        <MarkedInput Mark={Mark} value={value} onChange={setValue} options={[{ slotProps: { overlay: { trigger: '@', data: ['First', 'Second', 'Third']}]} />
     )
 }
 ```
@@ -349,7 +357,7 @@ export const CustomTrigger = () => {
             Overlay={Overlay}
             value={value}
             onChange={setValue}
-            options={[{overlayTrigger: '/'}]}
+            options={[{ slotProps: { overlay: { trigger: '/' } } }]}
         />
     )
 }
@@ -452,16 +460,18 @@ See the [MUI documentation](https://mui.com/material-ui/customization/overriding
 ### Overall view
 
 ```tsx
-<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue}> option={[{
-    overlayTrigger: '@',
+<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue} options={[{
     markup: '@[__value__](__meta__)',
-    data: Data,
-    markProps: getCustomMarkProps,
+    slotProps: {
+        mark: getCustomMarkProps,
+        overlay: {trigger: '@', data: Data},
+    },
 }, {
-    overlayTrigger: '/',
     markup: '@(__value__)[__meta__]',
-    data: AnotherData,
-    markProps: getAnotherCustomMarkProps,
+    slotProps: {
+        mark: getAnotherCustomMarkProps,
+        overlay: {trigger: '/', data: AnotherData},
+    },
 }]}/>
 ```
 
@@ -473,16 +483,18 @@ const MarkedInput = createMarkedInput({
     Overlay,
     options: [
         {
-            overlayTrigger: '@',
             markup: '@[__label__](__value__)',
-            data: Data,
-            markProps: getCustomMarkProps,
+            slotProps: {
+                mark: getCustomMarkProps,
+                overlay: {trigger: '@', data: Data},
+            },
         },
         {
-            overlayTrigger: '/',
             markup: '@(__label__)[__value__]',
-            data: AnotherData,
-            markProps: getAnotherCustomMarkProps,
+            slotProps: {
+                mark: getAnotherCustomMarkProps,
+                overlay: {trigger: '/', data: AnotherData},
+            },
         },
     ],
 })
@@ -663,31 +675,63 @@ export interface Option<T = Record<string, any>> {
      */
     markup?: Markup
     /**
-     * Sequence of symbols for calling the overlay.
-     * @default "@"
+     * Per-option slot components.
+     * If not specified, falls back to global Mark/Overlay components.
+     *
+     * Architecture:
+     * - Global Mark/Overlay (MarkedInputProps level)
+     * - Per-option Mark/Overlay (Option level) - overrides global
+     * - Priority: option.slots.mark → MarkedInputProps.Mark → undefined (optional)
      */
-    overlayTrigger?: string
+    slots?: {
+        mark?: ComponentType<any>
+        overlay?: ComponentType<any>
+    }
     /**
-     * Data for an overlay component. By default, it is suggestions.
+     * Props for slot components.
      */
-    data?: string[]
-    /**
-     * Props for the mark component. Can be either:
-     * - A static object that completely replaces MarkProps
-     * - A function that transforms MarkProps into component-specific props
-     *
-     * When using an object, it will be passed directly to the Mark component.
-     * When using a function, it receives MarkProps and should return props for the Mark component.
-     *
-     * @example
-     * // Static object
-     * markProps: { label: 'Click me', primary: true }
-     *
-     * @example
-     * // Function
-     * markProps: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
-     */
-    markProps?: T | ((props: MarkProps) => T)
+    slotProps?: {
+        /**
+         * Props for the mark component. Can be either:
+         * - A static object that completely replaces MarkProps
+         * - A function that transforms MarkProps into component-specific props
+         *
+         * @example
+         * // Static object
+         * mark: { label: 'Click me', primary: true }
+         *
+         * @example
+         * // Function
+         * mark: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
+         */
+        mark?: T | ((props: MarkProps) => T)
+        /**
+         * Props for the overlay component.
+         *
+         * @example
+         * overlay: {
+         *   trigger: '@',
+         *   data: ['Alice', 'Bob'],
+         *   maxItems: 5
+         * }
+         */
+        overlay?: {
+            /**
+             * Trigger sequence for this option's overlay.
+             * Framework-specific configuration (React layer).
+             * @default "@"
+             */
+            trigger?: string
+            /**
+             * Data for suggestions overlay.
+             */
+            data?: string[]
+            /**
+             * Additional custom props for overlay component.
+             */
+            [key: string]: any
+        }
+    }
 }
 ```
 

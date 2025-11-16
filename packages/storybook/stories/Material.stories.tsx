@@ -35,11 +35,15 @@ export const Chipped = () => {
 				options={[
 					{
 						markup: '@[__value__](outlined:__meta__)',
-						markProps: ({value}) => ({label: value, variant: 'outlined' as const, size: 'small' as const}),
+						slotProps: {
+							mark: ({value}) => ({label: value, variant: 'outlined' as const, size: 'small' as const}),
+						},
 					},
 					{
 						markup: '@[__value__](common:__meta__)',
-						markProps: ({value}) => ({label: value, size: 'small' as const}),
+						slotProps: {
+							mark: ({value}) => ({label: value, size: 'small' as const}),
+						},
 					},
 				]}
 			/>
@@ -61,15 +65,19 @@ export const Overridden = () => {
 					options: [
 						{
 							markup: '@[__value__](outlined:__meta__)',
-							markProps: ({value}: MarkToken) => ({
-								label: value,
-								variant: 'outlined' as const,
-								size: 'small' as const,
-							}),
+							slotProps: {
+								mark: ({value}: MarkToken) => ({
+									label: value,
+									variant: 'outlined' as const,
+									size: 'small' as const,
+								}),
+							},
 						},
 						{
 							markup: '@[__value__](common:__meta__)',
-							markProps: ({value}: MarkToken) => ({label: value, size: 'small' as const}),
+							slotProps: {
+								mark: ({value}: MarkToken) => ({label: value, size: 'small' as const}),
+							},
 						},
 					],
 				}}

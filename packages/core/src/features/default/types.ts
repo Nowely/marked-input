@@ -2,8 +2,13 @@ import {OverlayTrigger} from '../../shared/types'
 import {Markup} from '../parsing/ParserV2/types'
 
 /**
- * Core option for markups - used internally by core for parsing and triggering
- * Includes data for overlay/suggestions. Extended by framework-specific Option types.
+ * Core option for markups - Framework-agnostic configuration.
+ * Extended by framework-specific Option types (e.g., React Option).
+ *
+ * Architecture:
+ * - CoreOption: Contains only markup pattern (framework-independent)
+ * - trigger configuration: Handled by framework layer via getTrigger function in TriggerFinder
+ * - Separation of concerns: Core focuses on markup parsing, framework handles overlay triggers
  */
 export interface CoreOption {
 	/**
@@ -28,22 +33,6 @@ export interface CoreOption {
 	 * "@[__nested__]"
 	 */
 	markup?: Markup
-	/**
-	 * Sequence of symbols for calling the overlay.
-	 * @default "@"
-	 *
-	 * @example
-	 * "@"      - triggers on "@" symbol
-	 * "@#"     - triggers on either "@" or "#"
-	 */
-	overlayTrigger?: string
-	/**
-	 * Data for an overlay component. By default, it is suggestions.
-	 *
-	 * @example
-	 * ["option1", "option2", "option3"]
-	 */
-	data?: string[]
 }
 
 /**

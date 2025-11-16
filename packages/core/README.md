@@ -97,10 +97,11 @@ const store = new Store()
 
 - `DEFAULT_CLASS_NAME` - Default CSS class name
 - `DEFAULT_MARKUP` - Default markup template
-- `DEFAULT_OPTIONS` - Default configuration options
-- `DEFAULT_TRIGGER` - Default trigger character
+- `DEFAULT_OVERLAY_TRIGGER` - Default trigger character
 - `KEYBOARD` - Keyboard constants
 - `PLACEHOLDER` - Placeholder constants (`__label__`, `__value__`, `__nested__`)
+
+> **Note**: Default configuration options are now framework-specific. For React, see `@markput` package.
 
 ## Development
 

@@ -5,7 +5,7 @@ export type {OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/share
 
 // Feature exports
 export type {CoreOption, CoreMarkputProps} from './src/features/default'
-export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_OVERLAY_TRIGGER} from './src/features/default'
+export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from './src/features/default'
 
 // Parsing exports (modern API)
 export {Parser, annotate, denote} from './src/features/parsing'

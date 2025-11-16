@@ -55,7 +55,9 @@ export const Overridden = () => {
 				options={[
 					{
 						markup: '@[__value__](common)' as Markup,
-						markProps: ({value}: {value?: string}) => ({children: value}),
+						slotProps: {
+							mark: ({value}: {value?: string}) => ({children: value}),
+						},
 					},
 				]}
 			/>
@@ -84,7 +86,9 @@ export const TaggedInput = () => {
 				options={[
 					{
 						markup: '@[__value__](common)' as Markup,
-						markProps: ({value}) => ({children: value, style: {marginLeft: 0}}),
+						slotProps: {
+							mark: ({value}) => ({children: value, style: {marginLeft: 0}}),
+						},
 					},
 				]}
 				slotProps={{

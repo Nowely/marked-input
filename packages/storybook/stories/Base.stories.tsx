@@ -29,14 +29,23 @@ const ConfiguredMarkedInput = createMarkedInput({
 	options: [
 		{
 			markup: PrimaryMarkup,
-			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			markProps: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+			slotProps: {
+				mark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+				overlay: {
+					trigger: '@',
+					data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
+				},
+			},
 		},
 		{
 			markup: DefaultMarkup,
-			overlayTrigger: '/',
-			data: ['Seventh', 'Eight', 'Ninth'],
-			markProps: ({value}) => ({label: value || ''}),
+			slotProps: {
+				mark: ({value}) => ({label: value || ''}),
+				overlay: {
+					trigger: '/',
+					data: ['Seventh', 'Eight', 'Ninth'],
+				},
+			},
 		},
 	],
 })
@@ -80,7 +89,12 @@ export const Autocomplete: Story = {
 		options: [
 			{
 				markup: '@__value__' as Markup,
-				data: ['one', 'two', 'three', 'four'],
+				slotProps: {
+					overlay: {
+						trigger: '@',
+						data: ['one', 'two', 'three', 'four'],
+					},
+				},
 			},
 		],
 	},

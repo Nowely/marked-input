@@ -1,9 +1,9 @@
-import {ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
+import {ComponentType, ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {CoreOption} from '@markput/core'
 
 /**
- * Simplified props passed to Mark components via markProps
+ * Simplified props passed to Mark components via slotProps
  */
 export interface MarkProps {
 	/** Main content value of the mark */
@@ -21,58 +21,97 @@ export interface MarkProps {
  *
  * Inherits from CoreOption:
  * - `markup` - Template string for rendering marks
- * - `overlayTrigger` - Sequence of symbols that trigger the overlay
- * - `data` - Data for overlay component (suggestions, etc.)
  *
  * @example
  * ```typescript
- * // With function
+ * // Per-option mark and overlay components
  * const option: Option = {
  *   markup: '@[__value__](__meta__)',
- *   overlayTrigger: '@',
- *   data: ['Alice', 'Bob', 'Charlie'],
- *   markProps: ({ value, meta }) => ({ label: value, tooltip: meta })
+ *   slots: {
+ *     mark: Button,
+ *     overlay: UserList
+ *   },
+ *   slotProps: {
+ *     mark: ({ value, meta }) => ({ label: value, tooltip: meta }),
+ *     overlay: {
+ *       trigger: '@',
+ *       data: ['Alice', 'Bob', 'Charlie']
+ *     }
+ *   }
  * }
  *
- * // With static object
+ * // With static props
  * const option: Option = {
  *   markup: '[...]',
- *   markProps: { label: 'Static', primary: true }
+ *   slots: { mark: Badge },
+ *   slotProps: {
+ *     mark: { label: 'Static', variant: 'dot' }
+ *   }
  * }
  * ```
  */
 export interface Option<T = Record<string, any>> extends CoreOption {
 	/**
-	 * Props for the mark component. Can be either:
-	 * - A static object that completely replaces MarkProps
-	 * - A function that transforms MarkProps into component-specific props
-	 *
-	 * When using an object, it will be passed directly to the Mark component (full replacement).
-	 * When using a function, it receives MarkProps and should return props for the Mark component.
-	 *
-	 * @example
-	 * // Static object (full replacement)
-	 * markProps: { label: 'Click me', primary: true }
-	 *
-	 * @example
-	 * // Function for dynamic transformation
-	 * markProps: ({ value, meta }) => ({ label: value || '', tooltip: meta })
-	 *
-	 * @example
-	 * // With nested content support
-	 * markProps: ({ value, children }) => ({
-	 *   label: value || '',
-	 *   content: children
-	 * })
-	 *
-	 * @example
-	 * // Access to raw nested content
-	 * markProps: ({ value, nested }) => ({
-	 *   label: value || '',
-	 *   rawNested: nested // raw unparsed nested content
-	 * })
+	 * Per-option slot components.
+	 * If not specified, falls back to global Mark/Overlay components.
 	 */
-	markProps?: T | ((props: MarkProps) => T)
+	slots?: {
+		/**
+		 * Mark component for this option
+		 * @default MarkedInputProps.Mark
+		 */
+		mark?: ComponentType<any>
+		/**
+		 * Overlay component for this option
+		 * @default MarkedInputProps.Overlay
+		 */
+		overlay?: ComponentType<any>
+	}
+	/**
+	 * Props for slot components. Can be either:
+	 * - A static object passed directly to the component
+	 * - A function that transforms MarkProps into component-specific props
+	 */
+	slotProps?: {
+		/**
+		 * Props for the mark component.
+		 * Can be object or function receiving MarkProps.
+		 *
+		 * @example
+		 * // Static object
+		 * mark: { label: 'Click me', primary: true }
+		 *
+		 * @example
+		 * // Function for dynamic transformation
+		 * mark: ({ value, meta }) => ({ label: value || '', tooltip: meta })
+		 */
+		mark?: T | ((props: MarkProps) => T)
+		/**
+		 * Props for the overlay component.
+		 *
+		 * @example
+		 * overlay: {
+		 *   trigger: '@',
+		 *   data: ['Alice', 'Bob'],
+		 *   maxItems: 5
+		 * }
+		 */
+		overlay?: {
+			/**
+			 * Sequence of symbols for calling the overlay.
+			 * @default "@"
+			 */
+			trigger?: string
+			/**
+			 * Data for suggestions overlay.
+			 */
+			data?: string[]
+			/**
+			 * Additional custom props for overlay component
+			 */
+			[key: string]: any
+		}
+	}
 }
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>

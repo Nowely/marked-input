@@ -5,12 +5,4 @@ export const DEFAULT_OVERLAY_TRIGGER = '@'
 
 export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
 
-export const DEFAULT_OPTIONS: CoreOption[] = [
-	{
-		overlayTrigger: DEFAULT_OVERLAY_TRIGGER,
-		markup: DEFAULT_MARKUP,
-		data: [],
-	},
-]
-
 export const DEFAULT_CLASS_NAME = 'mk-input'
