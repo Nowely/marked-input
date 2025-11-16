@@ -3,6 +3,7 @@ import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import {ReactNode, useState} from 'react'
 import {Text} from '../assets/Text'
+import {useTab} from '../assets/Tabs'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
@@ -327,11 +328,20 @@ const result = parser.parse('Hello **world**!')
 
 Visit our [documentation](https://docs.example.com) for more details.
 ~~This feature is deprecated~~ and will be removed in v3.0.`)
+		const {Tab, activeTab} = useTab([
+			{value: 'preview', label: 'Preview'},
+			{value: 'write', label: 'Write'},
+		])
 
 		return (
 			<>
-				<MarkdownInput value={value} onChange={setValue} />
-				<Text label="Raw value:" value={value} />
+				<Tab />
+
+				{activeTab === 'write' ? (
+					<MarkedInput options={[]} value={value} onChange={setValue} />
+				) : (
+					<MarkdownInput value={value} readOnly={true} />
+				)}
 			</>
 		)
 	},
