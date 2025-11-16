@@ -23,5 +23,5 @@ export interface CoreMarkputProps {
 	/** Configuration options for markups and overlays */
 	options: InnerOption[]
 	/** Triggering events for overlay */
-	trigger: OverlayTrigger
+	trigger?: OverlayTrigger
 }
