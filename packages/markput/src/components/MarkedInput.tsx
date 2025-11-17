@@ -34,8 +34,7 @@ import {CoreMarkputProps, Token, OverlayTrigger} from '@markput/core'
  * />
  * ```
  */
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps>
-	extends Omit<CoreMarkputProps, 'options' | 'showOverlayOn'> {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
 	/** Global component used for rendering markups (fallback for option.slots.mark) */
