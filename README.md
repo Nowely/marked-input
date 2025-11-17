@@ -671,7 +671,19 @@ type OverlayMatch = {
 ```
 
 ```typescript jsx
-export interface Option<T = Record<string, any>> {
+export interface MarkProps {
+    value?: string
+    meta?: string
+    nested?: string
+    children?: ReactNode
+}
+
+export interface OverlayProps {
+    trigger?: string
+    data?: string[]
+}
+
+export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
     /**
      * Template string instead of which the mark is rendered.
      * Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
@@ -685,17 +697,19 @@ export interface Option<T = Record<string, any>> {
      */
     markup?: Markup
     /**
-     * Per-option slot components.
+     * Per-option slot components (mark and overlay).
      * If not specified, falls back to global Mark/Overlay components.
      *
-     * Architecture:
-     * - Global Mark/Overlay (MarkedInputProps level)
-     * - Per-option Mark/Overlay (Option level) - overrides global
-     * - Priority: option.slots.mark → MarkedInputProps.Mark → undefined (optional)
+     * Component Resolution Priority (for each slot):
+     * 1. option.slots[slot] (per-option component)
+     * 2. MarkedInputProps[slot] (global component)
+     * 3. Default component (Suggestions for overlay, undefined for mark)
+     *
+     * This allows fine-grained control with global fallbacks.
      */
     slots?: {
-        mark?: ComponentType<any>
-        overlay?: ComponentType<any>
+        mark?: ComponentType<TMarkProps>
+        overlay?: ComponentType<TOverlayProps>
     }
     /**
      * Props for slot components.
@@ -714,33 +728,17 @@ export interface Option<T = Record<string, any>> {
          * // Function
          * mark: ({ value, meta }) => ({ label: value, onClick: () => alert(meta) })
          */
-        mark?: T | ((props: MarkProps) => T)
+        mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
         /**
-         * Props for the overlay component.
+         * Props for the overlay component. Passed directly to the Overlay component.
          *
          * @example
          * overlay: {
          *   trigger: '@',
-         *   data: ['Alice', 'Bob'],
-         *   maxItems: 5
+         *   data: ['Alice', 'Bob']
          * }
          */
-        overlay?: {
-            /**
-             * Trigger sequence for this option's overlay.
-             * Framework-specific configuration (React layer).
-             * @default "@"
-             */
-            trigger?: string
-            /**
-             * Data for suggestions overlay.
-             */
-            data?: string[]
-            /**
-             * Additional custom props for overlay component.
-             */
-            [key: string]: any
-        }
+        overlay?: TOverlayProps
     }
 }
 ```
