@@ -1,6 +1,5 @@
 import {Tag} from 'antd'
 import {MarkedInput} from 'rc-marked-input'
-import type {Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Text} from '../assets/Text'
 import {withStyle} from '../assets/withStyle'
@@ -24,7 +23,7 @@ export const Tagged = () => {
 				onChange={setValue}
 				options={[
 					{
-						markup: '@(__value__)' as Markup,
+						markup: '@(__value__)',
 						slotProps: {
 							mark: ({value}) => ({children: value, color: value, style: {marginRight: 0}}),
 						},
