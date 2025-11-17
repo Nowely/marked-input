@@ -1,6 +1,6 @@
 import {ComponentType} from 'react'
 import {useStore} from './useStore'
-import type {Option, MarkProps, PropsOf} from '../../types'
+import type {Option, MarkProps, ResolveSlotProps} from '../../types'
 
 /**
  * Slot type that can be resolved
@@ -8,71 +8,25 @@ import type {Option, MarkProps, PropsOf} from '../../types'
 export type SlotType = 'mark' | 'overlay'
 
 /**
- * Extracts the slot component from Option based on slot type.
- * Returns the component type if found, undefined otherwise.
- *
- * @template TType - Slot type ('mark' | 'overlay')
- * @template TOption - Option type with slot configuration
+ * Helper type for mark slot return value.
+ * Simplifies function overload signatures.
  */
-type ExtractSlotComponent<
-	TType extends SlotType,
-	TOption extends Option<any, any> | undefined
-> = TType extends 'mark'
-	? TOption extends Option<any, any>
-		? TOption['slots'] extends {mark: ComponentType<any>}
-			? TOption['slots']['mark']
-			: undefined
-		: undefined
-	: TOption extends Option<any, any>
-		? TOption['slots'] extends {overlay: ComponentType<any>}
-			? TOption['slots']['overlay']
-			: undefined
-		: undefined
+type MarkSlotReturn<TOption extends Option<any, any> | undefined> = readonly [
+	ComponentType<ResolveSlotProps<'mark', TOption, ComponentType<any> | undefined, undefined>>,
+	ResolveSlotProps<'mark', TOption, ComponentType<any> | undefined, undefined>
+]
 
 /**
- * Infers props type for a slot with hierarchical fallback.
- *
- * Type resolution hierarchy:
- * 1. If TOptionSlot is provided (from option.slots[type]), use its props
- * 2. Otherwise, if TGlobal is provided (from global Mark/Overlay), use its props
- * 3. Otherwise, if TDefault is provided (from defaultComponent), use its props
- * 4. Finally, fallback to TBase (typically MarkProps)
- *
- * @template TOptionSlot - Component type from option.slots[type]
- * @template TGlobal - Global component type from store (Mark or Overlay)
- * @template TDefault - Default component type passed to useSlot
- * @template TBase - Base props type (MarkProps for mark, any for overlay)
+ * Helper type for overlay slot return value.
+ * Simplifies function overload signatures.
  */
-type InferSlotProps<
-	TOptionSlot extends ComponentType<any> | undefined,
-	TGlobal extends ComponentType<any> | undefined,
-	TDefault extends ComponentType<any> | undefined,
-	TBase = any
-> = TOptionSlot extends ComponentType<any>
-	? PropsOf<TOptionSlot>
-	: TGlobal extends ComponentType<any>
-		? PropsOf<TGlobal>
-		: TDefault extends ComponentType<any>
-			? PropsOf<TDefault>
-			: TBase
-
-/**
- * Resolves the final props type for a slot.
- * Combines ExtractSlotComponent and InferSlotProps for DRY.
- *
- * @template TType - Slot type ('mark' | 'overlay')
- * @template TOption - Option type with slot configuration
- * @template TGlobal - Global component from store
- * @template TDefault - Default component
- * @template TBase - Base props type
- */
-type ResolvedSlotProps<
-	TType extends SlotType,
+type OverlaySlotReturn<
 	TOption extends Option<any, any> | undefined,
-	TGlobal extends ComponentType<any> | undefined,
-	TDefault extends ComponentType<any> | undefined,
-	TBase = any
-> = InferSlotProps<ExtractSlotComponent<TType, TOption>, TGlobal, TDefault, TBase>
+	TDefault extends ComponentType<any> | undefined
+> = readonly [
+	ComponentType<ResolveSlotProps<'overlay', TOption, ComponentType<any> | undefined, TDefault>>,
+	ResolveSlotProps<'overlay', TOption, ComponentType<any> | undefined, TDefault>
+]
 
 /**
  * Resolves a mark slot component and its props with proper fallback chain.
@@ -92,10 +46,7 @@ export function useSlot<TOption extends Option<any, any> | undefined = undefined
 	option?: TOption,
 	baseProps?: MarkProps,
 	defaultComponent?: never
-): readonly [
-	ComponentType<ResolvedSlotProps<'mark', TOption, ComponentType<any> | undefined, undefined, MarkProps>>,
-	ResolvedSlotProps<'mark', TOption, ComponentType<any> | undefined, undefined, MarkProps>
-]
+): MarkSlotReturn<TOption>
 
 /**
  * Resolves an overlay slot component and its props with proper fallback chain.
@@ -119,10 +70,7 @@ export function useSlot<
 	option?: TOption,
 	baseProps?: any,
 	defaultComponent?: TDefault
-): readonly [
-	ComponentType<ResolvedSlotProps<'overlay', TOption, ComponentType<any> | undefined, TDefault, any>>,
-	ResolvedSlotProps<'overlay', TOption, ComponentType<any> | undefined, TDefault, any>
-]
+): OverlaySlotReturn<TOption, TDefault>
 
 /**
  * Implementation: Resolves a slot component and its props with proper fallback chain.
@@ -153,21 +101,15 @@ export function useSlot<
 	option?: TOption,
 	baseProps?: TType extends 'mark' ? MarkProps : any,
 	defaultComponent?: TDefault
-): readonly [
-	ComponentType<ResolvedSlotProps<TType, TOption, ComponentType<any> | undefined, TDefault, TType extends 'mark' ? MarkProps : any>>,
-	ResolvedSlotProps<TType, TOption, ComponentType<any> | undefined, TDefault, TType extends 'mark' ? MarkProps : any>
-] {
+): TType extends 'mark' ? MarkSlotReturn<TOption> : OverlaySlotReturn<TOption, TDefault> {
 	// Get global component from store
 	const globalComponent = useStore(state =>
 		type === 'mark' ? state.props.Mark : state.props.Overlay
 	) as ComponentType<any> | undefined
 
-	// Define base props type for type inference
-	type BasePropsType = TType extends 'mark' ? MarkProps : any
-
 	// Resolve component: option.slots[type] → global component → defaultComponent
 	const Component = (option?.slots?.[type] || globalComponent || defaultComponent) as ComponentType<
-		ResolvedSlotProps<TType, TOption, typeof globalComponent, TDefault, BasePropsType>
+		ResolveSlotProps<TType, TOption, typeof globalComponent, TDefault>
 	>
 
 	// Throw error if component not found
@@ -181,21 +123,21 @@ export function useSlot<
 	// Resolve props based on slotProps configuration
 	const slotPropsConfig = option?.slotProps?.[type]
 
-	let props: ResolvedSlotProps<TType, TOption, typeof globalComponent, TDefault, BasePropsType>
+	let props: ResolveSlotProps<TType, TOption, typeof globalComponent, TDefault>
 
 	if (slotPropsConfig !== undefined) {
 		// If slotProps is defined, use it
 		if (typeof slotPropsConfig === 'function') {
 			// If it's a function, transform baseProps
-			props = slotPropsConfig(baseProps) as ResolvedSlotProps<TType, TOption, typeof globalComponent, TDefault, BasePropsType>
+			props = slotPropsConfig(baseProps) as ResolveSlotProps<TType, TOption, typeof globalComponent, TDefault>
 		} else {
 			// If it's an object, use it directly
-			props = slotPropsConfig as ResolvedSlotProps<TType, TOption, typeof globalComponent, TDefault, BasePropsType>
+			props = slotPropsConfig as ResolveSlotProps<TType, TOption, typeof globalComponent, TDefault>
 		}
 	} else {
 		// Otherwise, use baseProps as fallback
-		props = (baseProps ?? {}) as ResolvedSlotProps<TType, TOption, typeof globalComponent, TDefault, BasePropsType>
+		props = (baseProps ?? {}) as ResolveSlotProps<TType, TOption, typeof globalComponent, TDefault>
 	}
 
-	return [Component, props] as const
+	return [Component, props] as unknown as TType extends 'mark' ? MarkSlotReturn<TOption> : OverlaySlotReturn<TOption, TDefault>
 }
