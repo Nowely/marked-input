@@ -48,21 +48,21 @@ export const SimpleNesting: Story = {
 							markup: BoldMarkup,
 							slotProps: {
 								mark: ({value, children}) => ({
-										value,
-										children,
-										style: {fontWeight: 'bold'},
-									}),
-								},
+									value,
+									children,
+									style: {fontWeight: 'bold'},
+								}),
+							},
 						},
 						{
 							markup: ItalicMarkup,
 							slotProps: {
 								mark: ({value, children}) => ({
-										value,
-										children,
-										style: {fontStyle: 'italic'},
-									}),
-								},
+									value,
+									children,
+									style: {fontStyle: 'italic'},
+								}),
+							},
 						},
 					]}
 				/>
@@ -107,49 +107,49 @@ export const MultipleLevels: Story = {
 							markup: TagMarkup,
 							slotProps: {
 								mark: ({value, children}) => ({
-										value,
-										children,
-										style: {
-											backgroundColor: '#e7f3ff',
-											border: '1px solid #2196f3',
-											color: '#1976d2',
-											padding: '2px 6px',
-											borderRadius: '4px',
-										},
-									}),
-								},
+									value,
+									children,
+									style: {
+										backgroundColor: '#e7f3ff',
+										border: '1px solid #2196f3',
+										color: '#1976d2',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 						{
 							markup: MentionMarkup,
 							slotProps: {
 								mark: ({value, children}) => ({
-										value,
-										children,
-										style: {
-											backgroundColor: '#fff3e0',
-											border: '1px solid #ff9800',
-											color: '#f57c00',
-											padding: '2px 6px',
-											borderRadius: '4px',
-										},
-									}),
-								},
+									value,
+									children,
+									style: {
+										backgroundColor: '#fff3e0',
+										border: '1px solid #ff9800',
+										color: '#f57c00',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 						{
 							markup: CodeMarkup,
 							slotProps: {
 								mark: ({value, children}) => ({
-										value,
-										children,
-										style: {
-											backgroundColor: '#f3e5f5',
-											border: '1px solid #9c27b0',
-											color: '#7b1fa2',
-											padding: '2px 6px',
-											borderRadius: '4px',
-										},
-									}),
-								},
+									value,
+									children,
+									style: {
+										backgroundColor: '#f3e5f5',
+										border: '1px solid #9c27b0',
+										color: '#7b1fa2',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 					]}
 				/>

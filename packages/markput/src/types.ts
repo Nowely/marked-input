@@ -31,7 +31,6 @@ export interface OverlayProps {
 	data?: string[]
 }
 
-
 // ============================================================================
 // Option Interface with Automatic Type Inference
 // ============================================================================
@@ -71,7 +70,6 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 		overlay?: TOverlayProps
 	}
 }
-
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 

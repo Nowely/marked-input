@@ -124,7 +124,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
-			const result = TriggerFinder.find(options, (opt) => opt.trigger)
+			const result = TriggerFinder.find(options, opt => opt.trigger)
 
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
@@ -135,7 +135,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			isSelectedPositionValue = false
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
-			const result = TriggerFinder.find(options, (opt) => opt.trigger)
+			const result = TriggerFinder.find(options, opt => opt.trigger)
 
 			expect(result).toBeUndefined()
 		})
@@ -194,7 +194,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			const finder = new TriggerFinder()
 			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
-			const result = finder.find(options, (opt) => opt.trigger)
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result).toEqual({
 				value: 'world',
@@ -213,7 +213,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			const finder = new TriggerFinder()
 			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
-			const result = finder.find(options, (opt) => opt.trigger)
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result).toBeUndefined()
 		})
@@ -228,7 +228,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 				{trigger: '@', markup: '@[__value__](__meta__)' as Markup},
 				{trigger: '#', markup: '#[__value__](__meta__)' as Markup},
 			]
-			const result = finder.find(options, (opt) => opt.trigger)
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result?.option).toBe(options[0])
 		})

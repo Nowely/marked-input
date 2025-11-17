@@ -152,10 +152,10 @@ const App = () => {
                         mark: {
                             variant: 'outlined',
                             color: 'primary',
-                            size: 'small'
-                        }
-                    }
-                }
+                            size: 'small',
+                        },
+                    },
+                },
             ]}
         />
     )
@@ -163,6 +163,7 @@ const App = () => {
 ```
 
 **Key differences:**
+
 - **Object form**: Props are passed directly to the Mark component (full replacement of MarkProps)
 - **Function form**: You can access and transform `value`, `meta`, `nested`, and `children` from the markup
 
@@ -357,7 +358,7 @@ export const CustomTrigger = () => {
             Overlay={Overlay}
             value={value}
             onChange={setValue}
-            options={[{ slotProps: { overlay: { trigger: '/' } } }]}
+            options={[{slotProps: {overlay: {trigger: '/'}}}]}
         />
     )
 }
@@ -460,19 +461,28 @@ See the [MUI documentation](https://mui.com/material-ui/customization/overriding
 ### Overall view
 
 ```tsx
-<MarkedInput Mark={Mark} Overlay={Overlay} value={value} onChange={setValue} options={[{
-    markup: '@[__value__](__meta__)',
-    slotProps: {
-        mark: getCustomMarkProps,
-        overlay: {trigger: '@', data: Data},
-    },
-}, {
-    markup: '@(__value__)[__meta__]',
-    slotProps: {
-        mark: getAnotherCustomMarkProps,
-        overlay: {trigger: '/', data: AnotherData},
-    },
-}]}/>
+<MarkedInput
+    Mark={Mark}
+    Overlay={Overlay}
+    value={value}
+    onChange={setValue}
+    options={[
+        {
+            markup: '@[__value__](__meta__)',
+            slotProps: {
+                mark: getCustomMarkProps,
+                overlay: {trigger: '@', data: Data},
+            },
+        },
+        {
+            markup: '@(__value__)[__meta__]',
+            slotProps: {
+                mark: getAnotherCustomMarkProps,
+                overlay: {trigger: '/', data: AnotherData},
+            },
+        },
+    ]}
+/>
 ```
 
 Or
