@@ -68,7 +68,7 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 		/**
 		 * Props for the overlay component.
 		 */
-		overlay?: TOverlayProps | ((props: OverlayProps) => TOverlayProps)
+		overlay?: TOverlayProps
 	}
 }
 
