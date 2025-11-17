@@ -8,6 +8,7 @@ A React component that lets you combine editable text with any component using a
 
 - Powerful annotations tool: add, edit, remove, visualize
 - Nested marks support
+- Support for custom syntax patterns (e.g., HTML, markdown)
 - TypeScript
 - Support for any components
 - Flexible and customizable
