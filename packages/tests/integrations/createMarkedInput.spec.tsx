@@ -20,8 +20,7 @@ describe(`Utility: createMarkedInput`, () => {
 		document.addEventListener = vi.fn((event, callback) => (events[event] = callback))
 		document.removeEventListener = vi.fn(event => delete events[event])
 
-		const Overlay = forwardRef<HTMLDivElement>(() => <span>I'm here!</span>)
-		//@ts-expect-error - TODO: fix this
+		const Overlay = forwardRef(() => <span>I'm here!</span>)
 		const Input = createMarkedInput({Mark: () => null, Overlay})
 
 		const {queryByText, getByText} = render(<Input showOverlayOn="selectionChange" defaultValue="Hello @" />)
