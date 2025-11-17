@@ -118,9 +118,9 @@ export interface Option<
 	 */
 	slots?: {
 		/** Mark component for this option. */
-		mark?: ComponentType<TSlotMarkProps>
+		mark?: ComponentType<any>
 		/** Overlay component for this option. */
-		overlay?: ComponentType<TSlotOverlayProps>
+		overlay?: ComponentType<any>
 	}
 	/**
 	 * Props for slot components.
@@ -130,11 +130,11 @@ export interface Option<
 		 * Props for the mark component.
 		 * Can be a static object or a function that transforms MarkProps.
 		 */
-		mark?: TSlotMarkProps | ((props: MarkProps) => TSlotMarkProps)
+		mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
 		/**
 		 * Props for the overlay component.
 		 */
-		overlay?: TSlotOverlayProps
+		overlay?: TOverlayProps | ((props: OverlayProps) => TOverlayProps)
 	}
 }
 
