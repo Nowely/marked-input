@@ -1,6 +1,18 @@
 name: Publish to npm
 
-on: workflow_dispatch
+on:
+    workflow_dispatch:
+        inputs:
+            release_type:
+                description: 'Release type'
+                required: true
+                default: 'patch'
+                type: choice
+                options:
+                    - major
+                    - minor
+                    - patch
+                    - none
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -8,9 +20,23 @@ jobs:
     publishing:
         name: Publishing
         runs-on: ubuntu-latest
+        permissions:
+            contents: write
         steps:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
+
+            - name: Bump Version
+              if: ${{ github.event.inputs.release_type != 'none' }}
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  cd packages/markput
+                  pnpm version ${{ github.event.inputs.release_type }} --no-git-tag-version
+                  cd ../..
+                  VERSION=$(node -p "require('./packages/markput/package.json').version")
+                  git commit -am "chore: bump version to $VERSION"
+                  git push
 
             - name: Build Package
               run: pnpm run build
@@ -24,6 +50,10 @@ jobs:
               name: Publish to npm
               shell: bash
               run: pnpm run publish
-#            - if: steps.publish.outputs.type != 'none'
-#              run: |
-#                  echo "Version changed: ${{ steps.publish.outputs.old-version }} => ${{ steps.publish.outputs.version }}"
+
+            - name: Create and Push Tag
+              if: ${{ github.event.inputs.release_type != 'none' }}
+              run: |
+                  VERSION=$(node -p "require('./packages/markput/package.json').version")
+                  git tag v$VERSION
+                  git push origin v$VERSION
