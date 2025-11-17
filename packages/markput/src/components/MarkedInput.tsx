@@ -5,7 +5,7 @@ import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
-import {CoreMarkputProps, Token, OverlayTrigger} from '@markput/core'
+import {CoreMarkputProps, OverlayTrigger} from '@markput/core'
 
 /**
  * Props for MarkedInput component with hierarchical type support.
