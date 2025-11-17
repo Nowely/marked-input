@@ -71,7 +71,9 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 	}
 }
 
-export type ConfiguredMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps> = FunctionComponent<MarkedInputProps<TMarkProps, TOverlayProps>>
+export type ConfiguredMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps> = FunctionComponent<
+	MarkedInputProps<TMarkProps, TOverlayProps>
+>
 
 /**
  * Available slots for customizing MarkedInput internal components
