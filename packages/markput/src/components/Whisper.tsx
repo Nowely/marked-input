@@ -23,7 +23,7 @@ export const Whisper = memo(() => {
 		store.nodes.input.target = store.nodes.focus.target
 	}, [key])
 
-	if (key) return <Overlay key={key} {...props} />
+	if (key) return <Overlay key={key} {...(props ?? {})} />
 })
 
 Whisper.displayName = 'Whisper'
