@@ -110,17 +110,17 @@ export type ResolveSlotProps<
 export interface Option<
 	TMarkProps = MarkProps,
 	TOverlayProps = OverlayProps,
-	TSlotMarkProps = TMarkProps,
-	TSlotOverlayProps = TOverlayProps,
+	TSlotMarkProps = any,
+	TSlotOverlayProps = any,
 > extends CoreOption {
 	/**
 	 * Per-option slot components.
 	 */
 	slots?: {
 		/** Mark component for this option. */
-		mark?: ComponentType<any>
+		mark?: ComponentType<TSlotMarkProps>
 		/** Overlay component for this option. */
-		overlay?: ComponentType<any>
+		overlay?: ComponentType<TSlotOverlayProps>
 	}
 	/**
 	 * Props for slot components.
