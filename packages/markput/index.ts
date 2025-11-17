@@ -10,7 +10,6 @@ export type {OverlayHandler} from './src/utils/hooks/useOverlay'
 export type {
 	MarkedInputHandler,
 	Option,
-	OptionWithSlots,
 	ConfiguredMarkedInput,
 	MarkProps,
 	OverlayProps,

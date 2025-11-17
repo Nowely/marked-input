@@ -31,55 +31,6 @@ export interface OverlayProps {
 	data?: string[]
 }
 
-// ============================================================================
-// Slot Props Resolution (for runtime use in useSlot)
-// ============================================================================
-
-/**
- * Extract mark component props from Option.slots.mark.
- */
-type ExtractSlotMarkProps<TOption> = TOption extends {slots?: {mark?: infer TMarkComp}} ? PropsOf<TMarkComp> : never
-
-/**
- * Extract overlay component props from Option.slots.overlay.
- */
-type ExtractSlotOverlayProps<TOption> = TOption extends {slots?: {overlay?: infer TOverlayComp}}
-	? PropsOf<TOverlayComp>
-	: never
-
-/**
- * Helper type for hierarchical fallback with component types.
- */
-type InferPropsWithFallback<
-	TExtracted,
-	TGlobal extends ComponentType<any> | undefined,
-	TDefault extends ComponentType<any> | undefined,
-	TBase,
-> = [TExtracted] extends [never]
-	? TGlobal extends ComponentType<any>
-		? PropsOf<TGlobal>
-		: TDefault extends ComponentType<any>
-			? PropsOf<TDefault>
-			: TBase
-	: TExtracted
-
-/**
- * Unified slot props resolution for both compile-time (Option interface) and runtime (useSlot).
- *
- * Resolution hierarchy:
- * 1. Props from option.slots[type] component (if defined)
- * 2. Props from global component (Mark or Overlay from MarkedInputProps)
- * 3. Props from default component (if provided)
- * 4. Base props type (MarkProps for mark, any for overlay)
- */
-export type ResolveSlotProps<
-	TType extends 'mark' | 'overlay',
-	TOption extends Option<any, any> | undefined,
-	TGlobal extends ComponentType<any> | undefined,
-	TDefault extends ComponentType<any> | undefined,
-> = TType extends 'mark'
-	? InferPropsWithFallback<ExtractSlotMarkProps<TOption>, TGlobal, TDefault, MarkProps>
-	: InferPropsWithFallback<ExtractSlotOverlayProps<TOption>, TGlobal, TDefault, any>
 
 // ============================================================================
 // Option Interface with Automatic Type Inference
@@ -88,39 +39,22 @@ export type ResolveSlotProps<
 /**
  * React-specific markup option for defining mark behavior and styling.
  *
- * Type Parameters:
- * - `TMarkProps` - Global mark component props (default: `MarkProps`)
- * - `TOverlayProps` - Global overlay component props (default: `OverlayProps`)
- * - `TSlotMarkProps` - Per-option mark props (default: inherits from `TMarkProps`)
- * - `TSlotOverlayProps` - Per-option overlay props (default: inherits from `TOverlayProps`)
- *
  * @example
- * // Using explicit type parameter
- * const option: Option<ButtonProps> = {
+ * const option: Option = {
+ *   markup: '@[__value__]',
  *   slots: { mark: Button },
  *   slotProps: { mark: { label: 'Click' } }
  * }
- *
- * @example
- * // Using function transformer
- * const option: Option<ButtonProps> = {
- *   slotProps: { mark: (props: MarkProps) => ({ label: props.value }) }
- * }
  */
-export interface Option<
-	TMarkProps = MarkProps,
-	TOverlayProps = OverlayProps,
-	TSlotMarkProps = any,
-	TSlotOverlayProps = any,
-> extends CoreOption {
+export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
 	/**
 	 * Per-option slot components.
 	 */
 	slots?: {
 		/** Mark component for this option. */
-		mark?: ComponentType<TSlotMarkProps>
+		mark?: ComponentType<TMarkProps>
 		/** Overlay component for this option. */
-		overlay?: ComponentType<TSlotOverlayProps>
+		overlay?: ComponentType<TOverlayProps>
 	}
 	/**
 	 * Props for slot components.
@@ -138,38 +72,6 @@ export interface Option<
 	}
 }
 
-/**
- * Helper type for creating options with slot-specific types.
- *
- * @example
- * const option: OptionWithSlots<ButtonProps> = {
- *   slots: { mark: Button },
- *   slotProps: { mark: { label: 'Click' } }
- * }
- */
-export type OptionWithSlots<TSlotMarkProps = MarkProps, TSlotOverlayProps = OverlayProps> = Option<
-	MarkProps,
-	OverlayProps,
-	TSlotMarkProps,
-	TSlotOverlayProps
->
-
-/**
- * Helper function to create a typed option.
- *
- * @example
- * const tagOption = option<TagProps>()({
- *   markup: '@(__value__)',
- *   slotProps: {
- *     mark: (props: MarkProps) => ({ children: props.value, color: props.value })
- *   }
- * })
- */
-export function option<TMarkProps = MarkProps, TOverlayProps = OverlayProps>() {
-	return <TSlotMarkProps = TMarkProps, TSlotOverlayProps = TOverlayProps>(
-		opt: Option<TMarkProps, TOverlayProps, TSlotMarkProps, TSlotOverlayProps>
-	): Option<TMarkProps, TOverlayProps, TSlotMarkProps, TSlotOverlayProps> => opt
-}
 
 export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
 
