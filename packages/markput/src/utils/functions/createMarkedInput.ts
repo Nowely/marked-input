@@ -1,18 +1,20 @@
 import {ForwardedRef, forwardRef} from 'react'
 import {MarkedInputProps, _MarkedInput} from '../../components/MarkedInput'
-import {ConfiguredMarkedInput} from '../../types'
-import {Token} from '@markput/core'
+import {ConfiguredMarkedInput, MarkProps, OverlayProps} from '../../types'
 
 /**
  * Create the configured MarkedInput component.
+ *
+ * @template TMarkProps - Type of props for the Mark component (default: MarkProps)
+ * @template TOverlayProps - Type of props for the Overlay component (default: OverlayProps)
  */
-export function createMarkedInput<T = Token>(
-	configs: Omit<MarkedInputProps<T>, 'value' | 'onChange'>
-): ConfiguredMarkedInput<T> {
-	const ConfiguredMarkedInput = (props: MarkedInputProps<any>, ref: ForwardedRef<any>) => {
+export function createMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
+	configs: Omit<MarkedInputProps<TMarkProps, TOverlayProps>, 'value' | 'onChange'>
+): ConfiguredMarkedInput<TMarkProps, TOverlayProps> {
+	const ConfiguredMarkedInput = (props: MarkedInputProps<any, any>, ref: ForwardedRef<any>) => {
 		const assignedProps: MarkedInputProps = Object.assign({}, configs, props)
 		return _MarkedInput(assignedProps, ref)
 	}
 
-	return forwardRef(ConfiguredMarkedInput) as ConfiguredMarkedInput<T>
+	return forwardRef(ConfiguredMarkedInput) as ConfiguredMarkedInput<TMarkProps, TOverlayProps>
 }

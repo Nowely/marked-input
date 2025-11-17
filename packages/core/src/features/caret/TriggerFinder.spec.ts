@@ -123,7 +123,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
 
-			const result = TriggerFinder.find([{overlayTrigger: '@', markup: '@[__label__](__value__)'}])
+			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
+			const result = TriggerFinder.find(options, opt => opt.trigger)
 
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
@@ -133,7 +134,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 		it('should return undefined when position is not selected', () => {
 			isSelectedPositionValue = false
 
-			const result = TriggerFinder.find([{overlayTrigger: '@', markup: '@[__label__](__value__)'}])
+			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
+			const result = TriggerFinder.find(options, opt => opt.trigger)
 
 			expect(result).toBeUndefined()
 		})
@@ -191,8 +193,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
 
 			const finder = new TriggerFinder()
-			const options = [{overlayTrigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []}]
-			const result = finder.find(options)
+			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result).toEqual({
 				value: 'world',
@@ -210,7 +212,8 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			mockGetFocusedSpan.mockReturnValue('Hello world')
 
 			const finder = new TriggerFinder()
-			const result = finder.find([{overlayTrigger: '@', markup: '@[__value__](__meta__)' as Markup}])
+			const options = [{trigger: '@', markup: '@[__value__](__meta__)' as Markup}]
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result).toBeUndefined()
 		})
@@ -222,10 +225,10 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 
 			const finder = new TriggerFinder()
 			const options = [
-				{overlayTrigger: '@', markup: '@[__value__](__meta__)' as Markup, data: []},
-				{trigger: '#', markup: '#[__value__](__meta__)' as Markup, data: []},
+				{trigger: '@', markup: '@[__value__](__meta__)' as Markup},
+				{trigger: '#', markup: '#[__value__](__meta__)' as Markup},
 			]
-			const result = finder.find(options)
+			const result = finder.find(options, opt => opt.trigger)
 
 			expect(result?.option).toBe(options[0])
 		})

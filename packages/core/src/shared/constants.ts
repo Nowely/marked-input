@@ -1,3 +1,5 @@
+import type {Markup} from '../features/parsing/ParserV2/types'
+
 export enum KEYBOARD {
 	// Navigation Keys
 	UP = 'ArrowUp',
@@ -22,3 +24,9 @@ export enum KEYBOARD {
 	// UI Keys
 	ESC = 'Escape',
 }
+
+export const DEFAULT_OVERLAY_TRIGGER = '@'
+
+export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
+
+export const DEFAULT_CLASS_NAME = 'mk-input'

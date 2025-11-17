@@ -1,5 +1,5 @@
 import type {CSSProperties} from 'react'
-import type {Markup, Option} from 'rc-marked-input'
+import type {Markup, Option, MarkProps} from 'rc-marked-input'
 
 /**
  * Preset configuration for a single markdown markup
@@ -104,7 +104,9 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>): Option[] {
 	return Object.values(theme).map((preset: MarkupPreset) => {
 		return {
 			markup: preset.markup,
-			initMark: props => ({...props, style: preset.style}),
+			slotProps: {
+				mark: (props: MarkProps) => ({...props, style: preset.style}),
+			},
 		}
 	})
 }

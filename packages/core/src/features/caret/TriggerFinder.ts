@@ -1,10 +1,18 @@
 import {Caret} from './Caret'
-import {CoreOption} from '../../features/default/types'
 import {OverlayMatch} from '../../shared/types'
 import {escape} from '../../shared/escape'
 
 /** Regex to match word characters from the start of a string */
 const wordRegex = new RegExp(/^\w*/)
+
+/**
+ * Function type for extracting trigger from option
+ * @template T - Type of option
+ * @param option - The option object
+ * @param index - Index of option in array
+ * @returns Trigger string or undefined
+ */
+type TriggerExtractor<T> = (option: T, index: number) => string | undefined
 
 export class TriggerFinder {
 	span: string
@@ -18,18 +26,43 @@ export class TriggerFinder {
 		this.dividedText = this.getDividedTextBy(caretPosition)
 	}
 
-	static find(options: CoreOption[] | undefined) {
+	/**
+	 * Find overlay match in text using provided options and trigger extractor.
+	 * @template T - Type of option objects
+	 * @param options - Array of options to search through
+	 * @param getTrigger - Function that extracts trigger from each option
+	 * @returns OverlayMatch with correct option type or undefined
+	 *
+	 * @example
+	 * // React usage
+	 * TriggerFinder.find(options, (opt) => opt.slotProps?.overlay?.trigger ?? '@')
+	 *
+	 * @example
+	 * // Other framework usage
+	 * TriggerFinder.find(vueOptions, (opt) => opt.overlay?.trigger ?? '@')
+	 */
+	static find<T>(options: T[] | undefined, getTrigger: TriggerExtractor<T>): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (Caret.isSelectedPosition) return new TriggerFinder().find(options)
+		if (Caret.isSelectedPosition) return new TriggerFinder().find(options, getTrigger)
 	}
 
 	getDividedTextBy(position: number) {
 		return {left: this.span.slice(0, position), right: this.span.slice(position)}
 	}
 
-	find(options: CoreOption[]): OverlayMatch | undefined {
-		for (const option of options) {
-			const match = this.matchInTextVia(option.overlayTrigger)
+	/**
+	 * Find overlay match in provided options.
+	 * @template T - Type of option objects
+	 * @param options - Array of options
+	 * @param getTrigger - Function to extract trigger from each option
+	 */
+	find<T>(options: T[], getTrigger: TriggerExtractor<T>): OverlayMatch<T> | undefined {
+		for (let i = 0; i < options.length; i++) {
+			const option = options[i]
+			const trigger = getTrigger(option, i)
+			if (!trigger) continue
+
+			const match = this.matchInTextVia(trigger)
 			if (match)
 				return {
 					value: match.word,

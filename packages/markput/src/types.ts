@@ -1,9 +1,14 @@
-import {ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
+import {ComponentType, ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
 import {MarkedInputProps} from './components/MarkedInput'
 import {CoreOption} from '@markput/core'
 
 /**
- * Simplified props passed to Mark components via initMark
+ * Utility type to extract props from a ComponentType.
+ */
+export type PropsOf<T> = T extends ComponentType<infer P> ? (P extends object ? P : never) : never
+
+/**
+ * Simplified props passed to Mark components via slotProps
  */
 export interface MarkProps {
 	/** Main content value of the mark */
@@ -17,79 +22,71 @@ export interface MarkProps {
 }
 
 /**
- * React-specific markup option extending CoreOption with framework-specific functionality.
- *
- * Inherits from CoreOption:
- * - `markup` - Template string for rendering marks
- * - `overlayTrigger` - Sequence of symbols that trigger the overlay
- * - `data` - Data for overlay component (suggestions, etc.)
- *
- * @example
- * ```typescript
- * const option: Option = {
- *   markup: '@[__value__](__meta__)',
- *   overlayTrigger: '@',
- *   data: ['Alice', 'Bob', 'Charlie'],
- *   initMark: ({ value, meta }) => ({ label: value, tooltip: meta })
- * }
- * ```
+ * Default props for Overlay components via slotProps.
  */
-export interface Option<T = Record<string, any>> extends CoreOption {
-	/**
-	 * Function to initialize props for the mark component. Gets simplified props with
-	 * value, meta, nested content (raw string), and rendered children (ReactNode).
-	 *
-	 * @param props - Simplified MarkProps with value, meta, nested, and children
-	 * @returns Props object for the Mark component
-	 *
-	 * @example
-	 * // Simple props mapping
-	 * initMark: ({ value, meta }) => ({ label: value || '', tooltip: meta })
-	 *
-	 * @example
-	 * // With nested content awareness
-	 * initMark: ({ value, meta, children }) => ({
-	 *   label: value || '',
-	 *   tooltip: meta,
-	 *   content: children
-	 * })
-	 *
-	 * @example
-	 * // Access to raw nested content
-	 * initMark: ({ value, nested }) => ({
-	 *   label: value || '',
-	 *   rawNested: nested // raw unparsed nested content
-	 * })
-	 */
-	initMark?: (props: MarkProps) => T
+export interface OverlayProps {
+	/** Trigger character(s) that activate the overlay */
+	trigger?: string
+	/** Data array for suggestions/autocomplete */
+	data?: string[]
 }
 
-export type ConfiguredMarkedInput<T> = FunctionComponent<MarkedInputProps<T>>
+// ============================================================================
+// Option Interface with Automatic Type Inference
+// ============================================================================
+
+/**
+ * React-specific markup option for defining mark behavior and styling.
+ *
+ * @example
+ * const option: Option = {
+ *   markup: '@[__value__]',
+ *   slots: { mark: Button },
+ *   slotProps: { mark: { label: 'Click' } }
+ * }
+ */
+export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
+	/**
+	 * Per-option slot components.
+	 */
+	slots?: {
+		/** Mark component for this option. */
+		mark?: ComponentType<TMarkProps>
+		/** Overlay component for this option. */
+		overlay?: ComponentType<TOverlayProps>
+	}
+	/**
+	 * Props for slot components.
+	 */
+	slotProps?: {
+		/**
+		 * Props for the mark component.
+		 * Can be a static object or a function that transforms MarkProps.
+		 */
+		mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
+		/**
+		 * Props for the overlay component.
+		 */
+		overlay?: TOverlayProps
+	}
+}
+
+export type ConfiguredMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps> = FunctionComponent<
+	MarkedInputProps<TMarkProps, TOverlayProps>
+>
 
 /**
  * Available slots for customizing MarkedInput internal components
  */
 export interface Slots {
-	/**
-	 * Root container component
-	 * @default 'div'
-	 */
+	/** Root container component */
 	container?: ElementType<HTMLAttributes<HTMLDivElement>>
-	/**
-	 * Text span component for rendering text tokens
-	 * @default 'span'
-	 */
+	/** Text span component for rendering text tokens */
 	span?: ElementType<HTMLAttributes<HTMLSpanElement>>
 }
 
 /**
  * Data attributes with automatic camelCase to kebab-case conversion
- * Keys starting with 'data' followed by camelCase will be converted to data-* attributes
- *
- * @example
- * // Input
- * { dataUserId: '123', dataUserName: 'John' }
- * // Output: data-user-id="123" data-user-name="John"
  */
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
@@ -97,28 +94,16 @@ export type DataAttributes = Record<`data${Capitalize<string>}`, string | number
  * Props for each slot component
  */
 export interface SlotProps {
-	/**
-	 * Props to pass to the container slot.
-	 * Supports all standard HTML attributes.
-	 * Data attributes can be passed using camelCase keys starting with 'data'.
-	 */
+	/** Props to pass to the container slot */
 	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
-	/**
-	 * Props to pass to the span slot.
-	 * Supports all standard HTML attributes.
-	 * Data attributes can be passed using camelCase keys starting with 'data'.
-	 */
+	/** Props to pass to the span slot */
 	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
 }
 
 export interface MarkedInputHandler {
-	/**
-	 * Container element
-	 */
+	/** Container element */
 	readonly container: HTMLDivElement | null
-	/**
-	 * Overlay element if exists
-	 */
+	/** Overlay element if exists */
 	readonly overlay: HTMLElement | null
 
 	focus(): void

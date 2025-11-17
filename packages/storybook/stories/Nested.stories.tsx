@@ -46,19 +46,23 @@ export const SimpleNesting: Story = {
 					options={[
 						{
 							markup: BoldMarkup,
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontWeight: 'bold'},
-							}),
+							slotProps: {
+								mark: ({value, children}) => ({
+									value,
+									children,
+									style: {fontWeight: 'bold'},
+								}),
+							},
 						},
 						{
 							markup: ItalicMarkup,
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontStyle: 'italic'},
-							}),
+							slotProps: {
+								mark: ({value, children}) => ({
+									value,
+									children,
+									style: {fontStyle: 'italic'},
+								}),
+							},
 						},
 					]}
 				/>
@@ -101,45 +105,51 @@ export const MultipleLevels: Story = {
 					options={[
 						{
 							markup: TagMarkup,
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#e7f3ff',
-									border: '1px solid #2196f3',
-									color: '#1976d2',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
+							slotProps: {
+								mark: ({value, children}) => ({
+									value,
+									children,
+									style: {
+										backgroundColor: '#e7f3ff',
+										border: '1px solid #2196f3',
+										color: '#1976d2',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 						{
 							markup: MentionMarkup,
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#fff3e0',
-									border: '1px solid #ff9800',
-									color: '#f57c00',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
+							slotProps: {
+								mark: ({value, children}) => ({
+									value,
+									children,
+									style: {
+										backgroundColor: '#fff3e0',
+										border: '1px solid #ff9800',
+										color: '#f57c00',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 						{
 							markup: CodeMarkup,
-							initMark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#f3e5f5',
-									border: '1px solid #9c27b0',
-									color: '#7b1fa2',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
+							slotProps: {
+								mark: ({value, children}) => ({
+									value,
+									children,
+									style: {
+										backgroundColor: '#f3e5f5',
+										border: '1px solid #9c27b0',
+										color: '#7b1fa2',
+										padding: '2px 6px',
+										borderRadius: '4px',
+									},
+								}),
+							},
 						},
 					]}
 				/>

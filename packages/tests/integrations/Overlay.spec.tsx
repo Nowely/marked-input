@@ -37,7 +37,17 @@ describe('API: Overlay and Triggers', () => {
 			<Default
 				showOverlayOn="selectionChange"
 				defaultValue="@ @[mark](1)!"
-				options={[{markup: '@[__label__](__value__)', overlayTrigger: '@', data: ['Item']}]}
+				options={[
+					{
+						markup: '@[__label__](__value__)',
+						slotProps: {
+							overlay: {
+								trigger: '@',
+								data: ['Item'],
+							},
+						},
+					},
+				]}
 			/>
 		)
 		const span = getByText(/@/i)

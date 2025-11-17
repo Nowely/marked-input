@@ -1,5 +1,6 @@
 import {RefObject, useCallback} from 'react'
 import {Caret, OverlayMatch, SystemEvent, Token} from '@markput/core'
+import type {Option} from '../../types'
 import {useStore} from './useStore'
 
 export interface OverlayHandler {
@@ -21,7 +22,7 @@ export interface OverlayHandler {
 	/**
 	 * Overlay match details
 	 */
-	match: OverlayMatch
+	match: OverlayMatch<Option>
 	ref: RefObject<HTMLElement>
 }
 

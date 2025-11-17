@@ -1,11 +1,7 @@
 // Shared exports
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
-export {KEYBOARD} from './src/shared/constants'
-export type {OverlayMatch, EventKey, Listener, OverlayTrigger} from './src/shared/types'
-
-// Feature exports
-export type {CoreOption, CoreMarkputProps} from './src/features/default'
-export {DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OPTIONS, DEFAULT_OVERLAY_TRIGGER} from './src/features/default'
+export {KEYBOARD, DEFAULT_CLASS_NAME, DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from './src/shared/constants'
+export type {OverlayMatch, EventKey, Listener, OverlayTrigger, CoreOption, CoreMarkputProps} from './src/shared/types'
 
 // Parsing exports (modern API)
 export {Parser, annotate, denote} from './src/features/parsing'
