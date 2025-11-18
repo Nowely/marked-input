@@ -1,6 +1,6 @@
-import {ComponentType, ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
-import {MarkedInputProps} from './components/MarkedInput'
-import {CoreOption} from '@markput/core'
+import type {ComponentType, ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
+import type {MarkedInputProps} from './components/MarkedInput'
+import type {CoreOption} from '@markput/core'
 
 /**
  * Utility type to extract props from a ComponentType.

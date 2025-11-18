@@ -1,6 +1,7 @@
-import {ForwardedRef, useImperativeHandle} from 'react'
-import {MarkedInputHandler} from '../types'
-import {Store} from '@markput/core'
+import type {ForwardedRef} from 'react'
+import {useImperativeHandle} from 'react'
+import type {MarkedInputHandler} from '../types'
+import type {Store} from '@markput/core'
 import {useStore} from '../utils/hooks/useStore'
 
 const initHandler = (store: Store): MarkedInputHandler => ({

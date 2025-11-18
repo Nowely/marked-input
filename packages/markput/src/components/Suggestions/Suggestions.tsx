@@ -1,4 +1,5 @@
-import {RefObject, useMemo, useState} from 'react'
+import type {RefObject} from 'react'
+import {useMemo, useState} from 'react'
 import {useDownOf} from '../../utils/hooks/useDownOf'
 import {useOverlay} from '../../utils/hooks/useOverlay'
 import {KEYBOARD} from '@markput/core'

@@ -1,6 +1,7 @@
-import {GAP_TYPE, GapType, PLACEHOLDER} from '../constants'
-import {Markup} from '../types'
-import {SegmentDefinition} from './SegmentMatcher'
+import type {GapType} from '../constants'
+import {GAP_TYPE, PLACEHOLDER} from '../constants'
+import type {Markup} from '../types'
+import type {SegmentDefinition} from './SegmentMatcher'
 
 /**
  * Descriptor for segment-based markup parsing
@@ -53,7 +54,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		gapTypes,
 		hasNested: counts.nested === 1,
 		hasTwoValues,
-		segmentGlobalIndices: new Array(segments.length), // Will be populated by MarkupRegistry
+		segmentGlobalIndices: Array.from({length: segments.length}), // Will be populated by MarkupRegistry
 	}
 }
 

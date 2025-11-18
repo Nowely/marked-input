@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {EventBus} from '.'
-import {EventKey} from '../../shared/types'
+import type {EventKey} from '../../shared/types'
 
 describe(`Utility: ${EventBus.name}`, () => {
 	let eventBus: EventBus

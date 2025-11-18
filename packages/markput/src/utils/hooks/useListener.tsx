@@ -1,7 +1,8 @@
-import {DependencyList, useContext, useEffect} from 'react'
-import {EventKey, Listener, assertNonNullable} from '@markput/core'
+import type {DependencyList} from 'react'
+import {useContext, useEffect} from 'react'
+import type {EventKey, Listener} from '@markput/core'
+import {assertNonNullable} from '@markput/core'
 import {StoreContext} from '../providers/StoreContext'
-import {useStore} from './useStore'
 
 export function useListener<T>(key: EventKey<T>, listener: Listener<T>, deps?: DependencyList): void
 export function useListener<K extends keyof HTMLElementEventMap>(
@@ -29,9 +30,9 @@ function useContainerListener<K extends keyof HTMLElementEventMap>(
 	listener: Listener<HTMLElementEventMap[K]>,
 	deps?: DependencyList
 ) {
-	const store = useStore()
+	const store = useContext(StoreContext)
 	useEffect(() => {
-		store.refs.container?.addEventListener(key, listener)
-		return () => store.refs.container?.removeEventListener(key, listener)
+		store?.refs.container?.addEventListener(key, listener)
+		return () => store?.refs.container?.removeEventListener(key, listener)
 	}, deps)
 }

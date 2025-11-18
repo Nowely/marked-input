@@ -1,5 +1,7 @@
-import {RefObject, useCallback} from 'react'
-import {Caret, OverlayMatch, SystemEvent, Token} from '@markput/core'
+import type {RefObject} from 'react'
+import {useCallback} from 'react'
+import type {OverlayMatch, Token} from '@markput/core'
+import {Caret, SystemEvent} from '@markput/core'
 import type {Option} from '../../types'
 import {useStore} from './useStore'
 

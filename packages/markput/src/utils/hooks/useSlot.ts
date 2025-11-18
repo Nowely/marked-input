@@ -1,4 +1,4 @@
-import {ComponentType} from 'react'
+import type {ComponentType} from 'react'
 import {useStore} from './useStore'
 import type {Option, MarkProps} from '../../types'
 

@@ -20,5 +20,5 @@ export function useCloseOverlayByEsc() {
 
 		window.addEventListener('keydown', handle)
 		return () => window.removeEventListener('keydown', handle)
-	}, [match])
+	}, [match, bus])
 }

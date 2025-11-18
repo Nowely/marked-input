@@ -1,6 +1,7 @@
-import {Markup} from '../types'
-import {MarkupDescriptor, createMarkupDescriptor} from '../core/MarkupDescriptor'
-import {SegmentDefinition} from './SegmentMatcher'
+import type {Markup} from '../types'
+import type {MarkupDescriptor} from '../core/MarkupDescriptor'
+import {createMarkupDescriptor} from '../core/MarkupDescriptor'
+import type {SegmentDefinition} from './SegmentMatcher'
 
 /**
  * Registry for managing markup descriptors

@@ -1,6 +1,6 @@
 import {Avatar, Chip} from '@mui/material'
-import {MarkToken} from 'rc-marked-input'
-import {User} from './types'
+import type {MarkToken} from 'rc-marked-input'
+import type {User} from './types'
 import {useFetch} from './utils/useFetch'
 
 export const Mention = ({value}: MarkToken) => {

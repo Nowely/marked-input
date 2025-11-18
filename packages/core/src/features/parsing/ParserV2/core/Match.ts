@@ -1,7 +1,7 @@
-import {GapType} from '../constants'
-import {PositionRange} from '../types'
-import {SegmentMatch} from './SegmentMatcher'
-import {MarkupDescriptor} from './MarkupDescriptor'
+import type {GapType} from '../constants'
+import type {PositionRange} from '../types'
+import type {SegmentMatch} from './SegmentMatcher'
+import type {MarkupDescriptor} from './MarkupDescriptor'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 
 /**

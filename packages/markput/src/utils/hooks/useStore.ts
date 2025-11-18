@@ -2,7 +2,7 @@ import {useContext, useState} from 'react'
 import type {Store} from '@markput/core'
 import {SystemEvent, assertNonNullable, shallow} from '@markput/core'
 import {StoreContext} from '../providers/StoreContext'
-import {MarkedInputProps} from '../../components/MarkedInput'
+import type {MarkedInputProps} from '../../components/MarkedInput'
 import {useListener} from './useListener'
 
 export function useStore(): Store<MarkedInputProps>

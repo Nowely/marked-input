@@ -1,7 +1,8 @@
-import {ReactNode} from 'react'
+import type {ReactNode} from 'react'
 import {useStore} from '../utils/hooks/useStore'
 import {useSlot} from '../utils/hooks/useSlot'
 import {useToken} from '../utils/providers/TokenProvider'
+// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token renders Piece, Piece renders Token for children
 import {Token} from './Token'
 import type {MarkProps} from '../types'
 

@@ -16,7 +16,7 @@
   ],
   "categories": {},
   "rules": {
-    "import/no-cycle": "warn",
+    "import/no-cycle": "error",
     "import/no-duplicates": "error",
     "import/no-extraneous-dependencies": "error",
     "import/no-unresolved": "error",
@@ -98,6 +98,7 @@
     "typescript/no-wrapper-object-types": "warn",
     "typescript/prefer-as-const": "warn",
     "typescript/triple-slash-reference": "warn",
+    "typescript/consistent-type-imports": "error",
     "unicorn/no-await-in-promise-methods": "warn",
     "unicorn/no-empty-file": "warn",
     "unicorn/no-invalid-fetch-options": "warn",
@@ -110,7 +111,10 @@
     "unicorn/no-useless-length-check": "warn",
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-set-size": "warn",
-    "unicorn/prefer-string-starts-ends-with": "warn"
+    "unicorn/prefer-string-starts-ends-with": "warn",
+    "jest/valid-expect": "off",
+    "react/exhaustive-deps": "off",
+    "jsx_a11y/click-events-have-key-events": "off"
   },
   "settings": {
     "jsx-a11y": {

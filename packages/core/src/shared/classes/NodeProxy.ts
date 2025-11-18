@@ -1,4 +1,4 @@
-import {Store} from '../../features/store'
+import type {Store} from '../../features/store'
 import {Caret} from '../../features/caret'
 
 export class NodeProxy {

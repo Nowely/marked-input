@@ -1,6 +1,7 @@
 import {memo} from 'react'
-import {Token as TokenType} from '@markput/core'
+import type {Token as TokenType} from '@markput/core'
 import {TokenProvider} from '../utils/providers/TokenProvider'
+// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token renders Piece, Piece renders Token for children
 import {Piece} from './Piece'
 import {TextSpan} from './TextSpan'
 

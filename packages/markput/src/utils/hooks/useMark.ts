@@ -1,5 +1,7 @@
-import {RefObject, useEffect, useMemo, useRef, useState} from 'react'
-import {MarkToken, Store, SystemEvent, Token} from '@markput/core'
+import type {RefObject} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
+import type {MarkToken, Store, Token} from '@markput/core'
+import {SystemEvent} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 

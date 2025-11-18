@@ -1,8 +1,7 @@
-/// <reference types="vitest" />
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect, it} from 'vitest'
-import {MarkedInputHandler} from 'rc-marked-input'
+import type {MarkedInputHandler} from 'rc-marked-input'
 import {Story} from '../../storybook/stories'
 
 const {Default} = Story.Base

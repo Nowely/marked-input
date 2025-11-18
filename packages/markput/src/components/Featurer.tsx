@@ -1,4 +1,4 @@
-import {ForwardedRef} from 'react'
+import type {ForwardedRef} from 'react'
 import {useCloseOverlayByEsc} from '../features/events/useCloseOverlayByEsc'
 import {useCloseOverlayByOutsideClick} from '../features/events/useCloseOverlayByOutsideClick'
 import {useKeyDown} from '../features/events/useKeyDown'
@@ -11,7 +11,7 @@ import {useCheckTrigger} from '../features/overlay/useCheckTrigger'
 import {useTrigger} from '../features/overlay/useTrigger'
 import {useValueParser} from '../features/parsing/useValueParser'
 import {useMarkedInputHandler} from '../features/useMarkedInputHandler'
-import {MarkedInputHandler} from '../types'
+import type {MarkedInputHandler} from '../types'
 
 export const Featurer = ({inRef}: {inRef: ForwardedRef<MarkedInputHandler>}) => {
 	useMarkedInputHandler(inRef)

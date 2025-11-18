@@ -1,6 +1,8 @@
-import {ForwardedRef, forwardRef} from 'react'
-import {MarkedInputProps, _MarkedInput} from '../../components/MarkedInput'
-import {ConfiguredMarkedInput, MarkProps, OverlayProps} from '../../types'
+import type {ForwardedRef} from 'react'
+import {forwardRef} from 'react'
+import type {MarkedInputProps} from '../../components/MarkedInput'
+import {_MarkedInput} from '../../components/MarkedInput'
+import type {ConfiguredMarkedInput, MarkProps, OverlayProps} from '../../types'
 
 /**
  * Create the configured MarkedInput component.

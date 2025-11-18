@@ -1,11 +1,12 @@
-import {CSSProperties, ComponentType, ForwardedRef, forwardRef} from 'react'
+import type {CSSProperties, ComponentType, ForwardedRef} from 'react'
+import {forwardRef} from 'react'
 import '@markput/core/styles.css'
-import {MarkedInputHandler, Option, Slots, SlotProps, OverlayProps, MarkProps} from '../types'
+import type {MarkedInputHandler, Option, Slots, SlotProps, OverlayProps, MarkProps} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
-import {CoreMarkputProps, OverlayTrigger} from '@markput/core'
+import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
 
 /**
  * Props for MarkedInput component with hierarchical type support.

@@ -1,6 +1,6 @@
 import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from '@mui/material'
-import {MarkToken} from 'rc-marked-input'
-import {SearchUser} from '../types'
+import type {MarkToken} from 'rc-marked-input'
+import type {SearchUser} from '../types'
 
 export interface UserItemProps {
 	onSelect: (mark: Pick<MarkToken, 'value' | 'meta'>) => void

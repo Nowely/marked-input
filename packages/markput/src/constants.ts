@@ -1,5 +1,5 @@
 import {DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from '@markput/core'
-import {Option} from './types'
+import type {Option} from './types'
 
 /**
  * React-specific default options for MarkedInput.

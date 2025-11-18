@@ -1,11 +1,11 @@
-import {Markup, Token, MarkToken} from './types'
+import type {Markup, Token, MarkToken} from './types'
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {createTextToken} from './utils/createTextToken'
 import {TreeBuilder} from './core/TreeBuilder'
 import {toString as tokensToString} from './utils/toString'
-import {processTokensWithCallback} from './utils/denote'
+import {processTokensWithCallback} from './utils/processTokens'
 
 /**
  * Parser - High-performance tree-based markup parser
