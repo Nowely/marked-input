@@ -105,12 +105,13 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should pass children to Mark component for nested content', () => {
+		let hasChildrenAtDepthZero = false
+
 		const CapturingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
-			// Root mark should have children
+			// Capture whether root mark has children
 			if (mark.depth === 0 && mark.hasChildren) {
-				expect(children).not.toBeNull()
-				expect(children).not.toBeUndefined()
+				hasChildrenAtDepthZero = children != null
 			}
 			// Render both children and value to show all content
 			return (
@@ -130,6 +131,8 @@ describe('Nested Marks Rendering', () => {
 		expect(container.textContent).toContain('before')
 		expect(container.textContent).toContain('after')
 		expect(container.textContent).toContain('nested')
+		// Verify that root mark with children received them
+		expect(hasChildrenAtDepthZero).toBe(true)
 	})
 })
 
