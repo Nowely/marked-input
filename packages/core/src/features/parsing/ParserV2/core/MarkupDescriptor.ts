@@ -1,5 +1,5 @@
 import {GAP_TYPE, GapType, PLACEHOLDER} from '../constants'
-import {Markup} from '../types'
+import type {Markup} from '../types'
 import {SegmentDefinition} from './SegmentMatcher'
 
 /**

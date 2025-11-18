@@ -1,6 +1,6 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {Token} from '../parsing/ParserV2/types'
-import {OverlayMatch, Recovery, CoreMarkputProps} from '../../shared/types'
+import type {OverlayMatch, Recovery, CoreMarkputProps} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {Parser} from '../parsing/ParserV2/Parser'

@@ -1,4 +1,4 @@
-import {EventKey, Listener} from '../../shared/types'
+import type {EventKey, Listener} from '../../shared/types'
 
 export class EventBus {
 	readonly #SystemEvents = new Map<EventKey<any>, Set<Listener>>()
