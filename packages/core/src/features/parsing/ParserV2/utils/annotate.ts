@@ -1,5 +1,5 @@
 import {PLACEHOLDER} from '../constants'
-import {Markup} from '../types'
+import type {Markup} from '../types'
 
 /**
  * Make annotation from the markup for ParserV2

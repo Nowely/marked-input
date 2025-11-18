@@ -1,5 +1,5 @@
 import {Parser} from '../Parser'
-import {MarkToken, Markup, Token} from '../types'
+import type {MarkToken, Markup, Token} from '../types'
 
 /**
  * Transform annotated text to another text by recursively processing all tokens

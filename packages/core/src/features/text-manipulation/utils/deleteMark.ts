@@ -1,4 +1,4 @@
-import {Store} from '../../store'
+import type {Store} from '../../store'
 import {toString} from '../../parsing'
 
 export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {

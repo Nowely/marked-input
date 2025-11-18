@@ -1,4 +1,4 @@
-import {Token} from '../parsing/ParserV2/types'
+import type {Token} from '../parsing/ParserV2/types'
 import type {EventKey, OverlayMatch} from '../../shared/types'
 
 export const SystemEvent = {

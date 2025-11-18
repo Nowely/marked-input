@@ -1,4 +1,4 @@
-import {TextToken} from '../types'
+import type {TextToken} from '../types'
 
 /**
  * Creates a text token for a range in the input

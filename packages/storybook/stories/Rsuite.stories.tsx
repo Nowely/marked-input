@@ -1,4 +1,4 @@
-import {Meta} from '@storybook/react-vite'
+import type {Meta} from '@storybook/react-vite'
 import {MarkedInput, useOverlay} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
 import {useEffect, useState} from 'react'

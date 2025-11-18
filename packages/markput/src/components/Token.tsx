@@ -1,5 +1,5 @@
 import {memo} from 'react'
-import {Token as TokenType} from '@markput/core'
+import type {Token as TokenType} from '@markput/core'
 import {TokenProvider} from '../utils/providers/TokenProvider'
 import {Piece} from './Piece'
 import {TextSpan} from './TextSpan'

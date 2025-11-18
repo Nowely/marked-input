@@ -1,6 +1,7 @@
-import {GAP_TYPE, GapType, PLACEHOLDER} from '../constants'
+import type {GapType} from '../constants'
+import {GAP_TYPE, PLACEHOLDER} from '../constants'
 import type {Markup} from '../types'
-import {SegmentDefinition} from './SegmentMatcher'
+import type {SegmentDefinition} from './SegmentMatcher'
 
 /**
  * Descriptor for segment-based markup parsing

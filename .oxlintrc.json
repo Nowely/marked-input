@@ -98,6 +98,7 @@
     "typescript/no-wrapper-object-types": "warn",
     "typescript/prefer-as-const": "warn",
     "typescript/triple-slash-reference": "warn",
+    "typescript/consistent-type-imports": "error",
     "unicorn/no-await-in-promise-methods": "warn",
     "unicorn/no-empty-file": "warn",
     "unicorn/no-invalid-fetch-options": "warn",

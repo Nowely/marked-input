@@ -12,8 +12,8 @@
  * - Gap position management for nested content extraction
  */
 
-import {MarkupRegistry} from './MarkupRegistry'
-import {SegmentMatch} from './SegmentMatcher'
+import type {MarkupRegistry} from './MarkupRegistry'
+import type {SegmentMatch} from './SegmentMatcher'
 import {Match} from './Match'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 import type {MarkupDescriptor} from './MarkupDescriptor'

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {Markup} from '../types'
+import type {Markup} from '../types'
 import {toString} from './toString'
 import {Parser} from '../Parser'
 

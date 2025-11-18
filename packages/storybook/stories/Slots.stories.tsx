@@ -1,4 +1,4 @@
-import {Meta, StoryObj} from '@storybook/react-vite'
+import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput} from 'rc-marked-input'
 import {forwardRef, useState} from 'react'
 import {Text} from '../assets/Text'

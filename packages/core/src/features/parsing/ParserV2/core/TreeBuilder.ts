@@ -1,5 +1,5 @@
-import {MarkToken, PositionRange, TextToken, Token} from '../types'
-import {Match} from './Match'
+import type {MarkToken, PositionRange, TextToken, Token} from '../types'
+import type {Match} from './Match'
 import {createTextToken} from '../utils/createTextToken'
 
 /**

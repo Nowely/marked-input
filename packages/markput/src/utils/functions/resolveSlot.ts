@@ -1,6 +1,6 @@
-import {CSSProperties, ElementType, HTMLAttributes} from 'react'
-import {Store} from '@markput/core'
-import {MarkedInputProps} from '../../components/MarkedInput'
+import type {CSSProperties, ElementType, HTMLAttributes} from 'react'
+import type {Store} from '@markput/core'
+import type {MarkedInputProps} from '../../components/MarkedInput'
 import {convertDataAttrs} from './dataAttributes'
 
 /**

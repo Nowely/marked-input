@@ -1,7 +1,8 @@
 import {useCallback} from 'react'
 import {useListener} from '../../utils/hooks/useListener'
 import {useStore} from '../../utils/hooks/useStore'
-import {OverlayTrigger, SystemEvent} from '@markput/core'
+import type {OverlayTrigger} from '@markput/core'
+import {SystemEvent} from '@markput/core'
 
 export function useCheckTrigger() {
 	const store = useStore()

@@ -1,4 +1,4 @@
-import {PLACEHOLDER} from './constants'
+import type {PLACEHOLDER} from './constants'
 import type {MarkupDescriptor} from './core/MarkupDescriptor'
 
 export type Token = TextToken | MarkToken

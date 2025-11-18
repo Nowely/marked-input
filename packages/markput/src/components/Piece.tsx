@@ -1,4 +1,4 @@
-import {ReactNode} from 'react'
+import type {ReactNode} from 'react'
 import {useStore} from '../utils/hooks/useStore'
 import {useSlot} from '../utils/hooks/useSlot'
 import {useToken} from '../utils/providers/TokenProvider'

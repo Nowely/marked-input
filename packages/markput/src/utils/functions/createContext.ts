@@ -1,4 +1,5 @@
-import React, {Context, useContext} from 'react'
+import type {Context} from 'react'
+import React, {useContext} from 'react'
 
 export const createContext = <T>(
 	name: string

@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {render, screen} from '@testing-library/react'
 import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
-import {ReactNode} from 'react'
+import type {ReactNode} from 'react'
 import {describe, expect, it} from 'vitest'
 
 describe('Nested Marks Rendering', () => {

@@ -1,4 +1,4 @@
-import {NodeProxy} from './classes/NodeProxy'
+import type {NodeProxy} from './classes/NodeProxy'
 import type {Markup} from '../features/parsing/ParserV2/types'
 
 /**

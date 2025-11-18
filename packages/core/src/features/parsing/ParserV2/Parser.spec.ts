@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it} from 'vitest'
 import {Parser} from './Parser'
-import {MarkToken, Markup, Token} from './types'
+import type {MarkToken, Markup, Token} from './types'
 import {faker} from '@faker-js/faker'
 
 describe('ParserV2', () => {

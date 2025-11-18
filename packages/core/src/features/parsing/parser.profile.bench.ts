@@ -1,6 +1,6 @@
 import {afterAll, bench, describe} from 'vitest'
 import {Parser} from './ParserV2/Parser'
-import {Markup, Token} from './ParserV2/types'
+import type {Markup, Token} from './ParserV2/types'
 import * as fs from 'fs'
 import * as path from 'path'
 

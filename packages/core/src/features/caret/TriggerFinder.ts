@@ -1,5 +1,5 @@
 import {Caret} from './Caret'
-import {OverlayMatch} from '../../shared/types'
+import type {OverlayMatch} from '../../shared/types'
 import {escape} from '../../shared/escape'
 
 /** Regex to match word characters from the start of a string */
