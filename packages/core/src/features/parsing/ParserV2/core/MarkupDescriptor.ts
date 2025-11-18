@@ -54,7 +54,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		gapTypes,
 		hasNested: counts.nested === 1,
 		hasTwoValues,
-		segmentGlobalIndices: Array.from({ length: segments.length }), // Will be populated by MarkupRegistry
+		segmentGlobalIndices: Array.from({length: segments.length}), // Will be populated by MarkupRegistry
 	}
 }
 
