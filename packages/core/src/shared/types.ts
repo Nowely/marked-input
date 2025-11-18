@@ -83,7 +83,7 @@ export type OverlayMatch<TOption = CoreOption> = {
 
 export type Listener<T = any> = (e: T) => void
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars, oxlint-disable-next-line no-wrapper-object-types
 export interface EventKey<T = any> extends Symbol {}
 
 export type Recovery = {
