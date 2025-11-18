@@ -113,7 +113,8 @@
     "unicorn/prefer-set-size": "warn",
     "unicorn/prefer-string-starts-ends-with": "warn",
     "jest/valid-expect": "off",
-    "react/exhaustive-deps": "off"
+    "react/exhaustive-deps": "off",
+    "jsx_a11y/click-events-have-key-events": "off"
   },
   "settings": {
     "jsx-a11y": {
