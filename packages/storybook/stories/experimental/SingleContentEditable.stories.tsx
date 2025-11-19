@@ -179,6 +179,110 @@ function htmlToPlainText(html: string): string {
 }
 
 // ============================================================================
+// Wrapper Components for MarkedInput
+// ============================================================================
+
+interface MarkedInputControlledProps {
+	onValueChange: (value: string) => void
+}
+
+/**
+ * MarkedInputControlled - Encapsulates controlled contentEditable logic
+ *
+ * Manages its own state and re-renders on every change.
+ * Notifies parent component via onValueChange callback.
+ *
+ * ⚠️ This demonstrates the PROBLEM with controlled contentEditable:
+ * - React re-renders DOM on every change
+ * - Cursor position resets
+ * - Editing experience is broken
+ */
+const MarkedInputControlled = ({onValueChange}: MarkedInputControlledProps) => {
+	const [value, setValue] = useState('Hello @[John](id:123) and @[World](greeting)!')
+	const containerRef = useState<HTMLDivElement | null>(null)[1]
+
+	const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+		const html = e.currentTarget.innerHTML
+		const plainText = htmlToPlainText(html)
+		setValue(plainText)
+		onValueChange(plainText)
+	}, [onValueChange])
+
+	return (
+		<MarkedInput
+			key="single-editable-controlled"
+			value={value}
+			onChange={() => {}} // Not used - we use manual onInput instead
+			Mark={HTMLMark}
+			slots={{
+				container: CustomContainer,
+				span: PlainTextSpan,
+			}}
+			slotProps={{
+				container: {
+					ref: containerRef,
+					onInput: handleInput,
+				} as any,
+			}}
+		/>
+	)
+}
+
+interface MarkedInputUncontrolledProps {
+	onValueChange: (value: string) => void
+}
+
+/**
+ * MarkedInputUncontrolled - Encapsulates uncontrolled contentEditable logic with MutationObserver
+ *
+ * Manages its own state and tracks changes via MutationObserver.
+ * Cursor stays in place naturally.
+ * Notifies parent component via onValueChange callback.
+ *
+ * This is the recommended approach for single contentEditable!
+ */
+const MarkedInputUncontrolled = ({onValueChange}: MarkedInputUncontrolledProps) => {
+	const initialValue = 'Hello @[John](id:123) and @[World](greeting)! Try editing - cursor stays in place!'
+	const [container, setContainer] = useState<HTMLDivElement | null>(null)
+
+	useEffect(() => {
+		if (!container) return
+
+		const observer = new MutationObserver(() => {
+			const html = container.innerHTML
+			const plainText = htmlToPlainText(html)
+			onValueChange(plainText)
+		})
+
+		observer.observe(container, {
+			characterData: true,
+			characterDataOldValue: true,
+			childList: true,
+			subtree: true,
+		})
+
+		return () => observer.disconnect()
+	}, [container, onValueChange])
+
+	return (
+		<MarkedInput
+			key="single-editable-uncontrolled"
+			defaultValue={initialValue}
+			Mark={HTMLMark}
+			slots={{
+				container: CustomContainer,
+				span: PlainTextSpan,
+			}}
+			slotProps={{
+				container: {
+					ref: setContainer,
+				} as any,
+			}}
+		/>
+	)
+}
+
+// ============================================================================
 // Story Examples
 // ============================================================================
 
@@ -194,15 +298,7 @@ function htmlToPlainText(html: string): string {
  */
 export const Controlled: Story = {
 	render: () => {
-		const [value, setValue] = useState('Hello @[John](id:123) and @[World](greeting)!')
-		const containerRef = useState<HTMLDivElement | null>(null)[1]
-
-		// Manual input handler to force React re-renders (this causes cursor reset!)
-		const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-			const html = e.currentTarget.innerHTML
-			const plainText = htmlToPlainText(html)
-			setValue(plainText)
-		}, [])
+		const [value, setValue] = useState('')
 
 		return (
 			<>
@@ -210,22 +306,7 @@ export const Controlled: Story = {
 					<h3 style={{marginTop: 0}}>❌ Controlled (React-managed)</h3>
 				</div>
 
-				<MarkedInput
-					key="single-editable-controlled"
-					value={value}
-					onChange={() => {}} // Not used - we use manual onInput instead
-					Mark={HTMLMark}
-					slots={{
-						container: CustomContainer,
-						span: PlainTextSpan,
-					}}
-					slotProps={{
-						container: {
-							ref: containerRef,
-							onInput: handleInput,
-						} as any,
-					}}
-				/>
+				<MarkedInputControlled onValueChange={setValue} />
 
 				<Text label="Plain text value:" value={value} />
 			</>
@@ -246,28 +327,7 @@ export const Controlled: Story = {
  */
 export const Uncontrolled: Story = {
 	render: () => {
-		const initialValue = 'Hello @[John](id:123) and @[World](greeting)! Try editing - cursor stays in place!'
-		const [value, setValue] = useState(initialValue)
-		const [container, setContainer] = useState<HTMLDivElement | null>(null)
-
-		useEffect(() => {
-			if (!container) return
-
-			const observer = new MutationObserver(() => {
-				const html = container.innerHTML
-				const plainText = htmlToPlainText(html)
-				setValue(plainText)
-			})
-
-			observer.observe(container, {
-				characterData: true,
-				characterDataOldValue: true,
-				childList: true,
-				subtree: true,
-			})
-
-			return () => observer.disconnect()
-		}, [container])
+		const [value, setValue] = useState('')
 
 		return (
 			<>
@@ -275,20 +335,7 @@ export const Uncontrolled: Story = {
 					<h3 style={{marginTop: 0}}>✅ Uncontrolled (MutationObserver)</h3>
 				</div>
 
-				<MarkedInput
-					key="single-editable-uncontrolled"
-					defaultValue={initialValue}
-					Mark={HTMLMark}
-					slots={{
-						container: CustomContainer,
-						span: PlainTextSpan,
-					}}
-					slotProps={{
-						container: {
-							ref: setContainer,
-						} as any,
-					}}
-				/>
+				<MarkedInputUncontrolled onValueChange={setValue} />
 
 				<Text label="Plain text value:" value={value} />
 			</>
