@@ -2,10 +2,10 @@ import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput} from 'rc-marked-input'
 import type {MarkProps} from 'rc-marked-input'
 import {forwardRef, useState, useCallback, useEffect, type HTMLAttributes, type ReactNode} from 'react'
-import {Text} from '../assets/Text'
+import {Text} from '../../assets/Text'
 
 export default {
-	title: 'MarkedInput/Single ContentEditable',
+	title: 'Experimental/Single ContentEditable',
 	tags: ['autodocs'],
 	component: MarkedInput,
 } satisfies Meta<typeof MarkedInput>
@@ -59,10 +59,10 @@ const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement
 				whiteSpace: 'pre-wrap',
 				...props.style,
 			}}
-			onFocus={(e) => {
+			onFocus={e => {
 				e.currentTarget.style.borderColor = '#5b9dd9'
 			}}
-			onBlur={(e) => {
+			onBlur={e => {
 				e.currentTarget.style.borderColor = '#e0e0e0'
 			}}
 		/>
@@ -80,12 +80,11 @@ interface TextSpanProps extends HTMLAttributes<HTMLSpanElement> {
 	children?: ReactNode
 }
 
-const PlainTextSpan = forwardRef<HTMLSpanElement, TextSpanProps>(({children, ...props}, ref) => {
+const PlainTextSpan = ({children}: TextSpanProps) => {
 	// Just render text as plain node (without span wrapper)
 	// Browser will handle editing through parent contentEditable
 	return <>{children}</>
-})
-PlainTextSpan.displayName = 'PlainTextSpan'
+}
 
 /**
  * HTMLMark - Renders marks as HTML <mark> elements
@@ -108,10 +107,10 @@ const HTMLMark = ({value, meta, children}: MarkProps) => {
 				cursor: 'pointer',
 				transition: 'background-color 0.15s',
 			}}
-			onMouseEnter={(e) => {
+			onMouseEnter={e => {
 				e.currentTarget.style.backgroundColor = '#d0e8ff'
 			}}
-			onMouseLeave={(e) => {
+			onMouseLeave={e => {
 				e.currentTarget.style.backgroundColor = '#e8f3ff'
 			}}
 		>
@@ -199,14 +198,11 @@ export const Controlled: Story = {
 		const containerRef = useState<HTMLDivElement | null>(null)[1]
 
 		// Manual input handler to force React re-renders (this causes cursor reset!)
-		const handleInput = useCallback(
-			(e: React.FormEvent<HTMLDivElement>) => {
-				const html = e.currentTarget.innerHTML
-				const plainText = htmlToPlainText(html)
-				setValue(plainText)
-			},
-			[]
-		)
+		const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+			const html = e.currentTarget.innerHTML
+			const plainText = htmlToPlainText(html)
+			setValue(plainText)
+		}, [])
 
 		return (
 			<>
@@ -236,12 +232,26 @@ export const Controlled: Story = {
 
 				<Text label="Plain text value:" value={value} />
 
-				<div style={{marginTop: '12px', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px', fontSize: '13px'}}>
+				<div
+					style={{
+						marginTop: '12px',
+						padding: '10px',
+						backgroundColor: '#ffebee',
+						borderRadius: '4px',
+						fontSize: '13px',
+					}}
+				>
 					<strong>⚠️ Problems with this approach:</strong>
 					<ul style={{margin: '8px 0', paddingLeft: '20px', fontSize: '12px'}}>
-						<li><strong>React re-renders</strong> DOM on every keystroke</li>
-						<li><strong>Cursor resets</strong> to beginning or end</li>
-						<li><strong>Unusable</strong> for actual editing</li>
+						<li>
+							<strong>React re-renders</strong> DOM on every keystroke
+						</li>
+						<li>
+							<strong>Cursor resets</strong> to beginning or end
+						</li>
+						<li>
+							<strong>Unusable</strong> for actual editing
+						</li>
 						<li>Conflicts with MarkedInput's internal systems</li>
 					</ul>
 					<p style={{margin: '8px 0 0 0', fontSize: '12px'}}>
@@ -293,9 +303,6 @@ export const Uncontrolled: Story = {
 			<>
 				<div style={{marginBottom: '16px'}}>
 					<h3 style={{marginTop: 0}}>✅ Uncontrolled (MutationObserver)</h3>
-					<p style={{color: '#2e7d32', fontSize: '14px', fontWeight: 500}}>
-						✨ Try typing - cursor stays in place! This is the working solution.
-					</p>
 				</div>
 
 				<MarkedInput
@@ -314,30 +321,6 @@ export const Uncontrolled: Story = {
 				/>
 
 				<Text label="Plain text value:" value={value} />
-
-				<div style={{marginTop: '12px', padding: '10px', backgroundColor: '#e8f5e9', borderRadius: '4px', fontSize: '13px'}}>
-					<strong>✅ Why this works:</strong>
-					<ul style={{margin: '8px 0', paddingLeft: '20px', fontSize: '12px'}}>
-						<li><strong>defaultValue</strong> - React doesn't control content</li>
-						<li><strong>MutationObserver</strong> - tracks DOM changes efficiently</li>
-						<li><strong>No re-renders</strong> - cursor position preserved</li>
-						<li><strong>Native editing</strong> - browser handles everything</li>
-					</ul>
-					<p style={{margin: '8px 0 0 0', fontSize: '12px', fontWeight: 500}}>
-						🎯 Use this approach for production!
-					</p>
-				</div>
-
-				<div style={{marginTop: '12px', padding: '10px', backgroundColor: '#fff4e6', borderRadius: '4px', fontSize: '13px'}}>
-					<strong>💡 Try these actions:</strong>
-					<ul style={{margin: '8px 0', paddingLeft: '20px', fontSize: '12px'}}>
-						<li>Type text before/after/inside marks</li>
-						<li>Edit text inside marks (changes textContent)</li>
-						<li>Delete marks with Backspace/Delete</li>
-						<li>Navigate with arrow keys</li>
-						<li>Copy/paste text</li>
-					</ul>
-				</div>
 			</>
 		)
 	},
