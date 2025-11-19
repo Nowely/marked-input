@@ -179,15 +179,15 @@ function htmlToPlainText(html: string): string {
 }
 
 // ============================================================================
-// Wrapper Components for MarkedInput
+// Single Editable Components
 // ============================================================================
 
-interface MarkedInputControlledProps {
+interface SingleEditableControlledProps {
 	onValueChange: (value: string) => void
 }
 
 /**
- * MarkedInputControlled - Encapsulates controlled contentEditable logic
+ * SingleEditableControlled - Encapsulates controlled contentEditable logic
  *
  * Manages its own state and re-renders on every change.
  * Notifies parent component via onValueChange callback.
@@ -197,7 +197,7 @@ interface MarkedInputControlledProps {
  * - Cursor position resets
  * - Editing experience is broken
  */
-const MarkedInputControlled = ({onValueChange}: MarkedInputControlledProps) => {
+const SingleEditableControlled = ({onValueChange}: SingleEditableControlledProps) => {
 	const [value, setValue] = useState('Hello @[John](id:123) and @[World](greeting)!')
 	const containerRef = useState<HTMLDivElement | null>(null)[1]
 
@@ -228,12 +228,12 @@ const MarkedInputControlled = ({onValueChange}: MarkedInputControlledProps) => {
 	)
 }
 
-interface MarkedInputUncontrolledProps {
+interface SingleEditableUncontrolledProps {
 	onValueChange: (value: string) => void
 }
 
 /**
- * MarkedInputUncontrolled - Encapsulates uncontrolled contentEditable logic with MutationObserver
+ * SingleEditableUncontrolled - Encapsulates uncontrolled contentEditable logic with MutationObserver
  *
  * Manages its own state and tracks changes via MutationObserver.
  * Cursor stays in place naturally.
@@ -241,7 +241,7 @@ interface MarkedInputUncontrolledProps {
  *
  * This is the recommended approach for single contentEditable!
  */
-const MarkedInputUncontrolled = ({onValueChange}: MarkedInputUncontrolledProps) => {
+const SingleEditableUncontrolled = ({onValueChange}: SingleEditableUncontrolledProps) => {
 	const initialValue = 'Hello @[John](id:123) and @[World](greeting)! Try editing - cursor stays in place!'
 	const [container, setContainer] = useState<HTMLDivElement | null>(null)
 
@@ -306,7 +306,7 @@ export const Controlled: Story = {
 					<h3 style={{marginTop: 0}}>❌ Controlled (React-managed)</h3>
 				</div>
 
-				<MarkedInputControlled onValueChange={setValue} />
+				<SingleEditableControlled onValueChange={setValue} />
 
 				<Text label="Plain text value:" value={value} />
 			</>
@@ -335,7 +335,7 @@ export const Uncontrolled: Story = {
 					<h3 style={{marginTop: 0}}>✅ Uncontrolled (MutationObserver)</h3>
 				</div>
 
-				<MarkedInputUncontrolled onValueChange={setValue} />
+				<SingleEditableUncontrolled onValueChange={setValue} />
 
 				<Text label="Plain text value:" value={value} />
 			</>
