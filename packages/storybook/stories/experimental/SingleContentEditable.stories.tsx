@@ -208,9 +208,6 @@ export const Controlled: Story = {
 			<>
 				<div style={{marginBottom: '16px'}}>
 					<h3 style={{marginTop: 0}}>❌ Controlled (React-managed)</h3>
-					<p style={{color: '#d32f2f', fontSize: '14px', fontWeight: 500}}>
-						⚠️ Try typing - cursor will reset! This shows the problem.
-					</p>
 				</div>
 
 				<MarkedInput
@@ -231,33 +228,6 @@ export const Controlled: Story = {
 				/>
 
 				<Text label="Plain text value:" value={value} />
-
-				<div
-					style={{
-						marginTop: '12px',
-						padding: '10px',
-						backgroundColor: '#ffebee',
-						borderRadius: '4px',
-						fontSize: '13px',
-					}}
-				>
-					<strong>⚠️ Problems with this approach:</strong>
-					<ul style={{margin: '8px 0', paddingLeft: '20px', fontSize: '12px'}}>
-						<li>
-							<strong>React re-renders</strong> DOM on every keystroke
-						</li>
-						<li>
-							<strong>Cursor resets</strong> to beginning or end
-						</li>
-						<li>
-							<strong>Unusable</strong> for actual editing
-						</li>
-						<li>Conflicts with MarkedInput's internal systems</li>
-					</ul>
-					<p style={{margin: '8px 0 0 0', fontSize: '12px'}}>
-						👉 See <strong>Uncontrolled</strong> story below for the working solution!
-					</p>
-				</div>
 			</>
 		)
 	},
