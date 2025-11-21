@@ -22,12 +22,15 @@ export const SingleEditableControlled = ({onValueChange}: SingleEditableControll
 	const [value, setValue] = useState('Hello @[John](id:123) and @[World](greeting)!')
 	const containerRef = useState<HTMLDivElement | null>(null)[1]
 
-	const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-		const html = e.currentTarget.innerHTML
-		const plainText = htmlToPlainText(html)
-		setValue(plainText)
-		onValueChange(plainText)
-	}, [onValueChange])
+	const handleInput = useCallback(
+		(e: React.FormEvent<HTMLDivElement>) => {
+			const html = e.currentTarget.innerHTML
+			const plainText = htmlToPlainText(html)
+			setValue(plainText)
+			onValueChange(plainText)
+		},
+		[onValueChange]
+	)
 
 	return (
 		<MarkedInput

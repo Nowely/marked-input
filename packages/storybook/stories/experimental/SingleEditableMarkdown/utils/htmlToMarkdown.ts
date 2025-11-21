@@ -94,8 +94,5 @@ export function htmlToMarkdown(html: string): string {
 		return ''
 	}
 
-	return Array.from(temp.childNodes)
-		.map(processNode)
-		.join('')
-		.trim()
+	return Array.from(temp.childNodes).map(processNode).join('').trim()
 }
