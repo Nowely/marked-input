@@ -4,6 +4,7 @@ import {useState} from 'react'
 import {Text} from '../../assets/Text'
 import {SingleEditableControlled} from './SingleEditableControlled'
 import {SingleEditableUncontrolled} from './SingleEditableUncontrolled'
+import {SingleEditableMarkdown} from './SingleEditableMarkdown'
 
 export default {
 	title: 'Experimental/Single ContentEditable',
@@ -73,3 +74,35 @@ export const Uncontrolled: Story = {
 		)
 	},
 }
+
+/**
+ * Markdown Editor
+ *
+ * Uncontrolled markdown editor with support for:
+ * - **bold** text
+ * - *italic* text
+ * - `code` formatting
+ * - [links](url)
+ * - # headings
+ * - > blockquotes
+ *
+ * Uses the same uncontrolled approach with MutationObserver for smooth editing!
+ */
+export const Markdown: Story = {
+	render: () => {
+		const [value, setValue] = useState('')
+
+		return (
+			<>
+				<div style={{marginBottom: '16px'}}>
+					<h3 style={{marginTop: 0}}>📝 Markdown (Uncontrolled)</h3>
+				</div>
+
+				<SingleEditableMarkdown onValueChange={setValue} />
+
+				<Text label="Markdown value:" value={value} />
+			</>
+		)
+	},
+}
+
