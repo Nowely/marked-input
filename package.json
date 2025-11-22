@@ -11,6 +11,8 @@
     "build:all": "pnpm -r run build",
     "storybook:dev": "pnpm -F sb run dev",
     "storybook:build": "pnpm -F sb run build",
+    "website:dev": "pnpm -F website run dev",
+    "website:build": "pnpm -F website run build",
     "clean:git": "git clean -xdf",
     "clean:git:dry": "git clean -xdn",
     "lint": "oxlint .",
