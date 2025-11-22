@@ -1,6 +1,7 @@
 ---
 title: Helpers API
 description: Utility functions for working with markup text
+version: 1.0.0
 ---
 
 This page documents helper functions for creating, parsing, and transforming annotated text.

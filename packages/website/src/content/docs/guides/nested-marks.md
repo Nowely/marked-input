@@ -1,6 +1,7 @@
 ---
 title: Nested Marks
 description: Create hierarchical text structures with nested marks
+version: 1.0.0
 ---
 
 Nested marks allow you to create rich, hierarchical text structures where marks can contain other marks. This enables complex formatting scenarios like markdown-style text, HTML-like tags, and multi-level annotations.

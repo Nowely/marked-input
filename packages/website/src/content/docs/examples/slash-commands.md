@@ -1,6 +1,7 @@
 ---
 title: Slash Commands
 description: Build Notion-style /commands for rich text editing
+version: 1.0.0
 ---
 
 This example demonstrates how to build a slash command system like Notion, Slack, or Linear. Type `/` to trigger a menu of commands that transform text or insert content.

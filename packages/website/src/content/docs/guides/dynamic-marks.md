@@ -1,6 +1,7 @@
 ---
 title: Dynamic Marks
 description: Create interactive, editable, and removable marks with useMark hook
+version: 1.0.0
 ---
 
 Dynamic marks are marks that users can interact with - edit, remove, focus, or trigger custom actions. Markput provides the `useMark()` hook to build dynamic mark components.

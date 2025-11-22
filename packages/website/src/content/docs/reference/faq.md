@@ -1,6 +1,7 @@
 ---
 title: FAQ (Frequently Asked Questions)
 description: Answers to common questions about Markput
+version: 1.0.0
 ---
 
 This page answers the most frequently asked questions about Markput.
@@ -9,14 +10,7 @@ This page answers the most frequently asked questions about Markput.
 
 ### What is Markput?
 
-Markput is a React library for building rich text editors with custom markup patterns. It allows you to create editors with @mentions, #hashtags, /commands, and any custom markup you need.
-
-**Key features:**
-- Framework-agnostic parser
-- Customizable mark rendering
-- Built-in autocomplete
-- TypeScript support
-- Accessibility-focused
+React library for building rich text editors with custom markup patterns (@mentions, #hashtags, /commands).
 
 **Learn more:** [Introduction](../introduction/introduction)
 

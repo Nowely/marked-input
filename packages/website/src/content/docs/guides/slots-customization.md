@@ -1,6 +1,7 @@
 ---
 title: Slots Customization
 description: Customize internal components with the slots pattern
+version: 1.0.0
 ---
 
 Markput uses the **slots pattern** (popularized by Material-UI) to give you fine-grained control over internal components. This guide covers how to customize the container and text rendering without losing built-in functionality.

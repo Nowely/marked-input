@@ -1,6 +1,7 @@
 ---
 title: Performance Optimization
 description: Optimize Markput for large documents and high-performance applications
+version: 1.0.0
 ---
 
 This guide covers performance optimization techniques for Markput applications.

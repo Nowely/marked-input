@@ -1,6 +1,7 @@
 ---
 title: Quick Start
 description: Build your first annotated text editor in 5 minutes
+version: 1.0.0
 ---
 
 This guide will walk you through creating your first working example with Markput. By the end, you'll have a functional editor with clickable mentions.
@@ -50,38 +51,15 @@ function MyEditor() {
 export default MyEditor
 ```
 
-**Congratulations!** 🎉 You've created your first annotated text editor. Let's understand what's happening.
+**Congratulations!** You've created your first annotated text editor.
 
-## Understanding the Code
+## How It Works
 
-### The Value String
-```tsx
-const [value, setValue] = useState('Hello @[World](meta)!')
-```
-- The value is a plain string with a special pattern: `@[value](meta)`
-- `@[World]` - This will be rendered as your Mark component
-- `(meta)` - Optional metadata you can access in your Mark component
-- `Hello` and `!` - Regular text, rendered as-is
+**Value string:** `'Hello @[World](meta)!'` — plain text with markup pattern `@[value](meta)`.
 
-### The MarkedInput Component
-```tsx
-<MarkedInput
-  value={value}
-  onChange={setValue}
-  Mark={(props) => <mark>{props.value}</mark>}
-/>
-```
-- `value` - The text to display (controlled component)
-- `onChange` - Called when the text changes
-- `Mark` - Your custom component for rendering annotations
+**MarkedInput:** Controlled component. `value` — text to display, `onChange` — update handler, `Mark` — component for rendering annotations.
 
-### The Mark Component
-```tsx
-Mark={(props) => <mark>{props.value}</mark>}
-```
-- `props.value` - The text inside `@[...]`, in this case "World"
-- `props.meta` - The optional metadata from `(...)`, in this case "meta"
-- Returns a `<mark>` element, but can be any React component
+**Mark component:** Receives `props.value` (text inside `@[...]`) and `props.meta` (optional metadata). Returns any React element.
 
 ## Step 3: Make it Interactive
 
@@ -121,12 +99,6 @@ function MyEditor() {
 
 **Try it out!** Click on the mentions to see the alert with the user ID.
 
-### What Changed?
-1. **Multiple mentions** - You can have as many marks as you want
-2. **Metadata usage** - We're using `props.meta` to store user IDs
-3. **Custom styling** - The Mark component can be styled however you like
-4. **Click handlers** - Marks can be interactive with event handlers
-
 ## Step 4: Add Autocomplete
 
 Let's add a suggestion overlay that appears when you type `@`:
@@ -165,16 +137,7 @@ function MyEditor() {
 }
 ```
 
-**Try typing `@` in the editor!** A suggestion list will appear.
-
-### What's New?
-- `options` array - Configuration for different types of marks
-- `markup` - The pattern to match: `@[__value__](user)`
-  - `__value__` - Placeholder for the selected value
-  - `(user)` - Static metadata added to all mentions
-- `slotProps.overlay` - Configuration for the suggestion overlay
-  - `trigger: '@'` - Show suggestions when user types `@`
-  - `data: users` - Array of suggestions to display
+**Try typing `@` in the editor!** A suggestion list will appear when you type the trigger character.
 
 ## Common Patterns
 

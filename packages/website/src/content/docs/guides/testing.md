@@ -1,6 +1,7 @@
 ---
 title: Testing
 description: Comprehensive guide to testing Markput components
+version: 1.0.0
 ---
 
 This guide covers testing strategies for Markput-based editors, from unit testing individual Mark components to integration testing complete editor workflows.

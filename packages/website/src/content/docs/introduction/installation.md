@@ -1,6 +1,7 @@
 ---
 title: Installation
 description: How to install Markput in your project
+version: 1.0.0
 ---
 
 ## Package Installation

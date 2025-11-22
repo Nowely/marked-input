@@ -1,6 +1,7 @@
 ---
 title: Troubleshooting
 description: Solutions to common problems and errors
+version: 1.0.0
 ---
 
 This guide helps you diagnose and fix common issues with Markput.

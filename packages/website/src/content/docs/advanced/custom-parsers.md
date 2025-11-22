@@ -1,6 +1,7 @@
 ---
 title: Custom Parsers
 description: Build custom parsers and extend parsing capabilities
+version: 1.0.0
 ---
 
 This guide covers advanced parser customization, custom markup patterns, and extending Markput's parsing capabilities.

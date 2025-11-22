@@ -1,6 +1,7 @@
 ---
 title: Core Package API
 description: Framework-agnostic @markput/core package reference
+version: 1.0.0
 ---
 
 This page documents the `@markput/core` package - the framework-agnostic foundation that powers Markput.

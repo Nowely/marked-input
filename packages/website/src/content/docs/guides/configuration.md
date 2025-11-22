@@ -1,6 +1,7 @@
 ---
 title: Configuration
 description: Complete guide to configuring MarkedInput
+version: 1.0.0
 ---
 
 Markput provides flexible configuration options through the `MarkedInput` component and the `createMarkedInput` factory. This guide covers all configuration patterns from basic to advanced.

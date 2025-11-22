@@ -1,6 +1,7 @@
 ---
 title: Components API
 description: Complete API reference for MarkedInput and related components
+version: 1.0.0
 ---
 
 This page documents all React components exported by Markput.

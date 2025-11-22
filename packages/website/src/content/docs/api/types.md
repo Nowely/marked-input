@@ -1,6 +1,7 @@
 ---
 title: Types API
 description: Complete TypeScript type reference for Markput
+version: 1.0.0
 ---
 
 This page documents all TypeScript types and interfaces exported by Markput.

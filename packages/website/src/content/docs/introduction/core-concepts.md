@@ -1,6 +1,7 @@
 ---
 title: Core Concepts
 description: Understanding marks, tokens, parsing, and the Markput architecture
+version: 1.0.0
 ---
 
 This guide explains the fundamental concepts behind Markput. Understanding these concepts will help you build more sophisticated editors and troubleshoot issues effectively.

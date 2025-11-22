@@ -1,6 +1,7 @@
 ---
 title: Accessibility
 description: Build accessible editors with Markput following WCAG guidelines
+version: 1.0.0
 ---
 
 This guide covers accessibility (a11y) best practices for Markput applications following WCAG 2.1 Level AA guidelines.

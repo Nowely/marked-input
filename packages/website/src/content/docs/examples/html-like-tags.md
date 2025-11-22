@@ -1,6 +1,7 @@
 ---
 title: HTML-like Tags
 description: Build custom HTML-like tag system with attributes and nesting
+version: 1.0.0
 ---
 
 This example demonstrates how to create custom HTML-like tags with the "two values pattern" for matching opening and closing tags.

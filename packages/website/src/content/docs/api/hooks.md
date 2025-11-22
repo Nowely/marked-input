@@ -1,6 +1,7 @@
 ---
 title: Hooks API
 description: Complete API reference for useMark, useOverlay, and useListener hooks
+version: 1.0.0
 ---
 
 This page documents all hooks exported by Markput for creating interactive marks and custom overlays.

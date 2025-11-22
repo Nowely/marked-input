@@ -1,6 +1,7 @@
 ---
 title: Keyboard Handling
 description: Master keyboard navigation, shortcuts, and custom interactions
+version: 1.0.0
 ---
 
 Markput provides built-in keyboard support for common editing operations and allows you to add custom keyboard shortcuts. This guide covers everything from basic navigation to advanced keyboard interactions.

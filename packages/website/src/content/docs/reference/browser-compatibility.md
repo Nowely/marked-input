@@ -1,6 +1,7 @@
 ---
 title: Browser Compatibility
 description: Browser support, known issues, and compatibility solutions
+version: 1.0.0
 ---
 
 This guide covers browser compatibility for Markput, including supported browsers, known issues, and workarounds.

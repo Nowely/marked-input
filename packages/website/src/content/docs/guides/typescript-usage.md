@@ -1,6 +1,7 @@
 ---
 title: TypeScript Usage
 description: Type-safe Markput with TypeScript best practices
+version: 1.0.0
 ---
 
 Markput is written in TypeScript and provides comprehensive type definitions. This guide covers everything from basic typing to advanced generic patterns.

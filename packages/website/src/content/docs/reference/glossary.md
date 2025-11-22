@@ -1,6 +1,7 @@
 ---
 title: Glossary
 description: Complete glossary of terms used in Markput documentation
+version: 1.0.0
 ---
 
 This glossary defines key terms and concepts used throughout Markput documentation.

@@ -1,6 +1,7 @@
 ---
 title: Architecture
 description: Deep dive into Markput's internal architecture and design
+version: 1.0.0
 ---
 
 This guide explains Markput's internal architecture, data flow, and design decisions.
