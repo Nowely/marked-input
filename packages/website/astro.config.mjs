@@ -7,11 +7,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'Marked Input',
+			title: 'Markput',
 			social: [
 				{
 					label: 'GitHub',
-					href: 'https://github.com/entrptaher/rc-marked-input', // Changed 'url' to 'href'
+					href: 'https://github.com/Nowely/marked-input',
 					icon: 'github',
 				},
 			],
