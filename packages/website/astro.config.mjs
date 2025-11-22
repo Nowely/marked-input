@@ -17,10 +17,16 @@ export default defineConfig({
 			],
 			sidebar: [
 				{
+					label: 'Introduction',
+					items: [
+						{ label: 'Installation', slug: 'introduction/installation' },
+						{ label: 'Getting Started', slug: 'introduction/getting-started' },
+						{ label: 'Features', slug: 'introduction/features' },
+					],
+				},
+				{
 					label: 'Guides',
 					items: [
-						{ label: 'Installation', slug: 'guides/installation' },
-						{ label: 'Getting Started', slug: 'guides/getting-started' },
 						{ label: 'Configuration', slug: 'guides/configuration' },
 						{ label: 'Dynamic Marks', slug: 'guides/dynamic-marks' },
 						{ label: 'Nested Marks', slug: 'guides/nested-marks' },
@@ -29,9 +35,9 @@ export default defineConfig({
 					],
 				},
 				{
-					label: 'Reference',
+					label: 'API',
 					items: [
-						{ label: 'API', slug: 'reference/api' },
+						{ label: 'Reference', slug: 'api/reference' },
 					],
 				},
 			],
