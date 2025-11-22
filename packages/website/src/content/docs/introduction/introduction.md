@@ -6,9 +6,9 @@ version: 1.0.0
 
 ## What is Markput?
 
-Markput is a React component library for building rich text editors with annotated text. It parses plain text patterns and renders them as React components.
+Markput is a React component library for building editors with **annotated text**. It renders plain text patterns as React components, enabling features like mentions, hashtags, and slash commands.
 
-**Key difference:** Unlike HTML-based editors, Markput uses plain text with markup patterns like `@[value](meta)`, making it lightweight and easy to integrate.
+**Key difference:** Unlike HTML-based editors, Markput uses plain text with markup patterns like `@[value](meta)`, making it lightweight and easy to integrate with your existing application state.
 
 ```tsx
 // Simple example: clickable mentions
@@ -21,54 +21,29 @@ Markput is a React component library for building rich text editors with annotat
 
 ## Why Markput?
 
-### Component-First
-Annotations are React components, not DOM nodes. Full control over rendering, styling, and integration with UI libraries.
-
-### Plain Text State
-Editor state is a string with markup patterns (`@[value](meta)`). Easy to serialize, version control, and test. No complex JSON structures.
-
-### Highly Flexible
-- **Custom Syntax**: Define your own markup patterns (markdown, HTML-like, custom)
-- **Nested Marks**: Support for complex hierarchical structures
-- **Dynamic Marks**: Editable, removable, focusable annotations
-- **Custom Overlays**: Build autocomplete, suggestion menus, tooltips
-
-### Zero Dependencies
-No external dependencies except React. Smaller bundle size (~20KB).
-
-### TypeScript-First
-Written entirely in TypeScript with comprehensive type definitions. Type-safe component props, generic type inference, and excellent IDE support.
+| Feature | Description |
+|---------|-------------|
+| **Component-First** | Annotations are React components, giving you full control over rendering and behavior. |
+| **Plain Text State** | State is a string with markup (`@[value](meta)`). Easy to serialize, test, and store. |
+| **Zero Dependencies** | Lightweight (~20KB) with no external dependencies. |
+| **TypeScript-First** | Written in TypeScript with comprehensive type definitions. |
+| **Custom Syntax** | Define your own markup patterns (markdown, HTML-like, custom). |
+| **Dynamic Marks** | Support for editable, removable, and focusable annotations. |
+| **Overlay System** | Built-in autocomplete and suggestion UI for mentions and commands. |
+| **Nested Marks** | Support for hierarchical and nested structures. |
 
 ## When to Use Markput?
 
-### Good For
-- **Mention Systems** - Twitter-like @mentions, Slack-style user tagging
-- **Slash Commands** - Notion-like `/` command menus
-- **Hashtag Systems** - Instagram-style #hashtags
-- **Tag Editors** - Inline tags with autocomplete
-- **Markdown Editors** - Bold, italic, and other formatting
-- **Template Editors** - Variable insertion with `{{placeholder}}`
-- **Custom Markup Languages** - Domain-specific notation systems
+**Good For:**
+- **Mention Systems** (@mentions, user tagging)
+- **Slash Commands** (Notion-like menus)
+- **Hashtag Systems** (#hashtags)
+- **Structured Editors** (Variables, placeholders, inline tags)
 
-### Consider Alternatives
-- **Full WYSIWYG Editors** - For complex document editing with tables, images, etc., use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/)
-- **Simple Text Input** - For basic textarea without annotations, use native `<textarea>`
-- **Code Editors** - For syntax-highlighted code editing, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/)
-
-## Key Features at a Glance
-
-| Feature | Description |
-|---------|-------------|
-| **Annotations** | Add, edit, remove, and visualize text annotations |
-| **Nested Marks** | Support for hierarchical and nested structures |
-| **Custom Syntax** | Define your own markup patterns (regex-based) |
-| **Dynamic Marks** | Create editable and interactive annotations |
-| **Overlay System** | Built-in autocomplete and suggestion UI |
-| **Keyboard Navigation** | Smart handling of arrows, delete, backspace, escape |
-| **TypeScript** | Full type safety and IDE autocomplete |
-| **Slots Pattern** | Customize internal components (MUI-style) |
-| **Zero Dependencies** | Lightweight with no external packages |
-| **Cross Selection** | Select text across multiple marks and nodes |
+**Consider Alternatives:**
+- **Full WYSIWYG Editors**: For documents with tables and images, use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/).
+- **Simple Text Input**: For basic text without annotations, use a native `<textarea>`.
+- **Code Editors**: For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/).
 
 ## Architecture Overview
 
@@ -103,22 +78,7 @@ The framework-agnostic core library containing the parser, tokenizer, and state 
 └─────────────────────────────────────┘
 ```
 
-## Quick Comparison
-
-| Feature | Markput | ContentEditable | ProseMirror/Slate |
-|---------|---------|-----------------|-------------------|
-| **Learning Curve** | Low | Medium | High |
-| **Bundle Size** | ~20KB | N/A | ~100-200KB |
-| **TypeScript** | ✅ Excellent | ⚠️ Varies | ✅ Good |
-| **Custom Components** | ✅ Native | ❌ Limited | ✅ Possible |
-| **State Model** | Plain Text | HTML/DOM | JSON Schema |
-| **Annotations** | ✅ Native | ⚠️ Complex | ✅ Native |
-| **Nested Structures** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Collaborative Editing** | ⚠️ Manual | ⚠️ Complex | ✅ Built-in (some) |
-
 ## Next Steps
-
-Ready to get started? Here's your learning path:
 
 1. **[Installation](./installation)** - Install Markput in your project
 2. **[Quick Start](./quick-start)** - Build your first annotated text editor
