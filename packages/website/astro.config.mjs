@@ -7,19 +7,32 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'Docs with Tailwind',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'Marked Input',
+			social: [
+				{
+					label: 'GitHub',
+					href: 'https://github.com/entrptaher/rc-marked-input', // Changed 'url' to 'href'
+					icon: 'github',
+				},
+			],
 			sidebar: [
 				{
 					label: 'Guides',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: 'Installation', slug: 'guides/installation' },
+						{ label: 'Getting Started', slug: 'guides/getting-started' },
+						{ label: 'Configuration', slug: 'guides/configuration' },
+						{ label: 'Dynamic Marks', slug: 'guides/dynamic-marks' },
+						{ label: 'Nested Marks', slug: 'guides/nested-marks' },
+						{ label: 'Overlay', slug: 'guides/overlay' },
+						{ label: 'Slots', slug: 'guides/slots' },
 					],
 				},
 				{
 					label: 'Reference',
-					autogenerate: { directory: 'reference' },
+					items: [
+						{ label: 'API', slug: 'reference/api' },
+					],
 				},
 			],
 			customCss: ['./src/styles/global.css'],
