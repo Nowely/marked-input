@@ -1,0 +1,80 @@
+---
+title: Getting Started
+description: Quick guide to install and start using Markput in your project
+version: 1.0.0
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+## Package Installation
+
+Install Markput using your preferred package manager:
+
+<Tabs syncKey="package-manager">
+  <TabItem label="npm">
+    ```bash
+    npm install rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add rc-marked-input
+    ```
+  </TabItem>
+</Tabs>
+
+## Requirements
+
+### Peer Dependencies
+
+Markput requires React as a peer dependency:
+
+```json
+{
+  "peerDependencies": {
+    "react": ">=17.0.0"
+  }
+}
+```
+
+If you don't have React installed:
+
+<Tabs syncKey="package-manager">
+  <TabItem label="npm">
+    ```bash
+    npm install react react-dom
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add react react-dom
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add react react-dom
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add react react-dom
+    ```
+  </TabItem>
+</Tabs>
+
+## Getting Help
+
+Need assistance? Check out these resources:
+
+- **[Quick Start](./quick-start)** - Get started in 5 minutes
+- **[Getting Help](../reference/getting-help)** - Where to get support

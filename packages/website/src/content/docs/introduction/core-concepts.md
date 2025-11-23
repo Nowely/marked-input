@@ -448,7 +448,6 @@ Now that you understand the core concepts:
 
 - **[Architecture](../advanced/architecture)** - Deep dive into internal design
 - **[Performance](../advanced/performance)** - Optimization techniques
-- **[Custom Parsers](../advanced/custom-parsers)** - Extend the parser
 
 ---
 

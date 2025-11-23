@@ -919,7 +919,6 @@ function modifyTokens(tokens: Token[]): Token[] {
 - **[Components API](./components)** - MarkedInput and createMarkedInput
 - **[Hooks API](./hooks)** - useMark(), useOverlay(), useListener()
 - **[Types API](./types)** - TypeScript type reference
-- **[Core Package API](./core-package)** - @markput/core overview
 
 ---
 

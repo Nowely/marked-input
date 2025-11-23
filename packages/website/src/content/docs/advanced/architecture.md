@@ -727,11 +727,8 @@ function printTokenTree(tokens: Token[], indent = 0) {
 ## Next Steps
 
 - **[Performance Guide](./performance)** - Optimization techniques
-- **[Custom Parsers](./custom-parsers)** - Extending parser
-- **[Accessibility Guide](./accessibility)** - A11y best practices
 
 ---
 
 **See also:**
 - [Core Concepts](../introduction/core-concepts) - Understanding basics
-- [Core Package API](../api/core-package) - Low-level API

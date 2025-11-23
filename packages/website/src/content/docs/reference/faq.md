@@ -12,7 +12,7 @@ This page answers the most frequently asked questions about Markput.
 
 React library for building rich text editors with custom markup patterns (@mentions, #hashtags, /commands).
 
-**Learn more:** [Introduction](../introduction/introduction)
+**Learn more:** [Why Markput?](../introduction/why-markput)
 
 ### How is Markput different from other editors?
 
@@ -44,7 +44,6 @@ const tokens = parser.parse(text)
 </script>
 ```
 
-**Learn more:** [Core Package - Framework Integration](../api/core-package#framework-integration-examples)
 
 ### Is Markput production-ready?
 
@@ -99,7 +98,6 @@ Yes! Markput is stable and used in production applications.
 - React 17+ recommended
 - React 18+ fully supported
 
-**Learn more:** [Browser Compatibility](./browser-compatibility)
 
 ### Do I need TypeScript?
 
@@ -130,8 +128,6 @@ const options: Option<MyMarkProps>[] = [...]
   options={options}
 />
 ```
-
-**Learn more:** [TypeScript Usage Guide](../guides/typescript-usage)
 
 ### How do I add it to an existing project?
 
@@ -540,8 +536,6 @@ test('user can type and create marks', async () => {
 })
 ```
 
-**Learn more:** [Testing Guide](../guides/testing)
-
 ## Troubleshooting
 
 ### Why isn't my mark rendering?
@@ -570,8 +564,6 @@ text: '@[Alice](123)' // ✅
 ```
 
 3. **Check browser console for errors**
-
-**Learn more:** [Troubleshooting Guide](./troubleshooting)
 
 ### Why is the overlay not showing?
 
@@ -651,12 +643,6 @@ const MyMark = ({ value }) => <span>{value}</span>
    - Use case
    - Proposed API
    - Why existing features don't work
-
-## Next Steps
-
-- **[Troubleshooting Guide](./troubleshooting)** - Common errors and solutions
-- **[Browser Compatibility](./browser-compatibility)** - Browser support
-- **[Glossary](./glossary)** - Term definitions
 
 ---
 

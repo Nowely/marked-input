@@ -755,11 +755,5 @@ benchmark('Render 10 marks', () => {
 ## Next Steps
 
 - **[Architecture Guide](./architecture)** - System design
-- **[Accessibility Guide](./accessibility)** - A11y optimization
-- **[Custom Parsers](./custom-parsers)** - Advanced parsing
 
 ---
-
-**See also:**
-- [Testing Guide](../guides/testing) - Performance testing
-- [TypeScript Guide](../guides/typescript-usage) - Type-safe optimization

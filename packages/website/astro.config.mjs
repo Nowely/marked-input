@@ -19,8 +19,8 @@ export default defineConfig({
 				{
 					label: 'Introduction',
 					items: [
-						{ label: 'Introduction', slug: 'introduction/introduction' },
-						{ label: 'Installation', slug: 'introduction/installation' },
+						{ label: 'Why Markput?', slug: 'introduction/why-markput' },
+						{ label: 'Getting Started', slug: 'introduction/getting-started' },
 						{ label: 'Quick Start', slug: 'introduction/quick-start' },
 						{ label: 'Core Concepts', slug: 'introduction/core-concepts' },
 					],
@@ -29,13 +29,12 @@ export default defineConfig({
 					label: 'Guides',
 					items: [
 						{ label: 'Configuration', slug: 'guides/configuration' },
+						{ label: 'Framework Integration', slug: 'guides/framework-integration' },
 						{ label: 'Dynamic Marks', slug: 'guides/dynamic-marks' },
 						{ label: 'Nested Marks', slug: 'guides/nested-marks' },
 						{ label: 'Overlay Customization', slug: 'guides/overlay-customization' },
 						{ label: 'Slots Customization', slug: 'guides/slots-customization' },
 						{ label: 'Keyboard Handling', slug: 'guides/keyboard-handling' },
-						{ label: 'TypeScript Usage', slug: 'guides/typescript-usage' },
-						{ label: 'Testing', slug: 'guides/testing' },
 					],
 				},
 				{
@@ -56,7 +55,6 @@ export default defineConfig({
 						{ label: 'Hooks', slug: 'api/hooks' },
 						{ label: 'Types', slug: 'api/types' },
 						{ label: 'Helpers', slug: 'api/helpers' },
-						{ label: 'Core Package', slug: 'api/core-package' },
 					],
 				},
 				{
@@ -64,17 +62,13 @@ export default defineConfig({
 					items: [
 						{ label: 'Architecture', slug: 'advanced/architecture' },
 						{ label: 'Performance', slug: 'advanced/performance' },
-						{ label: 'Accessibility', slug: 'advanced/accessibility' },
-						{ label: 'Custom Parsers', slug: 'advanced/custom-parsers' },
 					],
 				},
 				{
 					label: 'Reference',
 					items: [
-						{ label: 'Glossary', slug: 'reference/glossary' },
 						{ label: 'FAQ', slug: 'reference/faq' },
-						{ label: 'Troubleshooting', slug: 'reference/troubleshooting' },
-						{ label: 'Browser Compatibility', slug: 'reference/browser-compatibility' },
+						{ label: 'Getting Help', slug: 'reference/getting-help' },
 					],
 				},
 			],

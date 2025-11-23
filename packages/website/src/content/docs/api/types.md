@@ -1006,7 +1006,6 @@ const option: Option<MentionProps> = {
 - **[Components API](./components)** - MarkedInput and createMarkedInput
 - **[Hooks API](./hooks)** - useMark(), useOverlay(), useListener()
 - **[Helpers API](./helpers)** - annotate(), denote(), and utilities
-- **[TypeScript Usage Guide](../guides/typescript-usage)** - Practical TypeScript patterns
 
 ---
 

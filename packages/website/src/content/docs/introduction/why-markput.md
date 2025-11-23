@@ -1,6 +1,6 @@
 ---
-title: Introduction
-description: What is Markput and why should you use it
+title: Why Markput?
+description: What is Markput and why you should use it for annotated text inputs
 version: 1.0.0
 ---
 
@@ -80,7 +80,7 @@ The framework-agnostic core library containing the parser, tokenizer, and state 
 
 ## Next Steps
 
-1. **[Installation](./installation)** - Install Markput in your project
+1. **[Getting Started](./getting-started)** - Install Markput in your project
 2. **[Quick Start](./quick-start)** - Build your first annotated text editor
 3. **[Core Concepts](./core-concepts)** - Understand marks, tokens, and parsing
 4. **[Guides](/guides/configuration)** - Learn how to configure and customize
