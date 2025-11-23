@@ -20,7 +20,6 @@ const sidebarConfig = [
 		label: 'Guides',
 		items: [
 			{label: 'Configuration', slug: 'guides/configuration', badge: wipBadge},
-			{label: 'Framework Integration', slug: 'guides/framework-integration', badge: wipBadge},
 			{label: 'Dynamic Marks', slug: 'guides/dynamic-marks', badge: wipBadge},
 			{label: 'Nested Marks', slug: 'guides/nested-marks', badge: wipBadge},
 			{label: 'Overlay Customization', slug: 'guides/overlay-customization', badge: wipBadge},
