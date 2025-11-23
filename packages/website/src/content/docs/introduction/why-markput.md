@@ -47,11 +47,10 @@ Markput is a React component library for building editors with **annotated text*
 
 ## Next Steps
 
-1. **[Getting Started](./getting-started)** - Install Markput in your project
-2. **[Quick Start](./quick-start)** - Build your first annotated text editor
-3. **[Core Concepts](./core-concepts)** - Understand marks, tokens, and parsing
-4. **[Guides](/guides/configuration)** - Learn how to configure and customize
-5. **[Examples](/examples/mention-system)** - See production-ready examples
+1. **[Getting Started](./getting-started)** - Install Markput and build your first editor
+2. **[Core Concepts](./core-concepts)** - Understand marks, tokens, and parsing
+3. **[Guides](/guides/configuration)** - Learn how to configure and customize
+4. **[Examples](/examples/mention-system)** - See production-ready implementations
 
 ---
 

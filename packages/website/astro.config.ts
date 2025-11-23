@@ -13,7 +13,6 @@ const sidebarConfig = [
 		items: [
 			{label: 'Why Markput?', slug: 'introduction/why-markput', badge: wipBadge},
 			{label: 'Getting Started', slug: 'introduction/getting-started', badge: wipBadge},
-			{label: 'Quick Start', slug: 'introduction/quick-start', badge: wipBadge},
 			{label: 'Core Concepts', slug: 'introduction/core-concepts', badge: wipBadge},
 		],
 	},
