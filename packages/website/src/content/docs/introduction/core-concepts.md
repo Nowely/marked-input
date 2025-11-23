@@ -435,10 +435,4 @@ console.log(JSON.stringify(tokens, null, 2))
 | TypeScript errors | Generic type mismatch | Specify types explicitly |
 | Overlay not showing | Trigger mismatch | Check trigger character |
 
-## Further Reading
-
-- **[Performance](../development/performance)** - Optimization techniques
-
----
-
 **Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

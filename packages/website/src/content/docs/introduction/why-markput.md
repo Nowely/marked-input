@@ -4,8 +4,6 @@ description: What is Markput and why you should use it for annotated text inputs
 version: 1.0.0
 ---
 
-## What is Markput?
-
 Markput is a React component library for building editors with **annotated text**. It renders plain text patterns as React components, enabling features like mentions, hashtags, and slash commands.
 
 **Key difference:** Unlike HTML-based editors, Markput uses plain text with markup patterns like `@[value](meta)`, making it lightweight and easy to integrate with your existing application state.
