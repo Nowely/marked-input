@@ -52,12 +52,6 @@ const sidebarConfig = [
 			},
 		],
 	},
-	{
-		label: 'Reference',
-		items: [
-			{label: 'Getting Help', slug: 'reference/getting-help', badge: wipBadge},
-		],
-	},
 	typeDocSidebarGroup,
 	{label: 'Comparisons', slug: 'comparisons', badge: wipBadge},
 ]
