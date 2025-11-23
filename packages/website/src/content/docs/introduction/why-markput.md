@@ -45,39 +45,6 @@ Markput is a React component library for building editors with **annotated text*
 - **Simple Text Input**: For basic text without annotations, use a native `<textarea>`.
 - **Code Editors**: For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/).
 
-## Architecture Overview
-
-Markput consists of two main packages:
-
-### `rc-marked-input`
-The React component wrapper. This is what you'll typically use in your application.
-```bash
-npm install rc-marked-input
-```
-
-### `@markput/core`
-The framework-agnostic core library containing the parser, tokenizer, and state management. You only need this if you're building custom integrations.
-
-```
-┌─────────────────────────────────────┐
-│        Your Application             │
-└─────────────────┬───────────────────┘
-                  │
-┌─────────────────▼───────────────────┐
-│      rc-marked-input (React)        │
-│  • MarkedInput Component            │
-│  • Hooks (useMark, useOverlay)      │
-│  • createMarkedInput                │
-└─────────────────┬───────────────────┘
-                  │
-┌─────────────────▼───────────────────┐
-│      @markput/core (Framework-free) │
-│  • Parser & Tokenizer               │
-│  • State Management                 │
-│  • Event System                     │
-└─────────────────────────────────────┘
-```
-
 ## Next Steps
 
 1. **[Getting Started](./getting-started)** - Install Markput in your project
