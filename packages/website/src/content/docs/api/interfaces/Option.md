@@ -5,7 +5,7 @@ prev: false
 title: "Option"
 ---
 
-Defined in: [markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L48)
+Defined in: [markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/types.ts#L48)
 
 React-specific markup option for defining mark behavior and styling.
 
@@ -38,7 +38,7 @@ const option: Option = {
 optional markup: Markup;
 ```
 
-Defined in: [core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/shared/types.ts#L35)
+Defined in: [core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/core/src/shared/types.ts#L35)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
@@ -79,7 +79,7 @@ CoreOption.markup
 optional slotProps: object;
 ```
 
-Defined in: [markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L61)
+Defined in: [markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/types.ts#L61)
 
 Props for slot components.
 
@@ -108,7 +108,7 @@ Props for the overlay component.
 optional slots: object;
 ```
 
-Defined in: [markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L52)
+Defined in: [markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/types.ts#L52)
 
 Per-option slot components.
 

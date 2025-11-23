@@ -9,4 +9,4 @@ title: "MarkedInput"
 const MarkedInput: MarkedInputComponent;
 ```
 
-Defined in: [markput/src/components/MarkedInput.tsx:93](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/components/MarkedInput.tsx#L93)
+Defined in: [markput/src/components/MarkedInput.tsx:93](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/components/MarkedInput.tsx#L93)

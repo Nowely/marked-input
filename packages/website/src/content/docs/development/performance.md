@@ -752,8 +752,4 @@ benchmark('Render 10 marks', () => {
 
 **Solution:** Virtualization or pagination
 
-## Next Steps
-
-- **[Architecture Guide](./architecture)** - System design
-
 ---

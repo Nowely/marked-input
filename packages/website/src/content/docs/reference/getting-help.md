@@ -340,7 +340,6 @@ When you receive help:
 
 - **[Core Concepts](../introduction/core-concepts)** - Deep dive into architecture
 - **[API Reference](../api/components)** - Complete API documentation
-- **[Advanced Topics](../advanced/architecture)** - Advanced usage patterns
 
 ### External Resources
 

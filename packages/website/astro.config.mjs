@@ -4,6 +4,8 @@ import starlight from '@astrojs/starlight';
 import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc';
 import tailwindcss from '@tailwindcss/vite';
 
+const isDev = import.meta.env.DEV;
+
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
@@ -67,13 +69,14 @@ export default defineConfig({
 						{ label: 'Autocomplete', slug: 'examples/autocomplete' },
 					],
 				},
-				{
-					label: 'Advanced',
+				...(isDev ? [{
+					label: '🚧 Development',
 					items: [
-						{ label: 'Architecture', slug: 'advanced/architecture' },
-						{ label: 'Performance', slug: 'advanced/performance' },
+						{ label: 'Architecture', slug: 'development/architecture' },
+						{ label: 'Performance', slug: 'development/performance' },
+						{ label: 'RFC: Nested Marks', slug: 'development/rfc-nested-marks' },
 					],
-				},
+				}] : []),
 				{
 					label: 'Reference',
 					items: [

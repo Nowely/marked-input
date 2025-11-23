@@ -14,7 +14,7 @@ function useListener<T>(
    deps?): void;
 ```
 
-Defined in: [markput/src/utils/hooks/useListener.tsx:7](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useListener.tsx#L7)
+Defined in: [markput/src/utils/hooks/useListener.tsx:7](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/utils/hooks/useListener.tsx#L7)
 
 ### Type Parameters
 
@@ -43,7 +43,7 @@ function useListener<K>(
    deps?): void;
 ```
 
-Defined in: [markput/src/utils/hooks/useListener.tsx:8](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useListener.tsx#L8)
+Defined in: [markput/src/utils/hooks/useListener.tsx:8](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/utils/hooks/useListener.tsx#L8)
 
 ### Type Parameters
 

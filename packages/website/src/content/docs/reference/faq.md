@@ -463,7 +463,7 @@ const LazyMark = ({ meta }) => {
 }
 ```
 
-**Learn more:** [Performance Guide](../advanced/performance)
+**Learn more:** [Performance Guide](../development/performance)
 
 ### Can I integrate with form libraries?
 
@@ -615,7 +615,7 @@ const users = useFetchAllUsers()
 const MyMark = ({ value }) => <span>{value}</span>
 ```
 
-3. **Large documents** - See [Performance Guide](../advanced/performance)
+3. **Large documents** - See [Performance Guide](../development/performance)
 
 ## Getting Help
 

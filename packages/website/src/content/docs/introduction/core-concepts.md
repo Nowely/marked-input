@@ -446,8 +446,7 @@ Now that you understand the core concepts:
 
 ## Further Reading
 
-- **[Architecture](../advanced/architecture)** - Deep dive into internal design
-- **[Performance](../advanced/performance)** - Optimization techniques
+- **[Performance](../development/performance)** - Optimization techniques
 
 ---
 

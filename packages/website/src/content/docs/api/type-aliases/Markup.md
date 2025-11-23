@@ -23,7 +23,7 @@ type Markup =
   | `${MetaMarkup}${NestedMarkup}${ValueMarkup}`;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:59](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L59)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:59](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/core/src/features/parsing/ParserV2/types.ts#L59)
 
 Modern Markup type supporting value, meta, and nested placeholders
 

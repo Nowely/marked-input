@@ -1,3 +1,9 @@
+---
+title: "RFC: Nested Marks"
+description: Proposal for nested marks support in Markput
+version: 1.0.0
+---
+
 # RFC: Nested Marks
 
 ## Status: In Development (ParserV2 Ready, React API Pending)
