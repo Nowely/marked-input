@@ -9,7 +9,7 @@ title: "createMarkedInput"
 function createMarkedInput<TMarkProps, TOverlayProps>(configs): ConfiguredMarkedInput<TMarkProps, TOverlayProps>;
 ```
 
-Defined in: [markput/src/utils/functions/createMarkedInput.ts:13](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/utils/functions/createMarkedInput.ts#L13)
+Defined in: [markput/src/utils/functions/createMarkedInput.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/functions/createMarkedInput.ts#L13)
 
 Create the configured MarkedInput component.
 

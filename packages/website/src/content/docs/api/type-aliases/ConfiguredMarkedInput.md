@@ -9,7 +9,7 @@ title: "ConfiguredMarkedInput"
 type ConfiguredMarkedInput<TMarkProps, TOverlayProps> = FunctionComponent<MarkedInputProps<TMarkProps, TOverlayProps>>;
 ```
 
-Defined in: [markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/markput/src/types.ts#L74)
+Defined in: [markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L74)
 
 ## Type Parameters
 

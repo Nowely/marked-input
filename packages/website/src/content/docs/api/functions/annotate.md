@@ -9,7 +9,7 @@ title: "annotate"
 function annotate(markup, params): string;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/utils/annotate.ts:18](https://github.com/Nowely/marked-input/blob/79420fc552c7fc55c3dba69d98fb3554d30361c2/packages/core/src/features/parsing/ParserV2/utils/annotate.ts#L18)
+Defined in: [core/src/features/parsing/ParserV2/utils/annotate.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/utils/annotate.ts#L18)
 
 Make annotation from the markup for ParserV2
 

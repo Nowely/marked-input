@@ -1,4 +1,3 @@
-// @ts-check
 import {defineConfig} from 'astro/config'
 import starlight from '@astrojs/starlight'
 import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
@@ -6,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 const isDev = import.meta.env.DEV
 const wipBadge = {text: '🚧', class: 'border-none bg-transparent'}
+
 
 const sidebarConfig = [
 	{
@@ -93,6 +93,7 @@ export default defineConfig({
 						parametersFormat: 'table',
 						classPropertiesFormat: 'table',
 						interfacePropertiesFormat: 'list',
+						gitRevision: 'next',
 					},
 				}),
 			],
