@@ -1,0 +1,46 @@
+---
+editUrl: false
+next: false
+prev: false
+title: "denote"
+---
+
+> **denote**(`value`, `callback`, `markups`): `string`
+
+Defined in: [core/src/features/parsing/ParserV2/utils/denote.ts:20](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/utils/denote.ts#L20)
+
+Transform annotated text to another text by recursively processing all tokens
+
+## Parameters
+
+### value
+
+`string`
+
+Annotated text to process
+
+### callback
+
+(`mark`) => `string`
+
+Function to transform each MarkToken
+
+### markups
+
+[`Markup`](/api/type-aliases/markup/)[]
+
+Array of markup patterns to parse
+
+## Returns
+
+`string`
+
+Transformed text
+
+## Example
+
+```typescript
+const text = '@[Hello](world) and #[nested @[content]]'
+const result = denote(text, mark => mark.value, ['@[__value__](__meta__)', '#[__nested__]'])
+// Returns: 'Hello and nested content'
+```

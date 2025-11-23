@@ -1,12 +1,25 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightTypeDoc, { typeDocSidebarGroup } from 'starlight-typedoc';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
 		starlight({
+			plugins: [
+				starlightTypeDoc({
+					entryPoints: ['../markput/index.ts'],
+					tsconfig: '../markput/tsconfig.json',
+					output: 'api',
+					watch: true,
+					sidebar: {
+						label: 'API Reference',
+						collapsed: false,
+					},
+				}),
+			],
 			title: 'Markput',
 			social: [
 				{
@@ -48,15 +61,7 @@ export default defineConfig({
 						{ label: 'Autocomplete', slug: 'examples/autocomplete' },
 					],
 				},
-				{
-					label: 'API Reference',
-					items: [
-						{ label: 'Components', slug: 'api/components' },
-						{ label: 'Hooks', slug: 'api/hooks' },
-						{ label: 'Types', slug: 'api/types' },
-						{ label: 'Helpers', slug: 'api/helpers' },
-					],
-				},
+				typeDocSidebarGroup,
 				{
 					label: 'Advanced',
 					items: [
