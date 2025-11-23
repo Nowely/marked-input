@@ -724,11 +724,5 @@ function printTokenTree(tokens: Token[], indent = 0) {
 }
 ```
 
-## Next Steps
-
-- **[Performance Guide](./performance)** - Optimization techniques
-
----
-
 **See also:**
 - [Core Concepts](../introduction/core-concepts) - Understanding basics

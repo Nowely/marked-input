@@ -378,23 +378,6 @@ Input Text → Aho-Corasick → SegmentMatches
 - 🚧 Feature flag for nested mode not yet implemented
 - 🚧 Migration strategy requires implementation
 
-## Next Steps
-
-### Current Priorities
-
-1. 🚧 **React Integration**: Implement `useMark` hook extensions and nested rendering
-2. 🚧 **Component Updates**: Update `Piece` component to render nested children
-3. 🚧 **Feature Flag**: Add `nested` prop to `MarkedInput` component
-4. 🚧 **Type Safety**: Implement `NestedMarkHandler` and `NestedMarkStruct` types
-
-### Future Enhancements
-
-1. **Advanced Navigation**: Add tree traversal utilities
-2. **Performance Monitoring**: Add instrumentation for complex documents
-3. **Migration Tools**: Create codemods for v4.0.0 migration
-4. **Lazy Loading**: Implement virtualization for deep nesting
-5. **Undo/Redo**: Add nested operations support
-
 ## Discussion Questions
 
 1. What nesting level to support initially? **Answer: Arbitrary depth with O(N log N) complexity**
@@ -478,17 +461,6 @@ const CustomMark = ({ label, value }) => {
   )
 }
 ```
-
-## Testing
-
-### ParserV2 Tests
-
-ParserV2 is thoroughly tested with:
-
-- **104 unit tests** covering all parsing scenarios
-- **Integration tests** for end-to-end functionality
-- **Performance benchmarks** showing 65K+ ops/sec for complex patterns
-- **Edge case handling** for malformed markup and Unicode content
 
 ## Success Metrics
 

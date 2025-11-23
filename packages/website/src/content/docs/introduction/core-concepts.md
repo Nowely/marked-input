@@ -435,15 +435,6 @@ console.log(JSON.stringify(tokens, null, 2))
 | TypeScript errors | Generic type mismatch | Specify types explicitly |
 | Overlay not showing | Trigger mismatch | Check trigger character |
 
-## Next Steps
-
-Now that you understand the core concepts:
-
-- **[Configuration Guide](../guides/configuration)** - Master all configuration options
-- **[Dynamic Marks](../guides/dynamic-marks)** - Build interactive marks
-- **[Nested Marks](../guides/nested-marks)** - Work with hierarchical structures
-- **[API Reference](../api/components)** - Complete API documentation
-
 ## Further Reading
 
 - **[Performance](../development/performance)** - Optimization techniques

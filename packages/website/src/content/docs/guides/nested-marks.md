@@ -616,65 +616,6 @@ markup: '**__nested__**'
 value: '**text **nested****' // Can cause issues
 ```
 
-## Troubleshooting
-
-### Children Not Rendering
-
-**Problem:** Nested marks don't show up
-
-**Solution:** Use `children`, not `value`
-
-```tsx
-// ❌ Wrong
-function Mark({ value }) {
-  return <span>{value}</span> // value is undefined for nested!
-}
-
-// ✅ Correct
-function Mark({ children, nested }) {
-  return <span>{children || nested}</span>
-}
-```
-
-### Styles Not Applied to Nested Content
-
-**Problem:** Styles only apply to parent, not children
-
-**Solution:** Styles cascade automatically in React
-
-```tsx
-// ✅ This works - styles cascade
-function Mark({ children }) {
-  return <span style={{ fontWeight: 'bold' }}>{children}</span>
-}
-```
-
-### Mismatched Tags Not Parsing
-
-**Problem:** `<div>content</span>` not recognized
-
-**Cause:** Two values pattern requires identical tags
-
-**Solution:** Ensure tags match
-
-```tsx
-// ❌ Won't match
-'<div>content</span>'
-
-// ✅ Will match
-'<div>content</div>'
-```
-
-### Performance Issues
-
-**Problem:** Slow rendering with deep nesting
-
-**Solutions:**
-1. Memoize Mark component with `React.memo`
-2. Limit nesting depth in content
-3. Profile with React DevTools
-4. Use flat marks when nesting isn't needed
-
 ## TypeScript Support
 
 Type your nested Mark components:
@@ -707,15 +648,6 @@ function HtmlMark({ value, children }: HtmlMarkProps) {
   return <Tag>{children}</Tag>
 }
 ```
-
-## Next Steps
-
-- **[Dynamic Marks](./dynamic-marks)** - Make nested marks interactive
-- **[Configuration](./configuration)** - Configure multiple markup patterns
-- **[Core Concepts](../introduction/core-concepts#nested-marks)** - Deep dive into token trees
-- **[Examples](../examples/markdown-editor)** - See real-world nested mark examples
-
----
 
 **Key Takeaways:**
 - Use `__nested__` placeholder for hierarchical structures

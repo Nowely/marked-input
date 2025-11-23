@@ -722,57 +722,6 @@ useEffect(() => {
 }, [])
 ```
 
-## Troubleshooting
-
-### Overlay Not Showing
-
-**Checklist:**
-1. Is `trigger` defined in `slotProps.overlay`?
-2. Does user typed the trigger character?
-3. Is `showOverlayOn` set correctly?
-4. Check browser console for errors
-
-### Overlay Not Closing
-
-**Problem:** Overlay stays open after clicking outside
-
-**Solution:** Attach `ref` to root overlay element
-
-```tsx
-function Overlay() {
-  const { ref, select } = useOverlay()
-  return <div ref={ref}>{/* content */}</div>  // ref is required!
-}
-```
-
-### Position Wrong
-
-**Problem:** Overlay appears at wrong location
-
-**Solution:** Use `style.left` and `style.top`
-
-```tsx
-<div style={{
-  position: 'absolute',
-  left: style.left,
-  top: style.top
-}}>
-```
-
-### Keyboard Navigation Not Working
-
-**Problem:** Arrow keys don't work
-
-**Solution:** Add event listeners and cleanup
-
-```tsx
-useEffect(() => {
-  const handler = (e) => { /* handle keys */ }
-  window.addEventListener('keydown', handler)
-  return () => window.removeEventListener('keydown', handler)
-}, [dependencies])
-```
-
 ## TypeScript Support
 
 Type your custom overlays:
@@ -795,15 +744,6 @@ function TypedOverlay() {
   )
 }
 ```
-
-## Next Steps
-
-- **[Configuration](./configuration)** - Configure overlay triggers and data
-- **[Dynamic Marks](./dynamic-marks)** - Build interactive marks
-- **[API Reference](../api/hooks#useOverlay)** - Complete useOverlay documentation
-- **[Examples](../examples/slash-commands)** - See real-world overlay examples
-
----
 
 **Key Takeaways:**
 - Use `useOverlay()` hook for custom overlays

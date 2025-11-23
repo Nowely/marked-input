@@ -45,13 +45,4 @@ Markput is a React component library for building editors with **annotated text*
 - **Simple Text Input**: For basic text without annotations, use a native `<textarea>`.
 - **Code Editors**: For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/).
 
-## Next Steps
-
-1. **[Getting Started](./getting-started)** - Install Markput and build your first editor
-2. **[Core Concepts](./core-concepts)** - Understand marks, tokens, and parsing
-3. **[Guides](/guides/configuration)** - Learn how to configure and customize
-4. **[Examples](/examples/mention-system)** - See production-ready implementations
-
----
-
 **Questions?** [Open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.

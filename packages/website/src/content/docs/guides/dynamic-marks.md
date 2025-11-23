@@ -675,13 +675,4 @@ function Good() {
 }
 ```
 
-## Next Steps
-
-- **[Nested Marks](./nested-marks)** - Work with hierarchical structures
-- **[Keyboard Handling](./keyboard-handling)** - Advanced keyboard interactions
-- **[API Reference](../api/hooks#useMark)** - Complete useMark documentation
-- **[Examples](../examples/mention-system)** - Real-world implementations
-
----
-
 **Try it:** [CodeSandbox - Dynamic Marks](https://codesandbox.io/s/dynamic-mark-w2nj82)
