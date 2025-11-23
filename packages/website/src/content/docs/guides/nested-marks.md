@@ -1,7 +1,7 @@
 ---
 title: Nested Marks
-description: Create hierarchical text structures with nested marks
-version: 1.0.0
+description: Nested marks tutorial - hierarchical text structures, __nested__ placeholder, markdown formatting, HTML-like tags in Markput
+keywords: [nested marks, hierarchical structures, token tree, children, markdown, HTML-like tags, nesting]
 ---
 
 Nested marks allow you to create rich, hierarchical text structures where marks can contain other marks. This enables complex formatting scenarios like markdown-style text, HTML-like tags, and multi-level annotations.

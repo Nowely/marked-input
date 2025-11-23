@@ -1,7 +1,7 @@
 ---
 title: Hashtags
-description: Build Twitter-style #hashtag system with trends and analytics
-version: 1.0.0
+description: Twitter/Instagram hashtag system tutorial - trending topics, autocomplete, click tracking, usage analytics
+keywords: [hashtags, trending topics, social media, autocomplete, tagging, analytics]
 ---
 
 This example demonstrates how to build a hashtag system like Twitter, Instagram, or LinkedIn with trending topics, autocomplete, and click tracking.

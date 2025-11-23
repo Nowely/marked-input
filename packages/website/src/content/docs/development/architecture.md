@@ -1,7 +1,7 @@
 ---
 title: Architecture
-description: Deep dive into Markput's internal architecture and design
-version: 1.0.0
+description: Markput internal architecture - React layer, parser engine, token renderer, store, component hierarchy and data flow
+keywords: [architecture, parser engine, token renderer, React hooks, component design, data flow, system design]
 ---
 
 This guide explains Markput's internal architecture, data flow, and design decisions.
@@ -725,4 +725,4 @@ function printTokenTree(tokens: Token[], indent = 0) {
 ```
 
 **See also:**
-- [Core Concepts](../introduction/core-concepts) - Understanding basics
+- [How It Works](../introduction/how-it-works) - Understanding how Markput processes text

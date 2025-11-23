@@ -1,7 +1,7 @@
 ---
 title: Configuration
-description: Complete guide to configuring MarkedInput
-version: 1.0.0
+description: Configure Markput - inline configuration, factory pattern, markup patterns, options, and advanced setup for React text editors
+keywords: [configuration, factory pattern, markup patterns, options, inline config, setup, advanced]
 ---
 
 Markput provides flexible configuration options through the `MarkedInput` component and the `createMarkedInput` factory. This guide covers all configuration patterns from basic to advanced.
@@ -128,7 +128,7 @@ markup: '<__value__>__nested__</__value__>'
 - `__meta__` - Metadata (plain text)
 - `__nested__` - Content that can contain other marks
 
-See [Core Concepts](../introduction/core-concepts#markup-patterns) for detailed explanation.
+See [How It Works](../introduction/how-it-works#markup-patterns) for detailed explanation of markup patterns.
 
 ## slotProps.mark
 

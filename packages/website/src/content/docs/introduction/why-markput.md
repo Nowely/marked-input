@@ -1,7 +1,7 @@
 ---
 title: Why Markput?
-description: What is Markput and why you should use it for annotated text inputs
-version: 1.0.0
+description: React library for @mentions, hashtags, and slash commands - lightweight annotated text editor alternative to Draft.js, Slate, ProseMirror
+keywords: [markput, react, mentions, hashtags, slash commands, text editor, annotations, markup patterns, lightweight]
 ---
 
 Markput is a React component library for building editors with **annotated text**. It renders plain text patterns as React components, enabling features like mentions, hashtags, and slash commands.

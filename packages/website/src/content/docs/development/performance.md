@@ -1,7 +1,7 @@
 ---
 title: Performance Optimization
-description: Optimize Markput for large documents and high-performance applications
-version: 1.0.0
+description: Markput performance tuning - optimization techniques, large documents, memoization, benchmarking, scaling best practices
+keywords: [performance, optimization, memoization, React.memo, large documents, benchmarking, scaling]
 ---
 
 This guide covers performance optimization techniques for Markput applications.

@@ -1,7 +1,7 @@
 ---
 title: Markdown Editor
-description: Build a rich Markdown editor with live preview and formatting toolbar
-version: 1.0.0
+description: GitHub markdown editor tutorial - bold, italic, code blocks, links, live preview, keyboard shortcuts
+keywords: [markdown editor, rich text, formatting, bold, italic, code blocks, live preview, WYSIWYG]
 ---
 
 This example demonstrates how to build a Markdown editor with bold, italic, links, images, and live preview - similar to GitHub, Stack Overflow, or Reddit.

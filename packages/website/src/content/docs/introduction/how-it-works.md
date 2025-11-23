@@ -1,12 +1,17 @@
 ---
-title: Core Concepts
-description: Understanding marks, tokens, parsing, and the Markput architecture
-version: 1.0.0
+title: How It Works
+description: Learn how Markput works - marks, tokens, parsing, overlay system, nested marks, and state management for React text editors
+keywords: [how it works, architecture, marks, tokens, parsing, overlay, nested marks, state management, component design, token tree]
 ---
 
-This guide explains the fundamental concepts behind Markput. Understanding these concepts will help you build more sophisticated editors and troubleshoot issues effectively.
+This guide explains how Markput works under the hood. Understanding these concepts will help you build more sophisticated editors and troubleshoot issues effectively.
+
+> **TL;DR**: Markput turns text patterns into React components. You define patterns like `@[__value__]`, Markput parses them into tokens, and renders them as your custom components.
 
 ## The Big Picture
+
+<details>
+<summary><strong>Visual Overview (Optional)</strong></summary>
 
 Markput transforms plain text with special patterns into interactive React components. Here's the flow:
 
@@ -21,6 +26,10 @@ Plain Text with Patterns
          ↓
   React Components
 ```
+
+This process happens automatically when you type, and the result is a fully interactive editor.
+
+</details>
 
 ## Marks vs Tokens
 
@@ -103,7 +112,10 @@ Markup patterns define how marks are identified in your text. They use placehold
 
 ## The Parsing Process
 
-Let's walk through how Markput processes your text:
+<details>
+<summary><strong>How Markput Parses Text (Deep Dive)</strong></summary>
+
+Let's walk through how Markput processes your text step-by-step:
 
 ### Step 1: Preparsing
 The text is scanned for potential mark boundaries.
@@ -151,6 +163,10 @@ MarkToken → <Mark value="Alice" meta="user:1" />
 TextToken → <span>!</span>
 ```
 
+**Key insight**: This happens for every keystroke, keeping tokens in sync with your text.
+
+</details>
+
 ## Nested Marks
 
 Nested marks allow hierarchical structures. Use `__nested__` to enable nesting:
@@ -168,6 +184,9 @@ value: '*bold with *italic* inside*'
 ```
 
 ### Token Tree for Nested Marks
+
+<details>
+<summary><strong>Token Structure Example (Advanced)</strong></summary>
 
 ```tsx
 '**bold with *italic* text**'
@@ -191,6 +210,10 @@ value: '*bold with *italic* inside*'
   ]
 }
 ```
+
+Notice the `children` array - this is what makes nesting possible. Each mark can contain text and other marks.
+
+</details>
 
 ### Rendering Nested Marks
 
@@ -256,6 +279,9 @@ The `useOverlay()` hook provides:
 
 ## Component Architecture
 
+<details>
+<summary><strong>Internal Architecture (For Curious Minds)</strong></summary>
+
 ### High-Level Structure
 
 ```
@@ -286,6 +312,10 @@ Events → onChange
        ↓
 Update State
 ```
+
+The key insight: Everything flows through the store, which triggers re-renders only when tokens change.
+
+</details>
 
 ## State Management
 
@@ -343,7 +373,27 @@ const Mark = () => {
 
 ## Options System
 
-Options allow per-pattern configuration:
+Options allow per-pattern configuration. Each pattern can have its own Mark component and overlay:
+
+```tsx
+<MarkedInput
+  options={[
+    {
+      markup: '@[__value__](__meta__)',      // Pattern 1: mentions
+      slots: { mark: MentionComponent },
+      slotProps: { overlay: { trigger: '@', data: users } }
+    },
+    {
+      markup: '#[__value__]',                 // Pattern 2: hashtags
+      slots: { mark: HashtagComponent },
+      slotProps: { overlay: { trigger: '#', data: hashtags } }
+    }
+  ]}
+/>
+```
+
+<details>
+<summary><strong>Advanced: Full Example with Props Transform</strong></summary>
 
 ```tsx
 <MarkedInput
@@ -351,25 +401,18 @@ Options allow per-pattern configuration:
     {
       markup: '@[__value__](__meta__)',
       slots: {
-        mark: MentionComponent,      // Custom Mark for this pattern
-        overlay: MentionOverlay        // Custom Overlay for this pattern
+        mark: MentionComponent,
+        overlay: MentionOverlay
       },
       slotProps: {
-        mark: ({ value, meta }) => ({ // Transform props
+        mark: ({ value, meta }) => ({  // Transform extracted props
           label: value,
           userId: meta
         }),
-        overlay: {                     // Static props
+        overlay: {                      // Static overlay config
           trigger: '@',
           data: users
         }
-      }
-    },
-    {
-      markup: '#[__value__]',
-      slots: { mark: HashtagComponent },
-      slotProps: {
-        overlay: { trigger: '#', data: hashtags }
       }
     }
   ]}
@@ -384,7 +427,12 @@ Options allow per-pattern configuration:
 3. undefined               (error if no Mark provided)
 ```
 
+</details>
+
 ## Performance Considerations
+
+<details>
+<summary><strong>Performance Tips & Optimization (Optional Reading)</strong></summary>
 
 ### Re-render Optimization
 
@@ -407,7 +455,14 @@ For large documents (1000+ marks):
 - Use `defaultValue` if possible
 - Implement virtualization for mark lists
 
+For more details, see the [Performance Optimization](/development/performance) guide.
+
+</details>
+
 ## Debugging Tips
+
+<details>
+<summary><strong>Troubleshooting & Debug Tools</strong></summary>
 
 ### Visualize Tokens
 
@@ -418,6 +473,8 @@ const tokens = parse(value, [{ markup: '@[__value__]' }])
 console.log(JSON.stringify(tokens, null, 2))
 ```
 
+This is your best friend for understanding what Markput "sees" in your text.
+
 ### Check Markup Matching
 
 ```tsx
@@ -426,13 +483,17 @@ console.log(JSON.stringify(tokens, null, 2))
 // Check console for parsing logs
 ```
 
-### Common Issues
+### Common Issues & Solutions
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Marks not rendering | Markup pattern mismatch | Check pattern syntax |
+| Marks not rendering | Markup pattern mismatch | Check pattern syntax with console.log |
 | Infinite re-renders | onChange creates new reference | Use `useCallback` |
-| TypeScript errors | Generic type mismatch | Specify types explicitly |
-| Overlay not showing | Trigger mismatch | Check trigger character |
+| TypeScript errors | Generic type mismatch | Specify types explicitly in `<MarkedInput<YourType>>` |
+| Overlay not showing | Trigger mismatch | Check that trigger character matches your pattern |
 
-**Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).
+</details>
+
+---
+
+**Still stuck?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

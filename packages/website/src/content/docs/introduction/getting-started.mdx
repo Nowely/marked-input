@@ -1,7 +1,7 @@
 ---
 title: Getting Started
-description: Install Markput and build your first annotated text editor
-version: 1.0.0
+description: Install Markput React component - step-by-step guide for building @mention, hashtag, and slash command editors with code examples
+keywords: [installation, setup, react component, first editor, markup patterns, typescript, examples, npm, yarn]
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
@@ -71,6 +71,21 @@ If you don't have React installed:
     ```
   </TabItem>
 </Tabs>
+
+## Mental Model
+
+Before coding, understand these key concepts:
+
+| Term | Definition | Example | Real-world analogy |
+|------|-----------|---------|-------------------|
+| **Markup** | Text pattern that defines a mark | `@[__value__](__meta__)` | A stamp/template |
+| **Mark** | React component rendering a pattern | `<Mention user="Alice" />` | The stamped result |
+| **Token** | Internal parsed representation | `{ type: 'mark', value: 'Alice', meta: 'user:1' }` | Blueprint |
+| **Overlay** | Autocomplete menu that appears | Dropdown with suggestions | Auto-complete in Google |
+
+**The flow:** You define a markup pattern → Markput parses your text into tokens → Renders tokens as your custom Mark components → Overlay helps users type mentions
+
+That's it! Everything else is customization.
 
 ## Your First Editor
 

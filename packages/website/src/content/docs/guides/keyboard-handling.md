@@ -1,7 +1,7 @@
 ---
 title: Keyboard Handling
-description: Master keyboard navigation, shortcuts, and custom interactions
-version: 1.0.0
+description: Keyboard shortcuts and navigation in Markput - built-in keys, custom hotkeys, onKeyDown events, Cmd/Ctrl modifiers
+keywords: [keyboard shortcuts, hotkeys, onKeyDown, navigation, Cmd, Ctrl, modifier keys, focus management]
 ---
 
 Markput provides built-in keyboard support for common editing operations and allows you to add custom keyboard shortcuts. This guide covers everything from basic navigation to advanced keyboard interactions.

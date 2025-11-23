@@ -1,7 +1,7 @@
 ---
 title: Autocomplete System
-description: Build advanced autocomplete with fuzzy search, categories, and recent items
-version: 1.0.0
+description: Advanced autocomplete tutorial - fuzzy search, categorized suggestions, recent items, multi-source, loading states
+keywords: [autocomplete, fuzzy search, suggestions, filtering, categories, recent items, search]
 ---
 
 This example demonstrates how to build a comprehensive autocomplete system with fuzzy matching, categories, keyboard navigation, and recent selections.

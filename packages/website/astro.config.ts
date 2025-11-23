@@ -13,7 +13,7 @@ const sidebarConfig = [
 		items: [
 			{label: 'Why Markput?', slug: 'introduction/why-markput', badge: wipBadge},
 			{label: 'Getting Started', slug: 'introduction/getting-started', badge: wipBadge},
-			{label: 'Core Concepts', slug: 'introduction/core-concepts', badge: wipBadge},
+			{label: 'How It Works', slug: 'introduction/how-it-works', badge: wipBadge},
 		],
 	},
 	{
@@ -90,6 +90,10 @@ export default defineConfig({
 				}),
 			],
 			title: 'Markput',
+			lastUpdated: true,
+			editLink: {
+				baseUrl: 'https://github.com/Nowely/marked-input/edit/next/packages/website/src/content/docs',
+			},
 			social: [
 				{
 					label: 'GitHub',

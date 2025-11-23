@@ -1,7 +1,7 @@
 ---
 title: Mention System
-description: Build a production-ready @mention system like Twitter or Slack
-version: 1.0.0
+description: Twitter/Slack @mention system tutorial - autocomplete, user avatars, clickable marks, backend integration, mobile optimization
+keywords: [mentions, social media, chat, autocomplete, avatars, user tagging, backend integration]
 ---
 
 This example demonstrates how to build a complete mention system with autocomplete, user avatars, and clickable mentions. Perfect for social media apps, chat applications, and collaborative tools.

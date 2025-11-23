@@ -1,7 +1,7 @@
 ---
 title: Comparison with Other Editors
-description: How Markput compares to other rich text editor libraries
-version: 1.0.0
+description: Markput vs Draft.js, Slate, ProseMirror, Lexical - features, size, learning curve, use cases comparison
+keywords: [comparison, Draft.js, Slate, ProseMirror, Lexical, rich text editor, alternatives, editor selection]
 ---
 
 This page compares Markput with other popular rich text editor libraries to help you understand when Markput is the right choice for your project.

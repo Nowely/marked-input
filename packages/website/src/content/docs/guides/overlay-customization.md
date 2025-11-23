@@ -1,7 +1,7 @@
 ---
 title: Overlay Customization
-description: Build custom autocomplete and suggestion overlays
-version: 1.0.0
+description: Custom autocomplete overlays for Markput - trigger characters, suggestions, positioning, useOverlay hook, and styling
+keywords: [overlay, autocomplete, suggestions, trigger characters, useOverlay hook, positioning, custom UI]
 ---
 
 The overlay system provides autocomplete, suggestions, and contextual menus when users type trigger characters. Markput includes a default Suggestions component, but you can fully customize it to match your needs.

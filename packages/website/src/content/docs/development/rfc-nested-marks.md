@@ -1,7 +1,7 @@
 ---
 title: "RFC: Nested Marks"
-description: Proposal for nested marks support in Markput
-version: 1.0.0
+description: RFC nested marks feature proposal - hierarchical structures, ParserV2, tree-based parsing, implementation roadmap
+keywords: [RFC, nested marks, ParserV2, proposal, hierarchical, roadmap, feature development]
 ---
 
 # RFC: Nested Marks
