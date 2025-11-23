@@ -15,7 +15,6 @@ This page compares Markput with other popular rich text editor libraries to help
 | **Bundle size** | ~15KB | ~100KB | ~150KB | ~200KB |
 | **Learning curve** | Easy | Steep | Steep | Very steep |
 | **TypeScript** | ✅ First-class | ✅ | ✅ | ⚠️ Limited |
-| **Accessibility** | ✅ Built-in | ⚠️ Manual | ⚠️ Manual | ⚠️ Manual |
 
 ## When to Use Markput
 
@@ -41,7 +40,6 @@ This page compares Markput with other popular rich text editor libraries to help
 - Very small bundle size (~15KB)
 - Simple API with minimal learning curve
 - First-class TypeScript support
-- Built-in accessibility features
 - Pattern matching with regular expressions
 
 **Limitations:**
