@@ -4,29 +4,34 @@ description: How to install Markput in your project
 version: 1.0.0
 ---
 
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
 ## Package Installation
 
 Install Markput using your preferred package manager:
 
-### npm
-```bash
-npm install rc-marked-input
-```
-
-### yarn
-```bash
-yarn add rc-marked-input
-```
-
-### pnpm
-```bash
-pnpm add rc-marked-input
-```
-
-### bun
-```bash
-bun add rc-marked-input
-```
+<Tabs syncKey="package-manager">
+  <TabItem label="npm">
+    ```bash
+    npm install rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add rc-marked-input
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add rc-marked-input
+    ```
+  </TabItem>
+</Tabs>
 
 ## Requirements
 
@@ -44,9 +49,28 @@ Markput requires React as a peer dependency:
 
 If you don't have React installed:
 
-```bash
-npm install react react-dom
-```
+<Tabs syncKey="package-manager">
+  <TabItem label="npm">
+    ```bash
+    npm install react react-dom
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add react react-dom
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add react react-dom
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add react react-dom
+    ```
+  </TabItem>
+</Tabs>
 
 ### Browser Support
 
@@ -68,9 +92,28 @@ Markput is written in TypeScript and includes type definitions. No additional pa
 
 If you encounter type errors, ensure you have React types installed:
 
-```bash
-npm install --save-dev @types/react @types/react-dom
-```
+<Tabs syncKey="package-manager">
+  <TabItem label="npm">
+    ```bash
+    npm install --save-dev @types/react @types/react-dom
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add --dev @types/react @types/react-dom
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add -D @types/react @types/react-dom
+    ```
+  </TabItem>
+  <TabItem label="bun">
+    ```bash
+    bun add -d @types/react @types/react-dom
+    ```
+  </TabItem>
+</Tabs>
 
 ### tsconfig.json Recommendations
 
@@ -296,4 +339,3 @@ Installation complete! Now let's build something:
 - **[Quick Start](./quick-start)** - Build your first editor in 5 minutes
 - **[Core Concepts](./core-concepts)** - Understand how Markput works
 - **[Examples](../examples/mention-system)** - See production-ready examples
-
