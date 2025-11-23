@@ -5,7 +5,7 @@ prev: false
 title: "OverlayProps"
 ---
 
-Defined in: [markput/src/types.ts:27](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L27)
+Defined in: [markput/src/types.ts:27](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L27)
 
 Default props for Overlay components via slotProps.
 
@@ -13,9 +13,11 @@ Default props for Overlay components via slotProps.
 
 ### data?
 
-> `optional` **data**: `string`[]
+```ts
+optional data: string[];
+```
 
-Defined in: [markput/src/types.ts:31](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L31)
+Defined in: [markput/src/types.ts:31](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L31)
 
 Data array for suggestions/autocomplete
 
@@ -23,8 +25,10 @@ Data array for suggestions/autocomplete
 
 ### trigger?
 
-> `optional` **trigger**: `string`
+```ts
+optional trigger: string;
+```
 
-Defined in: [markput/src/types.ts:29](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L29)
+Defined in: [markput/src/types.ts:29](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L29)
 
 Trigger character(s) that activate the overlay

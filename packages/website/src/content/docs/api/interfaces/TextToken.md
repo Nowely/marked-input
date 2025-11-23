@@ -5,36 +5,46 @@ prev: false
 title: "TextToken"
 ---
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:6](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L6)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:6](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L6)
 
 ## Properties
 
 ### content
 
-> **content**: `string`
+```ts
+content: string;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:8](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L8)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:8](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L8)
 
 ***
 
 ### position
 
-> **position**: `object`
+```ts
+position: object;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:9](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L9)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:9](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L9)
 
 #### end
 
-> **end**: `number`
+```ts
+end: number;
+```
 
 #### start
 
-> **start**: `number`
+```ts
+start: number;
+```
 
 ***
 
 ### type
 
-> **type**: `"text"`
+```ts
+type: "text";
+```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:7](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L7)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:7](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L7)

@@ -5,9 +5,25 @@ prev: false
 title: "Markup"
 ---
 
-> **Markup** = `` `${ValueMarkup}` `` \| `` `${ValueMarkup}${MetaMarkup}` `` \| `` `${ValueMarkup}${MetaMarkup}${NestedMarkup}` `` \| `` `${ValueMarkup}${NestedMarkup}` `` \| `` `${ValueMarkup}${NestedMarkup}${MetaMarkup}` `` \| `` `${NestedMarkup}` `` \| `` `${NestedMarkup}${MetaMarkup}` `` \| `` `${NestedMarkup}${MetaMarkup}${ValueMarkup}` `` \| `` `${NestedMarkup}${ValueMarkup}` `` \| `` `${NestedMarkup}${ValueMarkup}${MetaMarkup}` `` \| `` `${MetaMarkup}${ValueMarkup}` `` \| `` `${MetaMarkup}${ValueMarkup}${NestedMarkup}` `` \| `` `${MetaMarkup}${NestedMarkup}` `` \| `` `${MetaMarkup}${NestedMarkup}${ValueMarkup}` ``
+```ts
+type Markup = 
+  | `${ValueMarkup}`
+  | `${ValueMarkup}${MetaMarkup}`
+  | `${ValueMarkup}${MetaMarkup}${NestedMarkup}`
+  | `${ValueMarkup}${NestedMarkup}`
+  | `${ValueMarkup}${NestedMarkup}${MetaMarkup}`
+  | `${NestedMarkup}`
+  | `${NestedMarkup}${MetaMarkup}`
+  | `${NestedMarkup}${MetaMarkup}${ValueMarkup}`
+  | `${NestedMarkup}${ValueMarkup}`
+  | `${NestedMarkup}${ValueMarkup}${MetaMarkup}`
+  | `${MetaMarkup}${ValueMarkup}`
+  | `${MetaMarkup}${ValueMarkup}${NestedMarkup}`
+  | `${MetaMarkup}${NestedMarkup}`
+  | `${MetaMarkup}${NestedMarkup}${ValueMarkup}`;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:59](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L59)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:59](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L59)
 
 Modern Markup type supporting value, meta, and nested placeholders
 

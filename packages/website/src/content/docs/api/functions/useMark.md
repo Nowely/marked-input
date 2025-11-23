@@ -5,21 +5,23 @@ prev: false
 title: "useMark"
 ---
 
-> **useMark**\<`T`\>(`options`): [`MarkHandler`](/api/interfaces/markhandler/)\<`T`\>
+```ts
+function useMark<T>(options): MarkHandler<T>;
+```
 
-Defined in: [markput/src/utils/hooks/useMark.ts:62](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useMark.ts#L62)
+Defined in: [markput/src/utils/hooks/useMark.ts:62](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useMark.ts#L62)
 
 ## Type Parameters
 
-### T
-
-`T` *extends* `HTMLElement` = `HTMLElement`
+| Type Parameter | Default type |
+| ------ | ------ |
+| `T` *extends* `HTMLElement` | `HTMLElement` |
 
 ## Parameters
 
-### options
-
-`MarkOptions` = `{}`
+| Parameter | Type |
+| ------ | ------ |
+| `options` | `MarkOptions` |
 
 ## Returns
 

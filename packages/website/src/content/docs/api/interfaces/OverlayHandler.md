@@ -5,15 +5,17 @@ prev: false
 title: "OverlayHandler"
 ---
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:8](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L8)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:8](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L8)
 
 ## Properties
 
 ### close()
 
-> **close**: () => `void`
+```ts
+close: () => void;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:19](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L19)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:19](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L19)
 
 Used for close overlay.
 
@@ -25,9 +27,11 @@ Used for close overlay.
 
 ### match
 
-> **match**: `OverlayMatch`\<[`Option`](/api/interfaces/option/)\<[`MarkProps`](/api/interfaces/markprops/), [`OverlayProps`](/api/interfaces/overlayprops/)\>\>
+```ts
+match: OverlayMatch<Option<MarkProps, OverlayProps>>;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:27](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L27)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:27](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L27)
 
 Overlay match details
 
@@ -35,31 +39,31 @@ Overlay match details
 
 ### ref
 
-> **ref**: `RefObject`\<`HTMLElement`\>
+```ts
+ref: RefObject<HTMLElement>;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:28](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L28)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:28](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L28)
 
 ***
 
 ### select()
 
-> **select**: (`value`) => `void`
+```ts
+select: (value) => void;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:23](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L23)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:23](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L23)
 
 Used for insert an annotation instead a triggered value.
 
 #### Parameters
 
-##### value
-
-###### meta?
-
-`string`
-
-###### value
-
-`string`
+| Parameter | Type |
+| ------ | ------ |
+| `value` | \{ `meta?`: `string`; `value`: `string`; \} |
+| `value.meta?` | `string` |
+| `value.value` | `string` |
 
 #### Returns
 
@@ -69,16 +73,22 @@ Used for insert an annotation instead a triggered value.
 
 ### style
 
-> **style**: `object`
+```ts
+style: object;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:12](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L12)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:12](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L12)
 
 Style with caret absolute position. Used for placing an overlay.
 
 #### left
 
-> **left**: `number`
+```ts
+left: number;
+```
 
 #### top
 
-> **top**: `number`
+```ts
+top: number;
+```

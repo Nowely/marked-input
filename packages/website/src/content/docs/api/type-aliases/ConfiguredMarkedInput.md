@@ -5,16 +5,15 @@ prev: false
 title: "ConfiguredMarkedInput"
 ---
 
-> **ConfiguredMarkedInput**\<`TMarkProps`, `TOverlayProps`\> = `FunctionComponent`\<[`MarkedInputProps`](/api/interfaces/markedinputprops/)\<`TMarkProps`, `TOverlayProps`\>\>
+```ts
+type ConfiguredMarkedInput<TMarkProps, TOverlayProps> = FunctionComponent<MarkedInputProps<TMarkProps, TOverlayProps>>;
+```
 
-Defined in: [markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L74)
+Defined in: [markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L74)
 
 ## Type Parameters
 
-### TMarkProps
-
-`TMarkProps` = [`MarkProps`](/api/interfaces/markprops/)
-
-### TOverlayProps
-
-`TOverlayProps` = [`OverlayProps`](/api/interfaces/overlayprops/)
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |

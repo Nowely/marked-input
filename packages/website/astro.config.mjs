@@ -15,8 +15,14 @@ export default defineConfig({
 					output: 'api',
 					watch: true,
 					sidebar: {
-						label: 'API Reference',
+						label: 'API',
 						collapsed: false,
+					},
+					typeDoc: {
+						useCodeBlocks: true,
+						parametersFormat: 'table',
+						classPropertiesFormat: 'table',
+						interfacePropertiesFormat: 'list',
 					},
 				}),
 			],
@@ -61,7 +67,6 @@ export default defineConfig({
 						{ label: 'Autocomplete', slug: 'examples/autocomplete' },
 					],
 				},
-				typeDocSidebarGroup,
 				{
 					label: 'Advanced',
 					items: [
@@ -76,6 +81,7 @@ export default defineConfig({
 						{ label: 'Getting Help', slug: 'reference/getting-help' },
 					],
 				},
+				typeDocSidebarGroup,
 			],
 			customCss: ['./src/styles/global.css'],
 		}),

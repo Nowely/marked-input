@@ -5,9 +5,11 @@ prev: false
 title: "useOverlay"
 ---
 
-> **useOverlay**(): [`OverlayHandler`](/api/interfaces/overlayhandler/)
+```ts
+function useOverlay(): OverlayHandler;
+```
 
-Defined in: [markput/src/utils/hooks/useOverlay.tsx:31](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/utils/hooks/useOverlay.tsx#L31)
+Defined in: [markput/src/utils/hooks/useOverlay.tsx:31](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/utils/hooks/useOverlay.tsx#L31)
 
 ## Returns
 

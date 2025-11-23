@@ -5,27 +5,26 @@ prev: false
 title: "MarkedInputComponent"
 ---
 
-Defined in: [markput/src/components/MarkedInput.tsx:75](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/components/MarkedInput.tsx#L75)
+Defined in: [markput/src/components/MarkedInput.tsx:75](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/components/MarkedInput.tsx#L75)
 
-> **MarkedInputComponent**\<`TMarkProps`, `TOverlayProps`\>(`props`): `Element` \| `null`
+```ts
+MarkedInputComponent<TMarkProps, TOverlayProps>(props): Element | null;
+```
 
-Defined in: [markput/src/components/MarkedInput.tsx:76](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/components/MarkedInput.tsx#L76)
+Defined in: [markput/src/components/MarkedInput.tsx:76](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/components/MarkedInput.tsx#L76)
 
 ## Type Parameters
 
-### TMarkProps
-
-`TMarkProps` = `any`
-
-### TOverlayProps
-
-`TOverlayProps` = [`OverlayProps`](/api/interfaces/overlayprops/)
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TMarkProps` | `any` |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Parameters
 
-### props
-
-[`MarkedInputProps`](/api/interfaces/markedinputprops/)\<`TMarkProps`, `TOverlayProps`\>
+| Parameter | Type |
+| ------ | ------ |
+| `props` | [`MarkedInputProps`](/api/interfaces/markedinputprops/)\<`TMarkProps`, `TOverlayProps`\> |
 
 ## Returns
 
@@ -35,6 +34,8 @@ Defined in: [markput/src/components/MarkedInput.tsx:76](https://github.com/Nowel
 
 ### displayName?
 
-> `optional` **displayName**: `string`
+```ts
+optional displayName: string;
+```
 
-Defined in: [markput/src/components/MarkedInput.tsx:80](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/components/MarkedInput.tsx#L80)
+Defined in: [markput/src/components/MarkedInput.tsx:80](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/components/MarkedInput.tsx#L80)

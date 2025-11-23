@@ -5,7 +5,7 @@ prev: false
 title: "Option"
 ---
 
-Defined in: [markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L48)
+Defined in: [markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L48)
 
 React-specific markup option for defining mark behavior and styling.
 
@@ -25,21 +25,20 @@ const option: Option = {
 
 ## Type Parameters
 
-### TMarkProps
-
-`TMarkProps` = [`MarkProps`](/api/interfaces/markprops/)
-
-### TOverlayProps
-
-`TOverlayProps` = [`OverlayProps`](/api/interfaces/overlayprops/)
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Properties
 
 ### markup?
 
-> `optional` **markup**: [`Markup`](/api/type-aliases/markup/)
+```ts
+optional markup: Markup;
+```
 
-Defined in: [core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/shared/types.ts#L35)
+Defined in: [core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/shared/types.ts#L35)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
@@ -68,28 +67,36 @@ Placeholder types:
 
 #### Inherited from
 
-`CoreOption.markup`
+```ts
+CoreOption.markup
+```
 
 ***
 
 ### slotProps?
 
-> `optional` **slotProps**: `object`
+```ts
+optional slotProps: object;
+```
 
-Defined in: [markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L61)
+Defined in: [markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L61)
 
 Props for slot components.
 
 #### mark?
 
-> `optional` **mark**: `TMarkProps` \| (`props`) => `TMarkProps`
+```ts
+optional mark: TMarkProps | (props) => TMarkProps;
+```
 
 Props for the mark component.
 Can be a static object or a function that transforms MarkProps.
 
 #### overlay?
 
-> `optional` **overlay**: `TOverlayProps`
+```ts
+optional overlay: TOverlayProps;
+```
 
 Props for the overlay component.
 
@@ -97,20 +104,26 @@ Props for the overlay component.
 
 ### slots?
 
-> `optional` **slots**: `object`
+```ts
+optional slots: object;
+```
 
-Defined in: [markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/types.ts#L52)
+Defined in: [markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/types.ts#L52)
 
 Per-option slot components.
 
 #### mark?
 
-> `optional` **mark**: `ComponentType`\<`TMarkProps`\>
+```ts
+optional mark: ComponentType<TMarkProps>;
+```
 
 Mark component for this option.
 
 #### overlay?
 
-> `optional` **overlay**: `ComponentType`\<`TOverlayProps`\>
+```ts
+optional overlay: ComponentType<TOverlayProps>;
+```
 
 Overlay component for this option.

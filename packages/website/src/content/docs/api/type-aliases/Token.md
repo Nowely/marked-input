@@ -5,6 +5,10 @@ prev: false
 title: "Token"
 ---
 
-> **Token** = [`TextToken`](/api/interfaces/texttoken/) \| [`MarkToken`](/api/interfaces/marktoken/)
+```ts
+type Token = 
+  | TextToken
+  | MarkToken;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:4](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/types.ts#L4)
+Defined in: [core/src/features/parsing/ParserV2/types.ts:4](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/types.ts#L4)

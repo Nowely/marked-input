@@ -5,35 +5,23 @@ prev: false
 title: "annotate"
 ---
 
-> **annotate**(`markup`, `params`): `string`
+```ts
+function annotate(markup, params): string;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/utils/annotate.ts:18](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/utils/annotate.ts#L18)
+Defined in: [core/src/features/parsing/ParserV2/utils/annotate.ts:18](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/utils/annotate.ts#L18)
 
 Make annotation from the markup for ParserV2
 
 ## Parameters
 
-### markup
-
-[`Markup`](/api/type-aliases/markup/)
-
-Markup pattern with __value__, __meta__, and/or __nested__ placeholders
-
-### params
-
-Object with optional value, meta, and nested strings
-
-#### meta?
-
-`string`
-
-#### nested?
-
-`string`
-
-#### value?
-
-`string`
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `markup` | [`Markup`](/api/type-aliases/markup/) | Markup pattern with __value__, __meta__, and/or __nested__ placeholders |
+| `params` | \{ `meta?`: `string`; `nested?`: `string`; `value?`: `string`; \} | Object with optional value, meta, and nested strings |
+| `params.meta?` | `string` | - |
+| `params.nested?` | `string` | - |
+| `params.value?` | `string` | - |
 
 ## Returns
 

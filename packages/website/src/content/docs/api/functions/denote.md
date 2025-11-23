@@ -5,31 +5,24 @@ prev: false
 title: "denote"
 ---
 
-> **denote**(`value`, `callback`, `markups`): `string`
+```ts
+function denote(
+   value, 
+   callback, 
+   markups): string;
+```
 
-Defined in: [core/src/features/parsing/ParserV2/utils/denote.ts:20](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/core/src/features/parsing/ParserV2/utils/denote.ts#L20)
+Defined in: [core/src/features/parsing/ParserV2/utils/denote.ts:20](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/core/src/features/parsing/ParserV2/utils/denote.ts#L20)
 
 Transform annotated text to another text by recursively processing all tokens
 
 ## Parameters
 
-### value
-
-`string`
-
-Annotated text to process
-
-### callback
-
-(`mark`) => `string`
-
-Function to transform each MarkToken
-
-### markups
-
-[`Markup`](/api/type-aliases/markup/)[]
-
-Array of markup patterns to parse
+| Parameter | Type | Description |
+| ------ | ------ | ------ |
+| `value` | `string` | Annotated text to process |
+| `callback` | (`mark`) => `string` | Function to transform each MarkToken |
+| `markups` | [`Markup`](/api/type-aliases/markup/)[] | Array of markup patterns to parse |
 
 ## Returns
 

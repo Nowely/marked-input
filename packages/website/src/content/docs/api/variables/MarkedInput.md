@@ -5,6 +5,8 @@ prev: false
 title: "MarkedInput"
 ---
 
-> `const` **MarkedInput**: [`MarkedInputComponent`](/api/interfaces/markedinputcomponent/)
+```ts
+const MarkedInput: MarkedInputComponent;
+```
 
-Defined in: [markput/src/components/MarkedInput.tsx:93](https://github.com/Nowely/marked-input/blob/e56ea7644eec9f0085392a774d1029c257015999/packages/markput/src/components/MarkedInput.tsx#L93)
+Defined in: [markput/src/components/MarkedInput.tsx:93](https://github.com/Nowely/marked-input/blob/aae09b7351f8965355f759c8665c77d5cadbc14f/packages/markput/src/components/MarkedInput.tsx#L93)
