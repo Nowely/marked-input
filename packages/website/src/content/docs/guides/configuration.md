@@ -735,4 +735,4 @@ markup: '@[__value__]'
 
 ---
 
-**Questions?** Check the [FAQ](#) or ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).
+**Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

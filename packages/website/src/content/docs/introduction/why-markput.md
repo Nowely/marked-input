@@ -88,4 +88,4 @@ The framework-agnostic core library containing the parser, tokenizer, and state 
 
 ---
 
-**Questions?** Check out the [FAQ](#) or [open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.
+**Questions?** [Open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.

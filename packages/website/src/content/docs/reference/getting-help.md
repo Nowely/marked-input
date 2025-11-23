@@ -15,7 +15,6 @@ Before reaching out, try these steps first:
 - **[Getting Started](../introduction/getting-started)** - Setup and dependencies
 - **[Quick Start](../introduction/quick-start)** - Basic usage guide
 - **[Core Concepts](../introduction/core-concepts)** - Understanding how Markput works
-- **[FAQ](./faq)** - Frequently asked questions
 
 ### 2. Search Existing Issues
 
@@ -388,7 +387,6 @@ All interactions should follow the [Code of Conduct](https://github.com/Nowely/m
 - 💡 [Request a Feature](https://github.com/Nowely/marked-input/discussions/new?category=ideas)
 - ❓ [Ask a Question](https://github.com/Nowely/marked-input/discussions/new?category=q-a)
 - 📖 [View Documentation](../introduction/why-markput)
-- ❓ [FAQ](./faq)
 
 ---
 

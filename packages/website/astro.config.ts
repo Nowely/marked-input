@@ -55,11 +55,11 @@ const sidebarConfig = [
 	{
 		label: 'Reference',
 		items: [
-			{label: 'FAQ', slug: 'reference/faq', badge: wipBadge},
 			{label: 'Getting Help', slug: 'reference/getting-help', badge: wipBadge},
 		],
 	},
 	typeDocSidebarGroup,
+	{label: 'Comparisons', slug: 'comparisons', badge: wipBadge},
 ]
 
 const filterDevItems = (items: any[]) => {
