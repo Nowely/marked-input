@@ -66,7 +66,7 @@ A **token** is the internal representation used by Markput's parser. Your text i
 
 **Token Types:**
 - **TextToken**: Plain text segments
-- **MarkToken**: Annotated segments (rendered as your Mark component)
+- **MarkToken**: Marked segments (rendered as your Mark component)
 
 ## Markup Patterns
 

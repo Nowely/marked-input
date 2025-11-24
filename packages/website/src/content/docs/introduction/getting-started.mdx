@@ -116,7 +116,7 @@ Let's break down what's happening:
 
 1. **Value String**: `'Hello @[World](meta)!'` contains a markup pattern `@[value](meta)`
 2. **MarkedInput Component**: Parses the string and identifies the pattern
-3. **Mark Component**: Renders the annotated part - receives `props.value` ("World") and `props.meta` ("meta")
+3. **Mark Component**: Renders the marked part - receives `props.value` ("World") and `props.meta` ("meta")
 
 The text is automatically parsed, and anything matching the pattern becomes an interactive mark.
 
@@ -124,7 +124,7 @@ The text is automatically parsed, and anything matching the pattern becomes an i
 
 ### Markup Patterns
 
-Markput uses **markup patterns** to identify which parts of text should be annotated. Think of them as templates:
+Markput uses **markup patterns** to identify which parts of text should be marked. Think of them as templates:
 
 - `@[__value__]` - Simple pattern (just a value)
 - `@[__value__](__meta__)` - Pattern with metadata

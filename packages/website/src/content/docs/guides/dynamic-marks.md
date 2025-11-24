@@ -1,6 +1,6 @@
 ---
 title: Dynamic Marks
-description: Build interactive React marks - useMark hook tutorial for editable, removable, focusable mentions and annotations
+description: Build interactive React marks - useMark hook tutorial for editable, removable, focusable mentions and marks
 keywords: [useMark hook, interactive marks, editable, removable, focusable, mark state, event handling]
 ---
 

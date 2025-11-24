@@ -1,7 +1,7 @@
 ---
 title: Why Markput?
 description: Lightweight React library for mentions, hashtags, and slash commands using plain text markup instead of heavy HTML editors
-keywords: [markput, react mentions, text annotations, lightweight editor, slash commands]
+keywords: [markput, react mentions, marks, lightweight editor, slash commands]
 ---
 
 Markput is a React component library for building editors with **custom markup**. It renders plain text patterns as React components, enabling features like mentions, hashtags, and slash commands.

@@ -4,7 +4,7 @@ description: Nested marks tutorial - hierarchical text structures, __nested__ pl
 keywords: [nested marks, hierarchical structures, token tree, children, markdown, HTML-like tags, nesting]
 ---
 
-Nested marks allow you to create rich, hierarchical text structures where marks can contain other marks. This enables complex formatting scenarios like markdown-style text, HTML-like tags, and multi-level annotations.
+Nested marks allow you to create rich, hierarchical text structures where marks can contain other marks. This enables complex formatting scenarios like markdown-style text, HTML-like tags, and multi-level mark structures.
 
 ## Understanding Nesting
 
@@ -33,7 +33,7 @@ value: '*Hello **world***'
 | **Content Type** | Plain text | Supports child marks |
 | **Parsing** | No recursive parsing | Recursive parsing |
 | **Props** | `value` string | `children` ReactNode + `nested` string |
-| **Use Case** | Simple annotations | Hierarchical structures |
+| **Use Case** | Simple marks | Hierarchical structures |
 
 ## Enabling Nested Marks
 
