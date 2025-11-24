@@ -35,7 +35,7 @@ This process happens automatically when you type, and the result is a fully inte
 
 ### Marks
 
-A **mark** is a special pattern in your text that gets rendered as a React component. Think of it as an "annotation" or "highlight" in the text.
+A **mark** is a special pattern in your text that gets rendered as a React component. It highlights or transforms specific text segments into interactive elements.
 
 ```tsx
 'Hello @[World](meta)!'
