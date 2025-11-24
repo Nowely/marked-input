@@ -4,22 +4,24 @@ description: Lightweight React library for mentions, hashtags, and slash command
 keywords: [markput, react mentions, marks, lightweight editor, slash commands]
 ---
 
-Markput is a React component library for building editors with **custom markup**. It renders plain text patterns as React components, enabling features like mentions, hashtags, and slash commands.
+Markput is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
-**Key difference:** Unlike HTML-based editors, Markput uses plain text with markup patterns like `@[value](meta)`, making it lightweight and easy to integrate with your existing application state.
+**Key difference:** Unlike complex editors (Draft.js, Slate), Markput stores content as **plain text** with markup patterns like `@[value](meta)` — making it trivial to save, serialize, and version control.
 
 ```tsx
-const AlertMark = ({ value, meta }) => (
-  <mark onClick={() => alert(`Clicked user:${meta}`)}>
-    {value}
-  </mark>
-)
+import { MarkedInput } from 'rc-marked-input'
 
-<MarkedInput
-  value="Hello @[World](user:123)!"
-  onChange={setValue}
-  Mark={AlertMark}
-/>
+function App() {
+  const [value, setValue] = useState('Hello @[World]!')
+
+  return (
+    <MarkedInput
+      value={value}
+      onChange={setValue}
+      Mark={props => <mark>{props.value}</mark>}
+    />
+  )
+}
 ```
 
 ## Features
