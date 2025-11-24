@@ -90,4 +90,7 @@ export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedIn
 	)
 }
 
+/**
+ * @function
+ */
 export const MarkedInput = forwardRef(_MarkedInput) as MarkedInputComponent

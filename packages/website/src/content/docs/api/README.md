@@ -24,15 +24,12 @@ title: "rc-marked-input"
 - [Markup](/api/type-aliases/markup/)
 - [Token](/api/type-aliases/token/)
 
-## Variables
-
-- [MarkedInput](/api/variables/markedinput/)
-
 ## Functions
 
 - [annotate](/api/functions/annotate/)
 - [createMarkedInput](/api/functions/createmarkedinput/)
 - [denote](/api/functions/denote/)
+- [MarkedInput](/api/functions/markedinput/)
 - [useListener](/api/functions/uselistener/)
 - [useMark](/api/functions/usemark/)
 - [useOverlay](/api/functions/useoverlay/)
