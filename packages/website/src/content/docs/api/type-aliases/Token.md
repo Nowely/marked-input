@@ -11,4 +11,4 @@ type Token =
   | MarkToken;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:4](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L4)
+Defined in: [packages/core/src/features/parsing/ParserV2/types.ts:4](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L4)

@@ -7,6 +7,7 @@ title: "rc-marked-input"
 
 ## Interfaces
 
+- [ConfiguredMarkedInput](/api/interfaces/configuredmarkedinput/)
 - [MarkedInputComponent](/api/interfaces/markedinputcomponent/)
 - [MarkedInputHandler](/api/interfaces/markedinputhandler/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
@@ -20,7 +21,6 @@ title: "rc-marked-input"
 
 ## Type Aliases
 
-- [ConfiguredMarkedInput](/api/type-aliases/configuredmarkedinput/)
 - [Markup](/api/type-aliases/markup/)
 - [Token](/api/type-aliases/token/)
 
