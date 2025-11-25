@@ -1,0 +1,65 @@
+---
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+---
+
+<Tabs>
+  <TabItem label="Code">
+    <slot name="code" />
+  </TabItem>
+  <TabItem label="Preview">
+    <div class="demo-preview">
+      <slot name="preview" />
+    </div>
+  </TabItem>
+</Tabs>
+
+<style>
+  .demo-preview {
+    padding: 1rem;
+  }
+
+  .demo-preview :global(.marked-input-container) {
+    border: 1px solid var(--sl-color-gray-4);
+    border-radius: 6px;
+    padding: 1rem;
+    min-height: 100px;
+    background: var(--sl-color-bg);
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    outline: none;
+  }
+
+  .demo-preview :global(.marked-input-container:focus) {
+    outline: 2px solid var(--sl-color-accent);
+    outline-offset: 2px;
+  }
+
+  .demo-preview :global(.demo-output) {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--sl-color-gray-6);
+    border-radius: 6px;
+    font-size: 0.875rem;
+  }
+
+  .demo-preview :global(.demo-output-label) {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--sl-color-gray-1);
+  }
+
+  .demo-preview :global(.demo-output-value) {
+    display: block;
+    padding: 0.75rem;
+    background: var(--sl-color-black);
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.813rem;
+    color: var(--sl-color-green);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+</style>
