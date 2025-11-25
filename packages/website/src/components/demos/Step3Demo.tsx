@@ -3,10 +3,10 @@ import {useState, useEffect, type RefObject} from 'react'
 
 const User = ({avatar, login, onClick}: {avatar?: string; login?: string; onClick?: () => void}) => (
 	<span
-		className={`inline-flex items-center gap-2 ${onClick ? '!flex p-2 cursor-pointer hover:bg-gray-100 ' : ''}`}
+		className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`}
 		onClick={onClick}
 	>
-		<img src={avatar} alt="" width={24} height={24} className="rounded-full" />
+		<img src={avatar} alt="" className="rounded-full w-6 h-6" />
 		{login}
 	</span>
 )
@@ -29,7 +29,7 @@ const CustomOverlay = () => {
 			ref={ref as RefObject<HTMLDivElement>}
 			popover="auto"
 			style={{top: style.top, left: style.left}}
-			className="m-0 p-0 border border-gray-200 rounded bg-white max-w-52 shadow-md"
+			className="border border-gray-200 shadow-md"
 		>
 			{users?.map(user => (
 				<User
