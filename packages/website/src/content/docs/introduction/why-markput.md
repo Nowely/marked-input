@@ -30,17 +30,21 @@ Markput is a React component library for building editors with **custom markup**
 
 ## Use Cases
 
-**Perfect for:**
+**Ideal for:**
 
-- **Mention Systems** - Slack-like @mentions, team collaboration, user tagging
-- **Slash Commands** - Notion-like menus, quick actions, command palettes
-- **Hashtag Systems** - Social media #hashtags, topic categorization
-- **Structured Editors** - Variables, placeholders, templating systems
+- **Social features** - @mentions, #hashtags, /commands
+- **Markdown/HTML formatting** - Bold, italic, links, code, custom tags
+- **Custom markup** - Templates, BBCode, domain-specific languages
+- **Lightweight editors** - Plain text + markup patterns approach
 
-**Not for:**
+**Can be built (requires work):**
 
-- **Full WYSIWYG Editors** - For documents with tables and images, use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/)
-- **Basic Text Input** - For simple text without marks, use native `<textarea>`
-- **Code Editors** - For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/)
+- **WYSIWYG editors** - Rich documents with tables and images
+  *(Markput supports this, but requires custom implementation)*
+
+**Not ideal for:**
+
+- **Plain text only** - Use native `<textarea>` if no markup needed
+- **Code editing** - Use [CodeMirror](https://codemirror.net/) for syntax highlighting and LSP
 
 **Questions?** [Open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.
