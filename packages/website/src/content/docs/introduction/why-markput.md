@@ -1,51 +1,34 @@
 ---
 title: Why Markput?
-description: Lightweight React library for mentions, hashtags, and slash commands using plain text markup instead of heavy HTML editors
-keywords: [markput, react mentions, marks, lightweight editor, slash commands]
+description: Lightweight React library for building custom markup text editors with plain text storage and full component control
+keywords: [markput, react mentions, marks, custom markup, text editor, slash commands, autocomplete, typescript]
 ---
 
 Markput is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
 **Simple API, complex possibilities.** Define patterns like `@[__value__](__meta__)`, pass React components — done. Markput handles parsing, rendering, keyboard navigation, and autocomplete. Build @mentions, /commands, or nested formatting in minutes.
 
-```tsx
-import { MarkedInput } from 'rc-marked-input'
+**The Problem**: Building custom text editors usually means choosing between:
+- **Simple but limited** (basic input + regex)
+- **Powerful but complex** (Draft.js, Slate with steep learning curves)
 
-function App() {
-  const [value, setValue] = useState('Hello @[World](id:123)!')
+**Our Philosophy**: You shouldn't have to choose. Markput combines:
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={props => <mark>{props.value}</mark>}
-    />
-  )
-}
-```
+- **Simple API**: Define patterns like `@[__value__]`, pass components — done.
+- **No framework overhead**: Your React components work as-is, no adapters.
+- **Debuggable state**: Plain text strings, not complex JSON schemas.
+- **Scale naturally**: Start with @mentions, add nested formatting later — same API.
 
 ## Features
 
 - **Component-First**: Marks are your components - full control, no constraints.
 - **Flexible Patterns**: Custom markup syntax - markdown, HTML-like, or your own.
-- **Dynamic Marks**: Interactive with editing, removing, focusing, and custom actions.
+- **Dynamic Marks**: Interactive marks with editing, removing, focusing, and custom actions.
 - **Overlay System**: Built-in suggestions or fully custom overlays.
 - **Nested Marks**: Hierarchical structures - marks inside marks.
 - **Zero Dependency**: Lightweight, no external dependencies.
 - **Plain Text State**: Simple string storage - easy to save and version.
 - **TypeScript-First**: Full type safety included.
-
-## Design Principles
-
-Markput was built with clear principles to solve real problems in building custom text editors.
-
-**Markput is…**
-
-- **Simple by default**: Start with 3 lines of code, scale to complex interactions.
-- **Component-first**: Your React components, your styling, your behavior — no adapters.
-- **Flexible**: Define any markup pattern — not locked into mentions or hashtags.
-- **Lightweight**: Zero dependencies, plain text storage, minimal overhead.
-- **Developer-friendly**: TypeScript-first, clear APIs, no hidden magic.
 
 ## Use Cases
 
