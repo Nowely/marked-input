@@ -12,10 +12,10 @@ Markput is a React component library for building editors with **custom markup**
 
 **Our Philosophy**: You shouldn't have to choose. Markput combines:
 
-- **Simple API**: Define patterns like `@[__value__](__meta__)`, pass components — done.
+- **Simple API**: Define patterns like `@[__value__](__meta__)`, pass components - done.
 - **No framework overhead**: Your React components work as-is, no adapters.
 - **Debuggable state**: Plain text strings, not complex JSON schemas.
-- **Scale naturally**: Start with @mentions, add nested formatting later — same API.
+- **Scale naturally**: Start with @mentions, add nested formatting later - same API.
 
 ## Features
 
