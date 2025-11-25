@@ -37,7 +37,7 @@ Markput is a React component library for building editors with **custom markup**
 - **Hashtag Systems** - Social media #hashtags, topic categorization
 - **Structured Editors** - Variables, placeholders, templating systems
 
-**Not ideal for:**
+**Not for:**
 
 - **Full WYSIWYG Editors** - For documents with tables and images, use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/)
 - **Basic Text Input** - For simple text without marks, use native `<textarea>`
