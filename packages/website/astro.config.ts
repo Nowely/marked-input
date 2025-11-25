@@ -11,7 +11,7 @@ const sidebarConfig = [
 	{
 		label: 'Introduction',
 		items: [
-			{label: 'Why Markput?', slug: 'introduction/why-markput', badge: wipBadge},
+			{label: 'Why Markput?', slug: 'introduction/why-markput'},
 			{label: 'Getting Started', slug: 'introduction/getting-started', badge: wipBadge},
 			{label: 'How It Works', slug: 'introduction/how-it-works', badge: wipBadge},
 		],
