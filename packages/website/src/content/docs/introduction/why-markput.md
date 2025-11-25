@@ -47,4 +47,4 @@ Markput is a React component library for building editors with **custom markup**
 - **Plain text only** - Use native `<textarea>` if no markup needed
 - **Code editing** - Use [CodeMirror](https://codemirror.net/) for syntax highlighting and LSP
 
-**Questions?** [Open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.
+**Have questions or found a bug?** [Start a discussion](https://github.com/Nowely/marked-input/discussions) or [open an issue](https://github.com/Nowely/marked-input/issues) on GitHub.
