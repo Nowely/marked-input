@@ -6,13 +6,13 @@ keywords: [markput, react mentions, marks, lightweight editor, slash commands]
 
 Markput is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
-**Key difference:** Unlike complex editors (Draft.js, Slate), Markput stores content as **plain text** with markup patterns like `@[value](meta)` — making it trivial to save, serialize, and version control.
+**Simple API, complex possibilities.** Define patterns like `@[__value__](__meta__)`, pass React components — done. Markput handles parsing, rendering, keyboard navigation, and autocomplete. Build @mentions, /commands, or nested formatting in minutes.
 
 ```tsx
 import { MarkedInput } from 'rc-marked-input'
 
 function App() {
-  const [value, setValue] = useState('Hello @[World]!')
+  const [value, setValue] = useState('Hello @[World](id:123)!')
 
   return (
     <MarkedInput
@@ -29,8 +29,8 @@ function App() {
 | Feature                | Description                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------------- |
 | **Component-First**    | Marks are React components, giving you full control over rendering and behavior.      |
-| **Plain Text State**   | State is a string with markup (`@[value](meta)`). Easy to serialize, test, and store. |
-| **Zero Dependencies**  | Lightweight (~20KB) with no external dependencies.                                    |
+| **Plain Text State**   | State is a string with your markup. Easy to serialize, test, and store. |
+| **Zero Dependencies**  | Lightweight with no external dependencies.                                            |
 | **TypeScript-First**   | Written in TypeScript with comprehensive type definitions.                            |
 | **Flexible Patterns**  | Define your own markup patterns - markdown, HTML-like, etc.                           |
 | **Dynamic Marks**      | Support for editable, removable, and focusable marks.                                 |
