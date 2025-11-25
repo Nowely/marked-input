@@ -26,14 +26,14 @@ function App() {
 
 ## Features
 
-- **Component-First** - Marks are your components. Full control over rendering and behavior.
-- **Flexible Patterns** - Define your own markup patterns - markdown, HTML-like, etc.
-- **Dynamic Marks** - Marks can be edited, removed, focused, and trigger custom interactions.
-- **Overlay System** - Trigger-based overlays with built-in suggestions or custom components.
-- **Nested Marks** - Create hierarchical structures with marks inside marks.
-- **Zero Dependency** - Lightweight with no external dependencies.
-- **Plain Text State** - State is a string with your markup.
-- **TypeScript-First** - Written in TypeScript with comprehensive type definitions.
+- **Component-First**: Marks are your components - full control, no constraints.
+- **Flexible Patterns**: Custom markup syntax - markdown, HTML-like, or your own.
+- **Dynamic Marks**: Interactive with editing, removing, focusing, and custom actions.
+- **Overlay System**: Built-in suggestions or fully custom overlays.
+- **Nested Marks**: Hierarchical structures - marks inside marks.
+- **Zero Dependency**: Lightweight, no external dependencies.
+- **Plain Text State**: Simple string storage - easy to save and version.
+- **TypeScript-First**: Full type safety included.
 
 ## When to Use Markput?
 
