@@ -5,11 +5,13 @@ keywords: [installation, setup, quick start, react component, mentions editor, a
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
-import DemoWrapper from '../../../components/demos/DemoWrapper.astro';
+import CodePreview from '../../../components/demos/CodePreview.astro';
 import { Step1Demo } from '../../../components/demos/Step1Demo';
-import { BasicDemo } from '../../../components/demos/BasicDemo';
+import { Step2Demo } from '../../../components/demos/Step2Demo';
+import { Step3Demo } from '../../../components/demos/Step3Demo';
 import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
-import basicDemoRaw from '../../../components/demos/BasicDemo.tsx?raw';
+import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw';
+import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw';
 
 Install Markput and build your first **@mention editor** with autocomplete in minutes.
 
@@ -44,27 +46,37 @@ Install Markput using your preferred package manager:
 
 ## Your First Editor
 
-Let's build a mention editor with autocomplete in two steps.
+Let's build a mention editor with autocomplete in three steps.
 
-### Step 1: Basic Rendering
+### Step 1: Render Marks
 
-First, create a simple editor that renders mentions:
+Create an editor that renders mentions. Click the mention to see it's interactive:
 
-<DemoWrapper code={step1DemoRaw}>
+<CodePreview code={step1DemoRaw}>
   <Step1Demo client:visible />
-</DemoWrapper>
+</CodePreview>
 
-The text `@[World](meta)` is parsed and rendered as a styled `<Mark>` component.
+The text `@[World](user:123)` is parsed and rendered as a `<Mark>` component. Since Mark is just a React component, you can add event handlers like `onClick`.
 
 ### Step 2: Add Autocomplete
 
 Now add the `options` prop to show suggestions when typing `@`:
 
-<DemoWrapper code={basicDemoRaw}>
-  <BasicDemo client:visible />
-</DemoWrapper>
+<CodePreview code={step2DemoRaw}>
+  <Step2Demo client:visible />
+</CodePreview>
 
-Type `@` to see the autocomplete dropdown!
+Type `@` to see the autocomplete dropdown! The built-in `Suggestions` component handles the UI.
+
+### Step 3: Custom Overlay
+
+Create your own autocomplete UI using the `useOverlay` hook:
+
+<CodePreview code={step3DemoRaw}>
+  <Step3Demo client:visible />
+</CodePreview>
+
+The `useOverlay` hook provides `match` (filtered data), `select` (choose item), `style` (positioning), and `ref`. You have full control over the overlay UI.
 
 ## How It Works
 
@@ -89,35 +101,6 @@ const [value, setValue] = useState('Hello @[Alice](user:1)!')
 ```
 
 Easy to save, version, and work with any backend.
-
-## Making Marks Interactive
-
-Your Mark component can do anything a React component can:
-
-```tsx
-const Mention = ({ value, meta }) => (
-  <button
-    onClick={() => alert(`User ID: ${meta}`)}
-    style={{
-      background: '#e3f2fd',
-      border: '1px solid #2196f3',
-      borderRadius: '4px',
-      padding: '2px 6px',
-      cursor: 'pointer',
-    }}
-  >
-    @{value}
-  </button>
-)
-
-<MarkedInput
-  value="Click on @[Alice](user:1)!"
-  onChange={setValue}
-  Mark={Mention}
-/>
-```
-
-Clicks, hovers, custom styling - full React component control.
 
 ## Common Patterns
 
