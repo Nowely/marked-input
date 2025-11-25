@@ -1,6 +1,8 @@
 import {MarkedInput, useOverlay} from 'rc-marked-input'
 import {useState} from 'react'
 
+const Mark = ({value}: {value: string}) => <mark>@{value}</mark>
+
 const CustomOverlay = () => {
 	const overlay = useOverlay()
 
@@ -22,13 +24,11 @@ export function Step3Demo() {
 		<MarkedInput
 			value={value}
 			onChange={setValue}
-			Mark={props => <mark>@{props.value}</mark>}
+			Mark={Mark}
+			Overlay={CustomOverlay}
 			options={[
 				{
 					markup: '@[__value__](__meta__)',
-					slots: {
-						overlay: CustomOverlay,
-					},
 					slotProps: {
 						overlay: {
 							trigger: '@',
