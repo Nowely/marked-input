@@ -1,7 +1,7 @@
 ---
 title: Getting Started
 description: Install Markput and build your first @mention editor with autocomplete in minutes
-keywords: [installation, setup, quick start, react component, mentions editor, autocomplete, typescript]
+keywords: [installation, setup, quick start, react component, mentions editor, autocomplete]
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
@@ -50,7 +50,7 @@ Let's build a mention editor with autocomplete in three steps.
 
 ### Step 1: Render Marks
 
-Create an editor that renders mentions. Click the mention to see it's interactive:
+Create an editor that renders mentions. Click the mention to see it in action:
 
 <CodePreview code={step1DemoRaw}>
   <Step1Demo client:visible />
@@ -60,7 +60,7 @@ Create an editor that renders mentions. Click the mention to see it's interactiv
 
 The text `@[World](user:123)` contains a **markup** that Markput recognizes and parses:
 
-1. **Pattern**: `@[__value__](__meta__)` defines the structure
+1. **Markup**: `@[__value__](__meta__)` defines the structure
 2. **Parsing**: Markput extracts `value="World"` and `meta="user:123"`
 3. **Rendering**: Your `Mark` component receives these props and renders the mention
 
