@@ -8,6 +8,8 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
 import DemoWrapper from '../../../components/demos/DemoWrapper.astro';
 import { Step1Demo } from '../../../components/demos/Step1Demo';
 import { BasicDemo } from '../../../components/demos/BasicDemo';
+import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
+import basicDemoRaw from '../../../components/demos/BasicDemo.tsx?raw';
 
 Install Markput and build your first **@mention editor** with autocomplete in minutes.
 
@@ -48,30 +50,8 @@ Let's build a mention editor with autocomplete in two steps.
 
 First, create a simple editor that renders mentions:
 
-<DemoWrapper>
-  <Step1Demo client:visible slot="preview" />
-  <Fragment slot="code">
-    ```tsx
-    import { MarkedInput } from 'rc-marked-input'
-    import { useState } from 'react'
-
-    function App() {
-      const [value, setValue] = useState('Hello @[World](meta)!')
-
-      return (
-        <MarkedInput
-          value={value}
-          onChange={setValue}
-          Mark={(props) => (
-            <span style={{ color: '#2196f3', fontWeight: 'bold' }}>
-              @{props.value}
-            </span>
-          )}
-        />
-      )
-    }
-    ```
-  </Fragment>
+<DemoWrapper code={step1DemoRaw}>
+  <Step1Demo client:visible />
 </DemoWrapper>
 
 The text `@[World](meta)` is parsed and rendered as a styled `<Mark>` component.
@@ -80,45 +60,8 @@ The text `@[World](meta)` is parsed and rendered as a styled `<Mark>` component.
 
 Now add the `options` prop to show suggestions when typing `@`:
 
-<DemoWrapper>
-  <BasicDemo client:visible slot="preview" />
-  <Fragment slot="code">
-    ```tsx
-    import { MarkedInput } from 'rc-marked-input'
-    import { useState } from 'react'
-
-    function App() {
-      const [value, setValue] = useState('Type @ to mention someone!')
-
-      return (
-        <MarkedInput
-          value={value}
-          onChange={setValue}
-          Mark={(props) => (
-            <span style={{
-              color: '#2196f3',
-              fontWeight: 'bold',
-              backgroundColor: '#e3f2fd',
-              padding: '2px 6px',
-              borderRadius: '4px',
-            }}>
-              @{props.value}
-            </span>
-          )}
-          options={[{
-            markup: '@[__value__](__meta__)',
-            slotProps: {
-              overlay: {
-                trigger: '@',
-                data: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
-              },
-            },
-          }]}
-        />
-      )
-    }
-    ```
-  </Fragment>
+<DemoWrapper code={basicDemoRaw}>
+  <BasicDemo client:visible />
 </DemoWrapper>
 
 Type `@` to see the autocomplete dropdown!

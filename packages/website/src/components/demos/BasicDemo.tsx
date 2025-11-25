@@ -36,7 +36,6 @@ export function BasicDemo() {
         slotProps={{
           container: {
             className: 'marked-input-container',
-            placeholder: 'Type @ to see autocomplete...',
           },
         }}
       />
