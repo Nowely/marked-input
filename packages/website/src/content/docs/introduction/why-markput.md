@@ -26,16 +26,14 @@ function App() {
 
 ## Features
 
-| Feature                | Description                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| **Component-First**    | Marks are React components, giving you full control over rendering and behavior.      |
-| **Plain Text State**   | State is a string with your markup. Easy to serialize, test, and store. |
-| **Zero Dependencies**  | Lightweight with no external dependencies.                                            |
-| **TypeScript-First**   | Written in TypeScript with comprehensive type definitions.                            |
-| **Flexible Patterns**  | Define your own markup patterns - markdown, HTML-like, etc.                           |
-| **Dynamic Marks**      | Support for editable, removable, and focusable marks.                                 |
-| **Overlay System**     | Built-in autocomplete and suggestion UI for mentions and commands.                    |
-| **Complex Structures** | Support for hierarchical marks and nested elements.                                   |
+- **Component-First** - Marks are React components, giving you full control over rendering and behavior.
+- **Flexible Patterns** - Define your own markup patterns - markdown, HTML-like, etc.
+- **Dynamic Marks** - Support for editable, removable, and focusable marks.
+- **Overlay System** - Built-in autocomplete and suggestion UI for mentions and commands.
+- **Nested Marks** - Support for hierarchical marks and nested elements.
+- **Zero Dependency** - Lightweight with no external dependencies.
+- **Plain Text State** - State is a string with your markup.
+- **TypeScript-First** - Written in TypeScript with comprehensive type definitions.
 
 ## When to Use Markput?
 
