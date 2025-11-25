@@ -56,7 +56,19 @@ Create an editor that renders mentions. Click the mention to see it's interactiv
   <Step1Demo client:visible />
 </CodePreview>
 
-The text `@[World](user:123)` is parsed and rendered as a `<Mark>` component. Since Mark is just a React component, you can add event handlers like `onClick`.
+**How it works:**
+
+The text `@[World](user:123)` contains a **markup** that Markput recognizes and parses:
+
+1. **Pattern**: `@[__value__](__meta__)` defines the structure
+2. **Parsing**: Markput extracts `value="World"` and `meta="user:123"`
+3. **Rendering**: Your `Mark` component receives these props and renders the mention
+
+Since `Mark` is just a React component, you can add event handlers, styles, or any other React features. Your editor state remains a simple string—easy to save, version, and work with any backend:
+
+```tsx
+const [value, setValue] = useState('Hello @[World](user:123)!')
+```
 
 ### Step 2: Add Autocomplete
 
@@ -66,7 +78,15 @@ Now add the `options` prop to show suggestions when typing `@`:
   <Step2Demo client:visible />
 </CodePreview>
 
-Type `@` to see the autocomplete dropdown! The built-in `Suggestions` component handles the UI.
+**How it works:**
+
+The `options` prop configures an **overlay**—an autocomplete menu that appears when you type a trigger character:
+
+- **`markup`**: The pattern that will be inserted when user selects an item
+- **`trigger`**: Character that opens the overlay (in this case `@`)
+- **`data`**: Array of suggestions to show
+
+When you type `@`, Markput automatically shows the built-in `Suggestions` component with filtered results. Selecting an item inserts the markup with the chosen value.
 
 ### Step 3: Custom Overlay
 
@@ -76,31 +96,16 @@ Create your own autocomplete UI using the `useOverlay` hook:
   <Step3Demo client:visible />
 </CodePreview>
 
-The `useOverlay` hook provides `match` (filtered data), `select` (choose item), `style` (positioning), and `ref`. You have full control over the overlay UI.
+**How it works:**
 
-## How It Works
+The `useOverlay` hook gives you full control over the overlay UI. It provides:
 
-Understanding the core concepts:
+- **`match`**: Current search query and matched text information
+- **`select`**: Function to insert the selected item with `{value, meta}`
+- **`style`**: Positioning coordinates (`top`, `left`) for the overlay
+- **`ref`**: Reference to attach to your overlay element
 
-| Concept | What it is | Example |
-|---------|-----------|---------|
-| **Markup** | Template defining how marks look in text | `@[__value__](__meta__)` |
-| **Mark** | React component rendering the markup | `<Mention user="Alice" />` |
-| **Overlay** | Autocomplete menu triggered by a character | Dropdown when typing `@` |
-
-### The Flow
-
-1. User types: `Hello @[Alice](user:123)`
-2. Markput parses the pattern `@[__value__](__meta__)`
-3. Extracts: `value="Alice"`, `meta="user:123"`
-4. Renders: `<Mark value="Alice" meta="user:123" />`
-
-Your editor state is just a plain string:
-```tsx
-const [value, setValue] = useState('Hello @[Alice](user:1)!')
-```
-
-Easy to save, version, and work with any backend.
+In this example, we fetch GitHub users and use the HTML Popover API for a native popup experience. The overlay automatically positions itself near the cursor and handles keyboard navigation.
 
 ## Common Patterns
 
