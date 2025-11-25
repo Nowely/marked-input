@@ -35,19 +35,31 @@ function App() {
 - **Plain Text State**: Simple string storage - easy to save and version.
 - **TypeScript-First**: Full type safety included.
 
-## When to Use Markput?
+## Design Principles
 
-**Good For:**
+Markput was built with clear principles to solve real problems in building custom text editors.
 
-- **Mention Systems** - Slack-like @mentions, team collaboration, user tagging in comments
+**Markput is…**
+
+- **Simple by default**: Start with 3 lines of code, scale to complex interactions.
+- **Component-first**: Your React components, your styling, your behavior — no adapters.
+- **Flexible**: Define any markup pattern — not locked into mentions or hashtags.
+- **Lightweight**: Zero dependencies, plain text storage, minimal overhead.
+- **Developer-friendly**: TypeScript-first, clear APIs, no hidden magic.
+
+## Use Cases
+
+**Perfect for:**
+
+- **Mention Systems** - Slack-like @mentions, team collaboration, user tagging
 - **Slash Commands** - Notion-like menus, quick actions, command palettes
-- **Hashtag Systems** - Social media #hashtags, topic categorization, content tagging
-- **Structured Editors** - Variables, placeholders, inline tags, templating systems
+- **Hashtag Systems** - Social media #hashtags, topic categorization
+- **Structured Editors** - Variables, placeholders, templating systems
 
-**Consider Alternatives:**
+**Not ideal for:**
 
-- **Full WYSIWYG Editors**: For documents with tables and images, use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/).
-- **Simple Text Input**: For basic text without marks, use a native `<textarea>`.
-- **Code Editors**: For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/).
+- **Full WYSIWYG Editors** - For documents with tables and images, use [ProseMirror](https://prosemirror.net/), [Slate](https://www.slatejs.org/), or [Lexical](https://lexical.dev/)
+- **Basic Text Input** - For simple text without marks, use native `<textarea>`
+- **Code Editors** - For syntax highlighting, use [CodeMirror](https://codemirror.net/) or [Monaco](https://microsoft.github.io/monaco-editor/)
 
 **Questions?** [Open a discussion](https://github.com/Nowely/marked-input/discussions) on GitHub.
