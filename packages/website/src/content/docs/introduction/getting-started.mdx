@@ -107,38 +107,6 @@ The `useOverlay` hook gives you full control over the overlay UI. It provides:
 
 In this example, we fetch GitHub users and use the HTML Popover API for a native popup experience. The overlay automatically positions itself near the cursor and handles keyboard navigation.
 
-## Common Patterns
-
-Markput works with any pattern you define:
-
-| Pattern | Syntax | Use Case |
-|---------|--------|----------|
-| **Mentions** | `@[__value__](__meta__)` | Social features, user tags |
-| **Hashtags** | `#[__value__]` | Categories, search |
-| **Commands** | `/[__value__]` | Command palette |
-| **Bold** | `**__value__**` | Text formatting |
-| **Links** | `[__value__](__meta__)` | Hyperlinks with URLs |
-
-See [all examples](../examples/mention-system) for complete implementations.
-
-## TypeScript Support
-
-Add type safety to your Mark components:
-
-```tsx
-interface MentionProps {
-  value: string
-  meta: string
-}
-
-<MarkedInput<MentionProps>
-  value={value}
-  onChange={setValue}
-  Mark={(props) => {
-    // props.value and props.meta are fully typed
-    return <span data-id={props.meta}>@{props.value}</span>
-  }}
-/>
-```
+---
 
 **Have questions or found a bug?** [Start a discussion](https://github.com/Nowely/marked-input/discussions) or [open an issue](https://github.com/Nowely/marked-input/issues) on GitHub.
