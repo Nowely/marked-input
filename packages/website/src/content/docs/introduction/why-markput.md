@@ -6,15 +6,13 @@ keywords: [markput, react mentions, marks, custom markup, text editor, slash com
 
 Markput is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
-**Simple API, complex possibilities.** Define patterns like `@[__value__](__meta__)`, pass React components — done. Markput handles parsing, rendering, keyboard navigation, and autocomplete. Build @mentions, /commands, or nested formatting in minutes.
-
 **The Problem**: Building custom text editors usually means choosing between:
 - **Simple but limited** (basic input + regex)
 - **Powerful but complex** (Draft.js, Slate with steep learning curves)
 
 **Our Philosophy**: You shouldn't have to choose. Markput combines:
 
-- **Simple API**: Define patterns like `@[__value__]`, pass components — done.
+- **Simple API**: Define patterns like `@[__value__](__meta__)`, pass components — done.
 - **No framework overhead**: Your React components work as-is, no adapters.
 - **Debuggable state**: Plain text strings, not complex JSON schemas.
 - **Scale naturally**: Start with @mentions, add nested formatting later — same API.
