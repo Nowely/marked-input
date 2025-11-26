@@ -43,15 +43,10 @@ const CustomOverlay = () => {
 	)
 }
 
-export function Step3Demo() {
-	const [value, setValue] = useState('Type @ to mention someone!')
-
-	return (
-		<MarkedInput
-			value={value}
-			onChange={setValue}
-			Mark={({value, meta}) => <User avatar={meta} login={value} />}
-			Overlay={CustomOverlay}
-		/>
-	)
-}
+export const Step3Demo = () => (
+	<MarkedInput
+		defaultValue='Type @ to mention someone!'
+		Mark={({value, meta}) => <User avatar={meta} login={value} />}
+		Overlay={CustomOverlay}
+	/>
+)
