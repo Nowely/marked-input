@@ -69,13 +69,9 @@ When Markput encounters `@[World](123)` in the text:
 
 1. **Parses** the markup and extracts: `value="World"`, `meta="123"`
 2. **Renders** your `Mark` component with these props: `<mark onClick={...}>{props.value}</mark>`
-3. **Preserves** the original text in state — just a string, easy to save or send to any backend
+3. **Preserves** the original text as a simple string — easy to save or send to any backend
 
-Since `Mark` is a regular React component, you can style it, add click handlers (like the `onClick` that shows an alert), or use any React features. The editor state remains a simple string:
-
-```tsx
-const [value, setValue] = useState('Hello @[World](123)!')
-```
+Since `Mark` is a regular React component, you can style it, add click handlers (like the `onClick` that shows an alert), or use any React features.
 
 ### Step 2: Add Autocomplete
 
@@ -98,7 +94,7 @@ When you type the trigger character `@`:
 
 1. Markput **detects** the trigger and shows the built-in `Suggestions` component
 2. As you type, suggestions are **filtered** based on your input
-3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup. For simple strings, the item becomes both `value` (visible text) and `meta` (stored data)
+3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup. For simple strings, the item becomes both `value` (visible text) and `meta` (stored data).
 
 The `Mark` component receives `MarkProps` with `value` and `meta` properties. You can import this type for better TypeScript support.
 
