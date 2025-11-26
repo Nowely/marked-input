@@ -4,7 +4,7 @@ description: Install Markput and build your first @mention editor with autocompl
 keywords: [installation, setup, quick start, react component, mentions editor, autocomplete]
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 import CodePreview from '../../../components/demos/CodePreview.astro';
 import { Step1Demo } from '../../../components/demos/Step1Demo';
 import { Step2Demo } from '../../../components/demos/Step2Demo';
@@ -13,7 +13,7 @@ import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
 import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw';
 import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw';
 
-Install Markput and build your first **@mention editor** with autocomplete in minutes.
+Install Markput and build your first **marked text editor** with autocomplete in minutes.
 
 ## Installation
 
@@ -46,11 +46,11 @@ Install Markput using your preferred package manager:
 
 ## Your First Editor
 
-Let's build a mention editor with autocomplete in three steps.
+Let's build a marked text editor with autocomplete in three steps.
 
 ### Step 1: Render Marks
 
-Create an editor that renders mentions. Click the mention to see it in action:
+Render marked text elements. Click a mark to see the interaction:
 
 <CodePreview code={step1DemoRaw}>
   <Step1Demo client:visible />
@@ -58,21 +58,28 @@ Create an editor that renders mentions. Click the mention to see it in action:
 
 **How it works:**
 
-The text `@[World](user:123)` contains a **markup** that Markput recognizes and parses:
+Markput uses a special **markup syntax** to represent interactive elements as plain text:
 
-1. **Markup**: `@[__value__](__meta__)` defines the structure
-2. **Parsing**: Markput extracts `value="World"` and `meta="user:123"`
-3. **Rendering**: Your `Mark` component receives these props and renders the mention
+- **Markup** — a text pattern that encodes structured data: `@[__value__](__meta__)`
+- **Value** — the visible text shown to users (e.g., `World`)
+- **Meta** — hidden metadata for your app (e.g., `123` - user ID)
+- **Mark** — a React component that renders the markup visually
 
-Since `Mark` is just a React component, you can add event handlers, styles, or any other React features. Your editor state remains a simple string—easy to save, version, and work with any backend:
+When Markput encounters `@[World](123)` in the text:
+
+1. **Parses** the markup and extracts: `value="World"`, `meta="123"`
+2. **Renders** your `Mark` component with these props: `<mark onClick={...}>{props.value}</mark>`
+3. **Preserves** the original text in state — just a string, easy to save or send to any backend
+
+Since `Mark` is a regular React component, you can style it, add click handlers (like the `onClick` that shows an alert), or use any React features. The editor state remains a simple string:
 
 ```tsx
-const [value, setValue] = useState('Hello @[World](user:123)!')
+const [value, setValue] = useState('Hello @[World](123)!')
 ```
 
 ### Step 2: Add Autocomplete
 
-Now add the `options` prop to show suggestions when typing `@`:
+Add the `options` prop to enable autocomplete suggestions:
 
 <CodePreview code={step2DemoRaw}>
   <Step2Demo client:visible />
@@ -80,17 +87,24 @@ Now add the `options` prop to show suggestions when typing `@`:
 
 **How it works:**
 
-The `options` prop configures an **overlay**—an autocomplete menu that appears when you type a trigger character:
+The `options` prop enables **autocomplete** functionality by configuring an overlay:
 
-- **`markup`**: The pattern that will be inserted when user selects an item
-- **`trigger`**: Character that opens the overlay (in this case `@`)
-- **`data`**: Array of suggestions to show
+- **Overlay** — a popup menu that appears above the editor when triggered
+- **Trigger** — the character that opens the overlay (here: `@`)
+- **Data** — array of suggestions to display (can be strings like `['Alice', 'Bob']` or objects)
+- **Markup** — template pattern for inserting selected items: `@[__value__](__meta__)`
 
-When you type `@`, Markput automatically shows the built-in `Suggestions` component with filtered results. Selecting an item inserts the markup with the chosen value.
+When you type the trigger character `@`:
+
+1. Markput **detects** the trigger and shows the built-in `Suggestions` component
+2. As you type, suggestions are **filtered** based on your input
+3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup using the item as both value and meta
+
+Keyboard navigation is built-in (↑↓ to navigate, Enter to select, Esc to close).
 
 ### Step 3: Custom Overlay
 
-Create your own autocomplete UI using the `useOverlay` hook:
+Build a custom mention UI with user avatars using the `useOverlay` hook:
 
 <CodePreview code={step3DemoRaw}>
   <Step3Demo client:visible />
@@ -98,11 +112,22 @@ Create your own autocomplete UI using the `useOverlay` hook:
 
 **How it works:**
 
-The `useOverlay` hook gives you full control over the overlay UI. It provides:
+The `useOverlay` hook gives you **complete control** over the overlay UI by providing:
 
-- **`match`**: Current search query and matched text information
-- **`select`**: Function to insert the selected item with `{value, meta}`
-- **`style`**: Positioning coordinates (`top`, `left`) for the overlay
-- **`ref`**: Reference to attach to your overlay element
+- **`match`** — current search state: what the user typed after the trigger (e.g., typing `@joh` gives `match.value = "joh"`)
+- **`select(item)`** — function to insert the selected item as markup. Call it with `{value, meta}`, e.g., `select({value: 'johndoe', meta: 'avatar-url'})`
+- **`style`** — positioning coordinates (`top`, `left`) to place your overlay near the cursor
+- **`ref`** — React ref to attach to your overlay element for proper event handling
 
-In this example, we fetch GitHub users and use the HTML Popover API for a native popup experience. The overlay automatically positions itself near the cursor and handles keyboard navigation.
+This hook handles all the complexity:
+
+1. **Detects** when the user types a trigger character
+2. **Tracks** the search query as they continue typing
+3. **Positions** the overlay dynamically near the cursor
+4. **Inserts** the selected item as markup when you call `select({value, meta})`
+
+In this example, we fetch GitHub users dynamically and store the username as `value` and avatar URL as `meta`. The `Mark` component then uses `meta` to display the avatar image. You can use any UI library or custom component—Markput doesn't impose styling constraints.
+
+<Aside type="caution" title="Browser Compatibility">
+This example uses the [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API), which requires Chrome 114+, Edge 114+, or Safari 17+. For broader browser support, use a regular positioned `div` or a third-party library like [Floating UI](https://floating-ui.com/).
+</Aside>

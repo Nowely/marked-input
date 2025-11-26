@@ -4,7 +4,7 @@ description: Lightweight React library for building custom markup text editors w
 keywords: [markput, react mentions, marks, custom markup, text editor, slash commands, autocomplete, typescript]
 ---
 
-Markput is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
+Markput (marked input) is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
 **The Problem**: Building custom text editors usually means choosing between:
 - **Simple but limited** (basic input + regex)
