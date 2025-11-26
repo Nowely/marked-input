@@ -12,7 +12,7 @@
 	max-height: 186px;
 	overflow-y: auto;
 	padding-left: 0;
-	position: absolute;
+	position: fixed;
 	background: white;
 	width: fit-content;
 	min-width: 100px;
