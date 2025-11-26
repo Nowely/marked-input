@@ -13,7 +13,7 @@ import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
 import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw';
 import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw';
 
-Install Markput and build your first **marked text editor** with autocomplete in minutes.
+Build interactive text with custom markup—quick start in minutes.
 
 ## Installation
 
@@ -87,24 +87,28 @@ Add the `options` prop to enable autocomplete suggestions:
 
 **How it works:**
 
-The `options` prop enables **autocomplete** functionality by configuring an overlay:
+The `options` prop accepts an array of option objects. Each option configures how markup is parsed and how the overlay behaves:
 
-- **Overlay** — a popup menu that appears above the editor when triggered
-- **Trigger** — the character that opens the overlay (here: `@`)
-- **Data** — array of suggestions to display (can be strings like `['Alice', 'Bob']` or objects)
-- **Markup** — template pattern for inserting selected items: `@[__value__](__meta__)`
+- **`markup`** — the pattern used for parsing and inserting marks (same syntax as Step 1)
+- **`slotProps.overlay`** — configuration for the built-in `Suggestions` component:
+  - **`trigger`** — character that opens the overlay (here: `@`)
+  - **`data`** — array of suggestions to display
 
 When you type the trigger character `@`:
 
 1. Markput **detects** the trigger and shows the built-in `Suggestions` component
 2. As you type, suggestions are **filtered** based on your input
-3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup using the item as both value and meta
+3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup. For simple strings, the item becomes both `value` (visible text) and `meta` (stored data)
+
+The `Mark` component receives `MarkProps` with `value` and `meta` properties. You can import this type for better TypeScript support.
 
 Keyboard navigation is built-in (↑↓ to navigate, Enter to select, Esc to close).
 
 ### Step 3: Custom Overlay
 
-Build a custom mention UI with user avatars using the `useOverlay` hook:
+The built-in `Suggestions` component is convenient, but sometimes you need full control over the UI. The `Overlay` prop lets you render a completely custom component, and the `useOverlay` hook provides all the state and actions you need.
+
+Here's a custom mention UI that fetches GitHub users and displays avatars:
 
 <CodePreview code={step3DemoRaw}>
   <Step3Demo client:visible />
@@ -112,21 +116,17 @@ Build a custom mention UI with user avatars using the `useOverlay` hook:
 
 **How it works:**
 
-The `useOverlay` hook gives you **complete control** over the overlay UI by providing:
+The `useOverlay` hook returns an object with everything you need to build a custom overlay:
 
-- **`match`** — current search state: what the user typed after the trigger (e.g., typing `@joh` gives `match.value = "joh"`)
-- **`select(item)`** — function to insert the selected item as markup. Call it with `{value, meta}`, e.g., `select({value: 'johndoe', meta: 'avatar-url'})`
-- **`style`** — positioning coordinates (`top`, `left`) to place your overlay near the cursor
+- **`match`** — current search state with `match.value` containing what the user typed after the trigger
+- **`select`** — function to insert markup: `select({value: string, meta?: string})`
+- **`close`** — function to dismiss the overlay without selecting
+- **`style`** — object with `top` and `left` coordinates for positioning near the cursor
 - **`ref`** — React ref to attach to your overlay element for proper event handling
 
-This hook handles all the complexity:
+The hook handles all the complexity: detecting triggers, tracking the search query, and positioning the overlay. When you call `select({value, meta})`, it inserts the markup and closes the overlay.
 
-1. **Detects** when the user types a trigger character
-2. **Tracks** the search query as they continue typing
-3. **Positions** the overlay dynamically near the cursor
-4. **Inserts** the selected item as markup when you call `select({value, meta})`
-
-In this example, we fetch GitHub users dynamically and store the username as `value` and avatar URL as `meta`. The `Mark` component then uses `meta` to display the avatar image. You can use any UI library or custom component—Markput doesn't impose styling constraints.
+In this example, we fetch GitHub users and store the username as `value` and avatar URL as `meta`. The `Mark` component then uses `meta` to display the avatar. You can use any UI library or custom component. Markput doesn't impose styling constraints.
 
 <Aside type="caution" title="Browser Compatibility">
 This example uses the [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API), which requires Chrome 114+, Edge 114+, or Safari 17+. For broader browser support, use a regular positioned `div` or a third-party library like [Floating UI](https://floating-ui.com/).
