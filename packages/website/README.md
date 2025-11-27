@@ -7,6 +7,7 @@ Documentation site for Markput, built with [Astro](https://astro.build) and [Sta
 ## 📚 Tech Stack Overview
 
 ### Astro Framework
+
 - **Server-first rendering**: Components render on the server, sending minimal JavaScript to the browser
 - **Zero JavaScript by default**: Astro automatically removes unused JavaScript
 - **Content Collections**: Type-safe content management with frontmatter validation
@@ -14,6 +15,7 @@ Documentation site for Markput, built with [Astro](https://astro.build) and [Sta
 - **Multi-framework support**: Can use React, Vue, Svelte, or other frameworks alongside Astro components
 
 ### Starlight Documentation Framework
+
 - **Built on Astro**: Inherits all Astro performance benefits
 - **Documentation-focused**: Pre-configured navigation, search, SEO, and accessibility
 - **i18n ready**: Built-in internationalization support
@@ -21,6 +23,7 @@ Documentation site for Markput, built with [Astro](https://astro.build) and [Sta
 - **Markdown/MDX**: Supports `.md` and `.mdx` with component integration
 
 ### Tailwind CSS
+
 - Utility-first CSS framework for custom styling
 - Configured in `src/styles/global.css`
 
@@ -45,14 +48,14 @@ packages/website/
 
 Run from the project root:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`            | Installs dependencies                            |
-| `pnpm dev`                | Starts local dev server at `localhost:4321`      |
-| `pnpm build`              | Build production site to `./dist/`               |
-| `pnpm preview`            | Preview build locally before deploying           |
-| `pnpm astro ...`          | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help`    | Get help using the Astro CLI                     |
+| Command                | Action                                           |
+| :--------------------- | :----------------------------------------------- |
+| `pnpm install`         | Installs dependencies                            |
+| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
+| `pnpm build`           | Build production site to `./dist/`               |
+| `pnpm preview`         | Preview build locally before deploying           |
+| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
+| `pnpm astro -- --help` | Get help using the Astro CLI                     |
 
 ## 📝 Content Development Guidelines
 
@@ -61,8 +64,8 @@ Run from the project root:
 1. **Location**: All docs go in `src/content/docs/`
 2. **Format**: Use `.md` for simple pages, `.mdx` for pages with components
 3. **Routing**: File path determines URL
-   - `src/content/docs/guide.md` → `/guide`
-   - `src/content/docs/api/overview.md` → `/api/overview`
+    - `src/content/docs/guide.md` → `/guide`
+    - `src/content/docs/api/overview.md` → `/api/overview`
 
 ### Frontmatter Schema
 
@@ -76,6 +79,7 @@ description: Brief description for SEO and previews
 ```
 
 Additional optional fields (configured in `content.config.ts`):
+
 - `sidebar`: Custom sidebar configuration
 - `tableOfContents`: Control TOC visibility
 - `editUrl`: Override edit link
@@ -84,17 +88,21 @@ Additional optional fields (configured in `content.config.ts`):
 ### Working with Images
 
 **Optimized images** (recommended):
+
 ```md
 ![Alt text](../../assets/image.png)
 ```
+
 - Stored in `src/assets/`
 - Automatically optimized by Astro
 - Responsive and format-converted
 
 **Static images**:
+
 ```md
 ![Alt text](/static-image.png)
 ```
+
 - Stored in `public/`
 - Served as-is without optimization
 
@@ -107,7 +115,7 @@ MDX allows importing and using components:
 title: Example
 ---
 
-import MyComponent from '../../components/MyComponent.astro';
+import MyComponent from '../../components/MyComponent.astro'
 
 # Content
 
@@ -120,15 +128,14 @@ import MyComponent from '../../components/MyComponent.astro';
 
 - Global styles: `src/styles/global.css`
 - Use Tailwind utility classes in MDX:
-  ```mdx
-  <div class="bg-blue-500 text-white p-4 rounded">
-    Styled content
-  </div>
-  ```
+    ```mdx
+    <div class="bg-blue-500 text-white p-4 rounded">Styled content</div>
+    ```
 
 ### Custom CSS
 
 Add custom styles in `global.css`:
+
 ```css
 @tailwind base;
 @tailwind components;
@@ -136,7 +143,7 @@ Add custom styles in `global.css`:
 
 /* Custom styles */
 .custom-class {
-  /* ... */
+    /* ... */
 }
 ```
 
@@ -145,6 +152,7 @@ Add custom styles in `global.css`:
 ### Astro Config (`astro.config.mjs`)
 
 Key configuration points:
+
 - **Starlight settings**: Site title, navigation, sidebar
 - **Integrations**: Add UI frameworks or other integrations
 - **Build settings**: Output directory, adapters for deployment
@@ -158,26 +166,31 @@ Key configuration points:
 ## 🚀 Development Best Practices
 
 ### 1. Server-First Mindset
+
 - Astro renders on the server by default
 - Only add client-side JavaScript when necessary
 - Use `client:*` directives sparingly for interactivity
 
 ### 2. Content Organization
+
 - Group related pages in folders
 - Use index.md for section overviews
 - Keep file names URL-friendly (lowercase, hyphens)
 
 ### 3. Performance
+
 - Prefer `src/assets/` for images (auto-optimization)
 - Minimize client-side JavaScript
 - Use Astro's View Transitions for smooth navigation
 
 ### 4. Type Safety
+
 - Define content schemas in `content.config.ts`
 - Use TypeScript for components
 - Validate frontmatter at build time
 
 ### 5. Navigation Structure
+
 - Configure sidebar in `astro.config.mjs`
 - Use consistent heading hierarchy (H1 → H2 → H3)
 - Include descriptions for better SEO
@@ -200,6 +213,7 @@ Key configuration points:
 ### Customizing Starlight
 
 Starlight can be extended with:
+
 - Custom CSS in `global.css`
 - Astro integrations
 - Custom components overriding defaults
@@ -217,26 +231,26 @@ Starlight can be extended with:
 When working on this project:
 
 1. **File Operations**:
-   - Docs: `src/content/docs/` (.md/.mdx files)
-   - Images: `src/assets/` (optimized) or `public/` (static)
-   - Config: `astro.config.mjs`, `content.config.ts`
-   - Styles: `src/styles/global.css`
+    - Docs: `src/content/docs/` (.md/.mdx files)
+    - Images: `src/assets/` (optimized) or `public/` (static)
+    - Config: `astro.config.mjs`, `content.config.ts`
+    - Styles: `src/styles/global.css`
 
 2. **Architecture**:
-   - Server-side rendering (SSR) by default
-   - Zero JS baseline, hydrate components only when needed
-   - Type-safe content collections
-   - File-based routing
+    - Server-side rendering (SSR) by default
+    - Zero JS baseline, hydrate components only when needed
+    - Type-safe content collections
+    - File-based routing
 
 3. **Don't**:
-   - Add unnecessary client-side JavaScript
-   - Bypass content collections for documentation
-   - Ignore frontmatter schema validation
-   - Create routes outside `src/content/docs/`
+    - Add unnecessary client-side JavaScript
+    - Bypass content collections for documentation
+    - Ignore frontmatter schema validation
+    - Create routes outside `src/content/docs/`
 
 4. **Do**:
-   - Use Astro components for reusable UI
-   - Leverage content collections for type safety
-   - Optimize images through `src/assets/`
-   - Follow Starlight conventions for consistency
-   - Use Tailwind utilities for styling
+    - Use Astro components for reusable UI
+    - Leverage content collections for type safety
+    - Optimize images through `src/assets/`
+    - Follow Starlight conventions for consistency
+    - Use Tailwind utilities for styling

@@ -52,7 +52,6 @@ const sidebarConfig = [
 	{label: 'Comparisons', slug: 'comparisons', badge: wipBadge},
 ].filter(item => isDev || ('badge' in item && item.badge !== wipBadge))
 
-
 // https://astro.build/config
 export default defineConfig({
 	adapter: vercel({

@@ -12,18 +12,19 @@ Slots are a component customization pattern that separates structure from stylin
 
 ```tsx
 <MarkedInput
-  slots={{
-    container: CustomContainer,  // Replace component
-    span: CustomSpan             // Replace component
-  }}
-  slotProps={{
-    container: { className: 'my-editor' },  // Pass props to default
-    span: { style: { color: 'red' } }       // Pass props to default
-  }}
+    slots={{
+        container: CustomContainer, // Replace component
+        span: CustomSpan, // Replace component
+    }}
+    slotProps={{
+        container: {className: 'my-editor'}, // Pass props to default
+        span: {style: {color: 'red'}}, // Pass props to default
+    }}
 />
 ```
 
 **Key Concepts:**
+
 - **`slots`** - Replace the default component entirely
 - **`slotProps`** - Pass props to the default (or custom) component
 
@@ -31,12 +32,13 @@ Slots are a component customization pattern that separates structure from stylin
 
 Markput exposes two slots:
 
-| Slot | Default Component | Purpose |
-|------|------------------|---------|
-| `container` | `<div>` | Root editable container |
-| `span` | `<span>` | Plain text segments |
+| Slot        | Default Component | Purpose                 |
+| ----------- | ----------------- | ----------------------- |
+| `container` | `<div>`           | Root editable container |
+| `span`      | `<span>`          | Plain text segments     |
 
 **What's NOT a slot:**
+
 - Mark components (use `Mark` prop)
 - Overlay components (use `Overlay` prop)
 
@@ -47,35 +49,35 @@ The simplest way to customize slots is through `slotProps`. This passes props to
 ### Basic Styling
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
+import {MarkedInput} from 'rc-marked-input'
 
 function StyledEditor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMark}
-      slotProps={{
-        container: {
-          style: {
-            border: '2px solid #e0e0e0',
-            borderRadius: '8px',
-            padding: '12px',
-            minHeight: '120px',
-            fontSize: '16px',
-            lineHeight: '1.6'
-          }
-        },
-        span: {
-          style: {
-            whiteSpace: 'pre-wrap'  // Preserve whitespace
-          }
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMark}
+            slotProps={{
+                container: {
+                    style: {
+                        border: '2px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        minHeight: '120px',
+                        fontSize: '16px',
+                        lineHeight: '1.6',
+                    },
+                },
+                span: {
+                    style: {
+                        whiteSpace: 'pre-wrap', // Preserve whitespace
+                    },
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -83,35 +85,35 @@ function StyledEditor() {
 
 ```tsx
 <MarkedInput
-  Mark={MyMark}
-  slotProps={{
-    container: {
-      className: 'editor-container'
-    },
-    span: {
-      className: 'editor-text'
-    }
-  }}
+    Mark={MyMark}
+    slotProps={{
+        container: {
+            className: 'editor-container',
+        },
+        span: {
+            className: 'editor-text',
+        },
+    }}
 />
 ```
 
 ```css
 /* styles.css */
 .editor-container {
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 16px;
-  font-family: 'Inter', sans-serif;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 16px;
+    font-family: 'Inter', sans-serif;
 }
 
 .editor-container:focus {
-  outline: 2px solid #2196f3;
-  border-color: transparent;
+    outline: 2px solid #2196f3;
+    border-color: transparent;
 }
 
 .editor-text {
-  color: #333;
-  letter-spacing: 0.01em;
+    color: #333;
+    letter-spacing: 0.01em;
 }
 ```
 
@@ -121,40 +123,40 @@ Add event handlers through `slotProps`:
 
 ```tsx
 function EditorWithEvents() {
-  const [value, setValue] = useState('')
-  const [isFocused, setIsFocused] = useState(false)
+    const [value, setValue] = useState('')
+    const [isFocused, setIsFocused] = useState(false)
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMark}
-      slotProps={{
-        container: {
-          onFocus: (e) => {
-            console.log('Editor focused')
-            setIsFocused(true)
-          },
-          onBlur: (e) => {
-            console.log('Editor blurred')
-            setIsFocused(false)
-          },
-          onKeyDown: (e) => {
-            if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault()
-              console.log('Save triggered')
-            }
-          },
-          onPaste: (e) => {
-            console.log('Pasted:', e.clipboardData.getData('text'))
-          },
-          style: {
-            outline: isFocused ? '2px solid blue' : 'none'
-          }
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMark}
+            slotProps={{
+                container: {
+                    onFocus: e => {
+                        console.log('Editor focused')
+                        setIsFocused(true)
+                    },
+                    onBlur: e => {
+                        console.log('Editor blurred')
+                        setIsFocused(false)
+                    },
+                    onKeyDown: e => {
+                        if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
+                            e.preventDefault()
+                            console.log('Save triggered')
+                        }
+                    },
+                    onPaste: e => {
+                        console.log('Pasted:', e.clipboardData.getData('text'))
+                    },
+                    style: {
+                        outline: isFocused ? '2px solid blue' : 'none',
+                    },
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -187,17 +189,17 @@ Add custom data attributes for testing or analytics:
 
 ```tsx
 <MarkedInput
-  Mark={MyMark}
-  slotProps={{
-    container: {
-      'data-testid': 'editor-input',
-      'data-editor-type': 'mention-editor',
-      'data-track': 'user-input'
-    },
-    span: {
-      'data-text-node': true
-    }
-  }}
+    Mark={MyMark}
+    slotProps={{
+        container: {
+            'data-testid': 'editor-input',
+            'data-editor-type': 'mention-editor',
+            'data-track': 'user-input',
+        },
+        span: {
+            'data-text-node': true,
+        },
+    }}
 />
 ```
 
@@ -210,41 +212,39 @@ For deeper customization, replace the default components entirely with `slots`.
 Replace the container with a custom component:
 
 ```tsx
-import { forwardRef } from 'react'
-import type { HTMLAttributes } from 'react'
+import {forwardRef} from 'react'
+import type {HTMLAttributes} from 'react'
 
-const CustomContainer = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->((props, ref) => {
-  return (
-    <div
-      {...props}
-      ref={ref}
-      style={{
-        ...props.style,
-        border: '2px dashed #9c27b0',
-        borderRadius: '12px',
-        padding: '16px',
-        backgroundColor: '#f5f5f5'
-      }}
-    />
-  )
+const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
+    return (
+        <div
+            {...props}
+            ref={ref}
+            style={{
+                ...props.style,
+                border: '2px dashed #9c27b0',
+                borderRadius: '12px',
+                padding: '16px',
+                backgroundColor: '#f5f5f5',
+            }}
+        />
+    )
 })
 
 function Editor() {
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slots={{
-        container: CustomContainer
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            Mark={MyMark}
+            slots={{
+                container: CustomContainer,
+            }}
+        />
+    )
 }
 ```
 
 **Important:** Custom slot components MUST:
+
 1. Accept all props with spread (`{...props}`)
 2. Forward the ref (`forwardRef`)
 3. Be typed correctly for TypeScript
@@ -315,22 +315,22 @@ Good for dynamic styles based on state:
 
 ```tsx
 function ThemedEditor() {
-  const [theme, setTheme] = useState('light')
+    const [theme, setTheme] = useState('light')
 
-  const containerStyle = {
-    backgroundColor: theme === 'light' ? '#fff' : '#1e1e1e',
-    color: theme === 'light' ? '#000' : '#fff',
-    border: `1px solid ${theme === 'light' ? '#ddd' : '#444'}`
-  }
+    const containerStyle = {
+        backgroundColor: theme === 'light' ? '#fff' : '#1e1e1e',
+        color: theme === 'light' ? '#000' : '#fff',
+        border: `1px solid ${theme === 'light' ? '#ddd' : '#444'}`,
+    }
 
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slotProps={{
-        container: { style: containerStyle }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            Mark={MyMark}
+            slotProps={{
+                container: {style: containerStyle},
+            }}
+        />
+    )
 }
 ```
 
@@ -340,32 +340,32 @@ Good for static styles and media queries:
 
 ```tsx
 <MarkedInput
-  Mark={MyMark}
-  slotProps={{
-    container: { className: 'editor-modern' }
-  }}
+    Mark={MyMark}
+    slotProps={{
+        container: {className: 'editor-modern'},
+    }}
 />
 ```
 
 ```css
 .editor-modern {
-  border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    border: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .editor-modern:focus {
-  box-shadow: 0 10px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 10px 60px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 768px) {
-  .editor-modern {
-    padding: 12px;
-    border-radius: 8px;
-  }
+    .editor-modern {
+        padding: 12px;
+        border-radius: 8px;
+    }
 }
 ```
 
@@ -374,34 +374,34 @@ Good for static styles and media queries:
 Good for component libraries and scoped styles:
 
 ```tsx
-import { styled } from '@mui/material/styles'
+import {styled} from '@mui/material/styles'
 
-const StyledContainer = styled('div')(({ theme }) => ({
-  border: `1px solid ${theme.palette.divider}`,
-  borderRadius: theme.shape.borderRadius,
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
-  '&:focus': {
-    outline: `2px solid ${theme.palette.primary.main}`,
-    outlineOffset: 2
-  }
+const StyledContainer = styled('div')(({theme}) => ({
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: theme.shape.borderRadius,
+    padding: theme.spacing(2),
+    backgroundColor: theme.palette.background.paper,
+    '&:focus': {
+        outline: `2px solid ${theme.palette.primary.main}`,
+        outlineOffset: 2,
+    },
 }))
 
-const StyledSpan = styled('span')(({ theme }) => ({
-  color: theme.palette.text.primary,
-  fontSize: theme.typography.body1.fontSize
+const StyledSpan = styled('span')(({theme}) => ({
+    color: theme.palette.text.primary,
+    fontSize: theme.typography.body1.fontSize,
 }))
 
 function MuiEditor() {
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slots={{
-        container: StyledContainer,
-        span: StyledSpan
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            Mark={MyMark}
+            slots={{
+                container: StyledContainer,
+                span: StyledSpan,
+            }}
+        />
+    )
 }
 ```
 
@@ -441,46 +441,45 @@ const TailwindContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 Show placeholder when editor is empty:
 
 ```tsx
-const ContainerWithPlaceholder = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement> & { isEmpty?: boolean }
->(({ isEmpty, ...props }, ref) => (
-  <div {...props} ref={ref} style={{ position: 'relative' }}>
-    {isEmpty && (
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          pointerEvents: 'none',
-          color: '#999',
-          padding: 'inherit'
-        }}
-      >
-        Type @ to mention someone...
-      </div>
-    )}
-  </div>
-))
+const ContainerWithPlaceholder = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & {isEmpty?: boolean}>(
+    ({isEmpty, ...props}, ref) => (
+        <div {...props} ref={ref} style={{position: 'relative'}}>
+            {isEmpty && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        pointerEvents: 'none',
+                        color: '#999',
+                        padding: 'inherit',
+                    }}
+                >
+                    Type @ to mention someone...
+                </div>
+            )}
+        </div>
+    )
+)
 
 function EditorWithPlaceholder() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMark}
-      slots={{
-        container: ContainerWithPlaceholder
-      }}
-      slotProps={{
-        container: {
-          isEmpty: value.trim() === ''
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMark}
+            slots={{
+                container: ContainerWithPlaceholder,
+            }}
+            slotProps={{
+                container: {
+                    isEmpty: value.trim() === '',
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -490,45 +489,45 @@ Add a character count overlay:
 
 ```tsx
 const ContainerWithCounter = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement> & { charCount?: number; maxChars?: number }
->(({ charCount = 0, maxChars = 500, ...props }, ref) => (
-  <div style={{ position: 'relative' }}>
-    <div {...props} ref={ref} />
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 8,
-        right: 8,
-        fontSize: '12px',
-        color: charCount > maxChars ? '#f44336' : '#999',
-        pointerEvents: 'none'
-      }}
-    >
-      {charCount} / {maxChars}
+    HTMLDivElement,
+    HTMLAttributes<HTMLDivElement> & {charCount?: number; maxChars?: number}
+>(({charCount = 0, maxChars = 500, ...props}, ref) => (
+    <div style={{position: 'relative'}}>
+        <div {...props} ref={ref} />
+        <div
+            style={{
+                position: 'absolute',
+                bottom: 8,
+                right: 8,
+                fontSize: '12px',
+                color: charCount > maxChars ? '#f44336' : '#999',
+                pointerEvents: 'none',
+            }}
+        >
+            {charCount} / {maxChars}
+        </div>
     </div>
-  </div>
 ))
 
 function EditorWithCounter() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMark}
-      slots={{
-        container: ContainerWithCounter
-      }}
-      slotProps={{
-        container: {
-          charCount: value.length,
-          maxChars: 500
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMark}
+            slots={{
+                container: ContainerWithCounter,
+            }}
+            slotProps={{
+                container: {
+                    charCount: value.length,
+                    maxChars: 500,
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -577,50 +576,49 @@ const FocusableContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElem
 Add line numbers for multi-line content:
 
 ```tsx
-const ContainerWithLineNumbers = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement> & { lineCount?: number }
->(({ lineCount = 1, ...props }, ref) => (
-  <div style={{ display: 'flex' }}>
-    <div
-      style={{
-        width: '40px',
-        backgroundColor: '#f5f5f5',
-        padding: '8px',
-        textAlign: 'right',
-        color: '#999',
-        fontSize: '12px',
-        userSelect: 'none',
-        borderRight: '1px solid #ddd'
-      }}
-    >
-      {Array.from({ length: lineCount }, (_, i) => (
-        <div key={i}>{i + 1}</div>
-      ))}
-    </div>
-    <div {...props} ref={ref} style={{ flex: 1, ...props.style }} />
-  </div>
-))
+const ContainerWithLineNumbers = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & {lineCount?: number}>(
+    ({lineCount = 1, ...props}, ref) => (
+        <div style={{display: 'flex'}}>
+            <div
+                style={{
+                    width: '40px',
+                    backgroundColor: '#f5f5f5',
+                    padding: '8px',
+                    textAlign: 'right',
+                    color: '#999',
+                    fontSize: '12px',
+                    userSelect: 'none',
+                    borderRight: '1px solid #ddd',
+                }}
+            >
+                {Array.from({length: lineCount}, (_, i) => (
+                    <div key={i}>{i + 1}</div>
+                ))}
+            </div>
+            <div {...props} ref={ref} style={{flex: 1, ...props.style}} />
+        </div>
+    )
+)
 
 function EditorWithLineNumbers() {
-  const [value, setValue] = useState('')
-  const lineCount = value.split('\n').length
+    const [value, setValue] = useState('')
+    const lineCount = value.split('\n').length
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMark}
-      slots={{
-        container: ContainerWithLineNumbers
-      }}
-      slotProps={{
-        container: {
-          lineCount
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMark}
+            slots={{
+                container: ContainerWithLineNumbers,
+            }}
+            slotProps={{
+                container: {
+                    lineCount,
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -663,33 +661,33 @@ const HighlightedSpan = forwardRef<
 ### Material-UI (MUI)
 
 ```tsx
-import { Paper, useTheme } from '@mui/material'
-import { styled } from '@mui/material/styles'
+import {Paper, useTheme} from '@mui/material'
+import {styled} from '@mui/material/styles'
 
-const MuiContainer = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(2),
-  minHeight: 120,
-  border: `1px solid ${theme.palette.divider}`,
-  '&:focus-within': {
-    borderColor: theme.palette.primary.main,
-    boxShadow: `0 0 0 2px ${theme.palette.primary.main}25`
-  }
+const MuiContainer = styled(Paper)(({theme}) => ({
+    padding: theme.spacing(2),
+    minHeight: 120,
+    border: `1px solid ${theme.palette.divider}`,
+    '&:focus-within': {
+        borderColor: theme.palette.primary.main,
+        boxShadow: `0 0 0 2px ${theme.palette.primary.main}25`,
+    },
 }))
 
 function MuiEditor() {
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slots={{
-        container: MuiContainer
-      }}
-      slotProps={{
-        container: {
-          elevation: 0
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            Mark={MyMark}
+            slots={{
+                container: MuiContainer,
+            }}
+            slotProps={{
+                container: {
+                    elevation: 0,
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -753,72 +751,67 @@ const AntContainer = forwardRef<HTMLDivElement, any>((props, ref) => (
 ### Typing Custom Slot Components
 
 ```tsx
-import { forwardRef } from 'react'
-import type { HTMLAttributes, CSSProperties } from 'react'
+import {forwardRef} from 'react'
+import type {HTMLAttributes, CSSProperties} from 'react'
 
 // Type container with custom props
 interface CustomContainerProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'outlined' | 'filled'
-  error?: boolean
+    variant?: 'outlined' | 'filled'
+    error?: boolean
 }
 
 const TypedContainer = forwardRef<HTMLDivElement, CustomContainerProps>(
-  ({ variant = 'outlined', error = false, ...props }, ref) => {
-    const style: CSSProperties = {
-      ...props.style,
-      border: error ? '2px solid red' : '1px solid #ddd',
-      backgroundColor: variant === 'filled' ? '#f5f5f5' : 'transparent'
-    }
+    ({variant = 'outlined', error = false, ...props}, ref) => {
+        const style: CSSProperties = {
+            ...props.style,
+            border: error ? '2px solid red' : '1px solid #ddd',
+            backgroundColor: variant === 'filled' ? '#f5f5f5' : 'transparent',
+        }
 
-    return <div {...props} ref={ref} style={style} />
-  }
+        return <div {...props} ref={ref} style={style} />
+    }
 )
 
 // Usage with type safety
 function TypedEditor() {
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slots={{
-        container: TypedContainer
-      }}
-      slotProps={{
-        container: {
-          variant: 'filled',
-          error: true
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            Mark={MyMark}
+            slots={{
+                container: TypedContainer,
+            }}
+            slotProps={{
+                container: {
+                    variant: 'filled',
+                    error: true,
+                },
+            }}
+        />
+    )
 }
 ```
 
 ### Generic Slot Props
 
 ```tsx
-import type { MarkedInputProps } from 'rc-marked-input'
+import type {MarkedInputProps} from 'rc-marked-input'
 
 interface EditorProps {
-  containerClass?: string
-  spanClass?: string
+    containerClass?: string
+    spanClass?: string
 }
 
-function ConfigurableEditor({ containerClass, spanClass }: EditorProps) {
-  const slotProps: MarkedInputProps['slotProps'] = {
-    container: {
-      className: containerClass
-    },
-    span: {
-      className: spanClass
+function ConfigurableEditor({containerClass, spanClass}: EditorProps) {
+    const slotProps: MarkedInputProps['slotProps'] = {
+        container: {
+            className: containerClass,
+        },
+        span: {
+            className: spanClass,
+        },
     }
-  }
 
-  return (
-    <MarkedInput
-      Mark={MyMark}
-      slotProps={slotProps}
-    />
-  )
+    return <MarkedInput Mark={MyMark} slotProps={slotProps} />
 }
 ```
 
@@ -851,29 +844,29 @@ const MemoizedContainer = memo(
 
 ```tsx
 // ❌ Bad - creates new function each render
-<MarkedInput
-  slotProps={{
-    container: {
-      onKeyDown: (e) => console.log(e.key)
-    }
-  }}
+;<MarkedInput
+    slotProps={{
+        container: {
+            onKeyDown: e => console.log(e.key),
+        },
+    }}
 />
 
 // ✅ Good - stable function reference
 function Editor() {
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    console.log(e.key)
-  }, [])
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        console.log(e.key)
+    }, [])
 
-  return (
-    <MarkedInput
-      slotProps={{
-        container: {
-          onKeyDown: handleKeyDown
-        }
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            slotProps={{
+                container: {
+                    onKeyDown: handleKeyDown,
+                },
+            }}
+        />
+    )
 }
 ```
 
@@ -881,17 +874,20 @@ function Editor() {
 
 ```tsx
 function Editor() {
-  const slotProps = useMemo(() => ({
-    container: {
-      className: 'editor',
-      style: { padding: '16px' }
-    },
-    span: {
-      className: 'text'
-    }
-  }), [])  // Only created once
+    const slotProps = useMemo(
+        () => ({
+            container: {
+                className: 'editor',
+                style: {padding: '16px'},
+            },
+            span: {
+                className: 'text',
+            },
+        }),
+        []
+    ) // Only created once
 
-  return <MarkedInput Mark={MyMark} slotProps={slotProps} />
+    return <MarkedInput Mark={MyMark} slotProps={slotProps} />
 }
 ```
 
@@ -900,153 +896,145 @@ function Editor() {
 ### Example 1: GitHub-Style Editor
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
-import { useState, forwardRef } from 'react'
-import type { HTMLAttributes } from 'react'
+import {MarkedInput} from 'rc-marked-input'
+import {useState, forwardRef} from 'react'
+import type {HTMLAttributes} from 'react'
 
-const GitHubContainer = forwardRef<
-  HTMLDivElement,
-  HTMLAttributes<HTMLDivElement>
->((props, ref) => (
-  <div
-    {...props}
-    ref={ref}
-    style={{
-      ...props.style,
-      border: '1px solid #d0d7de',
-      borderRadius: '6px',
-      padding: '8px 12px',
-      fontSize: '14px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-      minHeight: '100px',
-      backgroundColor: '#fff'
-    }}
-  />
+const GitHubContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => (
+    <div
+        {...props}
+        ref={ref}
+        style={{
+            ...props.style,
+            border: '1px solid #d0d7de',
+            borderRadius: '6px',
+            padding: '8px 12px',
+            fontSize: '14px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+            minHeight: '100px',
+            backgroundColor: '#fff',
+        }}
+    />
 ))
 
 function GitHubEditor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <div style={{ maxWidth: '800px' }}>
-      <div
-        style={{
-          border: '1px solid #d0d7de',
-          borderRadius: '6px',
-          overflow: 'hidden'
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: '#f6f8fa',
-            padding: '8px 12px',
-            borderBottom: '1px solid #d0d7de',
-            fontSize: '14px',
-            color: '#57606a'
-          }}
-        >
-          Write a comment
+    return (
+        <div style={{maxWidth: '800px'}}>
+            <div
+                style={{
+                    border: '1px solid #d0d7de',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                }}
+            >
+                <div
+                    style={{
+                        backgroundColor: '#f6f8fa',
+                        padding: '8px 12px',
+                        borderBottom: '1px solid #d0d7de',
+                        fontSize: '14px',
+                        color: '#57606a',
+                    }}
+                >
+                    Write a comment
+                </div>
+                <MarkedInput
+                    value={value}
+                    onChange={setValue}
+                    Mark={({value}) => <span style={{color: '#0969da', fontWeight: 600}}>@{value}</span>}
+                    slots={{
+                        container: GitHubContainer,
+                    }}
+                    slotProps={{
+                        container: {
+                            'aria-label': 'Comment body',
+                        },
+                    }}
+                    options={[
+                        {
+                            markup: '@[__value__]',
+                            slotProps: {
+                                overlay: {trigger: '@', data: ['octocat', 'github', 'copilot']},
+                            },
+                        },
+                    ]}
+                />
+            </div>
         </div>
-        <MarkedInput
-          value={value}
-          onChange={setValue}
-          Mark={({ value }) => (
-            <span style={{ color: '#0969da', fontWeight: 600 }}>
-              @{value}
-            </span>
-          )}
-          slots={{
-            container: GitHubContainer
-          }}
-          slotProps={{
-            container: {
-              'aria-label': 'Comment body'
-            }
-          }}
-          options={[
-            {
-              markup: '@[__value__]',
-              slotProps: {
-                overlay: { trigger: '@', data: ['octocat', 'github', 'copilot'] }
-              }
-            }
-          ]}
-        />
-      </div>
-    </div>
-  )
+    )
 }
 ```
 
 ### Example 2: Notion-Style Editor
 
 ```tsx
-const NotionContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => {
+const NotionContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
     const [placeholder, setPlaceholder] = useState("Type '/' for commands")
 
     return (
-      <div
-        {...props}
-        ref={ref}
-        style={{
-          ...props.style,
-          fontSize: '16px',
-          lineHeight: '1.6',
-          fontFamily: 'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-          padding: '12px 96px',
-          minHeight: '300px',
-          outline: 'none'
-        }}
-        onFocus={() => setPlaceholder('')}
-        onBlur={(e) => {
-          if (!e.currentTarget.textContent) {
-            setPlaceholder("Type '/' for commands")
-          }
-          props.onBlur?.(e)
-        }}
-      >
-        {!props.children && (
-          <div
+        <div
+            {...props}
+            ref={ref}
             style={{
-              position: 'absolute',
-              color: '#9b9a97',
-              pointerEvents: 'none'
+                ...props.style,
+                fontSize: '16px',
+                lineHeight: '1.6',
+                fontFamily:
+                    'ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+                padding: '12px 96px',
+                minHeight: '300px',
+                outline: 'none',
             }}
-          >
-            {placeholder}
-          </div>
-        )}
-      </div>
+            onFocus={() => setPlaceholder('')}
+            onBlur={e => {
+                if (!e.currentTarget.textContent) {
+                    setPlaceholder("Type '/' for commands")
+                }
+                props.onBlur?.(e)
+            }}
+        >
+            {!props.children && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        color: '#9b9a97',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    {placeholder}
+                </div>
+            )}
+        </div>
     )
-  }
-)
+})
 
 function NotionEditor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={({ value }) => (
-        <span
-          style={{
-            backgroundColor: '#f1f1ef',
-            padding: '2px 6px',
-            borderRadius: '3px',
-            fontSize: '85%',
-            fontFamily: 'monospace'
-          }}
-        >
-          {value}
-        </span>
-      )}
-      slots={{
-        container: NotionContainer
-      }}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={({value}) => (
+                <span
+                    style={{
+                        backgroundColor: '#f1f1ef',
+                        padding: '2px 6px',
+                        borderRadius: '3px',
+                        fontSize: '85%',
+                        fontFamily: 'monospace',
+                    }}
+                >
+                    {value}
+                </span>
+            )}
+            slots={{
+                container: NotionContainer,
+            }}
+        />
+    )
 }
 ```
 
@@ -1056,29 +1044,25 @@ function NotionEditor() {
 
 ```tsx
 // Always forward refs
-const CustomContainer = forwardRef((props, ref) => (
-  <div {...props} ref={ref} />
-))
+const CustomContainer = forwardRef((props, ref) => <div {...props} ref={ref} />)
 
 // Spread all props
 const CustomContainer = forwardRef((props, ref) => (
-  <div {...props} ref={ref} className={`custom ${props.className || ''}`} />
+    <div {...props} ref={ref} className={`custom ${props.className || ''}`} />
 ))
 
 // Preserve existing style
 const CustomContainer = forwardRef((props, ref) => (
-  <div {...props} ref={ref} style={{ ...props.style, padding: '16px' }} />
+    <div {...props} ref={ref} style={{...props.style, padding: '16px'}} />
 ))
 
 // Memoize stable components
-const StableContainer = memo(forwardRef((props, ref) => (
-  <div {...props} ref={ref} />
-)))
+const StableContainer = memo(forwardRef((props, ref) => <div {...props} ref={ref} />))
 
 // Type custom components properly
-const TypedContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => <div {...props} ref={ref} />
-)
+const TypedContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => (
+    <div {...props} ref={ref} />
+))
 ```
 
 ### ❌ Don't

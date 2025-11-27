@@ -1,7 +1,19 @@
 ---
 title: How It Works
 description: Learn how Markput works - marks, tokens, parsing, overlay system, nested marks, and state management for React text editors
-keywords: [how it works, architecture, marks, tokens, parsing, overlay, nested marks, state management, component design, token tree]
+keywords:
+    [
+        how it works,
+        architecture,
+        marks,
+        tokens,
+        parsing,
+        overlay,
+        nested marks,
+        state management,
+        component design,
+        token tree,
+    ]
 ---
 
 This guide explains how Markput works under the hood. Understanding these concepts will help you build more sophisticated editors and troubleshoot issues effectively.
@@ -44,6 +56,7 @@ A **mark** is a special pattern in your text that gets rendered as a React compo
 ```
 
 **Mark Properties:**
+
 - **Content**: The entire matched pattern `@[World](meta)`
 - **Value**: The text to display `"World"`
 - **Meta**: Optional metadata `"meta"`
@@ -54,17 +67,16 @@ A **mark** is a special pattern in your text that gets rendered as a React compo
 A **token** is the internal representation used by Markput's parser. Your text is broken down into tokens:
 
 ```tsx
-'Hello @[World](meta)!'
-
-// Becomes this token tree:
-[
-  { type: 'text', content: 'Hello ' },
-  { type: 'mark', value: 'World', meta: 'meta', content: '@[World](meta)' },
-  { type: 'text', content: '!' }
+'Hello @[World](meta)!'[
+    // Becomes this token tree:
+    ({type: 'text', content: 'Hello '},
+    {type: 'mark', value: 'World', meta: 'meta', content: '@[World](meta)'},
+    {type: 'text', content: '!'})
 ]
 ```
 
 **Token Types:**
+
 - **TextToken**: Plain text segments
 - **MarkToken**: Marked segments (rendered as your Mark component)
 
@@ -74,11 +86,11 @@ Markup patterns define how marks are identified in your text. They use placehold
 
 ### Placeholders
 
-| Placeholder | Description | Supports Nesting |
-|-------------|-------------|------------------|
-| `__value__` | Main content (plain text only) | ❌ No |
-| `__meta__` | Metadata (plain text only) | ❌ No |
-| `__nested__` | Content that can contain other marks | ✅ Yes |
+| Placeholder  | Description                          | Supports Nesting |
+| ------------ | ------------------------------------ | ---------------- |
+| `__value__`  | Main content (plain text only)       | ❌ No            |
+| `__meta__`   | Metadata (plain text only)           | ❌ No            |
+| `__nested__` | Content that can contain other marks | ✅ Yes           |
 
 ### Common Patterns
 
@@ -118,6 +130,7 @@ Markup patterns define how marks are identified in your text. They use placehold
 Let's walk through how Markput processes your text step-by-step:
 
 ### Step 1: Preparsing
+
 The text is scanned for potential mark boundaries.
 
 ```tsx
@@ -127,6 +140,7 @@ Identifies: Two potential marks at positions 6-22 and 27-42
 ```
 
 ### Step 2: Pattern Matching
+
 Each potential mark is tested against your markup patterns.
 
 ```tsx
@@ -140,6 +154,7 @@ Test: '@[Alice](user:1)' → ✅ Match!
 ```
 
 ### Step 3: Tokenization
+
 The text is broken into tokens.
 
 ```tsx
@@ -153,6 +168,7 @@ The text is broken into tokens.
 ```
 
 ### Step 4: Rendering
+
 Each token is rendered as a React element.
 
 ```tsx
@@ -220,13 +236,13 @@ Notice the `children` array - this is what makes nesting possible. Each mark can
 When a mark has `children`, they're rendered as React children:
 
 ```tsx
-const Mark = ({ children, nested }) => {
-  // For nested marks, use children (ReactNode)
-  if (children) {
-    return <strong>{children}</strong>
-  }
-  // For flat marks, use nested string
-  return <strong>{nested}</strong>
+const Mark = ({children, nested}) => {
+    // For nested marks, use children (ReactNode)
+    if (children) {
+        return <strong>{children}</strong>
+    }
+    // For flat marks, use nested string
+    return <strong>{nested}</strong>
 }
 ```
 
@@ -347,12 +363,12 @@ const [value, setValue] = useState('')
 
 ### Built-in Events
 
-| Event | When Triggered | Use Case |
-|-------|----------------|----------|
-| `onChange` | Text changes | Update parent state |
-| `onFocus` | Editor focused | Show toolbar |
-| `onBlur` | Editor blurred | Hide toolbar |
-| `onKeyDown` | Key pressed | Custom shortcuts |
+| Event               | When Triggered    | Use Case             |
+| ------------------- | ----------------- | -------------------- |
+| `onChange`          | Text changes      | Update parent state  |
+| `onFocus`           | Editor focused    | Show toolbar         |
+| `onBlur`            | Editor blurred    | Hide toolbar         |
+| `onKeyDown`         | Key pressed       | Custom shortcuts     |
 | `onSelectionChange` | Selection changes | Update toolbar state |
 
 ### Custom Event Listeners
@@ -360,14 +376,18 @@ const [value, setValue] = useState('')
 Use `useListener` hook for custom events:
 
 ```tsx
-import { useListener } from 'rc-marked-input'
+import {useListener} from 'rc-marked-input'
 
 const Mark = () => {
-  useListener('customEvent', (data) => {
-    console.log('Custom event:', data)
-  }, [])
+    useListener(
+        'customEvent',
+        data => {
+            console.log('Custom event:', data)
+        },
+        []
+    )
 
-  return <span>Mark</span>
+    return <span>Mark</span>
 }
 ```
 
@@ -377,18 +397,18 @@ Options allow per-pattern configuration. Each pattern can have its own Mark comp
 
 ```tsx
 <MarkedInput
-  options={[
-    {
-      markup: '@[__value__](__meta__)',      // Pattern 1: mentions
-      slots: { mark: MentionComponent },
-      slotProps: { overlay: { trigger: '@', data: users } }
-    },
-    {
-      markup: '#[__value__]',                 // Pattern 2: hashtags
-      slots: { mark: HashtagComponent },
-      slotProps: { overlay: { trigger: '#', data: hashtags } }
-    }
-  ]}
+    options={[
+        {
+            markup: '@[__value__](__meta__)', // Pattern 1: mentions
+            slots: {mark: MentionComponent},
+            slotProps: {overlay: {trigger: '@', data: users}},
+        },
+        {
+            markup: '#[__value__]', // Pattern 2: hashtags
+            slots: {mark: HashtagComponent},
+            slotProps: {overlay: {trigger: '#', data: hashtags}},
+        },
+    ]}
 />
 ```
 
@@ -397,25 +417,27 @@ Options allow per-pattern configuration. Each pattern can have its own Mark comp
 
 ```tsx
 <MarkedInput
-  options={[
-    {
-      markup: '@[__value__](__meta__)',
-      slots: {
-        mark: MentionComponent,
-        overlay: MentionOverlay
-      },
-      slotProps: {
-        mark: ({ value, meta }) => ({  // Transform extracted props
-          label: value,
-          userId: meta
-        }),
-        overlay: {                      // Static overlay config
-          trigger: '@',
-          data: users
-        }
-      }
-    }
-  ]}
+    options={[
+        {
+            markup: '@[__value__](__meta__)',
+            slots: {
+                mark: MentionComponent,
+                overlay: MentionOverlay,
+            },
+            slotProps: {
+                mark: ({value, meta}) => ({
+                    // Transform extracted props
+                    label: value,
+                    userId: meta,
+                }),
+                overlay: {
+                    // Static overlay config
+                    trigger: '@',
+                    data: users,
+                },
+            },
+        },
+    ]}
 />
 ```
 
@@ -437,20 +459,22 @@ Options allow per-pattern configuration. Each pattern can have its own Mark comp
 ### Re-render Optimization
 
 Markput minimizes re-renders:
+
 - Token tree is memoized
 - Components re-render only when their token changes
 - Use `React.memo` for expensive Mark components
 
 ```tsx
-const ExpensiveMark = React.memo(({ value }) => {
-  // Complex rendering logic
-  return <span>{value}</span>
+const ExpensiveMark = React.memo(({value}) => {
+    // Complex rendering logic
+    return <span>{value}</span>
 })
 ```
 
 ### Large Documents
 
 For large documents (1000+ marks):
+
 - Consider debouncing `onChange`
 - Use `defaultValue` if possible
 - Implement virtualization for mark lists
@@ -467,9 +491,9 @@ For more details, see the [Performance Optimization](/development/performance) g
 ### Visualize Tokens
 
 ```tsx
-import { parse } from '@markput/core'
+import {parse} from '@markput/core'
 
-const tokens = parse(value, [{ markup: '@[__value__]' }])
+const tokens = parse(value, [{markup: '@[__value__]'}])
 console.log(JSON.stringify(tokens, null, 2))
 ```
 
@@ -485,12 +509,12 @@ This is your best friend for understanding what Markput "sees" in your text.
 
 ### Common Issues & Solutions
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Marks not rendering | Markup pattern mismatch | Check pattern syntax with console.log |
-| Infinite re-renders | onChange creates new reference | Use `useCallback` |
-| TypeScript errors | Generic type mismatch | Specify types explicitly in `<MarkedInput<YourType>>` |
-| Overlay not showing | Trigger mismatch | Check that trigger character matches your pattern |
+| Issue               | Cause                          | Solution                                              |
+| ------------------- | ------------------------------ | ----------------------------------------------------- |
+| Marks not rendering | Markup pattern mismatch        | Check pattern syntax with console.log                 |
+| Infinite re-renders | onChange creates new reference | Use `useCallback`                                     |
+| TypeScript errors   | Generic type mismatch          | Specify types explicitly in `<MarkedInput<YourType>>` |
+| Overlay not showing | Trigger mismatch               | Check that trigger character matches your pattern     |
 
 </details>
 

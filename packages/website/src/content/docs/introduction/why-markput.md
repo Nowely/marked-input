@@ -7,6 +7,7 @@ keywords: [markput, react mentions, marks, custom markup, text editor, slash com
 Markput (marked input) is a React component library for building editors with **custom markup**. It transforms plain text patterns into interactive React components, giving you full control over rendering and behavior.
 
 **The Problem**: Building custom text editors usually means choosing between:
+
 - **Simple but limited** (basic input + regex)
 - **Powerful but complex** (Draft.js, Slate with steep learning curves)
 
@@ -41,7 +42,7 @@ Markput (marked input) is a React component library for building editors with **
 **Can be built (requires work):**
 
 - **WYSIWYG editors** - Rich documents with tables and images
-  *(Markput supports this, but requires custom implementation)*
+  _(Markput supports this, but requires custom implementation)_
 
 **Not ideal for:**
 

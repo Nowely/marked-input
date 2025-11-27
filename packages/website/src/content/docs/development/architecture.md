@@ -60,16 +60,16 @@ This guide explains Markput's internal architecture, data flow, and design decis
 
 ### Component Responsibilities
 
-| Component | Responsibility |
-|-----------|---------------|
-| **MarkedInput** | Entry point, props validation, store initialization |
-| **StoreProvider** | React context for store access |
-| **Container** | contenteditable management, event handling |
-| **TextNode** | Renders plain text tokens |
-| **MarkNode** | Renders mark tokens, provides mark context |
-| **Mark** | User's custom mark component |
-| **OverlayPortal** | React portal for overlay positioning |
-| **Overlay** | User's custom overlay component |
+| Component         | Responsibility                                      |
+| ----------------- | --------------------------------------------------- |
+| **MarkedInput**   | Entry point, props validation, store initialization |
+| **StoreProvider** | React context for store access                      |
+| **Container**     | contenteditable management, event handling          |
+| **TextNode**      | Renders plain text tokens                           |
+| **MarkNode**      | Renders mark tokens, provides mark context          |
+| **Mark**          | User's custom mark component                        |
+| **OverlayPortal** | React portal for overlay positioning                |
+| **Overlay**       | User's custom overlay component                     |
 
 ## Data Flow
 
@@ -159,8 +159,8 @@ Input: "Hello @[Alice](123) and #[react]"
 
 ```typescript
 const parser = new Parser([
-  '@[__value__](__meta__)',  // Mention pattern
-  '#[__value__]'             // Hashtag pattern
+    '@[__value__](__meta__)', // Mention pattern
+    '#[__value__]', // Hashtag pattern
 ])
 ```
 
@@ -169,34 +169,34 @@ const parser = new Parser([
 Parser converts text into token tree:
 
 ```typescript
-[
-  {
-    type: 'text',
-    content: 'Hello ',
-    position: { start: 0, end: 6 }
-  },
-  {
-    type: 'mark',
-    content: '@[Alice](123)',
-    position: { start: 6, end: 19 },
-    value: 'Alice',
-    meta: '123',
-    descriptor: { index: 0, markup: '@[__value__](__meta__)' },
-    children: []
-  },
-  {
-    type: 'text',
-    content: ' and ',
-    position: { start: 19, end: 24 }
-  },
-  {
-    type: 'mark',
-    content: '#[react]',
-    position: { start: 24, end: 32 },
-    value: 'react',
-    descriptor: { index: 1, markup: '#[__value__]' },
-    children: []
-  }
+;[
+    {
+        type: 'text',
+        content: 'Hello ',
+        position: {start: 0, end: 6},
+    },
+    {
+        type: 'mark',
+        content: '@[Alice](123)',
+        position: {start: 6, end: 19},
+        value: 'Alice',
+        meta: '123',
+        descriptor: {index: 0, markup: '@[__value__](__meta__)'},
+        children: [],
+    },
+    {
+        type: 'text',
+        content: ' and ',
+        position: {start: 19, end: 24},
+    },
+    {
+        type: 'mark',
+        content: '#[react]',
+        position: {start: 24, end: 32},
+        value: 'react',
+        descriptor: {index: 1, markup: '#[__value__]'},
+        children: [],
+    },
 ]
 ```
 
@@ -206,14 +206,14 @@ Each token renders as React component:
 
 ```jsx
 <Container>
-  <TextNode>Hello </TextNode>
-  <MarkNode>
-    <MentionMark value="Alice" meta="123" />
-  </MarkNode>
-  <TextNode> and </TextNode>
-  <MarkNode>
-    <HashtagMark value="react" />
-  </MarkNode>
+    <TextNode>Hello </TextNode>
+    <MarkNode>
+        <MentionMark value="Alice" meta="123" />
+    </MarkNode>
+    <TextNode> and </TextNode>
+    <MarkNode>
+        <HashtagMark value="react" />
+    </MarkNode>
 </Container>
 ```
 
@@ -245,39 +245,39 @@ For nested marks like `**bold @[mention]**`:
 
 ```typescript
 class EventBus {
-  private listeners = new Map<EventKey, Set<Function>>()
+    private listeners = new Map<EventKey, Set<Function>>()
 
-  on(event: EventKey, handler: Function): void
-  off(event: EventKey, handler: Function): void
-  send(event: EventKey, data?: any): void
+    on(event: EventKey, handler: Function): void
+    off(event: EventKey, handler: Function): void
+    send(event: EventKey, data?: any): void
 }
 ```
 
 ### System Events
 
-| Event | When Fired | Payload |
-|-------|-----------|---------|
-| `STORE_UPDATED` | Store state changes | Updated store |
-| `Change` | Text content changes | `{ value: string }` |
-| `Parse` | Parsing triggered | - |
-| `CheckTrigger` | Check for overlay trigger | - |
-| `ClearTrigger` | Close overlay | - |
-| `Select` | Overlay item selected | `{ mark, match }` |
-| `Delete` | Mark deleted | `{ token }` |
+| Event           | When Fired                | Payload             |
+| --------------- | ------------------------- | ------------------- |
+| `STORE_UPDATED` | Store state changes       | Updated store       |
+| `Change`        | Text content changes      | `{ value: string }` |
+| `Parse`         | Parsing triggered         | -                   |
+| `CheckTrigger`  | Check for overlay trigger | -                   |
+| `ClearTrigger`  | Close overlay             | -                   |
+| `Select`        | Overlay item selected     | `{ mark, match }`   |
+| `Delete`        | Mark deleted              | `{ token }`         |
 
 ### Event Flow Example
 
 ```typescript
 // Component sends event
-store.bus.send(SystemEvent.Change, { value: 'new text' })
+store.bus.send(SystemEvent.Change, {value: 'new text'})
 
 // Multiple listeners can subscribe
-store.bus.on(SystemEvent.Change, (data) => {
-  console.log('Text changed:', data.value)
+store.bus.on(SystemEvent.Change, data => {
+    console.log('Text changed:', data.value)
 })
 
-store.bus.on(SystemEvent.Change, (data) => {
-  saveToLocalStorage(data.value)
+store.bus.on(SystemEvent.Change, data => {
+    saveToLocalStorage(data.value)
 })
 
 // Clean up when done
@@ -290,34 +290,34 @@ store.bus.off(SystemEvent.Change, handler)
 
 ```typescript
 class Store {
-  // Configuration
-  props: MarkedInputProps
+    // Configuration
+    props: MarkedInputProps
 
-  // Document state
-  tokens: Token[]
-  parser: Parser
-  previousValue?: string
+    // Document state
+    tokens: Token[]
+    parser: Parser
+    previousValue?: string
 
-  // UI state
-  refs: {
-    container: HTMLDivElement | null
-    overlay: HTMLElement | null
-  }
-  selecting?: boolean
+    // UI state
+    refs: {
+        container: HTMLDivElement | null
+        overlay: HTMLElement | null
+    }
+    selecting?: boolean
 
-  // Overlay state
-  overlayMatch?: OverlayMatch
+    // Overlay state
+    overlayMatch?: OverlayMatch
 
-  // Navigation
-  nodes: {
-    focus: NodeProxy
-    input: NodeProxy
-  }
-  recovery?: Recovery
+    // Navigation
+    nodes: {
+        focus: NodeProxy
+        input: NodeProxy
+    }
+    recovery?: Recovery
 
-  // Event system
-  bus: EventBus
-  key: KeyGenerator
+    // Event system
+    bus: EventBus
+    key: KeyGenerator
 }
 ```
 
@@ -327,19 +327,19 @@ Store uses Proxy pattern for reactive updates:
 
 ```typescript
 const store = new Proxy(new Store(props), {
-  set(target, prop, value) {
-    if (IMMUTABLE_KEYS.has(prop)) {
-      return false // Prevent mutation of immutable properties
-    }
+    set(target, prop, value) {
+        if (IMMUTABLE_KEYS.has(prop)) {
+            return false // Prevent mutation of immutable properties
+        }
 
-    if (target[prop] === value) {
-      return true // No change, skip update
-    }
+        if (target[prop] === value) {
+            return true // No change, skip update
+        }
 
-    target[prop] = value
-    target.bus.send(SystemEvent.STORE_UPDATED, store)
-    return true
-  }
+        target[prop] = value
+        target.bus.send(SystemEvent.STORE_UPDATED, store)
+        return true
+    },
 })
 ```
 
@@ -362,7 +362,7 @@ Tokens are memoized to prevent unnecessary re-parsing:
 
 ```typescript
 const tokens = useMemo(() => {
-  return parser.parse(value)
+    return parser.parse(value)
 }, [value, parser])
 ```
 
@@ -417,18 +417,18 @@ Cursor position is managed through:
 
 ```typescript
 class Caret {
-  static save(): Recovery {
-    const selection = window.getSelection()
-    // Save range, offset, etc.
-  }
+    static save(): Recovery {
+        const selection = window.getSelection()
+        // Save range, offset, etc.
+    }
 
-  static restore(recovery: Recovery): void {
-    // Restore cursor to saved position
-  }
+    static restore(recovery: Recovery): void {
+        // Restore cursor to saved position
+    }
 
-  static getAbsolutePosition(): { left: number; top: number } {
-    // Get cursor coordinates for overlay
-  }
+    static getAbsolutePosition(): {left: number; top: number} {
+        // Get cursor coordinates for overlay
+    }
 }
 ```
 
@@ -438,14 +438,14 @@ After DOM updates, cursor must be restored:
 
 ```typescript
 function handleInput() {
-  const recovery = Caret.save()        // 1. Save cursor
-  const newText = extractText(dom)     // 2. Get new text
-  onChange(newText)                    // 3. Update value (triggers re-render)
+    const recovery = Caret.save() // 1. Save cursor
+    const newText = extractText(dom) // 2. Get new text
+    onChange(newText) // 3. Update value (triggers re-render)
 
-  // After re-render:
-  useEffect(() => {
-    Caret.restore(recovery)            // 4. Restore cursor
-  })
+    // After re-render:
+    useEffect(() => {
+        Caret.restore(recovery) // 4. Restore cursor
+    })
 }
 ```
 
@@ -455,14 +455,14 @@ function handleInput() {
 
 ```html
 <div contenteditable="true" class="marked-input">
-  <span>Hello </span>
-  <span data-mark="mention">
-    <MentionMark value="Alice" />
-  </span>
-  <span> and </span>
-  <span data-mark="hashtag">
-    <HashtagMark value="react" />
-  </span>
+    <span>Hello </span>
+    <span data-mark="mention">
+        <MentionMark value="Alice" />
+    </span>
+    <span> and </span>
+    <span data-mark="hashtag">
+        <HashtagMark value="react" />
+    </span>
 </div>
 ```
 
@@ -472,23 +472,23 @@ Extract plain text from DOM, preserving marks:
 
 ```typescript
 function extractText(element: HTMLElement): string {
-  let text = ''
+    let text = ''
 
-  for (const node of element.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement
-      if (el.dataset.mark) {
-        // Extract mark syntax from data attributes
-        text += el.dataset.markup || ''
-      } else {
-        text += extractText(el) // Recurse
-      }
+    for (const node of element.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            text += node.textContent
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as HTMLElement
+            if (el.dataset.mark) {
+                // Extract mark syntax from data attributes
+                text += el.dataset.markup || ''
+            } else {
+                text += extractText(el) // Recurse
+            }
+        }
     }
-  }
 
-  return text
+    return text
 }
 ```
 
@@ -498,14 +498,14 @@ Ensure DOM marks match token tree:
 
 ```typescript
 function syncDOMWithTokens(container: HTMLElement, tokens: Token[]) {
-  // 1. Build new DOM tree from tokens
-  const newDOM = tokensToDOM(tokens)
+    // 1. Build new DOM tree from tokens
+    const newDOM = tokensToDOM(tokens)
 
-  // 2. Diff with current DOM
-  const patches = diff(container.childNodes, newDOM)
+    // 2. Diff with current DOM
+    const patches = diff(container.childNodes, newDOM)
 
-  // 3. Apply minimal patches
-  applyPatches(container, patches)
+    // 3. Apply minimal patches
+    applyPatches(container, patches)
 }
 ```
 
@@ -513,16 +513,17 @@ function syncDOMWithTokens(container: HTMLElement, tokens: Token[]) {
 
 ### Parsing Performance
 
-| Text Length | Parse Time | Notes |
-|-------------|-----------|-------|
-| 100 chars | ~0.1ms | Very fast |
-| 1,000 chars | ~1ms | Fast |
-| 10,000 chars | ~10ms | Acceptable |
-| 100,000 chars | ~100ms | Consider optimization |
+| Text Length   | Parse Time | Notes                 |
+| ------------- | ---------- | --------------------- |
+| 100 chars     | ~0.1ms     | Very fast             |
+| 1,000 chars   | ~1ms       | Fast                  |
+| 10,000 chars  | ~10ms      | Acceptable            |
+| 100,000 chars | ~100ms     | Consider optimization |
 
 ### Re-render Performance
 
 With proper memoization:
+
 - **Token changes**: Only changed tokens re-render
 - **Overlay opens**: Only overlay component re-renders
 - **Store updates**: Only components using affected state re-render
@@ -530,6 +531,7 @@ With proper memoization:
 ### Memory Usage
 
 Typical memory footprint:
+
 - **Parser**: ~100KB (markup registry, matcher caches)
 - **Store**: ~10KB (state objects)
 - **Tokens**: ~100 bytes per token
@@ -565,9 +567,9 @@ User provides custom components:
 Event bus implements pub/sub:
 
 ```typescript
-bus.on(event, handler)   // Subscribe
-bus.send(event, data)    // Publish
-bus.off(event, handler)  // Unsubscribe
+bus.on(event, handler) // Subscribe
+bus.send(event, data) // Publish
+bus.off(event, handler) // Unsubscribe
 ```
 
 ### Factory Pattern
@@ -576,8 +578,8 @@ bus.off(event, handler)  // Unsubscribe
 
 ```typescript
 const Editor = createMarkedInput({
-  Mark: MyMark,
-  options: myOptions
+    Mark: MyMark,
+    options: myOptions,
 })
 ```
 
@@ -586,7 +588,7 @@ const Editor = createMarkedInput({
 Store uses Proxy for reactive updates:
 
 ```typescript
-const store = new Proxy(new Store(), { set })
+const store = new Proxy(new Store(), {set})
 ```
 
 ## Extensibility Points
@@ -634,8 +636,8 @@ Replace internal components:
 Hook into system events:
 
 ```typescript
-useListener('change', (data) => {
-  console.log('Changed:', data)
+useListener('change', data => {
+    console.log('Changed:', data)
 })
 ```
 
@@ -694,17 +696,12 @@ console.log('Overlay:', store.overlayMatch)
 
 ```typescript
 // Log all events
-const events = [
-  SystemEvent.STORE_UPDATED,
-  SystemEvent.Change,
-  SystemEvent.CheckTrigger,
-  SystemEvent.Select
-]
+const events = [SystemEvent.STORE_UPDATED, SystemEvent.Change, SystemEvent.CheckTrigger, SystemEvent.Select]
 
 events.forEach(event => {
-  store.bus.on(event, (data) => {
-    console.log(`[Event] ${event.description}`, data)
-  })
+    store.bus.on(event, data => {
+        console.log(`[Event] ${event.description}`, data)
+    })
 })
 ```
 
@@ -712,17 +709,18 @@ events.forEach(event => {
 
 ```typescript
 function printTokenTree(tokens: Token[], indent = 0) {
-  tokens.forEach(token => {
-    const prefix = '  '.repeat(indent)
-    if (token.type === 'text') {
-      console.log(`${prefix}Text: "${token.content}"`)
-    } else {
-      console.log(`${prefix}Mark: ${token.value}`)
-      printTokenTree(token.children, indent + 1)
-    }
-  })
+    tokens.forEach(token => {
+        const prefix = '  '.repeat(indent)
+        if (token.type === 'text') {
+            console.log(`${prefix}Text: "${token.content}"`)
+        } else {
+            console.log(`${prefix}Mark: ${token.value}`)
+            printTokenTree(token.children, indent + 1)
+        }
+    })
 }
 ```
 
 **See also:**
+
 - [How It Works](../introduction/how-it-works) - Understanding how Markput processes text

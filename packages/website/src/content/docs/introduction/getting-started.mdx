@@ -4,14 +4,14 @@ description: Install Markput and build your first @mention editor with autocompl
 keywords: [installation, setup, quick start, react component, mentions editor, autocomplete]
 ---
 
-import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
-import CodePreview from '../../../components/demos/CodePreview.astro';
-import { Step1Demo } from '../../../components/demos/Step1Demo';
-import { Step2Demo } from '../../../components/demos/Step2Demo';
-import { Step3Demo } from '../../../components/demos/Step3Demo';
-import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
-import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw';
-import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw';
+import {Tabs, TabItem, Aside} from '@astrojs/starlight/components'
+import CodePreview from '../../../components/demos/CodePreview.astro'
+import {Step1Demo} from '../../../components/demos/Step1Demo'
+import {Step2Demo} from '../../../components/demos/Step2Demo'
+import {Step3Demo} from '../../../components/demos/Step3Demo'
+import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw'
+import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw'
+import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw'
 
 Build interactive text with custom markup - quick start in minutes.
 
@@ -20,26 +20,26 @@ Build interactive text with custom markup - quick start in minutes.
 Install Markput using your preferred package manager:
 
 <Tabs syncKey="package-manager">
-  <TabItem label="npm" icon="npm">
+	<TabItem label="npm" icon="npm">
     ```bash
     npm install rc-marked-input
     ```
-  </TabItem>
-  <TabItem label="pnpm" icon="pnpm">
+	</TabItem>
+	<TabItem label="pnpm" icon="pnpm">
     ```bash
     pnpm add rc-marked-input
     ```
-  </TabItem>
-  <TabItem label="yarn" icon="seti:yarn">
+	</TabItem>
+	<TabItem label="yarn" icon="seti:yarn">
     ```bash
     yarn add rc-marked-input
     ```
-  </TabItem>
-  <TabItem label="bun" icon="bun">
+	</TabItem>
+	<TabItem label="bun" icon="bun">
     ```bash
     bun add rc-marked-input
     ```
-  </TabItem>
+	</TabItem>
 </Tabs>
 
 **Requirements**: React 17 or later.
@@ -53,7 +53,7 @@ Let's build a marked text editor with autocomplete in three steps.
 Here's a basic editor rendering marked text. Try clicking the highlighted text:
 
 <CodePreview code={step1DemoRaw}>
-  <Step1Demo client:visible />
+	<Step1Demo client:visible />
 </CodePreview>
 
 **How it works:**
@@ -78,7 +78,7 @@ Since `Mark` is a regular React component, you can style it, add click handlers 
 Add the `options` prop to enable autocomplete suggestions:
 
 <CodePreview code={step2DemoRaw}>
-  <Step2Demo client:visible />
+	<Step2Demo client:visible />
 </CodePreview>
 
 **How it works:**
@@ -87,8 +87,8 @@ The `options` prop configures autocomplete behavior:
 
 - **`markup`** — the pattern for inserted text (`__value__` inserts plain text)
 - **`slotProps.overlay`** — configuration for the built-in `Suggestions` component:
-  - **`trigger`** — character that opens the overlay (here: `@`)
-  - **`data`** — array of suggestions to display
+    - **`trigger`** — character that opens the overlay (here: `@`)
+    - **`data`** — array of suggestions to display
 
 When you type the trigger character `@`:
 
@@ -105,7 +105,7 @@ The built-in `Suggestions` component is convenient, but sometimes you need full 
 Here's a custom mention UI that fetches GitHub users and displays avatars:
 
 <CodePreview code={step3DemoRaw}>
-  <Step3Demo client:visible />
+	<Step3Demo client:visible />
 </CodePreview>
 
 **How it works:**
@@ -123,7 +123,9 @@ The hook handles all the complexity: detecting triggers, tracking the search que
 In this example, we fetch GitHub users and store the username as `value` and avatar URL as `meta`. The `Mark` component then uses `meta` to display the avatar. You can use any UI library or custom component. Markput doesn't impose styling constraints.
 
 <Aside type="caution" title="Browser Compatibility">
-This example uses the [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API), which requires Chrome 114+, Edge 114+, or Safari 17+. For broader browser support, use a regular positioned `div` or a third-party library like [Floating UI](https://floating-ui.com/).
+	This example uses the [Popover API](https://developer.mozilla.org/en-US/docs/Web/API/Popover_API), which requires
+	Chrome 114+, Edge 114+, or Safari 17+. For broader browser support, use a regular positioned `div` or a third-party
+	library like [Floating UI](https://floating-ui.com/).
 </Aside>
 
 ## Try It Live

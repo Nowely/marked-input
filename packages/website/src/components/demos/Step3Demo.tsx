@@ -2,10 +2,7 @@ import {MarkedInput, useOverlay} from 'rc-marked-input'
 import {useState, useEffect, type RefObject} from 'react'
 
 const User = ({avatar, login, onClick}: {avatar?: string; login?: string; onClick?: () => void}) => (
-	<span
-		className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`}
-		onClick={onClick}
-	>
+	<span className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`} onClick={onClick}>
 		<img src={avatar} alt="" className="rounded-full w-6 h-6" />
 		{login}
 	</span>
@@ -45,7 +42,7 @@ const CustomOverlay = () => {
 
 export const Step3Demo = () => (
 	<MarkedInput
-		defaultValue='Type @ to mention someone!'
+		defaultValue="Type @ to mention someone!"
 		Mark={({value, meta}) => <User avatar={meta} login={value} />}
 		Overlay={CustomOverlay}
 	/>

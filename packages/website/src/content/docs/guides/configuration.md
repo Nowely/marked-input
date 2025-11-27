@@ -15,24 +15,29 @@ There are two main ways to configure Markput:
 Pass configuration directly to `<MarkedInput>`:
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
-import { useState } from 'react'
+import {MarkedInput} from 'rc-marked-input'
+import {useState} from 'react'
 
 function Editor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={MyMarkComponent}
-      options={[/* configuration */]}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={MyMarkComponent}
+            options={
+                [
+                    /* configuration */
+                ]
+            }
+        />
+    )
 }
 ```
 
 **Use when:**
+
 - Configuration changes based on props or state
 - Different instances need different configs
 - Building a reusable editor component
@@ -42,21 +47,24 @@ function Editor() {
 Create a pre-configured component with `createMarkedInput`:
 
 ```tsx
-import { createMarkedInput } from 'rc-marked-input'
+import {createMarkedInput} from 'rc-marked-input'
 
 const ConfiguredEditor = createMarkedInput({
-  Mark: MyMarkComponent,
-  options: [/* configuration */]
+    Mark: MyMarkComponent,
+    options: [
+        /* configuration */
+    ],
 })
 
 // Use anywhere
 function App() {
-  const [value, setValue] = useState('')
-  return <ConfiguredEditor value={value} onChange={setValue} />
+    const [value, setValue] = useState('')
+    return <ConfiguredEditor value={value} onChange={setValue} />
 }
 ```
 
 **Use when:**
+
 - Configuration is static across the app
 - Want to reuse the same config multiple times
 - Prefer a cleaner, more declarative API
@@ -91,11 +99,11 @@ options={[
 
 Each option has three main properties:
 
-| Property | Type | Purpose |
-|----------|------|---------|
-| `markup` | `string` | Pattern to match (e.g., `'@[__value__]'`) |
-| `slots` | `object` | Per-option components (mark, overlay) |
-| `slotProps` | `object` | Props for slot components |
+| Property    | Type     | Purpose                                   |
+| ----------- | -------- | ----------------------------------------- |
+| `markup`    | `string` | Pattern to match (e.g., `'@[__value__]'`) |
+| `slots`     | `object` | Per-option components (mark, overlay)     |
+| `slotProps` | `object` | Props for slot components                 |
 
 ## Markup Patterns
 
@@ -124,6 +132,7 @@ markup: '<__value__>__nested__</__value__>'
 ```
 
 **Placeholders:**
+
 - `__value__` - Main content (plain text)
 - `__meta__` - Metadata (plain text)
 - `__nested__` - Content that can contain other marks
@@ -140,16 +149,17 @@ Transform markup data dynamically:
 
 ```tsx
 slotProps: {
-  mark: ({ value, meta, nested, children }) => ({
-    // Transform markup data into component props
-    label: value,
-    userId: meta,
-    onClick: () => console.log('Clicked', value)
-  })
+    mark: ({value, meta, nested, children}) => ({
+        // Transform markup data into component props
+        label: value,
+        userId: meta,
+        onClick: () => console.log('Clicked', value),
+    })
 }
 ```
 
 **Parameters:**
+
 - `value` - Content from `__value__` placeholder
 - `meta` - Content from `__meta__` placeholder
 - `nested` - Raw string from `__nested__` placeholder
@@ -189,6 +199,7 @@ slotProps: {
 ```
 
 **Use when:**
+
 - All marks should have the same props
 - Props don't depend on markup content
 - Working with UI library components (MUI, Chakra)
@@ -196,21 +207,23 @@ slotProps: {
 **Example:** MUI Chip
 
 ```tsx
-import { Chip } from '@mui/material'
+import {Chip} from '@mui/material'
 
-<MarkedInput
-  Mark={Chip}
-  options={[{
-    markup: '@[__value__]',
-    slotProps: {
-      mark: {
-        variant: 'filled',
-        color: 'primary',
-        size: 'small',
-        deleteIcon: <CloseIcon />
-      }
-    }
-  }]}
+;<MarkedInput
+    Mark={Chip}
+    options={[
+        {
+            markup: '@[__value__]',
+            slotProps: {
+                mark: {
+                    variant: 'filled',
+                    color: 'primary',
+                    size: 'small',
+                    deleteIcon: <CloseIcon />,
+                },
+            },
+        },
+    ]}
 />
 ```
 
@@ -254,6 +267,7 @@ slotProps: {
 ### Common Configurations
 
 **Basic suggestions:**
+
 ```tsx
 overlay: {
   trigger: '@',
@@ -262,6 +276,7 @@ overlay: {
 ```
 
 **With objects:**
+
 ```tsx
 overlay: {
   trigger: '/',
@@ -274,6 +289,7 @@ overlay: {
 ```
 
 **Dynamic data (from API):**
+
 ```tsx
 const [users, setUsers] = useState([])
 
@@ -289,6 +305,7 @@ overlay: {
 ```
 
 **Multiple triggers:**
+
 ```tsx
 options={[
   {
@@ -334,23 +351,23 @@ Override global components for specific patterns:
 
 ```tsx
 <MarkedInput
-  Mark={DefaultMark}          // Fallback
-  options={[
-    {
-      markup: '@[__value__]',
-      slots: {
-        mark: MentionMark,    // Overrides DefaultMark
-        overlay: MentionOverlay
-      }
-    },
-    {
-      markup: '#[__value__]',
-      slots: {
-        mark: HashtagMark     // Overrides DefaultMark
-      }
-      // Uses global Overlay
-    }
-  ]}
+    Mark={DefaultMark} // Fallback
+    options={[
+        {
+            markup: '@[__value__]',
+            slots: {
+                mark: MentionMark, // Overrides DefaultMark
+                overlay: MentionOverlay,
+            },
+        },
+        {
+            markup: '#[__value__]',
+            slots: {
+                mark: HashtagMark, // Overrides DefaultMark
+            },
+            // Uses global Overlay
+        },
+    ]}
 />
 ```
 
@@ -372,21 +389,21 @@ For **each** option, components are resolved in this order:
 
 ```tsx
 <MarkedInput
-  Mark={DefaultMark}
-  Overlay={DefaultOverlay}
-  options={[
-    {
-      markup: '@[__value__]',
-      slots: { mark: MentionMark }
-      // ✅ Uses: MentionMark (option.slots)
-      // ✅ Uses: DefaultOverlay (global)
-    },
-    {
-      markup: '#[__value__]'
-      // ✅ Uses: DefaultMark (global)
-      // ✅ Uses: DefaultOverlay (global)
-    }
-  ]}
+    Mark={DefaultMark}
+    Overlay={DefaultOverlay}
+    options={[
+        {
+            markup: '@[__value__]',
+            slots: {mark: MentionMark},
+            // ✅ Uses: MentionMark (option.slots)
+            // ✅ Uses: DefaultOverlay (global)
+        },
+        {
+            markup: '#[__value__]',
+            // ✅ Uses: DefaultMark (global)
+            // ✅ Uses: DefaultOverlay (global)
+        },
+    ]}
 />
 ```
 
@@ -395,129 +412,127 @@ For **each** option, components are resolved in this order:
 ### Example 1: Multi-Trigger Editor
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
-import { useState } from 'react'
+import {MarkedInput} from 'rc-marked-input'
+import {useState} from 'react'
 
 function MultiTriggerEditor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  const users = ['Alice', 'Bob', 'Charlie']
-  const hashtags = ['react', 'javascript', 'typescript']
-  const commands = ['heading', 'bold', 'italic']
+    const users = ['Alice', 'Bob', 'Charlie']
+    const hashtags = ['react', 'javascript', 'typescript']
+    const commands = ['heading', 'bold', 'italic']
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      Mark={({ value, meta }) => (
-        <span style={{ background: meta === 'mention' ? '#e3f2fd' : '#f3e5f5' }}>
-          {value}
-        </span>
-      )}
-      options={[
-        {
-          markup: '@[__value__](mention)',
-          slotProps: {
-            overlay: { trigger: '@', data: users }
-          }
-        },
-        {
-          markup: '#[__value__](hashtag)',
-          slotProps: {
-            overlay: { trigger: '#', data: hashtags }
-          }
-        },
-        {
-          markup: '/[__value__](command)',
-          slotProps: {
-            overlay: { trigger: '/', data: commands }
-          }
-        }
-      ]}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            Mark={({value, meta}) => (
+                <span style={{background: meta === 'mention' ? '#e3f2fd' : '#f3e5f5'}}>{value}</span>
+            )}
+            options={[
+                {
+                    markup: '@[__value__](mention)',
+                    slotProps: {
+                        overlay: {trigger: '@', data: users},
+                    },
+                },
+                {
+                    markup: '#[__value__](hashtag)',
+                    slotProps: {
+                        overlay: {trigger: '#', data: hashtags},
+                    },
+                },
+                {
+                    markup: '/[__value__](command)',
+                    slotProps: {
+                        overlay: {trigger: '/', data: commands},
+                    },
+                },
+            ]}
+        />
+    )
 }
 ```
 
 ### Example 2: Per-Pattern Components
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
+import {MarkedInput} from 'rc-marked-input'
 
-const MentionMark = ({ value, meta }) => (
-  <a href={`/users/${meta}`} className="mention">
-    @{value}
-  </a>
+const MentionMark = ({value, meta}) => (
+    <a href={`/users/${meta}`} className="mention">
+        @{value}
+    </a>
 )
 
-const HashtagMark = ({ value }) => (
-  <a href={`/tags/${value}`} className="hashtag">
-    #{value}
-  </a>
+const HashtagMark = ({value}) => (
+    <a href={`/tags/${value}`} className="hashtag">
+        #{value}
+    </a>
 )
 
 function Editor() {
-  const [value, setValue] = useState('')
+    const [value, setValue] = useState('')
 
-  return (
-    <MarkedInput
-      value={value}
-      onChange={setValue}
-      options={[
-        {
-          markup: '@[__value__](__meta__)',
-          slots: { mark: MentionMark },
-          slotProps: {
-            mark: ({ value, meta }) => ({ value, meta }),
-            overlay: { trigger: '@', data: users }
-          }
-        },
-        {
-          markup: '#[__value__]',
-          slots: { mark: HashtagMark },
-          slotProps: {
-            mark: ({ value }) => ({ value }),
-            overlay: { trigger: '#', data: hashtags }
-          }
-        }
-      ]}
-    />
-  )
+    return (
+        <MarkedInput
+            value={value}
+            onChange={setValue}
+            options={[
+                {
+                    markup: '@[__value__](__meta__)',
+                    slots: {mark: MentionMark},
+                    slotProps: {
+                        mark: ({value, meta}) => ({value, meta}),
+                        overlay: {trigger: '@', data: users},
+                    },
+                },
+                {
+                    markup: '#[__value__]',
+                    slots: {mark: HashtagMark},
+                    slotProps: {
+                        mark: ({value}) => ({value}),
+                        overlay: {trigger: '#', data: hashtags},
+                    },
+                },
+            ]}
+        />
+    )
 }
 ```
 
 ### Example 3: createMarkedInput Factory
 
 ```tsx
-import { createMarkedInput } from 'rc-marked-input'
-import { Chip } from '@mui/material'
+import {createMarkedInput} from 'rc-marked-input'
+import {Chip} from '@mui/material'
 
 const MentionEditor = createMarkedInput({
-  Mark: Chip,
-  options: [
-    {
-      markup: '@[__value__](__meta__)',
-      slotProps: {
-        mark: ({ value, meta }) => ({
-          label: `@${value}`,
-          variant: 'filled',
-          color: 'primary',
-          size: 'small',
-          onClick: () => console.log('Clicked', meta)
-        }),
-        overlay: {
-          trigger: '@',
-          data: ['Alice', 'Bob', 'Charlie']
-        }
-      }
-    }
-  ]
+    Mark: Chip,
+    options: [
+        {
+            markup: '@[__value__](__meta__)',
+            slotProps: {
+                mark: ({value, meta}) => ({
+                    label: `@${value}`,
+                    variant: 'filled',
+                    color: 'primary',
+                    size: 'small',
+                    onClick: () => console.log('Clicked', meta),
+                }),
+                overlay: {
+                    trigger: '@',
+                    data: ['Alice', 'Bob', 'Charlie'],
+                },
+            },
+        },
+    ],
 })
 
 // Use anywhere in your app
 function App() {
-  const [value, setValue] = useState('')
-  return <MentionEditor value={value} onChange={setValue} />
+    const [value, setValue] = useState('')
+    return <MentionEditor value={value} onChange={setValue} />
 }
 ```
 
@@ -526,41 +541,34 @@ function App() {
 Type your configuration for better IDE support:
 
 ```tsx
-import { MarkedInput } from 'rc-marked-input'
-import type { Option } from 'rc-marked-input'
+import {MarkedInput} from 'rc-marked-input'
+import type {Option} from 'rc-marked-input'
 
 interface MentionProps {
-  username: string
-  userId: string
-  onClick: () => void
+    username: string
+    userId: string
+    onClick: () => void
 }
 
 const options: Option<MentionProps>[] = [
-  {
-    markup: '@[__value__](__meta__)',
-    slotProps: {
-      mark: ({ value, meta }) => ({
-        username: value || '',
-        userId: meta || '',
-        onClick: () => console.log('Clicked')
-      }),
-      overlay: {
-        trigger: '@',
-        data: ['Alice', 'Bob']
-      }
-    }
-  }
+    {
+        markup: '@[__value__](__meta__)',
+        slotProps: {
+            mark: ({value, meta}) => ({
+                username: value || '',
+                userId: meta || '',
+                onClick: () => console.log('Clicked'),
+            }),
+            overlay: {
+                trigger: '@',
+                data: ['Alice', 'Bob'],
+            },
+        },
+    },
 ]
 
 function TypedEditor() {
-  return (
-    <MarkedInput<MentionProps>
-      Mark={MentionComponent}
-      options={options}
-      value=""
-      onChange={() => {}}
-    />
-  )
+    return <MarkedInput<MentionProps> Mark={MentionComponent} options={options} value="" onChange={() => {}} />
 }
 ```
 

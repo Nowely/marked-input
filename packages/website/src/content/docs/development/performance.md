@@ -12,13 +12,13 @@ This guide covers performance optimization techniques for Markput applications.
 
 Markput is optimized for typical use cases:
 
-| Scenario | Performance | Notes |
-|----------|------------|-------|
-| **Text length** | 100-10,000 chars | Excellent performance |
-| **Marks count** | 10-100 marks | Fast rendering |
-| **Typing speed** | Normal typing | No lag |
-| **Parse time** | ~0.01ms per 100 chars | Very fast |
-| **Re-render** | ~1-5ms | Optimized with memoization |
+| Scenario         | Performance           | Notes                      |
+| ---------------- | --------------------- | -------------------------- |
+| **Text length**  | 100-10,000 chars      | Excellent performance      |
+| **Marks count**  | 10-100 marks          | Fast rendering             |
+| **Typing speed** | Normal typing         | No lag                     |
+| **Parse time**   | ~0.01ms per 100 chars | Very fast                  |
+| **Re-render**    | ~1-5ms                | Optimized with memoization |
 
 ### Performance Bottlenecks
 
@@ -35,6 +35,7 @@ Common performance issues:
 ### Problem: Slow Parsing
 
 **Symptoms:**
+
 - Typing feels sluggish
 - Delays when pasting large text
 - UI freezes on input
@@ -184,6 +185,7 @@ function Editor() {
 ### Problem: Too Many DOM Nodes
 
 **Symptoms:**
+
 - Slow scrolling
 - High memory usage
 - Browser becomes unresponsive
@@ -299,14 +301,12 @@ const MyMark: FC = () => {
 ```typescript
 // Cache parsed tokens
 const tokens = useMemo(() => {
-  return parser.parse(value)
+    return parser.parse(value)
 }, [value, parser])
 
 // Cache mark data
 const markData = useMemo(() => {
-  return tokens
-    .filter(t => t.type === 'mark')
-    .map(t => ({ value: t.value, meta: t.meta }))
+    return tokens.filter(t => t.type === 'mark').map(t => ({value: t.value, meta: t.meta}))
 }, [tokens])
 ```
 
@@ -399,6 +399,7 @@ const throttled = throttle(fn, 300)
 ```
 
 **When to use:**
+
 - **Debounce**: API calls, validation, save operations
 - **Throttle**: Scroll events, resize events, frequent updates
 
@@ -414,6 +415,7 @@ const throttled = throttle(fn, 300)
 6. Analyze flame graph
 
 **Look for:**
+
 - Long render times (>16ms)
 - Frequent re-renders
 - Unnecessary component updates
@@ -427,6 +429,7 @@ const throttled = throttle(fn, 300)
 5. Analyze timeline
 
 **Look for:**
+
 - Long scripting time
 - Layout thrashing
 - Excessive repaints
@@ -435,36 +438,33 @@ const throttled = throttle(fn, 300)
 
 ```typescript
 function measurePerformance<T>(fn: () => T, label: string): T {
-  const start = performance.now()
-  const result = fn()
-  const end = performance.now()
-  console.log(`[${label}] ${(end - start).toFixed(2)}ms`)
-  return result
+    const start = performance.now()
+    const result = fn()
+    const end = performance.now()
+    console.log(`[${label}] ${(end - start).toFixed(2)}ms`)
+    return result
 }
 
 // Usage
-const tokens = measurePerformance(
-  () => parser.parse(value),
-  'Parse'
-)
+const tokens = measurePerformance(() => parser.parse(value), 'Parse')
 ```
 
 ### Performance Hooks
 
 ```typescript
 function usePerformanceMonitor(label: string) {
-  useEffect(() => {
-    const start = performance.now()
-    return () => {
-      const end = performance.now()
-      console.log(`[${label}] Render: ${(end - start).toFixed(2)}ms`)
-    }
-  })
+    useEffect(() => {
+        const start = performance.now()
+        return () => {
+            const end = performance.now()
+            console.log(`[${label}] Render: ${(end - start).toFixed(2)}ms`)
+        }
+    })
 }
 
 function MyMark() {
-  usePerformanceMonitor('MyMark')
-  // ... component code
+    usePerformanceMonitor('MyMark')
+    // ... component code
 }
 ```
 
@@ -476,7 +476,7 @@ Ensure proper tree shaking:
 
 ```typescript
 // ✅ Named imports (tree-shakeable)
-import { MarkedInput, useMark } from 'rc-marked-input'
+import {MarkedInput, useMark} from 'rc-marked-input'
 
 // ❌ Namespace import (not tree-shakeable)
 import * as Markput from 'rc-marked-input'
@@ -528,14 +528,14 @@ function App() {
 
 ```typescript
 function MyComponent() {
-  useEffect(() => {
-    const handler = (e) => console.log(e)
-    store.bus.on(SystemEvent.Change, handler)
+    useEffect(() => {
+        const handler = e => console.log(e)
+        store.bus.on(SystemEvent.Change, handler)
 
-    return () => {
-      store.bus.off(SystemEvent.Change, handler) // ✅ Cleanup
-    }
-  }, [])
+        return () => {
+            store.bus.off(SystemEvent.Change, handler) // ✅ Cleanup
+        }
+    }, [])
 }
 ```
 
@@ -573,13 +573,13 @@ function Editor() {
 const markCache = new WeakMap<MarkToken, CachedData>()
 
 function getCachedData(mark: MarkToken): CachedData {
-  if (markCache.has(mark)) {
-    return markCache.get(mark)!
-  }
+    if (markCache.has(mark)) {
+        return markCache.get(mark)!
+    }
 
-  const data = computeExpensiveData(mark)
-  markCache.set(mark, data)
-  return data
+    const data = computeExpensiveData(mark)
+    markCache.set(mark, data)
+    return data
 }
 ```
 
@@ -590,19 +590,19 @@ function getCachedData(mark: MarkToken): CachedData {
 ```typescript
 // ❌ Multiple onChange calls
 function insertMultipleMarks() {
-  marks.forEach(mark => {
-    const newValue = value + annotate(markup, mark)
-    onChange(newValue) // Triggers re-render each time!
-  })
+    marks.forEach(mark => {
+        const newValue = value + annotate(markup, mark)
+        onChange(newValue) // Triggers re-render each time!
+    })
 }
 
 // ✅ Single onChange call
 function insertMultipleMarks() {
-  let newValue = value
-  marks.forEach(mark => {
-    newValue += annotate(markup, mark)
-  })
-  onChange(newValue) // Single re-render
+    let newValue = value
+    marks.forEach(mark => {
+        newValue += annotate(markup, mark)
+    })
+    onChange(newValue) // Single re-render
 }
 ```
 
@@ -612,18 +612,18 @@ function insertMultipleMarks() {
 const pendingRequests = new Map<string, Promise<any>>()
 
 function fetchWithDedup(url: string): Promise<any> {
-  if (pendingRequests.has(url)) {
-    return pendingRequests.get(url)!
-  }
+    if (pendingRequests.has(url)) {
+        return pendingRequests.get(url)!
+    }
 
-  const promise = fetch(url).then(r => r.json())
-  pendingRequests.set(url, promise)
+    const promise = fetch(url).then(r => r.json())
+    pendingRequests.set(url, promise)
 
-  promise.finally(() => {
-    pendingRequests.delete(url)
-  })
+    promise.finally(() => {
+        pendingRequests.delete(url)
+    })
 
-  return promise
+    return promise
 }
 ```
 
@@ -687,15 +687,15 @@ function IncrementalEditor() {
 
 ```typescript
 function benchmark(label: string, fn: () => void, iterations = 1000) {
-  const start = performance.now()
+    const start = performance.now()
 
-  for (let i = 0; i < iterations; i++) {
-    fn()
-  }
+    for (let i = 0; i < iterations; i++) {
+        fn()
+    }
 
-  const end = performance.now()
-  const avg = (end - start) / iterations
-  console.log(`[${label}] Avg: ${avg.toFixed(3)}ms`)
+    const end = performance.now()
+    const avg = (end - start) / iterations
+    console.log(`[${label}] Avg: ${avg.toFixed(3)}ms`)
 }
 ```
 
@@ -705,11 +705,11 @@ function benchmark(label: string, fn: () => void, iterations = 1000) {
 const parser = new Parser(['@[__value__](__meta__)'])
 
 benchmark('Parse 100 chars', () => {
-  parser.parse('Hello @[Alice](1) @[Bob](2)')
+    parser.parse('Hello @[Alice](1) @[Bob](2)')
 })
 
 benchmark('Parse 1000 chars', () => {
-  parser.parse(longText)
+    parser.parse(longText)
 })
 ```
 

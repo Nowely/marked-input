@@ -1,5 +1,5 @@
 ---
-title: "RFC: Nested Marks"
+title: 'RFC: Nested Marks'
 description: RFC nested marks feature proposal - hierarchical structures, ParserV2, tree-based parsing, implementation roadmap
 keywords: [RFC, nested marks, ParserV2, proposal, hierarchical, roadmap, feature development]
 ---
