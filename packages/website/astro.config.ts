@@ -2,8 +2,8 @@ import {defineConfig} from 'astro/config'
 import starlight from '@astrojs/starlight'
 import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
 import tailwindcss from '@tailwindcss/vite'
-
 import react from '@astrojs/react'
+import vercel from '@astrojs/vercel'
 
 const isDev = import.meta.env.DEV
 const wipBadge = {text: '🚧', class: 'border-none bg-transparent'}
@@ -55,6 +55,10 @@ const sidebarConfig = [
 
 // https://astro.build/config
 export default defineConfig({
+	adapter: vercel({
+		imageService: true,
+		webAnalytics: {enabled: true},
+	}),
 	integrations: [
 		starlight({
 			plugins: [
