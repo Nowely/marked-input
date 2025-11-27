@@ -672,4 +672,6 @@ mark: {
 }
 ```
 
+**Try it live:** [CodeSandbox - Configured Component](https://codesandbox.io/s/configured-marked-input-305v6m)
+
 **Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

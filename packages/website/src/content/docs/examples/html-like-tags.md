@@ -540,5 +540,3 @@ const validateTag = (
   return { valid: true }
 }
 ```
-
-**Try it live:** [CodeSandbox - HTML-like Tags](https://codesandbox.io/s/html-like-tags-example)

@@ -841,7 +841,3 @@ const AccessibleMentionMark: FC<MentionProps> = (props) => {
     `${mentionedUsers.length} users mentioned`}
 </div>
 ```
-
-**Try it live:** [CodeSandbox - Mention System](https://codesandbox.io/s/mention-system-example)
-
-**Source code:** [GitHub - Complete Example](https://github.com/Nowely/marked-input/tree/main/examples/mention-system)

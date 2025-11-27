@@ -711,5 +711,3 @@ const RelatedHashtags: FC<{ currentTag: string }> = ({ currentTag }) => {
   )
 }
 ```
-
-**Try it live:** [CodeSandbox - Hashtags](https://codesandbox.io/s/hashtags-example)

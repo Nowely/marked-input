@@ -950,5 +950,3 @@ const handleKeyDown: KeyboardEventHandler<HTMLDivElement> = (e) => {
   // Type-safe event handler
 }
 ```
-
-**Try it:** [CodeSandbox - Keyboard Shortcuts](https://codesandbox.io/s/keyboard-shortcuts-example)

@@ -547,5 +547,3 @@ const TableMark: FC<{ value: string }> = ({ value }) => {
   )
 }
 ```
-
-**Try it live:** [CodeSandbox - Markdown Editor](https://codesandbox.io/s/markdown-editor-example)

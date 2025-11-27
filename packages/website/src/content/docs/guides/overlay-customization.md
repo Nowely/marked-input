@@ -751,3 +751,5 @@ function TypedOverlay() {
 - Attach `ref` for outside click detection
 - Use `select()` to insert marks
 - Add keyboard navigation for better UX
+
+**Try it live:** [CodeSandbox - Custom Overlay](https://codesandbox.io/s/custom-overlay-1m5ctx)

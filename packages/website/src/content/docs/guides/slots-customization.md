@@ -1109,5 +1109,3 @@ const Bad = forwardRef((props, ref) => (  // Any types!
   <div {...props} ref={ref} />
 ))
 ```
-
-**More examples:** Check [CodeSandbox - Custom Slots](https://codesandbox.io/s/custom-slots-example) for live demos.

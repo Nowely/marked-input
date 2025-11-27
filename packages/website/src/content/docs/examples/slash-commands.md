@@ -988,7 +988,3 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
   }
 }
 ```
-
-**Try it live:** [CodeSandbox - Slash Commands](https://codesandbox.io/s/slash-commands-example)
-
-**Source code:** [GitHub - Complete Example](https://github.com/Nowely/marked-input/tree/main/examples/slash-commands)

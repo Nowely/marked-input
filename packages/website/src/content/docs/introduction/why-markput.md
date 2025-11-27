@@ -24,6 +24,7 @@ Markput (marked input) is a React component library for building editors with **
 - **Dynamic Marks**: Interactive marks with editing, removing, focusing, and custom actions.
 - **Overlay System**: Built-in suggestions or fully custom overlays.
 - **Nested Marks**: Hierarchical structures - marks inside marks.
+- **Cross Selection**: Select text across multiple marks - seamless text highlighting.
 - **Zero Dependency**: Lightweight, no external dependencies.
 - **Plain Text State**: Simple string storage - easy to save and version.
 - **TypeScript-First**: Full type safety included.

@@ -709,5 +709,3 @@ export const AutocompleteEditor: FC = () => {
   color: #424242;
 }
 ```
-
-**Try it live:** [CodeSandbox - Autocomplete](https://codesandbox.io/s/autocomplete-example)
