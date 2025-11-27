@@ -1,5 +1,5 @@
 ---
-title: Slots Customization
+title: 🚧 Slots Customization
 description: Customize Markput components with slots pattern - replace container, text rendering, styling without forking
 keywords: [slots pattern, component customization, container, rendering, styling, slotProps]
 ---

@@ -1,5 +1,5 @@
 ---
-title: Hashtags
+title: 🚧 Hashtags
 description: Twitter/Instagram hashtag system tutorial - trending topics, autocomplete, click tracking, usage analytics
 keywords: [hashtags, trending topics, social media, autocomplete, tagging, analytics]
 ---

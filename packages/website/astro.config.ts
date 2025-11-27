@@ -50,19 +50,8 @@ const sidebarConfig = [
 	},
 	typeDocSidebarGroup,
 	{label: 'Comparisons', slug: 'comparisons', badge: wipBadge},
-]
+].filter(item => isDev || ('badge' in item && item.badge !== wipBadge))
 
-const filterDevItems = (items: any[]) => {
-	return items.filter(item => {
-		if (item.badge === wipBadge && !isDev) {
-			return false
-		}
-		if (item.items) {
-			item.items = filterDevItems(item.items)
-		}
-		return true
-	})
-}
 
 // https://astro.build/config
 export default defineConfig({
@@ -99,7 +88,7 @@ export default defineConfig({
 					icon: 'github',
 				},
 			],
-			sidebar: filterDevItems(sidebarConfig),
+			sidebar: sidebarConfig,
 			customCss: ['./src/styles/global.css'],
 		}),
 		react(),

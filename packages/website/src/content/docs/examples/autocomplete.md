@@ -1,5 +1,5 @@
 ---
-title: Autocomplete System
+title: 🚧 Autocomplete System
 description: Advanced autocomplete tutorial - fuzzy search, categorized suggestions, recent items, multi-source, loading states
 keywords: [autocomplete, fuzzy search, suggestions, filtering, categories, recent items, search]
 ---

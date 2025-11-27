@@ -1,5 +1,5 @@
 ---
-title: Slash Commands
+title: 🚧 Slash Commands
 description: Notion-style slash commands tutorial - command menu, text transformation, keyboard navigation, content insertion
 keywords: [slash commands, command menu, Notion, text transformation, command palette, content insertion]
 ---

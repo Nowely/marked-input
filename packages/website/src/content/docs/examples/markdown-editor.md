@@ -1,5 +1,5 @@
 ---
-title: Markdown Editor
+title: 🚧 Markdown Editor
 description: GitHub markdown editor tutorial - bold, italic, code blocks, links, live preview, keyboard shortcuts
 keywords: [markdown editor, rich text, formatting, bold, italic, code blocks, live preview, WYSIWYG]
 ---

@@ -1,5 +1,5 @@
 ---
-title: Mention System
+title: 🚧 Mention System
 description: Twitter/Slack @mention system tutorial - autocomplete, user avatars, clickable marks, backend integration, mobile optimization
 keywords: [mentions, social media, chat, autocomplete, avatars, user tagging, backend integration]
 ---

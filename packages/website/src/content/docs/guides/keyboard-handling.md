@@ -1,5 +1,5 @@
 ---
-title: Keyboard Handling
+title: 🚧 Keyboard Handling
 description: Keyboard shortcuts and navigation in Markput - built-in keys, custom hotkeys, onKeyDown events, Cmd/Ctrl modifiers
 keywords: [keyboard shortcuts, hotkeys, onKeyDown, navigation, Cmd, Ctrl, modifier keys, focus management]
 ---

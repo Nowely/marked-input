@@ -1,5 +1,5 @@
 ---
-title: Configuration
+title: 🚧 Configuration
 description: Configure Markput - inline configuration, factory pattern, markup patterns, options, and advanced setup for React text editors
 keywords: [configuration, factory pattern, markup patterns, options, inline config, setup, advanced]
 ---
