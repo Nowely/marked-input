@@ -13,7 +13,7 @@ import step1DemoRaw from '../../../components/demos/Step1Demo.tsx?raw';
 import step2DemoRaw from '../../../components/demos/Step2Demo.tsx?raw';
 import step3DemoRaw from '../../../components/demos/Step3Demo.tsx?raw';
 
-Build interactive text with custom markup—quick start in minutes.
+Build interactive text with custom markup - quick start in minutes.
 
 ## Installation
 
@@ -83,9 +83,9 @@ Add the `options` prop to enable autocomplete suggestions:
 
 **How it works:**
 
-The `options` prop accepts an array of option objects. Each option configures how markup is parsed and how the overlay behaves:
+The `options` prop configures autocomplete behavior:
 
-- **`markup`** — the pattern used for parsing and inserting marks (same syntax as Step 1)
+- **`markup`** — the pattern for inserted text (`__value__` inserts plain text)
 - **`slotProps.overlay`** — configuration for the built-in `Suggestions` component:
   - **`trigger`** — character that opens the overlay (here: `@`)
   - **`data`** — array of suggestions to display
@@ -94,9 +94,7 @@ When you type the trigger character `@`:
 
 1. Markput **detects** the trigger and shows the built-in `Suggestions` component
 2. As you type, suggestions are **filtered** based on your input
-3. When you select an item (e.g., `'Alice'`), Markput **inserts** the markup. For simple strings, the item becomes both `value` (visible text) and `meta` (stored data).
-
-The `Mark` component receives `MarkProps` with `value` and `meta` properties. You can import this type for better TypeScript support.
+3. When you select an item (e.g., `'Alice'`), Markput **inserts** the text
 
 Keyboard navigation is built-in (↑↓ to navigate, Enter to select, Esc to close).
 
