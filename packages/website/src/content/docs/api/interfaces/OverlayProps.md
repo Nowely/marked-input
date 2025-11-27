@@ -1,0 +1,34 @@
+---
+editUrl: false
+next: false
+prev: false
+title: "OverlayProps"
+---
+
+Defined in: [packages/markput/src/types.ts:27](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L27)
+
+Default props for Overlay components via slotProps.
+
+## Properties
+
+### data?
+
+```ts
+optional data: string[];
+```
+
+Defined in: [packages/markput/src/types.ts:31](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L31)
+
+Data array for suggestions/autocomplete
+
+***
+
+### trigger?
+
+```ts
+optional trigger: string;
+```
+
+Defined in: [packages/markput/src/types.ts:29](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L29)
+
+Trigger character(s) that activate the overlay

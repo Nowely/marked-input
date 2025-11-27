@@ -1,0 +1,40 @@
+---
+title: Welcome
+description: Markput - lightweight React component library for @mentions, hashtags, slash commands, and custom markup editors
+template: splash
+keywords: [Markput, React component, text editor, marks, mentions, hashtags, slash commands, markup]
+hero:
+    title: Build your own editor with Markput
+    tagline: A React component that lets you combine editable text with any component using custom markup.
+    image:
+        file: ../../assets/houston.webp
+    actions:
+        - text: Get Started
+          link: /introduction/getting-started/
+          icon: right-arrow
+          variant: primary
+        - text: View on GitHub
+          link: https://github.com/Nowely/marked-input
+          icon: external
+          variant: minimal
+---
+
+import {Card, CardGrid} from '@astrojs/starlight/components'
+
+<CardGrid stagger>
+	<Card title="Dynamic Marks" icon="pencil">
+		Add, edit, remove, and visualize marks with ease.
+	</Card>
+	<Card title="Nested Marks" icon="list-format">
+		Support for nested marks and complex text structures.
+	</Card>
+	<Card title="Custom Syntax" icon="setting">
+		Support for custom syntax patterns (e.g., HTML, markdown).
+	</Card>
+	<Card title="Cross Selection" icon="document">
+		Select text across multiple marks seamlessly.
+	</Card>
+	<Card title="Zero Dependencies" icon="puzzle">
+		Lightweight with zero external dependencies.
+	</Card>
+</CardGrid>
