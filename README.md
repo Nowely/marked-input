@@ -4,7 +4,7 @@
 
 A React component that lets you combine editable text with any component using annotated text.
 
-**[Documentation](https://marked-input.vercel.app)**
+**[Documentation](https://markput.vercel.app)** **[Storybook](https://marked-input.vercel.app)** 
 
 ## Feature
 
