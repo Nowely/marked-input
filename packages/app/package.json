@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "rc-marked-input": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

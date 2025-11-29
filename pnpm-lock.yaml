@@ -72,6 +72,9 @@ importers:
 
   packages/app:
     dependencies:
+      rc-marked-input:
+        specifier: workspace:*
+        version: link:../markput
       react:
         specifier: 'catalog:'
         version: 18.3.1
