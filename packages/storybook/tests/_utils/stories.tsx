@@ -1,11 +1,11 @@
 import type {ComponentType} from 'react'
 import {composeStories} from '@storybook/react-vite'
-import * as AntStories from '../../stories/Ant.stories'
-import * as BaseStories from '../../stories/Base.stories'
-import * as DynamicStories from '../../stories/Dynamic.stories'
-import * as MaterialStories from '../../stories/Material.stories'
-import * as OverlayStories from '../../stories/Overlay.stories'
-import * as RsuiteStories from '../../stories/Rsuite.stories'
+import * as AntStories from '../../src/stories/Ant.stories'
+import * as BaseStories from '../../src/stories/Base.stories'
+import * as DynamicStories from '../../src/stories/Dynamic.stories'
+import * as MaterialStories from '../../src/stories/Material.stories'
+import * as OverlayStories from '../../src/stories/Overlay.stories'
+import * as RsuiteStories from '../../src/stories/Rsuite.stories'
 
 type ComposedStories = Record<string, ComponentType<any>>
 

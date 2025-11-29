@@ -2,8 +2,8 @@ import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput, createMarkedInput, denote} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import {useState} from 'react'
-import {Button} from '../components/Button'
-import {Text} from '../components/Text'
+import {Button} from '../shared/ui/Button'
+import {Text} from '../shared/ui/Text'
 
 export default {
 	title: 'MarkedInput',

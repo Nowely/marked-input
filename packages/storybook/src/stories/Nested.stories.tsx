@@ -3,8 +3,8 @@ import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
-import {Text} from '../components/Text'
-import {useTab} from '../components/Tabs'
+import {Text} from '../shared/ui/Text'
+import {useTab} from '../shared/ui/Tabs'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
