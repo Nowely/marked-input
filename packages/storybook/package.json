@@ -30,6 +30,8 @@
     "@storybook/cli": "^10.1.2",
     "@storybook/react-vite": "^10.1.2",
     "@types/node": "^24.10.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "jsdom": "23.1.0",
