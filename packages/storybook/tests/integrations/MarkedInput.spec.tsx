@@ -3,7 +3,7 @@ import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {Focusable, Removable} from '../../stories/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../stories'
+import {Story} from '../_utils/stories'
 import {focusAtStart} from '../_utils/focus'
 
 const {Default} = Story.Base

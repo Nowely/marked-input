@@ -3,8 +3,8 @@ import {MarkedInput, useOverlay} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
-import {Text} from '../assets/Text'
-import {withStyle} from '../assets/withStyle'
+import {Text} from '../components/Text'
+import {withStyle} from '../components/withStyle'
 
 export default {
 	title: 'Styled/Rsuite',

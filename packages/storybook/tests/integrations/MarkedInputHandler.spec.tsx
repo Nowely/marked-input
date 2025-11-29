@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect, it} from 'vitest'
 import type {MarkedInputHandler} from 'rc-marked-input'
-import {Story} from '../../stories'
+import {Story} from '../_utils/stories'
 
 const {Default} = Story.Base
 

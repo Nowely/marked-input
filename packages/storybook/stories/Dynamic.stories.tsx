@@ -1,6 +1,6 @@
 import {MarkedInput, useMark} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
-import {Text} from '../assets/Text'
+import {Text} from '../components/Text'
 
 export default {
 	title: 'MarkedInput/Mark',

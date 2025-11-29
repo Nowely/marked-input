@@ -5,7 +5,7 @@ import type {MarkedInputHandler} from 'rc-marked-input'
 import {createMarkedInput} from 'rc-marked-input'
 import {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../stories'
+import {Story} from '../_utils/stories'
 
 const {Configured} = Story.Base
 

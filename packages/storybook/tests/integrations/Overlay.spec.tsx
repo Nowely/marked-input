@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../stories'
+import {Story} from '../_utils/stories'
 
 const {Default} = Story.Base
 const {DefaultOverlay} = Story.Overlay
