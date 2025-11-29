@@ -2,8 +2,8 @@ import {Chip, Input} from '@mui/material'
 import type {MarkToken} from 'rc-marked-input'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {MaterialMentions} from '../../shared/ui/MaterialMentions'
-import {Text} from '../../shared/ui/Text'
+import {MaterialMentions} from '../../shared/components/MaterialMentions'
+import {Text} from '../../shared/components/Text'
 
 export default {
 	title: 'Styled/Material',

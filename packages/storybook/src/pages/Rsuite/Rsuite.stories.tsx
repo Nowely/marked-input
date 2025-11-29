@@ -3,7 +3,7 @@ import {MarkedInput, useOverlay} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
-import {Text} from '../../shared/ui/Text'
+import {Text} from '../../shared/components/Text'
 import {withStyle} from '../../shared/lib/withStyle'
 
 export default {

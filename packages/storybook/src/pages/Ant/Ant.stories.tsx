@@ -1,7 +1,7 @@
 import {Tag} from 'antd'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {Text} from '../../shared/ui/Text'
+import {Text} from '../../shared/components/Text'
 import {withStyle} from '../../shared/lib/withStyle'
 
 export default {
