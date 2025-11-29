@@ -1,8 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true
+    "composite": true,
+    "types": ["vitest/globals"],
+    "skipLibCheck": true
   },
-  "include": ["./**/*.ts", "./**/*.tsx"],
+  "include": ["./**/*.ts", "./**/*.tsx", "../core/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

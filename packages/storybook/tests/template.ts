@@ -6,3 +6,4 @@ describe(`[Type]: [name of tested]`, () => {
 
 	it.todo('does this thing', () => {})
 })
+

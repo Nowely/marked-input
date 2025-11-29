@@ -5,7 +5,7 @@ import type {MarkedInputHandler} from 'rc-marked-input'
 import {createMarkedInput} from 'rc-marked-input'
 import {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 
 const {Configured} = Story.Base
 
@@ -48,3 +48,4 @@ describe(`Utility: createMarkedInput`, () => {
 		})
 	})
 })
+

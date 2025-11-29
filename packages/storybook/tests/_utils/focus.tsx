@@ -65,3 +65,4 @@ function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 		return range.toString().length
 	}
 }
+

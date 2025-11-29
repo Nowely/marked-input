@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 import {focusAtEnd, focusAtStart} from '../_utils/focus'
 
 const {Default} = Story.Base
@@ -85,3 +85,4 @@ describe('Api: keyboard', () => {
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 })
+

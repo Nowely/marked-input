@@ -466,3 +466,4 @@ describe('Slots API', () => {
 		})
 	})
 })
+

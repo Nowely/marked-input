@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 
 //TODO correct type
 const getTests = ([name, Story]: [string, any]) =>
@@ -36,3 +36,4 @@ describe('Component: stories', () => {
 		Object.entries(Story.Rsuite).map(getTests)
 	})
 })
+

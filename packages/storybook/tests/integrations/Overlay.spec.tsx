@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 
 const {Default} = Story.Base
 const {DefaultOverlay} = Story.Overlay
@@ -63,3 +63,4 @@ describe('API: Overlay and Triggers', () => {
 		expect(await findByText('Item')).toBeInTheDocument()
 	})
 })
+

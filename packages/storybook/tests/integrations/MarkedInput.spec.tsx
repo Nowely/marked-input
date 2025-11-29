@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
-import {Focusable, Removable} from 'sb/stories/Dynamic.stories'
+import {Focusable, Removable} from '../../stories/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 import {focusAtStart} from '../_utils/focus'
 
 const {Default} = Story.Base
@@ -124,3 +124,4 @@ describe(`Component: MarkedInput`, () => {
 		expect(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
 	})
 })
+

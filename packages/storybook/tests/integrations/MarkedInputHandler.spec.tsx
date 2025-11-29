@@ -2,7 +2,7 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect, it} from 'vitest'
 import type {MarkedInputHandler} from 'rc-marked-input'
-import {Story} from '../../storybook/stories'
+import {Story} from '../../stories'
 
 const {Default} = Story.Base
 
@@ -30,3 +30,4 @@ describe('API: MarkedInputHandler', () => {
 		expect(handler.value?.container).not.toBeNull()
 	})
 })
+
