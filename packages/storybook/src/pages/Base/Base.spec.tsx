@@ -1,10 +1,10 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
-import {Focusable, Removable} from '../../src/stories/Dynamic.stories'
+import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../_utils/stories'
-import {focusAtStart} from '../_utils/focus'
+import {Story} from '../../../tests/_utils/stories'
+import {focusAtStart} from '../../../tests/_utils/focus'
 
 const {Default} = Story.Base
 

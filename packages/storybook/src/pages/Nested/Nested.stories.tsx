@@ -3,9 +3,9 @@ import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
 import type {MarkToken, Markup} from 'rc-marked-input'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
-import {Text} from '../shared/ui/Text'
-import {useTab} from '../shared/ui/Tabs'
-import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
+import {Text} from '../../shared/ui/Text'
+import {useTab} from '../../shared/ui/Tabs'
+import {markdownOptions as MarkdownOptions} from '../Base/MarkdownOptions'
 
 export default {
 	title: 'MarkedInput/Nested',
