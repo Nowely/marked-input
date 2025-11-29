@@ -43,7 +43,7 @@ Defined in: [packages/markput/src/types.ts:74](https://github.com/Nowely/marked-
 optional contextTypes: ValidationMap<any>;
 ```
 
-Defined in: node\_modules/.pnpm/@types+react@18.3.24/node\_modules/@types/react/index.d.ts:1156
+Defined in: node\_modules/.pnpm/@types+react@18.3.27/node\_modules/@types/react/index.d.ts:1156
 
 :::caution[Deprecated]
 Lets you specify which legacy context is consumed by
@@ -68,7 +68,7 @@ FunctionComponent.contextTypes
 optional defaultProps: Partial<MarkedInputProps<TMarkProps, TOverlayProps>>;
 ```
 
-Defined in: node\_modules/.pnpm/@types+react@18.3.24/node\_modules/@types/react/index.d.ts:1179
+Defined in: node\_modules/.pnpm/@types+react@18.3.27/node\_modules/@types/react/index.d.ts:1179
 
 Used to define default values for the props accepted by
 the component.
@@ -109,7 +109,7 @@ FunctionComponent.defaultProps
 optional displayName: string;
 ```
 
-Defined in: node\_modules/.pnpm/@types+react@18.3.24/node\_modules/@types/react/index.d.ts:1198
+Defined in: node\_modules/.pnpm/@types+react@18.3.27/node\_modules/@types/react/index.d.ts:1198
 
 Used in debugging messages. You might want to set it
 explicitly if you want to display a different name for
@@ -144,7 +144,7 @@ FunctionComponent.displayName
 optional propTypes: WeakValidationMap<MarkedInputProps<TMarkProps, TOverlayProps>>;
 ```
 
-Defined in: node\_modules/.pnpm/@types+react@18.3.24/node\_modules/@types/react/index.d.ts:1147
+Defined in: node\_modules/.pnpm/@types+react@18.3.27/node\_modules/@types/react/index.d.ts:1147
 
 Used to declare the types of the props accepted by the
 component. These types will be checked during rendering
