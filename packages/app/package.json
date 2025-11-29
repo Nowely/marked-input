@@ -1,5 +1,5 @@
 {
-  "name": "app-react",
+  "name": "@markput/react-app",
   "version": "1.0.0",
   "description": "E2E test application for marked-input",
   "license": "MIT",
