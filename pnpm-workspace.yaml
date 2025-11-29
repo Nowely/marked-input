@@ -1,12 +1,12 @@
 packages:
-    - packages/*
+  - packages/*
 
 catalog:
-    '@faker-js/faker': ^10.1.0
-    '@types/react': ^18.3.24
-    '@types/react-dom': ^18.3.7
-    '@vitest/coverage-v8': ^4.0.8
-    '@vitest/ui': ^4.0.8
-    react: ^18.3.1
-    react-dom: ^18.3.1
-    vitest: ^4.0.8
+  '@faker-js/faker': ^10.1.0
+  '@types/react': ^18.3.24
+  '@types/react-dom': ^18.3.7
+  '@vitest/coverage-v8': ^4.0.14
+  '@vitest/ui': ^4.0.14
+  react: ^18.3.1
+  react-dom: ^18.3.1
+  vitest: ^4.0.14

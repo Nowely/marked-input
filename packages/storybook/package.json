@@ -11,29 +11,29 @@
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
-    "@mui/material": "^7.3.2",
+    "@mui/material": "^7.3.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "rsuite": "^5.83.3"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.0.7",
-    "@storybook/addon-links": "^10.0.7",
-    "@storybook/cli": "^10.0.7",
-    "@storybook/react-vite": "^10.0.7",
+    "@storybook/addon-docs": "^10.1.2",
+    "@storybook/addon-links": "^10.1.2",
+    "@storybook/cli": "^10.1.2",
+    "@storybook/react-vite": "^10.1.2",
     "@types/node": "^24.10.1",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "jsdom": "23.1.0",
-    "storybook": "^10.0.7",
+    "storybook": "^10.1.2",
     "vitest": "catalog:"
   },
   "type": "module"
