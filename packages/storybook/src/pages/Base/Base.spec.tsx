@@ -3,10 +3,11 @@ import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../../tests/_utils/stories'
-import {focusAtStart} from '../../../tests/_utils/focus'
+import {composeStories} from '@storybook/react-vite'
+import * as BaseStories from './Base.stories'
+import {focusAtStart} from '../../shared/lib/focus'
 
-const {Default} = Story.Base
+const {Default} = composeStories(BaseStories)
 
 describe(`Component: MarkedInput`, () => {
 	it.todo('should set readOnly on selection')

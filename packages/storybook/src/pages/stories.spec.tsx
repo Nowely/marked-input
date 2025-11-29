@@ -1,7 +1,22 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
+import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../tests/_utils/stories'
+import * as AntStories from './Ant/Ant.stories'
+import * as BaseStories from './Base/Base.stories'
+import * as DynamicStories from './Dynamic/Dynamic.stories'
+import * as MaterialStories from './Material/Material.stories'
+import * as OverlayStories from './Overlay/Overlay.stories'
+import * as RsuiteStories from './Rsuite/Rsuite.stories'
+
+const Story = {
+	Ant: composeStories(AntStories),
+	Base: composeStories(BaseStories),
+	Dynamic: composeStories(DynamicStories),
+	Material: composeStories(MaterialStories),
+	Overlay: composeStories(OverlayStories),
+	Rsuite: composeStories(RsuiteStories),
+}
 
 //TODO correct type
 const getTests = ([name, Story]: [string, any]) =>

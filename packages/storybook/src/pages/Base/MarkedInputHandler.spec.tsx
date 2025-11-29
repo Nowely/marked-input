@@ -2,9 +2,10 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {describe, expect, it} from 'vitest'
 import type {MarkedInputHandler} from 'rc-marked-input'
-import {Story} from '../../../tests/_utils/stories'
+import {composeStories} from '@storybook/react-vite'
+import * as BaseStories from './Base.stories'
 
-const {Default} = Story.Base
+const {Default} = composeStories(BaseStories)
 
 type UseMarkedInputHandler = {
 	value: MarkedInputHandler | null

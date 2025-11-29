@@ -2,10 +2,11 @@ import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it} from 'vitest'
-import {Story} from '../../../tests/_utils/stories'
-import {focusAtEnd, focusAtStart} from '../../../tests/_utils/focus'
+import {composeStories} from '@storybook/react-vite'
+import * as BaseStories from './Base.stories'
+import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 
-const {Default} = Story.Base
+const {Default} = composeStories(BaseStories)
 
 describe('Api: keyboard', () => {
 	it('should support the "Backspace" button', async () => {

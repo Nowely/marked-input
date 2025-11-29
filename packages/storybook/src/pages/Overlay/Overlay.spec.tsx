@@ -2,10 +2,12 @@ import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import user from '@testing-library/user-event'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../../tests/_utils/stories'
+import {composeStories} from '@storybook/react-vite'
+import * as BaseStories from '../Base/Base.stories'
+import * as OverlayStories from './Overlay.stories'
 
-const {Default} = Story.Base
-const {DefaultOverlay} = Story.Overlay
+const {Default} = composeStories(BaseStories)
+const {DefaultOverlay} = composeStories(OverlayStories)
 
 describe('API: Overlay and Triggers', () => {
 	//TODO not working

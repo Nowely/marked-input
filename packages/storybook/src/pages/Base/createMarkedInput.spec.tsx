@@ -5,9 +5,10 @@ import type {MarkedInputHandler} from 'rc-marked-input'
 import {createMarkedInput} from 'rc-marked-input'
 import {forwardRef} from 'react'
 import {describe, expect, it, vi} from 'vitest'
-import {Story} from '../../../tests/_utils/stories'
+import {composeStories} from '@storybook/react-vite'
+import * as BaseStories from './Base.stories'
 
-const {Configured} = Story.Base
+const {Configured} = composeStories(BaseStories)
 
 describe(`Utility: createMarkedInput`, () => {
 	it('should render', () => {
