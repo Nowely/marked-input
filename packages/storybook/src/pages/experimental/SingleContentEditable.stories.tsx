@@ -1,10 +1,11 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
-import {Text} from '../../assets/Text'
+
 import {SingleEditableControlled} from './SingleEditableControlled'
 import {SingleEditableUncontrolled} from './SingleEditableUncontrolled'
 import {SingleEditableMarkdown} from './SingleEditableMarkdown'
+import { Text } from '../../shared/ui/Text'
 
 export default {
 	title: 'Experimental/Single ContentEditable',
