@@ -5,7 +5,7 @@ import type {ReactNode} from 'react'
 import {useState} from 'react'
 import {Text} from '../../shared/components/Text'
 import {useTab} from '../../shared/components/Tabs'
-import {markdownOptions as MarkdownOptions} from '../Base/MarkdownOptions'
+import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
 	title: 'MarkedInput/Nested',
