@@ -32,9 +32,9 @@
     "@types/node": "^24.10.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitest/browser-playwright": "^4.0.14",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "jsdom": "23.1.0",
     "storybook": "^10.1.2",
     "vitest": "catalog:"
   },

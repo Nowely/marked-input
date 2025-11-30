@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react-swc'
 import {defineConfig} from 'vitest/config'
+import {playwright} from '@vitest/browser-playwright'
 
 export default defineConfig({
 	plugins: [react()],
@@ -8,11 +9,16 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
-		environment: 'jsdom',
 		include: ['src/pages/**/*.spec.ts', 'src/pages/**/*.spec.tsx'],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],
+		},
+		browser: {
+			enabled: true,
+			provider: playwright(),
+			instances: [{browser: 'chromium'}],
+			headless: true,
 		},
 	},
 })

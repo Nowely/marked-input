@@ -151,10 +151,11 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const textSpan = container.querySelector('span[contenteditable]')
-			expect(textSpan).toHaveStyle({fontWeight: 'bold', fontSize: '16px'})
-		})
+		const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+		expect(textSpan.style.fontWeight).toBe('bold')
+		expect(textSpan.style.fontSize).toBe('16px')
 	})
+})
 
 	describe('Both slots', () => {
 		it('should allow overriding both container and span slots simultaneously', () => {
