@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {userEvent} from 'vitest/browser'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
@@ -18,12 +17,12 @@ describe(`Component: MarkedInput`, () => {
 		const {container, queryByText} = render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
 
-		expect(span).toHaveTextContent('')
+		await expect.element(span).toHaveTextContent('')
 
 		await userEvent.type(span, '@[[mark](1)')
 
 		expect(queryByText('@[mark](1)')).toBeNull()
-		expect(queryByText('mark')).toBeInTheDocument()
+		await expect.element(queryByText('mark')!).toBeInTheDocument()
 	})
 
 	it.todo('should support ref focusing target', async () => {
@@ -36,19 +35,19 @@ describe(`Component: MarkedInput`, () => {
 		await focusAtStart(firstSpan)
 
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		expect(firstAbbr).toHaveFocus()
+		await expect.element(firstAbbr).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowLeft>1/}`)
-		expect(firstSpan).toHaveFocus()
+		await expect.element(firstSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>1/}`)
-		expect(firstAbbr).toHaveFocus()
+		await expect.element(firstAbbr).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
-		expect(secondSpan).toHaveFocus()
+		await expect.element(secondSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowLeft>1/}`)
-		expect(firstAbbr).toHaveFocus()
+		await expect.element(firstAbbr).toHaveFocus()
 	})
 
 	it('should support remove itself', async () => {
@@ -70,8 +69,8 @@ describe(`Component: MarkedInput`, () => {
 		await focusAtEnd(worldElement)
 		await userEvent.keyboard('123')
 
-		expect(getByText('world123')).toBeInTheDocument()
-		expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
+		await expect.element(getByText('world123')).toBeInTheDocument()
+		await expect.element(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
 	// TODO: user.pointer with offset is not available in vitest/browser.
@@ -126,7 +125,7 @@ describe(`Component: MarkedInput`, () => {
 		// await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
 		// expect(selection.isCollapsed).toBeTruthy()
 		await userEvent.keyboard('abc')
-		expect(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
+		await expect.element(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
 	})
 })
 

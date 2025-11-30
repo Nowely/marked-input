@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {userEvent} from 'vitest/browser'
 import {describe, expect, it} from 'vitest'
@@ -19,7 +18,7 @@ describe('API: Overlay and Triggers', () => {
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
-		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+		await expect.element(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
 	it('should typed with default values of options', async () => {
@@ -29,7 +28,7 @@ describe('API: Overlay and Triggers', () => {
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
-		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
+		await expect.element(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
 	// TODO: user.pointer with offset is not available in vitest/browser.
@@ -57,7 +56,7 @@ describe('API: Overlay and Triggers', () => {
 		// await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
 		// await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
 
-		expect(await findByText('Item')).toBeInTheDocument()
+		await expect.element(await findByText('Item')).toBeInTheDocument()
 	})
 })
 

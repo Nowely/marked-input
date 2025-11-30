@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {act, render} from '@testing-library/react'
 import {userEvent} from 'vitest/browser'
 import type {MarkedInputHandler} from 'rc-marked-input'
@@ -11,9 +10,9 @@ import * as BaseStories from './Base.stories'
 const {Configured} = composeStories(BaseStories)
 
 describe(`Utility: createMarkedInput`, () => {
-	it('should render', () => {
+	it('should render', async () => {
 		const {container} = render(<Configured />)
-		expect(container).toBeInTheDocument()
+		await expect.element(container).toBeInTheDocument()
 	})
 
 	// TODO: This test relies on mocking selectionchange event which doesn't work properly
@@ -31,14 +30,14 @@ describe(`Utility: createMarkedInput`, () => {
 		const span = getByText(/hello/i)
 		await userEvent.click(span)
 		await userEvent.keyboard('{ArrowRight}')
-		expect(span).toHaveFocus()
+		await expect.element(span).toHaveFocus()
 
 		await act(() => {
 			// @ts-ignore
 			events['selectionchange']({})
 		})
 
-		expect(queryByText("I'm here!")).toBeInTheDocument()
+		await expect.element(queryByText("I'm here!")!).toBeInTheDocument()
 	})
 
 	it('should to support the ref prop', async () => {

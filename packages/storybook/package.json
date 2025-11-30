@@ -15,7 +15,6 @@
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
     "@mui/material": "^7.3.5",
-    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",

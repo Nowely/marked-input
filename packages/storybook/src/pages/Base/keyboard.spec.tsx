@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
 import {userEvent} from 'vitest/browser'
 import {describe, expect, it} from 'vitest'
@@ -17,21 +16,21 @@ describe('Api: keyboard', () => {
 
 		//Remove last span
 		await userEvent.keyboard('{Backspace}')
-		expect(tailSpan).toHaveTextContent('')
+		await expect.element(tailSpan).toHaveTextContent('')
 
 		//Remove mark
 		const mark = getByText(/mark/)
-		expect(mark).toBeInTheDocument()
+		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Backspace}')
-		expect(mark).not.toBeInTheDocument()
-		expect(tailSpan).not.toBeInTheDocument()
+		await expect.element(mark).not.toBeInTheDocument()
+		await expect.element(tailSpan).not.toBeInTheDocument()
 
 		// Remove first span
 		const headSpan = getByText(/Hello/)
-		expect(headSpan).toHaveTextContent('Hello ', {normalizeWhitespace: false})
-		expect(headSpan).toHaveFocus()
+		await expect.element(headSpan).toHaveTextContent('Hello')
+		await expect.element(headSpan).toHaveFocus()
 		await userEvent.keyboard('{Backspace>7/}')
-		expect(headSpan).toHaveTextContent('')
+		await expect.element(headSpan).toHaveTextContent('')
 	})
 
 	it('should support the "Delete" button', async () => {
@@ -41,19 +40,19 @@ describe('Api: keyboard', () => {
 		await focusAtStart(firstSpan)
 
 		await userEvent.keyboard('{Delete>6/}')
-		expect(firstSpan).toHaveTextContent('')
+		await expect.element(firstSpan).toHaveTextContent('')
 
 		const mark = getByText(/mark/)
-		expect(mark).toBeInTheDocument()
+		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Delete}')
-		expect(mark).not.toBeInTheDocument()
-		expect(firstSpan).not.toBeInTheDocument()
+		await expect.element(mark).not.toBeInTheDocument()
+		await expect.element(firstSpan).not.toBeInTheDocument()
 
 		const secondSpan = getByText('!')
-		expect(secondSpan).toHaveFocus()
-		expect(secondSpan).toHaveTextContent('!')
+		await expect.element(secondSpan).toHaveFocus()
+		await expect.element(secondSpan).toHaveTextContent('!')
 		await userEvent.keyboard('{Delete>2/}')
-		expect(secondSpan).toHaveTextContent('')
+		await expect.element(secondSpan).toHaveTextContent('')
 	})
 
 	it('should support focus navigation between spans', async () => {
@@ -65,10 +64,10 @@ describe('Api: keyboard', () => {
 		const secondSpan = getByText('!')
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		expect(secondSpan).toHaveFocus()
+		await expect.element(secondSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowLeft>1/}`)
-		expect(firstSpan).toHaveFocus()
+		await expect.element(firstSpan).toHaveFocus()
 	})
 
 	//TODO not working

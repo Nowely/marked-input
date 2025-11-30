@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {userEvent} from 'vitest/browser'
 import {expect} from 'vitest'
 
@@ -42,7 +41,7 @@ function setCaretPosition(element: HTMLElement, offset: number) {
 export async function focusAtStart(element: HTMLElement) {
 	await userEvent.click(element)
 	setCaretPosition(element, 0)
-	expect(element).toHaveFocus()
+	await expect.element(element).toHaveFocus()
 
 	verifyCaretPosition(element, 0)
 }
@@ -54,7 +53,7 @@ export async function focusAtEnd(element: HTMLElement) {
 	await userEvent.click(element)
 	const textLength = element.textContent?.length || 0
 	setCaretPosition(element, textLength)
-	expect(element).toHaveFocus()
+	await expect.element(element).toHaveFocus()
 
 	verifyCaretPosition(element, textLength)
 }
@@ -65,7 +64,7 @@ export async function focusAtEnd(element: HTMLElement) {
 export async function focusAtOffset(element: HTMLElement, offset: number) {
 	await userEvent.click(element)
 	setCaretPosition(element, offset)
-	expect(element).toHaveFocus()
+	await expect.element(element).toHaveFocus()
 
 	verifyCaretPosition(element, offset)
 }
