@@ -17,7 +17,6 @@
     "@mui/material": "^7.3.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
     "react": "catalog:",

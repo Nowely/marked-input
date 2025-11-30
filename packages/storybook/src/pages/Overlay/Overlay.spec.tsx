@@ -1,10 +1,11 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
-import user from '@testing-library/user-event'
+import {userEvent} from 'vitest/browser'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
+import {focusAtEnd} from '../../shared/lib/focus'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
@@ -15,7 +16,8 @@ describe('API: Overlay and Triggers', () => {
 		const {container, getByText} = render(<DefaultOverlay options={[]} />)
 
 		const element = container.firstElementChild?.firstElementChild as HTMLElement
-		await user.type(element, 'abc')
+		await focusAtEnd(element)
+		await userEvent.keyboard('abc')
 
 		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
@@ -24,11 +26,14 @@ describe('API: Overlay and Triggers', () => {
 		const {container, getByText} = render(<DefaultOverlay />)
 
 		const element = container.firstElementChild?.firstElementChild as HTMLElement
-		await user.type(element, 'abc')
+		await focusAtEnd(element)
+		await userEvent.keyboard('abc')
 
 		expect(getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
+	// TODO: user.pointer with offset is not available in vitest/browser.
+	// Need to rewrite using focusAtOffset helper or native Selection API.
 	it.todo('should appear a overlay component by trigger', async () => {
 		const {getByText, findByText} = render(
 			<Default
@@ -49,8 +54,8 @@ describe('API: Overlay and Triggers', () => {
 		)
 		const span = getByText(/@/i)
 
-		await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
-		await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
+		// await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
+		// await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
 
 		expect(await findByText('Item')).toBeInTheDocument()
 	})

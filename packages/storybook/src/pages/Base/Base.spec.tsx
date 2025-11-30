@@ -1,11 +1,11 @@
 import '@testing-library/jest-dom'
 import {render} from '@testing-library/react'
-import user from '@testing-library/user-event'
+import {userEvent} from 'vitest/browser'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from './Base.stories'
-import {focusAtStart} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 
 const {Default} = composeStories(BaseStories)
 
@@ -20,7 +20,7 @@ describe(`Component: MarkedInput`, () => {
 
 		expect(span).toHaveTextContent('')
 
-		await user.type(span, '@[[mark](1)')
+		await userEvent.type(span, '@[[mark](1)')
 
 		expect(queryByText('@[mark](1)')).toBeNull()
 		expect(queryByText('mark')).toBeInTheDocument()
@@ -35,19 +35,19 @@ describe(`Component: MarkedInput`, () => {
 
 		await focusAtStart(firstSpan)
 
-		await user.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
+		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		expect(firstAbbr).toHaveFocus()
 
-		await user.keyboard(`{ArrowLeft>1/}`)
+		await userEvent.keyboard(`{ArrowLeft>1/}`)
 		expect(firstSpan).toHaveFocus()
 
-		await user.keyboard(`{ArrowRight>1/}`)
+		await userEvent.keyboard(`{ArrowRight>1/}`)
 		expect(firstAbbr).toHaveFocus()
 
-		await user.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
+		await userEvent.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
 		expect(secondSpan).toHaveFocus()
 
-		await user.keyboard(`{ArrowLeft>1/}`)
+		await userEvent.keyboard(`{ArrowLeft>1/}`)
 		expect(firstAbbr).toHaveFocus()
 	})
 
@@ -55,73 +55,77 @@ describe(`Component: MarkedInput`, () => {
 		const {getByText, queryByText} = render(<Removable />)
 
 		let mark = getByText('contain')
-		await user.click(mark)
+		await userEvent.click(mark)
 		expect(queryByText('contain')).toBeNull()
 
 		mark = getByText('marks')
-		await user.click(mark)
+		await userEvent.click(mark)
 		expect(queryByText('marks')).toBeNull()
 	})
 
 	it('should support editable marks', async () => {
 		const {getByText} = render(<Focusable />)
 
-		await user.type(getByText('world'), '123')
+		const worldElement = getByText('world')
+		await focusAtEnd(worldElement)
+		await userEvent.keyboard('123')
 
 		expect(getByText('world123')).toBeInTheDocument()
 		expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
+	// TODO: user.pointer with offset is not available in vitest/browser.
+	// Need to rewrite using native Selection API for text selection testing.
 	it.todo('should be selectable', async () => {
 		const {container} = render(<Default defaultValue="Hello @[mark](1)!" />)
 		const selection = window.getSelection()!
 		expect(selection).not.toBeNull()
 
-		await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
-		expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
+		// await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
+		// expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
 
 		const MarkedText = container.firstElementChild!
 		const [span1, mark, span2] = MarkedText.children
 
-		await user.pointer([
-			{target: span1, offset: 0, keys: '[MouseLeft>]'},
-			{target: mark, offset: 2},
-		])
-		expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
+		// await user.pointer([
+		// 	{target: span1, offset: 0, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
 
-		await user.pointer([
-			{target: span2, keys: '[MouseLeft>]'},
-			{target: mark, offset: 2},
-		])
-		expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
+		// await user.pointer([
+		// 	{target: span2, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
 
-		await user.pointer([
-			{target: span1, keys: '[MouseLeft>]'},
-			{target: mark, offset: 2},
-		])
-		expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
+		// await user.pointer([
+		// 	{target: span1, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
 
-		await user.pointer([
-			{target: span2, offset: 0, keys: '[MouseLeft>]'},
-			{target: mark, offset: 2},
-		])
-		expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
+		// await user.pointer([
+		// 	{target: span2, offset: 0, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
 
-		await user.pointer([
-			{target: mark, offset: 2, keys: '[MouseLeft>]'},
-			{target: span1, offset: 2},
-		])
-		expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
+		// await user.pointer([
+		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
+		// 	{target: span1, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
 
-		await user.pointer([
-			{target: mark, offset: 2, keys: '[MouseLeft>]'},
-			{target: span2, offset: 1},
-		])
-		expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
+		// await user.pointer([
+		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
+		// 	{target: span2, offset: 1},
+		// ])
+		// expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
 
-		await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
-		expect(selection.isCollapsed).toBeTruthy()
-		await user.keyboard('abc')
+		// await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
+		// expect(selection.isCollapsed).toBeTruthy()
+		await userEvent.keyboard('abc')
 		expect(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
 	})
 })

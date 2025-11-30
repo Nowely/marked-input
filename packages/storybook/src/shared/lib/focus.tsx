@@ -1,12 +1,47 @@
 import '@testing-library/jest-dom'
-import user from '@testing-library/user-event'
+import {userEvent} from 'vitest/browser'
 import {expect} from 'vitest'
+
+/**
+ * Sets caret position in a contenteditable element
+ */
+function setCaretPosition(element: HTMLElement, offset: number) {
+	const range = document.createRange()
+	const selection = window.getSelection()
+
+	if (!selection) return
+
+	// Find the text node and offset within it
+	let currentOffset = 0
+	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null)
+
+	let node = walker.nextNode()
+	while (node) {
+		const nodeLength = node.textContent?.length || 0
+		if (currentOffset + nodeLength >= offset) {
+			range.setStart(node, offset - currentOffset)
+			range.collapse(true)
+			selection.removeAllRanges()
+			selection.addRange(range)
+			return
+		}
+		currentOffset += nodeLength
+		node = walker.nextNode()
+	}
+
+	// If offset is beyond content, place at end
+	range.selectNodeContents(element)
+	range.collapse(false)
+	selection.removeAllRanges()
+	selection.addRange(range)
+}
 
 /**
  * Focuses contenteditable element and places caret at start
  */
 export async function focusAtStart(element: HTMLElement) {
-	await user.pointer({target: element, offset: 0, keys: '[MouseLeft]'})
+	await userEvent.click(element)
+	setCaretPosition(element, 0)
 	expect(element).toHaveFocus()
 
 	verifyCaretPosition(element, 0)
@@ -16,10 +51,11 @@ export async function focusAtStart(element: HTMLElement) {
  * Focuses contenteditable element and places caret at end
  */
 export async function focusAtEnd(element: HTMLElement) {
-	await user.pointer({target: element, keys: '[MouseLeft]'})
+	await userEvent.click(element)
+	const textLength = element.textContent?.length || 0
+	setCaretPosition(element, textLength)
 	expect(element).toHaveFocus()
 
-	const textLength = element.textContent?.length || 0
 	verifyCaretPosition(element, textLength)
 }
 
@@ -27,7 +63,8 @@ export async function focusAtEnd(element: HTMLElement) {
  * Focuses contenteditable element and places caret at specific offset
  */
 export async function focusAtOffset(element: HTMLElement, offset: number) {
-	await user.pointer({target: element, offset, keys: '[MouseLeft]'})
+	await userEvent.click(element)
+	setCaretPosition(element, offset)
 	expect(element).toHaveFocus()
 
 	verifyCaretPosition(element, offset)
