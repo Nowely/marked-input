@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom'
 import {render, screen} from '@testing-library/react'
 import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
@@ -16,7 +15,7 @@ describe('Nested Marks Rendering', () => {
 		)
 	}
 
-	it('should render simple nested marks', () => {
+	it('should render simple nested marks', async () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[outer @[inner]]'
 
@@ -25,13 +24,13 @@ describe('Nested Marks Rendering', () => {
 		const outerMark = screen.getByTestId('mark-depth-0')
 		const innerMark = screen.getByTestId('mark-depth-1')
 
-		expect(outerMark).toBeInTheDocument()
-		expect(innerMark).toBeInTheDocument()
+		await expect.element(outerMark).toBeInTheDocument()
+		await expect.element(innerMark).toBeInTheDocument()
 		expect(outerMark.getAttribute('data-has-children')).toBe('true')
 		expect(innerMark.getAttribute('data-has-children')).toBe('false')
 	})
 
-	it('should render multiple nesting levels', () => {
+	it('should render multiple nesting levels', async () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[level0 @[level1 @[level2]]]'
 
@@ -41,12 +40,12 @@ describe('Nested Marks Rendering', () => {
 		const level1 = screen.getByTestId('mark-depth-1')
 		const level2 = screen.getByTestId('mark-depth-2')
 
-		expect(level0).toBeInTheDocument()
-		expect(level1).toBeInTheDocument()
-		expect(level2).toBeInTheDocument()
+		await expect.element(level0).toBeInTheDocument()
+		await expect.element(level1).toBeInTheDocument()
+		await expect.element(level2).toBeInTheDocument()
 	})
 
-	it('should render multiple nested marks at same level', () => {
+	it('should render multiple nested marks at same level', async () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[outer @[first] and @[second]]'
 
@@ -55,11 +54,11 @@ describe('Nested Marks Rendering', () => {
 		const outerMark = screen.getByTestId('mark-depth-0')
 		const nestedMarks = screen.getAllByTestId('mark-depth-1')
 
-		expect(outerMark).toBeInTheDocument()
+		await expect.element(outerMark).toBeInTheDocument()
 		expect(nestedMarks).toHaveLength(2)
 	})
 
-	it('should render different markup types nested', () => {
+	it('should render different markup types nested', async () => {
 		const TagMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			const isTag = mark.label.startsWith('#')
@@ -88,8 +87,8 @@ describe('Nested Marks Rendering', () => {
 		const tagMark = screen.getByTestId('tag-mark')
 		const mentionMark = screen.getByTestId('mention-mark')
 
-		expect(tagMark).toBeInTheDocument()
-		expect(mentionMark).toBeInTheDocument()
+		await expect.element(tagMark).toBeInTheDocument()
+		await expect.element(mentionMark).toBeInTheDocument()
 		expect(tagMark.getAttribute('data-depth')).toBe('0')
 		expect(mentionMark.getAttribute('data-depth')).toBe('1')
 	})
@@ -192,7 +191,7 @@ describe('Nested Marks Tree Navigation', () => {
 })
 
 describe('Backward Compatibility', () => {
-	it('should work with flat marks (no nesting)', () => {
+	it('should work with flat marks (no nesting)', async () => {
 		const FlatMark = ({value}: {value?: string; meta?: string; children?: ReactNode}) => {
 			return <span data-testid="flat-mark">{value}</span>
 		}
@@ -203,11 +202,11 @@ describe('Backward Compatibility', () => {
 		render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
 
 		const mark = screen.getByTestId('flat-mark')
-		expect(mark).toBeInTheDocument()
+		await expect.element(mark).toBeInTheDocument()
 		expect(mark.textContent).toBe('test')
 	})
 
-	it('should ignore children prop in flat marks', () => {
+	it('should ignore children prop in flat marks', async () => {
 		const FlatMark = ({value}: {value?: string; children?: ReactNode}) => {
 			// Old components that don't use children should still work
 			return <span data-testid="flat-mark">{value}</span>
@@ -219,7 +218,7 @@ describe('Backward Compatibility', () => {
 		render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
 
 		const mark = screen.getByTestId('flat-mark')
-		expect(mark).toBeInTheDocument()
+		await expect.element(mark).toBeInTheDocument()
 		expect(mark.textContent).toBe('test')
 	})
 
@@ -342,7 +341,7 @@ describe('Edge Cases', () => {
 		expect(container.textContent).toBe('Just plain text')
 	})
 
-	it('should handle malformed nested marks gracefully', () => {
+	it('should handle malformed nested marks gracefully', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
 			return <span data-testid="mark">{children}</span>
 		}
@@ -353,7 +352,6 @@ describe('Edge Cases', () => {
 		const {container} = render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		// Should render something without crashing
-		expect(container).toBeInTheDocument()
+		await expect.element(container).toBeInTheDocument()
 	})
 })
-
