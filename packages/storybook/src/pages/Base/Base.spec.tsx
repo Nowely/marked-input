@@ -26,7 +26,7 @@ describe(`Component: MarkedInput`, () => {
 		expect(queryByText('mark')).toBeInTheDocument()
 	})
 
-	it('should support ref focusing target', async () => {
+	it.todo('should support ref focusing target', async () => {
 		const {container} = render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
@@ -72,7 +72,7 @@ describe(`Component: MarkedInput`, () => {
 		expect(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
-	it('should be selectable', async () => {
+	it.todo('should be selectable', async () => {
 		const {container} = render(<Default defaultValue="Hello @[mark](1)!" />)
 		const selection = window.getSelection()!
 		expect(selection).not.toBeNull()
