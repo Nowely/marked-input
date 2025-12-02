@@ -1,4 +1,4 @@
-import {render} from '@testing-library/react'
+import {render} from 'vitest-browser-react'
 import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 import * as AntStories from './Ant/Ant.stories'
@@ -20,7 +20,7 @@ const Story = {
 //TODO correct type
 const getTests = ([name, Story]: [string, any]) =>
 	it(`Story ${name}`, async () => {
-		const {container} = render(<Story />)
+		const {container} = await render(<Story />)
 		expect(container.textContent?.length).toBeTruthy()
 	})
 

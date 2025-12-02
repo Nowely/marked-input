@@ -365,7 +365,6 @@ Visit our [documentation](https://docs.example.com) for more details.
 const HtmlDocMark = ({children, value, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
 	const tagName = value?.toLowerCase() || 'span'
 
-	// Стили для разных HTML тегов
 	const tagStyles: Record<string, React.CSSProperties> = {
 		div: {
 			display: 'block',

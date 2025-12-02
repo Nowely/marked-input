@@ -1,4 +1,4 @@
-import {render} from '@testing-library/react'
+import {render} from 'vitest-browser-react'
 import {describe, expect, it} from 'vitest'
 import type {MarkedInputHandler} from 'rc-marked-input'
 import {composeStories} from '@storybook/react-vite'
@@ -25,7 +25,7 @@ describe('API: MarkedInputHandler', () => {
 	it('should support the ref prop for accessing component handler', async () => {
 		const handler = useMarkedInputHandler()
 
-		render(<Default ref={handler.set} />)
+		await render(<Default ref={handler.set} />)
 
 		expect(handler.value?.container).not.toBeNull()
 	})

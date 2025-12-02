@@ -1,4 +1,5 @@
-import {render, screen, fireEvent} from '@testing-library/react'
+import {render} from 'vitest-browser-react'
+import {page, userEvent} from 'vitest/browser'
 import {MarkedInput} from 'rc-marked-input'
 import {describe, it, expect, vi} from 'vitest'
 import {forwardRef} from 'react'
@@ -8,10 +9,10 @@ describe('Slots API', () => {
 
 	describe('Container slot', () => {
 		it('should use default div component when no slot is provided', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />)
 
-			const containerDiv = container.querySelector('div')
-			await expect.element(containerDiv!).toBeInTheDocument()
+			const containerDiv = container.querySelector('div') as HTMLElement
+			await expect.element(containerDiv).toBeInTheDocument()
 		})
 
 		it('should use custom component from slots.container', async () => {
@@ -20,7 +21,7 @@ describe('Slots API', () => {
 			))
 			CustomContainer.displayName = 'CustomContainer'
 
-			render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -30,13 +31,13 @@ describe('Slots API', () => {
 				/>
 			)
 
-			await expect.element(screen.getByTestId('custom-container')).toBeInTheDocument()
+			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
 		})
 
 		it('should pass slotProps.container to the container component', async () => {
 			const handleKeyDown = vi.fn()
 
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -49,12 +50,12 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div')
-			await expect.element(containerDiv!).toHaveAttribute('data-custom', 'test-value')
+			const containerDiv = container.querySelector('div') as HTMLElement
+			await expect.element(containerDiv).toHaveAttribute('data-custom', 'test-value')
 		})
 
 		it('should merge className from slotProps with default className', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -67,12 +68,12 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div')
-			await expect.element(containerDiv!).toHaveClass('default-class')
+			const containerDiv = container.querySelector('div') as HTMLElement
+			await expect.element(containerDiv).toHaveClass('default-class')
 		})
 
 		it('should merge style from slotProps with default style', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -85,17 +86,17 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div')
-			await expect.element(containerDiv!).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
+			const containerDiv = container.querySelector('div') as HTMLElement
+			await expect.element(containerDiv).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 	})
 
 	describe('Span slot', () => {
 		it('should use default span component when no slot is provided', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable]')
-			await expect.element(textSpan!).toBeInTheDocument()
+			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			await expect.element(textSpan).toBeInTheDocument()
 			await expect.element(textSpan!).toHaveTextContent('Hello world')
 		})
 
@@ -105,7 +106,7 @@ describe('Slots API', () => {
 			))
 			CustomSpan.displayName = 'CustomSpan'
 
-			render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -115,11 +116,11 @@ describe('Slots API', () => {
 				/>
 			)
 
-			await expect.element(screen.getByTestId('custom-span')).toBeInTheDocument()
+			await expect.element(page.getByTestId('custom-span')).toBeInTheDocument()
 		})
 
 		it('should pass slotProps.span to the span component', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -132,13 +133,13 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const textSpan = container.querySelector('span[contenteditable]')
-			await expect.element(textSpan!).toHaveClass('custom-span-class')
-			await expect.element(textSpan!).toHaveAttribute('data-span-custom', 'span-value')
+			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			await expect.element(textSpan).toHaveClass('custom-span-class')
+			await expect.element(textSpan).toHaveAttribute('data-span-custom', 'span-value')
 		})
 
-		it('should merge style from slotProps.span', () => {
-			const {container} = render(
+		it('should merge style from slotProps.span', async () => {
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -151,8 +152,7 @@ describe('Slots API', () => {
 			)
 
 			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
-			expect(textSpan.style.fontWeight).toBe('bold')
-			expect(textSpan.style.fontSize).toBe('16px')
+			await expect.element(textSpan).toHaveStyle({fontWeight: 'bold', fontSize: '16px'})
 		})
 	})
 
@@ -168,7 +168,7 @@ describe('Slots API', () => {
 			))
 			CustomSpan.displayName = 'CustomSpan'
 
-			render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -187,8 +187,8 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const container = screen.getByTestId('custom-container')
-			const span = screen.getByTestId('custom-span')
+			const container = page.getByTestId('custom-container')
+			const span = page.getByTestId('custom-span')
 
 			await expect.element(container).toBeInTheDocument()
 			await expect.element(container).toHaveAttribute('data-container-prop', 'container')
@@ -206,7 +206,7 @@ describe('Slots API', () => {
 			))
 			CustomDiv.displayName = 'CustomDiv'
 
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello"
@@ -230,7 +230,7 @@ describe('Slots API', () => {
 		})
 
 		it('should support camelCase data attributes in slotProps', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -244,26 +244,26 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div')
-			await expect.element(containerDiv!).toHaveAttribute('data-test-id', 'my-container')
-			await expect.element(containerDiv!).toHaveAttribute('data-user-id', 'user-123')
-			await expect.element(containerDiv!).toHaveAttribute('data-user-name', 'John')
+			const containerDiv = container.querySelector('div') as HTMLElement
+			await expect.element(containerDiv).toHaveAttribute('data-test-id', 'my-container')
+			await expect.element(containerDiv).toHaveAttribute('data-user-id', 'user-123')
+			await expect.element(containerDiv).toHaveAttribute('data-user-name', 'John')
 		})
 	})
 
 	describe('Span contentEditable attribute', () => {
 		it('should have contentEditable="true" by default on editable span', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable="true"]')
-			await expect.element(textSpan!).toBeInTheDocument()
+			const textSpan = container.querySelector('span[contenteditable="true"]') as HTMLElement
+			await expect.element(textSpan).toBeInTheDocument()
 		})
 
 		it('should have contentEditable="false" when readOnly is true', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
 
-			const textSpan = container.querySelector('span[contenteditable="false"]')
-			await expect.element(textSpan!).toBeInTheDocument()
+			const textSpan = container.querySelector('span[contenteditable="false"]') as HTMLElement
+			await expect.element(textSpan).toBeInTheDocument()
 		})
 
 		it('should maintain contentEditable on span with custom slot', async () => {
@@ -272,26 +272,26 @@ describe('Slots API', () => {
 			))
 			CustomSpan.displayName = 'CustomSpan'
 
-			render(<MarkedInput Mark={TestMark} value="Hello world" slots={{span: CustomSpan}} />)
+			await render(<MarkedInput Mark={TestMark} value="Hello world" slots={{span: CustomSpan}} />)
 
-			const span = screen.getByTestId('custom-span')
+			const span = page.getByTestId('custom-span')
 			await expect.element(span).toHaveAttribute('contenteditable', 'true')
 		})
 
 		it('should respect suppressContentEditableWarning when set', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable]')
+			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
 			// Should not throw warning during render
-			await expect.element(textSpan!).toBeInTheDocument()
+			await expect.element(textSpan).toBeInTheDocument()
 		})
 	})
 
 	describe('Event handlers in slotProps', () => {
-		it('should call onKeyDown handler from slotProps.container', () => {
+		it('should call onKeyDown handler from slotProps.container', async () => {
 			const handleKeyDown = vi.fn()
 
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -303,16 +303,17 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div')
-			fireEvent.keyDown(div!, {key: 'Enter'})
+			const div = container.querySelector('div') as HTMLElement
+			await userEvent.click(div)
+			await userEvent.keyboard('{Enter}')
 
 			expect(handleKeyDown).toHaveBeenCalled()
 		})
 
-		it('should call onClick handler from slotProps.container', () => {
+		it('should call onClick handler from slotProps.container', async () => {
 			const handleClick = vi.fn()
 
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -324,17 +325,17 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div')
-			fireEvent.click(div!)
+			const div = container.querySelector('div') as HTMLElement
+			await userEvent.click(div)
 
 			expect(handleClick).toHaveBeenCalled()
 		})
 
-		it('should call onFocus and onBlur handlers from slotProps.container', () => {
+		it('should call onFocus and onBlur handlers from slotProps.container', async () => {
 			const handleFocus = vi.fn()
 			const handleBlur = vi.fn()
 
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -347,11 +348,11 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div')
-			fireEvent.focus(div!)
+			const div = container.querySelector('div') as HTMLElement
+			await userEvent.click(div)
 			expect(handleFocus).toHaveBeenCalled()
 
-			fireEvent.blur(div!)
+			await userEvent.click(page.getByRole('document'))
 			expect(handleBlur).toHaveBeenCalled()
 		})
 	})
@@ -363,7 +364,7 @@ describe('Slots API', () => {
 			))
 			CustomContainer.displayName = 'CustomContainer'
 
-			render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -379,14 +380,14 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const container = screen.getByTestId('custom-container')
+			const container = page.getByTestId('custom-container')
 			await expect.element(container).toHaveClass('outer-class')
 			await expect.element(container).toHaveClass('inner-class')
 			await expect.element(container).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 
 		it('should allow native HTML elements as slots', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -397,31 +398,31 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const article = container.querySelector('article')
-			const div = container.querySelector('div[contenteditable]')
+			const article = container.querySelector('article') as HTMLElement
+			const div = container.querySelector('div[contenteditable]') as HTMLElement
 
-			await expect.element(article!).toBeInTheDocument()
-			await expect.element(div!).toBeInTheDocument()
+			await expect.element(article).toBeInTheDocument()
+			await expect.element(div).toBeInTheDocument()
 		})
 	})
 
 	describe('Edge cases', () => {
 		it('should handle empty value', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="" />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="" />)
 
-			const div = container.querySelector('div')
-			await expect.element(div!).toBeInTheDocument()
+			const div = container.querySelector('div') as HTMLElement
+			await expect.element(div).toBeInTheDocument()
 		})
 
 		it('should handle undefined slotProps gracefully', async () => {
-			const {container} = render(<MarkedInput Mark={TestMark} value="Hello world" slotProps={undefined} />)
+			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" slotProps={undefined} />)
 
-			const div = container.querySelector('div')
-			await expect.element(div!).toBeInTheDocument()
+			const div = container.querySelector('div') as HTMLElement
+			await expect.element(div).toBeInTheDocument()
 		})
 
 		it('should handle empty className in slotProps', async () => {
-			const {container} = render(
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -433,12 +434,12 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div')
-			await expect.element(div!).toBeInTheDocument()
+			const div = container.querySelector('div') as HTMLElement
+			await expect.element(div).toBeInTheDocument()
 		})
 
-		it('should handle multiple marked values with custom slots', () => {
-			const {container} = render(
+		it('should handle multiple marked values with custom slots', async () => {
+			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="@[hello] world @[test]"
@@ -460,9 +461,9 @@ describe('Slots API', () => {
 			))
 			CustomContainer.displayName = 'CustomContainer'
 
-			render(<MarkedInput Mark={TestMark} value="Hello world" slots={{container: CustomContainer}} />)
+			await render(<MarkedInput Mark={TestMark} value="Hello world" slots={{container: CustomContainer}} />)
 
-			await expect.element(screen.getByTestId('custom-container')).toBeInTheDocument()
+			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
 		})
 	})
 })

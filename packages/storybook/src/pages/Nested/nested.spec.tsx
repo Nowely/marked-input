@@ -1,4 +1,5 @@
-import {render, screen} from '@testing-library/react'
+import {render} from 'vitest-browser-react'
+import {page} from 'vitest/browser'
 import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
 import type {ReactNode} from 'react'
@@ -19,26 +20,26 @@ describe('Nested Marks Rendering', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[outer @[inner]]'
 
-		render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
-		const outerMark = screen.getByTestId('mark-depth-0')
-		const innerMark = screen.getByTestId('mark-depth-1')
+		const outerMark = page.getByTestId('mark-depth-0')
+		const innerMark = page.getByTestId('mark-depth-1')
 
 		await expect.element(outerMark).toBeInTheDocument()
 		await expect.element(innerMark).toBeInTheDocument()
-		expect(outerMark.getAttribute('data-has-children')).toBe('true')
-		expect(innerMark.getAttribute('data-has-children')).toBe('false')
+		expect(outerMark.element().getAttribute('data-has-children')).toBe('true')
+		expect(innerMark.element().getAttribute('data-has-children')).toBe('false')
 	})
 
 	it('should render multiple nesting levels', async () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[level0 @[level1 @[level2]]]'
 
-		render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
-		const level0 = screen.getByTestId('mark-depth-0')
-		const level1 = screen.getByTestId('mark-depth-1')
-		const level2 = screen.getByTestId('mark-depth-2')
+		const level0 = page.getByTestId('mark-depth-0')
+		const level1 = page.getByTestId('mark-depth-1')
+		const level2 = page.getByTestId('mark-depth-2')
 
 		await expect.element(level0).toBeInTheDocument()
 		await expect.element(level1).toBeInTheDocument()
@@ -49,10 +50,10 @@ describe('Nested Marks Rendering', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[outer @[first] and @[second]]'
 
-		render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
-		const outerMark = screen.getByTestId('mark-depth-0')
-		const nestedMarks = screen.getAllByTestId('mark-depth-1')
+		const outerMark = page.getByTestId('mark-depth-0')
+		const nestedMarks = page.getByTestId('mark-depth-1').all()
 
 		await expect.element(outerMark).toBeInTheDocument()
 		expect(nestedMarks).toHaveLength(2)
@@ -84,26 +85,26 @@ describe('Nested Marks Rendering', () => {
 			/>
 		)
 
-		const tagMark = screen.getByTestId('tag-mark')
-		const mentionMark = screen.getByTestId('mention-mark')
+		const tagMark = page.getByTestId('tag-mark')
+		const mentionMark = page.getByTestId('mention-mark')
 
 		await expect.element(tagMark).toBeInTheDocument()
 		await expect.element(mentionMark).toBeInTheDocument()
-		expect(tagMark.getAttribute('data-depth')).toBe('0')
-		expect(mentionMark.getAttribute('data-depth')).toBe('1')
+		expect(tagMark.element().getAttribute('data-depth')).toBe('0')
+		expect(mentionMark.element().getAttribute('data-depth')).toBe('1')
 	})
 
-	it('should handle empty nested marks', () => {
+	it('should handle empty nested marks', async () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[@[]]'
 
-		render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
-		const marks = screen.getAllByTestId(/mark-depth-/)
+		const marks = page.getByTestId(/mark-depth-/).all()
 		expect(marks).toHaveLength(2)
 	})
 
-	it('should pass children to Mark component for nested content', () => {
+	it('should pass children to Mark component for nested content', async () => {
 		let hasChildrenAtDepthZero = false
 
 		const CapturingMark = ({children}: {value?: string; children?: ReactNode}) => {
@@ -124,7 +125,7 @@ describe('Nested Marks Rendering', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[before @[nested] after]'
 
-		const {container} = render(<MarkedInput Mark={CapturingMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={CapturingMark} value={value} options={[{markup}]} />)
 
 		// With children and value rendered, all text should be visible
 		expect(container.textContent).toContain('before')
@@ -136,7 +137,7 @@ describe('Nested Marks Rendering', () => {
 })
 
 describe('Nested Marks Tree Navigation', () => {
-	it('should provide correct depth information', () => {
+	it('should provide correct depth information', async () => {
 		const DepthMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			return <span data-depth={mark.depth}>{children}</span>
@@ -145,14 +146,14 @@ describe('Nested Marks Tree Navigation', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[d0 @[d1 @[d2]]]'
 
-		const {container} = render(<MarkedInput Mark={DepthMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={DepthMark} value={value} options={[{markup}]} />)
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el => el.getAttribute('data-depth'))
 
 		expect(depths).toEqual(['0', '1', '2'])
 	})
 
-	it('should provide hasChildren information', () => {
+	it('should provide hasChildren information', async () => {
 		const ChildrenMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			return <span data-has-children={mark.hasChildren}>{children}</span>
@@ -161,7 +162,7 @@ describe('Nested Marks Tree Navigation', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[parent @[child]]'
 
-		const {container} = render(<MarkedInput Mark={ChildrenMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={ChildrenMark} value={value} options={[{markup}]} />)
 
 		const elements = Array.from(container.querySelectorAll('[data-has-children]'))
 		const hasChildrenValues = elements.map(el => el.getAttribute('data-has-children'))
@@ -169,7 +170,7 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(hasChildrenValues).toEqual(['true', 'false'])
 	})
 
-	it('should provide children array', () => {
+	it('should provide children array', async () => {
 		let capturedChildrenCount = 0
 
 		const ChildrenCountMark = ({children}: {value?: string; children?: ReactNode}) => {
@@ -183,7 +184,7 @@ describe('Nested Marks Tree Navigation', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[parent @[child1] text @[child2]]'
 
-		render(<MarkedInput Mark={ChildrenCountMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={ChildrenCountMark} value={value} options={[{markup}]} />)
 
 		// Should have 5 children: text, mark, text, mark, text
 		expect(capturedChildrenCount).toBeGreaterThan(0)
@@ -199,11 +200,11 @@ describe('Backward Compatibility', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const value = '@[test](meta)'
 
-		render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
 
-		const mark = screen.getByTestId('flat-mark')
+		const mark = page.getByTestId('flat-mark')
 		await expect.element(mark).toBeInTheDocument()
-		expect(mark.textContent).toBe('test')
+		expect(mark.element().textContent).toBe('test')
 	})
 
 	it('should ignore children prop in flat marks', async () => {
@@ -215,14 +216,14 @@ describe('Backward Compatibility', () => {
 		const markup: Markup = '@[__value__]'
 		const value = '@[test]'
 
-		render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
 
-		const mark = screen.getByTestId('flat-mark')
+		const mark = page.getByTestId('flat-mark')
 		await expect.element(mark).toBeInTheDocument()
-		expect(mark.textContent).toBe('test')
+		expect(mark.element().textContent).toBe('test')
 	})
 
-	it('should not parse nested content in __value__ placeholders', () => {
+	it('should not parse nested content in __value__ placeholders', async () => {
 		const FlatMark = ({value}: {value?: string}) => {
 			return <span data-testid="flat-mark">{value}</span>
 		}
@@ -230,18 +231,18 @@ describe('Backward Compatibility', () => {
 		const markup: Markup = '@[__value__]'
 		const value = '@[text with @[nested]]'
 
-		render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={FlatMark} value={value} options={[{markup}]} />)
 
 		// Should only have one mark since __value__ doesn't support nesting
-		const marks = screen.getAllByTestId('flat-mark')
+		const marks = page.getByTestId('flat-mark').all()
 		expect(marks).toHaveLength(1)
 		// The inner @[nested] should be part of the value as plain text
-		expect(marks[0].textContent).toContain('text with @[nested]')
+		expect(marks[0].element().textContent).toContain('text with @[nested]')
 	})
 })
 
 describe('Complex Nesting Scenarios', () => {
-	it('should handle adjacent nested marks', () => {
+	it('should handle adjacent nested marks', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
 			return <span data-testid="mark">{children}</span>
 		}
@@ -249,13 +250,13 @@ describe('Complex Nesting Scenarios', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[first]@[second]'
 
-		render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
-		const marks = screen.getAllByTestId('mark')
+		const marks = page.getByTestId('mark').all()
 		expect(marks).toHaveLength(2)
 	})
 
-	it('should handle deeply nested structure', () => {
+	it('should handle deeply nested structure', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			return <span data-depth={mark.depth}>{children}</span>
@@ -264,7 +265,7 @@ describe('Complex Nesting Scenarios', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[@[@[@[@[deep]]]]]'
 
-		const {container} = render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el =>
 			parseInt(el.getAttribute('data-depth') || '0')
@@ -273,7 +274,7 @@ describe('Complex Nesting Scenarios', () => {
 		expect(Math.max(...depths)).toBe(4) // 5 levels: 0, 1, 2, 3, 4
 	})
 
-	it('should handle mixed nested and flat marks', () => {
+	it('should handle mixed nested and flat marks', async () => {
 		const MixedMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			return (
@@ -286,13 +287,13 @@ describe('Complex Nesting Scenarios', () => {
 		const nestedMarkup: Markup = '@[__nested__]'
 		const value = '@[nested @[child]] @[another]'
 
-		render(<MarkedInput Mark={MixedMark} value={value} options={[{markup: nestedMarkup}]} />)
+		await render(<MarkedInput Mark={MixedMark} value={value} options={[{markup: nestedMarkup}]} />)
 
-		const marks = screen.getAllByTestId('mark')
+		const marks = page.getByTestId('mark').all()
 		expect(marks.length).toBeGreaterThanOrEqual(3)
 	})
 
-	it('should render nested structure when Mark component renders children', () => {
+	it('should render nested structure when Mark component renders children', async () => {
 		const RenderingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			// This Mark component explicitly renders children
@@ -303,7 +304,7 @@ describe('Complex Nesting Scenarios', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[Hello @[World] from @[Nested] marks]'
 
-		const {container} = render(<MarkedInput Mark={RenderingMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={RenderingMark} value={value} options={[{markup}]} />)
 
 		// When Mark renders children/value appropriately, all text content should be visible
 		expect(container.textContent).toContain('Hello')
@@ -315,7 +316,7 @@ describe('Complex Nesting Scenarios', () => {
 })
 
 describe('Edge Cases', () => {
-	it('should handle empty input', () => {
+	it('should handle empty input', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
 			return <span>{children}</span>
 		}
@@ -323,12 +324,12 @@ describe('Edge Cases', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = ''
 
-		const {container} = render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		expect(container.textContent).toBe('')
 	})
 
-	it('should handle input with no marks', () => {
+	it('should handle input with no marks', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
 			return <span>{children}</span>
 		}
@@ -336,7 +337,7 @@ describe('Edge Cases', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = 'Just plain text'
 
-		const {container} = render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		expect(container.textContent).toBe('Just plain text')
 	})
@@ -349,7 +350,7 @@ describe('Edge Cases', () => {
 		const markup: Markup = '@[__nested__]'
 		const value = '@[unclosed @[nested'
 
-		const {container} = render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
+		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		// Should render something without crashing
 		await expect.element(container).toBeInTheDocument()

@@ -15,7 +15,6 @@
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
     "@mui/material": "^7.3.5",
-    "@testing-library/react": "^16.3.0",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
     "react": "catalog:",
@@ -34,7 +33,8 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "storybook": "^10.1.2",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vitest-browser-react": "^2.0.2"
   },
   "type": "module"
 }

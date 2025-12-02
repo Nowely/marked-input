@@ -1,5 +1,5 @@
-import {render} from '@testing-library/react'
-import {userEvent} from 'vitest/browser'
+import {render} from 'vitest-browser-react'
+import {page, userEvent} from 'vitest/browser'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
@@ -14,19 +14,19 @@ describe(`Component: MarkedInput`, () => {
 	//TODO mark focus
 
 	it('should correct process an annotation type', async () => {
-		const {container, queryByText} = render(<Default defaultValue="" />)
+		const {container} = await render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
 
 		await expect.element(span).toHaveTextContent('')
 
 		await userEvent.type(span, '@[[mark](1)')
 
-		expect(queryByText('@[mark](1)')).toBeNull()
-		await expect.element(queryByText('mark')!).toBeInTheDocument()
+		await expect.element(page.getByText('@[mark](1)')).not.toBeInTheDocument()
+		await expect.element(page.getByText('mark')).toBeInTheDocument()
 	})
 
 	it.todo('should support ref focusing target', async () => {
-		const {container} = render(<Focusable />)
+		const {container} = await render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
 		const firstSpanLength = firstSpan.textContent?.length ?? 0
@@ -51,32 +51,32 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support remove itself', async () => {
-		const {getByText, queryByText} = render(<Removable />)
+		await render(<Removable />)
 
-		let mark = getByText('contain')
+		let mark = page.getByText('contain')
 		await userEvent.click(mark)
-		expect(queryByText('contain')).toBeNull()
+		await expect.element(page.getByText('contain')).not.toBeInTheDocument()
 
-		mark = getByText('marks')
+		mark = page.getByText('marks')
 		await userEvent.click(mark)
-		expect(queryByText('marks')).toBeNull()
+		await expect.element(page.getByText('marks')).not.toBeInTheDocument()
 	})
 
 	it('should support editable marks', async () => {
-		const {getByText} = render(<Focusable />)
+		await render(<Focusable />)
 
-		const worldElement = getByText('world')
+		const worldElement = page.getByText('world').first().element() as HTMLElement
 		await focusAtEnd(worldElement)
 		await userEvent.keyboard('123')
 
-		await expect.element(getByText('world123')).toBeInTheDocument()
-		await expect.element(getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
+		await expect.element(page.getByText('world123').first()).toBeInTheDocument()
+		await expect.element(page.getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
 	// TODO: user.pointer with offset is not available in vitest/browser.
 	// Need to rewrite using native Selection API for text selection testing.
 	it.todo('should be selectable', async () => {
-		const {container} = render(<Default defaultValue="Hello @[mark](1)!" />)
+		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
 		const selection = window.getSelection()!
 		expect(selection).not.toBeNull()
 
