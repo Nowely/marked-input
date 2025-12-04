@@ -3,7 +3,7 @@
  *
  * This function walks through DOM nodes and reconstructs the original text format:
  * - Text nodes → plain text
- * - <mark> elements → @[value](meta) format
+ * - <mark> elements → `@[value](meta)` format
  * - Nested content → recursive processing
  *
  * @param html - innerHTML from the contentEditable container

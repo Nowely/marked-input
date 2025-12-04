@@ -76,15 +76,15 @@ describe(`Component: MarkedInput`, () => {
 	// TODO: user.pointer with offset is not available in vitest/browser.
 	// Need to rewrite using native Selection API for text selection testing.
 	it.todo('should be selectable', async () => {
-		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
-		const selection = window.getSelection()!
-		expect(selection).not.toBeNull()
+		//const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+		//const selection = window.getSelection()!
+		//expect(selection).not.toBeNull()
 
 		// await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
 		// expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
 
-		const MarkedText = container.firstElementChild!
-		const [span1, mark, span2] = MarkedText.children
+		//const MarkedText = container.firstElementChild!
+		//const [span1, mark, span2] = MarkedText.children
 
 		// await user.pointer([
 		// 	{target: span1, offset: 0, keys: '[MouseLeft>]'},
@@ -124,8 +124,8 @@ describe(`Component: MarkedInput`, () => {
 
 		// await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
 		// expect(selection.isCollapsed).toBeTruthy()
-		await userEvent.keyboard('abc')
-		await expect.element(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
+		//await userEvent.keyboard('abc')
+		//await expect.element(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
 	})
 })
 

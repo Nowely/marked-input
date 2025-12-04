@@ -9,7 +9,7 @@ const {Default} = composeStories(BaseStories)
 
 describe('Api: keyboard', () => {
 	it.todo('should support the "Backspace" button', async () => {
-		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+		await render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const tailSpan = page.getByText('!').element() as HTMLElement
 		await focusAtEnd(tailSpan)
@@ -35,7 +35,7 @@ describe('Api: keyboard', () => {
 	})
 
 	it('should support the "Delete" button', async () => {
-		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+		await render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const firstSpan = page.getByText(/Hello/).element() as HTMLElement
 		await focusAtStart(firstSpan)
