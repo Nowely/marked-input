@@ -40,10 +40,10 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react-swc": "^4.2.2",
-    "oxlint": "^1.30.0",
-    "prettier": "^3.7.3",
+    "oxlint": "^1.31.0",
+    "prettier": "^3.7.4",
     "typescript": "^5.9.3",
-    "vite": "^7.2.4",
+    "vite": "^7.2.6",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   }
 }
