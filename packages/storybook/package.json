@@ -5,7 +5,6 @@
     "dev": "storybook dev",
     "build": "storybook build -o ./dist",
     "test": "vitest run",
-    "test:integration": "vitest run tests/integrations",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage"

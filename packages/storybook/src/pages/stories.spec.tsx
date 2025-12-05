@@ -28,18 +28,17 @@ for (const [path, module] of Object.entries(storiesModules)) {
 
 //TODO correct type
 const getTests =
-	(category: string) =>
+	() =>
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(<Story />)
 			expect(container.textContent?.length).toBeTruthy()
-			//await expect(container).toMatchScreenshot(`${category}-${name}`)
 		})
 
 describe('Component: stories', () => {
 	for (const [category, stories] of storiesByCategory.entries()) {
 		describe(`${category} stories`, () => {
-			Object.entries(stories).map(getTests(category))
+			Object.entries(stories).map(getTests())
 		})
 	}
 })
