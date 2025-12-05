@@ -2,8 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
-    "types": ["vitest/globals", "vite/client"],
-    "skipLibCheck": true
   },
   "include": ["./**/*.ts", "./**/*.tsx", "../core/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

@@ -97,6 +97,7 @@ export default defineConfig({
 		react(),
 	],
 	vite: {
+		// @ts-expect-error Vite version type mismatch between Astro internal and workspace
 		plugins: [tailwindcss()],
 	},
 })
