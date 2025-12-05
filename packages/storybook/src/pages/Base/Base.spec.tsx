@@ -6,6 +6,8 @@ import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from './Base.stories'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 
+//createVisualTests(BaseStories)
+
 const {Default} = composeStories(BaseStories)
 
 describe(`Component: MarkedInput`, () => {

@@ -8,7 +8,11 @@ export const useFetch = <T,>(url: string, deps: unknown[]) => {
 		fetch(url, {signal: abortController.signal})
 			.then(res => res.json())
 			.then(setData)
-		//.catch(reason => console.error(reason))
+			.catch(error => {
+				// Ignore aborts triggered during cleanup to avoid noisy test errors.
+				if ((error as DOMException)?.name === 'AbortError') return
+				console.error(error)
+			})
 
 		return () => abortController.abort()
 	}, deps)
