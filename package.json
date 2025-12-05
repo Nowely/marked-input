@@ -22,7 +22,6 @@
     "test": "pnpm -r run test",
     "test:ui": "pnpm -r run test:ui",
     "test:watch": "pnpm -r run test:watch",
-    "test:integration": "pnpm -r run test:integration",
     "test:coverage": "pnpm -r run coverage",
     "bench": "pnpm -r run bench",
     "typecheck": "tsc --noEmit",

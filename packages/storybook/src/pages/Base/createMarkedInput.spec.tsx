@@ -34,6 +34,7 @@ describe(`Utility: createMarkedInput`, () => {
 
 		await render(<Input ref={el => (ref = el)} value={''} onChange={() => ({})} />)
 
+		//@ts-expect-error - TODO ref is not typed correctly 
 		expect(ref?.container).not.toBeNull()
 	})
 })

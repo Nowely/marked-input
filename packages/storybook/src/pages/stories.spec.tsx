@@ -3,7 +3,6 @@ import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 
 // Automatically import all stories files
-// @ts-expect-error - import.meta.glob is a Vite feature
 const storiesModules = import.meta.glob('./**/*.stories.tsx', {eager: true})
 
 // Group stories by category
