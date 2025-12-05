@@ -19,14 +19,11 @@ const CustomOverlay = () => {
 			.then(data => setUsers(data.items?.slice(0, 10) || []))
 	}, [match.value])
 
-	useEffect(() => ref.current?.showPopover(), [])
-
 	return (
 		<div
 			ref={ref as RefObject<HTMLDivElement>}
-			popover="auto"
 			style={{top: style.top, left: style.left}}
-			className="border border-gray-200 shadow-md"
+			className="fixed z-10 bg-white border border-gray-200 shadow-md"
 		>
 			{users?.map(user => (
 				<User
