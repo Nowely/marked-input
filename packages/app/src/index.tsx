@@ -7,15 +7,7 @@ import type {MarkToken, Markup} from 'rc-marked-input'
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
-const Button = ({
-	label,
-	primary,
-	onClick,
-}: {
-	label: string
-	primary?: boolean
-	onClick?: () => void
-}) => (
+const Button = ({label, primary, onClick}: {label: string; primary?: boolean; onClick?: () => void}) => (
 	<button
 		type="button"
 		onClick={onClick}

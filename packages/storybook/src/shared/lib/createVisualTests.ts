@@ -4,9 +4,9 @@ import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 
 /**
- * Создает скриншотные тесты для всех stories модуля.
+ * Builds screenshot-based tests for every story in a module.
  *
- * @param storiesModule - импортированный stories файл (namespace import)
+ * @param storiesModule - imported stories file (namespace import)
  */
 export function createVisualTests(storiesModule: any) {
 	const stories = composeStories(storiesModule)
@@ -22,4 +22,3 @@ export function createVisualTests(storiesModule: any) {
 		}
 	})
 }
-

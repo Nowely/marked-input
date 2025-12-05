@@ -59,4 +59,3 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 })
-

@@ -87,4 +87,3 @@ describe('Api: keyboard', () => {
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 })
-

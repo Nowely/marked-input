@@ -21,4 +21,3 @@ const require = createRequire(import.meta.url)
 function getAbsolutePath(value: string): string {
 	return dirname(require.resolve(join(value, 'package.json')))
 }*/
-

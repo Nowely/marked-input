@@ -154,14 +154,14 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 	const testNames = Object.keys(currentRun.tests)
 	const totalDuration = testNames.reduce((sum, name) => sum + currentRun.tests[name].duration, 0)
 
-	// Расчет performance delta на основе comparison
+	// Calculate performance delta based on the comparison
 	let performanceDelta = '0.0%'
 
 	if (comparison) {
 		const avgChange =
 			comparison.differences.reduce((sum, diff) => sum + diff.durationChangePercent, 0) /
 			comparison.differences.length
-		// Инвертируем знак: положительное значение означает улучшение производительности
+		// Invert the sign: a positive value means performance improved
 		const performanceValue = -avgChange
 		performanceDelta = `${performanceValue >= 0 ? '+' : ''}${performanceValue.toFixed(1)}%`
 	}

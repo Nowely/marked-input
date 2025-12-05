@@ -37,4 +37,3 @@ describe(`Utility: createMarkedInput`, () => {
 		expect(ref?.container).not.toBeNull()
 	})
 })
-

@@ -9,7 +9,9 @@ describe('Slots API', () => {
 
 	describe('Container slot', () => {
 		it('should use default div component when no slot is provided', async () => {
-			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />)
+			const {container} = await render(
+				<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />
+			)
 
 			const containerDiv = container.querySelector('div') as HTMLElement
 			await expect.element(containerDiv).toBeInTheDocument()

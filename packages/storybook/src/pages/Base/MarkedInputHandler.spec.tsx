@@ -30,4 +30,3 @@ describe('API: MarkedInputHandler', () => {
 		expect(handler.value?.container).not.toBeNull()
 	})
 })
-

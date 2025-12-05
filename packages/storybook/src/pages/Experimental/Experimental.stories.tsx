@@ -5,7 +5,7 @@ import {useState} from 'react'
 import {SingleEditableControlled} from './components/SingleEditableControlled'
 import {SingleEditableUncontrolled} from './components/SingleEditableUncontrolled'
 import {SingleEditableMarkdown} from './components/SingleEditableMarkdown'
-import { Text } from '../../shared/components/Text'
+import {Text} from '../../shared/components/Text'
 
 export default {
 	title: 'Experimental/Single ContentEditable',
