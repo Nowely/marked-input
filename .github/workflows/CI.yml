@@ -19,6 +19,9 @@ jobs:
             - name: Setup Environment
               uses: nowely/action-setup-node@v1
 
+            - name: Install Playwright Browsers
+              run: npx --no playwright install --with-deps --only-shell
+
             - name: Run Tests
               run: pnpm test
 
