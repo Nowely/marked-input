@@ -5,7 +5,7 @@ prev: false
 title: "MarkedInputHandler"
 ---
 
-Defined in: [packages/markput/src/types.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L91)
+Defined in: [packages/markput/src/types.ts:94](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L94)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [packages/markput/src/types.ts:91](https://github.com/Nowely/marked-
 readonly container: HTMLDivElement | null;
 ```
 
-Defined in: [packages/markput/src/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L93)
+Defined in: [packages/markput/src/types.ts:96](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L96)
 
 Container element
 
@@ -27,7 +27,7 @@ Container element
 readonly overlay: HTMLElement | null;
 ```
 
-Defined in: [packages/markput/src/types.ts:95](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L95)
+Defined in: [packages/markput/src/types.ts:98](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L98)
 
 Overlay element if exists
 
@@ -39,7 +39,7 @@ Overlay element if exists
 focus(): void;
 ```
 
-Defined in: [packages/markput/src/types.ts:97](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L97)
+Defined in: [packages/markput/src/types.ts:100](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L100)
 
 #### Returns
 

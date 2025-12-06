@@ -37,7 +37,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	 * Each option can specify its own slot component via mark.slot or overlay.slot.
 	 * Falls back to global Mark/Overlay components when not specified.
 	 */
-	options?: Option[]
+	options?: Option<TMarkProps, TOverlayProps>[]
 	/** Additional classes */
 	className?: string
 	/** Additional style */

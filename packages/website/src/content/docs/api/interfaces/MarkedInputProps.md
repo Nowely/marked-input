@@ -107,7 +107,7 @@ CoreMarkputProps.onChange
 ### options?
 
 ```ts
-optional options: Option[];
+optional options: Option<TMarkProps, TOverlayProps>[];
 ```
 
 Defined in: [packages/markput/src/components/MarkedInput.tsx:40](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L40)

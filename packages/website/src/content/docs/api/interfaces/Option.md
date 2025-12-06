@@ -5,16 +5,16 @@ prev: false
 title: "Option"
 ---
 
-Defined in: [packages/markput/src/types.ts:51](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L51)
+Defined in: [packages/markput/src/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L54)
 
 React-specific markup option for defining mark behavior and styling.
 
 ## Example
 
 ```ts
-const option: Option = {
+const option: Option<ChipProps> = {
   markup: '@[__value__]',
-  mark: { slot: Button, label: 'Click' }
+  mark: { slot: Chip, label: 'Click' }
 }
 ```
 
@@ -22,17 +22,22 @@ const option: Option = {
 
 - `CoreOption`
 
+## Type Parameters
+
+| Type Parameter | Default type | Description |
+| ------ | ------ | ------ |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the mark component |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the overlay component |
+
 ## Properties
 
 ### mark?
 
 ```ts
-optional mark: 
-  | MarkProps
-  | (props) => MarkProps;
+optional mark: TMarkProps | (props) => TMarkProps;
 ```
 
-Defined in: [packages/markput/src/types.ts:56](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L56)
+Defined in: [packages/markput/src/types.ts:59](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L59)
 
 Props for the mark component.
 Can be a static object or a function that transforms MarkProps.
@@ -83,9 +88,9 @@ CoreOption.markup
 ### overlay?
 
 ```ts
-optional overlay: OverlayProps;
+optional overlay: TOverlayProps;
 ```
 
-Defined in: [packages/markput/src/types.ts:60](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L60)
+Defined in: [packages/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L63)
 
 Props for the overlay component.

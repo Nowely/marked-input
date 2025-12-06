@@ -28,7 +28,7 @@ Used for close overlay.
 ### match
 
 ```ts
-match: OverlayMatch<Option>;
+match: OverlayMatch<Option<MarkProps, OverlayProps>>;
 ```
 
 Defined in: [packages/markput/src/utils/hooks/useOverlay.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useOverlay.tsx#L27)
