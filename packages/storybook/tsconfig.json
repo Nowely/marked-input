@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "composite": true,
+    "composite": true
   },
   "include": ["./**/*.ts", "./**/*.tsx", "../core/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

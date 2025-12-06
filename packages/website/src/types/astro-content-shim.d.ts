@@ -7,4 +7,3 @@ declare module 'astro:content' {
 	export function defineCollection<T = any>(input: T): T
 	export function getCollection(...args: any[]): Promise<any>
 }
-
