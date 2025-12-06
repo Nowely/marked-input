@@ -20,7 +20,7 @@ jobs:
               uses: nowely/action-setup-node@v1
 
             - name: Install Playwright Browsers
-              run: npx --no playwright install --with-deps --only-shell
+              run: pnpm playwright install --with-deps --only-shell chromium
 
             - name: Run Tests
               run: pnpm test
