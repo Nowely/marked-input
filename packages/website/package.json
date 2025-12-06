@@ -7,10 +7,11 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "sync": "astro sync",
+    "check": "astro check",
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/check": "^0.9.6",
     "@astrojs/react": "^4.4.2",
     "@astrojs/starlight": "^0.37.0",
     "@astrojs/starlight-tailwind": "^4.0.2",
@@ -24,6 +25,7 @@
     "react-dom": "catalog:",
     "sharp": "^0.34.5",
     "starlight-typedoc": "^0.21.5",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3"
   }
 }
