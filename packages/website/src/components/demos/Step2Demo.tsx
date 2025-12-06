@@ -6,11 +6,9 @@ export const Step2Demo = () => (
 		options={[
 			{
 				markup: '__value__',
-				slotProps: {
-					overlay: {
-						trigger: '@',
-						data: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
-					},
+				overlay: {
+					trigger: '@',
+					data: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
 				},
 			},
 		]}

@@ -4,7 +4,7 @@ import type {Option} from './types'
 /**
  * React-specific default options for MarkedInput.
  * Extends core DEFAULT_OPTIONS with framework-specific configuration:
- * - Includes trigger configuration via slotProps.overlay.trigger
+ * - Includes trigger configuration via overlay.trigger
  * - Provides empty data array for overlay suggestions
  *
  * Architecture:
@@ -15,11 +15,9 @@ import type {Option} from './types'
 export const DEFAULT_OPTIONS: Option[] = [
 	{
 		markup: DEFAULT_MARKUP,
-		slotProps: {
-			overlay: {
-				trigger: DEFAULT_OVERLAY_TRIGGER,
-				data: [],
-			},
+		overlay: {
+			trigger: DEFAULT_OVERLAY_TRIGGER,
+			data: [],
 		},
 	},
 ]

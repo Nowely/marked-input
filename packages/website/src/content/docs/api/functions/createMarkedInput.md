@@ -17,8 +17,8 @@ Create the configured MarkedInput component.
 
 | Type Parameter | Default type | Description |
 | ------ | ------ | ------ |
-| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the Mark component (default: MarkProps) |
-| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the Overlay component (default: OverlayProps) |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the global Mark component |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the global Overlay component |
 
 ## Parameters
 

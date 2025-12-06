@@ -1,5 +1,5 @@
 import {Chip, Input} from '@mui/material'
-import type {MarkToken} from 'rc-marked-input'
+import type {MarkProps} from 'rc-marked-input'
 import {MarkedInput} from 'rc-marked-input'
 import {useState} from 'react'
 import {MaterialMentions} from '../../shared/components/MaterialMentions'
@@ -36,15 +36,11 @@ export const Chipped = () => {
 				options={[
 					{
 						markup: '@[__value__](outlined:__meta__)',
-						slotProps: {
-							mark: ({value}) => ({label: value, variant: 'outlined' as const, size: 'small' as const}),
-						},
+						mark: ({value}) => ({label: value, variant: 'outlined' as const, size: 'small' as const}),
 					},
 					{
 						markup: '@[__value__](common:__meta__)',
-						slotProps: {
-							mark: ({value}) => ({label: value, size: 'small' as const}),
-						},
+						mark: ({value}) => ({label: value, size: 'small' as const}),
 					},
 				]}
 			/>
@@ -66,19 +62,15 @@ export const Overridden = () => {
 					options: [
 						{
 							markup: '@[__value__](outlined:__meta__)',
-							slotProps: {
-								mark: ({value}: MarkToken) => ({
-									label: value,
-									variant: 'outlined' as const,
-									size: 'small' as const,
-								}),
-							},
+							mark: ({value}: MarkProps) => ({
+								label: value,
+								variant: 'outlined' as const,
+								size: 'small' as const,
+							}),
 						},
 						{
 							markup: '@[__value__](common:__meta__)',
-							slotProps: {
-								mark: ({value}: MarkToken) => ({label: value, size: 'small' as const}),
-							},
+							mark: ({value}: MarkProps) => ({label: value, size: 'small' as const}),
 						},
 					],
 				}}

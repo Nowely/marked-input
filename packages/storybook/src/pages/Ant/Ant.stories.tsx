@@ -24,9 +24,7 @@ export const Tagged = () => {
 				options={[
 					{
 						markup: '@(__value__)',
-						slotProps: {
-							mark: ({value}) => ({children: value, color: value, style: {marginRight: 0}}),
-						},
+						mark: ({value}) => ({children: value, color: value, style: {marginRight: 0}}),
 					},
 				]}
 			/>

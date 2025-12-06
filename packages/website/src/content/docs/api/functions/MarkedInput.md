@@ -9,13 +9,13 @@ title: "MarkedInput"
 function MarkedInput<TMarkProps, TOverlayProps>(props): Element | null;
 ```
 
-Defined in: [packages/markput/src/components/MarkedInput.tsx:96](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L96)
+Defined in: [packages/markput/src/components/MarkedInput.tsx:84](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L84)
 
 ## Type Parameters
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TMarkProps` | `any` |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
 | `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Parameters

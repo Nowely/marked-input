@@ -22,7 +22,7 @@ export const StoreProvider = ({props, children}: StoreProviderProps) => {
 	return <StoreContext.Provider value={store} children={children} />
 }
 
-function normalizeProps(props: MarkedInputProps<any>): MarkedInputProps {
+function normalizeProps(props: MarkedInputProps): MarkedInputProps {
 	const className = mergeClassNames(DEFAULT_CLASS_NAME, props.className, props.slotProps?.container?.className)
 	const style = mergeStyles(props.style, props.slotProps?.container?.style)
 

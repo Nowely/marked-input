@@ -79,8 +79,8 @@ describe('Nested Marks Rendering', () => {
 				Mark={TagMark}
 				value={value}
 				options={[
-					{markup: tagMarkup, slotProps: {overlay: {trigger: '#'}}},
-					{markup: mentionMarkup, slotProps: {overlay: {trigger: '@'}}},
+					{markup: tagMarkup, overlay: {trigger: '#'}},
+					{markup: mentionMarkup, overlay: {trigger: '@'}},
 				]}
 			/>
 		)

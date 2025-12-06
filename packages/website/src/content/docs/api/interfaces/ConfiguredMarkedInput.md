@@ -5,7 +5,7 @@ prev: false
 title: "ConfiguredMarkedInput"
 ---
 
-Defined in: [packages/markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L74)
+Defined in: [packages/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L63)
 
 ## Extends
 
@@ -22,7 +22,7 @@ Defined in: [packages/markput/src/types.ts:74](https://github.com/Nowely/marked-
 ConfiguredMarkedInput(props, deprecatedLegacyContext?): ReactNode;
 ```
 
-Defined in: [packages/markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L74)
+Defined in: [packages/markput/src/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/types.ts#L63)
 
 ## Parameters
 

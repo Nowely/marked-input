@@ -12,7 +12,7 @@ export const useTrigger = () => {
 		_ =>
 			(store.overlayMatch = TriggerFinder.find(
 				store.props.options,
-				(option: Option) => option.slotProps?.overlay?.trigger
+				(option: Option) => option.overlay?.trigger
 			)),
 		[]
 	)
