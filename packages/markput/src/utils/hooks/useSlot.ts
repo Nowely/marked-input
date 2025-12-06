@@ -30,12 +30,7 @@ type OverlaySlotReturn = readonly [ComponentType<any>, OverlayProps]
  * const [Mark, props] = useSlot('mark', option, markPropsData)
  * return <Mark {...props} />
  */
-export function useSlot(
-	type: 'mark',
-	option?: Option,
-	baseProps?: MarkProps,
-	defaultComponent?: never
-): MarkSlotReturn
+export function useSlot(type: 'mark', option?: Option, baseProps?: MarkProps, defaultComponent?: never): MarkSlotReturn
 
 /**
  * Resolves an overlay slot component and its props with proper fallback chain.

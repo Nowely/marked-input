@@ -13,10 +13,7 @@ import type {ConfiguredMarkedInput, MarkProps, OverlayProps} from '../../types'
 export function createMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	configs: Omit<MarkedInputProps<TMarkProps, TOverlayProps>, 'value' | 'onChange'>
 ): ConfiguredMarkedInput<TMarkProps, TOverlayProps> {
-	const ConfiguredMarkedInput = (
-		props: MarkedInputProps<TMarkProps, TOverlayProps>,
-		ref: ForwardedRef<any>
-	) => {
+	const ConfiguredMarkedInput = (props: MarkedInputProps<TMarkProps, TOverlayProps>, ref: ForwardedRef<any>) => {
 		const assignedProps = Object.assign({}, configs, props) as MarkedInputProps
 		return _MarkedInput(assignedProps, ref)
 	}
