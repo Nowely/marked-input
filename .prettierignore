@@ -5,6 +5,8 @@ package.json
 # Build outputs
 dist/
 coverage/
+packages/website/.vercel/
+packages/website/src/content/docs/
 
 # Dependencies
 node_modules/

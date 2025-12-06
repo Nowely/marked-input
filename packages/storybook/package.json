@@ -1,26 +1,39 @@
 {
-  "name": "sb",
+  "name": "@markput/react-storybook",
   "private": true,
   "scripts": {
-    "dev": "storybook dev -p 6006 -c ./",
-    "build": "storybook build -c ./ -o ./dist"
+    "dev": "storybook dev",
+    "build": "storybook build -o ./dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "react": "catalog:",
-    "react-dom": "catalog:",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/material": "^7.3.2",
+    "@faker-js/faker": "catalog:",
+    "@mui/material": "^7.3.6",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "rsuite": "^5.83.3"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.0.7",
-    "@storybook/addon-links": "^10.0.7",
-    "@storybook/cli": "^10.0.7",
-    "@storybook/react-vite": "^10.0.7",
-    "storybook": "^10.0.7"
+    "@storybook/addon-docs": "^10.1.4",
+    "@storybook/addon-links": "^10.1.4",
+    "@storybook/cli": "^10.1.4",
+    "@storybook/react-vite": "^10.1.4",
+    "@types/node": "^24.10.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitest/browser-playwright": "^4.0.15",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "storybook": "^10.1.4",
+    "vitest": "catalog:",
+    "vitest-browser-react": "^2.0.2"
   },
   "type": "module"
 }

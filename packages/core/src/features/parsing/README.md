@@ -7,20 +7,20 @@ Purpose: Handles parsing of text values into tokens and annotations
 ### Running Benchmarks
 
 ```bash
-# Запуск бенчмарков (результаты автоматически сохраняются в JSON)
+# Run benchmarks (results are saved to JSON automatically)
 pnpm run bench
 
-# Watch режим для разработки
+# Watch mode for development
 pnpm -F core run test:bench:watch
 ```
 
-**Примечание:** Бенчмарки используют единый файл `parser.bench.ts`. Результаты автоматически сохраняются в `parser.bench.result.json` после каждого запуска.
+**Note:** Benchmarks use the single file `parser.bench.ts`. Results are saved to `parser.bench.result.json` after each run.
 
 ### Benchmark Results Format
 
-Результаты бенчмарков сохраняются в `parser.bench.result.json` с расширенными метриками производительности.
+Benchmark results are stored in `parser.bench.result.json` with extended performance metrics.
 
-#### Структура JSON
+#### JSON structure
 
 ```json
 {
@@ -56,63 +56,63 @@ pnpm -F core run test:bench:watch
 }
 ```
 
-#### Метрики
+#### Metrics
 
-Каждый тест включает следующие метрики:
+Each test includes these metrics:
 
 **Operations (ops)**
 
-- `avg` - среднее количество операций в секунду
-- `min` - минимальное значение
-- `max` - максимальное значение
-- `p95` - 95-й перцентиль
-- `p99` - 99-й перцентиль
+- `avg` - average operations per second
+- `min` - minimum
+- `max` - maximum
+- `p95` - 95th percentile
+- `p99` - 99th percentile
 
 **Latency (latency)**
 
-- Время выполнения одной операции в миллисекундах
-- Те же статистики: avg, min, max, p95, p99
+- Execution time of one operation in milliseconds
+- Same stats: avg, min, max, p95, p99
 
 **Memory (memory)**
 
-- `heapUsed` - используемая heap память в KB
-- `external` - внешняя память в KB
+- `heapUsed` - heap memory used (KB)
+- `external` - external memory (KB)
 
 **Comparison**
 
-- `ratio` - соотношение производительности v1/v2
-- `winner` - какой парсер быстрее
-- `performanceGap` - разница в процентах
-- `latencyDiff` - соотношение latency
-- `memoryRatio` - соотношение потребления памяти
+- `ratio` - performance ratio v1/v2
+- `winner` - which parser is faster
+- `performanceGap` - percentage difference
+- `latencyDiff` - latency ratio
+- `memoryRatio` - memory usage ratio
 
-#### Категории тестов
+#### Test categories
 
 **scalability**
-Тесты масштабируемости с различным количеством marks (10, 50, 100, 500)
+Scalability tests with different counts of marks (10, 50, 100, 500)
 
 **realWorld**
-Реальные сценарии использования:
+Real-world scenarios:
 
-- social media - посты с упоминаниями и хэштегами
-- markdown-like - текст с markdown-подобной разметкой
-- code comments - комментарии кода с аннотациями
+- social media - posts with mentions and hashtags
+- markdown-like - text with markdown-like markup
+- code comments - code comments with annotations
 
 #### Trends
 
-Автоматический анализ изменений производительности между запусками:
+Automatic analysis of performance changes between runs:
 
-- `changeFromLast` - процентное изменение с последнего запуска
-- `regressions` - список тестов с деградацией производительности (>5%)
+- `changeFromLast` - percent change since the last run
+- `regressions` - list of tests with performance degradation (>5%)
 
-#### Интерпретация результатов
+#### How to read results
 
-1. **Высокий ops** - больше операций в секунду = лучше
-2. **Низкий latency** - меньше времени на операцию = лучше
-3. **Низкий memory** - меньше потребление памяти = лучше
-4. **p95/p99** - показывают стабильность производительности
-5. **Regressions** - требуют внимания при наличии
+1. **High ops** - more operations per second = better
+2. **Low latency** - less time per operation = better
+3. **Low memory** - lower memory usage = better
+4. **p95/p99** - show performance stability
+5. **Regressions** - need attention if present
 
-### История результатов
+### Results history
 
-Файл `parser.bench.result.json` хранит последние 10 запусков бенчмарков для анализа трендов и выявления регрессий.
+The file `parser.bench.result.json` stores the last 10 benchmark runs for trend analysis and regression detection.

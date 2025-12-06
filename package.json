@@ -6,13 +6,11 @@
     "pnpm": ">=9"
   },
   "scripts": {
-    "dev": "pnpm -F app-react dev",
+    "dev": "pnpm -F @markput/react-app dev",
     "build": "pnpm -F rc-marked-input run build",
     "build:all": "pnpm -r run build",
-    "storybook:dev": "pnpm -F sb run dev",
-    "storybook:build": "pnpm -F sb run build",
-    "website:dev": "pnpm -F website run dev",
-    "website:build": "pnpm -F website run build",
+    "storybook:dev": "pnpm -F @markput/react-storybook run dev",
+    "website:dev": "pnpm -F @markput/website run dev",
     "clean:git": "git clean -xdf",
     "clean:git:dry": "git clean -xdn",
     "lint": "oxlint .",
@@ -24,12 +22,11 @@
     "test": "pnpm -r run test",
     "test:ui": "pnpm -r run test:ui",
     "test:watch": "pnpm -r run test:watch",
-    "test:integration": "pnpm -r run test:integration",
-    "test:coverage": "pnpm -r run test:coverage",
+    "test:coverage": "pnpm -r run coverage",
     "bench": "pnpm -r run bench",
-    "typecheck": "tsc --noEmit",
-    "use:local": "sed -i '' 's/\"rc-marked-input\": \"workspace:\\*\"/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/g' packages/tests/package.json packages/storybook/package.json && pnpm install",
-    "use:workspace": "sed -i '' 's/\"rc-marked-input\": \"file:..\\\/markput\\\/dist\"/\"rc-marked-input\": \"workspace:*\"/g' packages/tests/package.json packages/storybook/package.json && pnpm install",
+    "typecheck": "tsc --noEmit && pnpm run -F @markput/website check",
+    "use:local": "sed -i '' 's/\"rc-marked-input\": \"workspace:\\*\"/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/g' packages/storybook/package.json && pnpm install",
+    "use:workspace": "sed -i '' 's/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/\"rc-marked-input\": \"workspace:*\"/g' packages/storybook/package.json && pnpm install",
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F rc-marked-input run publish"
   },
@@ -38,14 +35,14 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "^7.55.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@microsoft/api-extractor": "^7.55.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
-    "oxlint": "^1.28.0",
-    "prettier": "3.6.2",
-    "typescript": "^5.9.2",
-    "vite": "^7.2.2",
+    "oxlint": "^1.31.0",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
     "vite-plugin-css-injected-by-js": "^3.5.2"
   }
 }

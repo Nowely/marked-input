@@ -6,6 +6,9 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "baseUrl": ".",
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "types": ["astro/client", "vite/client"],
     "paths": {
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"]
