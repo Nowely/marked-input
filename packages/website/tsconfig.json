@@ -8,7 +8,7 @@
     "baseUrl": ".",
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "types": ["astro/client", "vite/client"],
+    "types": ["astro/client", "vite/client", "./src/types/astro-content-shim"],
     "paths": {
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"]
