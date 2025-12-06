@@ -9,7 +9,7 @@ export default {
 	component: MarkedInput,
 }
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInput<MarkToken>>>
 
 const Mark = (props: MarkToken) => <mark>{props.value}</mark>
 

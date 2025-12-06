@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput, createMarkedInput, denote} from 'rc-marked-input'
-import type {MarkToken, Markup} from 'rc-marked-input' // MarkToken used in denote
+import type {MarkProps, MarkToken, Markup} from 'rc-marked-input' // MarkToken used in denote
 import {useState} from 'react'
 import {Button} from '../../shared/components/Button'
 import {Text} from '../../shared/components/Text'
@@ -12,7 +12,7 @@ export default {
 	args: {},
 } satisfies Meta<typeof MarkedInput>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+type Story = StoryObj<Meta<typeof MarkedInput<MarkProps>>>
 
 export const Default: Story = {
 	args: {
