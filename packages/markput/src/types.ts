@@ -8,9 +8,11 @@ import type {CoreOption} from '@markput/core'
 export type PropsOf<T> = T extends ComponentType<infer P> ? (P extends object ? P : never) : never
 
 /**
- * Simplified props passed to Mark components via slotProps
+ * Props passed to Mark components.
  */
 export interface MarkProps {
+	/** Custom component to render this mark */
+	slot?: ComponentType<MarkProps>
 	/** Main content value of the mark */
 	value?: string
 	/** Additional metadata for the mark */
@@ -22,9 +24,11 @@ export interface MarkProps {
 }
 
 /**
- * Default props for Overlay components via slotProps.
+ * Props for Overlay components.
  */
 export interface OverlayProps {
+	/** Custom component to render this overlay */
+	slot?: ComponentType<OverlayProps>
 	/** Trigger character(s) that activate the overlay */
 	trigger?: string
 	/** Data array for suggestions/autocomplete */
@@ -32,43 +36,31 @@ export interface OverlayProps {
 }
 
 // ============================================================================
-// Option Interface with Automatic Type Inference
+// Option Interface
 // ============================================================================
 
 /**
  * React-specific markup option for defining mark behavior and styling.
  *
+ * @template TMarkProps - Type of props for the mark component
+ * @template TOverlayProps - Type of props for the overlay component
+ *
  * @example
- * const option: Option = {
+ * const option: Option<ChipProps> = {
  *   markup: '@[__value__]',
- *   slots: { mark: Button },
- *   slotProps: { mark: { label: 'Click' } }
+ *   mark: { slot: Chip, label: 'Click' }
  * }
  */
 export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
 	/**
-	 * Per-option slot components.
+	 * Props for the mark component.
+	 * Can be a static object or a function that transforms MarkProps.
 	 */
-	slots?: {
-		/** Mark component for this option. */
-		mark?: ComponentType<TMarkProps>
-		/** Overlay component for this option. */
-		overlay?: ComponentType<TOverlayProps>
-	}
+	mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
 	/**
-	 * Props for slot components.
+	 * Props for the overlay component.
 	 */
-	slotProps?: {
-		/**
-		 * Props for the mark component.
-		 * Can be a static object or a function that transforms MarkProps.
-		 */
-		mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
-		/**
-		 * Props for the overlay component.
-		 */
-		overlay?: TOverlayProps
-	}
+	overlay?: TOverlayProps
 }
 
 export interface ConfiguredMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends FunctionComponent<

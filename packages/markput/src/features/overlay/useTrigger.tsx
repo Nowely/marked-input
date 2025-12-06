@@ -10,10 +10,7 @@ export const useTrigger = () => {
 	useListener(
 		SystemEvent.CheckTrigger,
 		_ =>
-			(store.overlayMatch = TriggerFinder.find(
-				store.props.options,
-				(option: Option) => option.slotProps?.overlay?.trigger
-			)),
+			(store.overlayMatch = TriggerFinder.find(store.props.options, (option: Option) => option.overlay?.trigger)),
 		[]
 	)
 }

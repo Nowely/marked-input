@@ -9,28 +9,18 @@ import {Whisper} from './Whisper'
 import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
 
 /**
- * Props for MarkedInput component with hierarchical type support.
+ * Props for MarkedInput component.
  *
- * Type parameters:
- * - `TMarkProps` - Type of props for the global Mark component (default: MarkProps)
- * - `TOverlayProps` - Type of props for the global Overlay component (default: OverlayProps)
- *
- * The global Mark and Overlay components serve as defaults when options don't specify
- * their own slot components. Each option can override these with option.slots.
- *
- * Default types:
- * - TMarkProps = MarkProps: Type-safe base props (value, meta, nested, children)
- * - TOverlayProps = OverlayProps: Type-safe overlay props (trigger, data)
+ * @template TMarkProps - Type of props for the global Mark component
+ * @template TOverlayProps - Type of props for the global Overlay component
  *
  * @example
  * ```typescript
- * // Using global Mark component with custom props type
- * interface ButtonProps { label: string; onClick: () => void }
- * <MarkedInput<ButtonProps>
- *   Mark={Button}
+ * <MarkedInput<ChipProps>
+ *   Mark={Chip}
  *   options={[{
  *     markup: '@[__value__]',
- *     slotProps: { mark: { label: 'Click me', onClick: () => {} } }
+ *     mark: { label: 'Click me' }
  *   }]}
  * />
  * ```
@@ -38,15 +28,14 @@ import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	/** Ref to handler */
 	ref?: ForwardedRef<MarkedInputHandler>
-	/** Global component used for rendering markups (fallback for option.slots.mark) */
+	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
-	/** Global component used for rendering overlays like suggestions, mentions, etc (fallback for option.slots.overlay) */
+	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
 	Overlay?: ComponentType<TOverlayProps>
 	/**
 	 * Configuration options for markups and overlays.
-	 * Each option can specify its own slot components and props via option.slots and option.slotProps.
+	 * Each option can specify its own slot component via mark.slot or overlay.slot.
 	 * Falls back to global Mark/Overlay components when not specified.
-	 * @default [{overlayTrigger: '@', markup: '@[__label__](__value__)', data: []}]
 	 */
 	options?: Option<TMarkProps, TOverlayProps>[]
 	/** Additional classes */
@@ -73,10 +62,9 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 }
 
 export interface MarkedInputComponent {
-	<TMarkProps = any, TOverlayProps = OverlayProps>(
+	<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 		props: MarkedInputProps<TMarkProps, TOverlayProps>
 	): JSX.Element | null
-
 	displayName?: string
 }
 

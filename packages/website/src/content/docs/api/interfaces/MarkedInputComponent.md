@@ -5,19 +5,19 @@ prev: false
 title: "MarkedInputComponent"
 ---
 
-Defined in: [packages/markput/src/components/MarkedInput.tsx:75](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L75)
+Defined in: [packages/markput/src/components/MarkedInput.tsx:64](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L64)
 
 ```ts
 MarkedInputComponent<TMarkProps, TOverlayProps>(props): Element | null;
 ```
 
-Defined in: [packages/markput/src/components/MarkedInput.tsx:76](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L76)
+Defined in: [packages/markput/src/components/MarkedInput.tsx:65](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L65)
 
 ## Type Parameters
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TMarkProps` | `any` |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
 | `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Parameters
@@ -38,4 +38,4 @@ Defined in: [packages/markput/src/components/MarkedInput.tsx:76](https://github.
 optional displayName: string;
 ```
 
-Defined in: [packages/markput/src/components/MarkedInput.tsx:80](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L80)
+Defined in: [packages/markput/src/components/MarkedInput.tsx:68](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/components/MarkedInput.tsx#L68)

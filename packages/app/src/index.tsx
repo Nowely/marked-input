@@ -30,22 +30,18 @@ const ConfiguredMarkedInput = createMarkedInput({
 	options: [
 		{
 			markup: PrimaryMarkup,
-			slotProps: {
-				mark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
-				overlay: {
-					trigger: '@',
-					data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-				},
+			mark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+			overlay: {
+				trigger: '@',
+				data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
 			},
 		},
 		{
 			markup: DefaultMarkup,
-			slotProps: {
-				mark: ({value}) => ({label: value || ''}),
-				overlay: {
-					trigger: '/',
-					data: ['Seventh', 'Eight', 'Ninth'],
-				},
+			mark: ({value}) => ({label: value || ''}),
+			overlay: {
+				trigger: '/',
+				data: ['Seventh', 'Eight', 'Ninth'],
 			},
 		},
 	],

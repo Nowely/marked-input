@@ -7,7 +7,7 @@ import {KEYBOARD} from '@markput/core'
 export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
-	const data = match.option.slotProps?.overlay?.data || []
+	const data = match.option.overlay?.data || []
 	const filtered = useMemo(
 		() => data.filter(s => s.toLowerCase().indexOf(match.value.toLowerCase()) > -1),
 		[match.value, data]

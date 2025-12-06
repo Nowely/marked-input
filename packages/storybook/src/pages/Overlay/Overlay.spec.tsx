@@ -41,11 +41,9 @@ describe('API: Overlay and Triggers', () => {
 				options={[
 					{
 						markup: '@[__label__](__value__)',
-						slotProps: {
-							overlay: {
-								trigger: '@',
-								data: ['Item'],
-							},
+						overlay: {
+							trigger: '@',
+							data: ['Item'],
 						},
 					},
 				]}

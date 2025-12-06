@@ -104,9 +104,7 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>): Option[] {
 	return Object.values(theme).map((preset: MarkupPreset) => {
 		return {
 			markup: preset.markup,
-			slotProps: {
-				mark: (props: MarkProps) => ({...props, style: preset.style}),
-			},
+			mark: (props: MarkProps) => ({...props, style: preset.style}),
 		}
 	})
 }

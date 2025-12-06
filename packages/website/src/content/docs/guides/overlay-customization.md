@@ -39,11 +39,9 @@ function BasicSuggestions() {
             options={[
                 {
                     markup: '@[__value__]',
-                    slotProps: {
-                        overlay: {
-                            trigger: '@',
-                            data: ['Alice', 'Bob', 'Charlie', 'Diana'],
-                        },
+                    overlay: {
+                        trigger: '@',
+                        data: ['Alice', 'Bob', 'Charlie', 'Diana'],
                     },
                 },
             ]}
@@ -131,7 +129,7 @@ function SimpleListOverlay() {
 }
 
 // Usage
-;<MarkedInput Overlay={SimpleListOverlay} options={[{slotProps: {overlay: {trigger: '@'}}}]} />
+;<MarkedInput Overlay={SimpleListOverlay} options={[{overlay: {trigger: '@'}}]} />
 ```
 
 ### Example 2: Positioned Overlay
@@ -241,7 +239,7 @@ function UserOverlay() {
     options={[
         {
             markup: '@[__value__](__meta__)',
-            slotProps: {overlay: {trigger: '@'}},
+            overlay: {trigger: '@'},
         },
     ]}
 />
@@ -333,11 +331,9 @@ function ClickOutsideOverlay() {
 options={[
   {
     markup: '@[__value__]',
-    slotProps: {
-      overlay: {
-        trigger: '@',
-        data: ['Alice', 'Bob']
-      }
+    overlay: {
+      trigger: '@',
+      data: ['Alice', 'Bob']
     }
   }
 ]}
@@ -351,21 +347,15 @@ Different triggers for different mark types:
 options={[
   {
     markup: '@[__value__](user)',
-    slotProps: {
-      overlay: { trigger: '@', data: users }
-    }
+    overlay: { trigger: '@', data: users }
   },
   {
     markup: '#[__value__](hashtag)',
-    slotProps: {
-      overlay: { trigger: '#', data: hashtags }
-    }
+    overlay: { trigger: '#', data: hashtags }
   },
   {
     markup: '/[__value__](command)',
-    slotProps: {
-      overlay: { trigger: '/', data: commands }
-    }
+    overlay: { trigger: '/', data: commands }
   }
 ]}
 ```
@@ -376,11 +366,9 @@ options={[
 options={[
   {
     markup: '{{__value__}}',
-    slotProps: {
-      overlay: {
-        trigger: '{{',
-        data: ['name', 'email', 'date']
-      }
+    overlay: {
+      trigger: '{{',
+      data: ['name', 'email', 'date']
     }
   }
 ]}
@@ -424,13 +412,11 @@ function Editor() {
             options={[
                 {
                     markup: '@[__value__]',
-                    slots: {overlay: UserOverlay}, // Custom overlay for @
-                    slotProps: {overlay: {trigger: '@'}},
+                    overlay: {slot: UserOverlay, trigger: '@'}, // Custom overlay for @
                 },
                 {
                     markup: '/[__value__]',
-                    slots: {overlay: CommandOverlay}, // Custom overlay for /
-                    slotProps: {overlay: {trigger: '/'}},
+                    overlay: {slot: CommandOverlay, trigger: '/'}, // Custom overlay for /
                 },
             ]}
         />

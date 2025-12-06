@@ -7,14 +7,14 @@ import type {ConfiguredMarkedInput, MarkProps, OverlayProps} from '../../types'
 /**
  * Create the configured MarkedInput component.
  *
- * @template TMarkProps - Type of props for the Mark component (default: MarkProps)
- * @template TOverlayProps - Type of props for the Overlay component (default: OverlayProps)
+ * @template TMarkProps - Type of props for the global Mark component
+ * @template TOverlayProps - Type of props for the global Overlay component
  */
 export function createMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	configs: Omit<MarkedInputProps<TMarkProps, TOverlayProps>, 'value' | 'onChange'>
 ): ConfiguredMarkedInput<TMarkProps, TOverlayProps> {
-	const ConfiguredMarkedInput = (props: MarkedInputProps<any, any>, ref: ForwardedRef<any>) => {
-		const assignedProps: MarkedInputProps = Object.assign({}, configs, props)
+	const ConfiguredMarkedInput = (props: MarkedInputProps<TMarkProps, TOverlayProps>, ref: ForwardedRef<any>) => {
+		const assignedProps = Object.assign({}, configs, props) as MarkedInputProps
 		return _MarkedInput(assignedProps, ref)
 	}
 

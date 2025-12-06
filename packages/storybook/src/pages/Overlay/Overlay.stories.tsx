@@ -19,11 +19,9 @@ export const DefaultOverlay: Story = {
 		defaultValue: 'Hello, default - suggestion overlay by trigger @!',
 		options: [
 			{
-				slotProps: {
-					overlay: {
-						trigger: '@',
-						data: ['First', 'Second', 'Third'],
-					},
+				overlay: {
+					trigger: '@',
+					data: ['First', 'Second', 'Third'],
 				},
 			},
 		],
@@ -44,7 +42,7 @@ export const CustomTrigger = () => {
 			Overlay={Overlay}
 			value={value}
 			onChange={setValue}
-			options={[{slotProps: {overlay: {trigger: '/'}}}]}
+			options={[{overlay: {trigger: '/'}}]}
 		/>
 	)
 }

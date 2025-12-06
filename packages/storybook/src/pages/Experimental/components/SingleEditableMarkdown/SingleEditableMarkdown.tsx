@@ -15,63 +15,51 @@ const BlockquoteMarkup: Markup = '> __value__'
 const MARKDOWN_OPTIONS = [
 	{
 		markup: BoldMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'bold',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'bold',
+		}),
 	},
 	{
 		markup: ItalicMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'italic',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'italic',
+		}),
 	},
 	{
 		markup: CodeMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'code',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'code',
+		}),
 	},
 	{
 		markup: LinkMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'link',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'link',
+		}),
 	},
 	{
 		markup: HeadingMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'heading',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'heading',
+		}),
 	},
 	{
 		markup: BlockquoteMarkup,
-		slotProps: {
-			mark: ({value, children}: any) => ({
-				value,
-				children,
-				type: 'blockquote',
-			}),
-		},
+		mark: ({value, children}: any) => ({
+			value,
+			children,
+			type: 'blockquote',
+		}),
 	},
 ]
 
