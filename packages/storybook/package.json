@@ -13,7 +13,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
-    "@mui/material": "^7.3.6",
+    "@mui/material": "^7.3.7",
     "antd": "^5.28.1",
     "rc-marked-input": "workspace:*",
     "react": "catalog:",
@@ -21,19 +21,19 @@
     "rsuite": "^5.83.3"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.1.4",
-    "@storybook/addon-links": "^10.1.4",
-    "@storybook/cli": "^10.1.4",
-    "@storybook/react-vite": "^10.1.4",
+    "@storybook/addon-docs": "^10.2.3",
+    "@storybook/addon-links": "^10.2.3",
+    "@storybook/cli": "^10.2.3",
+    "@storybook/react-vite": "^10.2.3",
     "@types/node": "^24.10.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/browser-playwright": "^4.0.15",
+    "@vitest/browser-playwright": "^4.0.18",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "storybook": "^10.1.4",
+    "storybook": "^10.2.3",
     "vitest": "catalog:",
-    "vitest-browser-react": "^2.0.2"
+    "vitest-browser-react": "^2.0.5"
   },
   "type": "module"
 }
