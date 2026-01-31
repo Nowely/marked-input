@@ -57,6 +57,9 @@ importers:
       oxlint:
         specifier: ^1.42.0
         version: 1.42.0
+      playwright:
+        specifier: ^1.58.1
+        version: 1.58.1
       prettier:
         specifier: ^3.8.1
         version: 3.8.1
@@ -182,9 +185,6 @@ importers:
       '@vitest/ui':
         specifier: 'catalog:'
         version: 4.0.18(vitest@4.0.18)
-      playwright:
-        specifier: ^1.58.1
-        version: 1.58.1
       storybook:
         specifier: ^10.2.3
         version: 10.2.3(@testing-library/dom@10.4.1)(prettier@3.8.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
