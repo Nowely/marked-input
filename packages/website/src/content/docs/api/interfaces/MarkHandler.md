@@ -5,109 +5,15 @@ prev: false
 title: "MarkHandler"
 ---
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:13](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L13)
-
-## Extends
-
-- `MarkStruct`
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:38](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L38)
 
 ## Type Parameters
 
-| Type Parameter |
-| ------ |
-| `T` |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `T` *extends* `HTMLElement` | `HTMLElement` |
 
 ## Properties
-
-### change()
-
-```ts
-change: (props, options?) => void;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L23)
-
-Change mark.
-
-#### Parameters
-
-| Parameter | Type | Description |
-| ------ | ------ | ------ |
-| `props` | `MarkStruct` | - |
-| `options?` | \{ `silent`: `boolean`; \} | The options object |
-| `options.silent?` | `boolean` | If true, doesn't change itself label and value, only pass change event. |
-
-#### Returns
-
-`void`
-
-***
-
-### depth
-
-```ts
-readonly depth: number;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:40](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L40)
-
-Nesting depth of this mark (0 for root-level marks).
-Computed lazily on access.
-
-***
-
-### hasChildren
-
-```ts
-readonly hasChildren: boolean;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:44](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L44)
-
-Whether this mark has nested children
-
-***
-
-### label
-
-```ts
-label: string;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:9](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L9)
-
-#### Inherited from
-
-```ts
-MarkStruct.label
-```
-
-***
-
-### meta?
-
-```ts
-optional meta: string;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:35](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L35)
-
-Meta value of the mark
-
-***
-
-### parent
-
-```ts
-readonly parent: MarkToken | undefined;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:49](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L49)
-
-Parent mark token (undefined for root-level marks).
-Computed lazily on access.
-
-***
 
 ### readOnly?
 
@@ -115,33 +21,220 @@ Computed lazily on access.
 optional readOnly: boolean;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:31](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L31)
-
-Passed the readOnly prop value
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:43](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L43)
 
 ***
 
 ### ref
 
 ```ts
-ref: RefObject<T>;
+readonly ref: RefObject<T>;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:17](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L17)
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:39](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L39)
 
-MarkStruct ref. Used for focusing and key handling operations.
+## Accessors
+
+### content
+
+#### Get Signature
+
+```ts
+get content(): string;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:54](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L54)
+
+Content/label of the mark (displayed text)
+
+##### Returns
+
+`string`
+
+#### Set Signature
+
+```ts
+set content(value): void;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:58](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L58)
+
+##### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `value` | `string` |
+
+##### Returns
+
+`void`
 
 ***
 
-### remove()
+### depth
+
+#### Get Signature
 
 ```ts
-remove: () => void;
+get depth(): number;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L27)
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:95](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L95)
 
-Remove itself.
+Nesting depth of this mark (0 for root-level marks).
+Computed lazily on access - O(n) traversal.
+
+##### Returns
+
+`number`
+
+***
+
+### hasChildren
+
+#### Get Signature
+
+```ts
+get hasChildren(): boolean;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:102](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L102)
+
+Whether this mark has nested children
+
+##### Returns
+
+`boolean`
+
+***
+
+### meta
+
+#### Get Signature
+
+```ts
+get meta(): string | undefined;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:78](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L78)
+
+Meta value of the mark
+
+##### Returns
+
+`string` \| `undefined`
+
+#### Set Signature
+
+```ts
+set meta(value): void;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:82](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L82)
+
+##### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `value` | `string` \| `undefined` |
+
+##### Returns
+
+`void`
+
+***
+
+### parent
+
+#### Get Signature
+
+```ts
+get parent(): MarkToken | undefined;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:110](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L110)
+
+Parent mark token (undefined for root-level marks).
+Computed lazily on access - O(n) traversal.
+
+##### Returns
+
+[`MarkToken`](/api/interfaces/marktoken/) \| `undefined`
+
+***
+
+### tokens
+
+#### Get Signature
+
+```ts
+get tokens(): Token[];
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:117](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L117)
+
+Array of child tokens (read-only)
+
+##### Returns
+
+[`Token`](/api/type-aliases/token/)[]
+
+***
+
+### value
+
+#### Get Signature
+
+```ts
+get value(): string | undefined;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:66](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L66)
+
+Value of the mark (hidden data)
+
+##### Returns
+
+`string` \| `undefined`
+
+#### Set Signature
+
+```ts
+set value(value): void;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:70](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L70)
+
+##### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `value` | `string` \| `undefined` |
+
+##### Returns
+
+`void`
+
+## Methods
+
+### change()
+
+```ts
+change(props): void;
+```
+
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:124](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L124)
+
+Change mark content, value, and/or meta at once.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `props` | \{ `content`: `string`; `meta?`: `string`; `value?`: `string`; \} |
+| `props.content` | `string` |
+| `props.meta?` | `string` |
+| `props.value?` | `string` |
 
 #### Returns
 
@@ -149,28 +242,16 @@ Remove itself.
 
 ***
 
-### tokens
+### remove()
 
 ```ts
-readonly tokens: Token[];
+remove(): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:53](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L53)
+Defined in: [packages/markput/src/utils/hooks/useMark.tsx:136](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L136)
 
-Array of child tokens (read-only)
+Remove this mark.
 
-***
+#### Returns
 
-### value?
-
-```ts
-optional value: string;
-```
-
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:10](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L10)
-
-#### Inherited from
-
-```ts
-MarkStruct.value
-```
+`void`

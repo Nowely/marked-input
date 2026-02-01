@@ -20,13 +20,7 @@ export const Container = memo(() => {
 		true
 	)
 
-	useListener(
-		'input',
-		() => {
-			bus.send(SystemEvent.Change)
-		},
-		[]
-	)
+	useListener('input',() => bus.send(SystemEvent.Change),[])
 
 	return (
 		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>

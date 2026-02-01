@@ -62,7 +62,7 @@ describe('Nested Marks Rendering', () => {
 	it('should render different markup types nested', async () => {
 		const TagMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
-			const isTag = mark.label.startsWith('#')
+			const isTag = mark.content.startsWith('#')
 			return (
 				<span data-testid={isTag ? 'tag-mark' : 'mention-mark'} data-depth={mark.depth}>
 					{children}

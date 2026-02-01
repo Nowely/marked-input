@@ -5,54 +5,6 @@ import {SystemEvent} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 
-interface MarkStruct {
-	label: string
-	value?: string
-}
-
-export interface MarkHandler<T> extends MarkStruct {
-	/**
-	 * MarkStruct ref. Used for focusing and key handling operations.
-	 */
-	ref: RefObject<T>
-	/**
-	 * Change mark.
-	 * @param {Object} options - The options object
-	 * @param {boolean} options.silent - If true, doesn't change itself label and value, only pass change event.
-	 */
-	change: (props: MarkStruct, options?: {silent: boolean}) => void
-	/**
-	 * Remove itself.
-	 */
-	remove: () => void
-	/**
-	 * Passed the readOnly prop value
-	 */
-	readOnly?: boolean
-	/**
-	 * Meta value of the mark
-	 */
-	meta?: string
-	/**
-	 * Nesting depth of this mark (0 for root-level marks).
-	 * Computed lazily on access.
-	 */
-	readonly depth: number
-	/**
-	 * Whether this mark has nested children
-	 */
-	readonly hasChildren: boolean
-	/**
-	 * Parent mark token (undefined for root-level marks).
-	 * Computed lazily on access.
-	 */
-	readonly parent: MarkToken | undefined
-	/**
-	 * Array of child tokens (read-only)
-	 */
-	readonly tokens: Token[]
-}
-
 export interface MarkOptions {
 	/**
 	 * @default false
@@ -70,7 +22,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		throw new Error('useMark can only be used with mark tokens')
 	}
 
-	const [mark] = useState(() => new MarkHandlerP<T>({ref, store, options, token}))
+	const [mark] = useState(() => new MarkHandler<T>({ref, store, token}))
 
 	useUncontrolledInit(ref, options, token)
 
@@ -83,30 +35,34 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	return mark
 }
 
-type MarkHandlerPConstruct<T> = {ref: RefObject<T>; options: MarkOptions; store: Store; token: MarkToken}
-
-export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
-	ref: RefObject<T>
+export class MarkHandler<T extends HTMLElement = HTMLElement> {
+	readonly ref: RefObject<T>
 	readonly #store: Store
 	readonly #token: MarkToken
 
 	readOnly?: boolean
 
-	get label() {
-		return this.#token.content
-	}
-
-	set label(value: string) {
-		this.#token.content = value
-		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
-	}
-
-	constructor(param: MarkHandlerPConstruct<T>) {
+	constructor(param: {ref: RefObject<T>; store: Store; token: MarkToken}) {
 		this.ref = param.ref
 		this.#store = param.store
 		this.#token = param.token
 	}
 
+	/**
+	 * Content/label of the mark (displayed text)
+	 */
+	get content() {
+		return this.#token.content
+	}
+
+	set content(value: string) {
+		this.#token.content = value
+		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
+	}
+
+	/**
+	 * Value of the mark (hidden data)
+	 */
 	get value() {
 		return this.#token.value
 	}
@@ -116,6 +72,9 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
 	}
 
+	/**
+	 * Meta value of the mark
+	 */
 	get meta() {
 		return this.#token.meta
 	}
@@ -159,12 +118,21 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 		return this.#token.children
 	}
 
-	change = (props: MarkStruct) => {
-		this.#token.content = props.label
+	/**
+	 * Change mark content, value, and/or meta at once.
+	 */
+	change = (props: {content: string; value?: string; meta?: string}) => {
+		this.#token.content = props.content
 		this.#token.value = props.value ?? ''
+		if (props.meta !== undefined) {
+			this.#token.meta = props.meta
+		}
 		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
 	}
 
+	/**
+	 * Remove this mark.
+	 */
 	remove = () => this.#store.bus.send(SystemEvent.Delete, {token: this.#token})
 }
 
