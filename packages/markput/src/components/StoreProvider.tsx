@@ -2,8 +2,8 @@ import type {ReactNode} from 'react'
 import {useEffect, useState} from 'react'
 import {Store, DEFAULT_CLASS_NAME} from '@markput/core'
 import type {MarkedInputProps} from './MarkedInput'
-import {StoreContext} from '../utils/providers/StoreContext'
-import {mergeClassNames, mergeStyles} from '../utils/functions/resolveSlot'
+import {StoreContext} from '../lib/providers/StoreContext'
+import {mergeClassNames, mergeStyles} from '../lib/functions/resolveSlot'
 import {DEFAULT_OPTIONS} from '../constants'
 
 interface StoreProviderProps {

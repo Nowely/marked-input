@@ -1,7 +1,7 @@
 import {SystemEvent, TriggerFinder} from '@markput/core'
 import type {Option} from '../../types'
-import {useListener} from '../../utils/hooks/useListener'
-import {useStore} from '../../utils/hooks/useStore'
+import {useListener} from '../../lib/hooks/useListener'
+import {useStore} from '../../lib/hooks/useStore'
 
 export const useTrigger = () => {
 	const store = useStore()

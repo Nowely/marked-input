@@ -1,6 +1,6 @@
 import {memo, useEffect} from 'react'
-import {useStore} from '../utils/hooks/useStore'
-import {useSlot} from '../utils/hooks/useSlot'
+import {useStore} from '../lib/hooks/useStore'
+import {useSlot} from '../lib/hooks/useSlot'
 import {Suggestions} from './Suggestions'
 
 /**

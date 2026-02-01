@@ -1,6 +1,6 @@
 import {useCallback} from 'react'
-import {useListener} from '../../utils/hooks/useListener'
-import {useStore} from '../../utils/hooks/useStore'
+import {useListener} from '../../lib/hooks/useListener'
+import {useStore} from '../../lib/hooks/useStore'
 import type {OverlayTrigger} from '@markput/core'
 import {SystemEvent} from '@markput/core'
 

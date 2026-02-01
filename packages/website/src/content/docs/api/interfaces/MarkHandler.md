@@ -5,7 +5,7 @@ prev: false
 title: "MarkHandler"
 ---
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:38](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L38)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:5
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:38](https://github.com
 optional readOnly: boolean;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:43](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L43)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:10
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:43](https://github.com
 readonly ref: RefObject<T>;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:39](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L39)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:6
 
 ## Accessors
 
@@ -43,7 +43,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:39](https://github.com
 get content(): string;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:54](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L54)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:21
 
 Content/label of the mark (displayed text)
 
@@ -57,7 +57,7 @@ Content/label of the mark (displayed text)
 set content(value): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:58](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L58)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:25
 
 ##### Parameters
 
@@ -79,7 +79,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:58](https://github.com
 get depth(): number;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:95](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L95)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:62
 
 Nesting depth of this mark (0 for root-level marks).
 Computed lazily on access - O(n) traversal.
@@ -98,7 +98,7 @@ Computed lazily on access - O(n) traversal.
 get hasChildren(): boolean;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:102](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L102)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:69
 
 Whether this mark has nested children
 
@@ -116,7 +116,7 @@ Whether this mark has nested children
 get meta(): string | undefined;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:78](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L78)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:45
 
 Meta value of the mark
 
@@ -130,7 +130,7 @@ Meta value of the mark
 set meta(value): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:82](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L82)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:49
 
 ##### Parameters
 
@@ -152,7 +152,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:82](https://github.com
 get parent(): MarkToken | undefined;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:110](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L110)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:77
 
 Parent mark token (undefined for root-level marks).
 Computed lazily on access - O(n) traversal.
@@ -171,7 +171,7 @@ Computed lazily on access - O(n) traversal.
 get tokens(): Token[];
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:117](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L117)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:84
 
 Array of child tokens (read-only)
 
@@ -189,7 +189,7 @@ Array of child tokens (read-only)
 get value(): string | undefined;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:66](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L66)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:33
 
 Value of the mark (hidden data)
 
@@ -203,7 +203,7 @@ Value of the mark (hidden data)
 set value(value): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:70](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L70)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:37
 
 ##### Parameters
 
@@ -223,7 +223,7 @@ Defined in: [packages/markput/src/utils/hooks/useMark.tsx:70](https://github.com
 change(props): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:124](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L124)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:91
 
 Change mark content, value, and/or meta at once.
 
@@ -248,7 +248,7 @@ Change mark content, value, and/or meta at once.
 remove(): void;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.tsx:136](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.tsx#L136)
+Defined in: packages/markput/src/lib/classes/MarkHandler.ts:103
 
 Remove this mark.
 

@@ -1,7 +1,7 @@
 import type {ClipboardEvent} from 'react'
-import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
-import {useMark} from '../utils/hooks/useMark'
-import {useStore} from '../utils/hooks/useStore'
+import {resolveSlot, resolveSlotProps} from '../lib/functions/resolveSlot'
+import {useMark} from '../lib/hooks/useMark'
+import {useStore} from '../lib/hooks/useStore'
 
 //Editable block - edit text here
 export const EditableSpan = () => {

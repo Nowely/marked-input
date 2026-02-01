@@ -1,7 +1,7 @@
 import {memo} from 'react'
-import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
-import {useListener} from '../utils/hooks/useListener'
-import {useStore} from '../utils/hooks/useStore'
+import {resolveSlot, resolveSlotProps} from '../lib/functions/resolveSlot'
+import {useListener} from '../lib/hooks/useListener'
+import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
 import {SystemEvent} from '@markput/core'
 

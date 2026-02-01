@@ -1,7 +1,7 @@
 import type {MarkToken} from '@markput/core'
-import {useStore} from '../utils/hooks/useStore'
-import {useSlot} from '../utils/hooks/useSlot'
-import {useToken} from '../utils/providers/TokenProvider'
+import {useStore} from '../lib/hooks/useStore'
+import {useSlot} from '../lib/hooks/useSlot'
+import {useToken} from '../lib/providers/TokenProvider'
 import type {MarkProps} from '../types'
 // eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Piece → Token → MarkTokenComponent → Piece
 import {Token} from './Token'
