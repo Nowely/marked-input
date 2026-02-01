@@ -2,7 +2,7 @@ import {memo} from 'react'
 import type {Token as TokenType} from '@markput/core'
 import {TokenProvider} from '../lib/providers/TokenProvider'
 // eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token → Piece → Token
-import {Piece} from './Piece'
+import {Piece} from './MarkRenderer'
 import {TextSpan} from './TextSpan'
 
 /** Renders a token - marks via Piece, text via TextSpan or plain text if nested */
