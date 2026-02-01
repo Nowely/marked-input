@@ -1,8 +1,8 @@
 import type {ClipboardEvent} from 'react'
 import {useRef} from 'react'
-import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
-import {useStore} from '../utils/hooks/useStore'
-import {useToken} from '../utils/providers/TokenProvider'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useStore} from '../lib/hooks/useStore'
+import {useToken} from '../lib/providers/TokenProvider'
 
 /**
  * TextSpan - renders text tokens (non-annotated text)

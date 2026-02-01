@@ -1,7 +1,7 @@
 import {memo} from 'react'
-import {resolveSlot, resolveSlotProps} from '../utils/functions/resolveSlot'
-import {useListener} from '../utils/hooks/useListener'
-import {useStore} from '../utils/hooks/useStore'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useListener} from '../lib/hooks/useListener'
+import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
 import {SystemEvent} from '@markput/core'
 
@@ -20,13 +20,7 @@ export const Container = memo(() => {
 		true
 	)
 
-	useListener(
-		'input',
-		() => {
-			bus.send(SystemEvent.Change)
-		},
-		[]
-	)
+	useListener('input', () => bus.send(SystemEvent.Change), [])
 
 	return (
 		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>

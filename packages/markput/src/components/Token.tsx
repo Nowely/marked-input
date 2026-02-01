@@ -1,35 +1,29 @@
 import {memo} from 'react'
 import type {Token as TokenType} from '@markput/core'
-import {TokenProvider} from '../utils/providers/TokenProvider'
-// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token renders Piece, Piece renders Token for children
-import {Piece} from './Piece'
+import {TokenProvider} from '../lib/providers/TokenProvider'
+// eslint-disable-next-line import/no-cycle
+import {MarkRenderer} from './MarkRenderer'
 import {TextSpan} from './TextSpan'
 
-/**
- * Token component - renders a single token (text or mark) with recursive support for nested marks
- *
- * This component handles both TextToken and MarkToken types:
- * - TextToken: renders as TextSpan (editable text) when isNested=false, or plain text when isNested=true
- * - MarkToken: renders as Piece (custom Mark component with optional nested children)
- *
- * The isNested prop determines editing behavior:
- * - isNested=false (default): TextTokens are editable contentEditable spans
- * - isNested=true: TextTokens render as plain text within nested marks
- *
- * The component is memoized for performance and provides the token via context
- * to child components through TokenProvider.
- */
-export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?: boolean}) => (
-	<TokenProvider value={mark}>
-		{mark.type === 'mark' ? (
-			<Piece />
-		) : isNested ? (
-			// For nested text tokens, render as plain text without contentEditable
-			mark.content
-		) : (
+/** Renders a token - marks via MarkRenderer, text via TextSpan or plain text if nested */
+export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?: boolean}) => {
+	if (mark.type === 'mark') {
+		return (
+			<TokenProvider value={mark}>
+				<MarkRenderer />
+			</TokenProvider>
+		)
+	}
+
+	if (isNested) {
+		return <>{mark.content}</>
+	}
+
+	return (
+		<TokenProvider value={mark}>
 			<TextSpan />
-		)}
-	</TokenProvider>
-))
+		</TokenProvider>
+	)
+})
 
 Token.displayName = 'Token'

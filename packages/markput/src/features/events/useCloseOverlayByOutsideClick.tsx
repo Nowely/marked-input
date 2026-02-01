@@ -1,5 +1,5 @@
 import {useEffect} from 'react'
-import {useStore} from '../../utils/hooks/useStore'
+import {useStore} from '../../lib/hooks/useStore'
 import {SystemEvent} from '@markput/core'
 
 export function useCloseOverlayByOutsideClick() {

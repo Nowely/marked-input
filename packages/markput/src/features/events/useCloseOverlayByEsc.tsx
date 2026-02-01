@@ -1,5 +1,5 @@
 import {useEffect} from 'react'
-import {useStore} from '../../utils/hooks/useStore'
+import {useStore} from '../../lib/hooks/useStore'
 import {KEYBOARD, SystemEvent} from '@markput/core'
 
 export function useCloseOverlayByEsc() {
