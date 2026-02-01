@@ -5,12 +5,7 @@ export interface TokenContext {
 	parent?: MarkToken
 }
 
-export function findToken(
-	tokens: Token[],
-	target: Token,
-	depth = 0,
-	parent?: MarkToken
-): TokenContext | undefined {
+export function findToken(tokens: Token[], target: Token, depth = 0, parent?: MarkToken): TokenContext | undefined {
 	for (const token of tokens) {
 		if (token === target) return {depth, parent}
 		if (token.type === 'mark') {
