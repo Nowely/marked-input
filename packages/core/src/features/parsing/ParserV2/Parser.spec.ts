@@ -1278,28 +1278,6 @@ describe('ParserV2', () => {
 			})
 		})
 
-		it.todo('should handle international content and unicode', () => {
-			const testCases = Array.from({length: 10}, () => {
-				const city = faker.location.city()
-				const country = faker.location.country()
-				const text = faker.lorem.sentence()
-
-				return {city, country, text}
-			})
-
-			testCases.forEach(({city, country, text}) => {
-				const input = `${text} @[${city}](${country}) 🌍`
-				const result = parser.parse(input)
-
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-				expect(marks).toHaveLength(1)
-
-				const mark = marks[0]
-				expect(mark.value).toBe(city)
-				expect(mark.meta).toBe(country)
-			})
-		})
-
 		it('should handle complex nested structures with diverse content', () => {
 			//const parser = new ParserV2(['@[__nested__]($__value__)', '#[__nested__]'])
 			const testCases = Array.from({length: 15}, () => {
