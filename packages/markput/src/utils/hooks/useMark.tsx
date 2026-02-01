@@ -1,11 +1,9 @@
-import type {ReactNode, RefObject} from 'react'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import type {RefObject} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import type {MarkToken, Store, Token} from '@markput/core'
 import {SystemEvent} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
-// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: useMark renders Token for children
-import {Token as TokenComponent} from '../../components/Token'
 
 interface MarkStruct {
 	label: string
@@ -36,25 +34,23 @@ export interface MarkHandler<T> extends MarkStruct {
 	 */
 	meta?: string
 	/**
-	 * Nesting depth of this mark (0 for root-level marks)
+	 * Nesting depth of this mark (0 for root-level marks).
+	 * Computed lazily on access.
 	 */
-	depth: number
+	readonly depth: number
 	/**
 	 * Whether this mark has nested children
 	 */
-	hasChildren: boolean
+	readonly hasChildren: boolean
 	/**
-	 * Parent mark token (undefined for root-level marks)
+	 * Parent mark token (undefined for root-level marks).
+	 * Computed lazily on access.
 	 */
-	parent?: MarkToken
+	readonly parent: MarkToken | undefined
 	/**
 	 * Array of child tokens (read-only)
 	 */
-	tokens: Token[]
-	/**
-	 * Rendered children as ReactNode
-	 */
-	children: ReactNode
+	readonly tokens: Token[]
 }
 
 export interface MarkOptions {
@@ -84,91 +80,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		mark.readOnly = readOnly
 	}, [readOnly])
 
-	// Calculate tree navigation properties
-	const depth = useMemo(() => calculateDepth(token, store.tokens), [token, store.tokens])
-	const parent = useMemo(() => findParent(token, store.tokens), [token, store.tokens])
-
-	// Compute children ReactNode from token.children if present
-	// Nested tokens render as non-editable content (isNested=true)
-	const childrenReactNode: ReactNode =
-		token.children.length > 0
-			? token.children.map(child => <TokenComponent key={store.key.get(child)} mark={child} isNested />)
-			: undefined
-
-	// Extend mark with tree navigation properties
-	mark.depth = depth
-	mark.hasChildren = token.children.length > 0
-	mark.parent = parent
-	mark.tokens = token.children
-	mark.children = childrenReactNode
-
 	return mark
-}
-
-/**
- * Calculate the nesting depth of a token in the tree
- * @param token - The token to calculate depth for
- * @param tokens - Root-level tokens array
- * @returns Depth (0 for root-level, 1+ for nested)
- */
-function calculateDepth(token: MarkToken, tokens: Token[]): number {
-	let depth = 0
-	const visited = new Set<Token>()
-
-	function findDepthRecursive(currentTokens: Token[], currentDepth: number): boolean {
-		for (const t of currentTokens) {
-			if (visited.has(t)) continue
-			visited.add(t)
-
-			if (t === token) {
-				depth = currentDepth
-				return true
-			}
-
-			if (t.type === 'mark' && t.children.length > 0) {
-				if (findDepthRecursive(t.children, currentDepth + 1)) {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
-	findDepthRecursive(tokens, 0)
-	return depth
-}
-
-/**
- * Find the parent MarkToken of a given token
- * @param token - The token to find parent for
- * @param tokens - Root-level tokens array
- * @returns Parent MarkToken or undefined if at root level
- */
-function findParent(token: MarkToken, tokens: Token[]): MarkToken | undefined {
-	let parent: MarkToken | undefined
-	const visited = new Set<Token>()
-
-	function findParentRecursive(currentTokens: Token[], currentParent?: MarkToken): boolean {
-		for (const t of currentTokens) {
-			if (visited.has(t)) continue
-			visited.add(t)
-
-			if (t === token) {
-				parent = currentParent
-				return true
-			}
-
-			if (t.type === 'mark' && t.children.length > 0) {
-				if (findParentRecursive(t.children, t)) {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
-	findParentRecursive(tokens)
-	return parent
 }
 
 type MarkHandlerPConstruct<T> = {ref: RefObject<T>; options: MarkOptions; store: Store; token: MarkToken}
@@ -179,13 +91,6 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 	readonly #token: MarkToken
 
 	readOnly?: boolean
-
-	// Tree navigation properties (set by useMark hook)
-	depth: number = 0
-	hasChildren: boolean = false
-	parent?: MarkToken
-	tokens: Token[] = []
-	children: ReactNode = undefined
 
 	get label() {
 		return this.#token.content
@@ -224,6 +129,36 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
 	}
 
+	/**
+	 * Nesting depth of this mark (0 for root-level marks).
+	 * Computed lazily on access - O(n) traversal.
+	 */
+	get depth(): number {
+		return calculateDepth(this.#token, this.#store.tokens)
+	}
+
+	/**
+	 * Whether this mark has nested children
+	 */
+	get hasChildren(): boolean {
+		return this.#token.children.length > 0
+	}
+
+	/**
+	 * Parent mark token (undefined for root-level marks).
+	 * Computed lazily on access - O(n) traversal.
+	 */
+	get parent(): MarkToken | undefined {
+		return findParent(this.#token, this.#store.tokens)
+	}
+
+	/**
+	 * Array of child tokens (read-only)
+	 */
+	get tokens(): Token[] {
+		return this.#token.children
+	}
+
 	change = (props: MarkStruct) => {
 		this.#token.content = props.label
 		this.#token.value = props.value ?? ''
@@ -231,6 +166,60 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 	}
 
 	remove = () => this.#store.bus.send(SystemEvent.Delete, {token: this.#token})
+}
+
+/**
+ * Calculate the nesting depth of a token in the tree.
+ * O(n) traversal - only called when depth is accessed.
+ */
+function calculateDepth(token: MarkToken, tokens: Token[]): number {
+	let depth = 0
+
+	function findDepthRecursive(currentTokens: Token[], currentDepth: number): boolean {
+		for (const t of currentTokens) {
+			if (t === token) {
+				depth = currentDepth
+				return true
+			}
+
+			if (t.type === 'mark' && t.children.length > 0) {
+				if (findDepthRecursive(t.children, currentDepth + 1)) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	findDepthRecursive(tokens, 0)
+	return depth
+}
+
+/**
+ * Find the parent MarkToken of a given token.
+ * O(n) traversal - only called when parent is accessed.
+ */
+function findParent(token: MarkToken, tokens: Token[]): MarkToken | undefined {
+	let parent: MarkToken | undefined
+
+	function findParentRecursive(currentTokens: Token[], currentParent?: MarkToken): boolean {
+		for (const t of currentTokens) {
+			if (t === token) {
+				parent = currentParent
+				return true
+			}
+
+			if (t.type === 'mark' && t.children.length > 0) {
+				if (findParentRecursive(t.children, t)) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	findParentRecursive(tokens)
+	return parent
 }
 
 function useUncontrolledInit(ref: RefObject<HTMLElement>, options: MarkOptions, token: MarkToken) {
