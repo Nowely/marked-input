@@ -1,6 +1,7 @@
 import type {RefObject} from 'react'
 import type {MarkToken, Store, Token} from '@markput/core'
 import {SystemEvent} from '@markput/core'
+import {findToken} from '../utils/findToken'
 
 export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	readonly ref: RefObject<T>
@@ -50,7 +51,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 
 	/** Nesting depth (0 for root-level marks) */
 	get depth(): number {
-		return calculateDepth(this.#token, this.#store.tokens)
+		return findToken(this.#store.tokens, this.#token)!.depth
 	}
 
 	/** Whether this mark has nested children */
@@ -60,7 +61,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 
 	/** Parent mark token (undefined for root-level marks) */
 	get parent(): MarkToken | undefined {
-		return findParent(this.#token, this.#store.tokens)
+		return findToken(this.#store.tokens, this.#token)?.parent
 	}
 
 	/** Child tokens of this mark */
@@ -87,51 +88,5 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 
 	#emitChange(): void {
 		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
-	}
-}
-
-// ─── Helper Functions ────────────────────────────────────────────────────────
-
-function calculateDepth(token: MarkToken, tokens: Token[]): number {
-	let depth = 0
-	findDepthRecursive(tokens, 0)
-	return depth
-
-	function findDepthRecursive(currentTokens: Token[], currentDepth: number): boolean {
-		for (const t of currentTokens) {
-			if (t === token) {
-				depth = currentDepth
-				return true
-			}
-
-			if (t.type === 'mark' && t.children.length > 0) {
-				if (findDepthRecursive(t.children, currentDepth + 1)) {
-					return true
-				}
-			}
-		}
-		return false
-	}
-}
-
-function findParent(token: MarkToken, tokens: Token[]): MarkToken | undefined {
-	let parent: MarkToken | undefined
-	findParentRecursive(tokens)
-	return parent
-	
-	function findParentRecursive(currentTokens: Token[], currentParent?: MarkToken): boolean {
-		for (const t of currentTokens) {
-			if (t === token) {
-				parent = currentParent
-				return true
-			}
-
-			if (t.type === 'mark' && t.children.length > 0) {
-				if (findParentRecursive(t.children, t)) {
-					return true
-				}
-			}
-		}
-		return false
 	}
 }
