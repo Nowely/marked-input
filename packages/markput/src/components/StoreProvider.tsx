@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react'
 import {Store, DEFAULT_CLASS_NAME} from '@markput/core'
 import type {MarkedInputProps} from './MarkedInput'
 import {StoreContext} from '../lib/providers/StoreContext'
-import {mergeClassNames, mergeStyles} from '../lib/functions/resolveSlot'
+import {mergeClassNames, mergeStyles} from '../lib/utils/resolveSlot'
 import {DEFAULT_OPTIONS} from '../constants'
 
 interface StoreProviderProps {

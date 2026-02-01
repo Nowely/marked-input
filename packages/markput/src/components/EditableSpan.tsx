@@ -1,5 +1,5 @@
 import type {ClipboardEvent} from 'react'
-import {resolveSlot, resolveSlotProps} from '../lib/functions/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useMark} from '../lib/hooks/useMark'
 import {useStore} from '../lib/hooks/useStore'
 

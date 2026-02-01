@@ -1,5 +1,5 @@
 import {memo} from 'react'
-import {resolveSlot, resolveSlotProps} from '../lib/functions/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useListener} from '../lib/hooks/useListener'
 import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'

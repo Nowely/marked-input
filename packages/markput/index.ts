@@ -1,5 +1,5 @@
 export {MarkedInput} from './src/components/MarkedInput'
-export {createMarkedInput} from './src/lib/functions/createMarkedInput'
+export {createMarkedInput} from './src/lib/utils/createMarkedInput'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'
 export {useListener} from './src/lib/hooks/useListener'
