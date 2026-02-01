@@ -13,8 +13,7 @@ export function MarkRenderer() {
 
 	const option = options?.[node.descriptor.index]
 
-	const children =
-		node.children.map(child => <Token key={key.get(child)} mark={child} isNested />)
+	const children = node.children.map(child => <Token key={key.get(child)} mark={child} isNested />)
 
 	const markPropsData: MarkProps = {
 		value: node.value,
