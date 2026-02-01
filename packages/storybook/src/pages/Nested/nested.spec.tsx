@@ -176,7 +176,7 @@ describe('Nested Marks Tree Navigation', () => {
 		const ChildrenCountMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
 			if (mark.depth === 0) {
-				capturedChildrenCount = mark.children.length
+				capturedChildrenCount = mark.tokens.length
 			}
 			return <span>{children}</span>
 		}

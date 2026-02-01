@@ -191,7 +191,7 @@ const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNo
 				console.log('Mark clicked:', {
 					depth: mark.depth,
 					hasChildren: mark.hasChildren,
-					childrenCount: mark.children.length,
+					childrenCount: mark.tokens.length,
 					parent: mark.parent ? 'has parent' : 'root level',
 				})
 			}}
@@ -207,7 +207,7 @@ const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNo
 				cursor: 'pointer',
 				transition: 'all 0.2s',
 			}}
-			title={`Depth: ${mark.depth}, Children: ${mark.children.length}`}
+			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
 		>
 			{children || nested}
 		</span>

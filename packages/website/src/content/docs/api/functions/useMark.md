@@ -9,7 +9,7 @@ title: "useMark"
 function useMark<T>(options): MarkHandler<T>;
 ```
 
-Defined in: [packages/markput/src/utils/hooks/useMark.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/utils/hooks/useMark.ts#L62)
+Defined in: packages/markput/src/utils/hooks/useMark.tsx:68
 
 ## Type Parameters
 

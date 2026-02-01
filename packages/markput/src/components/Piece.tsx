@@ -1,9 +1,8 @@
-import type {ReactNode} from 'react'
 import {useStore} from '../utils/hooks/useStore'
 import {useSlot} from '../utils/hooks/useSlot'
 import {useToken} from '../utils/providers/TokenProvider'
-// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token renders Piece, Piece renders Token for children
-import {Token} from './Token'
+// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token renders Piece, Piece uses useMark which renders Token for children
+import {useMark} from '../utils/hooks/useMark'
 import type {MarkProps} from '../types'
 
 /**
@@ -11,12 +10,12 @@ import type {MarkProps} from '../types'
  *
  * This component:
  * 1. Retrieves the MarkToken from context
- * 2. Constructs MarkProps (value, meta, nested, children)
- * 3. Recursively renders nested children if present
+ * 2. Uses useMark hook to get children ReactNode
+ * 3. Constructs MarkProps (value, meta, nested, children)
  * 4. Resolves Mark component and props using useSlot hook
  * 5. Passes result to the resolved Mark component
  *
- * Children rendering:
+ * Children rendering is handled by useMark hook:
  * - If token.children is empty: children prop is undefined (backward compatible)
  * - If token.children has items: recursively renders them as ReactNode
  *
@@ -26,13 +25,8 @@ import type {MarkProps} from '../types'
  */
 export function Piece() {
 	const node = useToken()
-	const {options, key} = useStore(
-		store => ({
-			options: store.props.options,
-			key: store.key,
-		}),
-		true
-	)
+	const {options} = useStore(store => ({options: store.props.options}), true)
+	const mark = useMark()
 
 	// Ensure it's a MarkToken
 	if (node.type !== 'mark') {
@@ -42,18 +36,11 @@ export function Piece() {
 	// Get option and construct base MarkProps
 	const option = options?.[node.descriptor.index]
 
-	// Construct children ReactNode from token.children if present
-	// Nested tokens render as non-editable content (isNested=true)
-	const children: ReactNode | undefined =
-		node.children.length > 0
-			? node.children.map(child => <Token key={key.get(child)} mark={child} isNested />)
-			: undefined
-
 	const markPropsData: MarkProps = {
 		value: node.value,
 		meta: node.meta,
 		nested: node.nested?.content,
-		children,
+		children: mark.children,
 	}
 
 	// Resolve Mark component and props with proper fallback chain

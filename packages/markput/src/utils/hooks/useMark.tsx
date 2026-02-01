@@ -1,9 +1,11 @@
-import type {RefObject} from 'react'
+import type {ReactNode, RefObject} from 'react'
 import {useEffect, useMemo, useRef, useState} from 'react'
 import type {MarkToken, Store, Token} from '@markput/core'
 import {SystemEvent} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
+// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: useMark renders Token for children
+import {Token as TokenComponent} from '../../components/Token'
 
 interface MarkStruct {
 	label: string
@@ -48,7 +50,11 @@ export interface MarkHandler<T> extends MarkStruct {
 	/**
 	 * Array of child tokens (read-only)
 	 */
-	children: Token[]
+	tokens: Token[]
+	/**
+	 * Rendered children as ReactNode
+	 */
+	children: ReactNode
 }
 
 export interface MarkOptions {
@@ -82,11 +88,19 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	const depth = useMemo(() => calculateDepth(token, store.tokens), [token, store.tokens])
 	const parent = useMemo(() => findParent(token, store.tokens), [token, store.tokens])
 
+	// Compute children ReactNode from token.children if present
+	// Nested tokens render as non-editable content (isNested=true)
+	const childrenReactNode: ReactNode =
+		token.children.length > 0
+			? token.children.map(child => <TokenComponent key={store.key.get(child)} mark={child} isNested />)
+			: undefined
+
 	// Extend mark with tree navigation properties
 	mark.depth = depth
 	mark.hasChildren = token.children.length > 0
 	mark.parent = parent
-	mark.children = token.children
+	mark.tokens = token.children
+	mark.children = childrenReactNode
 
 	return mark
 }
@@ -170,7 +184,8 @@ export class MarkHandlerP<T extends HTMLElement = HTMLElement> {
 	depth: number = 0
 	hasChildren: boolean = false
 	parent?: MarkToken
-	children: Token[] = []
+	tokens: Token[] = []
+	children: ReactNode = undefined
 
 	get label() {
 		return this.#token.content
