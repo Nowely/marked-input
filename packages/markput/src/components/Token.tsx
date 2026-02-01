@@ -1,16 +1,16 @@
 import {memo} from 'react'
 import type {Token as TokenType} from '@markput/core'
 import {TokenProvider} from '../lib/providers/TokenProvider'
-// eslint-disable-next-line import/no-cycle -- Legitimate recursive component relationship: Token → Piece → Token
-import {Piece} from './MarkRenderer'
+// eslint-disable-next-line import/no-cycle
+import {MarkRenderer} from './MarkRenderer'
 import {TextSpan} from './TextSpan'
 
-/** Renders a token - marks via Piece, text via TextSpan or plain text if nested */
+/** Renders a token - marks via MarkRenderer, text via TextSpan or plain text if nested */
 export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?: boolean}) => {
 	if (mark.type === 'mark') {
 		return (
 			<TokenProvider value={mark}>
-				<Piece />
+				<MarkRenderer />
 			</TokenProvider>
 		)
 	}
