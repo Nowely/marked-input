@@ -1,6 +1,5 @@
-import type {MarkedInputProps} from 'rc-marked-input'
+import type {MarkedInputProps, Markup} from 'rc-marked-input'
 import {MarkedInput} from 'rc-marked-input'
-import type {Markup} from 'rc-marked-input'
 import {Mention} from './Mention'
 import {UserList} from './UserList'
 
