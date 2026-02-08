@@ -8,7 +8,7 @@ import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 const {Default} = composeStories(BaseStories)
 
 describe('Api: keyboard', () => {
-	it.todo('should support the "Backspace" button', async () => {
+	it('should support the "Backspace" button', async () => {
 		await render(<Default defaultValue="Hello @[mark](1)!" />)
 
 		const tailSpan = page.getByText('!').element() as HTMLElement
@@ -27,7 +27,7 @@ describe('Api: keyboard', () => {
 
 		// Remove first span
 		const headSpan = page.getByText(/Hello/).element() as HTMLElement
-		await focusAtStart(headSpan)
+		await focusAtEnd(headSpan)
 		await expect.element(headSpan).toHaveTextContent('Hello')
 		await expect.element(headSpan).toHaveFocus()
 		await userEvent.keyboard('{Backspace>7/}')
@@ -71,19 +71,15 @@ describe('Api: keyboard', () => {
 		await expect.element(firstSpan).toHaveFocus()
 	})
 
-	//TODO not working
-	it.todo('should select all text with keyboard shortcut "Ctrl+A"', async () => {
+	// It's not working in browser mode, but works in real
+	it.skip('should select all text with keyboard shortcut "Ctrl+A"', async () => {
 		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
-		const [span] = container.querySelectorAll('span')
-
-		await focusAtStart(span)
 
 		expect(window.getSelection()?.toString()).toBe('')
 
-		await userEvent.type(span, '{Control>}a{/Control}')
-		expect(window.getSelection()?.toString()).toBe(container.textContent)
-
-		await userEvent.type(span, '{Control>}A{/Control}')
+		await userEvent.click(container)
+		await userEvent.keyboard('{ControlOrMeta>}a{/ControlOrMeta}')
+		
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 })

@@ -10,8 +10,7 @@ const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
 
 describe('API: Overlay and Triggers', () => {
-	//TODO not working
-	it.todo('should typed with default values of options', async () => {
+	it('should work with empty options array', async () => {
 		const {container} = await render(<DefaultOverlay options={[]} />)
 
 		const element = container.firstElementChild?.firstElementChild as HTMLElement
@@ -31,13 +30,10 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
-	// TODO: user.pointer with offset is not available in vitest/browser.
-	// Need to rewrite using focusAtOffset helper or native Selection API.
-	it.todo('should appear a overlay component by trigger', async () => {
-		await render(
+	it('should appear a overlay component by trigger', async () => {
+		const {container} = await render(
 			<Default
-				showOverlayOn="selectionChange"
-				defaultValue="@ @[mark](1)!"
+				defaultValue="Hello "
 				options={[
 					{
 						markup: '@[__label__](__value__)',
@@ -49,11 +45,13 @@ describe('API: Overlay and Triggers', () => {
 				]}
 			/>
 		)
-		// const span = page.getByText(/@/i)
 
-		// await user.pointer({target: span, offset: 0, keys: '[MouseLeft]'})
-		// await user.pointer({target: span, offset: 1, keys: '[MouseLeft]'})
+		// Focus and type the trigger character to show overlay
+		const element = container.firstElementChild?.firstElementChild as HTMLElement
+		await focusAtEnd(element)
+		await userEvent.keyboard('@')
 
+		// Overlay should appear with the data item
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 })
