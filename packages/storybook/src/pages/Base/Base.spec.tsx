@@ -78,7 +78,9 @@ describe(`Component: MarkedInput`, () => {
 	it('should support to pass a forward overlay', async () => {
 		const Overlay = forwardRef(() => <span>I'm here!</span>)
 
-		await render(<MarkedInput Mark={() => null} Overlay={Overlay} showOverlayOn="selectionChange" defaultValue="Hello @" />)
+		await render(
+			<MarkedInput Mark={() => null} Overlay={Overlay} showOverlayOn="selectionChange" defaultValue="Hello @" />
+		)
 		const span = page.getByText(/hello/i)
 		await focusAtEnd(span.element() as HTMLElement)
 		await userEvent.keyboard('{ArrowRight}')
