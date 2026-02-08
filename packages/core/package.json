@@ -18,9 +18,7 @@
     ".": {
       "import": "./index.ts"
     },
-    "./styles.css": {
-      "import": "./styles.css"
-    }
+    "./styles.module.css": "./styles.module.css"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",

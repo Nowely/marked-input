@@ -1,6 +1,5 @@
 import type {CSSProperties, ComponentType, ForwardedRef} from 'react'
 import {forwardRef} from 'react'
-import '@markput/core/styles.css'
 import type {MarkedInputHandler, Option, Slots, SlotProps, OverlayProps, MarkProps} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
