@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {MarkedInput, createMarkedInput, denote} from 'rc-marked-input'
-import type {MarkProps, MarkToken, Markup} from 'rc-marked-input' // MarkToken used in denote
+import {MarkedInput, denote} from 'rc-marked-input'
+import type {MarkProps, MarkToken, Markup} from 'rc-marked-input'
 import {useState} from 'react'
 import {Button} from '../../shared/components/Button'
 import {Text} from '../../shared/components/Text'
@@ -24,27 +24,24 @@ export const Default: Story = {
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
-const ConfiguredMarkedInput = createMarkedInput({
-	Mark: Button,
-	options: [
-		{
-			markup: PrimaryMarkup,
-			mark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
-			overlay: {
-				trigger: '@',
-				data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			},
+const configuredOptions = [
+	{
+		markup: PrimaryMarkup,
+		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+		overlay: {
+			trigger: '@',
+			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
 		},
-		{
-			markup: DefaultMarkup,
-			mark: ({value}) => ({label: value || ''}),
-			overlay: {
-				trigger: '/',
-				data: ['Seventh', 'Eight', 'Ninth'],
-			},
+	},
+	{
+		markup: DefaultMarkup,
+		mark: ({value}: MarkProps) => ({label: value || ''}),
+		overlay: {
+			trigger: '/',
+			data: ['Seventh', 'Eight', 'Ninth'],
 		},
-	],
-})
+	},
+]
 
 export const Configured: Story = {
 	render: () => {
@@ -58,7 +55,9 @@ export const Configured: Story = {
 
 		return (
 			<>
-				<ConfiguredMarkedInput
+				<MarkedInput
+					Mark={Button}
+					options={configuredOptions}
 					value={value}
 					onChange={setValue}
 					slotProps={{

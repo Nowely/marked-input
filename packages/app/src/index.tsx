@@ -1,8 +1,8 @@
 import React, {useState} from 'react'
 import ReactDOM from 'react-dom/client'
 import './style.css'
-import {createMarkedInput, denote} from 'rc-marked-input'
-import type {MarkToken, Markup} from 'rc-marked-input'
+import {MarkedInput, denote} from 'rc-marked-input'
+import type {MarkProps, MarkToken, Markup} from 'rc-marked-input'
 
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
@@ -25,27 +25,24 @@ const Button = ({label, primary, onClick}: {label: string; primary?: boolean; on
 	</button>
 )
 
-const ConfiguredMarkedInput = createMarkedInput({
-	Mark: Button,
-	options: [
-		{
-			markup: PrimaryMarkup,
-			mark: ({value, meta}) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
-			overlay: {
-				trigger: '@',
-				data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
-			},
+const options = [
+	{
+		markup: PrimaryMarkup,
+		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+		overlay: {
+			trigger: '@',
+			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
 		},
-		{
-			markup: DefaultMarkup,
-			mark: ({value}) => ({label: value || ''}),
-			overlay: {
-				trigger: '/',
-				data: ['Seventh', 'Eight', 'Ninth'],
-			},
+	},
+	{
+		markup: DefaultMarkup,
+		mark: ({value}: MarkProps) => ({label: value || ''}),
+		overlay: {
+			trigger: '/',
+			data: ['Seventh', 'Eight', 'Ninth'],
 		},
-	],
-})
+	},
+]
 
 const App = () => {
 	const [value, setValue] = useState(
@@ -58,7 +55,9 @@ const App = () => {
 
 	return (
 		<>
-			<ConfiguredMarkedInput
+			<MarkedInput
+				Mark={Button}
+				options={options}
 				value={value}
 				onChange={setValue}
 				slotProps={{

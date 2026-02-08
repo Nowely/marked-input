@@ -1,16 +1,12 @@
 ---
 title: 🚧 Configuration
-description: Configure Markput - inline configuration, factory pattern, markup patterns, options, and advanced setup for React text editors
-keywords: [configuration, factory pattern, markup patterns, options, inline config, setup, advanced]
+description: Configure Markput - markup patterns, options, and advanced setup for React text editors
+keywords: [configuration, markup patterns, options, inline config, setup, advanced]
 ---
 
-Markput provides flexible configuration options through the `MarkedInput` component and the `createMarkedInput` factory. This guide covers all configuration patterns from basic to advanced.
+Markput provides flexible configuration options through the `MarkedInput` component. This guide covers all configuration patterns from basic to advanced.
 
-## Configuration Methods
-
-There are two main ways to configure Markput:
-
-### Method 1: Inline Configuration
+## Configuration
 
 Pass configuration directly to `<MarkedInput>`:
 
@@ -35,41 +31,6 @@ function Editor() {
     )
 }
 ```
-
-**Use when:**
-
-- Configuration changes based on props or state
-- Different instances need different configs
-- Building a reusable editor component
-
-### Method 2: Factory Configuration
-
-Create a pre-configured component with `createMarkedInput`:
-
-```tsx
-import {createMarkedInput} from 'rc-marked-input'
-
-const ConfiguredEditor = createMarkedInput({
-    Mark: MyMarkComponent,
-    options: [
-        /* configuration */
-    ],
-})
-
-// Use anywhere
-function App() {
-    const [value, setValue] = useState('')
-    return <ConfiguredEditor value={value} onChange={setValue} />
-}
-```
-
-**Use when:**
-
-- Configuration is static across the app
-- Want to reuse the same config multiple times
-- Prefer a cleaner, more declarative API
-
-**Key Difference:** `createMarkedInput` bakes configuration into the component, while inline config allows runtime changes.
 
 ## The Options Array
 
@@ -501,41 +462,6 @@ function Editor() {
 }
 ```
 
-### Example 3: createMarkedInput Factory
-
-```tsx
-import {createMarkedInput} from 'rc-marked-input'
-import {Chip} from '@mui/material'
-
-const MentionEditor = createMarkedInput({
-    Mark: Chip,
-    options: [
-        {
-            markup: '@[__value__](__meta__)',
-            slotProps: {
-                mark: ({value, meta}) => ({
-                    label: `@${value}`,
-                    variant: 'filled',
-                    color: 'primary',
-                    size: 'small',
-                    onClick: () => console.log('Clicked', meta),
-                }),
-                overlay: {
-                    trigger: '@',
-                    data: ['Alice', 'Bob', 'Charlie'],
-                },
-            },
-        },
-    ],
-})
-
-// Use anywhere in your app
-function App() {
-    const [value, setValue] = useState('')
-    return <MentionEditor value={value} onChange={setValue} />
-}
-```
-
 ## TypeScript Configuration
 
 Type your configuration for better IDE support:
@@ -643,9 +569,6 @@ options={[
 ### ✅ Do
 
 ```tsx
-// Use createMarkedInput for static configs
-const Editor = createMarkedInput({ Mark, options })
-
 // Memoize dynamic options
 const options = useMemo(() => [...], [dependencies])
 
@@ -679,7 +602,5 @@ mark: {
   color: 'blue'
 }
 ```
-
-**Try it live:** [CodeSandbox - Configured Component](https://codesandbox.io/s/configured-marked-input-305v6m)
 
 **Questions?** Ask in [GitHub Discussions](https://github.com/Nowely/marked-input/discussions).

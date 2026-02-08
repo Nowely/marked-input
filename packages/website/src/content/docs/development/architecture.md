@@ -572,17 +572,6 @@ bus.send(event, data) // Publish
 bus.off(event, handler) // Unsubscribe
 ```
 
-### Factory Pattern
-
-`createMarkedInput` factory:
-
-```typescript
-const Editor = createMarkedInput({
-    Mark: MyMark,
-    options: myOptions,
-})
-```
-
 ### Proxy Pattern
 
 Store uses Proxy for reactive updates:

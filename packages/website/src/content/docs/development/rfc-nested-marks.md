@@ -394,16 +394,16 @@ Input Text → Aho-Corasick → SegmentMatches
 
 ```typescript
 // Configuration for formatted text
-const NestedMarkedInput = createMarkedInput({
-  nested: true,
-  maxDepth: 3,
-  Mark: ({ label, children }) => (
+<MarkedInput
+  nested={true}
+  maxDepth={3}
+  Mark={({ label, children }) => (
     <span className="mark">
       {label}
       {children && <span className="children">{children}</span>}
     </span>
-  ),
-  options: [
+  )}
+  options={[
     {
       markup: '**__nested__**',
       trigger: '**',
@@ -419,11 +419,7 @@ const NestedMarkedInput = createMarkedInput({
       trigger: '`',
       data: ['code', 'inline-code'],
     }
-  ]
-})
-
-// Usage
-<NestedMarkedInput
+  ]}
   value="This is **bold text with *italic* and `code`** inside"
   onChange={setValue}
 />
