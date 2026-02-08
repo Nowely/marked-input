@@ -1,4 +1,4 @@
-import {deleteMark, KEYBOARD, SystemEvent} from '@markput/core'
+import {deleteMark, KEYBOARD} from '@markput/core'
 import {useEffect} from 'react'
 import {useDownOf} from '../../lib/hooks/useDownOf'
 import {useListener} from '../../lib/hooks/useListener'
@@ -125,9 +125,7 @@ export function useKeyDown() {
 		event.preventDefault()
 
 		// Determine new content based on input type
-		const newContent = event.inputType.startsWith('delete')
-			? ''
-			: (event.data ?? '')
+		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
 
 		replaceAllContentWith(newContent)
 	}
@@ -155,11 +153,13 @@ export function useKeyDown() {
 
 		// For uncontrolled components (defaultValue), directly update tokens
 		if (store.props.value === undefined) {
-			store.tokens = store.parser?.parse(newContent) ?? [{
-				type: 'text' as const,
-				content: newContent,
-				position: { start: 0, end: newContent.length }
-			}]
+			store.tokens = store.parser?.parse(newContent) ?? [
+				{
+					type: 'text' as const,
+					content: newContent,
+					position: {start: 0, end: newContent.length},
+				},
+			]
 		}
 
 		// Restore focus after React re-render
@@ -168,7 +168,7 @@ export function useKeyDown() {
 			if (firstChild) {
 				store.recovery = {
 					anchor: store.nodes.focus,
-					caret: newContent.length
+					caret: newContent.length,
 				}
 				firstChild.focus()
 			}
