@@ -5,7 +5,7 @@ prev: false
 title: "MarkHandler"
 ---
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:5
+Defined in: [markput/src/lib/classes/MarkHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L6)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:5
 optional readOnly: boolean;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:10
+Defined in: [markput/src/lib/classes/MarkHandler.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L10)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:10
 readonly ref: RefObject<T>;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:6
+Defined in: [markput/src/lib/classes/MarkHandler.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L7)
 
 ## Accessors
 
@@ -43,9 +43,9 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:6
 get content(): string;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:21
+Defined in: [markput/src/lib/classes/MarkHandler.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L21)
 
-Content/label of the mark (displayed text)
+Displayed text of the mark
 
 ##### Returns
 
@@ -57,7 +57,7 @@ Content/label of the mark (displayed text)
 set content(value): void;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:25
+Defined in: [markput/src/lib/classes/MarkHandler.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L25)
 
 ##### Parameters
 
@@ -79,10 +79,9 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:25
 get depth(): number;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:62
+Defined in: [markput/src/lib/classes/MarkHandler.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L53)
 
-Nesting depth of this mark (0 for root-level marks).
-Computed lazily on access - O(n) traversal.
+Nesting depth (0 for root-level marks)
 
 ##### Returns
 
@@ -98,7 +97,7 @@ Computed lazily on access - O(n) traversal.
 get hasChildren(): boolean;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:69
+Defined in: [markput/src/lib/classes/MarkHandler.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L58)
 
 Whether this mark has nested children
 
@@ -116,9 +115,9 @@ Whether this mark has nested children
 get meta(): string | undefined;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:45
+Defined in: [markput/src/lib/classes/MarkHandler.ts:41](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L41)
 
-Meta value of the mark
+Optional metadata for the mark
 
 ##### Returns
 
@@ -130,7 +129,7 @@ Meta value of the mark
 set meta(value): void;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:49
+Defined in: [markput/src/lib/classes/MarkHandler.ts:45](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L45)
 
 ##### Parameters
 
@@ -152,10 +151,9 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:49
 get parent(): MarkToken | undefined;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:77
+Defined in: [markput/src/lib/classes/MarkHandler.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L63)
 
-Parent mark token (undefined for root-level marks).
-Computed lazily on access - O(n) traversal.
+Parent mark token (undefined for root-level marks)
 
 ##### Returns
 
@@ -171,9 +169,9 @@ Computed lazily on access - O(n) traversal.
 get tokens(): Token[];
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:84
+Defined in: [markput/src/lib/classes/MarkHandler.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L68)
 
-Array of child tokens (read-only)
+Child tokens of this mark
 
 ##### Returns
 
@@ -189,9 +187,9 @@ Array of child tokens (read-only)
 get value(): string | undefined;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:33
+Defined in: [markput/src/lib/classes/MarkHandler.ts:31](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L31)
 
-Value of the mark (hidden data)
+Data value associated with the mark
 
 ##### Returns
 
@@ -203,7 +201,7 @@ Value of the mark (hidden data)
 set value(value): void;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:37
+Defined in: [markput/src/lib/classes/MarkHandler.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L35)
 
 ##### Parameters
 
@@ -223,9 +221,9 @@ Defined in: packages/markput/src/lib/classes/MarkHandler.ts:37
 change(props): void;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:91
+Defined in: [markput/src/lib/classes/MarkHandler.ts:75](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L75)
 
-Change mark content, value, and/or meta at once.
+Update multiple properties in a single operation
 
 #### Parameters
 
@@ -248,9 +246,9 @@ Change mark content, value, and/or meta at once.
 remove(): void;
 ```
 
-Defined in: packages/markput/src/lib/classes/MarkHandler.ts:103
+Defined in: [markput/src/lib/classes/MarkHandler.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L85)
 
-Remove this mark.
+Delete this mark from the editor
 
 #### Returns
 
