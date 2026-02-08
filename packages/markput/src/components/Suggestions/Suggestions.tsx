@@ -3,6 +3,7 @@ import {useMemo, useState} from 'react'
 import {useDownOf} from '../../lib/hooks/useDownOf'
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {KEYBOARD} from '@markput/core'
+import styles from '@markput/core/styles.module.css'
 
 export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()
@@ -46,9 +47,9 @@ export const Suggestions = () => {
 
 	//TODO possible to add classes via slots
 	return (
-		<ul ref={ref as RefObject<HTMLUListElement>} className="mk-suggestions" style={style}>
+		<ul ref={ref as RefObject<HTMLUListElement>} className={styles.suggestions} style={style}>
 			{filtered.map((suggestion, index) => {
-				const className = index === active ? 'mk-suggestion-active' : undefined
+				const className = index === active ? styles.suggestionActive : undefined
 
 				return (
 					<li

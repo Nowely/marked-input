@@ -1,13 +1,13 @@
-.mk-input {
+.input {
 	min-height: 1.4em;
 }
 
-.mk-input span {
+.input span {
 	outline: none;
 	white-space: pre-wrap;
 }
 
-.mk-suggestions {
+.suggestions {
 	border: 1px solid #ccc;
 	max-height: 186px;
 	overflow-y: auto;
@@ -30,12 +30,12 @@
 	box-shadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
 }
 
-.mk-suggestions li {
+.suggestions li {
 	padding: 0.5rem;
 }
 
-.mk-suggestions li:hover,
-.mk-suggestion-active {
+.suggestions li:hover,
+.suggestionActive {
 	background-color: #cce9ff;
 	color: #2589f5;
 	cursor: pointer;
