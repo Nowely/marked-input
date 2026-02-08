@@ -47,7 +47,7 @@ export const Suggestions = () => {
 
 	//TODO possible to add classes via slots
 	return (
-		<ul ref={ref as RefObject<HTMLUListElement>} className={styles.suggestions} style={style}>
+		<ul ref={ref as RefObject<HTMLUListElement>} className={styles.Suggestions} style={style}>
 			{filtered.map((suggestion, index) => {
 				const className = index === active ? styles.suggestionActive : undefined
 

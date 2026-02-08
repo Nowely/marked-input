@@ -1,13 +1,13 @@
-.input {
+.Container {
 	min-height: 1.4em;
 }
 
-.input span {
+.Container span {
 	outline: none;
 	white-space: pre-wrap;
 }
 
-.suggestions {
+.Suggestions {
 	border: 1px solid #ccc;
 	max-height: 186px;
 	overflow-y: auto;
@@ -30,11 +30,11 @@
 	box-shadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
 }
 
-.suggestions li {
+.Suggestions li {
 	padding: 0.5rem;
 }
 
-.suggestions li:hover,
+.Suggestions li:hover,
 .suggestionActive {
 	background-color: #cce9ff;
 	color: #2589f5;
