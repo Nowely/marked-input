@@ -6,6 +6,7 @@ import {forwardRef} from 'react'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from './Base.stories'
+import {focusAtEnd} from '../../shared/lib/focus'
 
 const {Configured} = composeStories(BaseStories)
 
@@ -15,13 +16,13 @@ describe(`Utility: createMarkedInput`, () => {
 		await expect.element(container).toBeInTheDocument()
 	})
 
-	it.todo('should support to pass a forward overlay', async () => {
+	it('should support to pass a forward overlay', async () => {
 		const Overlay = forwardRef(() => <span>I'm here!</span>)
 		const Input = createMarkedInput({Mark: () => null, Overlay})
 
 		await render(<Input showOverlayOn="selectionChange" defaultValue="Hello @" />)
 		const span = page.getByText(/hello/i)
-		await userEvent.click(span)
+		await focusAtEnd(span.element() as HTMLElement)
 		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(span).toHaveFocus()
 

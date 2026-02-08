@@ -1,6 +1,7 @@
 import {MarkedInput, useMark} from 'rc-marked-input'
 import {useEffect, useState} from 'react'
 import {Text} from '../../shared/components/Text'
+import {useCaretInfo} from '../../shared/hooks/useCaretInfo'
 
 export default {
 	title: 'MarkedInput/Mark',
@@ -55,10 +56,12 @@ const Abbr = () => {
 
 export const Focusable = () => {
 	const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
+	useCaretInfo(true)
+
 	return (
 		<>
 			<MarkedInput Mark={Abbr} value={value} onChange={setValue} />
-			<Text label="Plaint text:" value={value} />
+			<Text label="Plain text:" value={value} />
 		</>
 	)
 }

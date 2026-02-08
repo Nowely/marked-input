@@ -65,7 +65,7 @@ export function useKeyDown() {
 	}
 
 	function selectAllText(event: KeyboardEvent) {
-		if (event.ctrlKey && event.code === 'KeyA') {
+		if ((event.ctrlKey || event.metaKey) && event.code === 'KeyA') {
 			event.preventDefault()
 
 			const selection = window.getSelection()

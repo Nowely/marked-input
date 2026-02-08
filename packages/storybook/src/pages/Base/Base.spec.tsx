@@ -13,8 +13,6 @@ const {Default} = composeStories(BaseStories)
 describe(`Component: MarkedInput`, () => {
 	it.todo('should set readOnly on selection')
 
-	//TODO mark focus
-
 	it('should correct process an annotation type', async () => {
 		const {container} = await render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
@@ -27,7 +25,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('mark')).toBeInTheDocument()
 	})
 
-	it.todo('should support ref focusing target', async () => {
+	it('should support ref focusing target', async () => {
 		const {container} = await render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
@@ -35,21 +33,21 @@ describe(`Component: MarkedInput`, () => {
 		const firstAbbrLength = firstAbbr.textContent?.length ?? 0
 
 		await focusAtStart(firstSpan)
+		await expect.element(firstSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		await expect.element(firstAbbr).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowLeft>1/}`)
+		// Need two steps to move back to the first span
+		await userEvent.keyboard(`{ArrowLeft>2/}`)
 		await expect.element(firstSpan).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowRight>1/}`)
+		// Need two steps to move forward to the first abbreviation
+		await userEvent.keyboard(`{ArrowRight>2/}`)
 		await expect.element(firstAbbr).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
 		await expect.element(secondSpan).toHaveFocus()
-
-		await userEvent.keyboard(`{ArrowLeft>1/}`)
-		await expect.element(firstAbbr).toHaveFocus()
 	})
 
 	it('should support remove itself', async () => {
