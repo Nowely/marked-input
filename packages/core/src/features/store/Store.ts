@@ -36,7 +36,7 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 			this.refs.overlay = element
 		},
 	}
-	selecting?: boolean
+	selecting?: 'drag' | 'all'
 
 	// Overlay domain
 	overlayMatch?: OverlayMatch
