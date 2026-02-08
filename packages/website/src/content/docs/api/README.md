@@ -7,7 +7,6 @@ title: "rc-marked-input"
 
 ## Interfaces
 
-- [ConfiguredMarkedInput](/api/interfaces/configuredmarkedinput/)
 - [MarkedInputComponent](/api/interfaces/markedinputcomponent/)
 - [MarkedInputHandler](/api/interfaces/markedinputhandler/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
@@ -27,7 +26,6 @@ title: "rc-marked-input"
 ## Functions
 
 - [annotate](/api/functions/annotate/)
-- [createMarkedInput](/api/functions/createmarkedinput/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
 - [useListener](/api/functions/uselistener/)

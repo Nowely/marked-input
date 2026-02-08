@@ -1,5 +1,7 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
+import {MarkedInput} from 'rc-marked-input'
+import {forwardRef} from 'react'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
@@ -71,6 +73,20 @@ describe(`Component: MarkedInput`, () => {
 
 		await expect.element(page.getByText('world123').first()).toBeInTheDocument()
 		await expect.element(page.getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
+	})
+
+	it('should support to pass a forward overlay', async () => {
+		const Overlay = forwardRef(() => <span>I'm here!</span>)
+
+		await render(
+			<MarkedInput Mark={() => null} Overlay={Overlay} showOverlayOn="selectionChange" defaultValue="Hello @" />
+		)
+		const span = page.getByText(/hello/i)
+		await focusAtEnd(span.element() as HTMLElement)
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.element(span).toHaveFocus()
+
+		await expect.element(page.getByText("I'm here!")).toBeInTheDocument()
 	})
 
 	// TODO: user.pointer with offset is not available in vitest/browser.

@@ -1,5 +1,4 @@
-import type {ComponentType, ElementType, FunctionComponent, HTMLAttributes, ReactNode} from 'react'
-import type {MarkedInputProps} from './components/MarkedInput'
+import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 import type {CoreOption} from '@markput/core'
 
 /**
@@ -62,10 +61,6 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 	 */
 	overlay?: TOverlayProps
 }
-
-export interface ConfiguredMarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends FunctionComponent<
-	MarkedInputProps<TMarkProps, TOverlayProps>
-> {}
 
 /**
  * Available slots for customizing MarkedInput internal components

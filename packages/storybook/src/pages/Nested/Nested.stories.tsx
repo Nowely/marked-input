@@ -1,5 +1,5 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {MarkedInput, createMarkedInput, useMark} from 'rc-marked-input'
+import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
@@ -298,11 +298,6 @@ const MarkdownMark = ({
 	style?: React.CSSProperties
 }) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
 
-const MarkdownInput = createMarkedInput({
-	Mark: MarkdownMark,
-	options: MarkdownOptions,
-})
-
 export const ComplexMarkdown: Story = {
 	render: () => {
 		const [value, setValue] = useState(`# Welcome to **Marked Input**
@@ -339,7 +334,7 @@ Visit our [documentation](https://docs.example.com) for more details.
 				<Tab />
 
 				{activeTab === 'preview' ? (
-					<MarkdownInput value={value} readOnly={true} />
+					<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={value} readOnly={true} />
 				) : (
 					<MarkedInput options={[]} value={value} onChange={setValue} />
 				)}
