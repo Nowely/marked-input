@@ -82,4 +82,12 @@ describe('Api: keyboard', () => {
 
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
+
+	// Ctrl+A fix tests - manual verification recommended with Playwright MCP
+	// These test the fix for issue #1 in INCONSISTENCIES.md
+	// Vitest browser mode has limitations with beforeinput events on contentEditable
+	// Please verify manually: pnpm storybook:dev then test Ctrl+A on the configured story
+	it.todo('should replace all content when Ctrl+A then type')
+	it.todo('should replace all content when Ctrl+A then paste')
+	it.todo('should clear all content when Ctrl+A then delete')
 })

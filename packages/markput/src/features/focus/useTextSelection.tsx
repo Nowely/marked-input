@@ -23,7 +23,7 @@ export function useTextSelection() {
 			const isInside = window.getSelection()?.containsNode(store.refs.container!, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
-				store.selecting = true
+				store.selecting = 'drag'
 			}
 		}
 
@@ -35,7 +35,7 @@ export function useTextSelection() {
 		const listener = () => {
 			pressedUp.current = false
 			ref.current = null
-			store.selecting = false
+			store.selecting = undefined
 		}
 
 		document.addEventListener('mouseup', listener)
@@ -50,7 +50,7 @@ function useSelectionListener() {
 	const selecting = useStore(store => store.selecting)
 
 	useEffect(() => {
-		if (!selecting) return
+		if (selecting !== 'drag') return
 
 		const nodes = [...store.refs.container!.children] as HTMLElement[]
 		const preservedState = nodes.map(value => value.contentEditable)
