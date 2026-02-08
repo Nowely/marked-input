@@ -79,7 +79,7 @@ describe('Api: keyboard', () => {
 
 		await userEvent.click(container)
 		await userEvent.keyboard('{ControlOrMeta>}a{/ControlOrMeta}')
-		
+
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 })

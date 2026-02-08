@@ -57,7 +57,7 @@ const Abbr = () => {
 export const Focusable = () => {
 	const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
 	useCaretInfo(true)
-	
+
 	return (
 		<>
 			<MarkedInput Mark={Abbr} value={value} onChange={setValue} />
