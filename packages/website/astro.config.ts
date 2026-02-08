@@ -46,6 +46,7 @@ const sidebarConfig = [
 			{label: 'Architecture', slug: 'development/architecture'},
 			{label: 'Performance', slug: 'development/performance'},
 			{label: 'RFC: Nested Marks', slug: 'development/rfc-nested-marks'},
+			{label: 'Known Inconsistencies', slug: 'development/inconsistencies'},
 		],
 	},
 	typeDocSidebarGroup,
