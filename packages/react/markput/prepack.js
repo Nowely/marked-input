@@ -5,7 +5,7 @@ import api from '@microsoft/api-extractor'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const __root = path.join(__dirname, '..', '..')
+const __root = path.join(__dirname, '..', '..', '..')
 
 //TODO to ts
 copyReadme()
