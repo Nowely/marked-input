@@ -53,7 +53,7 @@ alwaysApply: true
 18. **Building**: test builds before publishing
     - `pnpm build` - build main package
     - `pnpm build:all` - build all packages
-19. **Publishing**: use `pnpm publish` to publish the package (rc-marked-input)
+19. **Publishing**: use `pnpm publish` to publish the package (@markput/react)
 
 ## Task Completion
 20. When completing a task, add the following sections:
