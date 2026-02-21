@@ -1,5 +1,5 @@
 import type {ClipboardEvent} from 'react'
-import {useRef} from 'react'
+import {useLayoutEffect, useRef} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useStore} from '../lib/hooks/useStore'
 import {useToken} from '../lib/providers/TokenProvider'
@@ -20,6 +20,10 @@ import {useToken} from '../lib/providers/TokenProvider'
  * - Text level: Marks are atomic units (Del/Backspace removes entire mark)
  * - Mark level: Each Mark component is independent and can be editable
  * - Nested text: Plain text content within nested marks
+ *
+ * React 19 Note:
+ * Uses ref-based content setting via useLayoutEffect instead of React children
+ * to prevent caret reset during re-renders caused by style changes.
  */
 export const TextSpan = () => {
 	const token = useToken()
@@ -38,6 +42,13 @@ export const TextSpan = () => {
 		throw new Error('TextSpan component expects a TextToken')
 	}
 
+	// Set content via ref to prevent React from resetting caret during re-renders
+	useLayoutEffect(() => {
+		if (ref.current && ref.current.textContent !== token.content) {
+			ref.current.textContent = token.content
+		}
+	}, [token.content])
+
 	return (
 		<SpanComponent
 			{...spanProps}
@@ -45,9 +56,7 @@ export const TextSpan = () => {
 			contentEditable={!readOnly}
 			onPaste={handlePaste}
 			suppressContentEditableWarning
-		>
-			{token.content}
-		</SpanComponent>
+		/>
 	)
 }
 
