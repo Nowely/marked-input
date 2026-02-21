@@ -1,4 +1,6 @@
-import {forwardRef, type HTMLAttributes, useCallback} from 'react'
+import {type HTMLAttributes, useCallback} from 'react'
+
+type Props = HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}
 
 /**
  * CustomContainer - Container with single contentEditable
@@ -11,7 +13,7 @@ import {forwardRef, type HTMLAttributes, useCallback} from 'react'
  * Important: We prevent the default 'input' event from reaching MarkedInput's
  * internal handler, and instead handle it ourselves in the story component.
  */
-export const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
+export function CustomContainer({ref, ...props}: Props) {
 	const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
 		// Prevent default paste behavior (which might include HTML)
 		e.preventDefault()
@@ -51,5 +53,4 @@ export const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDiv
 			}}
 		/>
 	)
-})
-CustomContainer.displayName = 'CustomContainer'
+}

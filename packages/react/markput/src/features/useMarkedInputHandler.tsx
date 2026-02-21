@@ -1,4 +1,4 @@
-import type {ForwardedRef} from 'react'
+import type {Ref} from 'react'
 import {useImperativeHandle} from 'react'
 import type {MarkedInputHandler} from '../types'
 import type {Store} from '@markput/core'
@@ -16,7 +16,7 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 	},
 })
 
-export function useMarkedInputHandler(ref: ForwardedRef<MarkedInputHandler>) {
+export function useMarkedInputHandler(ref?: Ref<MarkedInputHandler>) {
 	const store = useStore()
 	useImperativeHandle(ref, () => initHandler(store), [store])
 }

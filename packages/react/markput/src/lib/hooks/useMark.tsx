@@ -16,7 +16,7 @@ export interface MarkOptions {
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
 	const token = useToken()
-	const ref = useRef<HTMLElement>() as unknown as RefObject<T>
+	const ref = useRef<HTMLElement>(null) as unknown as RefObject<T>
 
 	if (token.type !== 'mark') {
 		throw new Error('useMark can only be used with mark tokens')

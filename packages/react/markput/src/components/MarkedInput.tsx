@@ -1,5 +1,4 @@
-import type {ComponentType, CSSProperties, ForwardedRef} from 'react'
-import {forwardRef} from 'react'
+import type {ComponentType, CSSProperties, Ref} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
@@ -26,7 +25,7 @@ import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
  */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	/** Ref to handler */
-	ref?: ForwardedRef<MarkedInputHandler>
+	ref?: Ref<MarkedInputHandler>
 	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
@@ -60,24 +59,15 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	showOverlayOn?: OverlayTrigger
 }
 
-export interface MarkedInputComponent {
-	<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
-		props: MarkedInputProps<TMarkProps, TOverlayProps>
-	): JSX.Element | null
-	displayName?: string
-}
-
-export const _MarkedInput = (props: MarkedInputProps, ref: ForwardedRef<MarkedInputHandler>) => {
+export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
+	props: MarkedInputProps<TMarkProps, TOverlayProps>
+) {
+	const {ref, ...rest} = props
 	return (
-		<StoreProvider props={props}>
+		<StoreProvider props={rest as MarkedInputProps}>
 			<Container />
 			<Whisper />
 			<Featurer inRef={ref} />
 		</StoreProvider>
 	)
 }
-
-/**
- * @function
- */
-export const MarkedInput = forwardRef(_MarkedInput) as MarkedInputComponent

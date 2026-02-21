@@ -1,7 +1,6 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 import {MarkedInput} from '@markput/react'
-import {forwardRef} from 'react'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
@@ -76,7 +75,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('should support to pass a forward overlay', async () => {
-		const Overlay = forwardRef(() => <span>I'm here!</span>)
+		const Overlay = () => <span>I'm here!</span>
 
 		await render(
 			<MarkedInput Mark={() => null} Overlay={Overlay} showOverlayOn="selectionChange" defaultValue="Hello @" />
