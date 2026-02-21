@@ -2,12 +2,10 @@ import {Tag} from 'antd'
 import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 import {Text} from '../../shared/components/Text'
-import {withStyle} from '../../shared/lib/withStyle'
 
 export default {
 	title: 'Styled/Ant',
 	component: MarkedInput,
-	decorators: [withStyle('antd.min.css')],
 }
 
 export const Tagged = () => {

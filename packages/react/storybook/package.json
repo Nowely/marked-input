@@ -14,7 +14,7 @@
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
     "@mui/material": "^7.3.7",
-    "antd": "^5.28.1",
+    "antd": "^6.3.0",
     "@markput/react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
