@@ -5,7 +5,7 @@ prev: false
 title: "MarkToken"
 ---
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:15](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L15)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:15](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L15)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:15](https://github.com/
 children: Token[];
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:30](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L30)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:30](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L30)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:30](https://github.com/
 content: string;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L17)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L17)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:17](https://github.com/
 descriptor: MarkupDescriptor;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L22)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L22)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:22](https://github.com/
 optional meta: string;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L24)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L24)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:24](https://github.com/
 optional nested: object;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L25)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L25)
 
 #### content
 
@@ -83,7 +83,7 @@ start: number;
 position: object;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L18)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L18)
 
 #### end
 
@@ -105,7 +105,7 @@ start: number;
 type: "mark";
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L16)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L16)
 
 ***
 
@@ -115,4 +115,4 @@ Defined in: [core/src/features/parsing/ParserV2/types.ts:16](https://github.com/
 value: string;
 ```
 
-Defined in: [core/src/features/parsing/ParserV2/types.ts:23](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/ParserV2/types.ts#L23)
+Defined in: [common/core/src/features/parsing/ParserV2/types.ts:23](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/types.ts#L23)

@@ -63,8 +63,8 @@ export default defineConfig({
 		starlight({
 			plugins: [
 				starlightTypeDoc({
-					entryPoints: ['../markput/index.ts'],
-					tsconfig: '../markput/tsconfig.json',
+					entryPoints: ['../react/markput/index.ts'],
+					tsconfig: '../react/markput/tsconfig.json',
 					output: 'api',
 					watch: true,
 					sidebar: {
@@ -98,7 +98,6 @@ export default defineConfig({
 		react(),
 	],
 	vite: {
-		// @ts-expect-error Vite version type mismatch between Astro internal and workspace
 		plugins: [tailwindcss()],
 	},
 })

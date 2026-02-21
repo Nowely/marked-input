@@ -5,7 +5,7 @@ prev: false
 title: "MarkHandler"
 ---
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L6)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L6)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:6](https://github.com/Nowely
 optional readOnly: boolean;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L10)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L10)
 
 ***
 
@@ -31,7 +31,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:10](https://github.com/Nowel
 readonly ref: RefObject<T>;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L7)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L7)
 
 ## Accessors
 
@@ -43,7 +43,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:7](https://github.com/Nowely
 get content(): string;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L21)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L21)
 
 Displayed text of the mark
 
@@ -57,7 +57,7 @@ Displayed text of the mark
 set content(value): void;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L25)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L25)
 
 ##### Parameters
 
@@ -79,7 +79,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:25](https://github.com/Nowel
 get depth(): number;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L53)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L53)
 
 Nesting depth (0 for root-level marks)
 
@@ -97,7 +97,7 @@ Nesting depth (0 for root-level marks)
 get hasChildren(): boolean;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L58)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L58)
 
 Whether this mark has nested children
 
@@ -115,7 +115,7 @@ Whether this mark has nested children
 get meta(): string | undefined;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:41](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L41)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:41](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L41)
 
 Optional metadata for the mark
 
@@ -129,7 +129,7 @@ Optional metadata for the mark
 set meta(value): void;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:45](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L45)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:45](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L45)
 
 ##### Parameters
 
@@ -151,7 +151,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:45](https://github.com/Nowel
 get parent(): MarkToken | undefined;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L63)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L63)
 
 Parent mark token (undefined for root-level marks)
 
@@ -169,7 +169,7 @@ Parent mark token (undefined for root-level marks)
 get tokens(): Token[];
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L68)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L68)
 
 Child tokens of this mark
 
@@ -187,7 +187,7 @@ Child tokens of this mark
 get value(): string | undefined;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:31](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L31)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:31](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L31)
 
 Data value associated with the mark
 
@@ -201,7 +201,7 @@ Data value associated with the mark
 set value(value): void;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L35)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L35)
 
 ##### Parameters
 
@@ -221,7 +221,7 @@ Defined in: [markput/src/lib/classes/MarkHandler.ts:35](https://github.com/Nowel
 change(props): void;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:75](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L75)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:75](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L75)
 
 Update multiple properties in a single operation
 
@@ -246,7 +246,7 @@ Update multiple properties in a single operation
 remove(): void;
 ```
 
-Defined in: [markput/src/lib/classes/MarkHandler.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/markput/src/lib/classes/MarkHandler.ts#L85)
+Defined in: [react/markput/src/lib/classes/MarkHandler.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/classes/MarkHandler.ts#L85)
 
 Delete this mark from the editor
 
