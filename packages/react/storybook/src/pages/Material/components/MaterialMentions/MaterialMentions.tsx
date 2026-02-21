@@ -6,6 +6,7 @@ import {UserList} from './UserList'
 const options = [
 	{
 		markup: '@[__value__]' as Markup,
+		overlay: {trigger: '@'},
 	},
 ]
 
