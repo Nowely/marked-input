@@ -1,0 +1,36 @@
+name: Release
+
+on:
+    push:
+        branches: [next]
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    release-please:
+        runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+        steps:
+            - uses: googleapis/release-please-action@v4
+              id: release
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  release-type: node
+                  path: packages/react/markput
+                  target-branch: next
+
+    publish:
+        needs: release-please
+        if: ${{ needs.release-please.outputs.release_created }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            id-token: write
+        steps:
+            - uses: nowely/action-setup-node@v1
+            - run: pnpm build
+            - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+            - run: pnpm -F @markput/react run publish
