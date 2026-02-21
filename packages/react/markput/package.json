@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "vite build && tsc && node prepack.js",
-    "publish": "pnpm publish dist --no-git-checks --json --access public"
+    "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
   "dependencies": {
     "@markput/core": "workspace:*"
