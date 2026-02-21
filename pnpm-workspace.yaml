@@ -1,5 +1,5 @@
 packages:
-    - packages/*
+    - packages/**/*
 
 catalog:
     '@faker-js/faker': ^10.2.0

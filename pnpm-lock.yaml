@@ -70,7 +70,22 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
 
-  packages/app:
+  packages/common/core:
+    devDependencies:
+      '@faker-js/faker':
+        specifier: 'catalog:'
+        version: 10.2.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 4.0.18(@vitest/browser@4.0.18(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))(vitest@4.0.18))(vitest@4.0.18)
+      '@vitest/ui':
+        specifier: 'catalog:'
+        version: 4.0.18(vitest@4.0.18)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@24.10.1)(@vitest/browser-playwright@4.0.18)(@vitest/ui@4.0.18)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
+
+  packages/react/app:
     dependencies:
       rc-marked-input:
         specifier: workspace:*
@@ -98,31 +113,16 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
 
-  packages/core:
-    devDependencies:
-      '@faker-js/faker':
-        specifier: 'catalog:'
-        version: 10.2.0
-      '@vitest/coverage-v8':
-        specifier: 'catalog:'
-        version: 4.0.18(@vitest/browser@4.0.18(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))(vitest@4.0.18))(vitest@4.0.18)
-      '@vitest/ui':
-        specifier: 'catalog:'
-        version: 4.0.18(vitest@4.0.18)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.0.18(@types/node@24.10.1)(@vitest/browser-playwright@4.0.18)(@vitest/ui@4.0.18)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
-
-  packages/markput:
+  packages/react/markput:
     dependencies:
       '@markput/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../common/core
       react:
         specifier: '>=17.0.0'
         version: 19.2.0
 
-  packages/storybook:
+  packages/react/storybook:
     dependencies:
       '@emotion/react':
         specifier: ^11.14.0
@@ -211,7 +211,7 @@ importers:
         version: 9.0.4(astro@5.17.1(@types/node@24.10.1)(@vercel/functions@2.2.13)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.53.3)(typescript@5.9.3)(yaml@2.8.2))(react@18.3.1)(rollup@4.53.3)
       '@tailwindcss/vite':
         specifier: ^4.1.18
-        version: 4.1.18(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))
+        version: 4.1.18(vite@6.4.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))
       '@types/react':
         specifier: 'catalog:'
         version: 18.3.27
@@ -223,7 +223,7 @@ importers:
         version: 5.17.1(@types/node@24.10.1)(@vercel/functions@2.2.13)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.53.3)(typescript@5.9.3)(yaml@2.8.2)
       rc-marked-input:
         specifier: workspace:*
-        version: link:../markput
+        version: link:../react/markput
       react:
         specifier: 'catalog:'
         version: 18.3.1
@@ -2858,11 +2858,12 @@ packages:
   glob@11.1.0:
     resolution: {integrity: sha512-vuNwKSaKiqm7g0THUBu2x7ckSs3XJLXE+2ssL7/MfTGPLLcrJQ/4Uq1CjPTtO5cCIiRxqvN6Twy1qOwhL0Xjcw==}
     engines: {node: 20 || >=22}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -6811,12 +6812,12 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.1.18
       '@tailwindcss/oxide-win32-x64-msvc': 4.1.18
 
-  '@tailwindcss/vite@4.1.18(vite@7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))':
+  '@tailwindcss/vite@4.1.18(vite@6.4.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))':
     dependencies:
       '@tailwindcss/node': 4.1.18
       '@tailwindcss/oxide': 4.1.18
       tailwindcss: 4.1.18
-      vite: 7.3.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
+      vite: 6.4.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
 
   '@testing-library/dom@10.4.1':
     dependencies:
