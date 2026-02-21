@@ -2,7 +2,7 @@ import {Chip, Input} from '@mui/material'
 import type {MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
-import {MaterialMentions} from '../../shared/components/MaterialMentions'
+import {MaterialMentions} from './components/MaterialMentions'
 import {Text} from '../../shared/components/Text'
 
 export default {
