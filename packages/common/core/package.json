@@ -4,15 +4,15 @@
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build -w",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:related": "vitest related",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "coverage": "vitest run --coverage",
-    "bench": "vitest bench --run"
+    "test": "node_modules/.bin/vitest run",
+    "test:watch": "node_modules/.bin/vitest",
+    "test:related": "node_modules/.bin/vitest related",
+    "test:ui": "node_modules/.bin/vitest --ui",
+    "test:coverage": "node_modules/.bin/vitest run --coverage",
+    "coverage": "node_modules/.bin/vitest run --coverage",
+    "bench": "node_modules/.bin/vitest bench --run"
   },
-  "module": "./index.ts",
+  "module": "index.ts",
   "types": "./index.ts",
   "exports": {
     ".": {

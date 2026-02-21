@@ -1,4 +1,4 @@
-import type {Markup, Token, MarkToken} from './types'
+import type {MarkToken, Markup, Token} from './types'
 import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {SegmentMatcher} from './core/SegmentMatcher'
