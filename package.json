@@ -5,7 +5,7 @@
   "engines": {
     "pnpm": ">=9"
   },
-  "scripts": {
+"scripts": {
     "dev": "pnpm -r run dev",
     "dev:react:app": "pnpm -F @markput/react-app dev",
     "dev:react:sb": "pnpm -F @markput/react-storybook run dev",
@@ -32,21 +32,33 @@
     "clean": "git clean -xdf",
     "clean:dry": "git clean -xdn",
     "preinstall": "npx only-allow pnpm",
-    "publish": "pnpm -F @markput/react run publish"
-  },
+    "publish": "pnpm -F @markput/react run publish",
+    "prepare": "husky"
+},
+"lint-staged": {
+    "*.{js,jsx,ts,tsx,vue}": [
+        "oxlint --fix",
+        "prettier --write"
+    ],
+    "*.{json,md,css,html}": [
+        "prettier --write"
+    ]
+},
   "dependencies": {
     "react": "catalog:",
     "react-dom": "catalog:"
   },
-  "devDependencies": {
+"devDependencies": {
     "@microsoft/api-extractor": "^7.56.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react-swc": "^4.2.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.3",
     "oxlint": "^1.42.0",
     "playwright": "^1.58.1",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
-  }
+}
 }
