@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react'
 import type {Markup} from 'rc-marked-input'
 import {MarkedInput} from 'rc-marked-input'
-import {MarkdownContainer, MarkdownText, MarkdownMark} from './components'
+import {MarkdownContainer, MarkdownMark, MarkdownText} from './components'
 import {htmlToMarkdown} from './utils'
 
 // Markdown markup patterns

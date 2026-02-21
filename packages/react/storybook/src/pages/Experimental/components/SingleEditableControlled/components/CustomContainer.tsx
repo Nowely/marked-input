@@ -1,4 +1,4 @@
-import {forwardRef, useCallback, type HTMLAttributes} from 'react'
+import {forwardRef, type HTMLAttributes, useCallback} from 'react'
 
 /**
  * CustomContainer - Container with single contentEditable

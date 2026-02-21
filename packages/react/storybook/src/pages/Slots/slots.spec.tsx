@@ -1,7 +1,7 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 import {MarkedInput} from 'rc-marked-input'
-import {describe, it, expect, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 import {forwardRef} from 'react'
 
 describe('Slots API', () => {

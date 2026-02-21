@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
+import {MarkedInput, useMark} from 'rc-marked-input'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
 import {Text} from '../../shared/components/Text'

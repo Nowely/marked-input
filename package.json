@@ -25,8 +25,8 @@
     "test:coverage": "pnpm -r run coverage",
     "bench": "pnpm -r run bench",
     "typecheck": "tsc --noEmit && pnpm run -F @markput/website check",
-    "use:local": "sed -i '' 's/\"rc-marked-input\": \"workspace:\\*\"/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/g' packages/storybook/package.json && pnpm install",
-    "use:workspace": "sed -i '' 's/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/\"rc-marked-input\": \"workspace:*\"/g' packages/storybook/package.json && pnpm install",
+    "use:local": "sed -i '' 's/\"rc-marked-input\": \"workspace:\\*\"/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/g' packages/react/storybook/package.json && pnpm install",
+    "use:workspace": "sed -i '' 's/\"rc-marked-input\": \"file:..\\/markput\\/dist\"/\"rc-marked-input\": \"workspace:*\"/g' packages/react/storybook/package.json && pnpm install",
     "preinstall": "npx only-allow pnpm",
     "publish": "pnpm -F rc-marked-input run publish"
   },

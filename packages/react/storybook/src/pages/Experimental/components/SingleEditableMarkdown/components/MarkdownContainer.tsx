@@ -1,17 +1,14 @@
-import {forwardRef, useCallback, type HTMLAttributes} from 'react'
+import {forwardRef, type HTMLAttributes, useCallback} from 'react'
 
 /**
- * CustomContainer - Container with single contentEditable
+ * MarkdownContainer - Container with contentEditable for markdown
  *
- * This is the key component for Obsidian-like approach:
+ * Similar to CustomContainer but optimized for markdown editing:
  * - Only this container has contentEditable={true}
- * - All children (text and marks) are rendered inside
+ * - Renders markdown content with formatting preserved
  * - Browser handles all editing natively
- *
- * Important: We prevent the default 'input' event from reaching MarkedInput's
- * internal handler, and instead handle it ourselves in the story component.
  */
-export const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
+export const MarkdownContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
 	const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
 		// Prevent default paste behavior (which might include HTML)
 		e.preventDefault()
@@ -37,10 +34,11 @@ export const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDiv
 				borderRadius: '8px',
 				fontSize: '14px',
 				lineHeight: '1.6',
-				fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+				fontFamily: 'Menlo, Monaco, "Courier New", monospace',
 				outline: 'none',
 				transition: 'border-color 0.2s',
 				whiteSpace: 'pre-wrap',
+				backgroundColor: '#fafafa',
 				...props.style,
 			}}
 			onFocus={e => {
@@ -52,4 +50,4 @@ export const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDiv
 		/>
 	)
 })
-CustomContainer.displayName = 'CustomContainer'
+MarkdownContainer.displayName = 'MarkdownContainer'

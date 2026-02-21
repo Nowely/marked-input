@@ -1,7 +1,7 @@
 import {render} from 'vitest-browser-react'
 import {page} from 'vitest/browser'
-import {MarkedInput, useMark} from 'rc-marked-input'
 import type {Markup} from 'rc-marked-input'
+import {MarkedInput, useMark} from 'rc-marked-input'
 import type {ReactNode} from 'react'
 import {describe, expect, it} from 'vitest'
 
