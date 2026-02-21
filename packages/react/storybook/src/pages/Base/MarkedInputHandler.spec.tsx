@@ -8,14 +8,14 @@ const {Default} = composeStories(BaseStories)
 
 type UseMarkedInputHandler = {
 	value: MarkedInputHandler | null
-	set: (el: MarkedInputHandler | null) => MarkedInputHandler | null
+	set: (el: MarkedInputHandler | null) => void
 }
 
 function useMarkedInputHandler(): UseMarkedInputHandler {
 	let value: MarkedInputHandler | null = null
 
 	function set(el: MarkedInputHandler | null) {
-		return (value = el)
+		value = el
 	}
 
 	return {value, set}

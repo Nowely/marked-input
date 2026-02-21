@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput} from '@markput/react'
-import {forwardRef, useState} from 'react'
+import {useState} from 'react'
 import {Text} from '../../shared/components/Text'
 
 const meta = {
@@ -32,7 +32,10 @@ export const CustomComponents: Story = {
 	render: () => {
 		const [value, setValue] = useState('Both @[container] and @[span] are @[customized]')
 
-		const FancyContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+		const FancyContainer = ({
+			ref,
+			...props
+		}: React.HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}) => (
 			<div
 				{...props}
 				ref={ref}
@@ -45,10 +48,12 @@ export const CustomComponents: Story = {
 					boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
 				}}
 			/>
-		))
-		FancyContainer.displayName = 'FancyContainer'
+		)
 
-		const FancySpan = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
+		const FancySpan = ({
+			ref,
+			...props
+		}: React.HTMLAttributes<HTMLSpanElement> & {ref?: React.Ref<HTMLSpanElement>}) => (
 			<span
 				{...props}
 				ref={ref}
@@ -59,8 +64,7 @@ export const CustomComponents: Story = {
 					letterSpacing: '0.5px',
 				}}
 			/>
-		))
-		FancySpan.displayName = 'FancySpan'
+		)
 
 		return (
 			<>
@@ -160,7 +164,10 @@ export const StyleMerging: Story = {
 	render: () => {
 		const [value, setValue] = useState('Container has @[merged] styles from multiple sources')
 
-		const StyledContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+		const StyledContainer = ({
+			ref,
+			...props
+		}: React.HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}) => (
 			<div
 				{...props}
 				ref={ref}
@@ -170,8 +177,7 @@ export const StyleMerging: Story = {
 					borderRadius: '8px',
 				}}
 			/>
-		))
-		StyledContainer.displayName = 'StyledContainer'
+		)
 
 		return (
 			<>

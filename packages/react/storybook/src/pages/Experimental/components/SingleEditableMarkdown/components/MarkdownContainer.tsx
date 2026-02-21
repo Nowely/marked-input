@@ -1,4 +1,6 @@
-import {forwardRef, type HTMLAttributes, useCallback} from 'react'
+import {type HTMLAttributes, useCallback} from 'react'
+
+type Props = HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}
 
 /**
  * MarkdownContainer - Container with contentEditable for markdown
@@ -8,7 +10,7 @@ import {forwardRef, type HTMLAttributes, useCallback} from 'react'
  * - Renders markdown content with formatting preserved
  * - Browser handles all editing natively
  */
-export const MarkdownContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
+export function MarkdownContainer({ref, ...props}: Props) {
 	const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
 		// Prevent default paste behavior (which might include HTML)
 		e.preventDefault()
@@ -49,5 +51,4 @@ export const MarkdownContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLD
 			}}
 		/>
 	)
-})
-MarkdownContainer.displayName = 'MarkdownContainer'
+}

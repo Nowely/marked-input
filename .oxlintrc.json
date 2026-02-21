@@ -112,7 +112,14 @@
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-set-size": "warn",
     "unicorn/prefer-string-starts-ends-with": "warn",
-    "jest/valid-expect": "off",
+    "vitest/no-importing-vitest-globals": "warn",
+    "typescript/no-unnecessary-condition": "warn",
+    "typescript/no-useless-default-assignment": "warn",
+    "typescript/consistent-type-exports": "error",
+    "typescript/prefer-readonly": "warn",
+    "typescript/no-unnecessary-qualifier": "warn",
+    "eslint/no-shadow": "warn",
+
     "react/exhaustive-deps": "off",
     "jsx_a11y/click-events-have-key-events": "off"
   },

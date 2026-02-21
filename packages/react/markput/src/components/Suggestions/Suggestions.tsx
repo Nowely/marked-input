@@ -54,7 +54,9 @@ export const Suggestions = () => {
 				return (
 					<li
 						key={suggestion}
-						ref={el => className && el?.scrollIntoView(false)}
+						ref={el => {
+							if (className && el) el.scrollIntoView(false)
+						}}
 						className={className}
 						onClick={_ => select({value: suggestion, meta: index.toString()})}
 						children={suggestion}

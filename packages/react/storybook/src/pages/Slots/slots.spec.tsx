@@ -2,7 +2,9 @@ import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 import {MarkedInput} from '@markput/react'
 import {describe, expect, it, vi} from 'vitest'
-import {forwardRef} from 'react'
+
+type DivProps = React.HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}
+type SpanProps = React.HTMLAttributes<HTMLSpanElement> & {ref?: React.Ref<HTMLSpanElement>}
 
 describe('Slots API', () => {
 	const TestMark = ({children}: {children?: React.ReactNode}) => <mark>{children}</mark>
@@ -18,10 +20,9 @@ describe('Slots API', () => {
 		})
 
 		it('should use custom component from slots.container', async () => {
-			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
-			))
-			CustomContainer.displayName = 'CustomContainer'
+			)
 
 			await render(
 				<MarkedInput
@@ -103,10 +104,7 @@ describe('Slots API', () => {
 		})
 
 		it('should use custom component from slots.span', async () => {
-			const CustomSpan = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
-				<span {...props} ref={ref} data-testid="custom-span" />
-			))
-			CustomSpan.displayName = 'CustomSpan'
+			const CustomSpan = ({ref, ...props}: SpanProps) => <span {...props} ref={ref} data-testid="custom-span" />
 
 			await render(
 				<MarkedInput
@@ -160,15 +158,11 @@ describe('Slots API', () => {
 
 	describe('Both slots', () => {
 		it('should allow overriding both container and span slots simultaneously', async () => {
-			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
-			))
-			CustomContainer.displayName = 'CustomContainer'
+			)
 
-			const CustomSpan = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
-				<span {...props} ref={ref} data-testid="custom-span" />
-			))
-			CustomSpan.displayName = 'CustomSpan'
+			const CustomSpan = ({ref, ...props}: SpanProps) => <span {...props} ref={ref} data-testid="custom-span" />
 
 			await render(
 				<MarkedInput
@@ -203,10 +197,7 @@ describe('Slots API', () => {
 	describe('TypeScript integration', () => {
 		it('should work with valid slot types', async () => {
 			// This is a compile-time test - if it compiles, the types are correct
-			const CustomDiv = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
-				<div {...props} ref={ref} />
-			))
-			CustomDiv.displayName = 'CustomDiv'
+			const CustomDiv = ({ref, ...props}: DivProps) => <div {...props} ref={ref} />
 
 			const {container} = await render(
 				<MarkedInput
@@ -269,10 +260,7 @@ describe('Slots API', () => {
 		})
 
 		it('should maintain contentEditable on span with custom slot', async () => {
-			const CustomSpan = forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
-				<span {...props} ref={ref} data-testid="custom-span" />
-			))
-			CustomSpan.displayName = 'CustomSpan'
+			const CustomSpan = ({ref, ...props}: SpanProps) => <span {...props} ref={ref} data-testid="custom-span" />
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" slots={{span: CustomSpan}} />)
 
@@ -361,10 +349,9 @@ describe('Slots API', () => {
 
 	describe('Custom slot components', () => {
 		it('should pass all required props to custom container slot', async () => {
-			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
-			))
-			CustomContainer.displayName = 'CustomContainer'
+			)
 
 			await render(
 				<MarkedInput
@@ -446,9 +433,7 @@ describe('Slots API', () => {
 					Mark={TestMark}
 					value="@[hello] world @[test]"
 					slots={{
-						span: forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement>>((props, ref) => (
-							<span {...props} ref={ref} data-testid="text-span" />
-						)),
+						span: ({ref, ...props}: SpanProps) => <span {...props} ref={ref} data-testid="text-span" />,
 					}}
 				/>
 			)
@@ -458,10 +443,9 @@ describe('Slots API', () => {
 		})
 
 		it('should preserve slot functionality when no slotProps provided', async () => {
-			const CustomContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => (
+			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
-			))
-			CustomContainer.displayName = 'CustomContainer'
+			)
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" slots={{container: CustomContainer}} />)
 
