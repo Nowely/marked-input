@@ -49,14 +49,14 @@
         "react-dom": "catalog:"
     },
     "devDependencies": {
-        "@microsoft/api-extractor": "^7.56.0",
+        "@microsoft/api-extractor": "^7.57.2",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@vitejs/plugin-react-swc": "^4.2.3",
         "husky": "^9.1.7",
         "lint-staged": "^16.2.7",
-        "oxlint": "^1.42.0",
-        "playwright": "^1.58.1",
+        "oxlint": "^1.49.0",
+        "playwright": "^1.58.2",
         "prettier": "^3.8.1",
         "typescript": "^5.9.3",
         "vite": "^7.3.1"

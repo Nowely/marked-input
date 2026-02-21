@@ -43,7 +43,7 @@ importers:
         version: 19.2.4(react@19.2.4)
     devDependencies:
       '@microsoft/api-extractor':
-        specifier: ^7.56.0
+        specifier: ^7.57.2
         version: 7.57.2(@types/node@24.10.13)
       '@types/react':
         specifier: 'catalog:'
@@ -61,10 +61,10 @@ importers:
         specifier: ^16.2.7
         version: 16.2.7
       oxlint:
-        specifier: ^1.42.0
+        specifier: ^1.49.0
         version: 1.49.0
       playwright:
-        specifier: ^1.58.1
+        specifier: ^1.58.2
         version: 1.58.2
       prettier:
         specifier: ^3.8.1
