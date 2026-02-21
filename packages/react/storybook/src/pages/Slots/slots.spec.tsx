@@ -1,6 +1,6 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {describe, expect, it, vi} from 'vitest'
 import {forwardRef} from 'react'
 

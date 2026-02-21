@@ -1,6 +1,6 @@
 import {Chip, Input} from '@mui/material'
-import type {MarkProps} from 'rc-marked-input'
-import {MarkedInput} from 'rc-marked-input'
+import type {MarkProps} from '@markput/react'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 import {MaterialMentions} from '../../shared/components/MaterialMentions'
 import {Text} from '../../shared/components/Text'

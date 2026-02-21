@@ -256,7 +256,7 @@ export const FormattingToolbar: FC<FormattingToolbarProps> = ({rules, onFormat})
 ```tsx
 // MarkdownEditor.tsx
 import {FC, useState, useCallback, useRef} from 'react'
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {FormattingToolbar} from './FormattingToolbar'
 import {MARKDOWN_RULES} from './markdown'
 import type {MarkdownRule} from './markdown'

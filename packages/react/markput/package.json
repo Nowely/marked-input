@@ -1,7 +1,7 @@
 {
-  "name": "rc-marked-input",
+  "name": "@markput/react",
   "type": "module",
-  "version": "4.2.0",
+  "version": "0.1.0",
   "description": "React component for combine editable text with any component using annotated text",
   "license": "MIT",
   "author": "Ruslan Ilyin",
@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "vite build && tsc && node prepack.js",
-    "publish": "pnpm publish dist --no-git-checks --json"
+    "publish": "pnpm publish dist --no-git-checks --json --access public"
   },
   "dependencies": {
     "@markput/core": "workspace:*"

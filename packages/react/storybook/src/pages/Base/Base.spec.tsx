@@ -1,6 +1,6 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {forwardRef} from 'react'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'

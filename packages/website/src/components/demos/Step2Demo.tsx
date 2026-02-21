@@ -1,4 +1,4 @@
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 
 export const Step2Demo = () => (
 	<MarkedInput

@@ -1,5 +1,5 @@
 import {Avatar, ListItem, ListItemAvatar, ListItemButton, ListItemText} from '@mui/material'
-import type {MarkToken} from 'rc-marked-input'
+import type {MarkToken} from '@markput/react'
 import type {SearchUser} from '../types'
 
 export interface UserItemProps {

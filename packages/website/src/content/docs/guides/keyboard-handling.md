@@ -29,7 +29,7 @@ These behaviors work out of the box without any configuration.
 Use `slotProps.container` to listen to keyboard events on the editor:
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function EditorWithKeyboard() {
@@ -231,7 +231,7 @@ function Editor() {
 Use `useMark()` to handle keyboard events specific to marks:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
+import {useMark} from '@markput/react'
 
 function KeyboardAwareMark() {
     const {label, remove, ref} = useMark()
@@ -401,7 +401,7 @@ The overlay handles keyboard events automatically:
 ### Custom Overlay Keyboard Behavior
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 
 function CustomOverlay() {
     const {select, close, match} = useOverlay()

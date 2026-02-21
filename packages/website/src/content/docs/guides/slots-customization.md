@@ -49,7 +49,7 @@ The simplest way to customize slots is through `slotProps`. This passes props to
 ### Basic Styling
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 
 function StyledEditor() {
     const [value, setValue] = useState('')
@@ -794,7 +794,7 @@ function TypedEditor() {
 ### Generic Slot Props
 
 ```tsx
-import type {MarkedInputProps} from 'rc-marked-input'
+import type {MarkedInputProps} from '@markput/react'
 
 interface EditorProps {
     containerClass?: string
@@ -896,7 +896,7 @@ function Editor() {
 ### Example 1: GitHub-Style Editor
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState, forwardRef} from 'react'
 import type {HTMLAttributes} from 'react'
 

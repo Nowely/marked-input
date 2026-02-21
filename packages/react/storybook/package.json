@@ -15,7 +15,7 @@
     "@faker-js/faker": "catalog:",
     "@mui/material": "^7.3.7",
     "antd": "^5.28.1",
-    "rc-marked-input": "workspace:*",
+    "@markput/react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rsuite": "^5.83.3"

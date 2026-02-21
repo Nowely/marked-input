@@ -476,10 +476,10 @@ Ensure proper tree shaking:
 
 ```typescript
 // ✅ Named imports (tree-shakeable)
-import {MarkedInput, useMark} from 'rc-marked-input'
+import {MarkedInput, useMark} from '@markput/react'
 
 // ❌ Namespace import (not tree-shakeable)
-import * as Markput from 'rc-marked-input'
+import * as Markput from '@markput/react'
 ```
 
 ### Code Splitting

@@ -50,7 +50,7 @@ const FlatMarkup = '**__value__**'
 **Example: Markdown-style formatting**
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 const FormatMark = ({children, nested}) => {
@@ -127,7 +127,7 @@ function NestedMark({children, nested}) {
 ## Simple Nesting Example
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function SimpleMark({children, style}) {
@@ -193,7 +193,7 @@ markup: '<__value__>__nested__</__value__>'
 ### HTML-like Tags Example
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function HtmlLikeMark({value, children, nested}) {
@@ -322,7 +322,7 @@ function MultiLevelEditor() {
 Use `useMark()` hook to access nesting details:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
+import {useMark} from '@markput/react'
 
 function NestedAwareMark({children}) {
     const {depth, hasChildren, parent, children: tokens} = useMark()
@@ -413,7 +413,7 @@ function ColoredMark({children, meta}) {
 ### Example 1: Markdown Editor
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function MarkdownMark({children, nested}) {

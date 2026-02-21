@@ -2,7 +2,7 @@
 editUrl: false
 next: false
 prev: false
-title: "rc-marked-input"
+title: "@markput/react"
 ---
 
 ## Interfaces

@@ -376,7 +376,7 @@ const [value, setValue] = useState('')
 Use `useListener` hook for custom events:
 
 ```tsx
-import {useListener} from 'rc-marked-input'
+import {useListener} from '@markput/react'
 
 const Mark = () => {
     useListener(

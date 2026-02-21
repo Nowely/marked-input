@@ -1,4 +1,4 @@
-import {type MarkProps} from 'rc-marked-input'
+import {type MarkProps} from '@markput/react'
 
 /**
  * MarkdownMark - Renders markdown formatting marks with distinct visual styles
