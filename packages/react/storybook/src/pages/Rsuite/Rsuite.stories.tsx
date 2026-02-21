@@ -1,6 +1,6 @@
 import type {Meta} from '@storybook/react-vite'
-import type {Markup} from 'rc-marked-input'
-import {MarkedInput, useOverlay} from 'rc-marked-input'
+import type {Markup} from '@markput/react'
+import {MarkedInput, useOverlay} from '@markput/react'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import {Text} from '../../shared/components/Text'

@@ -4,7 +4,8 @@ description: Install Markput and build your first @mention editor with autocompl
 keywords: [installation, setup, quick start, react component, mentions editor, autocomplete]
 ---
 
-import {Tabs, TabItem, Aside} from '@astrojs/starlight/components'
+
+import {TabItem, Tabs} from '@astrojs/starlight/components'
 import CodePreview from '../../../components/demos/CodePreview.astro'
 import {Step1Demo} from '../../../components/demos/Step1Demo'
 import {Step2Demo} from '../../../components/demos/Step2Demo'
@@ -22,22 +23,22 @@ Install Markput using your preferred package manager:
 <Tabs syncKey="package-manager">
 	<TabItem label="npm" icon="npm">
     ```bash
-    npm install rc-marked-input
+    npm install @markput/react
     ```
 	</TabItem>
 	<TabItem label="pnpm" icon="pnpm">
     ```bash
-    pnpm add rc-marked-input
+    pnpm add @markput/react
     ```
 	</TabItem>
 	<TabItem label="yarn" icon="seti:yarn">
     ```bash
-    yarn add rc-marked-input
+    yarn add @markput/react
     ```
 	</TabItem>
 	<TabItem label="bun" icon="bun">
     ```bash
-    bun add rc-marked-input
+    bun add @markput/react
     ```
 	</TabItem>
 </Tabs>

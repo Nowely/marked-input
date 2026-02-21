@@ -159,7 +159,7 @@ ProseMirror's document model is very different from Markput's markup-based appro
 
 ### Markput
 
-- **React**: ✅ Full support (`rc-marked-input`)
+- **React**: ✅ Full support (`@markput/react`)
 - **Vue/Svelte/Angular**: ⚠️ Core library only (`@markput/core`)
 
 ### Other Editors

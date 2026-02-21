@@ -11,7 +11,7 @@ Dynamic marks are marks that users can interact with - edit, remove, focus, or t
 The `useMark()` hook gives your Mark component access to its internal state and methods:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
+import {useMark} from '@markput/react'
 
 function DynamicMark() {
     const mark = useMark()
@@ -44,7 +44,7 @@ The hook returns an object with these properties:
 Make marks editable with `contentEditable`:
 
 ```tsx
-import {MarkedInput, useMark} from 'rc-marked-input'
+import {MarkedInput, useMark} from '@markput/react'
 import {useState} from 'react'
 
 function EditableMark() {
@@ -150,7 +150,7 @@ change({value: newValue}, {silent: true})
 Allow users to delete marks:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
+import {useMark} from '@markput/react'
 
 function RemovableMark() {
     const {label, remove} = useMark()
@@ -221,7 +221,7 @@ function KeyboardRemovableMark() {
 Make marks focusable for keyboard navigation:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
+import {useMark} from '@markput/react'
 
 function FocusableMark() {
     const {label, ref} = useMark()
@@ -356,7 +356,7 @@ function CollapsibleMark({children}) {
 ### Example 1: Tag Editor
 
 ```tsx
-import {MarkedInput, useMark} from 'rc-marked-input'
+import {MarkedInput, useMark} from '@markput/react'
 import {useState} from 'react'
 
 function TagMark() {
@@ -603,8 +603,8 @@ change({value: newValue}, {silent: true})
 Type your dynamic marks:
 
 ```tsx
-import {useMark} from 'rc-marked-input'
-import type {MarkHandler} from 'rc-marked-input'
+import {useMark} from '@markput/react'
+import type {MarkHandler} from '@markput/react'
 
 interface TagMarkProps {
     // Custom props if needed

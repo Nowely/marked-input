@@ -1,6 +1,6 @@
 # @markput/core
 
-Core utilities for text annotation and parsing used by [rc-marked-input](https://www.npmjs.com/package/rc-marked-input).
+Core utilities for text annotation and parsing used by [@markput/react](https://www.npmjs.com/package/@markput/react).
 
 This package provides low-level utilities for working with annotated text, including:
 

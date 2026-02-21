@@ -11,7 +11,7 @@ Markput provides flexible configuration options through the `MarkedInput` compon
 Pass configuration directly to `<MarkedInput>`:
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function Editor() {
@@ -373,7 +373,7 @@ For **each** option, components are resolved in this order:
 ### Example 1: Multi-Trigger Editor
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function MultiTriggerEditor() {
@@ -418,7 +418,7 @@ function MultiTriggerEditor() {
 ### Example 2: Per-Pattern Components
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 
 const MentionMark = ({value, meta}) => (
     <a href={`/users/${meta}`} className="mention">
@@ -467,8 +467,8 @@ function Editor() {
 Type your configuration for better IDE support:
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
-import type {Option} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
+import type {Option} from '@markput/react'
 
 interface MentionProps {
     username: string

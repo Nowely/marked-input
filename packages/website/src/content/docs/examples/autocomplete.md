@@ -163,7 +163,7 @@ export const AutocompleteMark: FC<AutocompleteMarkProps> = ({value, category, ic
 ```tsx
 // AdvancedAutocompleteOverlay.tsx
 import {FC, useState, useEffect, useMemo, useRef} from 'react'
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import {fuzzyFilter} from './fuzzySearch'
 import type {AutocompleteItem, AutocompleteSource} from './types'
 import './AdvancedAutocompleteOverlay.css'
@@ -499,7 +499,7 @@ export const AdvancedAutocompleteOverlay: FC<Props> = ({sources, recentItems = [
 ```tsx
 // AutocompleteEditor.tsx
 import {FC, useState, useCallback} from 'react'
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {AutocompleteMark} from './AutocompleteMark'
 import {AdvancedAutocompleteOverlay} from './AdvancedAutocompleteOverlay'
 import type {AutocompleteSource, AutocompleteItem} from './types'

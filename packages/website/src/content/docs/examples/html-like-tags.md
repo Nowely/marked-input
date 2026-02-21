@@ -291,7 +291,7 @@ export const TagPalette: FC<{onInsert: (syntax: string) => void}> = ({onInsert})
 ```tsx
 // HtmlLikeEditor.tsx
 import {FC, useState} from 'react'
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {CustomTag} from './CustomTag'
 import {TagPalette} from './TagPalette'
 import type {TagType, TagProps} from './types'

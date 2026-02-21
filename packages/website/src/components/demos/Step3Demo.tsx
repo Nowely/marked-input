@@ -1,5 +1,5 @@
-import {MarkedInput, useOverlay} from 'rc-marked-input'
-import {useState, useEffect, type RefObject} from 'react'
+import {MarkedInput, useOverlay} from '@markput/react'
+import {type RefObject, useEffect, useState} from 'react'
 
 const User = ({avatar, login, onClick}: {avatar?: string; login?: string; onClick?: () => void}) => (
 	<span className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`} onClick={onClick}>

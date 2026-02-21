@@ -210,7 +210,7 @@ export const CommandMark: FC<CommandMarkProps> = ({command, label}) => {
 ```tsx
 // CommandOverlay.tsx
 import {FC, useState, useEffect, useRef} from 'react'
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import {COMMANDS, searchCommands} from './commands'
 import type {Command} from './types'
 import './CommandOverlay.css'
@@ -474,8 +474,8 @@ export const CommandOverlay: FC = () => {
 ```tsx
 // SlashCommandEditor.tsx
 import {FC, useState, useRef} from 'react'
-import {MarkedInput} from 'rc-marked-input'
-import type {Option} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
+import type {Option} from '@markput/react'
 import {CommandMark} from './CommandMark'
 import {CommandOverlay} from './CommandOverlay'
 import {COMMANDS} from './commands'

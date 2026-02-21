@@ -25,7 +25,7 @@ Text becomes '@[Alice]'
 Markput includes a built-in Suggestions component:
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
 
 function BasicSuggestions() {
@@ -63,7 +63,7 @@ function BasicSuggestions() {
 Build custom overlays with the `useOverlay()` hook:
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 
 function CustomOverlay() {
     const overlay = useOverlay()
@@ -110,7 +110,7 @@ interface OverlayHandler {
 ### Example 1: Simple List
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 
 function SimpleListOverlay() {
     const {select} = useOverlay()
@@ -250,7 +250,7 @@ function UserOverlay() {
 Add keyboard support:
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function KeyboardOverlay() {
@@ -379,7 +379,7 @@ options={[
 Use different overlay components for different triggers:
 
 ```tsx
-import {MarkedInput} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
 
 function UserOverlay() {
     const {select} = useOverlay()
@@ -429,7 +429,7 @@ function Editor() {
 Load data asynchronously:
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function AsyncOverlay() {
@@ -499,7 +499,7 @@ Use `showOverlayOn` prop:
 ### Example: Rich User Selector
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function RichUserOverlay() {
@@ -697,8 +697,8 @@ useEffect(() => {
 Type your custom overlays:
 
 ```tsx
-import {useOverlay} from 'rc-marked-input'
-import type {OverlayHandler} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
+import type {OverlayHandler} from '@markput/react'
 
 function TypedOverlay() {
     const overlay: OverlayHandler = useOverlay()

@@ -107,7 +107,7 @@ export const HashtagMark: FC<HashtagMarkProps> = ({tag, count, onClick}) => {
 ```tsx
 // HashtagOverlay.tsx
 import {FC, useState, useEffect} from 'react'
-import {useOverlay} from 'rc-marked-input'
+import {useOverlay} from '@markput/react'
 import type {Hashtag} from './types'
 import './HashtagOverlay.css'
 
@@ -404,8 +404,8 @@ export const TrendingSidebar: FC<TrendingSidebarProps> = ({hashtags, onHashtagCl
 ```tsx
 // HashtagEditor.tsx
 import {FC, useState, useCallback} from 'react'
-import {MarkedInput} from 'rc-marked-input'
-import type {Option} from 'rc-marked-input'
+import {MarkedInput} from '@markput/react'
+import type {Option} from '@markput/react'
 import {HashtagMark} from './HashtagMark'
 import {HashtagOverlay} from './HashtagOverlay'
 import {TrendingSidebar} from './TrendingSidebar'

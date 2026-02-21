@@ -87,7 +87,7 @@ importers:
 
   packages/react/app:
     dependencies:
-      rc-marked-input:
+      '@markput/react':
         specifier: workspace:*
         version: link:../markput
       react:
@@ -122,6 +122,12 @@ importers:
         specifier: '>=17.0.0'
         version: 19.2.0
 
+  packages/react/markput/dist:
+    dependencies:
+      react:
+        specifier: '>=17.0.0'
+        version: 19.2.0
+
   packages/react/storybook:
     dependencies:
       '@emotion/react':
@@ -133,15 +139,15 @@ importers:
       '@faker-js/faker':
         specifier: 'catalog:'
         version: 10.2.0
+      '@markput/react':
+        specifier: workspace:*
+        version: link:../markput
       '@mui/material':
         specifier: ^7.3.7
         version: 7.3.7(@emotion/react@11.14.0(@types/react@18.3.27)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.27)(react@18.3.1))(@types/react@18.3.27)(react@18.3.1))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       antd:
         specifier: ^5.28.1
         version: 5.29.1(date-fns@2.30.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      rc-marked-input:
-        specifier: workspace:*
-        version: link:../markput
       react:
         specifier: 'catalog:'
         version: 18.3.1
@@ -209,6 +215,9 @@ importers:
       '@astrojs/vercel':
         specifier: ^9.0.4
         version: 9.0.4(astro@5.17.1(@types/node@24.10.1)(@vercel/functions@2.2.13)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.53.3)(typescript@5.9.3)(yaml@2.8.2))(react@18.3.1)(rollup@4.53.3)
+      '@markput/react':
+        specifier: workspace:*
+        version: link:../react/markput
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.1.18(vite@6.4.1(@types/node@24.10.1)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))
@@ -221,9 +230,6 @@ importers:
       astro:
         specifier: ^5.17.1
         version: 5.17.1(@types/node@24.10.1)(@vercel/functions@2.2.13)(jiti@2.6.1)(lightningcss@1.30.2)(rollup@4.53.3)(typescript@5.9.3)(yaml@2.8.2)
-      rc-marked-input:
-        specifier: workspace:*
-        version: link:../react/markput
       react:
         specifier: 'catalog:'
         version: 18.3.1

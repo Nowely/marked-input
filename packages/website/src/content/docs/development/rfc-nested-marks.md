@@ -12,7 +12,7 @@ keywords: [RFC, nested marks, ParserV2, proposal, hierarchical, roadmap, feature
 
 ## Overview
 
-This RFC describes the introduction of nested marks support in the `rc-marked-input` library. The current implementation supports only flat text processing, where marks cannot contain other marks. The proposal is to transition to a tree structure that allows creating nested constructs.
+This RFC describes the introduction of nested marks support in the `@markput/react` library. The current implementation supports only flat text processing, where marks cannot contain other marks. The proposal is to transition to a tree structure that allows creating nested constructs.
 
 **Current Status**: ParserV2 (core parsing engine) is fully implemented and tested. React components and hooks for nested rendering are pending implementation.
 
