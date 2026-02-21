@@ -3,7 +3,7 @@
     "type": "module",
     "private": true,
     "engines": {
-        "pnpm": ">=9"
+        "pnpm": ">=10"
     },
     "scripts": {
         "dev": "pnpm -r run dev",
