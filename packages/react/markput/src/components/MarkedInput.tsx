@@ -1,6 +1,6 @@
-import type {CSSProperties, ComponentType, ForwardedRef} from 'react'
+import type {ComponentType, CSSProperties, ForwardedRef} from 'react'
 import {forwardRef} from 'react'
-import type {MarkedInputHandler, Option, Slots, SlotProps, OverlayProps, MarkProps} from '../types'
+import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'

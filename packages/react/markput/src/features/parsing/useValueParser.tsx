@@ -2,7 +2,7 @@ import {useEffect, useRef} from 'react'
 import {useListener} from '../../lib/hooks/useListener'
 import {useStore} from '../../lib/hooks/useStore'
 import type {Store} from '@markput/core'
-import {Parser, SystemEvent, findGap, getClosestIndexes} from '@markput/core'
+import {findGap, getClosestIndexes, Parser, SystemEvent} from '@markput/core'
 
 export const useValueParser = () => {
 	const store = useStore()

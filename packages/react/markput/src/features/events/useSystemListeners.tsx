@@ -1,4 +1,4 @@
-import {SystemEvent, annotate, createNewSpan, toString} from '@markput/core'
+import {annotate, createNewSpan, SystemEvent, toString} from '@markput/core'
 import {useListener} from '../../lib/hooks/useListener'
 import {useStore} from '../../lib/hooks/useStore'
 

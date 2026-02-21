@@ -1,6 +1,6 @@
 import type {ComponentType} from 'react'
 import {useStore} from './useStore'
-import type {Option, MarkProps, OverlayProps} from '../../types'
+import type {MarkProps, Option, OverlayProps} from '../../types'
 
 /**
  * Slot type that can be resolved
