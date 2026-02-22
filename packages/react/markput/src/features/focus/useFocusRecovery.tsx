@@ -6,27 +6,7 @@ export const useFocusRecovery = () => {
 	const tokens = useStore(store => store.tokens)
 	const deps = store.props.Mark ? [tokens] : undefined
 
-	//Restore focus after delete mark
 	useEffect(() => {
-		if (!store.recovery) return
-
-		const {anchor, caret, isNext} = store.recovery
-
-		switch (true) {
-			case isNext && !anchor.target:
-				store.nodes.focus.tail.focus()
-				break
-			case isNext:
-				anchor.prev.focus()
-				break
-			case !anchor.target:
-				store.nodes.focus.head.focus()
-				break
-			default:
-				anchor.next.focus()
-		}
-
-		store.nodes.focus.caret = caret
-		store.recovery = undefined
+		store.controllers.focus.recover()
 	}, deps)
 }

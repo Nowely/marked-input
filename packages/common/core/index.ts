@@ -25,7 +25,8 @@ export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
 export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
-export {CloseOverlayController} from './src/features/overlay'
+export {CloseOverlayController, TriggerController, CheckTriggerController} from './src/features/overlay'
+export {FocusController} from './src/features/focus'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Navigation & Input

@@ -3,7 +3,8 @@ import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
-import {CloseOverlayController} from '../overlay'
+import {CheckTriggerController, CloseOverlayController, TriggerController} from '../overlay'
+import {FocusController} from '../focus'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	// Utils domain
@@ -13,6 +14,9 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	// Controllers domain
 	readonly controllers = {
 		closeOverlay: new CloseOverlayController(this),
+		trigger: new TriggerController(this),
+		checkTrigger: new CheckTriggerController(this),
+		focus: new FocusController(this),
 	}
 
 	// Config domain

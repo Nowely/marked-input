@@ -1,9 +1,11 @@
-import {useListener} from '../../lib/hooks/useListener'
+import {useEffect} from 'react'
 import {useStore} from '../../lib/hooks/useStore'
 
 export const useFocusedNode = () => {
 	const store = useStore()
 
-	useListener('focusin', e => (store.nodes.focus.target = e.target), [])
-	useListener('focusout', _ => (store.nodes.focus.target = undefined), [])
+	useEffect(() => {
+		store.controllers.focus.enable()
+		return () => store.controllers.focus.disable()
+	}, [])
 }
