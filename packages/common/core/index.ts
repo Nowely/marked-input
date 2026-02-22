@@ -26,3 +26,8 @@ export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulati
 export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
 export {Caret, TriggerFinder} from './src/features/caret'
+
+// Navigation & Input
+export {shiftFocusPrev, shiftFocusNext} from './src/features/navigation'
+export {isFullSelection, selectAllText} from './src/features/selection'
+export {handleBeforeInput, handlePaste, replaceAllContentWith} from './src/features/input'
