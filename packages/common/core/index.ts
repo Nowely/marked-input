@@ -4,8 +4,18 @@ export {KEYBOARD, DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from './src/shared/co
 export type {OverlayMatch, EventKey, Listener, OverlayTrigger, CoreOption, CoreMarkputProps} from './src/shared/types'
 
 // Parsing exports (modern API)
-export {Parser, annotate, denote} from './src/features/parsing'
-export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
+export {
+	Parser,
+	annotate,
+	denote,
+	findToken,
+	getTokensByUI,
+	getTokensByValue,
+	parseUnionLabels,
+	getRangeMap,
+	parseWithParser,
+} from './src/features/parsing'
+export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
 
 // Utilities
 export {escape} from './src/shared/escape'

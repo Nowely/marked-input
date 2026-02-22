@@ -1,7 +1,6 @@
 import type {RefObject} from 'react'
 import type {MarkToken, Store, Token} from '@markput/core'
-import {SystemEvent} from '@markput/core'
-import {findToken} from '../utils/findToken'
+import {findToken, SystemEvent} from '@markput/core'
 
 export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	readonly ref: RefObject<T>

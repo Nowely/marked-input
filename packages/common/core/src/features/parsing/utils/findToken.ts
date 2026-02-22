@@ -1,4 +1,4 @@
-import type {MarkToken, Token} from '@markput/core'
+import type {MarkToken, Token} from '../ParserV2/types'
 
 export interface TokenContext {
 	depth: number
