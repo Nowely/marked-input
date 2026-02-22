@@ -10,11 +10,11 @@
  * convertDataAttrs({ dataUserId: '123', dataUserName: 'John', className: 'test' })
  * // Returns: { 'data-user-id': '123', 'data-user-name': 'John', className: 'test' }
  *
- * @example
- * convertDataAttrs({ dataTestId: 'test', dataFoo: 'bar' })
+ * convertDataAttrs({ dataTestId * @example
+: 'test', dataFoo: 'bar' })
  * // Returns: { 'data-test-id': 'test', 'data-foo': 'bar' }
  */
-export function convertDataAttrs(obj: Record<string, any> | undefined): Record<string, any> {
+export function convertDataAttrs(obj: Record<string, unknown> | undefined): Record<string, unknown> {
 	if (!obj) return {}
 
 	return Object.fromEntries(

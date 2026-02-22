@@ -1,7 +1,7 @@
-import type {CSSProperties, ElementType, HTMLAttributes} from 'react'
+import type {ElementType, HTMLAttributes} from 'react'
 import type {Store} from '@markput/core'
+import {convertDataAttrs} from '@markput/core'
 import type {MarkedInputProps} from '../../components/MarkedInput'
-import {convertDataAttrs} from './dataAttributes'
 
 /**
  * Slot names that can be customized
@@ -47,32 +47,5 @@ export function resolveSlotProps(
 	state: Store<MarkedInputProps>
 ): HTMLAttributes<HTMLElement> | undefined {
 	const props = state.props.slotProps?.[slotName]
-	return props ? convertDataAttrs(props) : undefined
-}
-
-/**
- * Merges multiple class names, filtering out falsy values
- *
- * @param classes - Class names to merge (strings, undefined, null, false)
- * @returns Merged class name string or undefined if all values are falsy
- */
-export function mergeClassNames(...classes: (string | undefined | null | false)[]): string | undefined {
-	return classes.filter(Boolean).join(' ') || undefined
-}
-
-/**
- * Merges multiple style objects, with later values overriding earlier ones
- *
- * @param styles - Style objects to merge (CSSProperties, undefined, null, false)
- * @returns Merged style object or undefined if all values are falsy
- */
-export function mergeStyles(...styles: (CSSProperties | undefined | null | false)[]): CSSProperties | undefined {
-	const merged = styles.reduce<CSSProperties>((acc, style) => {
-		if (style) {
-			Object.assign(acc, style)
-		}
-		return acc
-	}, {})
-
-	return Object.keys(merged).length > 0 ? merged : undefined
+	return props ? (convertDataAttrs(props as Record<string, unknown>) as HTMLAttributes<HTMLElement>) : undefined
 }
