@@ -35,15 +35,6 @@
         "publish": "pnpm -F @markput/react run publish",
         "prepare": "husky"
     },
-    "lint-staged": {
-        "*.{js,jsx,ts,tsx,vue}": [
-            "oxlint --fix",
-            "prettier --write"
-        ],
-        "*.{json,md,css,html}": [
-            "prettier --write"
-        ]
-    },
     "dependencies": {
         "react": "catalog:",
         "react-dom": "catalog:"
@@ -60,5 +51,14 @@
         "prettier": "^3.8.1",
         "typescript": "^5.9.3",
         "vite": "^7.3.1"
-    }
+    },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,vue}": [
+      "oxlint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,html}": [
+      "prettier --write"
+    ]
+  }
 }
