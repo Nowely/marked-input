@@ -1,21 +1,13 @@
 import {useEffect} from 'react'
 import {useStore} from '../../lib/hooks/useStore'
-import {SystemEvent} from '@markput/core'
 
 export function useCloseOverlayByOutsideClick() {
 	const store = useStore()
-	const match = useStore(store => store.overlayMatch)
+	const match = useStore(s => s.overlayMatch, true)
 
 	useEffect(() => {
 		if (!match) return
-
-		const handleClick = (event: MouseEvent) => {
-			const target = event.target as HTMLElement | null
-			if (store.refs.overlay?.contains(target) || store.refs.container?.contains(target)) return
-			store.bus.send(SystemEvent.ClearTrigger)
-		}
-
-		document.addEventListener('click', handleClick)
-		return () => document.removeEventListener('click', handleClick)
+		store.controllers.closeOverlay.enable()
+		return () => store.controllers.closeOverlay.disable()
 	}, [match])
 }

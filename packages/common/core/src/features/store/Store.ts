@@ -3,11 +3,17 @@ import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
 import {EventBus, SystemEvent} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
+import {CloseOverlayController} from '../overlay'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	// Utils domain
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
+
+	// Controllers domain
+	readonly controllers = {
+		closeOverlay: new CloseOverlayController(this),
+	}
 
 	// Config domain
 	props: TProps
@@ -47,7 +53,7 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	static create = <TProps extends CoreMarkputProps>(props: TProps) => new Proxy(new Store<TProps>(props), {set})
 }
 
-const IMMUTABLE_KEYS = new Set(['bus', 'refs', 'nodes', 'key'])
+const IMMUTABLE_KEYS = new Set(['bus', 'refs', 'nodes', 'key', 'controllers'])
 
 function set<TProps extends CoreMarkputProps, K extends keyof Store<TProps>>(
 	target: Store<TProps>,
