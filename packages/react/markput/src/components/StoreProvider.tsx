@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react'
 import {useEffect, useState} from 'react'
-import {mergeClassNames, mergeStyles, Store} from '@markput/core'
+import {cx, merge, Store} from '@markput/core'
 import styles from '@markput/core/styles.module.css'
 import type {MarkedInputProps} from './MarkedInput'
 import {StoreContext} from '../lib/providers/StoreContext'
@@ -23,8 +23,8 @@ export const StoreProvider = ({props, children}: StoreProviderProps) => {
 }
 
 function normalizeProps(props: MarkedInputProps): MarkedInputProps {
-	const className = mergeClassNames(styles.Container, props.className, props.slotProps?.container?.className)
-	const style = mergeStyles(props.style, props.slotProps?.container?.style)
+	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
+	const style = merge(props.style, props.slotProps?.container?.style)
 
 	return {
 		value: props.value,

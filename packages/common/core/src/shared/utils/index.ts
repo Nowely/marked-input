@@ -1,3 +1,3 @@
 export {convertDataAttrs} from './dataAttributes'
-export {mergeClassNames} from './mergeClassNames'
-export {mergeStyles} from './mergeStyles'
+export {cx} from './cx'
+export {merge} from './merge'
