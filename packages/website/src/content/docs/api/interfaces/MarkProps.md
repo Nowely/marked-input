@@ -5,7 +5,7 @@ prev: false
 title: "MarkProps"
 ---
 
-Defined in: [react/markput/src/types.ts:12](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L12)
+Defined in: [react/markput/src/types.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L7)
 
 Props passed to Mark components.
 
@@ -17,7 +17,7 @@ Props passed to Mark components.
 optional children: ReactNode;
 ```
 
-Defined in: [react/markput/src/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L22)
+Defined in: [react/markput/src/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L17)
 
 Rendered children content (ReactNode) for nested marks
 
@@ -29,7 +29,7 @@ Rendered children content (ReactNode) for nested marks
 optional meta: string;
 ```
 
-Defined in: [react/markput/src/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L18)
+Defined in: [react/markput/src/types.ts:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L13)
 
 Additional metadata for the mark
 
@@ -41,7 +41,7 @@ Additional metadata for the mark
 optional nested: string;
 ```
 
-Defined in: [react/markput/src/types.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L20)
+Defined in: [react/markput/src/types.ts:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L15)
 
 Nested content as string (raw, unparsed)
 
@@ -53,7 +53,7 @@ Nested content as string (raw, unparsed)
 optional slot: ComponentType<MarkProps>;
 ```
 
-Defined in: [react/markput/src/types.ts:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L14)
+Defined in: [react/markput/src/types.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L9)
 
 Custom component to render this mark
 
@@ -65,6 +65,6 @@ Custom component to render this mark
 optional value: string;
 ```
 
-Defined in: [react/markput/src/types.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L16)
+Defined in: [react/markput/src/types.ts:11](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L11)
 
 Main content value of the mark

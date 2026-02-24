@@ -5,21 +5,7 @@ prev: false
 title: "MarkedInputProps"
 ---
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L27)
-
-Props for MarkedInput component.
-
-## Example
-
-```typescript
-<MarkedInput<ChipProps>
-  Mark={Chip}
-  options={[{
-    markup: '@[__value__]',
-    mark: { label: 'Click me' }
-  }]}
-/>
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:20](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L20)
 
 ## Extends
 
@@ -27,10 +13,10 @@ Props for MarkedInput component.
 
 ## Type Parameters
 
-| Type Parameter | Default type | Description |
-| ------ | ------ | ------ |
-| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the global Mark component |
-| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the global Overlay component |
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Properties
 
@@ -40,9 +26,7 @@ Props for MarkedInput component.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:41](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L41)
-
-Additional classes
+Defined in: [react/markput/src/components/MarkedInput.tsx:25](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L25)
 
 ***
 
@@ -70,9 +54,7 @@ CoreMarkputProps.defaultValue
 optional Mark: ComponentType<TMarkProps>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:31](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L31)
-
-Global component used for rendering markups (fallback for option.mark.slot)
+Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L22)
 
 ***
 
@@ -110,11 +92,9 @@ CoreMarkputProps.onChange
 optional options: Option<TMarkProps, TOverlayProps>[];
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:39](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L39)
+Defined in: [react/markput/src/components/MarkedInput.tsx:24](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L24)
 
-Configuration options for markups and overlays.
-Each option can specify its own slot component via mark.slot or overlay.slot.
-Falls back to global Mark/Overlay components when not specified.
+Configuration options for markups and overlays
 
 #### Overrides
 
@@ -130,9 +110,7 @@ CoreMarkputProps.options
 optional Overlay: ComponentType<TOverlayProps>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:33](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L33)
-
-Global component used for rendering overlays (fallback for option.overlay.slot)
+Defined in: [react/markput/src/components/MarkedInput.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L23)
 
 ***
 
@@ -157,12 +135,10 @@ CoreMarkputProps.readOnly
 ### ref?
 
 ```ts
-optional ref: ForwardedRef<MarkedInputHandler>;
+optional ref: Ref<MarkedInputHandler>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:29](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L29)
-
-Ref to handler
+Defined in: [react/markput/src/components/MarkedInput.tsx:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L21)
 
 ***
 
@@ -172,15 +148,9 @@ Ref to handler
 optional showOverlayOn: OverlayTrigger;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:60](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L60)
+Defined in: [react/markput/src/components/MarkedInput.tsx:29](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L29)
 
 Events that trigger overlay display
-
-#### Default
-
-```ts
-'change'
-```
 
 #### Overrides
 
@@ -196,15 +166,7 @@ CoreMarkputProps.showOverlayOn
 optional slotProps: SlotProps;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:55](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L55)
-
-Props to pass to slot components
-
-#### Example
-
-```ts
-slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:28](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L28)
 
 ***
 
@@ -214,15 +176,7 @@ slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
 optional slots: Slots;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:49](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L49)
-
-Override internal components using slots
-
-#### Example
-
-```ts
-slots={{ container: 'div', span: 'span' }}
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L27)
 
 ***
 
@@ -232,9 +186,7 @@ slots={{ container: 'div', span: 'span' }}
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:43](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L43)
-
-Additional style
+Defined in: [react/markput/src/components/MarkedInput.tsx:26](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L26)
 
 ***
 

@@ -27,6 +27,9 @@ export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
 export {CloseOverlayController, TriggerController, CheckTriggerController} from './src/features/overlay'
 export {FocusController} from './src/features/focus'
+export {KeyDownController} from './src/features/input'
+export {SystemListenerController} from './src/features/events'
+export {TextSelectionController} from './src/features/selection'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Navigation & Input

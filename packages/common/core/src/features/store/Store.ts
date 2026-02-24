@@ -1,10 +1,12 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
-import {EventBus, SystemEvent} from '../events'
+import {EventBus, SystemEvent, SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {CheckTriggerController, CloseOverlayController, TriggerController} from '../overlay'
 import {FocusController} from '../focus'
+import {KeyDownController} from '../input'
+import {TextSelectionController} from '../selection'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	// Utils domain
@@ -17,6 +19,9 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		trigger: new TriggerController(this),
 		checkTrigger: new CheckTriggerController(this),
 		focus: new FocusController(this),
+		keydown: new KeyDownController(this),
+		system: new SystemListenerController(this),
+		textSelection: new TextSelectionController(this),
 	}
 
 	// Config domain

@@ -1,62 +1,48 @@
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
-import {Featurer} from './Featurer'
 import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
 import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
+import {useMarkedInputHandler} from '../features/useMarkedInputHandler'
+import {useSystemListeners} from '../features/events/useSystemListeners'
+import {useValueParser} from '../features/parsing/useValueParser'
+import {useFocusedNode} from '../features/focus/useFocusedNode'
+import {useKeyDown} from '../features/events/useKeyDown'
+import {useFocusOnEmptyInput} from '../features/focus/useFocusOnEmptyInput'
+import {useFocusRecovery} from '../features/focus/useFocusRecovery'
+import {useTrigger} from '../features/overlay/useTrigger'
+import {useCheckTrigger} from '../features/overlay/useCheckTrigger'
+import {useCloseOverlayByEsc} from '../features/events/useCloseOverlayByEsc'
+import {useCloseOverlayByOutsideClick} from '../features/events/useCloseOverlayByOutsideClick'
+import {useTextSelection} from '../features/focus/useTextSelection'
 
-/**
- * Props for MarkedInput component.
- *
- * @template TMarkProps - Type of props for the global Mark component
- * @template TOverlayProps - Type of props for the global Overlay component
- *
- * @example
- * ```typescript
- * <MarkedInput<ChipProps>
- *   Mark={Chip}
- *   options={[{
- *     markup: '@[__value__]',
- *     mark: { label: 'Click me' }
- *   }]}
- * />
- * ```
- */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
-	/** Ref to handler */
 	ref?: Ref<MarkedInputHandler>
-	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
-	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
 	Overlay?: ComponentType<TOverlayProps>
-	/**
-	 * Configuration options for markups and overlays.
-	 * Each option can specify its own slot component via mark.slot or overlay.slot.
-	 * Falls back to global Mark/Overlay components when not specified.
-	 */
 	options?: Option<TMarkProps, TOverlayProps>[]
-	/** Additional classes */
 	className?: string
-	/** Additional style */
 	style?: CSSProperties
-	/**
-	 * Override internal components using slots
-	 * @example
-	 * slots={{ container: 'div', span: 'span' }}
-	 */
 	slots?: Slots
-	/**
-	 * Props to pass to slot components
-	 * @example
-	 * slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
-	 */
 	slotProps?: SlotProps
-	/**
-	 * Events that trigger overlay display
-	 * @default 'change'
-	 */
 	showOverlayOn?: OverlayTrigger
+}
+
+function Features({ref}: {ref?: Ref<MarkedInputHandler>}) {
+	useMarkedInputHandler(ref)
+	useSystemListeners()
+	useValueParser()
+	useFocusedNode()
+	useKeyDown()
+	useFocusOnEmptyInput()
+	useFocusRecovery()
+	useTrigger()
+	useCheckTrigger()
+	useCloseOverlayByEsc()
+	useCloseOverlayByOutsideClick()
+	useTextSelection()
+	return null
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
@@ -67,7 +53,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		<StoreProvider props={rest as MarkedInputProps}>
 			<Container />
 			<Whisper />
-			<Featurer inRef={ref} />
+			<Features ref={ref} />
 		</StoreProvider>
 	)
 }

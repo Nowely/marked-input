@@ -31,3 +31,5 @@ export function selectAllText(store: Store, event: KeyboardEvent): void {
 		store.selecting = 'all'
 	}
 }
+
+export {TextSelectionController} from './TextSelectionController'
