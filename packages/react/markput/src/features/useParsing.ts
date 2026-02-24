@@ -1,10 +1,12 @@
 import {useEffect, useRef} from 'react'
-import {useListener} from '../../lib/hooks/useListener'
-import {useStore} from '../../lib/hooks/useStore'
+import {useListener} from '../lib/hooks/useListener'
+import {useStore} from '../lib/hooks/useStore'
 import {getTokensByUI, getTokensByValue, Parser, parseWithParser, SystemEvent} from '@markput/core'
 
-export const useValueParser = () => {
+export function useParsing() {
 	const store = useStore()
+
+	// useValueParser
 	const isMounted = useRef(false)
 	const {value, options} = useStore(
 		store => ({

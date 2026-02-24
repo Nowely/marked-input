@@ -5,17 +5,10 @@ import {StoreProvider} from './StoreProvider'
 import {Whisper} from './Whisper'
 import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
 import {useMarkedInputHandler} from '../features/useMarkedInputHandler'
-import {useSystemListeners} from '../features/events/useSystemListeners'
-import {useValueParser} from '../features/parsing/useValueParser'
-import {useFocusedNode} from '../features/focus/useFocusedNode'
-import {useKeyDown} from '../features/events/useKeyDown'
-import {useFocusOnEmptyInput} from '../features/focus/useFocusOnEmptyInput'
-import {useFocusRecovery} from '../features/focus/useFocusRecovery'
-import {useTrigger} from '../features/overlay/useTrigger'
-import {useCheckTrigger} from '../features/overlay/useCheckTrigger'
-import {useCloseOverlayByEsc} from '../features/events/useCloseOverlayByEsc'
-import {useCloseOverlayByOutsideClick} from '../features/events/useCloseOverlayByOutsideClick'
-import {useTextSelection} from '../features/focus/useTextSelection'
+import {useEvents} from '../features/useEvents'
+import {useFocus} from '../features/useFocus'
+import {useOverlayFeature} from '../features/useOverlayFeature'
+import {useParsing} from '../features/useParsing'
 
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	ref?: Ref<MarkedInputHandler>
@@ -31,17 +24,10 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 
 function Features({ref}: {ref?: Ref<MarkedInputHandler>}) {
 	useMarkedInputHandler(ref)
-	useSystemListeners()
-	useValueParser()
-	useFocusedNode()
-	useKeyDown()
-	useFocusOnEmptyInput()
-	useFocusRecovery()
-	useTrigger()
-	useCheckTrigger()
-	useCloseOverlayByEsc()
-	useCloseOverlayByOutsideClick()
-	useTextSelection()
+	useEvents()
+	useParsing()
+	useFocus()
+	useOverlayFeature()
 	return null
 }
 
