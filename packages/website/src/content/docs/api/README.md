@@ -5,11 +5,14 @@ prev: false
 title: "@markput/react"
 ---
 
+## Classes
+
+- [MarkHandler](/api/classes/markhandler/)
+
 ## Interfaces
 
 - [MarkedInputHandler](/api/interfaces/markedinputhandler/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
-- [MarkHandler](/api/interfaces/markhandler/)
 - [MarkProps](/api/interfaces/markprops/)
 - [MarkToken](/api/interfaces/marktoken/)
 - [Option](/api/interfaces/option/)

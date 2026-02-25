@@ -32,6 +32,13 @@ export {SystemListenerController} from './src/features/events'
 export {TextSelectionController} from './src/features/selection'
 export {Caret, TriggerFinder} from './src/features/caret'
 
+// Feature Management
+export {FeatureManager, asFeature, type Feature} from './src/features/FeatureManager'
+export {createCoreFeatures, createOverlayFeatures} from './src/features/coreFeatures'
+
+// Mark Handler
+export {MarkHandler, type RefAccessor} from './src/features/mark'
+
 // Navigation & Input
 export {shiftFocusPrev, shiftFocusNext} from './src/features/navigation'
 export {isFullSelection, selectAllText} from './src/features/selection'
