@@ -38,9 +38,6 @@ export function useParsing() {
 	useListener(
 		SystemEvent.Parse,
 		() => {
-			// Skip if recovery exists - tokens are already correct and we need to preserve
-			// object identity for React key stability during focus recovery
-			if (store.recovery) return
 			store.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]

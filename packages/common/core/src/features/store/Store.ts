@@ -8,20 +8,22 @@ import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {TextSelectionController} from '../selection'
 
+const IMMUTABLE_KEYS = new Set(['bus', 'refs', 'nodes', 'key', 'controllers'])
+
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	// Utils domain
 	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
 
 	// Controllers domain
-	readonly controllers = {
-		closeOverlay: new CloseOverlayController(this),
-		trigger: new TriggerController(this),
-		checkTrigger: new CheckTriggerController(this),
-		focus: new FocusController(this),
-		keydown: new KeyDownController(this),
-		system: new SystemListenerController(this),
-		textSelection: new TextSelectionController(this),
+	declare readonly controllers: {
+		closeOverlay: CloseOverlayController
+		trigger: TriggerController
+		checkTrigger: CheckTriggerController
+		focus: FocusController
+		keydown: KeyDownController
+		system: SystemListenerController
+		textSelection: TextSelectionController
 	}
 
 	// Config domain
@@ -33,10 +35,11 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	previousValue?: string
 
 	// Navigation domain
-	readonly nodes = {
-		focus: new NodeProxy(undefined, this),
-		input: new NodeProxy(undefined, this),
+	declare readonly nodes: {
+		focus: NodeProxy
+		input: NodeProxy
 	}
+
 	recovery?: Recovery
 
 	// UI domain
@@ -59,26 +62,49 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		this.props = props
 	}
 
-	static create = <TProps extends CoreMarkputProps>(props: TProps) => new Proxy(new Store<TProps>(props), {set})
-}
+	static create = <TProps extends CoreMarkputProps>(props: TProps): Store<TProps> => {
+		const rawStore = new Store<TProps>(props)
 
-const IMMUTABLE_KEYS = new Set(['bus', 'refs', 'nodes', 'key', 'controllers'])
+		const proxy = new Proxy(rawStore, {
+			set: (target, prop, newValue, receiver) => {
+				if (IMMUTABLE_KEYS.has(String(prop))) {
+					return false
+				}
 
-function set<TProps extends CoreMarkputProps, K extends keyof Store<TProps>>(
-	target: Store<TProps>,
-	prop: K,
-	newValue: Store<TProps>[K],
-	receiver: Store<TProps>
-): boolean {
-	if (IMMUTABLE_KEYS.has(String(prop))) {
-		return false
+				if (target[prop as keyof Store<TProps>] === newValue) {
+					return true
+				}
+
+				;(target as any)[prop] = newValue
+				target.bus.send(SystemEvent.STORE_UPDATED, receiver)
+				return true
+			},
+		}) as Store<TProps>
+
+		// Initialize nodes and controllers with the Proxy, not the raw store
+		Object.defineProperty(proxy, 'nodes', {
+			value: {
+				focus: new NodeProxy(undefined, proxy),
+				input: new NodeProxy(undefined, proxy),
+			},
+			writable: false,
+			configurable: false,
+		})
+
+		Object.defineProperty(proxy, 'controllers', {
+			value: {
+				closeOverlay: new CloseOverlayController(proxy),
+				trigger: new TriggerController(proxy),
+				checkTrigger: new CheckTriggerController(proxy),
+				focus: new FocusController(proxy),
+				keydown: new KeyDownController(proxy),
+				system: new SystemListenerController(proxy),
+				textSelection: new TextSelectionController(proxy),
+			},
+			writable: false,
+			configurable: false,
+		})
+
+		return proxy
 	}
-
-	if (target[prop] === newValue) {
-		return true
-	}
-
-	target[prop] = newValue
-	target.bus.send(SystemEvent.STORE_UPDATED, receiver)
-	return true
 }
