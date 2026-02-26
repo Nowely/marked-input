@@ -13,7 +13,7 @@ interface StoreProviderProps {
 
 export const StoreProvider = ({props, children}: StoreProviderProps) => {
 	const storeProps = normalizeProps(props)
-	const [store] = useState(() => Store.create(storeProps))
+	const [store] = useState(() => new Store(storeProps))
 
 	useEffect(() => {
 		store.props = storeProps

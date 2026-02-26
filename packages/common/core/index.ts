@@ -19,6 +19,7 @@ export {
 export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
 
 // Utilities
+export {Signal} from './src/shared/classes/Signal'
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'

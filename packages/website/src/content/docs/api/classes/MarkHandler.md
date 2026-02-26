@@ -5,7 +5,7 @@ prev: false
 title: "MarkHandler"
 ---
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:10
+Defined in: [common/core/src/features/mark/MarkHandler.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L10)
 
 ## Type Parameters
 
@@ -21,7 +21,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:10
 new MarkHandler<T>(param): MarkHandler<T>;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:16
+Defined in: [common/core/src/features/mark/MarkHandler.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L16)
 
 #### Parameters
 
@@ -40,7 +40,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:16
 
 | Property | Modifier | Type | Defined in |
 | ------ | ------ | ------ | ------ |
-| <a id="property-ref"></a> `ref` | `readonly` | `RefAccessor`\<`T`\> | common/core/src/features/mark/MarkHandler.ts:11 |
+| <a id="property-ref"></a> `ref` | `readonly` | `RefAccessor`\<`T`\> | [common/core/src/features/mark/MarkHandler.ts:11](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L11) |
 
 ## Accessors
 
@@ -52,7 +52,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:16
 get content(): string;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:30
+Defined in: [common/core/src/features/mark/MarkHandler.ts:30](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L30)
 
 ##### Returns
 
@@ -64,7 +64,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:30
 set content(value): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:34
+Defined in: [common/core/src/features/mark/MarkHandler.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L34)
 
 ##### Parameters
 
@@ -86,7 +86,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:34
 get depth(): number;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:57
+Defined in: [common/core/src/features/mark/MarkHandler.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L57)
 
 ##### Returns
 
@@ -102,7 +102,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:57
 get hasChildren(): boolean;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:61
+Defined in: [common/core/src/features/mark/MarkHandler.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L61)
 
 ##### Returns
 
@@ -118,7 +118,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:61
 get meta(): string | undefined;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:48
+Defined in: [common/core/src/features/mark/MarkHandler.ts:48](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L48)
 
 ##### Returns
 
@@ -130,7 +130,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:48
 set meta(v): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:52
+Defined in: [common/core/src/features/mark/MarkHandler.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L52)
 
 ##### Parameters
 
@@ -152,7 +152,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:52
 get parent(): MarkToken | undefined;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:65
+Defined in: [common/core/src/features/mark/MarkHandler.ts:65](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L65)
 
 ##### Returns
 
@@ -168,7 +168,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:65
 get readOnly(): boolean | undefined;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:22
+Defined in: [common/core/src/features/mark/MarkHandler.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L22)
 
 ##### Returns
 
@@ -180,7 +180,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:22
 set readOnly(value): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:26
+Defined in: [common/core/src/features/mark/MarkHandler.ts:26](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L26)
 
 ##### Parameters
 
@@ -202,7 +202,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:26
 get tokens(): Token[];
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:69
+Defined in: [common/core/src/features/mark/MarkHandler.ts:69](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L69)
 
 ##### Returns
 
@@ -218,7 +218,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:69
 get value(): string | undefined;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:39
+Defined in: [common/core/src/features/mark/MarkHandler.ts:39](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L39)
 
 ##### Returns
 
@@ -230,7 +230,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:39
 set value(v): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:43
+Defined in: [common/core/src/features/mark/MarkHandler.ts:43](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L43)
 
 ##### Parameters
 
@@ -250,7 +250,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:43
 change(props): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:73
+Defined in: [common/core/src/features/mark/MarkHandler.ts:73](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L73)
 
 #### Parameters
 
@@ -273,7 +273,7 @@ Defined in: common/core/src/features/mark/MarkHandler.ts:73
 remove(): void;
 ```
 
-Defined in: common/core/src/features/mark/MarkHandler.ts:82
+Defined in: [common/core/src/features/mark/MarkHandler.ts:82](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L82)
 
 #### Returns
 
