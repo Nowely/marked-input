@@ -22,6 +22,12 @@ export function getTokensByValue(store: Store): Token[] {
 	} = store
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.previousValue, value)
+
+	if (!gap.left && !gap.right) {
+		store.previousValue = value
+		return store.tokens
+	}
+
 	store.previousValue = value
 
 	switch (true) {

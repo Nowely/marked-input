@@ -1,4 +1,3 @@
-import {SystemEvent} from '../events'
 import type {OverlayTrigger} from '../../shared/types'
 import type {Store} from '../store/Store'
 
@@ -18,7 +17,7 @@ export class CheckTriggerController {
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.bus.send(SystemEvent.CheckTrigger)
+				this.store.$$.checkTrigger.emit()
 			}
 		}
 
@@ -30,12 +29,12 @@ export class CheckTriggerController {
 			document.removeEventListener('selectionchange', this.#selectionChangeHandler!)
 		}
 
-		this.#changeUnsubscribe = this.store.bus.on(SystemEvent.Change, () => {
+		this.#changeUnsubscribe = this.store.$$.change.subscribe(() => {
 			const showOverlayOn = this.store.props.showOverlayOn!
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.bus.send(SystemEvent.CheckTrigger)
+				this.store.$$.checkTrigger.emit()
 			}
 		})
 

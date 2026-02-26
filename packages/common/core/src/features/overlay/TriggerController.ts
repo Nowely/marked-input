@@ -1,4 +1,3 @@
-import {SystemEvent} from '../events'
 import {TriggerFinder} from '../caret'
 import type {OverlayMatch} from '../../shared/types'
 import type {Store} from '../store/Store'
@@ -15,11 +14,11 @@ export class TriggerController {
 	enable<T>(getTrigger: TriggerExtractor<T>, onMatch: OverlayMatchHandler) {
 		if (this.#unsubscribeClear) return
 
-		this.#unsubscribeClear = this.store.bus.on(SystemEvent.ClearTrigger, () => {
+		this.#unsubscribeClear = this.store.$$.clearTrigger.subscribe(() => {
 			onMatch(undefined)
 		})
 
-		this.#unsubscribeCheck = this.store.bus.on(SystemEvent.CheckTrigger, () => {
+		this.#unsubscribeCheck = this.store.$$.checkTrigger.subscribe(() => {
 			const match = TriggerFinder.find(this.store.props.options as T[], getTrigger) as OverlayMatch | undefined
 			onMatch(match)
 		})

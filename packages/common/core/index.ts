@@ -18,13 +18,14 @@ export {
 } from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
 
+// Reactive system
+export {Reactive, createReactiveProxy} from './src/shared/classes/Reactive'
+
 // Utilities
-export {Signal} from './src/shared/classes/Signal'
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
-export {SystemEvent} from './src/features/events'
 export {Store} from './src/features/store'
 export {CloseOverlayController, TriggerController, CheckTriggerController} from './src/features/overlay'
 export {FocusController} from './src/features/focus'

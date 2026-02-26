@@ -1,22 +1,17 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
-import {Signal} from '../../shared/classes/Signal'
+import {createReactiveProxy, Reactive} from '../../shared/classes/Reactive'
 import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
-import {EventBus, SystemListenerController} from '../events'
+import {SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {CheckTriggerController, CloseOverlayController, TriggerController} from '../overlay'
 import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {TextSelectionController} from '../selection'
 
-type ReactiveKeys = 'tokens' | 'parser' | 'previousValue' | 'recovery' | 'selecting' | 'overlayMatch'
-
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
-	// Utils domain
-	readonly bus = new EventBus()
 	readonly key = new KeyGenerator()
 
-	// Controllers domain
 	declare readonly controllers: {
 		closeOverlay: CloseOverlayController
 		trigger: TriggerController
@@ -27,33 +22,29 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		textSelection: TextSelectionController
 	}
 
-	// Config domain
 	props: TProps
 
-	// Reactive signals (internal)
-	readonly #signals: {
-		tokens: Signal<Token[]>
-		parser: Signal<Parser | undefined>
-		previousValue: Signal<string | undefined>
-		recovery: Signal<Recovery | undefined>
-		selecting: Signal<'drag' | 'all' | undefined>
-		overlayMatch: Signal<OverlayMatch | undefined>
+	readonly #r = {
+		tokens: new Reactive<Token[]>([]),
+		parser: new Reactive<Parser | undefined>(undefined),
+		previousValue: new Reactive<string | undefined>(undefined),
+		recovery: new Reactive<Recovery | undefined>(undefined),
+		selecting: new Reactive<'drag' | 'all' | undefined>(undefined),
+		overlayMatch: new Reactive<OverlayMatch | undefined>(undefined),
+		change: Reactive.event<void>(),
+		parse: Reactive.event<void>(),
+		delete: Reactive.event<{token: Token}>(),
+		select: Reactive.event<{mark: Token; match: OverlayMatch}>(),
+		clearTrigger: Reactive.event<void>(),
+		checkTrigger: Reactive.event<void>(),
 	}
+
+	readonly $ = createReactiveProxy(this.#r)
+	readonly $$ = this.#r
 
 	constructor(props: TProps) {
 		this.props = props
 
-		// Initialize signals
-		this.#signals = {
-			tokens: new Signal<Token[]>([]),
-			parser: new Signal<Parser | undefined>(undefined),
-			previousValue: new Signal<string | undefined>(undefined),
-			recovery: new Signal<Recovery | undefined>(undefined),
-			selecting: new Signal<'drag' | 'all' | undefined>(undefined),
-			overlayMatch: new Signal<OverlayMatch | undefined>(undefined),
-		}
-
-		// Initialize nodes
 		Object.defineProperty(this, 'nodes', {
 			value: {
 				focus: new NodeProxy(undefined, this),
@@ -63,7 +54,6 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 			configurable: false,
 		})
 
-		// Initialize controllers
 		Object.defineProperty(this, 'controllers', {
 			value: {
 				closeOverlay: new CloseOverlayController(this),
@@ -79,42 +69,59 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		})
 	}
 
-	// Document domain - simple getters/setters
 	get tokens(): Token[] {
-		return this.#signals.tokens.get()
+		return this.$.tokens
 	}
 
 	set tokens(value: Token[]) {
-		this.#signals.tokens.set(value)
+		this.$.tokens = value
 	}
 
 	get parser(): Parser | undefined {
-		return this.#signals.parser.get()
+		return this.$.parser
 	}
 
 	set parser(value: Parser | undefined) {
-		this.#signals.parser.set(value)
+		this.$.parser = value
 	}
 
 	get previousValue(): string | undefined {
-		return this.#signals.previousValue.get()
+		return this.$.previousValue
 	}
 
-	// Navigation domain
+	set previousValue(value: string | undefined) {
+		this.$.previousValue = value
+	}
+
+	get recovery(): Recovery | undefined {
+		return this.$.recovery
+	}
+
+	set recovery(value: Recovery | undefined) {
+		this.$.recovery = value
+	}
+
+	get selecting(): 'drag' | 'all' | undefined {
+		return this.$.selecting
+	}
+
+	set selecting(value: 'drag' | 'all' | undefined) {
+		this.$.selecting = value
+	}
+
+	get overlayMatch(): OverlayMatch | undefined {
+		return this.$.overlayMatch
+	}
+
+	set overlayMatch(value: OverlayMatch | undefined) {
+		this.$.overlayMatch = value
+	}
+
 	declare readonly nodes: {
 		focus: NodeProxy
 		input: NodeProxy
 	}
 
-	set previousValue(value: string | undefined) {
-		this.#signals.previousValue.set(value)
-	}
-
-	get recovery(): Recovery | undefined {
-		return this.#signals.recovery.get()
-	}
-
-	// UI domain
 	readonly refs = {
 		container: null as HTMLDivElement | null,
 		overlay: null as HTMLElement | null,
@@ -126,44 +133,15 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		},
 	}
 
-	set recovery(value: Recovery | undefined) {
-		this.#signals.recovery.set(value)
-	}
-
-	get selecting(): 'drag' | 'all' | undefined {
-		return this.#signals.selecting.get()
-	}
-
-	set selecting(value: 'drag' | 'all' | undefined) {
-		this.#signals.selecting.set(value)
-	}
-
-	// Overlay domain
-	get overlayMatch(): OverlayMatch | undefined {
-		return this.#signals.overlayMatch.get()
-	}
-
-	set overlayMatch(value: OverlayMatch | undefined) {
-		this.#signals.overlayMatch.set(value)
-	}
-
-	// Deprecated: Use new Store() instead
 	static create = <TProps extends CoreMarkputProps>(props: TProps): Store<TProps> => {
 		console.warn('Store.create() is deprecated. Use new Store() instead.')
 		return new Store<TProps>(props)
 	}
 
-	// Subscribe to a specific reactive property
-	on<K extends ReactiveKeys>(key: K, callback: (value: any) => void): () => void {
-		const signal = this.#signals[key]
-		return signal.subscribe(callback)
-	}
-
-	// Subscribe to all reactive property changes
 	subscribe(callback: () => void): () => void {
 		const unsubscribers: (() => void)[] = []
-		for (const key of Object.keys(this.#signals) as ReactiveKeys[]) {
-			unsubscribers.push(this.#signals[key].subscribe(() => callback()))
+		for (const key of ['tokens', 'parser', 'previousValue', 'recovery', 'selecting', 'overlayMatch'] as const) {
+			unsubscribers.push(this.#r[key].subscribe(() => callback()))
 		}
 		return () => unsubscribers.forEach(unsub => unsub())
 	}

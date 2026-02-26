@@ -1,5 +1,3 @@
-import {SystemEvent} from './constants'
-import type {Token} from '../parsing'
 import {annotate, toString} from '../parsing'
 import {createNewSpan} from '../text-manipulation'
 import type {Store} from '../store/Store'
@@ -14,7 +12,7 @@ export class SystemListenerController {
 	enable() {
 		if (this.#changeUnsubscribe) return
 
-		this.#changeUnsubscribe = this.store.bus.on(SystemEvent.Change, () => {
+		this.#changeUnsubscribe = this.store.$$.change.subscribe(() => {
 			const {onChange} = this.store.props
 
 			if (!this.store.nodes.focus.target) return
@@ -27,23 +25,27 @@ export class SystemListenerController {
 			}
 
 			onChange?.(toString(this.store.tokens))
-			this.store.bus.send(SystemEvent.Parse)
+			this.store.$$.parse.emit()
 		})
 
-		this.#deleteUnsubscribe = this.store.bus.on(SystemEvent.Delete, ({token}: {token: Token}) => {
+		this.#deleteUnsubscribe = this.store.$$.delete.subscribe(data => {
+			if (!data) return
+			const {token} = data
 			const {onChange} = this.store.props
 
-			this.store.tokens.splice(this.store.tokens.indexOf(token), 1)
+			const index = this.store.tokens.indexOf(token)
+			this.store.tokens = this.store.tokens.toSpliced(index, 1)
 
 			onChange?.(toString(this.store.tokens))
 		})
 
-		this.#selectUnsubscribe = this.store.bus.on(SystemEvent.Select, event => {
+		this.#selectUnsubscribe = this.store.$$.select.subscribe(event => {
+			if (!event) return
 			const {Mark, onChange} = this.store.props as any
 			const {
 				mark,
 				match: {option, span, index, source},
-			} = event as any
+			} = event
 
 			const annotation =
 				mark.type === 'mark'
@@ -71,7 +73,7 @@ export class SystemListenerController {
 				this.store.nodes.focus.target = this.store.nodes.input.target
 				this.store.nodes.input.clear()
 				onChange?.(toString(this.store.tokens))
-				this.store.bus.send(SystemEvent.Parse)
+				this.store.$$.parse.emit()
 			}
 		})
 	}

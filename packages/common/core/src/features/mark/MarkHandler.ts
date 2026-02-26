@@ -1,7 +1,6 @@
 import type {MarkToken, Token} from '../parsing'
 import {findToken} from '../parsing'
 import type {Store} from '../store/Store'
-import {SystemEvent} from '../events'
 
 export interface RefAccessor<T> {
 	current: T | null
@@ -79,9 +78,9 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 		this.#emitChange()
 	}
 
-	remove = () => this.#store.bus.send(SystemEvent.Delete, {token: this.#token})
+	remove = () => this.#store.$$.delete.emit({token: this.#token})
 
 	#emitChange(): void {
-		this.#store.bus.send(SystemEvent.Change, {node: this.#token})
+		this.#store.$$.change.emit()
 	}
 }

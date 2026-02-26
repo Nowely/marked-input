@@ -14,9 +14,9 @@ export function useStore<T>(selector?: (store: Store<MarkedInputProps>) => T, by
 
 	useEffect(() => {
 		return store.subscribe(() => {
-			setValue(value => {
+			setValue(prevValue => {
 				const newValue = selector?.(store)
-				if (byStruct && shallow(value, newValue)) return value
+				if (byStruct && shallow(prevValue, newValue)) return prevValue
 				return newValue
 			})
 		})

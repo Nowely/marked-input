@@ -1,5 +1,4 @@
 import {KEYBOARD} from '../../shared/constants'
-import {SystemEvent} from '../events'
 import type {Store} from '../store/Store'
 
 export class CloseOverlayController {
@@ -13,7 +12,7 @@ export class CloseOverlayController {
 
 		this.#escHandler = e => {
 			if (e.key === KEYBOARD.ESC) {
-				this.store.bus.send(SystemEvent.ClearTrigger)
+				this.store.$$.clearTrigger.emit()
 			}
 		}
 
@@ -21,7 +20,7 @@ export class CloseOverlayController {
 			const target = e.target as HTMLElement | null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
-			this.store.bus.send(SystemEvent.ClearTrigger)
+			this.store.$$.clearTrigger.emit()
 		}
 
 		window.addEventListener('keydown', this.#escHandler)
