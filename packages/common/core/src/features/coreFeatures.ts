@@ -16,9 +16,7 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 export const createOverlayFeatures = (store: Store): FeatureManager => {
 	const manager = new FeatureManager()
 
-	manager
-		.register(asFeature('checkTrigger', store.controllers.checkTrigger))
-		.register(asFeature('closeOverlay', store.controllers.closeOverlay))
+	manager.register(asFeature('closeOverlay', store.controllers.closeOverlay))
 
 	return manager
 }

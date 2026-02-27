@@ -18,7 +18,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const match = useStore(store => store.overlayMatch!)
+	const match = useStore(store => store.state.overlayMatch!)
 	const style = Caret.getAbsolutePosition()
 
 	const close = useCallback(() => store.events.clearTrigger.emit(), [])

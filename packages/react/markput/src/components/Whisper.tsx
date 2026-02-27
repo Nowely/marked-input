@@ -13,8 +13,10 @@ import {Suggestions} from './Suggestions'
  */
 export const Whisper = memo(() => {
 	const store = useStore()
-	const overlayMatch = useStore(state => state.overlayMatch)
-	const key = useStore(state => (state.overlayMatch ? state.key.get(state.overlayMatch.option) : undefined))
+	const overlayMatch = useStore(state => state.state.overlayMatch)
+	const key = useStore(state =>
+		state.state.overlayMatch ? state.key.get(state.state.overlayMatch.option) : undefined
+	)
 
 	// Resolve Overlay component and props with Suggestions as default fallback
 	const [Overlay, props] = useSlot('overlay', overlayMatch?.option, undefined, Suggestions)

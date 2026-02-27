@@ -40,9 +40,9 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
 		if (markups && markups.some(Boolean)) {
-			store.parser = new Parser(markups)
+			store.state.parser = new Parser(markups)
 		} else {
-			store.parser = undefined
+			store.state.parser = undefined
 		}
 
 		if (isMounted.current) {
@@ -51,7 +51,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		}
 
 		const inputValue = value ?? store.props.defaultValue ?? ''
-		store.tokens = parseWithParser(store, inputValue)
+		store.state.tokens = parseWithParser(store, inputValue)
 
 		isMounted.current = true
 	}, [value, options])
@@ -59,13 +59,13 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	useListener(
 		store.events.parse,
 		() => {
-			if (store.recovery) return
-			store.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)
+			if (store.state.recovery) return
+			store.state.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)
 		},
 		[]
 	)
 
-	const tokens = useStore(s => s.tokens)
+	const tokens = useStore(s => s.state.tokens)
 	useEffect(
 		() => {
 			store.controllers.focus.recover()
@@ -74,19 +74,14 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	)
 
 	useEffect(() => {
-		store.controllers.trigger.enable<Option>(
+		store.controllers.overlayTrigger.enable<Option>(
 			(option: Option) => option.overlay?.trigger,
-			match => (store.overlayMatch = match)
+			match => (store.state.overlayMatch = match)
 		)
-		return () => store.controllers.trigger.disable()
+		return () => store.controllers.overlayTrigger.disable()
 	}, [])
 
-	useEffect(() => {
-		store.controllers.checkTrigger.enable()
-		return () => store.controllers.checkTrigger.disable()
-	}, [])
-
-	const overlayMatch = useStore(s => s.overlayMatch, true)
+	const overlayMatch = useStore(s => s.state.overlayMatch, true)
 	useEffect(() => {
 		if (!overlayMatch) return
 		store.controllers.closeOverlay.enable()

@@ -10,10 +10,10 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const placeIndex = placeMap[place]
 	const {focus} = store.nodes
 
-	const [span1, , span2] = store.tokens.splice(focus.index - placeIndex, 3)
+	const [span1, , span2] = store.state.tokens.splice(focus.index - placeIndex, 3)
 	const content1 = span1.type === 'text' ? span1.content : span1.content
 	const content2 = span2.type === 'text' ? span2.content : span2.content
-	store.tokens = store.tokens.toSpliced(focus.index - placeIndex, 0, {
+	store.state.tokens = store.state.tokens.toSpliced(focus.index - placeIndex, 0, {
 		type: 'text',
 		content: content1 + content2,
 		position: {
@@ -28,7 +28,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	}
 	const caret = caretAnchor.length
 
-	store.recovery = {anchor: caretAnchor.prev, caret}
+	store.state.recovery = {anchor: caretAnchor.prev, caret}
 
-	store.props.onChange?.(toString(store.tokens))
+	store.props.onChange?.(toString(store.state.tokens))
 }

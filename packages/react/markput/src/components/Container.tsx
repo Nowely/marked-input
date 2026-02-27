@@ -9,7 +9,7 @@ export const Container = memo(() => {
 		s => ({
 			className: s.props.className,
 			style: s.props.style,
-			tokens: s.tokens,
+			tokens: s.state.tokens,
 			events: s.events,
 			key: s.key,
 			refs: s.refs,

@@ -17,14 +17,14 @@ export class SystemListenerController {
 
 			if (!this.store.nodes.focus.target) return
 
-			const token = this.store.tokens[this.store.nodes.focus.index]
+			const token = this.store.state.tokens[this.store.nodes.focus.index]
 			if (token.type === 'text') {
 				token.content = this.store.nodes.focus.content
 			} else if (token.type === 'mark') {
 				token.value = this.store.nodes.focus.content
 			}
 
-			onChange?.(toString(this.store.tokens))
+			onChange?.(toString(this.store.state.tokens))
 			this.store.events.parse.emit()
 		})
 
@@ -33,10 +33,10 @@ export class SystemListenerController {
 			const {token} = data
 			const {onChange} = this.store.props
 
-			const index = this.store.tokens.indexOf(token)
-			this.store.tokens = this.store.tokens.toSpliced(index, 1)
+			const index = this.store.state.tokens.indexOf(token)
+			this.store.state.tokens = this.store.state.tokens.toSpliced(index, 1)
 
-			onChange?.(toString(this.store.tokens))
+			onChange?.(toString(this.store.state.tokens))
 		})
 
 		this.#selectUnsubscribe = this.store.events.select.subscribe(event => {
@@ -59,20 +59,20 @@ export class SystemListenerController {
 
 			const newSpan = createNewSpan(span, annotation, index, source)
 
-			this.store.recovery = Mark
+			this.store.state.recovery = Mark
 				? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
 				: {caret: index + annotation.length, anchor: this.store.nodes.input}
 
 			if (this.store.nodes.input.target) {
 				this.store.nodes.input.content = newSpan
-				const inputToken = this.store.tokens[this.store.nodes.input.index]
+				const inputToken = this.store.state.tokens[this.store.nodes.input.index]
 				if (inputToken.type === 'text') {
 					inputToken.content = newSpan
 				}
 
 				this.store.nodes.focus.target = this.store.nodes.input.target
 				this.store.nodes.input.clear()
-				onChange?.(toString(this.store.tokens))
+				onChange?.(toString(this.store.state.tokens))
 				this.store.events.parse.emit()
 			}
 		})
