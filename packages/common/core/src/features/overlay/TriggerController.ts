@@ -14,11 +14,11 @@ export class TriggerController {
 	enable<T>(getTrigger: TriggerExtractor<T>, onMatch: OverlayMatchHandler) {
 		if (this.#unsubscribeClear) return
 
-		this.#unsubscribeClear = this.store.$$.clearTrigger.subscribe(() => {
+		this.#unsubscribeClear = this.store.events.clearTrigger.subscribe(() => {
 			onMatch(undefined)
 		})
 
-		this.#unsubscribeCheck = this.store.$$.checkTrigger.subscribe(() => {
+		this.#unsubscribeCheck = this.store.events.checkTrigger.subscribe(() => {
 			const match = TriggerFinder.find(this.store.props.options as T[], getTrigger) as OverlayMatch | undefined
 			onMatch(match)
 		})

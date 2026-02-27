@@ -21,7 +21,7 @@ export function useOverlay(): OverlayHandler {
 	const match = useStore(store => store.overlayMatch!)
 	const style = Caret.getAbsolutePosition()
 
-	const close = useCallback(() => store.$$.clearTrigger.emit(), [])
+	const close = useCallback(() => store.events.clearTrigger.emit(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			const mark: Token = {
@@ -37,8 +37,8 @@ export function useOverlay(): OverlayHandler {
 				children: [],
 				nested: undefined,
 			}
-			store.$$.select.emit({mark, match})
-			store.$$.clearTrigger.emit()
+			store.events.select.emit({mark, match})
+			store.events.clearTrigger.emit()
 		},
 		[match]
 	)

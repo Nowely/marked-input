@@ -46,7 +46,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		}
 
 		if (isMounted.current) {
-			store.$$.parse.emit()
+			store.events.parse.emit()
 			return
 		}
 
@@ -57,7 +57,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	}, [value, options])
 
 	useListener(
-		store.$$.parse,
+		store.events.parse,
 		() => {
 			if (store.recovery) return
 			store.tokens = store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store)

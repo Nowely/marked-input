@@ -12,7 +12,7 @@ export class SystemListenerController {
 	enable() {
 		if (this.#changeUnsubscribe) return
 
-		this.#changeUnsubscribe = this.store.$$.change.subscribe(() => {
+		this.#changeUnsubscribe = this.store.events.change.subscribe(() => {
 			const {onChange} = this.store.props
 
 			if (!this.store.nodes.focus.target) return
@@ -25,10 +25,10 @@ export class SystemListenerController {
 			}
 
 			onChange?.(toString(this.store.tokens))
-			this.store.$$.parse.emit()
+			this.store.events.parse.emit()
 		})
 
-		this.#deleteUnsubscribe = this.store.$$.delete.subscribe(data => {
+		this.#deleteUnsubscribe = this.store.events.delete.subscribe(data => {
 			if (!data) return
 			const {token} = data
 			const {onChange} = this.store.props
@@ -39,7 +39,7 @@ export class SystemListenerController {
 			onChange?.(toString(this.store.tokens))
 		})
 
-		this.#selectUnsubscribe = this.store.$$.select.subscribe(event => {
+		this.#selectUnsubscribe = this.store.events.select.subscribe(event => {
 			if (!event) return
 			const {Mark, onChange} = this.store.props as any
 			const {
@@ -73,7 +73,7 @@ export class SystemListenerController {
 				this.store.nodes.focus.target = this.store.nodes.input.target
 				this.store.nodes.input.clear()
 				onChange?.(toString(this.store.tokens))
-				this.store.$$.parse.emit()
+				this.store.events.parse.emit()
 			}
 		})
 	}

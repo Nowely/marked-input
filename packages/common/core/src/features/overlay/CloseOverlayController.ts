@@ -12,7 +12,7 @@ export class CloseOverlayController {
 
 		this.#escHandler = e => {
 			if (e.key === KEYBOARD.ESC) {
-				this.store.$$.clearTrigger.emit()
+				this.store.events.clearTrigger.emit()
 			}
 		}
 
@@ -20,7 +20,7 @@ export class CloseOverlayController {
 			const target = e.target as HTMLElement | null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
-			this.store.$$.clearTrigger.emit()
+			this.store.events.clearTrigger.emit()
 		}
 
 		window.addEventListener('keydown', this.#escHandler)

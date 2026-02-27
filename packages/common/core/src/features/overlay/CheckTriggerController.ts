@@ -17,7 +17,7 @@ export class CheckTriggerController {
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.$$.checkTrigger.emit()
+				this.store.events.checkTrigger.emit()
 			}
 		}
 
@@ -29,12 +29,12 @@ export class CheckTriggerController {
 			document.removeEventListener('selectionchange', this.#selectionChangeHandler!)
 		}
 
-		this.#changeUnsubscribe = this.store.$$.change.subscribe(() => {
+		this.#changeUnsubscribe = this.store.events.change.subscribe(() => {
 			const showOverlayOn = this.store.props.showOverlayOn!
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.$$.checkTrigger.emit()
+				this.store.events.checkTrigger.emit()
 			}
 		})
 

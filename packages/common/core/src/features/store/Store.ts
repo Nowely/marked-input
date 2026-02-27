@@ -1,5 +1,5 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
-import {createReactiveProxy, Reactive} from '../../shared/classes/Reactive'
+import {Reactive} from '../../shared/classes/Reactive'
 import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
 import {SystemListenerController} from '../events'
@@ -24,13 +24,7 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 
 	props: TProps
 
-	readonly #r = {
-		tokens: new Reactive<Token[]>([]),
-		parser: new Reactive<Parser | undefined>(undefined),
-		previousValue: new Reactive<string | undefined>(undefined),
-		recovery: new Reactive<Recovery | undefined>(undefined),
-		selecting: new Reactive<'drag' | 'all' | undefined>(undefined),
-		overlayMatch: new Reactive<OverlayMatch | undefined>(undefined),
+	readonly events = {
 		change: Reactive.event<void>(),
 		parse: Reactive.event<void>(),
 		delete: Reactive.event<{token: Token}>(),
@@ -38,9 +32,14 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		clearTrigger: Reactive.event<void>(),
 		checkTrigger: Reactive.event<void>(),
 	}
-
-	readonly $ = createReactiveProxy(this.#r)
-	readonly $$ = this.#r
+	readonly #state = {
+		tokens: new Reactive<Token[]>([]),
+		parser: new Reactive<Parser | undefined>(undefined),
+		previousValue: new Reactive<string | undefined>(undefined),
+		recovery: new Reactive<Recovery | undefined>(undefined),
+		selecting: new Reactive<'drag' | 'all' | undefined>(undefined),
+		overlayMatch: new Reactive<OverlayMatch | undefined>(undefined),
+	}
 
 	constructor(props: TProps) {
 		this.props = props
@@ -70,51 +69,51 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	}
 
 	get tokens(): Token[] {
-		return this.$.tokens
+		return this.#state.tokens.get()
 	}
 
 	set tokens(value: Token[]) {
-		this.$.tokens = value
+		this.#state.tokens.set(value)
 	}
 
 	get parser(): Parser | undefined {
-		return this.$.parser
+		return this.#state.parser.get()
 	}
 
 	set parser(value: Parser | undefined) {
-		this.$.parser = value
+		this.#state.parser.set(value)
 	}
 
 	get previousValue(): string | undefined {
-		return this.$.previousValue
+		return this.#state.previousValue.get()
 	}
 
 	set previousValue(value: string | undefined) {
-		this.$.previousValue = value
+		this.#state.previousValue.set(value)
 	}
 
 	get recovery(): Recovery | undefined {
-		return this.$.recovery
+		return this.#state.recovery.get()
 	}
 
 	set recovery(value: Recovery | undefined) {
-		this.$.recovery = value
+		this.#state.recovery.set(value)
 	}
 
 	get selecting(): 'drag' | 'all' | undefined {
-		return this.$.selecting
+		return this.#state.selecting.get()
 	}
 
 	set selecting(value: 'drag' | 'all' | undefined) {
-		this.$.selecting = value
+		this.#state.selecting.set(value)
 	}
 
 	get overlayMatch(): OverlayMatch | undefined {
-		return this.$.overlayMatch
+		return this.#state.overlayMatch.get()
 	}
 
 	set overlayMatch(value: OverlayMatch | undefined) {
-		this.$.overlayMatch = value
+		this.#state.overlayMatch.set(value)
 	}
 
 	declare readonly nodes: {
@@ -139,10 +138,7 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	}
 
 	subscribe(callback: () => void): () => void {
-		const unsubscribers: (() => void)[] = []
-		for (const key of ['tokens', 'parser', 'previousValue', 'recovery', 'selecting', 'overlayMatch'] as const) {
-			unsubscribers.push(this.#r[key].subscribe(() => callback()))
-		}
-		return () => unsubscribers.forEach(unsub => unsub())
+		const unsubs = Object.values(this.#state).map(r => r.subscribe(() => callback()))
+		return () => unsubs.forEach(u => u())
 	}
 }

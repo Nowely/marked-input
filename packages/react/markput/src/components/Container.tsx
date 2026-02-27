@@ -5,12 +5,12 @@ import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {className, style, tokens, $$, key, ContainerComponent, containerProps, refs} = useStore(
+	const {className, style, tokens, events, key, ContainerComponent, containerProps, refs} = useStore(
 		s => ({
 			className: s.props.className,
 			style: s.props.style,
 			tokens: s.tokens,
-			$$: s.$$,
+			events: s.events,
 			key: s.key,
 			refs: s.refs,
 			ContainerComponent: resolveSlot('container', s),
@@ -19,7 +19,7 @@ export const Container = memo(() => {
 		true
 	)
 
-	useListener('input', () => $$.change.emit(), [])
+	useListener('input', () => events.change.emit(), [])
 
 	return (
 		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>
