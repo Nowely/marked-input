@@ -11,19 +11,10 @@ import {TextSelectionController} from '../selection'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly key = new KeyGenerator()
-	props: TProps
 
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
 		input: new NodeProxy(undefined, this),
-	}
-
-	readonly controllers = {
-		overlay: new OverlayController(this),
-		focus: new FocusController(this),
-		keydown: new KeyDownController(this),
-		system: new SystemListenerController(this),
-		textSelection: new TextSelectionController(this),
 	}
 
 	readonly state = {
@@ -46,7 +37,13 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		overlay: null as HTMLElement | null,
 	}
 
-	constructor(props: TProps) {
-		this.props = props
+	readonly controllers = {
+		overlay: new OverlayController(this),
+		focus: new FocusController(this),
+		keydown: new KeyDownController(this),
+		system: new SystemListenerController(this),
+		textSelection: new TextSelectionController(this),
 	}
+
+	constructor(public props: TProps) {}
 }
