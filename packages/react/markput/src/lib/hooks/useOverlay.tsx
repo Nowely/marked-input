@@ -4,6 +4,7 @@ import type {OverlayMatch, Token} from '@markput/core'
 import {Caret} from '@markput/core'
 import type {Option} from '../../types'
 import {useStore} from './useStore'
+import {useReactive} from './useReactive'
 
 export interface OverlayHandler {
 	style: {
@@ -18,7 +19,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const match = useStore(store => store.state.overlayMatch.get()!)
+	const match = useReactive(store.state.overlayMatch)!
 	const style = Caret.getAbsolutePosition()
 
 	const close = useCallback(() => store.state.$clearOverlay.emit(), [])

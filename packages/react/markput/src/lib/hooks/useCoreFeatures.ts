@@ -4,6 +4,7 @@ import type {Store} from '@markput/core'
 import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser} from '@markput/core'
 import {useListener} from './useListener'
 import {useStore} from './useStore'
+import {useReactive} from './useReactive'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {
@@ -29,13 +30,9 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		return () => features.disableAll()
 	}, [])
 
-	const {value, options} = useStore(
-		s => ({
-			value: s.props.value,
-			options: s.props.Mark ? s.props.options : undefined,
-		}),
-		true
-	)
+	const value = store.props.value
+	const Mark = store.props.Mark
+	const options = Mark ? store.props.options : undefined
 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
@@ -65,7 +62,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		[]
 	)
 
-	const tokens = useStore(s => s.state.tokens.get())
+	const tokens = useReactive(store.state.tokens)
 	useEffect(
 		() => {
 			store.controllers.focus.recover()
@@ -81,7 +78,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		return () => store.controllers.overlay.disable()
 	}, [])
 
-	const overlayMatch = useStore(s => s.state.overlayMatch.get(), true)
+	const overlayMatch = useReactive(store.state.overlayMatch)
 	useEffect(() => {
 		if (!overlayMatch) return
 		store.controllers.overlay.enableClose()

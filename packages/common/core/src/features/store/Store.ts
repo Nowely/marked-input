@@ -11,7 +11,7 @@ import {TextSelectionController} from '../selection'
 
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly key = new KeyGenerator()
-	props!: TProps
+	props: TProps
 
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
@@ -48,10 +48,5 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 
 	constructor(props: TProps) {
 		this.props = props
-	}
-
-	subscribe(callback: () => void): () => void {
-		const unsubs = Object.values(this.state).map(r => r.subscribe(() => callback()))
-		return () => unsubs.forEach(u => u())
 	}
 }

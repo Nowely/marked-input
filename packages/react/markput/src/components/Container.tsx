@@ -1,23 +1,20 @@
-import {memo} from 'react'
+import {memo, useMemo} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useListener} from '../lib/hooks/useListener'
 import {useStore} from '../lib/hooks/useStore'
+import {useReactive} from '../lib/hooks/useReactive'
 import {Token} from './Token'
 
 export const Container = memo(() => {
 	const store = useStore()
-	const {className, style, tokens, key, ContainerComponent, containerProps, refs} = useStore(
-		s => ({
-			className: s.props.className,
-			style: s.props.style,
-			tokens: s.state.tokens.get(),
-			key: s.key,
-			refs: s.refs,
-			ContainerComponent: resolveSlot('container', s),
-			containerProps: resolveSlotProps('container', s),
-		}),
-		true
-	)
+	const tokens = useReactive(store.state.tokens)
+
+	const className = store.props.className
+	const style = store.props.style
+	const key = store.key
+	const refs = store.refs
+	const ContainerComponent = useMemo(() => resolveSlot('container', store), [store])
+	const containerProps = useMemo(() => resolveSlotProps('container', store), [store])
 
 	useListener('input', () => store.state.$change.emit(), [])
 

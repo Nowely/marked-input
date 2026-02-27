@@ -6,9 +6,6 @@ import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 
 export interface MarkOptions {
-	/**
-	 * @default false
-	 */
 	controlled?: boolean
 }
 
@@ -25,7 +22,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 
 	useUncontrolledInit(ref, options, token as MarkToken)
 
-	const readOnly = useStore(state => state.props.readOnly)
+	const readOnly = store.props.readOnly
 	useEffect(() => {
 		mark.readOnly = readOnly
 	}, [readOnly])

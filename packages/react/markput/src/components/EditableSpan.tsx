@@ -1,18 +1,14 @@
 import type {ClipboardEvent} from 'react'
+import {useMemo} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useMark} from '../lib/hooks/useMark'
 import {useStore} from '../lib/hooks/useStore'
 
-//Editable block - edit text here
 export const EditableSpan = () => {
 	const mark = useMark()
-	const {SpanComponent, spanProps} = useStore(
-		state => ({
-			SpanComponent: resolveSlot('span', state),
-			spanProps: resolveSlotProps('span', state),
-		}),
-		true
-	)
+	const store = useStore()
+	const SpanComponent = useMemo(() => resolveSlot('span', store), [store])
+	const spanProps = useMemo(() => resolveSlotProps('span', store), [store])
 
 	return <SpanComponent {...spanProps} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
 }

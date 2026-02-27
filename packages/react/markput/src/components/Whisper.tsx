@@ -1,15 +1,13 @@
-import {memo, useEffect} from 'react'
+import {memo, useEffect, useMemo} from 'react'
 import {useStore} from '../lib/hooks/useStore'
+import {useReactive} from '../lib/hooks/useReactive'
 import {useSlot} from '../lib/hooks/useSlot'
 import {Suggestions} from './Suggestions'
 
 export const Whisper = memo(() => {
 	const store = useStore()
-	const overlayMatch = useStore(state => state.state.overlayMatch.get())
-	const key = useStore(state => {
-		const match = state.state.overlayMatch.get()
-		return match ? state.key.get(match.option) : undefined
-	})
+	const overlayMatch = useReactive(store.state.overlayMatch)
+	const key = useMemo(() => (overlayMatch ? store.key.get(overlayMatch.option) : undefined), [overlayMatch])
 
 	const [Overlay, props] = useSlot('overlay', overlayMatch?.option, undefined, Suggestions)
 
