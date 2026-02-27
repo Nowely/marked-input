@@ -19,7 +19,7 @@ export {
 export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
 
 // Reactive system
-export {Reactive, createReactiveProxy} from './src/shared/classes/Reactive'
+export {Reactive} from './src/shared/classes/Reactive'
 
 // Utilities
 export {escape} from './src/shared/escape'
@@ -27,7 +27,7 @@ export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
 export {Store} from './src/features/store'
-export {CloseOverlayController, OverlayTriggerController} from './src/features/overlay'
+export {OverlayController} from './src/features/overlay'
 export {FocusController} from './src/features/focus'
 export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
@@ -36,7 +36,7 @@ export {Caret, TriggerFinder} from './src/features/caret'
 
 // Feature Management
 export {FeatureManager, asFeature, type Feature} from './src/features/FeatureManager'
-export {createCoreFeatures, createOverlayFeatures} from './src/features/coreFeatures'
+export {createCoreFeatures} from './src/features/coreFeatures'
 
 // Mark Handler
 export {MarkHandler, type RefAccessor} from './src/features/mark'

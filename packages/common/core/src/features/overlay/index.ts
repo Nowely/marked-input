@@ -1,2 +1,1 @@
-export {CloseOverlayController} from './CloseOverlayController'
-export {OverlayTriggerController} from './OverlayTriggerController'
+export {OverlayController} from './OverlayController'

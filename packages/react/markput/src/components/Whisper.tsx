@@ -3,22 +3,14 @@ import {useStore} from '../lib/hooks/useStore'
 import {useSlot} from '../lib/hooks/useSlot'
 import {Suggestions} from './Suggestions'
 
-/**
- * Whisper component - renders the overlay component for suggestions
- *
- * This component:
- * 1. Gets overlay match from store
- * 2. Resolves Overlay component using useSlot with Suggestions as fallback
- * 3. Renders the resolved Overlay component when match is available
- */
 export const Whisper = memo(() => {
 	const store = useStore()
-	const overlayMatch = useStore(state => state.state.overlayMatch)
-	const key = useStore(state =>
-		state.state.overlayMatch ? state.key.get(state.state.overlayMatch.option) : undefined
-	)
+	const overlayMatch = useStore(state => state.state.overlayMatch.get())
+	const key = useStore(state => {
+		const match = state.state.overlayMatch.get()
+		return match ? state.key.get(match.option) : undefined
+	})
 
-	// Resolve Overlay component and props with Suggestions as default fallback
 	const [Overlay, props] = useSlot('overlay', overlayMatch?.option, undefined, Suggestions)
 
 	useEffect(() => {

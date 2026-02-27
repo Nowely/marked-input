@@ -12,34 +12,36 @@ export class SystemListenerController {
 	enable() {
 		if (this.#changeUnsubscribe) return
 
-		this.#changeUnsubscribe = this.store.events.change.subscribe(() => {
+		this.#changeUnsubscribe = this.store.state.$change.subscribe(() => {
 			const {onChange} = this.store.props
 
 			if (!this.store.nodes.focus.target) return
 
-			const token = this.store.state.tokens[this.store.nodes.focus.index]
+			const tokens = this.store.state.tokens.get()
+			const token = tokens[this.store.nodes.focus.index]
 			if (token.type === 'text') {
 				token.content = this.store.nodes.focus.content
 			} else if (token.type === 'mark') {
 				token.value = this.store.nodes.focus.content
 			}
 
-			onChange?.(toString(this.store.state.tokens))
-			this.store.events.parse.emit()
+			onChange?.(toString(tokens))
+			this.store.state.$parse.emit()
 		})
 
-		this.#deleteUnsubscribe = this.store.events.delete.subscribe(data => {
+		this.#deleteUnsubscribe = this.store.state.$delete.subscribe(data => {
 			if (!data) return
 			const {token} = data
 			const {onChange} = this.store.props
 
-			const index = this.store.state.tokens.indexOf(token)
-			this.store.state.tokens = this.store.state.tokens.toSpliced(index, 1)
+			const tokens = this.store.state.tokens.get()
+			const index = tokens.indexOf(token)
+			this.store.state.tokens.set(tokens.toSpliced(index, 1))
 
-			onChange?.(toString(this.store.state.tokens))
+			onChange?.(toString(this.store.state.tokens.get()))
 		})
 
-		this.#selectUnsubscribe = this.store.events.select.subscribe(event => {
+		this.#selectUnsubscribe = this.store.state.$select.subscribe(event => {
 			if (!event) return
 			const {Mark, onChange} = this.store.props as any
 			const {
@@ -59,21 +61,24 @@ export class SystemListenerController {
 
 			const newSpan = createNewSpan(span, annotation, index, source)
 
-			this.store.state.recovery = Mark
-				? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
-				: {caret: index + annotation.length, anchor: this.store.nodes.input}
+			this.store.state.recovery.set(
+				Mark
+					? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
+					: {caret: index + annotation.length, anchor: this.store.nodes.input}
+			)
 
 			if (this.store.nodes.input.target) {
 				this.store.nodes.input.content = newSpan
-				const inputToken = this.store.state.tokens[this.store.nodes.input.index]
+				const tokens = this.store.state.tokens.get()
+				const inputToken = tokens[this.store.nodes.input.index]
 				if (inputToken.type === 'text') {
 					inputToken.content = newSpan
 				}
 
 				this.store.nodes.focus.target = this.store.nodes.input.target
 				this.store.nodes.input.clear()
-				onChange?.(toString(this.store.state.tokens))
-				this.store.events.parse.emit()
+				onChange?.(toString(tokens))
+				this.store.state.$parse.emit()
 			}
 		})
 	}

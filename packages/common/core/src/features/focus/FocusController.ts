@@ -2,8 +2,8 @@ import type {Store} from '../store/Store'
 
 export class FocusController {
 	#focusinHandler?: (e: FocusEvent) => void
-	#focusoutHandler?: (e: FocusEvent) => void
-	#clickHandler?: (e: MouseEvent) => void
+	#focusoutHandler?: () => void
+	#clickHandler?: () => void
 
 	constructor(private store: Store) {}
 
@@ -22,7 +22,7 @@ export class FocusController {
 		}
 
 		this.#clickHandler = () => {
-			const tokens = this.store.state.tokens
+			const tokens = this.store.state.tokens.get()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				const element = this.store.refs.container?.firstElementChild as HTMLElement | undefined
 				element?.focus()
@@ -48,7 +48,7 @@ export class FocusController {
 	}
 
 	recover() {
-		const recovery = this.store.state.recovery
+		const recovery = this.store.state.recovery.get()
 		if (!recovery) return
 
 		const {anchor, caret, isNext} = recovery
@@ -68,6 +68,6 @@ export class FocusController {
 		}
 
 		this.store.nodes.focus.caret = caret
-		this.store.state.recovery = undefined
+		this.store.state.recovery.set(undefined)
 	}
 }

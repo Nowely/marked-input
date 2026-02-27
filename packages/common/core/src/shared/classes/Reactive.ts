@@ -39,15 +39,3 @@ export class Reactive<T = void> {
 		return () => this.#subs.delete(fn)
 	}
 }
-
-export function createReactiveProxy<T extends Record<string, Reactive<any>>>(
-	reactives: T
-): {[K in keyof T]: T[K] extends Reactive<infer V> ? V : never} {
-	return new Proxy({} as any, {
-		get: (_, prop: string) => reactives[prop as keyof T]?.get(),
-		set: (_, prop: string, value) => {
-			reactives[prop as keyof T]?.set(value)
-			return true
-		},
-	})
-}

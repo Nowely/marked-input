@@ -12,11 +12,3 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 
 	return manager
 }
-
-export const createOverlayFeatures = (store: Store): FeatureManager => {
-	const manager = new FeatureManager()
-
-	manager.register(asFeature('closeOverlay', store.controllers.closeOverlay))
-
-	return manager
-}

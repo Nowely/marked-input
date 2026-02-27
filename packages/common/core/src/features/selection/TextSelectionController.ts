@@ -25,18 +25,18 @@ export class TextSelectionController {
 			const isInside = window.getSelection()?.containsNode(this.store.refs.container!, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
-				this.store.state.selecting = 'drag'
+				this.store.state.selecting.set('drag')
 			}
 		}
 
 		this.#mouseupHandler = () => {
 			this.#isPressed = false
 			this.#pressedNode = null
-			this.store.state.selecting = undefined
+			this.store.state.selecting.set(undefined)
 		}
 
 		this.#selectionchangeHandler = () => {
-			if (this.store.state.selecting !== 'drag') return
+			if (this.store.state.selecting.get() !== 'drag') return
 
 			const nodes = [...this.store.refs.container!.children] as HTMLElement[]
 			const preservedState = nodes.map(value => value.contentEditable)
