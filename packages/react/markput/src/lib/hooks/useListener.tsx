@@ -22,7 +22,7 @@ export function useListener(
 }
 
 function useReactiveListener<T>(reactive: Reactive<T>, listener: Listener<T>, deps?: DependencyList) {
-	useEffect(() => reactive.subscribe(listener), deps)
+	useEffect(() => reactive.on(listener), deps)
 }
 
 function useContainerListener<K extends keyof HTMLElementEventMap>(

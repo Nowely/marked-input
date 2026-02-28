@@ -16,15 +16,20 @@ export class Reactive<T = void> {
 		return new Reactive<T | undefined>(undefined, {equals: false})
 	}
 
-	get(): T {
+	get value(): T {
 		return this.#value
 	}
 
-	set(value: T): void {
-		if (this.#equals === false || !this.#equals(this.#value, value)) {
-			this.#value = value
-			this.#subs.forEach(fn => fn(value))
+	set value(val: T) {
+		if (this.#equals === false || !this.#equals(this.#value, val)) {
+			this.#value = val
+			this.#subs.forEach(fn => fn(val))
 		}
+	}
+
+	on(fn: (v: T) => void): () => void {
+		this.#subs.add(fn)
+		return () => this.#subs.delete(fn)
 	}
 
 	emit(value?: T): void {
@@ -34,8 +39,11 @@ export class Reactive<T = void> {
 		this.#subs.forEach(fn => fn(this.#value))
 	}
 
-	subscribe(fn: (v: T) => void): () => void {
-		this.#subs.add(fn)
-		return () => this.#subs.delete(fn)
+	get(): T {
+		return this.#value
+	}
+
+	set(value: T): void {
+		this.value = value
 	}
 }

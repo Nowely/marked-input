@@ -20,16 +20,16 @@ export class OverlayController {
 	enableTrigger<T>(getTrigger: TriggerExtractor<T>, onMatch: (match: OverlayMatch | undefined) => void) {
 		if (this.#clearUnsubscribe) return
 
-		this.#clearUnsubscribe = this.store.state.$clearOverlay.subscribe(() => {
+		this.#clearUnsubscribe = this.store.state.$clearOverlay.on(() => {
 			onMatch(undefined)
 		})
 
-		this.#checkUnsubscribe = this.store.state.$checkOverlay.subscribe(() => {
+		this.#checkUnsubscribe = this.store.state.$checkOverlay.on(() => {
 			const match = TriggerFinder.find(this.store.props.options as T[], getTrigger) as OverlayMatch | undefined
 			onMatch(match)
 		})
 
-		this.#changeUnsubscribe = this.store.state.$change.subscribe(() => {
+		this.#changeUnsubscribe = this.store.state.$change.on(() => {
 			const showOverlayOn = this.store.props.showOverlayOn!
 			const type: OverlayTrigger = 'change'
 
