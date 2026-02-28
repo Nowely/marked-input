@@ -9,12 +9,12 @@ title: "useListener"
 
 ```ts
 function useListener<T>(
-   reactive, 
+   subscribable, 
    listener, 
    deps?): void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useListener.tsx:6](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useListener.tsx#L6)
+Defined in: [react/markput/src/lib/hooks/useListener.tsx:8](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useListener.tsx#L8)
 
 ### Type Parameters
 
@@ -26,7 +26,7 @@ Defined in: [react/markput/src/lib/hooks/useListener.tsx:6](https://github.com/N
 
 | Parameter | Type |
 | ------ | ------ |
-| `reactive` | `Reactive`\<`T`\> |
+| `subscribable` | `Subscribable`\<`T`\> |
 | `listener` | `Listener`\<`T`\> |
 | `deps?` | `DependencyList` |
 
@@ -43,7 +43,7 @@ function useListener<K>(
    deps?): void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useListener.tsx:7](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useListener.tsx#L7)
+Defined in: [react/markput/src/lib/hooks/useListener.tsx:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useListener.tsx#L9)
 
 ### Type Parameters
 

@@ -82,9 +82,9 @@ export class KeyDownController {
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
-	const selecting = store.state.selecting.get()
+	const selecting = store.state.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.state.selecting.set(undefined)
+		if (selecting === 'all') store.state.selecting(undefined)
 		return
 	}
 
@@ -98,9 +98,9 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 }
 
 export function handlePaste(store: Store, event: ClipboardEvent): void {
-	const selecting = store.state.selecting.get()
+	const selecting = store.state.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.state.selecting.set(undefined)
+		if (selecting === 'all') store.state.selecting(undefined)
 		return
 	}
 
@@ -128,13 +128,13 @@ function isFullSelection(store: Store): boolean {
 
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
-	store.state.selecting.set(undefined)
+	store.state.selecting(undefined)
 
 	store.props.onChange?.(newContent)
 
 	if (store.props.value === undefined) {
-		store.state.tokens.set(
-			store.state.parser.get()?.parse(newContent) ?? [
+		store.state.tokens(
+			store.state.parser()?.parse(newContent) ?? [
 				{
 					type: 'text' as const,
 					content: newContent,
@@ -147,7 +147,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	queueMicrotask(() => {
 		const firstChild = store.refs.container?.firstChild as HTMLElement | null
 		if (firstChild) {
-			store.state.recovery.set({
+			store.state.recovery({
 				anchor: store.nodes.focus,
 				caret: newContent.length,
 			})

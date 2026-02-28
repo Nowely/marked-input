@@ -22,7 +22,7 @@ export function useOverlay(): OverlayHandler {
 	const match = useReactive(store.state.overlayMatch)!
 	const style = Caret.getAbsolutePosition()
 
-	const close = useCallback(() => store.state.$clearOverlay.emit(), [])
+	const close = useCallback(() => store.events.clearOverlay(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			const mark: Token = {
@@ -38,8 +38,8 @@ export function useOverlay(): OverlayHandler {
 				children: [],
 				nested: undefined,
 			}
-			store.state.$select.emit({mark, match})
-			store.state.$clearOverlay.emit()
+			store.events.select({mark, match})
+			store.events.clearOverlay()
 		},
 		[match]
 	)

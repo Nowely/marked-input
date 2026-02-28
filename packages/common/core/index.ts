@@ -20,6 +20,8 @@ export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/feat
 
 // Reactive system
 export {Reactive} from './src/shared/classes/Reactive'
+export {defineState, defineEvents} from './src/shared/classes'
+export type {Signal, Emitter} from './src/shared/classes'
 
 // Utilities
 export {escape} from './src/shared/escape'

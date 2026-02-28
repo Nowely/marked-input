@@ -1,8 +1,8 @@
 import {useEffect, useState} from 'react'
-import type {Reactive} from '@markput/core'
+import type {Signal} from '@markput/core'
 
-export function useReactive<T>(reactive: Reactive<T>): T {
-	const [value, setValue] = useState(() => reactive.get())
-	useEffect(() => reactive.on(setValue), [reactive])
+export function useReactive<T>(signal: Signal<T>): T {
+	const [value, setValue] = useState(() => signal())
+	useEffect(() => signal.on(setValue), [signal])
 	return value
 }

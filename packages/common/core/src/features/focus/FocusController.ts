@@ -22,7 +22,7 @@ export class FocusController {
 		}
 
 		this.#clickHandler = () => {
-			const tokens = this.store.state.tokens.get()
+			const tokens = this.store.state.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				const element = this.store.refs.container?.firstElementChild as HTMLElement | undefined
 				element?.focus()
@@ -48,7 +48,7 @@ export class FocusController {
 	}
 
 	recover() {
-		const recovery = this.store.state.recovery.get()
+		const recovery = this.store.state.recovery()
 		if (!recovery) return
 
 		const {anchor, caret, isNext} = recovery
@@ -68,6 +68,6 @@ export class FocusController {
 		}
 
 		this.store.nodes.focus.caret = caret
-		this.store.state.recovery.set(undefined)
+		this.store.state.recovery(undefined)
 	}
 }

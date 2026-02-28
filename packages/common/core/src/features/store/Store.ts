@@ -1,5 +1,5 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
-import {Reactive} from '../../shared/classes/Reactive'
+import {defineState, defineEvents} from '../../shared/classes'
 import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
 import {SystemListenerController} from '../events'
@@ -17,20 +17,23 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state = {
-		tokens: new Reactive<Token[]>([]),
-		parser: new Reactive<Parser | undefined>(undefined),
-		previousValue: new Reactive<string | undefined>(undefined),
-		recovery: new Reactive<Recovery | undefined>(undefined),
-		selecting: new Reactive<'drag' | 'all' | undefined>(undefined),
-		overlayMatch: new Reactive<OverlayMatch | undefined>(undefined),
-		$change: Reactive.event<void>(),
-		$parse: Reactive.event<void>(),
-		$delete: Reactive.event<{token: Token}>(),
-		$select: Reactive.event<{mark: Token; match: OverlayMatch}>(),
-		$clearOverlay: Reactive.event<void>(),
-		$checkOverlay: Reactive.event<void>(),
-	}
+	readonly state = defineState({
+		tokens: [] as Token[],
+		parser: undefined as Parser | undefined,
+		previousValue: undefined as string | undefined,
+		recovery: undefined as Recovery | undefined,
+		selecting: undefined as 'drag' | 'all' | undefined,
+		overlayMatch: undefined as OverlayMatch | undefined,
+	})
+
+	readonly events = defineEvents<{
+		change: void
+		parse: void
+		delete: {token: Token}
+		select: {mark: Token; match: OverlayMatch}
+		clearOverlay: void
+		checkOverlay: void
+	}>()
 
 	readonly refs = {
 		container: null as HTMLDivElement | null,

@@ -37,27 +37,27 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
 		if (markups && markups.some(Boolean)) {
-			store.state.parser.set(new Parser(markups))
+			store.state.parser(new Parser(markups))
 		} else {
-			store.state.parser.set(undefined)
+			store.state.parser(undefined)
 		}
 
 		if (isMounted.current) {
-			store.state.$parse.emit()
+			store.events.parse()
 			return
 		}
 
 		const inputValue = value ?? store.props.defaultValue ?? ''
-		store.state.tokens.set(parseWithParser(store, inputValue))
+		store.state.tokens(parseWithParser(store, inputValue))
 
 		isMounted.current = true
 	}, [value, options])
 
 	useListener(
-		store.state.$parse,
+		store.events.parse,
 		() => {
-			if (store.state.recovery.get()) return
-			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+			if (store.state.recovery()) return
+			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
 		},
 		[]
 	)
@@ -73,7 +73,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	useEffect(() => {
 		store.controllers.overlay.enableTrigger<Option>(
 			(option: Option) => option.overlay?.trigger,
-			match => store.state.overlayMatch.set(match)
+			match => store.state.overlayMatch(match)
 		)
 		return () => store.controllers.overlay.disable()
 	}, [])

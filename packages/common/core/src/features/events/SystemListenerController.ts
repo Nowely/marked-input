@@ -12,12 +12,12 @@ export class SystemListenerController {
 	enable() {
 		if (this.#changeUnsubscribe) return
 
-		this.#changeUnsubscribe = this.store.state.$change.on(() => {
+		this.#changeUnsubscribe = this.store.events.change.on(() => {
 			const {onChange} = this.store.props
 
 			if (!this.store.nodes.focus.target) return
 
-			const tokens = this.store.state.tokens.get()
+			const tokens = this.store.state.tokens()
 			const token = tokens[this.store.nodes.focus.index]
 			if (token.type === 'text') {
 				token.content = this.store.nodes.focus.content
@@ -26,22 +26,22 @@ export class SystemListenerController {
 			}
 
 			onChange?.(toString(tokens))
-			this.store.state.$parse.emit()
+			this.store.events.parse()
 		})
 
-		this.#deleteUnsubscribe = this.store.state.$delete.on(data => {
+		this.#deleteUnsubscribe = this.store.events.delete.on(data => {
 			if (!data) return
 			const {token} = data
 			const {onChange} = this.store.props
 
-			const tokens = this.store.state.tokens.get()
+			const tokens = this.store.state.tokens()
 			const index = tokens.indexOf(token)
-			this.store.state.tokens.set(tokens.toSpliced(index, 1))
+			this.store.state.tokens(tokens.toSpliced(index, 1))
 
-			onChange?.(toString(this.store.state.tokens.get()))
+			onChange?.(toString(this.store.state.tokens()))
 		})
 
-		this.#selectUnsubscribe = this.store.state.$select.on(event => {
+		this.#selectUnsubscribe = this.store.events.select.on(event => {
 			if (!event) return
 			const {Mark, onChange} = this.store.props as any
 			const {
@@ -61,7 +61,7 @@ export class SystemListenerController {
 
 			const newSpan = createNewSpan(span, annotation, index, source)
 
-			this.store.state.recovery.set(
+			this.store.state.recovery(
 				Mark
 					? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
 					: {caret: index + annotation.length, anchor: this.store.nodes.input}
@@ -69,7 +69,7 @@ export class SystemListenerController {
 
 			if (this.store.nodes.input.target) {
 				this.store.nodes.input.content = newSpan
-				const tokens = this.store.state.tokens.get()
+				const tokens = this.store.state.tokens()
 				const inputToken = tokens[this.store.nodes.input.index]
 				if (inputToken.type === 'text') {
 					inputToken.content = newSpan
@@ -78,59 +78,7 @@ export class SystemListenerController {
 				this.store.nodes.focus.target = this.store.nodes.input.target
 				this.store.nodes.input.clear()
 				onChange?.(toString(tokens))
-				this.store.state.$parse.emit()
-			}
-		})
-
-		this.#deleteUnsubscribe = this.store.state.$delete.on(data => {
-			if (!data) return
-			const {token} = data
-			const {onChange} = this.store.props
-
-			const tokens = this.store.state.tokens.get()
-			const index = tokens.indexOf(token)
-			this.store.state.tokens.set(tokens.toSpliced(index, 1))
-
-			onChange?.(toString(this.store.state.tokens.get()))
-		})
-
-		this.#selectUnsubscribe = this.store.state.$select.on(event => {
-			if (!event) return
-			const {Mark, onChange} = this.store.props as any
-			const {
-				mark,
-				match: {option, span, index, source},
-			} = event
-
-			const annotation =
-				mark.type === 'mark'
-					? annotate(option.markup!, {
-							value: mark.value,
-							meta: mark.meta,
-						})
-					: annotate(option.markup!, {
-							value: mark.content,
-						})
-
-			const newSpan = createNewSpan(span, annotation, index, source)
-			this.store.state.recovery.set(
-				Mark
-					? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
-					: {caret: index + annotation.length, anchor: this.store.nodes.input}
-			)
-
-			if (this.store.nodes.input.target) {
-				this.store.nodes.input.content = newSpan
-				const tokens = this.store.state.tokens.get()
-				const inputToken = tokens[this.store.nodes.input.index]
-				if (inputToken.type === 'text') {
-					inputToken.content = newSpan
-				}
-
-				this.store.nodes.focus.target = this.store.nodes.input.target
-				this.store.nodes.input.clear()
-				onChange?.(toString(tokens))
-				this.store.state.$parse.emit()
+				this.store.events.parse()
 			}
 		})
 	}

@@ -28,7 +28,7 @@ export function selectAllText(store: Store, event: KeyboardEvent): void {
 		if (!selection || !anchorNode || !focusNode) return
 		selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
 
-		store.state.selecting.set('all')
+		store.state.selecting('all')
 	}
 }
 

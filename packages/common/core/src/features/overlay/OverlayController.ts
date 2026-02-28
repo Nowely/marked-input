@@ -20,21 +20,21 @@ export class OverlayController {
 	enableTrigger<T>(getTrigger: TriggerExtractor<T>, onMatch: (match: OverlayMatch | undefined) => void) {
 		if (this.#clearUnsubscribe) return
 
-		this.#clearUnsubscribe = this.store.state.$clearOverlay.on(() => {
+		this.#clearUnsubscribe = this.store.events.clearOverlay.on(() => {
 			onMatch(undefined)
 		})
 
-		this.#checkUnsubscribe = this.store.state.$checkOverlay.on(() => {
+		this.#checkUnsubscribe = this.store.events.checkOverlay.on(() => {
 			const match = TriggerFinder.find(this.store.props.options as T[], getTrigger) as OverlayMatch | undefined
 			onMatch(match)
 		})
 
-		this.#changeUnsubscribe = this.store.state.$change.on(() => {
+		this.#changeUnsubscribe = this.store.events.change.on(() => {
 			const showOverlayOn = this.store.props.showOverlayOn!
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.state.$checkOverlay.emit()
+				this.store.events.checkOverlay()
 			}
 		})
 
@@ -43,7 +43,7 @@ export class OverlayController {
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.state.$checkOverlay.emit()
+				this.store.events.checkOverlay()
 			}
 		}
 
@@ -67,7 +67,7 @@ export class OverlayController {
 
 		this.#escHandler = e => {
 			if (e.key === KEYBOARD.ESC) {
-				this.store.state.$clearOverlay.emit()
+				this.store.events.clearOverlay()
 			}
 		}
 
@@ -75,7 +75,7 @@ export class OverlayController {
 			const target = e.target as HTMLElement | null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
-			this.store.state.$clearOverlay.emit()
+			this.store.events.clearOverlay()
 		}
 
 		window.addEventListener('keydown', this.#escHandler)

@@ -16,7 +16,7 @@ export const Container = memo(() => {
 	const ContainerComponent = useMemo(() => resolveSlot('container', store), [store])
 	const containerProps = useMemo(() => resolveSlotProps('container', store), [store])
 
-	useListener('input', () => store.state.$change.emit(), [])
+	useListener('input', () => store.events.change(), [])
 
 	return (
 		<ContainerComponent
