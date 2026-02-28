@@ -130,9 +130,9 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.state.selecting(undefined)
 
-	store.props.onChange?.(newContent)
+	store.state.onChange()?.(newContent)
 
-	if (store.props.value === undefined) {
+	if (store.state.value() === undefined) {
 		store.state.tokens(
 			store.state.parser()?.parse(newContent) ?? [
 				{

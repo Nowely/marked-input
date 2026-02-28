@@ -13,7 +13,7 @@ export class SystemListenerController {
 		if (this.#changeUnsubscribe) return
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const {onChange} = this.store.props
+			const onChange = this.store.state.onChange()
 
 			if (!this.store.nodes.focus.target) return
 
@@ -32,7 +32,7 @@ export class SystemListenerController {
 		this.#deleteUnsubscribe = this.store.events.delete.on(data => {
 			if (!data) return
 			const {token} = data
-			const {onChange} = this.store.props
+			const onChange = this.store.state.onChange()
 
 			const tokens = this.store.state.tokens()
 			const index = tokens.indexOf(token)
@@ -43,7 +43,8 @@ export class SystemListenerController {
 
 		this.#selectUnsubscribe = this.store.events.select.on(event => {
 			if (!event) return
-			const {Mark, onChange} = this.store.props as any
+			const Mark = (this.store.props as any).Mark
+			const onChange = this.store.state.onChange()
 			const {
 				mark,
 				match: {option, span, index, source},

@@ -1,7 +1,7 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
 import type {Parser, Token} from '../parsing'
-import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
+import type {CoreMarkputProps, CoreOption, OverlayMatch, OverlayTrigger, Recovery} from '../../shared/types'
 import {SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {OverlayController} from '../overlay'
@@ -29,6 +29,12 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 			recovery: Recovery | undefined
 			selecting: 'drag' | 'all' | undefined
 			overlayMatch: OverlayMatch | undefined
+			value: string | undefined
+			defaultValue: string | undefined
+			onChange: ((value: string) => void) | undefined
+			readOnly: boolean
+			options: CoreOption[] | undefined
+			showOverlayOn: OverlayTrigger | undefined
 		}>
 	>
 
@@ -66,6 +72,12 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 				recovery: undefined as Recovery | undefined,
 				selecting: undefined as 'drag' | 'all' | undefined,
 				overlayMatch: undefined as OverlayMatch | undefined,
+				value: undefined as string | undefined,
+				defaultValue: undefined as string | undefined,
+				onChange: undefined as ((value: string) => void) | undefined,
+				readOnly: false as boolean,
+				options: undefined as CoreOption[] | undefined,
+				showOverlayOn: undefined as OverlayTrigger | undefined,
 			},
 			options.createUseHook
 		)

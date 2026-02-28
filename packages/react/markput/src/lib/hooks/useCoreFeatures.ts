@@ -29,9 +29,9 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		return () => features.disableAll()
 	}, [])
 
-	const value = store.props.value
+	const value = store.state.value()
 	const Mark = store.props.Mark
-	const options = Mark ? store.props.options : undefined
+	const options = Mark ? store.state.options() : undefined
 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
@@ -46,7 +46,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 			return
 		}
 
-		const inputValue = value ?? store.props.defaultValue ?? ''
+		const inputValue = value ?? store.state.defaultValue() ?? ''
 		store.state.tokens(parseWithParser(store, inputValue))
 
 		isMounted.current = true
@@ -62,12 +62,10 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	)
 
 	const tokens = store.state.tokens.use()
-	useEffect(
-		() => {
-			store.controllers.focus.recover()
-		},
-		store.props.Mark ? [tokens] : undefined
-	)
+	useEffect(() => {
+		if (!store.props.Mark) return
+		store.controllers.focus.recover()
+	}, [tokens])
 
 	useEffect(() => {
 		store.controllers.overlay.enableTrigger<Option>(

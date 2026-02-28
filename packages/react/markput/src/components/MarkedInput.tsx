@@ -1,5 +1,5 @@
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useEffect, useMemo, useState} from 'react'
+import {useMemo, useState} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {Whisper} from './Whisper'
@@ -36,13 +36,40 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
 	const {ref, ...rest} = props
-	const storeProps = normalizeProps(rest as MarkedInputProps)
+	const normalized = normalizeProps(rest as MarkedInputProps)
+	const {
+		value,
+		defaultValue,
+		onChange,
+		readOnly,
+		options,
+		showOverlayOn,
+		Mark,
+		Overlay,
+		className,
+		style,
+		slots,
+		slotProps,
+	} = normalized
 	const createUseHook = useMemo(createUseSignalHook, [])
-	const [store] = useState(() => new Store(storeProps, {createUseHook}))
-
-	useEffect(() => {
-		store.props = storeProps
+	const [store] = useState(() => {
+		const s = new Store({} as any, {createUseHook})
+		s.state.value(value)
+		s.state.defaultValue(defaultValue)
+		s.state.onChange(onChange)
+		s.state.readOnly(readOnly ?? false)
+		s.state.options(options)
+		s.state.showOverlayOn(showOverlayOn)
+		return s
 	})
+
+	store.props = {Mark, Overlay, className, style, slots, slotProps} as any
+	store.state.value(value)
+	store.state.defaultValue(defaultValue)
+	store.state.onChange(onChange)
+	store.state.readOnly(readOnly ?? false)
+	store.state.options(options)
+	store.state.showOverlayOn(showOverlayOn)
 
 	return (
 		<StoreContext.Provider value={store}>

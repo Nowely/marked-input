@@ -9,7 +9,7 @@ export const TextSpan = () => {
 	const store = useStore()
 	const ref = useRef<HTMLSpanElement>(null)
 
-	const readOnly = store.props.readOnly
+	const readOnly = store.state.readOnly()
 	const SpanComponent = useMemo(() => resolveSlot('span', store), [store])
 	const spanProps = useMemo(() => resolveSlotProps('span', store), [store])
 

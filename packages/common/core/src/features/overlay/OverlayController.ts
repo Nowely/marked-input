@@ -25,12 +25,12 @@ export class OverlayController {
 		})
 
 		this.#checkUnsubscribe = this.store.events.checkOverlay.on(() => {
-			const match = TriggerFinder.find(this.store.props.options as T[], getTrigger) as OverlayMatch | undefined
+			const match = TriggerFinder.find(this.store.state.options() as T[], getTrigger) as OverlayMatch | undefined
 			onMatch(match)
 		})
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const showOverlayOn = this.store.props.showOverlayOn!
+			const showOverlayOn = this.store.state.showOverlayOn()!
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -39,7 +39,7 @@ export class OverlayController {
 		})
 
 		this.#selectionChangeHandler = () => {
-			const showOverlayOn = this.store.props.showOverlayOn!
+			const showOverlayOn = this.store.state.showOverlayOn()!
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
