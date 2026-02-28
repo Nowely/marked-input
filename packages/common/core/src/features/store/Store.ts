@@ -1,5 +1,5 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
-import {defineState, defineEvents} from '../../shared/classes'
+import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
 import type {Parser, Token} from '../parsing'
 import type {CoreMarkputProps, OverlayMatch, Recovery} from '../../shared/types'
 import {SystemListenerController} from '../events'
@@ -9,6 +9,10 @@ import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {TextSelectionController} from '../selection'
 
+export interface StoreOptions {
+	createUseHook: UseHookFactory
+}
+
 export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 	readonly key = new KeyGenerator()
 
@@ -17,14 +21,16 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state = defineState({
-		tokens: [] as Token[],
-		parser: undefined as Parser | undefined,
-		previousValue: undefined as string | undefined,
-		recovery: undefined as Recovery | undefined,
-		selecting: undefined as 'drag' | 'all' | undefined,
-		overlayMatch: undefined as OverlayMatch | undefined,
-	})
+	readonly state: ReturnType<
+		typeof defineState<{
+			tokens: Token[]
+			parser: Parser | undefined
+			previousValue: string | undefined
+			recovery: Recovery | undefined
+			selecting: 'drag' | 'all' | undefined
+			overlayMatch: OverlayMatch | undefined
+		}>
+	>
 
 	readonly events = defineEvents<{
 		change: void
@@ -48,5 +54,20 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		textSelection: new TextSelectionController(this),
 	}
 
-	constructor(public props: TProps) {}
+	constructor(
+		public props: TProps,
+		options: StoreOptions
+	) {
+		this.state = defineState(
+			{
+				tokens: [] as Token[],
+				parser: undefined as Parser | undefined,
+				previousValue: undefined as string | undefined,
+				recovery: undefined as Recovery | undefined,
+				selecting: undefined as 'drag' | 'all' | undefined,
+				overlayMatch: undefined as OverlayMatch | undefined,
+			},
+			options.createUseHook
+		)
+	}
 }

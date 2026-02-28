@@ -1,5 +1,5 @@
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useEffect, useState} from 'react'
+import {useEffect, useMemo, useState} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {Whisper} from './Whisper'
@@ -9,6 +9,7 @@ import styles from '@markput/core/styles.module.css'
 import {StoreContext} from '../lib/providers/StoreContext'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {DEFAULT_OPTIONS} from '../constants'
+import {createUseSignalHook} from '../lib/hooks/createUseSignalHook'
 
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	ref?: Ref<MarkedInputHandler>
@@ -57,7 +58,8 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 ) {
 	const {ref, ...rest} = props
 	const storeProps = normalizeProps(rest as MarkedInputProps)
-	const [store] = useState(() => new Store(storeProps))
+	const createUseHook = useMemo(createUseSignalHook, [])
+	const [store] = useState(() => new Store(storeProps, {createUseHook}))
 
 	useEffect(() => {
 		store.props = storeProps

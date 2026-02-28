@@ -4,7 +4,6 @@ import type {Store} from '@markput/core'
 import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser} from '@markput/core'
 import {useListener} from './useListener'
 import {useStore} from './useStore'
-import {useReactive} from './useReactive'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {
@@ -62,7 +61,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		[]
 	)
 
-	const tokens = useReactive(store.state.tokens)
+	const tokens = store.state.tokens.use()
 	useEffect(
 		() => {
 			store.controllers.focus.recover()
@@ -78,7 +77,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		return () => store.controllers.overlay.disable()
 	}, [])
 
-	const overlayMatch = useReactive(store.state.overlayMatch)
+	const overlayMatch = store.state.overlayMatch.use()
 	useEffect(() => {
 		if (!overlayMatch) return
 		store.controllers.overlay.enableClose()

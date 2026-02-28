@@ -21,14 +21,14 @@ export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/feat
 // Reactive system
 export {Reactive} from './src/shared/classes/Reactive'
 export {defineState, defineEvents} from './src/shared/classes'
-export type {Signal, Emitter} from './src/shared/classes'
+export type {Signal, Emitter, UseHookFactory} from './src/shared/classes'
 
 // Utilities
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
-export {Store} from './src/features/store'
+export {Store, type StoreOptions} from './src/features/store'
 export {OverlayController} from './src/features/overlay'
 export {FocusController} from './src/features/focus'
 export {KeyDownController} from './src/features/input'
