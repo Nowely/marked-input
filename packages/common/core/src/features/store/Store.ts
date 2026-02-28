@@ -1,7 +1,16 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
 import type {Parser, Token} from '../parsing'
-import type {CoreMarkputProps, CoreOption, OverlayMatch, OverlayTrigger, Recovery} from '../../shared/types'
+import type {
+	CoreOption,
+	CoreSlotProps,
+	CoreSlots,
+	GenericComponent,
+	OverlayMatch,
+	OverlayTrigger,
+	Recovery,
+	StyleProperties,
+} from '../../shared/types'
 import {SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {OverlayController} from '../overlay'
@@ -13,7 +22,7 @@ export interface StoreOptions {
 	createUseHook: UseHookFactory
 }
 
-export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
+export class Store {
 	readonly key = new KeyGenerator()
 
 	readonly nodes = {
@@ -35,6 +44,12 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 			readOnly: boolean
 			options: CoreOption[] | undefined
 			showOverlayOn: OverlayTrigger | undefined
+			Mark: GenericComponent | undefined
+			Overlay: GenericComponent | undefined
+			className: string | undefined
+			style: StyleProperties | undefined
+			slots: CoreSlots | undefined
+			slotProps: CoreSlotProps | undefined
 		}>
 	>
 
@@ -60,10 +75,7 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 		textSelection: new TextSelectionController(this),
 	}
 
-	constructor(
-		public props: TProps,
-		options: StoreOptions
-	) {
+	constructor(options: StoreOptions) {
 		this.state = defineState(
 			{
 				tokens: [] as Token[],
@@ -78,6 +90,12 @@ export class Store<TProps extends CoreMarkputProps = CoreMarkputProps> {
 				readOnly: false as boolean,
 				options: undefined as CoreOption[] | undefined,
 				showOverlayOn: undefined as OverlayTrigger | undefined,
+				Mark: undefined as GenericComponent | undefined,
+				Overlay: undefined as GenericComponent | undefined,
+				className: undefined as string | undefined,
+				style: undefined as StyleProperties | undefined,
+				slots: undefined as CoreSlots | undefined,
+				slotProps: undefined as CoreSlotProps | undefined,
 			},
 			options.createUseHook
 		)

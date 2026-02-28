@@ -24,7 +24,9 @@ export function useSlot(
 	defaultComponent?: ComponentType<any>
 ): MarkSlotReturn | OverlaySlotReturn {
 	const store = useStore()
-	const globalComponent = (type === 'mark' ? store.props.Mark : store.props.Overlay) as ComponentType<any> | undefined
+	const globalComponent = (type === 'mark' ? store.state.Mark() : store.state.Overlay()) as
+		| ComponentType<any>
+		| undefined
 
 	const optionConfig = type === 'mark' ? option?.mark : option?.overlay
 	let props: any

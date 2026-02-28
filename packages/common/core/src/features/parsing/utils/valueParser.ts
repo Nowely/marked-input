@@ -19,9 +19,7 @@ export function getTokensByUI(store: Store): Token[] {
 }
 
 export function getTokensByValue(store: Store): Token[] {
-	const {
-		props: {value},
-	} = store
+	const value = store.state.value()
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.state.previousValue(), value)
 

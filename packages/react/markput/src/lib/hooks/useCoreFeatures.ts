@@ -30,7 +30,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	}, [])
 
 	const value = store.state.value()
-	const Mark = store.props.Mark
+	const Mark = store.state.Mark()
 	const options = Mark ? store.state.options() : undefined
 
 	useEffect(() => {
@@ -63,7 +63,7 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 
 	const tokens = store.state.tokens.use()
 	useEffect(() => {
-		if (!store.props.Mark) return
+		if (!store.state.Mark()) return
 		store.controllers.focus.recover()
 	}, [tokens])
 

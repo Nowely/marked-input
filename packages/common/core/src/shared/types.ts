@@ -93,3 +93,19 @@ export type Recovery = {
 }
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
+
+export type StyleProperties = Record<string, string | number>
+
+export type GenericComponent = unknown
+export type GenericElement = unknown
+export type GenericAttributes = Record<string, unknown>
+
+export interface CoreSlots {
+	container?: GenericElement
+	span?: GenericElement
+}
+
+export interface CoreSlotProps {
+	container?: GenericAttributes & {className?: string; style?: StyleProperties}
+	span?: GenericAttributes & {className?: string; style?: StyleProperties}
+}

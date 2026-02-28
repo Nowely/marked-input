@@ -43,7 +43,7 @@ export class SystemListenerController {
 
 		this.#selectUnsubscribe = this.store.events.select.on(event => {
 			if (!event) return
-			const Mark = (this.store.props as any).Mark
+			const Mark = this.store.state.Mark()
 			const onChange = this.store.state.onChange()
 			const {
 				mark,
