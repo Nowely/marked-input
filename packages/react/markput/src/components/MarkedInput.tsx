@@ -4,12 +4,11 @@ import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slo
 import {Container} from './Container'
 import {Whisper} from './Whisper'
 import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
-import {cx, merge, Store} from '@markput/core'
-import styles from '@markput/core/styles.module.css'
+import {Store} from '@markput/core'
 import {StoreContext} from '../lib/providers/StoreContext'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
-import {DEFAULT_OPTIONS} from '../constants'
 import {createUseSignalHook} from '../lib/hooks/createUseSignalHook'
+import {normalizeProps} from '../lib/utils/normalizeProps'
 
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
 	ref?: Ref<MarkedInputHandler>
@@ -21,26 +20,6 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	slots?: Slots
 	slotProps?: SlotProps
 	showOverlayOn?: OverlayTrigger
-}
-
-function normalizeProps(props: MarkedInputProps): MarkedInputProps {
-	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
-	const style = merge(props.style, props.slotProps?.container?.style)
-
-	return {
-		value: props.value,
-		defaultValue: props.defaultValue,
-		onChange: props.onChange,
-		readOnly: props.readOnly,
-		options: props.options ?? DEFAULT_OPTIONS,
-		showOverlayOn: props.showOverlayOn ?? 'change',
-		className,
-		style,
-		Mark: props.Mark,
-		Overlay: props.Overlay,
-		slots: props.slots,
-		slotProps: props.slotProps,
-	}
 }
 
 function MarkedInputInner({ref}: {ref?: Ref<MarkedInputHandler>}) {
