@@ -27,10 +27,11 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 		return () => features.disableAll()
 	}, [])
 
-	const value = store.state.value.get()
-	const Mark = store.state.Mark.get()
+	const value = store.state.value.use()
+	const Mark = store.state.Mark.use()
+	const coreOptions = store.state.options.use()
 	// options only matters when Mark is provided; omitting it prevents unnecessary re-parses
-	const options = Mark ? store.state.options.get() : undefined
+	const options = Mark ? coreOptions : undefined
 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
