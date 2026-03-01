@@ -76,7 +76,7 @@ export async function focusAtOffset(element: HTMLElement, offset: number) {
  * @param element - Contenteditable HTML element
  * @param expectedOffset - Expected caret position (character offset)
  */
-function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
+export function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 	const position = getCaretPosition()
 	expect(position, 'Caret position not available').not.toBeNull()
 

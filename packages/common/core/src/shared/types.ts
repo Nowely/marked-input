@@ -103,6 +103,7 @@ export type Recovery = {
 	anchor: NodeProxy
 	isNext?: boolean
 	caret: number
+	childIndex?: number
 }
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'

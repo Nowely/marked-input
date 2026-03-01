@@ -4,7 +4,7 @@ import {page, userEvent} from 'vitest/browser'
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
-import {focusAtEnd} from '../../shared/lib/focus'
+import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {describe, expect, it} from 'vitest'
 
 const {Default} = composeStories(BaseStories)
@@ -117,9 +117,12 @@ describe('API: Overlay and Triggers', () => {
 	})
 
 	it('should restore focus after selection from overlay', async () => {
+		// Use a value with existing marks so the new mark is inserted in the MIDDLE.
+		// This distinguishes "focus after mark" (childIndex + 2) from "focus at tail".
+		// After parse: [span("Start "), mark("A"), span(" mid "), mark("B"), span(" end")]
 		const {container} = await render(
 			<Default
-				defaultValue="Hello "
+				defaultValue="Start @[A](0) mid @[B](0) end"
 				options={[
 					{
 						markup: '@[__value__](__meta__)',
@@ -132,16 +135,19 @@ describe('API: Overlay and Triggers', () => {
 			/>
 		)
 
-		const element = container.firstElementChild?.firstElementChild as HTMLElement
-		await focusAtEnd(element)
+		const editableContainer = container.firstElementChild as HTMLElement
+		// Focus the middle span (" mid ") at child index 2
+		const middleSpan = editableContainer.children[2] as HTMLElement
+		await focusAtEnd(middleSpan)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 
 		// Select the item from overlay
 		await page.getByText('Item').click()
 
-		// Focus should be restored - verify by typing after selection
-		await userEvent.keyboard(' world')
-		await expect.element(page.getByText('world')).toBeInTheDocument()
+		// After re-parse: [span("Start "), mark("A"), span(" mid "), mark("Item"), span(""), mark("B"), span(" end")]
+		// Focus should be on span("") at childIndex + 2 = 4, NOT tail at index 6.
+		// Caret position: "Start " (6) + "A" (1) + " mid " (5) + "Item" (4) = 16
+		verifyCaretPosition(editableContainer, 16)
 	})
 })

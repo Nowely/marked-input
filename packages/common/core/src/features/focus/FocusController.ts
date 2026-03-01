@@ -52,15 +52,28 @@ export class FocusController {
 		if (!recovery) return
 
 		const {anchor, caret, isNext} = recovery
+		const isStale = !anchor.target || !anchor.target.isConnected
 
 		switch (true) {
-			case isNext && !anchor.target:
-				this.store.nodes.focus.tail.focus()
+			case isNext && isStale: {
+				const container = this.store.refs.container
+				// After re-parse, text at childIndex splits into [text, mark, text]
+				// Focus the text span after the mark (childIndex + 2)
+				const targetChild =
+					recovery.childIndex != null
+						? (container?.children[recovery.childIndex + 2] as HTMLElement | undefined)
+						: undefined
+				if (targetChild) {
+					targetChild.focus()
+				} else {
+					this.store.nodes.focus.tail.focus()
+				}
 				break
+			}
 			case isNext:
 				anchor.prev.focus()
 				break
-			case !anchor.target:
+			case isStale:
 				this.store.nodes.focus.head.focus()
 				break
 			default:

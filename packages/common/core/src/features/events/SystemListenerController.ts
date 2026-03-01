@@ -64,7 +64,12 @@ export class SystemListenerController {
 
 			this.store.state.recovery.set(
 				Mark
-					? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
+					? {
+							caret: 0,
+							anchor: this.store.nodes.input.next,
+							isNext: true,
+							childIndex: this.store.nodes.input.index,
+						}
 					: {caret: index + annotation.length, anchor: this.store.nodes.input}
 			)
 

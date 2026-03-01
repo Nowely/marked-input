@@ -42,7 +42,9 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 		}
 
 		if (isInitialized.current) {
-			store.events.parse()
+			if (!store.state.recovery.get()) {
+				store.events.parse()
+			}
 			return
 		}
 
@@ -56,7 +58,9 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 		store.events.parse,
 		() => {
 			if (store.state.recovery.get()) {
-				store.state.tokens.set(parseWithParser(store, toString(store.state.tokens.get())))
+				const text = toString(store.state.tokens.get())
+				store.state.tokens.set(parseWithParser(store, text))
+				store.state.previousValue.set(text)
 				return
 			}
 			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
