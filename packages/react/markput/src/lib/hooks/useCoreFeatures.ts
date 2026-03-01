@@ -17,7 +17,7 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 })
 
 export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler> | undefined) {
-	const isMounted = useRef(false)
+	const isInitialized = useRef(false)
 
 	useImperativeHandle(ref, () => initHandler(store), [store])
 
@@ -29,6 +29,7 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 
 	const value = store.state.value.get()
 	const Mark = store.state.Mark.get()
+	// options only matters when Mark is provided; omitting it prevents unnecessary re-parses
 	const options = Mark ? store.state.options.get() : undefined
 
 	useEffect(() => {
@@ -39,7 +40,7 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 			store.state.parser.set(undefined)
 		}
 
-		if (isMounted.current) {
+		if (isInitialized.current) {
 			store.events.parse()
 			return
 		}
@@ -47,7 +48,7 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 		const inputValue = value ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
 
-		isMounted.current = true
+		isInitialized.current = true
 	}, [value, options])
 
 	useListener(

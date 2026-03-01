@@ -48,22 +48,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const className = cx(styles.Container, classNameProp, slotProps?.container?.className)
 	const style = merge(styleProp, slotProps?.container?.style)
 	const createUseHook = useMemo(createUseSignalHook, [])
-	const [store] = useState(() => {
-		const s = new Store({createUseHook})
-		s.state.value.set(value)
-		s.state.defaultValue.set(defaultValue)
-		s.state.onChange.set(onChange)
-		s.state.readOnly.set(readOnly ?? false)
-		s.state.options.set(options)
-		s.state.showOverlayOn.set(showOverlayOn)
-		s.state.Mark.set(Mark)
-		s.state.Overlay.set(Overlay)
-		s.state.className.set(className)
-		s.state.style.set(style as StyleProperties)
-		s.state.slots.set(slots as CoreSlots)
-		s.state.slotProps.set(slotProps as CoreSlotProps)
-		return s
-	})
+	const [store] = useState(() => new Store({createUseHook}))
 
 	store.state.value.set(value)
 	store.state.defaultValue.set(defaultValue)
