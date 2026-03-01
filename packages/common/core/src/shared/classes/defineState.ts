@@ -19,10 +19,13 @@ function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): 
 	return signal
 }
 
-export function defineState<T extends object>(
-	initial: T,
-	createUseHook: UseHookFactory
-): {[K in keyof T]: Signal<T[K]>} {
+export type StateObject<T> = {
+	[K in keyof T]: Signal<T[K]>
+} & {
+	set(values: Partial<T>): void
+}
+
+export function defineState<T extends object>(initial: T, createUseHook: UseHookFactory): StateObject<T> {
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key in initial) {
@@ -31,10 +34,17 @@ export function defineState<T extends object>(
 
 	return new Proxy(initial, {
 		get(_, key: string) {
+			if (key === 'set') {
+				return (values: Partial<T>) => {
+					for (const k in values) {
+						reactives.get(k)?.set(values[k])
+					}
+				}
+			}
 			const reactive = reactives.get(key)
 			if (!reactive) return undefined
 
 			return createSignal(reactive, createUseHook)
 		},
-	}) as {[K in keyof T]: Signal<T[K]>}
+	}) as StateObject<T>
 }

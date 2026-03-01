@@ -5,14 +5,16 @@ prev: false
 title: "MarkedInputProps"
 ---
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L14)
+Defined in: [react/markput/src/components/MarkedInput.tsx:20](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L20)
+
+Props for MarkedInput component.
 
 ## Type Parameters
 
-| Type Parameter | Default type |
-| ------ | ------ |
-| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
-| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) |
+| Type Parameter | Default type | Description |
+| ------ | ------ | ------ |
+| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the global Mark component |
+| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the global Overlay component |
 
 ## Properties
 
@@ -22,7 +24,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:14](https://github.com
 optional className: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:19](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L19)
+Defined in: [react/markput/src/components/MarkedInput.tsx:30](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L30)
+
+Additional classes
 
 ***
 
@@ -32,7 +36,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:19](https://github.com
 optional defaultValue: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:25](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L25)
+Defined in: [react/markput/src/components/MarkedInput.tsx:42](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L42)
+
+Initial value for uncontrolled mode
 
 ***
 
@@ -42,7 +48,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:25](https://github.com
 optional Mark: ComponentType<TMarkProps>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:16](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L16)
+Defined in: [react/markput/src/components/MarkedInput.tsx:24](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L24)
+
+Global component used for rendering markups (fallback for option.mark.slot)
 
 ***
 
@@ -52,7 +60,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:16](https://github.com
 optional onChange: (value) => void;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:26](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L26)
+Defined in: [react/markput/src/components/MarkedInput.tsx:44](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L44)
+
+Change event handler
 
 #### Parameters
 
@@ -72,7 +82,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:26](https://github.com
 optional options: Option<TMarkProps, TOverlayProps>[];
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:18](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L18)
+Defined in: [react/markput/src/components/MarkedInput.tsx:28](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L28)
+
+Configuration options for markups and overlays
 
 ***
 
@@ -82,7 +94,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:18](https://github.com
 optional Overlay: ComponentType<TOverlayProps>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L17)
+Defined in: [react/markput/src/components/MarkedInput.tsx:26](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L26)
+
+Global component used for rendering overlays (fallback for option.overlay.slot)
 
 ***
 
@@ -92,7 +106,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:17](https://github.com
 optional readOnly: boolean;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L27)
+Defined in: [react/markput/src/components/MarkedInput.tsx:46](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L46)
+
+Read-only mode
 
 ***
 
@@ -102,7 +118,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:27](https://github.com
 optional ref: Ref<MarkedInputHandler>;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L15)
+Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L22)
+
+Ref to handler
 
 ***
 
@@ -112,7 +130,15 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:15](https://github.com
 optional showOverlayOn: OverlayTrigger;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L23)
+Defined in: [react/markput/src/components/MarkedInput.tsx:38](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L38)
+
+Events that trigger overlay display
+
+#### Default
+
+```ts
+'change'
+```
 
 ***
 
@@ -122,7 +148,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:23](https://github.com
 optional slotProps: SlotProps;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L22)
+Defined in: [react/markput/src/components/MarkedInput.tsx:36](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L36)
+
+Props to pass to slot components
 
 ***
 
@@ -132,7 +160,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com
 optional slots: Slots;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L21)
+Defined in: [react/markput/src/components/MarkedInput.tsx:34](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L34)
+
+Override internal components using slots
 
 ***
 
@@ -142,7 +172,9 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:21](https://github.com
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:20](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L20)
+Defined in: [react/markput/src/components/MarkedInput.tsx:32](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L32)
+
+Additional style
 
 ***
 
@@ -152,4 +184,6 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:20](https://github.com
 optional value: string;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:24](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L24)
+Defined in: [react/markput/src/components/MarkedInput.tsx:40](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L40)
+
+Annotated text with markups

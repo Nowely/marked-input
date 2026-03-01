@@ -68,18 +68,20 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const style = merge(styleProp, slotProps?.container?.style)
 	const [store] = useState(() => new Store({createUseHook}))
 
-	store.state.value.set(value)
-	store.state.defaultValue.set(defaultValue)
-	store.state.onChange.set(onChange)
-	store.state.readOnly.set(readOnly ?? false)
-	store.state.options.set(options)
-	store.state.showOverlayOn.set(showOverlayOn)
-	store.state.Mark.set(Mark)
-	store.state.Overlay.set(Overlay)
-	store.state.className.set(className)
-	store.state.style.set(style as StyleProperties)
-	store.state.slots.set(slots as CoreSlots)
-	store.state.slotProps.set(slotProps as CoreSlotProps)
+	store.state.set({
+		value,
+		defaultValue,
+		onChange,
+		readOnly: readOnly ?? false,
+		options,
+		showOverlayOn,
+		Mark,
+		Overlay,
+		className,
+		style: style as StyleProperties,
+		slots: slots as CoreSlots,
+		slotProps: slotProps as CoreSlotProps,
+	})
 
 	useCoreFeatures(store, ref)
 
