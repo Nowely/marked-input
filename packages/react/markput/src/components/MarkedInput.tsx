@@ -11,19 +11,38 @@ import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {createUseHook} from '../lib/hooks/createUseHook'
 import {DEFAULT_OPTIONS} from '../constants'
 
+/**
+ * Props for MarkedInput component.
+ *
+ * @template TMarkProps - Type of props for the global Mark component
+ * @template TOverlayProps - Type of props for the global Overlay component
+ */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+	/** Ref to handler */
 	ref?: Ref<MarkedInputHandler>
+	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
+	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
 	Overlay?: ComponentType<TOverlayProps>
+	/** Configuration options for markups and overlays */
 	options?: Option<TMarkProps, TOverlayProps>[]
+	/** Additional classes */
 	className?: string
+	/** Additional style */
 	style?: CSSProperties
+	/** Override internal components using slots */
 	slots?: Slots
+	/** Props to pass to slot components */
 	slotProps?: SlotProps
+	/** Events that trigger overlay display @default 'change' */
 	showOverlayOn?: OverlayTrigger
+	/** Annotated text with markups */
 	value?: string
+	/** Initial value for uncontrolled mode */
 	defaultValue?: string
+	/** Change event handler */
 	onChange?: (value: string) => void
+	/** Read-only mode */
 	readOnly?: boolean
 }
 
