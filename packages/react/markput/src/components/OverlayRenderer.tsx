@@ -3,7 +3,7 @@ import {useStore} from '../lib/hooks/useStore'
 import {useSlot} from '../lib/hooks/useSlot'
 import {Suggestions} from './Suggestions'
 
-export const Whisper = memo(() => {
+export const OverlayRenderer = memo(() => {
 	const store = useStore()
 	const overlayMatch = store.state.overlayMatch.use()
 	const key = useMemo(() => (overlayMatch ? store.key.get(overlayMatch.option) : undefined), [overlayMatch])
@@ -17,4 +17,4 @@ export const Whisper = memo(() => {
 	if (key) return <Overlay key={key} {...(props ?? {})} />
 })
 
-Whisper.displayName = 'Whisper'
+OverlayRenderer.displayName = 'OverlayRenderer'

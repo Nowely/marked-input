@@ -2,7 +2,7 @@ import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
-import {Whisper} from './Whisper'
+import {OverlayRenderer} from './OverlayRenderer'
 import type {CoreSlotProps, CoreSlots, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
 import styles from '@markput/core/styles.module.css'
@@ -112,7 +112,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	return (
 		<StoreContext.Provider value={store}>
 			<Container />
-			<Whisper />
+			<OverlayRenderer />
 		</StoreContext.Provider>
 	)
 }
