@@ -7,8 +7,10 @@ import {useStore} from '../lib/hooks/useStore'
 export const EditableSpan = () => {
 	const mark = useMark()
 	const store = useStore()
-	const SpanComponent = useMemo(() => resolveSlot('span', store), [store])
-	const spanProps = useMemo(() => resolveSlotProps('span', store), [store])
+	const slots = store.state.slots.use()
+	const slotProps = store.state.slotProps.use()
+	const SpanComponent = useMemo(() => resolveSlot('span', slots), [slots])
+	const spanProps = useMemo(() => resolveSlotProps('span', slotProps), [slotProps])
 
 	return <SpanComponent {...spanProps} ref={mark.ref} contentEditable={!mark.readOnly} onPaste={handlePaste} />
 }

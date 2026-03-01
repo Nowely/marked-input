@@ -22,7 +22,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 
 	useUncontrolledInit(ref, options, token as MarkToken)
 
-	const readOnly = store.state.readOnly.get()
+	const readOnly = store.state.readOnly.use()
 	useEffect(() => {
 		mark.readOnly = readOnly
 	}, [readOnly])

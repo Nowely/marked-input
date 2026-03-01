@@ -7,13 +7,14 @@ import {Token} from './Token'
 export const Container = memo(() => {
 	const store = useStore()
 	const tokens = store.state.tokens.use()
-
-	const className = store.state.className.get()
-	const style = store.state.style.get()
+	const slots = store.state.slots.use()
+	const slotProps = store.state.slotProps.use()
+	const className = store.state.className.use()
+	const style = store.state.style.use()
 	const key = store.key
 	const refs = store.refs
-	const ContainerComponent = useMemo(() => resolveSlot('container', store), [store])
-	const containerProps = useMemo(() => resolveSlotProps('container', store), [store])
+	const ContainerComponent = useMemo(() => resolveSlot('container', slots), [slots])
+	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	useListener('input', () => store.events.change(), [])
 

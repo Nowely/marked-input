@@ -9,9 +9,11 @@ export const TextSpan = () => {
 	const store = useStore()
 	const ref = useRef<HTMLSpanElement>(null)
 
-	const readOnly = store.state.readOnly.get()
-	const SpanComponent = useMemo(() => resolveSlot('span', store), [store])
-	const spanProps = useMemo(() => resolveSlotProps('span', store), [store])
+	const readOnly = store.state.readOnly.use()
+	const slots = store.state.slots.use()
+	const slotProps = store.state.slotProps.use()
+	const SpanComponent = useMemo(() => resolveSlot('span', slots), [slots])
+	const spanProps = useMemo(() => resolveSlotProps('span', slotProps), [slotProps])
 
 	if (token.type !== 'text') {
 		throw new Error('TextSpan component expects a TextToken')
