@@ -13,11 +13,11 @@ export class SystemListenerController {
 		if (this.#changeUnsubscribe) return
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const onChange = this.store.state.onChange()
+			const onChange = this.store.state.onChange.get()
 
 			if (!this.store.nodes.focus.target) return
 
-			const tokens = this.store.state.tokens()
+			const tokens = this.store.state.tokens.get()
 			const token = tokens[this.store.nodes.focus.index]
 			if (token.type === 'text') {
 				token.content = this.store.nodes.focus.content
@@ -32,19 +32,19 @@ export class SystemListenerController {
 		this.#deleteUnsubscribe = this.store.events.delete.on(data => {
 			if (!data) return
 			const {token} = data
-			const onChange = this.store.state.onChange()
+			const onChange = this.store.state.onChange.get()
 
-			const tokens = this.store.state.tokens()
+			const tokens = this.store.state.tokens.get()
 			const index = tokens.indexOf(token)
-			this.store.state.tokens(tokens.toSpliced(index, 1))
+			this.store.state.tokens.set(tokens.toSpliced(index, 1))
 
-			onChange?.(toString(this.store.state.tokens()))
+			onChange?.(toString(this.store.state.tokens.get()))
 		})
 
 		this.#selectUnsubscribe = this.store.events.select.on(event => {
 			if (!event) return
-			const Mark = this.store.state.Mark()
-			const onChange = this.store.state.onChange()
+			const Mark = this.store.state.Mark.get()
+			const onChange = this.store.state.onChange.get()
 			const {
 				mark,
 				match: {option, span, index, source},
@@ -62,7 +62,7 @@ export class SystemListenerController {
 
 			const newSpan = createNewSpan(span, annotation, index, source)
 
-			this.store.state.recovery(
+			this.store.state.recovery.set(
 				Mark
 					? {caret: 0, anchor: this.store.nodes.input.next, isNext: true}
 					: {caret: index + annotation.length, anchor: this.store.nodes.input}
@@ -70,7 +70,7 @@ export class SystemListenerController {
 
 			if (this.store.nodes.input.target) {
 				this.store.nodes.input.content = newSpan
-				const tokens = this.store.state.tokens()
+				const tokens = this.store.state.tokens.get()
 				const inputToken = tokens[this.store.nodes.input.index]
 				if (inputToken.type === 'text') {
 					inputToken.content = newSpan

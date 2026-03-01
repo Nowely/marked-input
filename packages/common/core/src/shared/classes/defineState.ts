@@ -3,20 +3,16 @@ import {Reactive} from './Reactive'
 export type UseHookFactory = <T>(signal: Signal<T>) => () => T
 
 export type Signal<T> = {
-	(): T
-	(value: T): void
+	get(): T
+	set(value: T): void
 	on(fn: (value: T) => void): () => void
 	use: () => T
 }
 
 function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): Signal<T> {
-	const signal = function (value?: T): T | void {
-		if (arguments.length === 0) {
-			return reactive.get()
-		}
-		reactive.set(value as T)
-	} as Signal<T>
-
+	const signal = {} as Signal<T>
+	signal.get = () => reactive.get()
+	signal.set = (value: T) => reactive.set(value)
 	signal.on = (fn: (value: T) => void) => reactive.on(fn)
 	signal.use = createUseHook(signal)
 

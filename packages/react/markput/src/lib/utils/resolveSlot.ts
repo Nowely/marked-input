@@ -10,7 +10,7 @@ const defaultSlots: Record<SlotName, ElementType> = {
 }
 
 export function resolveSlot(slotName: SlotName, store: Store): ElementType {
-	const slots = store.state.slots() as Record<SlotName, ElementType> | undefined
+	const slots = store.state.slots.get() as Record<SlotName, ElementType> | undefined
 	if (slots?.[slotName]) {
 		return slots[slotName]!
 	}
@@ -19,7 +19,7 @@ export function resolveSlot(slotName: SlotName, store: Store): ElementType {
 }
 
 export function resolveSlotProps(slotName: SlotName, store: Store): HTMLAttributes<HTMLElement> | undefined {
-	const slotProps = store.state.slotProps() as Record<string, unknown> | undefined
+	const slotProps = store.state.slotProps.get() as Record<string, unknown> | undefined
 	const props = slotProps?.[slotName]
 	return props ? (convertDataAttrs(props as Record<string, unknown>) as HTMLAttributes<HTMLElement>) : undefined
 }

@@ -4,8 +4,8 @@ import {findGap, getClosestIndexes} from '../../preparsing'
 
 export function getTokensByUI(store: Store): Token[] {
 	const {focus} = store.nodes
-	const parser = store.state.parser()
-	const tokens = store.state.tokens()
+	const parser = store.state.parser.get()
+	const tokens = store.state.tokens.get()
 
 	if (!parser) {
 		return tokens
@@ -19,17 +19,17 @@ export function getTokensByUI(store: Store): Token[] {
 }
 
 export function getTokensByValue(store: Store): Token[] {
-	const value = store.state.value()
+	const value = store.state.value.get()
 	const ranges = getRangeMap(store)
-	const gap = findGap(store.state.previousValue(), value)
+	const gap = findGap(store.state.previousValue.get(), value)
 
 	if (!gap.left && !gap.right) {
-		store.state.previousValue(value)
-		return store.state.tokens()
+		store.state.previousValue.set(value)
+		return store.state.tokens.get()
 	}
 
-	store.state.previousValue(value)
-	const tokens = store.state.tokens()
+	store.state.previousValue.set(value)
+	const tokens = store.state.tokens.get()
 
 	switch (true) {
 		case gap.left !== undefined &&
@@ -59,7 +59,7 @@ export function getTokensByValue(store: Store): Token[] {
 
 export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
 	let span = ''
-	const tokens = store.state.tokens()
+	const tokens = store.state.tokens.get()
 	for (const index of indexes) {
 		const token = tokens[index]
 		span += token.content
@@ -70,7 +70,7 @@ export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
 
 export function getRangeMap(store: Store): number[] {
 	let position = 0
-	const tokens = store.state.tokens()
+	const tokens = store.state.tokens.get()
 	return (
 		tokens.map(token => {
 			const length = token.content.length
@@ -81,7 +81,7 @@ export function getRangeMap(store: Store): number[] {
 }
 
 export function parseWithParser(store: Store, value: string): Token[] {
-	const parser = store.state.parser()
+	const parser = store.state.parser.get()
 	if (!parser) {
 		return [
 			{

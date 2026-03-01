@@ -8,8 +8,8 @@ export const Container = memo(() => {
 	const store = useStore()
 	const tokens = store.state.tokens.use()
 
-	const className = store.state.className()
-	const style = store.state.style()
+	const className = store.state.className.get()
+	const style = store.state.style.get()
 	const key = store.key
 	const refs = store.refs
 	const ContainerComponent = useMemo(() => resolveSlot('container', store), [store])

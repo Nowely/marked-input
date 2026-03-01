@@ -29,16 +29,16 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 		return () => features.disableAll()
 	}, [])
 
-	const value = store.state.value()
-	const Mark = store.state.Mark()
-	const options = Mark ? store.state.options() : undefined
+	const value = store.state.value.get()
+	const Mark = store.state.Mark.get()
+	const options = Mark ? store.state.options.get() : undefined
 
 	useEffect(() => {
 		const markups = options?.map(opt => opt.markup)
 		if (markups && markups.some(Boolean)) {
-			store.state.parser(new Parser(markups))
+			store.state.parser.set(new Parser(markups))
 		} else {
-			store.state.parser(undefined)
+			store.state.parser.set(undefined)
 		}
 
 		if (isMounted.current) {
@@ -46,8 +46,8 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 			return
 		}
 
-		const inputValue = value ?? store.state.defaultValue() ?? ''
-		store.state.tokens(parseWithParser(store, inputValue))
+		const inputValue = value ?? store.state.defaultValue.get() ?? ''
+		store.state.tokens.set(parseWithParser(store, inputValue))
 
 		isMounted.current = true
 	}, [value, options])
@@ -55,22 +55,22 @@ export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) 
 	useListener(
 		store.events.parse,
 		() => {
-			if (store.state.recovery()) return
-			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+			if (store.state.recovery.get()) return
+			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
 		},
 		[]
 	)
 
 	const tokens = store.state.tokens.use()
 	useEffect(() => {
-		if (!store.state.Mark()) return
+		if (!store.state.Mark.get()) return
 		store.controllers.focus.recover()
 	}, [tokens])
 
 	useEffect(() => {
 		store.controllers.overlay.enableTrigger<Option>(
 			(option: Option) => option.overlay?.trigger,
-			match => store.state.overlayMatch(match)
+			match => store.state.overlayMatch.set(match)
 		)
 		return () => store.controllers.overlay.disable()
 	}, [])

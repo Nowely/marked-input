@@ -9,7 +9,7 @@ import {Token} from './Token'
 export function MarkRenderer() {
 	const node = useToken() as MarkToken
 	const store = useStore()
-	const options = store.state.options()
+	const options = store.state.options.get()
 	const key = store.key
 
 	const option = options?.[node.descriptor.index]
