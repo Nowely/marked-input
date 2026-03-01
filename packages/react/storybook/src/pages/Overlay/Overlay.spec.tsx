@@ -1,6 +1,6 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
-import {describe, expect, it} from 'vitest'
+
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
@@ -52,6 +52,38 @@ describe('API: Overlay and Triggers', () => {
 		await userEvent.keyboard('@')
 
 		// Overlay should appear with the data item
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+	})
+
+	it('should reopen overlay after closing', async () => {
+		const {container} = await render(
+			<Default
+				defaultValue="Hello "
+				options={[
+					{
+						markup: '@[__label__](__value__)',
+						overlay: {
+							trigger: '@',
+							data: ['Item'],
+						},
+					},
+				]}
+			/>
+		)
+
+		const element = container.firstElementChild?.firstElementChild as HTMLElement
+		await focusAtEnd(element)
+
+		// Open overlay
+		await userEvent.keyboard('@')
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+
+		// Close overlay with Escape
+		await userEvent.keyboard('{Escape}')
+		await expect.element(page.getByText('Item')).not.toBeInTheDocument()
+
+		// Add space and reopen overlay
+		await userEvent.keyboard(' @')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 })

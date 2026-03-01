@@ -78,6 +78,6 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 	useEffect(() => {
 		if (!overlayMatch) return
 		store.controllers.overlay.enableClose()
-		return () => store.controllers.overlay.disable()
+		return () => store.controllers.overlay.disableClose()
 	}, [overlayMatch])
 }

@@ -84,6 +84,15 @@ export class OverlayController {
 		document.addEventListener('click', this.#clickHandler, true)
 	}
 
+	disableClose() {
+		if (this.#escHandler) {
+			window.removeEventListener('keydown', this.#escHandler)
+			document.removeEventListener('click', this.#clickHandler!, true)
+			this.#escHandler = undefined
+			this.#clickHandler = undefined
+		}
+	}
+
 	disable() {
 		const container = this.store.refs.container
 
@@ -96,10 +105,7 @@ export class OverlayController {
 			document.removeEventListener('selectionchange', this.#selectionChangeHandler)
 		}
 
-		if (this.#escHandler) {
-			window.removeEventListener('keydown', this.#escHandler)
-			document.removeEventListener('click', this.#clickHandler!, true)
-		}
+		this.disableClose()
 
 		this.#clearUnsubscribe?.()
 		this.#checkUnsubscribe?.()
@@ -111,7 +117,5 @@ export class OverlayController {
 		this.#selectionChangeHandler = undefined
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined
-		this.#escHandler = undefined
-		this.#clickHandler = undefined
 	}
 }
