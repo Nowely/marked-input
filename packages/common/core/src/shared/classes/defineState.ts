@@ -19,7 +19,7 @@ function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): 
 	return signal
 }
 
-export function defineState<T extends Record<string, unknown>>(
+export function defineState<T extends object>(
 	initial: T,
 	createUseHook: UseHookFactory
 ): {[K in keyof T]: Signal<T[K]>} {

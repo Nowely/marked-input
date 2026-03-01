@@ -7,10 +7,6 @@ title: "MarkedInputProps"
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L13)
 
-## Extends
-
-- `CoreMarkputProps`
-
 ## Type Parameters
 
 | Type Parameter | Default type |
@@ -36,15 +32,7 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:18](https://github.com
 optional defaultValue: string;
 ```
 
-Defined in: [common/core/src/shared/types.ts:46](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L46)
-
-Default value
-
-#### Inherited from
-
-```ts
-CoreMarkputProps.defaultValue
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:24](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L24)
 
 ***
 
@@ -64,9 +52,7 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:15](https://github.com
 optional onChange: (value) => void;
 ```
 
-Defined in: [common/core/src/shared/types.ts:48](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L48)
-
-Change event handler
+Defined in: [react/markput/src/components/MarkedInput.tsx:25](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L25)
 
 #### Parameters
 
@@ -78,12 +64,6 @@ Change event handler
 
 `void`
 
-#### Inherited from
-
-```ts
-CoreMarkputProps.onChange
-```
-
 ***
 
 ### options?
@@ -93,14 +73,6 @@ optional options: Option<TMarkProps, TOverlayProps>[];
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L17)
-
-Configuration options for markups and overlays
-
-#### Overrides
-
-```ts
-CoreMarkputProps.options
-```
 
 ***
 
@@ -120,15 +92,7 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:16](https://github.com
 optional readOnly: boolean;
 ```
 
-Defined in: [common/core/src/shared/types.ts:50](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L50)
-
-Prevents from changing the value
-
-#### Inherited from
-
-```ts
-CoreMarkputProps.readOnly
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:26](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L26)
 
 ***
 
@@ -149,14 +113,6 @@ optional showOverlayOn: OverlayTrigger;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L22)
-
-Events that trigger overlay display
-
-#### Overrides
-
-```ts
-CoreMarkputProps.showOverlayOn
-```
 
 ***
 
@@ -196,12 +152,4 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:19](https://github.com
 optional value: string;
 ```
 
-Defined in: [common/core/src/shared/types.ts:44](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L44)
-
-Annotated text with markups for mark
-
-#### Inherited from
-
-```ts
-CoreMarkputProps.value
-```
+Defined in: [react/markput/src/components/MarkedInput.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L23)

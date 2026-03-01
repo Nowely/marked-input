@@ -3,14 +3,14 @@ import {useMemo, useState} from 'react'
 import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {Whisper} from './Whisper'
-import type {CoreMarkputProps, CoreSlotProps, CoreSlots, OverlayTrigger, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, CoreSlots, OverlayTrigger, StyleProperties} from '@markput/core'
 import {Store} from '@markput/core'
 import {StoreContext} from '../lib/providers/StoreContext'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {createUseSignalHook} from '../lib/hooks/createUseSignalHook'
 import {normalizeProps} from '../lib/utils/normalizeProps'
 
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	ref?: Ref<MarkedInputHandler>
 	Mark?: ComponentType<TMarkProps>
 	Overlay?: ComponentType<TOverlayProps>
@@ -20,6 +20,10 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	slots?: Slots
 	slotProps?: SlotProps
 	showOverlayOn?: OverlayTrigger
+	value?: string
+	defaultValue?: string
+	onChange?: (value: string) => void
+	readOnly?: boolean
 }
 
 function MarkedInputInner({ref}: {ref?: Ref<MarkedInputHandler>}) {

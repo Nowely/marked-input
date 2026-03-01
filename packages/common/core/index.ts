@@ -8,7 +8,7 @@ export type {
 	Listener,
 	OverlayTrigger,
 	CoreOption,
-	CoreMarkputProps,
+	MarkputState,
 	StyleProperties,
 	GenericComponent,
 	GenericElement,

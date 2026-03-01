@@ -50,7 +50,7 @@ Can be a static object or a function that transforms MarkProps.
 optional markup: Markup;
 ```
 
-Defined in: [common/core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L35)
+Defined in: [common/core/src/shared/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L36)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
