@@ -37,6 +37,7 @@ export const Suggestions = () => {
 		KEYBOARD.ENTER,
 		event => {
 			event.preventDefault()
+			if (isNaN(active)) return
 			const suggestion = filtered[active]
 			select({value: suggestion, meta: active.toString()})
 		},
