@@ -4,11 +4,12 @@ import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slo
 import {Container} from './Container'
 import {Whisper} from './Whisper'
 import type {CoreSlotProps, CoreSlots, OverlayTrigger, StyleProperties} from '@markput/core'
-import {Store} from '@markput/core'
+import {cx, merge, Store} from '@markput/core'
+import styles from '@markput/core/styles.module.css'
 import {StoreContext} from '../lib/providers/StoreContext'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {createUseSignalHook} from '../lib/hooks/createUseSignalHook'
-import {normalizeProps} from '../lib/utils/normalizeProps'
+import {DEFAULT_OPTIONS} from '../constants'
 
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	ref?: Ref<MarkedInputHandler>
@@ -29,8 +30,23 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref, value, defaultValue, onChange, readOnly, Mark, Overlay, slots, slotProps, ...rest} = props
-	const {options, showOverlayOn, className, style} = normalizeProps(rest as MarkedInputProps)
+	const {
+		ref,
+		value,
+		defaultValue,
+		onChange,
+		readOnly,
+		Mark,
+		Overlay,
+		slots,
+		slotProps,
+		options = DEFAULT_OPTIONS,
+		showOverlayOn = 'change',
+		className: classNameProp,
+		style: styleProp,
+	} = props
+	const className = cx(styles.Container, classNameProp, slotProps?.container?.className)
+	const style = merge(styleProp, slotProps?.container?.style)
 	const createUseHook = useMemo(createUseSignalHook, [])
 	const [store] = useState(() => {
 		const s = new Store({createUseHook})
