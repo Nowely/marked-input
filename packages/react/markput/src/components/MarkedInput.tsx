@@ -16,6 +16,17 @@ import {DEFAULT_OPTIONS} from '../constants'
  *
  * @template TMarkProps - Type of props for the global Mark component
  * @template TOverlayProps - Type of props for the global Overlay component
+ *
+ * @example
+ * ```tsx
+ * <MarkedInput<ChipProps>
+ *   Mark={Chip}
+ *   options={[{
+ *     markup: '@[__value__]',
+ *     mark: { label: 'Click me' }
+ *   }]}
+ * />
+ * ```
  */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	/** Ref to handler */
@@ -24,17 +35,30 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
 	Overlay?: ComponentType<TOverlayProps>
-	/** Configuration options for markups and overlays */
+	/**
+	 * Configuration options for markups and overlays.
+	 * Each option can specify its own slot component via mark.slot or overlay.slot.
+	 * Falls back to global Mark/Overlay components when not specified.
+	 */
 	options?: Option<TMarkProps, TOverlayProps>[]
 	/** Additional classes */
 	className?: string
 	/** Additional style */
 	style?: CSSProperties
-	/** Override internal components using slots */
+	/**
+	 * Override internal components using slots
+	 * @example slots={{ container: 'div', span: 'span' }}
+	 */
 	slots?: Slots
-	/** Props to pass to slot components */
+	/**
+	 * Props to pass to slot components
+	 * @example slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
+	 */
 	slotProps?: SlotProps
-	/** Events that trigger overlay display @default 'change' */
+	/**
+	 * Events that trigger overlay display
+	 * @default 'change'
+	 */
 	showOverlayOn?: OverlayTrigger
 	/** Annotated text with markups */
 	value?: string
