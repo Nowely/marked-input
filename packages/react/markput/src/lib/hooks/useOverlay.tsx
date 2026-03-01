@@ -1,5 +1,5 @@
 import type {RefObject} from 'react'
-import {useCallback} from 'react'
+import {useCallback, useMemo} from 'react'
 import type {OverlayMatch, Token} from '@markput/core'
 import {Caret} from '@markput/core'
 import type {Option} from '../../types'
@@ -43,5 +43,17 @@ export function useOverlay(): OverlayHandler {
 		[match]
 	)
 
-	return {match, style, select, close, ref: {current: store.refs.overlay} as RefObject<HTMLElement>}
+	const ref = useMemo<RefObject<HTMLElement>>(
+		() => ({
+			get current() {
+				return store.refs.overlay
+			},
+			set current(v) {
+				store.refs.overlay = v
+			},
+		}),
+		[]
+	)
+
+	return {match, style, select, close, ref}
 }

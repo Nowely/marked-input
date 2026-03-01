@@ -1,7 +1,7 @@
 import {useEffect, useImperativeHandle, useRef} from 'react'
 import type {MarkedInputHandler, Option} from '../../types'
 import type {Store} from '@markput/core'
-import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser} from '@markput/core'
+import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser, toString} from '@markput/core'
 import {useListener} from './useListener'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
@@ -55,7 +55,10 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler>
 	useListener(
 		store.events.parse,
 		() => {
-			if (store.state.recovery.get()) return
+			if (store.state.recovery.get()) {
+				store.state.tokens.set(parseWithParser(store, toString(store.state.tokens.get())))
+				return
+			}
 			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
 		},
 		[]
