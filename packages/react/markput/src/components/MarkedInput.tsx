@@ -1,9 +1,9 @@
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
-import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
+import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
-import type {CoreSlotProps, CoreSlots, OverlayTrigger, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
 import styles from '@markput/core/styles.module.css'
 import {StoreContext} from '../lib/providers/StoreContext'
@@ -30,7 +30,7 @@ import {DEFAULT_OPTIONS} from '../constants'
  */
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	/** Ref to handler */
-	ref?: Ref<MarkedInputHandler>
+	ref?: Ref<MarkputHandler>
 	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.overlay.slot) */

@@ -9,6 +9,7 @@ export type {
 	OverlayTrigger,
 	CoreOption,
 	MarkputState,
+	MarkputHandler,
 	StyleProperties,
 	GenericComponent,
 	GenericElement,

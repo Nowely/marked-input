@@ -1,6 +1,6 @@
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
-import type {MarkputState, OverlayMatch} from '../../shared/types'
+import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import type {Token} from '../parsing'
 import {SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
@@ -69,5 +69,20 @@ export class Store {
 			},
 			options.createUseHook
 		)
+	}
+
+	createHandler(): MarkputHandler {
+		const store = this
+		return {
+			get container() {
+				return store.refs.container
+			},
+			get overlay() {
+				return store.refs.overlay
+			},
+			focus() {
+				store.nodes.focus.head?.focus()
+			},
+		}
 	}
 }

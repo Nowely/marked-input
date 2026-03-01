@@ -123,3 +123,9 @@ export interface CoreSlotProps {
 	container?: GenericAttributes & {className?: string; style?: StyleProperties}
 	span?: GenericAttributes & {className?: string; style?: StyleProperties}
 }
+
+export interface MarkputHandler {
+	readonly container: HTMLDivElement | null
+	readonly overlay: HTMLElement | null
+	focus(): void
+}

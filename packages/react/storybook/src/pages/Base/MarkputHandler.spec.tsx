@@ -1,29 +1,29 @@
 import {render} from 'vitest-browser-react'
 import {describe, expect, it} from 'vitest'
-import type {MarkedInputHandler} from '@markput/react'
+import type {MarkputHandler} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import * as BaseStories from './Base.stories'
 
 const {Default} = composeStories(BaseStories)
 
-type UseMarkedInputHandler = {
-	value: MarkedInputHandler | null
-	set: (el: MarkedInputHandler | null) => void
+type UseMarkputHandler = {
+	value: MarkputHandler | null
+	set: (el: MarkputHandler | null) => void
 }
 
-function useMarkedInputHandler(): UseMarkedInputHandler {
-	let value: MarkedInputHandler | null = null
+function useMarkputHandler(): UseMarkputHandler {
+	let value: MarkputHandler | null = null
 
-	function set(el: MarkedInputHandler | null) {
+	function set(el: MarkputHandler | null) {
 		value = el
 	}
 
 	return {value, set}
 }
 
-describe('API: MarkedInputHandler', () => {
+describe('API: MarkputHandler', () => {
 	it('should support the ref prop for accessing component handler', async () => {
-		const handler = useMarkedInputHandler()
+		const handler = useMarkputHandler()
 
 		await render(<Default ref={handler.set} />)
 

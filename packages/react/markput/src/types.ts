@@ -81,12 +81,3 @@ export interface SlotProps {
 	/** Props to pass to the span slot */
 	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
 }
-
-export interface MarkedInputHandler {
-	/** Container element */
-	readonly container: HTMLDivElement | null
-	/** Overlay element if exists */
-	readonly overlay: HTMLElement | null
-
-	focus(): void
-}

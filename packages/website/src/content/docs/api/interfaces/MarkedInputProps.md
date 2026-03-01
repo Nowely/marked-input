@@ -115,7 +115,7 @@ Read-only mode
 ### ref?
 
 ```ts
-optional ref: Ref<MarkedInputHandler>;
+optional ref: Ref<MarkputHandler>;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L22)

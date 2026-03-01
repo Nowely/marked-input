@@ -1,25 +1,13 @@
 import {useEffect, useImperativeHandle, useRef} from 'react'
-import type {MarkedInputHandler, Option} from '../../types'
-import type {Store} from '@markput/core'
+import type {Option} from '../../types'
+import type {MarkputHandler, Store} from '@markput/core'
 import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser, toString} from '@markput/core'
 import {useListener} from './useListener'
 
-const initHandler = (store: Store): MarkedInputHandler => ({
-	get container() {
-		return store.refs.container
-	},
-	get overlay() {
-		return store.refs.overlay
-	},
-	focus() {
-		store.nodes.focus.head?.focus()
-	},
-})
-
-export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler> | undefined) {
+export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | undefined) {
 	const isInitialized = useRef(false)
 
-	useImperativeHandle(ref, () => initHandler(store), [store])
+	useImperativeHandle(ref, () => store.createHandler(), [store])
 
 	useEffect(() => {
 		const features = createCoreFeatures(store)
