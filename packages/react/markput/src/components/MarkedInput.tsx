@@ -26,16 +26,6 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	readOnly?: boolean
 }
 
-function MarkedInputInner({ref}: {ref?: Ref<MarkedInputHandler>}) {
-	useCoreFeatures(ref)
-	return (
-		<>
-			<Container />
-			<Whisper />
-		</>
-	)
-}
-
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
@@ -86,9 +76,12 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	store.state.slots.set(slots as CoreSlots)
 	store.state.slotProps.set(slotProps as CoreSlotProps)
 
+	useCoreFeatures(store, ref)
+
 	return (
 		<StoreContext.Provider value={store}>
-			<MarkedInputInner ref={ref} />
+			<Container />
+			<Whisper />
 		</StoreContext.Provider>
 	)
 }

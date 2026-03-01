@@ -3,7 +3,6 @@ import type {MarkedInputHandler, Option} from '../../types'
 import type {Store} from '@markput/core'
 import {createCoreFeatures, getTokensByUI, getTokensByValue, Parser, parseWithParser} from '@markput/core'
 import {useListener} from './useListener'
-import {useStore} from './useStore'
 
 const initHandler = (store: Store): MarkedInputHandler => ({
 	get container() {
@@ -17,8 +16,7 @@ const initHandler = (store: Store): MarkedInputHandler => ({
 	},
 })
 
-export function useCoreFeatures(ref: React.Ref<MarkedInputHandler> | undefined) {
-	const store = useStore()
+export function useCoreFeatures(store: Store, ref: React.Ref<MarkedInputHandler> | undefined) {
 	const isMounted = useRef(false)
 
 	useImperativeHandle(ref, () => initHandler(store), [store])
