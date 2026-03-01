@@ -8,6 +8,7 @@ import {OverlayController} from '../overlay'
 import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {TextSelectionController} from '../selection'
+import {Lifecycle} from '../lifecycle'
 
 export interface StoreOptions {
 	createUseHook: UseHookFactory
@@ -44,6 +45,8 @@ export class Store {
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
 	}
+
+	readonly lifecycle = new Lifecycle(this)
 
 	constructor(options: StoreOptions) {
 		this.state = defineState(

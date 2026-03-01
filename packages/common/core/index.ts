@@ -54,6 +54,9 @@ export {Caret, TriggerFinder} from './src/features/caret'
 export {FeatureManager, asFeature, type Feature} from './src/features/FeatureManager'
 export {createCoreFeatures} from './src/features/coreFeatures'
 
+// Lifecycle
+export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
+
 // Mark Handler
 export {MarkHandler, type RefAccessor} from './src/features/mark'
 
