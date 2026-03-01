@@ -1,6 +1,5 @@
 import {memo, useMemo} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
-import {useListener} from '../lib/hooks/useListener'
 import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
 
@@ -15,8 +14,6 @@ export const Container = memo(() => {
 	const refs = store.refs
 	const ContainerComponent = useMemo(() => resolveSlot('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
-
-	useListener('input', () => store.events.change(), [])
 
 	return (
 		<ContainerComponent

@@ -1,7 +1,6 @@
 export {MarkedInput} from './src/components/MarkedInput'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'
-export {useListener} from './src/lib/hooks/useListener'
 
 export type {MarkedInputProps} from './src/components/MarkedInput'
 export type {OverlayHandler} from './src/lib/hooks/useOverlay'
