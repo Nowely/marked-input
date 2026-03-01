@@ -44,14 +44,15 @@ export function useOverlay(): OverlayHandler {
 	)
 
 	const ref = useMemo<RefObject<HTMLElement>>(
-		() => ({
-			get current() {
-				return store.refs.overlay
-			},
-			set current(v) {
-				store.refs.overlay = v
-			},
-		}),
+		() =>
+			({
+				get current() {
+					return store.refs.overlay
+				},
+				set current(v: HTMLElement | null) {
+					store.refs.overlay = v
+				},
+			}) as RefObject<HTMLElement>,
 		[]
 	)
 

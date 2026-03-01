@@ -15,7 +15,7 @@ Defined in: [common/core/src/shared/types.ts:127](https://github.com/Nowely/mark
 readonly container: HTMLDivElement | null;
 ```
 
-Container element
+Defined in: [common/core/src/shared/types.ts:128](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L128)
 
 ***
 
@@ -25,7 +25,7 @@ Container element
 readonly overlay: HTMLElement | null;
 ```
 
-Overlay element if exists
+Defined in: [common/core/src/shared/types.ts:129](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L129)
 
 ## Methods
 
@@ -34,6 +34,8 @@ Overlay element if exists
 ```ts
 focus(): void;
 ```
+
+Defined in: [common/core/src/shared/types.ts:130](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L130)
 
 #### Returns
 
