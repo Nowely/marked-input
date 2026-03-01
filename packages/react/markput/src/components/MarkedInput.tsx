@@ -29,22 +29,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref, ...rest} = props
-	const normalized = normalizeProps(rest as MarkedInputProps)
-	const {
-		value,
-		defaultValue,
-		onChange,
-		readOnly,
-		options,
-		showOverlayOn,
-		Mark,
-		Overlay,
-		className,
-		style,
-		slots,
-		slotProps,
-	} = normalized
+	const {ref, value, defaultValue, onChange, readOnly, Mark, Overlay, slots, slotProps, ...rest} = props
+	const {options, showOverlayOn, className, style} = normalizeProps(rest as MarkedInputProps)
 	const createUseHook = useMemo(createUseSignalHook, [])
 	const [store] = useState(() => {
 		const s = new Store({createUseHook})
