@@ -1,1 +1,0 @@
-Purpose: Manages overlay functionality like suggestions, mentions, etc.

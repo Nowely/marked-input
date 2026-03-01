@@ -1,11 +1,12 @@
 import type {RefObject} from 'react'
-import {useMemo, useState} from 'react'
-import {useDownOf} from '../../lib/hooks/useDownOf'
+import {useEffect, useMemo, useState} from 'react'
 import {useOverlay} from '../../lib/hooks/useOverlay'
+import {useStore} from '../../lib/hooks/useStore'
 import {KEYBOARD} from '@markput/core'
 import styles from '@markput/core/styles.module.css'
 
 export const Suggestions = () => {
+	const store = useStore()
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match.option.overlay?.data || []
@@ -15,37 +16,38 @@ export const Suggestions = () => {
 	)
 	const length = filtered.length
 
-	useDownOf(
-		KEYBOARD.UP,
-		event => {
-			event.preventDefault()
-			setActive(prevState => (isNaN(prevState) ? 0 : (length + ((prevState - 1) % length)) % length))
-		},
-		[length]
-	)
+	useEffect(() => {
+		const container = store.refs.container
+		if (!container) return
 
-	useDownOf(
-		KEYBOARD.DOWN,
-		event => {
-			event.preventDefault()
-			setActive(prevState => (isNaN(prevState) ? 0 : (prevState + 1) % length))
-		},
-		[length]
-	)
+		const handler = (event: KeyboardEvent) => {
+			switch (event.key) {
+				case KEYBOARD.UP:
+					event.preventDefault()
+					setActive(prev => (isNaN(prev) ? 0 : (length + ((prev - 1) % length)) % length))
+					break
+				case KEYBOARD.DOWN:
+					event.preventDefault()
+					setActive(prev => (isNaN(prev) ? 0 : (prev + 1) % length))
+					break
+				case KEYBOARD.ENTER:
+					event.preventDefault()
+					setActive(current => {
+						if (isNaN(current)) return current
+						const suggestion = filtered[current]
+						select({value: suggestion, meta: current.toString()})
+						return current
+					})
+					break
+			}
+		}
 
-	useDownOf(
-		KEYBOARD.ENTER,
-		event => {
-			event.preventDefault()
-			const suggestion = filtered[active]
-			select({value: suggestion, meta: active.toString()})
-		},
-		[filtered, active]
-	)
+		container.addEventListener('keydown', handler)
+		return () => container.removeEventListener('keydown', handler)
+	}, [length, filtered])
 
 	if (!filtered.length) return null
 
-	//TODO possible to add classes via slots
 	return (
 		<ul ref={ref as RefObject<HTMLUListElement>} className={styles.Suggestions} style={style}>
 			{filtered.map((suggestion, index) => {

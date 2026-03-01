@@ -1,18 +1,14 @@
 import type {RefObject} from 'react'
 import {useEffect, useRef, useState} from 'react'
 import type {MarkToken} from '@markput/core'
+import {MarkHandler} from '@markput/core'
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
-import {MarkHandler} from '../classes/MarkHandler'
 
 export interface MarkOptions {
-	/**
-	 * @default false
-	 */
 	controlled?: boolean
 }
 
-//TODO subscribe on label/value changing
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
 	const token = useToken()
@@ -22,12 +18,11 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		throw new Error('useMark can only be used with mark tokens')
 	}
 
-	const [mark] = useState(() => new MarkHandler<T>({ref, store, token}))
+	const [mark] = useState(() => new MarkHandler<T>({ref, store, token: token as MarkToken}))
 
-	useUncontrolledInit(ref, options, token)
+	useUncontrolledInit(ref, options, token as MarkToken)
 
-	//Sync for state
-	const readOnly = useStore(state => state.props.readOnly)
+	const readOnly = store.state.readOnly.use()
 	useEffect(() => {
 		mark.readOnly = readOnly
 	}, [readOnly])

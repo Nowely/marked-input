@@ -16,7 +16,7 @@
   "dependencies": {
     "@markput/core": "workspace:*"
   },
-"peerDependencies": {
+  "peerDependencies": {
     "react": ">=19.0.0"
   },
   "module": "./index.js",

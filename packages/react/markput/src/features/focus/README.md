@@ -1,1 +1,0 @@
-Purpose: Handles focus-related functionality and text selection

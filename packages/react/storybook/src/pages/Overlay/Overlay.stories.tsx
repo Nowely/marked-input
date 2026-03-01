@@ -1,6 +1,7 @@
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {MarkToken} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
+import type {RefObject} from 'react'
 import {useState} from 'react'
 
 export default {
@@ -57,9 +58,9 @@ export const PositionedOverlay = () => {
 }
 
 const List = () => {
-	const {select} = useOverlay()
+	const {select, ref} = useOverlay()
 	return (
-		<ul>
+		<ul ref={ref as RefObject<HTMLUListElement>}>
 			<li onClick={() => select({value: 'First'})}>Clickable First</li>
 			<li onClick={() => select({value: 'Second'})}>Clickable Second</li>
 		</ul>
@@ -68,5 +69,13 @@ const List = () => {
 
 export const SelectableOverlay = () => {
 	const [value, setValue] = useState('Hello, suggest overlay by trigger @!')
-	return <MarkedInput Mark={Mark} Overlay={List} value={value} onChange={setValue} />
+	return (
+		<MarkedInput
+			Mark={Mark}
+			Overlay={List}
+			value={value}
+			onChange={setValue}
+			options={[{markup: '@[__value__](__meta__)', overlay: {trigger: '@'}}]}
+		/>
+	)
 }

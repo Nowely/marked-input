@@ -6,10 +6,10 @@ title: "MarkedInput"
 ---
 
 ```ts
-function MarkedInput<TMarkProps, TOverlayProps>(props): Element | null;
+function MarkedInput<TMarkProps, TOverlayProps>(props): Element;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:83](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L83)
+Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
 
 ## Type Parameters
 
@@ -26,4 +26,4 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:83](https://github.com
 
 ## Returns
 
-`Element` \| `null`
+`Element`

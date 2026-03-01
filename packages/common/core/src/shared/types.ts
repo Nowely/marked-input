@@ -1,5 +1,6 @@
 import type {NodeProxy} from './classes/NodeProxy'
 import type {Markup} from '../features/parsing/ParserV2/types'
+import type {Parser, Token} from '../features/parsing'
 
 /**
  * Core option for markups - Framework-agnostic configuration.
@@ -36,22 +37,34 @@ export interface CoreOption {
 }
 
 /**
- * Framework-agnostic core props for MarkedInput
- * Contains only data and configuration, no framework-specific fields
+ * State for Markput store
+ * Contains internal state and props-derived configuration
  */
-export interface CoreMarkputProps {
+export interface MarkputState {
+	tokens: Token[]
+	parser: Parser | undefined
+	previousValue: string | undefined
+	recovery: Recovery | undefined
+	selecting: 'drag' | 'all' | undefined
+	overlayMatch: OverlayMatch | undefined
 	/** Annotated text with markups for mark */
-	value?: string
+	value: string | undefined
 	/** Default value */
-	defaultValue?: string
+	defaultValue: string | undefined
 	/** Change event handler */
-	onChange?: (value: string) => void
+	onChange: ((value: string) => void) | undefined
 	/** Prevents from changing the value */
-	readOnly?: boolean
+	readOnly: boolean
 	/** Configuration options for markups and overlays */
-	options?: CoreOption[]
+	options: CoreOption[] | undefined
 	/** Events that trigger overlay display */
-	showOverlayOn?: OverlayTrigger
+	showOverlayOn: OverlayTrigger | undefined
+	Mark: GenericComponent | undefined
+	Overlay: GenericComponent | undefined
+	className: string | undefined
+	style: StyleProperties | undefined
+	slots: CoreSlots | undefined
+	slotProps: CoreSlotProps | undefined
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
@@ -90,6 +103,29 @@ export type Recovery = {
 	anchor: NodeProxy
 	isNext?: boolean
 	caret: number
+	childIndex?: number
 }
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
+
+export type StyleProperties = Record<string, string | number>
+
+export type GenericComponent = unknown
+export type GenericElement = unknown
+export type GenericAttributes = Record<string, unknown>
+
+export interface CoreSlots {
+	container?: GenericElement
+	span?: GenericElement
+}
+
+export interface CoreSlotProps {
+	container?: GenericAttributes & {className?: string; style?: StyleProperties}
+	span?: GenericAttributes & {className?: string; style?: StyleProperties}
+}
+
+export interface MarkputHandler {
+	readonly container: HTMLDivElement | null
+	readonly overlay: HTMLElement | null
+	focus(): void
+}

@@ -5,13 +5,15 @@ prev: false
 title: "@markput/react"
 ---
 
+## Classes
+
+- [MarkHandler](/api/classes/markhandler/)
+
 ## Interfaces
 
-- [MarkedInputComponent](/api/interfaces/markedinputcomponent/)
-- [MarkedInputHandler](/api/interfaces/markedinputhandler/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
-- [MarkHandler](/api/interfaces/markhandler/)
 - [MarkProps](/api/interfaces/markprops/)
+- [MarkputHandler](/api/interfaces/markputhandler/)
 - [MarkToken](/api/interfaces/marktoken/)
 - [Option](/api/interfaces/option/)
 - [OverlayHandler](/api/interfaces/overlayhandler/)
@@ -28,6 +30,5 @@ title: "@markput/react"
 - [annotate](/api/functions/annotate/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
-- [useListener](/api/functions/uselistener/)
 - [useMark](/api/functions/usemark/)
 - [useOverlay](/api/functions/useoverlay/)

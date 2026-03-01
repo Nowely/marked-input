@@ -6,10 +6,11 @@ import type {MarkProps} from '../types'
 // eslint-disable-next-line import/no-cycle
 import {Token} from './Token'
 
-/** Renders a MarkToken using the resolved Mark component from useSlot */
 export function MarkRenderer() {
 	const node = useToken() as MarkToken
-	const {options, key} = useStore(store => ({options: store.props.options, key: store.key}), true)
+	const store = useStore()
+	const options = store.state.options.use()
+	const key = store.key
 
 	const option = options?.[node.descriptor.index]
 

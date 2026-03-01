@@ -1,29 +1,27 @@
-import {memo} from 'react'
+import {memo, useMemo} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
-import {useListener} from '../lib/hooks/useListener'
 import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
-import {SystemEvent} from '@markput/core'
 
 export const Container = memo(() => {
-	const {className, style, tokens, bus, key, ContainerComponent, containerProps, refs} = useStore(
-		s => ({
-			className: s.props.className,
-			style: s.props.style,
-			tokens: s.tokens,
-			bus: s.bus,
-			key: s.key,
-			refs: s.refs,
-			ContainerComponent: resolveSlot('container', s),
-			containerProps: resolveSlotProps('container', s),
-		}),
-		true
-	)
-
-	useListener('input', () => bus.send(SystemEvent.Change), [])
+	const store = useStore()
+	const tokens = store.state.tokens.use()
+	const slots = store.state.slots.use()
+	const slotProps = store.state.slotProps.use()
+	const className = store.state.className.use()
+	const style = store.state.style.use()
+	const key = store.key
+	const refs = store.refs
+	const ContainerComponent = useMemo(() => resolveSlot('container', slots), [slots])
+	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	return (
-		<ContainerComponent ref={refs.setContainer} {...containerProps} className={className} style={style}>
+		<ContainerComponent
+			ref={(el: HTMLDivElement | null) => (refs.container = el)}
+			{...containerProps}
+			className={className}
+			style={style}
+		>
 			{tokens.map(token => (
 				<Token key={key.get(token)} mark={token} />
 			))}

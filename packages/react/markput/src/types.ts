@@ -2,11 +2,6 @@ import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 import type {CoreOption} from '@markput/core'
 
 /**
- * Utility type to extract props from a ComponentType.
- */
-export type PropsOf<T> = T extends ComponentType<infer P> ? (P extends object ? P : never) : never
-
-/**
  * Props passed to Mark components.
  */
 export interface MarkProps {
@@ -85,13 +80,4 @@ export interface SlotProps {
 	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
 	/** Props to pass to the span slot */
 	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
-}
-
-export interface MarkedInputHandler {
-	/** Container element */
-	readonly container: HTMLDivElement | null
-	/** Overlay element if exists */
-	readonly overlay: HTMLElement | null
-
-	focus(): void
 }

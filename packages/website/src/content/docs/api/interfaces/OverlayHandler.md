@@ -15,9 +15,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:8](https://github.com/No
 close: () => void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:19](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L19)
-
-Used for close overlay.
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L13)
 
 #### Returns
 
@@ -31,9 +29,7 @@ Used for close overlay.
 match: OverlayMatch<Option<MarkProps, OverlayProps>>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:27](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L27)
-
-Overlay match details
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L15)
 
 ***
 
@@ -43,7 +39,7 @@ Overlay match details
 ref: RefObject<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:28](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L28)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:16](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L16)
 
 ***
 
@@ -53,9 +49,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:28](https://github.com/N
 select: (value) => void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:23](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L23)
-
-Used for insert an annotation instead a triggered value.
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L14)
 
 #### Parameters
 
@@ -77,9 +71,7 @@ Used for insert an annotation instead a triggered value.
 style: object;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:12](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L12)
-
-Style with caret absolute position. Used for placing an overlay.
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L9)
 
 #### left
 

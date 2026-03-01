@@ -4,7 +4,7 @@
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build -w",
-"test": "vitest run",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:related": "vitest related",
     "test:ui": "vitest --ui",

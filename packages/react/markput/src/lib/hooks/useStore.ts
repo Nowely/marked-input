@@ -1,28 +1,10 @@
-import {useContext, useState} from 'react'
-import type {Store} from '@markput/core'
-import {assertNonNullable, shallow, SystemEvent} from '@markput/core'
+import {useContext} from 'react'
 import {StoreContext} from '../providers/StoreContext'
-import type {MarkedInputProps} from '../../components/MarkedInput'
-import {useListener} from './useListener'
+import type {Store} from '@markput/core'
+import {assertNonNullable} from '@markput/core'
 
-export function useStore(): Store<MarkedInputProps>
-export function useStore<T>(selector: (store: Store<MarkedInputProps>) => T, byStruct?: boolean): T
-export function useStore<T>(selector?: (store: Store<MarkedInputProps>) => T, byStruct?: boolean) {
+export function useStore(): Store {
 	const store = useContext(StoreContext)
 	assertNonNullable(store)
-
-	const [value, setValue] = useState(() => selector?.(store))
-	useListener(
-		SystemEvent.STORE_UPDATED,
-		() => {
-			setValue(value => {
-				const newValue = selector?.(store)
-				if (byStruct && shallow(value, newValue)) return value
-				return newValue
-			})
-		},
-		[]
-	)
-
-	return selector ? value : store
+	return store
 }

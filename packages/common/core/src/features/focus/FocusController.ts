@@ -1,0 +1,86 @@
+import type {Store} from '../store/Store'
+
+export class FocusController {
+	#focusinHandler?: (e: FocusEvent) => void
+	#focusoutHandler?: () => void
+	#clickHandler?: () => void
+
+	constructor(private store: Store) {}
+
+	enable() {
+		if (this.#focusinHandler) return
+
+		const container = this.store.refs.container
+		if (!container) return
+
+		this.#focusinHandler = e => {
+			this.store.nodes.focus.target = e.target as HTMLElement
+		}
+
+		this.#focusoutHandler = () => {
+			this.store.nodes.focus.target = undefined
+		}
+
+		this.#clickHandler = () => {
+			const tokens = this.store.state.tokens.get()
+			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+				const element = this.store.refs.container?.firstElementChild as HTMLElement | undefined
+				element?.focus()
+			}
+		}
+
+		container.addEventListener('focusin', this.#focusinHandler)
+		container.addEventListener('focusout', this.#focusoutHandler)
+		container.addEventListener('click', this.#clickHandler)
+	}
+
+	disable() {
+		const container = this.store.refs.container
+		if (!container || !this.#focusinHandler) return
+
+		container.removeEventListener('focusin', this.#focusinHandler)
+		container.removeEventListener('focusout', this.#focusoutHandler!)
+		container.removeEventListener('click', this.#clickHandler!)
+
+		this.#focusinHandler = undefined
+		this.#focusoutHandler = undefined
+		this.#clickHandler = undefined
+	}
+
+	recover() {
+		const recovery = this.store.state.recovery.get()
+		if (!recovery) return
+
+		const {anchor, caret, isNext} = recovery
+		const isStale = !anchor.target || !anchor.target.isConnected
+
+		switch (true) {
+			case isNext && isStale: {
+				const container = this.store.refs.container
+				// After re-parse, text at childIndex splits into [text, mark, text]
+				// Focus the text span after the mark (childIndex + 2)
+				const targetChild =
+					recovery.childIndex != null
+						? (container?.children[recovery.childIndex + 2] as HTMLElement | undefined)
+						: undefined
+				if (targetChild) {
+					targetChild.focus()
+				} else {
+					this.store.nodes.focus.tail.focus()
+				}
+				break
+			}
+			case isNext:
+				anchor.prev.focus()
+				break
+			case isStale:
+				this.store.nodes.focus.head.focus()
+				break
+			default:
+				anchor.next.focus()
+		}
+
+		this.store.nodes.focus.caret = caret
+		this.store.state.recovery.set(undefined)
+	}
+}

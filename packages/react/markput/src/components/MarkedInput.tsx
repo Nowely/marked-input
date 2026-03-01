@@ -1,10 +1,15 @@
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import type {MarkedInputHandler, MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
+import {useState} from 'react'
+import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
-import {Featurer} from './Featurer'
-import {StoreProvider} from './StoreProvider'
-import {Whisper} from './Whisper'
-import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
+import {OverlayRenderer} from './OverlayRenderer'
+import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
+import {cx, merge, Store} from '@markput/core'
+import styles from '@markput/core/styles.module.css'
+import {StoreContext} from '../lib/providers/StoreContext'
+import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
+import {createUseHook} from '../lib/hooks/createUseHook'
+import {DEFAULT_OPTIONS} from '../constants'
 
 /**
  * Props for MarkedInput component.
@@ -13,7 +18,7 @@ import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
  * @template TOverlayProps - Type of props for the global Overlay component
  *
  * @example
- * ```typescript
+ * ```tsx
  * <MarkedInput<ChipProps>
  *   Mark={Chip}
  *   options={[{
@@ -23,9 +28,9 @@ import type {CoreMarkputProps, OverlayTrigger} from '@markput/core'
  * />
  * ```
  */
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreMarkputProps {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	/** Ref to handler */
-	ref?: Ref<MarkedInputHandler>
+	ref?: Ref<MarkputHandler>
 	/** Global component used for rendering markups (fallback for option.mark.slot) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
@@ -42,14 +47,12 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	style?: CSSProperties
 	/**
 	 * Override internal components using slots
-	 * @example
-	 * slots={{ container: 'div', span: 'span' }}
+	 * @example slots={{ container: 'div', span: 'span' }}
 	 */
 	slots?: Slots
 	/**
 	 * Props to pass to slot components
-	 * @example
-	 * slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
+	 * @example slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
 	 */
 	slotProps?: SlotProps
 	/**
@@ -57,17 +60,59 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	 * @default 'change'
 	 */
 	showOverlayOn?: OverlayTrigger
+	/** Annotated text with markups */
+	value?: string
+	/** Initial value for uncontrolled mode */
+	defaultValue?: string
+	/** Change event handler */
+	onChange?: (value: string) => void
+	/** Read-only mode */
+	readOnly?: boolean
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref, ...rest} = props
+	const {
+		ref,
+		value,
+		defaultValue,
+		onChange,
+		readOnly = false,
+		Mark,
+		Overlay,
+		slots,
+		slotProps,
+		options = DEFAULT_OPTIONS,
+		showOverlayOn = 'change',
+		className: classNameProp,
+		style: styleProp,
+	} = props
+	const className = cx(styles.Container, classNameProp, slotProps?.container?.className)
+	const style = merge(styleProp, slotProps?.container?.style)
+	const [store] = useState(() => new Store({createUseHook}))
+
+	store.state.set({
+		value,
+		defaultValue,
+		onChange,
+		readOnly,
+		options,
+		showOverlayOn,
+		Mark,
+		Overlay,
+		className,
+		style: style as StyleProperties,
+		slots: slots as CoreSlots,
+		slotProps: slotProps as CoreSlotProps,
+	})
+
+	useCoreFeatures(store, ref)
+
 	return (
-		<StoreProvider props={rest as MarkedInputProps}>
+		<StoreContext.Provider value={store}>
 			<Container />
-			<Whisper />
-			<Featurer inRef={ref} />
-		</StoreProvider>
+			<OverlayRenderer />
+		</StoreContext.Provider>
 	)
 }

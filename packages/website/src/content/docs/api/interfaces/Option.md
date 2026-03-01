@@ -5,7 +5,7 @@ prev: false
 title: "Option"
 ---
 
-Defined in: [react/markput/src/types.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L53)
+Defined in: [react/markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L48)
 
 React-specific markup option for defining mark behavior and styling.
 
@@ -37,7 +37,7 @@ const option: Option<ChipProps> = {
 optional mark: TMarkProps | (props) => TMarkProps;
 ```
 
-Defined in: [react/markput/src/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L58)
+Defined in: [react/markput/src/types.ts:53](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L53)
 
 Props for the mark component.
 Can be a static object or a function that transforms MarkProps.
@@ -50,7 +50,7 @@ Can be a static object or a function that transforms MarkProps.
 optional markup: Markup;
 ```
 
-Defined in: [common/core/src/shared/types.ts:35](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L35)
+Defined in: [common/core/src/shared/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L36)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__nested__`
@@ -91,6 +91,6 @@ CoreOption.markup
 optional overlay: TOverlayProps;
 ```
 
-Defined in: [react/markput/src/types.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L62)
+Defined in: [react/markput/src/types.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L57)
 
 Props for the overlay component.

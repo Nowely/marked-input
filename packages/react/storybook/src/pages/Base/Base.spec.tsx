@@ -1,5 +1,6 @@
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
+import type {Markup} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
 import {describe, expect, it} from 'vitest'
@@ -86,6 +87,29 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(span).toHaveFocus()
 
 		await expect.element(page.getByText("I'm here!")).toBeInTheDocument()
+	})
+
+	it('should not create empty mark when pressing Enter in overlay without selection', async () => {
+		await render(
+			<MarkedInput
+				Mark={({value}) => <mark>{value}</mark>}
+				options={[
+					{
+						markup: '@[__value__](test:__meta__)' as Markup,
+						overlay: {trigger: '@', data: ['one', 'two', 'three']},
+					},
+				]}
+				defaultValue="Hello @"
+			/>
+		)
+		const span = page.getByText(/hello/i)
+		await focusAtEnd(span.element() as HTMLElement)
+		await userEvent.keyboard('{ArrowRight}')
+		await userEvent.keyboard('{Enter}')
+
+		await expect.element(page.getByText('one')).not.toBeInTheDocument()
+		await expect.element(page.getByText('two')).not.toBeInTheDocument()
+		await expect.element(page.getByText('three')).not.toBeInTheDocument()
 	})
 
 	// TODO: user.pointer with offset is not available in vitest/browser.

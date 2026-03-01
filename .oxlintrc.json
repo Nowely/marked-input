@@ -112,7 +112,6 @@
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-set-size": "warn",
     "unicorn/prefer-string-starts-ends-with": "warn",
-    "vitest/no-importing-vitest-globals": "warn",
     "typescript/no-unnecessary-condition": "warn",
     "typescript/no-useless-default-assignment": "warn",
     "typescript/consistent-type-exports": "error",
