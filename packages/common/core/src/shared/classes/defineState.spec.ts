@@ -1,3 +1,4 @@
+import {beforeEach, describe, it, expect, vi} from 'vitest'
 import {defineState} from './defineState'
 import type {Signal, UseHookFactory} from './defineState'
 
