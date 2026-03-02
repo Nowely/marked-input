@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import {computed, type Ref} from 'vue'
+import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useStore} from '../lib/hooks/useStore'
 import Token from './Token.vue'
 
 const store = useStore()
-const tokens = store.state.tokens.use()
-const slots = store.state.slots.use()
-const slotProps = store.state.slotProps.use()
+const tokens = store.state.tokens.use() as unknown as Ref<CoreToken[]>
+const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
+const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
 const className = store.state.className.use()
 const style = store.state.style.use()
 const key = store.key
-
-console.log('Container rendered, tokens length:', tokens.value?.length)
 
 const containerTag = computed(() => resolveSlot('container', slots.value))
 const containerProps = computed(() => resolveSlotProps('container', slotProps.value))

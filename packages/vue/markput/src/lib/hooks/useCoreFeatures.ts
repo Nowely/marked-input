@@ -1,4 +1,4 @@
-import {onMounted, onUnmounted, watch} from 'vue'
+import {onMounted, onUnmounted, watch, type Ref} from 'vue'
 import type {Store} from '@markput/core'
 import type {Option} from '../../types'
 
@@ -13,9 +13,9 @@ export function useCoreFeatures(store: Store) {
 		store.lifecycle.disable()
 	})
 
-	const value = store.state.value.use()
-	const Mark = store.state.Mark.use()
-	const coreOptions = store.state.options.use()
+	const value = store.state.value.use() as unknown as Ref<string | undefined>
+	const Mark = store.state.Mark.use() as unknown as Ref<unknown>
+	const coreOptions = store.state.options.use() as unknown as Ref<Option[] | undefined>
 
 	watch(
 		[value, coreOptions, Mark],

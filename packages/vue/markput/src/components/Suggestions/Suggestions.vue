@@ -9,10 +9,11 @@ const store = useStore()
 const {match, select, style: overlayStyle, ref: overlayRef} = useOverlay()
 const active = ref(NaN)
 
-const data = computed(() => match.value.option.overlay?.data || [])
-const filtered = computed(() =>
-	(data.value as string[]).filter(s => s.toLowerCase().indexOf(match.value.value.toLowerCase()) > -1)
-)
+const data = computed(() => match.value?.option.overlay?.data || [])
+const filtered = computed(() => {
+	const search = match.value?.value.toLowerCase() ?? ''
+	return (data.value as string[]).filter(s => s.toLowerCase().indexOf(search) > -1)
+})
 
 function handleKeyDown(event: KeyboardEvent) {
 	const length = filtered.value.length
@@ -29,7 +30,9 @@ function handleKeyDown(event: KeyboardEvent) {
 			event.preventDefault()
 			if (!isNaN(active.value)) {
 				const suggestion = filtered.value[active.value]
-				select({value: suggestion, meta: active.value.toString()})
+				if (suggestion) {
+					select({value: suggestion, meta: active.value.toString()})
+				}
 			}
 			break
 	}

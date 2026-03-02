@@ -1,5 +1,5 @@
-import type {Component} from 'vue'
-import type {CoreOption} from '@markput/core'
+import type {Component, CSSProperties} from 'vue'
+import type {CoreOption, OverlayTrigger} from '@markput/core'
 
 export interface MarkProps {
 	slot?: Component
@@ -18,6 +18,20 @@ export interface OverlayProps {
 export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
 	mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
 	overlay?: TOverlayProps
+}
+
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+	Mark?: Component
+	Overlay?: Component
+	options?: Option<TMarkProps, TOverlayProps>[]
+	className?: string
+	style?: CSSProperties
+	slots?: Slots
+	slotProps?: SlotProps
+	showOverlayOn?: OverlayTrigger
+	value?: string
+	defaultValue?: string
+	readOnly?: boolean
 }
 
 export interface Slots {

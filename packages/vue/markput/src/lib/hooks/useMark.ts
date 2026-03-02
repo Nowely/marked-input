@@ -39,7 +39,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		}
 	})
 
-	const readOnly = store.state.readOnly.use() as Ref<boolean>
+	const readOnly = store.state.readOnly.use() as unknown as Ref<boolean>
 	watch(readOnly, val => {
 		mark.readOnly = val
 	})

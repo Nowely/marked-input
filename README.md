@@ -2,7 +2,12 @@
 
 <img width="521" alt="image" src="https://user-images.githubusercontent.com/37639183/182974441-49e4b247-449a-47ba-a090-2cb3aab7ce44.png">
 
-A React component that lets you combine editable text with any component using annotated text.
+A set of framework adapters that let you combine editable text with custom components using annotated text.
+
+Currently supported packages:
+
+- `@markput/react`
+- `@markput/vue`
 
 **[Documentation](https://markput.vercel.app)** **[Storybook](https://marked-input.vercel.app)**
 
@@ -24,10 +29,12 @@ A React component that lets you combine editable text with any component using a
 
 ## Installation
 
-You can install the package via npm:
+Install the package for your framework:
 
 ```
-npm install @markput/react
+pnpm add @markput/react
+# or
+pnpm add @markput/vue
 ```
 
 ## Contributing

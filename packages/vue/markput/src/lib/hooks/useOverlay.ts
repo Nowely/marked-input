@@ -6,12 +6,12 @@ import {useStore} from './useStore'
 
 export interface OverlayHandler {
 	style: ComputedRef<{
-		left: number
-		top: number
+		left: string
+		top: string
 	}>
 	close: () => void
 	select: (value: {value: string; meta?: string}) => void
-	match: Ref<OverlayMatch<Option>>
+	match: Ref<OverlayMatch<Option> | undefined>
 	ref: {
 		get current(): HTMLElement | null
 		set current(v: HTMLElement | null)
@@ -20,7 +20,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const matchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option>>
+	const matchRef = store.state.overlayMatch.use() as unknown as Ref<OverlayMatch<Option> | undefined>
 
 	const style = computed(() => {
 		// Depend on matchRef so position recalculates as user types/moves caret
@@ -36,6 +36,7 @@ export function useOverlay(): OverlayHandler {
 	const close = () => store.events.clearOverlay()
 	const select = (value: {value: string; meta?: string}) => {
 		const match = matchRef.value
+		if (!match) return
 		const mark: Token = {
 			type: 'mark',
 			value: value.value,
