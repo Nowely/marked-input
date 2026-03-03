@@ -46,3 +46,9 @@ jobs:
             - run: pnpm build:react && pnpm build:vue
             - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
             - run: pnpm -F @markput/react run publish && pnpm -F @markput/vue run publish
+            - name: Sync main to latest release
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git checkout -B main
+                  git push origin main --force
