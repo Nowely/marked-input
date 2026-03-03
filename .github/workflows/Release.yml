@@ -13,14 +13,14 @@ jobs:
         runs-on: ubuntu-latest
         outputs:
             release_created: ${{ steps.release.outputs.release_created }}
+            version: ${{ steps.release.outputs.version }}
         steps:
             - uses: googleapis/release-please-action@v4
               id: release
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  release-type: node
-                  path: packages/react/markput
                   target-branch: next
+                  config-file: release-please-config.json
 
     publish:
         needs: release-please
@@ -31,6 +31,18 @@ jobs:
             id-token: write
         steps:
             - uses: nowely/action-setup-node@v1
-            - run: pnpm build
+            - name: Sync version to packages
+              run: |
+                  node -e "
+                    const fs = require('fs');
+                    const v = '${{ needs.release-please.outputs.version }}';
+                    for (const p of ['packages/react/markput', 'packages/vue/markput']) {
+                      const f = p + '/package.json';
+                      const pkg = JSON.parse(fs.readFileSync(f));
+                      pkg.version = v;
+                      fs.writeFileSync(f, JSON.stringify(pkg, null, 2) + '\n');
+                    }
+                  "
+            - run: pnpm build:react && pnpm build:vue
             - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-            - run: pnpm -F @markput/react run publish
+            - run: pnpm -F @markput/react run publish && pnpm -F @markput/vue run publish
