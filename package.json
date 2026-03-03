@@ -37,13 +37,15 @@
   },
   "dependencies": {
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@microsoft/api-extractor": "^7.57.2",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react-swc": "^4.2.3",
+    "@vitejs/plugin-vue": "^6.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "oxlint": "^1.49.0",

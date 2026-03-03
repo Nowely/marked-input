@@ -1,0 +1,22 @@
+{
+  "name": "@markput/vue-app",
+  "version": "1.0.0",
+  "description": "E2E test application for marked-input (Vue)",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@markput/vue": "workspace:*",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vue-tsc": "^2.2.8"
+  },
+  "type": "module"
+}

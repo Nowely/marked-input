@@ -1,6 +1,10 @@
 import {Reactive} from './Reactive'
 
-export type UseHookFactory = <T>(signal: Signal<T>) => () => T
+/**
+ * Framework adapters can return any reactive wrapper from `use`.
+ * React returns plain values, while Vue can return `Ref<T>`.
+ */
+export type UseHookFactory = <T>(signal: Signal<T>) => () => any
 
 export type Signal<T> = {
 	get(): T

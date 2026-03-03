@@ -98,6 +98,7 @@ export default defineConfig({
 		react(),
 	],
 	vite: {
-		plugins: [tailwindcss()],
+		// Astro currently types Vite plugin options against Vite 6.
+		plugins: [tailwindcss() as any],
 	},
 })

@@ -1,0 +1,53 @@
+<script setup lang="ts">
+import {inject, ref, computed, watch, onMounted, type Ref} from 'vue'
+import type {CoreSlotProps, CoreSlots} from '@markput/core'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useStore} from '../lib/hooks/useStore'
+import {TOKEN_KEY} from '../lib/providers/tokenKey'
+
+const store = useStore()
+const tokenRef = inject(TOKEN_KEY)!
+const token = tokenRef.value
+const elRef = ref<HTMLSpanElement | null>(null)
+
+const readOnly = store.state.readOnly.use() as unknown as Ref<boolean>
+const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
+const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
+const spanTag = computed(() => resolveSlot('span', slots.value))
+const spanProps = computed(() => resolveSlotProps('span', slotProps.value))
+
+if (token.type !== 'text') {
+	throw new Error('TextSpan component expects a TextToken')
+}
+
+onMounted(() => {
+	if (elRef.value && elRef.value.textContent !== token.content) {
+		elRef.value.textContent = token.content
+	}
+})
+
+watch(
+	() => token.content,
+	content => {
+		if (elRef.value && elRef.value.textContent !== content) {
+			elRef.value.textContent = content
+		}
+	}
+)
+
+function handlePaste(e: ClipboardEvent) {
+	e.preventDefault()
+	const text = e.clipboardData?.getData('text')
+	if (text) document.execCommand('insertText', false, text)
+}
+</script>
+
+<template>
+	<component
+		:is="spanTag"
+		:ref="(el: any) => (elRef = el)"
+		v-bind="spanProps"
+		:contenteditable="!readOnly"
+		@paste="handlePaste"
+	/>
+</template>
