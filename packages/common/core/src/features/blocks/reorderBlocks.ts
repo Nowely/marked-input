@@ -44,7 +44,7 @@ function reassembleBlocks(orderedBlocks: OrderedBlock[]): string {
 		const isLast = i === orderedBlocks.length - 1
 
 		let text = block.text
-		if (isLast && text.endsWith('\n')) {
+		if (text.endsWith('\n')) {
 			text = text.slice(0, -1)
 		}
 

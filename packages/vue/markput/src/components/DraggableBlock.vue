@@ -55,7 +55,7 @@ function onDragOver(e: DragEvent) {
 }
 
 function onDragLeave(e: DragEvent) {
-	if (e.currentTarget.contains(e.relatedTarget as Node)) return
+	if ((e.currentTarget as HTMLElement)?.contains(e.relatedTarget as Node)) return
 	dropPosition.value = null
 }
 

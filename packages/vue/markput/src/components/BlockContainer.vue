@@ -38,7 +38,7 @@ function handleReorder(sourceIndex: number, targetIndex: number) {
 <template>
 	<component
 		:is="containerTag"
-		:ref="(el: Element | null) => (store.refs.container = el)"
+		:ref="(el: HTMLDivElement | null) => (store.refs.container = el)"
 		v-bind="containerProps"
 		:class="className"
 		:style="style"
