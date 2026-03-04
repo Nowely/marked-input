@@ -2,6 +2,7 @@ import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
+import {BlockContainer} from './BlockContainer'
 import {OverlayRenderer} from './OverlayRenderer'
 import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
@@ -68,6 +69,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	onChange?: (value: string) => void
 	/** Read-only mode */
 	readOnly?: boolean
+	/** Enable Notion-like draggable blocks with drag handles for reordering */
+	block?: boolean
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
@@ -79,6 +82,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		defaultValue,
 		onChange,
 		readOnly = false,
+		block = false,
 		Mark,
 		Overlay,
 		slots,
@@ -109,9 +113,11 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 
 	useCoreFeatures(store, ref)
 
+	const ContainerImpl = block ? BlockContainer : Container
+
 	return (
 		<StoreContext.Provider value={store}>
-			<Container />
+			<ContainerImpl />
 			<OverlayRenderer />
 		</StoreContext.Provider>
 	)

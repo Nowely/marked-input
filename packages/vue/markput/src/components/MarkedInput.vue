@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {provide, shallowRef, watch} from 'vue'
+import {computed, provide, shallowRef, watch} from 'vue'
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
 import styles from '@markput/core/styles.module.css'
@@ -9,13 +9,17 @@ import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import Container from './Container.vue'
+import BlockContainer from './BlockContainer.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
 const props = withDefaults(defineProps<MarkedInputProps>(), {
 	options: () => DEFAULT_OPTIONS,
 	showOverlayOn: 'change',
 	readOnly: false,
+	block: false,
 })
+
+const ContainerImpl = computed(() => (props.block ? BlockContainer : Container))
 
 const emit = defineEmits<{
 	change: [value: string]
@@ -63,6 +67,7 @@ watch(
 		props.style,
 		props.slots,
 		props.slotProps,
+		props.block,
 	],
 	syncProps
 )
@@ -74,6 +79,6 @@ defineExpose(handler)
 </script>
 
 <template>
-	<Container />
+	<component :is="ContainerImpl" />
 	<OverlayRenderer />
 </template>

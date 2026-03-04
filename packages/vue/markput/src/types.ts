@@ -32,6 +32,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	value?: string
 	defaultValue?: string
 	readOnly?: boolean
+	/** Enable Notion-like draggable blocks with drag handles for reordering */
+	block?: boolean
 }
 
 export interface Slots {
