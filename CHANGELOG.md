@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/Nowely/marked-input/compare/0.2.0...0.3.0) (2026-03-04)
+
+
+### Features
+
+* add block reordering with drag-and-drop support ([#130](https://github.com/Nowely/marked-input/issues/130)) ([511c973](https://github.com/Nowely/marked-input/commit/511c9731aabe1251bf35ed14ce1e15ebf259cc12))
+* **storybook:** add Vue Storybook ([#129](https://github.com/Nowely/marked-input/issues/129)) ([06f75c3](https://github.com/Nowely/marked-input/commit/06f75c39a20028e5147b85093f07f78bab7b5001))
+
+
+### Documentation
+
+* update README to include Vue package information and badges ([3a87989](https://github.com/Nowely/marked-input/commit/3a879893aae8ebc03e16c9a0a73d6a9eeab370ad))
+
+
+### Miscellaneous
+
+* add sync step to release workflow for main branch updates ([bde610f](https://github.com/Nowely/marked-input/commit/bde610fc35d41e7059bb9b8785ca9d532731f3e1))
+* rename package from root to markput in package.json ([1cb8a8a](https://github.com/Nowely/marked-input/commit/1cb8a8a9146fb5b732509bdf54c26ac9a4ba204a))
+* update release-please config to exclude component in tag ([1555898](https://github.com/Nowely/marked-input/commit/1555898f840c65fbebd96193758d44fd79d2dde5))
+
 ## [0.2.0](https://github.com/Nowely/marked-input/compare/root-0.1.0...root-0.2.0) (2026-03-03)
 
 
