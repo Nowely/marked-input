@@ -1,6 +1,8 @@
 # Lock files - generated automatically
 pnpm-lock.yaml
 
+CHANGELOG.md
+
 # Build outputs
 dist/
 coverage/
