@@ -11,6 +11,7 @@ title: "@markput/react"
 
 ## Interfaces
 
+- [Block](/api/interfaces/block/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
 - [MarkProps](/api/interfaces/markprops/)
 - [MarkputHandler](/api/interfaces/markputhandler/)
@@ -30,5 +31,7 @@ title: "@markput/react"
 - [annotate](/api/functions/annotate/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
+- [reorderBlocks](/api/functions/reorderblocks/)
+- [splitTokensIntoBlocks](/api/functions/splittokensintoblocks/)
 - [useMark](/api/functions/usemark/)
 - [useOverlay](/api/functions/useoverlay/)
