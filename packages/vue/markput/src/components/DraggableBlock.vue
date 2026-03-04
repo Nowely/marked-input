@@ -15,6 +15,62 @@ const isDragging = ref(false)
 const dropPosition = ref<'before' | 'after' | null>(null)
 const blockRef = ref<HTMLDivElement | null>(null)
 
+const blockStyle = computed<CSSProperties>(() => ({
+	position: 'relative',
+	paddingLeft: '4px',
+	transition: 'opacity 0.2s ease',
+	opacity: isDragging.value ? 0.4 : 1,
+}))
+
+const handleStyle = computed<CSSProperties>(() => {
+	if (props.readOnly) return {...HANDLE_BASE, display: 'none'}
+	if (isDragging.value) return {...HANDLE_BASE, opacity: 1, cursor: 'grabbing'}
+	if (isHovered.value) return {...HANDLE_BASE, opacity: 1}
+	return {...HANDLE_BASE, opacity: 0}
+})
+
+function onDragStart(e: DragEvent) {
+	if (!e.dataTransfer) return
+	e.dataTransfer.effectAllowed = 'move'
+	e.dataTransfer.setData('text/plain', String(props.blockIndex))
+	isDragging.value = true
+	if (blockRef.value) {
+		e.dataTransfer.setDragImage(blockRef.value, 0, 0)
+	}
+}
+
+function onDragEnd() {
+	isDragging.value = false
+	dropPosition.value = null
+}
+
+function onDragOver(e: DragEvent) {
+	e.preventDefault()
+	if (!e.dataTransfer) return
+	e.dataTransfer.dropEffect = 'move'
+	if (!blockRef.value) return
+	const rect = blockRef.value.getBoundingClientRect()
+	const midY = rect.top + rect.height / 2
+	dropPosition.value = e.clientY < midY ? 'before' : 'after'
+}
+
+function onDragLeave(e: DragEvent) {
+	if (e.currentTarget.contains(e.relatedTarget as Node)) return
+	dropPosition.value = null
+}
+
+function onDrop(e: DragEvent) {
+	e.preventDefault()
+	if (!e.dataTransfer) return
+	const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
+	if (isNaN(sourceIndex)) return
+	const targetIndex = dropPosition.value === 'before' ? props.blockIndex : props.blockIndex + 1
+	dropPosition.value = null
+	emit('reorder', sourceIndex, targetIndex)
+}
+</script>
+
+<script lang="ts">
 const HANDLE_BASE: CSSProperties = {
 	position: 'absolute',
 	left: '-28px',
@@ -37,21 +93,7 @@ const HANDLE_BASE: CSSProperties = {
 	lineHeight: '1',
 }
 
-const blockStyle = computed<CSSProperties>(() => ({
-	position: 'relative',
-	paddingLeft: '4px',
-	transition: 'opacity 0.2s ease',
-	opacity: isDragging.value ? 0.4 : 1,
-}))
-
-const handleStyle = computed<CSSProperties>(() => {
-	if (props.readOnly) return {...HANDLE_BASE, display: 'none'}
-	if (isDragging.value) return {...HANDLE_BASE, opacity: 1, cursor: 'grabbing'}
-	if (isHovered.value) return {...HANDLE_BASE, opacity: 1}
-	return {...HANDLE_BASE, opacity: 0}
-})
-
-const dropIndicatorStyle: CSSProperties = {
+const DROP_INDICATOR_STYLES: CSSProperties = {
 	position: 'absolute',
 	left: '0',
 	right: '0',
@@ -60,41 +102,6 @@ const dropIndicatorStyle: CSSProperties = {
 	borderRadius: '1px',
 	pointerEvents: 'none',
 	zIndex: 10,
-}
-
-function onDragStart(e: DragEvent) {
-	e.dataTransfer!.effectAllowed = 'move'
-	e.dataTransfer!.setData('text/plain', String(props.blockIndex))
-	isDragging.value = true
-	if (blockRef.value) {
-		e.dataTransfer!.setDragImage(blockRef.value, 0, 0)
-	}
-}
-
-function onDragEnd() {
-	isDragging.value = false
-}
-
-function onDragOver(e: DragEvent) {
-	e.preventDefault()
-	e.dataTransfer!.dropEffect = 'move'
-	if (!blockRef.value) return
-	const rect = blockRef.value.getBoundingClientRect()
-	const midY = rect.top + rect.height / 2
-	dropPosition.value = e.clientY < midY ? 'before' : 'after'
-}
-
-function onDragLeave() {
-	dropPosition.value = null
-}
-
-function onDrop(e: DragEvent) {
-	e.preventDefault()
-	const sourceIndex = parseInt(e.dataTransfer!.getData('text/plain'), 10)
-	if (isNaN(sourceIndex)) return
-	const targetIndex = dropPosition.value === 'before' ? props.blockIndex : props.blockIndex + 1
-	dropPosition.value = null
-	emit('reorder', sourceIndex, targetIndex)
 }
 </script>
 
@@ -108,7 +115,7 @@ function onDrop(e: DragEvent) {
 		@dragleave="onDragLeave"
 		@drop="onDrop"
 	>
-		<div v-if="dropPosition === 'before'" :style="{...dropIndicatorStyle, top: '-1px'}" />
+		<div v-if="dropPosition === 'before'" :style="{...DROP_INDICATOR_STYLES, top: '-1px'}" />
 
 		<button
 			type="button"
@@ -130,6 +137,6 @@ function onDrop(e: DragEvent) {
 
 		<slot />
 
-		<div v-if="dropPosition === 'after'" :style="{...dropIndicatorStyle, bottom: '-1px'}" />
+		<div v-if="dropPosition === 'after'" :style="{...DROP_INDICATOR_STYLES, bottom: '-1px'}" />
 	</div>
 </template>

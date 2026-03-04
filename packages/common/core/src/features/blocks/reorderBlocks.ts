@@ -1,53 +1,61 @@
 import type {Block} from './splitTokensIntoBlocks'
 
-/**
- * Reorders blocks in the raw string value by moving a source block
- * to a target position.
- *
- * @param value - The full raw string value
- * @param blocks - Current block list from splitTokensIntoBlocks
- * @param sourceIndex - Index of the block being dragged
- * @param targetIndex - Index where the block should be inserted (before this block)
- * @returns The new string value with the block moved
- */
+interface OrderedBlock {
+	index: number
+	text: string
+	separatorAfter: string
+}
+
 export function reorderBlocks(value: string, blocks: Block[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
 	if (blocks.length < 2) return value
 	if (sourceIndex < 0 || sourceIndex >= blocks.length) return value
 	if (targetIndex < 0 || targetIndex > blocks.length) return value
 
-	const orderedBlocks = blocks.map((block, i) => ({
-		index: i,
-		text: extractBlockText(value, block, blocks, i),
-	}))
-
+	const orderedBlocks = extractBlocksWithSeparators(value, blocks)
 	const newOrder = reorder(orderedBlocks, sourceIndex, targetIndex)
 
-	return newOrder.map(b => b.text).join('\n')
+	return reassembleBlocks(newOrder)
 }
 
-interface OrderedBlock {
-	index: number
-	text: string
+function extractBlocksWithSeparators(value: string, blocks: Block[]): OrderedBlock[] {
+	return blocks.map((block, i) => {
+		const text = value.substring(block.startPos, block.endPos)
+		let separatorAfter = ''
+
+		if (i < blocks.length - 1) {
+			const nextBlock = blocks[i + 1]
+			separatorAfter = value.substring(block.endPos, nextBlock.startPos)
+		}
+
+		return {
+			index: i,
+			text,
+			separatorAfter,
+		}
+	})
 }
 
-/**
- * Extracts the text for a block from the raw value, including any trailing
- * newline that separates it from the next block.
- */
-function extractBlockText(value: string, block: Block, blocks: Block[], index: number): string {
-	const start = block.startPos
-	let end: number
+function reassembleBlocks(orderedBlocks: OrderedBlock[]): string {
+	const result: string[] = []
 
-	if (index < blocks.length - 1) {
-		const nextBlock = blocks[index + 1]
-		end = nextBlock.startPos
-		const text = value.substring(start, end)
-		return text.endsWith('\n') ? text.slice(0, -1) : text
+	for (let i = 0; i < orderedBlocks.length; i++) {
+		const block = orderedBlocks[i]
+		const isLast = i === orderedBlocks.length - 1
+
+		let text = block.text
+		if (isLast && text.endsWith('\n')) {
+			text = text.slice(0, -1)
+		}
+
+		result.push(text)
+
+		if (!isLast) {
+			result.push(block.separatorAfter || '\n')
+		}
 	}
 
-	end = value.length
-	return value.substring(start, end)
+	return result.join('')
 }
 
 function reorder(items: OrderedBlock[], sourceIndex: number, targetIndex: number): OrderedBlock[] {
@@ -57,5 +65,22 @@ function reorder(items: OrderedBlock[], sourceIndex: number, targetIndex: number
 	const insertAt = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
 	result.splice(insertAt, 0, moved)
 
+	redistributeSeparators(result, items)
+
 	return result
+}
+
+function redistributeSeparators(blocks: OrderedBlock[], originalBlocks: OrderedBlock[]): void {
+	for (let i = 0; i < blocks.length - 1; i++) {
+		const currentOriginalIndex = blocks[i].index
+		const nextOriginalIndex = blocks[i + 1].index
+
+		if (Math.abs(currentOriginalIndex - nextOriginalIndex) === 1) {
+			const earlierIndex = Math.min(currentOriginalIndex, nextOriginalIndex)
+			const originalSeparator = originalBlocks[earlierIndex].separatorAfter
+			blocks[i].separatorAfter = originalSeparator.length > 0 ? originalSeparator : '\n'
+		} else {
+			blocks[i].separatorAfter = '\n'
+		}
+	}
 }

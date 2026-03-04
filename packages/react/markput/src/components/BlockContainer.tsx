@@ -1,5 +1,5 @@
-import {memo, useCallback, useMemo} from 'react'
-import {splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
+import {memo, useCallback, useMemo, useRef} from 'react'
+import {splitTokensIntoBlocks, reorderBlocks, parseWithParser, type Block} from '@markput/core'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useStore} from '../lib/hooks/useStore'
 import {Token} from './Token'
@@ -22,23 +22,22 @@ export const BlockContainer = memo(() => {
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	const blocks = useMemo(() => splitTokensIntoBlocks(tokens), [tokens])
+	const blocksRef = useRef<Block[]>(blocks)
+	blocksRef.current = blocks
 
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
 			if (!value || !onChange) return
-			const newValue = reorderBlocks(value, blocks, sourceIndex, targetIndex)
+			const currentBlocks = blocksRef.current
+			const newValue = reorderBlocks(value, currentBlocks, sourceIndex, targetIndex)
 			if (newValue !== value) {
-				// Full re-parse: the incremental parser (getTokensByValue) cannot handle
-				// global rearrangements. Set tokens + previousValue directly so that when
-				// onChange triggers a re-render and syncParser fires, getTokensByValue
-				// sees previousValue === value and returns the already-correct tokens.
 				const newTokens = parseWithParser(store, newValue)
 				store.state.tokens.set(newTokens)
 				store.state.previousValue.set(newValue)
 				onChange(newValue)
 			}
 		},
-		[store, value, onChange, blocks]
+		[store, value, onChange]
 	)
 
 	return (

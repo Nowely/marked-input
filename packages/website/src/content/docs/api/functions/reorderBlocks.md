@@ -13,22 +13,17 @@ function reorderBlocks(
    targetIndex): string;
 ```
 
-Defined in: common/core/src/features/blocks/reorderBlocks.ts:13
-
-Reorders blocks in the raw string value by moving a source block
-to a target position.
+Defined in: [common/core/src/features/blocks/reorderBlocks.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/reorderBlocks.ts#L9)
 
 ## Parameters
 
-| Parameter | Type | Description |
-| ------ | ------ | ------ |
-| `value` | `string` | The full raw string value |
-| `blocks` | [`Block`](/api/interfaces/block/)[] | Current block list from splitTokensIntoBlocks |
-| `sourceIndex` | `number` | Index of the block being dragged |
-| `targetIndex` | `number` | Index where the block should be inserted (before this block) |
+| Parameter | Type |
+| ------ | ------ |
+| `value` | `string` |
+| `blocks` | [`Block`](/api/interfaces/block/)[] |
+| `sourceIndex` | `number` |
+| `targetIndex` | `number` |
 
 ## Returns
 
 `string`
-
-The new string value with the block moved

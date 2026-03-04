@@ -9,13 +9,7 @@ title: "splitTokensIntoBlocks"
 function splitTokensIntoBlocks(tokens): Block[];
 ```
 
-Defined in: common/core/src/features/blocks/splitTokensIntoBlocks.ts:17
-
-Groups a flat list of root-level tokens into blocks by splitting on newline boundaries.
-
-Block-level marks (whose markup ends with `\n`) form their own block.
-Text tokens containing `\n` are split at newline boundaries — each line
-becomes a separate block along with any adjacent marks.
+Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L20)
 
 ## Parameters
 

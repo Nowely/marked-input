@@ -59,7 +59,7 @@ const DROP_INDICATOR_STYLES: CSSProperties = {
 	zIndex: 10,
 }
 
-const GripIcon = () => (
+const GripIcon = memo(() => (
 	<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
 		<circle cx="5" cy="3" r="1.5" />
 		<circle cx="11" cy="3" r="1.5" />
@@ -68,7 +68,9 @@ const GripIcon = () => (
 		<circle cx="5" cy="13" r="1.5" />
 		<circle cx="11" cy="13" r="1.5" />
 	</svg>
-)
+))
+
+GripIcon.displayName = 'GripIcon'
 
 type DropPosition = 'before' | 'after' | null
 
@@ -77,6 +79,9 @@ export const DraggableBlock = memo(({blockIndex, children, readOnly, onReorder}:
 	const [isDragging, setIsDragging] = useState(false)
 	const [dropPosition, setDropPosition] = useState<DropPosition>(null)
 	const blockRef = useRef<HTMLDivElement>(null)
+
+	const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+	const handleMouseLeave = useCallback(() => setIsHovered(false), [])
 
 	const handleDragStart = useCallback(
 		(e: DragEvent<HTMLButtonElement>) => {
@@ -93,6 +98,7 @@ export const DraggableBlock = memo(({blockIndex, children, readOnly, onReorder}:
 
 	const handleDragEnd = useCallback(() => {
 		setIsDragging(false)
+		setDropPosition(null)
 	}, [])
 
 	const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -106,7 +112,8 @@ export const DraggableBlock = memo(({blockIndex, children, readOnly, onReorder}:
 		setDropPosition(e.clientY < midY ? 'before' : 'after')
 	}, [])
 
-	const handleDragLeave = useCallback(() => {
+	const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+		if (e.currentTarget.contains(e.relatedTarget as Node)) return
 		setDropPosition(null)
 	}, [])
 
@@ -140,8 +147,8 @@ export const DraggableBlock = memo(({blockIndex, children, readOnly, onReorder}:
 		<div
 			ref={blockRef}
 			style={blockStyle}
-			onMouseEnter={() => setIsHovered(true)}
-			onMouseLeave={() => setIsHovered(false)}
+			onMouseEnter={handleMouseEnter}
+			onMouseLeave={handleMouseLeave}
 			onDragOver={handleDragOver}
 			onDragLeave={handleDragLeave}
 			onDrop={handleDrop}

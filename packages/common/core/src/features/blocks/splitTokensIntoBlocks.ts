@@ -7,15 +7,20 @@ export interface Block {
 	endPos: number
 }
 
-/**
- * Groups a flat list of root-level tokens into blocks by splitting on newline boundaries.
- *
- * Block-level marks (whose markup ends with `\n`) form their own block.
- * Text tokens containing `\n` are split at newline boundaries — each line
- * becomes a separate block along with any adjacent marks.
- */
+let blockIdCounter = 0
+
+function generateBlockId(startPos: number): string {
+	return `block-${blockIdCounter++}-${startPos}`
+}
+
+export function resetBlockIdCounter(): void {
+	blockIdCounter = 0
+}
+
 export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 	if (tokens.length === 0) return []
+
+	resetBlockIdCounter()
 
 	const blocks: Block[] = []
 	let currentTokens: Token[] = []
@@ -24,7 +29,7 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 	const flushBlock = (endPos: number) => {
 		if (currentTokens.length === 0) return
 		blocks.push({
-			id: `block-${blockStart}`,
+			id: generateBlockId(blockStart),
 			tokens: [...currentTokens],
 			startPos: blockStart,
 			endPos,
@@ -41,7 +46,7 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 				flushBlock(token.position.start)
 
 				blocks.push({
-					id: `block-${token.position.start}`,
+					id: generateBlockId(token.position.start),
 					tokens: [token],
 					startPos: token.position.start,
 					endPos: token.position.end,
@@ -53,7 +58,9 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 			continue
 		}
 
-		const textToken = token as TextToken
+		if (token.type !== 'text') continue
+
+		const textToken = token
 		const parts = splitTextByNewlines(textToken)
 
 		for (let i = 0; i < parts.length; i++) {
@@ -92,37 +99,59 @@ interface TextPart {
 function splitTextByNewlines(token: TextToken): TextPart[] {
 	const parts: TextPart[] = []
 	const {content, position} = token
-	let offset = position.start
-	let current = ''
 
-	for (let i = 0; i < content.length; i++) {
-		if (content[i] === '\n') {
-			if (current.length > 0) {
-				parts.push({
-					content: current,
-					position: {start: offset, end: offset + current.length},
-					isNewline: false,
-				})
-			}
+	let offset = position.start
+	const chars: string[] = []
+
+	const flushText = () => {
+		if (chars.length > 0) {
+			const text = chars.join('')
 			parts.push({
-				content: '\n',
-				position: {start: offset + current.length, end: offset + current.length + 1},
-				isNewline: true,
+				content: text,
+				position: {start: offset, end: offset + text.length},
+				isNewline: false,
 			})
-			offset = offset + current.length + 1
-			current = ''
-		} else {
-			current += content[i]
+			offset += text.length
+			chars.length = 0
 		}
 	}
 
-	if (current.length > 0) {
-		parts.push({
-			content: current,
-			position: {start: offset, end: offset + current.length},
-			isNewline: false,
-		})
+	for (let i = 0; i < content.length; i++) {
+		const char = content[i]
+
+		if (char === '\n') {
+			flushText()
+			parts.push({
+				content: '\n',
+				position: {start: offset, end: offset + 1},
+				isNewline: true,
+			})
+			offset += 1
+		} else if (char === '\r') {
+			if (i + 1 < content.length && content[i + 1] === '\n') {
+				flushText()
+				parts.push({
+					content: '\n',
+					position: {start: offset, end: offset + 2},
+					isNewline: true,
+				})
+				offset += 2
+				i++
+			} else {
+				flushText()
+				parts.push({
+					content: '\n',
+					position: {start: offset, end: offset + 1},
+					isNewline: true,
+				})
+				offset += 1
+			}
+		} else {
+			chars.push(char)
+		}
 	}
+
+	flushText()
 
 	return parts
 }

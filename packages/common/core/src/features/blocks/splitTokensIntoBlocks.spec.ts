@@ -89,4 +89,59 @@ describe('splitTokensIntoBlocks', () => {
 		const ids = blocks.map(b => b.id)
 		expect(new Set(ids).size).toBe(ids.length)
 	})
+
+	it('handles empty text token', () => {
+		const tokens: Token[] = [text('', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(0)
+	})
+
+	it('handles text with only newlines', () => {
+		const tokens: Token[] = [text('\n\n\n', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(0)
+	})
+
+	it('handles \\r\\n line endings (Windows)', () => {
+		const tokens: Token[] = [text('line one\r\nline two\r\nline three', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(3)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one')
+		expect((blocks[1].tokens[0] as TextToken).content).toBe('line two')
+		expect((blocks[2].tokens[0] as TextToken).content).toBe('line three')
+	})
+
+	it('handles mixed \\n and \\r\\n line endings', () => {
+		const tokens: Token[] = [text('line one\nline two\r\nline three', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(3)
+	})
+
+	it('handles standalone \\r (old Mac style)', () => {
+		const tokens: Token[] = [text('line one\rline two', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(2)
+	})
+
+	it('handles unicode and emoji content', () => {
+		const tokens: Token[] = [text('你好世界\n🎉 emoji\nØÆÅ', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(3)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('你好世界')
+		expect((blocks[1].tokens[0] as TextToken).content).toBe('🎉 emoji')
+		expect((blocks[2].tokens[0] as TextToken).content).toBe('ØÆÅ')
+	})
+
+	it('handles very long text without performance issues', () => {
+		const lines = Array(1000).fill('line')
+		const longText = lines.join('\n')
+		const tokens: Token[] = [text(longText, 0)]
+
+		const start = performance.now()
+		const blocks = splitTokensIntoBlocks(tokens)
+		const duration = performance.now() - start
+
+		expect(blocks).toHaveLength(1000)
+		expect(duration).toBeLessThan(100)
+	})
 })

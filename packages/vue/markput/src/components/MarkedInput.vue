@@ -67,6 +67,7 @@ watch(
 		props.style,
 		props.slots,
 		props.slotProps,
+		props.block,
 	],
 	syncProps
 )

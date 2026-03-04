@@ -30,6 +30,18 @@ Props for MarkedInput component.
 
 ## Properties
 
+### block?
+
+```ts
+optional block: boolean;
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
+
+Enable Notion-like draggable blocks with drag handles for reordering
+
+***
+
 ### className?
 
 ```ts
@@ -51,18 +63,6 @@ optional defaultValue: string;
 Defined in: [react/markput/src/components/MarkedInput.tsx:67](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L67)
 
 Initial value for uncontrolled mode
-
-***
-
-### draggableBlocks?
-
-```ts
-optional draggableBlocks: boolean;
-```
-
-Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
-
-Enable Notion-like draggable blocks with drag handles for reordering
 
 ***
 
