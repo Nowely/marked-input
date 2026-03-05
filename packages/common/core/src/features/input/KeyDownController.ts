@@ -89,7 +89,10 @@ export class KeyDownController {
 export function handleBeforeInput(store: Store, event: InputEvent): void {
 	const selecting = store.state.selecting.get()
 	if (selecting === 'all' && isFullSelection(store)) {
-		if (event.inputType === 'insertFromPaste') return
+		if (event.inputType === 'insertFromPaste') {
+			event.preventDefault()
+			return
+		}
 		event.preventDefault()
 		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
 		replaceAllContentWith(store, newContent)

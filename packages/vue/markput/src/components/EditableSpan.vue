@@ -11,12 +11,6 @@ const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
 const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
 const spanTag = computed(() => resolveSlot('span', slots.value))
 const spanProps = computed(() => resolveSlotProps('span', slotProps.value))
-
-function handlePaste(e: ClipboardEvent) {
-	e.preventDefault()
-	const text = e.clipboardData?.getData('text')
-	if (text) document.execCommand('insertText', false, text)
-}
 </script>
 
 <template>
@@ -29,6 +23,5 @@ function handlePaste(e: ClipboardEvent) {
 		"
 		v-bind="spanProps"
 		:contenteditable="!mark.readOnly"
-		@paste="handlePaste"
 	/>
 </template>
