@@ -134,7 +134,8 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 			newCaret = startOffset
 			break
 		}
-		case 'insertFromPaste': {
+		case 'insertFromPaste':
+		case 'insertReplacementText': {
 			const text = event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			const start = ranges[0]?.startOffset ?? offset
