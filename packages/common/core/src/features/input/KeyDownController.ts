@@ -60,6 +60,10 @@ export class KeyDownController {
 
 		if (event.key === KEYBOARD.DELETE || event.key === KEYBOARD.BACKSPACE) {
 			if (focus.isMark) {
+				if (focus.isEditable) {
+					if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
+					if (event.key === KEYBOARD.DELETE && !focus.isCaretAtEnd) return
+				}
 				event.preventDefault()
 				deleteMark('self', this.store)
 				return
@@ -94,7 +98,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	if (selecting === 'all') store.state.selecting.set(undefined)
 
 	const {focus} = store.nodes
-	if (!focus.isSpan || !focus.target) return
+	if (!focus.target || !focus.isEditable) return
 
 	if (applySpanInput(focus, event)) {
 		store.events.change()
