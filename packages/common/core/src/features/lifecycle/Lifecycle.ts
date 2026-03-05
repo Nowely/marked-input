@@ -25,7 +25,6 @@ export class Lifecycle {
 		this.#unsubscribers.push(() => features.disableAll())
 
 		this.#subscribeParse()
-		this.#subscribeInputEvent()
 
 		if (options?.getTrigger) {
 			this.#subscribeOverlay(options.getTrigger as TriggerExtractor<CoreOption>)
@@ -76,15 +75,6 @@ export class Lifecycle {
 	recoverFocus() {
 		if (!this.store.state.Mark.get()) return
 		this.store.controllers.focus.recover()
-	}
-
-	#subscribeInputEvent() {
-		const container = this.store.refs.container
-		if (!container) return
-
-		const handler = () => this.store.events.change()
-		container.addEventListener('input', handler)
-		this.#unsubscribers.push(() => container.removeEventListener('input', handler))
 	}
 
 	#subscribeParse() {

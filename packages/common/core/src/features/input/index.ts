@@ -1,1 +1,7 @@
-export {KeyDownController, handleBeforeInput, handlePaste, replaceAllContentWith} from './KeyDownController'
+export {
+	KeyDownController,
+	handleBeforeInput,
+	handlePaste,
+	replaceAllContentWith,
+	applySpanInput,
+} from './KeyDownController'

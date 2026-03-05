@@ -34,20 +34,8 @@ watch(
 		}
 	}
 )
-
-function handlePaste(e: ClipboardEvent) {
-	e.preventDefault()
-	const text = e.clipboardData?.getData('text')
-	if (text) document.execCommand('insertText', false, text)
-}
 </script>
 
 <template>
-	<component
-		:is="spanTag"
-		:ref="(el: any) => (elRef = el)"
-		v-bind="spanProps"
-		:contenteditable="!readOnly"
-		@paste="handlePaste"
-	/>
+	<component :is="spanTag" :ref="(el: any) => (elRef = el)" v-bind="spanProps" :contenteditable="!readOnly" />
 </template>
