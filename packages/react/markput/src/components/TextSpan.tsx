@@ -1,4 +1,3 @@
-import type {ClipboardEvent} from 'react'
 import {useLayoutEffect, useMemo, useRef} from 'react'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {useStore} from '../lib/hooks/useStore'
@@ -25,19 +24,5 @@ export const TextSpan = () => {
 		}
 	}, [token.content])
 
-	return (
-		<SpanComponent
-			{...spanProps}
-			ref={ref}
-			contentEditable={!readOnly}
-			onPaste={handlePaste}
-			suppressContentEditableWarning
-		/>
-	)
-}
-
-function handlePaste(e: ClipboardEvent<HTMLSpanElement>) {
-	e.preventDefault()
-	const text = e.clipboardData.getData('text')
-	document.execCommand('insertText', false, text)
+	return <SpanComponent {...spanProps} ref={ref} contentEditable={!readOnly} suppressContentEditableWarning />
 }

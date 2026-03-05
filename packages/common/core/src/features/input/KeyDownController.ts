@@ -3,6 +3,7 @@ import {deleteMark} from '../text-manipulation'
 import {selectAllText} from '../selection'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {Store} from '../store/Store'
+import type {NodeProxy} from '../../shared/classes/NodeProxy'
 
 export class KeyDownController {
 	#keydownHandler?: (e: KeyboardEvent) => void
@@ -83,18 +84,69 @@ export class KeyDownController {
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
 	const selecting = store.state.selecting.get()
-	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.state.selecting.set(undefined)
+	if (selecting === 'all' && isFullSelection(store)) {
+		if (event.inputType === 'insertFromPaste') return
+		event.preventDefault()
+		const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
+		replaceAllContentWith(store, newContent)
 		return
 	}
+	if (selecting === 'all') store.state.selecting.set(undefined)
 
-	if (event.inputType === 'insertFromPaste') return
+	const {focus} = store.nodes
+	if (!focus.isSpan || !focus.target) return
 
-	event.preventDefault()
+	if (applySpanInput(focus, event)) {
+		store.events.change()
+	}
+}
 
-	const newContent = event.inputType.startsWith('delete') ? '' : (event.data ?? '')
+export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
+	const offset = focus.caret
+	const content = focus.content
+	let newContent: string
+	let newCaret: number
 
-	replaceAllContentWith(store, newContent)
+	switch (event.inputType) {
+		case 'insertText': {
+			event.preventDefault()
+			const data = event.data ?? ''
+			newContent = content.slice(0, offset) + data + content.slice(offset)
+			newCaret = offset + data.length
+			break
+		}
+		case 'deleteContentBackward':
+		case 'deleteContentForward':
+		case 'deleteWordBackward':
+		case 'deleteWordForward':
+		case 'deleteSoftLineBackward':
+		case 'deleteSoftLineForward': {
+			const ranges = event.getTargetRanges()
+			if (!ranges.length) return false
+			const {startOffset, endOffset} = ranges[0]
+			if (startOffset === endOffset) return false
+			event.preventDefault()
+			newContent = content.slice(0, startOffset) + content.slice(endOffset)
+			newCaret = startOffset
+			break
+		}
+		case 'insertFromPaste': {
+			const text = event.dataTransfer?.getData('text/plain') ?? ''
+			const ranges = event.getTargetRanges()
+			const start = ranges[0]?.startOffset ?? offset
+			const end = ranges[0]?.endOffset ?? offset
+			event.preventDefault()
+			newContent = content.slice(0, start) + text + content.slice(end)
+			newCaret = start + text.length
+			break
+		}
+		default:
+			return false
+	}
+
+	focus.content = newContent
+	focus.caret = newCaret
+	return true
 }
 
 export function handlePaste(store: Store, event: ClipboardEvent): void {
