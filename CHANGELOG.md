@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0](https://github.com/Nowely/marked-input/compare/0.3.0...0.4.0) (2026-03-06)
+
+
+### Features
+
+* **core:** predictive input model via beforeinput ([#131](https://github.com/Nowely/marked-input/issues/131)) ([80d0369](https://github.com/Nowely/marked-input/commit/80d036958862b342a013eb189a60671614b25d62))
+
+
+### Documentation
+
+* Add AGENTS.md ([#135](https://github.com/Nowely/marked-input/issues/135)) ([675a8e2](https://github.com/Nowely/marked-input/commit/675a8e203c0abe8434e5c4d062a3cb1ac9e183d6))
+* update Storybook links and reorganize badges by framewor ([#137](https://github.com/Nowely/marked-input/issues/137)) ([9884dc1](https://github.com/Nowely/marked-input/commit/9884dc14d61680f1a0394e8667be924344f8abd6))
+
+
+### Miscellaneous
+
+* migrate from prettier to oxfmt ([#139](https://github.com/Nowely/marked-input/issues/139)) ([4349b1b](https://github.com/Nowely/marked-input/commit/4349b1b0210c91119a872246a4ac94628da668c5))
+* remove unused EditableSpan components ([#133](https://github.com/Nowely/marked-input/issues/133)) ([2e5388a](https://github.com/Nowely/marked-input/commit/2e5388afe14e51df44c34c82f89602f14f48f994))
+* remove unused Vercel configuration file from Storybook ([#136](https://github.com/Nowely/marked-input/issues/136)) ([60129be](https://github.com/Nowely/marked-input/commit/60129be7ec1f530031e495035f5f113a73a551e4))
+* upgrade vue-tsc to v3.2.5 ([#138](https://github.com/Nowely/marked-input/issues/138)) ([a189b53](https://github.com/Nowely/marked-input/commit/a189b532ddf373b57083e7ff52144edd6617eb27))
+
 ## [0.3.0](https://github.com/Nowely/marked-input/compare/0.2.0...0.3.0) (2026-03-04)
 
 
