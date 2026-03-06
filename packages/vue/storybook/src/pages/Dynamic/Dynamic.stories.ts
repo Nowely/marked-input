@@ -1,6 +1,7 @@
+import {MarkedInput, useMark} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, onMounted, watch, type ComponentPublicInstance} from 'vue'
-import {MarkedInput, useMark} from '@markput/vue'
+
 import Text from '../../shared/components/Text.vue'
 
 export default {

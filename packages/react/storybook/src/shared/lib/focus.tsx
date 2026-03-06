@@ -1,5 +1,5 @@
-import {userEvent} from 'vitest/browser'
 import {expect} from 'vitest'
+import {userEvent} from 'vitest/browser'
 
 /**
  * Sets caret position in a contenteditable element

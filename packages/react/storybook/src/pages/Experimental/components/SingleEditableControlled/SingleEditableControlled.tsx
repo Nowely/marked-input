@@ -1,5 +1,6 @@
-import {useCallback, useState} from 'react'
 import {MarkedInput} from '@markput/react'
+import {useCallback, useState} from 'react'
+
 import {CustomContainer, HTMLMark, PlainTextSpan} from './components'
 import {htmlToPlainText} from './utils'
 

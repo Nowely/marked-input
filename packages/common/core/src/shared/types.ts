@@ -1,6 +1,6 @@
-import type {NodeProxy} from './classes/NodeProxy'
-import type {Markup} from '../features/parsing/ParserV2/types'
 import type {Parser, Token} from '../features/parsing'
+import type {Markup} from '../features/parsing/ParserV2/types'
+import type {NodeProxy} from './classes/NodeProxy'
 
 /**
  * Core option for markups - Framework-agnostic configuration.

@@ -1,5 +1,6 @@
 import type {MarkedInputProps, Markup} from '@markput/react'
 import {MarkedInput} from '@markput/react'
+
 import {Mention} from './Mention'
 import {UserList} from './UserList'
 

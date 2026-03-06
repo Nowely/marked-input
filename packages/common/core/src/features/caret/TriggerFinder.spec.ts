@@ -1,7 +1,8 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
-import {TriggerFinder} from './TriggerFinder'
-import {Caret} from './Caret'
+
 import type {Markup} from '../parsing/ParserV2/types'
+import {Caret} from './Caret'
+import {TriggerFinder} from './TriggerFinder'
 
 // Mock DOM
 const mockCreateTextNode = vi.fn(

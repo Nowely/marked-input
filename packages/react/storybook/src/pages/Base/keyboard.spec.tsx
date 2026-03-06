@@ -1,9 +1,10 @@
+import {composeStories} from '@storybook/react-vite'
+import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
-import {describe, expect, it} from 'vitest'
-import {composeStories} from '@storybook/react-vite'
-import * as BaseStories from './Base.stories'
+
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
+import * as BaseStories from './Base.stories'
 
 const {Default} = composeStories(BaseStories)
 

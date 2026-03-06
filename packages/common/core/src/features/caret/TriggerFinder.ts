@@ -1,6 +1,6 @@
-import {Caret} from './Caret'
-import type {OverlayMatch} from '../../shared/types'
 import {escape} from '../../shared/escape'
+import type {OverlayMatch} from '../../shared/types'
+import {Caret} from './Caret'
 
 /** Regex to match word characters from the start of a string */
 const wordRegex = new RegExp(/^\w*/)

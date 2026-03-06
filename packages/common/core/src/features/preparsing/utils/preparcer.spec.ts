@@ -1,5 +1,6 @@
-import {findGap} from './findGap'
 import {describe, expect, it} from 'vitest'
+
+import {findGap} from './findGap'
 
 const Hello = 'Hello'
 const Day = 'Day'

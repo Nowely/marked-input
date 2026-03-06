@@ -1,6 +1,7 @@
 {
   "name": "@markput/react-storybook",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "storybook dev",
     "build": "storybook build -o ./dist",
@@ -13,9 +14,9 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@faker-js/faker": "catalog:",
+    "@markput/react": "workspace:*",
     "@mui/material": "^7.3.7",
     "antd": "^6.3.0",
-    "@markput/react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rsuite": "^6.1.2"
@@ -34,6 +35,5 @@
     "storybook": "^10.2.3",
     "vitest": "catalog:",
     "vitest-browser-react": "^2.0.5"
-  },
-  "type": "module"
+  }
 }

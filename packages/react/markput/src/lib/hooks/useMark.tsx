@@ -1,7 +1,8 @@
-import type {RefObject} from 'react'
-import {useEffect, useRef, useState} from 'react'
 import type {MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
+import type {RefObject} from 'react'
+import {useEffect, useRef, useState} from 'react'
+
 import {useToken} from '../providers/TokenProvider'
 import {useStore} from './useStore'
 

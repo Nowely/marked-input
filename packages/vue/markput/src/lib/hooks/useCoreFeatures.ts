@@ -1,5 +1,6 @@
-import {onMounted, onUnmounted, watch, type Ref} from 'vue'
 import type {Store} from '@markput/core'
+import {onMounted, onUnmounted, watch, type Ref} from 'vue'
+
 import type {Option} from '../../types'
 
 export function useCoreFeatures(store: Store) {

@@ -1,14 +1,14 @@
-import {NodeProxy} from '../../shared/classes/NodeProxy'
 import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
-import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
-import type {Token} from '../parsing'
-import {SystemListenerController} from '../events'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
-import {OverlayController} from '../overlay'
+import {NodeProxy} from '../../shared/classes/NodeProxy'
+import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
-import {TextSelectionController} from '../selection'
 import {Lifecycle} from '../lifecycle'
+import {OverlayController} from '../overlay'
+import type {Token} from '../parsing'
+import {TextSelectionController} from '../selection'
 
 export interface StoreOptions {
 	createUseHook: UseHookFactory

@@ -1,8 +1,9 @@
-import React, {useState} from 'react'
-import ReactDOM from 'react-dom/client'
-import './style.css'
 import type {MarkProps, MarkToken, Markup} from '@markput/react'
 import {denote, MarkedInput} from '@markput/react'
+
+import './style.css'
+import React, {useState} from 'react'
+import ReactDOM from 'react-dom/client'
 
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'

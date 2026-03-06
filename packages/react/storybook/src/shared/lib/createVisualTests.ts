@@ -1,7 +1,7 @@
-import React from 'react'
-import {render} from 'vitest-browser-react'
 import {composeStories} from '@storybook/react-vite'
+import React from 'react'
 import {describe, expect, it} from 'vitest'
+import {render} from 'vitest-browser-react'
 
 /**
  * Builds screenshot-based tests for every story in a module.

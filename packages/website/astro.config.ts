@@ -1,9 +1,9 @@
-import {defineConfig} from 'astro/config'
-import starlight from '@astrojs/starlight'
-import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
-import tailwindcss from '@tailwindcss/vite'
 import react from '@astrojs/react'
+import starlight from '@astrojs/starlight'
 import vercel from '@astrojs/vercel'
+import tailwindcss from '@tailwindcss/vite'
+import {defineConfig} from 'astro/config'
+import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
 
 const isDev = import.meta.env.DEV
 const wipBadge = {text: '🚧', class: 'border-none bg-transparent'}

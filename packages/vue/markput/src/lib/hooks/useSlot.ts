@@ -1,6 +1,7 @@
 import type {Component, Ref} from 'vue'
-import {useStore} from './useStore'
+
 import type {MarkProps, Option, OverlayProps} from '../../types'
+import {useStore} from './useStore'
 
 export type SlotType = 'mark' | 'overlay'
 

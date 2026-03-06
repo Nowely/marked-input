@@ -1,5 +1,6 @@
-import {memo} from 'react'
 import type {Token as TokenType} from '@markput/core'
+import {memo} from 'react'
+
 import {TokenProvider} from '../lib/providers/TokenProvider'
 // eslint-disable-next-line import/no-cycle
 import {MarkRenderer} from './MarkRenderer'

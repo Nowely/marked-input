@@ -1,5 +1,5 @@
-import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 import type {CoreOption} from '@markput/core'
+import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 
 /**
  * Props passed to Mark components.

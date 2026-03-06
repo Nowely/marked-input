@@ -1,5 +1,5 @@
-import {type Ref, shallowRef} from 'vue'
 import type {Signal} from '@markput/core'
+import {type Ref, shallowRef} from 'vue'
 
 export const createUseHook =
 	<T>(signal: Signal<T>) =>

@@ -1,6 +1,7 @@
-import {computed, type Ref, type ComputedRef} from 'vue'
 import type {OverlayMatch, Token} from '@markput/core'
 import {Caret} from '@markput/core'
+import {computed, type Ref, type ComputedRef} from 'vue'
+
 import type {Option} from '../../types'
 import {useStore} from './useStore'
 

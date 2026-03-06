@@ -1,9 +1,9 @@
-import {KEYBOARD} from '../../shared/constants'
-import {deleteMark} from '../text-manipulation'
-import {selectAllText} from '../selection'
-import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import type {Store} from '../store/Store'
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
+import {KEYBOARD} from '../../shared/constants'
+import {shiftFocusNext, shiftFocusPrev} from '../navigation'
+import {selectAllText} from '../selection'
+import type {Store} from '../store/Store'
+import {deleteMark} from '../text-manipulation'
 
 export class KeyDownController {
 	#keydownHandler?: (e: KeyboardEvent) => void

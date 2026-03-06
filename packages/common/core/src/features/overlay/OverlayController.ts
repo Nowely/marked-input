@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
-import {TriggerFinder} from '../caret'
 import type {OverlayMatch, OverlayTrigger} from '../../shared/types'
+import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
 
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined

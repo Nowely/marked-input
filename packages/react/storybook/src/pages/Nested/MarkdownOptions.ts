@@ -1,5 +1,5 @@
-import type {CSSProperties} from 'react'
 import type {MarkProps, Markup, Option} from '@markput/react'
+import type {CSSProperties} from 'react'
 
 /**
  * Preset configuration for a single markdown markup

@@ -1,9 +1,10 @@
-import {Chip, Input} from '@mui/material'
 import type {MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
+import {Chip, Input} from '@mui/material'
 import {useState} from 'react'
-import {MaterialMentions} from './components/MaterialMentions'
+
 import {Text} from '../../shared/components/Text'
+import {MaterialMentions} from './components/MaterialMentions'
 
 export default {
 	title: 'Styled/Material',

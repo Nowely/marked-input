@@ -1,5 +1,5 @@
-import {useState, useEffect} from 'react'
 import type {Signal} from '@markput/core'
+import {useState, useEffect} from 'react'
 
 export const createUseHook =
 	<T>(signal: Signal<T>) =>

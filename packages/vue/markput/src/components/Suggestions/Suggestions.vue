@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import {KEYBOARD} from '@markput/core'
 import {ref, computed, onMounted, onUnmounted} from 'vue'
+
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {useStore} from '../../lib/hooks/useStore'
-import {KEYBOARD} from '@markput/core'
+
 import styles from '@markput/core/styles.module.css'
 
 const store = useStore()

@@ -1,12 +1,13 @@
-import {render} from 'vitest-browser-react'
-import {page, userEvent} from 'vitest/browser'
 import type {Markup} from '@markput/react'
 import {MarkedInput} from '@markput/react'
-import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
-import {describe, expect, it} from 'vitest'
 import {composeStories} from '@storybook/react-vite'
-import * as BaseStories from './Base.stories'
+import {describe, expect, it} from 'vitest'
+import {render} from 'vitest-browser-react'
+import {page, userEvent} from 'vitest/browser'
+
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
+import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
+import * as BaseStories from './Base.stories'
 
 //createVisualTests(BaseStories)
 

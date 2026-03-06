@@ -1,7 +1,8 @@
-import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref} from 'vue'
 import type {MarkProps, Markup, Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
+import type {Meta, StoryObj} from '@storybook/vue3-vite'
+import {defineComponent, h, ref} from 'vue'
+
 import Text from '../../shared/components/Text.vue'
 
 export default {

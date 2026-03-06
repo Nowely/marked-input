@@ -1,5 +1,6 @@
-import {useEffect, useState} from 'react'
 import {MarkedInput} from '@markput/react'
+import {useEffect, useState} from 'react'
+
 import {CustomContainer, HTMLMark, PlainTextSpan} from './components'
 import {htmlToPlainText} from './utils'
 

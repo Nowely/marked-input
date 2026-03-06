@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import {computed, type Ref} from 'vue'
 import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
 import {splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {computed, type Ref} from 'vue'
+
 import {useStore} from '../lib/hooks/useStore'
-import Token from './Token.vue'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import DraggableBlock from './DraggableBlock.vue'
+import Token from './Token.vue'
 
 const store = useStore()
 const tokens = store.state.tokens.use() as unknown as Ref<CoreToken[]>

@@ -1,6 +1,7 @@
+import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, reactive} from 'vue'
-import {MarkedInput} from '@markput/vue'
+
 import Text from '../../shared/components/Text.vue'
 
 const meta = {

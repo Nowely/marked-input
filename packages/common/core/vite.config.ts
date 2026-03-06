@@ -1,5 +1,6 @@
 import path from 'path'
 import {fileURLToPath} from 'url'
+
 import {defineConfig} from 'vite'
 
 const __filename = fileURLToPath(import.meta.url)

@@ -1,5 +1,5 @@
-import type {Component, CSSProperties} from 'vue'
 import type {CoreOption, OverlayTrigger} from '@markput/core'
+import type {Component, CSSProperties} from 'vue'
 
 export interface MarkProps {
 	slot?: Component

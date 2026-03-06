@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import {computed, provide, shallowRef, watch} from 'vue'
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
-import styles from '@markput/core/styles.module.css'
-import type {MarkedInputProps} from '../types'
+import {computed, provide, shallowRef, watch} from 'vue'
+
 import {DEFAULT_OPTIONS} from '../constants'
 import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
-import Container from './Container.vue'
+import type {MarkedInputProps} from '../types'
 import BlockContainer from './BlockContainer.vue'
+import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
+
+import styles from '@markput/core/styles.module.css'
 
 const props = withDefaults(defineProps<MarkedInputProps>(), {
 	options: () => DEFAULT_OPTIONS,

@@ -1,5 +1,6 @@
-import {inject} from 'vue'
 import type {Store} from '@markput/core'
+import {inject} from 'vue'
+
 import {STORE_KEY} from '../providers/storeKey'
 
 export function useStore(): Store {

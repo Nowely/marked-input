@@ -1,5 +1,6 @@
-import {Avatar, Chip} from '@mui/material'
 import type {MarkToken} from '@markput/react'
+import {Avatar, Chip} from '@mui/material'
+
 import type {User} from './types'
 import {useFetch} from './utils/useFetch'
 
