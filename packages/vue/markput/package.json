@@ -34,6 +34,11 @@
     "@markput/core": "workspace:*"
   },
   "devDependencies": {
+    "@microsoft/api-extractor": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue": "catalog:",
     "vue-tsc": "catalog:"
   },
   "peerDependencies": {

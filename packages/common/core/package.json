@@ -24,6 +24,7 @@
     "@faker-js/faker": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

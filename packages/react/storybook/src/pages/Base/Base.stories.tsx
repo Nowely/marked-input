@@ -17,7 +17,7 @@ type Story = StoryObj<Meta<typeof MarkedInput<MarkProps>>>
 
 export const Default: Story = {
 	args: {
-		Mark: props => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
+		Mark: (props: MarkProps) => <mark onClick={_ => alert(props.meta)}>{props.value}</mark>,
 		defaultValue: 'Hello, clickable marked @[world](Hello! Hello!)!',
 	},
 }
