@@ -33,6 +33,9 @@ catalogs:
     vue:
       specifier: ^3.5.13
       version: 3.5.29
+    vue-tsc:
+      specifier: ^3.2.5
+      version: 3.2.5
 
 importers:
 
@@ -104,7 +107,7 @@ importers:
     dependencies:
       '@markput/react':
         specifier: workspace:*
-        version: link:../markput
+        version: link:../markput/dist
       react:
         specifier: 'catalog:'
         version: 19.2.4
@@ -137,6 +140,12 @@ importers:
         specifier: '>=19.0.0'
         version: 19.2.4
 
+  packages/react/markput/dist:
+    dependencies:
+      react:
+        specifier: '>=19.0.0'
+        version: 19.2.4
+
   packages/react/storybook:
     dependencies:
       '@emotion/react':
@@ -150,7 +159,7 @@ importers:
         version: 10.3.0
       '@markput/react':
         specifier: workspace:*
-        version: link:../markput
+        version: link:../markput/dist
       '@mui/material':
         specifier: ^7.3.7
         version: 7.3.8(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react@19.2.4))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -211,7 +220,7 @@ importers:
     dependencies:
       '@markput/vue':
         specifier: workspace:*
-        version: link:../markput
+        version: link:../markput/dist
       vue:
         specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
@@ -226,8 +235,8 @@ importers:
         specifier: ^7.3.1
         version: 7.3.1(@types/node@24.11.0)(jiti@2.6.1)(lightningcss@1.31.1)(yaml@2.8.2)
       vue-tsc:
-        specifier: ^2.2.8
-        version: 2.2.12(typescript@5.9.3)
+        specifier: 'catalog:'
+        version: 3.2.5(typescript@5.9.3)
 
   packages/vue/markput:
     dependencies:
@@ -239,14 +248,20 @@ importers:
         version: 3.5.29(typescript@5.9.3)
     devDependencies:
       vue-tsc:
-        specifier: ^2.2.8
-        version: 2.2.12(typescript@5.9.3)
+        specifier: 'catalog:'
+        version: 3.2.5(typescript@5.9.3)
+
+  packages/vue/markput/dist:
+    dependencies:
+      vue:
+        specifier: '>=3.5.0'
+        version: 3.5.29(typescript@5.9.3)
 
   packages/vue/storybook:
     dependencies:
       '@markput/vue':
         specifier: workspace:*
-        version: link:../markput
+        version: link:../markput/dist
       vue:
         specifier: 'catalog:'
         version: 3.5.29(typescript@5.9.3)
@@ -286,7 +301,7 @@ importers:
         version: 9.0.4(astro@5.18.0(@types/node@24.11.0)(@vercel/functions@2.2.13)(jiti@2.6.1)(lightningcss@1.31.1)(rollup@4.59.0)(typescript@5.9.3)(yaml@2.8.2))(react@19.2.4)(rollup@4.59.0)(vue@3.5.29(typescript@5.9.3))
       '@markput/react':
         specifier: workspace:*
-        version: link:../react/markput
+        version: link:../react/markput/dist
       '@tailwindcss/vite':
         specifier: ^4.1.18
         version: 4.2.1(vite@7.3.1(@types/node@24.11.0)(jiti@2.6.1)(lightningcss@1.31.1)(yaml@2.8.2))
@@ -2543,6 +2558,9 @@ packages:
       typescript:
         optional: true
 
+  '@vue/language-core@3.2.5':
+    resolution: {integrity: sha512-d3OIxN/+KRedeM5wQ6H6NIpwS3P5gC9nmyaHgBk+rO6dIsjY+tOh4UlPpiZbAh3YtLdCGEX4M16RmsBqPmJV+g==}
+
   '@vue/reactivity@3.5.29':
     resolution: {integrity: sha512-zcrANcrRdcLtmGZETBxWqIkoQei8HaFpZWx/GHKxx79JZsiZ8j1du0VUJtu4eJjgFvU/iKL5lRXFXksVmI+5DA==}
 
@@ -2612,6 +2630,9 @@ packages:
 
   alien-signals@1.0.13:
     resolution: {integrity: sha512-OGj9yyTnJEttvzhTUWuscOvtqxq5vrhF7vL9oS0xJ2mK0ItPYP1/y+vCFebfxoEyAz0++1AIwJ5CMr+Fk3nDmg==}
+
+  alien-signals@3.1.2:
+    resolution: {integrity: sha512-d9dYqZTS90WLiU0I5c6DHj/HcKkF8ZyGN3G5x8wSbslulz70KOxaqCT0hQCo9KOyhVqzqGojvNdJXoTumZOtcw==}
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -5363,8 +5384,8 @@ packages:
     peerDependencies:
       vue: '>=2'
 
-  vue-tsc@2.2.12:
-    resolution: {integrity: sha512-P7OP77b2h/Pmk+lZdJ0YWs+5tJ6J2+uOQPo7tlBnY44QqQSPYvS0qVT4wqDJgwrZaLe47etJLLQRFia71GYITw==}
+  vue-tsc@3.2.5:
+    resolution: {integrity: sha512-/htfTCMluQ+P2FISGAooul8kO4JMheOTCbCy4M6dYnYYjqLe3BExZudAua6MSIKSFYQtFOYAll7XobYwcpokGA==}
     hasBin: true
     peerDependencies:
       typescript: '>=5.0.0'
@@ -7936,6 +7957,16 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  '@vue/language-core@3.2.5':
+    dependencies:
+      '@volar/language-core': 2.4.28
+      '@vue/compiler-dom': 3.5.29
+      '@vue/shared': 3.5.29
+      alien-signals: 3.1.2
+      muggle-string: 0.4.1
+      path-browserify: 1.0.1
+      picomatch: 4.0.3
+
   '@vue/reactivity@3.5.29':
     dependencies:
       '@vue/shared': 3.5.29
@@ -8000,6 +8031,8 @@ snapshots:
       require-from-string: 2.0.2
 
   alien-signals@1.0.13: {}
+
+  alien-signals@3.1.2: {}
 
   ansi-align@3.0.1:
     dependencies:
@@ -11339,10 +11372,10 @@ snapshots:
     dependencies:
       vue: 3.5.29(typescript@5.9.3)
 
-  vue-tsc@2.2.12(typescript@5.9.3):
+  vue-tsc@3.2.5(typescript@5.9.3):
     dependencies:
-      '@volar/typescript': 2.4.15
-      '@vue/language-core': 2.2.12(typescript@5.9.3)
+      '@volar/typescript': 2.4.28
+      '@vue/language-core': 3.2.5
       typescript: 5.9.3
 
   vue@3.5.29(typescript@5.9.3):

@@ -20,7 +20,7 @@
     "vue": ">=3.5.0"
   },
   "devDependencies": {
-    "vue-tsc": "^2.2.8"
+    "vue-tsc": "catalog:"
   },
   "module": "./index.js",
   "types": "./index.d.ts",

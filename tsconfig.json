@@ -14,5 +14,16 @@
     "declaration": true,
     "declarationMap": true
   },
+  "vueCompilerOptions": {
+    "strictTemplates": true,
+    "strictVModel": true,
+    "strictCssModules": true,
+    "resolveStyleImports": true,
+    "checkUnknownComponents": true,
+    "checkUnknownProps": true,
+    "checkUnknownEvents": true,
+    "checkUnknownDirectives": true,
+    "fallthroughAttributes": true
+  },
   "exclude": ["packages/website/**"]
 }
