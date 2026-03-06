@@ -98,6 +98,9 @@ importers:
       oxlint:
         specifier: ^1.49.0
         version: 1.51.0
+      playwright:
+        specifier: 'catalog:'
+        version: 1.58.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
