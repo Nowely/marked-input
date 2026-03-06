@@ -8,8 +8,8 @@ export class ContentEditableController {
 	enable() {
 		if (this.#unsubscribe) return
 
-		this.sync()
 		this.#unsubscribe = this.store.state.readOnly.on(() => this.sync())
+		this.sync()
 	}
 
 	disable() {

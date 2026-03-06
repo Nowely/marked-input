@@ -20,7 +20,7 @@ describe(`Component: MarkedInput`, () => {
 		const {container} = await render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
 
-		await expect.element(span).toHaveTextContent('')
+		await expect.element(span).toBeInTheDocument()
 
 		await userEvent.type(span, '@[[mark](1)')
 

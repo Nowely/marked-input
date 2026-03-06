@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots} from '@markput/core'
-import {inject, ref, computed, watch, onMounted} from 'vue'
+import {inject, ref, computed, watch, onMounted, type Ref} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
