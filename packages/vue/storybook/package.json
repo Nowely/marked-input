@@ -11,10 +11,12 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.2.3",
-    "@storybook/addon-links": "^10.2.3",
-    "@storybook/cli": "^10.2.3",
-    "@storybook/vue3-vite": "^10.2.3",
-    "storybook": "^10.2.3"
+    "@storybook/addon-docs": "catalog:",
+    "@storybook/addon-links": "catalog:",
+    "@storybook/cli": "catalog:",
+    "@storybook/vue3-vite": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "storybook": "catalog:",
+    "vite": "catalog:"
   }
 }

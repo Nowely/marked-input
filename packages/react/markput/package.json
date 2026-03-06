@@ -33,6 +33,14 @@
   "dependencies": {
     "@markput/core": "workspace:*"
   },
+  "devDependencies": {
+    "@microsoft/api-extractor": "catalog:",
+    "@types/react": "catalog:",
+    "@vitejs/plugin-react-swc": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
   "peerDependencies": {
     "react": ">=19.0.0"
   }

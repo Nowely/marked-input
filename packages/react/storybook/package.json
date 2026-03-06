@@ -22,18 +22,21 @@
     "rsuite": "^6.1.2"
   },
   "devDependencies": {
-    "@storybook/addon-docs": "^10.2.3",
-    "@storybook/addon-links": "^10.2.3",
-    "@storybook/cli": "^10.2.3",
-    "@storybook/react-vite": "^10.2.3",
-    "@types/node": "^24.10.1",
+    "@storybook/addon-docs": "catalog:",
+    "@storybook/addon-links": "catalog:",
+    "@storybook/cli": "catalog:",
+    "@storybook/react-vite": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/browser-playwright": "^4.0.18",
+    "@vitejs/plugin-react-swc": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "storybook": "^10.2.3",
+    "playwright": "catalog:",
+    "storybook": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:",
-    "vitest-browser-react": "^2.0.5"
+    "vitest-browser-react": "catalog:"
   }
 }
