@@ -1,11 +1,12 @@
 import {describe, expect, it} from 'vitest'
-import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
-import {reorderBlocks} from './reorderBlocks'
+
+import type {UseHookFactory} from '../../shared/classes/defineState'
 import {Parser} from '../parsing/ParserV2/Parser'
+import type {TextToken, Markup} from '../parsing/ParserV2/types'
 import {getTokensByValue, parseWithParser} from '../parsing/utils/valueParser'
 import {Store} from '../store/Store'
-import type {TextToken, Markup} from '../parsing/ParserV2/types'
-import type {UseHookFactory} from '../../shared/classes/defineState'
+import {reorderBlocks} from './reorderBlocks'
+import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
 
 const mockUseHook: UseHookFactory = signal => () => signal.get()
 

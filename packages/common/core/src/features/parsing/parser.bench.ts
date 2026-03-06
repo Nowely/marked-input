@@ -1,7 +1,9 @@
-import {bench, describe} from 'vitest'
-import {Parser as ParserV2} from './index'
 import * as fs from 'fs'
 import * as path from 'path'
+
+import {bench, describe} from 'vitest'
+
+import {Parser as ParserV2} from './index'
 
 // Test data generators
 function generateComparisonText(marks: number): string {

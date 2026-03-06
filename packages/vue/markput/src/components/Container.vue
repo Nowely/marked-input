@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {computed, type Ref} from 'vue'
 import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {computed, type Ref} from 'vue'
+
 import {useStore} from '../lib/hooks/useStore'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import Token from './Token.vue'
 
 const store = useStore()

@@ -1,13 +1,30 @@
 {
   "name": "@markput/vue",
-  "type": "module",
   "version": "0.1.0",
   "description": "Vue component for combine editable text with any component using annotated text",
+  "keywords": [
+    "component",
+    "highlight",
+    "input",
+    "marked-input",
+    "markup",
+    "mention",
+    "vue",
+    "vue-component"
+  ],
   "license": "MIT",
   "author": "Ruslan Ilyin",
   "repository": {
     "type": "git",
     "url": "https://github.com/Nowely/marked-input.git"
+  },
+  "type": "module",
+  "module": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./index.js"
+    }
   },
   "scripts": {
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && node prepack.js",
@@ -16,27 +33,10 @@
   "dependencies": {
     "@markput/core": "workspace:*"
   },
-  "peerDependencies": {
-    "vue": ">=3.5.0"
-  },
   "devDependencies": {
     "vue-tsc": "catalog:"
   },
-  "module": "./index.js",
-  "types": "./index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./index.js"
-    }
-  },
-  "keywords": [
-    "vue",
-    "vue-component",
-    "component",
-    "mention",
-    "markup",
-    "marked-input",
-    "highlight",
-    "input"
-  ]
+  "peerDependencies": {
+    "vue": ">=3.5.0"
+  }
 }

@@ -1,8 +1,10 @@
-import {afterAll, bench, describe} from 'vitest'
-import {Parser} from './ParserV2/Parser'
-import type {Markup, Token} from './ParserV2/types'
 import * as fs from 'fs'
 import * as path from 'path'
+
+import {afterAll, bench, describe} from 'vitest'
+
+import {Parser} from './ParserV2/Parser'
+import type {Markup, Token} from './ParserV2/types'
 
 /**
  * Method profiling data with hierarchical structure

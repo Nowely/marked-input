@@ -1,6 +1,7 @@
 import {memo, useMemo} from 'react'
-import {useStore} from '../lib/hooks/useStore'
+
 import {useSlot} from '../lib/hooks/useSlot'
+import {useStore} from '../lib/hooks/useStore'
 import {Suggestions} from './Suggestions'
 
 export const OverlayRenderer = memo(() => {

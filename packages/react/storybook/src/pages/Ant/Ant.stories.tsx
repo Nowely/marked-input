@@ -1,6 +1,7 @@
-import {Tag} from 'antd'
 import {MarkedInput} from '@markput/react'
+import {Tag} from 'antd'
 import {useState} from 'react'
+
 import {Text} from '../../shared/components/Text'
 
 export default {

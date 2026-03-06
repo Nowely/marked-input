@@ -1,7 +1,8 @@
+import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ReactNode} from 'react'
-import {MarkedInput} from '@markput/react'
 import {useState} from 'react'
+
 import {Text} from '../../shared/components/Text'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 

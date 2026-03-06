@@ -1,6 +1,7 @@
-import type {Meta, StoryObj} from '@storybook/react-vite'
 import {MarkedInput} from '@markput/react'
+import type {Meta, StoryObj} from '@storybook/react-vite'
 import {useState} from 'react'
+
 import {Text} from '../../shared/components/Text'
 
 const meta = {

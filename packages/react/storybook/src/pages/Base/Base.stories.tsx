@@ -1,7 +1,8 @@
-import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {MarkProps, MarkToken, Markup} from '@markput/react'
 import {denote, MarkedInput} from '@markput/react'
+import type {Meta, StoryObj} from '@storybook/react-vite'
 import {useState} from 'react'
+
 import {Button} from '../../shared/components/Button'
 import {Text} from '../../shared/components/Text'
 

@@ -1,8 +1,9 @@
 {
   "name": "@markput/vue-app",
   "version": "1.0.0",
-  "description": "E2E test application for marked-input (Vue)",
   "private": true,
+  "description": "E2E test application for marked-input (Vue)",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -17,6 +18,5 @@
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vue-tsc": "catalog:"
-  },
-  "type": "module"
+  }
 }

@@ -1,9 +1,10 @@
-import {memo, useCallback, useMemo, useRef} from 'react'
 import {splitTokensIntoBlocks, reorderBlocks, parseWithParser, type Block} from '@markput/core'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {memo, useCallback, useMemo, useRef} from 'react'
+
 import {useStore} from '../lib/hooks/useStore'
-import {Token} from './Token'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {DraggableBlock} from './DraggableBlock'
+import {Token} from './Token'
 
 export const BlockContainer = memo(() => {
 	const store = useStore()

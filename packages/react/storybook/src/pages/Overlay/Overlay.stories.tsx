@@ -1,6 +1,6 @@
-import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {MarkToken} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
+import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {RefObject} from 'react'
 import {useState} from 'react'
 

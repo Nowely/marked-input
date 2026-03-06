@@ -1,10 +1,11 @@
-import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {Markup} from '@markput/react'
 import {MarkedInput, useMark} from '@markput/react'
+import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ReactNode} from 'react'
 import {useState} from 'react'
-import {Text} from '../../shared/components/Text'
+
 import {useTab} from '../../shared/components/Tabs'
+import {Text} from '../../shared/components/Text'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {inject, computed, type Ref, type Component} from 'vue'
 import type {MarkToken} from '@markput/core'
+import {inject, computed, type Ref, type Component} from 'vue'
+
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
 import type {MarkProps, Option} from '../types'

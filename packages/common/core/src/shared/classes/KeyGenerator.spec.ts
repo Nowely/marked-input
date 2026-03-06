@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, it} from 'vitest'
+
 import {KeyGenerator} from './KeyGenerator'
 
 describe(`Utility: ${KeyGenerator.name}`, () => {

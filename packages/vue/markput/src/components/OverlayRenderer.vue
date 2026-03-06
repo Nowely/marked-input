@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {computed, type Ref, type Component} from 'vue'
 import type {OverlayMatch} from '@markput/core'
-import type {Option} from '../types'
+import {computed, type Ref, type Component} from 'vue'
+
 import {useStore} from '../lib/hooks/useStore'
+import type {Option} from '../types'
 import Suggestions from './Suggestions/Suggestions.vue'
 
 const store = useStore()

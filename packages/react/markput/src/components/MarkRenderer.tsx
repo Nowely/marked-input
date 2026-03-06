@@ -1,6 +1,7 @@
 import type {MarkToken} from '@markput/core'
-import {useStore} from '../lib/hooks/useStore'
+
 import {useSlot} from '../lib/hooks/useSlot'
+import {useStore} from '../lib/hooks/useStore'
 import {useToken} from '../lib/providers/TokenProvider'
 import type {MarkProps} from '../types'
 // eslint-disable-next-line import/no-cycle

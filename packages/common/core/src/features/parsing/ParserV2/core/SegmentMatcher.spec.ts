@@ -1,8 +1,9 @@
 import {describe, expect, it} from 'vitest'
+
+import type {Markup} from '../types'
+import {MarkupRegistry} from './MarkupRegistry'
 import type {SegmentDefinition} from './SegmentMatcher'
 import {SegmentMatcher} from './SegmentMatcher'
-import {MarkupRegistry} from './MarkupRegistry'
-import type {Markup} from '../types'
 
 describe('SegmentMatcher', () => {
 	describe('static segments', () => {

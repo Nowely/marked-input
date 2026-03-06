@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import {provide, toRef} from 'vue'
 import type {Token as TokenType} from '@markput/core'
+import {provide, toRef} from 'vue'
+
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
 // eslint-disable-next-line import/no-cycle
 import MarkRenderer from './MarkRenderer.vue'

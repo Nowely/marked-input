@@ -1,8 +1,8 @@
 import type {GapType} from '../constants'
 import type {PositionRange} from '../types'
-import type {SegmentMatch} from './SegmentMatcher'
-import type {MarkupDescriptor} from './MarkupDescriptor'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
+import type {MarkupDescriptor} from './MarkupDescriptor'
+import type {SegmentMatch} from './SegmentMatcher'
 
 /**
  * Unified match structure for pattern matching states

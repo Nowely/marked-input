@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import {fileURLToPath} from 'url'
+
 import api from '@microsoft/api-extractor'
 
 const __filename = fileURLToPath(import.meta.url)

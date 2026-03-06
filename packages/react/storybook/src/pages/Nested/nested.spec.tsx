@@ -1,9 +1,9 @@
-import {render} from 'vitest-browser-react'
-import {page} from 'vitest/browser'
 import type {Markup} from '@markput/react'
 import {MarkedInput, useMark} from '@markput/react'
 import type {ReactNode} from 'react'
 import {describe, expect, it} from 'vitest'
+import {render} from 'vitest-browser-react'
+import {page} from 'vitest/browser'
 
 describe('Nested Marks Rendering', () => {
 	// Simple Mark component for testing

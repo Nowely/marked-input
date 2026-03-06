@@ -1,7 +1,7 @@
 {
   "name": "@markput/website",
-  "type": "module",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -15,11 +15,11 @@
     "@astrojs/starlight": "^0.37.5",
     "@astrojs/starlight-tailwind": "^4.0.2",
     "@astrojs/vercel": "^9.0.4",
+    "@markput/react": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "astro": "^5.17.1",
-    "@markput/react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sharp": "^0.34.5",

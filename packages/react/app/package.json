@@ -1,9 +1,10 @@
 {
   "name": "@markput/react-app",
   "version": "1.0.0",
+  "private": true,
   "description": "E2E test application for marked-input",
   "license": "MIT",
-  "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -20,6 +21,5 @@
     "@vitejs/plugin-react-swc": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
-  },
-  "type": "module"
+  }
 }

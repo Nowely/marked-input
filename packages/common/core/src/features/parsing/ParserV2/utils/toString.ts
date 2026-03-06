@@ -1,5 +1,5 @@
-import type {Token} from '../types'
 import {PLACEHOLDER} from '../constants'
+import type {Token} from '../types'
 import {annotate} from './annotate'
 
 /**

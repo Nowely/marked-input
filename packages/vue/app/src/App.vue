@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {ref, computed, h, type FunctionalComponent} from 'vue'
 import type {MarkProps, MarkToken, Markup} from '@markput/vue'
 import {denote, MarkedInput} from '@markput/vue'
+import {ref, computed, h, type FunctionalComponent} from 'vue'
 
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'

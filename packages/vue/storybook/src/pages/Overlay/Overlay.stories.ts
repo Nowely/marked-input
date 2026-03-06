@@ -1,6 +1,6 @@
+import {MarkedInput, useOverlay} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, type ComponentPublicInstance} from 'vue'
-import {MarkedInput, useOverlay} from '@markput/vue'
 
 export default {
 	title: 'MarkedInput/Overlay',

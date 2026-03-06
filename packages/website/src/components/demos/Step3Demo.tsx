@@ -3,7 +3,7 @@ import {type RefObject, useEffect, useState} from 'react'
 
 const User = ({avatar, login, onClick}: {avatar?: string; login?: string; onClick?: () => void}) => (
 	<span className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`} onClick={onClick}>
-		<img src={avatar} alt="" className="rounded-full w-6 h-6" />
+		<img src={avatar} alt="" className="h-6 w-6 rounded-full" />
 		{login}
 	</span>
 )
@@ -23,7 +23,7 @@ const CustomOverlay = () => {
 		<div
 			ref={ref as RefObject<HTMLDivElement>}
 			style={{top: style.top, left: style.left}}
-			className="fixed z-10 bg-white border border-gray-200 shadow-md"
+			className="fixed z-10 border border-gray-200 bg-white shadow-md"
 		>
 			{users?.map(user => (
 				<User

@@ -1,7 +1,8 @@
 import {describe, expect, it} from 'vitest'
+
+import {Parser} from '../Parser'
 import type {Markup} from '../types'
 import {toString} from './toString'
-import {Parser} from '../Parser'
 
 describe('Utility: toString', () => {
 	it('should reconstruct simple annotated text', () => {

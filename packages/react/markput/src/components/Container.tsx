@@ -1,6 +1,7 @@
 import {memo, useMemo} from 'react'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+
 import {useStore} from '../lib/hooks/useStore'
+import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {Token} from './Token'
 
 export const Container = memo(() => {

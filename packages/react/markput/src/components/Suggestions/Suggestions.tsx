@@ -1,8 +1,10 @@
+import {KEYBOARD} from '@markput/core'
 import type {RefObject} from 'react'
 import {useEffect, useMemo, useState} from 'react'
+
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {useStore} from '../../lib/hooks/useStore'
-import {KEYBOARD} from '@markput/core'
+
 import styles from '@markput/core/styles.module.css'
 
 export const Suggestions = () => {

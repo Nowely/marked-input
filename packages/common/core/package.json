@@ -1,6 +1,14 @@
 {
   "name": "@markput/core",
   "type": "module",
+  "module": "index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "import": "./index.ts"
+    },
+    "./styles.module.css": "./styles.module.css"
+  },
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build -w",
@@ -11,14 +19,6 @@
     "test:coverage": "vitest run --coverage",
     "coverage": "vitest run --coverage",
     "bench": "vitest bench --run"
-  },
-  "module": "index.ts",
-  "types": "./index.ts",
-  "exports": {
-    ".": {
-      "import": "./index.ts"
-    },
-    "./styles.module.css": "./styles.module.css"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",

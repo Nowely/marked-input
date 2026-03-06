@@ -1,11 +1,11 @@
+import {composeStories} from '@storybook/react-vite'
+import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {composeStories} from '@storybook/react-vite'
+import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
-import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
-import {describe, expect, it} from 'vitest'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)

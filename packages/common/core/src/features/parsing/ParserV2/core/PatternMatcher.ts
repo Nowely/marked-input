@@ -12,11 +12,11 @@
  * - Gap position management for nested content extraction
  */
 
-import type {MarkupRegistry} from './MarkupRegistry'
-import type {SegmentMatch} from './SegmentMatcher'
-import {Match} from './Match'
 import {getSegmentIndex} from '../utils/getSegmentIndex'
 import type {MarkupDescriptor} from './MarkupDescriptor'
+import type {MarkupRegistry} from './MarkupRegistry'
+import {Match} from './Match'
+import type {SegmentMatch} from './SegmentMatcher'
 
 /**
  * Optimized parser using state machine approach

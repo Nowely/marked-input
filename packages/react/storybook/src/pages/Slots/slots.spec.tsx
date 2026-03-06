@@ -1,7 +1,7 @@
-import {render} from 'vitest-browser-react'
-import {page, userEvent} from 'vitest/browser'
 import {MarkedInput} from '@markput/react'
 import {describe, expect, it, vi} from 'vitest'
+import {render} from 'vitest-browser-react'
+import {page, userEvent} from 'vitest/browser'
 
 type DivProps = React.HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}
 type SpanProps = React.HTMLAttributes<HTMLSpanElement> & {ref?: React.Ref<HTMLSpanElement>}

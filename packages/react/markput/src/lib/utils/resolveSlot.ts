@@ -1,6 +1,6 @@
-import type {ElementType, HTMLAttributes} from 'react'
 import type {CoreSlotProps, CoreSlots} from '@markput/core'
 import {convertDataAttrs} from '@markput/core'
+import type {ElementType, HTMLAttributes} from 'react'
 
 export type SlotName = 'container' | 'span'
 

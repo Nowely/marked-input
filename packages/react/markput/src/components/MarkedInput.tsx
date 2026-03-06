@@ -1,16 +1,18 @@
-import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useState} from 'react'
-import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
-import {Container} from './Container'
-import {BlockContainer} from './BlockContainer'
-import {OverlayRenderer} from './OverlayRenderer'
 import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
-import styles from '@markput/core/styles.module.css'
-import {StoreContext} from '../lib/providers/StoreContext'
-import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
-import {createUseHook} from '../lib/hooks/createUseHook'
+import type {ComponentType, CSSProperties, Ref} from 'react'
+import {useState} from 'react'
+
 import {DEFAULT_OPTIONS} from '../constants'
+import {createUseHook} from '../lib/hooks/createUseHook'
+import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
+import {StoreContext} from '../lib/providers/StoreContext'
+import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
+import {BlockContainer} from './BlockContainer'
+import {Container} from './Container'
+import {OverlayRenderer} from './OverlayRenderer'
+
+import styles from '@markput/core/styles.module.css'
 
 /**
  * Props for MarkedInput component.

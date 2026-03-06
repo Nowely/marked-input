@@ -1,4 +1,5 @@
 import {describe, expect, it} from 'vitest'
+
 import type {Token, TextToken, MarkToken} from '../parsing/ParserV2/types'
 import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
 

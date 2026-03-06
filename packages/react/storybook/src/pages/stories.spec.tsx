@@ -1,6 +1,6 @@
-import {render} from 'vitest-browser-react'
 import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
+import {render} from 'vitest-browser-react'
 
 // Automatically import all stories files
 const storiesModules = import.meta.glob('./**/*.stories.tsx', {eager: true})

@@ -1,9 +1,10 @@
 import {describe, expect, it} from 'vitest'
-import type {Block} from './splitTokensIntoBlocks'
-import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
-import {reorderBlocks} from './reorderBlocks'
+
 import {Parser} from '../parsing/ParserV2/Parser'
 import type {TextToken} from '../parsing/ParserV2/types'
+import {reorderBlocks} from './reorderBlocks'
+import type {Block} from './splitTokensIntoBlocks'
+import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
 
 function makeBlocks(...lines: string[]): {value: string; blocks: Block[]} {
 	const value = lines.join('\n')

@@ -1,9 +1,9 @@
 import type {CoreOption} from '../../shared/types'
-import type {Store} from '../store/Store'
 import {createCoreFeatures} from '../coreFeatures'
 import {Parser} from '../parsing/ParserV2/Parser'
-import {getTokensByUI, getTokensByValue, parseWithParser} from '../parsing/utils/valueParser'
 import {toString} from '../parsing/ParserV2/utils/toString'
+import {getTokensByUI, getTokensByValue, parseWithParser} from '../parsing/utils/valueParser'
+import type {Store} from '../store/Store'
 
 type TriggerExtractor<T> = (option: T) => string | undefined
 

@@ -1,4 +1,5 @@
 import {DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from '@markput/core'
+
 import type {Option} from './types'
 
 export const DEFAULT_OPTIONS: Option[] = [

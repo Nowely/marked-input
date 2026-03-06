@@ -1,6 +1,7 @@
-import {type Ref, inject, ref, watch, onMounted} from 'vue'
 import type {MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
+import {type Ref, inject, ref, watch, onMounted} from 'vue'
+
 import {TOKEN_KEY} from '../providers/tokenKey'
 import {useStore} from './useStore'
 

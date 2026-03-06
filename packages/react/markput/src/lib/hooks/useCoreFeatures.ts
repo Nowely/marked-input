@@ -1,6 +1,7 @@
-import {useEffect, useImperativeHandle} from 'react'
-import type {Option} from '../../types'
 import type {MarkputHandler, Store} from '@markput/core'
+import {useEffect, useImperativeHandle} from 'react'
+
+import type {Option} from '../../types'
 
 export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | undefined) {
 	useImperativeHandle(ref, () => store.createHandler(), [store])
