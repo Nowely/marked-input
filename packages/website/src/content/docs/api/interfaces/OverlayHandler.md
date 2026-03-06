@@ -5,7 +5,7 @@ prev: false
 title: "OverlayHandler"
 ---
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:8](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L8)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L9)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:8](https://github.com/No
 close: () => void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:13](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L13)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L14)
 
 #### Returns
 
@@ -29,7 +29,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:13](https://github.com/N
 match: OverlayMatch<Option<MarkProps, OverlayProps>>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L15)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:16](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L16)
 
 ***
 
@@ -39,7 +39,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:15](https://github.com/N
 ref: RefObject<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:16](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L16)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L17)
 
 ***
 
@@ -49,7 +49,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:16](https://github.com/N
 select: (value) => void;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:14](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L14)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:15](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L15)
 
 #### Parameters
 
@@ -71,7 +71,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:14](https://github.com/N
 style: object;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:9](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L9)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:10](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L10)
 
 #### left
 

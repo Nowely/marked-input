@@ -4,7 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "storybook dev",
-    "build": "storybook build -o ./dist"
+    "build": "storybook build -o ./dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@markput/vue": "workspace:*",
@@ -15,8 +19,15 @@
     "@storybook/addon-links": "catalog:",
     "@storybook/cli": "catalog:",
     "@storybook/vue3-vite": "catalog:",
+    "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "playwright": "catalog:",
     "storybook": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vitest-browser-vue": "catalog:"
   }
 }
