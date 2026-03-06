@@ -39,7 +39,8 @@
     "oxfmt": "^0.36.0",
     "oxlint": "^1.49.0",
     "playwright": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "catalog:"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,vue}": [
