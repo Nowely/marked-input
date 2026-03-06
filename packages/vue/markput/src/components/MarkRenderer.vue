@@ -50,7 +50,8 @@ const resolved = computed(() => {
 </script>
 
 <template>
-	<component :is="resolved.Comp" v-bind="resolved.props">
+	<component v-if="node.children.length > 0" :is="resolved.Comp" v-bind="resolved.props">
 		<Token v-for="child in node.children" :key="key.get(child)" :mark="child" :is-nested="true" />
 	</component>
+	<component v-else :is="resolved.Comp" v-bind="resolved.props" />
 </template>
