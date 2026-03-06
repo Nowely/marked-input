@@ -1,6 +1,6 @@
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, computed} from 'vue'
-import type {MarkProps, MarkToken, Markup} from '@markput/vue'
+import type {MarkProps, MarkToken, Markup, Option} from '@markput/vue'
 import {denote, MarkedInput} from '@markput/vue'
 import Button from '../../shared/components/Button.vue'
 import Text from '../../shared/components/Text.vue'
@@ -45,7 +45,7 @@ const configuredOptions = [
 			data: ['Seventh', 'Eight', 'Ninth'],
 		},
 	},
-]
+] as Option[]
 
 export const Configured: Story = {
 	render: () =>
