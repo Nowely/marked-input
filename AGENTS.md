@@ -45,6 +45,43 @@
 - No semicolons, single quotes, tabs, trailing commas (ES5)
 - `arrowParens: "avoid"`
 
+## Documentation
+
+Keep documentation synchronized with code changes to maintain project quality.
+
+### When to Update
+
+Update documentation when:
+
+- Modifying APIs (function signatures, interfaces, types)
+- Adding new features or components
+- Changing architecture or data flow
+- Modifying configuration options
+- Fixing bugs that affect user-facing behavior
+- Adding or updating dependencies
+
+### Verification Checklist
+
+Before submitting changes:
+
+- [ ] Code examples compile and work
+- [ ] Website docs updated for user-facing changes
+- [ ] AGENTS.md updated if new patterns introduced
+- [ ] Conventional commit messages used (required for CHANGELOG auto-generation)
+- [ ] Type definitions accurate (run `pnpm run typecheck`)
+- [ ] README.md updated if usage changes
+
+### Website Documentation
+
+The project documentation website is located at `packages/website/`:
+
+- **Tech Stack**: Astro + Starlight documentation framework
+- **Content Location**: `packages/website/src/content/docs/` (.md/.mdx files)
+- **Run locally**: `pnpm run dev:website`
+- **Structure**: File-based routing (each .md/.mdx becomes a route)
+- **API Docs**: Auto-generated via TypeDoc in `packages/website/src/content/docs/api/`
+- **RFC Files**: Place feature RFCs in `packages/website/src/content/docs/development/` (e.g., `rfc-nested-marks.md`)
+
 ## Naming
 
 - Components: PascalCase (`MarkedInput.tsx`, `Container.vue`)
