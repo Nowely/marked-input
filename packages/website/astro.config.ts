@@ -91,6 +91,16 @@ export default defineConfig({
 					href: 'https://github.com/Nowely/marked-input',
 					icon: 'github',
 				},
+				{
+					label: 'React Storybook',
+					href: 'https://markput-react.vercel.app',
+					icon: 'external',
+				},
+				{
+					label: 'Vue Storybook',
+					href: 'https://markput-vue.vercel.app',
+					icon: 'external',
+				},
 			],
 			sidebar: sidebarConfig,
 			customCss: ['./src/styles/global.css'],
