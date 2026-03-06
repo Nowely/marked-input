@@ -8,6 +8,7 @@
 ## Setup
 
 - pnpm >= 9 required (enforced, no npm/yarn)
+- pnpm workspaces (catalog for shared deps)
 - `pnpm install`
 
 ## Commands
@@ -15,8 +16,15 @@
 - `pnpm test` — run all tests
 - `pnpm run build` — build all packages
 - `pnpm run lint` — oxlint
+- `pnpm run lint:fix` — oxlint with auto-fix
 - `pnpm run typecheck` — tsc + vue-tsc
 - `pnpm run format` — prettier check
+- `pnpm run format:fix` — prettier write
+- `pnpm run dev:react:sb` — React Storybook
+- `pnpm run dev:vue:sb` — Vue Storybook
+- `pnpm run dev:react:app` — React E2E test app
+- `pnpm run dev:vue:app` — Vue E2E test app
+- `pnpm run dev:website` — Docs site
 
 ## Structure
 
@@ -46,10 +54,48 @@
 
 ## Architecture
 
-- Core uses class-based controllers: `Store`, `FeatureManager`, `Caret`, etc.
-- Reactivity via `defineState()`, `defineEvents()`, `Reactive` class
-- Framework adapters bridge core to React/Vue via `createUseHook()`
-- React and Vue adapters mirror each other's structure
+### Core (`@markput/core`)
+
+Framework-agnostic logic using class-based controllers:
+
+- **`Store`** — Central state container. Holds all state via `defineState()`, DOM node refs, controllers, and lifecycle. Created once per component instance.
+- **`FeatureManager`** — Registers and enables/disables feature modules (parsing, overlay, focus, etc.)
+- **`Caret`** — Static helpers for cursor/selection position in contenteditable
+- **`Parser`** — Tokenizes input text into `TextToken` and `MarkToken` segments
+- **Controllers** — `FocusController`, `KeyDownController`, `OverlayController`, `TextSelectionController`, `SystemListenerController`
+
+### Reactivity System
+
+- **`Reactive<T>`** — Minimal reactive primitive with `get()`, `set()`, `on(fn)` subscription
+- **`defineState<T>()`** — Creates reactive state object where each property is a `Signal<T>`
+- **`defineEvents<T>()`** — Creates typed event emitters with `on(fn)` subscription
+- **`Signal<T>`** — Interface: `{ get(), set(), on(), use() }`
+
+### Framework Adapters
+
+React/Vue adapters bridge core to framework reactivity via `createUseHook`:
+
+```ts
+// React: creates useState + useEffect subscription
+const createUseHook = signal => () => {
+    const [value, setValue] = useState(() => signal.get())
+    useEffect(() => signal.on(setValue), [signal])
+    return value
+}
+
+// Vue: returns computed ref
+const createUseHook = signal => () => computed(() => signal.get())
+```
+
+Data flow: Core state → Signal.use() → Component re-render
+
+### Package Dependencies
+
+```
+@markput/react  ─┐
+                 ├─→ @markput/core
+@markput/vue    ─┘
+```
 
 ## Testing
 
