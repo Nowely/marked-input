@@ -1,5 +1,5 @@
 <script lang="ts">
-import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
+import type {CoreSlotProps, CoreSlots, StyleProperties, Token as CoreToken} from '@markput/core'
 import {computed, defineComponent, h, type Ref} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
@@ -12,8 +12,8 @@ export default defineComponent({
 		const tokens = store.state.tokens.use() as unknown as Ref<CoreToken[]>
 		const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
 		const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
-		const className = store.state.className.use()
-		const style = store.state.style.use()
+		const className = store.state.className.use() as unknown as Ref<string | undefined>
+		const style = store.state.style.use() as unknown as Ref<StyleProperties | undefined>
 		const key = store.key
 
 		const containerTag = computed(() => resolveSlot('container', slots.value))
