@@ -18,8 +18,8 @@
 - `pnpm run lint` — oxlint
 - `pnpm run lint:fix` — oxlint with auto-fix
 - `pnpm run typecheck` — tsc + vue-tsc
-- `pnpm run format` — prettier check
-- `pnpm run format:fix` — prettier write
+- `pnpm run format` — oxfmt check
+- `pnpm run format:fix` — oxfmt
 - `pnpm run dev:react:sb` — React Storybook
 - `pnpm run dev:vue:sb` — Vue Storybook
 - `pnpm run dev:react:app` — React E2E test app
@@ -144,5 +144,5 @@ Data flow: Core state → Signal.use() → Component re-render
 
 - Default branch: `next` (not main)
 - Conventional Commits required for PR titles
-- Pre-commit hook: oxlint --fix + prettier via lint-staged
+- Pre-commit hook: oxlint --fix + oxfmt via lint-staged
 - Release via release-please on `next` branch

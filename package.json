@@ -1,11 +1,8 @@
 {
   "name": "markput",
   "version": "0.3.0",
-  "type": "module",
   "private": true,
-  "engines": {
-    "pnpm": ">=9"
-  },
+  "type": "module",
   "scripts": {
     "dev": "pnpm -r run dev",
     "dev:react:app": "pnpm -F @markput/react-app dev",
@@ -27,8 +24,8 @@
     "lint:fix": "oxlint . --fix",
     "lint:fix:suggest": "oxlint . --fix-suggestions",
     "lint:fix:danger": "oxlint . --fix-dangerously",
-    "format": "prettier . --check",
-    "format:fix": "prettier . --write",
+    "format": "oxfmt --check",
+    "format:fix": "oxfmt",
     "typecheck": "tsc --noEmit && pnpm run -F @markput/website check",
     "clean": "git clean -xdf",
     "clean:dry": "git clean -xdn",
@@ -49,19 +46,22 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "oxfmt": "^0.36.0",
     "oxlint": "^1.49.0",
     "playwright": "^1.58.2",
-    "prettier": "^3.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,vue}": [
       "oxlint --fix",
-      "prettier --write"
+      "oxfmt"
     ],
     "*.{json,md,css,html}": [
-      "prettier --write"
+      "oxfmt"
     ]
+  },
+  "engines": {
+    "pnpm": ">=9"
   }
 }
