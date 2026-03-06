@@ -1,6 +1,6 @@
 # [Marked Input](https://marked-input.vercel.app)
 
-[![npm version](https://img.shields.io/npm/v/@markput/react.svg?style=flat&label=react)](https://www.npmjs.com/package/@markput/react) [![npm version](https://img.shields.io/npm/v/@markput/vue.svg?style=flat&label=vue)](https://www.npmjs.com/package/@markput/vue) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/react?label=react+gzip)](https://bundlephobia.com/package/@markput/react) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/vue?label=vue+gzip)](https://bundlephobia.com/package/@markput/vue) [![Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://marked-input.vercel.app)
+[![npm version](https://img.shields.io/npm/v/@markput/react.svg?style=flat&label=react)](https://www.npmjs.com/package/@markput/react) [![npm version](https://img.shields.io/npm/v/@markput/vue.svg?style=flat&label=vue)](https://www.npmjs.com/package/@markput/vue) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/react?label=react+gzip)](https://bundlephobia.com/package/@markput/react) [![min zipped size](https://img.shields.io/bundlephobia/minzip/@markput/vue?label=vue+gzip)](https://bundlephobia.com/package/@markput/vue) [![React Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://markput-react.vercel.app) [![Vue Storybook](https://gw.alipayobjects.com/mdn/ob_info/afts/img/A*CQXNTZfK1vwAAAAAAAAAAABjAQAAAQ/original)](https://markput-vue.vercel.app)
 
 <img width="521" alt="image" src="https://user-images.githubusercontent.com/37639183/182974441-49e4b247-449a-47ba-a090-2cb3aab7ce44.png">
 
@@ -11,7 +11,7 @@ Currently supported packages:
 - `@markput/react`
 - `@markput/vue`
 
-**[Documentation](https://markput.vercel.app)** **[Storybook](https://marked-input.vercel.app)**
+**[Documentation](https://markput.vercel.app)** **[React Storybook](https://markput-react.vercel.app)** **[Vue Storybook](https://markput-vue.vercel.app)**
 
 ## Feature
 
