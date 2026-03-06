@@ -4,7 +4,7 @@ import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h, ref, type ComponentPublicInstance} from 'vue'
+import {defineComponent, h, onMounted, ref, type ComponentPublicInstance} from 'vue'
 
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils'
@@ -23,9 +23,11 @@ describe('Component: MarkedInput', () => {
 			},
 		})
 
-		await render(withProps(Default, {Mark, defaultValue: ''}))
+		const {container} = await render(withProps(Default, {Mark, defaultValue: ''}))
 
-		const span = page.getByRole('textbox')
+		const [span] = container.querySelectorAll('span')
+		await expect.element(span).toHaveTextContent('')
+
 		await userEvent.type(span, '@[[mark](1)')
 
 		await expect.element(page.getByText('mark')).toBeInTheDocument()
@@ -33,26 +35,26 @@ describe('Component: MarkedInput', () => {
 
 	const FocusableMark = defineComponent({
 		setup() {
-			const mark = useMark<HTMLElement>()
+			const mark = useMark<HTMLElement>({controlled: true})
 			const elRef = ref<HTMLElement | null>(null)
 
+			onMounted(() => {
+				if (elRef.value) elRef.value.textContent = mark.value ?? null
+			})
+
 			return () =>
-				h(
-					'abbr',
-					{
-						ref: (el: Element | ComponentPublicInstance | null) => {
-							elRef.value = el as HTMLElement | null
-							mark.ref.current = el as HTMLElement | null
-						},
-						title: mark.meta,
-						contentEditable: true,
-						style: {
-							outline: 'none',
-							whiteSpace: 'pre-wrap',
-						},
+				h('abbr', {
+					ref: (el: Element | ComponentPublicInstance | null) => {
+						elRef.value = el as HTMLElement | null
+						mark.ref.current = el as HTMLElement | null
 					},
-					mark.value
-				)
+					title: mark.meta,
+					contentEditable: true,
+					style: {
+						outline: 'none',
+						whiteSpace: 'pre-wrap',
+					},
+				})
 		},
 	})
 

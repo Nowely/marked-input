@@ -1,5 +1,6 @@
 import type {CoreSlotProps, CoreSlots} from '@markput/core'
 import {convertDataAttrs} from '@markput/core'
+import type {Component} from 'vue'
 
 export type SlotName = 'container' | 'span'
 
@@ -8,9 +9,9 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot(slotName: SlotName, slots: CoreSlots | undefined): string {
+export function resolveSlot(slotName: SlotName, slots: CoreSlots | undefined): string | Component {
 	if (slots?.[slotName]) {
-		return slots[slotName] as string
+		return slots[slotName] as string | Component
 	}
 
 	return defaultSlots[slotName]

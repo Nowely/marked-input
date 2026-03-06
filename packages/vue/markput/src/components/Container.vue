@@ -21,7 +21,7 @@ const containerProps = computed(() => resolveSlotProps('container', slotProps.va
 <template>
 	<component
 		:is="containerTag"
-		:ref="(el: any) => (store.refs.container = el)"
+		:ref="(el: any) => (store.refs.container = el?.$el ?? el)"
 		v-bind="containerProps"
 		:class="className"
 		:style="style"

@@ -37,8 +37,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 }
 
 export interface Slots {
-	container?: string
-	span?: string
+	container?: string | Component
+	span?: string | Component
 }
 
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>

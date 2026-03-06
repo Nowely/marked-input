@@ -28,9 +28,11 @@ describe('Nested Marks Rendering', () => {
 		const value = '@[outer @[inner]]'
 
 		await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const outerMark = page.getByTestId('mark-depth-0')
@@ -47,9 +49,11 @@ describe('Nested Marks Rendering', () => {
 		const value = '@[level0 @[level1 @[level2]]]'
 
 		await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const level0 = page.getByTestId('mark-depth-0')
@@ -66,9 +70,11 @@ describe('Nested Marks Rendering', () => {
 		const value = '@[outer @[first] and @[second]]'
 
 		await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const outerMark = page.getByTestId('mark-depth-0')
@@ -101,12 +107,14 @@ describe('Nested Marks Rendering', () => {
 		const value = '#[tag with @[mention]]'
 
 		await render(MarkedInput, {
-			Mark: TagMark,
-			value,
-			options: [
-				{markup: tagMarkup, overlay: {trigger: '#'}},
-				{markup: mentionMarkup, overlay: {trigger: '@'}},
-			],
+			props: {
+				Mark: TagMark,
+				value,
+				options: [
+					{markup: tagMarkup, overlay: {trigger: '#'}},
+					{markup: mentionMarkup, overlay: {trigger: '@'}},
+				],
+			},
 		})
 
 		const tagMark = page.getByTestId('tag-mark')
@@ -123,9 +131,11 @@ describe('Nested Marks Rendering', () => {
 		const value = '@[@[]]'
 
 		await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const marks = page.getByTestId(/mark-depth-/).all()
@@ -155,9 +165,11 @@ describe('Nested Marks Rendering', () => {
 		const value = '@[before @[nested] after]'
 
 		const {container} = await render(MarkedInput, {
-			Mark: CapturingMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: CapturingMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		expect(container.textContent).toContain('before')
@@ -181,9 +193,11 @@ describe('Nested Marks Tree Navigation', () => {
 		const value = '@[d0 @[d1 @[d2]]]'
 
 		const {container} = await render(MarkedInput, {
-			Mark: DepthMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: DepthMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el => el.getAttribute('data-depth'))
@@ -204,9 +218,11 @@ describe('Nested Marks Tree Navigation', () => {
 		const value = '@[parent @[child]]'
 
 		const {container} = await render(MarkedInput, {
-			Mark: ChildrenMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: ChildrenMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const elements = Array.from(container.querySelectorAll('[data-has-children]'))
@@ -233,9 +249,11 @@ describe('Nested Marks Tree Navigation', () => {
 		const value = '@[parent @[child1] text @[child2]]'
 
 		await render(MarkedInput, {
-			Mark: ChildrenCountMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: ChildrenCountMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		expect(capturedChildrenCount).toBeGreaterThan(0)
@@ -255,9 +273,11 @@ describe('Backward Compatibility', () => {
 		const value = '@[test](meta)'
 
 		await render(MarkedInput, {
-			Mark: FlatMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: FlatMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const mark = page.getByTestId('flat-mark')
@@ -277,9 +297,11 @@ describe('Backward Compatibility', () => {
 		const value = '@[test]'
 
 		await render(MarkedInput, {
-			Mark: FlatMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: FlatMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const mark = page.getByTestId('flat-mark')
@@ -299,9 +321,11 @@ describe('Backward Compatibility', () => {
 		const value = '@[text with @[nested]]'
 
 		await render(MarkedInput, {
-			Mark: FlatMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: FlatMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const marks = page.getByTestId('flat-mark').all()
@@ -323,9 +347,11 @@ describe('Complex Nesting Scenarios', () => {
 		const value = '@[first]@[second]'
 
 		await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const marks = page.getByTestId('mark').all()
@@ -345,9 +371,11 @@ describe('Complex Nesting Scenarios', () => {
 		const value = '@[@[@[@[@[deep]]]]]'
 
 		const {container} = await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el =>
@@ -378,9 +406,11 @@ describe('Complex Nesting Scenarios', () => {
 		const value = '@[nested @[child]] @[another]'
 
 		await render(MarkedInput, {
-			Mark: MixedMark,
-			value,
-			options: [{markup: nestedMarkup}],
+			props: {
+				Mark: MixedMark,
+				value,
+				options: [{markup: nestedMarkup}],
+			},
 		})
 
 		const marks = page.getByTestId('mark').all()
@@ -401,9 +431,11 @@ describe('Complex Nesting Scenarios', () => {
 		const value = '@[Hello @[World] from @[Nested] marks]'
 
 		const {container} = await render(MarkedInput, {
-			Mark: RenderingMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: RenderingMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		expect(container.textContent).toContain('Hello')
@@ -427,9 +459,11 @@ describe('Edge Cases', () => {
 		const value = ''
 
 		const {container} = await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		expect(container.textContent).toBe('')
@@ -447,9 +481,11 @@ describe('Edge Cases', () => {
 		const value = 'Just plain text'
 
 		const {container} = await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		expect(container.textContent).toBe('Just plain text')
@@ -467,9 +503,11 @@ describe('Edge Cases', () => {
 		const value = '@[unclosed @[nested'
 
 		const {container} = await render(MarkedInput, {
-			Mark: TestMark,
-			value,
-			options: [{markup}],
+			props: {
+				Mark: TestMark,
+				value,
+				options: [{markup}],
+			},
 		})
 
 		await expect.element(container).toBeInTheDocument()

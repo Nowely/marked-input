@@ -15,9 +15,11 @@ describe('Slots API', () => {
 	describe('Container slot', () => {
 		it('should use default div component when no slot is provided', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				'data-testid': 'container',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					'data-testid': 'container',
+				},
 			})
 
 			const containerDiv = container.querySelector('div') as HTMLElement
@@ -32,10 +34,12 @@ describe('Slots API', () => {
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {
-					container: CustomContainer,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {
+						container: CustomContainer,
+					},
 				},
 			})
 
@@ -46,12 +50,14 @@ describe('Slots API', () => {
 			const handleKeyDown = vi.fn()
 
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						onKeydown: handleKeyDown,
-						dataCustom: 'test-value',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							onKeydown: handleKeyDown,
+							dataCustom: 'test-value',
+						},
 					},
 				},
 			})
@@ -62,12 +68,14 @@ describe('Slots API', () => {
 
 		it('should merge className from slotProps with default className', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				className: 'default-class',
-				slotProps: {
-					container: {
-						className: 'custom-class',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					className: 'default-class',
+					slotProps: {
+						container: {
+							className: 'custom-class',
+						},
 					},
 				},
 			})
@@ -78,12 +86,14 @@ describe('Slots API', () => {
 
 		it('should merge style from slotProps with default style', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				style: {color: 'red'},
-				slotProps: {
-					container: {
-						style: {backgroundColor: 'blue'},
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					style: {color: 'red'},
+					slotProps: {
+						container: {
+							style: {backgroundColor: 'blue'},
+						},
 					},
 				},
 			})
@@ -96,8 +106,10 @@ describe('Slots API', () => {
 	describe('Span slot', () => {
 		it('should use default span component when no slot is provided', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+				},
 			})
 
 			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
@@ -113,10 +125,12 @@ describe('Slots API', () => {
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {
-					span: CustomSpan,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {
+						span: CustomSpan,
+					},
 				},
 			})
 
@@ -125,12 +139,14 @@ describe('Slots API', () => {
 
 		it('should pass slotProps.span to the span component', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					span: {
-						className: 'custom-span-class',
-						dataSpanCustom: 'span-value',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						span: {
+							className: 'custom-span-class',
+							dataSpanCustom: 'span-value',
+						},
 					},
 				},
 			})
@@ -142,11 +158,13 @@ describe('Slots API', () => {
 
 		it('should merge style from slotProps.span', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					span: {
-						style: {fontWeight: 'bold', fontSize: '16px'},
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						span: {
+							style: {fontWeight: 'bold', fontSize: '16px'},
+						},
 					},
 				},
 			})
@@ -171,18 +189,20 @@ describe('Slots API', () => {
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {
-					container: CustomContainer,
-					span: CustomSpan,
-				},
-				slotProps: {
-					container: {
-						dataContainerProp: 'container',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {
+						container: CustomContainer,
+						span: CustomSpan,
 					},
-					span: {
-						dataSpanProp: 'span',
+					slotProps: {
+						container: {
+							dataContainerProp: 'container',
+						},
+						span: {
+							dataSpanProp: 'span',
+						},
 					},
 				},
 			})
@@ -207,19 +227,21 @@ describe('Slots API', () => {
 			})
 
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello',
-				slots: {
-					container: CustomDiv,
-					span: 'span',
-				},
-				slotProps: {
-					container: {
-						onKeydown: () => {},
-						className: 'test',
+				props: {
+					Mark: TestMark,
+					value: 'Hello',
+					slots: {
+						container: CustomDiv,
+						span: 'span',
 					},
-					span: {
-						style: {color: 'red'},
+					slotProps: {
+						container: {
+							onKeydown: () => {},
+							className: 'test',
+						},
+						span: {
+							style: {color: 'red'},
+						},
 					},
 				},
 			})
@@ -229,13 +251,15 @@ describe('Slots API', () => {
 
 		it('should support camelCase data attributes in slotProps', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						dataTestId: 'my-container',
-						dataUserId: 'user-123',
-						dataUserName: 'John',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							dataTestId: 'my-container',
+							dataUserId: 'user-123',
+							dataUserName: 'John',
+						},
 					},
 				},
 			})
@@ -250,8 +274,10 @@ describe('Slots API', () => {
 	describe('Span contentEditable attribute', () => {
 		it('should have contentEditable="true" by default on editable span', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+				},
 			})
 
 			const textSpan = container.querySelector('span[contenteditable="true"]') as HTMLElement
@@ -260,9 +286,11 @@ describe('Slots API', () => {
 
 		it('should have contentEditable="false" when readOnly is true', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				readOnly: true,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					readOnly: true,
+				},
 			})
 
 			const textSpan = container.querySelector('span[contenteditable="false"]') as HTMLElement
@@ -272,24 +300,28 @@ describe('Slots API', () => {
 		it('should maintain contentEditable on span with custom slot', async () => {
 			const CustomSpan = defineComponent({
 				setup(_, {slots}) {
-					return () => h('span', {'data-testid': 'custom-span'}, slots.default?.())
+					return () => h('span', {'data-testid': 'custom-editable-span'}, slots.default?.())
 				},
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {span: CustomSpan},
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {span: CustomSpan},
+				},
 			})
 
-			const span = page.getByTestId('custom-span')
+			const span = page.getByTestId('custom-editable-span')
 			await expect.element(span).toHaveAttribute('contenteditable', 'true')
 		})
 
 		it('should respect suppressContentEditableWarning when set', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+				},
 			})
 
 			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
@@ -302,11 +334,13 @@ describe('Slots API', () => {
 			const handleKeyDown = vi.fn()
 
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						onKeydown: handleKeyDown,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							onKeydown: handleKeyDown,
+						},
 					},
 				},
 			})
@@ -322,11 +356,13 @@ describe('Slots API', () => {
 			const handleClick = vi.fn()
 
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						onClick: handleClick,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							onClick: handleClick,
+						},
 					},
 				},
 			})
@@ -337,17 +373,19 @@ describe('Slots API', () => {
 			expect(handleClick).toHaveBeenCalled()
 		})
 
-		it('should call onFocus and onBlur handlers from slotProps.container', async () => {
+		it('should call onFocusin and onFocusout handlers from slotProps.container', async () => {
 			const handleFocus = vi.fn()
 			const handleBlur = vi.fn()
 
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						onFocus: handleFocus,
-						onBlur: handleBlur,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							onFocusin: handleFocus,
+							onFocusout: handleBlur,
+						},
 					},
 				},
 			})
@@ -370,15 +408,17 @@ describe('Slots API', () => {
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				className: 'outer-class',
-				style: {color: 'red'},
-				slots: {container: CustomContainer},
-				slotProps: {
-					container: {
-						className: 'inner-class',
-						style: {backgroundColor: 'blue'},
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					className: 'outer-class',
+					style: {color: 'red'},
+					slots: {container: CustomContainer},
+					slotProps: {
+						container: {
+							className: 'inner-class',
+							style: {backgroundColor: 'blue'},
+						},
 					},
 				},
 			})
@@ -391,11 +431,13 @@ describe('Slots API', () => {
 
 		it('should allow native HTML elements as slots', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {
-					container: 'article',
-					span: 'div',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {
+						container: 'article',
+						span: 'div',
+					},
 				},
 			})
 
@@ -410,8 +452,10 @@ describe('Slots API', () => {
 	describe('Edge cases', () => {
 		it('should handle empty value', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: '',
+				props: {
+					Mark: TestMark,
+					value: '',
+				},
 			})
 
 			const div = container.querySelector('div') as HTMLElement
@@ -420,9 +464,11 @@ describe('Slots API', () => {
 
 		it('should handle undefined slotProps gracefully', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: undefined,
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: undefined,
+				},
 			})
 
 			const div = container.querySelector('div') as HTMLElement
@@ -431,11 +477,13 @@ describe('Slots API', () => {
 
 		it('should handle empty className in slotProps', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slotProps: {
-					container: {
-						className: '',
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slotProps: {
+						container: {
+							className: '',
+						},
 					},
 				},
 			})
@@ -446,14 +494,16 @@ describe('Slots API', () => {
 
 		it('should handle multiple marked values with custom slots', async () => {
 			const {container} = await render(MarkedInput, {
-				Mark: TestMark,
-				value: '@[hello] world @[test]',
-				slots: {
-					span: defineComponent({
-						setup(_, {slots}) {
-							return () => h('span', {'data-testid': 'text-span'}, slots.default?.())
-						},
-					}),
+				props: {
+					Mark: TestMark,
+					value: '@[hello] world @[test]',
+					slots: {
+						span: defineComponent({
+							setup(_, {slots}) {
+								return () => h('span', {'data-testid': 'text-span'}, slots.default?.())
+							},
+						}),
+					},
 				},
 			})
 
@@ -469,9 +519,11 @@ describe('Slots API', () => {
 			})
 
 			await render(MarkedInput, {
-				Mark: TestMark,
-				value: 'Hello world',
-				slots: {container: CustomContainer},
+				props: {
+					Mark: TestMark,
+					value: 'Hello world',
+					slots: {container: CustomContainer},
+				},
 			})
 
 			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
