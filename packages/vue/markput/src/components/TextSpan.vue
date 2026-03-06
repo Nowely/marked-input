@@ -11,9 +11,8 @@ const tokenRef = inject(TOKEN_KEY)!
 const token = tokenRef.value
 const elRef = ref<HTMLSpanElement | null>(null)
 
-const readOnly = store.state.readOnly.use()
-const slots = store.state.slots.use()
-const slotProps = store.state.slotProps.use()
+const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
+const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
 const spanTag = computed(() => resolveSlot('span', slots.value))
 const spanProps = computed(() => resolveSlotProps('span', slotProps.value))
 
@@ -38,5 +37,5 @@ watch(
 </script>
 
 <template>
-	<component :is="spanTag" :ref="(el: any) => (elRef = el)" v-bind="spanProps" :contenteditable="!readOnly" />
+	<component :is="spanTag" :ref="(el: any) => (elRef = el)" v-bind="spanProps" />
 </template>

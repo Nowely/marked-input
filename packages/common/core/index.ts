@@ -48,6 +48,7 @@ export {FocusController} from './src/features/focus'
 export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
 export {TextSelectionController} from './src/features/selection'
+export {ContentEditableController} from './src/features/editable'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Feature Management
