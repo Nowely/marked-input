@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import type {Token as CoreToken} from '@markput/core'
-import {resolveSlot, resolveSlotProps, splitTokensIntoBlocks, reorderBlocks, addBlock, deleteBlock, duplicateBlock, parseWithParser} from '@markput/core'
+import {
+	resolveSlot,
+	resolveSlotProps,
+	splitTokensIntoBlocks,
+	reorderBlocks,
+	addBlock,
+	deleteBlock,
+	duplicateBlock,
+	parseWithParser,
+} from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
 
