@@ -10,6 +10,7 @@
     "./styles.module.css": "./styles.module.css"
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "vite build",
     "build:watch": "vite build -w",
     "test": "vitest run",
@@ -24,6 +25,7 @@
     "@faker-js/faker": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
+    "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

@@ -26,7 +26,7 @@
     "lint:fix:danger": "oxlint . --fix-dangerously",
     "format": "oxfmt --check",
     "format:fix": "oxfmt",
-    "typecheck": "tsc --noEmit && pnpm run -F @markput/website check",
+    "typecheck": "pnpm -r run typecheck",
     "clean": "git clean -xdf",
     "clean:dry": "git clean -xdn",
     "preinstall": "npx only-allow pnpm",
