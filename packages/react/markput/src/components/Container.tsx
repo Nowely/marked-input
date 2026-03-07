@@ -1,6 +1,6 @@
 import {memo, useMemo} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
+import {useStore} from '../lib/providers/StoreContext'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {Token} from './Token'
 

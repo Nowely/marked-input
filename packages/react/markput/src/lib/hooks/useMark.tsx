@@ -3,8 +3,8 @@ import {MarkHandler} from '@markput/core'
 import type {RefObject} from 'react'
 import {useEffect, useRef, useState} from 'react'
 
+import {useStore} from '../providers/StoreContext'
 import {useToken} from '../providers/TokenContext'
-import {useStore} from './useStore'
 
 export interface MarkOptions {
 	controlled?: boolean

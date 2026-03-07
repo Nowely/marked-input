@@ -4,7 +4,7 @@ import type {RefObject} from 'react'
 import {useCallback, useMemo} from 'react'
 
 import type {Option} from '../../types'
-import {useStore} from './useStore'
+import {useStore} from '../providers/StoreContext'
 
 export interface OverlayHandler {
 	style: {

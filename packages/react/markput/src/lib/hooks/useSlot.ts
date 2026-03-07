@@ -1,7 +1,7 @@
 import type {ComponentType} from 'react'
 
 import type {MarkProps, Option, OverlayProps} from '../../types'
-import {useStore} from './useStore'
+import {useStore} from '../providers/StoreContext'
 
 export type SlotType = 'mark' | 'overlay'
 

@@ -1,7 +1,7 @@
 import {splitTokensIntoBlocks, reorderBlocks, parseWithParser, type Block} from '@markput/core'
 import {memo, useCallback, useMemo, useRef} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
+import {useStore} from '../lib/providers/StoreContext'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import {DraggableBlock} from './DraggableBlock'
 import {Token} from './Token'

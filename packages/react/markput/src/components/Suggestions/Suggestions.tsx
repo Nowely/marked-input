@@ -3,7 +3,7 @@ import type {RefObject} from 'react'
 import {useEffect, useMemo, useState} from 'react'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
-import {useStore} from '../../lib/hooks/useStore'
+import {useStore} from '../../lib/providers/StoreContext'
 
 import styles from '@markput/core/styles.module.css'
 

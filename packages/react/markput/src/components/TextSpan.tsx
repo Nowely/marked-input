@@ -1,6 +1,6 @@
 import {useLayoutEffect, useMemo, useRef} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
+import {useStore} from '../lib/providers/StoreContext'
 import {useToken} from '../lib/providers/TokenContext'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 
