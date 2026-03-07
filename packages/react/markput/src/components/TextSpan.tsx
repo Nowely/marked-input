@@ -2,7 +2,7 @@ import {useLayoutEffect, useMemo, useRef} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
 import {useToken} from '../lib/providers/TokenContext'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../lib/slots'
 
 export const TextSpan = () => {
 	const token = useToken()

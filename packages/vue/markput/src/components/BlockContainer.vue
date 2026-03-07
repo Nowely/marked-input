@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
+import type {Token as CoreToken} from '@markput/core'
 import {splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
 import {computed} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../lib/slots'
 import DraggableBlock from './DraggableBlock.vue'
 import Token from './Token.vue'
 

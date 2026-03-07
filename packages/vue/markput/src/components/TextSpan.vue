@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots} from '@markput/core'
 import {inject, ref, computed, watch, onMounted} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {resolveSlot, resolveSlotProps} from '../lib/slots'
 
 const store = useStore()
 const tokenRef = inject(TOKEN_KEY)!

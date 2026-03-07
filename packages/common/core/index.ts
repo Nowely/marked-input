@@ -1,6 +1,6 @@
 // Shared exports
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
-export {convertDataAttrs, cx, merge} from './src/shared/utils'
+export {convertDataAttrs, cx, merge, resolveSlot, resolveSlotProps, type SlotName} from './src/shared/utils'
 export {KEYBOARD, DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from './src/shared/constants'
 export type {
 	OverlayMatch,
