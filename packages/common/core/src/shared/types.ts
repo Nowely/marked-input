@@ -110,6 +110,8 @@ export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 's
 
 export type StyleProperties = Record<string, string | number>
 
+export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
+
 export type GenericComponent = unknown
 export type GenericElement = unknown
 export type GenericAttributes = Record<string, unknown>

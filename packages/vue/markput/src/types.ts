@@ -1,4 +1,4 @@
-import type {CoreOption, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DataAttributes, OverlayTrigger} from '@markput/core'
 import type {Component, CSSProperties} from 'vue'
 
 export interface MarkProps {
@@ -40,8 +40,6 @@ export interface Slots {
 	container?: string | Component
 	span?: string | Component
 }
-
-export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
 export interface SlotProps {
 	container?: Record<string, unknown> & DataAttributes

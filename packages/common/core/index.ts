@@ -31,6 +31,7 @@ export type {
 	GenericAttributes,
 	CoreSlots,
 	CoreSlotProps,
+	DataAttributes,
 } from './src/shared/types'
 
 // Parsing exports (modern API)
