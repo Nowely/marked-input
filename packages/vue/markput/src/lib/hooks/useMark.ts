@@ -1,13 +1,9 @@
-import type {MarkToken} from '@markput/core'
+import type {MarkOptions, MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
 import {inject, ref, watch, onMounted} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
 import {useStore} from './useStore'
-
-export interface MarkOptions {
-	controlled?: boolean
-}
 
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()

@@ -1,6 +1,14 @@
 // Shared exports
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
-export {convertDataAttrs, cx, merge, resolveSlot, resolveSlotProps, type SlotName} from './src/shared/utils'
+export {
+	convertDataAttrs,
+	cx,
+	merge,
+	resolveOptionSlot,
+	resolveSlot,
+	resolveSlotProps,
+	type SlotName,
+} from './src/shared/utils'
 export {
 	KEYBOARD,
 	DEFAULT_MARKUP,
@@ -50,7 +58,14 @@ export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
 export {Store, type StoreOptions} from './src/features/store'
-export {OverlayController, createMarkFromOverlay} from './src/features/overlay'
+export {
+	OverlayController,
+	createMarkFromOverlay,
+	filterSuggestions,
+	navigateSuggestions,
+	type NavigationAction,
+	type NavigationResult,
+} from './src/features/overlay'
 export {FocusController} from './src/features/focus'
 export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
@@ -65,7 +80,7 @@ export {createCoreFeatures} from './src/features/coreFeatures'
 export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
 
 // Mark Handler
-export {MarkHandler, type RefAccessor} from './src/features/mark'
+export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
 
 // Blocks
 export {splitTokensIntoBlocks, reorderBlocks, type Block} from './src/features/blocks'

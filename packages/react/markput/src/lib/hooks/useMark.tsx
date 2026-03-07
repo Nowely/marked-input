@@ -1,14 +1,10 @@
-import type {MarkToken} from '@markput/core'
+import type {MarkOptions, MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
 import type {RefObject} from 'react'
 import {useEffect, useRef, useState} from 'react'
 
 import {useStore} from '../providers/StoreContext'
 import {useToken} from '../providers/TokenContext'
-
-export interface MarkOptions {
-	controlled?: boolean
-}
 
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()

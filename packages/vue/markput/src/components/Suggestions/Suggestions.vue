@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {KEYBOARD} from '@markput/core'
+import {filterSuggestions, navigateSuggestions} from '@markput/core'
 import {ref, computed, onMounted, onUnmounted} from 'vue'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
@@ -13,28 +13,23 @@ const active = ref(NaN)
 
 const data = computed(() => match.value?.option.overlay?.data || [])
 const filtered = computed(() => {
-	const search = match.value?.value.toLowerCase() ?? ''
-	return (data.value as string[]).filter(s => s.toLowerCase().indexOf(search) > -1)
+	const search = match.value?.value ?? ''
+	return filterSuggestions(data.value as string[], search)
 })
 
 function handleKeyDown(event: KeyboardEvent) {
-	const length = filtered.value.length
-	switch (event.key) {
-		case KEYBOARD.UP:
+	const result = navigateSuggestions(event.key, active.value, filtered.value.length)
+	switch (result.action) {
+		case 'up':
+		case 'down':
 			event.preventDefault()
-			active.value = isNaN(active.value) ? 0 : (length + ((active.value - 1) % length)) % length
+			active.value = result.index
 			break
-		case KEYBOARD.DOWN:
+		case 'select':
 			event.preventDefault()
-			active.value = isNaN(active.value) ? 0 : (active.value + 1) % length
-			break
-		case KEYBOARD.ENTER:
-			event.preventDefault()
-			if (!isNaN(active.value)) {
-				const suggestion = filtered.value[active.value]
-				if (suggestion) {
-					select({value: suggestion, meta: active.value.toString()})
-				}
+			const suggestion = filtered.value[result.index]
+			if (suggestion) {
+				select({value: suggestion, meta: result.index.toString()})
 			}
 			break
 	}
