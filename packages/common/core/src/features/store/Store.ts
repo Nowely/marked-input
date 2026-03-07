@@ -1,4 +1,4 @@
-import {defineState, defineEvents, type UseHookFactory} from '../../shared/classes'
+import {defineState, defineEvents, type UseHookFactory, type StateObject} from '../../shared/classes'
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
@@ -22,7 +22,7 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: ReturnType<typeof defineState<MarkputState>>
+	readonly state: StateObject<MarkputState>
 
 	readonly events = defineEvents<{
 		change: void
@@ -49,7 +49,7 @@ export class Store {
 	readonly lifecycle = new Lifecycle(this)
 
 	constructor(options: StoreOptions) {
-		this.state = defineState(
+		this.state = defineState<MarkputState>(
 			{
 				tokens: [],
 				parser: undefined,

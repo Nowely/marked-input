@@ -1,7 +1,14 @@
 import type {Store} from '@markput/core'
 import {inject} from 'vue'
+import type {Ref} from 'vue'
 
 import {STORE_KEY} from '../providers/storeKey'
+
+declare module '@markput/core' {
+	interface Signal<T> {
+		use(): Ref<T>
+	}
+}
 
 export function useStore(): Store {
 	const store = inject(STORE_KEY)

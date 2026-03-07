@@ -27,6 +27,7 @@
     }
   },
   "scripts": {
+    "typecheck": "tsc --noEmit",
     "build": "vite build && tsc && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },

@@ -27,6 +27,7 @@
     }
   },
   "scripts": {
+    "typecheck": "vue-tsc --noEmit",
     "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },

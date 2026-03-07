@@ -11,7 +11,7 @@ import Token from './Token.vue'
 const store = useStore()
 const tokenRef = inject(TOKEN_KEY)!
 const node = tokenRef.value as MarkToken
-const optionsRef = store.state.options.use() as unknown as Ref<Option[] | undefined>
+const optionsRef = store.state.options.use() as Ref<Option[] | undefined>
 const MarkRef = store.state.Mark.use() as Ref<Component | undefined>
 const key = store.key
 

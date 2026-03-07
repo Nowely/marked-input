@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
 import {splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
-import {computed, type Ref} from 'vue'
+import {computed} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
@@ -9,14 +9,14 @@ import DraggableBlock from './DraggableBlock.vue'
 import Token from './Token.vue'
 
 const store = useStore()
-const tokens = store.state.tokens.use() as unknown as Ref<CoreToken[]>
-const slots = store.state.slots.use() as unknown as Ref<CoreSlots | undefined>
-const slotProps = store.state.slotProps.use() as unknown as Ref<CoreSlotProps | undefined>
+const tokens = store.state.tokens.use()
+const slots = store.state.slots.use()
+const slotProps = store.state.slotProps.use()
 const className = store.state.className.use()
 const style = store.state.style.use()
-const readOnly = store.state.readOnly.use() as unknown as Ref<boolean>
-const value = store.state.value.use() as unknown as Ref<string | undefined>
-const onChange = store.state.onChange.use() as unknown as Ref<((v: string) => void) | undefined>
+const readOnly = store.state.readOnly.use()
+const value = store.state.value.use()
+const onChange = store.state.onChange.use()
 const key = store.key
 
 const containerTag = computed(() => resolveSlot('container', slots.value))

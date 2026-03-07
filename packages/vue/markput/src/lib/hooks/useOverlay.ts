@@ -21,7 +21,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const matchRef = store.state.overlayMatch.use() as unknown as Ref<OverlayMatch<Option> | undefined>
+	const matchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option> | undefined>
 
 	const style = computed(() => {
 		// Depend on matchRef so position recalculates as user types/moves caret
