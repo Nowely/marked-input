@@ -1,5 +1,5 @@
 import type {ReactNode, DragEvent, CSSProperties, MouseEvent} from 'react'
-import {memo, useCallback, useRef, useState, useEffect} from 'react'
+import {Children, memo, useCallback, useRef, useState, useEffect} from 'react'
 
 interface DraggableBlockProps {
 	blockIndex: number
@@ -292,7 +292,7 @@ export const DraggableBlock = memo(
 					</div>
 				)}
 
-				{children || <br />}
+				{Children.count(children) === 0 ? <br /> : children}
 
 				{dropPosition === 'after' && <div style={{...dropIndicatorStyle, bottom: -1}} />}
 
