@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.5.0](https://github.com/Nowely/marked-input/compare/0.4.0...0.5.0) (2026-03-07)
+
+
+### Features
+
+* **core:** add ContentEditableController for DOM-based editing ([#134](https://github.com/Nowely/marked-input/issues/134)) ([633133b](https://github.com/Nowely/marked-input/commit/633133bd924ecb1e96f48d0f3526d4e19b004041))
+
+
+### Refactoring
+
+* extract shared logic from framework adapters to core ([#145](https://github.com/Nowely/marked-input/issues/145)) ([795c0e8](https://github.com/Nowely/marked-input/commit/795c0e82d38c065f1f4e25c5695d1c0decd814cc))
+* improve Signal typing with interface augmentation for framework-specific use() return types ([#143](https://github.com/Nowely/marked-input/issues/143)) ([e6d4efc](https://github.com/Nowely/marked-input/commit/e6d4efc5168029c6c75c60b43d2e6abc8ad654bb))
+
+
+### Miscellaneous
+
+* migrate to pnpm catalog for centralized dependency management ([#140](https://github.com/Nowely/marked-input/issues/140)) ([b71cd55](https://github.com/Nowely/marked-input/commit/b71cd55ad88966d629f4c90733488bfc73869f5d))
+* update oxlint configuration ([#144](https://github.com/Nowely/marked-input/issues/144)) ([1db73ec](https://github.com/Nowely/marked-input/commit/1db73eca4d8846b911aa2c6875caf6b95bed228e))
+
+
+### Tests
+
+* add comprehensive Vue component tests with Vitest ([#142](https://github.com/Nowely/marked-input/issues/142)) ([231f3dc](https://github.com/Nowely/marked-input/commit/231f3dc902b88f6bfa683df5346c6343a6adbb0e))
+
 ## [0.4.0](https://github.com/Nowely/marked-input/compare/0.3.0...0.4.0) (2026-03-06)
 
 
