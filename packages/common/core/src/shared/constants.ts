@@ -1,4 +1,14 @@
 import type {Markup} from '../features/parsing/ParserV2/types'
+import type {CoreOption} from './types'
+
+export interface DefaultOverlayConfig {
+	trigger?: string
+	data?: string[]
+}
+
+export interface DefaultOption extends CoreOption {
+	overlay?: DefaultOverlayConfig
+}
 
 export enum KEYBOARD {
 	// Navigation Keys
@@ -28,3 +38,13 @@ export enum KEYBOARD {
 export const DEFAULT_OVERLAY_TRIGGER = '@'
 
 export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
+
+export const DEFAULT_OPTIONS: DefaultOption[] = [
+	{
+		markup: DEFAULT_MARKUP,
+		overlay: {
+			trigger: DEFAULT_OVERLAY_TRIGGER,
+			data: [],
+		},
+	},
+]

@@ -1,5 +1,5 @@
-import type {OverlayMatch, Token} from '@markput/core'
-import {Caret} from '@markput/core'
+import type {OverlayMatch} from '@markput/core'
+import {Caret, createMarkFromOverlay} from '@markput/core'
 import type {RefObject} from 'react'
 import {useCallback, useMemo} from 'react'
 
@@ -25,19 +25,7 @@ export function useOverlay(): OverlayHandler {
 	const close = useCallback(() => store.events.clearOverlay(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
-			const mark: Token = {
-				type: 'mark',
-				value: value.value,
-				meta: value.meta,
-				content: '',
-				position: {start: match.index, end: match.index + match.span.length},
-				descriptor: {
-					index: 0,
-					markup: match.option.markup,
-				} as any,
-				children: [],
-				nested: undefined,
-			}
+			const mark = createMarkFromOverlay(match, value.value, value.meta)
 			store.events.select({mark, match})
 			store.events.clearOverlay()
 		},

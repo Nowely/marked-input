@@ -1,5 +1,5 @@
-import type {OverlayMatch, Token} from '@markput/core'
-import {Caret} from '@markput/core'
+import type {OverlayMatch} from '@markput/core'
+import {Caret, createMarkFromOverlay} from '@markput/core'
 import {computed, type Ref, type ComputedRef} from 'vue'
 
 import type {Option} from '../../types'
@@ -38,19 +38,7 @@ export function useOverlay(): OverlayHandler {
 	const select = (value: {value: string; meta?: string}) => {
 		const match = matchRef.value
 		if (!match) return
-		const mark: Token = {
-			type: 'mark',
-			value: value.value,
-			meta: value.meta,
-			content: '',
-			position: {start: match.index, end: match.index + match.span.length},
-			descriptor: {
-				index: 0,
-				markup: match.option.markup,
-			} as any,
-			children: [],
-			nested: undefined,
-		}
+		const mark = createMarkFromOverlay(match, value.value, value.meta)
 		store.events.select({mark, match})
 		store.events.clearOverlay()
 	}

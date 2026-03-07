@@ -1,7 +1,14 @@
 // Shared exports
 export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
 export {convertDataAttrs, cx, merge, resolveSlot, resolveSlotProps, type SlotName} from './src/shared/utils'
-export {KEYBOARD, DEFAULT_MARKUP, DEFAULT_OVERLAY_TRIGGER} from './src/shared/constants'
+export {
+	KEYBOARD,
+	DEFAULT_MARKUP,
+	DEFAULT_OVERLAY_TRIGGER,
+	DEFAULT_OPTIONS,
+	type DefaultOption,
+	type DefaultOverlayConfig,
+} from './src/shared/constants'
 export type {
 	OverlayMatch,
 	EventKey,
@@ -43,7 +50,7 @@ export {findGap, getClosestIndexes} from './src/features/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
 export {Store, type StoreOptions} from './src/features/store'
-export {OverlayController} from './src/features/overlay'
+export {OverlayController, createMarkFromOverlay} from './src/features/overlay'
 export {FocusController} from './src/features/focus'
 export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
