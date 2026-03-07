@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import {resolveSlot, resolveSlotProps} from '@markput/core'
+import type {Component} from 'vue'
 import {inject, ref, computed, watch, onMounted} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
-import {resolveSlot, resolveSlotProps} from '../lib/slots'
 
 const store = useStore()
 const tokenRef = inject(TOKEN_KEY)!
@@ -13,7 +14,7 @@ const elRef = ref<HTMLSpanElement | null>(null)
 const readOnly = store.state.readOnly.use()
 const slots = store.state.slots.use()
 const slotProps = store.state.slotProps.use()
-const spanTag = computed(() => resolveSlot('span', slots.value))
+const spanTag = computed(() => resolveSlot<string | Component>('span', slots.value))
 const spanProps = computed(() => resolveSlotProps('span', slotProps.value))
 
 if (token.type !== 'text') {

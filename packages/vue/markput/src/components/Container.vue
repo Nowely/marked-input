@@ -1,9 +1,10 @@
 <script lang="ts">
 import type {StyleProperties, Token as CoreToken} from '@markput/core'
+import {resolveSlot, resolveSlotProps} from '@markput/core'
+import type {Component} from 'vue'
 import {computed, defineComponent, h} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
-import {resolveSlot, resolveSlotProps} from '../lib/slots'
 import Token from './Token.vue'
 
 export default defineComponent({
@@ -16,7 +17,7 @@ export default defineComponent({
 		const style = store.state.style.use()
 		const key = store.key
 
-		const containerTag = computed(() => resolveSlot('container', slots.value))
+		const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
 		const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
 
 		return () =>

@@ -1,4 +1,4 @@
-import type {CoreSlotProps, CoreSlots, GenericAttributes, GenericElement} from '../types'
+import type {CoreSlotProps, CoreSlots} from '../types'
 import {convertDataAttrs} from './dataAttributes'
 
 export type SlotName = 'container' | 'span'
@@ -8,14 +8,14 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot(slotName: SlotName, slots: CoreSlots | undefined): GenericElement {
-	return slots?.[slotName] ?? defaultSlots[slotName]
+export function resolveSlot<T = string>(slotName: SlotName, slots: CoreSlots | undefined): T {
+	return (slots?.[slotName] ?? defaultSlots[slotName]) as T
 }
 
-export function resolveSlotProps(
+export function resolveSlotProps<T = Record<string, unknown>>(
 	slotName: SlotName,
 	slotProps: CoreSlotProps | undefined
-): GenericAttributes | undefined {
+): T | undefined {
 	const props = slotProps?.[slotName]
-	return props ? (convertDataAttrs(props as Record<string, unknown>) as GenericAttributes) : undefined
+	return props ? (convertDataAttrs(props as Record<string, unknown>) as T) : undefined
 }
