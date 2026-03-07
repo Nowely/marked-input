@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {Token as CoreToken} from '@markput/core'
-import {resolveSlot, resolveSlotProps, splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
+import {resolveSlot, resolveSlotProps, splitTokensIntoBlocks, reorderBlocks, addBlock, deleteBlock, duplicateBlock, parseWithParser} from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
 
@@ -24,15 +24,33 @@ const containerProps = computed(() => resolveSlotProps('container', slotProps.va
 
 const blocks = computed(() => splitTokensIntoBlocks(tokens.value))
 
+function applyNewValue(newValue: string) {
+	if (!onChange.value) return
+	const newTokens = parseWithParser(store, newValue)
+	store.state.tokens.set(newTokens)
+	store.state.previousValue.set(newValue)
+	onChange.value(newValue)
+}
+
 function handleReorder(sourceIndex: number, targetIndex: number) {
 	if (!value.value || !onChange.value) return
 	const newValue = reorderBlocks(value.value, blocks.value, sourceIndex, targetIndex)
-	if (newValue !== value.value) {
-		const newTokens = parseWithParser(store, newValue)
-		store.state.tokens.set(newTokens)
-		store.state.previousValue.set(newValue)
-		onChange.value(newValue)
-	}
+	if (newValue !== value.value) applyNewValue(newValue)
+}
+
+function handleAdd(afterIndex: number) {
+	if (!value.value || !onChange.value) return
+	applyNewValue(addBlock(value.value, blocks.value, afterIndex))
+}
+
+function handleDelete(index: number) {
+	if (!value.value || !onChange.value) return
+	applyNewValue(deleteBlock(value.value, blocks.value, index))
+}
+
+function handleDuplicate(index: number) {
+	if (!value.value || !onChange.value) return
+	applyNewValue(duplicateBlock(value.value, blocks.value, index))
 }
 </script>
 
@@ -50,6 +68,9 @@ function handleReorder(sourceIndex: number, targetIndex: number) {
 			:block-index="index"
 			:read-only="readOnly"
 			@reorder="handleReorder"
+			@add="handleAdd"
+			@delete="handleDelete"
+			@duplicate="handleDuplicate"
 		>
 			<Token v-for="token in block.tokens" :key="key.get(token)" :mark="token" />
 		</DraggableBlock>

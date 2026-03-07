@@ -13,7 +13,7 @@ export default {
 		docs: {
 			description: {
 				component:
-					'Notion-like draggable blocks. Hover over a block to reveal the drag handle on the left, then drag to reorder.',
+					'Notion-like draggable blocks. Hover over a block to reveal the + and drag handle buttons. Drag to reorder, click + to add a block, click the grip to open a block menu (delete/duplicate).',
 			},
 		},
 	},
@@ -76,7 +76,7 @@ const markdownOptions: Option[] = [
 	},
 ]
 
-const containerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '32px'}
+const containerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '52px'}
 const editorStyle = {minHeight: '200px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}
 
 export const BasicDraggable: Story = {

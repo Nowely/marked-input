@@ -150,17 +150,18 @@ describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 		expect(reordered.split('\n')).toHaveLength(3)
 	})
 
-	it('does not preserve trailing newline from original after reorder', () => {
+	it('trailing newline creates empty block and is preserved after reorder', () => {
 		const original = 'aaa\nbbb\nccc\n'
 		const parser = new Parser([])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
-		expect(blocks).toHaveLength(3)
+		// Trailing newline now creates an empty block
+		expect(blocks).toHaveLength(4)
 		expect(blocks[2].endPos).toBe(11)
 
 		const reordered = reorderBlocks(original, blocks, 0, 2)
-		expect(reordered).toBe('bbb\naaa\nccc')
+		expect(reordered).toBe('bbb\naaa\nccc\n')
 	})
 
 	it('handles unicode content correctly', () => {

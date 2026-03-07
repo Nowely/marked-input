@@ -85,7 +85,14 @@ export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
 export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
 
 // Blocks
-export {splitTokensIntoBlocks, reorderBlocks, type Block} from './src/features/blocks'
+export {
+	splitTokensIntoBlocks,
+	reorderBlocks,
+	addBlock,
+	deleteBlock,
+	duplicateBlock,
+	type Block,
+} from './src/features/blocks'
 
 // Navigation & Input
 export {shiftFocusPrev, shiftFocusNext} from './src/features/navigation'

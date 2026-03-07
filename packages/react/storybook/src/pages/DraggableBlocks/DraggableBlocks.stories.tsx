@@ -14,7 +14,7 @@ export default {
 		docs: {
 			description: {
 				component:
-					'Notion-like draggable blocks. Hover over a block to reveal the drag handle on the left, then drag to reorder.',
+					'Notion-like draggable blocks. Hover over a block to reveal the + and drag handle buttons. Drag to reorder, click + to add a block, click the grip to open a block menu (delete/duplicate).',
 			},
 		},
 	},
@@ -45,7 +45,7 @@ This is the second paragraph. Try dragging it above the first one!
 		)
 
 		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 32}}>
+			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
 				<MarkedInput
 					Mark={MarkdownMark}
 					options={markdownOptions}
@@ -73,7 +73,7 @@ Implement real-time collaboration with conflict resolution.
 Create a plugin system for custom markup patterns.`)
 
 		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 32}}>
+			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
 				<MarkedInput
 					Mark={MarkdownMark}
 					options={markdownOptions}
@@ -98,7 +98,7 @@ Content cannot be reordered.
 This is static content.`
 
 		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 32}}>
+			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
 				<MarkedInput
 					Mark={MarkdownMark}
 					options={markdownOptions}
@@ -123,7 +123,7 @@ Fifth block of plain text`
 		)
 
 		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 32}}>
+			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
 				<MarkedInput
 					value={value}
 					onChange={setValue}

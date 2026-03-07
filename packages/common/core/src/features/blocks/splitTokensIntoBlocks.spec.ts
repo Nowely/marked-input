@@ -76,12 +76,23 @@ describe('splitTokensIntoBlocks', () => {
 		expect(blocks[2].endPos).toBe(11)
 	})
 
-	it('handles consecutive newlines (empty lines)', () => {
+	it('handles consecutive newlines (empty lines) as separate blocks', () => {
 		const tokens: Token[] = [text('aaa\n\nbbb', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
-		expect(blocks).toHaveLength(2)
+		expect(blocks).toHaveLength(3)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('aaa')
+		expect(blocks[1].tokens).toHaveLength(0)
+		expect((blocks[2].tokens[0] as TextToken).content).toBe('bbb')
+	})
+
+	it('creates empty block from trailing newline', () => {
+		const tokens: Token[] = [text('aaa\nbbb\n', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('aaa')
 		expect((blocks[1].tokens[0] as TextToken).content).toBe('bbb')
+		expect(blocks[2].tokens).toHaveLength(0)
+		expect(blocks[2].startPos).toBe(blocks[2].endPos)
 	})
 
 	it('generates unique block ids based on start position', () => {
@@ -100,7 +111,12 @@ describe('splitTokensIntoBlocks', () => {
 	it('handles text with only newlines', () => {
 		const tokens: Token[] = [text('\n\n\n', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
-		expect(blocks).toHaveLength(0)
+		// Three newlines produce empty blocks after each (except the leading one before content)
+		expect(blocks).toHaveLength(3)
+		blocks.forEach(b => {
+			expect(b.tokens).toHaveLength(0)
+			expect(b.startPos).toBe(b.endPos)
+		})
 	})
 
 	it('handles \\r\\n line endings (Windows)', () => {

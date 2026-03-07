@@ -25,17 +25,25 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 	const blocks: Block[] = []
 	let currentTokens: Token[] = []
 	let blockStart = -1
+	// Tracks whether blockStart was set by a text newline (vs a mark-newline block).
+	// Only text-newline-derived pending positions can produce trailing empty blocks.
+	let blockStartFromText = false
 
-	const flushBlock = (endPos: number) => {
-		if (currentTokens.length === 0) return
+	const flushBlock = (endPos: number, canCreateEmpty = false) => {
+		const isEmpty = currentTokens.length === 0
+		if (blockStart === -1 && isEmpty) return
+		// Don't create empty blocks when triggered by a new mark (e.g. between consecutive marks)
+		if (isEmpty && !canCreateEmpty) return
+		const startPos = blockStart === -1 ? endPos : blockStart
 		blocks.push({
-			id: generateBlockId(blockStart),
+			id: generateBlockId(startPos),
 			tokens: [...currentTokens],
-			startPos: blockStart,
-			endPos,
+			startPos,
+			endPos: isEmpty ? startPos : endPos,
 		})
 		currentTokens = []
 		blockStart = -1
+		blockStartFromText = false
 	}
 
 	for (const token of tokens) {
@@ -51,6 +59,8 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 					startPos: token.position.start,
 					endPos: token.position.end,
 				})
+				blockStart = token.position.end
+				blockStartFromText = false
 			} else {
 				if (blockStart === -1) blockStart = token.position.start
 				currentTokens.push(token)
@@ -67,7 +77,9 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 			const part = parts[i]
 
 			if (part.isNewline) {
-				flushBlock(part.position.start)
+				flushBlock(part.position.start, true)
+				blockStart = part.position.end
+				blockStartFromText = true
 				continue
 			}
 
@@ -82,9 +94,10 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 		}
 	}
 
-	if (currentTokens.length > 0) {
-		const lastToken = currentTokens[currentTokens.length - 1]
-		flushBlock(lastToken.position.end)
+	const lastPos = currentTokens.length > 0 ? currentTokens[currentTokens.length - 1].position.end : blockStart
+	if (blockStart !== -1 || currentTokens.length > 0) {
+		// Allow empty block at end only when the trailing newline came from a text token
+		flushBlock(lastPos === -1 ? 0 : lastPos, currentTokens.length > 0 || blockStartFromText)
 	}
 
 	return blocks
