@@ -2,15 +2,16 @@ import {Reactive} from './Reactive'
 
 /**
  * Framework adapters can return any reactive wrapper from `use`.
- * React returns plain values, while Vue can return `Ref<T>`.
+ * The actual return type of `use()` is overridden per-framework via module augmentation.
+ * React returns plain T, Vue augments Signal<T> so that `use()` returns Ref<T>.
  */
-export type UseHookFactory = <T>(signal: Signal<T>) => () => any
+export type UseHookFactory = <T>(signal: Signal<T>) => () => unknown
 
-export type Signal<T> = {
+export interface Signal<T> {
 	get(): T
 	set(value: T): void
 	on(fn: (value: T) => void): () => void
-	use: () => T
+	use(): T
 }
 
 function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): Signal<T> {
@@ -18,7 +19,7 @@ function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): 
 	signal.get = () => reactive.get()
 	signal.set = (value: T) => reactive.set(value)
 	signal.on = (fn: (value: T) => void) => reactive.on(fn)
-	signal.use = createUseHook(signal)
+	signal.use = createUseHook(signal) as Signal<T>['use']
 
 	return signal
 }

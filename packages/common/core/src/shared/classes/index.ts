@@ -1,5 +1,5 @@
 export {Reactive} from './Reactive'
-export type {Signal, UseHookFactory} from './defineState'
+export type {Signal, UseHookFactory, StateObject} from './defineState'
 export {defineState} from './defineState'
 export type {Emitter} from './defineEvents'
 export {defineEvents} from './defineEvents'

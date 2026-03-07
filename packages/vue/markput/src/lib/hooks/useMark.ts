@@ -1,6 +1,6 @@
 import type {MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
-import {type Ref, inject, ref, watch, onMounted} from 'vue'
+import {inject, ref, watch, onMounted} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
 import {useStore} from './useStore'
@@ -40,7 +40,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		}
 	})
 
-	const readOnly = store.state.readOnly.use() as unknown as Ref<boolean>
+	const readOnly = store.state.readOnly.use()
 	watch(readOnly, val => {
 		mark.readOnly = val
 	})
