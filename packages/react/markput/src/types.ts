@@ -1,4 +1,4 @@
-import type {CoreOption} from '@markput/core'
+import type {CoreOption, DataAttributes} from '@markput/core'
 import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 
 /**
@@ -67,17 +67,7 @@ export interface Slots {
 	span?: ElementType<HTMLAttributes<HTMLSpanElement>>
 }
 
-/**
- * Data attributes with automatic camelCase to kebab-case conversion
- */
-export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
-
-/**
- * Props for each slot component
- */
 export interface SlotProps {
-	/** Props to pass to the container slot */
 	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
-	/** Props to pass to the span slot */
 	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
 }

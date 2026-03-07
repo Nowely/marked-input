@@ -1,9 +1,9 @@
-import {KEYBOARD} from '@markput/core'
+import {filterSuggestions, navigateSuggestions} from '@markput/core'
 import type {RefObject} from 'react'
 import {useEffect, useMemo, useState} from 'react'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
-import {useStore} from '../../lib/hooks/useStore'
+import {useStore} from '../../lib/providers/StoreContext'
 
 import styles from '@markput/core/styles.module.css'
 
@@ -12,10 +12,7 @@ export const Suggestions = () => {
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match.option.overlay?.data || []
-	const filtered = useMemo(
-		() => data.filter(s => s.toLowerCase().indexOf(match.value.toLowerCase()) > -1),
-		[match.value, data]
-	)
+	const filtered = useMemo(() => filterSuggestions(data, match.value), [match.value, data])
 	const length = filtered.length
 
 	useEffect(() => {
@@ -23,30 +20,24 @@ export const Suggestions = () => {
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {
-			switch (event.key) {
-				case KEYBOARD.UP:
+			const result = navigateSuggestions(event.key, active, length)
+			switch (result.action) {
+				case 'up':
+				case 'down':
 					event.preventDefault()
-					setActive(prev => (isNaN(prev) ? 0 : (length + ((prev - 1) % length)) % length))
+					setActive(result.index)
 					break
-				case KEYBOARD.DOWN:
+				case 'select':
 					event.preventDefault()
-					setActive(prev => (isNaN(prev) ? 0 : (prev + 1) % length))
-					break
-				case KEYBOARD.ENTER:
-					event.preventDefault()
-					setActive(current => {
-						if (isNaN(current)) return current
-						const suggestion = filtered[current]
-						select({value: suggestion, meta: current.toString()})
-						return current
-					})
+					const suggestion = filtered[result.index]
+					select({value: suggestion, meta: result.index.toString()})
 					break
 			}
 		}
 
 		container.addEventListener('keydown', handler)
 		return () => container.removeEventListener('keydown', handler)
-	}, [length, filtered])
+	}, [length, filtered, active])
 
 	if (!filtered.length) return null
 

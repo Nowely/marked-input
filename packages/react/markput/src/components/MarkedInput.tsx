@@ -1,9 +1,8 @@
 import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
-import {cx, merge, Store} from '@markput/core'
+import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
 
-import {DEFAULT_OPTIONS} from '../constants'
 import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
@@ -118,9 +117,9 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const ContainerImpl = block ? BlockContainer : Container
 
 	return (
-		<StoreContext.Provider value={store}>
+		<StoreContext value={store}>
 			<ContainerImpl />
 			<OverlayRenderer />
-		</StoreContext.Provider>
+		</StoreContext>
 	)
 }

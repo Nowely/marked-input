@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, Token as CoreToken} from '@markput/core'
-import {splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
+import type {Token as CoreToken} from '@markput/core'
+import {resolveSlot, resolveSlotProps, splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
+import type {Component} from 'vue'
 import {computed} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
 import DraggableBlock from './DraggableBlock.vue'
 import Token from './Token.vue'
 
@@ -19,7 +19,7 @@ const value = store.state.value.use()
 const onChange = store.state.onChange.use()
 const key = store.key
 
-const containerTag = computed(() => resolveSlot('container', slots.value))
+const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
 const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
 
 const blocks = computed(() => splitTokensIntoBlocks(tokens.value))

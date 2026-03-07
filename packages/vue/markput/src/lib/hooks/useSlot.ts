@@ -1,3 +1,4 @@
+import {resolveOptionSlot} from '@markput/core'
 import type {Component, Ref} from 'vue'
 
 import type {MarkProps, Option, OverlayProps} from '../../types'
@@ -30,17 +31,7 @@ export function useSlot(
 	const globalComponent = type === 'mark' ? MarkRef.value : OverlayRef.value
 
 	const optionConfig = type === 'mark' ? option?.mark : option?.overlay
-	let props: any
-
-	if (optionConfig !== undefined) {
-		if (typeof optionConfig === 'function') {
-			props = optionConfig(baseProps)
-		} else {
-			props = optionConfig
-		}
-	} else {
-		props = baseProps ?? {}
-	}
+	const props = resolveOptionSlot(optionConfig as any, baseProps ?? {})
 
 	const Comp = (props.slot || globalComponent || defaultComponent) as Component
 

@@ -1,7 +1,8 @@
+import {resolveOptionSlot} from '@markput/core'
 import type {ComponentType} from 'react'
 
 import type {MarkProps, Option, OverlayProps} from '../../types'
-import {useStore} from './useStore'
+import {useStore} from '../providers/StoreContext'
 
 export type SlotType = 'mark' | 'overlay'
 
@@ -30,17 +31,7 @@ export function useSlot(
 	const globalComponent = (type === 'mark' ? Mark : Overlay) as ComponentType<any> | undefined
 
 	const optionConfig = type === 'mark' ? option?.mark : option?.overlay
-	let props: any
-
-	if (optionConfig !== undefined) {
-		if (typeof optionConfig === 'function') {
-			props = optionConfig(baseProps)
-		} else {
-			props = optionConfig
-		}
-	} else {
-		props = baseProps ?? {}
-	}
+	const props = resolveOptionSlot(optionConfig as any, baseProps ?? {})
 
 	const Component = (props.slot || globalComponent || defaultComponent) as ComponentType<any>
 

@@ -1,8 +1,9 @@
+import {resolveSlot, resolveSlotProps} from '@markput/core'
+import type {ElementType} from 'react'
 import {useLayoutEffect, useMemo, useRef} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
-import {useToken} from '../lib/providers/TokenProvider'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useStore} from '../lib/providers/StoreContext'
+import {useToken} from '../lib/providers/TokenContext'
 
 export const TextSpan = () => {
 	const token = useToken()
@@ -11,7 +12,7 @@ export const TextSpan = () => {
 
 	const slots = store.state.slots.use()
 	const slotProps = store.state.slotProps.use()
-	const SpanComponent = useMemo(() => resolveSlot('span', slots), [slots])
+	const SpanComponent = useMemo(() => resolveSlot<ElementType>('span', slots), [slots])
 	const spanProps = useMemo(() => resolveSlotProps('span', slotProps), [slotProps])
 
 	if (token.type !== 'text') {

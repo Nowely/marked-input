@@ -1,8 +1,15 @@
-import {splitTokensIntoBlocks, reorderBlocks, parseWithParser, type Block} from '@markput/core'
+import {
+	resolveSlot,
+	resolveSlotProps,
+	splitTokensIntoBlocks,
+	reorderBlocks,
+	parseWithParser,
+	type Block,
+} from '@markput/core'
+import type {ElementType} from 'react'
 import {memo, useCallback, useMemo, useRef} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useStore} from '../lib/providers/StoreContext'
 import {DraggableBlock} from './DraggableBlock'
 import {Token} from './Token'
 
@@ -19,7 +26,7 @@ export const BlockContainer = memo(() => {
 	const key = store.key
 	const refs = store.refs
 
-	const ContainerComponent = useMemo(() => resolveSlot('container', slots), [slots])
+	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	const blocks = useMemo(() => splitTokensIntoBlocks(tokens), [tokens])

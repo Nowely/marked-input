@@ -1,7 +1,8 @@
+import {resolveSlot, resolveSlotProps} from '@markput/core'
+import type {ElementType} from 'react'
 import {memo, useMemo} from 'react'
 
-import {useStore} from '../lib/hooks/useStore'
-import {resolveSlot, resolveSlotProps} from '../lib/utils/resolveSlot'
+import {useStore} from '../lib/providers/StoreContext'
 import {Token} from './Token'
 
 export const Container = memo(() => {
@@ -13,7 +14,7 @@ export const Container = memo(() => {
 	const style = store.state.style.use()
 	const key = store.key
 	const refs = store.refs
-	const ContainerComponent = useMemo(() => resolveSlot('container', slots), [slots])
+	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	return (

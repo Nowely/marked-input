@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
-import {cx, merge, Store} from '@markput/core'
+import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import {computed, provide, shallowRef, watch} from 'vue'
 
-import {DEFAULT_OPTIONS} from '../constants'
 import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
