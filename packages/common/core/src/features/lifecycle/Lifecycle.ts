@@ -73,6 +73,7 @@ export class Lifecycle {
 	 * since focus recovery requires the new DOM to be committed.
 	 */
 	recoverFocus() {
+		this.store.controllers.contentEditable.sync()
 		if (!this.store.state.Mark.get()) return
 		this.store.controllers.focus.recover()
 	}

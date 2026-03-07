@@ -2,6 +2,7 @@ import {defineState, defineEvents, type UseHookFactory, type StateObject} from '
 import {KeyGenerator} from '../../shared/classes/KeyGenerator'
 import {NodeProxy} from '../../shared/classes/NodeProxy'
 import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
@@ -44,6 +45,7 @@ export class Store {
 		keydown: new KeyDownController(this),
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
+		contentEditable: new ContentEditableController(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)
