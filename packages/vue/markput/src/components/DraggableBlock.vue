@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, computed, watch, nextTick, type CSSProperties} from 'vue'
+import {ref, computed, watch, onUnmounted, nextTick, type CSSProperties} from 'vue'
 
 const props = defineProps<{
 	blockIndex: number
@@ -175,29 +175,31 @@ function closeMenu() {
 	menuOpen.value = false
 }
 
+function onMouseDownOutside(e: MouseEvent) {
+	if (menuRef.value && !menuRef.value.contains(e.target as Node)) closeMenu()
+}
+function onKeyDownEscape(e: KeyboardEvent) {
+	if (e.key === 'Escape') closeMenu()
+}
+
+let cleanupMenuListeners: (() => void) | null = null
+
 watch(menuOpen, async open => {
-	if (!open) return
-
-	await nextTick()
-
-	function onMouseDown(e: MouseEvent) {
-		if (menuRef.value && !menuRef.value.contains(e.target as Node)) closeMenu()
-	}
-	function onKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Escape') closeMenu()
-	}
-
-	document.addEventListener('mousedown', onMouseDown)
-	document.addEventListener('keydown', onKeyDown)
-
-	const stop = watch(menuOpen, newOpen => {
-		if (!newOpen) {
-			document.removeEventListener('mousedown', onMouseDown)
-			document.removeEventListener('keydown', onKeyDown)
-			stop()
+	if (open) {
+		await nextTick()
+		document.addEventListener('mousedown', onMouseDownOutside)
+		document.addEventListener('keydown', onKeyDownEscape)
+		cleanupMenuListeners = () => {
+			document.removeEventListener('mousedown', onMouseDownOutside)
+			document.removeEventListener('keydown', onKeyDownEscape)
 		}
-	})
+	} else {
+		cleanupMenuListeners?.()
+		cleanupMenuListeners = null
+	}
 })
+
+onUnmounted(() => cleanupMenuListeners?.())
 
 function onMenuDelete() {
 	emit('delete', props.blockIndex)

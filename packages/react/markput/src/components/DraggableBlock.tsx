@@ -1,5 +1,10 @@
 import type {ReactNode, DragEvent, CSSProperties, MouseEvent} from 'react'
-import {Children, memo, useCallback, useRef, useState, useEffect} from 'react'
+import {Children, memo, useCallback, useRef, useState} from 'react'
+
+export interface MenuPosition {
+	top: number
+	left: number
+}
 
 interface DraggableBlockProps {
 	blockIndex: number
@@ -7,8 +12,7 @@ interface DraggableBlockProps {
 	readOnly: boolean
 	onReorder: (sourceIndex: number, targetIndex: number) => void
 	onAdd?: (afterIndex: number) => void
-	onDelete?: (index: number) => void
-	onDuplicate?: (index: number) => void
+	onRequestMenu?: (index: number, rect: DOMRect) => void
 }
 
 const GripIcon = memo(() => (
@@ -26,110 +30,11 @@ GripIcon.displayName = 'GripIcon'
 
 type DropPosition = 'before' | 'after' | null
 
-interface MenuPosition {
-	top: number
-	left: number
-}
-
-interface BlockMenuProps {
-	position: MenuPosition
-	onDelete: () => void
-	onDuplicate: () => void
-	onClose: () => void
-}
-
-const BlockMenu = memo(({position, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
-	const menuRef = useRef<HTMLDivElement>(null)
-	const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-
-	useEffect(() => {
-		const handleMouseDown = (e: globalThis.MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				onClose()
-			}
-		}
-		const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-			if (e.key === 'Escape') onClose()
-		}
-		document.addEventListener('mousedown', handleMouseDown)
-		document.addEventListener('keydown', handleKeyDown)
-		return () => {
-			document.removeEventListener('mousedown', handleMouseDown)
-			document.removeEventListener('keydown', handleKeyDown)
-		}
-	}, [onClose])
-
-	const menuStyle: CSSProperties = {
-		position: 'fixed',
-		top: position.top,
-		left: position.left,
-		background: 'white',
-		border: '1px solid rgba(55, 53, 47, 0.16)',
-		borderRadius: 6,
-		boxShadow: '0 4px 16px rgba(15, 15, 15, 0.12)',
-		padding: 4,
-		zIndex: 9999,
-		minWidth: 160,
-		fontSize: 14,
-	}
-
-	const itemStyle = (key: string): CSSProperties => ({
-		display: 'flex',
-		alignItems: 'center',
-		gap: 8,
-		padding: '6px 10px',
-		borderRadius: 4,
-		cursor: 'pointer',
-		color: key === 'delete' ? '#eb5757' : 'inherit',
-		background:
-			hoveredItem === key
-				? key === 'delete'
-					? 'rgba(235, 87, 87, 0.06)'
-					: 'rgba(55, 53, 47, 0.06)'
-				: 'transparent',
-		userSelect: 'none',
-	})
-
-	return (
-		<div ref={menuRef} style={menuStyle}>
-			<div
-				style={itemStyle('duplicate')}
-				onMouseEnter={() => setHoveredItem('duplicate')}
-				onMouseLeave={() => setHoveredItem(null)}
-				onMouseDown={e => {
-					e.preventDefault()
-					onDuplicate()
-					onClose()
-				}}
-			>
-				<span>⧉</span>
-				<span>Duplicate</span>
-			</div>
-			<div
-				style={itemStyle('delete')}
-				onMouseEnter={() => setHoveredItem('delete')}
-				onMouseLeave={() => setHoveredItem(null)}
-				onMouseDown={e => {
-					e.preventDefault()
-					onDelete()
-					onClose()
-				}}
-			>
-				<span>🗑</span>
-				<span>Delete</span>
-			</div>
-		</div>
-	)
-})
-
-BlockMenu.displayName = 'BlockMenu'
-
 export const DraggableBlock = memo(
-	({blockIndex, children, readOnly, onReorder, onAdd, onDelete, onDuplicate}: DraggableBlockProps) => {
+	({blockIndex, children, readOnly, onReorder, onAdd, onRequestMenu}: DraggableBlockProps) => {
 		const [isHovered, setIsHovered] = useState(false)
 		const [isDragging, setIsDragging] = useState(false)
 		const [dropPosition, setDropPosition] = useState<DropPosition>(null)
-		const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null)
 		const blockRef = useRef<HTMLDivElement>(null)
 		const gripRef = useRef<HTMLButtonElement>(null)
 
@@ -183,12 +88,14 @@ export const DraggableBlock = memo(
 			[blockIndex, dropPosition, onReorder]
 		)
 
-		const handleGripClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
-			e.preventDefault()
-			if (!gripRef.current) return
-			const rect = gripRef.current.getBoundingClientRect()
-			setMenuPosition({top: rect.bottom + 4, left: rect.left})
-		}, [])
+		const handleGripClick = useCallback(
+			(e: MouseEvent<HTMLButtonElement>) => {
+				e.preventDefault()
+				if (!gripRef.current) return
+				onRequestMenu?.(blockIndex, gripRef.current.getBoundingClientRect())
+			},
+			[blockIndex, onRequestMenu]
+		)
 
 		const handleAddClick = useCallback(
 			(e: MouseEvent<HTMLButtonElement>) => {
@@ -295,15 +202,6 @@ export const DraggableBlock = memo(
 				{Children.count(children) === 0 ? <br /> : children}
 
 				{dropPosition === 'after' && <div style={{...dropIndicatorStyle, bottom: -1}} />}
-
-				{menuPosition && onDelete && onDuplicate && (
-					<BlockMenu
-						position={menuPosition}
-						onDelete={() => onDelete(blockIndex)}
-						onDuplicate={() => onDuplicate(blockIndex)}
-						onClose={() => setMenuPosition(null)}
-					/>
-				)}
 			</div>
 		)
 	}

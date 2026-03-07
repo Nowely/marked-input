@@ -9,12 +9,115 @@ import {
 	parseWithParser,
 	type Block,
 } from '@markput/core'
-import type {ElementType} from 'react'
-import {memo, useCallback, useMemo, useRef} from 'react'
+import type {CSSProperties, ElementType} from 'react'
+import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
-import {DraggableBlock} from './DraggableBlock'
+import {DraggableBlock, type MenuPosition} from './DraggableBlock'
 import {Token} from './Token'
+
+interface BlockMenuProps {
+	position: MenuPosition
+	onDelete: () => void
+	onDuplicate: () => void
+	onClose: () => void
+}
+
+const BlockMenu = memo(({position, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
+	const menuRef = useRef<HTMLDivElement>(null)
+	const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+
+	// Keep a ref so the effect stays stable (empty deps) while always calling
+	// the latest onClose without re-registering listeners on every render.
+	const onCloseRef = useRef(onClose)
+	onCloseRef.current = onClose
+
+	useEffect(() => {
+		const handleMouseDown = (e: globalThis.MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+				onCloseRef.current()
+			}
+		}
+		const handleKeyDown = (e: globalThis.KeyboardEvent) => {
+			if (e.key === 'Escape') onCloseRef.current()
+		}
+		document.addEventListener('mousedown', handleMouseDown)
+		document.addEventListener('keydown', handleKeyDown)
+		return () => {
+			document.removeEventListener('mousedown', handleMouseDown)
+			document.removeEventListener('keydown', handleKeyDown)
+		}
+	}, [])
+
+	const menuStyle: CSSProperties = {
+		position: 'fixed',
+		top: position.top,
+		left: position.left,
+		background: 'white',
+		border: '1px solid rgba(55, 53, 47, 0.16)',
+		borderRadius: 6,
+		boxShadow: '0 4px 16px rgba(15, 15, 15, 0.12)',
+		padding: 4,
+		zIndex: 9999,
+		minWidth: 160,
+		fontSize: 14,
+	}
+
+	const itemStyle = (key: string): CSSProperties => ({
+		display: 'flex',
+		alignItems: 'center',
+		gap: 8,
+		padding: '6px 10px',
+		borderRadius: 4,
+		cursor: 'pointer',
+		color: key === 'delete' ? '#eb5757' : 'inherit',
+		background:
+			hoveredItem === key
+				? key === 'delete'
+					? 'rgba(235, 87, 87, 0.06)'
+					: 'rgba(55, 53, 47, 0.06)'
+				: 'transparent',
+		userSelect: 'none',
+	})
+
+	return (
+		<div ref={menuRef} style={menuStyle}>
+			<div
+				style={itemStyle('duplicate')}
+				onMouseEnter={() => setHoveredItem('duplicate')}
+				onMouseLeave={() => setHoveredItem(null)}
+				onMouseDown={e => {
+					e.preventDefault()
+					onDuplicate()
+					onClose()
+				}}
+			>
+				<span>⧉</span>
+				<span>Duplicate</span>
+			</div>
+			<div
+				style={itemStyle('delete')}
+				onMouseEnter={() => setHoveredItem('delete')}
+				onMouseLeave={() => setHoveredItem(null)}
+				onMouseDown={e => {
+					e.preventDefault()
+					onDelete()
+					onClose()
+				}}
+			>
+				<span>🗑</span>
+				<span>Delete</span>
+			</div>
+		</div>
+	)
+})
+
+BlockMenu.displayName = 'BlockMenu'
+
+interface MenuState {
+	index: number
+	position: MenuPosition
+}
 
 export const BlockContainer = memo(() => {
 	const store = useStore()
@@ -28,6 +131,8 @@ export const BlockContainer = memo(() => {
 	const onChange = store.state.onChange.use()
 	const key = store.key
 	const refs = store.refs
+
+	const [menuState, setMenuState] = useState<MenuState | null>(null)
 
 	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
@@ -80,29 +185,50 @@ export const BlockContainer = memo(() => {
 		[value, onChange, applyNewValue]
 	)
 
+	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {
+		setMenuState({index, position: {top: rect.bottom + 4, left: rect.left}})
+	}, [])
+
+	const closeMenu = useCallback(() => setMenuState(null), [])
+
 	return (
-		<ContainerComponent
-			ref={(el: HTMLDivElement | null) => (refs.container = el)}
-			{...containerProps}
-			className={className}
-			style={style}
-		>
-			{blocks.map((block, index) => (
-				<DraggableBlock
-					key={block.id}
-					blockIndex={index}
-					readOnly={readOnly}
-					onReorder={handleReorder}
-					onAdd={handleAdd}
-					onDelete={handleDelete}
-					onDuplicate={handleDuplicate}
-				>
-					{block.tokens.map(token => (
-						<Token key={key.get(token)} mark={token} />
-					))}
-				</DraggableBlock>
-			))}
-		</ContainerComponent>
+		<>
+			<ContainerComponent
+				ref={(el: HTMLDivElement | null) => (refs.container = el)}
+				{...containerProps}
+				className={className}
+				style={style}
+			>
+				{blocks.map((block, index) => (
+					<DraggableBlock
+						key={block.id}
+						blockIndex={index}
+						readOnly={readOnly}
+						onReorder={handleReorder}
+						onAdd={handleAdd}
+						onRequestMenu={handleRequestMenu}
+					>
+						{block.tokens.map(token => (
+							<Token key={key.get(token)} mark={token} />
+						))}
+					</DraggableBlock>
+				))}
+			</ContainerComponent>
+			{menuState && (
+				<BlockMenu
+					position={menuState.position}
+					onDelete={() => {
+						handleDelete(menuState.index)
+						closeMenu()
+					}}
+					onDuplicate={() => {
+						handleDuplicate(menuState.index)
+						closeMenu()
+					}}
+					onClose={closeMenu}
+				/>
+			)}
+		</>
 	)
 })
 

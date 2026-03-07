@@ -1,8 +1,6 @@
 import type {Block} from './splitTokensIntoBlocks'
 
 export function addBlock(value: string, blocks: Block[], afterIndex: number): string {
-	if (blocks.length === 0) return value + '\n'
-
 	if (afterIndex >= blocks.length - 1) {
 		return value + '\n'
 	}
