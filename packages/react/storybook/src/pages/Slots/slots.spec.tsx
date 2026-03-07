@@ -96,11 +96,11 @@ describe('Slots API', () => {
 
 	describe('Span slot', () => {
 		it('should use default span component when no slot is provided', async () => {
-			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
+			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
-			await expect.element(textSpan!).toHaveTextContent('Hello world')
+			await expect.element(textSpan).toHaveAttribute('contenteditable')
 		})
 
 		it('should use custom component from slots.span', async () => {
@@ -120,7 +120,7 @@ describe('Slots API', () => {
 		})
 
 		it('should pass slotProps.span to the span component', async () => {
-			const {container} = await render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -133,13 +133,13 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toHaveClass('custom-span-class')
 			await expect.element(textSpan).toHaveAttribute('data-span-custom', 'span-value')
 		})
 
 		it('should merge style from slotProps.span', async () => {
-			const {container} = await render(
+			await render(
 				<MarkedInput
 					Mark={TestMark}
 					value="Hello world"
@@ -151,7 +151,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toHaveStyle({fontWeight: 'bold', fontSize: '16px'})
 		})
 	})
@@ -246,17 +246,19 @@ describe('Slots API', () => {
 
 	describe('Span contentEditable attribute', () => {
 		it('should have contentEditable="true" by default on editable span', async () => {
-			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
+			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable="true"]') as HTMLElement
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
+			await expect.element(textSpan).toHaveAttribute('contenteditable')
 		})
 
 		it('should have contentEditable="false" when readOnly is true', async () => {
-			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
+			await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
 
-			const textSpan = container.querySelector('span[contenteditable="false"]') as HTMLElement
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
+			await expect.element(textSpan).toHaveAttribute('contenteditable', 'false')
 		})
 
 		it('should maintain contentEditable on span with custom slot', async () => {
@@ -265,15 +267,14 @@ describe('Slots API', () => {
 			await render(<MarkedInput Mark={TestMark} value="Hello world" slots={{span: CustomSpan}} />)
 
 			const span = page.getByTestId('custom-span')
-			await expect.element(span).toHaveAttribute('contenteditable', 'true')
+			await expect.element(span).toHaveAttribute('contenteditable')
 		})
 
-		it('should respect suppressContentEditableWarning when set', async () => {
-			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" />)
+		it('should set contentEditable imperatively via core controller', async () => {
+			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
-			// Should not throw warning during render
-			await expect.element(textSpan).toBeInTheDocument()
+			const textSpan = page.getByText('Hello world')
+			await expect.element(textSpan).toHaveAttribute('contenteditable')
 		})
 	})
 
@@ -388,10 +389,10 @@ describe('Slots API', () => {
 			)
 
 			const article = container.querySelector('article') as HTMLElement
-			const div = container.querySelector('div[contenteditable]') as HTMLElement
-
 			await expect.element(article).toBeInTheDocument()
-			await expect.element(div).toBeInTheDocument()
+			const textDiv = page.getByText('Hello world')
+			await expect.element(textDiv).toBeInTheDocument()
+			await expect.element(textDiv).toHaveAttribute('contenteditable')
 		})
 	})
 

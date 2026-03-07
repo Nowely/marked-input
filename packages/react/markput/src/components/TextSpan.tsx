@@ -10,7 +10,6 @@ export const TextSpan = () => {
 	const store = useStore()
 	const ref = useRef<HTMLSpanElement>(null)
 
-	const readOnly = store.state.readOnly.use()
 	const slots = store.state.slots.use()
 	const slotProps = store.state.slotProps.use()
 	const SpanComponent = useMemo(() => resolveSlot<ElementType>('span', slots), [slots])
@@ -26,5 +25,5 @@ export const TextSpan = () => {
 		}
 	}, [token.content])
 
-	return <SpanComponent {...spanProps} ref={ref} contentEditable={!readOnly} suppressContentEditableWarning />
+	return <SpanComponent {...spanProps} ref={ref} />
 }

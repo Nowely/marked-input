@@ -9,6 +9,7 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 		.register(asFeature('system', store.controllers.system))
 		.register(asFeature('focus', store.controllers.focus))
 		.register(asFeature('textSelection', store.controllers.textSelection))
+		.register(asFeature('contentEditable', store.controllers.contentEditable))
 
 	return manager
 }

@@ -17,12 +17,12 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	const Mark = store.state.Mark.use()
 	const coreOptions = store.state.options.use()
 	const options = Mark ? coreOptions : undefined
+	const tokens = store.state.tokens.use()
 
 	useEffect(() => {
 		store.lifecycle.syncParser(value, options)
 	}, [value, options])
 
-	const tokens = store.state.tokens.use()
 	useEffect(() => {
 		store.lifecycle.recoverFocus()
 	}, [tokens])
