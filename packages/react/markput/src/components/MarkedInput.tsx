@@ -118,9 +118,9 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const ContainerImpl = block ? BlockContainer : Container
 
 	return (
-		<StoreContext.Provider value={store}>
+		<StoreContext value={store}>
 			<ContainerImpl />
 			<OverlayRenderer />
-		</StoreContext.Provider>
+		</StoreContext>
 	)
 }

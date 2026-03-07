@@ -1,7 +1,7 @@
 import type {Token as TokenType} from '@markput/core'
 import {memo} from 'react'
 
-import {TokenProvider} from '../lib/providers/TokenProvider'
+import {TokenContext} from '../lib/providers/TokenContext'
 // eslint-disable-next-line import/no-cycle
 import {MarkRenderer} from './MarkRenderer'
 import {TextSpan} from './TextSpan'
@@ -10,9 +10,9 @@ import {TextSpan} from './TextSpan'
 export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?: boolean}) => {
 	if (mark.type === 'mark') {
 		return (
-			<TokenProvider value={mark}>
+			<TokenContext value={mark}>
 				<MarkRenderer />
-			</TokenProvider>
+			</TokenContext>
 		)
 	}
 
@@ -21,9 +21,9 @@ export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?
 	}
 
 	return (
-		<TokenProvider value={mark}>
+		<TokenContext value={mark}>
 			<TextSpan />
-		</TokenProvider>
+		</TokenContext>
 	)
 })
 
