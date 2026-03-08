@@ -107,7 +107,7 @@ function menuItemStyle(key: string): CSSProperties {
 		padding: '7px 12px',
 		borderRadius: '4px',
 		cursor: 'pointer',
-		color: key === 'delete' ? '#eb5757' : 'inherit',
+		color: key === 'delete' ? '#eb5757' : 'rgba(55, 53, 47, 0.85)',
 		background:
 			hoveredMenuItem.value === key
 				? key === 'delete'
@@ -261,7 +261,13 @@ function onMenuDuplicate() {
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuAdd"
 				>
-					<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 16 16"
+						fill="currentColor"
+						style="flex-shrink: 0; opacity: 0.75"
+					>
 						<path
 							d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"
 						/>
@@ -274,7 +280,13 @@ function onMenuDuplicate() {
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuDuplicate"
 				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						style="flex-shrink: 0; opacity: 0.75"
+					>
 						<path
 							fill-rule="evenodd"
 							clip-rule="evenodd"
@@ -288,13 +300,20 @@ function onMenuDuplicate() {
 					</svg>
 					<span>Duplicate</span>
 				</div>
+				<div style="height: 1px; background: rgba(55, 53, 47, 0.09); margin: 4px 0" />
 				<div
 					:style="menuItemStyle('delete')"
 					@mouseenter="hoveredMenuItem = 'delete'"
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuDelete"
 				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="currentColor"
+						style="flex-shrink: 0; opacity: 0.75"
+					>
 						<path
 							fill-rule="evenodd"
 							clip-rule="evenodd"

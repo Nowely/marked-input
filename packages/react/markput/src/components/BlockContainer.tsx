@@ -24,14 +24,21 @@ interface BlockMenuProps {
 	onClose: () => void
 }
 
+const svgProps = {
+	width: 14,
+	height: 14,
+	fill: 'currentColor',
+	style: {display: 'block', flexShrink: 0, opacity: 0.75} as CSSProperties,
+}
+
 const AddIcon = () => (
-	<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+	<svg {...svgProps} viewBox="0 0 16 16">
 		<path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
 	</svg>
 )
 
 const DuplicateIcon = () => (
-	<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+	<svg {...svgProps} viewBox="0 0 24 24">
 		<path
 			fillRule="evenodd"
 			clipRule="evenodd"
@@ -46,7 +53,7 @@ const DuplicateIcon = () => (
 )
 
 const TrashIcon = () => (
-	<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+	<svg {...svgProps} viewBox="0 0 24 24">
 		<path
 			fillRule="evenodd"
 			clipRule="evenodd"
@@ -54,6 +61,12 @@ const TrashIcon = () => (
 		/>
 	</svg>
 )
+
+const separatorStyle: CSSProperties = {
+	height: 1,
+	background: 'rgba(55, 53, 47, 0.09)',
+	margin: '4px 0',
+}
 
 const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
 	const menuRef = useRef<HTMLDivElement>(null)
@@ -99,10 +112,10 @@ const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: Block
 		display: 'flex',
 		alignItems: 'center',
 		gap: 8,
-		padding: '7px 12px',
+		padding: '6px 10px',
 		borderRadius: 4,
 		cursor: 'pointer',
-		color: key === 'delete' ? '#eb5757' : 'inherit',
+		color: key === 'delete' ? '#eb5757' : 'rgba(55, 53, 47, 0.85)',
 		background:
 			hoveredItem === key
 				? key === 'delete'
@@ -142,6 +155,7 @@ const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: Block
 				<DuplicateIcon />
 				<span>Duplicate</span>
 			</div>
+			<div style={separatorStyle} />
 			<div
 				style={itemStyle('delete')}
 				onMouseEnter={() => setHoveredItem('delete')}
