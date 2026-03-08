@@ -7,7 +7,7 @@ import {Text} from '../../shared/components/Text'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
-	title: 'MarkedInput/DraggableBlocks',
+	title: 'MarkedInput/Block',
 	tags: ['autodocs'],
 	component: MarkedInput,
 	parameters: {
@@ -34,15 +34,17 @@ const MarkdownMark = ({
 
 export const BasicDraggable: Story = {
 	render: () => {
-		const [value, setValue] = useState(
-			`# Welcome to Draggable Blocks
+		const [value, setValue] = useState(`# Welcome to Draggable Blocks
+
 This is the first paragraph. Hover to see the drag handle on the left.
+
 This is the second paragraph. Try dragging it above the first one!
+
 ## Features
+
 - Drag handles appear on hover
 - Drop indicators show where the block will land
-- Blocks reorder by manipulating the underlying string`
-		)
+- Blocks reorder by manipulating the underlying string`)
 
 		return (
 			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
@@ -63,13 +65,21 @@ This is the second paragraph. Try dragging it above the first one!
 export const MarkdownDocument: Story = {
 	render: () => {
 		const [value, setValue] = useState(`# Project Roadmap
+
 ## Phase 1: Foundation
+
 Build the core parsing engine with support for nested markup patterns.
+
 ## Phase 2: Rich Text
+
 Add markdown-style formatting: **bold**, *italic*, \`code\`, and ~~strikethrough~~.
+
 ## Phase 3: Collaboration
+
 Implement real-time collaboration with conflict resolution.
+
 ## Phase 4: Extensions
+
 Create a plugin system for custom markup patterns.`)
 
 		return (
@@ -91,10 +101,15 @@ Create a plugin system for custom markup patterns.`)
 export const ReadOnlyDraggable: Story = {
 	render: () => {
 		const value = `# Read-Only Mode
+
 Drag handles are hidden in read-only mode.
+
 ## Section A
+
 Content cannot be reordered.
+
 ## Section B
+
 This is static content.`
 
 		return (
@@ -114,13 +129,15 @@ This is static content.`
 
 export const PlainTextBlocks: Story = {
 	render: () => {
-		const [value, setValue] = useState(
-			`First block of plain text
+		const [value, setValue] = useState(`First block of plain text
+
 Second block of plain text
+
 Third block of plain text
+
 Fourth block of plain text
-Fifth block of plain text`
-		)
+
+Fifth block of plain text`)
 
 		return (
 			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>

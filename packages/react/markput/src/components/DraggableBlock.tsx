@@ -112,9 +112,11 @@ export const DraggableBlock = memo(
 			paddingLeft: readOnly ? 0 : 48,
 			transition: 'opacity 0.2s ease',
 			opacity: isDragging ? 0.4 : 1,
-			background: isHovered && !readOnly ? 'rgba(55, 53, 47, 0.03)' : 'transparent',
+			background: 'transparent',
 			borderRadius: 3,
 			minHeight: '1.2em',
+			userSelect: 'none',
+			outline: 'none',
 		}
 
 		const sidePanelStyle: CSSProperties = {

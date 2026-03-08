@@ -6,7 +6,7 @@ import {defineComponent, h, ref} from 'vue'
 import Text from '../../shared/components/Text.vue'
 
 export default {
-	title: 'MarkedInput/DraggableBlocks',
+	title: 'MarkedInput/Block',
 	tags: ['autodocs'],
 	component: MarkedInput,
 	parameters: {
@@ -83,9 +83,17 @@ export const BasicDraggable: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
-				const value = ref(
-					`# Welcome to Draggable Blocks\nThis is the first paragraph. Hover to see the drag handle on the left.\nThis is the second paragraph. Try dragging it above the first one!\n## Features\n- Drag handles appear on hover\n- Drop indicators show where the block will land\n- Blocks reorder by manipulating the underlying string`
-				)
+				const value = ref(`# Welcome to Draggable Blocks
+
+This is the first paragraph. Hover to see the drag handle on the left.
+
+This is the second paragraph. Try dragging it above the first one!
+
+## Features
+
+- Drag handles appear on hover
+- Drop indicators show where the block will land
+- Blocks reorder by manipulating the underlying string`)
 				return () =>
 					h('div', {style: containerStyle}, [
 						h(MarkedInput, {
@@ -108,9 +116,23 @@ export const MarkdownDocument: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
-				const value = ref(
-					`# Project Roadmap\n## Phase 1: Foundation\nBuild the core parsing engine with support for nested markup patterns.\n## Phase 2: Rich Text\nAdd markdown-style formatting: **bold**, *italic*, \`code\`.\n## Phase 3: Collaboration\nImplement real-time collaboration with conflict resolution.\n## Phase 4: Extensions\nCreate a plugin system for custom markup patterns.`
-				)
+				const value = ref(`# Project Roadmap
+
+## Phase 1: Foundation
+
+Build the core parsing engine with support for nested markup patterns.
+
+## Phase 2: Rich Text
+
+Add markdown-style formatting: **bold**, *italic*, \`code\`.
+
+## Phase 3: Collaboration
+
+Implement real-time collaboration with conflict resolution.
+
+## Phase 4: Extensions
+
+Create a plugin system for custom markup patterns.`)
 				return () =>
 					h('div', {style: containerStyle}, [
 						h(MarkedInput, {
@@ -133,9 +155,15 @@ export const PlainTextBlocks: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
-				const value = ref(
-					`First block of plain text\nSecond block of plain text\nThird block of plain text\nFourth block of plain text\nFifth block of plain text`
-				)
+				const value = ref(`First block of plain text
+
+Second block of plain text
+
+Third block of plain text
+
+Fourth block of plain text
+
+Fifth block of plain text`)
 				return () =>
 					h('div', {style: containerStyle}, [
 						h(MarkedInput, {

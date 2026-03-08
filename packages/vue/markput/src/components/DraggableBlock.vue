@@ -31,9 +31,11 @@ const blockStyle = computed<CSSProperties>(() => ({
 	paddingLeft: props.readOnly ? '0' : '48px',
 	transition: 'opacity 0.2s ease',
 	opacity: isDragging.value ? 0.4 : 1,
-	background: isHovered.value && !props.readOnly ? 'rgba(55, 53, 47, 0.03)' : 'transparent',
+	background: 'transparent',
 	borderRadius: '3px',
 	minHeight: '1.2em',
+	userSelect: 'none',
+	outline: 'none',
 }))
 
 const sidePanelStyle = computed<CSSProperties>(() => ({
