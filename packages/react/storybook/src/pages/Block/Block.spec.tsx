@@ -18,6 +18,10 @@ function getBlockDiv(grip: HTMLElement) {
 	return grip.closest('[data-testid="block"]') as HTMLElement
 }
 
+function getEditableInBlock(blockDiv: HTMLElement) {
+	return blockDiv.querySelector('[contenteditable="true"]') as HTMLElement
+}
+
 /** Read the raw value from the <pre> rendered by the Text component */
 function getRawValue(container: Element) {
 	return container.querySelector('pre')!.textContent!
@@ -122,15 +126,15 @@ describe('Block Feature', () => {
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Delete').element())
 
-			// Now value is '' — try to add a block
-			// Bug #1: if (!value || !onChange) return — empty string is falsy, so this no-ops
-			const gripsAfterEmpty = getGrips(container)
-			if (gripsAfterEmpty.length > 0) {
-				await openMenuForGrip(container, 0)
-				await userEvent.click(page.getByText('Add below').element())
-				// If bug is fixed, block count should increase
-				expect(getGrips(container).length).toBeGreaterThan(0)
-			}
+			// Now value is '' — editor still renders 1 empty block
+			// Bug #1: if (!value || !onChange) return — empty string is falsy, so addBlock no-ops
+			expect(getGrips(container)).toHaveLength(1)
+
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Add below').element())
+
+			// Bug #1 would keep count at 1; fixed version should increase to 2
+			expect(getGrips(container)).toHaveLength(2)
 		})
 	})
 
@@ -187,15 +191,14 @@ describe('Block Feature', () => {
 
 		it('new block added below first block is empty', async () => {
 			const {container} = await render(<PlainTextBlocks />)
-			const originalValue = getRawValue(container)
 
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
 
 			const raw = getRawValue(container)
-			// Original "First block of plain text\n\n..."
-			// After add: "First block of plain text\n\n\n\n..." (new separator + empty block before second block)
-			expect(raw.length).toBeGreaterThan(originalValue.length)
+			// An empty block is inserted between block 0 and block 1:
+			// "First block of plain text\n\n\n\nSecond block of plain text"
+			expect(raw).toContain('First block of plain text\n\n\n\nSecond block of plain text')
 		})
 	})
 
@@ -270,8 +273,8 @@ describe('Block Feature', () => {
 			const {container} = await render(<PlainTextBlocks />)
 			expect(getGrips(container)).toHaveLength(5)
 
-			const blockDiv = getBlockDiv(getGrips(container)[0])
-			await focusAtEnd(blockDiv)
+			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
+			await focusAtEnd(editable)
 			await userEvent.keyboard('{Enter}')
 
 			expect(getGrips(container)).toHaveLength(6)
@@ -281,8 +284,8 @@ describe('Block Feature', () => {
 			const {container} = await render(<PlainTextBlocks />)
 			const originalValue = getRawValue(container)
 
-			const blockDiv = getBlockDiv(getGrips(container)[0])
-			await focusAtEnd(blockDiv)
+			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
+			await focusAtEnd(editable)
 			await userEvent.keyboard('{Enter}')
 
 			const newValue = getRawValue(container)
@@ -295,8 +298,8 @@ describe('Block Feature', () => {
 		it('pressing Shift+Enter does NOT create a new block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 
-			const blockDiv = getBlockDiv(getGrips(container)[0])
-			await focusAtEnd(blockDiv)
+			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
+			await focusAtEnd(editable)
 			await userEvent.keyboard('{Shift>}{Enter}{/Shift}')
 
 			expect(getGrips(container)).toHaveLength(5)
