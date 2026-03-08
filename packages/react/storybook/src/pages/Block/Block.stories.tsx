@@ -4,6 +4,7 @@ import type {ReactNode} from 'react'
 import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
+import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
@@ -64,23 +65,7 @@ This is the second paragraph. Try dragging it above the first one!
 
 export const MarkdownDocument: Story = {
 	render: () => {
-		const [value, setValue] = useState(`# Project Roadmap
-
-## Phase 1: Foundation
-
-Build the core parsing engine with support for nested markup patterns.
-
-## Phase 2: Rich Text
-
-Add markdown-style formatting: **bold**, *italic*, \`code\`, and ~~strikethrough~~.
-
-## Phase 3: Collaboration
-
-Implement real-time collaboration with conflict resolution.
-
-## Phase 4: Extensions
-
-Create a plugin system for custom markup patterns.`)
+		const [value, setValue] = useState(COMPLEX_MARKDOWN)
 
 		return (
 			<div>
