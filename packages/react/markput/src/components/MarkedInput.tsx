@@ -102,6 +102,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		defaultValue,
 		onChange,
 		readOnly,
+		block,
 		options,
 		showOverlayOn,
 		Mark,

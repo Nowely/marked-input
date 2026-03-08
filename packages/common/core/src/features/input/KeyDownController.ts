@@ -1,5 +1,6 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
+import {BLOCK_SEPARATOR} from '../blocks/config'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import {selectAllText} from '../selection'
 import type {Store} from '../store/Store'
@@ -26,6 +27,7 @@ export class KeyDownController {
 			}
 
 			this.#handleDelete(e)
+			this.#handleEnter(e)
 			selectAllText(this.store, e)
 		}
 
@@ -83,6 +85,26 @@ export class KeyDownController {
 				}
 			}
 		}
+	}
+
+	#handleEnter(event: KeyboardEvent) {
+		if (!this.store.state.block.get()) return
+		if (event.key !== KEYBOARD.ENTER) return
+
+		const {focus} = this.store.nodes
+		if (!focus.target || !focus.isEditable) return
+
+		if (event.shiftKey) return
+
+		event.preventDefault()
+
+		const offset = focus.caret
+		const content = focus.content
+		const newContent = content.slice(0, offset) + BLOCK_SEPARATOR + content.slice(offset)
+		focus.content = newContent
+		focus.caret = offset + BLOCK_SEPARATOR.length
+
+		this.store.events.change()
 	}
 }
 

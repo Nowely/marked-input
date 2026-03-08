@@ -42,6 +42,7 @@ function syncProps() {
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
 		readOnly: props.readOnly,
+		block: props.block,
 		options: props.options,
 		showOverlayOn: props.showOverlayOn,
 		Mark: props.Mark,
