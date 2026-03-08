@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import {ref, computed, watch, onUnmounted, nextTick, type CSSProperties} from 'vue'
 
+import styles from '@markput/core/styles.module.css'
+
 const props = defineProps<{
 	blockIndex: number
 	readOnly: boolean
@@ -238,14 +240,7 @@ function onMenuDuplicate() {
 				@dragend="onDragEnd"
 				@click="onGripClick"
 			>
-				<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-					<circle cx="5" cy="3" r="1.5" />
-					<circle cx="11" cy="3" r="1.5" />
-					<circle cx="5" cy="8" r="1.5" />
-					<circle cx="11" cy="8" r="1.5" />
-					<circle cx="5" cy="13" r="1.5" />
-					<circle cx="11" cy="13" r="1.5" />
-				</svg>
+				<span :class="[styles.Icon, styles.IconGrip]" />
 			</button>
 		</div>
 
@@ -261,17 +256,7 @@ function onMenuDuplicate() {
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuAdd"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 16 16"
-						fill="currentColor"
-						style="flex-shrink: 0; opacity: 0.75"
-					>
-						<path
-							d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"
-						/>
-					</svg>
+					<span :class="[styles.Icon, styles.IconAdd]" />
 					<span>Add below</span>
 				</div>
 				<div
@@ -280,24 +265,7 @@ function onMenuDuplicate() {
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuDuplicate"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="currentColor"
-						style="flex-shrink: 0; opacity: 0.75"
-					>
-						<path
-							fill-rule="evenodd"
-							clip-rule="evenodd"
-							d="M10 9C9.44772 9 9 9.44772 9 10V20C9 20.5523 9.44772 21 10 21H20C20.5523 21 21 20.5523 21 20V10C21 9.44772 20.5523 9 20 9H10ZM7 10C7 8.34315 8.34315 7 10 7H20C21.6569 7 23 8.34315 23 10V20C23 21.6569 21.6569 23 20 23H10C8.34315 23 7 21.6569 7 20V10Z"
-						/>
-						<path
-							fill-rule="evenodd"
-							clip-rule="evenodd"
-							d="M4 3C3.45228 3 3 3.45228 3 4V14C3 14.5477 3.45228 15 4 15C4.55228 15 5 15.4477 5 16C5 16.5523 4.55228 17 4 17C2.34772 17 1 15.6523 1 14V4C1 2.34772 2.34772 1 4 1H14C15.6523 1 17 2.34772 17 4C17 4.55228 16.5523 5 16 5C15.4477 5 15 4.55228 15 4C15 3.45228 14.5477 3 14 3H4Z"
-						/>
-					</svg>
+					<span :class="[styles.Icon, styles.IconDuplicate]" />
 					<span>Duplicate</span>
 				</div>
 				<div style="height: 1px; background: rgba(55, 53, 47, 0.09); margin: 4px 0" />
@@ -307,19 +275,7 @@ function onMenuDuplicate() {
 					@mouseleave="hoveredMenuItem = null"
 					@mousedown.prevent="onMenuDelete"
 				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="currentColor"
-						style="flex-shrink: 0; opacity: 0.75"
-					>
-						<path
-							fill-rule="evenodd"
-							clip-rule="evenodd"
-							d="M7 5V4C7 3.17477 7.40255 2.43324 7.91789 1.91789C8.43324 1.40255 9.17477 1 10 1H14C14.8252 1 15.5668 1.40255 16.0821 1.91789C16.5975 2.43324 17 3.17477 17 4V5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H20V20C20 20.8252 19.5975 21.5668 19.0821 22.0821C18.5668 22.5975 17.8252 23 17 23H7C6.17477 23 5.43324 22.5975 4.91789 22.0821C4.40255 21.5668 4 20.8252 4 20V7H3C2.44772 7 2 6.55228 2 6C2 5.44772 2.44772 5 3 5H7ZM9 4C9 3.82523 9.09745 3.56676 9.33211 3.33211C9.56676 3.09745 9.82523 3 10 3H14C14.1748 3 14.4332 3.09745 14.6679 3.33211C14.9025 3.56676 15 3.82523 15 4V5H9V4ZM6 7V20C6 20.1748 6.09745 20.4332 6.33211 20.6679C6.56676 20.9025 6.82523 21 7 21H17C17.1748 21 17.4332 20.9025 17.6679 20.6679C17.9025 20.4332 18 20.1748 18 20V7H6Z"
-						/>
-					</svg>
+					<span :class="[styles.Icon, styles.IconTrash]" />
 					<span>Delete</span>
 				</div>
 			</div>

@@ -1,6 +1,8 @@
 import type {ReactNode, DragEvent, CSSProperties, MouseEvent} from 'react'
 import {Children, memo, useCallback, useRef, useState} from 'react'
 
+import styles from '@markput/core/styles.module.css'
+
 export interface MenuPosition {
 	top: number
 	left: number
@@ -13,19 +15,6 @@ interface DraggableBlockProps {
 	onReorder: (sourceIndex: number, targetIndex: number) => void
 	onRequestMenu?: (index: number, rect: DOMRect) => void
 }
-
-const GripIcon = memo(() => (
-	<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-		<circle cx="5" cy="3" r="1.5" />
-		<circle cx="11" cy="3" r="1.5" />
-		<circle cx="5" cy="8" r="1.5" />
-		<circle cx="11" cy="8" r="1.5" />
-		<circle cx="5" cy="13" r="1.5" />
-		<circle cx="11" cy="13" r="1.5" />
-	</svg>
-))
-
-GripIcon.displayName = 'GripIcon'
 
 type DropPosition = 'before' | 'after' | null
 
@@ -176,7 +165,7 @@ export const DraggableBlock = memo(
 							style={{...sideButtonStyle, cursor: isDragging ? 'grabbing' : 'grab'}}
 							aria-label="Drag to reorder or click for options"
 						>
-							<GripIcon />
+							<span className={`${styles.Icon} ${styles.IconGrip}`} />
 						</button>
 					</div>
 				)}
