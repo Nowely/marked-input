@@ -3,6 +3,8 @@ import {Children, memo, useCallback, useRef, useState} from 'react'
 
 import styles from '@markput/core/styles.module.css'
 
+const iconGrip = `${styles.Icon} ${styles.IconGrip}`
+
 export interface MenuPosition {
 	top: number
 	left: number
@@ -165,7 +167,7 @@ export const DraggableBlock = memo(
 							style={{...sideButtonStyle, cursor: isDragging ? 'grabbing' : 'grab'}}
 							aria-label="Drag to reorder or click for options"
 						>
-							<span className={`${styles.Icon} ${styles.IconGrip}`} />
+							<span className={iconGrip} />
 						</button>
 					</div>
 				)}

@@ -1,4 +1,5 @@
 import {
+	cx,
 	resolveSlot,
 	resolveSlotProps,
 	splitTokensIntoBlocks,
@@ -103,7 +104,7 @@ const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: Block
 					onClose()
 				}}
 			>
-				<span className={`${styles.Icon} ${styles.IconAdd}`} />
+				<span className={cx(styles.Icon, styles.IconAdd)} />
 				<span>Add below</span>
 			</div>
 			<div
@@ -116,7 +117,7 @@ const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: Block
 					onClose()
 				}}
 			>
-				<span className={`${styles.Icon} ${styles.IconDuplicate}`} />
+				<span className={cx(styles.Icon, styles.IconDuplicate)} />
 				<span>Duplicate</span>
 			</div>
 			<div style={separatorStyle} />
@@ -130,7 +131,7 @@ const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: Block
 					onClose()
 				}}
 			>
-				<span className={`${styles.Icon} ${styles.IconTrash}`} />
+				<span className={cx(styles.Icon, styles.IconTrash)} />
 				<span>Delete</span>
 			</div>
 		</div>
