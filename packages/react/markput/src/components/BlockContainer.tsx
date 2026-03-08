@@ -171,7 +171,7 @@ export const BlockContainer = memo(() => {
 
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
-			if (!value || !onChange) return
+			if (value == null || !onChange) return
 			const newValue = reorderBlocks(value, blocksRef.current, sourceIndex, targetIndex)
 			if (newValue !== value) store.applyValue(newValue)
 		},
@@ -180,15 +180,22 @@ export const BlockContainer = memo(() => {
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
-			if (!value || !onChange) return
+			if (value == null || !onChange) return
 			store.applyValue(addBlock(value, blocksRef.current, afterIndex))
+			queueMicrotask(() => {
+				const container = store.refs.container
+				if (!container) return
+				const newBlockIndex = afterIndex + 1
+				const target = container.children[newBlockIndex] as HTMLElement | undefined
+				target?.focus()
+			})
 		},
 		[store, value, onChange]
 	)
 
 	const handleDelete = useCallback(
 		(index: number) => {
-			if (!value || !onChange) return
+			if (value == null || !onChange) return
 			store.applyValue(deleteBlock(value, blocksRef.current, index))
 		},
 		[store, value, onChange]
@@ -196,7 +203,7 @@ export const BlockContainer = memo(() => {
 
 	const handleDuplicate = useCallback(
 		(index: number) => {
-			if (!value || !onChange) return
+			if (value == null || !onChange) return
 			store.applyValue(duplicateBlock(value, blocksRef.current, index))
 		},
 		[store, value, onChange]

@@ -1,5 +1,6 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
+import {deleteBlock} from '../blocks/blockOperations'
 import {BLOCK_SEPARATOR} from '../blocks/config'
 import {splitTokensIntoBlocks} from '../blocks/splitTokensIntoBlocks'
 import {Caret} from '../caret'
@@ -86,6 +87,43 @@ export class KeyDownController {
 					deleteMark('next', this.store)
 				}
 			}
+		}
+
+		// Notion-like: Backspace on an empty block deletes the block
+		if (event.key === KEYBOARD.BACKSPACE && this.store.state.block.get()) {
+			const container = this.store.refs.container
+			if (!container) return
+
+			const blockDivs = Array.from(container.children)
+			const blockIndex = blockDivs.findIndex(
+				div => div === document.activeElement || div.contains(document.activeElement as Node)
+			)
+			if (blockIndex === -1) return
+
+			const tokens = this.store.state.tokens.get()
+			const blocks = splitTokensIntoBlocks(tokens)
+			if (blockIndex >= blocks.length) return
+
+			const block = blocks[blockIndex]
+			const blockText = block.tokens.map(t => ('content' in t ? (t as {content: string}).content : '')).join('')
+			if (blockText !== '') return
+
+			event.preventDefault()
+			const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
+			if (!this.store.state.onChange.get()) return
+
+			const newValue = deleteBlock(value, blocks, blockIndex)
+			this.store.applyValue(newValue)
+
+			queueMicrotask(() => {
+				const newDivs = container.children
+				const targetIndex = Math.max(0, blockIndex - 1)
+				const target = newDivs[targetIndex] as HTMLElement | undefined
+				if (target) {
+					target.focus()
+					Caret.trySetIndex(target, Infinity)
+				}
+			})
 		}
 	}
 

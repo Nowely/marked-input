@@ -27,6 +27,49 @@ function getRawValue(container: Element) {
 	return container.querySelector('pre')!.textContent!
 }
 
+/**
+ * Simulate an HTML5 drag-and-drop: drag the grip at sourceGripIndex and drop it
+ * onto the block at targetBlockIndex. The drop lands in the 'after' position
+ * (cursor past the midpoint of the target) by default.
+ */
+async function simulateDragBlock(
+	container: Element,
+	sourceGripIndex: number,
+	targetBlockIndex: number,
+	position: 'before' | 'after' = 'after'
+) {
+	const grips = getGrips(container)
+	const blocks = Array.from(container.querySelectorAll('[data-testid="block"]')) as HTMLElement[]
+	const grip = grips[sourceGripIndex]
+	const targetBlock = blocks[targetBlockIndex]
+
+	const dt = new DataTransfer()
+
+	// dragstart — React handler sets dt data as side-effect
+	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
+
+	// dragover — React handler reads clientY to set dropPosition state
+	const rect = targetBlock.getBoundingClientRect()
+	targetBlock.dispatchEvent(
+		new DragEvent('dragover', {
+			bubbles: true,
+			cancelable: true,
+			dataTransfer: dt,
+			clientY: position === 'before' ? rect.top + 1 : rect.bottom - 1,
+		})
+	)
+
+	// Allow React to flush the dropPosition state update before drop fires
+	await new Promise(r => setTimeout(r, 50))
+
+	// drop — React handler reads dt data and calls onReorder
+	targetBlock.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}))
+	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
+
+	// Allow React to re-render after reorder
+	await new Promise(r => setTimeout(r, 50))
+}
+
 /** Hover a block to reveal its grip, then click it to open the menu */
 async function openMenuForGrip(container: Element, gripIndex: number) {
 	const grip = getGrips(container)[gripIndex]
@@ -147,7 +190,6 @@ describe('Feature: blocks', () => {
 			await userEvent.click(page.getByText('Delete').element())
 
 			// Editor renders 1 empty block even when value is ''
-			// Bug: if (!value || !onChange) return — empty string is falsy, so addBlock no-ops
 			expect(getGrips(container)).toHaveLength(1)
 
 			await openMenuForGrip(container, 0)
@@ -269,8 +311,72 @@ describe('Feature: blocks', () => {
 	})
 
 	describe('drag & drop', () => {
-		it.todo('should reorder blocks when dragging block 0 after block 2')
-		it.todo('should not change order when dragging block onto itself')
+		it('should reorder blocks when dragging block 0 after block 2', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			await simulateDragBlock(container, 0, 2)
+
+			const raw = getRawValue(container)
+			expect(raw.indexOf('First block of plain text')).toBeGreaterThan(raw.indexOf('Third block of plain text'))
+		})
+
+		it('should not change order when dragging block onto itself', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const original = getRawValue(container)
+
+			await simulateDragBlock(container, 1, 1)
+
+			expect(getRawValue(container)).toBe(original)
+		})
+	})
+
+	describe('backspace on empty block', () => {
+		it('should delete the block and reduce count by 1', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			// Insert an empty block after block 0
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Add below').element())
+			expect(getGrips(container)).toHaveLength(6)
+
+			// Focus the new empty block (index 1) and press Backspace
+			const newBlockDiv = getBlockDiv(getGrips(container)[1])
+			newBlockDiv.focus()
+			await userEvent.keyboard('{Backspace}')
+
+			expect(getGrips(container)).toHaveLength(5)
+		})
+
+		it('should not delete a non-empty block on Backspace', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
+			await focusAtEnd(editable)
+			await userEvent.keyboard('{Backspace}')
+
+			// Only one character was deleted, not the whole block
+			expect(getGrips(container)).toHaveLength(5)
+		})
+	})
+
+	it('should focus the new empty block after Add below', async () => {
+		const {container} = await render(<PlainTextBlocks />)
+		await openMenuForGrip(container, 0)
+		await userEvent.click(page.getByText('Add below').element())
+
+		const newBlockDiv = getBlockDiv(getGrips(container)[1])
+		expect(document.activeElement).toBe(newBlockDiv)
+	})
+
+	it('should split block at caret when pressing Enter at the beginning', async () => {
+		const {container} = await render(<PlainTextBlocks />)
+		const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
+		await userEvent.click(editable)
+		await userEvent.keyboard('{Home}')
+		await userEvent.keyboard('{Enter}')
+
+		expect(getGrips(container)).toHaveLength(6)
+		// Original first-block text should still be present
+		expect(getRawValue(container)).toContain('First block of plain text')
 	})
 
 	it('should restore original value after add then delete', async () => {
