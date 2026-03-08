@@ -34,114 +34,36 @@ async function openMenuForGrip(container: Element, gripIndex: number) {
 	await userEvent.click(grip)
 }
 
-describe('Block Feature', () => {
-	// ── Phase 1: Bug-exposing tests ────────────────────────────────
-
-	describe('Rendering — block counts', () => {
-		it('BasicDraggable renders 5 blocks', async () => {
-			const {container} = await render(<BasicDraggable />)
-			expect(getGrips(container)).toHaveLength(5)
-		})
-
-		it('MarkdownDocument renders 6 blocks', async () => {
-			const {container} = await render(<MarkdownDocument />)
-			// Mark tokens can merge adjacent text blocks, resulting in 6 blocks
-			expect(getGrips(container)).toHaveLength(6)
-		})
-
-		it('PlainTextBlocks renders 5 blocks', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-			expect(getGrips(container)).toHaveLength(5)
-		})
-
-		it('ReadOnlyDraggable renders no grip buttons', async () => {
-			const {container} = await render(<ReadOnlyDraggable />)
-			expect(getGrips(container)).toHaveLength(0)
-		})
-
-		it('ReadOnlyDraggable still renders content', async () => {
-			await render(<ReadOnlyDraggable />)
-			await expect.element(page.getByText(/Read-Only/).first()).toBeInTheDocument()
-			await expect.element(page.getByText(/Section A/).first()).toBeInTheDocument()
-			await expect.element(page.getByText(/Section B/).first()).toBeInTheDocument()
-		})
+describe('Feature: blocks', () => {
+	it('should render 5 blocks for BasicDraggable', async () => {
+		const {container} = await render(<BasicDraggable />)
+		expect(getGrips(container)).toHaveLength(5)
 	})
 
-	describe('Bug #5 — Add block on last block creates trailing empty block', () => {
-		it('adding below last block increases count by exactly 1', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-			expect(getGrips(container)).toHaveLength(5)
-
-			// Open menu on last block (index 4)
-			await openMenuForGrip(container, 4)
-			await userEvent.click(page.getByText('Add below').element())
-
-			expect(getGrips(container)).toHaveLength(6)
-		})
-
-		it('value after adding below last block does not end with double separator', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-			await openMenuForGrip(container, 4)
-			await userEvent.click(page.getByText('Add below').element())
-
-			const raw = getRawValue(container)
-			// Should end with exactly one \n\n (the separator before the new empty block),
-			// NOT \n\n\n\n (which would mean a trailing extra separator)
-			expect(raw.endsWith('\n\n\n\n')).toBe(false)
-		})
+	it('should render 6 blocks for MarkdownDocument', async () => {
+		const {container} = await render(<MarkdownDocument />)
+		expect(getGrips(container)).toHaveLength(6)
 	})
 
-	describe('Bug #6 — Delete single remaining block', () => {
-		it('deleting blocks until one remains, then deleting that block', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-
-			// Delete blocks from the end until only 1 remains
-			for (let i = 4; i > 0; i--) {
-				await openMenuForGrip(container, i)
-				await userEvent.click(page.getByText('Delete').element())
-			}
-
-			expect(getGrips(container)).toHaveLength(1)
-
-			// Delete the last remaining block — exposes bug #6
-			await openMenuForGrip(container, 0)
-			await userEvent.click(page.getByText('Delete').element())
-
-			const raw = getRawValue(container)
-			// After deleting the only block, value becomes '' — the editor should still render
-			expect(raw).toBe('')
-		})
+	it('should render 5 blocks for PlainTextBlocks', async () => {
+		const {container} = await render(<PlainTextBlocks />)
+		expect(getGrips(container)).toHaveLength(5)
 	})
 
-	describe('Bug #1 — Empty value guard blocks operations', () => {
-		it('adding a block after deleting all blocks should work', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-
-			// Delete all blocks
-			for (let i = 4; i > 0; i--) {
-				await openMenuForGrip(container, i)
-				await userEvent.click(page.getByText('Delete').element())
-			}
-			// Delete the last one
-			await openMenuForGrip(container, 0)
-			await userEvent.click(page.getByText('Delete').element())
-
-			// Now value is '' — editor still renders 1 empty block
-			// Bug #1: if (!value || !onChange) return — empty string is falsy, so addBlock no-ops
-			expect(getGrips(container)).toHaveLength(1)
-
-			await openMenuForGrip(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
-
-			// Bug #1 would keep count at 1; fixed version should increase to 2
-			expect(getGrips(container)).toHaveLength(2)
-		})
+	it('should render no grip buttons in read-only mode', async () => {
+		const {container} = await render(<ReadOnlyDraggable />)
+		expect(getGrips(container)).toHaveLength(0)
 	})
 
-	// ── Phase 2: Block Menu ────────────────────────────────────────
+	it('should render content in read-only mode', async () => {
+		await render(<ReadOnlyDraggable />)
+		await expect.element(page.getByText(/Read-Only/).first()).toBeInTheDocument()
+		await expect.element(page.getByText(/Section A/).first()).toBeInTheDocument()
+		await expect.element(page.getByText(/Section B/).first()).toBeInTheDocument()
+	})
 
-	describe('Block Menu', () => {
-		it('clicking grip opens menu with Add below, Duplicate, Delete', async () => {
+	describe('menu', () => {
+		it('should open with Add below, Duplicate, Delete options', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 
@@ -150,7 +72,7 @@ describe('Block Feature', () => {
 			await expect.element(page.getByText('Delete')).toBeInTheDocument()
 		})
 
-		it('Escape key closes the menu', async () => {
+		it('should close on Escape', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
@@ -159,21 +81,18 @@ describe('Block Feature', () => {
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
 		})
 
-		it('clicking outside the menu closes it', async () => {
+		it('should close when clicking outside', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 
-			// Click on the story wrapper (outside the menu)
 			await userEvent.click(container.firstElementChild!)
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
 		})
 	})
 
-	// ── Phase 2: Add Block ─────────────────────────────────────────
-
-	describe('Add Block', () => {
-		it('add below first block increases block count by 1', async () => {
+	describe('add block', () => {
+		it('should increase block count by 1 when adding below first block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
@@ -181,7 +100,7 @@ describe('Block Feature', () => {
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('add below middle block increases block count by 1', async () => {
+		it('should increase block count by 1 when adding below middle block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 2)
 			await userEvent.click(page.getByText('Add below').element())
@@ -189,23 +108,57 @@ describe('Block Feature', () => {
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('new block added below first block is empty', async () => {
+		it('should increase block count by 1 when adding below last block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
+			await openMenuForGrip(container, 4)
+			await userEvent.click(page.getByText('Add below').element())
 
+			expect(getGrips(container)).toHaveLength(6)
+		})
+
+		it('should insert an empty block between the target and next block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
 
 			const raw = getRawValue(container)
-			// An empty block is inserted between block 0 and block 1:
-			// "First block of plain text\n\n\n\nSecond block of plain text"
 			expect(raw).toContain('First block of plain text\n\n\n\nSecond block of plain text')
+		})
+
+		it('should not create a trailing separator when adding below last block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			await openMenuForGrip(container, 4)
+			await userEvent.click(page.getByText('Add below').element())
+
+			const raw = getRawValue(container)
+			expect(raw.endsWith('\n\n\n\n')).toBe(false)
+		})
+
+		it('should work when value is empty', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			// Delete all blocks until value is '' — sequential DOM interactions
+			// eslint-disable-next-line no-await-in-loop
+			for (let i = 4; i > 0; i--) {
+				await openMenuForGrip(container, i)
+				await userEvent.click(page.getByText('Delete').element())
+			}
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Delete').element())
+
+			// Editor renders 1 empty block even when value is ''
+			// Bug: if (!value || !onChange) return — empty string is falsy, so addBlock no-ops
+			expect(getGrips(container)).toHaveLength(1)
+
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Add below').element())
+
+			expect(getGrips(container)).toHaveLength(2)
 		})
 	})
 
-	// ── Phase 2: Delete Block ──────────────────────────────────────
-
-	describe('Delete Block', () => {
-		it('delete middle block decreases count by 1', async () => {
+	describe('delete block', () => {
+		it('should decrease count by 1 when deleting middle block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 2)
 			await userEvent.click(page.getByText('Delete').element())
@@ -213,32 +166,46 @@ describe('Block Feature', () => {
 			expect(getGrips(container)).toHaveLength(4)
 		})
 
-		it('delete first block preserves remaining content', async () => {
+		it('should preserve remaining content when deleting first block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Delete').element())
 
 			expect(getGrips(container)).toHaveLength(4)
-			const raw = getRawValue(container)
-			expect(raw).toContain('Second block of plain text')
+			expect(getRawValue(container)).toContain('Second block of plain text')
 		})
 
-		it('delete last block decreases count by 1', async () => {
+		it('should decrease count by 1 when deleting last block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Delete').element())
 
 			expect(getGrips(container)).toHaveLength(4)
-			const raw = getRawValue(container)
-			expect(raw).toContain('Fourth block of plain text')
-			expect(raw).not.toContain('Fifth block of plain text')
+			expect(getRawValue(container)).toContain('Fourth block of plain text')
+			expect(getRawValue(container)).not.toContain('Fifth block of plain text')
+		})
+
+		it('should result in empty value when deleting the last remaining block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			// Sequential DOM interactions — must await each step
+			// eslint-disable-next-line no-await-in-loop
+			for (let i = 4; i > 0; i--) {
+				await openMenuForGrip(container, i)
+				await userEvent.click(page.getByText('Delete').element())
+			}
+
+			expect(getGrips(container)).toHaveLength(1)
+
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Delete').element())
+
+			expect(getRawValue(container)).toBe('')
 		})
 	})
 
-	// ── Phase 2: Duplicate Block ───────────────────────────────────
-
-	describe('Duplicate Block', () => {
-		it('duplicate first block increases count by 1', async () => {
+	describe('duplicate block', () => {
+		it('should increase count by 1 when duplicating first block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Duplicate').element())
@@ -246,18 +213,16 @@ describe('Block Feature', () => {
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('duplicate creates a copy with same text content', async () => {
+		it('should create a copy with the same text content', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Duplicate').element())
 
-			const raw = getRawValue(container)
-			// "First block of plain text" should appear twice
-			const matches = raw.match(/First block of plain text/g)
+			const matches = getRawValue(container).match(/First block of plain text/g)
 			expect(matches).toHaveLength(2)
 		})
 
-		it('duplicate last block increases count by 1', async () => {
+		it('should increase count by 1 when duplicating last block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Duplicate').element())
@@ -266,10 +231,8 @@ describe('Block Feature', () => {
 		})
 	})
 
-	// ── Phase 3: Enter Key ─────────────────────────────────────────
-
-	describe('Enter Key — new block', () => {
-		it('pressing Enter at end of block creates a new block', async () => {
+	describe('enter key', () => {
+		it('should create a new block when pressing Enter at end of block', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			expect(getGrips(container)).toHaveLength(5)
 
@@ -280,7 +243,7 @@ describe('Block Feature', () => {
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('pressing Enter preserves all block content', async () => {
+		it('should preserve all block content after pressing Enter', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 			const originalValue = getRawValue(container)
 
@@ -290,12 +253,11 @@ describe('Block Feature', () => {
 
 			const newValue = getRawValue(container)
 			expect(newValue).not.toBe(originalValue)
-			// Original content should still be present
 			expect(newValue).toContain('First block of plain text')
 			expect(newValue).toContain('Fifth block of plain text')
 		})
 
-		it('pressing Shift+Enter does NOT create a new block', async () => {
+		it('should not create a new block when pressing Shift+Enter', async () => {
 			const {container} = await render(<PlainTextBlocks />)
 
 			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
@@ -306,48 +268,38 @@ describe('Block Feature', () => {
 		})
 	})
 
-	// ── Phase 3: Drag & Drop ───────────────────────────────────────
-
-	describe('Drag & Drop', () => {
-		it.todo('drag block 0 after block 2 reorders blocks')
-		it.todo('drag block onto itself causes no change')
+	describe('drag & drop', () => {
+		it.todo('should reorder blocks when dragging block 0 after block 2')
+		it.todo('should not change order when dragging block onto itself')
 	})
 
-	// ── Phase 4: Regression / compound scenarios ───────────────────
+	it('should restore original value after add then delete', async () => {
+		const {container} = await render(<PlainTextBlocks />)
+		const original = getRawValue(container)
 
-	describe('Regression', () => {
-		it('add then delete restores original value', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-			const original = getRawValue(container)
+		await openMenuForGrip(container, 0)
+		await userEvent.click(page.getByText('Add below').element())
+		expect(getGrips(container)).toHaveLength(6)
 
-			// Add below first block
-			await openMenuForGrip(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
-			expect(getGrips(container)).toHaveLength(6)
+		await openMenuForGrip(container, 1)
+		await userEvent.click(page.getByText('Delete').element())
+		expect(getGrips(container)).toHaveLength(5)
 
-			// Delete the newly added empty block (index 1)
-			await openMenuForGrip(container, 1)
-			await userEvent.click(page.getByText('Delete').element())
-			expect(getGrips(container)).toHaveLength(5)
+		expect(getRawValue(container)).toBe(original)
+	})
 
-			expect(getRawValue(container)).toBe(original)
-		})
+	it('should restore original value after duplicate then delete', async () => {
+		const {container} = await render(<PlainTextBlocks />)
+		const original = getRawValue(container)
 
-		it('duplicate then delete restores original value', async () => {
-			const {container} = await render(<PlainTextBlocks />)
-			const original = getRawValue(container)
+		await openMenuForGrip(container, 0)
+		await userEvent.click(page.getByText('Duplicate').element())
+		expect(getGrips(container)).toHaveLength(6)
 
-			// Duplicate first block
-			await openMenuForGrip(container, 0)
-			await userEvent.click(page.getByText('Duplicate').element())
-			expect(getGrips(container)).toHaveLength(6)
+		await openMenuForGrip(container, 1)
+		await userEvent.click(page.getByText('Delete').element())
+		expect(getGrips(container)).toHaveLength(5)
 
-			// Delete the duplicate (index 1)
-			await openMenuForGrip(container, 1)
-			await userEvent.click(page.getByText('Delete').element())
-			expect(getGrips(container)).toHaveLength(5)
-
-			expect(getRawValue(container)).toBe(original)
-		})
+		expect(getRawValue(container)).toBe(original)
 	})
 })
