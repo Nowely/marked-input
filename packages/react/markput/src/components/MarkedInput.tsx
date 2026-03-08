@@ -70,8 +70,10 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	onChange?: (value: string) => void
 	/** Read-only mode */
 	readOnly?: boolean
-	/** Enable Notion-like draggable blocks with drag handles for reordering */
-	block?: boolean
+	/** Enable Notion-like draggable blocks with drag handles for reordering.
+	 * Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
+	 */
+	block?: boolean | {alwaysShowHandle: boolean}
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(

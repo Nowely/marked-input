@@ -23,6 +23,8 @@ const slotProps = store.state.slotProps.use()
 const className = store.state.className.use()
 const style = store.state.style.use()
 const readOnly = store.state.readOnly.use()
+const block = store.state.block.use()
+const alwaysShowHandle = computed(() => typeof block.value === 'object' && block.value.alwaysShowHandle)
 const value = store.state.value.use()
 const onChange = store.state.onChange.use()
 const key = store.key
@@ -75,6 +77,7 @@ function handleDuplicate(index: number) {
 			:key="block.id"
 			:block-index="index"
 			:read-only="readOnly"
+			:always-show-handle="alwaysShowHandle"
 			@reorder="handleReorder"
 			@add="handleAdd"
 			@delete="handleDelete"

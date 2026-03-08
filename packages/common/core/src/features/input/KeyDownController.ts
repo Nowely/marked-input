@@ -1,7 +1,10 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
 import {BLOCK_SEPARATOR} from '../blocks/config'
+import {splitTokensIntoBlocks} from '../blocks/splitTokensIntoBlocks'
+import {Caret} from '../caret'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
+import {parseWithParser} from '../parsing'
 import {selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 import {deleteMark} from '../text-manipulation'
@@ -90,21 +93,61 @@ export class KeyDownController {
 	#handleEnter(event: KeyboardEvent) {
 		if (!this.store.state.block.get()) return
 		if (event.key !== KEYBOARD.ENTER) return
-
-		const {focus} = this.store.nodes
-		if (!focus.target || !focus.isEditable) return
-
 		if (event.shiftKey) return
+
+		const container = this.store.refs.container
+		if (!container) return
+
+		const activeElement = document.activeElement as HTMLElement | null
+		if (!activeElement || !container.contains(activeElement)) return
 
 		event.preventDefault()
 
-		const offset = focus.caret
-		const content = focus.content
-		const newContent = content.slice(0, offset) + BLOCK_SEPARATOR + content.slice(offset)
-		focus.content = newContent
-		focus.caret = offset + BLOCK_SEPARATOR.length
+		// Find which block (container child) contains the active element
+		const blockDivs = container.children
+		let blockIndex = -1
+		for (let i = 0; i < blockDivs.length; i++) {
+			if (blockDivs[i] === activeElement || blockDivs[i].contains(activeElement)) {
+				blockIndex = i
+				break
+			}
+		}
+		if (blockIndex === -1) return
 
-		this.store.events.change()
+		// Get caret offset within the active element
+		const caretOffset = Caret.getCaretIndex(activeElement)
+
+		// Compute absolute position in the full value string
+		const tokens = this.store.state.tokens.get()
+		const blocks = splitTokensIntoBlocks(tokens)
+		if (blockIndex >= blocks.length) return
+
+		const block = blocks[blockIndex]
+		const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
+		const absolutePos = block.startPos + caretOffset
+
+		// Insert BLOCK_SEPARATOR at the absolute position
+		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
+
+		// Apply new value through store (re-parse and notify)
+		const onChange = this.store.state.onChange.get()
+		if (!onChange) return
+
+		const newTokens = parseWithParser(this.store, newValue)
+		this.store.state.tokens.set(newTokens)
+		this.store.state.previousValue.set(newValue)
+		onChange(newValue)
+
+		// Focus the new block after re-render
+		queueMicrotask(() => {
+			const newBlockDivs = container.children
+			const newBlockIndex = blockIndex + 1
+			if (newBlockIndex < newBlockDivs.length) {
+				const newBlock = newBlockDivs[newBlockIndex] as HTMLElement
+				newBlock.focus()
+				Caret.trySetIndex(newBlock, 0)
+			}
+		})
 	}
 }
 

@@ -105,6 +105,32 @@ This is static content.`
 	},
 }
 
+export const MobileBlocks: Story = {
+	render: () => {
+		const [value, setValue] = useState(`# Always-visible handles
+
+Drag handles are always visible — ideal for touch devices.
+
+## Try it
+
+Tap the grip icon to open the block menu.`)
+
+		return (
+			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
+				<MarkedInput
+					Mark={MarkdownMark}
+					options={markdownOptions}
+					value={value}
+					onChange={setValue}
+					block={{alwaysShowHandle: true}}
+					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
+				/>
+				<Text label="Raw value:" value={value} />
+			</div>
+		)
+	},
+}
+
 export const PlainTextBlocks: Story = {
 	render: () => {
 		const [value, setValue] = useState(`First block of plain text

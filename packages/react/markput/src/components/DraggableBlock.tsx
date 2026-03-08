@@ -14,6 +14,7 @@ interface DraggableBlockProps {
 	blockIndex: number
 	children: ReactNode
 	readOnly: boolean
+	alwaysShowHandle?: boolean
 	onReorder: (sourceIndex: number, targetIndex: number) => void
 	onRequestMenu?: (index: number, rect: DOMRect) => void
 }
@@ -21,7 +22,7 @@ interface DraggableBlockProps {
 type DropPosition = 'before' | 'after' | null
 
 export const DraggableBlock = memo(
-	({blockIndex, children, readOnly, onReorder, onRequestMenu}: DraggableBlockProps) => {
+	({blockIndex, children, readOnly, alwaysShowHandle, onReorder, onRequestMenu}: DraggableBlockProps) => {
 		const [isHovered, setIsHovered] = useState(false)
 		const [isDragging, setIsDragging] = useState(false)
 		const [dropPosition, setDropPosition] = useState<DropPosition>(null)
@@ -108,9 +109,9 @@ export const DraggableBlock = memo(
 			width: 24,
 			display: 'flex',
 			alignItems: 'center',
-			opacity: isHovered && !isDragging ? 1 : 0,
-			transition: 'opacity 0.15s ease',
-			pointerEvents: isHovered ? 'auto' : 'none',
+			opacity: alwaysShowHandle || (isHovered && !isDragging) ? 1 : 0,
+			transition: alwaysShowHandle ? undefined : 'opacity 0.15s ease',
+			pointerEvents: alwaysShowHandle || isHovered ? 'auto' : 'none',
 		}
 
 		const sideButtonStyle: CSSProperties = {

@@ -33,10 +33,12 @@ const MarkdownMark = defineComponent({
 	},
 })
 
+const h1Style = {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'}
+
 const markdownOptions: Option[] = [
 	{
 		markup: '# __nested__\n\n' as Markup,
-		mark: (props: MarkProps) => ({...props, style: preset.style}),
+		mark: (props: MarkProps) => ({...props, style: h1Style}),
 	},
 ] as Option[]
 

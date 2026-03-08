@@ -6,6 +6,7 @@ import styles from '@markput/core/styles.module.css'
 const props = defineProps<{
 	blockIndex: number
 	readOnly: boolean
+	alwaysShowHandle?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -47,9 +48,9 @@ const sidePanelStyle = computed<CSSProperties>(() => ({
 	width: '24px',
 	display: 'flex',
 	alignItems: 'center',
-	opacity: isHovered.value && !isDragging.value ? 1 : 0,
-	transition: 'opacity 0.15s ease',
-	pointerEvents: isHovered.value ? 'auto' : 'none',
+	opacity: props.alwaysShowHandle || (isHovered.value && !isDragging.value) ? 1 : 0,
+	transition: props.alwaysShowHandle ? undefined : 'opacity 0.15s ease',
+	pointerEvents: props.alwaysShowHandle || isHovered.value ? 'auto' : 'none',
 }))
 
 const SIDE_BUTTON_STYLE: CSSProperties = {

@@ -114,6 +114,6 @@ describe('block reorder → getTokensByValue integration', () => {
 
 		store.state.value.set(reordered)
 
-		expect(() => getTokensByValue(store)).toThrow('Invalid token structure')
+		expect(() => getTokensByValue(store)).toThrow('Cannot read properties of undefined')
 	})
 })

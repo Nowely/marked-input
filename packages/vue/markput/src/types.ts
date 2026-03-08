@@ -32,8 +32,10 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	value?: string
 	defaultValue?: string
 	readOnly?: boolean
-	/** Enable Notion-like draggable blocks with drag handles for reordering */
-	block?: boolean
+	/** Enable Notion-like draggable blocks with drag handles for reordering.
+	 * Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
+	 */
+	block?: boolean | {alwaysShowHandle: boolean}
 }
 
 export interface Slots {

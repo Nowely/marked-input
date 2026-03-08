@@ -153,6 +153,8 @@ export const BlockContainer = memo(() => {
 	const className = store.state.className.use()
 	const style = store.state.style.use()
 	const readOnly = store.state.readOnly.use()
+	const block = store.state.block.use()
+	const alwaysShowHandle = typeof block === 'object' && block.alwaysShowHandle
 	const value = store.state.value.use()
 	const onChange = store.state.onChange.use()
 	const key = store.key
@@ -230,6 +232,7 @@ export const BlockContainer = memo(() => {
 						key={block.id}
 						blockIndex={index}
 						readOnly={readOnly}
+						alwaysShowHandle={alwaysShowHandle}
 						onReorder={handleReorder}
 						onRequestMenu={handleRequestMenu}
 					>
