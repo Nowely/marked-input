@@ -1,12 +1,13 @@
+import {BLOCK_SEPARATOR} from './config'
 import type {Block} from './splitTokensIntoBlocks'
 
 export function addBlock(value: string, blocks: Block[], afterIndex: number): string {
 	if (afterIndex >= blocks.length - 1) {
-		return value + '\n'
+		return value + BLOCK_SEPARATOR
 	}
 
 	const insertPos = blocks[afterIndex + 1].startPos
-	return value.slice(0, insertPos) + '\n' + value.slice(insertPos)
+	return value.slice(0, insertPos) + BLOCK_SEPARATOR + value.slice(insertPos)
 }
 
 export function deleteBlock(value: string, blocks: Block[], index: number): string {
@@ -24,9 +25,9 @@ export function duplicateBlock(value: string, blocks: Block[], index: number): s
 	const blockText = value.substring(block.startPos, block.endPos)
 
 	if (index >= blocks.length - 1) {
-		return value + '\n' + blockText
+		return value + BLOCK_SEPARATOR + blockText
 	}
 
 	const insertPos = blocks[index + 1].startPos
-	return value.slice(0, insertPos) + blockText + '\n' + value.slice(insertPos)
+	return value.slice(0, insertPos) + blockText + BLOCK_SEPARATOR + value.slice(insertPos)
 }

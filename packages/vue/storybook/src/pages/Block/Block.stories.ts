@@ -35,46 +35,10 @@ const MarkdownMark = defineComponent({
 
 const markdownOptions: Option[] = [
 	{
-		markup: '# __nested__\n' as Markup,
-		mark: (p: MarkProps) => ({
-			...p,
-			style: {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'},
-		}),
+		markup: '# __nested__\n\n' as Markup,
+		mark: (props: MarkProps) => ({...props, style: preset.style}),
 	},
-	{
-		markup: '## __nested__\n' as Markup,
-		mark: (p: MarkProps) => ({
-			...p,
-			style: {display: 'block', fontSize: '1.5em', fontWeight: 'bold', margin: '0.4em 0'},
-		}),
-	},
-	{
-		markup: '### __nested__\n' as Markup,
-		mark: (p: MarkProps) => ({
-			...p,
-			style: {display: 'block', fontSize: '1.17em', fontWeight: 'bold', margin: '0.83em 0'},
-		}),
-	},
-	{
-		markup: '- __nested__\n' as Markup,
-		mark: (p: MarkProps) => ({...p, style: {display: 'block', paddingLeft: '1em'}}),
-	},
-	{markup: '**__nested__**' as Markup, mark: (p: MarkProps) => ({...p, style: {fontWeight: 'bold'}})},
-	{markup: '*__nested__*' as Markup, mark: (p: MarkProps) => ({...p, style: {fontStyle: 'italic'}})},
-	{
-		markup: '`__value__`' as Markup,
-		mark: (p: MarkProps) => ({
-			...p,
-			style: {
-				backgroundColor: '#f6f8fa',
-				padding: '2px 6px',
-				borderRadius: '3px',
-				fontFamily: 'monospace',
-				fontSize: '0.9em',
-			},
-		}),
-	},
-]
+] as Option[]
 
 const containerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '52px'}
 const editorStyle = {minHeight: '200px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}

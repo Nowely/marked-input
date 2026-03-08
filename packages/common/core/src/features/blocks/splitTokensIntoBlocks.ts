@@ -1,4 +1,5 @@
 import type {Token, TextToken} from '../parsing/ParserV2/types'
+import {BLOCK_SEPARATOR} from './config'
 
 export interface Block {
 	id: string
@@ -25,14 +26,11 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 	const blocks: Block[] = []
 	let currentTokens: Token[] = []
 	let blockStart = -1
-	// Tracks whether blockStart was set by a text newline (vs a mark-newline block).
-	// Only text-newline-derived pending positions can produce trailing empty blocks.
 	let blockStartFromText = false
 
 	const flushBlock = (endPos: number, canCreateEmpty = false) => {
 		const isEmpty = currentTokens.length === 0
 		if (blockStart === -1 && isEmpty) return
-		// Don't create empty blocks when triggered by a new mark (e.g. between consecutive marks)
 		if (isEmpty && !canCreateEmpty) return
 		const startPos = blockStart === -1 ? endPos : blockStart
 		blocks.push({
@@ -48,9 +46,9 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 
 	for (const token of tokens) {
 		if (token.type === 'mark') {
-			const endsWithNewline = token.content.endsWith('\n')
+			const endsWithBlockSeparator = token.content.endsWith(BLOCK_SEPARATOR)
 
-			if (endsWithNewline) {
+			if (endsWithBlockSeparator) {
 				flushBlock(token.position.start)
 
 				blocks.push({
@@ -71,12 +69,12 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 		if (token.type !== 'text') continue
 
 		const textToken = token
-		const parts = splitTextByNewlines(textToken)
+		const parts = splitTextByBlockSeparator(textToken)
 
 		for (let i = 0; i < parts.length; i++) {
 			const part = parts[i]
 
-			if (part.isNewline) {
+			if (part.isBlockSeparator) {
 				flushBlock(part.position.start, true)
 				blockStart = part.position.end
 				blockStartFromText = true
@@ -96,7 +94,6 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 
 	const lastPos = currentTokens.length > 0 ? currentTokens[currentTokens.length - 1].position.end : blockStart
 	if (blockStart !== -1 || currentTokens.length > 0) {
-		// Allow empty block at end only when the trailing newline came from a text token
 		flushBlock(lastPos === -1 ? 0 : lastPos, currentTokens.length > 0 || blockStartFromText)
 	}
 
@@ -106,10 +103,10 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 interface TextPart {
 	content: string
 	position: {start: number; end: number}
-	isNewline: boolean
+	isBlockSeparator: boolean
 }
 
-function splitTextByNewlines(token: TextToken): TextPart[] {
+function splitTextByBlockSeparator(token: TextToken): TextPart[] {
 	const parts: TextPart[] = []
 	const {content, position} = token
 
@@ -122,7 +119,7 @@ function splitTextByNewlines(token: TextToken): TextPart[] {
 			parts.push({
 				content: text,
 				position: {start: offset, end: offset + text.length},
-				isNewline: false,
+				isBlockSeparator: false,
 			})
 			offset += text.length
 			chars.length = 0
@@ -133,31 +130,43 @@ function splitTextByNewlines(token: TextToken): TextPart[] {
 		const char = content[i]
 
 		if (char === '\n') {
-			flushText()
-			parts.push({
-				content: '\n',
-				position: {start: offset, end: offset + 1},
-				isNewline: true,
-			})
-			offset += 1
-		} else if (char === '\r') {
 			if (i + 1 < content.length && content[i + 1] === '\n') {
 				flushText()
 				parts.push({
-					content: '\n',
+					content: BLOCK_SEPARATOR,
 					position: {start: offset, end: offset + 2},
-					isNewline: true,
+					isBlockSeparator: true,
 				})
 				offset += 2
 				i++
 			} else {
-				flushText()
-				parts.push({
-					content: '\n',
-					position: {start: offset, end: offset + 1},
-					isNewline: true,
-				})
-				offset += 1
+				chars.push(char)
+				offset++
+			}
+		} else if (char === '\r') {
+			if (i + 1 < content.length && content[i + 1] === '\n') {
+				if (
+					i + 2 < content.length &&
+					content[i + 2] === '\r' &&
+					i + 3 < content.length &&
+					content[i + 3] === '\n'
+				) {
+					flushText()
+					parts.push({
+						content: BLOCK_SEPARATOR,
+						position: {start: offset, end: offset + 4},
+						isBlockSeparator: true,
+					})
+					offset += 4
+					i += 3
+				} else {
+					chars.push('\n')
+					offset += 2
+					i++
+				}
+			} else {
+				chars.push('\n')
+				offset++
 			}
 		} else {
 			chars.push(char)

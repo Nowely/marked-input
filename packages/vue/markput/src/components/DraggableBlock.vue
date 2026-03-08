@@ -27,8 +27,8 @@ const menuRef = ref<HTMLDivElement | null>(null)
 const blockStyle = computed<CSSProperties>(() => ({
 	position: 'relative',
 	// Extend hover zone to the left (into gutter) without indenting text
-	marginLeft: props.readOnly ? '0' : '-48px',
-	paddingLeft: props.readOnly ? '0' : '48px',
+	marginLeft: props.readOnly ? '0' : '-52px',
+	paddingLeft: props.readOnly ? '0' : '52px',
 	transition: 'opacity 0.2s ease',
 	opacity: isDragging.value ? 0.4 : 1,
 	background: 'transparent',
@@ -77,7 +77,7 @@ const gripStyle = computed<CSSProperties>(() => ({
 
 const DROP_INDICATOR: CSSProperties = {
 	position: 'absolute',
-	left: '48px',
+	left: '52px',
 	right: '0',
 	height: '2px',
 	backgroundColor: '#3b82f6',

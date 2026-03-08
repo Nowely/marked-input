@@ -7,7 +7,7 @@ import type {Block} from './splitTokensIntoBlocks'
 import {splitTokensIntoBlocks} from './splitTokensIntoBlocks'
 
 function makeBlocks(...lines: string[]): {value: string; blocks: Block[]} {
-	const value = lines.join('\n')
+	const value = lines.join('\n\n')
 	let pos = 0
 	const blocks: Block[] = lines.map(line => {
 		const block: Block = {
@@ -16,7 +16,7 @@ function makeBlocks(...lines: string[]): {value: string; blocks: Block[]} {
 			startPos: pos,
 			endPos: pos + line.length,
 		}
-		pos += line.length + 1
+		pos += line.length + 2
 		return block
 	})
 	return {value, blocks}
@@ -36,19 +36,19 @@ describe('reorderBlocks', () => {
 	it('moves block forward', () => {
 		const {value, blocks} = makeBlocks('aaa', 'bbb', 'ccc')
 		const result = reorderBlocks(value, blocks, 0, 2)
-		expect(result).toBe('bbb\naaa\nccc')
+		expect(result).toBe('bbb\n\naaa\n\nccc')
 	})
 
 	it('moves block backward', () => {
 		const {value, blocks} = makeBlocks('aaa', 'bbb', 'ccc')
 		const result = reorderBlocks(value, blocks, 2, 0)
-		expect(result).toBe('ccc\naaa\nbbb')
+		expect(result).toBe('ccc\n\naaa\n\nbbb')
 	})
 
 	it('moves block to end', () => {
 		const {value, blocks} = makeBlocks('aaa', 'bbb', 'ccc')
 		const result = reorderBlocks(value, blocks, 0, 3)
-		expect(result).toBe('bbb\nccc\naaa')
+		expect(result).toBe('bbb\n\nccc\n\naaa')
 	})
 
 	it('returns same value for single block', () => {
@@ -71,25 +71,25 @@ describe('reorderBlocks', () => {
 	it('moves first block to last position', () => {
 		const {value, blocks} = makeBlocks('aaa', 'bbb', 'ccc', 'ddd')
 		const result = reorderBlocks(value, blocks, 0, 4)
-		expect(result).toBe('bbb\nccc\nddd\naaa')
+		expect(result).toBe('bbb\n\nccc\n\nddd\n\naaa')
 	})
 
 	it('moves last block to first position', () => {
 		const {value, blocks} = makeBlocks('aaa', 'bbb', 'ccc', 'ddd')
 		const result = reorderBlocks(value, blocks, 3, 0)
-		expect(result).toBe('ddd\naaa\nbbb\nccc')
+		expect(result).toBe('ddd\n\naaa\n\nbbb\n\nccc')
 	})
 })
 
 describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 	it('plain text: reordered value re-parses into correct blocks', () => {
-		const original = 'aaa\nbbb\nccc'
+		const original = 'aaa\n\nbbb\n\nccc'
 		const parser = new Parser([])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
 		const reordered = reorderBlocks(original, blocks, 0, 2)
-		expect(reordered).toBe('bbb\naaa\nccc')
+		expect(reordered).toBe('bbb\n\naaa\n\nccc')
 
 		const newTokens = parser.parse(reordered)
 		const newBlocks = splitTokensIntoBlocks(newTokens)
@@ -101,15 +101,15 @@ describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 	})
 
 	it('markdown: reordered value re-parses into correct blocks', () => {
-		const original = '# Heading\nParagraph text\n## Subheading'
-		const parser = new Parser(['# __nested__\n', '## __nested__\n'])
+		const original = '# Heading\n\nParagraph text\n\n## Subheading'
+		const parser = new Parser(['# __nested__\n\n', '## __nested__\n\n'])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
 		expect(blocks).toHaveLength(3)
 
 		const reordered = reorderBlocks(original, blocks, 2, 0)
-		expect(reordered).toBe('## Subheading\n# Heading\nParagraph text')
+		expect(reordered).toBe('## Subheading\n\n# Heading\n\nParagraph text')
 
 		const newTokens = parser.parse(reordered)
 		const newBlocks = splitTokensIntoBlocks(newTokens)
@@ -119,7 +119,7 @@ describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 
 	it('full cycle: split → reorder → re-parse → re-split produces consistent blocks', () => {
 		const lines = ['First line', 'Second line', 'Third line', 'Fourth line']
-		const original = lines.join('\n')
+		const original = lines.join('\n\n')
 		const parser = new Parser([])
 
 		const tokens1 = parser.parse(original)
@@ -127,7 +127,7 @@ describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 		expect(blocks1).toHaveLength(4)
 
 		const reordered = reorderBlocks(original, blocks1, 0, 4)
-		expect(reordered).toBe('Second line\nThird line\nFourth line\nFirst line')
+		expect(reordered).toBe('Second line\n\nThird line\n\nFourth line\n\nFirst line')
 
 		const tokens2 = parser.parse(reordered)
 		const blocks2 = splitTokensIntoBlocks(tokens2)
@@ -139,39 +139,38 @@ describe('reorderBlocks round-trip (reorder → re-parse → re-split)', () => {
 		expect(reordered2).toBe(original)
 	})
 
-	it('preserves single newline between adjacent blocks after reorder', () => {
-		const original = 'aaa\nbbb\nccc'
+	it('preserves double newline between adjacent blocks after reorder', () => {
+		const original = 'aaa\n\nbbb\n\nccc'
 		const parser = new Parser([])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
 		const reordered = reorderBlocks(original, blocks, 0, 2)
-		expect(reordered).toBe('bbb\naaa\nccc')
-		expect(reordered.split('\n')).toHaveLength(3)
+		expect(reordered).toBe('bbb\n\naaa\n\nccc')
+		expect(reordered.split('\n\n')).toHaveLength(3)
 	})
 
-	it('trailing newline creates empty block and is preserved after reorder', () => {
-		const original = 'aaa\nbbb\nccc\n'
+	it('trailing double newline creates empty block and is preserved after reorder', () => {
+		const original = 'aaa\n\nbbb\n\nccc\n\n'
 		const parser = new Parser([])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
-		// Trailing newline now creates an empty block
 		expect(blocks).toHaveLength(4)
-		expect(blocks[2].endPos).toBe(11)
+		expect(blocks[2].endPos).toBe(13)
 
 		const reordered = reorderBlocks(original, blocks, 0, 2)
-		expect(reordered).toBe('bbb\naaa\nccc\n')
+		expect(reordered).toBe('bbb\n\naaa\n\nccc\n\n')
 	})
 
 	it('handles unicode content correctly', () => {
-		const original = '你好\n世界\n🎉'
+		const original = '你好\n\n世界\n\n🎉'
 		const parser = new Parser([])
 		const tokens = parser.parse(original)
 		const blocks = splitTokensIntoBlocks(tokens)
 
 		const reordered = reorderBlocks(original, blocks, 2, 0)
-		expect(reordered).toBe('🎉\n你好\n世界')
+		expect(reordered).toBe('🎉\n\n你好\n\n世界')
 
 		const newTokens = parser.parse(reordered)
 		const newBlocks = splitTokensIntoBlocks(newTokens)

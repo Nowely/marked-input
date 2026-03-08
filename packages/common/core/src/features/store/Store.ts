@@ -77,16 +77,16 @@ export class Store {
 	}
 
 	createHandler(): MarkputHandler {
-		const store = this
+		const {refs, nodes} = this
 		return {
 			get container() {
-				return store.refs.container
+				return refs.container
 			},
 			get overlay() {
-				return store.refs.overlay
+				return refs.overlay
 			},
 			focus() {
-				store.nodes.focus.head?.focus()
+				nodes.focus.head?.focus()
 			},
 		}
 	}

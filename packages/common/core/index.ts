@@ -91,6 +91,7 @@ export {
 	addBlock,
 	deleteBlock,
 	duplicateBlock,
+	BLOCK_SEPARATOR,
 	type Block,
 } from './src/features/blocks'
 

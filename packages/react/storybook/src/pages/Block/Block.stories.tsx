@@ -83,15 +83,8 @@ Implement real-time collaboration with conflict resolution.
 Create a plugin system for custom markup patterns.`)
 
 		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					onChange={setValue}
-					block
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
+			<div>
+				<MarkedInput Mark={MarkdownMark} options={markdownOptions} value={value} onChange={setValue} block />
 				<Text label="Raw value:" value={value} />
 			</div>
 		)

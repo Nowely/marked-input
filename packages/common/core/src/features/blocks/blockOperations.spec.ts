@@ -7,26 +7,24 @@ function makeBlock(id: string, startPos: number, endPos: number): Block {
 	return {id, tokens: [], startPos, endPos}
 }
 
-// "A\nB\nC" → blocks at [0,1], [2,3], [4,5]
-const THREE_BLOCKS: Block[] = [makeBlock('0', 0, 1), makeBlock('2', 2, 3), makeBlock('4', 4, 5)]
+const THREE_BLOCKS: Block[] = [makeBlock('0', 0, 1), makeBlock('3', 3, 4), makeBlock('6', 6, 7)]
 
 describe('addBlock', () => {
-	it('appends newline when blocks is empty', () => {
-		expect(addBlock('A', [], 0)).toBe('A\n')
+	it('appends block separator when blocks is empty', () => {
+		expect(addBlock('A', [], 0)).toBe('A\n\n')
 	})
 
-	it('appends newline when afterIndex is last block', () => {
-		expect(addBlock('A\nB\nC', THREE_BLOCKS, 2)).toBe('A\nB\nC\n')
+	it('appends block separator when afterIndex is last block', () => {
+		expect(addBlock('A\n\nB\n\nC', THREE_BLOCKS, 2)).toBe('A\n\nB\n\nC\n\n')
 	})
 
-	it('inserts newline after middle block', () => {
-		// After block[0] ("A"), insert before block[1] start (pos 2)
-		expect(addBlock('A\nB\nC', THREE_BLOCKS, 0)).toBe('A\n\nB\nC')
+	it('inserts block separator after middle block', () => {
+		expect(addBlock('A\n\nB\n\nC', THREE_BLOCKS, 0)).toBe('A\n\n\n\nB\n\nC')
 	})
 
-	it('inserts newline after first block in two-block value', () => {
-		const blocks: Block[] = [makeBlock('0', 0, 1), makeBlock('2', 2, 3)]
-		expect(addBlock('A\nB', blocks, 0)).toBe('A\n\nB')
+	it('inserts block separator after first block in two-block value', () => {
+		const blocks: Block[] = [makeBlock('0', 0, 1), makeBlock('3', 3, 4)]
+		expect(addBlock('A\n\nB', blocks, 0)).toBe('A\n\n\n\nB')
 	})
 })
 
@@ -37,44 +35,39 @@ describe('deleteBlock', () => {
 	})
 
 	it('deletes first block', () => {
-		// Remove block[0] ("A\n"), remainder is "B\nC"
-		expect(deleteBlock('A\nB\nC', THREE_BLOCKS, 0)).toBe('B\nC')
+		expect(deleteBlock('A\n\nB\n\nC', THREE_BLOCKS, 0)).toBe('B\n\nC')
 	})
 
 	it('deletes middle block', () => {
-		// Remove block[1] ("B\n"), result is "A\nC"
-		expect(deleteBlock('A\nB\nC', THREE_BLOCKS, 1)).toBe('A\nC')
+		expect(deleteBlock('A\n\nB\n\nC', THREE_BLOCKS, 1)).toBe('A\n\nC')
 	})
 
 	it('deletes last block', () => {
-		// Remove block[2] ("C"), trim to block[1].endPos (3)
-		expect(deleteBlock('A\nB\nC', THREE_BLOCKS, 2)).toBe('A\nB')
+		expect(deleteBlock('A\n\nB\n\nC', THREE_BLOCKS, 2)).toBe('A\n\nB')
 	})
 
 	it('deletes from a two-block value', () => {
-		const blocks: Block[] = [makeBlock('0', 0, 1), makeBlock('2', 2, 3)]
-		expect(deleteBlock('A\nB', blocks, 0)).toBe('B')
-		expect(deleteBlock('A\nB', blocks, 1)).toBe('A')
+		const blocks: Block[] = [makeBlock('0', 0, 1), makeBlock('3', 3, 4)]
+		expect(deleteBlock('A\n\nB', blocks, 0)).toBe('B')
+		expect(deleteBlock('A\n\nB', blocks, 1)).toBe('A')
 	})
 })
 
 describe('duplicateBlock', () => {
 	it('duplicates last block by appending', () => {
-		expect(duplicateBlock('A\nB\nC', THREE_BLOCKS, 2)).toBe('A\nB\nC\nC')
+		expect(duplicateBlock('A\n\nB\n\nC', THREE_BLOCKS, 2)).toBe('A\n\nB\n\nC\n\nC')
 	})
 
 	it('duplicates first block into middle', () => {
-		// Insert "A\n" before block[1] start (pos 2) → "A\nA\nB\nC"
-		expect(duplicateBlock('A\nB\nC', THREE_BLOCKS, 0)).toBe('A\nA\nB\nC')
+		expect(duplicateBlock('A\n\nB\n\nC', THREE_BLOCKS, 0)).toBe('A\n\nA\n\nB\n\nC')
 	})
 
 	it('duplicates middle block', () => {
-		// Insert "B\n" before block[2] start (pos 4) → "A\nB\nB\nC"
-		expect(duplicateBlock('A\nB\nC', THREE_BLOCKS, 1)).toBe('A\nB\nB\nC')
+		expect(duplicateBlock('A\n\nB\n\nC', THREE_BLOCKS, 1)).toBe('A\n\nB\n\nB\n\nC')
 	})
 
 	it('duplicates single block', () => {
 		const blocks: Block[] = [makeBlock('0', 0, 1)]
-		expect(duplicateBlock('A', blocks, 0)).toBe('A\nA')
+		expect(duplicateBlock('A', blocks, 0)).toBe('A\n\nA')
 	})
 })

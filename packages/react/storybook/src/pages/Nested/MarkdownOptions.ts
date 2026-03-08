@@ -14,7 +14,7 @@ export interface MarkupPreset {
  */
 export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 	h1: {
-		markup: '# __nested__\n',
+		markup: '# __nested__\n\n',
 		style: {
 			display: 'block',
 			fontSize: '2em',
@@ -23,7 +23,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	h2: {
-		markup: '## __nested__\n',
+		markup: '## __nested__\n\n',
 		style: {
 			display: 'block',
 			fontSize: '1.5em',
@@ -32,7 +32,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	h3: {
-		markup: '### __nested__\n',
+		markup: '### __nested__\n\n',
 		style: {
 			display: 'block',
 			fontSize: '1.17em',
@@ -41,7 +41,7 @@ export const defaultMarkdownTheme: Record<string, MarkupPreset> = {
 		},
 	},
 	list: {
-		markup: '- __nested__\n',
+		markup: '- __nested__\n\n',
 		style: {
 			display: 'block',
 			paddingLeft: '1em',

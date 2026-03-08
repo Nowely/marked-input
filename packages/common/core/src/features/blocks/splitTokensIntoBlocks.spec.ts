@@ -39,8 +39,15 @@ describe('splitTokensIntoBlocks', () => {
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('hello world')
 	})
 
-	it('splits text by newlines into separate blocks', () => {
+	it('keeps single newlines as content within a block', () => {
 		const tokens: Token[] = [text('line one\nline two\nline three', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(1)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one\nline two\nline three')
+	})
+
+	it('splits text by double newlines (empty lines) into separate blocks', () => {
+		const tokens: Token[] = [text('line one\n\nline two\n\nline three', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one')
@@ -48,10 +55,10 @@ describe('splitTokensIntoBlocks', () => {
 		expect((blocks[2].tokens[0] as TextToken).content).toBe('line three')
 	})
 
-	it('handles block-level marks ending with newline', () => {
-		const heading = mark('# Hello\n', 0, 'Hello')
-		heading.content = '# Hello\n'
-		const tokens: Token[] = [heading, text('paragraph text', 9)]
+	it('handles block-level marks ending with double newline', () => {
+		const heading = mark('# Hello\n\n', 0, 'Hello')
+		heading.content = '# Hello\n\n'
+		const tokens: Token[] = [heading, text('paragraph text', 10)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(2)
 		expect(blocks[0].tokens[0]).toBe(heading)
@@ -65,19 +72,19 @@ describe('splitTokensIntoBlocks', () => {
 		expect(blocks[0].tokens).toHaveLength(3)
 	})
 
-	it('assigns correct positions to blocks', () => {
-		const tokens: Token[] = [text('aaa\nbbb\nccc', 0)]
+	it('assigns correct positions to blocks with double newlines', () => {
+		const tokens: Token[] = [text('aaa\n\nbbb\n\nccc', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks[0].startPos).toBe(0)
 		expect(blocks[0].endPos).toBe(3)
-		expect(blocks[1].startPos).toBe(4)
-		expect(blocks[1].endPos).toBe(7)
-		expect(blocks[2].startPos).toBe(8)
-		expect(blocks[2].endPos).toBe(11)
+		expect(blocks[1].startPos).toBe(5)
+		expect(blocks[1].endPos).toBe(8)
+		expect(blocks[2].startPos).toBe(10)
+		expect(blocks[2].endPos).toBe(13)
 	})
 
-	it('handles consecutive newlines (empty lines) as separate blocks', () => {
-		const tokens: Token[] = [text('aaa\n\nbbb', 0)]
+	it('handles consecutive double newlines as separate empty blocks', () => {
+		const tokens: Token[] = [text('aaa\n\n\n\nbbb', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('aaa')
@@ -85,8 +92,8 @@ describe('splitTokensIntoBlocks', () => {
 		expect((blocks[2].tokens[0] as TextToken).content).toBe('bbb')
 	})
 
-	it('creates empty block from trailing newline', () => {
-		const tokens: Token[] = [text('aaa\nbbb\n', 0)]
+	it('creates empty block from trailing double newline', () => {
+		const tokens: Token[] = [text('aaa\n\nbbb\n\n', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('aaa')
@@ -95,8 +102,16 @@ describe('splitTokensIntoBlocks', () => {
 		expect(blocks[2].startPos).toBe(blocks[2].endPos)
 	})
 
+	it('single trailing newline stays as content in last block', () => {
+		const tokens: Token[] = [text('aaa\n\nbbb\n', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(2)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('aaa')
+		expect((blocks[1].tokens[0] as TextToken).content).toBe('bbb\n')
+	})
+
 	it('generates unique block ids based on start position', () => {
-		const tokens: Token[] = [text('aaa\nbbb\nccc', 0)]
+		const tokens: Token[] = [text('aaa\n\nbbb\n\nccc', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		const ids = blocks.map(b => b.id)
 		expect(new Set(ids).size).toBe(ids.length)
@@ -108,19 +123,18 @@ describe('splitTokensIntoBlocks', () => {
 		expect(blocks).toHaveLength(0)
 	})
 
-	it('handles text with only newlines', () => {
-		const tokens: Token[] = [text('\n\n\n', 0)]
+	it('handles text with only double newlines', () => {
+		const tokens: Token[] = [text('\n\n\n\n', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
-		// Three newlines produce empty blocks after each (except the leading one before content)
-		expect(blocks).toHaveLength(3)
+		expect(blocks).toHaveLength(2)
 		blocks.forEach(b => {
 			expect(b.tokens).toHaveLength(0)
 			expect(b.startPos).toBe(b.endPos)
 		})
 	})
 
-	it('handles \\r\\n line endings (Windows)', () => {
-		const tokens: Token[] = [text('line one\r\nline two\r\nline three', 0)]
+	it('handles \\r\\n\\r\\n line endings (Windows double newline)', () => {
+		const tokens: Token[] = [text('line one\r\n\r\nline two\r\n\r\nline three', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one')
@@ -128,20 +142,30 @@ describe('splitTokensIntoBlocks', () => {
 		expect((blocks[2].tokens[0] as TextToken).content).toBe('line three')
 	})
 
-	it('handles mixed \\n and \\r\\n line endings', () => {
-		const tokens: Token[] = [text('line one\nline two\r\nline three', 0)]
+	it('handles single \\r\\n as content within block', () => {
+		const tokens: Token[] = [text('line one\r\nline two', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
-		expect(blocks).toHaveLength(3)
+		expect(blocks).toHaveLength(1)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one\nline two')
 	})
 
-	it('handles standalone \\r (old Mac style)', () => {
-		const tokens: Token[] = [text('line one\rline two', 0)]
+	it('handles mixed single and double line endings', () => {
+		const tokens: Token[] = [text('line one\nline two\r\n\r\nline three', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(2)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one\nline two')
+		expect((blocks[1].tokens[0] as TextToken).content).toBe('line three')
 	})
 
-	it('handles unicode and emoji content', () => {
-		const tokens: Token[] = [text('你好世界\n🎉 emoji\nØÆÅ', 0)]
+	it('handles standalone \\r as newline content', () => {
+		const tokens: Token[] = [text('line one\rline two', 0)]
+		const blocks = splitTokensIntoBlocks(tokens)
+		expect(blocks).toHaveLength(1)
+		expect((blocks[0].tokens[0] as TextToken).content).toBe('line one\nline two')
+	})
+
+	it('handles unicode and emoji content with double newlines', () => {
+		const tokens: Token[] = [text('你好世界\n\n🎉 emoji\n\nØÆÅ', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
 		expect(blocks).toHaveLength(3)
 		expect((blocks[0].tokens[0] as TextToken).content).toBe('你好世界')
@@ -151,7 +175,7 @@ describe('splitTokensIntoBlocks', () => {
 
 	it('handles very long text without performance issues', () => {
 		const lines = Array(1000).fill('line')
-		const longText = lines.join('\n')
+		const longText = lines.join('\n\n')
 		const tokens: Token[] = [text(longText, 0)]
 
 		const start = performance.now()

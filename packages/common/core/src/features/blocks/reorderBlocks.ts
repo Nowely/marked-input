@@ -1,3 +1,4 @@
+import {BLOCK_SEPARATOR} from './config'
 import type {Block} from './splitTokensIntoBlocks'
 
 interface OrderedBlock {
@@ -44,14 +45,14 @@ function reassembleBlocks(orderedBlocks: OrderedBlock[]): string {
 		const isLast = i === orderedBlocks.length - 1
 
 		let text = block.text
-		if (text.endsWith('\n')) {
+		while (text.endsWith('\n')) {
 			text = text.slice(0, -1)
 		}
 
 		result.push(text)
 
 		if (!isLast) {
-			result.push(block.separatorAfter || '\n')
+			result.push(block.separatorAfter || BLOCK_SEPARATOR)
 		}
 	}
 
@@ -78,9 +79,9 @@ function redistributeSeparators(blocks: OrderedBlock[], originalBlocks: OrderedB
 		if (Math.abs(currentOriginalIndex - nextOriginalIndex) === 1) {
 			const earlierIndex = Math.min(currentOriginalIndex, nextOriginalIndex)
 			const originalSeparator = originalBlocks[earlierIndex].separatorAfter
-			blocks[i].separatorAfter = originalSeparator.length > 0 ? originalSeparator : '\n'
+			blocks[i].separatorAfter = originalSeparator.length > 0 ? originalSeparator : BLOCK_SEPARATOR
 		} else {
-			blocks[i].separatorAfter = '\n'
+			blocks[i].separatorAfter = BLOCK_SEPARATOR
 		}
 	}
 }
