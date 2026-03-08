@@ -4,7 +4,6 @@ import {BLOCK_SEPARATOR} from '../blocks/config'
 import {splitTokensIntoBlocks} from '../blocks/splitTokensIntoBlocks'
 import {Caret} from '../caret'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import {parseWithParser} from '../parsing'
 import {selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 import {deleteMark} from '../text-manipulation'
@@ -129,14 +128,8 @@ export class KeyDownController {
 		// Insert BLOCK_SEPARATOR at the absolute position
 		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
 
-		// Apply new value through store (re-parse and notify)
-		const onChange = this.store.state.onChange.get()
-		if (!onChange) return
-
-		const newTokens = parseWithParser(this.store, newValue)
-		this.store.state.tokens.set(newTokens)
-		this.store.state.previousValue.set(newValue)
-		onChange(newValue)
+		if (!this.store.state.onChange.get()) return
+		this.store.applyValue(newValue)
 
 		// Focus the new block after re-render
 		queueMicrotask(() => {

@@ -7,7 +7,7 @@ import {
 	addBlock,
 	deleteBlock,
 	duplicateBlock,
-	parseWithParser,
+	getAlwaysShowHandle,
 	type Block,
 } from '@markput/core'
 import type {CSSProperties, ElementType} from 'react'
@@ -154,7 +154,7 @@ export const BlockContainer = memo(() => {
 	const style = store.state.style.use()
 	const readOnly = store.state.readOnly.use()
 	const block = store.state.block.use()
-	const alwaysShowHandle = typeof block === 'object' && block.alwaysShowHandle
+	const alwaysShowHandle = getAlwaysShowHandle(block)
 	const value = store.state.value.use()
 	const onChange = store.state.onChange.use()
 	const key = store.key
@@ -169,48 +169,37 @@ export const BlockContainer = memo(() => {
 	const blocksRef = useRef<Block[]>(blocks)
 	blocksRef.current = blocks
 
-	const applyNewValue = useCallback(
-		(newValue: string) => {
-			if (!onChange) return
-			const newTokens = parseWithParser(store, newValue)
-			store.state.tokens.set(newTokens)
-			store.state.previousValue.set(newValue)
-			onChange(newValue)
-		},
-		[store, onChange]
-	)
-
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
 			if (!value || !onChange) return
 			const newValue = reorderBlocks(value, blocksRef.current, sourceIndex, targetIndex)
-			if (newValue !== value) applyNewValue(newValue)
+			if (newValue !== value) store.applyValue(newValue)
 		},
-		[value, onChange, applyNewValue]
+		[store, value, onChange]
 	)
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
 			if (!value || !onChange) return
-			applyNewValue(addBlock(value, blocksRef.current, afterIndex))
+			store.applyValue(addBlock(value, blocksRef.current, afterIndex))
 		},
-		[value, onChange, applyNewValue]
+		[store, value, onChange]
 	)
 
 	const handleDelete = useCallback(
 		(index: number) => {
 			if (!value || !onChange) return
-			applyNewValue(deleteBlock(value, blocksRef.current, index))
+			store.applyValue(deleteBlock(value, blocksRef.current, index))
 		},
-		[value, onChange, applyNewValue]
+		[store, value, onChange]
 	)
 
 	const handleDuplicate = useCallback(
 		(index: number) => {
 			if (!value || !onChange) return
-			applyNewValue(duplicateBlock(value, blocksRef.current, index))
+			store.applyValue(duplicateBlock(value, blocksRef.current, index))
 		},
-		[value, onChange, applyNewValue]
+		[store, value, onChange]
 	)
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {

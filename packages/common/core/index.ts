@@ -92,6 +92,7 @@ export {
 	deleteBlock,
 	duplicateBlock,
 	BLOCK_SEPARATOR,
+	getAlwaysShowHandle,
 	type Block,
 } from './src/features/blocks'
 

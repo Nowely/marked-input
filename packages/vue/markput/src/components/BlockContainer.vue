@@ -7,7 +7,7 @@ import {
 	addBlock,
 	deleteBlock,
 	duplicateBlock,
-	parseWithParser,
+	getAlwaysShowHandle,
 } from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
@@ -24,7 +24,7 @@ const className = store.state.className.use()
 const style = store.state.style.use()
 const readOnly = store.state.readOnly.use()
 const block = store.state.block.use()
-const alwaysShowHandle = computed(() => typeof block.value === 'object' && block.value.alwaysShowHandle)
+const alwaysShowHandle = computed(() => getAlwaysShowHandle(block.value))
 const value = store.state.value.use()
 const onChange = store.state.onChange.use()
 const key = store.key
@@ -34,33 +34,25 @@ const containerProps = computed(() => resolveSlotProps('container', slotProps.va
 
 const blocks = computed(() => splitTokensIntoBlocks(tokens.value))
 
-function applyNewValue(newValue: string) {
-	if (!onChange.value) return
-	const newTokens = parseWithParser(store, newValue)
-	store.state.tokens.set(newTokens)
-	store.state.previousValue.set(newValue)
-	onChange.value(newValue)
-}
-
 function handleReorder(sourceIndex: number, targetIndex: number) {
 	if (!value.value || !onChange.value) return
 	const newValue = reorderBlocks(value.value, blocks.value, sourceIndex, targetIndex)
-	if (newValue !== value.value) applyNewValue(newValue)
+	if (newValue !== value.value) store.applyValue(newValue)
 }
 
 function handleAdd(afterIndex: number) {
 	if (!value.value || !onChange.value) return
-	applyNewValue(addBlock(value.value, blocks.value, afterIndex))
+	store.applyValue(addBlock(value.value, blocks.value, afterIndex))
 }
 
 function handleDelete(index: number) {
 	if (!value.value || !onChange.value) return
-	applyNewValue(deleteBlock(value.value, blocks.value, index))
+	store.applyValue(deleteBlock(value.value, blocks.value, index))
 }
 
 function handleDuplicate(index: number) {
 	if (!value.value || !onChange.value) return
-	applyNewValue(duplicateBlock(value.value, blocks.value, index))
+	store.applyValue(duplicateBlock(value.value, blocks.value, index))
 }
 </script>
 

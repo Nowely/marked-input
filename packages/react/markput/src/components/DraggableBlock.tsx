@@ -147,6 +147,7 @@ export const DraggableBlock = memo(
 		return (
 			<div
 				ref={blockRef}
+				data-testid="block"
 				style={blockStyle}
 				onMouseEnter={handleMouseEnter}
 				onMouseLeave={handleMouseLeave}

@@ -15,8 +15,7 @@ function getGrips(container: Element) {
 }
 
 function getBlockDiv(grip: HTMLElement) {
-	// grip → side panel div → DraggableBlock root div
-	return grip.parentElement!.parentElement! as HTMLElement
+	return grip.closest('[data-testid="block"]') as HTMLElement
 }
 
 /** Read the raw value from the <pre> rendered by the Text component */
