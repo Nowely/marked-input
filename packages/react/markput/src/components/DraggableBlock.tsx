@@ -11,7 +11,6 @@ interface DraggableBlockProps {
 	children: ReactNode
 	readOnly: boolean
 	onReorder: (sourceIndex: number, targetIndex: number) => void
-	onAdd?: (afterIndex: number) => void
 	onRequestMenu?: (index: number, rect: DOMRect) => void
 }
 
@@ -31,7 +30,7 @@ GripIcon.displayName = 'GripIcon'
 type DropPosition = 'before' | 'after' | null
 
 export const DraggableBlock = memo(
-	({blockIndex, children, readOnly, onReorder, onAdd, onRequestMenu}: DraggableBlockProps) => {
+	({blockIndex, children, readOnly, onReorder, onRequestMenu}: DraggableBlockProps) => {
 		const [isHovered, setIsHovered] = useState(false)
 		const [isDragging, setIsDragging] = useState(false)
 		const [dropPosition, setDropPosition] = useState<DropPosition>(null)
@@ -97,18 +96,10 @@ export const DraggableBlock = memo(
 			[blockIndex, onRequestMenu]
 		)
 
-		const handleAddClick = useCallback(
-			(e: MouseEvent<HTMLButtonElement>) => {
-				e.preventDefault()
-				onAdd?.(blockIndex)
-			},
-			[blockIndex, onAdd]
-		)
-
 		const blockStyle: CSSProperties = {
 			position: 'relative',
 			marginLeft: 0,
-			paddingLeft: readOnly ? 0 : 52,
+			paddingLeft: readOnly ? 0 : 32,
 			transition: 'opacity 0.2s ease',
 			opacity: isDragging ? 0.4 : 1,
 			background: 'transparent',
@@ -123,7 +114,7 @@ export const DraggableBlock = memo(
 			left: 4,
 			top: 0,
 			bottom: 0,
-			width: 44,
+			width: 24,
 			display: 'flex',
 			alignItems: 'center',
 			opacity: isHovered && !isDragging ? 1 : 0,
@@ -152,7 +143,7 @@ export const DraggableBlock = memo(
 
 		const dropIndicatorStyle: CSSProperties = {
 			position: 'absolute',
-			left: readOnly ? 0 : 52,
+			left: readOnly ? 0 : 32,
 			right: 0,
 			height: 2,
 			backgroundColor: '#3b82f6',
@@ -175,16 +166,6 @@ export const DraggableBlock = memo(
 
 				{!readOnly && (
 					<div style={sidePanelStyle}>
-						<button
-							type="button"
-							style={sideButtonStyle}
-							aria-label="Add block below"
-							onClick={handleAddClick}
-						>
-							<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-								<path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
-							</svg>
-						</button>
 						<button
 							ref={gripRef}
 							type="button"

@@ -27,7 +27,7 @@ const menuRef = ref<HTMLDivElement | null>(null)
 const blockStyle = computed<CSSProperties>(() => ({
 	position: 'relative',
 	marginLeft: '0',
-	paddingLeft: props.readOnly ? '0' : '52px',
+	paddingLeft: props.readOnly ? '0' : '32px',
 	transition: 'opacity 0.2s ease',
 	opacity: isDragging.value ? 0.4 : 1,
 	background: 'transparent',
@@ -42,7 +42,7 @@ const sidePanelStyle = computed<CSSProperties>(() => ({
 	left: '4px',
 	top: '0',
 	bottom: '0',
-	width: '44px',
+	width: '24px',
 	display: 'flex',
 	alignItems: 'center',
 	opacity: isHovered.value && !isDragging.value ? 1 : 0,
@@ -76,7 +76,7 @@ const gripStyle = computed<CSSProperties>(() => ({
 
 const dropIndicatorStyle = computed<CSSProperties>(() => ({
 	position: 'absolute',
-	left: props.readOnly ? '0' : '52px',
+	left: props.readOnly ? '0' : '32px',
 	right: '0',
 	height: '2px',
 	backgroundColor: '#3b82f6',
@@ -167,11 +167,6 @@ function onGripClick(e: MouseEvent) {
 	menuOpen.value = true
 }
 
-function onAddClick(e: MouseEvent) {
-	e.preventDefault()
-	emit('add', props.blockIndex)
-}
-
 function closeMenu() {
 	menuOpen.value = false
 }
@@ -207,6 +202,11 @@ function onMenuDelete() {
 	closeMenu()
 }
 
+function onMenuAdd() {
+	emit('add', props.blockIndex)
+	closeMenu()
+}
+
 function onMenuDuplicate() {
 	emit('duplicate', props.blockIndex)
 	closeMenu()
@@ -226,13 +226,6 @@ function onMenuDuplicate() {
 		<div v-if="dropPosition === 'before'" :style="{...dropIndicatorStyle, top: '-1px'}" />
 
 		<div v-if="!readOnly" :style="sidePanelStyle">
-			<button type="button" :style="SIDE_BUTTON_STYLE" aria-label="Add block below" @click="onAddClick">
-				<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-					<path
-						d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"
-					/>
-				</svg>
-			</button>
 			<button
 				ref="gripRef"
 				type="button"
@@ -260,6 +253,19 @@ function onMenuDuplicate() {
 
 		<Teleport to="body">
 			<div v-if="menuOpen" ref="menuRef" :style="menuStyle" @mousedown.stop>
+				<div
+					:style="menuItemStyle('add')"
+					@mouseenter="hoveredMenuItem = 'add'"
+					@mouseleave="hoveredMenuItem = null"
+					@mousedown.prevent="onMenuAdd"
+				>
+					<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+						<path
+							d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z"
+						/>
+					</svg>
+					<span>Add below</span>
+				</div>
 				<div
 					:style="menuItemStyle('duplicate')"
 					@mouseenter="hoveredMenuItem = 'duplicate'"

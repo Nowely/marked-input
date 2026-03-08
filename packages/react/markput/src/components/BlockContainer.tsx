@@ -18,12 +18,13 @@ import {Token} from './Token'
 
 interface BlockMenuProps {
 	position: MenuPosition
+	onAdd: () => void
 	onDelete: () => void
 	onDuplicate: () => void
 	onClose: () => void
 }
 
-const BlockMenu = memo(({position, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
+const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
 	const menuRef = useRef<HTMLDivElement>(null)
 	const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
@@ -82,6 +83,21 @@ const BlockMenu = memo(({position, onDelete, onDuplicate, onClose}: BlockMenuPro
 
 	return (
 		<div ref={menuRef} style={menuStyle}>
+			<div
+				style={itemStyle('add')}
+				onMouseEnter={() => setHoveredItem('add')}
+				onMouseLeave={() => setHoveredItem(null)}
+				onMouseDown={e => {
+					e.preventDefault()
+					onAdd()
+					onClose()
+				}}
+			>
+				<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+					<path d="M8 2a.75.75 0 0 1 .75.75v4.5h4.5a.75.75 0 0 1 0 1.5h-4.5v4.5a.75.75 0 0 1-1.5 0v-4.5h-4.5a.75.75 0 0 1 0-1.5h4.5v-4.5A.75.75 0 0 1 8 2Z" />
+				</svg>
+				<span>Add below</span>
+			</div>
 			<div
 				style={itemStyle('duplicate')}
 				onMouseEnter={() => setHoveredItem('duplicate')}
@@ -205,7 +221,6 @@ export const BlockContainer = memo(() => {
 						blockIndex={index}
 						readOnly={readOnly}
 						onReorder={handleReorder}
-						onAdd={handleAdd}
 						onRequestMenu={handleRequestMenu}
 					>
 						{block.tokens.map(token => (
@@ -217,6 +232,10 @@ export const BlockContainer = memo(() => {
 			{menuState && (
 				<BlockMenu
 					position={menuState.position}
+					onAdd={() => {
+						handleAdd(menuState.index)
+						closeMenu()
+					}}
 					onDelete={() => {
 						handleDelete(menuState.index)
 						closeMenu()
