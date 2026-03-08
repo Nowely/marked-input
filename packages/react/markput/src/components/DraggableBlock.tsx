@@ -107,8 +107,7 @@ export const DraggableBlock = memo(
 
 		const blockStyle: CSSProperties = {
 			position: 'relative',
-			// Extend hover zone to the left (into gutter) without indenting text
-			marginLeft: readOnly ? 0 : -52,
+			marginLeft: 0,
 			paddingLeft: readOnly ? 0 : 52,
 			transition: 'opacity 0.2s ease',
 			opacity: isDragging ? 0.4 : 1,
@@ -153,7 +152,7 @@ export const DraggableBlock = memo(
 
 		const dropIndicatorStyle: CSSProperties = {
 			position: 'absolute',
-			left: 52,
+			left: readOnly ? 0 : 52,
 			right: 0,
 			height: 2,
 			backgroundColor: '#3b82f6',

@@ -26,8 +26,7 @@ const menuRef = ref<HTMLDivElement | null>(null)
 
 const blockStyle = computed<CSSProperties>(() => ({
 	position: 'relative',
-	// Extend hover zone to the left (into gutter) without indenting text
-	marginLeft: props.readOnly ? '0' : '-52px',
+	marginLeft: '0',
 	paddingLeft: props.readOnly ? '0' : '52px',
 	transition: 'opacity 0.2s ease',
 	opacity: isDragging.value ? 0.4 : 1,
@@ -75,16 +74,16 @@ const gripStyle = computed<CSSProperties>(() => ({
 	cursor: isDragging.value ? 'grabbing' : 'grab',
 }))
 
-const DROP_INDICATOR: CSSProperties = {
+const dropIndicatorStyle = computed<CSSProperties>(() => ({
 	position: 'absolute',
-	left: '52px',
+	left: props.readOnly ? '0' : '52px',
 	right: '0',
 	height: '2px',
 	backgroundColor: '#3b82f6',
 	borderRadius: '1px',
 	pointerEvents: 'none',
 	zIndex: 10,
-}
+}))
 
 const menuStyle = computed<CSSProperties>(() => ({
 	position: 'fixed',
@@ -224,7 +223,7 @@ function onMenuDuplicate() {
 		@dragleave="onDragLeave"
 		@drop="onDrop"
 	>
-		<div v-if="dropPosition === 'before'" :style="{...DROP_INDICATOR, top: '-1px'}" />
+		<div v-if="dropPosition === 'before'" :style="{...dropIndicatorStyle, top: '-1px'}" />
 
 		<div v-if="!readOnly" :style="sidePanelStyle">
 			<button type="button" :style="SIDE_BUTTON_STYLE" aria-label="Add block below" @click="onAddClick">
@@ -257,7 +256,7 @@ function onMenuDuplicate() {
 
 		<slot><br /></slot>
 
-		<div v-if="dropPosition === 'after'" :style="{...DROP_INDICATOR, bottom: '-1px'}" />
+		<div v-if="dropPosition === 'after'" :style="{...dropIndicatorStyle, bottom: '-1px'}" />
 
 		<Teleport to="body">
 			<div v-if="menuOpen" ref="menuRef" :style="menuStyle" @mousedown.stop>

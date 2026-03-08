@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type {Token as CoreToken} from '@markput/core'
 import {
 	resolveSlot,
 	resolveSlotProps,
