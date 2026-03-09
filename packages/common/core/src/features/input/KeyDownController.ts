@@ -1,8 +1,8 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
-import {deleteBlock} from '../blocks/blockOperations'
+import {deleteBlock, mergeBlocks} from '../blocks/blockOperations'
 import {BLOCK_SEPARATOR} from '../blocks/config'
-import {splitTokensIntoBlocks} from '../blocks/splitTokensIntoBlocks'
+import {splitTokensIntoBlocks, type Block} from '../blocks/splitTokensIntoBlocks'
 import {Caret} from '../caret'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import {selectAllText} from '../selection'
@@ -27,6 +27,8 @@ export class KeyDownController {
 				shiftFocusPrev(this.store, e)
 			} else if (e.key === KEYBOARD.RIGHT) {
 				shiftFocusNext(this.store, e)
+			} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
+				this.#handleArrowUpDown(e)
 			}
 
 			this.#handleDelete(e)
@@ -62,8 +64,11 @@ export class KeyDownController {
 
 	#handleDelete(event: KeyboardEvent) {
 		const {focus} = this.store.nodes
+		const isBlockMode = !!this.store.state.block.get()
 
-		if (event.key === KEYBOARD.DELETE || event.key === KEYBOARD.BACKSPACE) {
+		// Mark/span deletion only applies in non-block mode.
+		// In block mode the focus target is a block div, not a span/mark.
+		if (!isBlockMode && (event.key === KEYBOARD.DELETE || event.key === KEYBOARD.BACKSPACE)) {
 			if (focus.isMark) {
 				if (focus.isEditable) {
 					if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
@@ -78,6 +83,7 @@ export class KeyDownController {
 				if (focus.isSpan && focus.isCaretAtBeginning && focus.prev.target) {
 					event.preventDefault()
 					deleteMark('prev', this.store)
+					return
 				}
 			}
 
@@ -85,45 +91,92 @@ export class KeyDownController {
 				if (focus.isSpan && focus.isCaretAtEnd && focus.next.target) {
 					event.preventDefault()
 					deleteMark('next', this.store)
+					return
 				}
 			}
 		}
 
-		// Notion-like: Backspace on an empty block deletes the block
-		if (event.key === KEYBOARD.BACKSPACE && this.store.state.block.get()) {
-			const container = this.store.refs.container
-			if (!container) return
+		if (!isBlockMode) return
 
-			const blockDivs = Array.from(container.children)
-			const blockIndex = blockDivs.findIndex(
-				div => div === document.activeElement || div.contains(document.activeElement as Node)
-			)
-			if (blockIndex === -1) return
+		const container = this.store.refs.container
+		if (!container) return
 
-			const tokens = this.store.state.tokens.get()
-			const blocks = splitTokensIntoBlocks(tokens)
-			if (blockIndex >= blocks.length) return
+		const blockDivs = Array.from(container.children)
+		const blockIndex = blockDivs.findIndex(
+			div => div === document.activeElement || div.contains(document.activeElement as Node)
+		)
+		if (blockIndex === -1) return
 
-			const block = blocks[blockIndex]
+		const tokens = this.store.state.tokens.get()
+		const blocks = splitTokensIntoBlocks(tokens)
+		if (blockIndex >= blocks.length) return
+
+		const block = blocks[blockIndex]
+		const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
+		if (!this.store.state.onChange.get()) return
+
+		if (event.key === KEYBOARD.BACKSPACE) {
+			const blockDiv = blockDivs[blockIndex] as HTMLElement
+			const caretAtStart = Caret.getCaretIndex(blockDiv) === 0
+
+			// Empty block: delete the block entirely
 			const blockText = block.tokens.map(t => ('content' in t ? (t as {content: string}).content : '')).join('')
-			if (blockText !== '') return
+			if (blockText === '') {
+				event.preventDefault()
+				const newValue = deleteBlock(value, blocks, blockIndex)
+				this.store.applyValue(newValue)
+				queueMicrotask(() => {
+					const newDivs = container.children
+					const targetIndex = Math.max(0, blockIndex - 1)
+					const target = newDivs[targetIndex] as HTMLElement | undefined
+					if (target) {
+						target.focus()
+						Caret.setCaretToEnd(target)
+					}
+				})
+				return
+			}
 
-			event.preventDefault()
-			const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
-			if (!this.store.state.onChange.get()) return
+			// Non-empty block at position 0: merge with previous block
+			if (caretAtStart && blockIndex > 0) {
+				event.preventDefault()
+				const joinPos = blocks[blockIndex - 1].endPos
+				const newValue = mergeBlocks(value, blocks, blockIndex)
+				this.store.applyValue(newValue)
+				queueMicrotask(() => {
+					const newDivs = container.children
+					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+					if (target) {
+						target.focus()
+						const charOffset = joinPos - blocks[blockIndex - 1].startPos
+						Caret.trySetIndex(target, charOffset)
+					}
+				})
+				return
+			}
+		}
 
-			const newValue = deleteBlock(value, blocks, blockIndex)
-			this.store.applyValue(newValue)
+		if (event.key === KEYBOARD.DELETE) {
+			const blockDiv = blockDivs[blockIndex] as HTMLElement
+			const caretAtEnd = Caret.getCaretIndex(blockDiv) === blockDiv.textContent?.length
 
-			queueMicrotask(() => {
-				const newDivs = container.children
-				const targetIndex = Math.max(0, blockIndex - 1)
-				const target = newDivs[targetIndex] as HTMLElement | undefined
-				if (target) {
-					target.focus()
-					Caret.trySetIndex(target, Infinity)
-				}
-			})
+			// Caret at end of non-last block: merge next block into current
+			if (caretAtEnd && blockIndex < blocks.length - 1) {
+				event.preventDefault()
+				const joinPos = block.endPos
+				const newValue = mergeBlocks(value, blocks, blockIndex + 1)
+				this.store.applyValue(newValue)
+				queueMicrotask(() => {
+					const newDivs = container.children
+					const target = newDivs[blockIndex] as HTMLElement | undefined
+					if (target) {
+						target.focus()
+						const charOffset = joinPos - block.startPos
+						Caret.trySetIndex(target, charOffset)
+					}
+				})
+				return
+			}
 		}
 	}
 
@@ -151,19 +204,18 @@ export class KeyDownController {
 		}
 		if (blockIndex === -1) return
 
-		// Get caret offset within the active element
-		const caretOffset = Caret.getCaretIndex(activeElement)
-
-		// Compute absolute position in the full value string
 		const tokens = this.store.state.tokens.get()
 		const blocks = splitTokensIntoBlocks(tokens)
 		if (blockIndex >= blocks.length) return
 
 		const block = blocks[blockIndex]
+		const blockDiv = blockDivs[blockIndex] as HTMLElement
 		const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
-		const absolutePos = block.startPos + caretOffset
 
-		// Insert BLOCK_SEPARATOR at the absolute position
+		// Compute raw value offset at caret position using token positions
+		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
+
+		// Insert BLOCK_SEPARATOR at the raw position
 		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
 
 		if (!this.store.state.onChange.get()) return
@@ -180,6 +232,89 @@ export class KeyDownController {
 			}
 		})
 	}
+
+	#handleArrowUpDown(event: KeyboardEvent) {
+		if (!this.store.state.block.get()) return
+
+		const container = this.store.refs.container
+		if (!container) return
+
+		const activeElement = document.activeElement as HTMLElement | null
+		if (!activeElement || !container.contains(activeElement)) return
+
+		const blockDivs = Array.from(container.children)
+		const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
+		if (blockIndex === -1) return
+
+		const blockDiv = blockDivs[blockIndex] as HTMLElement
+
+		if (event.key === KEYBOARD.UP) {
+			if (!Caret.isCaretOnFirstLine(blockDiv)) return
+			if (blockIndex === 0) return
+
+			event.preventDefault()
+			const caretRect = Caret.getCaretRect()
+			const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
+			const prevBlockDiv = blockDivs[blockIndex - 1] as HTMLElement
+			prevBlockDiv.focus()
+			const prevRect = prevBlockDiv.getBoundingClientRect()
+			Caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
+		} else if (event.key === KEYBOARD.DOWN) {
+			if (!Caret.isCaretOnLastLine(blockDiv)) return
+			if (blockIndex >= blockDivs.length - 1) return
+
+			event.preventDefault()
+			const caretRect = Caret.getCaretRect()
+			const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
+			const nextBlockDiv = blockDivs[blockIndex + 1] as HTMLElement
+			nextBlockDiv.focus()
+			const nextRect = nextBlockDiv.getBoundingClientRect()
+			Caret.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
+		}
+	}
+}
+
+/**
+ * Computes the raw value offset (index into the full value string) corresponding
+ * to the current caret position within `blockDiv`.
+ *
+ * For text tokens, the visual character offset equals the raw offset.
+ * For mark tokens, the caret is treated as being at the mark's end (after the mark).
+ */
+function getCaretRawPosInBlock(blockDiv: HTMLElement, block: Block): number {
+	const selection = window.getSelection()
+	if (!selection?.rangeCount) return block.endPos
+
+	const {focusNode} = selection
+	if (!focusNode) return block.endPos
+
+	// Walk up from focusNode to find the direct child of blockDiv that contains it
+	let node: Node | null = focusNode.nodeType === Node.ELEMENT_NODE ? focusNode : focusNode.parentElement
+	while (node && node.parentElement !== blockDiv) {
+		node = node.parentElement
+	}
+
+	if (!node) return block.endPos
+
+	// Find the child index in blockDiv.children (element children only)
+	const childIndex = Array.from(blockDiv.children).indexOf(node as Element)
+	if (childIndex < 0) return block.endPos
+
+	// Token index: child 0 is the drag handle, tokens start at child 1
+	const tokenIndex = childIndex - 1
+	if (tokenIndex < 0) return block.startPos // caret in drag handle
+	if (tokenIndex >= block.tokens.length) return block.endPos
+
+	const token = block.tokens[tokenIndex]
+
+	if (token.type === 'text') {
+		// Visual offset within this span = raw offset within this text token
+		const visualOffset = Caret.getCaretIndex(node as HTMLElement)
+		return token.position.start + visualOffset
+	}
+
+	// For mark tokens: treat the caret as being at the end of the mark
+	return token.position.end
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {

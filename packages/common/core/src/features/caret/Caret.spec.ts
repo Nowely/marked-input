@@ -7,12 +7,25 @@ const mockGetSelection = vi.fn()
 const mockGetBoundingClientRect = vi.fn()
 const mockGetRangeAt = vi.fn()
 
+const mockAddRange = vi.fn()
+const mockRemoveAllRanges = vi.fn()
+const mockSetStart = vi.fn()
+const mockCollapse = vi.fn()
+const mockCreatedRange = {
+	setStart: mockSetStart,
+	collapse: mockCollapse,
+}
+const mockCreateRange = vi.fn(() => mockCreatedRange)
+const mockCreateTreeWalker = vi.fn()
+
 const mockSelection = {
 	isCollapsed: true,
 	anchorOffset: 5,
 	anchorNode: {textContent: 'Hello world'} as {textContent: string} | null,
 	getRangeAt: mockGetRangeAt,
 	setPosition: vi.fn(),
+	removeAllRanges: mockRemoveAllRanges,
+	addRange: mockAddRange,
 	rangeCount: 1,
 }
 
@@ -38,11 +51,17 @@ Object.defineProperty(global, 'window', {
 
 Object.defineProperty(global, 'document', {
 	value: {
-		createElement: vi.fn(tag => ({
-			tagName: tag.toUpperCase(),
-			textContent: '',
-			firstChild: {nodeType: 3, textContent: ''},
-		})),
+		createElement: vi.fn(tag => {
+			const textNode = {nodeType: 3, textContent: '', length: 0}
+			return {
+				tagName: tag.toUpperCase(),
+				textContent: '',
+				firstChild: textNode,
+				_textNode: textNode,
+			}
+		}),
+		createRange: mockCreateRange,
+		createTreeWalker: mockCreateTreeWalker,
 	},
 	writable: true,
 })
@@ -197,19 +216,28 @@ describe(`Utility: ${Caret.name}`, () => {
 	})
 
 	describe('setIndex', () => {
-		it('should set caret position in element', () => {
+		it('should set caret position in element via TreeWalker', () => {
 			const element = document.createElement('div')
-			element.textContent = 'Hello world'
-
-			mockSelection.rangeCount = 1
-			mockSelection.anchorNode = {textContent: 'test'}
+			const textNode = {nodeType: 3, textContent: 'Hello world', length: 11}
+			let visited = false
+			mockCreateTreeWalker.mockReturnValue({
+				nextNode: () => {
+					if (!visited) {
+						visited = true
+						return textNode
+					}
+					return null
+				},
+			})
 			mockGetSelection.mockReturnValue(mockSelection)
-			mockGetRangeAt.mockReturnValue(mockRange)
 
 			Caret.setIndex(element, 5)
 
-			expect(mockRange.setStart).toHaveBeenCalledWith(element.firstChild, 5)
-			expect(mockRange.setEnd).toHaveBeenCalledWith(element.firstChild, 5)
+			expect(mockCreateTreeWalker).toHaveBeenCalledWith(element, 4)
+			expect(mockSetStart).toHaveBeenCalledWith(textNode, 5)
+			expect(mockCollapse).toHaveBeenCalledWith(true)
+			expect(mockRemoveAllRanges).toHaveBeenCalled()
+			expect(mockAddRange).toHaveBeenCalledWith(mockCreatedRange)
 		})
 
 		it('should do nothing when no selection', () => {
@@ -219,20 +247,19 @@ describe(`Utility: ${Caret.name}`, () => {
 
 			Caret.setIndex(element, 5)
 
-			expect(mockRange.setStart).not.toHaveBeenCalled()
-			expect(mockRange.setEnd).not.toHaveBeenCalled()
+			expect(mockSetStart).not.toHaveBeenCalled()
+			expect(mockAddRange).not.toHaveBeenCalled()
 		})
 
-		it('should do nothing when no range count', () => {
+		it('should do nothing when element has no text nodes', () => {
 			const element = document.createElement('div')
-
-			mockSelection.rangeCount = 0
 			mockGetSelection.mockReturnValue(mockSelection)
+			mockCreateTreeWalker.mockReturnValue({nextNode: () => null})
 
 			Caret.setIndex(element, 5)
 
-			expect(mockRange.setStart).not.toHaveBeenCalled()
-			expect(mockRange.setEnd).not.toHaveBeenCalled()
+			expect(mockSetStart).not.toHaveBeenCalled()
+			expect(mockAddRange).not.toHaveBeenCalled()
 		})
 	})
 
@@ -288,15 +315,13 @@ describe(`Utility: ${Caret.name}`, () => {
 	})
 
 	describe('setCaretToEnd', () => {
-		it('should set position to end of element', () => {
+		it('should set position to end of element by calling setIndex with Infinity', () => {
 			const element = document.createElement('div')
-			element.textContent = 'Hello'
-
-			mockGetSelection.mockReturnValue(mockSelection)
+			const setIndexSpy = vi.spyOn(Caret, 'setIndex')
 
 			Caret.setCaretToEnd(element)
 
-			expect(mockSelection.setPosition).toHaveBeenCalledWith(element, 1)
+			expect(setIndexSpy).toHaveBeenCalledWith(element, Infinity)
 		})
 
 		it('should do nothing when element is null', () => {
