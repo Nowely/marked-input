@@ -615,6 +615,41 @@ describe('Feature: block keyboard navigation', () => {
 		})
 	})
 
+	describe('typing in blocks (BUG3)', () => {
+		it('should update raw value when typing a character at end of block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('!')
+
+			expect(getRawValue(container)).toContain('First block of plain text!')
+		})
+
+		it('should update raw value when deleting a character with Backspace mid-block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('{Backspace}')
+
+			// "First block of plain text" → backspace → "First block of plain tex"
+			expect(getRawValue(container)).toContain('First block of plain tex')
+			expect(getRawValue(container)).not.toContain('First block of plain text\n\n')
+		})
+
+		it('should not wipe all blocks when Ctrl+A in focused block then typing (BUG1)', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			// Focus block 1 and Ctrl+A — bug sets selecting='all' and replaces all content on next keystroke
+			getEditableInBlock(blocks[1]).focus()
+			await userEvent.keyboard('{Control>}a{/Control}')
+			await userEvent.keyboard('X')
+
+			// With bug: raw value becomes 'X' (all wiped) and first block content gone
+			// After fix: first block unchanged, only block 1 affected
+			expect(getRawValue(container)).not.toBe('X')
+			expect(getRawValue(container)).toContain('First block of plain text')
+		})
+	})
+
 	describe('Enter mid-block split', () => {
 		it('should increase block count by 1', async () => {
 			const {container} = await render(<PlainTextBlocks />)

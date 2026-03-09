@@ -332,9 +332,12 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	if (selecting === 'all') store.state.selecting.set(undefined)
 
 	// In block mode the focus target is a block div, not a text span.
-	// applySpanInput is not designed for block divs; keyboard operations
-	// (Enter, Backspace, Delete) are handled by KeyDownController instead.
-	if (store.state.block.get()) return
+	// Block-level keys (Enter, Backspace, Delete) are handled by KeyDownController.
+	// Text insertions and in-block deletions need special handling to update state.
+	if (store.state.block.get()) {
+		handleBlockBeforeInput(store, event)
+		return
+	}
 
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
@@ -450,4 +453,105 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 			firstChild.focus()
 		}
 	})
+}
+
+/**
+ * Handles `beforeinput` events when the editor is in block mode.
+ * Intercepts text insertion and in-block deletion to update the raw value via
+ * `store.applyValue`, since `applySpanInput` is designed for span-level editing only.
+ * Block-level operations (Enter, Backspace/Delete at boundaries) are handled by
+ * `KeyDownController` via `keydown` events.
+ */
+function handleBlockBeforeInput(store: Store, event: InputEvent): void {
+	const container = store.refs.container
+	if (!container) return
+
+	const activeElement = document.activeElement as HTMLElement | null
+	if (!activeElement || !container.contains(activeElement)) return
+
+	const blockDivs = Array.from(container.children) as HTMLElement[]
+	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
+	if (blockIndex === -1) return
+
+	const blockDiv = blockDivs[blockIndex]
+	const tokens = store.state.tokens.get()
+	const blocks = splitTokensIntoBlocks(tokens)
+	if (blockIndex >= blocks.length) return
+
+	const block = blocks[blockIndex]
+	const value = store.state.value.get() ?? store.state.previousValue.get() ?? ''
+
+	switch (event.inputType) {
+		case 'insertText': {
+			event.preventDefault()
+			const data = event.data ?? ''
+			const ranges = event.getTargetRanges()
+			if (!ranges.length) return
+			const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
+			const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+			store.applyValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
+			const newCaretOffset = rawFrom - block.startPos + data.length
+			queueMicrotask(() => {
+				const target = container.children[blockIndex] as HTMLElement | undefined
+				if (target) {
+					target.focus()
+					Caret.trySetIndex(target, newCaretOffset)
+				}
+			})
+			break
+		}
+		case 'deleteContentBackward':
+		case 'deleteContentForward':
+		case 'deleteWordBackward':
+		case 'deleteWordForward':
+		case 'deleteSoftLineBackward':
+		case 'deleteSoftLineForward': {
+			const ranges = event.getTargetRanges()
+			if (!ranges.length) return
+			const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
+			const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+			if (rawFrom === rawTo) return
+			event.preventDefault()
+			store.applyValue(value.slice(0, rawFrom) + value.slice(rawTo))
+			const newCaretOffset = rawFrom - block.startPos
+			queueMicrotask(() => {
+				const target = container.children[blockIndex] as HTMLElement | undefined
+				if (target) {
+					target.focus()
+					Caret.trySetIndex(target, newCaretOffset)
+				}
+			})
+			break
+		}
+	}
+}
+
+/**
+ * Maps a DOM (node, offset) position to an absolute raw-value offset.
+ * Walks up from `node` to find the direct child of `blockDiv`, then maps
+ * to the corresponding token's raw position.
+ */
+function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: Block): number {
+	let child: Node | null = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
+	while (child && child.parentElement !== blockDiv) {
+		child = child.parentElement
+	}
+	if (!child) return block.endPos
+
+	const childIndex = Array.from(blockDiv.children).indexOf(child as Element)
+	if (childIndex < 0) return block.endPos
+
+	// child[0] is the side panel div (drag handle); tokens start at child[1]
+	const tokenIndex = childIndex - 1
+	if (tokenIndex < 0) return block.startPos
+	if (tokenIndex >= block.tokens.length) return block.endPos
+
+	const token = block.tokens[tokenIndex]
+	if (token.type === 'text') {
+		return token.position.start + Math.min(offset, token.content.length)
+	}
+	// For mark tokens: offset 0 means before the mark, any other offset means after
+	return offset === 0 ? token.position.start : token.position.end
 }
