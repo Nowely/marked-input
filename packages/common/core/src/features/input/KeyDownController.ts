@@ -331,6 +331,11 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.state.selecting.set(undefined)
 
+	// In block mode the focus target is a block div, not a text span.
+	// applySpanInput is not designed for block divs; keyboard operations
+	// (Enter, Backspace, Delete) are handled by KeyDownController instead.
+	if (store.state.block.get()) return
+
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
 

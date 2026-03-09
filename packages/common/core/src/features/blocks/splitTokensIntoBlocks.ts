@@ -30,7 +30,7 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 
 	const flushBlock = (endPos: number, canCreateEmpty = false) => {
 		const isEmpty = currentTokens.length === 0
-		if (blockStart === -1 && isEmpty) return
+		if (blockStart === -1 && isEmpty && !canCreateEmpty) return
 		if (isEmpty && !canCreateEmpty) return
 		const startPos = blockStart === -1 ? endPos : blockStart
 		blocks.push({

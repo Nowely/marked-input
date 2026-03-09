@@ -19,6 +19,8 @@ import {Token} from './Token'
 
 import styles from '@markput/core/styles.module.css'
 
+const EMPTY_BLOCK: Block = {id: 'block-empty', tokens: [], startPos: 0, endPos: 0}
+
 interface BlockMenuProps {
 	position: MenuPosition
 	onAdd: () => void
@@ -165,7 +167,10 @@ export const BlockContainer = memo(() => {
 	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
-	const blocks = useMemo(() => splitTokensIntoBlocks(tokens), [tokens])
+	const blocks = useMemo(() => {
+		const result = splitTokensIntoBlocks(tokens)
+		return result.length > 0 ? result : [EMPTY_BLOCK]
+	}, [tokens])
 	const blocksRef = useRef<Block[]>(blocks)
 	blocksRef.current = blocks
 

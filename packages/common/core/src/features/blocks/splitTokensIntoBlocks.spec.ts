@@ -126,7 +126,8 @@ describe('splitTokensIntoBlocks', () => {
 	it('handles text with only double newlines', () => {
 		const tokens: Token[] = [text('\n\n\n\n', 0)]
 		const blocks = splitTokensIntoBlocks(tokens)
-		expect(blocks).toHaveLength(2)
+		// Two separators produce three empty blocks (leading + middle + trailing).
+		expect(blocks).toHaveLength(3)
 		blocks.forEach(b => {
 			expect(b.tokens).toHaveLength(0)
 			expect(b.startPos).toBe(b.endPos)

@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {focusAtEnd} from '../../shared/lib/focus'
+import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as BlockStories from './Block.stories'
 
 const {BasicDraggable, MarkdownDocument, PlainTextBlocks, ReadOnlyDraggable} = composeStories(BlockStories)
@@ -19,7 +19,11 @@ function getBlockDiv(grip: HTMLElement) {
 }
 
 function getEditableInBlock(blockDiv: HTMLElement) {
-	return blockDiv.querySelector('[contenteditable="true"]') as HTMLElement
+	return (blockDiv.querySelector('[contenteditable="true"]') ?? blockDiv) as HTMLElement
+}
+
+function getBlocks(container: Element) {
+	return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
 /** Read the raw value from the <pre> rendered by the Text component */
@@ -370,8 +374,7 @@ describe('Feature: blocks', () => {
 	it('should split block at caret when pressing Enter at the beginning', async () => {
 		const {container} = await render(<PlainTextBlocks />)
 		const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
-		await userEvent.click(editable)
-		await userEvent.keyboard('{Home}')
+		await focusAtStart(editable)
 		await userEvent.keyboard('{Enter}')
 
 		expect(getGrips(container)).toHaveLength(6)
@@ -407,5 +410,263 @@ describe('Feature: blocks', () => {
 		expect(getGrips(container)).toHaveLength(5)
 
 		expect(getRawValue(container)).toBe(original)
+	})
+})
+
+describe('Feature: block keyboard navigation', () => {
+	describe('ArrowLeft cross-block', () => {
+		it('should move focus to previous block when at start of block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtStart(getEditableInBlock(blocks[1]))
+			await userEvent.keyboard('{ArrowLeft}')
+
+			expect(document.activeElement).toBe(blocks[0])
+		})
+
+		it('should not cross to previous block when caret is mid-block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtEnd(getEditableInBlock(blocks[1]))
+			await userEvent.keyboard('{ArrowLeft}')
+
+			// Still in block 1
+			expect(document.activeElement).toBe(blocks[1])
+		})
+
+		it('should not cross block boundary from the first block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtStart(getEditableInBlock(blocks[0]))
+			await userEvent.keyboard('{ArrowLeft}')
+
+			expect(document.activeElement).toBe(blocks[0])
+		})
+	})
+
+	describe('ArrowRight cross-block', () => {
+		it('should move focus to next block when at end of block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtEnd(getEditableInBlock(blocks[0]))
+			await userEvent.keyboard('{ArrowRight}')
+
+			expect(document.activeElement).toBe(blocks[1])
+		})
+
+		it('should not cross to next block when caret is mid-block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtStart(getEditableInBlock(blocks[0]))
+			await userEvent.keyboard('{ArrowRight}')
+
+			// Still in block 0
+			expect(document.activeElement).toBe(blocks[0])
+		})
+
+		it('should not cross block boundary from the last block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			const last = blocks[blocks.length - 1]
+
+			await focusAtEnd(getEditableInBlock(last))
+			await userEvent.keyboard('{ArrowRight}')
+
+			expect(document.activeElement).toBe(last)
+		})
+	})
+
+	describe('ArrowDown cross-block', () => {
+		it('should move focus to next block when on last line of block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtEnd(getEditableInBlock(blocks[0]))
+			await userEvent.keyboard('{ArrowDown}')
+
+			expect(document.activeElement).toBe(blocks[1])
+		})
+
+		it('should not cross block boundary from the last block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			const last = blocks[blocks.length - 1]
+
+			await focusAtEnd(getEditableInBlock(last))
+			await userEvent.keyboard('{ArrowDown}')
+
+			expect(document.activeElement).toBe(last)
+		})
+	})
+
+	describe('ArrowUp cross-block', () => {
+		it('should move focus to previous block when on first line of block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtStart(getEditableInBlock(blocks[1]))
+			await userEvent.keyboard('{ArrowUp}')
+
+			expect(document.activeElement).toBe(blocks[0])
+		})
+
+		it('should not cross block boundary from the first block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+
+			await focusAtStart(getEditableInBlock(blocks[0]))
+			await userEvent.keyboard('{ArrowUp}')
+
+			expect(document.activeElement).toBe(blocks[0])
+		})
+	})
+
+	describe('Backspace merge blocks', () => {
+		it('should merge with previous block when Backspace pressed at start of non-empty block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const before = getBlocks(container).length
+
+			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+			await userEvent.keyboard('{Backspace}')
+
+			expect(getBlocks(container)).toHaveLength(before - 1)
+		})
+
+		it('should preserve content of both merged blocks', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+			await userEvent.keyboard('{Backspace}')
+
+			const raw = getRawValue(container)
+			expect(raw).toContain('First block of plain text')
+			expect(raw).toContain('Second block of plain text')
+		})
+
+		it('should keep focus in the previous block after merge', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			const prevBlock = blocks[0]
+
+			await focusAtStart(getEditableInBlock(blocks[1]))
+			await userEvent.keyboard('{Backspace}')
+
+			expect(document.activeElement).toBe(prevBlock)
+		})
+
+		it('should only delete one block at a time on Backspace', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			expect(getBlocks(container)).toHaveLength(5)
+
+			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+			await userEvent.keyboard('{Backspace}')
+
+			// Must be exactly 4 — not 3 (double-delete regression guard)
+			expect(getBlocks(container)).toHaveLength(4)
+		})
+	})
+
+	describe('Delete merge blocks', () => {
+		it('should merge with next block when Delete pressed at end of non-last block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const before = getBlocks(container).length
+
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('{Delete}')
+
+			expect(getBlocks(container)).toHaveLength(before - 1)
+		})
+
+		it('should preserve content of both merged blocks', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('{Delete}')
+
+			const raw = getRawValue(container)
+			expect(raw).toContain('First block of plain text')
+			expect(raw).toContain('Second block of plain text')
+		})
+
+		it('should keep focus in the current block after Delete merge', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const currentBlock = getBlocks(container)[0]
+
+			await focusAtEnd(getEditableInBlock(currentBlock))
+			await userEvent.keyboard('{Delete}')
+
+			expect(document.activeElement).toBe(currentBlock)
+		})
+
+		it('should not merge when Delete pressed at end of last block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			const last = blocks[blocks.length - 1]
+
+			await focusAtEnd(getEditableInBlock(last))
+			await userEvent.keyboard('{Delete}')
+
+			expect(getBlocks(container)).toHaveLength(5)
+		})
+	})
+
+	describe('Enter mid-block split', () => {
+		it('should increase block count by 1', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			const editable = getEditableInBlock(getBlocks(container)[0])
+			await userEvent.click(editable)
+			await userEvent.keyboard('{Home}')
+			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
+			await userEvent.keyboard('{Enter}')
+
+			expect(getBlocks(container)).toHaveLength(6)
+		})
+
+		it('should put text before caret in current block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			const editable = getEditableInBlock(getBlocks(container)[0])
+			await userEvent.click(editable)
+			await userEvent.keyboard('{Home}')
+			// Position after "First"
+			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
+			await userEvent.keyboard('{Enter}')
+
+			const raw = getRawValue(container)
+			const blockTexts = raw.split('\n\n')
+			expect(blockTexts[0]).toBe('First')
+		})
+
+		it('should put text after caret in new block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+
+			const editable = getEditableInBlock(getBlocks(container)[0])
+			await userEvent.click(editable)
+			await userEvent.keyboard('{Home}')
+			// Position after "First"
+			await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}')
+			await userEvent.keyboard('{Enter}')
+
+			const raw = getRawValue(container)
+			const blockTexts = raw.split('\n\n')
+			expect(blockTexts[1]).toBe(' block of plain text')
+		})
+
+		it('should not expose raw markdown syntax in block[0] after Enter with marks', async () => {
+			const {container} = await render(<MarkdownDocument />)
+			const blocks = getBlocks(container)
+			await focusAtEnd(blocks[0])
+			await userEvent.keyboard('{Enter}')
+
+			const raw = getRawValue(container)
+			// The separator after the mark should still be intact
+			expect(raw).toContain('**Marked Input**\n\n')
+		})
 	})
 })
