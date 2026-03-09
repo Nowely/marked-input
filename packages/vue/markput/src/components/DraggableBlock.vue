@@ -221,6 +221,7 @@ function onMenuDuplicate() {
 <template>
 	<div
 		ref="blockRef"
+		data-testid="block"
 		:style="blockStyle"
 		@mouseenter="isHovered = true"
 		@mouseleave="isHovered = false"

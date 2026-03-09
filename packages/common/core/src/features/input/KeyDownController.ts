@@ -576,6 +576,18 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
  * content, recursively resolves the position within the mark's children.
  */
 function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: Block): number {
+	// When the browser represents the caret as (blockDiv, childNodeOffset) — common
+	// at element boundaries (e.g. after a mark span in Vue where comment nodes
+	// shift childNode indices) — fall back to the current selection which gives
+	// a more precise (textNode, offset) position.
+	if (node === blockDiv) {
+		const sel = window.getSelection()
+		if (sel?.focusNode && sel.focusNode !== blockDiv) {
+			return getDomRawPos(sel.focusNode, sel.focusOffset, blockDiv, block)
+		}
+		return block.endPos
+	}
+
 	let child: Node | null = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
 	while (child && child.parentElement !== blockDiv) {
 		child = child.parentElement
@@ -611,12 +623,18 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
  */
 function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
 	if (!markToken.children || markToken.children.length === 0) {
-		// Leaf mark (no nested parsed children): use nested content boundaries
 		if (offset === 0) return markToken.position.start
 		const nestedLen = markToken.nested?.content.length ?? markToken.value.length
-		// Cursor at or past end of nested content → after closing delimiter
-		if (nestedLen > 0 && offset >= nestedLen) return markToken.position.end
-		// Cursor in the middle of nested content
+		if (nestedLen > 0 && offset >= nestedLen) {
+			// When the mark's raw content ends with a block separator, the cursor
+			// at the visual end should map to nested.end (before the separator),
+			// not position.end (after it). Otherwise use position.end to place
+			// the cursor after the closing delimiter (e.g. ** in bold).
+			if (markToken.content.endsWith('\n\n') && markToken.nested) {
+				return markToken.nested.end
+			}
+			return markToken.position.end
+		}
 		return (markToken.nested?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
 	}
 

@@ -82,23 +82,30 @@ export const MarkdownDocument: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
-				const value = ref(`# Project Roadmap
+				const value = ref(`# Welcome to **Marked Input**
 
-## Phase 1: Foundation
+This is a *powerful* library for parsing **rich text** with *markdown* formatting.
+You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
 
-Build the core parsing engine with support for nested markup patterns.
+## Features
 
-## Phase 2: Rich Text
+- **Bold text** with **strong emphasis**
+- *Italic text* and *emphasis* support
+- \`Code snippets\` and \`code blocks\`
+- ~~Strikethrough~~ for deleted content
+- Links like [GitHub](https://github.com)
 
-Add markdown-style formatting: **bold**, *italic*, \`code\`.
+## Example
 
-## Phase 3: Collaboration
+Here's how to use it:
 
-Implement real-time collaboration with conflict resolution.
+\`\`\`javascript
+const parser = new ParserV2(['**__value__**', '*__value__*'])
+const result = parser.parse('Hello **world**!')
+\`\`\`
 
-## Phase 4: Extensions
-
-Create a plugin system for custom markup patterns.`)
+Visit our [documentation](https://docs.example.com) for more details.
+~~This feature is deprecated~~ and will be removed in v3.0.`)
 				return () =>
 					h('div', {style: containerStyle}, [
 						h(MarkedInput, {
@@ -112,6 +119,36 @@ Create a plugin system for custom markup patterns.`)
 							},
 						}),
 						h(Text, {label: 'Raw value:', value: value.value}),
+					])
+			},
+		}),
+}
+
+export const ReadOnlyDraggable: Story = {
+	render: () =>
+		defineComponent({
+			setup() {
+				const value = `# Read-Only Mode
+
+Drag handles are hidden in read-only mode.
+
+## Section A
+
+Content cannot be reordered.
+
+## Section B
+
+This is static content.`
+				return () =>
+					h('div', {style: containerStyle}, [
+						h(MarkedInput, {
+							Mark: MarkdownMark,
+							options: markdownOptions,
+							value,
+							readOnly: true,
+							block: true,
+							style: editorStyle,
+						}),
 					])
 			},
 		}),
