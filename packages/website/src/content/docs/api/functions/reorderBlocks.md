@@ -13,7 +13,7 @@ function reorderBlocks(
    targetIndex): string;
 ```
 
-Defined in: [common/core/src/features/blocks/reorderBlocks.ts:9](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/reorderBlocks.ts#L9)
+Defined in: [common/core/src/features/blocks/reorderBlocks.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/reorderBlocks.ts#L10)
 
 ## Parameters
 

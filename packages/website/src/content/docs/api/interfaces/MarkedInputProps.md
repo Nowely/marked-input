@@ -33,12 +33,17 @@ Props for MarkedInput component.
 ### block?
 
 ```ts
-optional block: boolean;
+optional block: 
+  | boolean
+  | {
+  alwaysShowHandle: boolean;
+};
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:74](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L74)
+Defined in: [react/markput/src/components/MarkedInput.tsx:76](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L76)
 
-Enable Notion-like draggable blocks with drag handles for reordering
+Enable Notion-like draggable blocks with drag handles for reordering.
+Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
 
 ***
 

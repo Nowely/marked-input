@@ -188,18 +188,18 @@ function convertTwoValuePattern(
 	const filteredGapTypes = gapTypes.filter(type => type !== GAP_TYPE.Value)
 
 	return {segments: newSegments, gapTypes: filteredGapTypes}
+}
 
-	function createDynamicDefinition(
-		beforeSegment: string,
-		afterSegment: string,
-		nextSegment?: string
-	): [string, string, string] {
-		if (!nextSegment) return [beforeSegment, afterSegment, '']
+function createDynamicDefinition(
+	beforeSegment: string,
+	afterSegment: string,
+	nextSegment?: string
+): [string, string, string] {
+	if (!nextSegment) return [beforeSegment, afterSegment, '']
 
-		const firstChar = nextSegment.charAt(0)
-		const exclusion =
-			firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment) ? firstChar : ''
+	const firstChar = nextSegment.charAt(0)
+	const exclusion =
+		firstChar && !afterSegment.includes(firstChar) && !nextSegment.startsWith(beforeSegment) ? firstChar : ''
 
-		return [beforeSegment, afterSegment, exclusion]
-	}
+	return [beforeSegment, afterSegment, exclusion]
 }

@@ -28,6 +28,77 @@ export class Caret {
 		return {left: 0, top: 0}
 	}
 
+	/** Returns the raw DOMRect of the current caret position, or null if unavailable. */
+	static getCaretRect(): DOMRect | null {
+		try {
+			const range = window.getSelection()?.getRangeAt(0)
+			return range?.getBoundingClientRect() ?? null
+		} catch {
+			return null
+		}
+	}
+
+	/**
+	 * Returns true if the caret is on the first visual line of the element.
+	 */
+	static isCaretOnFirstLine(element: HTMLElement): boolean {
+		const caretRect = this.getCaretRect()
+		if (!caretRect || caretRect.height === 0) return true
+		const elRect = element.getBoundingClientRect()
+		return caretRect.top < elRect.top + caretRect.height + 2
+	}
+
+	/**
+	 * Returns true if the caret is on the last visual line of the element.
+	 */
+	static isCaretOnLastLine(element: HTMLElement): boolean {
+		const caretRect = this.getCaretRect()
+		if (!caretRect || caretRect.height === 0) return true
+		const elRect = element.getBoundingClientRect()
+		return caretRect.bottom > elRect.bottom - caretRect.height - 2
+	}
+
+	/**
+	 * Positions the caret in `element` at the character closest to the given x coordinate.
+	 * `y` defaults to the vertical center of the element.
+	 */
+	static setAtX(element: HTMLElement, x: number, y?: number): void {
+		const elRect = element.getBoundingClientRect()
+		const targetY = y ?? elRect.top + elRect.height / 2
+
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const caretPos =
+			(document as any).caretRangeFromPoint?.(x, targetY) ??
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			(document as any).caretPositionFromPoint?.(x, targetY)
+
+		if (!caretPos) return
+
+		const sel = window.getSelection()
+		if (!sel) return
+
+		let domRange: Range
+		if (caretPos instanceof Range) {
+			domRange = caretPos
+		} else if (caretPos && typeof caretPos === 'object' && 'offsetNode' in caretPos) {
+			// Firefox CaretPosition
+			domRange = document.createRange()
+			domRange.setStart(caretPos.offsetNode as Node, caretPos.offset as number)
+			domRange.collapse(true)
+		} else {
+			return
+		}
+
+		if (!element.contains(domRange.startContainer)) {
+			// Clicked outside: clamp to end
+			this.setIndex(element, Infinity)
+			return
+		}
+
+		sel.removeAllRanges()
+		sel.addRange(domRange)
+	}
+
 	static trySetIndex(element: HTMLElement, offset: number) {
 		try {
 			this.setIndex(element, offset)
@@ -36,13 +107,34 @@ export class Caret {
 		}
 	}
 
+	/**
+	 * Sets the caret at character `offset` within `element` by walking text nodes.
+	 * Use Infinity to position at the very end of all text.
+	 */
 	static setIndex(element: HTMLElement, offset: number) {
 		const selection = window.getSelection()
-		if (!selection?.anchorNode || !selection.rangeCount) return
+		if (!selection) return
 
-		const range = selection.getRangeAt(0)
-		range?.setStart(element.firstChild! || element, offset)
-		range?.setEnd(element.firstChild! || element, offset)
+		const walker = document.createTreeWalker(element, 4 /* NodeFilter.SHOW_TEXT */)
+		let node = walker.nextNode() as Text | null
+		if (!node) return
+
+		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
+
+		while (node) {
+			const next = walker.nextNode() as Text | null
+			if (!next || remaining <= node.length) {
+				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
+				const range = document.createRange()
+				range.setStart(node, charOffset)
+				range.collapse(true)
+				selection.removeAllRanges()
+				selection.addRange(range)
+				return
+			}
+			remaining -= node.length
+			node = next
+		}
 	}
 
 	static getCaretIndex(element: HTMLElement) {
@@ -68,8 +160,7 @@ export class Caret {
 
 	static setCaretToEnd(element: HTMLElement | null | undefined) {
 		if (!element) return
-		const selection = window.getSelection()
-		selection?.setPosition(element, 1)
+		this.setIndex(element, Infinity)
 	}
 
 	static getIndex() {

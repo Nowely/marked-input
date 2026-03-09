@@ -2,6 +2,8 @@ import type {OverlayMatch} from '../../shared/types'
 import type {MarkToken} from '../parsing'
 
 export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?: string): MarkToken {
+	const markup = match.option.markup
+	if (!markup) throw new Error('createMarkFromOverlay: option.markup is required')
 	return {
 		type: 'mark',
 		value,
@@ -12,7 +14,7 @@ export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?:
 			end: match.index + match.span.length,
 		},
 		descriptor: {
-			markup: match.option.markup!,
+			markup,
 			index: 0,
 			segments: [],
 			gapTypes: [],

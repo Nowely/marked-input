@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import type {Token as CoreToken} from '@markput/core'
-import {resolveSlot, resolveSlotProps, splitTokensIntoBlocks, reorderBlocks, parseWithParser} from '@markput/core'
+import {
+	resolveSlot,
+	resolveSlotProps,
+	splitTokensIntoBlocks,
+	reorderBlocks,
+	addBlock,
+	deleteBlock,
+	duplicateBlock,
+	getAlwaysShowHandle,
+} from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
 
@@ -15,6 +23,8 @@ const slotProps = store.state.slotProps.use()
 const className = store.state.className.use()
 const style = store.state.style.use()
 const readOnly = store.state.readOnly.use()
+const block = store.state.block.use()
+const alwaysShowHandle = computed(() => getAlwaysShowHandle(block.value))
 const value = store.state.value.use()
 const onChange = store.state.onChange.use()
 const key = store.key
@@ -27,12 +37,22 @@ const blocks = computed(() => splitTokensIntoBlocks(tokens.value))
 function handleReorder(sourceIndex: number, targetIndex: number) {
 	if (!value.value || !onChange.value) return
 	const newValue = reorderBlocks(value.value, blocks.value, sourceIndex, targetIndex)
-	if (newValue !== value.value) {
-		const newTokens = parseWithParser(store, newValue)
-		store.state.tokens.set(newTokens)
-		store.state.previousValue.set(newValue)
-		onChange.value(newValue)
-	}
+	if (newValue !== value.value) store.applyValue(newValue)
+}
+
+function handleAdd(afterIndex: number) {
+	if (!value.value || !onChange.value) return
+	store.applyValue(addBlock(value.value, blocks.value, afterIndex))
+}
+
+function handleDelete(index: number) {
+	if (!value.value || !onChange.value) return
+	store.applyValue(deleteBlock(value.value, blocks.value, index))
+}
+
+function handleDuplicate(index: number) {
+	if (!value.value || !onChange.value) return
+	store.applyValue(duplicateBlock(value.value, blocks.value, index))
 }
 </script>
 
@@ -49,7 +69,11 @@ function handleReorder(sourceIndex: number, targetIndex: number) {
 			:key="block.id"
 			:block-index="index"
 			:read-only="readOnly"
+			:always-show-handle="alwaysShowHandle"
 			@reorder="handleReorder"
+			@add="handleAdd"
+			@delete="handleDelete"
+			@duplicate="handleDuplicate"
 		>
 			<Token v-for="token in block.tokens" :key="key.get(token)" :mark="token" />
 		</DraggableBlock>

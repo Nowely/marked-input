@@ -8,6 +8,7 @@ import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
+import {parseWithParser} from '../parsing'
 import type {Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 
@@ -71,22 +72,32 @@ export class Store {
 				style: undefined,
 				slots: undefined,
 				slotProps: undefined,
+				block: false,
 			},
 			options.createUseHook
 		)
 	}
 
+	applyValue(newValue: string): void {
+		const onChange = this.state.onChange.get()
+		if (!onChange) return
+		const newTokens = parseWithParser(this, newValue)
+		this.state.tokens.set(newTokens)
+		this.state.previousValue.set(newValue)
+		onChange(newValue)
+	}
+
 	createHandler(): MarkputHandler {
-		const store = this
+		const {refs, nodes} = this
 		return {
 			get container() {
-				return store.refs.container
+				return refs.container
 			},
 			get overlay() {
-				return store.refs.overlay
+				return refs.overlay
 			},
 			focus() {
-				store.nodes.focus.head?.focus()
+				nodes.focus.head?.focus()
 			},
 		}
 	}

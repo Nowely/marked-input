@@ -6,6 +6,7 @@ import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
 import {Text} from '../../shared/components/Text'
+import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
 export default {
@@ -301,30 +302,7 @@ const MarkdownMark = ({
 
 export const ComplexMarkdown: Story = {
 	render: () => {
-		const [value, setValue] = useState(`# Welcome to **Marked Input**
-
-This is a *powerful* library for parsing **rich text** with *markdown* formatting.
-You can use \`inline code\` snippets like \`const parser = new ParserV2()\` in your text.
-
-## Features
-
-- **Bold text** with **strong emphasis**
-- *Italic text* and *emphasis* support
-- \`Code snippets\` and \`code blocks\`
-- ~~Strikethrough~~ for deleted content
-- Links like [GitHub](https://github.com)
-
-## Example
-
-Here's how to use it:
-
-\`\`\`javascript
-const parser = new ParserV2(['**__value__**', '*__value__*'])
-const result = parser.parse('Hello **world**!')
-\`\`\`
-
-Visit our [documentation](https://docs.example.com) for more details.
-~~This feature is deprecated~~ and will be removed in v3.0.`)
+		const [value, setValue] = useState(COMPLEX_MARKDOWN)
 		const {Tab, activeTab} = useTab([
 			{value: 'preview', label: 'Preview'},
 			{value: 'write', label: 'Write'},

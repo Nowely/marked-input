@@ -9,7 +9,7 @@ title: "splitTokensIntoBlocks"
 function splitTokensIntoBlocks(tokens): Block[];
 ```
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L20)
+Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L21)
 
 ## Parameters
 

@@ -24,16 +24,15 @@ function setupStore(value: string, markups: Markup[] = []) {
 
 describe('block reorder → getTokensByValue integration', () => {
 	it('fix path: full re-parse + set tokens gives correct result after reorder', () => {
-		const original = 'aaa\nbbb\nccc'
+		const original = 'aaa\n\nbbb\n\nccc'
 		const store = setupStore(original)
 
 		const tokens = store.state.tokens.get()
 		const blocks = splitTokensIntoBlocks(tokens)
 		const reordered = reorderBlocks(original, blocks, 0, 2)
 
-		expect(reordered).toBe('bbb\naaa\nccc')
+		expect(reordered).toBe('bbb\n\naaa\n\nccc')
 
-		// Apply the fix: full re-parse, set tokens, sync previousValue
 		const newTokens = parseWithParser(store, reordered)
 		store.state.tokens.set(newTokens)
 		store.state.previousValue.set(reordered)
@@ -42,16 +41,15 @@ describe('block reorder → getTokensByValue integration', () => {
 		expect(newTokens).not.toBe(tokens)
 
 		const fullContent = newTokens.map(t => t.content).join('')
-		expect(fullContent).toBe('bbb\naaa\nccc')
+		expect(fullContent).toBe('bbb\n\naaa\n\nccc')
 
-		// Subsequent getTokensByValue should be stable (no gap → returns current tokens)
 		const stable = getTokensByValue(store)
-		expect(stable.map(t => t.content).join('')).toBe('bbb\naaa\nccc')
+		expect(stable.map(t => t.content).join('')).toBe('bbb\n\naaa\n\nccc')
 	})
 
 	it('fix path with parser: full re-parse gives correct tokens after reorder', () => {
-		const original = '# Heading\nParagraph'
-		const store = setupStore(original, ['# __nested__\n' as Markup])
+		const original = '# Heading\n\nParagraph'
+		const store = setupStore(original, ['# __nested__\n\n' as Markup])
 
 		const tokens = store.state.tokens.get()
 		const blocks = splitTokensIntoBlocks(tokens)
@@ -59,27 +57,26 @@ describe('block reorder → getTokensByValue integration', () => {
 		expect(blocks).toHaveLength(2)
 
 		const reordered = reorderBlocks(original, blocks, 1, 0)
-		expect(reordered).toBe('Paragraph\n# Heading')
+		expect(reordered).toBe('Paragraph\n\n# Heading')
 
-		// Apply the fix
 		const newTokens = parseWithParser(store, reordered)
 		store.state.tokens.set(newTokens)
 		store.state.previousValue.set(reordered)
 		store.state.value.set(reordered)
 
 		const fullContent = newTokens.map(t => t.content).join('')
-		expect(fullContent).toBe('Paragraph\n# Heading')
+		expect(fullContent).toBe('Paragraph\n\n# Heading')
 	})
 
 	it('full re-parse produces correct blocks after reorder', () => {
-		const original = 'first\nsecond\nthird'
+		const original = 'first\n\nsecond\n\nthird'
 		const store = setupStore(original)
 
 		const tokens = store.state.tokens.get()
 		const blocks = splitTokensIntoBlocks(tokens)
 		const reordered = reorderBlocks(original, blocks, 2, 0)
 
-		expect(reordered).toBe('third\nfirst\nsecond')
+		expect(reordered).toBe('third\n\nfirst\n\nsecond')
 
 		const newTokens = parseWithParser(store, reordered)
 		const newBlocks = splitTokensIntoBlocks(newTokens)
@@ -91,35 +88,32 @@ describe('block reorder → getTokensByValue integration', () => {
 	})
 
 	it('direct token set + previousValue sync bypasses broken incremental parse', () => {
-		const original = 'aaa\nbbb\nccc'
+		const original = 'aaa\n\nbbb\n\nccc'
 		const store = setupStore(original)
 
 		const blocks = splitTokensIntoBlocks(store.state.tokens.get())
 		const reordered = reorderBlocks(original, blocks, 0, 2)
-		expect(reordered).toBe('bbb\naaa\nccc')
+		expect(reordered).toBe('bbb\n\naaa\n\nccc')
 
-		// This is the fix: full re-parse + set tokens + sync previousValue
 		const newTokens = parseWithParser(store, reordered)
 		store.state.tokens.set(newTokens)
 		store.state.previousValue.set(reordered)
 		store.state.value.set(reordered)
 
-		// Now getTokensByValue should see no gap and return current (correct) tokens
 		const result = getTokensByValue(store)
 		const resultContent = result.map(t => t.content).join('')
-		expect(resultContent).toBe('bbb\naaa\nccc')
+		expect(resultContent).toBe('bbb\n\naaa\n\nccc')
 	})
 
 	it('without fix: incremental parse crashes on block reorder', () => {
-		const original = 'aaa\nbbb\nccc'
+		const original = 'aaa\n\nbbb\n\nccc'
 		const store = setupStore(original)
 
 		const blocks = splitTokensIntoBlocks(store.state.tokens.get())
 		const reordered = reorderBlocks(original, blocks, 0, 2)
 
-		// Only set value without updating tokens/previousValue — this is the broken path
 		store.state.value.set(reordered)
 
-		expect(() => getTokensByValue(store)).toThrow()
+		expect(() => getTokensByValue(store)).toThrow(TypeError)
 	})
 })
