@@ -413,6 +413,52 @@ describe('Feature: blocks', () => {
 	})
 })
 
+/** Dispatch a synthetic beforeinput paste event using the current selection as the target range. */
+function dispatchPaste(target: HTMLElement, text: string) {
+	const sel = window.getSelection()
+	if (!sel?.rangeCount) return
+	const r = sel.getRangeAt(0)
+	const staticRange = new StaticRange({
+		startContainer: r.startContainer,
+		startOffset: r.startOffset,
+		endContainer: r.endContainer,
+		endOffset: r.endOffset,
+	})
+	const dt = new DataTransfer()
+	dt.setData('text/plain', text)
+	target.dispatchEvent(
+		new InputEvent('beforeinput', {
+			bubbles: true,
+			cancelable: true,
+			inputType: 'insertFromPaste',
+			dataTransfer: dt,
+			targetRanges: [staticRange],
+		})
+	)
+}
+
+/** Dispatch a synthetic beforeinput insertText event using the current selection as the target range. */
+function dispatchInsertText(target: HTMLElement, text: string) {
+	const sel = window.getSelection()
+	if (!sel?.rangeCount) return
+	const r = sel.getRangeAt(0)
+	const staticRange = new StaticRange({
+		startContainer: r.startContainer,
+		startOffset: r.startOffset,
+		endContainer: r.endContainer,
+		endOffset: r.endOffset,
+	})
+	target.dispatchEvent(
+		new InputEvent('beforeinput', {
+			bubbles: true,
+			cancelable: true,
+			inputType: 'insertText',
+			data: text,
+			targetRanges: [staticRange],
+		})
+	)
+}
+
 describe('Feature: block keyboard navigation', () => {
 	describe('ArrowLeft cross-block', () => {
 		it('should move focus to previous block when at start of block', async () => {
@@ -647,6 +693,78 @@ describe('Feature: block keyboard navigation', () => {
 			// After fix: first block unchanged, only block 1 affected
 			expect(getRawValue(container)).not.toBe('X')
 			expect(getRawValue(container)).toContain('First block of plain text')
+		})
+
+		it('should append character after last mark when typing at end of mark block (BUG-CARET-MARK)', async () => {
+			const {container} = await render(<MarkdownDocument />)
+			const blocks = getBlocks(container)
+			// block[0] raw = '# Welcome to **Marked Input**'
+			await focusAtEnd(blocks[0])
+			// Use synthetic event to avoid browser selection drift at mark boundaries
+			dispatchInsertText(blocks[0], '!')
+			await new Promise(r => setTimeout(r, 50))
+
+			// With the bug: raw/visual offset mismatch puts '!' mid-mark, e.g. '# Welcome to **Marked Inpu!t**'
+			// After fix: '!' appended after the last mark at correct position
+			const block0Raw = getRawValue(container).split('\n\n')[0]
+			expect(block0Raw).toBe('# Welcome to **Marked Input**!')
+		})
+
+		it('should insert character at correct position mid-text within a mark block (BUG-CARET-MARK)', async () => {
+			const {container} = await render(<MarkdownDocument />)
+			const blocks = getBlocks(container)
+			// block[0] raw = '# Welcome to **Marked Input**'
+			// block[0] h1 renders nested children (no '# ' prefix visible):
+			//   visual text = 'Welcome to Marked Input' (23 chars)
+			// focusAtStart → cursor before 'W' (raw pos 2, after h1 prefix '# ')
+			// ArrowRight x2 → cursor 2 visual positions right → before 'l' (raw pos 4)
+			await focusAtStart(blocks[0])
+			await userEvent.keyboard('{ArrowRight}{ArrowRight}')
+			// Use synthetic event to capture selection before browser can drift
+			dispatchInsertText(blocks[0], 'X')
+			await new Promise(r => setTimeout(r, 50))
+
+			// With the bug: getDomRawPos returned token.position.end = 31 for any mark cursor,
+			// inserting X at start of block 1. After fix: X at raw pos 4 (within nested TextToken).
+			const block0Raw = getRawValue(container).split('\n\n')[0]
+			expect(block0Raw).toBe('# WeXlcome to **Marked Input**')
+		})
+	})
+
+	describe('paste in blocks (BUG-PASTE)', () => {
+		it('should update raw value when pasting text at end of a plain text block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			await focusAtEnd(getEditableInBlock(blocks[0]))
+			dispatchPaste(blocks[0], ' pasted')
+			await new Promise(r => setTimeout(r, 50))
+
+			expect(getRawValue(container)).toContain('First block of plain text pasted')
+		})
+
+		it('should not affect other blocks when pasting in one block', async () => {
+			const {container} = await render(<PlainTextBlocks />)
+			const blocks = getBlocks(container)
+			await focusAtEnd(getEditableInBlock(blocks[0]))
+			dispatchPaste(blocks[0], '!')
+			await new Promise(r => setTimeout(r, 50))
+
+			const raw = getRawValue(container)
+			expect(raw).toContain('Second block of plain text')
+			expect(raw).toContain('Fifth block of plain text')
+			expect(getBlocks(container)).toHaveLength(5)
+		})
+
+		it('should update raw value when pasting text at end of a mark block', async () => {
+			const {container} = await render(<MarkdownDocument />)
+			const blocks = getBlocks(container)
+			// block[0] raw = '# Welcome to **Marked Input**'
+			await focusAtEnd(blocks[0])
+			dispatchPaste(blocks[0], '!')
+			await new Promise(r => setTimeout(r, 50))
+
+			const block0Raw = getRawValue(container).split('\n\n')[0]
+			expect(block0Raw).toBe('# Welcome to **Marked Input**!')
 		})
 	})
 

@@ -5,6 +5,7 @@ import {BLOCK_SEPARATOR} from '../blocks/config'
 import {splitTokensIntoBlocks, type Block} from '../blocks/splitTokensIntoBlocks'
 import {Caret} from '../caret'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
+import type {MarkToken} from '../parsing/ParserV2/types'
 import {selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 import {deleteMark} from '../text-manipulation'
@@ -278,43 +279,16 @@ export class KeyDownController {
  * Computes the raw value offset (index into the full value string) corresponding
  * to the current caret position within `blockDiv`.
  *
- * For text tokens, the visual character offset equals the raw offset.
- * For mark tokens, the caret is treated as being at the mark's end (after the mark).
+ * Delegates to `getDomRawPos` using the current selection's focus node and offset.
  */
 function getCaretRawPosInBlock(blockDiv: HTMLElement, block: Block): number {
 	const selection = window.getSelection()
 	if (!selection?.rangeCount) return block.endPos
 
-	const {focusNode} = selection
+	const {focusNode, focusOffset} = selection
 	if (!focusNode) return block.endPos
 
-	// Walk up from focusNode to find the direct child of blockDiv that contains it
-	let node: Node | null = focusNode.nodeType === Node.ELEMENT_NODE ? focusNode : focusNode.parentElement
-	while (node && node.parentElement !== blockDiv) {
-		node = node.parentElement
-	}
-
-	if (!node) return block.endPos
-
-	// Find the child index in blockDiv.children (element children only)
-	const childIndex = Array.from(blockDiv.children).indexOf(node as Element)
-	if (childIndex < 0) return block.endPos
-
-	// Token index: child 0 is the drag handle, tokens start at child 1
-	const tokenIndex = childIndex - 1
-	if (tokenIndex < 0) return block.startPos // caret in drag handle
-	if (tokenIndex >= block.tokens.length) return block.endPos
-
-	const token = block.tokens[tokenIndex]
-
-	if (token.type === 'text') {
-		// Visual offset within this span = raw offset within this text token
-		const visualOffset = Caret.getCaretIndex(node as HTMLElement)
-		return token.position.start + visualOffset
-	}
-
-	// For mark tokens: treat the caret as being at the end of the mark
-	return token.position.end
+	return getDomRawPos(focusNode, focusOffset, blockDiv, block)
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
@@ -481,24 +455,56 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	const block = blocks[blockIndex]
 	const value = store.state.value.get() ?? store.state.previousValue.get() ?? ''
 
+	const focusAndSetCaret = (newRawPos: number) => {
+		queueMicrotask(() => {
+			const target = container.children[blockIndex] as HTMLElement | undefined
+			if (!target) return
+			target.focus()
+			// Use updated tokens (post-applyValue) for correct token positions
+			const updatedBlocks = splitTokensIntoBlocks(store.state.tokens.get())
+			const updatedBlock = updatedBlocks[blockIndex]
+			if (updatedBlock) setCaretAtRawPos(target, updatedBlock, newRawPos)
+		})
+	}
+
 	switch (event.inputType) {
 		case 'insertText': {
 			event.preventDefault()
 			const data = event.data ?? ''
 			const ranges = event.getTargetRanges()
-			if (!ranges.length) return
-			const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
-			const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
-			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+			let rawFrom: number
+			let rawTo: number
+			if (ranges.length > 0) {
+				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
+				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+				;[rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+			} else {
+				// getTargetRanges() can be empty when the caret is adjacent to a mark element.
+				// Fall back to reading the caret position directly from the selection.
+				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, block)
+			}
 			store.applyValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
-			const newCaretOffset = rawFrom - block.startPos + data.length
-			queueMicrotask(() => {
-				const target = container.children[blockIndex] as HTMLElement | undefined
-				if (target) {
-					target.focus()
-					Caret.trySetIndex(target, newCaretOffset)
-				}
-			})
+			focusAndSetCaret(rawFrom + data.length)
+			break
+		}
+		case 'insertFromPaste':
+		case 'insertReplacementText': {
+			event.preventDefault()
+			const pasteData = event.dataTransfer?.getData('text/plain') ?? ''
+			const ranges = event.getTargetRanges()
+			let rawFrom: number
+			let rawTo: number
+			if (ranges.length > 0) {
+				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
+				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+				;[rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+			} else {
+				// Fall back to current selection when target ranges are unavailable
+				// (e.g. synthetic events used in tests, or caret adjacent to mark elements).
+				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, block)
+			}
+			store.applyValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
+			focusAndSetCaret(rawFrom + pasteData.length)
 			break
 		}
 		case 'deleteContentBackward':
@@ -515,23 +521,59 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			if (rawFrom === rawTo) return
 			event.preventDefault()
 			store.applyValue(value.slice(0, rawFrom) + value.slice(rawTo))
-			const newCaretOffset = rawFrom - block.startPos
-			queueMicrotask(() => {
-				const target = container.children[blockIndex] as HTMLElement | undefined
-				if (target) {
-					target.focus()
-					Caret.trySetIndex(target, newCaretOffset)
-				}
-			})
+			focusAndSetCaret(rawFrom)
 			break
 		}
 	}
 }
 
 /**
+ * Sets the caret at an absolute raw-value position within a block's DOM element.
+ * Finds the token that contains `rawAbsolutePos`, then directly positions the
+ * caret in that token's DOM text node — bypassing visual character counting
+ * which is incorrect when mark tokens are present (raw length ≠ visual length).
+ */
+function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: number): void {
+	const sel = window.getSelection()
+	if (!sel) return
+
+	const blockChildren = Array.from(blockDiv.children)
+
+	for (let i = 0; i < block.tokens.length; i++) {
+		const token = block.tokens[i]
+		// child[0] is the side panel; token[i] maps to child[i+1]
+		const domChild = blockChildren[i + 1] as HTMLElement | undefined
+		if (!domChild) continue
+
+		if (rawAbsolutePos >= token.position.start && rawAbsolutePos <= token.position.end) {
+			if (token.type === 'text') {
+				const offsetWithinToken = rawAbsolutePos - token.position.start
+				const walker = document.createTreeWalker(domChild, 4 /* SHOW_TEXT */)
+				const textNode = walker.nextNode() as Text | null
+				if (textNode) {
+					const charOffset = Math.min(offsetWithinToken, textNode.length)
+					const range = document.createRange()
+					range.setStart(textNode, charOffset)
+					range.collapse(true)
+					sel.removeAllRanges()
+					sel.addRange(range)
+					return
+				}
+			}
+			// Mark token: fall through to end-of-block fallback
+			break
+		}
+	}
+
+	// Fallback: position caret at end of block
+	Caret.setCaretToEnd(blockDiv)
+}
+
+/**
  * Maps a DOM (node, offset) position to an absolute raw-value offset.
  * Walks up from `node` to find the direct child of `blockDiv`, then maps
- * to the corresponding token's raw position.
+ * to the corresponding token's raw position. For mark tokens with nested
+ * content, recursively resolves the position within the mark's children.
  */
 function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: Block): number {
 	let child: Node | null = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
@@ -552,6 +594,52 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	if (token.type === 'text') {
 		return token.position.start + Math.min(offset, token.content.length)
 	}
-	// For mark tokens: offset 0 means before the mark, any other offset means after
-	return offset === 0 ? token.position.start : token.position.end
+	// For mark tokens: recursively resolve position within nested mark structure
+	return getDomRawPosInMark(node, offset, child as HTMLElement, token)
+}
+
+/**
+ * Recursively maps a DOM (node, offset) position to an absolute raw-value offset
+ * within a mark token's nested content. Handles marks that contain other marks
+ * (e.g. h1 containing bold), correctly mapping cursor positions through the
+ * nested DOM/token structure.
+ *
+ * Key rules:
+ * - cursor at offset === 0 → raw position at mark start
+ * - cursor at offset === full nested length → raw position at mark end (after closing delimiter)
+ * - cursor in the middle → raw position within nested content
+ */
+function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
+	if (!markToken.children || markToken.children.length === 0) {
+		// Leaf mark (no nested parsed children): use nested content boundaries
+		if (offset === 0) return markToken.position.start
+		const nestedLen = markToken.nested?.content.length ?? markToken.value.length
+		// Cursor at or past end of nested content → after closing delimiter
+		if (nestedLen > 0 && offset >= nestedLen) return markToken.position.end
+		// Cursor in the middle of nested content
+		return (markToken.nested?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
+	}
+
+	// Walk child nodes of markElement and match to token children.
+	// TextToken children render as text nodes; MarkToken children render as elements.
+	let tokenIdx = 0
+	for (const childNode of Array.from(markElement.childNodes)) {
+		if (tokenIdx >= markToken.children.length) break
+		const tokenChild = markToken.children[tokenIdx]
+
+		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+			if (node === childNode) {
+				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'mark') {
+			if (childNode === node || (childNode as Element).contains(node)) {
+				return getDomRawPosInMark(node, offset, childNode as HTMLElement, tokenChild)
+			}
+			tokenIdx++
+		}
+	}
+
+	// Fallback: cursor at or beyond end of nested content
+	return markToken.nested?.end ?? markToken.position.end
 }
