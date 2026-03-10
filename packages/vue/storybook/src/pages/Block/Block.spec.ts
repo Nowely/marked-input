@@ -590,46 +590,102 @@ describe('Feature: block keyboard navigation', () => {
 	})
 
 	describe('Delete merge blocks', () => {
-		it('should merge with next block when Delete pressed at end of non-last block', async () => {
-			const {container} = await render(PlainTextBlocks)
-			const before = getBlocks(container).length
+		describe('Delete at end of block', () => {
+			it('should merge with next block when Delete pressed at end of non-last block', async () => {
+				const {container} = await render(PlainTextBlocks)
+				const before = getBlocks(container).length
 
-			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
-			await userEvent.keyboard('{Delete}')
+				await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+				await userEvent.keyboard('{Delete}')
 
-			expect(getBlocks(container)).toHaveLength(before - 1)
+				expect(getBlocks(container)).toHaveLength(before - 1)
+			})
+
+			it('should preserve content of both merged blocks', async () => {
+				const {container} = await render(PlainTextBlocks)
+
+				await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+				await userEvent.keyboard('{Delete}')
+
+				const raw = getRawValue(container)
+				expect(raw).toContain('First block of plain text')
+				expect(raw).toContain('Second block of plain text')
+			})
+
+			it('should keep focus in the current block after Delete merge', async () => {
+				const {container} = await render(PlainTextBlocks)
+				const currentBlock = getBlocks(container)[0]
+
+				await focusAtEnd(getEditableInBlock(currentBlock))
+				await userEvent.keyboard('{Delete}')
+
+				expect(document.activeElement).toBe(currentBlock)
+			})
+
+			it('should not merge when Delete pressed at end of last block', async () => {
+				const {container} = await render(PlainTextBlocks)
+				const blocks = getBlocks(container)
+				const last = blocks[blocks.length - 1]
+
+				await focusAtEnd(getEditableInBlock(last))
+				await userEvent.keyboard('{Delete}')
+
+				expect(getBlocks(container)).toHaveLength(5)
+			})
 		})
 
-		it('should preserve content of both merged blocks', async () => {
-			const {container} = await render(PlainTextBlocks)
+		describe('Delete at start of block', () => {
+			it('should merge current block into previous when Delete pressed at start of non-first block', async () => {
+				const {container} = await render(PlainTextBlocks)
+				const before = getBlocks(container).length
 
-			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
-			await userEvent.keyboard('{Delete}')
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
 
-			const raw = getRawValue(container)
-			expect(raw).toContain('First block of plain text')
-			expect(raw).toContain('Second block of plain text')
-		})
+				expect(getBlocks(container)).toHaveLength(before - 1)
+			})
 
-		it('should keep focus in the current block after Delete merge', async () => {
-			const {container} = await render(PlainTextBlocks)
-			const currentBlock = getBlocks(container)[0]
+			it('should preserve content of both merged blocks', async () => {
+				const {container} = await render(PlainTextBlocks)
 
-			await focusAtEnd(getEditableInBlock(currentBlock))
-			await userEvent.keyboard('{Delete}')
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
 
-			expect(document.activeElement).toBe(currentBlock)
-		})
+				const raw = getRawValue(container)
+				expect(raw).toContain('First block of plain text')
+				expect(raw).toContain('Second block of plain text')
+			})
 
-		it('should not merge when Delete pressed at end of last block', async () => {
-			const {container} = await render(PlainTextBlocks)
-			const blocks = getBlocks(container)
-			const last = blocks[blocks.length - 1]
+			it('should move focus to the previous block after merge', async () => {
+				const {container} = await render(PlainTextBlocks)
+				const prevBlock = getBlocks(container)[0]
 
-			await focusAtEnd(getEditableInBlock(last))
-			await userEvent.keyboard('{Delete}')
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
 
-			expect(getBlocks(container)).toHaveLength(5)
+				expect(document.activeElement).toBe(prevBlock)
+			})
+
+			it('should not merge when Delete pressed at start of the first block', async () => {
+				const {container} = await render(PlainTextBlocks)
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(getBlocks(container)).toHaveLength(5)
+			})
+
+			it('should place caret at the join point after merge', async () => {
+				const {container} = await render(PlainTextBlocks)
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				// After merge, typing should insert right at the join point
+				// (between the end of block 0 and start of block 1 text)
+				const raw = getRawValue(container)
+				expect(raw).toContain('First block of plain textSecond block of plain text')
+			})
 		})
 	})
 

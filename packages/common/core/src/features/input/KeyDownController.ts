@@ -159,7 +159,27 @@ export class KeyDownController {
 
 		if (event.key === KEYBOARD.DELETE) {
 			const blockDiv = blockDivs[blockIndex] as HTMLElement
-			const caretAtEnd = Caret.getCaretIndex(blockDiv) === blockDiv.textContent?.length
+			const caretIndex = Caret.getCaretIndex(blockDiv)
+			const caretAtEnd = caretIndex === blockDiv.textContent?.length
+			const caretAtStart = caretIndex === 0
+
+			// Caret at start of non-first block: merge current block into previous (like Backspace at start)
+			if (caretAtStart && blockIndex > 0) {
+				event.preventDefault()
+				const joinPos = blocks[blockIndex - 1].endPos
+				const newValue = mergeBlocks(value, blocks, blockIndex)
+				this.store.applyValue(newValue)
+				queueMicrotask(() => {
+					const newDivs = container.children
+					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+					if (target) {
+						target.focus()
+						const charOffset = joinPos - blocks[blockIndex - 1].startPos
+						Caret.trySetIndex(target, charOffset)
+					}
+				})
+				return
+			}
 
 			// Caret at end of non-last block: merge next block into current
 			if (caretAtEnd && blockIndex < blocks.length - 1) {
