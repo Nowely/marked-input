@@ -1,6 +1,6 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
-import {deleteBlock, mergeBlocks} from '../blocks/blockOperations'
+import {deleteBlock, getMergeJoinPos, mergeBlocks} from '../blocks/blockOperations'
 import {BLOCK_SEPARATOR} from '../blocks/config'
 import {splitTokensIntoBlocks, type Block} from '../blocks/splitTokensIntoBlocks'
 import {Caret} from '../caret'
@@ -141,7 +141,7 @@ export class KeyDownController {
 			// Non-empty block at position 0: merge with previous block
 			if (caretAtStart && blockIndex > 0) {
 				event.preventDefault()
-				const joinPos = blocks[blockIndex - 1].endPos
+				const joinPos = getMergeJoinPos(blocks, blockIndex)
 				const newValue = mergeBlocks(value, blocks, blockIndex)
 				this.store.applyValue(newValue)
 				queueMicrotask(() => {
@@ -149,8 +149,9 @@ export class KeyDownController {
 					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const charOffset = joinPos - blocks[blockIndex - 1].startPos
-						Caret.trySetIndex(target, charOffset)
+						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
+						const updatedBlock = updatedBlocks[blockIndex - 1]
+						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 					}
 				})
 				return
@@ -166,7 +167,7 @@ export class KeyDownController {
 			// Caret at start of non-first block: merge current block into previous (like Backspace at start)
 			if (caretAtStart && blockIndex > 0) {
 				event.preventDefault()
-				const joinPos = blocks[blockIndex - 1].endPos
+				const joinPos = getMergeJoinPos(blocks, blockIndex)
 				const newValue = mergeBlocks(value, blocks, blockIndex)
 				this.store.applyValue(newValue)
 				queueMicrotask(() => {
@@ -174,8 +175,9 @@ export class KeyDownController {
 					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const charOffset = joinPos - blocks[blockIndex - 1].startPos
-						Caret.trySetIndex(target, charOffset)
+						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
+						const updatedBlock = updatedBlocks[blockIndex - 1]
+						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 					}
 				})
 				return
@@ -192,8 +194,9 @@ export class KeyDownController {
 					const target = newDivs[blockIndex] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const charOffset = joinPos - block.startPos
-						Caret.trySetIndex(target, charOffset)
+						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
+						const updatedBlock = updatedBlocks[blockIndex]
+						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 					}
 				})
 				return
@@ -548,10 +551,83 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 }
 
 /**
+ * Recursively sets the caret inside a mark token's rendered DOM element.
+ *
+ * For simple marks (no children), the mark renders its nested content as a single
+ * text node; we position the caret at `rawAbsolutePos - nested.start` within it.
+ *
+ * For complex marks with nested tokens (e.g. a heading that spans multiple inline
+ * marks), we walk the mark element's childNodes in parallel with token children,
+ * preferring later tokens at boundaries so a position equal to a mark's end
+ * resolves into the following sibling text rather than the mark itself.
+ *
+ * Returns true when the caret was successfully placed, false when the position
+ * could not be resolved (caller should fall back to end-of-block).
+ */
+function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, rawAbsolutePos: number): boolean {
+	const sel = window.getSelection()
+	if (!sel) return false
+
+	if (!markToken.children || markToken.children.length === 0) {
+		// Simple mark: renders nested content as a single text node.
+		const nestedStart = markToken.nested?.start ?? markToken.position.start
+		const nestedEnd = markToken.nested?.end ?? markToken.position.end
+		const offsetInNested = Math.max(0, Math.min(rawAbsolutePos - nestedStart, nestedEnd - nestedStart))
+		const walker = document.createTreeWalker(markElement, 4 /* SHOW_TEXT */)
+		const textNode = walker.nextNode() as Text | null
+		if (!textNode) return false
+		const range = document.createRange()
+		range.setStart(textNode, Math.min(offsetInNested, textNode.length))
+		range.collapse(true)
+		sel.removeAllRanges()
+		sel.addRange(range)
+		return true
+	}
+
+	// Complex mark: walk childNodes in parallel with token children.
+	// Comment / fragment nodes are skipped without advancing the token index.
+	let tokenIdx = 0
+	for (const childNode of Array.from(markElement.childNodes)) {
+		if (tokenIdx >= markToken.children.length) break
+		const tokenChild = markToken.children[tokenIdx]
+
+		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
+				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, (childNode as Text).length)
+				const range = document.createRange()
+				range.setStart(childNode, offset)
+				range.collapse(true)
+				sel.removeAllRanges()
+				sel.addRange(range)
+				return true
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'mark') {
+			// At a boundary, prefer the next sibling text over the current mark end.
+			const nextChild = tokenIdx + 1 < markToken.children.length ? markToken.children[tokenIdx + 1] : null
+			const atBoundary =
+				rawAbsolutePos === tokenChild.position.end && nextChild?.position.start === rawAbsolutePos
+			if (
+				!atBoundary &&
+				rawAbsolutePos >= tokenChild.position.start &&
+				rawAbsolutePos <= tokenChild.position.end
+			) {
+				return setCaretInMarkAtRawPos(childNode as HTMLElement, tokenChild as MarkToken, rawAbsolutePos)
+			}
+			tokenIdx++
+		}
+		// Other node types (comments, etc.) — skip without advancing tokenIdx.
+	}
+
+	return false
+}
+
+/**
  * Sets the caret at an absolute raw-value position within a block's DOM element.
  * Finds the token that contains `rawAbsolutePos`, then directly positions the
  * caret in that token's DOM text node — bypassing visual character counting
  * which is incorrect when mark tokens are present (raw length ≠ visual length).
+ * For mark tokens, recursively searches nested content via setCaretInMarkAtRawPos.
  */
 function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: number): void {
 	const sel = window.getSelection()
@@ -564,6 +640,13 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
 		// child[0] is the side panel; token[i] maps to child[i+1]
 		const domChild = blockChildren[i + 1] as HTMLElement | undefined
 		if (!domChild) continue
+
+		// At a boundary between tokens, prefer the later (next) token so that
+		// a position equal to the end of a mark resolves into the following text.
+		const nextToken = block.tokens[i + 1]
+		if (nextToken && rawAbsolutePos === token.position.end && rawAbsolutePos === nextToken.position.start) {
+			continue
+		}
 
 		if (rawAbsolutePos >= token.position.start && rawAbsolutePos <= token.position.end) {
 			if (token.type === 'text') {
@@ -580,7 +663,8 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
 					return
 				}
 			}
-			// Mark token: fall through to end-of-block fallback
+			// Mark token: recurse into its nested DOM content
+			if (setCaretInMarkAtRawPos(domChild, token as MarkToken, rawAbsolutePos)) return
 			break
 		}
 	}

@@ -615,6 +615,43 @@ describe('Feature: block keyboard navigation', () => {
 			// Must be exactly 4 — not 3 (double-delete regression guard)
 			expect(getBlocks(container)).toHaveLength(4)
 		})
+
+		describe('Backspace into a mark block (heading with embedded \\n\\n separator)', () => {
+			// Bug: blocks whose mark token includes the \n\n separator have endPos === next block's startPos.
+			// mergeBlocks must detect this and strip the separator from inside the mark.
+
+			it('should reduce block count when Backspace at start of block after heading mark', async () => {
+				const {container} = await render(<MarkdownDocument />)
+				const before = getBlocks(container).length
+
+				// block[1] is "This is a powerful..." which follows the heading mark (block[0])
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Backspace}')
+
+				expect(getBlocks(container)).toHaveLength(before - 1)
+			})
+
+			it('should preserve content of both blocks after merging into heading mark', async () => {
+				const {container} = await render(<MarkdownDocument />)
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Backspace}')
+
+				const raw = getRawValue(container)
+				expect(raw).toContain('Marked Input')
+				expect(raw).toContain('powerful')
+			})
+
+			it('should keep focus in the heading block after Backspace merge', async () => {
+				const {container} = await render(<MarkdownDocument />)
+				const headingBlock = getBlocks(container)[0]
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Backspace}')
+
+				expect(document.activeElement).toBe(headingBlock)
+			})
+		})
 	})
 
 	describe('Delete merge blocks', () => {
@@ -658,6 +695,86 @@ describe('Feature: block keyboard navigation', () => {
 			await userEvent.keyboard('{Delete}')
 
 			expect(getBlocks(container)).toHaveLength(5)
+		})
+
+		describe('Delete at start of block', () => {
+			it('should merge with previous block when Delete pressed at start of non-first block', async () => {
+				const {container} = await render(<PlainTextBlocks />)
+				const before = getBlocks(container).length
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(getBlocks(container)).toHaveLength(before - 1)
+			})
+
+			it('should preserve content of both merged blocks', async () => {
+				const {container} = await render(<PlainTextBlocks />)
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				const raw = getRawValue(container)
+				expect(raw).toContain('First block of plain text')
+				expect(raw).toContain('Second block of plain text')
+			})
+
+			it('should keep focus in the previous block after Delete merge', async () => {
+				const {container} = await render(<PlainTextBlocks />)
+				const prevBlock = getBlocks(container)[0]
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(document.activeElement).toBe(prevBlock)
+			})
+
+			it('should not merge when Delete pressed at start of first block', async () => {
+				const {container} = await render(<PlainTextBlocks />)
+				const before = getBlocks(container).length
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(getBlocks(container)).toHaveLength(before)
+			})
+		})
+
+		describe('Delete into a mark block (heading with embedded \\n\\n separator)', () => {
+			// Bug: blocks whose mark token includes the \n\n separator have endPos === next block's startPos.
+			// mergeBlocks must detect this and strip the separator from inside the mark.
+
+			it('should reduce block count when Delete at start of block after heading mark', async () => {
+				const {container} = await render(<MarkdownDocument />)
+				const before = getBlocks(container).length
+
+				// block[1] is "This is a powerful..." which follows the heading mark (block[0])
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(getBlocks(container)).toHaveLength(before - 1)
+			})
+
+			it('should preserve content of both blocks after merging into heading mark', async () => {
+				const {container} = await render(<MarkdownDocument />)
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				const raw = getRawValue(container)
+				expect(raw).toContain('Marked Input')
+				expect(raw).toContain('powerful')
+			})
+
+			it('should keep focus in the heading block after Delete merge', async () => {
+				const {container} = await render(<MarkdownDocument />)
+				const headingBlock = getBlocks(container)[0]
+
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Delete}')
+
+				expect(document.activeElement).toBe(headingBlock)
+			})
 		})
 	})
 

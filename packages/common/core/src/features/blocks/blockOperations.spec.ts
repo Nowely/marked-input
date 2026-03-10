@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {addBlock, deleteBlock, duplicateBlock} from './blockOperations'
+import {addBlock, deleteBlock, duplicateBlock, getMergeJoinPos, mergeBlocks} from './blockOperations'
 import type {Block} from './splitTokensIntoBlocks'
 
 function makeBlock(id: string, startPos: number, endPos: number): Block {
@@ -50,6 +50,59 @@ describe('deleteBlock', () => {
 		const blocks: Block[] = [makeBlock('0', 0, 1), makeBlock('3', 3, 4)]
 		expect(deleteBlock('A\n\nB', blocks, 0)).toBe('B')
 		expect(deleteBlock('A\n\nB', blocks, 1)).toBe('A')
+	})
+})
+
+describe('mergeBlocks', () => {
+	it('removes the separator between two blocks (standard case)', () => {
+		// value: "A\n\nB\n\nC", blocks: [0,1], [3,4], [6,7]
+		expect(mergeBlocks('A\n\nB\n\nC', THREE_BLOCKS, 1)).toBe('AB\n\nC')
+	})
+
+	it('merges last block into previous', () => {
+		expect(mergeBlocks('A\n\nB\n\nC', THREE_BLOCKS, 2)).toBe('A\n\nBC')
+	})
+
+	it('returns value unchanged when index is 0', () => {
+		expect(mergeBlocks('A\n\nB\n\nC', THREE_BLOCKS, 0)).toBe('A\n\nB\n\nC')
+	})
+
+	describe('embedded separator (mark-ending-with-\\n\\n)', () => {
+		// When a mark token consumes the \n\n as part of its content, splitTokensIntoBlocks
+		// sets endPos of that block to AFTER the \n\n, making endPos === next block's startPos.
+		// Example: "# Heading\n\nBody" where the heading mark includes the trailing \n\n.
+		//   block0: startPos=0, endPos=11  ("# Heading\n\n" length = 11)
+		//   block1: startPos=11, endPos=15 ("Body")
+
+		const HEADING_BLOCKS: Block[] = [makeBlock('0', 0, 11), makeBlock('11', 11, 15)]
+
+		it('removes the embedded separator from the end of the previous block', () => {
+			// "# Heading\n\nBody" → "# HeadingBody"
+			expect(mergeBlocks('# Heading\n\nBody', HEADING_BLOCKS, 1)).toBe('# HeadingBody')
+		})
+
+		it('does not return the original value unchanged', () => {
+			const result = mergeBlocks('# Heading\n\nBody', HEADING_BLOCKS, 1)
+			expect(result).not.toBe('# Heading\n\nBody')
+		})
+	})
+})
+
+describe('getMergeJoinPos', () => {
+	it('returns endPos of previous block in the standard case', () => {
+		// THREE_BLOCKS: [0,1], [3,4], [6,7] — endPos=1, next startPos=3 (different)
+		expect(getMergeJoinPos(THREE_BLOCKS, 1)).toBe(1)
+		expect(getMergeJoinPos(THREE_BLOCKS, 2)).toBe(4)
+	})
+
+	it('returns endPos minus separator length when separator is embedded in previous mark', () => {
+		// block0 endPos=11, block1 startPos=11 → separator is embedded, join is at 11-2=9
+		const HEADING_BLOCKS: Block[] = [makeBlock('0', 0, 11), makeBlock('11', 11, 15)]
+		expect(getMergeJoinPos(HEADING_BLOCKS, 1)).toBe(9)
+	})
+
+	it('returns 0 for index=0', () => {
+		expect(getMergeJoinPos(THREE_BLOCKS, 0)).toBe(0)
 	})
 })
 
