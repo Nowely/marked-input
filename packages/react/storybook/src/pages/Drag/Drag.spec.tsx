@@ -1,12 +1,12 @@
-import {composeStories} from '@storybook/vue3-vite'
+import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-vue'
+import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as BlockStories from './Block.stories'
+import * as DragStories from './Drag.stories'
 
-const {BasicDraggable, MarkdownDocument, PlainTextBlocks, ReadOnlyDraggable} = composeStories(BlockStories)
+const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
 
 const GRIP_SELECTOR = 'button[aria-label="Drag to reorder or click for options"]'
 
@@ -26,10 +26,15 @@ function getBlocks(container: Element) {
 	return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
+/** Read the raw value from the <pre> rendered by the Text component */
 function getRawValue(container: Element) {
 	return container.querySelector('pre')!.textContent!
 }
 
+/**
+ * Simulate an HTML5 drag-and-drop: drag the grip at sourceGripIndex and drop it
+ * onto the block at targetBlockIndex.
+ */
 async function simulateDragBlock(
 	container: Element,
 	sourceGripIndex: number,
@@ -70,29 +75,24 @@ async function openMenuForGrip(container: Element, gripIndex: number) {
 	await userEvent.click(grip)
 }
 
-describe('Feature: blocks', () => {
-	it('should render 6 blocks for BasicDraggable', async () => {
-		const {container} = await render(BasicDraggable)
-		expect(getGrips(container)).toHaveLength(6)
+describe('Feature: drag rows', () => {
+	it('should render 5 rows for PlainTextDrag', async () => {
+		const {container} = await render(<PlainTextDrag />)
+		expect(getGrips(container)).toHaveLength(5)
 	})
 
-	it('should render 10 blocks for MarkdownDocument', async () => {
-		const {container} = await render(MarkdownDocument)
-		expect(getGrips(container)).toHaveLength(10)
-	})
-
-	it('should render 5 blocks for PlainTextBlocks', async () => {
-		const {container} = await render(PlainTextBlocks)
+	it('should render 5 rows for MarkdownDrag', async () => {
+		const {container} = await render(<MarkdownDrag />)
 		expect(getGrips(container)).toHaveLength(5)
 	})
 
 	it('should render no grip buttons in read-only mode', async () => {
-		const {container} = await render(ReadOnlyDraggable)
+		const {container} = await render(<ReadOnlyDrag />)
 		expect(getGrips(container)).toHaveLength(0)
 	})
 
 	it('should render content in read-only mode', async () => {
-		await render(ReadOnlyDraggable)
+		await render(<ReadOnlyDrag />)
 		await expect.element(page.getByText(/Read-Only/).first()).toBeInTheDocument()
 		await expect.element(page.getByText(/Section A/).first()).toBeInTheDocument()
 		await expect.element(page.getByText(/Section B/).first()).toBeInTheDocument()
@@ -100,7 +100,7 @@ describe('Feature: blocks', () => {
 
 	describe('menu', () => {
 		it('should open with Add below, Duplicate, Delete options', async () => {
-			const {container} = await render(PlainTextBlocks)
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
@@ -109,7 +109,7 @@ describe('Feature: blocks', () => {
 		})
 
 		it('should close on Escape', async () => {
-			const {container} = await render(PlainTextBlocks)
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 
@@ -118,7 +118,7 @@ describe('Feature: blocks', () => {
 		})
 
 		it('should close when clicking outside', async () => {
-			const {container} = await render(PlainTextBlocks)
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 
@@ -127,33 +127,33 @@ describe('Feature: blocks', () => {
 		})
 	})
 
-	describe('add block', () => {
-		it('should increase block count by 1 when adding below first block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('add row', () => {
+		it('should increase row count by 1 when adding below first row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
 
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('should increase block count by 1 when adding below middle block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should increase row count by 1 when adding below middle row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 2)
 			await userEvent.click(page.getByText('Add below').element())
 
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('should increase block count by 1 when adding below last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should increase row count by 1 when adding below last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Add below').element())
 
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('should insert an empty block between the target and next block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should insert an empty row between the target and next row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
 
@@ -161,8 +161,8 @@ describe('Feature: blocks', () => {
 			expect(raw).toContain('First block of plain text\n\n\n\nSecond block of plain text')
 		})
 
-		it('should not create a trailing separator when adding below last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not create a trailing separator when adding below last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Add below').element())
 
@@ -170,9 +170,10 @@ describe('Feature: blocks', () => {
 			expect(raw.endsWith('\n\n\n\n')).toBe(false)
 		})
 
-		it('should result in a single empty block when all blocks are deleted', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should work when value is empty', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
+			// Delete all rows until value is ''
 			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForGrip(container, i)
@@ -181,21 +182,27 @@ describe('Feature: blocks', () => {
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Delete').element())
 
-			expect(getRawValue(container)).toBe('')
+			// Editor renders 1 empty row even when value is ''
+			expect(getGrips(container)).toHaveLength(1)
+
+			await openMenuForGrip(container, 0)
+			await userEvent.click(page.getByText('Add below').element())
+
+			expect(getGrips(container)).toHaveLength(2)
 		})
 	})
 
-	describe('delete block', () => {
-		it('should decrease count by 1 when deleting middle block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('delete row', () => {
+		it('should decrease count by 1 when deleting middle row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 2)
 			await userEvent.click(page.getByText('Delete').element())
 
 			expect(getGrips(container)).toHaveLength(4)
 		})
 
-		it('should preserve remaining content when deleting first block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should preserve remaining content when deleting first row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Delete').element())
 
@@ -203,8 +210,8 @@ describe('Feature: blocks', () => {
 			expect(getRawValue(container)).toContain('Second block of plain text')
 		})
 
-		it('should decrease count by 1 when deleting last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should decrease count by 1 when deleting last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Delete').element())
 
@@ -213,8 +220,8 @@ describe('Feature: blocks', () => {
 			expect(getRawValue(container)).not.toContain('Fifth block of plain text')
 		})
 
-		it('should result in empty value when deleting the last remaining block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should result in empty value when deleting the last remaining row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
@@ -231,9 +238,9 @@ describe('Feature: blocks', () => {
 		})
 	})
 
-	describe('duplicate block', () => {
-		it('should increase count by 1 when duplicating first block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('duplicate row', () => {
+		it('should increase count by 1 when duplicating first row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Duplicate').element())
 
@@ -241,7 +248,7 @@ describe('Feature: blocks', () => {
 		})
 
 		it('should create a copy with the same text content', async () => {
-			const {container} = await render(PlainTextBlocks)
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Duplicate').element())
 
@@ -249,8 +256,8 @@ describe('Feature: blocks', () => {
 			expect(matches).toHaveLength(2)
 		})
 
-		it('should increase count by 1 when duplicating last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should increase count by 1 when duplicating last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await openMenuForGrip(container, 4)
 			await userEvent.click(page.getByText('Duplicate').element())
 
@@ -259,8 +266,8 @@ describe('Feature: blocks', () => {
 	})
 
 	describe('enter key', () => {
-		it('should create a new block when pressing Enter at end of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should create a new row when pressing Enter at end of text row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			expect(getGrips(container)).toHaveLength(5)
 
 			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
@@ -270,8 +277,8 @@ describe('Feature: blocks', () => {
 			expect(getGrips(container)).toHaveLength(6)
 		})
 
-		it('should preserve all block content after pressing Enter', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should preserve all row content after pressing Enter', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const originalValue = getRawValue(container)
 
 			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
@@ -284,8 +291,8 @@ describe('Feature: blocks', () => {
 			expect(newValue).toContain('Fifth block of plain text')
 		})
 
-		it('should not create a new block when pressing Shift+Enter', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not create a new row when pressing Shift+Enter', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
 			await focusAtEnd(editable)
@@ -293,11 +300,22 @@ describe('Feature: blocks', () => {
 
 			expect(getGrips(container)).toHaveLength(5)
 		})
+
+		it('should create a new empty row after a mark row when pressing Enter', async () => {
+			const {container} = await render(<MarkdownDrag />)
+			const before = getBlocks(container).length
+			// block[0] is the h1 mark row
+			const markBlock = getBlocks(container)[0]
+			markBlock.focus()
+			await userEvent.keyboard('{Enter}')
+
+			expect(getGrips(container)).toHaveLength(before + 1)
+		})
 	})
 
 	describe('drag & drop', () => {
-		it('should reorder blocks when dragging block 0 after block 2', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should reorder rows when dragging row 0 after row 2', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			await simulateDragBlock(container, 0, 2)
 
@@ -305,8 +323,8 @@ describe('Feature: blocks', () => {
 			expect(raw.indexOf('First block of plain text')).toBeGreaterThan(raw.indexOf('Third block of plain text'))
 		})
 
-		it('should not change order when dragging block onto itself', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not change order when dragging row onto itself', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const original = getRawValue(container)
 
 			await simulateDragBlock(container, 1, 1)
@@ -315,14 +333,16 @@ describe('Feature: blocks', () => {
 		})
 	})
 
-	describe('backspace on empty block', () => {
-		it('should delete the block and reduce count by 1', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('backspace on empty row', () => {
+		it('should delete the row and reduce count by 1', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
+			// Insert an empty row after row 0
 			await openMenuForGrip(container, 0)
 			await userEvent.click(page.getByText('Add below').element())
 			expect(getGrips(container)).toHaveLength(6)
 
+			// Focus the new empty row (index 1) and press Backspace
 			const newBlockDiv = getBlockDiv(getGrips(container)[1])
 			newBlockDiv.focus()
 			await userEvent.keyboard('{Backspace}')
@@ -330,27 +350,28 @@ describe('Feature: blocks', () => {
 			expect(getGrips(container)).toHaveLength(5)
 		})
 
-		it('should not delete a non-empty block on Backspace', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not delete a non-empty row on Backspace', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
 			await focusAtEnd(editable)
 			await userEvent.keyboard('{Backspace}')
 
+			// Only one character was deleted, not the whole row
 			expect(getGrips(container)).toHaveLength(5)
 		})
 	})
 
-	it('should focus a block after Add below', async () => {
-		const {container} = await render(PlainTextBlocks)
+	it('should focus the new empty row after Add below', async () => {
+		const {container} = await render(<PlainTextDrag />)
 		await openMenuForGrip(container, 0)
 		await userEvent.click(page.getByText('Add below').element())
 
-		const activeEl = document.activeElement as HTMLElement
-		expect(activeEl?.closest('[data-testid="block"]')).toBeTruthy()
+		const newBlockDiv = getBlockDiv(getGrips(container)[1])
+		expect(document.activeElement).toBe(newBlockDiv)
 	})
 
-	it('should split block at caret when pressing Enter at the beginning', async () => {
-		const {container} = await render(PlainTextBlocks)
+	it('should split row at caret when pressing Enter at the beginning', async () => {
+		const {container} = await render(<PlainTextDrag />)
 		const editable = getEditableInBlock(getBlockDiv(getGrips(container)[0]))
 		await focusAtStart(editable)
 		await userEvent.keyboard('{Enter}')
@@ -360,7 +381,7 @@ describe('Feature: blocks', () => {
 	})
 
 	it('should restore original value after add then delete', async () => {
-		const {container} = await render(PlainTextBlocks)
+		const {container} = await render(<PlainTextDrag />)
 		const original = getRawValue(container)
 
 		await openMenuForGrip(container, 0)
@@ -375,7 +396,7 @@ describe('Feature: blocks', () => {
 	})
 
 	it('should restore original value after duplicate then delete', async () => {
-		const {container} = await render(PlainTextBlocks)
+		const {container} = await render(<PlainTextDrag />)
 		const original = getRawValue(container)
 
 		await openMenuForGrip(container, 0)
@@ -390,6 +411,7 @@ describe('Feature: blocks', () => {
 	})
 })
 
+/** Dispatch a synthetic beforeinput paste event using the current selection as the target range. */
 function dispatchPaste(target: HTMLElement, text: string) {
 	const sel = window.getSelection()
 	if (!sel?.rangeCount) return
@@ -413,6 +435,7 @@ function dispatchPaste(target: HTMLElement, text: string) {
 	)
 }
 
+/** Dispatch a synthetic beforeinput insertText event using the current selection as the target range. */
 function dispatchInsertText(target: HTMLElement, text: string) {
 	const sel = window.getSelection()
 	if (!sel?.rangeCount) return
@@ -434,10 +457,10 @@ function dispatchInsertText(target: HTMLElement, text: string) {
 	)
 }
 
-describe('Feature: block keyboard navigation', () => {
-	describe('ArrowLeft cross-block', () => {
-		it('should move focus to previous block when at start of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+describe('Feature: drag row keyboard navigation', () => {
+	describe('ArrowLeft cross-row', () => {
+		it('should move focus to previous row when at start of row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtStart(getEditableInBlock(blocks[1]))
@@ -446,8 +469,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[0])
 		})
 
-		it('should not cross to previous block when caret is mid-block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross to previous row when caret is mid-row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtEnd(getEditableInBlock(blocks[1]))
@@ -456,8 +479,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[1])
 		})
 
-		it('should not cross block boundary from the first block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross row boundary from the first row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtStart(getEditableInBlock(blocks[0]))
@@ -467,9 +490,9 @@ describe('Feature: block keyboard navigation', () => {
 		})
 	})
 
-	describe('ArrowRight cross-block', () => {
-		it('should move focus to next block when at end of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('ArrowRight cross-row', () => {
+		it('should move focus to next row when at end of row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtEnd(getEditableInBlock(blocks[0]))
@@ -478,8 +501,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[1])
 		})
 
-		it('should not cross to next block when caret is mid-block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross to next row when caret is mid-row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtStart(getEditableInBlock(blocks[0]))
@@ -488,8 +511,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[0])
 		})
 
-		it('should not cross block boundary from the last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross row boundary from the last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 			const last = blocks[blocks.length - 1]
 
@@ -500,9 +523,9 @@ describe('Feature: block keyboard navigation', () => {
 		})
 	})
 
-	describe('ArrowDown cross-block', () => {
-		it('should move focus to next block when on last line of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('ArrowDown cross-row', () => {
+		it('should move focus to next row when on last line of row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtEnd(getEditableInBlock(blocks[0]))
@@ -511,8 +534,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[1])
 		})
 
-		it('should not cross block boundary from the last block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross row boundary from the last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 			const last = blocks[blocks.length - 1]
 
@@ -523,9 +546,9 @@ describe('Feature: block keyboard navigation', () => {
 		})
 	})
 
-	describe('ArrowUp cross-block', () => {
-		it('should move focus to previous block when on first line of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('ArrowUp cross-row', () => {
+		it('should move focus to previous row when on first line of row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtStart(getEditableInBlock(blocks[1]))
@@ -534,8 +557,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(blocks[0])
 		})
 
-		it('should not cross block boundary from the first block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not cross row boundary from the first row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			await focusAtStart(getEditableInBlock(blocks[0]))
@@ -545,9 +568,9 @@ describe('Feature: block keyboard navigation', () => {
 		})
 	})
 
-	describe('Backspace merge blocks', () => {
-		it('should merge with previous block when Backspace pressed at start of non-empty block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('Backspace merge rows (text+text)', () => {
+		it('should merge with previous text row when Backspace pressed at start of non-empty row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const before = getBlocks(container).length
 
 			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
@@ -556,45 +579,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getBlocks(container)).toHaveLength(before - 1)
 		})
 
-		describe('Backspace into a mark block (heading with embedded \\n\\n separator)', () => {
-			// Bug: blocks whose mark token includes the \n\n separator have endPos === next block's startPos.
-			// mergeBlocks must detect this and strip the separator from inside the mark.
-
-			it('should reduce block count when Backspace at start of block after heading mark', async () => {
-				const {container} = await render(MarkdownDocument)
-				const before = getBlocks(container).length
-
-				// block[1] is "This is a powerful..." which follows the heading mark (block[0])
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
-				await userEvent.keyboard('{Backspace}')
-
-				expect(getBlocks(container)).toHaveLength(before - 1)
-			})
-
-			it('should preserve content of both blocks after merging into heading mark', async () => {
-				const {container} = await render(MarkdownDocument)
-
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
-				await userEvent.keyboard('{Backspace}')
-
-				const raw = getRawValue(container)
-				expect(raw).toContain('Marked Input')
-				expect(raw).toContain('powerful')
-			})
-
-			it('should keep focus in the heading block after Backspace merge', async () => {
-				const {container} = await render(MarkdownDocument)
-				const headingBlock = getBlocks(container)[0]
-
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
-				await userEvent.keyboard('{Backspace}')
-
-				expect(document.activeElement).toBe(headingBlock)
-			})
-		})
-
-		it('should preserve content of both merged blocks', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should preserve content of both merged rows', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
 			await userEvent.keyboard('{Backspace}')
@@ -604,8 +590,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(raw).toContain('Second block of plain text')
 		})
 
-		it('should keep focus in the previous block after merge', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should keep focus in the previous row after merge', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 			const prevBlock = blocks[0]
 
@@ -615,8 +601,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(document.activeElement).toBe(prevBlock)
 		})
 
-		it('should only delete one block at a time on Backspace', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should only delete one row at a time on Backspace', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			expect(getBlocks(container)).toHaveLength(5)
 
 			await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
@@ -624,56 +610,80 @@ describe('Feature: block keyboard navigation', () => {
 
 			expect(getBlocks(container)).toHaveLength(4)
 		})
-	})
 
-	describe('Delete merge blocks', () => {
-		describe('Delete at end of block', () => {
-			it('should merge with next block when Delete pressed at end of non-last block', async () => {
-				const {container} = await render(PlainTextBlocks)
+		describe('Backspace at start of text row after a mark row (navigate-only in drag mode)', () => {
+			// In drag mode, mark→text boundary is navigate-only: Backspace moves focus
+			// to the mark row but does NOT merge (can't combine text into a mark token).
+
+			it('should NOT reduce row count when Backspace at start of text row after mark row', async () => {
+				const {container} = await render(<MarkdownDrag />)
 				const before = getBlocks(container).length
 
-				await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
-				await userEvent.keyboard('{Delete}')
+				// block[1] is the first text row following the h1 mark row
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Backspace}')
 
-				expect(getBlocks(container)).toHaveLength(before - 1)
+				expect(getBlocks(container)).toHaveLength(before)
 			})
 
-			it('should preserve content of both merged blocks', async () => {
-				const {container} = await render(PlainTextBlocks)
+			it('should move focus to the mark row on Backspace at mark boundary', async () => {
+				const {container} = await render(<MarkdownDrag />)
+				const markBlock = getBlocks(container)[0]
 
-				await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
-				await userEvent.keyboard('{Delete}')
+				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await userEvent.keyboard('{Backspace}')
 
-				const raw = getRawValue(container)
-				expect(raw).toContain('First block of plain text')
-				expect(raw).toContain('Second block of plain text')
-			})
-
-			it('should keep focus in the current block after Delete merge', async () => {
-				const {container} = await render(PlainTextBlocks)
-				const currentBlock = getBlocks(container)[0]
-
-				await focusAtEnd(getEditableInBlock(currentBlock))
-				await userEvent.keyboard('{Delete}')
-
-				expect(document.activeElement).toBe(currentBlock)
-			})
-
-			it('should not merge when Delete pressed at end of last block', async () => {
-				const {container} = await render(PlainTextBlocks)
-				const blocks = getBlocks(container)
-				const last = blocks[blocks.length - 1]
-
-				await focusAtEnd(getEditableInBlock(last))
-				await userEvent.keyboard('{Delete}')
-
-				expect(getBlocks(container)).toHaveLength(5)
+				expect(document.activeElement).toBe(markBlock)
 			})
 		})
+	})
 
-		describe('Delete at start of block', () => {
-			it('should merge current block into previous when Delete pressed at start of non-first block', async () => {
-				const {container} = await render(PlainTextBlocks)
+	describe('Delete merge rows (text+text)', () => {
+		it('should merge with next text row when Delete pressed at end of non-last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
+			const before = getBlocks(container).length
+
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('{Delete}')
+
+			expect(getBlocks(container)).toHaveLength(before - 1)
+		})
+
+		it('should preserve content of both merged rows', async () => {
+			const {container} = await render(<PlainTextDrag />)
+
+			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
+			await userEvent.keyboard('{Delete}')
+
+			const raw = getRawValue(container)
+			expect(raw).toContain('First block of plain text')
+			expect(raw).toContain('Second block of plain text')
+		})
+
+		it('should keep focus in the current row after Delete merge', async () => {
+			const {container} = await render(<PlainTextDrag />)
+			const currentBlock = getBlocks(container)[0]
+
+			await focusAtEnd(getEditableInBlock(currentBlock))
+			await userEvent.keyboard('{Delete}')
+
+			expect(document.activeElement).toBe(currentBlock)
+		})
+
+		it('should not merge when Delete pressed at end of last row', async () => {
+			const {container} = await render(<PlainTextDrag />)
+			const blocks = getBlocks(container)
+			const last = blocks[blocks.length - 1]
+
+			await focusAtEnd(getEditableInBlock(last))
+			await userEvent.keyboard('{Delete}')
+
+			expect(getBlocks(container)).toHaveLength(5)
+		})
+
+		describe('Delete at start of row', () => {
+			it('should merge with previous row when Delete pressed at start of non-first row', async () => {
+				const {container} = await render(<PlainTextDrag />)
 				const before = getBlocks(container).length
 
 				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
@@ -682,8 +692,8 @@ describe('Feature: block keyboard navigation', () => {
 				expect(getBlocks(container)).toHaveLength(before - 1)
 			})
 
-			it('should preserve content of both merged blocks', async () => {
-				const {container} = await render(PlainTextBlocks)
+			it('should preserve content of both merged rows', async () => {
+				const {container} = await render(<PlainTextDrag />)
 
 				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
@@ -693,8 +703,8 @@ describe('Feature: block keyboard navigation', () => {
 				expect(raw).toContain('Second block of plain text')
 			})
 
-			it('should move focus to the previous block after merge', async () => {
-				const {container} = await render(PlainTextBlocks)
+			it('should keep focus in the previous row after Delete merge', async () => {
+				const {container} = await render(<PlainTextDrag />)
 				const prevBlock = getBlocks(container)[0]
 
 				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
@@ -703,77 +713,53 @@ describe('Feature: block keyboard navigation', () => {
 				expect(document.activeElement).toBe(prevBlock)
 			})
 
-			it('should not merge when Delete pressed at start of the first block', async () => {
-				const {container} = await render(PlainTextBlocks)
+			it('should not merge when Delete pressed at start of first row', async () => {
+				const {container} = await render(<PlainTextDrag />)
+				const before = getBlocks(container).length
 
 				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(getBlocks(container)).toHaveLength(5)
-			})
-
-			it('should place caret at the join point after merge', async () => {
-				const {container} = await render(PlainTextBlocks)
-
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
-				await userEvent.keyboard('{Delete}')
-
-				// After merge, typing should insert right at the join point
-				// (between the end of block 0 and start of block 1 text)
-				const raw = getRawValue(container)
-				expect(raw).toContain('First block of plain textSecond block of plain text')
+				expect(getBlocks(container)).toHaveLength(before)
 			})
 		})
 
-		describe('Delete into a mark block (heading with embedded \\n\\n separator)', () => {
-			// Bug: blocks whose mark token includes the \n\n separator have endPos === next block's startPos.
-			// mergeBlocks must detect this and strip the separator from inside the mark.
+		describe('Delete at mark→text boundary (navigate-only in drag mode)', () => {
+			// In drag mode, Backspace/Delete at a mark boundary navigates, does not merge.
 
-			it('should reduce block count when Delete at start of block after heading mark', async () => {
-				const {container} = await render(MarkdownDocument)
+			it('should NOT reduce row count when Delete at start of text row after mark row', async () => {
+				const {container} = await render(<MarkdownDrag />)
 				const before = getBlocks(container).length
 
-				// block[1] is "This is a powerful..." which follows the heading mark (block[0])
 				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(getBlocks(container)).toHaveLength(before - 1)
+				expect(getBlocks(container)).toHaveLength(before)
 			})
 
-			it('should preserve content of both blocks after merging into heading mark', async () => {
-				const {container} = await render(MarkdownDocument)
+			it('should move focus to mark row on Delete at mark boundary', async () => {
+				const {container} = await render(<MarkdownDrag />)
+				const markBlock = getBlocks(container)[0]
 
 				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				const raw = getRawValue(container)
-				expect(raw).toContain('Marked Input')
-				expect(raw).toContain('powerful')
-			})
-
-			it('should keep focus in the heading block after Delete merge', async () => {
-				const {container} = await render(MarkdownDocument)
-				const headingBlock = getBlocks(container)[0]
-
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
-				await userEvent.keyboard('{Delete}')
-
-				expect(document.activeElement).toBe(headingBlock)
+				expect(document.activeElement).toBe(markBlock)
 			})
 		})
 	})
 
-	describe('typing in blocks', () => {
-		it('should update raw value when typing a character at end of block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('typing in rows', () => {
+		it('should update raw value when typing a character at end of row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
 			await userEvent.keyboard('!')
 
 			expect(getRawValue(container)).toContain('First block of plain text!')
 		})
 
-		it('should update raw value when deleting a character with Backspace mid-block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should update raw value when deleting a character with Backspace mid-row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			await focusAtEnd(getEditableInBlock(getBlocks(container)[0]))
 			await userEvent.keyboard('{Backspace}')
 
@@ -781,8 +767,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getRawValue(container)).not.toContain('First block of plain text\n\n')
 		})
 
-		it('should not wipe all blocks when Ctrl+A in focused block then typing', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not wipe all rows when Ctrl+A in focused row then typing', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 
 			getEditableInBlock(blocks[1]).focus()
@@ -793,32 +779,38 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getRawValue(container)).toContain('First block of plain text')
 		})
 
-		it('should append character after last mark when typing at end of mark block', async () => {
-			const {container} = await render(MarkdownDocument)
+		it('should append character after last mark when typing at end of mark row', async () => {
+			const {container} = await render(<MarkdownDrag />)
 			const blocks = getBlocks(container)
-			await focusAtEnd(getEditableInBlock(blocks[0]))
-			await userEvent.keyboard('!')
+			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
+			await focusAtEnd(blocks[0])
+			dispatchInsertText(blocks[0], '!')
+			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
-			expect(block0Raw).toBe('# Welcome to **Marked Input**!')
+			expect(block0Raw).toBe('# Welcome to Draggable Blocks!')
 		})
 
-		it('should insert character at correct position mid-text within a mark block', async () => {
-			const {container} = await render(MarkdownDocument)
+		it('should insert character at correct position mid-text within a mark row', async () => {
+			const {container} = await render(<MarkdownDrag />)
 			const blocks = getBlocks(container)
+			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
+			// h1 renders nested children: 'Welcome to Draggable Blocks' (no '# ' prefix visible)
+			// focusAtStart → cursor before 'W' (raw pos 2, after '# ')
+			// ArrowRight x2 → before 'l' (raw pos 4)
 			await focusAtStart(blocks[0])
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}')
 			dispatchInsertText(blocks[0], 'X')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
-			expect(block0Raw).toBe('# WeXlcome to **Marked Input**')
+			expect(block0Raw).toBe('# WeXlcome to Draggable Blocks')
 		})
 	})
 
-	describe('paste in blocks', () => {
-		it('should update raw value when pasting text at end of a plain text block', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('paste in rows', () => {
+		it('should update raw value when pasting text at end of a plain text row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 			await focusAtEnd(getEditableInBlock(blocks[0]))
 			dispatchPaste(blocks[0], ' pasted')
@@ -827,8 +819,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getRawValue(container)).toContain('First block of plain text pasted')
 		})
 
-		it('should not affect other blocks when pasting in one block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should not affect other rows when pasting in one row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 			const blocks = getBlocks(container)
 			await focusAtEnd(getEditableInBlock(blocks[0]))
 			dispatchPaste(blocks[0], '!')
@@ -840,21 +832,22 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getBlocks(container)).toHaveLength(5)
 		})
 
-		it('should update raw value when pasting text at end of a mark block', async () => {
-			const {container} = await render(MarkdownDocument)
+		it('should update raw value when pasting text at end of a mark row', async () => {
+			const {container} = await render(<MarkdownDrag />)
 			const blocks = getBlocks(container)
-			await focusAtEnd(getEditableInBlock(blocks[0]))
-			dispatchPaste(getEditableInBlock(blocks[0]), '!')
+			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
+			await focusAtEnd(blocks[0])
+			dispatchPaste(blocks[0], '!')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
-			expect(block0Raw).toBe('# Welcome to **Marked Input**!')
+			expect(block0Raw).toBe('# Welcome to Draggable Blocks!')
 		})
 	})
 
-	describe('Enter mid-block split', () => {
-		it('should increase block count by 1', async () => {
-			const {container} = await render(PlainTextBlocks)
+	describe('Enter mid-row split', () => {
+		it('should increase row count by 1', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInBlock(getBlocks(container)[0])
 			await userEvent.click(editable)
@@ -865,8 +858,8 @@ describe('Feature: block keyboard navigation', () => {
 			expect(getBlocks(container)).toHaveLength(6)
 		})
 
-		it('should put text before caret in current block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should put text before caret in current row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInBlock(getBlocks(container)[0])
 			await userEvent.click(editable)
@@ -875,12 +868,12 @@ describe('Feature: block keyboard navigation', () => {
 			await userEvent.keyboard('{Enter}')
 
 			const raw = getRawValue(container)
-			const blockTexts = raw.split('\n\n')
-			expect(blockTexts[0]).toBe('First')
+			const rowTexts = raw.split('\n\n')
+			expect(rowTexts[0]).toBe('First')
 		})
 
-		it('should put text after caret in new block', async () => {
-			const {container} = await render(PlainTextBlocks)
+		it('should put text after caret in new row', async () => {
+			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInBlock(getBlocks(container)[0])
 			await userEvent.click(editable)
@@ -889,18 +882,19 @@ describe('Feature: block keyboard navigation', () => {
 			await userEvent.keyboard('{Enter}')
 
 			const raw = getRawValue(container)
-			const blockTexts = raw.split('\n\n')
-			expect(blockTexts[1]).toBe(' block of plain text')
+			const rowTexts = raw.split('\n\n')
+			expect(rowTexts[1]).toBe(' block of plain text')
 		})
 
-		it('should not expose raw markdown syntax in block[0] after Enter with marks', async () => {
-			const {container} = await render(MarkdownDocument)
+		it('should insert new empty row after mark row when pressing Enter on mark', async () => {
+			const {container} = await render(<MarkdownDrag />)
 			const blocks = getBlocks(container)
 			await focusAtEnd(blocks[0])
 			await userEvent.keyboard('{Enter}')
 
 			const raw = getRawValue(container)
-			expect(raw).toContain('**Marked Input**\n\n')
+			// The h1 mark row must remain intact
+			expect(raw).toContain('# Welcome to Draggable Blocks\n\n')
 		})
 	})
 })

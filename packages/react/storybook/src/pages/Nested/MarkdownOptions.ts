@@ -113,3 +113,10 @@ function buildMarkdownOptions(theme: Record<string, MarkupPreset>): Option[] {
  * Markdown options ready for MarkedInput
  */
 export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
+
+/**
+ * Block-level markdown options only (those whose markup includes \n\n).
+ * Use in drag mode so inline marks (bold, italic, code, link, strikethrough)
+ * are not each split into their own draggable row.
+ */
+export const blockLevelMarkdownOptions = markdownOptions.filter(opt => (opt.markup as string).includes('\n\n'))
