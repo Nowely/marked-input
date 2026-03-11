@@ -36,6 +36,10 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	 * Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
 	 */
 	block?: boolean | {alwaysShowHandle: boolean}
+	/** Enable drag mode: each individual token (mark or text) becomes its own draggable row.
+	 * Unlike `block`, rows are token-granular — one mark per row, one text fragment per row.
+	 */
+	drag?: boolean | {alwaysShowHandle: boolean}
 }
 
 export interface Slots {

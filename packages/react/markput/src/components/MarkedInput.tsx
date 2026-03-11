@@ -74,6 +74,11 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	 * Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
 	 */
 	block?: boolean | {alwaysShowHandle: boolean}
+	/** Enable drag mode: each individual token (mark or text) becomes its own draggable row.
+	 * Unlike `block`, rows are token-granular — one mark per row, one text fragment per row.
+	 * Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
+	 */
+	drag?: boolean | {alwaysShowHandle: boolean}
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
@@ -86,6 +91,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		onChange,
 		readOnly = false,
 		block = false,
+		drag = false,
 		Mark,
 		Overlay,
 		slots,
@@ -105,6 +111,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		onChange,
 		readOnly,
 		block,
+		drag,
 		options,
 		showOverlayOn,
 		Mark,
@@ -117,7 +124,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 
 	useCoreFeatures(store, ref)
 
-	const ContainerImpl = block ? BlockContainer : Container
+	const ContainerImpl = block || drag ? BlockContainer : Container
 
 	return (
 		<StoreContext value={store}>

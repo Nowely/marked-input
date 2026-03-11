@@ -100,13 +100,13 @@ export function splitTokensIntoBlocks(tokens: Token[]): Block[] {
 	return blocks
 }
 
-interface TextPart {
+export interface TextPart {
 	content: string
 	position: {start: number; end: number}
 	isBlockSeparator: boolean
 }
 
-function splitTextByBlockSeparator(token: TextToken): TextPart[] {
+export function splitTextByBlockSeparator(token: TextToken): TextPart[] {
 	const parts: TextPart[] = []
 	const {content, position} = token
 

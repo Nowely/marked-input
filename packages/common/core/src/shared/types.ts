@@ -66,6 +66,7 @@ export interface MarkputState {
 	slots: CoreSlots | undefined
 	slotProps: CoreSlotProps | undefined
 	block: boolean | {alwaysShowHandle: boolean}
+	drag: boolean | {alwaysShowHandle: boolean}
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
