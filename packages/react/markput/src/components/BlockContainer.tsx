@@ -2,17 +2,11 @@ import {
 	cx,
 	resolveSlot,
 	resolveSlotProps,
-	splitTokensIntoBlocks,
 	splitTokensIntoDragRows,
-	reorderBlocks,
 	reorderDragRows,
-	addBlock,
 	addDragRow,
-	deleteBlock,
 	deleteDragRow,
-	duplicateBlock,
 	duplicateDragRow,
-	getAlwaysShowHandle,
 	getAlwaysShowHandleDrag,
 	type Block,
 } from '@markput/core'
@@ -161,10 +155,8 @@ export const BlockContainer = memo(() => {
 	const className = store.state.className.use()
 	const style = store.state.style.use()
 	const readOnly = store.state.readOnly.use()
-	const block = store.state.block.use()
 	const drag = store.state.drag.use()
-	const isDragMode = !!drag
-	const alwaysShowHandle = isDragMode ? getAlwaysShowHandleDrag(drag) : getAlwaysShowHandle(block)
+	const alwaysShowHandle = getAlwaysShowHandleDrag(drag)
 	const value = store.state.value.use()
 	const onChange = store.state.onChange.use()
 	const key = store.key
@@ -176,31 +168,25 @@ export const BlockContainer = memo(() => {
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	const blocks = useMemo(() => {
-		const result = isDragMode ? splitTokensIntoDragRows(tokens) : splitTokensIntoBlocks(tokens)
+		const result = splitTokensIntoDragRows(tokens)
 		return result.length > 0 ? result : [EMPTY_BLOCK]
-	}, [tokens, isDragMode])
+	}, [tokens])
 	const blocksRef = useRef<Block[]>(blocks)
 	blocksRef.current = blocks
 
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
 			if (value == null || !onChange) return
-			const newValue = isDragMode
-				? reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
-				: reorderBlocks(value, blocksRef.current, sourceIndex, targetIndex)
+			const newValue = reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
 			if (newValue !== value) store.applyValue(newValue)
 		},
-		[store, value, onChange, isDragMode]
+		[store, value, onChange]
 	)
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(
-				isDragMode
-					? addDragRow(value, blocksRef.current, afterIndex)
-					: addBlock(value, blocksRef.current, afterIndex)
-			)
+			store.applyValue(addDragRow(value, blocksRef.current, afterIndex))
 			queueMicrotask(() => {
 				const container = store.refs.container
 				if (!container) return
@@ -209,31 +195,23 @@ export const BlockContainer = memo(() => {
 				target?.focus()
 			})
 		},
-		[store, value, onChange, isDragMode]
+		[store, value, onChange]
 	)
 
 	const handleDelete = useCallback(
 		(index: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(
-				isDragMode
-					? deleteDragRow(value, blocksRef.current, index)
-					: deleteBlock(value, blocksRef.current, index)
-			)
+			store.applyValue(deleteDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange, isDragMode]
+		[store, value, onChange]
 	)
 
 	const handleDuplicate = useCallback(
 		(index: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(
-				isDragMode
-					? duplicateDragRow(value, blocksRef.current, index)
-					: duplicateBlock(value, blocksRef.current, index)
-			)
+			store.applyValue(duplicateDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange, isDragMode]
+		[store, value, onChange]
 	)
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {

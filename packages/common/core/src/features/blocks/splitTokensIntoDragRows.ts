@@ -1,6 +1,90 @@
 import type {Token, TextToken} from '../parsing/ParserV2/types'
-import {splitTextByBlockSeparator} from './splitTokensIntoBlocks'
-import type {Block} from './splitTokensIntoBlocks'
+import {BLOCK_SEPARATOR} from './config'
+
+export interface Block {
+	id: string
+	tokens: Token[]
+	startPos: number
+	endPos: number
+}
+
+export interface TextPart {
+	content: string
+	position: {start: number; end: number}
+	isBlockSeparator: boolean
+}
+
+export function splitTextByBlockSeparator(token: TextToken): TextPart[] {
+	const parts: TextPart[] = []
+	const {content, position} = token
+
+	let offset = position.start
+	const chars: string[] = []
+
+	const flushText = () => {
+		if (chars.length > 0) {
+			const text = chars.join('')
+			parts.push({
+				content: text,
+				position: {start: offset, end: offset + text.length},
+				isBlockSeparator: false,
+			})
+			offset += text.length
+			chars.length = 0
+		}
+	}
+
+	for (let i = 0; i < content.length; i++) {
+		const char = content[i]
+
+		if (char === '\n') {
+			if (i + 1 < content.length && content[i + 1] === '\n') {
+				flushText()
+				parts.push({
+					content: BLOCK_SEPARATOR,
+					position: {start: offset, end: offset + 2},
+					isBlockSeparator: true,
+				})
+				offset += 2
+				i++
+			} else {
+				chars.push(char)
+				offset++
+			}
+		} else if (char === '\r') {
+			if (i + 1 < content.length && content[i + 1] === '\n') {
+				if (
+					i + 2 < content.length &&
+					content[i + 2] === '\r' &&
+					i + 3 < content.length &&
+					content[i + 3] === '\n'
+				) {
+					flushText()
+					parts.push({
+						content: BLOCK_SEPARATOR,
+						position: {start: offset, end: offset + 4},
+						isBlockSeparator: true,
+					})
+					offset += 4
+					i += 3
+				} else {
+					chars.push('\n')
+					offset += 2
+					i++
+				}
+			} else {
+				chars.push('\n')
+				offset++
+			}
+		} else {
+			chars.push(char)
+		}
+	}
+
+	flushText()
+
+	return parts
+}
 
 let dragRowIdCounter = 0
 
@@ -15,7 +99,7 @@ export function resetDragRowIdCounter(): void {
 /**
  * Splits a flat token list into drag rows where each top-level token = one row.
  *
- * Unlike `splitTokensIntoBlocks` (which groups multiple tokens per block, separated by `\n\n`),
+ * Unlike `splitTokensIntoBlocks` (which grouped multiple tokens per block separated by `\n\n`),
  * this function makes each individual token its own row:
  * - MarkToken → one row (auto-delimited by mark syntax, no `\n\n` needed between marks)
  * - TextToken → split by `\n\n` → one row per non-separator fragment

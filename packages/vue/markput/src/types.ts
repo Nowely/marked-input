@@ -32,12 +32,9 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	value?: string
 	defaultValue?: string
 	readOnly?: boolean
-	/** Enable Notion-like draggable blocks with drag handles for reordering.
-	 * Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
-	 */
-	block?: boolean | {alwaysShowHandle: boolean}
 	/** Enable drag mode: each individual token (mark or text) becomes its own draggable row.
-	 * Unlike `block`, rows are token-granular — one mark per row, one text fragment per row.
+	 * One mark per row, one text fragment per row.
+	 * Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
 	 */
 	drag?: boolean | {alwaysShowHandle: boolean}
 }

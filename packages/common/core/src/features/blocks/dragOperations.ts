@@ -1,5 +1,5 @@
 import {BLOCK_SEPARATOR} from './config'
-import type {Block} from './splitTokensIntoBlocks'
+import type {Block} from './splitTokensIntoDragRows'
 
 /**
  * In drag mode the gap between two adjacent rows can be:

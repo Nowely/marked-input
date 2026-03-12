@@ -86,22 +86,18 @@ export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/ma
 
 // Blocks
 export {
-	splitTokensIntoBlocks,
 	splitTokensIntoDragRows,
-	reorderBlocks,
+	splitTextByBlockSeparator,
 	reorderDragRows,
-	addBlock,
 	addDragRow,
-	deleteBlock,
 	deleteDragRow,
-	duplicateBlock,
 	duplicateDragRow,
 	mergeDragRows,
 	getMergeDragRowJoinPos,
 	BLOCK_SEPARATOR,
-	getAlwaysShowHandle,
 	getAlwaysShowHandleDrag,
 	type Block,
+	type TextPart,
 } from './src/features/blocks'
 
 // Navigation & Input

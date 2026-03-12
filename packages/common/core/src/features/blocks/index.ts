@@ -1,7 +1,4 @@
-export {splitTokensIntoBlocks, type Block, splitTextByBlockSeparator, type TextPart} from './splitTokensIntoBlocks'
-export {splitTokensIntoDragRows} from './splitTokensIntoDragRows'
-export {reorderBlocks} from './reorderBlocks'
-export {addBlock, deleteBlock, duplicateBlock, mergeBlocks, getMergeJoinPos} from './blockOperations'
+export {splitTokensIntoDragRows, type Block, splitTextByBlockSeparator, type TextPart} from './splitTokensIntoDragRows'
 export {
 	addDragRow,
 	deleteDragRow,
@@ -10,4 +7,4 @@ export {
 	getMergeDragRowJoinPos,
 	reorderDragRows,
 } from './dragOperations'
-export {BLOCK_SEPARATOR, getAlwaysShowHandle, getAlwaysShowHandleDrag} from './config'
+export {BLOCK_SEPARATOR, getAlwaysShowHandleDrag} from './config'

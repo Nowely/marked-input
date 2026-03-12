@@ -17,11 +17,10 @@ const props = withDefaults(defineProps<MarkedInputProps>(), {
 	options: () => DEFAULT_OPTIONS,
 	showOverlayOn: 'change',
 	readOnly: false,
-	block: false,
 	drag: false,
 })
 
-const ContainerImpl = computed(() => (props.block || props.drag ? BlockContainer : Container))
+const ContainerImpl = computed(() => (props.drag ? BlockContainer : Container))
 
 const emit = defineEmits<{
 	change: [value: string]
@@ -43,7 +42,6 @@ function syncProps() {
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
 		readOnly: props.readOnly,
-		block: props.block,
 		drag: props.drag,
 		options: props.options,
 		showOverlayOn: props.showOverlayOn,
@@ -71,7 +69,6 @@ watch(
 		props.style,
 		props.slots,
 		props.slotProps,
-		props.block,
 		props.drag,
 	],
 	syncProps
