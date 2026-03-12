@@ -369,7 +369,11 @@ export class KeyDownController {
 
 		// Text row (both block and drag modes): split at caret position
 		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
-		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
+		// In drag mode, inserting '\n\n' at position 0 of a row doesn't create a new leading row
+		// because the leading separator is ignored by splitTokensIntoDragRows. Use a double
+		// separator to produce an empty text row before the existing content.
+		const sep = isDragMode && absolutePos === block.startPos ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : BLOCK_SEPARATOR
+		const newValue = value.slice(0, absolutePos) + sep + value.slice(absolutePos)
 		this.store.applyValue(newValue)
 
 		// Focus the new block after re-render

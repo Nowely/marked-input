@@ -30,8 +30,10 @@ export function addDragRow(value: string, rows: Block[], afterIndex: number): st
 	if (rows.length === 0) return value + BLOCK_SEPARATOR
 
 	// Last row: append `\n\n` — splitTokensIntoDragRows will create a trailing empty text row.
+	// Special case: when value is empty, appending '\n\n' creates only 1 empty row (no content
+	// precedes the separator). Use double separator to ensure 2 empty rows exist.
 	if (afterIndex >= rows.length - 1) {
-		return value + BLOCK_SEPARATOR
+		return value === '' ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : value + BLOCK_SEPARATOR
 	}
 
 	const curr = rows[afterIndex]
