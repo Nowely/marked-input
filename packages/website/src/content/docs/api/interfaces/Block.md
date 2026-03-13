@@ -5,7 +5,7 @@ prev: false
 title: "Block"
 ---
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:4](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L4)
+Defined in: [common/core/src/features/blocks/splitTokensIntoDragRows.ts:4](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoDragRows.ts#L4)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:4](https:/
 endPos: number;
 ```
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:8](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L8)
+Defined in: [common/core/src/features/blocks/splitTokensIntoDragRows.ts:8](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoDragRows.ts#L8)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:8](https:/
 id: string;
 ```
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:5](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L5)
+Defined in: [common/core/src/features/blocks/splitTokensIntoDragRows.ts:5](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoDragRows.ts#L5)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:5](https:/
 startPos: number;
 ```
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L7)
+Defined in: [common/core/src/features/blocks/splitTokensIntoDragRows.ts:7](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoDragRows.ts#L7)
 
 ***
 
@@ -45,4 +45,4 @@ Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:7](https:/
 tokens: Token[];
 ```
 
-Defined in: [common/core/src/features/blocks/splitTokensIntoBlocks.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoBlocks.ts#L6)
+Defined in: [common/core/src/features/blocks/splitTokensIntoDragRows.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/blocks/splitTokensIntoDragRows.ts#L6)

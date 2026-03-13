@@ -35,9 +35,9 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
-    "lint-staged": "^16.2.7",
-    "oxfmt": "^0.36.0",
-    "oxlint": "^1.51.0",
+    "lint-staged": "^16.3.3",
+    "oxfmt": "^0.40.0",
+    "oxlint": "^1.55.0",
     "oxlint-tsgolint": "^0.16.0",
     "playwright": "catalog:",
     "typescript": "catalog:",
