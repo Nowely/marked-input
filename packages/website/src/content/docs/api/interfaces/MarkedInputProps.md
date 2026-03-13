@@ -30,23 +30,6 @@ Props for MarkedInput component.
 
 ## Properties
 
-### block?
-
-```ts
-optional block: 
-  | boolean
-  | {
-  alwaysShowHandle: boolean;
-};
-```
-
-Defined in: [react/markput/src/components/MarkedInput.tsx:76](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L76)
-
-Enable Notion-like draggable blocks with drag handles for reordering.
-Pass an object to configure block behavior, e.g. `{ alwaysShowHandle: true }` for mobile.
-
-***
-
 ### className?
 
 ```ts
@@ -68,6 +51,24 @@ optional defaultValue: string;
 Defined in: [react/markput/src/components/MarkedInput.tsx:68](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L68)
 
 Initial value for uncontrolled mode
+
+***
+
+### drag?
+
+```ts
+optional drag: 
+  | boolean
+  | {
+  alwaysShowHandle: boolean;
+};
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:77](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L77)
+
+Enable drag mode: each individual token (mark or text) becomes its own draggable row.
+One mark per row, one text fragment per row.
+Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
 
 ***
 
