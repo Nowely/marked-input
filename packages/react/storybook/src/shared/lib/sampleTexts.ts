@@ -1,7 +1,9 @@
 /**
  * Sample text for drag mode: each block-level element ends with \n\n so it
- * matches its own mark pattern (e.g. `- __nested__\n\n`). Prose uses plain text
- * to avoid inline marks becoming separate top-level drag rows.
+ * matches its own mark pattern (e.g. `- __nested__\n\n`). List items use
+ * loose-list format (blank line between items) because the markput parser
+ * requires an unambiguous \n\n terminator to delimit each list mark.
+ * Prose uses plain text to avoid inline marks becoming separate drag rows.
  */
 export const DRAG_MARKDOWN = `# Welcome to **Marked Input**
 

@@ -181,6 +181,54 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 
 > \u2610 = pending  \u2611 = done`
 
+// ─── Test helper stories (used by Drag.spec.tsx) ─────────────────────────────
+
+const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
+
+export const PlainTextDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => {
+		const [value, setValue] = useState(
+			'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
+		)
+		return (
+			<>
+				<MarkedInput value={value} onChange={setValue} drag style={testStyle} />
+				<Text value={value} />
+			</>
+		)
+	},
+}
+
+export const MarkdownDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => {
+		const [value, setValue] = useState(
+			'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
+		)
+		return (
+			<>
+				<MarkedInput
+					Mark={MarkdownMark}
+					options={markdownOptions}
+					value={value}
+					onChange={setValue}
+					drag
+					style={testStyle}
+				/>
+				<Text value={value} />
+			</>
+		)
+	},
+}
+
+export const ReadOnlyDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => <MarkedInput value="Read-Only Content\n\nSection A\n\nSection B" readOnly drag style={testStyle} />,
+}
+
+// ─── Todo list (all marks include \n\n) ───────────────────────────────────────
+
 export const TodoList: Story = {
 	render: () => {
 		const [value, setValue] = useState(TODO_VALUE)

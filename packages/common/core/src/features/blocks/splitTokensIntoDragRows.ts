@@ -148,7 +148,7 @@ export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 						})
 					}
 					afterSeparatorPos = part.position.end
-				} else if (part.content.length > 0) {
+				} else if (part.content.trim().length > 0) {
 					afterSeparatorPos = null
 					rows.push({
 						id: generateRowId(part.position.start),
