@@ -72,7 +72,7 @@ export class Store {
 				style: undefined,
 				slots: undefined,
 				slotProps: undefined,
-				block: false,
+				drag: false,
 			},
 			options.createUseHook
 		)

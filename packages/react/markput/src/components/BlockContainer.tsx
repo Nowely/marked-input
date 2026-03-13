@@ -2,12 +2,12 @@ import {
 	cx,
 	resolveSlot,
 	resolveSlotProps,
-	splitTokensIntoBlocks,
-	reorderBlocks,
-	addBlock,
-	deleteBlock,
-	duplicateBlock,
-	getAlwaysShowHandle,
+	splitTokensIntoDragRows,
+	reorderDragRows,
+	addDragRow,
+	deleteDragRow,
+	duplicateDragRow,
+	getAlwaysShowHandleDrag,
 	type Block,
 } from '@markput/core'
 import type {CSSProperties, ElementType} from 'react'
@@ -155,8 +155,8 @@ export const BlockContainer = memo(() => {
 	const className = store.state.className.use()
 	const style = store.state.style.use()
 	const readOnly = store.state.readOnly.use()
-	const block = store.state.block.use()
-	const alwaysShowHandle = getAlwaysShowHandle(block)
+	const drag = store.state.drag.use()
+	const alwaysShowHandle = getAlwaysShowHandleDrag(drag)
 	const value = store.state.value.use()
 	const onChange = store.state.onChange.use()
 	const key = store.key
@@ -168,7 +168,7 @@ export const BlockContainer = memo(() => {
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	const blocks = useMemo(() => {
-		const result = splitTokensIntoBlocks(tokens)
+		const result = splitTokensIntoDragRows(tokens)
 		return result.length > 0 ? result : [EMPTY_BLOCK]
 	}, [tokens])
 	const blocksRef = useRef<Block[]>(blocks)
@@ -177,7 +177,7 @@ export const BlockContainer = memo(() => {
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
 			if (value == null || !onChange) return
-			const newValue = reorderBlocks(value, blocksRef.current, sourceIndex, targetIndex)
+			const newValue = reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
 			if (newValue !== value) store.applyValue(newValue)
 		},
 		[store, value, onChange]
@@ -186,7 +186,7 @@ export const BlockContainer = memo(() => {
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(addBlock(value, blocksRef.current, afterIndex))
+			store.applyValue(addDragRow(value, blocksRef.current, afterIndex))
 			queueMicrotask(() => {
 				const container = store.refs.container
 				if (!container) return
@@ -201,7 +201,7 @@ export const BlockContainer = memo(() => {
 	const handleDelete = useCallback(
 		(index: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(deleteBlock(value, blocksRef.current, index))
+			store.applyValue(deleteDragRow(value, blocksRef.current, index))
 		},
 		[store, value, onChange]
 	)
@@ -209,7 +209,7 @@ export const BlockContainer = memo(() => {
 	const handleDuplicate = useCallback(
 		(index: number) => {
 			if (value == null || !onChange) return
-			store.applyValue(duplicateBlock(value, blocksRef.current, index))
+			store.applyValue(duplicateDragRow(value, blocksRef.current, index))
 		},
 		[store, value, onChange]
 	)

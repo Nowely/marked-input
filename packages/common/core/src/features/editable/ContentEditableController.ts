@@ -24,11 +24,11 @@ export class ContentEditableController {
 		const readOnly = this.store.state.readOnly.get()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = !!this.store.state.block.get()
+		const isDrag = !!this.store.state.drag.get()
 
-		// In non-block mode, even-indexed children are text spans (odd are marks).
-		// In block mode, all children are DraggableBlock divs and need contentEditable.
-		const step = isBlock ? 1 : 2
+		// In non-drag mode, even-indexed children are text spans (odd are marks).
+		// In drag mode, all children are DraggableBlock divs and need contentEditable.
+		const step = isDrag ? 1 : 2
 		for (let i = 0; i < children.length; i += step) {
 			;(children[i] as HTMLElement).contentEditable = value
 		}

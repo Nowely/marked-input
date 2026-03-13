@@ -5,24 +5,26 @@ import type {CSSProperties, ReactNode} from 'react'
 import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
-import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
+import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
-	title: 'MarkedInput/Block',
+	title: 'MarkedInput/Drag',
 	tags: ['autodocs'],
 	component: MarkedInput,
 	parameters: {
 		docs: {
 			description: {
 				component:
-					'Notion-like draggable blocks. Hover over a block to reveal the + and drag handle buttons. Drag to reorder, click + to add a block, click the grip to open a block menu (delete/duplicate).',
+					'Drag mode: each top-level token (mark or text fragment) is its own draggable row. Adjacent marks need no separator; adjacent text rows use \\n\\n.',
 			},
 		},
 	},
 } satisfies Meta<typeof MarkedInput>
 
 type Story = StoryObj<Meta<typeof MarkedInput>>
+
+// ─── Markdown with block-level marks (headings + list) ────────────────────────
 
 const MarkdownMark = ({
 	children,
@@ -34,19 +36,9 @@ const MarkdownMark = ({
 	style?: React.CSSProperties
 }) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
 
-export const BasicDraggable: Story = {
+export const Markdown: Story = {
 	render: () => {
-		const [value, setValue] = useState(`# Welcome to Draggable Blocks
-
-This is the first paragraph. Hover to see the drag handle on the left.
-
-This is the second paragraph. Try dragging it above the first one!
-
-## Features
-
-- Drag handles appear on hover
-- Drop indicators show where the block will land
-- Blocks reorder by manipulating the underlying string`)
+		const [value, setValue] = useState(DRAG_MARKDOWN)
 
 		return (
 			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
@@ -55,8 +47,8 @@ This is the second paragraph. Try dragging it above the first one!
 					options={markdownOptions}
 					value={value}
 					onChange={setValue}
-					block
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
+					drag
+					style={{minHeight: 300, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
 				/>
 				<Text label="Raw value:" value={value} />
 			</div>
@@ -64,103 +56,7 @@ This is the second paragraph. Try dragging it above the first one!
 	},
 }
 
-export const MarkdownDocument: Story = {
-	render: () => {
-		const [value, setValue] = useState(COMPLEX_MARKDOWN)
-
-		return (
-			<div>
-				<MarkedInput Mark={MarkdownMark} options={markdownOptions} value={value} onChange={setValue} block />
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
-	},
-}
-
-export const ReadOnlyDraggable: Story = {
-	render: () => {
-		const value = `# Read-Only Mode
-
-Drag handles are hidden in read-only mode.
-
-## Section A
-
-Content cannot be reordered.
-
-## Section B
-
-This is static content.`
-
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					readOnly
-					block
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-			</div>
-		)
-	},
-}
-
-export const MobileBlocks: Story = {
-	render: () => {
-		const [value, setValue] = useState(`# Always-visible handles
-
-Drag handles are always visible — ideal for touch devices.
-
-## Try it
-
-Tap the grip icon to open the block menu.`)
-
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					onChange={setValue}
-					block={{alwaysShowHandle: true}}
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
-	},
-}
-
-export const PlainTextBlocks: Story = {
-	render: () => {
-		const [value, setValue] = useState(`First block of plain text
-
-Second block of plain text
-
-Third block of plain text
-
-Fourth block of plain text
-
-Fifth block of plain text`)
-
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					value={value}
-					onChange={setValue}
-					block
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
-	},
-}
-
-// ---------------------------------------------------------------------------
-// Todo List — Notion-like checklist with nested hierarchy
-// ---------------------------------------------------------------------------
+// ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
 interface TodoMarkProps extends MarkProps {
 	style?: CSSProperties
@@ -285,6 +181,54 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 
 > \u2610 = pending  \u2611 = done`
 
+// ─── Test helper stories (used by Drag.spec.tsx) ─────────────────────────────
+
+const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
+
+export const PlainTextDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => {
+		const [value, setValue] = useState(
+			'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
+		)
+		return (
+			<>
+				<MarkedInput value={value} onChange={setValue} drag style={testStyle} />
+				<Text value={value} />
+			</>
+		)
+	},
+}
+
+export const MarkdownDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => {
+		const [value, setValue] = useState(
+			'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
+		)
+		return (
+			<>
+				<MarkedInput
+					Mark={MarkdownMark}
+					options={markdownOptions}
+					value={value}
+					onChange={setValue}
+					drag
+					style={testStyle}
+				/>
+				<Text value={value} />
+			</>
+		)
+	},
+}
+
+export const ReadOnlyDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () => <MarkedInput value="Read-Only Content\n\nSection A\n\nSection B" readOnly drag style={testStyle} />,
+}
+
+// ─── Todo list (all marks include \n\n) ───────────────────────────────────────
+
 export const TodoList: Story = {
 	render: () => {
 		const [value, setValue] = useState(TODO_VALUE)
@@ -296,7 +240,7 @@ export const TodoList: Story = {
 					options={todoOptions}
 					value={value}
 					onChange={setValue}
-					block
+					drag
 					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
 				/>
 				<Text label="Raw value:" value={value} />

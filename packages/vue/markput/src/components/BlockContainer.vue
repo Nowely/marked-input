@@ -2,12 +2,12 @@
 import {
 	resolveSlot,
 	resolveSlotProps,
-	splitTokensIntoBlocks,
-	reorderBlocks,
-	addBlock,
-	deleteBlock,
-	duplicateBlock,
-	getAlwaysShowHandle,
+	splitTokensIntoDragRows,
+	reorderDragRows,
+	addDragRow,
+	deleteDragRow,
+	duplicateDragRow,
+	getAlwaysShowHandleDrag,
 } from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
@@ -23,8 +23,8 @@ const slotProps = store.state.slotProps.use()
 const className = store.state.className.use()
 const style = store.state.style.use()
 const readOnly = store.state.readOnly.use()
-const block = store.state.block.use()
-const alwaysShowHandle = computed(() => getAlwaysShowHandle(block.value))
+const drag = store.state.drag.use()
+const alwaysShowHandle = computed(() => getAlwaysShowHandleDrag(drag.value))
 const value = store.state.value.use()
 const onChange = store.state.onChange.use()
 const key = store.key
@@ -32,27 +32,27 @@ const key = store.key
 const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
 const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
 
-const blocks = computed(() => splitTokensIntoBlocks(tokens.value))
+const blocks = computed(() => splitTokensIntoDragRows(tokens.value))
 
 function handleReorder(sourceIndex: number, targetIndex: number) {
 	if (!value.value || !onChange.value) return
-	const newValue = reorderBlocks(value.value, blocks.value, sourceIndex, targetIndex)
+	const newValue = reorderDragRows(value.value, blocks.value, sourceIndex, targetIndex)
 	if (newValue !== value.value) store.applyValue(newValue)
 }
 
 function handleAdd(afterIndex: number) {
 	if (!value.value || !onChange.value) return
-	store.applyValue(addBlock(value.value, blocks.value, afterIndex))
+	store.applyValue(addDragRow(value.value, blocks.value, afterIndex))
 }
 
 function handleDelete(index: number) {
 	if (!value.value || !onChange.value) return
-	store.applyValue(deleteBlock(value.value, blocks.value, index))
+	store.applyValue(deleteDragRow(value.value, blocks.value, index))
 }
 
 function handleDuplicate(index: number) {
 	if (!value.value || !onChange.value) return
-	store.applyValue(duplicateBlock(value.value, blocks.value, index))
+	store.applyValue(duplicateDragRow(value.value, blocks.value, index))
 }
 </script>
 

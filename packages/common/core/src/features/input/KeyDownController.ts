@@ -1,8 +1,8 @@
 import type {NodeProxy} from '../../shared/classes/NodeProxy'
 import {KEYBOARD} from '../../shared/constants'
-import {deleteBlock, getMergeJoinPos, mergeBlocks} from '../blocks/blockOperations'
 import {BLOCK_SEPARATOR} from '../blocks/config'
-import {splitTokensIntoBlocks, type Block} from '../blocks/splitTokensIntoBlocks'
+import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
+import {splitTokensIntoDragRows, type Block} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {MarkToken} from '../parsing/ParserV2/types'
@@ -65,11 +65,11 @@ export class KeyDownController {
 
 	#handleDelete(event: KeyboardEvent) {
 		const {focus} = this.store.nodes
-		const isBlockMode = !!this.store.state.block.get()
+		const isDragMode = !!this.store.state.drag.get()
 
-		// Mark/span deletion only applies in non-block mode.
-		// In block mode the focus target is a block div, not a span/mark.
-		if (!isBlockMode && (event.key === KEYBOARD.DELETE || event.key === KEYBOARD.BACKSPACE)) {
+		// Mark/span deletion only applies in non-drag mode.
+		// In drag mode the focus target is a block div, not a span/mark.
+		if (!isDragMode && (event.key === KEYBOARD.DELETE || event.key === KEYBOARD.BACKSPACE)) {
 			if (focus.isMark) {
 				if (focus.isEditable) {
 					if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
@@ -97,7 +97,7 @@ export class KeyDownController {
 			}
 		}
 
-		if (!isBlockMode) return
+		if (!isDragMode) return
 
 		const container = this.store.refs.container
 		if (!container) return
@@ -109,7 +109,7 @@ export class KeyDownController {
 		if (blockIndex === -1) return
 
 		const tokens = this.store.state.tokens.get()
-		const blocks = splitTokensIntoBlocks(tokens)
+		const blocks = splitTokensIntoDragRows(tokens)
 		if (blockIndex >= blocks.length) return
 
 		const block = blocks[blockIndex]
@@ -124,7 +124,17 @@ export class KeyDownController {
 			const blockText = block.tokens.map(t => ('content' in t ? (t as {content: string}).content : '')).join('')
 			if (blockText === '') {
 				event.preventDefault()
-				const newValue = deleteBlock(value, blocks, blockIndex)
+				const newValue =
+					blocks.length <= 1
+						? ''
+						: (() => {
+								if (blockIndex >= blocks.length - 1)
+									return value.slice(0, blocks[blockIndex - 1].endPos)
+								return (
+									value.slice(0, blocks[blockIndex].startPos) +
+									value.slice(blocks[blockIndex + 1].startPos)
+								)
+							})()
 				this.store.applyValue(newValue)
 				queueMicrotask(() => {
 					const newDivs = container.children
@@ -140,18 +150,34 @@ export class KeyDownController {
 
 			// Non-empty block at position 0: merge with previous block
 			if (caretAtStart && blockIndex > 0) {
+				const prevBlock = blocks[blockIndex - 1]
+				const currBlock = blocks[blockIndex]
+				const gap = currBlock.startPos - prevBlock.endPos
+				if (isTextRow(prevBlock) && isTextRow(currBlock) && gap === 2) {
+					// Text-text merge: remove the \n\n separator
+					event.preventDefault()
+					const joinPos = getMergeDragRowJoinPos(blocks, blockIndex)
+					const newValue = mergeDragRows(value, blocks, blockIndex)
+					this.store.applyValue(newValue)
+					queueMicrotask(() => {
+						const newDivs = container.children
+						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+						if (target) {
+							target.focus()
+							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlock = updatedBlocks[blockIndex - 1]
+							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						}
+					})
+					return
+				}
+				// Previous row is a mark (or gap=0): navigate only
 				event.preventDefault()
-				const joinPos = getMergeJoinPos(blocks, blockIndex)
-				const newValue = mergeBlocks(value, blocks, blockIndex)
-				this.store.applyValue(newValue)
 				queueMicrotask(() => {
-					const newDivs = container.children
-					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
-						const updatedBlock = updatedBlocks[blockIndex - 1]
-						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						Caret.setCaretToEnd(target)
 					}
 				})
 				return
@@ -166,18 +192,33 @@ export class KeyDownController {
 
 			// Caret at start of non-first block: merge current block into previous (like Backspace at start)
 			if (caretAtStart && blockIndex > 0) {
+				const prevBlock = blocks[blockIndex - 1]
+				const currBlock = blocks[blockIndex]
+				const gap = currBlock.startPos - prevBlock.endPos
+				if (isTextRow(prevBlock) && isTextRow(currBlock) && gap === 2) {
+					event.preventDefault()
+					const joinPos = getMergeDragRowJoinPos(blocks, blockIndex)
+					const newValue = mergeDragRows(value, blocks, blockIndex)
+					this.store.applyValue(newValue)
+					queueMicrotask(() => {
+						const newDivs = container.children
+						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+						if (target) {
+							target.focus()
+							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlock = updatedBlocks[blockIndex - 1]
+							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						}
+					})
+					return
+				}
+				// Previous row is a mark: navigate only
 				event.preventDefault()
-				const joinPos = getMergeJoinPos(blocks, blockIndex)
-				const newValue = mergeBlocks(value, blocks, blockIndex)
-				this.store.applyValue(newValue)
 				queueMicrotask(() => {
-					const newDivs = container.children
-					const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
-						const updatedBlock = updatedBlocks[blockIndex - 1]
-						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						Caret.setCaretToEnd(target)
 					}
 				})
 				return
@@ -185,18 +226,33 @@ export class KeyDownController {
 
 			// Caret at end of non-last block: merge next block into current
 			if (caretAtEnd && blockIndex < blocks.length - 1) {
+				const currBlock = blocks[blockIndex]
+				const nextBlock = blocks[blockIndex + 1]
+				const gap = nextBlock.startPos - currBlock.endPos
+				if (isTextRow(currBlock) && isTextRow(nextBlock) && gap === 2) {
+					event.preventDefault()
+					const joinPos = currBlock.endPos
+					const newValue = mergeDragRows(value, blocks, blockIndex + 1)
+					this.store.applyValue(newValue)
+					queueMicrotask(() => {
+						const newDivs = container.children
+						const target = newDivs[blockIndex] as HTMLElement | undefined
+						if (target) {
+							target.focus()
+							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlock = updatedBlocks[blockIndex]
+							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						}
+					})
+					return
+				}
+				// Next row is a mark: navigate only
 				event.preventDefault()
-				const joinPos = block.endPos
-				const newValue = mergeBlocks(value, blocks, blockIndex + 1)
-				this.store.applyValue(newValue)
 				queueMicrotask(() => {
-					const newDivs = container.children
-					const target = newDivs[blockIndex] as HTMLElement | undefined
+					const target = blockDivs[blockIndex + 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						const updatedBlocks = splitTokensIntoBlocks(this.store.state.tokens.get())
-						const updatedBlock = updatedBlocks[blockIndex]
-						if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+						Caret.trySetIndex(target, 0)
 					}
 				})
 				return
@@ -205,7 +261,8 @@ export class KeyDownController {
 	}
 
 	#handleEnter(event: KeyboardEvent) {
-		if (!this.store.state.block.get()) return
+		const isDragMode = !!this.store.state.drag.get()
+		if (!isDragMode) return
 		if (event.key !== KEYBOARD.ENTER) return
 		if (event.shiftKey) return
 
@@ -229,20 +286,37 @@ export class KeyDownController {
 		if (blockIndex === -1) return
 
 		const tokens = this.store.state.tokens.get()
-		const blocks = splitTokensIntoBlocks(tokens)
-		if (blockIndex >= blocks.length) return
-
+		const blocks = splitTokensIntoDragRows(tokens)
 		const block = blocks[blockIndex]
+		if (!block) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
-		const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
-
-		// Compute raw value offset at caret position using token positions
-		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
-
-		// Insert BLOCK_SEPARATOR at the raw position
-		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
+		const value = this.store.state.value.get() ?? ''
 
 		if (!this.store.state.onChange.get()) return
+
+		if (!isTextRow(block)) {
+			// Mark row in drag mode: add a new empty text row after this row
+			const newValue = addDragRow(value, blocks, blockIndex)
+			this.store.applyValue(newValue)
+			queueMicrotask(() => {
+				const newBlockDivs = container.children
+				const newBlockIndex = blockIndex + 1
+				if (newBlockIndex < newBlockDivs.length) {
+					const newBlock = newBlockDivs[newBlockIndex] as HTMLElement
+					newBlock.focus()
+					Caret.trySetIndex(newBlock, 0)
+				}
+			})
+			return
+		}
+
+		// Text row: split at caret position
+		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
+		// Inserting '\n\n' at position 0 of a row doesn't create a new leading row
+		// because the leading separator is ignored by splitTokensIntoDragRows. Use a double
+		// separator to produce an empty text row before the existing content.
+		const sep = absolutePos === block.startPos ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : BLOCK_SEPARATOR
+		const newValue = value.slice(0, absolutePos) + sep + value.slice(absolutePos)
 		this.store.applyValue(newValue)
 
 		// Focus the new block after re-render
@@ -258,7 +332,7 @@ export class KeyDownController {
 	}
 
 	#handleArrowUpDown(event: KeyboardEvent) {
-		if (!this.store.state.block.get()) return
+		if (!this.store.state.drag.get()) return
 
 		const container = this.store.refs.container
 		if (!container) return
@@ -328,10 +402,10 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.state.selecting.set(undefined)
 
-	// In block mode the focus target is a block div, not a text span.
+	// In block/drag mode the focus target is a block div, not a text span.
 	// Block-level keys (Enter, Backspace, Delete) are handled by KeyDownController.
 	// Text insertions and in-block deletions need special handling to update state.
-	if (store.state.block.get()) {
+	if (store.state.drag.get()) {
 		handleBlockBeforeInput(store, event)
 		return
 	}
@@ -453,7 +527,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 }
 
 /**
- * Handles `beforeinput` events when the editor is in block mode.
+ * Handles `beforeinput` events when the editor is in drag mode.
  * Intercepts text insertion and in-block deletion to update the raw value via
  * `store.applyValue`, since `applySpanInput` is designed for span-level editing only.
  * Block-level operations (Enter, Backspace/Delete at boundaries) are handled by
@@ -472,7 +546,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 
 	const blockDiv = blockDivs[blockIndex]
 	const tokens = store.state.tokens.get()
-	const blocks = splitTokensIntoBlocks(tokens)
+	const blocks = splitTokensIntoDragRows(tokens)
 	if (blockIndex >= blocks.length) return
 
 	const block = blocks[blockIndex]
@@ -484,7 +558,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			if (!target) return
 			target.focus()
 			// Use updated tokens (post-applyValue) for correct token positions
-			const updatedBlocks = splitTokensIntoBlocks(store.state.tokens.get())
+			const updatedBlocks = splitTokensIntoDragRows(store.state.tokens.get())
 			const updatedBlock = updatedBlocks[blockIndex]
 			if (updatedBlock) setCaretAtRawPos(target, updatedBlock, newRawPos)
 		})
