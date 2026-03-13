@@ -1,7 +1,7 @@
 import type {MarkProps, Markup, Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref} from 'vue'
+import {defineComponent, h, markRaw, ref} from 'vue'
 
 import Text from '../../shared/components/Text.vue'
 
@@ -130,7 +130,7 @@ const result = parser.parse('Hello **world**!')
 
 Visit our docs for more details.`
 
-export const MarkdownDrag: Story = {
+export const Markdown: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
@@ -260,6 +260,76 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 \t- [ ] Deploy to production
 
 > \u2610 = pending  \u2611 = done`
+
+// ─── Test helper stories (used by Drag.spec.ts) ──────────────────────────────
+
+const testStyle = {minHeight: '100px', padding: '8px', border: '1px solid #e0e0e0'}
+
+export const PlainTextDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () =>
+		defineComponent({
+			setup() {
+				const value = ref(
+					'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
+				)
+				return () =>
+					h('div', {}, [
+						h(MarkedInput, {
+							value: value.value,
+							drag: true,
+							style: testStyle,
+							onChange: (v: string) => {
+								value.value = v
+							},
+						}),
+						h(Text, {value: value.value}),
+					])
+			},
+		}),
+}
+
+export const MarkdownDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () =>
+		defineComponent({
+			setup() {
+				const value = ref(
+					'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
+				)
+				return () =>
+					h('div', {}, [
+						h(MarkedInput, {
+							Mark: markRaw(MarkdownMark),
+							options: markdownOptions,
+							value: value.value,
+							drag: true,
+							style: testStyle,
+							onChange: (v: string) => {
+								value.value = v
+							},
+						}),
+						h(Text, {value: value.value}),
+					])
+			},
+		}),
+}
+
+export const ReadOnlyDrag: Story = {
+	parameters: {docs: {disable: true}},
+	render: () =>
+		defineComponent({
+			setup() {
+				return () =>
+					h(MarkedInput, {
+						value: 'Read-Only Content\n\nSection A\n\nSection B',
+						readOnly: true,
+						drag: true,
+						style: testStyle,
+					})
+			},
+		}),
+}
 
 export const TodoListDrag: Story = {
 	render: () =>
