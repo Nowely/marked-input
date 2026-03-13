@@ -5,8 +5,8 @@ import type {CSSProperties, ReactNode} from 'react'
 import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
-import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
-import {blockLevelMarkdownOptions} from '../Nested/MarkdownOptions'
+import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
+import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
 	title: 'MarkedInput/Drag',
@@ -38,13 +38,13 @@ const MarkdownMark = ({
 
 export const Markdown: Story = {
 	render: () => {
-		const [value, setValue] = useState(COMPLEX_MARKDOWN)
+		const [value, setValue] = useState(DRAG_MARKDOWN)
 
 		return (
 			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
 				<MarkedInput
 					Mark={MarkdownMark}
-					options={blockLevelMarkdownOptions}
+					options={markdownOptions}
 					value={value}
 					onChange={setValue}
 					drag

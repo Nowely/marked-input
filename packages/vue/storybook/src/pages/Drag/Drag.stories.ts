@@ -24,26 +24,122 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 const mdContainerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '52px'}
 const mdEditorStyle = {minHeight: '200px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}
 
+const MarkdownMark = defineComponent({
+	props: {value: String, meta: String, nested: String, style: {type: Object}},
+	setup(props, {slots}) {
+		return () =>
+			h(
+				'span',
+				{style: {...(props.style as Record<string, unknown>), margin: '0 1px'}},
+				slots.default?.() ?? props.value
+			)
+	},
+})
+
+const markdownOptions: Option[] = [
+	{
+		markup: '# __nested__\n\n' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'},
+		}),
+	},
+	{
+		markup: '## __nested__\n\n' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {display: 'block', fontSize: '1.5em', fontWeight: 'bold', margin: '0.4em 0'},
+		}),
+	},
+	{
+		markup: '### __nested__\n\n' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {display: 'block', fontSize: '1.17em', fontWeight: 'bold', margin: '0.83em 0'},
+		}),
+	},
+	{
+		markup: '- __nested__\n\n' as Markup,
+		mark: (props: MarkProps) => ({...props, style: {display: 'block', paddingLeft: '1em'}}),
+	},
+	{markup: '**__nested__**' as Markup, mark: (props: MarkProps) => ({...props, style: {fontWeight: 'bold'}})},
+	{markup: '*__nested__*' as Markup, mark: (props: MarkProps) => ({...props, style: {fontStyle: 'italic'}})},
+	{
+		markup: '`__value__`' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {
+				backgroundColor: '#f6f8fa',
+				padding: '2px 6px',
+				borderRadius: '3px',
+				fontFamily: 'monospace',
+				fontSize: '0.9em',
+			},
+		}),
+	},
+	{
+		markup: '```__meta__\n__value__```' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {
+				display: 'block',
+				backgroundColor: '#f6f8fa',
+				padding: '12px',
+				borderRadius: '6px',
+				fontFamily: 'monospace',
+				fontSize: '0.9em',
+				whiteSpace: 'pre-wrap',
+				border: '1px solid #d1d9e0',
+				margin: '8px 0',
+			},
+		}),
+	},
+	{
+		markup: '[__value__](__meta__)' as Markup,
+		mark: (props: MarkProps) => ({
+			...props,
+			style: {color: '#0969da', textDecoration: 'underline', cursor: 'pointer'},
+		}),
+	},
+	{
+		markup: '~~__value__~~' as Markup,
+		mark: (props: MarkProps) => ({...props, style: {textDecoration: 'line-through', opacity: 0.7}}),
+	},
+] as Option[]
+
+const DRAG_MARKDOWN = `# Welcome to **Marked Input**
+
+A powerful library for parsing rich text with markdown formatting.
+
+## Features
+
+- **Bold** and *italic* text support
+
+- \`Code snippets\` and \`code blocks\`
+
+- ~~Strikethrough~~ for deleted content
+
+- Links like [GitHub](https://github.com)
+
+## Example
+
+\`\`\`javascript
+const parser = new ParserV2(['**__value__**', '*__value__*'])
+const result = parser.parse('Hello **world**!')
+\`\`\`
+
+Visit our docs for more details.`
+
 export const MarkdownDrag: Story = {
 	render: () =>
 		defineComponent({
 			setup() {
-				const value = ref(`# Welcome to Draggable Blocks
-
-This is the first paragraph. Hover to see the drag handle on the left.
-
-This is the second paragraph. Try dragging it above the first one!
-
-## Features
-
-- Drag handles appear on hover
-- Drop indicators show where the block will land
-- Blocks reorder by manipulating the underlying string`)
+				const value = ref(DRAG_MARKDOWN)
 				return () =>
 					h('div', {style: mdContainerStyle}, [
 						h(MarkedInput, {
 							Mark: MarkdownMark,
-							options: blockLevelMarkdownOptions,
+							options: markdownOptions,
 							value: value.value,
 							drag: true,
 							style: mdEditorStyle,
