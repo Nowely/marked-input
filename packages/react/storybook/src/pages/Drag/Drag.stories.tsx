@@ -6,6 +6,7 @@ import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
+import {withPlaintValue} from '../../shared/lib/withPlaintValue'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
@@ -231,21 +232,11 @@ export const ReadOnlyDrag: Story = {
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
 export const TodoList: Story = {
-	render: () => {
-		const [value, setValue] = useState(TODO_VALUE)
-
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={TodoMark}
-					options={todoOptions}
-					value={value}
-					onChange={setValue}
-					drag
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
+	decorators: [withPlaintValue],
+	args: {
+		Mark: TodoMark as any,
+		options: todoOptions,
+		value: TODO_VALUE,
+		drag: true,
 	},
 }
