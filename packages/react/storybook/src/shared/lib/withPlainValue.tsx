@@ -14,9 +14,23 @@ export const withPlainValue = (Story: any) => {
 	)
 
 	return (
-		<>
-			<Story args={{...args, onChange: handleChange}} />
-			{args.value !== undefined && <Text label="Plain value:" value={args.value} />}
-		</>
+		<div
+			style={{
+				display: 'flex',
+				border: '1px solid #d0d7de',
+				borderRadius: 6,
+				overflow: 'hidden',
+				alignItems: 'stretch',
+			}}
+		>
+			<div style={{flex: 3, minWidth: 0}}>
+				<Story args={{...args, onChange: handleChange}} />
+			</div>
+			{args.value !== undefined && (
+				<div style={{flex: 2, minWidth: 0}}>
+					<Text label="Plain value:" value={args.value} className="text-inset" />
+				</div>
+			)}
+		</div>
 	)
 }

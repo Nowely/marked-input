@@ -81,8 +81,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
-					textDecoration: isDone ? 'line-through' : undefined,
-					opacity: isDone ? 0.5 : undefined,
+					opacity: isDone ? 0.55 : undefined,
 				} as CSSProperties,
 			}
 		},
@@ -96,9 +95,9 @@ const todoOptions: Option<TodoMarkProps>[] = [
 				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
-					paddingLeft: '1.5em',
-					textDecoration: isDone ? 'line-through' : undefined,
-					opacity: isDone ? 0.5 : undefined,
+					paddingLeft: '22px',
+					borderLeft: '2px solid #d0d7de',
+					opacity: isDone ? 0.55 : undefined,
 				} as CSSProperties,
 			}
 		},
@@ -112,9 +111,10 @@ const todoOptions: Option<TodoMarkProps>[] = [
 				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
-					paddingLeft: '3em',
-					textDecoration: isDone ? 'line-through' : undefined,
-					opacity: isDone ? 0.5 : undefined,
+					paddingLeft: '22px',
+					marginLeft: '24px',
+					borderLeft: '2px solid #d0d7de',
+					opacity: isDone ? 0.55 : undefined,
 				} as CSSProperties,
 			}
 		},
@@ -123,7 +123,13 @@ const todoOptions: Option<TodoMarkProps>[] = [
 		markup: '> __nested__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
-			style: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic'} as CSSProperties,
+			style: {
+				display: 'block',
+				fontSize: '0.85em',
+				color: '#888',
+				fontStyle: 'italic',
+				marginTop: 16,
+			} as CSSProperties,
 		}),
 	},
 ]
@@ -137,8 +143,7 @@ const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 			style={{
 				...style,
 				margin: '0 1px',
-				textDecoration: isDone ? 'line-through' : undefined,
-				opacity: isDone ? 0.5 : undefined,
+				opacity: isDone ? 0.55 : undefined,
 			}}
 		>
 			{todo !== undefined && (
