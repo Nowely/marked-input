@@ -60,6 +60,7 @@ export const Markdown: Story = {
 
 interface TodoMarkProps extends MarkProps {
 	style?: CSSProperties
+	todo?: 'pending' | 'done'
 }
 
 const todoOptions: Option<TodoMarkProps>[] = [
@@ -76,6 +77,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 			const isDone = props.value === 'x'
 			return {
 				...props,
+				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
 					textDecoration: isDone ? 'line-through' : undefined,
@@ -90,6 +92,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 			const isDone = props.value === 'x'
 			return {
 				...props,
+				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
 					paddingLeft: '1.5em',
@@ -105,6 +108,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 			const isDone = props.value === 'x'
 			return {
 				...props,
+				todo: isDone ? 'done' : 'pending',
 				style: {
 					display: 'block',
 					paddingLeft: '3em',
@@ -123,19 +127,32 @@ const todoOptions: Option<TodoMarkProps>[] = [
 	},
 ]
 
-const TodoMark = ({nested, style}: TodoMarkProps) => {
-	const {value, change, readOnly} = useMark()
-	const isDone = value === 'x'
+const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
+	const mark = useMark()
+	const [isDone, setIsDone] = useState(mark.value === 'x')
 
 	return (
-		<span style={{...style, margin: '0 1px'}}>
-			<input
-				type="checkbox"
-				checked={isDone}
-				onChange={() => change({content: isDone ? ' ' : 'x'})}
-				disabled={readOnly}
-				style={{marginRight: 6}}
-			/>
+		<span
+			style={{
+				...style,
+				margin: '0 1px',
+				textDecoration: isDone ? 'line-through' : undefined,
+				opacity: isDone ? 0.5 : undefined,
+			}}
+		>
+			{todo !== undefined && (
+				<input
+					type="checkbox"
+					checked={isDone}
+					onChange={() => {
+						const next = !isDone
+						setIsDone(next)
+						mark.value = next ? 'x' : ' '
+					}}
+					disabled={mark.readOnly}
+					style={{marginRight: 6}}
+				/>
+			)}
 			{nested}
 		</span>
 	)
