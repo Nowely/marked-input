@@ -6,7 +6,7 @@ import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
-import {withPlaintValue} from '../../shared/lib/withPlaintValue'
+import {withPlainValue} from '../../shared/lib/withPlainValue'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
@@ -232,7 +232,7 @@ export const ReadOnlyDrag: Story = {
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
 export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
-	decorators: [withPlaintValue],
+	decorators: [withPlainValue],
 	args: {
 		Mark: TodoMark,
 		options: todoOptions,

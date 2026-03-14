@@ -3,7 +3,7 @@ import {useArgs} from 'storybook/preview-api'
 
 import {Text} from '../components/Text'
 
-export const withPlaintValue = (Story: any) => {
+export const withPlainValue = (Story: any) => {
 	const [args, updateArgs] = useArgs()
 
 	const handleChange = useCallback(
@@ -16,7 +16,7 @@ export const withPlaintValue = (Story: any) => {
 	return (
 		<>
 			<Story args={{...args, onChange: handleChange}} />
-			{args.value !== undefined && <Text label="Plaint value:" value={args.value} />}
+			{args.value !== undefined && <Text label="Plain value:" value={args.value} />}
 		</>
 	)
 }
