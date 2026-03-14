@@ -1,5 +1,5 @@
 import {MarkedInput, useMark} from '@markput/react'
-import type {MarkProps, Option} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties, ReactNode} from 'react'
 import {useState} from 'react'
@@ -231,10 +231,10 @@ export const ReadOnlyDrag: Story = {
 
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
-export const TodoList: Story = {
+export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
 	decorators: [withPlaintValue],
 	args: {
-		Mark: TodoMark as any,
+		Mark: TodoMark,
 		options: todoOptions,
 		value: TODO_VALUE,
 		drag: true,
