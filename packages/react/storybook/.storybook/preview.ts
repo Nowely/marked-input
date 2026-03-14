@@ -1,6 +1,20 @@
 import type {Preview} from '@storybook/react-vite'
 
 const preview: Preview = {
+	globalTypes: {
+		showPlainValue: {
+			name: 'Plain Value',
+			description: 'Toggle plain value panel',
+			defaultValue: 'show',
+			toolbar: {
+				icon: 'eye',
+				items: [
+					{value: 'show', icon: 'eye'},
+					{value: 'hide', icon: 'eyeclose'},
+				],
+			},
+		},
+	},
 	parameters: {
 		controls: {
 			hideNoControlsWarning: true,

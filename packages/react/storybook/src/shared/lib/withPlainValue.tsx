@@ -1,10 +1,12 @@
 import {useCallback} from 'react'
-import {useArgs} from 'storybook/preview-api'
+import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {Text} from '../components/Text'
 
 export const withPlainValue = (Story: any) => {
 	const [args, updateArgs] = useArgs()
+	const [globals] = useGlobals()
+	const showPlainValue = globals.showPlainValue !== 'hide'
 
 	const handleChange = useCallback(
 		(newValue: string) => {
@@ -12,6 +14,10 @@ export const withPlainValue = (Story: any) => {
 		},
 		[updateArgs]
 	)
+
+	if (!showPlainValue) {
+		return <Story args={{...args, onChange: handleChange}} />
+	}
 
 	return (
 		<div
