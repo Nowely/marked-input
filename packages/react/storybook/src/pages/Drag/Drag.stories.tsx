@@ -72,7 +72,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 		}),
 	},
 	{
-		markup: '- [__value__] __nested__\n\n',
+		markup: '- [__value__] __nested__\n',
 		mark: (props: MarkProps) => {
 			const isDone = props.value === 'x'
 			return {
@@ -87,7 +87,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 		},
 	},
 	{
-		markup: '\t- [__value__] __nested__\n\n',
+		markup: '\t- [__value__] __nested__\n',
 		mark: (props: MarkProps) => {
 			const isDone = props.value === 'x'
 			return {
@@ -103,7 +103,7 @@ const todoOptions: Option<TodoMarkProps>[] = [
 		},
 	},
 	{
-		markup: '\t\t- [__value__] __nested__\n\n',
+		markup: '\t\t- [__value__] __nested__\n',
 		mark: (props: MarkProps) => {
 			const isDone = props.value === 'x'
 			return {
@@ -161,42 +161,26 @@ const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 
 - [ ] Design Phase
-
 \t- [ ] Create wireframes
-
 \t- [x] Define color palette
-
 \t- [ ] Design component library
-
 - [x] Research
-
 \t- [x] Analyze competitors
-
 \t- [x] User interviews
-
 \t\t- [x] Draft interview questions
-
 \t\t- [x] Schedule 5 sessions
-
 - [ ] Development
-
 \t- [ ] Set up CI/CD pipeline
-
 \t- [x] Write unit tests
-
 \t- [ ] API integration
-
 \t\t- [ ] Auth endpoints
-
 \t\t- [ ] Data sync
-
 - [ ] Launch
-
 \t- [ ] Final QA pass
-
 \t- [ ] Deploy to production
+> \u2610 = pending  \u2611 = done
 
-> \u2610 = pending  \u2611 = done`
+`
 
 // ─── Test helper stories (used by Drag.spec.tsx) ─────────────────────────────
 
