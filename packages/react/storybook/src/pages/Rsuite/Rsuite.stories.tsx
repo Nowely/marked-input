@@ -1,10 +1,11 @@
-import type {Markup} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
-import type {Meta} from '@storybook/react-vite'
+import type {Meta, StoryObj} from '@storybook/react-vite'
+import type {ComponentType} from 'react'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
+import type {TagProps} from 'rsuite'
 
-import {Text} from '../../shared/components/Text'
 import {withStyle} from '../../shared/lib/withStyle'
 
 export default {
@@ -46,69 +47,54 @@ export const Overridden = () => {
 	const [value, setValue] = useState(initialState)
 
 	return (
-		<>
-			<Input
-				as={MarkedInput}
-				Mark={Tag as any}
-				Overlay={Overlay}
-				value={value}
-				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[
-					{
-						markup: '@[__value__](common)' as Markup,
-						mark: ({value}: {value?: string}) => ({children: value}),
-						overlay: {trigger: '@'},
-					},
-				]}
-			/>
-
-			<Text label="Plaint text:" value={value} />
-		</>
+		<Input
+			as={MarkedInput}
+			Mark={Tag as any}
+			Overlay={Overlay}
+			value={value}
+			onChange={(_, value) => setValue(value as unknown as string)}
+			options={[
+				{
+					markup: '@[__value__](common)' as Markup,
+					mark: ({value}: {value?: string}) => ({children: value}),
+					overlay: {trigger: '@'},
+				},
+			]}
+		/>
 	)
 }
 
-export const TaggedInput = () => {
-	const [value, setValue] = useState(initialState)
-	const classNames = 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag'
-
-	return (
-		<>
-			<MarkedInput
-				Mark={Tag}
-				Overlay={Overlay}
-				value={value}
-				onChange={setValue}
-				className={classNames}
-				style={{
-					minHeight: 36,
-					paddingRight: 5,
-				}}
-				options={[
-					{
-						markup: '@[__value__](common)' as Markup,
-						mark: ({value}) => ({children: value, style: {marginLeft: 0}}),
-						overlay: {trigger: '@'},
-					},
-				]}
-				slotProps={{
-					container: {
-						onKeyDown: e => e.key === 'Enter' && e.preventDefault(),
-					},
-					span: {
-						className: 'rs-tag rs-tag-md',
-						style: {
-							backgroundColor: 'white',
-							paddingLeft: 0,
-							paddingRight: 0,
-							whiteSpace: 'pre-wrap',
-							minWidth: 5,
-						},
-					},
-				}}
-			/>
-
-			<br />
-			<Text label="Plaint text:" value={value} />
-		</>
-	)
+export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
+	args: {
+		Mark: Tag as ComponentType<TagProps>,
+		Overlay,
+		value: initialState,
+		className: 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag',
+		style: {
+			minHeight: 36,
+			paddingRight: 5,
+		},
+		options: [
+			{
+				markup: '@[__value__](common)' as Markup,
+				mark: ({value}: MarkProps) => ({children: value, style: {marginLeft: 0}}),
+				overlay: {trigger: '@'},
+			},
+		],
+		slotProps: {
+			container: {
+				onKeyDown: (e: React.KeyboardEvent) => e.key === 'Enter' && e.preventDefault(),
+			},
+			span: {
+				className: 'rs-tag rs-tag-md',
+				style: {
+					backgroundColor: 'white',
+					paddingLeft: 0,
+					paddingRight: 0,
+					whiteSpace: 'pre-wrap',
+					minWidth: 5,
+				},
+			},
+		},
+	},
 }

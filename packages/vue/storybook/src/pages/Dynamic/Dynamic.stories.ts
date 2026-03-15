@@ -2,8 +2,6 @@ import {MarkedInput, useMark} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, ref, onMounted, watch, type ComponentPublicInstance} from 'vue'
 
-import Text from '../../shared/components/Text.vue'
-
 export default {
 	title: 'MarkedInput/Mark',
 	tags: ['autodocs'],
@@ -40,20 +38,10 @@ const DynamicMark = defineComponent({
 })
 
 export const Dynamic: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, dynamical mark @[world]( )!')
-				return () =>
-					h(MarkedInput, {
-						Mark: DynamicMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					})
-			},
-		}),
+	args: {
+		Mark: DynamicMark,
+		defaultValue: 'Hello, dynamical mark @[world]( )!',
+	},
 }
 
 const RemovableMark = defineComponent({
@@ -64,20 +52,10 @@ const RemovableMark = defineComponent({
 })
 
 export const Removable: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
-				return () =>
-					h(MarkedInput, {
-						Mark: RemovableMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					})
-			},
-		}),
+	args: {
+		Mark: RemovableMark,
+		defaultValue: 'I @[contain]( ) @[removable]( ) by click @[marks]( )!',
+	},
 }
 
 const Abbr = defineComponent({
@@ -113,20 +91,9 @@ const Abbr = defineComponent({
 })
 
 export const Focusable: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
-				return () => [
-					h(MarkedInput, {
-						Mark: Abbr,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					}),
-					h(Text, {label: 'Plain text:', value: value.value}),
-				]
-			},
-		}),
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: Abbr,
+		value: 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!',
+	},
 }

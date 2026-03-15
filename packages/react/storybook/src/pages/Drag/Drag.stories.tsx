@@ -1,12 +1,10 @@
 import {MarkedInput, useMark} from '@markput/react'
 import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {CSSProperties, ReactNode} from 'react'
+import type {CSSProperties} from 'react'
 import {useState} from 'react'
 
-import {Text} from '../../shared/components/Text'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
-import {withPlainValue} from '../../shared/lib/withPlainValue'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
@@ -27,33 +25,21 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 
 // ─── Markdown with block-level marks (headings + list) ────────────────────────
 
-const MarkdownMark = ({
-	children,
-	value,
-	style,
-}: {
-	value?: string
-	children?: ReactNode
-	style?: React.CSSProperties
-}) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
+interface MarkdownMarkProps extends MarkProps {
+	style?: CSSProperties
+}
 
-export const Markdown: Story = {
-	render: () => {
-		const [value, setValue] = useState(DRAG_MARKDOWN)
+const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
+	<span style={{...style, margin: '0 1px'}}>{children || value}</span>
+)
 
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					onChange={setValue}
-					drag
-					style={{minHeight: 300, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
+export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
+	args: {
+		Mark: MarkdownMark,
+		options: markdownOptions,
+		value: DRAG_MARKDOWN,
+		drag: true,
+		style: {minHeight: 300, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8},
 	},
 }
 
@@ -193,55 +179,45 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
 
 export const PlainTextDrag: Story = {
-	parameters: {docs: {disable: true}},
-	render: () => {
-		const [value, setValue] = useState(
-			'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
-		)
-		return (
-			<>
-				<MarkedInput value={value} onChange={setValue} drag style={testStyle} />
-				<Text value={value} />
-			</>
-		)
+	parameters: {docs: {disable: true}, plainValue: 'bottom'},
+	args: {
+		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text',
+		drag: true,
+		style: testStyle,
 	},
 }
 
-export const MarkdownDrag: Story = {
-	parameters: {docs: {disable: true}},
-	render: () => {
-		const [value, setValue] = useState(
-			'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
-		)
-		return (
-			<>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					onChange={setValue}
-					drag
-					style={testStyle}
-				/>
-				<Text value={value} />
-			</>
-		)
+export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
+	parameters: {docs: {disable: true}, plainValue: 'bottom'},
+	args: {
+		Mark: MarkdownMark,
+		options: markdownOptions,
+		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover',
+		drag: true,
+		style: testStyle,
 	},
 }
 
 export const ReadOnlyDrag: Story = {
 	parameters: {docs: {disable: true}},
-	render: () => <MarkedInput value="Read-Only Content\n\nSection A\n\nSection B" readOnly drag style={testStyle} />,
+	args: {
+		value: 'Read-Only Content\n\nSection A\n\nSection B',
+		readOnly: true,
+		drag: true,
+		style: testStyle,
+	},
 }
 
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
 export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
-	decorators: [withPlainValue],
 	args: {
 		Mark: TodoMark,
 		options: todoOptions,
 		value: TODO_VALUE,
 		drag: true,
+	},
+	parameters: {
+		plainValue: 'right',
 	},
 }

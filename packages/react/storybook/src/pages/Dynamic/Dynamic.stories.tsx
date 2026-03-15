@@ -1,14 +1,16 @@
 import {MarkedInput, useMark} from '@markput/react'
-import {useEffect, useState} from 'react'
+import type {Meta, StoryObj} from '@storybook/react-vite'
+import {useEffect} from 'react'
 
-import {Text} from '../../shared/components/Text'
 import {useCaretInfo} from '../../shared/hooks/useCaretInfo'
 
 export default {
 	title: 'MarkedInput/Mark',
 	tags: ['autodocs'],
 	component: MarkedInput,
-}
+} satisfies Meta<typeof MarkedInput>
+
+type Story = StoryObj<typeof MarkedInput>
 
 const Mark = () => {
 	const {value, ref} = useMark()
@@ -20,9 +22,11 @@ const Mark = () => {
 	return <mark ref={ref} contentEditable />
 }
 
-export const Dynamic = () => {
-	const [value, setValue] = useState('Hello, dynamical mark @[world]( )!')
-	return <MarkedInput Mark={Mark} value={value} onChange={setValue} />
+export const Dynamic: Story = {
+	args: {
+		Mark,
+		value: 'Hello, dynamical mark @[world]( )!',
+	},
 }
 
 const RemovableMark = () => {
@@ -30,9 +34,12 @@ const RemovableMark = () => {
 	return <mark onClick={remove} children={value} />
 }
 
-export const Removable = () => {
-	const [value, setValue] = useState('I @[contain]( ) @[removable]( ) by click @[marks]( )!')
-	return <MarkedInput Mark={RemovableMark} value={value} onChange={setValue} />
+export const Removable: Story = {
+	parameters: {docs: {disable: true}},
+	args: {
+		Mark: RemovableMark,
+		value: 'I @[contain]( ) @[removable]( ) by click @[marks]( )!',
+	},
 }
 
 const Abbr = () => {
@@ -55,16 +62,18 @@ const Abbr = () => {
 	)
 }
 
-export const Focusable = () => {
-	const [value, setValue] = useState('Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!')
-	useCaretInfo(true)
-
-	return (
-		<>
-			<MarkedInput Mark={Abbr} value={value} onChange={setValue} />
-			<Text label="Plain text:" value={value} />
-		</>
-	)
+export const Focusable: Story = {
+	parameters: {docs: {disable: true}, plainValue: 'right'},
+	args: {
+		Mark: Abbr,
+		value: 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!',
+	},
+	decorators: [
+		Story => {
+			useCaretInfo(true)
+			return <Story />
+		},
+	],
 }
 
 /*TODO
@@ -92,7 +101,7 @@ export const RichEditor = () => {
 
 This feature allows you to use dynamic marks to edit itself and beyond.
 
-It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked>, <small>smaller>, <del>deleted>, 
+It can be used to simulate a rich editor with <b>bold>, <i>italic>, <mark>marked>, <small>smaller>, <del>deleted>,
 <ins>inserted>, <sub>subscript> and other types of text.`)
 
     return (

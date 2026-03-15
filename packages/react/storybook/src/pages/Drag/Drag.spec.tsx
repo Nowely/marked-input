@@ -26,9 +26,9 @@ function getBlocks(container: Element) {
 	return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
-/** Read the raw value from the <pre> rendered by the Text component */
+/** Read the raw value from the PlainValuePanel's data-value attribute */
 function getRawValue(container: Element) {
-	return container.querySelector('pre')!.textContent!
+	return container.querySelector<HTMLElement>('pre[data-value]')!.dataset.value!
 }
 
 /**

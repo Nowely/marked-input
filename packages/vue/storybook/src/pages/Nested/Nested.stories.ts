@@ -1,9 +1,7 @@
 import type {Markup} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref} from 'vue'
-
-import Text from '../../shared/components/Text.vue'
+import {defineComponent, h} from 'vue'
 
 export default {
 	title: 'MarkedInput/Nested',
@@ -35,40 +33,30 @@ const SimpleMark = defineComponent({
 	},
 })
 
-export const SimpleNesting: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('This is *italic text with **bold** inside* and more text.')
-
-				return () => [
-					h(MarkedInput, {
-						Mark: SimpleMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						options: [
-							{
-								markup: BoldMarkup,
-								mark: ({children}: {value?: string; children?: any}) => ({
-									children,
-									style: {fontWeight: 'bold'},
-								}),
-							},
-							{
-								markup: ItalicMarkup,
-								mark: ({children}: {value?: string; children?: any}) => ({
-									children,
-									style: {fontStyle: 'italic'},
-								}),
-							},
-						],
-					}),
-					h(Text, {label: 'Raw value:', value: value.value}),
-				]
-			},
+const simpleNestingOptions = [
+	{
+		markup: BoldMarkup,
+		mark: ({children}: {value?: string; children?: any}) => ({
+			children,
+			style: {fontWeight: 'bold'},
 		}),
+	},
+	{
+		markup: ItalicMarkup,
+		mark: ({children}: {value?: string; children?: any}) => ({
+			children,
+			style: {fontStyle: 'italic'},
+		}),
+	},
+]
+
+export const SimpleNesting: Story = {
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: SimpleMark,
+		value: 'This is *italic text with **bold** inside* and more text.',
+		options: simpleNestingOptions,
+	},
 }
 
 // ============================================================================
@@ -86,67 +74,55 @@ const MultiLevelMark = defineComponent({
 	},
 })
 
-export const MultipleLevels: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref(
-					'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]'
-				)
-
-				return () => [
-					h(MarkedInput, {
-						Mark: MultiLevelMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						options: [
-							{
-								markup: TagMarkup,
-								mark: ({children}: {value?: string; children?: any}) => ({
-									children,
-									style: {
-										backgroundColor: '#e7f3ff',
-										border: '1px solid #2196f3',
-										color: '#1976d2',
-										padding: '2px 6px',
-										borderRadius: '4px',
-									},
-								}),
-							},
-							{
-								markup: MentionMarkup,
-								mark: ({children}: {value?: string; children?: any}) => ({
-									children,
-									style: {
-										backgroundColor: '#fff3e0',
-										border: '1px solid #ff9800',
-										color: '#f57c00',
-										padding: '2px 6px',
-										borderRadius: '4px',
-									},
-								}),
-							},
-							{
-								markup: CodeMarkup,
-								mark: ({children}: {value?: string; children?: any}) => ({
-									children,
-									style: {
-										backgroundColor: '#f3e5f5',
-										border: '1px solid #9c27b0',
-										color: '#7b1fa2',
-										padding: '2px 6px',
-										borderRadius: '4px',
-									},
-								}),
-							},
-						],
-					}),
-					h(Text, {label: 'Raw value:', value: value.value}),
-				]
+const multipleLevelsOptions = [
+	{
+		markup: TagMarkup,
+		mark: ({children}: {value?: string; children?: any}) => ({
+			children,
+			style: {
+				backgroundColor: '#e7f3ff',
+				border: '1px solid #2196f3',
+				color: '#1976d2',
+				padding: '2px 6px',
+				borderRadius: '4px',
 			},
 		}),
+	},
+	{
+		markup: MentionMarkup,
+		mark: ({children}: {value?: string; children?: any}) => ({
+			children,
+			style: {
+				backgroundColor: '#fff3e0',
+				border: '1px solid #ff9800',
+				color: '#f57c00',
+				padding: '2px 6px',
+				borderRadius: '4px',
+			},
+		}),
+	},
+	{
+		markup: CodeMarkup,
+		mark: ({children}: {value?: string; children?: any}) => ({
+			children,
+			style: {
+				backgroundColor: '#f3e5f5',
+				border: '1px solid #9c27b0',
+				color: '#7b1fa2',
+				padding: '2px 6px',
+				borderRadius: '4px',
+			},
+		}),
+	},
+]
+
+export const MultipleLevels: Story = {
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: MultiLevelMark,
+		value: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
+		options: multipleLevelsOptions,
+	},
 }
 
 // ============================================================================
@@ -163,24 +139,10 @@ const HtmlLikeMark = defineComponent({
 })
 
 export const HtmlLikeTags: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref(
-					'<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>'
-				)
-
-				return () => [
-					h(MarkedInput, {
-						Mark: HtmlLikeMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						options: [{markup: HtmlMarkup}],
-					}),
-					h(Text, {label: 'Raw value:', value: value.value}),
-				]
-			},
-		}),
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: HtmlLikeMark,
+		value: '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
+		options: [{markup: HtmlMarkup}],
+	},
 }
