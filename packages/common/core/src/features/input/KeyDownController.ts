@@ -6,7 +6,7 @@ import {splitTokensIntoDragRows, type Block} from '../blocks/splitTokensIntoDrag
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import type {MarkToken} from '../parsing/ParserV2/types'
+import type {MarkToken} from '../parsing/parser/types'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 

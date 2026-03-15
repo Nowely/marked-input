@@ -3,8 +3,8 @@ import * as path from 'path'
 
 import {afterAll, bench, describe} from 'vitest'
 
-import {Parser} from './ParserV2/Parser'
-import type {Markup, Token} from './ParserV2/types'
+import {Parser} from './parser/Parser'
+import type {Markup, Token} from './parser/types'
 
 /**
  * Method profiling data with hierarchical structure
@@ -196,7 +196,7 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 /**
  * AUTOMATIC METHOD PROFILING SYSTEM
  *
- * Automatically discovers and profiles all methods in ParserV2 classes and modules
+ * Automatically discovers and profiles all methods in parser classes and modules
  * without requiring manual benchmark code updates.
  *
  * Benefits:
@@ -426,7 +426,7 @@ function runCompleteProfiling(parser: Parser, input: string, testName: string, i
 				avgParamLength,
 			}
 		})
-		.sort((a, b) => b.totalTime - a.totalTime)
+		.toSorted((a, b) => b.totalTime - a.totalTime)
 
 	// Build hierarchical method tree
 	const mainMethod = buildMethodTree(methodProfiles, avgSplitTime)
@@ -782,11 +782,11 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 	// Find biggest changes
 	const biggestImprovement = differences
 		.filter(d => d.durationChangePercent < -1)
-		.sort((a, b) => a.durationChangePercent - b.durationChangePercent)[0]
+		.toSorted((a, b) => a.durationChangePercent - b.durationChangePercent)[0]
 
 	const biggestDegradation = differences
 		.filter(d => d.durationChangePercent > 1)
-		.sort((a, b) => b.durationChangePercent - a.durationChangePercent)[0]
+		.toSorted((a, b) => b.durationChangePercent - a.durationChangePercent)[0]
 
 	if (biggestImprovement) {
 		summary.push(
@@ -896,7 +896,7 @@ function saveCompleteProfileResults(): void {
 }
 
 // Profiling scenarios
-describe('ParserV2 Complete Profiling', () => {
+describe('parser Complete Profiling', () => {
 	const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 
 	bench('should profile all methods automatically', () => {

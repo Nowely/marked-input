@@ -77,7 +77,7 @@ export class SegmentMatcher {
 
 		// Create static regex
 		if (statics.length > 0) {
-			const sorted = [...statics].sort((a, b) => b.length - a.length)
+			const sorted = [...statics].toSorted((a, b) => b.length - a.length)
 			const escaped = sorted.map(escape)
 			this.staticRegex = new RegExp(`(?:${escaped.join('|')})`, 'gu')
 			this.staticToIndex = staticToIndex

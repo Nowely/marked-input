@@ -189,7 +189,7 @@ export class Parser {
 	escape(text: string): string {
 		return this.registry.segments
 			.filter((segment): segment is string => typeof segment === 'string')
-			.sort((a, b) => b.length - a.length)
+			.toSorted((a, b) => b.length - a.length)
 			.reduce((result, segment) => result.replaceAll(segment, segment.replace(/(.)/g, '\\$1')), text)
 	}
 
