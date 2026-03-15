@@ -6,7 +6,6 @@ import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
 import type {TagProps} from 'rsuite'
 
-import {Text} from '../../shared/components/Text'
 import {withStyle} from '../../shared/lib/withStyle'
 
 export default {
@@ -48,24 +47,20 @@ export const Overridden = () => {
 	const [value, setValue] = useState(initialState)
 
 	return (
-		<>
-			<Input
-				as={MarkedInput}
-				Mark={Tag as any}
-				Overlay={Overlay}
-				value={value}
-				onChange={(_, value) => setValue(value as unknown as string)}
-				options={[
-					{
-						markup: '@[__value__](common)' as Markup,
-						mark: ({value}: {value?: string}) => ({children: value}),
-						overlay: {trigger: '@'},
-					},
-				]}
-			/>
-
-			<Text label="Plaint text:" value={value} />
-		</>
+		<Input
+			as={MarkedInput}
+			Mark={Tag as any}
+			Overlay={Overlay}
+			value={value}
+			onChange={(_, value) => setValue(value as unknown as string)}
+			options={[
+				{
+					markup: '@[__value__](common)' as Markup,
+					mark: ({value}: {value?: string}) => ({children: value}),
+					overlay: {trigger: '@'},
+				},
+			]}
+		/>
 	)
 }
 

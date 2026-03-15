@@ -63,7 +63,7 @@ const Abbr = () => {
 }
 
 export const Focusable: Story = {
-	parameters: {docs: {disable: true}, plainValue: true},
+	parameters: {docs: {disable: true}, plainValue: 'right'},
 	args: {
 		Mark: Abbr,
 		value: 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!',

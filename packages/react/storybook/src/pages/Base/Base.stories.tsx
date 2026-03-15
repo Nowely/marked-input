@@ -1,10 +1,9 @@
-import type {MarkProps, MarkToken, Markup} from '@markput/react'
-import {denote, MarkedInput} from '@markput/react'
+import type {MarkProps, Markup} from '@markput/react'
+import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
-import {Text} from '../../shared/components/Text'
 
 export default {
 	title: 'MarkedInput',
@@ -52,29 +51,22 @@ export const Configured: Story = {
 				'For found mark used @[annotations](default:123).'
 		)
 
-		const displayText = denote(value, (mark: MarkToken) => mark.value, [PrimaryMarkup, DefaultMarkup])
-
 		return (
-			<>
-				<MarkedInput
-					Mark={Button}
-					options={configuredOptions}
-					value={value}
-					onChange={setValue}
-					slotProps={{
-						container: {
-							onClick: _ => console.log('onCLick'),
-							onInput: _ => console.log('onInput'),
-							onBlur: _ => console.log('onBlur'),
-							onFocus: _ => console.log('onFocus'),
-							onKeyDown: _ => console.log('onKeyDown'),
-						},
-					}}
-				/>
-
-				<Text label="Plaint text:" value={value} />
-				<Text label="Display text (denoted):" value={displayText} />
-			</>
+			<MarkedInput
+				Mark={Button}
+				options={configuredOptions}
+				value={value}
+				onChange={setValue}
+				slotProps={{
+					container: {
+						onClick: _ => console.log('onCLick'),
+						onInput: _ => console.log('onInput'),
+						onBlur: _ => console.log('onBlur'),
+						onFocus: _ => console.log('onFocus'),
+						onKeyDown: _ => console.log('onKeyDown'),
+					},
+				}}
+			/>
 		)
 	},
 }

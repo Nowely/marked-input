@@ -1,8 +1,6 @@
 import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {useState} from 'react'
 
-import {Text} from '../../shared/components/Text'
 import {SingleEditableControlled} from './components/SingleEditableControlled'
 import {SingleEditableMarkdown} from './components/SingleEditableMarkdown'
 import {SingleEditableUncontrolled} from './components/SingleEditableUncontrolled'
@@ -30,21 +28,14 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
  * This story shows WHY we need the uncontrolled approach.
  */
 export const Controlled: Story = {
-	render: () => {
-		const [value, setValue] = useState('')
-
-		return (
-			<>
-				<div style={{marginBottom: '16px'}}>
-					<h3 style={{marginTop: 0}}>❌ Controlled (React-managed)</h3>
-				</div>
-
-				<SingleEditableControlled onValueChange={setValue} />
-
-				<Text label="Plain text value:" value={value} />
-			</>
-		)
-	},
+	render: () => (
+		<>
+			<div style={{marginBottom: '16px'}}>
+				<h3 style={{marginTop: 0}}>❌ Controlled (React-managed)</h3>
+			</div>
+			<SingleEditableControlled onValueChange={() => {}} />
+		</>
+	),
 }
 
 /**
@@ -60,17 +51,12 @@ export const Controlled: Story = {
  */
 export const Uncontrolled: Story = {
 	render: () => {
-		const [value, setValue] = useState('')
-
 		return (
 			<>
 				<div style={{marginBottom: '16px'}}>
 					<h3 style={{marginTop: 0}}>✅ Uncontrolled (MutationObserver)</h3>
 				</div>
-
-				<SingleEditableUncontrolled onValueChange={setValue} />
-
-				<Text label="Plain text value:" value={value} />
+				<SingleEditableUncontrolled onValueChange={() => {}} />
 			</>
 		)
 	},
@@ -91,17 +77,12 @@ export const Uncontrolled: Story = {
  */
 export const Markdown: Story = {
 	render: () => {
-		const [value, setValue] = useState('')
-
 		return (
 			<>
 				<div style={{marginBottom: '16px'}}>
 					<h3 style={{marginTop: 0}}>📝 Markdown (Uncontrolled)</h3>
 				</div>
-
-				<SingleEditableMarkdown onValueChange={setValue} />
-
-				<Text label="Markdown value:" value={value} />
+				<SingleEditableMarkdown onValueChange={() => {}} />
 			</>
 		)
 	},
