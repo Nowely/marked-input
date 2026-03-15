@@ -1,10 +1,9 @@
-import type {MarkProps, MarkToken, Markup, Option} from '@markput/vue'
-import {denote, MarkedInput} from '@markput/vue'
+import type {MarkProps, Markup, Option} from '@markput/vue'
+import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref, computed} from 'vue'
+import {defineComponent, h} from 'vue'
 
 import Button from '../../shared/components/Button.vue'
-import Text from '../../shared/components/Text.vue'
 
 export default {
 	title: 'MarkedInput',
@@ -49,42 +48,24 @@ const configuredOptions = [
 ] as Option[]
 
 export const Configured: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref(
-					"Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
-						'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
-						'For found mark used @[annotations](default:123).'
-				)
-
-				const displayText = computed(() =>
-					denote(value.value, (mark: MarkToken) => mark.value, [PrimaryMarkup, DefaultMarkup])
-				)
-
-				return () => [
-					h(MarkedInput, {
-						Mark: Button,
-						options: configuredOptions,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						slotProps: {
-							container: {
-								onClick: () => console.log('onClick'),
-								onInput: () => console.log('onInput'),
-								onBlur: () => console.log('onBlur'),
-								onFocus: () => console.log('onFocus'),
-								onKeydown: () => console.log('onKeyDown'),
-							},
-						},
-					}),
-					h(Text, {label: 'Plain text:', value: value.value}),
-					h(Text, {label: 'Display text (denoted):', value: displayText.value}),
-				]
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: Button,
+		options: configuredOptions,
+		value:
+			"Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
+			'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
+			'For found mark used @[annotations](default:123).',
+		slotProps: {
+			container: {
+				onClick: () => console.log('onClick'),
+				onInput: () => console.log('onInput'),
+				onBlur: () => console.log('onBlur'),
+				onFocus: () => console.log('onFocus'),
+				onKeydown: () => console.log('onKeyDown'),
 			},
-		}),
+		},
+	},
 }
 
 export const Autocomplete: Story = {

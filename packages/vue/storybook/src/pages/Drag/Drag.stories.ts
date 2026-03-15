@@ -1,9 +1,7 @@
 import type {MarkProps, Markup, Option} from '@markput/vue'
 import {MarkedInput} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, markRaw, ref} from 'vue'
-
-import Text from '../../shared/components/Text.vue'
+import {defineComponent, h, ref} from 'vue'
 
 export default {
 	title: 'MarkedInput/Drag',
@@ -131,26 +129,14 @@ const result = parser.parse('Hello **world**!')
 Visit our docs for more details.`
 
 export const Markdown: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref(DRAG_MARKDOWN)
-				return () =>
-					h('div', {style: mdContainerStyle}, [
-						h(MarkedInput, {
-							Mark: MarkdownMark,
-							options: markdownOptions,
-							value: value.value,
-							drag: true,
-							style: mdEditorStyle,
-							onChange: (v: string) => {
-								value.value = v
-							},
-						}),
-						h(Text, {label: 'Raw value:', value: value.value}),
-					])
-			},
-		}),
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: MarkdownMark,
+		options: markdownOptions,
+		value: DRAG_MARKDOWN,
+		drag: true,
+		style: {...mdEditorStyle, ...mdContainerStyle},
+	},
 }
 
 // ─── Todo list (all marks include \n\n) ──────────────────────────────────────
@@ -267,7 +253,7 @@ export const PlainTextDrag: Story = {
 								value.value = v
 							},
 						}),
-						h(Text, {value: value.value}),
+						h('pre', {}, value.value),
 					])
 			},
 		}),
@@ -284,7 +270,7 @@ export const MarkdownDrag: Story = {
 				return () =>
 					h('div', {}, [
 						h(MarkedInput, {
-							Mark: markRaw(MarkdownMark),
+							Mark: MarkdownMark,
 							options: markdownOptions,
 							value: value.value,
 							drag: true,
@@ -293,7 +279,7 @@ export const MarkdownDrag: Story = {
 								value.value = v
 							},
 						}),
-						h(Text, {value: value.value}),
+						h('pre', {}, value.value),
 					])
 			},
 		}),
@@ -301,39 +287,21 @@ export const MarkdownDrag: Story = {
 
 export const ReadOnlyDrag: Story = {
 	parameters: {docs: {disable: true}},
-	render: () =>
-		defineComponent({
-			setup() {
-				return () =>
-					h(MarkedInput, {
-						value: 'Read-Only Content\n\nSection A\n\nSection B',
-						readOnly: true,
-						drag: true,
-						style: testStyle,
-					})
-			},
-		}),
+	args: {
+		value: 'Read-Only Content\n\nSection A\n\nSection B',
+		readOnly: true,
+		drag: true,
+		style: testStyle,
+	},
 }
 
 export const TodoListDrag: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref(TODO_VALUE)
-				return () =>
-					h('div', {style: mdContainerStyle}, [
-						h(MarkedInput, {
-							Mark: TodoMark,
-							options: todoOptions,
-							value: value.value,
-							drag: true,
-							style: {...mdEditorStyle, minHeight: '300px'},
-							onChange: (v: string) => {
-								value.value = v
-							},
-						}),
-						h(Text, {label: 'Raw value:', value: value.value}),
-					])
-			},
-		}),
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: TodoMark,
+		options: todoOptions,
+		value: TODO_VALUE,
+		drag: true,
+		style: {...mdEditorStyle, ...mdContainerStyle, minHeight: '300px'},
+	},
 }

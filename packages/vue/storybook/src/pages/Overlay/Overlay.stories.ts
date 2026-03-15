@@ -1,6 +1,6 @@
 import {MarkedInput, useOverlay} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref, type ComponentPublicInstance} from 'vue'
+import {defineComponent, h, type ComponentPublicInstance} from 'vue'
 
 export default {
 	title: 'MarkedInput/Overlay',
@@ -38,41 +38,23 @@ const CustomOverlayComponent = defineComponent({
 	},
 })
 
+const EmptyMark = defineComponent({setup: () => () => null})
+
 export const CustomOverlay: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, custom overlay by trigger @!')
-				return () =>
-					h(MarkedInput, {
-						Mark: defineComponent({setup: () => () => null}),
-						Overlay: CustomOverlayComponent,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					})
-			},
-		}),
+	args: {
+		Mark: EmptyMark,
+		Overlay: CustomOverlayComponent,
+		defaultValue: 'Hello, custom overlay by trigger @!',
+	},
 }
 
 export const CustomTrigger: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, custom overlay by trigger /!')
-				return () =>
-					h(MarkedInput, {
-						Mark: defineComponent({setup: () => () => null}),
-						Overlay: CustomOverlayComponent,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						options: [{overlay: {trigger: '/'}}],
-					})
-			},
-		}),
+	args: {
+		Mark: EmptyMark,
+		Overlay: CustomOverlayComponent,
+		defaultValue: 'Hello, custom overlay by trigger /!',
+		options: [{overlay: {trigger: '/'}}],
+	},
 }
 
 const Tooltip = defineComponent({
@@ -94,21 +76,11 @@ const Tooltip = defineComponent({
 })
 
 export const PositionedOverlay: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, positioned overlay by trigger @!')
-				return () =>
-					h(MarkedInput, {
-						Mark: defineComponent({setup: () => () => null}),
-						Overlay: Tooltip,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					})
-			},
-		}),
+	args: {
+		Mark: EmptyMark,
+		Overlay: Tooltip,
+		defaultValue: 'Hello, positioned overlay by trigger @!',
+	},
 }
 
 const List = defineComponent({
@@ -131,20 +103,10 @@ const List = defineComponent({
 })
 
 export const SelectableOverlay: Story = {
-	render: () =>
-		defineComponent({
-			setup() {
-				const value = ref('Hello, suggest overlay by trigger @!')
-				return () =>
-					h(MarkedInput, {
-						Mark,
-						Overlay: List,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-						options: [{markup: '@[__value__](__meta__)' as any, overlay: {trigger: '@'}}],
-					})
-			},
-		}),
+	args: {
+		Mark,
+		Overlay: List,
+		defaultValue: 'Hello, suggest overlay by trigger @!',
+		options: [{markup: '@[__value__](__meta__)' as any, overlay: {trigger: '@'}}],
+	},
 }
