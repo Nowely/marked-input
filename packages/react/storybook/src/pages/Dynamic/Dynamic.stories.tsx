@@ -35,7 +35,7 @@ const RemovableMark = () => {
 }
 
 export const Removable: Story = {
-	parameters: {docs: {disable: true}, plainValue: false},
+	parameters: {docs: {disable: true}},
 	args: {
 		Mark: RemovableMark,
 		value: 'I @[contain]( ) @[removable]( ) by click @[marks]( )!',
@@ -63,7 +63,7 @@ const Abbr = () => {
 }
 
 export const Focusable: Story = {
-	parameters: {docs: {disable: true}},
+	parameters: {docs: {disable: true}, plainValue: true},
 	args: {
 		Mark: Abbr,
 		value: 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!',

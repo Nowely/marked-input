@@ -180,14 +180,17 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
 
 export const PlainTextDrag: Story = {
-	parameters: {docs: {disable: true}, plainValue: false},
-	render: () => {
-		const [value, setValue] = useState(
-			'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
-		)
+	parameters: {docs: {disable: true}},
+	args: {
+		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text',
+		drag: true,
+		style: testStyle,
+	},
+	render: args => {
+		const [value, setValue] = useState(args.value as string)
 		return (
 			<>
-				<MarkedInput value={value} onChange={setValue} drag style={testStyle} />
+				<MarkedInput {...args} value={value} onChange={setValue} />
 				<Text value={value} />
 			</>
 		)
@@ -195,21 +198,19 @@ export const PlainTextDrag: Story = {
 }
 
 export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
-	parameters: {docs: {disable: true}, plainValue: false},
-	render: () => {
-		const [value, setValue] = useState(
-			'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
-		)
+	parameters: {docs: {disable: true}},
+	args: {
+		Mark: MarkdownMark,
+		options: markdownOptions,
+		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover',
+		drag: true,
+		style: testStyle,
+	},
+	render: args => {
+		const [value, setValue] = useState(args.value as string)
 		return (
 			<>
-				<MarkedInput
-					Mark={MarkdownMark}
-					options={markdownOptions}
-					value={value}
-					onChange={setValue}
-					drag
-					style={testStyle}
-				/>
+				<MarkedInput {...args} value={value} onChange={setValue} />
 				<Text value={value} />
 			</>
 		)
@@ -217,8 +218,13 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 }
 
 export const ReadOnlyDrag: Story = {
-	parameters: {docs: {disable: true}, plainValue: false},
-	render: () => <MarkedInput value="Read-Only Content\n\nSection A\n\nSection B" readOnly drag style={testStyle} />,
+	parameters: {docs: {disable: true}},
+	args: {
+		value: 'Read-Only Content\n\nSection A\n\nSection B',
+		readOnly: true,
+		drag: true,
+		style: testStyle,
+	},
 }
 
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
@@ -229,5 +235,8 @@ export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
 		options: todoOptions,
 		value: TODO_VALUE,
 		drag: true,
+	},
+	parameters: {
+		plainValue: true,
 	},
 }

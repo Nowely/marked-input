@@ -4,17 +4,21 @@ import {useArgs, useGlobals} from 'storybook/preview-api'
 import {Text} from '../components/Text'
 
 export const withPlainValue = (Story: any, context: any) => {
-	if (context.parameters?.plainValue === false) {
-		return <Story />
-	}
+	// Hooks must be called unconditionally (no early return before them).
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
-	const isControlled = 'value' in args
+
+	// In test environments useArgs() may return {} on the first render.
+	// Merge context.args (initial story args) with the reactive args from useArgs().
+	const mergedArgs = {...context.args, ...args}
+
+	const isControlled = 'value' in mergedArgs
+	const showPanel = context.parameters?.plainValue === true
 	const showPlainValue = globals.showPlainValue !== 'hide'
 
 	// displayValue tracks onChange synchronously so <Text> stays up-to-date in
 	// tests where updateArgs propagation is async.
-	const [displayValue, setDisplayValue] = useState(args.value)
+	const [displayValue, setDisplayValue] = useState<string | undefined>((context.args as any)?.value)
 
 	const handleChange = useCallback(
 		(newValue: string) => {
@@ -24,14 +28,14 @@ export const withPlainValue = (Story: any, context: any) => {
 		[updateArgs]
 	)
 
-	// Only wrap controlled stories (those with `value` in args).
+	// Only wrap controlled stories that opted in to the panel.
 	// Uncontrolled stories use `defaultValue` — overriding onChange would inject
 	// `value` back via updateArgs, switching them to controlled mode.
-	if (!isControlled) {
+	if (!showPanel || !isControlled) {
 		return <Story />
 	}
 
-	const storyArgs = {...args, onChange: handleChange}
+	const storyArgs = {...mergedArgs, onChange: handleChange}
 
 	if (!showPlainValue) {
 		return <Story args={storyArgs} />
