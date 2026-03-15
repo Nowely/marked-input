@@ -207,28 +207,30 @@ const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
 	<span style={{...style, margin: '0 1px'}}>{children || value}</span>
 )
 
+function TabbedMarkdownView({value, onChange}: {value: string; onChange?: (v: string) => void}) {
+	const {Tab, activeTab} = useTab([
+		{value: 'preview', label: 'Preview'},
+		{value: 'write', label: 'Write'},
+	])
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={value} readOnly={true} />
+			) : (
+				<MarkedInput options={[]} value={value} onChange={onChange} />
+			)}
+		</>
+	)
+}
+
 export const ComplexMarkdown: Story = {
 	args: {
 		value: COMPLEX_MARKDOWN,
 	},
-	render: args => {
-		const {Tab, activeTab} = useTab([
-			{value: 'preview', label: 'Preview'},
-			{value: 'write', label: 'Write'},
-		])
-
-		return (
-			<>
-				<Tab />
-
-				{activeTab === 'preview' ? (
-					<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={args.value} readOnly={true} />
-				) : (
-					<MarkedInput options={[]} value={args.value} onChange={args.onChange} />
-				)}
-			</>
-		)
-	},
+	render: args => <TabbedMarkdownView value={args.value!} onChange={args.onChange} />,
 }
 
 // ============================================================================
@@ -388,6 +390,31 @@ const HtmlDocMark = ({children, value, nested}: MarkProps) => {
 	return <Tag style={style}>{children || nested}</Tag>
 }
 
+function TabbedHtmlView({value, onChange}: {value: string; onChange?: (v: string) => void}) {
+	const {Tab, activeTab} = useTab([
+		{value: 'preview', label: 'Preview'},
+		{value: 'write', label: 'Write'},
+	])
+
+	return (
+		<>
+			<Tab />
+
+			{activeTab === 'preview' ? (
+				<MarkedInput
+					key={activeTab}
+					Mark={HtmlDocMark}
+					value={value}
+					readOnly={true}
+					options={[{markup: HtmlMarkup}]}
+				/>
+			) : (
+				<MarkedInput key={activeTab} value={value} onChange={onChange} options={[]} />
+			)}
+		</>
+	)
+}
+
 export const ComplexHtmlDocument: Story = {
 	args: {
 		value: `<article>
@@ -452,28 +479,5 @@ export const ComplexHtmlDocument: Story = {
 </footer>
 </article>`,
 	},
-	render: args => {
-		const {Tab, activeTab} = useTab([
-			{value: 'preview', label: 'Preview'},
-			{value: 'write', label: 'Write'},
-		])
-
-		return (
-			<>
-				<Tab />
-
-				{activeTab === 'preview' ? (
-					<MarkedInput
-						key={activeTab}
-						Mark={HtmlDocMark}
-						value={args.value}
-						readOnly={true}
-						options={[{markup: HtmlMarkup}]}
-					/>
-				) : (
-					<MarkedInput key={activeTab} value={args.value} onChange={args.onChange} options={[]} />
-				)}
-			</>
-		)
-	},
+	render: args => <TabbedHtmlView value={args.value!} onChange={args.onChange} />,
 }

@@ -64,13 +64,52 @@ export const CustomComponents: StoryObj<MarkedInputProps<MarkProps>> = {
 			span: FancySpan,
 		},
 	},
-	render: args => (
+}
+
+function EventLogStory(args: MarkedInputProps<MarkProps>) {
+	const [events, setEvents] = useState<string[]>([])
+
+	const addEvent = (event: string) => {
+		setEvents(prev => [...prev.slice(-4), event])
+	}
+
+	const slotProps = {
+		...args.slotProps,
+		container: {
+			...args.slotProps?.container,
+			onKeyDown: (e: React.KeyboardEvent) => {
+				if (e.key === 'Enter') {
+					e.preventDefault()
+					addEvent('Enter pressed')
+				}
+			},
+			onClick: () => addEvent('Clicked'),
+			onFocus: () => addEvent('Focused'),
+			onBlur: () => addEvent('Blurred'),
+		},
+	}
+
+	return (
 		<>
-			<h3>Custom Components via Slots</h3>
-			<p>Replace default div/span with your own components:</p>
-			<MarkedInput {...args} />
+			<h3>Styling & Events via slotProps</h3>
+			<p>Customize styling and add custom event handlers without replacing components:</p>
+
+			<MarkedInput {...args} slotProps={slotProps} />
+
+			<div style={{marginTop: '16px', padding: '12px', backgroundColor: '#f0f0f0', borderRadius: '4px'}}>
+				<strong>Recent events:</strong>
+				{events.length === 0 ? (
+					<p style={{marginTop: '8px', color: '#666'}}>No events yet</p>
+				) : (
+					<ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+						{events.map((event, i) => (
+							<li key={i}>{event}</li>
+						))}
+					</ul>
+				)}
+			</div>
 		</>
-	),
+	)
 }
 
 /**
@@ -99,51 +138,7 @@ export const WithSlotProps: StoryObj<MarkedInputProps<MarkProps>> = {
 			},
 		},
 	},
-	render: args => {
-		const [events, setEvents] = useState<string[]>([])
-
-		const addEvent = (event: string) => {
-			setEvents(prev => [...prev.slice(-4), event])
-		}
-
-		const slotProps = {
-			...args.slotProps,
-			container: {
-				...args.slotProps?.container,
-				onKeyDown: (e: React.KeyboardEvent) => {
-					if (e.key === 'Enter') {
-						e.preventDefault()
-						addEvent('Enter pressed')
-					}
-				},
-				onClick: () => addEvent('Clicked'),
-				onFocus: () => addEvent('Focused'),
-				onBlur: () => addEvent('Blurred'),
-			},
-		}
-
-		return (
-			<>
-				<h3>Styling & Events via slotProps</h3>
-				<p>Customize styling and add custom event handlers without replacing components:</p>
-
-				<MarkedInput {...args} slotProps={slotProps} />
-
-				<div style={{marginTop: '16px', padding: '12px', backgroundColor: '#f0f0f0', borderRadius: '4px'}}>
-					<strong>Recent events:</strong>
-					{events.length === 0 ? (
-						<p style={{marginTop: '8px', color: '#666'}}>No events yet</p>
-					) : (
-						<ul style={{marginTop: '8px', paddingLeft: '20px'}}>
-							{events.map((event, i) => (
-								<li key={i}>{event}</li>
-							))}
-						</ul>
-					)}
-				</div>
-			</>
-		)
-	},
+	render: args => <EventLogStory {...args} />,
 }
 
 const StyledContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> & {ref?: React.Ref<HTMLDivElement>}) => (
@@ -178,15 +173,6 @@ export const StyleMerging: StoryObj<MarkedInputProps<MarkProps>> = {
 			},
 		},
 	},
-	render: args => (
-		<>
-			<h3>Style Merging</h3>
-			<p>
-				When using both slots and slotProps, styles merge intelligently. slotProps styles override slot styles:
-			</p>
-			<MarkedInput {...args} />
-		</>
-	),
 }
 
 /**
@@ -214,20 +200,4 @@ export const DataAttributes: StoryObj<MarkedInputProps<MarkProps>> = {
 			},
 		},
 	},
-	render: args => (
-		<>
-			<h3>Data Attributes in camelCase</h3>
-			<p>slotProps supports camelCase data attributes (React converts them to kebab-case):</p>
-
-			<MarkedInput {...args} />
-
-			<div style={{marginTop: '16px', padding: '12px', backgroundColor: '#f0f0f0', borderRadius: '4px'}}>
-				<p style={{marginTop: 0}}>
-					<strong>Try inspecting the element:</strong> You'll see data-test-id, data-module, data-user-id
-					attributes on the container. These are automatically converted from camelCase (dataTestId →
-					data-test-id).
-				</p>
-			</div>
-		</>
-	),
 }

@@ -68,10 +68,12 @@ export const Focusable: Story = {
 		Mark: Abbr,
 		value: 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!',
 	},
-	render: args => {
-		useCaretInfo(true)
-		return <MarkedInput {...args} />
-	},
+	decorators: [
+		Story => {
+			useCaretInfo(true)
+			return <Story />
+		},
+	],
 }
 
 /*TODO

@@ -1,9 +1,9 @@
-import type {MarkProps, Markup} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Markup, Option} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {useState} from 'react'
 
 import {Button} from '../../shared/components/Button'
+import type {ButtonProps} from '../../shared/components/Button'
 
 export default {
 	title: 'MarkedInput',
@@ -24,7 +24,7 @@ export const Default: Story = {
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
-const configuredOptions = [
+const configuredOptions: Option<ButtonProps>[] = [
 	{
 		markup: PrimaryMarkup,
 		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
@@ -43,31 +43,24 @@ const configuredOptions = [
 	},
 ]
 
-export const Configured: Story = {
-	render: () => {
-		const [value, setValue] = useState(
+export const Configured: StoryObj<MarkedInputProps<ButtonProps>> = {
+	parameters: {plainValue: 'right'},
+	args: {
+		Mark: Button,
+		options: configuredOptions,
+		value:
 			"Enter the '@' for calling @[primary](primary:4) suggestions and '/' for @[default](default:7)!\n" +
-				'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
-				'For found mark used @[annotations](default:123).'
-		)
-
-		return (
-			<MarkedInput
-				Mark={Button}
-				options={configuredOptions}
-				value={value}
-				onChange={setValue}
-				slotProps={{
-					container: {
-						onClick: _ => console.log('onCLick'),
-						onInput: _ => console.log('onInput'),
-						onBlur: _ => console.log('onBlur'),
-						onFocus: _ => console.log('onFocus'),
-						onKeyDown: _ => console.log('onKeyDown'),
-					},
-				}}
-			/>
-		)
+			'Mark is can be a any component with any logic. In this example it is the @[Button](primary:54): clickable primary or secondary.\n' +
+			'For found mark used @[annotations](default:123).',
+		slotProps: {
+			container: {
+				onClick: _ => console.log('onCLick'),
+				onInput: _ => console.log('onInput'),
+				onBlur: _ => console.log('onBlur'),
+				onFocus: _ => console.log('onFocus'),
+				onKeyDown: _ => console.log('onKeyDown'),
+			},
+		},
 	},
 }
 
