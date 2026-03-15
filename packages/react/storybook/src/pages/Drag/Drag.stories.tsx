@@ -1,11 +1,12 @@
-import {MarkedInput} from '@markput/react'
-import type {MarkProps, Option} from '@markput/react'
+import {MarkedInput, useMark} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties, ReactNode} from 'react'
 import {useState} from 'react'
 
 import {Text} from '../../shared/components/Text'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
+import {withPlainValue} from '../../shared/lib/withPlainValue'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
 export default {
@@ -72,114 +73,120 @@ const todoOptions: Option<TodoMarkProps>[] = [
 		}),
 	},
 	{
-		markup: '- [ ] __nested__\n\n',
-		mark: (props: MarkProps) => ({...props, todo: 'pending' as const, style: {display: 'block'} as CSSProperties}),
+		markup: '- [__value__] __nested__\n',
+		mark: (props: MarkProps) => {
+			const isDone = props.value === 'x'
+			return {
+				...props,
+				todo: isDone ? 'done' : 'pending',
+				style: {
+					display: 'block',
+					opacity: isDone ? 0.55 : undefined,
+				} as CSSProperties,
+			}
+		},
 	},
 	{
-		markup: '- [x] __nested__\n\n',
-		mark: (props: MarkProps) => ({
-			...props,
-			todo: 'done' as const,
-			style: {display: 'block', textDecoration: 'line-through', opacity: 0.5} as CSSProperties,
-		}),
+		markup: '\t- [__value__] __nested__\n',
+		mark: (props: MarkProps) => {
+			const isDone = props.value === 'x'
+			return {
+				...props,
+				todo: isDone ? 'done' : 'pending',
+				style: {
+					display: 'block',
+					paddingLeft: '22px',
+					borderLeft: '2px solid #d0d7de',
+					opacity: isDone ? 0.55 : undefined,
+				} as CSSProperties,
+			}
+		},
 	},
 	{
-		markup: '\t- [ ] __nested__\n\n',
-		mark: (props: MarkProps) => ({
-			...props,
-			todo: 'pending' as const,
-			style: {display: 'block', paddingLeft: '1.5em'} as CSSProperties,
-		}),
-	},
-	{
-		markup: '\t- [x] __nested__\n\n',
-		mark: (props: MarkProps) => ({
-			...props,
-			todo: 'done' as const,
-			style: {
-				display: 'block',
-				paddingLeft: '1.5em',
-				textDecoration: 'line-through',
-				opacity: 0.5,
-			} as CSSProperties,
-		}),
-	},
-	{
-		markup: '\t\t- [ ] __nested__\n\n',
-		mark: (props: MarkProps) => ({
-			...props,
-			todo: 'pending' as const,
-			style: {display: 'block', paddingLeft: '3em'} as CSSProperties,
-		}),
-	},
-	{
-		markup: '\t\t- [x] __nested__\n\n',
-		mark: (props: MarkProps) => ({
-			...props,
-			todo: 'done' as const,
-			style: {
-				display: 'block',
-				paddingLeft: '3em',
-				textDecoration: 'line-through',
-				opacity: 0.5,
-			} as CSSProperties,
-		}),
+		markup: '\t\t- [__value__] __nested__\n',
+		mark: (props: MarkProps) => {
+			const isDone = props.value === 'x'
+			return {
+				...props,
+				todo: isDone ? 'done' : 'pending',
+				style: {
+					display: 'block',
+					paddingLeft: '22px',
+					marginLeft: '24px',
+					borderLeft: '2px solid #d0d7de',
+					opacity: isDone ? 0.55 : undefined,
+				} as CSSProperties,
+			}
+		},
 	},
 	{
 		markup: '> __nested__\n\n',
 		mark: (props: MarkProps) => ({
 			...props,
-			style: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic'} as CSSProperties,
+			style: {
+				display: 'block',
+				fontSize: '0.85em',
+				color: '#888',
+				fontStyle: 'italic',
+				marginTop: 16,
+			} as CSSProperties,
 		}),
 	},
 ]
 
-const TodoMark = ({children, value, style, todo}: TodoMarkProps) => (
-	<span style={{...style, margin: '0 1px'}}>
-		{todo && <span style={{marginRight: 6}}>{todo === 'done' ? '\u2611' : '\u2610'}</span>}
-		{children || value}
-	</span>
-)
+const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
+	const mark = useMark()
+	const [isDone, setIsDone] = useState(mark.value === 'x')
+
+	return (
+		<span
+			style={{
+				...style,
+				margin: '0 1px',
+				opacity: isDone ? 0.55 : undefined,
+			}}
+		>
+			{todo !== undefined && (
+				<input
+					type="checkbox"
+					checked={isDone}
+					onChange={() => {
+						const next = !isDone
+						setIsDone(next)
+						mark.value = next ? 'x' : ' '
+					}}
+					disabled={mark.readOnly}
+					style={{marginRight: 6}}
+				/>
+			)}
+			{nested}
+		</span>
+	)
+}
 
 const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 
 - [ ] Design Phase
-
 \t- [ ] Create wireframes
-
 \t- [x] Define color palette
-
 \t- [ ] Design component library
-
 - [x] Research
-
 \t- [x] Analyze competitors
-
 \t- [x] User interviews
-
 \t\t- [x] Draft interview questions
-
 \t\t- [x] Schedule 5 sessions
-
 - [ ] Development
-
 \t- [ ] Set up CI/CD pipeline
-
 \t- [x] Write unit tests
-
 \t- [ ] API integration
-
 \t\t- [ ] Auth endpoints
-
 \t\t- [ ] Data sync
-
 - [ ] Launch
-
 \t- [ ] Final QA pass
-
 \t- [ ] Deploy to production
+> \u2610 = pending  \u2611 = done
 
-> \u2610 = pending  \u2611 = done`
+`
 
 // ─── Test helper stories (used by Drag.spec.tsx) ─────────────────────────────
 
@@ -229,22 +236,12 @@ export const ReadOnlyDrag: Story = {
 
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
-export const TodoList: Story = {
-	render: () => {
-		const [value, setValue] = useState(TODO_VALUE)
-
-		return (
-			<div style={{maxWidth: 700, margin: '0 auto', paddingLeft: 52}}>
-				<MarkedInput
-					Mark={TodoMark}
-					options={todoOptions}
-					value={value}
-					onChange={setValue}
-					drag
-					style={{minHeight: 200, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8}}
-				/>
-				<Text label="Raw value:" value={value} />
-			</div>
-		)
+export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
+	decorators: [withPlainValue],
+	args: {
+		Mark: TodoMark,
+		options: todoOptions,
+		value: TODO_VALUE,
+		drag: true,
 	},
 }
