@@ -15,7 +15,9 @@ export const withPlainValue = (Story: any, context: any) => {
 	const isControlled = 'value' in mergedArgs
 	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const showPlainValue = globals.showPlainValue !== 'hide'
+	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
+	const showPlainValue = globalValue !== 'hide'
+	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
 
 	// displayValue tracks onChange synchronously so the panel stays up-to-date in
 	// tests where updateArgs propagation is async.
@@ -23,18 +25,18 @@ export const withPlainValue = (Story: any, context: any) => {
 
 	// Responsive: switch to 'bottom' when wrapper is narrower than 600px.
 	const wrapperRef = useRef<HTMLDivElement>(null)
-	const [effectivePosition, setEffectivePosition] = useState<'right' | 'bottom'>(rawPosition ?? 'right')
+	const [effectivePosition, setEffectivePosition] = useState<'right' | 'bottom'>(globalPosition)
 
 	useEffect(() => {
 		const el = wrapperRef.current
-		if (!el || !rawPosition) return
+		if (!el || !showPanel) return
 		const observer = new ResizeObserver(([entry]) => {
 			const width = entry.contentRect.width
-			setEffectivePosition(width < 600 ? 'bottom' : rawPosition)
+			setEffectivePosition(width < 600 ? 'bottom' : globalPosition)
 		})
 		observer.observe(el)
 		return () => observer.disconnect()
-	}, [rawPosition])
+	}, [globalPosition, showPlainValue, showPanel])
 
 	const handleChange = useCallback(
 		(newValue: string) => {

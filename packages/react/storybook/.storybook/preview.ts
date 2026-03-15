@@ -7,13 +7,14 @@ const preview: Preview = {
 	globalTypes: {
 		showPlainValue: {
 			name: 'Plain Value',
-			description: 'Toggle plain value panel',
-			defaultValue: 'show',
+			description: 'Plain value panel position',
+			defaultValue: 'right',
 			toolbar: {
-				icon: 'eye',
+				icon: 'sidebaralt',
 				items: [
-					{value: 'show', icon: 'eye'},
-					{value: 'hide', icon: 'eyeclose'},
+					{value: 'right', title: 'Show right', icon: 'sidebaralt'},
+					{value: 'bottom', title: 'Show bottom', icon: 'bottombar'},
+					{value: 'hide', title: 'Hide', icon: 'eyeclose'},
 				],
 			},
 		},

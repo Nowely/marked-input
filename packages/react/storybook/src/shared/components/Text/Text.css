@@ -5,7 +5,6 @@
 /* --- Dashed divider for bottom mode --- */
 .pvp-divider {
 	border: none;
-	border-top: 1.5px dashed #d0d7de;
 	margin: 16px 0 0;
 }
 
