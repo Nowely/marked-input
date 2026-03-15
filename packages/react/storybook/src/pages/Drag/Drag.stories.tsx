@@ -4,7 +4,6 @@ import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties} from 'react'
 import {useState} from 'react'
 
-import {Text} from '../../shared/components/Text'
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions} from '../Nested/MarkdownOptions'
 
@@ -188,12 +187,7 @@ export const PlainTextDrag: Story = {
 	},
 	render: args => {
 		const [value, setValue] = useState(args.value as string)
-		return (
-			<>
-				<MarkedInput {...args} value={value} onChange={setValue} />
-				<Text value={value} />
-			</>
-		)
+		return <MarkedInput {...args} value={value} onChange={setValue} />
 	},
 }
 
@@ -208,12 +202,7 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 	},
 	render: args => {
 		const [value, setValue] = useState(args.value as string)
-		return (
-			<>
-				<MarkedInput {...args} value={value} onChange={setValue} />
-				<Text value={value} />
-			</>
-		)
+		return <MarkedInput {...args} value={value} onChange={setValue} />
 	},
 }
 
@@ -237,6 +226,6 @@ export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
 		drag: true,
 	},
 	parameters: {
-		plainValue: true,
+		plainValue: 'right',
 	},
 }
