@@ -55,9 +55,9 @@ export type {Signal, Emitter, UseHookFactory} from './src/shared/classes'
 
 // Utilities
 export {escape} from './src/shared/escape'
-export {findGap, getClosestIndexes} from './src/features/preparsing'
+export {findGap, getClosestIndexes} from './src/features/parsing/preparsing'
 export {toString} from './src/features/parsing'
-export {shallow, createNewSpan, deleteMark} from './src/features/text-manipulation'
+export {shallow, createNewSpan, deleteMark} from './src/features/editing'
 export {Store, type StoreOptions} from './src/features/store'
 export {
 	OverlayController,
@@ -75,8 +75,7 @@ export {ContentEditableController} from './src/features/editable'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Feature Management
-export {FeatureManager, asFeature, type Feature} from './src/features/FeatureManager'
-export {createCoreFeatures} from './src/features/coreFeatures'
+export {FeatureManager, asFeature, type Feature, createCoreFeatures} from './src/features/feature-manager'
 
 // Lifecycle
 export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'

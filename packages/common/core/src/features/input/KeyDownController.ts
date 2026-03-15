@@ -4,11 +4,11 @@ import {BLOCK_SEPARATOR} from '../blocks/config'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
 import {splitTokensIntoDragRows, type Block} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
+import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {MarkToken} from '../parsing/ParserV2/types'
-import {selectAllText} from '../selection'
+import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
-import {deleteMark} from '../text-manipulation'
 
 export class KeyDownController {
 	#keydownHandler?: (e: KeyboardEvent) => void
@@ -477,23 +477,6 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	event.preventDefault()
 	const newContent = event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
-}
-
-function isFullSelection(store: Store): boolean {
-	const sel = window.getSelection()
-	const container = store.refs.container
-	if (!sel?.rangeCount || !container?.firstChild || !container?.lastChild) return false
-
-	try {
-		const range = sel.getRangeAt(0)
-		return (
-			container.contains(range.startContainer) &&
-			container.contains(range.endContainer) &&
-			range.toString().length > 0
-		)
-	} catch {
-		return false
-	}
 }
 
 export function replaceAllContentWith(store: Store, newContent: string): void {

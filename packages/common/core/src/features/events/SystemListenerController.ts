@@ -1,6 +1,6 @@
+import {createNewSpan} from '../editing'
 import {annotate, toString} from '../parsing'
 import type {Store} from '../store/Store'
-import {createNewSpan} from '../text-manipulation'
 
 export class SystemListenerController {
 	#changeUnsubscribe?: () => void

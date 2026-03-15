@@ -1,5 +1,5 @@
 import type {CoreOption} from '../../shared/types'
-import {createCoreFeatures} from '../coreFeatures'
+import {createCoreFeatures} from '../feature-manager'
 import {Parser} from '../parsing/ParserV2/Parser'
 import {toString} from '../parsing/ParserV2/utils/toString'
 import {getTokensByUI, getTokensByValue, parseWithParser} from '../parsing/utils/valueParser'
