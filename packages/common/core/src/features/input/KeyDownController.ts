@@ -1,4 +1,4 @@
-import type {NodeProxy} from '../../shared/classes/NodeProxy'
+import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {BLOCK_SEPARATOR} from '../blocks/config'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
@@ -6,7 +6,7 @@ import {splitTokensIntoDragRows, type Block} from '../blocks/splitTokensIntoDrag
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import type {MarkToken} from '../parsing/parser/types'
+import type {MarkToken} from '../parsing'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 

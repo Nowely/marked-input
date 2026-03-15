@@ -1,4 +1,4 @@
-import type {Token, TextToken} from '../parsing/parser/types'
+import type {Token, TextToken} from '../parsing'
 import {BLOCK_SEPARATOR} from './config'
 
 export interface Block {

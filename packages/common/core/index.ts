@@ -1,5 +1,5 @@
 // Shared exports
-export {assertNonNullable} from './src/shared/checkers/assertNonNullable'
+export {assertNonNullable} from './src/shared/checkers'
 export {
 	convertDataAttrs,
 	cx,

@@ -1,6 +1,11 @@
-import {defineState, defineEvents, type UseHookFactory, type StateObject} from '../../shared/classes'
-import {KeyGenerator} from '../../shared/classes/KeyGenerator'
-import {NodeProxy} from '../../shared/classes/NodeProxy'
+import {
+	defineState,
+	defineEvents,
+	KeyGenerator,
+	NodeProxy,
+	type UseHookFactory,
+	type StateObject,
+} from '../../shared/classes'
 import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
