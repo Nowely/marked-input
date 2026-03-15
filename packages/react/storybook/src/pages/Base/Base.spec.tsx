@@ -6,12 +6,13 @@ import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import {Focusable, Removable} from '../Dynamic/Dynamic.stories'
+import * as DynamicStories from '../Dynamic/Dynamic.stories'
 import * as BaseStories from './Base.stories'
 
 //createVisualTests(BaseStories)
 
 const {Default} = composeStories(BaseStories)
+const {Focusable, Removable} = composeStories(DynamicStories)
 
 describe(`Component: MarkedInput`, () => {
 	it.todo('should set readOnly on selection')

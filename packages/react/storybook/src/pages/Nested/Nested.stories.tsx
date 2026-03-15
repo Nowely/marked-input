@@ -1,11 +1,10 @@
-import type {Markup} from '@markput/react'
+import type {MarkProps, Markup} from '@markput/react'
 import {MarkedInput, useMark} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ReactNode} from 'react'
+import type {ComponentType, ReactNode} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
-import {Text} from '../../shared/components/Text'
 import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
@@ -37,37 +36,27 @@ const SimpleMark = ({children, style, value}: {value?: string; children?: ReactN
 )
 
 export const SimpleNesting: Story = {
-	render: () => {
-		const [value, setValue] = useState('This is *italic text with **bold** inside* and more text.')
-
-		return (
-			<>
-				<MarkedInput
-					Mark={SimpleMark}
-					value={value}
-					onChange={setValue}
-					options={[
-						{
-							markup: BoldMarkup,
-							mark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontWeight: 'bold'},
-							}),
-						},
-						{
-							markup: ItalicMarkup,
-							mark: ({value, children}) => ({
-								value,
-								children,
-								style: {fontStyle: 'italic'},
-							}),
-						},
-					]}
-				/>
-				<Text label="Raw value:" value={value} />
-			</>
-		)
+	args: {
+		Mark: SimpleMark as ComponentType<any>,
+		value: 'This is *italic text with **bold** inside* and more text.',
+		options: [
+			{
+				markup: BoldMarkup,
+				mark: ({value, children}: MarkProps) => ({
+					value,
+					children,
+					style: {fontWeight: 'bold'},
+				}),
+			},
+			{
+				markup: ItalicMarkup,
+				mark: ({value, children}: MarkProps) => ({
+					value,
+					children,
+					style: {fontStyle: 'italic'},
+				}),
+			},
+		],
 	},
 }
 
@@ -90,65 +79,53 @@ const MultiLevelMark = ({
 }) => <span style={{...style, margin: '0 2px'}}>{children || value}</span>
 
 export const MultipleLevels: Story = {
-	render: () => {
-		const [value, setValue] = useState(
-			'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]'
-		)
-
-		return (
-			<>
-				<MarkedInput
-					Mark={MultiLevelMark}
-					value={value}
-					onChange={setValue}
-					options={[
-						{
-							markup: TagMarkup,
-							mark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#e7f3ff',
-									border: '1px solid #2196f3',
-									color: '#1976d2',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
-						},
-						{
-							markup: MentionMarkup,
-							mark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#fff3e0',
-									border: '1px solid #ff9800',
-									color: '#f57c00',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
-						},
-						{
-							markup: CodeMarkup,
-							mark: ({value, children}) => ({
-								value,
-								children,
-								style: {
-									backgroundColor: '#f3e5f5',
-									border: '1px solid #9c27b0',
-									color: '#7b1fa2',
-									padding: '2px 6px',
-									borderRadius: '4px',
-								},
-							}),
-						},
-					]}
-				/>
-				<Text label="Raw value:" value={value} />
-			</>
-		)
+	args: {
+		Mark: MultiLevelMark as ComponentType<any>,
+		value: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
+		options: [
+			{
+				markup: TagMarkup,
+				mark: ({value, children}: MarkProps) => ({
+					value,
+					children,
+					style: {
+						backgroundColor: '#e7f3ff',
+						border: '1px solid #2196f3',
+						color: '#1976d2',
+						padding: '2px 6px',
+						borderRadius: '4px',
+					},
+				}),
+			},
+			{
+				markup: MentionMarkup,
+				mark: ({value, children}: MarkProps) => ({
+					value,
+					children,
+					style: {
+						backgroundColor: '#fff3e0',
+						border: '1px solid #ff9800',
+						color: '#f57c00',
+						padding: '2px 6px',
+						borderRadius: '4px',
+					},
+				}),
+			},
+			{
+				markup: CodeMarkup,
+				mark: ({value, children}: MarkProps) => ({
+					value,
+					children,
+					style: {
+						backgroundColor: '#f3e5f5',
+						border: '1px solid #9c27b0',
+						color: '#7b1fa2',
+						padding: '2px 6px',
+						borderRadius: '4px',
+					},
+				}),
+			},
+		],
 	},
 }
 
@@ -164,17 +141,10 @@ const HtmlLikeMark = ({children, value, nested}: {value?: string; children?: Rea
 }
 
 export const HtmlLikeTags: Story = {
-	render: () => {
-		const [value, setValue] = useState(
-			'<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>'
-		)
-
-		return (
-			<>
-				<MarkedInput Mark={HtmlLikeMark} value={value} onChange={setValue} options={[{markup: HtmlMarkup}]} />
-				<Text label="Raw value:" value={value} />
-			</>
-		)
+	args: {
+		Mark: HtmlLikeMark as ComponentType<any>,
+		value: '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
+		options: [{markup: HtmlMarkup}],
 	},
 }
 
@@ -217,74 +187,12 @@ const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNo
 }
 
 export const InteractiveNested: Story = {
-	render: () => {
-		const [value, setValue] = useState('@[Click me @[or me @[or even me]]]')
-
-		return (
-			<>
-				<MarkedInput
-					Mark={InteractiveMark}
-					value={value}
-					onChange={setValue}
-					options={[{markup: '@[__nested__]'}]}
-				/>
-				<Text label="Raw value:" value={value} />
-			</>
-		)
+	args: {
+		Mark: InteractiveMark as ComponentType<any>,
+		value: '@[Click me @[or me @[or even me]]]',
+		options: [{markup: '@[__nested__]'}],
 	},
 }
-
-// ============================================================================
-// Example 5: Editable Nested Content
-// ============================================================================
-
-// const EditableMark = ({children}: {value?: string; children?: ReactNode}) => {
-// 	const mark = useMark()
-//
-// 	return (
-// 		<span
-// 			ref={mark.ref}
-// 			contentEditable
-// 			suppressContentEditableWarning
-// 			style={{
-// 				display: 'inline-block',
-// 				padding: '4px 8px',
-// 				margin: '2px',
-// 				border: '1px dashed #999',
-// 				borderRadius: '4px',
-// 				backgroundColor: '#fff9e6',
-// 				minWidth: '20px',
-// 			}}
-// 		>
-// 			{children}
-// 		</span>
-// 	)
-// }
-
-// TODO fix editable nested marks support
-// const EditableNested: Story = {
-// 	render: () => {
-// 		const [value, setValue] = useState('@[Edit this @[and this @[and even this]]]')
-//
-// 		return (
-// 			<>
-// 				<MarkedInput
-// 					Mark={EditableMark}
-// 					value={value}
-// 					onChange={setValue}
-// 					options={[{markup: '@[__nested__]', trigger: '@'}]}
-// 				/>
-// 				<Text label="Raw value:" value={value} />
-// 				<div style={{marginTop: '10px', fontSize: '12px', color: '#666'}}>
-// 					<p>
-// 						<strong>Instructions:</strong> Click inside any mark to edit its content. Nested marks are
-// 						independently editable.
-// 					</p>
-// 				</div>
-// 			</>
-// 		)
-// 	},
-// }
 
 // ============================================================================
 // Example 6: Complex Markdown Document
@@ -301,8 +209,10 @@ const MarkdownMark = ({
 }) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
 
 export const ComplexMarkdown: Story = {
-	render: () => {
-		const [value, setValue] = useState(COMPLEX_MARKDOWN)
+	args: {
+		value: COMPLEX_MARKDOWN,
+	},
+	render: args => {
 		const {Tab, activeTab} = useTab([
 			{value: 'preview', label: 'Preview'},
 			{value: 'write', label: 'Write'},
@@ -313,9 +223,9 @@ export const ComplexMarkdown: Story = {
 				<Tab />
 
 				{activeTab === 'preview' ? (
-					<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={value} readOnly={true} />
+					<MarkedInput Mark={MarkdownMark} options={MarkdownOptions} value={args.value} readOnly={true} />
 				) : (
-					<MarkedInput options={[]} value={value} onChange={setValue} />
+					<MarkedInput options={[]} value={args.value} onChange={args.onChange} />
 				)}
 			</>
 		)
@@ -480,8 +390,8 @@ const HtmlDocMark = ({children, value, nested}: {value?: string; children?: Reac
 }
 
 export const ComplexHtmlDocument: Story = {
-	render: () => {
-		const [value, setValue] = useState(`<article>
+	args: {
+		value: `<article>
 <header>
 <h1>Understanding <strong>Nested HTML</strong> Structures</h1>
 <p><small>Published on <time>November 13, 2025</time></small></p>
@@ -541,7 +451,9 @@ export const ComplexHtmlDocument: Story = {
 <footer>
 <p><small>© 2025 MarkedInput Library. Built with <strong>React</strong> and <em>TypeScript</em>.</small></p>
 </footer>
-</article>`)
+</article>`,
+	},
+	render: args => {
 		const {Tab, activeTab} = useTab([
 			{value: 'preview', label: 'Preview'},
 			{value: 'write', label: 'Write'},
@@ -555,18 +467,14 @@ export const ComplexHtmlDocument: Story = {
 					<MarkedInput
 						key={activeTab}
 						Mark={HtmlDocMark}
-						value={value}
+						value={args.value}
 						readOnly={true}
 						options={[{markup: HtmlMarkup}]}
 					/>
 				) : (
-					<MarkedInput key={activeTab} value={value} onChange={setValue} options={[]} />
+					<MarkedInput key={activeTab} value={args.value} onChange={args.onChange} options={[]} />
 				)}
 			</>
 		)
 	},
 }
-
-// ============================================================================
-// Example 8: Complex Real-World Example (Rich Text Editor)
-// ============================================================================

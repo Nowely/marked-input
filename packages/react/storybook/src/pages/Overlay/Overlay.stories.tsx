@@ -2,7 +2,6 @@ import type {MarkToken} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {RefObject} from 'react'
-import {useState} from 'react'
 
 export default {
 	title: 'MarkedInput/Overlay',
@@ -30,31 +29,35 @@ export const DefaultOverlay: Story = {
 }
 
 const Overlay = () => <h1>I am the overlay</h1>
-export const CustomOverlay = () => {
-	const [value, setValue] = useState('Hello, custom overlay by trigger @!')
-	return <MarkedInput Mark={() => null} Overlay={Overlay} value={value} onChange={setValue} />
+
+export const CustomOverlay: Story = {
+	args: {
+		Mark: () => null,
+		Overlay,
+		value: 'Hello, custom overlay by trigger @!',
+	},
 }
 
-export const CustomTrigger = () => {
-	const [value, setValue] = useState('Hello, custom overlay by trigger /!')
-	return (
-		<MarkedInput
-			Mark={() => null}
-			Overlay={Overlay}
-			value={value}
-			onChange={setValue}
-			options={[{overlay: {trigger: '/'}}]}
-		/>
-	)
+export const CustomTrigger: Story = {
+	args: {
+		Mark: () => null,
+		Overlay,
+		value: 'Hello, custom overlay by trigger /!',
+		options: [{overlay: {trigger: '/'}}],
+	},
 }
 
 const Tooltip = () => {
 	const {style} = useOverlay()
 	return <div style={{position: 'absolute', ...style}}>I am the overlay</div>
 }
-export const PositionedOverlay = () => {
-	const [value, setValue] = useState('Hello, positioned overlay by trigger @!')
-	return <MarkedInput Mark={() => null} Overlay={Tooltip} value={value} onChange={setValue} />
+
+export const PositionedOverlay: Story = {
+	args: {
+		Mark: () => null,
+		Overlay: Tooltip,
+		value: 'Hello, positioned overlay by trigger @!',
+	},
 }
 
 const List = () => {
@@ -67,15 +70,11 @@ const List = () => {
 	)
 }
 
-export const SelectableOverlay = () => {
-	const [value, setValue] = useState('Hello, suggest overlay by trigger @!')
-	return (
-		<MarkedInput
-			Mark={Mark}
-			Overlay={List}
-			value={value}
-			onChange={setValue}
-			options={[{markup: '@[__value__](__meta__)', overlay: {trigger: '@'}}]}
-		/>
-	)
+export const SelectableOverlay: Story = {
+	args: {
+		Mark,
+		Overlay: List,
+		value: 'Hello, suggest overlay by trigger @!',
+		options: [{markup: '@[__value__](__meta__)', overlay: {trigger: '@'}}],
+	},
 }
