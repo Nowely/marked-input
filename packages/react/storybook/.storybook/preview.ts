@@ -1,6 +1,9 @@
 import type {Preview} from '@storybook/react-vite'
 
+import {withPlainValue} from '../src/shared/lib/withPlainValue'
+
 const preview: Preview = {
+	decorators: [withPlainValue],
 	globalTypes: {
 		showPlainValue: {
 			name: 'Plain Value',

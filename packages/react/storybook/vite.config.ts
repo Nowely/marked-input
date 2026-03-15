@@ -9,6 +9,7 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
+		setupFiles: ['./vitest.setup.ts'],
 		include: ['src/pages/**/*.spec.ts', 'src/pages/**/*.spec.tsx'],
 		coverage: {
 			provider: 'v8',

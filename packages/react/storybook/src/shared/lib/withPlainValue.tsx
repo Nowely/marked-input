@@ -1,22 +1,40 @@
-import {useCallback} from 'react'
+import {useCallback, useState} from 'react'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {Text} from '../components/Text'
 
-export const withPlainValue = (Story: any) => {
+export const withPlainValue = (Story: any, context: any) => {
+	if (context.parameters?.plainValue === false) {
+		return <Story />
+	}
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
+	const isControlled = 'value' in args
 	const showPlainValue = globals.showPlainValue !== 'hide'
+
+	// displayValue tracks onChange synchronously so <Text> stays up-to-date in
+	// tests where updateArgs propagation is async.
+	const [displayValue, setDisplayValue] = useState(args.value)
 
 	const handleChange = useCallback(
 		(newValue: string) => {
+			setDisplayValue(newValue)
 			updateArgs({value: newValue})
 		},
 		[updateArgs]
 	)
 
+	// Only wrap controlled stories (those with `value` in args).
+	// Uncontrolled stories use `defaultValue` — overriding onChange would inject
+	// `value` back via updateArgs, switching them to controlled mode.
+	if (!isControlled) {
+		return <Story />
+	}
+
+	const storyArgs = {...args, onChange: handleChange}
+
 	if (!showPlainValue) {
-		return <Story args={{...args, onChange: handleChange}} />
+		return <Story args={storyArgs} />
 	}
 
 	return (
@@ -30,11 +48,11 @@ export const withPlainValue = (Story: any) => {
 			}}
 		>
 			<div style={{flex: 3, minWidth: 0}}>
-				<Story args={{...args, onChange: handleChange}} />
+				<Story args={storyArgs} />
 			</div>
-			{args.value !== undefined && (
+			{displayValue !== undefined && (
 				<div style={{flex: 2, minWidth: 0}}>
-					<Text label="Plain value:" value={args.value} className="text-inset" />
+					<Text label="Plain value:" value={displayValue} className="text-inset" />
 				</div>
 			)}
 		</div>
