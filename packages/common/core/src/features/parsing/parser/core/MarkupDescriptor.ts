@@ -59,6 +59,15 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 }
 
 /**
+ * Maps placeholder types to their text representations
+ */
+const PLACEHOLDER_TEXT: Record<GapType, string> = {
+	[GAP_TYPE.Value]: PLACEHOLDER.Value,
+	[GAP_TYPE.Meta]: PLACEHOLDER.Meta,
+	[GAP_TYPE.Nested]: PLACEHOLDER.Nested,
+} as const
+
+/**
  * Parses markup template into segments, gap types and placeholder counts
  */
 function scanMarkupStructure(markup: string) {
@@ -139,15 +148,6 @@ function validateMarkup(counts: Record<GapType, number>, markup: string): void {
 		)
 	}
 }
-
-/**
- * Maps placeholder types to their text representations
- */
-const PLACEHOLDER_TEXT: Record<GapType, string> = {
-	[GAP_TYPE.Value]: PLACEHOLDER.Value,
-	[GAP_TYPE.Meta]: PLACEHOLDER.Meta,
-	[GAP_TYPE.Nested]: PLACEHOLDER.Nested,
-} as const
 
 /**
  * Converts static segments around __value__ placeholders to dynamic patterns

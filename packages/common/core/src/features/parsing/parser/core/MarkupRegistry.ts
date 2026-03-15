@@ -3,6 +3,15 @@ import type {MarkupDescriptor} from './MarkupDescriptor'
 import {createMarkupDescriptor} from './MarkupDescriptor'
 import type {SegmentDefinition} from './SegmentMatcher'
 
+function getOrCreate<K, V>(map: Map<K, V[]>, key: K): V[] {
+	let arr = map.get(key)
+	if (!arr) {
+		arr = []
+		map.set(key, arr)
+	}
+	return arr
+}
+
 /**
  * Registry for managing markup descriptors
  * Centralizes access to all markup patterns and their descriptors
@@ -48,12 +57,7 @@ export class MarkupRegistry {
 		const firstSegmentIndex = descriptor.segmentGlobalIndices[0]
 		if (firstSegmentIndex === undefined) return
 
-		const descriptors = this.firstSegmentIndexMap.get(firstSegmentIndex)
-		if (descriptors) {
-			descriptors.push(descriptor)
-		} else {
-			this.firstSegmentIndexMap.set(firstSegmentIndex, [descriptor])
-		}
+		getOrCreate(this.firstSegmentIndexMap, firstSegmentIndex).push(descriptor)
 	}
 
 	private processSegment(
