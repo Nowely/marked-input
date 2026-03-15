@@ -33,7 +33,9 @@ export const PlainValuePanel = ({value, position}: PlainValuePanelProps) => {
 				</button>
 			</div>
 			<div className="pvp-scroll">
-				<pre className="pvp-pre">{value || <em className="pvp-empty">(empty)</em>}</pre>
+				<pre className="pvp-pre" data-value={value}>
+					{value || <em className="pvp-empty">(empty)</em>}
+				</pre>
 			</div>
 			<div className="pvp-footer">{computeStats(value)}</div>
 		</div>

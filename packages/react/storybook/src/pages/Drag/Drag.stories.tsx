@@ -179,30 +179,22 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
 
 export const PlainTextDrag: Story = {
-	parameters: {docs: {disable: true}},
+	parameters: {docs: {disable: true}, plainValue: 'bottom'},
 	args: {
 		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text',
 		drag: true,
 		style: testStyle,
 	},
-	render: args => {
-		const [value, setValue] = useState(args.value as string)
-		return <MarkedInput {...args} value={value} onChange={setValue} />
-	},
 }
 
 export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
-	parameters: {docs: {disable: true}},
+	parameters: {docs: {disable: true}, plainValue: 'bottom'},
 	args: {
 		Mark: MarkdownMark,
 		options: markdownOptions,
 		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover',
 		drag: true,
 		style: testStyle,
-	},
-	render: args => {
-		const [value, setValue] = useState(args.value as string)
-		return <MarkedInput {...args} value={value} onChange={setValue} />
 	},
 }
 

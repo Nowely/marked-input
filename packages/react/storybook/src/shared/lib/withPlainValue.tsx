@@ -3,69 +3,64 @@ import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {PlainValuePanel} from '../components/Text'
 
-export const withPlainValue = (Story: any, context: any) => {
-	// Hooks must be called unconditionally (no early return before them).
-	const [args, updateArgs] = useArgs()
-	const [globals] = useGlobals()
+// ─── Proper React component that owns all local state ─────────────────────────
+// withPlainValue (a Storybook decorator) is NOT called as a React component —
+// it is invoked as a plain function inside Storybook's hookify wrapper.
+// Calling React hooks (useState, useEffect) from that context can produce
+// undefined initial state on the first render.
+// PanelContainer IS a real React component: React creates a dedicated fiber
+// for it, so useState always initialises correctly.
 
-	// In test environments useArgs() may return {} on the first render.
-	// Merge context.args (initial story args) with the reactive args from useArgs().
-	const mergedArgs = {...context.args, ...args}
+interface PanelContainerProps {
+	Story: any
+	args: any
+	value: string
+	position: 'right' | 'bottom'
+	updateArgs: (update: Record<string, unknown>) => void
+}
 
-	const isControlled = 'value' in mergedArgs
-	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
-	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
-	const showPlainValue = globalValue !== 'hide'
-	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
+function PanelContainer({Story, args, value: valueProp, position: positionProp, updateArgs}: PanelContainerProps) {
+	const [value, setValue] = useState(valueProp)
+	const [prevValueProp, setPrevValueProp] = useState(valueProp)
 
-	// displayValue tracks onChange synchronously so the panel stays up-to-date in
-	// tests where updateArgs propagation is async.
-	const [displayValue, setDisplayValue] = useState<string | undefined>((context.args as any)?.value)
+	// Sync when the external value changes (e.g. Storybook controls panel).
+	// getDerivedStateFromProps pattern: call setState during render when prop drifts.
+	if (valueProp !== prevValueProp) {
+		setPrevValueProp(valueProp)
+		setValue(valueProp)
+	}
+
+	const wrapperRef = useRef<HTMLDivElement>(null)
+	const [position, setPosition] = useState<'right' | 'bottom'>(positionProp)
 
 	// Responsive: switch to 'bottom' when wrapper is narrower than 600px.
-	const wrapperRef = useRef<HTMLDivElement>(null)
-	const [effectivePosition, setEffectivePosition] = useState<'right' | 'bottom'>(globalPosition)
-
 	useEffect(() => {
 		const el = wrapperRef.current
-		if (!el || !showPanel) return
+		if (!el) return
 		const observer = new ResizeObserver(([entry]) => {
-			const width = entry.contentRect.width
-			setEffectivePosition(width < 600 ? 'bottom' : globalPosition)
+			setPosition(entry.contentRect.width < 600 ? 'bottom' : positionProp)
 		})
 		observer.observe(el)
 		return () => observer.disconnect()
-	}, [globalPosition, showPlainValue, showPanel])
+	}, [positionProp])
 
 	const handleChange = useCallback(
 		(newValue: string) => {
-			setDisplayValue(newValue)
+			setValue(newValue)
 			updateArgs({value: newValue})
 		},
 		[updateArgs]
 	)
 
-	// Only wrap controlled stories that opted in to the panel.
-	// Uncontrolled stories use `defaultValue` — overriding onChange would inject
-	// `value` back via updateArgs, switching them to controlled mode.
-	if (!showPanel || !isControlled) {
-		return <Story />
-	}
+	const storyArgs = {...args, value, onChange: handleChange}
 
-	const storyArgs = {...mergedArgs, onChange: handleChange}
-
-	if (!showPlainValue) {
-		return <Story args={storyArgs} />
-	}
-
-	if (effectivePosition === 'right') {
+	if (position === 'right') {
 		return (
 			<div ref={wrapperRef} style={{display: 'flex', height: '100%'}}>
 				<div style={{flex: 3, minWidth: 0, overflowY: 'auto'}}>
 					<Story args={storyArgs} />
 				</div>
-				{displayValue !== undefined && <PlainValuePanel value={displayValue} position="right" />}
+				<PlainValuePanel value={value} position="right" />
 			</div>
 		)
 	}
@@ -73,12 +68,46 @@ export const withPlainValue = (Story: any, context: any) => {
 	return (
 		<div ref={wrapperRef}>
 			<Story args={storyArgs} />
-			{displayValue !== undefined && (
-				<>
-					<div className="pvp-divider" />
-					<PlainValuePanel value={displayValue} position="bottom" />
-				</>
-			)}
+			<div className="pvp-divider" />
+			<PlainValuePanel value={value} position="bottom" />
 		</div>
+	)
+}
+
+// ─── Global Storybook decorator ───────────────────────────────────────────────
+
+export const withPlainValue = (Story: any, context: any) => {
+	// Only Storybook hooks at this level — no React hooks.
+	const [args, updateArgs] = useArgs()
+	const [globals] = useGlobals()
+
+	const mergedArgs = {...context.args, ...args}
+	const isControlled = 'value' in mergedArgs
+	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
+	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
+	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
+	const showPlainValue = globalValue !== 'hide'
+	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
+
+	// Stories that don't opt in to the panel, or are uncontrolled.
+	if (!showPanel || !isControlled) {
+		return <Story />
+	}
+
+	// Panel opted in but globally hidden — still wire onChange so controls stay in sync.
+	if (!showPlainValue) {
+		return <Story args={{...mergedArgs, onChange: (v: string) => updateArgs({value: v})}} />
+	}
+
+	const position = rawPosition ?? globalPosition
+
+	return (
+		<PanelContainer
+			Story={Story}
+			args={mergedArgs}
+			value={mergedArgs.value ?? ''}
+			position={position}
+			updateArgs={updateArgs}
+		/>
 	)
 }
