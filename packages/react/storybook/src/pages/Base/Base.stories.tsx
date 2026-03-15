@@ -44,7 +44,7 @@ const configuredOptions: Option<ButtonProps>[] = [
 ]
 
 export const Configured: StoryObj<MarkedInputProps<ButtonProps>> = {
-	parameters: {plainValue: 'right'},
+	parameters: {plainValue: 'bottom'},
 	args: {
 		Mark: Button,
 		options: configuredOptions,
