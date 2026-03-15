@@ -1,14 +1,14 @@
-import type {MarkProps, Markup} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
 import {MarkedInput, useMark} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ComponentType, ReactNode} from 'react'
+import type {CSSProperties} from 'react'
 import {useState} from 'react'
 
 import {useTab} from '../../shared/components/Tabs'
 import {COMPLEX_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions as MarkdownOptions} from './MarkdownOptions'
 
-export default {
+const meta = {
 	title: 'MarkedInput/Nested',
 	tags: ['autodocs'],
 	component: MarkedInput,
@@ -22,7 +22,8 @@ export default {
 	},
 } satisfies Meta<typeof MarkedInput>
 
-type Story = StoryObj<Meta<typeof MarkedInput>>
+export default meta
+type Story = StoryObj<typeof meta>
 
 // ============================================================================
 // Example 1: Simple Nesting (Markdown-style)
@@ -31,13 +32,15 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 const BoldMarkup: Markup = '**__nested__**'
 const ItalicMarkup: Markup = '*__nested__*'
 
-const SimpleMark = ({children, style, value}: {value?: string; children?: ReactNode; style?: React.CSSProperties}) => (
-	<span style={style}>{children || value}</span>
-)
+interface SimpleMarkProps extends MarkProps {
+	style?: CSSProperties
+}
 
-export const SimpleNesting: Story = {
+const SimpleMark = ({children, style, value}: SimpleMarkProps) => <span style={style}>{children || value}</span>
+
+export const SimpleNesting: StoryObj<MarkedInputProps<SimpleMarkProps>> = {
 	args: {
-		Mark: SimpleMark as ComponentType<any>,
+		Mark: SimpleMark,
 		value: 'This is *italic text with **bold** inside* and more text.',
 		options: [
 			{
@@ -68,19 +71,17 @@ const TagMarkup: Markup = '#[__nested__]'
 const MentionMarkup: Markup = '@[__nested__]'
 const CodeMarkup: Markup = '`__nested__`'
 
-const MultiLevelMark = ({
-	children,
-	style,
-	value,
-}: {
-	value?: string
-	children?: ReactNode
-	style?: React.CSSProperties
-}) => <span style={{...style, margin: '0 2px'}}>{children || value}</span>
+interface MultiLevelMarkProps extends MarkProps {
+	style?: CSSProperties
+}
 
-export const MultipleLevels: Story = {
+const MultiLevelMark = ({children, style, value}: MultiLevelMarkProps) => (
+	<span style={{...style, margin: '0 2px'}}>{children || value}</span>
+)
+
+export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
 	args: {
-		Mark: MultiLevelMark as ComponentType<any>,
+		Mark: MultiLevelMark,
 		value: 'Check #[this tag with @[nested mention with `code`]] and #[another #[deeply nested] tag]',
 		options: [
 			{
@@ -135,14 +136,14 @@ export const MultipleLevels: Story = {
 
 const HtmlMarkup: Markup = '<__value__>__nested__</__value__>'
 
-const HtmlLikeMark = ({children, value, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
+const HtmlLikeMark = ({children, value, nested}: MarkProps) => {
 	const Tag = value! as React.ElementType
 	return <Tag>{children || nested}</Tag>
 }
 
-export const HtmlLikeTags: Story = {
+export const HtmlLikeTags: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: HtmlLikeMark as ComponentType<any>,
+		Mark: HtmlLikeMark,
 		value: '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
 		options: [{markup: HtmlMarkup}],
 	},
@@ -152,7 +153,7 @@ export const HtmlLikeTags: Story = {
 // Example 4: Interactive Nested Marks with Tree Navigation
 // ============================================================================
 
-const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
+const InteractiveMark = ({children, nested}: MarkProps) => {
 	const mark = useMark()
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
@@ -186,9 +187,9 @@ const InteractiveMark = ({children, nested}: {value?: string; children?: ReactNo
 	)
 }
 
-export const InteractiveNested: Story = {
+export const InteractiveNested: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: InteractiveMark as ComponentType<any>,
+		Mark: InteractiveMark,
 		value: '@[Click me @[or me @[or even me]]]',
 		options: [{markup: '@[__nested__]'}],
 	},
@@ -198,15 +199,13 @@ export const InteractiveNested: Story = {
 // Example 6: Complex Markdown Document
 // ============================================================================
 
-const MarkdownMark = ({
-	children,
-	value,
-	style,
-}: {
-	value?: string
-	children?: ReactNode
-	style?: React.CSSProperties
-}) => <span style={{...style, margin: '0 1px'}}>{children || value}</span>
+interface MarkdownMarkProps extends MarkProps {
+	style?: CSSProperties
+}
+
+const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
+	<span style={{...style, margin: '0 1px'}}>{children || value}</span>
+)
 
 export const ComplexMarkdown: Story = {
 	args: {
@@ -236,7 +235,7 @@ export const ComplexMarkdown: Story = {
 // Example 7: Complex HTML Document
 // ============================================================================
 
-const HtmlDocMark = ({children, value, nested}: {value?: string; children?: ReactNode; nested?: string}) => {
+const HtmlDocMark = ({children, value, nested}: MarkProps) => {
 	const tagName = value?.toLowerCase() || 'span'
 
 	const tagStyles: Record<string, React.CSSProperties> = {

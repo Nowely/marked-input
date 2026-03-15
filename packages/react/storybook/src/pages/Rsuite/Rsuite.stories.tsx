@@ -1,9 +1,10 @@
-import type {MarkProps, Markup} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
 import {MarkedInput, useOverlay} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ComponentType} from 'react'
 import {useEffect, useState} from 'react'
 import {Input, Popover, Tag} from 'rsuite'
+import type {TagProps} from 'rsuite'
 
 import {Text} from '../../shared/components/Text'
 import {withStyle} from '../../shared/lib/withStyle'
@@ -13,8 +14,6 @@ export default {
 	component: MarkedInput,
 	decorators: [withStyle('rsuite.min.css')],
 } as Meta<typeof MarkedInput>
-
-type Story = StoryObj<Meta<typeof MarkedInput>>
 
 const Overlay = () => {
 	const {style, match, select, close} = useOverlay()
@@ -70,9 +69,9 @@ export const Overridden = () => {
 	)
 }
 
-export const TaggedInput: Story = {
+export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 	args: {
-		Mark: Tag as ComponentType<any>,
+		Mark: Tag as ComponentType<TagProps>,
 		Overlay,
 		value: initialState,
 		className: 'rs-picker-tag-wrapper rs-picker-input rs-picker-toggle-wrapper rs-picker-tag',

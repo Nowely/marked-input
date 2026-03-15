@@ -1,6 +1,6 @@
+import type {MarkProps, MarkedInputProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ComponentType} from 'react'
 import {useState} from 'react'
 
 const meta = {
@@ -18,9 +18,8 @@ const meta = {
 } satisfies Meta<typeof MarkedInput>
 
 export default meta
-type Story = StoryObj<typeof meta>
 
-const SimpleMark = ({children}: {value?: string; children?: React.ReactNode}) => (
+const SimpleMark = ({children}: MarkProps) => (
 	<mark style={{backgroundColor: '#ffd700', padding: '2px 4px', borderRadius: '3px'}}>{children}</mark>
 )
 
@@ -56,9 +55,9 @@ const FancySpan = ({ref, ...props}: React.HTMLAttributes<HTMLSpanElement> & {ref
  * Using slots to completely replace container and span components.
  * This is useful when you need full control over the component structure.
  */
-export const CustomComponents: Story = {
+export const CustomComponents: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: SimpleMark as ComponentType<any>,
+		Mark: SimpleMark,
 		value: 'Both @[container] and @[span] are @[customized]',
 		slots: {
 			container: FancyContainer,
@@ -78,9 +77,9 @@ export const CustomComponents: Story = {
  * Using slotProps to customize styling and add event handlers.
  * This is useful when you want to keep the default components but customize their behavior.
  */
-export const WithSlotProps: Story = {
+export const WithSlotProps: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: SimpleMark as ComponentType<any>,
+		Mark: SimpleMark,
 		value: 'Try pressing @[Enter] or clicking',
 		className: 'custom-container',
 		slotProps: {
@@ -163,9 +162,9 @@ const StyledContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> &
  * Edge case: Style merging when both slots and slotProps provide styles.
  * Shows that slotProps styles take precedence.
  */
-export const StyleMerging: Story = {
+export const StyleMerging: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: SimpleMark as ComponentType<any>,
+		Mark: SimpleMark,
 		value: 'Container has @[merged] styles from multiple sources',
 		slots: {
 			container: StyledContainer,
@@ -194,9 +193,9 @@ export const StyleMerging: Story = {
  * Data attributes support using camelCase notation.
  * React automatically converts camelCase properties like 'dataUserId' to HTML attributes like 'data-user-id'.
  */
-export const DataAttributes: Story = {
+export const DataAttributes: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
-		Mark: SimpleMark as ComponentType<any>,
+		Mark: SimpleMark,
 		value: 'Use @[data] attributes for testing and tracking',
 		slotProps: {
 			container: {

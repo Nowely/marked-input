@@ -1,6 +1,7 @@
-import type {MarkProps} from '@markput/react'
+import type {MarkProps, MarkedInputProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
+import type {TagProps} from 'antd'
 import {Tag} from 'antd'
 import type {ComponentType} from 'react'
 
@@ -9,11 +10,9 @@ export default {
 	component: MarkedInput,
 } satisfies Meta<typeof MarkedInput>
 
-type Story = StoryObj<typeof MarkedInput>
-
-export const Tagged: Story = {
+export const Tagged: StoryObj<MarkedInputProps<TagProps>> = {
 	args: {
-		Mark: Tag as ComponentType<any>,
+		Mark: Tag as ComponentType<TagProps>,
 		value: `We preset five different colors. You can set color property such as @(success), @(processing), @(error), @(default) and @(warning) to show specific status.`,
 		options: [
 			{

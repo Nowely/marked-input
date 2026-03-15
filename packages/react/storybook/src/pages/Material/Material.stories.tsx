@@ -1,5 +1,6 @@
-import type {MarkProps} from '@markput/react'
+import type {MarkProps, MarkedInputProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
+import type {ChipProps} from '@mui/material'
 import {Chip, Input} from '@mui/material'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {ComponentType} from 'react'
@@ -12,8 +13,6 @@ export default {
 	title: 'Styled/Material',
 	component: MarkedInput,
 } satisfies Meta<typeof MarkedInput>
-
-type Story = StoryObj<typeof MarkedInput>
 
 export const Mentions = () => {
 	const [value, setValue] = useState(`Enter the '@' for calling mention list: \n- Hello @Agustina and @[Ruslan]!`)
@@ -29,9 +28,9 @@ export const Mentions = () => {
 
 const initialValue = 'Hello beautiful the @[first](outlined:1) world from the @[second](common:2) '
 
-export const Chipped: Story = {
+export const Chipped: StoryObj<MarkedInputProps<ChipProps>> = {
 	args: {
-		Mark: Chip as ComponentType<any>,
+		Mark: Chip as ComponentType<ChipProps>,
 		value: initialValue,
 		options: [
 			{
