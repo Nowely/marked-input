@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.6.0](https://github.com/Nowely/marked-input/compare/0.5.0...0.6.0) (2026-03-15)
+
+
+### Features
+
+* **blocks:** add block merging via Backspace/Delete and TodoList story ([#148](https://github.com/Nowely/marked-input/issues/148)) ([0685033](https://github.com/Nowely/marked-input/commit/0685033578d702aa223686f67f95fca656ea6a1f))
+* **blocks:** Notion-like block editor with keyboard navigation, block operations, and drag-and-drop ([#146](https://github.com/Nowely/marked-input/issues/146)) ([4bd5534](https://github.com/Nowely/marked-input/commit/4bd5534859238019200eba2498b19590afec125a))
+* **drag:** replace block mode with drag-and-drop row management ([#149](https://github.com/Nowely/marked-input/issues/149)) ([83034e8](https://github.com/Nowely/marked-input/commit/83034e8725994bd807cfeb93f05b02b3a0a668c8))
+* **storybook:** add withPlainValue decorator and enhance drag/text stories ([#151](https://github.com/Nowely/marked-input/issues/151)) ([1d76c1f](https://github.com/Nowely/marked-input/commit/1d76c1fbeea2f790b672c3122dfed9f388d7434e))
+
+
+### Refactoring
+
+* **storybook:** standardize stories with PlainValuePanel and StoryObj types across React and Vue ([#152](https://github.com/Nowely/marked-input/issues/152)) ([42d21f3](https://github.com/Nowely/marked-input/commit/42d21f3ce949fc893f58181b6ea7da1c53fc0b32))
+
+
+### Miscellaneous
+
+* upgrade to Vite 8, Vitest 4.1, and Astro 6 ([#150](https://github.com/Nowely/marked-input/issues/150)) ([693966d](https://github.com/Nowely/marked-input/commit/693966d122260d5da28a4cba7cb53df10fea969a))
+
 ## [0.5.0](https://github.com/Nowely/marked-input/compare/0.4.0...0.5.0) (2026-03-07)
 
 
