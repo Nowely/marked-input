@@ -1,5 +1,6 @@
 packages:
     - packages/**/*
+    - '!packages/**/dist'
 
 catalog:
     '@faker-js/faker': ^10.2.0
