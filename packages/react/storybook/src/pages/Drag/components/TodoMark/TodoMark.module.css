@@ -40,8 +40,8 @@
 .counter {
 	display: inline-flex;
 	align-items: center;
-	gap: 2px;
-	margin-right: 4px;
+	gap: 0;
+	margin-right: 6px;
 }
 
 .counter button {
@@ -49,9 +49,9 @@
 	border: none;
 	color: #666;
 	cursor: pointer;
-	font-size: 0.75em;
-	padding: 1px 3px;
-	min-width: 16px;
+	font-size: 0.95em;
+	padding: 3px 7px;
+	min-width: 24px;
 	text-align: center;
 	font-weight: bold;
 	transition: all 0.1s;
@@ -73,11 +73,11 @@
 }
 
 .counter span {
-	min-width: 18px;
+	min-width: 26px;
 	text-align: center;
 	font-weight: 500;
-	padding: 0 2px;
-	font-size: 0.8em;
+	padding: 0 4px;
+	font-size: 1em;
 	font-variant-numeric: tabular-nums;
 }
 

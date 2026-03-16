@@ -1,6 +1,6 @@
 import {useMark} from '@markput/react'
 import type {MarkProps} from '@markput/react'
-import {useReducer} from 'react'
+import {useCallback, useReducer, useState} from 'react'
 
 import styles from './TodoMark.module.css'
 
@@ -58,27 +58,34 @@ const CounterWidget = ({visible = true}: CounterWidgetProps) => {
 		return null
 	}
 
-	const count = parseInt(mark.value || '0', 10)
 	const step = parseInt(mark.meta || '1', 10)
 	const readOnly = mark.readOnly ?? false
 
+	const [count, setCount] = useState(() => parseInt(mark.value || '0', 10))
+
+	const decrement = useCallback(() => {
+		setCount(prev => {
+			const newValue = prev - step
+			mark.value = String(newValue)
+			return newValue
+		})
+	}, [step, mark])
+
+	const increment = useCallback(() => {
+		setCount(prev => {
+			const newValue = prev + step
+			mark.value = String(newValue)
+			return newValue
+		})
+	}, [step, mark])
+
 	return (
 		<span className={styles.counter}>
-			<button
-				onClick={() => {
-					mark.value = String(count - step)
-				}}
-				disabled={readOnly}
-			>
+			<button onClick={decrement} disabled={readOnly}>
 				-
 			</button>
 			<span>{count}</span>
-			<button
-				onClick={() => {
-					mark.value = String(count + step)
-				}}
-				disabled={readOnly}
-			>
+			<button onClick={increment} disabled={readOnly}>
 				+
 			</button>
 		</span>
