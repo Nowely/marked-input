@@ -1,3 +1,2 @@
-export type {TodoMarkProps, TodoType} from './TodoMark'
 export {TODO_OPTIONS, TODO_VALUE} from './constants'
-export {TodoMark} from './TodoMark'
+export {HeadingMark, TodoItemMark, TodoIndent1Mark, BlockquoteMark, CounterMark} from './TodoMark'

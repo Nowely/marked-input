@@ -1,14 +1,14 @@
 import type {Option} from '@markput/react'
 
-import type {TodoMarkProps} from './TodoMark'
+import {BlockquoteMark, CounterMark, HeadingMark, TodoIndent1Mark, TodoItemMark} from './TodoMark'
 
-export const TODO_OPTIONS: Option<TodoMarkProps>[] = [
-	{markup: '# __nested__\n\n', mark: p => ({...p, type: 'heading'})},
-	{markup: '- [__value__] __nested__\n', mark: p => ({...p, type: 'todo'})},
-	{markup: '\t- [__value__] __nested__\n', mark: p => ({...p, type: 'todo-indent1'})},
-	{markup: '\t\t- [__value__] __nested__\n', mark: p => ({...p, type: 'todo-indent2'})},
-	{markup: '> __nested__\n\n', mark: p => ({...p, type: 'blockquote'})},
-	{markup: '- [__value__|__meta__] __nested__\n', mark: p => ({...p, type: 'counter'})},
+export const TODO_OPTIONS: Option[] = [
+	{markup: '# __nested__\n\n', mark: {slot: HeadingMark}},
+	{markup: '- [__value__] __nested__\n', mark: {slot: TodoItemMark}},
+	{markup: '\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
+	{markup: '\t\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
+	{markup: '> __nested__\n\n', mark: {slot: BlockquoteMark}},
+	{markup: '- [__value__|__meta__] __nested__\n', mark: {slot: CounterMark}},
 ]
 
 export const TODO_VALUE = `# 📋 Project Launch Checklist

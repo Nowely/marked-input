@@ -5,7 +5,7 @@ import type {CSSProperties} from 'react'
 
 import {DRAG_MARKDOWN} from '../../shared/lib/sampleTexts'
 import {markdownOptions} from '../Nested/MarkdownOptions'
-import {TodoMark, type TodoMarkProps, TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
+import {TODO_OPTIONS, TODO_VALUE} from './components/TodoMark'
 
 export default {
 	title: 'MarkedInput/Drag',
@@ -72,9 +72,8 @@ export const ReadOnlyDrag: Story = {
 
 // ─── Todo list (all marks include \n\n) ───────────────────────────────────────
 
-export const TodoList: StoryObj<MarkedInputProps<TodoMarkProps>> = {
+export const TodoList: Story = {
 	args: {
-		Mark: TodoMark,
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
 		drag: true,
