@@ -14,9 +14,8 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	}, [])
 
 	const value = store.state.value.use()
-	const Mark = store.state.Mark.use()
 	const coreOptions = store.state.options.use()
-	const options = Mark ? coreOptions : undefined
+	const options = coreOptions
 	const tokens = store.state.tokens.use()
 
 	useEffect(() => {
