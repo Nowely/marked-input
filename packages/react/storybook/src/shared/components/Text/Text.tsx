@@ -26,18 +26,18 @@ export const PlainValuePanel = ({value, position}: PlainValuePanelProps) => {
 
 	return (
 		<div className={`pvp-container pvp-${position}`}>
-			<div className="pvp-header">
-				<span className="pvp-label">PLAIN VALUE</span>
-				<button className="pvp-copy" onClick={handleCopy}>
-					{copied ? 'Copied!' : 'Copy'}
-				</button>
-			</div>
+			<button className="pvp-copy" onClick={handleCopy}>
+				{copied ? 'Copied!' : 'Copy'}
+			</button>
 			<div className="pvp-scroll">
 				<pre className="pvp-pre" data-value={value}>
 					{value || <em className="pvp-empty">(empty)</em>}
 				</pre>
 			</div>
-			<div className="pvp-footer">{computeStats(value)}</div>
+			<div className="pvp-footer">
+				<span className="pvp-footer-label">Plain text</span>
+				<span>{computeStats(value)}</span>
+			</div>
 		</div>
 	)
 }
