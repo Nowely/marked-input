@@ -1,6 +1,6 @@
 import {useMark} from '@markput/react'
 import type {MarkProps} from '@markput/react'
-import {useState} from 'react'
+import {useReducer} from 'react'
 import type {CSSProperties} from 'react'
 
 export interface TodoMarkProps extends MarkProps {
@@ -10,7 +10,11 @@ export interface TodoMarkProps extends MarkProps {
 
 export const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 	const mark = useMark()
-	const [isDone, setIsDone] = useState(mark.value === 'x')
+	const [isDone, toggle] = useReducer(state => {
+		const newState = !state
+		mark.value = newState ? 'x' : ' '
+		return newState
+	}, mark.value === 'x')
 
 	return (
 		<span
@@ -24,11 +28,7 @@ export const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 				<input
 					type="checkbox"
 					checked={isDone}
-					onChange={() => {
-						const next = !isDone
-						setIsDone(next)
-						mark.value = next ? 'x' : ' '
-					}}
+					onChange={toggle}
 					disabled={mark.readOnly}
 					style={{marginRight: 6}}
 				/>
