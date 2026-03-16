@@ -3,12 +3,21 @@ import type {MarkProps} from '@markput/react'
 import {useReducer} from 'react'
 import type {CSSProperties} from 'react'
 
+export type TodoType = 'heading' | 'todo' | 'todo-indent1' | 'todo-indent2' | 'blockquote'
+
 export interface TodoMarkProps extends MarkProps {
-	style?: CSSProperties
-	todo?: 'pending' | 'done'
+	type: TodoType
 }
 
-export const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
+const STYLE_MAP: Record<TodoType, CSSProperties> = {
+	heading: {display: 'block', fontSize: '1.4em', fontWeight: 'bold', margin: '0.3em 0'},
+	todo: {display: 'block'},
+	'todo-indent1': {display: 'block', paddingLeft: '22px', borderLeft: '2px solid #d0d7de'},
+	'todo-indent2': {display: 'block', paddingLeft: '22px', marginLeft: '24px', borderLeft: '2px solid #d0d7de'},
+	blockquote: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic', marginTop: 16},
+}
+
+export const TodoMark = ({nested, type}: TodoMarkProps) => {
 	const mark = useMark()
 	const [isDone, toggle] = useReducer(state => {
 		const newState = !state
@@ -16,15 +25,17 @@ export const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 		return newState
 	}, mark.value === 'x')
 
+	const isTodo = type === 'todo' || type === 'todo-indent1' || type === 'todo-indent2'
+
 	return (
 		<span
 			style={{
-				...style,
+				...STYLE_MAP[type],
 				margin: '0 1px',
-				opacity: isDone ? 0.55 : undefined,
+				opacity: isTodo && isDone ? 0.55 : undefined,
 			}}
 		>
-			{todo !== undefined && (
+			{isTodo && (
 				<input
 					type="checkbox"
 					checked={isDone}
