@@ -40,8 +40,45 @@
 .counter {
 	display: inline-flex;
 	align-items: center;
-	gap: 4px;
-	margin-right: 6px;
+	gap: 2px;
+	margin-right: 4px;
+}
+
+.counter button {
+	background-color: transparent;
+	border: none;
+	color: #666;
+	cursor: pointer;
+	font-size: 0.75em;
+	padding: 1px 3px;
+	min-width: 16px;
+	text-align: center;
+	font-weight: bold;
+	transition: all 0.1s;
+}
+
+.counter button:hover:not(:disabled) {
+	background-color: #f0f0f0;
+	color: #333;
+	border-radius: 2px;
+}
+
+.counter button:active:not(:disabled) {
+	background-color: #e8e8e8;
+}
+
+.counter button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+.counter span {
+	min-width: 18px;
+	text-align: center;
+	font-weight: 500;
+	padding: 0 2px;
+	font-size: 0.8em;
+	font-variant-numeric: tabular-nums;
 }
 
 .done {
