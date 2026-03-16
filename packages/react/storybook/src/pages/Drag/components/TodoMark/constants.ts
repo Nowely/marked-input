@@ -6,7 +6,6 @@ export const TODO_OPTIONS: Option[] = [
 	{markup: '# __nested__\n\n', mark: {slot: HeadingMark}},
 	{markup: '- [__value__] __nested__\n', mark: {slot: TodoItemMark}},
 	{markup: '\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
-	{markup: '\t\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
 	{markup: '> __nested__\n\n', mark: {slot: BlockquoteMark}},
 	{markup: '- [__value__|__meta__] __nested__\n', mark: {slot: CounterMark}},
 ]
