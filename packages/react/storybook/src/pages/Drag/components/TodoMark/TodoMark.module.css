@@ -37,6 +37,13 @@
 	margin-right: 6px;
 }
 
+.counter {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-right: 6px;
+}
+
 .done {
 	opacity: 0.55;
 }

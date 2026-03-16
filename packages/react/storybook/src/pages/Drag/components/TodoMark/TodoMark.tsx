@@ -4,7 +4,7 @@ import {useReducer} from 'react'
 
 import styles from './TodoMark.module.css'
 
-export type TodoType = 'heading' | 'todo' | 'todo-indent1' | 'todo-indent2' | 'blockquote'
+export type TodoType = 'heading' | 'todo' | 'todo-indent1' | 'todo-indent2' | 'blockquote' | 'counter'
 
 export interface TodoMarkProps extends MarkProps {
 	type: TodoType
@@ -16,6 +16,7 @@ const CLASS_MAP: Record<TodoType, string> = {
 	'todo-indent1': styles.todoIndent1,
 	'todo-indent2': styles.todoIndent2,
 	blockquote: styles.blockquote,
+	counter: styles.counter,
 }
 
 export const TodoMark = ({nested, type}: TodoMarkProps) => {
@@ -26,6 +27,7 @@ export const TodoMark = ({nested, type}: TodoMarkProps) => {
 	return (
 		<span className={`${CLASS_MAP[type]} ${isTodo && isDone ? styles.done : ''}`.trim()}>
 			<TodoCheckbox visible={isTodo} />
+			<CounterWidget visible={type === 'counter'} />
 			{nested}
 		</span>
 	)
@@ -43,6 +45,44 @@ const TodoCheckbox = ({visible = true}: TodoCheckboxProps) => {
 	}
 
 	return <input type="checkbox" checked={isDone} onChange={toggle} disabled={readOnly} className={styles.checkbox} />
+}
+
+interface CounterWidgetProps {
+	visible?: boolean
+}
+
+const CounterWidget = ({visible = true}: CounterWidgetProps) => {
+	const mark = useMark()
+
+	if (!visible) {
+		return null
+	}
+
+	const count = parseInt(mark.value || '0', 10)
+	const step = parseInt(mark.meta || '1', 10)
+	const readOnly = mark.readOnly ?? false
+
+	return (
+		<span className={styles.counter}>
+			<button
+				onClick={() => {
+					mark.value = String(count - step)
+				}}
+				disabled={readOnly}
+			>
+				-
+			</button>
+			<span>{count}</span>
+			<button
+				onClick={() => {
+					mark.value = String(count + step)
+				}}
+				disabled={readOnly}
+			>
+				+
+			</button>
+		</span>
+	)
 }
 
 const useTodoState = () => {
