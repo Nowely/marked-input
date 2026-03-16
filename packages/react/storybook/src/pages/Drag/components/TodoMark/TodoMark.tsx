@@ -19,6 +19,33 @@ const CLASS_MAP: Record<TodoType, string> = {
 }
 
 export const TodoMark = ({nested, type}: TodoMarkProps) => {
+	const {isDone} = useTodoState()
+
+	const isTodo = type === 'todo' || type === 'todo-indent1' || type === 'todo-indent2'
+
+	return (
+		<span className={`${CLASS_MAP[type]} ${isTodo && isDone ? styles.done : ''}`.trim()}>
+			<TodoCheckbox visible={isTodo} />
+			{nested}
+		</span>
+	)
+}
+
+interface TodoCheckboxProps {
+	visible?: boolean
+}
+
+const TodoCheckbox = ({visible = true}: TodoCheckboxProps) => {
+	const {isDone, toggle, readOnly} = useTodoState()
+
+	if (!visible) {
+		return null
+	}
+
+	return <input type="checkbox" checked={isDone} onChange={toggle} disabled={readOnly} className={styles.checkbox} />
+}
+
+const useTodoState = () => {
 	const mark = useMark()
 	const [isDone, toggle] = useReducer(state => {
 		const newState = !state
@@ -26,20 +53,9 @@ export const TodoMark = ({nested, type}: TodoMarkProps) => {
 		return newState
 	}, mark.value === 'x')
 
-	const isTodo = type === 'todo' || type === 'todo-indent1' || type === 'todo-indent2'
-
-	return (
-		<span className={`${CLASS_MAP[type]} ${isTodo && isDone ? styles.done : ''}`.trim()}>
-			{isTodo && (
-				<input
-					type="checkbox"
-					checked={isDone}
-					onChange={toggle}
-					disabled={mark.readOnly}
-					className={styles.checkbox}
-				/>
-			)}
-			{nested}
-		</span>
-	)
+	return {
+		isDone,
+		toggle,
+		readOnly: mark.readOnly ?? false,
+	}
 }
