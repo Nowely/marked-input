@@ -17,7 +17,7 @@ export class Caret {
 
 	static getSelectedNode() {
 		const node = window.getSelection()?.anchorNode
-		if (node) return node
+		if (node && document.contains(node)) return node
 		throw new Error('Anchor node of selection is not exists!')
 	}
 
