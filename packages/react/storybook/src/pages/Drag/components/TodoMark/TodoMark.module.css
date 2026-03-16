@@ -1,0 +1,42 @@
+.heading {
+	display: block;
+	font-size: 1.4em;
+	font-weight: bold;
+	margin: 0.3em 0;
+}
+
+.todo {
+	display: block;
+	margin: 0 1px;
+}
+
+.todoIndent1 {
+	display: block;
+	padding-left: 22px;
+	border-left: 2px solid #d0d7de;
+	margin: 0 1px;
+}
+
+.todoIndent2 {
+	display: block;
+	padding-left: 22px;
+	margin-left: 24px;
+	border-left: 2px solid #d0d7de;
+	margin: 0 1px;
+}
+
+.blockquote {
+	display: block;
+	font-size: 0.85em;
+	color: #888;
+	font-style: italic;
+	margin-top: 16px;
+}
+
+.checkbox {
+	margin-right: 6px;
+}
+
+.done {
+	opacity: 0.55;
+}
