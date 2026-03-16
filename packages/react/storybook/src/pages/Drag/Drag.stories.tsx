@@ -43,16 +43,11 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 	},
 }
 
-// ─── Test helper stories (used by Drag.spec.tsx) ─────────────────────────────
-
-const testStyle: React.CSSProperties = {minHeight: 100, padding: 8, border: '1px solid #e0e0e0'}
-
 export const PlainTextDrag: Story = {
 	parameters: {docs: {disable: true}, plainValue: 'bottom'},
 	args: {
 		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text',
 		drag: true,
-		style: testStyle,
 	},
 }
 
@@ -63,7 +58,6 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 		options: markdownOptions,
 		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover',
 		drag: true,
-		style: testStyle,
 	},
 }
 
@@ -73,7 +67,6 @@ export const ReadOnlyDrag: Story = {
 		value: 'Read-Only Content\n\nSection A\n\nSection B',
 		readOnly: true,
 		drag: true,
-		style: testStyle,
 	},
 }
 
