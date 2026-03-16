@@ -1,7 +1,7 @@
 import type {MarkProps, Option} from '@markput/react'
 import type {CSSProperties} from 'react'
 
-import type {TodoMarkProps} from './types'
+import type {TodoMarkProps} from './TodoMark'
 
 export const TODO_OPTIONS: Option<TodoMarkProps>[] = [
 	{

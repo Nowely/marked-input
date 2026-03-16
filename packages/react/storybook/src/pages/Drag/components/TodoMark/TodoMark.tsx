@@ -1,7 +1,12 @@
 import {useMark} from '@markput/react'
+import type {MarkProps} from '@markput/react'
 import {useState} from 'react'
+import type {CSSProperties} from 'react'
 
-import type {TodoMarkProps} from './types'
+export interface TodoMarkProps extends MarkProps {
+	style?: CSSProperties
+	todo?: 'pending' | 'done'
+}
 
 export const TodoMark = ({nested, style, todo}: TodoMarkProps) => {
 	const mark = useMark()
