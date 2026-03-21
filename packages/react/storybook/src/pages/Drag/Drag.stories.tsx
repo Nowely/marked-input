@@ -39,7 +39,6 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 		options: markdownOptions,
 		value: DRAG_MARKDOWN,
 		drag: true,
-		style: {minHeight: 300, padding: 12, border: '1px solid #e0e0e0', borderRadius: 8},
 	},
 }
 
