@@ -7,8 +7,7 @@ export const TODO_OPTIONS: Option[] = [
 	{markup: '\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
 ]
 
-export const TODO_VALUE = `# 📋 Project Launch Checklist
-
+export const TODO_VALUE = `
 - [ ] Design Phase
 	- [ ] Create wireframes
 	- [x] Define color palette
