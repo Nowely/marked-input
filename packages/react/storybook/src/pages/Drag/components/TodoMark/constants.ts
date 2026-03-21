@@ -1,18 +1,13 @@
 import type {Option} from '@markput/react'
 
-import {BlockquoteMark, CounterMark, HeadingMark, TodoIndent1Mark, TodoItemMark} from './TodoMark'
+import {TodoIndent1Mark, TodoItemMark} from './TodoMark'
 
 export const TODO_OPTIONS: Option[] = [
-	{markup: '# __nested__\n\n', mark: {slot: HeadingMark}},
 	{markup: '- [__value__] __nested__\n', mark: {slot: TodoItemMark}},
 	{markup: '\t- [__value__] __nested__\n', mark: {slot: TodoIndent1Mark}},
-	{markup: '> __nested__\n\n', mark: {slot: BlockquoteMark}},
-	{markup: '- [__value__|__meta__] __nested__\n', mark: {slot: CounterMark}},
 ]
 
 export const TODO_VALUE = `# 📋 Project Launch Checklist
-
-> ☐ = pending  ☑ = done
 
 - [ ] Design Phase
 	- [ ] Create wireframes
@@ -32,7 +27,4 @@ export const TODO_VALUE = `# 📋 Project Launch Checklist
 - [ ] Launch
 	- [ ] Final QA pass
 	- [ ] Deploy to production
-
-
-- [0|1] Completed tasks
 `
