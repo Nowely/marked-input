@@ -14,15 +14,27 @@ export class SystemListenerController {
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
 			const onChange = this.store.state.onChange.get()
+			const {focus} = this.store.nodes
 
-			if (!this.store.nodes.focus.target) return
+			// Programmatic mark change or non-editable focus (e.g. a checkbox):
+			// the token was already mutated in-place by MarkHandler — serialize it
+			// directly and force a re-render without reading stale DOM content.
+			if (!focus.target || !focus.target.isContentEditable) {
+				const tokens = this.store.state.tokens.get()
+				const serialized = toString(tokens)
+				onChange?.(serialized)
+				this.store.state.previousValue.set(serialized)
+				this.store.state.tokens.set([...tokens])
+				return
+			}
 
+			// User typed in a contentEditable element: sync DOM content → token state.
 			const tokens = this.store.state.tokens.get()
-			const token = tokens[this.store.nodes.focus.index]
+			const token = tokens[focus.index]
 			if (token.type === 'text') {
-				token.content = this.store.nodes.focus.content
+				token.content = focus.content
 			} else if (token.type === 'mark') {
-				token.value = this.store.nodes.focus.content
+				token.value = focus.content
 			}
 
 			onChange?.(toString(tokens))

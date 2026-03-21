@@ -171,8 +171,6 @@ export const BlockContainer = memo(() => {
 	const readOnly = store.state.readOnly.use()
 	const drag = store.state.drag.use()
 	const alwaysShowHandle = getAlwaysShowHandleDrag(drag)
-	const value = store.state.value.use()
-	const onChange = store.state.onChange.use()
 	const key = store.key
 	const refs = store.refs
 
@@ -195,16 +193,18 @@ export const BlockContainer = memo(() => {
 
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			const newValue = reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
 			if (newValue !== value) store.applyValue(newValue)
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(addDragRow(value, blocksRef.current, afterIndex))
 			queueMicrotask(() => {
 				const container = store.refs.container
@@ -214,23 +214,25 @@ export const BlockContainer = memo(() => {
 				target?.focus()
 			})
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleDelete = useCallback(
 		(index: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(deleteDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleDuplicate = useCallback(
 		(index: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(duplicateDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {

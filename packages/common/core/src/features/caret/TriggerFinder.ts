@@ -43,7 +43,12 @@ export class TriggerFinder {
 	 */
 	static find<T>(options: T[] | undefined, getTrigger: TriggerExtractor<T>): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (Caret.isSelectedPosition) return new TriggerFinder().find(options, getTrigger)
+		if (!Caret.isSelectedPosition) return
+		try {
+			return new TriggerFinder().find(options, getTrigger)
+		} catch {
+			return undefined
+		}
 	}
 
 	getDividedTextBy(position: number) {

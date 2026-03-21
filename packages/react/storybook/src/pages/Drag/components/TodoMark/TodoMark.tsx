@@ -1,53 +1,40 @@
 import {useMark} from '@markput/react'
-import {useReducer} from 'react'
+import {useState} from 'react'
 
 import styles from './TodoMark.module.css'
 
 // ─── Shared state hook ────────────────────────────────────────────────────────
 
-const useTodoState = () => {
+const useTodo = () => {
 	const mark = useMark()
-	const [isDone, toggle] = useReducer(state => {
-		const newState = !state
-		mark.value = newState ? 'x' : ' '
-		return newState
-	}, mark.value === 'x')
-
-	return {
-		isDone,
-		toggle,
-		readOnly: mark.readOnly ?? false,
-		nested: mark.nested,
+	const [isDone, setIsDone] = useState(mark.value === 'x')
+	const toggle = () => {
+		const newDone = !isDone
+		setIsDone(newDone)
+		mark.value = newDone ? 'x' : ' '
 	}
-}
-
-// ─── Shared checkbox component ────────────────────────────────────────────────
-
-const TodoCheckbox = () => {
-	const {isDone, toggle, readOnly} = useTodoState()
-
-	return <input type="checkbox" checked={isDone} onChange={toggle} disabled={readOnly} className={styles.checkbox} />
+	return {isDone, toggle, readOnly: mark.readOnly ?? false, nested: mark.nested}
 }
 
 // ─── Mark components (one per option) ─────────────────────────────────────────
 
 export const TodoItemMark = () => {
-	const {isDone, nested} = useTodoState()
+	const {isDone, toggle, readOnly, nested} = useTodo()
 
 	return (
 		<span className={`${styles.todo} ${isDone ? styles.done : ''}`.trim()}>
-			<TodoCheckbox />
+			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
 			{nested}
 		</span>
 	)
 }
 
 export const TodoIndent1Mark = () => {
-	const {isDone, nested} = useTodoState()
+	const {isDone, toggle, readOnly, nested} = useTodo()
 
 	return (
 		<span className={`${styles.todoIndent1} ${isDone ? styles.done : ''}`.trim()}>
-			<TodoCheckbox />
+			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
 			{nested}
 		</span>
 	)
