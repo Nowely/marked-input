@@ -1,14 +1,16 @@
-import {resolveOptionSlot} from '@markput/core'
-import type {ComponentType} from 'react'
+import {resolveOptionSlot, resolveSlot, resolveSlotProps} from '@markput/core'
+import type {ComponentType, ElementType} from 'react'
 
 import type {MarkProps, Option, OverlayProps} from '../../types'
 import {useStore} from '../providers/StoreContext'
 
-export type SlotType = 'mark' | 'overlay'
+export type SlotType = 'mark' | 'overlay' | 'span'
 
 type MarkSlotReturn = readonly [ComponentType<any>, MarkProps]
 
 type OverlaySlotReturn = readonly [ComponentType<any>, OverlayProps]
+
+type SpanSlotReturn = readonly [ElementType, Record<string, unknown> | undefined]
 
 export function useSlot(type: 'mark', option?: Option, baseProps?: MarkProps, defaultComponent?: never): MarkSlotReturn
 
@@ -19,13 +21,24 @@ export function useSlot(
 	defaultComponent?: ComponentType<any>
 ): OverlaySlotReturn
 
+export function useSlot(type: 'span'): SpanSlotReturn
+
 export function useSlot(
 	type: SlotType,
 	option?: Option,
 	baseProps?: any,
 	defaultComponent?: ComponentType<any>
-): MarkSlotReturn | OverlaySlotReturn {
+): MarkSlotReturn | OverlaySlotReturn | SpanSlotReturn {
 	const store = useStore()
+
+	if (type === 'span') {
+		const slots = store.state.slots.use()
+		const slotProps = store.state.slotProps.use()
+		const Component = resolveSlot<ElementType>('span', slots)
+		const props = resolveSlotProps('span', slotProps)
+		return [Component, props]
+	}
+
 	const Mark = store.state.Mark.use()
 	const Overlay = store.state.Overlay.use()
 	const globalComponent = (type === 'mark' ? Mark : Overlay) as ComponentType<any> | undefined

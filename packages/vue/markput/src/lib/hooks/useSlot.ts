@@ -1,14 +1,16 @@
-import {resolveOptionSlot} from '@markput/core'
+import {resolveOptionSlot, resolveSlot, resolveSlotProps} from '@markput/core'
 import type {Component, Ref} from 'vue'
 
 import type {MarkProps, Option, OverlayProps} from '../../types'
 import {useStore} from './useStore'
 
-export type SlotType = 'mark' | 'overlay'
+export type SlotType = 'mark' | 'overlay' | 'span'
 
 type MarkSlotReturn = readonly [Component, MarkProps]
 
 type OverlaySlotReturn = readonly [Component, OverlayProps]
+
+type SpanSlotReturn = readonly [Component | string, Record<string, unknown> | undefined]
 
 export function useSlot(type: 'mark', option?: Option, baseProps?: MarkProps, defaultComponent?: never): MarkSlotReturn
 
@@ -19,13 +21,24 @@ export function useSlot(
 	defaultComponent?: Component
 ): OverlaySlotReturn
 
+export function useSlot(type: 'span'): SpanSlotReturn
+
 export function useSlot(
 	type: SlotType,
 	option?: Option,
 	baseProps?: any,
 	defaultComponent?: Component
-): MarkSlotReturn | OverlaySlotReturn {
+): MarkSlotReturn | OverlaySlotReturn | SpanSlotReturn {
 	const store = useStore()
+
+	if (type === 'span') {
+		const slotsRef = store.state.slots.use() as Ref<any>
+		const slotPropsRef = store.state.slotProps.use() as Ref<any>
+		const Comp = resolveSlot<Component | string>('span', slotsRef.value)
+		const props = resolveSlotProps('span', slotPropsRef.value)
+		return [Comp, props]
+	}
+
 	const MarkRef = store.state.Mark.use() as Ref<Component | undefined>
 	const OverlayRef = store.state.Overlay.use() as Ref<Component | undefined>
 	const globalComponent = type === 'mark' ? MarkRef.value : OverlayRef.value

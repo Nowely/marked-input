@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import {resolveSlot, resolveSlotProps} from '@markput/core'
-import type {Component} from 'vue'
 import {inject, ref, computed, watch, onMounted} from 'vue'
 
-import {useStore} from '../lib/hooks/useStore'
+import {useSlot} from '../lib/hooks/useSlot'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
 
-const store = useStore()
 const tokenRef = inject(TOKEN_KEY)!
 const token = tokenRef.value
 const elRef = ref<HTMLSpanElement | null>(null)
 
-const slots = store.state.slots.use()
-const slotProps = store.state.slotProps.use()
-const spanTag = computed(() => resolveSlot<string | Component>('span', slots.value))
-const spanProps = computed(() => resolveSlotProps('span', slotProps.value))
+const resolved = computed(() => useSlot('span'))
+const spanTag = computed(() => resolved.value[0])
+const spanProps = computed(() => resolved.value[1])
 
 if (token.type !== 'text') {
 	throw new Error('TextSpan component expects a TextToken')
