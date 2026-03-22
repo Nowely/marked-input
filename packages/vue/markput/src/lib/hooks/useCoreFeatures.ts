@@ -32,6 +32,13 @@ export function useCoreFeatures(store: Store) {
 	watch(
 		tokens,
 		() => {
+			store.controllers.contentEditable.sync()
+		},
+		{flush: 'post'}
+	)
+	watch(
+		tokens,
+		() => {
 			store.lifecycle.recoverFocus()
 		},
 		{flush: 'post'}

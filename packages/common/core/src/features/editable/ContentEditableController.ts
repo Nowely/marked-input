@@ -1,3 +1,5 @@
+import {splitTokensIntoDragRows} from '../blocks'
+import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
 export class ContentEditableController {
@@ -31,6 +33,61 @@ export class ContentEditableController {
 		const step = isDrag ? 1 : 2
 		for (let i = 0; i < children.length; i += step) {
 			;(children[i] as HTMLElement).contentEditable = value
+		}
+
+		// Sync textContent for all text spans (including nested)
+		const tokens = this.store.state.tokens.get()
+		if (isDrag) {
+			this.#syncDragTextContent(tokens, container, readOnly)
+		} else {
+			this.#syncTextContent(tokens, container)
+		}
+	}
+
+	#syncTextContent(tokens: Token[], parent: HTMLElement) {
+		const children = parent.children
+		for (let i = 0; i < tokens.length; i++) {
+			const token = tokens[i]
+			const el = children[i] as HTMLElement | undefined
+			if (!el) continue
+			if (token.type === 'text') {
+				if (el.textContent !== token.content) {
+					el.textContent = token.content
+				}
+			} else if (token.type === 'mark' && token.children.length > 0) {
+				this.#syncTextContent(token.children, el)
+			}
+		}
+	}
+
+	#syncDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
+		const blocks = splitTokensIntoDragRows(tokens)
+		for (let bi = 0; bi < blocks.length; bi++) {
+			const block = blocks[bi]
+			const blockEl = container.children[bi] as HTMLElement | undefined
+			if (!blockEl) continue
+
+			const isMark = block.tokens.length === 1 && block.tokens[0].type === 'mark'
+			if (isMark) {
+				const markToken = block.tokens[0]
+				if (markToken.type === 'mark' && markToken.children.length > 0) {
+					this.#syncTextContent(markToken.children, blockEl)
+				}
+				continue
+			}
+
+			// Text block: DragMark div with side panel offset
+			const offset = readOnly ? 0 : 1
+			for (let ti = 0; ti < block.tokens.length; ti++) {
+				const token = block.tokens[ti]
+				const el = blockEl.children[ti + offset] as HTMLElement | undefined
+				if (!el) continue
+				if (token.type === 'text') {
+					if (el.textContent !== token.content) {
+						el.textContent = token.content
+					}
+				}
+			}
 		}
 	}
 }

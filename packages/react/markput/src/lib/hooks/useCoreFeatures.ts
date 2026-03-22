@@ -1,5 +1,5 @@
 import type {MarkputHandler, Store} from '@markput/core'
-import {useEffect, useImperativeHandle} from 'react'
+import {useEffect, useImperativeHandle, useLayoutEffect} from 'react'
 
 import type {Option} from '../../types'
 
@@ -23,6 +23,10 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	useEffect(() => {
 		store.lifecycle.syncParser(value, options)
 	}, [value, options])
+
+	useLayoutEffect(() => {
+		store.controllers.contentEditable.sync()
+	}, [tokens])
 
 	useEffect(() => {
 		store.lifecycle.recoverFocus()
