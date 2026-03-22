@@ -12,7 +12,7 @@ import {annotate} from './annotate'
  *
  * @example
  * ```typescript
- * const markups = ['@[__value__](__meta__)', '#[__nested__]']
+ * const markups = ['@[__value__](__meta__)', '#[__children__]']
  * const tokens = new ParserV2(markups).parse('@[Hello](world) #[test]')
  * const result = toString(tokens)
  * // Returns: '@[Hello](world) #[test]'
@@ -27,17 +27,17 @@ export function toString(tokens: Token[]): string {
 			continue
 		}
 
-		const {markup, hasNested} = token.descriptor
-		const nested = hasNested
+		const {markup, hasChildren} = token.descriptor
+		const children = hasChildren
 			? token.children.length > 0
 				? toString(token.children)
-				: token.nested?.content
+				: token.childrenSource?.content
 			: undefined
 
 		result += annotate(markup, {
 			value: token.value,
 			meta: token.meta,
-			nested,
+			children,
 		})
 	}
 

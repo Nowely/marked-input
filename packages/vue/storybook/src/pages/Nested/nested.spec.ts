@@ -24,7 +24,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should render simple nested marks', async () => {
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[outer @[inner]]'
 
 		await render(MarkedInput, {
@@ -45,7 +45,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should render multiple nesting levels', async () => {
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[level0 @[level1 @[level2]]]'
 
 		await render(MarkedInput, {
@@ -66,7 +66,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should render multiple nested marks at same level', async () => {
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[outer @[first] and @[second]]'
 
 		await render(MarkedInput, {
@@ -102,8 +102,8 @@ describe('Nested Marks Rendering', () => {
 			},
 		})
 
-		const tagMarkup: Markup = '#[__nested__]'
-		const mentionMarkup: Markup = '@[__nested__]'
+		const tagMarkup: Markup = '#[__children__]'
+		const mentionMarkup: Markup = '@[__children__]'
 		const value = '#[tag with @[mention]]'
 
 		await render(MarkedInput, {
@@ -127,7 +127,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should handle empty nested marks', async () => {
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[@[]]'
 
 		await render(MarkedInput, {
@@ -161,7 +161,7 @@ describe('Nested Marks Rendering', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[before @[nested] after]'
 
 		const {container} = await render(MarkedInput, {
@@ -189,7 +189,7 @@ describe('Nested Marks Tree Navigation', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[d0 @[d1 @[d2]]]'
 
 		const {container} = await render(MarkedInput, {
@@ -214,7 +214,7 @@ describe('Nested Marks Tree Navigation', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[parent @[child]]'
 
 		const {container} = await render(MarkedInput, {
@@ -245,7 +245,7 @@ describe('Nested Marks Tree Navigation', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[parent @[child1] text @[child2]]'
 
 		await render(MarkedInput, {
@@ -343,7 +343,7 @@ describe('Complex Nesting Scenarios', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[first]@[second]'
 
 		await render(MarkedInput, {
@@ -367,7 +367,7 @@ describe('Complex Nesting Scenarios', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[@[@[@[@[deep]]]]]'
 
 		const {container} = await render(MarkedInput, {
@@ -402,7 +402,7 @@ describe('Complex Nesting Scenarios', () => {
 			},
 		})
 
-		const nestedMarkup: Markup = '@[__nested__]'
+		const nestedMarkup: Markup = '@[__children__]'
 		const value = '@[nested @[child]] @[another]'
 
 		await render(MarkedInput, {
@@ -427,7 +427,7 @@ describe('Complex Nesting Scenarios', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[Hello @[World] from @[Nested] marks]'
 
 		const {container} = await render(MarkedInput, {
@@ -455,7 +455,7 @@ describe('Edge Cases', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = ''
 
 		const {container} = await render(MarkedInput, {
@@ -477,7 +477,7 @@ describe('Edge Cases', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = 'Just plain text'
 
 		const {container} = await render(MarkedInput, {
@@ -499,7 +499,7 @@ describe('Edge Cases', () => {
 			},
 		})
 
-		const markup: Markup = '@[__nested__]'
+		const markup: Markup = '@[__children__]'
 		const value = '@[unclosed @[nested'
 
 		const {container} = await render(MarkedInput, {

@@ -28,7 +28,7 @@ The hook returns an object with these properties:
 | ------------- | ------------------------ | -------------------------------------- |
 | `value`       | `string \| undefined`    | Mark's value (from `__value__`)        |
 | `meta`        | `string \| undefined`    | Mark's metadata (from `__meta__`)      |
-| `nested`      | `string \| undefined`    | Raw nested content (from `__nested__`) |
+| `nested`      | `string \| undefined`    | Raw nested content (from `__children__`) |
 | `label`       | `string`                 | Display label (value or nested)        |
 | `ref`         | `RefObject<T>`           | Ref for keyboard focus                 |
 | `change()`    | `function`               | Update the mark                        |

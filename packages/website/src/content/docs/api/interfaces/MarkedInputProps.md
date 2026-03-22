@@ -80,7 +80,7 @@ optional Mark: ComponentType<TMarkProps>;
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:37](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L37)
 
-Global component used for rendering markups (fallback for option.mark.slot)
+Global component used for rendering markups (fallback for option.Mark)
 
 ***
 
@@ -115,7 +115,7 @@ optional options: Option<TMarkProps, TOverlayProps>[];
 Defined in: [react/markput/src/components/MarkedInput.tsx:45](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L45)
 
 Configuration options for markups and overlays.
-Each option can specify its own slot component via mark.slot or overlay.slot.
+Each option can specify its own component via option.Mark or option.Overlay.
 Falls back to global Mark/Overlay components when not specified.
 
 ***
@@ -128,7 +128,7 @@ optional Overlay: ComponentType<TOverlayProps>;
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:39](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L39)
 
-Global component used for rendering overlays (fallback for option.overlay.slot)
+Global component used for rendering overlays (fallback for option.Overlay)
 
 ***
 

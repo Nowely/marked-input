@@ -122,8 +122,8 @@ export class TreeBuilder {
 			// Create mark token for this match
 			const markToken = this.createMarkToken(match)
 
-			// If match has nested content, push to stack for processing children
-			if (this.hasNestedContent(match)) {
+			// If match has children content, push to stack for processing children
+			if (this.hasChildrenContent(match)) {
 				const bounds = this.getContentBounds(match)
 				parentStack.push({
 					match,
@@ -179,25 +179,25 @@ export class TreeBuilder {
 	private createMarkToken(match: Match): MarkToken {
 		// Extract content using helper functions
 		const value = this.extractSubstring(match.gaps.value?.start, match.gaps.value?.end)
-		const nestedStr = this.extractSubstring(match.gaps.nested?.start, match.gaps.nested?.end)
+		const childrenStr = this.extractSubstring(match.gaps.children?.start, match.gaps.children?.end)
 		const metaStr = this.extractSubstring(match.gaps.meta?.start, match.gaps.meta?.end)
 
-		// Convert empty strings to undefined for nested, but meta can be empty string
-		const nested = nestedStr || undefined
+		// Convert empty strings to undefined for children, but meta can be empty string
+		const childrenContent = childrenStr || undefined
 		const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
-		// Use value if present, otherwise use nested content
-		const valueContent = value || nested || ''
+		// Use value if present, otherwise use children content
+		const valueContent = value || childrenContent || ''
 
 		return {
 			type: 'mark',
 			content: this.input.substring(match.start, match.end),
-			children: [], // Will be populated if match has nested content
+			children: [], // Will be populated if match has children content
 			descriptor: match.descriptor,
 			value: valueContent,
 			meta,
 			position: {start: match.start, end: match.end},
-			nested: this.createNestedInfo(match, nested),
+			childrenSource: this.createChildrenSourceInfo(match, childrenContent),
 		}
 	}
 
@@ -208,8 +208,8 @@ export class TreeBuilder {
 	 * Priority: nested content if present, otherwise value content
 	 */
 	private getContentBounds(match: Match): PositionRange {
-		if (match.gaps.nested) {
-			return match.gaps.nested
+		if (match.gaps.children) {
+			return match.gaps.children
 		}
 		if (match.gaps.value) {
 			return match.gaps.value
@@ -221,10 +221,10 @@ export class TreeBuilder {
 	}
 
 	/**
-	 * Checks if a match has nested content capability
+	 * Checks if a match has children content capability
 	 */
-	private hasNestedContent(match: Match): boolean {
-		return match.gaps.nested !== undefined
+	private hasChildrenContent(match: Match): boolean {
+		return match.gaps.children !== undefined
 	}
 
 	/**
@@ -242,16 +242,16 @@ export class TreeBuilder {
 	}
 
 	/**
-	 * Creates nested info object if nested content exists
+	 * Creates children source info object if children content exists
 	 */
-	private createNestedInfo(match: Match, nested: string | undefined): MarkToken['nested'] {
-		if (!nested || match.gaps.nested === undefined) {
+	private createChildrenSourceInfo(match: Match, childrenContent: string | undefined): MarkToken['childrenSource'] {
+		if (!childrenContent || match.gaps.children === undefined) {
 			return undefined
 		}
 		return {
-			content: nested,
-			start: match.gaps.nested.start,
-			end: match.gaps.nested.end,
+			content: childrenContent,
+			start: match.gaps.children.start,
+			end: match.gaps.children.end,
 		}
 	}
 }
