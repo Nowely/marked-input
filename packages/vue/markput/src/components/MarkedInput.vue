@@ -7,8 +7,8 @@ import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
-import BlockContainer from './BlockContainer.vue'
 import Container from './Container.vue'
+import DragContainer from './DragContainer.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
 import styles from '@markput/core/styles.module.css'
@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<MarkedInputProps>(), {
 	drag: false,
 })
 
-const ContainerImpl = computed(() => (props.drag ? BlockContainer : Container))
+const ContainerImpl = computed(() => (props.drag ? DragContainer : Container))
 
 const emit = defineEmits<{
 	change: [value: string]

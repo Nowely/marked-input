@@ -14,7 +14,7 @@ import type {CSSProperties, DragEvent, ElementType, MouseEvent} from 'react'
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
-import {DraggableBlock, type MenuPosition} from './DraggableBlock'
+import {DragMark, type MenuPosition} from './DragMark'
 import {Token} from './Token'
 
 import styles from '@markput/core/styles.module.css'
@@ -161,7 +161,7 @@ interface MenuState {
 	position: MenuPosition
 }
 
-export const BlockContainer = memo(() => {
+export const DragContainer = memo(() => {
 	const store = useStore()
 	const tokens = store.state.tokens.use()
 	const slots = store.state.slots.use()
@@ -338,7 +338,7 @@ export const BlockContainer = memo(() => {
 					isMarkBlock(block) ? (
 						<Token key={key.get(block.tokens[0])} mark={block.tokens[0]} />
 					) : (
-						<DraggableBlock
+						<DragMark
 							key={block.id}
 							blockIndex={index}
 							readOnly={readOnly}
@@ -349,7 +349,7 @@ export const BlockContainer = memo(() => {
 							{block.tokens.map(token => (
 								<Token key={key.get(token)} mark={token} />
 							))}
-						</DraggableBlock>
+						</DragMark>
 					)
 				)}
 			</ContainerComponent>
@@ -442,4 +442,4 @@ export const BlockContainer = memo(() => {
 	)
 })
 
-BlockContainer.displayName = 'BlockContainer'
+DragContainer.displayName = 'DragContainer'
