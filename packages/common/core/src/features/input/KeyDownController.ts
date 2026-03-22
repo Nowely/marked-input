@@ -695,6 +695,14 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
 	// Mark blocks rendered without DraggableBlock have no side panel.
 	const hasSidePanel = blockDiv.hasAttribute('data-testid')
 
+	// In drag mode, mark blocks render the mark element directly as blockDiv
+	// (no DragMark wrapper). So blockDiv IS the mark element itself.
+	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
+		if (setCaretInMarkAtRawPos(blockDiv, block.tokens[0] as MarkToken, rawAbsolutePos)) return
+		Caret.setCaretToEnd(blockDiv)
+		return
+	}
+
 	for (let i = 0; i < block.tokens.length; i++) {
 		const token = block.tokens[i]
 		const domChild = blockChildren[i + (hasSidePanel ? 1 : 0)] as HTMLElement | undefined
