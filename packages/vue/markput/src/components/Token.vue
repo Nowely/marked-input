@@ -28,7 +28,9 @@ const Token = defineComponent({
 			const children =
 				props.mark.type === 'mark' && props.mark.children.length > 0
 					? () => props.mark.children.map(child => h(markRaw(Token), {key: key.get(child), mark: child}))
-					: undefined
+					: props.mark.type === 'mark' && props.mark.childrenRaw
+						? () => props.mark.childrenRaw!.content
+						: undefined
 
 			return h(Comp, compProps, children)
 		}

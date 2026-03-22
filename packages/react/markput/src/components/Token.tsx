@@ -12,7 +12,9 @@ export const Token = memo(({mark}: {mark: TokenType}) => {
 	const children =
 		mark.type === 'mark' && mark.children.length > 0
 			? mark.children.map(child => <Token key={store.key.get(child)} mark={child} />)
-			: undefined
+			: mark.type === 'mark' && mark.childrenRaw
+				? mark.childrenRaw.content
+				: undefined
 
 	return (
 		<TokenContext value={mark}>
