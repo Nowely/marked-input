@@ -12,7 +12,7 @@ function denote(
    markups): string;
 ```
 
-Defined in: [common/core/src/features/parsing/ParserV2/utils/denote.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/ParserV2/utils/denote.ts#L20)
+Defined in: [common/core/src/features/parsing/parser/utils/denote.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/utils/denote.ts#L20)
 
 Transform annotated text to another text by recursively processing all tokens
 

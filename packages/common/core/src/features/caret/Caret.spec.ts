@@ -62,6 +62,7 @@ Object.defineProperty(global, 'document', {
 		}),
 		createRange: mockCreateRange,
 		createTreeWalker: mockCreateTreeWalker,
+		contains: vi.fn(() => true),
 	},
 	writable: true,
 })
@@ -149,6 +150,15 @@ describe(`Utility: ${Caret.name}`, () => {
 			mockGetSelection.mockReturnValue(mockSelection)
 
 			expect(Caret.getSelectedNode()).toBe(textNode)
+		})
+
+		it('should throw error when anchor node is not in the document', () => {
+			const detachedNode = {textContent: 'detached'}
+			mockSelection.anchorNode = detachedNode
+			mockGetSelection.mockReturnValue(mockSelection)
+			;(document.contains as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
+
+			expect(() => Caret.getSelectedNode()).toThrow('Anchor node of selection is not exists!')
 		})
 
 		it('should throw error when no anchor node', () => {

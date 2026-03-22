@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "storybook dev",
+    "dev": "storybook dev --port 6007",
     "build": "storybook build -o ./dist",
     "test": "vitest run",
     "test:watch": "vitest",

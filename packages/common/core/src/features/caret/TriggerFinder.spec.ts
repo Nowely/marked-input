@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import type {Markup} from '../parsing/ParserV2/types'
+import type {Markup} from '../parsing'
 import {Caret} from './Caret'
 import {TriggerFinder} from './TriggerFinder'
 

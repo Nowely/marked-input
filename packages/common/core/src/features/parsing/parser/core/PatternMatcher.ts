@@ -18,6 +18,15 @@ import type {MarkupRegistry} from './MarkupRegistry'
 import {Match} from './Match'
 import type {SegmentMatch} from './SegmentMatcher'
 
+function getOrCreate<K, V>(map: Map<K, V[]>, key: K): V[] {
+	let arr = map.get(key)
+	if (!arr) {
+		arr = []
+		map.set(key, arr)
+	}
+	return arr
+}
+
 /**
  * Optimized parser using state machine approach
  */
@@ -92,16 +101,8 @@ export class PatternMatcher {
 	 */
 	private addToWaiting(match: Match): void {
 		const segmentIndex = match.nextSegment!
-
-		if (match.isAwaitingLastSegment) {
-			const states = this.completingStates.get(segmentIndex) || []
-			if (states.length === 0) this.completingStates.set(segmentIndex, states)
-			states.push(match)
-		} else {
-			const states = this.pendingStates.get(segmentIndex) || []
-			if (states.length === 0) this.pendingStates.set(segmentIndex, states)
-			states.push(match)
-		}
+		const map = match.isAwaitingLastSegment ? this.completingStates : this.pendingStates
+		getOrCreate(map, segmentIndex).push(match)
 	}
 
 	/**

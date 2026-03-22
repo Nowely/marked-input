@@ -1,6 +1,6 @@
 import type {MarkToken, Token} from '../parsing'
 import {findToken} from '../parsing'
-import type {Store} from '../store/Store'
+import type {Store} from '../store'
 
 export interface RefAccessor<T> {
 	current: T | null
@@ -51,6 +51,10 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	set meta(v: string | undefined) {
 		this.#token.meta = v
 		this.#emitChange()
+	}
+
+	get nested(): string | undefined {
+		return this.#token.nested?.content
 	}
 
 	get depth(): number {

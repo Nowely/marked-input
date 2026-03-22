@@ -46,15 +46,23 @@ function computeDynamicPattern(before: string, after: string, exclusions: string
 	return `${escapedBefore}([^${escapedDelimiters}]+?)${escapedAfter}`
 }
 
+interface StaticMatcher {
+	regex: RegExp
+	toIndex: Map<string, number>
+}
+
+interface DynamicMatcher {
+	regex: RegExp
+	entries: SegmentEntry[]
+	indices: Set<number>
+}
+
 /**
  * Segment matcher using dual strategy for optimal performance
  */
 export class SegmentMatcher {
-	private staticRegex?: RegExp
-	private staticToIndex?: Map<string, number>
-	private dynamicRegex?: RegExp
-	private dynamicEntries?: SegmentEntry[]
-	private dynamicIndices?: Set<number>
+	private static?: StaticMatcher
+	private dynamic?: DynamicMatcher
 
 	constructor(segments: SegmentDefinition[]) {
 		this.initializeDual(segments)
@@ -62,7 +70,7 @@ export class SegmentMatcher {
 
 	private initializeDual(segments: SegmentDefinition[]) {
 		const statics: string[] = []
-		const dynamics: SegmentDefinition[] = []
+		const dynamics: Array<{segment: SegmentDefinition; index: number}> = []
 		const staticToIndex = new Map<string, number>()
 
 		// Separate segments and build static index map
@@ -71,34 +79,31 @@ export class SegmentMatcher {
 				statics.push(segment)
 				staticToIndex.set(segment, index)
 			} else {
-				dynamics.push(segment)
+				dynamics.push({segment, index})
 			}
 		})
 
-		// Create static regex
+		// Create static matcher
 		if (statics.length > 0) {
-			const sorted = [...statics].sort((a, b) => b.length - a.length)
+			const sorted = [...statics].toSorted((a, b) => b.length - a.length)
 			const escaped = sorted.map(escape)
-			this.staticRegex = new RegExp(`(?:${escaped.join('|')})`, 'gu')
-			this.staticToIndex = staticToIndex
+			this.static = {
+				regex: new RegExp(`(?:${escaped.join('|')})`, 'gu'),
+				toIndex: staticToIndex,
+			}
 		}
 
-		// Create dynamic regex
+		// Create dynamic matcher
 		if (dynamics.length > 0) {
-			const dynamicIndices = new Set<number>()
+			const indices = new Set<number>()
 			const entries: SegmentEntry[] = []
 
-			dynamics.forEach(segment => {
-				const index = segments.indexOf(segment)
-				if (typeof segment === 'string') {
-					entries.push({index, pattern: escape(segment), definition: segment})
-				} else {
-					const [before, after, exclusions] = segment
-					dynamicIndices.add(index)
-					const pattern = computeDynamicPattern(before, after, exclusions)
-					const namedPattern = pattern.replace('(', `(?<content${index}>`)
-					entries.push({index, pattern: namedPattern, definition: segment})
-				}
+			dynamics.forEach(({segment, index}) => {
+				const [before, after, exclusions] = segment as readonly [string, string, string]
+				indices.add(index)
+				const pattern = computeDynamicPattern(before, after, exclusions)
+				const namedPattern = pattern.replace('(', `(?<content${index}>`)
+				entries.push({index, pattern: namedPattern, definition: segment})
 			})
 
 			// Sort by pattern length (longest first) for optimal matching
@@ -108,9 +113,11 @@ export class SegmentMatcher {
 				return bLen - aLen
 			})
 
-			this.dynamicEntries = entries
-			this.dynamicIndices = dynamicIndices
-			this.dynamicRegex = new RegExp(entries.map((e, i) => `(?<seg${i}>${e.pattern})`).join('|'), 'gu')
+			this.dynamic = {
+				entries,
+				indices,
+				regex: new RegExp(entries.map((e, i) => `(?<seg${i}>${e.pattern})`).join('|'), 'gu'),
+			}
 		}
 	}
 
@@ -119,9 +126,10 @@ export class SegmentMatcher {
 		const dynamicResults: SegmentMatch[] = []
 
 		// Static segments
-		if (this.staticRegex && this.staticToIndex) {
-			for (const match of text.matchAll(this.staticRegex)) {
-				const index = this.staticToIndex.get(match[0])
+		if (this.static) {
+			const {regex, toIndex} = this.static
+			for (const match of text.matchAll(regex)) {
+				const index = toIndex.get(match[0])
 				if (index !== undefined) {
 					results.push({
 						index,
@@ -134,8 +142,9 @@ export class SegmentMatcher {
 		}
 
 		// Dynamic segments
-		if (this.dynamicRegex && this.dynamicEntries && this.dynamicIndices) {
-			for (const match of text.matchAll(this.dynamicRegex)) {
+		if (this.dynamic) {
+			const {regex, entries, indices} = this.dynamic
+			for (const match of text.matchAll(regex)) {
 				const matchedText = match[0]
 				const start = match.index!
 
@@ -143,11 +152,11 @@ export class SegmentMatcher {
 				let captured: string | undefined
 
 				if (match.groups) {
-					for (let i = 0; i < this.dynamicEntries.length; i++) {
+					for (let i = 0; i < entries.length; i++) {
 						const groupValue = match.groups[`seg${i}`]
 						if (groupValue !== undefined) {
-							matchedIndex = this.dynamicEntries[i].index
-							if (this.dynamicIndices.has(matchedIndex)) {
+							matchedIndex = entries[i].index
+							if (indices.has(matchedIndex)) {
 								captured = match.groups[`content${matchedIndex}`]
 							}
 							break

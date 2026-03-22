@@ -1,5 +1,5 @@
 import type {Parser, Token} from '../features/parsing'
-import type {Markup} from '../features/parsing/ParserV2/types'
+import type {Markup} from '../features/parsing/parser/types'
 import type {NodeProxy} from './classes/NodeProxy'
 
 /**

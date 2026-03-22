@@ -91,7 +91,6 @@ export const DraggableBlock = memo(
 		const blockStyle: CSSProperties = {
 			position: 'relative',
 			marginLeft: 0,
-			paddingLeft: readOnly ? 0 : 32,
 			transition: 'opacity 0.2s ease',
 			opacity: isDragging ? 0.4 : 1,
 			background: 'transparent',
@@ -103,7 +102,7 @@ export const DraggableBlock = memo(
 
 		const sidePanelStyle: CSSProperties = {
 			position: 'absolute',
-			left: 4,
+			left: readOnly ? 0 : -24,
 			top: 0,
 			bottom: 0,
 			width: 24,
@@ -135,7 +134,7 @@ export const DraggableBlock = memo(
 
 		const dropIndicatorStyle: CSSProperties = {
 			position: 'absolute',
-			left: readOnly ? 0 : 32,
+			left: 0,
 			right: 0,
 			height: 2,
 			backgroundColor: '#3b82f6',

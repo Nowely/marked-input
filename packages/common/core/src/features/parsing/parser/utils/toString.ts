@@ -1,4 +1,3 @@
-import {PLACEHOLDER} from '../constants'
 import type {Token} from '../types'
 import {annotate} from './annotate'
 
@@ -28,8 +27,8 @@ export function toString(tokens: Token[]): string {
 			continue
 		}
 
-		const markup = token.descriptor.markup
-		const nested = markup.includes(PLACEHOLDER.Nested)
+		const {markup, hasNested} = token.descriptor
+		const nested = hasNested
 			? token.children.length > 0
 				? toString(token.children)
 				: token.nested?.content

@@ -1,6 +1,6 @@
-import {findGap, getClosestIndexes} from '../../preparsing'
 import type {Store} from '../../store/Store'
-import type {Token} from '../ParserV2/types'
+import type {Token} from '../parser/types'
+import {findGap, getClosestIndexes} from '../preparsing'
 
 export function getTokensByUI(store: Store): Token[] {
 	const {focus} = store.nodes

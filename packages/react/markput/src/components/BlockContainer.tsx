@@ -10,7 +10,7 @@ import {
 	getAlwaysShowHandleDrag,
 	type Block,
 } from '@markput/core'
-import type {CSSProperties, ElementType} from 'react'
+import type {CSSProperties, DragEvent, ElementType, MouseEvent} from 'react'
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
@@ -19,7 +19,21 @@ import {Token} from './Token'
 
 import styles from '@markput/core/styles.module.css'
 
+const iconGrip = `${styles.Icon} ${styles.IconGrip}`
+
 const EMPTY_BLOCK: Block = {id: 'block-empty', tokens: [], startPos: 0, endPos: 0}
+
+const isMarkBlock = (block: Block) => block.tokens.length === 1 && block.tokens[0].type === 'mark'
+
+function getDirectChildIndex(container: HTMLElement, target: EventTarget | null): number {
+	if (!target || !(target instanceof Node)) return -1
+	let node: Node | null = target as Node
+	while (node && node.parentNode !== container) {
+		node = node.parentNode
+	}
+	if (!node) return -1
+	return Array.from(container.children).indexOf(node as Element)
+}
 
 interface BlockMenuProps {
 	position: MenuPosition
@@ -157,12 +171,15 @@ export const BlockContainer = memo(() => {
 	const readOnly = store.state.readOnly.use()
 	const drag = store.state.drag.use()
 	const alwaysShowHandle = getAlwaysShowHandleDrag(drag)
-	const value = store.state.value.use()
-	const onChange = store.state.onChange.use()
 	const key = store.key
 	const refs = store.refs
 
 	const [menuState, setMenuState] = useState<MenuState | null>(null)
+	const [hoveredMarkIndex, setHoveredMarkIndex] = useState<number | null>(null)
+	const [markDragSource, setMarkDragSource] = useState<number | null>(null)
+	const [markDropTarget, setMarkDropTarget] = useState<{index: number; position: 'before' | 'after'} | null>(null)
+	const markGripRef = useRef<HTMLButtonElement>(null)
+	const hideMarkGripTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
@@ -176,16 +193,18 @@ export const BlockContainer = memo(() => {
 
 	const handleReorder = useCallback(
 		(sourceIndex: number, targetIndex: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			const newValue = reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
 			if (newValue !== value) store.applyValue(newValue)
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(addDragRow(value, blocksRef.current, afterIndex))
 			queueMicrotask(() => {
 				const container = store.refs.container
@@ -195,23 +214,25 @@ export const BlockContainer = memo(() => {
 				target?.focus()
 			})
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleDelete = useCallback(
 		(index: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(deleteDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleDuplicate = useCallback(
 		(index: number) => {
-			if (value == null || !onChange) return
+			const value = store.state.value.get()
+			if (value == null || !store.state.onChange.get()) return
 			store.applyValue(duplicateDragRow(value, blocksRef.current, index))
 		},
-		[store, value, onChange]
+		[store]
 	)
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {
@@ -220,29 +241,185 @@ export const BlockContainer = memo(() => {
 
 	const closeMenu = useCallback(() => setMenuState(null), [])
 
+	const scheduleHideMarkGrip = useCallback(() => {
+		if (hideMarkGripTimerRef.current) clearTimeout(hideMarkGripTimerRef.current)
+		hideMarkGripTimerRef.current = setTimeout(() => setHoveredMarkIndex(null), 120)
+	}, [])
+
+	const cancelHideMarkGrip = useCallback(() => {
+		if (hideMarkGripTimerRef.current) clearTimeout(hideMarkGripTimerRef.current)
+	}, [])
+
+	const handleContainerMouseOver = useCallback(
+		(e: MouseEvent<HTMLElement>) => {
+			const container = refs.container
+			if (!container) return
+			const childIndex = getDirectChildIndex(container, e.target)
+			if (childIndex === -1 || !isMarkBlock(blocksRef.current[childIndex])) {
+				scheduleHideMarkGrip()
+				return
+			}
+			cancelHideMarkGrip()
+			setHoveredMarkIndex(childIndex)
+		},
+		[refs, scheduleHideMarkGrip, cancelHideMarkGrip]
+	)
+
+	const handleContainerMouseLeave = useCallback(() => scheduleHideMarkGrip(), [scheduleHideMarkGrip])
+
+	const handleContainerDragOver = useCallback(
+		(e: DragEvent<HTMLElement>) => {
+			const container = refs.container
+			if (!container) return
+			const childIndex = getDirectChildIndex(container, e.target)
+			if (childIndex === -1 || !isMarkBlock(blocksRef.current[childIndex])) return
+			e.preventDefault()
+			const el = container.children[childIndex] as HTMLElement
+			const rect = el.getBoundingClientRect()
+			const mid = rect.left + rect.width / 2
+			setMarkDropTarget({index: childIndex, position: e.clientX < mid ? 'before' : 'after'})
+		},
+		[refs]
+	)
+
+	const handleContainerDragLeave = useCallback(
+		(e: DragEvent<HTMLElement>) => {
+			if (!refs.container) return
+			if (refs.container.contains(e.relatedTarget as Node)) return
+			setMarkDropTarget(null)
+		},
+		[refs]
+	)
+
+	const handleContainerDrop = useCallback(
+		(e: DragEvent<HTMLElement>) => {
+			if (!markDropTarget) return
+			e.preventDefault()
+			const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
+			if (isNaN(sourceIndex)) return
+			const targetIndex = markDropTarget.position === 'before' ? markDropTarget.index : markDropTarget.index + 1
+			setMarkDropTarget(null)
+			handleReorder(sourceIndex, targetIndex)
+		},
+		[markDropTarget, handleReorder]
+	)
+
+	const handleMarkGripDragStart = useCallback(
+		(e: DragEvent<HTMLButtonElement>) => {
+			if (hoveredMarkIndex === null || !refs.container) return
+			e.dataTransfer.effectAllowed = 'move'
+			e.dataTransfer.setData('text/plain', String(hoveredMarkIndex))
+			setMarkDragSource(hoveredMarkIndex)
+			const el = refs.container.children[hoveredMarkIndex] as HTMLElement
+			if (el) e.dataTransfer.setDragImage(el, 0, 0)
+		},
+		[hoveredMarkIndex, refs]
+	)
+
+	const handleMarkGripDragEnd = useCallback(() => {
+		setMarkDragSource(null)
+		setMarkDropTarget(null)
+	}, [])
+
 	return (
 		<>
 			<ContainerComponent
 				ref={(el: HTMLDivElement | null) => (refs.container = el)}
 				{...containerProps}
 				className={className}
-				style={style}
+				style={readOnly ? style : {paddingLeft: 24, ...style}}
+				onMouseOver={handleContainerMouseOver}
+				onMouseLeave={handleContainerMouseLeave}
+				onDragOver={handleContainerDragOver}
+				onDragLeave={handleContainerDragLeave}
+				onDrop={handleContainerDrop}
 			>
-				{blocks.map((block, index) => (
-					<DraggableBlock
-						key={block.id}
-						blockIndex={index}
-						readOnly={readOnly}
-						alwaysShowHandle={alwaysShowHandle}
-						onReorder={handleReorder}
-						onRequestMenu={handleRequestMenu}
-					>
-						{block.tokens.map(token => (
-							<Token key={key.get(token)} mark={token} />
-						))}
-					</DraggableBlock>
-				))}
+				{blocks.map((block, index) =>
+					isMarkBlock(block) ? (
+						<Token key={key.get(block.tokens[0])} mark={block.tokens[0]} />
+					) : (
+						<DraggableBlock
+							key={block.id}
+							blockIndex={index}
+							readOnly={readOnly}
+							alwaysShowHandle={alwaysShowHandle}
+							onReorder={handleReorder}
+							onRequestMenu={handleRequestMenu}
+						>
+							{block.tokens.map(token => (
+								<Token key={key.get(token)} mark={token} />
+							))}
+						</DraggableBlock>
+					)
+				)}
 			</ContainerComponent>
+			{hoveredMarkIndex !== null &&
+				!readOnly &&
+				(() => {
+					const el = refs.container?.children[hoveredMarkIndex] as HTMLElement | undefined
+					const rect = el?.getBoundingClientRect()
+					if (!rect) return null
+					return (
+						<button
+							ref={markGripRef}
+							type="button"
+							draggable
+							onDragStart={handleMarkGripDragStart}
+							onDragEnd={handleMarkGripDragEnd}
+							onMouseEnter={cancelHideMarkGrip}
+							onMouseLeave={scheduleHideMarkGrip}
+							onClick={e => {
+								e.preventDefault()
+								if (markGripRef.current)
+									handleRequestMenu(hoveredMarkIndex, markGripRef.current.getBoundingClientRect())
+							}}
+							style={{
+								position: 'fixed',
+								top: rect.top + rect.height / 2 - 12,
+								left: rect.left - 24,
+								width: 24,
+								height: 24,
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								cursor: markDragSource !== null ? 'grabbing' : 'grab',
+								borderRadius: 4,
+								color: '#9ca3af',
+								background: 'none',
+								border: 'none',
+								padding: 0,
+								zIndex: 100,
+								pointerEvents: 'auto',
+								userSelect: 'none',
+							}}
+							aria-label="Drag to reorder or click for options"
+						>
+							<span className={iconGrip} />
+						</button>
+					)
+				})()}
+			{markDropTarget !== null &&
+				(() => {
+					const el = refs.container?.children[markDropTarget.index] as HTMLElement | undefined
+					const rect = el?.getBoundingClientRect()
+					if (!rect) return null
+					const x = markDropTarget.position === 'before' ? rect.left - 1 : rect.right - 1
+					return (
+						<div
+							style={{
+								position: 'fixed',
+								left: x,
+								top: rect.top,
+								width: 2,
+								height: rect.height,
+								backgroundColor: '#3b82f6',
+								borderRadius: 1,
+								pointerEvents: 'none',
+								zIndex: 10,
+							}}
+						/>
+					)
+				})()}
 			{menuState && (
 				<BlockMenu
 					position={menuState.position}

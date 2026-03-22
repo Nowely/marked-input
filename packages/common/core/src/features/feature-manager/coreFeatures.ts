@@ -1,5 +1,5 @@
+import type {Store} from '../store/Store'
 import {asFeature, FeatureManager} from './FeatureManager'
-import type {Store} from './store/Store'
 
 export const createCoreFeatures = (store: Store): FeatureManager => {
 	const manager = new FeatureManager()
