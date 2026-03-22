@@ -53,8 +53,8 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 		this.#emitChange()
 	}
 
-	get nested(): string | undefined {
-		return this.#token.nested?.content
+	get childrenSource(): string | undefined {
+		return this.#token.childrenSource?.content
 	}
 
 	get depth(): number {

@@ -22,7 +22,7 @@ export interface MarkToken {
 	descriptor: MarkupDescriptor
 	value: string
 	meta?: string
-	nested?: {
+	childrenSource?: {
 		content: string
 		start: number
 		end: number
@@ -44,30 +44,30 @@ export interface PositionRange {
  */
 export type ValueMarkup = `${string}${typeof PLACEHOLDER.Value}${string}`
 export type MetaMarkup = `${string}${typeof PLACEHOLDER.Meta}${string}`
-export type NestedMarkup = `${string}${typeof PLACEHOLDER.Nested}${string}`
+export type ChildrenMarkup = `${string}${typeof PLACEHOLDER.Children}${string}`
 
 /**
- * Modern Markup type supporting value, meta, and nested placeholders
+ * Modern Markup type supporting value, meta, and children placeholders
  *
  * Examples:
  * - "@[__value__]" - simple value
  * - "@[__value__](__meta__)" - value with metadata
- * - "@[__nested__]" - nested content
- * - "@[__value__](__nested__)" - value with nested content
- * - "<__value__ __meta__>__nested__</__value__>" - HTML-like with all features
+ * - "@[__children__]" - nested content
+ * - "@[__value__](__children__)" - value with nested content
+ * - "<__value__ __meta__>__children__</__value__>" - HTML-like with all features
  */
 export type Markup =
 	| `${ValueMarkup}`
 	| `${ValueMarkup}${MetaMarkup}`
-	| `${ValueMarkup}${MetaMarkup}${NestedMarkup}`
-	| `${ValueMarkup}${NestedMarkup}`
-	| `${ValueMarkup}${NestedMarkup}${MetaMarkup}`
-	| `${NestedMarkup}`
-	| `${NestedMarkup}${MetaMarkup}`
-	| `${NestedMarkup}${MetaMarkup}${ValueMarkup}`
-	| `${NestedMarkup}${ValueMarkup}`
-	| `${NestedMarkup}${ValueMarkup}${MetaMarkup}`
+	| `${ValueMarkup}${MetaMarkup}${ChildrenMarkup}`
+	| `${ValueMarkup}${ChildrenMarkup}`
+	| `${ValueMarkup}${ChildrenMarkup}${MetaMarkup}`
+	| `${ChildrenMarkup}`
+	| `${ChildrenMarkup}${MetaMarkup}`
+	| `${ChildrenMarkup}${MetaMarkup}${ValueMarkup}`
+	| `${ChildrenMarkup}${ValueMarkup}`
+	| `${ChildrenMarkup}${ValueMarkup}${MetaMarkup}`
 	| `${MetaMarkup}${ValueMarkup}`
-	| `${MetaMarkup}${ValueMarkup}${NestedMarkup}`
-	| `${MetaMarkup}${NestedMarkup}`
-	| `${MetaMarkup}${NestedMarkup}${ValueMarkup}`
+	| `${MetaMarkup}${ValueMarkup}${ChildrenMarkup}`
+	| `${MetaMarkup}${ChildrenMarkup}`
+	| `${MetaMarkup}${ChildrenMarkup}${ValueMarkup}`

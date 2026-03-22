@@ -90,7 +90,7 @@ Markup patterns define how marks are identified in your text. They use placehold
 | ------------ | ------------------------------------ | ---------------- |
 | `__value__`  | Main content (plain text only)       | ❌ No            |
 | `__meta__`   | Metadata (plain text only)           | ❌ No            |
-| `__nested__` | Content that can contain other marks | ✅ Yes           |
+| `__children__` | Content that can contain other marks | ✅ Yes           |
 
 ### Common Patterns
 
@@ -108,11 +108,11 @@ Markup patterns define how marks are identified in your text. They use placehold
 // Matches: #[react], #[javascript]
 
 // Bold (supports nesting)
-'**__nested__**'
+'**__children__**'
 // Matches: **bold text**, **bold with *italic* inside**
 
 // HTML-like (two values pattern)
-'<__value__>__nested__</__value__>'
+'<__value__>__children__</__value__>'
 // Matches: <div>content</div>, <span>text</span>
 ```
 
@@ -185,7 +185,7 @@ TextToken → <span>!</span>
 
 ## Nested Marks
 
-Nested marks allow hierarchical structures. Use `__nested__` to enable nesting:
+Nested marks allow hierarchical structures. Use `__children__` to enable nesting:
 
 ```tsx
 // Flat (no nesting)
@@ -194,7 +194,7 @@ value: '*bold with *italic* inside*'
 // Result: One mark with value = "bold with *italic* inside"
 
 // Nested (supports hierarchy)
-markup: '*__nested__*'
+markup: '*__children__*'
 value: '*bold with *italic* inside*'
 // Result: Parent mark contains child mark
 ```

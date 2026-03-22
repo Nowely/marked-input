@@ -16,8 +16,8 @@ export interface MarkupDescriptor {
 	segments: SegmentDefinition[]
 	/** Type of content in each gap between segments */
 	gapTypes: GapType[]
-	/** True if this markup contains a __nested__ placeholder */
-	hasNested: boolean
+	/** True if this markup contains a __children__ placeholder */
+	hasChildren: boolean
 	/** True if this markup contains exactly two __value__ placeholders */
 	hasTwoValues: boolean
 	/** Global indices of segments in registry segments array (parallel to segments array) */
@@ -29,12 +29,12 @@ export interface MarkupDescriptor {
  *
  * Examples:
  * - `#[__value__]` -> segments: ["#[", "]"], gapTypes: ["value"]
- * - `#[__nested__]` -> segments: ["#[", "]"], gapTypes: ["nested"]
+ * - `#[__children__]` -> segments: ["#[", "]"], gapTypes: ["children"]
  * - `@[__value__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "meta"]
- * - `@[__nested__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["nested", "meta"]
- * - `@[__value__](__nested__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "nested"]
+ * - `@[__children__](__meta__)` -> segments: ["@[", "](", ")"], gapTypes: ["children", "meta"]
+ * - `@[__value__](__children__)` -> segments: ["@[", "](", ")"], gapTypes: ["value", "children"]
  * - `<__value__>__meta__</__value__>` -> segments: [{pattern: '<([^>]+)>'}, {pattern: '</([^>]+)>'}], gapTypes: ["value", "meta", "value"] (dynamic)
- * - `<__value__ __meta__>__nested__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__nested__</([^>]+)>'}], gapTypes: ["value", "meta", "nested", "value"] (dynamic)
+ * - `<__value__ __meta__>__children__</__value__>` -> segments: [{pattern: '<([^> ]+) '}, " ", {pattern: '>__children__</([^>]+)>'}], gapTypes: ["value", "meta", "children", "value"] (dynamic)
  */
 export function createMarkupDescriptor(markup: Markup, index: number): MarkupDescriptor {
 	const {segments: rawSegments, gapTypes: rawGapTypes, counts, valueGapIndices} = scanMarkupStructure(markup)
@@ -52,7 +52,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 		index,
 		segments,
 		gapTypes,
-		hasNested: counts.nested === 1,
+		hasChildren: counts.children === 1,
 		hasTwoValues,
 		segmentGlobalIndices: Array.from({length: segments.length}), // Will be populated by MarkupRegistry
 	}
@@ -64,7 +64,7 @@ export function createMarkupDescriptor(markup: Markup, index: number): MarkupDes
 const PLACEHOLDER_TEXT: Record<GapType, string> = {
 	[GAP_TYPE.Value]: PLACEHOLDER.Value,
 	[GAP_TYPE.Meta]: PLACEHOLDER.Meta,
-	[GAP_TYPE.Nested]: PLACEHOLDER.Nested,
+	[GAP_TYPE.Children]: PLACEHOLDER.Children,
 } as const
 
 /**
@@ -77,12 +77,12 @@ function scanMarkupStructure(markup: string) {
 	const counts: Record<GapType, number> = {
 		value: 0,
 		meta: 0,
-		nested: 0,
+		children: 0,
 	}
 
 	// Find all placeholders and sort by position
 	const placeholders: Array<{type: GapType; position: number}> = []
-	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Nested] as const
+	const placeholderTypes = [GAP_TYPE.Value, GAP_TYPE.Meta, GAP_TYPE.Children] as const
 
 	for (const type of placeholderTypes) {
 		const text = PLACEHOLDER_TEXT[type]
@@ -133,7 +133,7 @@ function validateMarkup(counts: Record<GapType, number>, markup: string): void {
 	const rules = [
 		{count: counts.value, max: 2, name: PLACEHOLDER.Value},
 		{count: counts.meta, max: 1, name: PLACEHOLDER.Meta},
-		{count: counts.nested, max: 1, name: PLACEHOLDER.Nested},
+		{count: counts.children, max: 1, name: PLACEHOLDER.Children},
 	]
 
 	for (const {count, max, name} of rules) {
@@ -142,9 +142,9 @@ function validateMarkup(counts: Record<GapType, number>, markup: string): void {
 		}
 	}
 
-	if (counts.value === 0 && counts.nested === 0) {
+	if (counts.value === 0 && counts.children === 0) {
 		throw new Error(
-			`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Nested}"`
+			`Invalid markup: "${markup}". Need at least one "${PLACEHOLDER.Value}" or "${PLACEHOLDER.Children}"`
 		)
 	}
 }

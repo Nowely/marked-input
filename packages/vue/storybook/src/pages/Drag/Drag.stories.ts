@@ -36,32 +36,32 @@ const MarkdownMark = defineComponent({
 
 const markdownOptions: Option[] = [
 	{
-		markup: '# __nested__\n\n' as Markup,
+		markup: '# __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '2em', fontWeight: 'bold', margin: '0.5em 0'},
 		}),
 	},
 	{
-		markup: '## __nested__\n\n' as Markup,
+		markup: '## __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.5em', fontWeight: 'bold', margin: '0.4em 0'},
 		}),
 	},
 	{
-		markup: '### __nested__\n\n' as Markup,
+		markup: '### __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.17em', fontWeight: 'bold', margin: '0.83em 0'},
 		}),
 	},
 	{
-		markup: '- __nested__\n\n' as Markup,
+		markup: '- __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({...props, style: {display: 'block', paddingLeft: '1em'}}),
 	},
-	{markup: '**__nested__**' as Markup, mark: (props: MarkProps) => ({...props, style: {fontWeight: 'bold'}})},
-	{markup: '*__nested__*' as Markup, mark: (props: MarkProps) => ({...props, style: {fontStyle: 'italic'}})},
+	{markup: '**__children__**' as Markup, mark: (props: MarkProps) => ({...props, style: {fontWeight: 'bold'}})},
+	{markup: '*__children__*' as Markup, mark: (props: MarkProps) => ({...props, style: {fontStyle: 'italic'}})},
 	{
 		markup: '`__value__`' as Markup,
 		mark: (props: MarkProps) => ({
@@ -156,18 +156,18 @@ const TodoMark = defineComponent({
 
 const todoOptions: Option[] = [
 	{
-		markup: '# __nested__\n\n' as Markup,
+		markup: '# __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '1.4em', fontWeight: 'bold', margin: '0.3em 0'},
 		}),
 	},
 	{
-		markup: '- [ ] __nested__\n' as Markup,
+		markup: '- [ ] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block'}}),
 	},
 	{
-		markup: '- [x] __nested__\n' as Markup,
+		markup: '- [x] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -175,11 +175,11 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		markup: '\t- [ ] __nested__\n' as Markup,
+		markup: '\t- [ ] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block', paddingLeft: '1.5em'}}),
 	},
 	{
-		markup: '\t- [x] __nested__\n' as Markup,
+		markup: '\t- [x] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -187,11 +187,11 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		markup: '\t\t- [ ] __nested__\n' as Markup,
+		markup: '\t\t- [ ] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({...props, todo: 'pending', style: {display: 'block', paddingLeft: '3em'}}),
 	},
 	{
-		markup: '\t\t- [x] __nested__\n' as Markup,
+		markup: '\t\t- [x] __children__\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			todo: 'done',
@@ -199,7 +199,7 @@ const todoOptions: Option[] = [
 		}),
 	},
 	{
-		markup: '> __nested__\n\n' as Markup,
+		markup: '> __children__\n\n' as Markup,
 		mark: (props: MarkProps) => ({
 			...props,
 			style: {display: 'block', fontSize: '0.85em', color: '#888', fontStyle: 'italic'},

@@ -120,34 +120,34 @@ describe('ParserV2', () => {
 						// Test basic nested parsing
 						// Note: Self-nesting is not supported (pattern cannot nest within itself)
 						// This is by design to eliminate bracket counting complexity
-						const simpleParser = new Parser(['@[__nested__]'])
+						const simpleParser = new Parser(['@[__children__]'])
 						const input = '@[hello @[world]]'
 						const result = simpleParser.parse(input)
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello @[world]]" [0-17] [value="hello @[world]", nested="hello @[world]"]
+							 1: MARK "@[hello @[world]]" [0-17] [value="hello @[world]", childrenSource="hello @[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "@[world]" [8-16] [value="world", nested="world"]
+								1.1: MARK "@[world]" [8-16] [value="world", childrenSource="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
 					})
 
 					it('handles multiple and deeply nested marks', () => {
-						const parser = new Parser(['@[__nested__]'])
+						const parser = new Parser(['@[__children__]'])
 						const input = '@[level1 @[level2 @[level3]]]'
 						const result = parser.parse(input)
 
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="level1 @[level2 @[level3]]", nested="level1 @[level2 @[level3]]"]
+							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="level1 @[level2 @[level3]]", childrenSource="level1 @[level2 @[level3]]"]
 								1.0: TEXT "level1 " [2-9]
-								1.1: MARK "@[level2 @[level3]]" [9-28] [value="level2 @[level3]", nested="level2 @[level3]"]
+								1.1: MARK "@[level2 @[level3]]" [9-28] [value="level2 @[level3]", childrenSource="level2 @[level3]"]
 									1.1.0: TEXT "level2 " [11-18]
-									1.1.1: MARK "@[level3]" [18-27] [value="level3", nested="level3"]
+									1.1.1: MARK "@[level3]" [18-27] [value="level3", childrenSource="level3"]
 									1.1.2: TEXT "" [27-27]
 								1.2: TEXT "" [28-28]
 							 2: TEXT "" [29-29]"
@@ -155,69 +155,69 @@ describe('ParserV2', () => {
 					})
 
 					it('handles mixed markup types with nesting', () => {
-						const parser = new Parser(['@[__nested__]', '#[__nested__]'])
+						const parser = new Parser(['@[__children__]', '#[__children__]'])
 						const input = '@[hello #[world]]'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]]" [0-17] [value="hello #[world]", nested="hello #[world]"]
+							 1: MARK "@[hello #[world]]" [0-17] [value="hello #[world]", childrenSource="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [value="world", nested="world"]
+								1.1: MARK "#[world]" [8-16] [value="world", childrenSource="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
 					})
 
 					it('handles marks with values and nesting', () => {
-						const parser = new Parser(['@[__nested__](__meta__)', '#[__nested__]'])
+						const parser = new Parser(['@[__children__](__meta__)', '#[__children__]'])
 						const input = '@[hello #[world]](value)'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[hello #[world]](value)" [0-24] [value="hello #[world]", meta="value", nested="hello #[world]"]
-							1.0: TEXT "hello " [2-8]
-							1.1: MARK "#[world]" [8-16] [value="world", nested="world"]
-							1.2: TEXT "" [16-16]
-						 2: TEXT "" [24-24]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[hello #[world]](value)" [0-24] [value="hello #[world]", meta="value", childrenSource="hello #[world]"]
+								1.0: TEXT "hello " [2-8]
+								1.1: MARK "#[world]" [8-16] [value="world", childrenSource="world"]
+								1.2: TEXT "" [16-16]
+							 2: TEXT "" [24-24]"
+						`)
 					})
 
-					it('handles combined __label__ and __nested__ pattern', () => {
-						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]'])
+					it('handles combined __label__ and __children__ pattern', () => {
+						const parser = new Parser(['@[__value__](__children__)', '#[__children__]'])
 						const input = '@[user](Hello #[world])'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[user](Hello #[world])" [0-23] [value="user", nested="Hello #[world]"]
-							1.0: TEXT "Hello " [8-14]
-							1.1: MARK "#[world]" [14-22] [value="world", nested="world"]
-							1.2: TEXT "" [22-22]
-						 2: TEXT "" [23-23]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[user](Hello #[world])" [0-23] [value="user", childrenSource="Hello #[world]"]
+								1.0: TEXT "Hello " [8-14]
+								1.1: MARK "#[world]" [14-22] [value="world", childrenSource="world"]
+								1.2: TEXT "" [22-22]
+							 2: TEXT "" [23-23]"
+						`)
 					})
 
-					it('handles combined __label__ and __nested__ with complex nesting', () => {
-						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]', '**__nested__**'])
+					it('handles combined __label__ and __children__ with complex nesting', () => {
+						const parser = new Parser(['@[__value__](__children__)', '#[__children__]', '**__children__**'])
 						const input = '@[user](Text with #[tag] and **bold**)'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [value="user", nested="Text with #[tag] and **bold**"]
-							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "#[tag]" [18-24] [value="tag", nested="tag"]
-							1.2: TEXT " and " [24-29]
-							1.3: MARK "**bold**" [29-37] [value="bold", nested="bold"]
-							1.4: TEXT "" [37-37]
-						 2: TEXT "" [38-38]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [value="user", childrenSource="Text with #[tag] and **bold**"]
+								1.0: TEXT "Text with " [8-18]
+								1.1: MARK "#[tag]" [18-24] [value="tag", childrenSource="tag"]
+								1.2: TEXT " and " [24-29]
+								1.3: MARK "**bold**" [29-37] [value="bold", childrenSource="bold"]
+								1.4: TEXT "" [37-37]
+							 2: TEXT "" [38-38]"
+						`)
 					})
 
-					it('handles __label__ and __nested__ with empty nested content', () => {
-						const parser = new Parser(['@[__value__](__nested__)', '#[__nested__]'])
+					it('handles __label__ and __children__ with empty nested content', () => {
+						const parser = new Parser(['@[__value__](__children__)', '#[__children__]'])
 						const input = '@[user]()'
 						const result = parser.parse(input)
 
@@ -229,19 +229,19 @@ describe('ParserV2', () => {
 					})
 
 					it('handles HTML-like pattern with label, value and nested', () => {
-						// Pattern: <__value__ __meta__>__nested__</__value__>
-						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '**__nested__**'])
+						// Pattern: <__value__ __meta__>__children__</__value__>
+						const parser = new Parser(['<__value__ __meta__>__children__</__value__>', '**__children__**'])
 						const input = '<div class>Content with **bold**</div>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "<div class>Content with **bold**</div>" [0-38] [value="div", meta="class", nested="Content with **bold**"]
-							1.0: TEXT "Content with " [11-24]
-							1.1: MARK "**bold**" [24-32] [value="bold", nested="bold"]
-							1.2: TEXT "" [32-32]
-						 2: TEXT "" [38-38]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<div class>Content with **bold**</div>" [0-38] [value="div", meta="class", childrenSource="Content with **bold**"]
+								1.0: TEXT "Content with " [11-24]
+								1.1: MARK "**bold**" [24-32] [value="bold", childrenSource="bold"]
+								1.2: TEXT "" [32-32]
+							 2: TEXT "" [38-38]"
+						`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 						expect(marks[0].value).toBe('div')
@@ -249,34 +249,34 @@ describe('ParserV2', () => {
 					})
 
 					it('handles HTML-like pattern with mismatched closing tags', () => {
-						// Pattern: <__value__ __meta__>__nested__</__value__>
-						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '**__nested__**'])
+						// Pattern: <__value__ __meta__>__children__</__value__>
+						const parser = new Parser(['<__value__ __meta__>__children__</__value__>', '**__children__**'])
 						const input = '<div class>Content with **bold** </span></div>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", nested="Content with **bold** </span>"]
-							1.0: TEXT "Content with " [11-24]
-							1.1: MARK "**bold**" [24-32] [value="bold", nested="bold"]
-							1.2: TEXT " </span>" [32-40]
-						 2: TEXT "" [46-46]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", childrenSource="Content with **bold** </span>"]
+								1.0: TEXT "Content with " [11-24]
+								1.1: MARK "**bold**" [24-32] [value="bold", childrenSource="bold"]
+								1.2: TEXT " </span>" [32-40]
+							 2: TEXT "" [46-46]"
+						`)
 					})
 
 					it('handles HTML-like pattern with empty value', () => {
-						const parser = new Parser(['<__value__ __meta__>__nested__</__value__>', '#[__nested__]'])
+						const parser = new Parser(['<__value__ __meta__>__children__</__value__>', '#[__children__]'])
 						const input = '<span >Text #[tag]</span>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-				"0: TEXT "" [0-0]
-				 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", nested="Text #[tag]"]
-					1.0: TEXT "Text " [7-12]
-					1.1: MARK "#[tag]" [12-18] [value="tag", nested="tag"]
-					1.2: TEXT "" [18-18]
-				 2: TEXT "" [25-25]"
-			`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", childrenSource="Text #[tag]"]
+								1.0: TEXT "Text " [7-12]
+								1.1: MARK "#[tag]" [12-18] [value="tag", childrenSource="tag"]
+								1.2: TEXT "" [18-18]
+							 2: TEXT "" [25-25]"
+						`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 						expect(marks[0].value).toBe('span')
@@ -286,20 +286,20 @@ describe('ParserV2', () => {
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
 						// Simpler test: outer pattern with value, inner pattern without value
 						const parser = new Parser([
-							'<__value__ __meta__>__nested__</__value__>',
-							'<__value__>__nested__</__value__>',
+							'<__value__ __meta__>__children__</__value__>',
+							'<__value__>__children__</__value__>',
 						])
 						const input = '<div class><p>Text</p></div>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-				"0: TEXT "" [0-0]
-				 1: MARK "<div class><p>Text</p></div>" [0-28] [value="div", meta="class", nested="<p>Text</p>"]
-					1.0: TEXT "" [11-11]
-					1.1: MARK "<p>Text</p>" [11-22] [value="p", nested="Text"]
-					1.2: TEXT "" [22-22]
-				 2: TEXT "" [28-28]"
-			`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<div class><p>Text</p></div>" [0-28] [value="div", meta="class", childrenSource="<p>Text</p>"]
+								1.0: TEXT "" [11-11]
+								1.1: MARK "<p>Text</p>" [11-22] [value="p", childrenSource="Text"]
+								1.2: TEXT "" [22-22]
+							 2: TEXT "" [28-28]"
+						`)
 
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
 						expect(marks[0].value).toBe('div')
@@ -308,24 +308,24 @@ describe('ParserV2', () => {
 
 					it('handles complex HTML-like nested structure', () => {
 						const parser = new Parser([
-							'<__value__ __meta__>__nested__</__value__>',
-							'<__value__>__nested__</__value__>',
-							'**__nested__**',
+							'<__value__ __meta__>__children__</__value__>',
+							'<__value__>__children__</__value__>',
+							'**__children__**',
 						])
 						const input = '<div class><p>Text **bold**</p></div>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-				"0: TEXT "" [0-0]
-				 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", nested="<p>Text **bold**</p>"]
-					1.0: TEXT "" [11-11]
-					1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", nested="Text **bold**"]
-						1.1.0: TEXT "Text " [14-19]
-						1.1.1: MARK "**bold**" [19-27] [value="bold", nested="bold"]
-						1.1.2: TEXT "" [27-27]
-					1.2: TEXT "" [31-31]
-				 2: TEXT "" [37-37]"
-			`)
+							"0: TEXT "" [0-0]
+							 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", childrenSource="<p>Text **bold**</p>"]
+								1.0: TEXT "" [11-11]
+								1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", childrenSource="Text **bold**"]
+									1.1.0: TEXT "Text " [14-19]
+									1.1.1: MARK "**bold**" [19-27] [value="bold", childrenSource="bold"]
+									1.1.2: TEXT "" [27-27]
+								1.2: TEXT "" [31-31]
+							 2: TEXT "" [37-37]"
+						`)
 
 						// Verify correct nesting
 						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
@@ -336,18 +336,18 @@ describe('ParserV2', () => {
 
 					it('handles complex HTML-like nested structure', () => {
 						const parser = new Parser([
-							'<__value__ __meta__>__nested__</__value__>',
-							'<__value__>__nested__</__value__>',
-							'**__nested__**',
+							'<__value__ __meta__>__children__</__value__>',
+							'<__value__>__children__</__value__>',
+							'**__children__**',
 						])
 						const input = '<div class><p>Text <span/>bold</p></div>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class><p>Text <span/>bold</p></div>" [0-40] [value="div", meta="class", nested="<p>Text <span/>bold</p>"]
+							 1: MARK "<div class><p>Text <span/>bold</p></div>" [0-40] [value="div", meta="class", childrenSource="<p>Text <span/>bold</p>"]
 								1.0: TEXT "" [11-11]
-								1.1: MARK "<p>Text <span/>bold</p>" [11-34] [value="p", nested="Text <span/>bold"]
+								1.1: MARK "<p>Text <span/>bold</p>" [11-34] [value="p", childrenSource="Text <span/>bold"]
 								1.2: TEXT "" [34-34]
 							 2: TEXT "" [40-40]"
 						`)
@@ -355,7 +355,7 @@ describe('ParserV2', () => {
 
 					it('does NOT match HTML-like pattern when opening and closing tags differ', () => {
 						// Pattern with two __value__ placeholders requires them to be equal
-						const parser = new Parser(['<__value__>__nested__</__value__>'])
+						const parser = new Parser(['<__value__>__children__</__value__>'])
 						const input = '<div1>text</div2>'
 						const result = parser.parse(input)
 
@@ -370,7 +370,7 @@ describe('ParserV2', () => {
 					})
 
 					it('does NOT find nested marks in __label__ sections', () => {
-						// Pattern uses __label__ (not __nested__), so no nesting should be found
+						// Pattern uses __label__ (not __children__), so no nesting should be found
 						const parser = new Parser(['@[__value__]', '#[__value__]'])
 						const input = '@[hello #[world]]'
 						const result = parser.parse(input)
@@ -390,16 +390,16 @@ describe('ParserV2', () => {
 
 					it('does NOT find nested marks in __value__ sections', () => {
 						// Nested patterns should not be found inside value sections
-						const parser = new Parser(['@[__nested__](__meta__)', '#[__nested__]'])
+						const parser = new Parser(['@[__children__](__meta__)', '#[__children__]'])
 						const input = '@[hello](#[world])'
 						const result = parser.parse(input)
 
 						// Should have only one mark, with #[world] as plain text in value
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "" [0-0]
-					 1: MARK "@[hello](#[world])" [0-18] [value="hello", meta="#[world]", nested="hello"]
-					 2: TEXT "" [18-18]"
-				`)
+							"0: TEXT "" [0-0]
+							 1: MARK "@[hello](#[world])" [0-18] [value="hello", meta="#[world]", childrenSource="hello"]
+							 2: TEXT "" [18-18]"
+						`)
 
 						// Verify no nested marks
 						const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
@@ -408,12 +408,12 @@ describe('ParserV2', () => {
 						expect(markTokens[0].meta).toBe('#[world]')
 					})
 
-					it('correctly distinguishes between __label__ and __nested__ in mixed patterns', () => {
+					it('correctly distinguishes between __label__ and __children__ in mixed patterns', () => {
 						// Pattern with __label__ should not support nesting
-						// Pattern with __nested__ should support nesting
-						const parser = new Parser(['@[__value__]', '#[__nested__]', '**__nested__**'])
+						// Pattern with __children__ should support nesting
+						const parser = new Parser(['@[__value__]', '#[__children__]', '**__children__**'])
 						const input1 = '@[#[tag]]' // __label__ pattern - no nesting
-						const input2 = '#[**bold**]' // __nested__ pattern - with nesting
+						const input2 = '#[**bold**]' // __children__ pattern - with nesting
 
 						const result1 = parser.parse(input1)
 						const result2 = parser.parse(input2)
@@ -425,15 +425,15 @@ describe('ParserV2', () => {
 						 2: TEXT "" [9-9]"
 					`)
 
-						// Second case: nesting in __nested__
+						// Second case: nesting in __children__
 						expect(tokensToDebugTree(result2)).toMatchInlineSnapshot(`
-					"0: TEXT "" [0-0]
-					 1: MARK "#[**bold**]" [0-11] [value="**bold**", nested="**bold**"]
-						1.0: TEXT "" [2-2]
-						1.1: MARK "**bold**" [2-10] [value="bold", nested="bold"]
-						1.2: TEXT "" [10-10]
-					 2: TEXT "" [11-11]"
-				`)
+							"0: TEXT "" [0-0]
+							 1: MARK "#[**bold**]" [0-11] [value="**bold**", childrenSource="**bold**"]
+								1.0: TEXT "" [2-2]
+								1.1: MARK "**bold**" [2-10] [value="bold", childrenSource="bold"]
+								1.2: TEXT "" [10-10]
+							 2: TEXT "" [11-11]"
+						`)
 					})
 				})
 			})
@@ -605,16 +605,16 @@ describe('ParserV2', () => {
 				})
 
 				it('handles __value__ before nested placeholder', () => {
-					// Pattern with value before nested: (__meta__)#[__nested__]
-					const parser = new Parser(['(__meta__)#[__nested__]', '**__nested__**'])
+					// Pattern with value before nested: (__meta__)#[__children__]
+					const parser = new Parser(['(__meta__)#[__children__]', '**__children__**'])
 					const input = '(note)#[Text with **bold**]'
 					const result = parser.parse(input)
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="Text with **bold**", meta="note", nested="Text with **bold**"]
+						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="Text with **bold**", meta="note", childrenSource="Text with **bold**"]
 							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "**bold**" [18-26] [value="bold", nested="bold"]
+							1.1: MARK "**bold**" [18-26] [value="bold", childrenSource="bold"]
 							1.2: TEXT "" [26-26]
 						 2: TEXT "" [27-27]"
 					`)
@@ -624,16 +624,16 @@ describe('ParserV2', () => {
 				})
 
 				it('handles complex pattern with value in middle', () => {
-					// Pattern: [__value__](__meta__)(__nested__)
-					const parser = new Parser(['[__value__](__meta__)(__nested__)', '**__nested__**'])
+					// Pattern: [__value__](__meta__)(__children__)
+					const parser = new Parser(['[__value__](__meta__)(__children__)', '**__children__**'])
 					const input = '[name](url)(Content **bold**)'
 					const result = parser.parse(input)
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "[name](url)(Content **bold**)" [0-29] [value="name", meta="url", nested="Content **bold**"]
+						 1: MARK "[name](url)(Content **bold**)" [0-29] [value="name", meta="url", childrenSource="Content **bold**"]
 							1.0: TEXT "Content " [12-20]
-							1.1: MARK "**bold**" [20-28] [value="bold", nested="bold"]
+							1.1: MARK "**bold**" [20-28] [value="bold", childrenSource="bold"]
 							1.2: TEXT "" [28-28]
 						 2: TEXT "" [29-29]"
 					`)
@@ -647,7 +647,7 @@ describe('ParserV2', () => {
 
 		describe('escape and unescape', () => {
 			it('should escape complete patterns using backslash', () => {
-				const parser = new Parser(['**__nested__**', '@[__value__]'])
+				const parser = new Parser(['**__children__**', '@[__value__]'])
 
 				const testInput = 'Hello **world** and @[user]'
 				const result = parser.escape(testInput)
@@ -656,7 +656,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should escape patterns with nested content', () => {
-				const parser = new Parser(['@[__nested__]'])
+				const parser = new Parser(['@[__children__]'])
 
 				const testInput = '@[user **bold** text]'
 				const result = parser.escape(testInput)
@@ -665,7 +665,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle empty text', () => {
-				const parser = new Parser(['**__nested__**'])
+				const parser = new Parser(['**__children__**'])
 
 				const result = parser.escape('')
 
@@ -673,7 +673,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle text without patterns', () => {
-				const parser = new Parser(['**__nested__**'])
+				const parser = new Parser(['**__children__**'])
 
 				const testInput = 'Hello world'
 				const result = parser.escape(testInput)
@@ -682,7 +682,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should unescape patterns', () => {
-				const parser = new Parser(['**__nested__**', '@[__value__]'])
+				const parser = new Parser(['**__children__**', '@[__value__]'])
 
 				const escapedInput = 'Hello \\*\\*world\\*\\* and \\@[user]'
 				const result = parser.unescape(escapedInput)
@@ -691,7 +691,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should unescape nested patterns', () => {
-				const parser = new Parser(['**__nested__**', '@[__nested__]'])
+				const parser = new Parser(['**__children__**', '@[__children__]'])
 
 				const escapedInput = '\\@[user \\*\\*bold\\*\\* text]'
 				const result = parser.unescape(escapedInput)
@@ -700,7 +700,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should round-trip correctly', () => {
-				const parser = new Parser(['**__nested__**', '@[__value__](__meta__)'])
+				const parser = new Parser(['**__children__**', '@[__value__](__meta__)'])
 
 				const original = 'Hello **world** and @[user](admin)'
 				const escaped = parser.escape(original)
@@ -710,7 +710,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle multiple patterns correctly', () => {
-				const parser = new Parser(['**__nested__**', '@[__value__]', '#[__value__]'])
+				const parser = new Parser(['**__children__**', '@[__value__]', '#[__value__]'])
 
 				const testInput = '**bold** @[user] #[tag]'
 				const result = parser.escape(testInput)
@@ -867,16 +867,16 @@ describe('ParserV2', () => {
 					})
 
 					it('parses nested HTML tags', () => {
-						const markups = ['<b>__nested__</b>' as any, '<i>__nested__</i>' as any]
+						const markups = ['<b>__children__</b>' as any, '<i>__children__</i>' as any]
 						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="Bold <i>italic</i> text", nested="Bold <i>italic</i> text"]
+							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="Bold <i>italic</i> text", childrenSource="Bold <i>italic</i> text"]
 								1.0: TEXT "Bold " [3-8]
-								1.1: MARK "<i>italic</i>" [8-21] [value="italic", nested="italic"]
+								1.1: MARK "<i>italic</i>" [8-21] [value="italic", childrenSource="italic"]
 								1.2: TEXT " text" [21-26]
 							 2: TEXT "" [30-30]"
 						`)
@@ -959,11 +959,11 @@ describe('ParserV2', () => {
 
 					it('parses complex realistic markdown document', () => {
 						const markups: Markup[] = [
-							'# __nested__\n', // h1 header
-							'## __nested__\n', // h2 header
-							'- __nested__\n', // list item
-							'**__nested__**', // bold
-							'*__nested__*', // italic
+							'# __children__\n', // h1 header
+							'## __children__\n', // h2 header
+							'- __children__\n', // list item
+							'**__children__**', // bold
+							'*__children__*', // italic
 							'`__value__`', // inline code (no nesting in code)
 							'```__value__\n__meta__```', // code block (no nesting)
 							'[__value__](__meta__)', // link (no nesting in link text)
@@ -1001,64 +1001,64 @@ describe('ParserV2', () => {
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="Welcome to **Marked Input**", nested="Welcome to **Marked Input**"]
-							1.0: TEXT "Welcome to " [2-13]
-							1.1: MARK "**Marked Input**" [13-29] [value="Marked Input", nested="Marked Input"]
-							1.2: TEXT "" [29-29]
-						 2: TEXT "↲This is a " [30-41]
-						 3: MARK "*powerful*" [41-51] [value="powerful", nested="powerful"]
-						 4: TEXT " library for parsing " [51-72]
-						 5: MARK "**rich text**" [72-85] [value="rich text", nested="rich text"]
-						 6: TEXT " with " [85-91]
-						 7: MARK "*markdown*" [91-101] [value="markdown", nested="markdown"]
-						 8: TEXT " formatting.↲You can use " [101-126]
-						 9: MARK "\`inline code\`" [126-139] [value="inline code"]
-						 10: TEXT " snippets like " [139-154]
-						 11: MARK "\`const parser = new ParserV2()\`" [154-185] [value="const parser = new ParserV2()"]
-						 12: TEXT " in your text.↲↲" [185-201]
-						 13: MARK "## Features↲" [201-213] [value="Features", nested="Features"]
-						 14: TEXT "↲" [213-214]
-						 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="**Bold text** with **strong emphasis**", nested="**Bold text** with **strong emphasis**"]
-							15.0: TEXT "" [216-216]
-							15.1: MARK "**Bold text**" [216-229] [value="Bold text", nested="Bold text"]
-							15.2: TEXT " with " [229-235]
-							15.3: MARK "**strong emphasis**" [235-254] [value="strong emphasis", nested="strong emphasis"]
-							15.4: TEXT "" [254-254]
-						 16: TEXT "" [255-255]
-						 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="*Italic text* and *emphasis* support", nested="*Italic text* and *emphasis* support"]
-							17.0: TEXT "" [257-257]
-							17.1: MARK "*Italic text*" [257-270] [value="Italic text", nested="Italic text"]
-							17.2: TEXT " and " [270-275]
-							17.3: MARK "*emphasis*" [275-285] [value="emphasis", nested="emphasis"]
-							17.4: TEXT " support" [285-293]
-						 18: TEXT "" [294-294]
-						 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="\`Code snippets\` and \`code blocks\`", nested="\`Code snippets\` and \`code blocks\`"]
-							19.0: TEXT "" [296-296]
-							19.1: MARK "\`Code snippets\`" [296-311] [value="Code snippets"]
-							19.2: TEXT " and " [311-316]
-							19.3: MARK "\`code blocks\`" [316-329] [value="code blocks"]
-							19.4: TEXT "" [329-329]
-						 20: TEXT "" [330-330]
-						 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="~~Strikethrough~~ for deleted content", nested="~~Strikethrough~~ for deleted content"]
-							21.0: TEXT "" [332-332]
-							21.1: MARK "~~Strikethrough~~" [332-349] [value="Strikethrough"]
-							21.2: TEXT " for deleted content" [349-369]
-						 22: TEXT "" [370-370]
-						 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="Links like [GitHub](https://github.com)", nested="Links like [GitHub](https://github.com)"]
-							23.0: TEXT "Links like " [372-383]
-							23.1: MARK "[GitHub](https://github.com)" [383-411] [value="GitHub", meta="https://github.com"]
-							23.2: TEXT "" [411-411]
-						 24: TEXT "↲" [412-413]
-						 25: MARK "## Example↲" [413-424] [value="Example", nested="Example"]
-						 26: TEXT "↲Here's how to use it:↲↲" [424-448]
-						 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲\`\`\`" [448-575] [value="javascript", meta="const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲"]
-						 28: TEXT "↲↲Visit our " [575-587]
-						 29: MARK "[documentation](https://docs.example.com)" [587-628] [value="documentation", meta="https://docs.example.com"]
-						 30: TEXT " for more details.↲" [628-647]
-						 31: MARK "~~This feature is deprecated~~" [647-677] [value="This feature is deprecated"]
-						 32: TEXT " and will be removed in v3.0." [677-706]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="Welcome to **Marked Input**", childrenSource="Welcome to **Marked Input**"]
+								1.0: TEXT "Welcome to " [2-13]
+								1.1: MARK "**Marked Input**" [13-29] [value="Marked Input", childrenSource="Marked Input"]
+								1.2: TEXT "" [29-29]
+							 2: TEXT "↲This is a " [30-41]
+							 3: MARK "*powerful*" [41-51] [value="powerful", childrenSource="powerful"]
+							 4: TEXT " library for parsing " [51-72]
+							 5: MARK "**rich text**" [72-85] [value="rich text", childrenSource="rich text"]
+							 6: TEXT " with " [85-91]
+							 7: MARK "*markdown*" [91-101] [value="markdown", childrenSource="markdown"]
+							 8: TEXT " formatting.↲You can use " [101-126]
+							 9: MARK "\`inline code\`" [126-139] [value="inline code"]
+							 10: TEXT " snippets like " [139-154]
+							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [value="const parser = new ParserV2()"]
+							 12: TEXT " in your text.↲↲" [185-201]
+							 13: MARK "## Features↲" [201-213] [value="Features", childrenSource="Features"]
+							 14: TEXT "↲" [213-214]
+							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="**Bold text** with **strong emphasis**", childrenSource="**Bold text** with **strong emphasis**"]
+								15.0: TEXT "" [216-216]
+								15.1: MARK "**Bold text**" [216-229] [value="Bold text", childrenSource="Bold text"]
+								15.2: TEXT " with " [229-235]
+								15.3: MARK "**strong emphasis**" [235-254] [value="strong emphasis", childrenSource="strong emphasis"]
+								15.4: TEXT "" [254-254]
+							 16: TEXT "" [255-255]
+							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="*Italic text* and *emphasis* support", childrenSource="*Italic text* and *emphasis* support"]
+								17.0: TEXT "" [257-257]
+								17.1: MARK "*Italic text*" [257-270] [value="Italic text", childrenSource="Italic text"]
+								17.2: TEXT " and " [270-275]
+								17.3: MARK "*emphasis*" [275-285] [value="emphasis", childrenSource="emphasis"]
+								17.4: TEXT " support" [285-293]
+							 18: TEXT "" [294-294]
+							 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="\`Code snippets\` and \`code blocks\`", childrenSource="\`Code snippets\` and \`code blocks\`"]
+								19.0: TEXT "" [296-296]
+								19.1: MARK "\`Code snippets\`" [296-311] [value="Code snippets"]
+								19.2: TEXT " and " [311-316]
+								19.3: MARK "\`code blocks\`" [316-329] [value="code blocks"]
+								19.4: TEXT "" [329-329]
+							 20: TEXT "" [330-330]
+							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="~~Strikethrough~~ for deleted content", childrenSource="~~Strikethrough~~ for deleted content"]
+								21.0: TEXT "" [332-332]
+								21.1: MARK "~~Strikethrough~~" [332-349] [value="Strikethrough"]
+								21.2: TEXT " for deleted content" [349-369]
+							 22: TEXT "" [370-370]
+							 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="Links like [GitHub](https://github.com)", childrenSource="Links like [GitHub](https://github.com)"]
+								23.0: TEXT "Links like " [372-383]
+								23.1: MARK "[GitHub](https://github.com)" [383-411] [value="GitHub", meta="https://github.com"]
+								23.2: TEXT "" [411-411]
+							 24: TEXT "↲" [412-413]
+							 25: MARK "## Example↲" [413-424] [value="Example", childrenSource="Example"]
+							 26: TEXT "↲Here's how to use it:↲↲" [424-448]
+							 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲\`\`\`" [448-575] [value="javascript", meta="const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲"]
+							 28: TEXT "↲↲Visit our " [575-587]
+							 29: MARK "[documentation](https://docs.example.com)" [587-628] [value="documentation", meta="https://docs.example.com"]
+							 30: TEXT " for more details.↲" [628-647]
+							 31: MARK "~~This feature is deprecated~~" [647-677] [value="This feature is deprecated"]
+							 32: TEXT " and will be removed in v3.0." [677-706]"
+						`)
 					})
 
 					it('isolated test: parses "**strong emphasis**" correctly', () => {
@@ -1114,20 +1114,20 @@ describe('ParserV2', () => {
 					})
 
 					it('isolated test: parses nested bold marks in list item', () => {
-						const parser = new Parser(['- __nested__\n', '**__nested__**'])
+						const parser = new Parser(['- __children__\n', '**__children__**'])
 						const input = '- **Bold text** with **strong emphasis**\n'
 						const result = parser.parse(input)
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-						"0: TEXT "" [0-0]
-						 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="**Bold text** with **strong emphasis**", nested="**Bold text** with **strong emphasis**"]
-							1.0: TEXT "" [2-2]
-							1.1: MARK "**Bold text**" [2-15] [value="Bold text", nested="Bold text"]
-							1.2: TEXT " with " [15-21]
-							1.3: MARK "**strong emphasis**" [21-40] [value="strong emphasis", nested="strong emphasis"]
-							1.4: TEXT "" [40-40]
-						 2: TEXT "" [41-41]"
-					`)
+							"0: TEXT "" [0-0]
+							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="**Bold text** with **strong emphasis**", childrenSource="**Bold text** with **strong emphasis**"]
+								1.0: TEXT "" [2-2]
+								1.1: MARK "**Bold text**" [2-15] [value="Bold text", childrenSource="Bold text"]
+								1.2: TEXT " with " [15-21]
+								1.3: MARK "**strong emphasis**" [21-40] [value="strong emphasis", childrenSource="strong emphasis"]
+								1.4: TEXT "" [40-40]
+							 2: TEXT "" [41-41]"
+						`)
 					})
 
 					it('isolated test: multiline code block pattern', () => {
@@ -1280,7 +1280,7 @@ describe('ParserV2', () => {
 		})
 
 		it('should handle complex nested structures with diverse content', () => {
-			//const parser = new ParserV2(['@[__nested__]($__value__)', '#[__nested__]'])
+			//const parser = new ParserV2(['@[__children__]($__value__)', '#[__children__]'])
 			const testCases = Array.from({length: 15}, () => {
 				const outerName = parser.escape(faker.company.name())
 				const innerTag = parser.escape(faker.word.noun())
@@ -1346,7 +1346,7 @@ describe('ParserV2', () => {
 			})
 
 			it('should handle nested tokens', () => {
-				const parser = new Parser(['@[__nested__](__meta__)', '#[__value__]'])
+				const parser = new Parser(['@[__children__](__meta__)', '#[__value__]'])
 				const input = 'Check @[#[urgent] task](priority)'
 
 				const tokens = parser.parse(input)
@@ -1386,8 +1386,8 @@ function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
 				infoParts.push(`meta="${escapeString(token.meta)}"`)
 			}
 
-			if (token.nested) {
-				infoParts.push(`nested="${escapeString(token.nested.content)}"`)
+			if (token.childrenSource) {
+				infoParts.push(`childrenSource="${escapeString(token.childrenSource.content)}"`)
 			}
 
 			const labelValueInfo = `[${infoParts.join(', ')}]`

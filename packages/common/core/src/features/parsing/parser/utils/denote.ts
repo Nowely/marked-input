@@ -13,7 +13,7 @@ import {processTokensWithCallback} from './processTokens'
  * @example
  * ```typescript
  * const text = '@[Hello](world) and #[nested @[content]]'
- * const result = denote(text, mark => mark.value, ['@[__value__](__meta__)', '#[__nested__]'])
+ * const result = denote(text, mark => mark.value, ['@[__value__](__meta__)', '#[__children__]'])
  * // Returns: 'Hello and nested content'
  * ```
  */

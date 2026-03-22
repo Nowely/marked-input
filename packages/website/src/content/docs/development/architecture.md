@@ -222,7 +222,7 @@ Each token renders as React component:
 For nested marks like `**bold @[mention]**`:
 
 ```
-1. Parse outer mark: **__nested__**
+1. Parse outer mark: **__children__**
    ↓
 2. Extract nested content: "bold @[mention]"
    ↓

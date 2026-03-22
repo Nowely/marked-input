@@ -19,6 +19,34 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:30](https://github
 
 ***
 
+### childrenSource?
+
+```ts
+optional childrenSource: object;
+```
+
+Defined in: [common/core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L25)
+
+#### content
+
+```ts
+content: string;
+```
+
+#### end
+
+```ts
+end: number;
+```
+
+#### start
+
+```ts
+start: number;
+```
+
+***
+
 ### content
 
 ```ts
@@ -46,34 +74,6 @@ optional meta: string;
 ```
 
 Defined in: [common/core/src/features/parsing/parser/types.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L24)
-
-***
-
-### nested?
-
-```ts
-optional nested: object;
-```
-
-Defined in: [common/core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L25)
-
-#### content
-
-```ts
-content: string;
-```
-
-#### end
-
-```ts
-end: number;
-```
-
-#### start
-
-```ts
-start: number;
-```
 
 ***
 

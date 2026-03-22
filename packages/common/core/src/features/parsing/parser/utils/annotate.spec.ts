@@ -16,21 +16,21 @@ describe(`Utility: ${annotate.name}`, () => {
 		expect(result).toBe('@[Hello](world)')
 	})
 
-	it('should annotate with nested only', () => {
-		const markup: Markup = '@[__nested__]'
-		const result = annotate(markup, {nested: 'content'})
+	it('should annotate with children only', () => {
+		const markup: Markup = '@[__children__]'
+		const result = annotate(markup, {children: 'content'})
 		expect(result).toBe('@[content]')
 	})
 
 	it('should annotate with value and nested', () => {
-		const markup: Markup = '@[__value__](__nested__)'
-		const result = annotate(markup, {value: 'user', nested: 'Hello world'})
+		const markup: Markup = '@[__value__](__children__)'
+		const result = annotate(markup, {value: 'user', children: 'Hello world'})
 		expect(result).toBe('@[user](Hello world)')
 	})
 
 	it('should annotate with all three placeholders', () => {
-		const markup: Markup = '<__value__ __meta__>__nested__</__value__>'
-		const result = annotate(markup, {value: 'div', meta: 'class', nested: 'Content'})
+		const markup: Markup = '<__value__ __meta__>__children__</__value__>'
+		const result = annotate(markup, {value: 'div', meta: 'class', children: 'Content'})
 		expect(result).toBe('<div class>Content</div>')
 	})
 
@@ -52,9 +52,9 @@ describe(`Utility: ${annotate.name}`, () => {
 		expect(result).toBe('@[__value__]')
 	})
 
-	it('should handle nested content with special characters', () => {
-		const markup: Markup = '@[__nested__]'
-		const result = annotate(markup, {nested: 'Hello #[world]'})
+	it('should handle children content with special characters', () => {
+		const markup: Markup = '@[__children__]'
+		const result = annotate(markup, {children: 'Hello #[world]'})
 		expect(result).toBe('@[Hello #[world]]')
 	})
 })
