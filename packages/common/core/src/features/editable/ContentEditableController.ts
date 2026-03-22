@@ -55,7 +55,46 @@ export class ContentEditableController {
 					el.textContent = token.content
 				}
 			} else if (token.type === 'mark' && token.children.length > 0) {
-				this.#syncTextContent(token.children, el)
+				this.#syncMarkChildren(token.children, el)
+			}
+		}
+	}
+
+	#syncMarkChildren(tokens: Token[], parent: HTMLElement) {
+		// Walk direct children and match to tokens sequentially.
+		// Text tokens render as bare <span> (no attributes).
+		// Mark tokens render as elements with attributes (classes, data-*, etc).
+		// Skip any extra mark-component elements (inputs, buttons, etc.)
+		const children = parent.children
+		let childIdx = 0
+
+		for (const token of tokens) {
+			if (token.type === 'text') {
+				// Find next bare span (text token element)
+				while (childIdx < children.length) {
+					const el = children[childIdx] as HTMLElement
+					if (el.tagName === 'SPAN' && el.attributes.length === 0) break
+					childIdx++
+				}
+				const el = children[childIdx] as HTMLElement | undefined
+				if (el) {
+					if (el.textContent !== token.content) {
+						el.textContent = token.content
+					}
+					childIdx++
+				}
+			} else if (token.type === 'mark' && token.children.length > 0) {
+				// Find next element with attributes (mark element)
+				while (childIdx < children.length) {
+					const el = children[childIdx] as HTMLElement
+					if (el.attributes.length > 0 || el.tagName !== 'SPAN') break
+					childIdx++
+				}
+				const el = children[childIdx] as HTMLElement | undefined
+				if (el) {
+					this.#syncMarkChildren(token.children, el)
+					childIdx++
+				}
 			}
 		}
 	}
@@ -71,7 +110,15 @@ export class ContentEditableController {
 			if (isMark) {
 				const markToken = block.tokens[0]
 				if (markToken.type === 'mark' && markToken.children.length > 0) {
-					this.#syncTextContent(markToken.children, blockEl)
+					// In Vue, mark blocks are wrapped in DragMark (has data-testid).
+					// In React, mark blocks render directly as the mark element.
+					const hasDragWrapper = blockEl.hasAttribute('data-testid')
+					const markEl = hasDragWrapper
+						? (blockEl.children[readOnly ? 0 : 1] as HTMLElement | undefined)
+						: blockEl
+					if (markEl) {
+						this.#syncMarkChildren(markToken.children, markEl)
+					}
 				}
 				continue
 			}

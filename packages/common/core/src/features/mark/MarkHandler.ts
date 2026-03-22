@@ -62,7 +62,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	}
 
 	get hasChildren(): boolean {
-		return this.#token.children.length > 0
+		return this.#token.children.some(child => child.type === 'mark')
 	}
 
 	get parent(): MarkToken | undefined {

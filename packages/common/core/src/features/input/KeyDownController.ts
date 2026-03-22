@@ -625,30 +625,37 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 	const sel = window.getSelection()
 	if (!sel) return false
 
-	if (!markToken.children || markToken.children.length === 0) {
-		// Simple mark: renders nested content as a single text node.
-		const nestedStart = markToken.childrenRaw?.start ?? markToken.position.start
-		const nestedEnd = markToken.childrenRaw?.end ?? markToken.position.end
-		const offsetInNested = Math.max(0, Math.min(rawAbsolutePos - nestedStart, nestedEnd - nestedStart))
-		const walker = document.createTreeWalker(markElement, 4 /* SHOW_TEXT */)
-		const textNode = walker.nextNode() as Text | null
-		if (!textNode) return false
-		const range = document.createRange()
-		range.setStart(textNode, Math.min(offsetInNested, textNode.length))
-		range.collapse(true)
-		sel.removeAllRanges()
-		sel.addRange(range)
-		return true
-	}
-
-	// Complex mark: walk childNodes in parallel with token children.
+	// Walk childNodes in parallel with token children.
 	// Comment / fragment nodes are skipped without advancing the token index.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			// Text token rendered as <span> element — place caret inside its text node.
+			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
+				const textNode = childNode.firstChild as Text | null
+				const offset = rawAbsolutePos - tokenChild.position.start
+				if (textNode) {
+					const range = document.createRange()
+					range.setStart(textNode, Math.min(offset, textNode.length))
+					range.collapse(true)
+					sel.removeAllRanges()
+					sel.addRange(range)
+				} else {
+					// Empty span — place caret at start of the element
+					const range = document.createRange()
+					range.setStart(childNode, 0)
+					range.collapse(true)
+					sel.removeAllRanges()
+					sel.addRange(range)
+				}
+				return true
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+			// Legacy: text token as direct text node
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
 				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, (childNode as Text).length)
 				const range = document.createRange()
@@ -763,8 +770,11 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	// DraggableBlock wrapper), resolve position using the mark token directly.
 	if (node.nodeType === Node.TEXT_NODE && node.parentElement === blockDiv) {
 		const token = block.tokens[0]
-		if (token) {
-			return getDomRawPosInMark(node, offset, blockDiv, token as MarkToken)
+		if (token?.type === 'mark') {
+			return getDomRawPosInMark(node, offset, blockDiv, token)
+		}
+		if (token?.type === 'text') {
+			return token.position.start + Math.min(offset, token.content.length)
 		}
 		return block.endPos
 	}
@@ -822,13 +832,23 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 	}
 
 	// Walk child nodes of markElement and match to token children.
-	// TextToken children render as text nodes; MarkToken children render as elements.
+	// TextToken children render as span elements; MarkToken children render as elements.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			if (node === childNode) {
+				// Element-level offset: 0 = before children, >= childNodes.length = after all children
+				const charOffset = offset === 0 ? 0 : tokenChild.content.length
+				return tokenChild.position.start + Math.min(charOffset, tokenChild.content.length)
+			}
+			if ((childNode as Element).contains(node)) {
+				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
 			if (node === childNode) {
 				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
 			}

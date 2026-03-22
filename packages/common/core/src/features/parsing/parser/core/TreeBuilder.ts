@@ -163,14 +163,7 @@ export class TreeBuilder {
 	 * Finalizes a parent token by adding final text token if needed
 	 */
 	private finalizeParent(parent: ParentContext, endPos: number): void {
-		const hasNestedMarks = parent.token.children.some(child => child.type === 'mark')
-		if (hasNestedMarks) {
-			// Add final text token within parent's content
-			parent.token.children.push(this.createTextToken(parent.textPos, endPos))
-		} else {
-			// No nested marks — clear children (no text-only children in output)
-			parent.token.children = []
-		}
+		parent.token.children.push(this.createTextToken(parent.textPos, endPos))
 	}
 
 	/**
