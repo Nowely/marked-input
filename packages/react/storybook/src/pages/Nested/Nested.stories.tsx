@@ -136,9 +136,9 @@ export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
 
 const HtmlMarkup: Markup = '<__value__>__nested__</__value__>'
 
-const HtmlLikeMark = ({children, value, nested}: MarkProps) => {
+const HtmlLikeMark = ({children, value}: MarkProps) => {
 	const Tag = value! as React.ElementType
-	return <Tag>{children || nested}</Tag>
+	return <Tag>{children}</Tag>
 }
 
 export const HtmlLikeTags: StoryObj<MarkedInputProps<MarkProps>> = {
@@ -153,7 +153,7 @@ export const HtmlLikeTags: StoryObj<MarkedInputProps<MarkProps>> = {
 // Example 4: Interactive Nested Marks with Tree Navigation
 // ============================================================================
 
-const InteractiveMark = ({children, nested}: MarkProps) => {
+const InteractiveMark = ({children}: MarkProps) => {
 	const mark = useMark()
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
@@ -182,7 +182,7 @@ const InteractiveMark = ({children, nested}: MarkProps) => {
 			}}
 			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
 		>
-			{children || nested}
+			{children}
 		</span>
 	)
 }
@@ -237,7 +237,7 @@ export const ComplexMarkdown: Story = {
 // Example 7: Complex HTML Document
 // ============================================================================
 
-const HtmlDocMark = ({children, value, nested}: MarkProps) => {
+const HtmlDocMark = ({children, value}: MarkProps) => {
 	const tagName = value?.toLowerCase() || 'span'
 
 	const tagStyles: Record<string, React.CSSProperties> = {
@@ -387,7 +387,7 @@ const HtmlDocMark = ({children, value, nested}: MarkProps) => {
 	const Tag = tagName as React.ElementType
 	const style = tagStyles[tagName] || {}
 
-	return <Tag style={style}>{children || nested}</Tag>
+	return <Tag style={style}>{children}</Tag>
 }
 
 function TabbedHtmlView({value, onChange}: {value: string; onChange?: (v: string) => void}) {

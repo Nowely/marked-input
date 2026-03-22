@@ -2,21 +2,20 @@ import type {CoreOption, DataAttributes, OverlayTrigger} from '@markput/core'
 import type {Component, CSSProperties} from 'vue'
 
 export interface MarkProps {
-	slot?: Component
 	value?: string
 	meta?: string
-	nested?: string
 	children?: any
 }
 
 export interface OverlayProps {
-	slot?: Component
 	trigger?: string
 	data?: string[]
 }
 
 export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
+	Mark?: Component
 	mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
+	Overlay?: Component
 	overlay?: TOverlayProps
 }
 

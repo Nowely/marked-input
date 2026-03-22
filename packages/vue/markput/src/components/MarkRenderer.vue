@@ -18,7 +18,6 @@ const key = store.key
 const markPropsData: MarkProps = {
 	value: node.value,
 	meta: node.meta,
-	nested: node.nested?.content,
 }
 
 const resolved = computed(() => {
