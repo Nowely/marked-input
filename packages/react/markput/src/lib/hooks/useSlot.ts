@@ -1,6 +1,8 @@
 import {resolveOptionSlot, resolveSlot, resolveSlotProps} from '@markput/core'
+import type {Token} from '@markput/core'
 import type {ComponentType, ElementType} from 'react'
 
+import {Span} from '../../components/Span'
 import type {MarkProps, Option, OverlayProps} from '../../types'
 import {useStore} from '../providers/StoreContext'
 
@@ -54,6 +56,31 @@ export function useSlot(
 			`No ${type} component found. ` +
 				`Provide either option.${type === 'mark' ? 'Mark' : 'Overlay'}, global ${type === 'mark' ? 'Mark' : 'Overlay'}, or a defaultComponent.`
 		)
+	}
+
+	return [Component, props]
+}
+
+type TokenSlotReturn = readonly [ComponentType<any>, MarkProps]
+
+export function useTokenSlot(token: Token): TokenSlotReturn {
+	const store = useStore()
+	const options = store.state.options.use() as Option[] | undefined
+	const GlobalMark = store.state.Mark.use()
+	const GlobalSpan = store.state.Span.use()
+
+	if (token.type === 'text') {
+		const Component = (GlobalSpan ?? Span) as ComponentType<any>
+		return [Component, {value: token.content}]
+	}
+
+	const option = options?.[token.descriptor.index]
+	const baseProps: MarkProps = {value: token.value, meta: token.meta}
+	const props = resolveOptionSlot(option?.mark, baseProps)
+	const Component = (option?.Mark || GlobalMark) as ComponentType<any>
+
+	if (!Component) {
+		throw new Error('No mark component found. Provide either option.Mark or global Mark.')
 	}
 
 	return [Component, props]

@@ -14,9 +14,6 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	}
 
 	const token = tokenRef.value
-	if (token.type !== 'mark') {
-		throw new Error('useMark can only be used with mark tokens')
-	}
 
 	const elRef = ref<T | null>(null)
 	const refAccessor = {

@@ -33,6 +33,8 @@ import styles from '@markput/core/styles.module.css'
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	/** Ref to handler */
 	ref?: Ref<MarkputHandler>
+	/** Global component used for rendering text tokens (default: built-in Span) */
+	Span?: ComponentType<MarkProps>
 	/** Global component used for rendering markups (fallback for option.Mark) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.Overlay) */
@@ -87,6 +89,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		onChange,
 		readOnly = false,
 		drag = false,
+		Span,
 		Mark,
 		Overlay,
 		slots,
@@ -108,6 +111,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		drag,
 		options,
 		showOverlayOn,
+		Span,
 		Mark,
 		Overlay,
 		className,

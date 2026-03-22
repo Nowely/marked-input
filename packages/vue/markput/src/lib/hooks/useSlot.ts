@@ -1,6 +1,11 @@
 import {resolveOptionSlot, resolveSlot, resolveSlotProps} from '@markput/core'
+import type {Token} from '@markput/core'
+import {markRaw} from 'vue'
 import type {Component, Ref} from 'vue'
 
+import Span from '../../components/Span.vue'
+
+const SpanRaw = markRaw(Span)
 import type {MarkProps, Option, OverlayProps} from '../../types'
 import {useStore} from './useStore'
 
@@ -54,6 +59,31 @@ export function useSlot(
 			`No ${type} component found. ` +
 				`Provide either option.${type === 'mark' ? 'Mark' : 'Overlay'}, global ${type === 'mark' ? 'Mark' : 'Overlay'}, or a defaultComponent.`
 		)
+	}
+
+	return [Comp, props]
+}
+
+type TokenSlotReturn = readonly [Component, MarkProps]
+
+export function useTokenSlot(token: Token): TokenSlotReturn {
+	const store = useStore()
+	const optionsRef = store.state.options.use() as Ref<Option[] | undefined>
+	const GlobalMarkRef = store.state.Mark.use() as Ref<Component | undefined>
+	const GlobalSpanRef = store.state.Span.use() as Ref<Component | undefined>
+
+	if (token.type === 'text') {
+		const Comp = (GlobalSpanRef.value ?? SpanRaw) as Component
+		return [Comp, {value: token.content}]
+	}
+
+	const option = optionsRef.value?.[token.descriptor.index]
+	const baseProps: MarkProps = {value: token.value, meta: token.meta}
+	const props = resolveOptionSlot(option?.mark, baseProps)
+	const Comp = (option?.Mark || GlobalMarkRef.value) as Component
+
+	if (!Comp) {
+		throw new Error('No mark component found. Provide either option.Mark or global Mark.')
 	}
 
 	return [Comp, props]

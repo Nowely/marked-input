@@ -59,6 +59,7 @@ export interface MarkputState {
 	options: CoreOption[] | undefined
 	/** Events that trigger overlay display */
 	showOverlayOn: OverlayTrigger | undefined
+	Span: GenericComponent | undefined
 	Mark: GenericComponent | undefined
 	Overlay: GenericComponent | undefined
 	className: string | undefined

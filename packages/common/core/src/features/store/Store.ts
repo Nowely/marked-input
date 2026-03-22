@@ -71,6 +71,7 @@ export class Store {
 				readOnly: false,
 				options: undefined,
 				showOverlayOn: undefined,
+				Span: undefined,
 				Mark: undefined,
 				Overlay: undefined,
 				className: undefined,
