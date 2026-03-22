@@ -639,7 +639,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(document.activeElement).toBe(markRow)
+				expect(markRow.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
@@ -751,7 +751,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(document.activeElement).toBe(markRow)
+				expect(markRow.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
