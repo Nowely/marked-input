@@ -16,7 +16,9 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	const value = store.state.value.use()
 	const Mark = store.state.Mark.use()
 	const coreOptions = store.state.options.use()
-	const hasSlots = coreOptions?.some(opt => opt.mark != null && typeof opt.mark !== 'function')
+	const hasSlots = (coreOptions as Option[] | undefined)?.some(
+		opt => opt.mark != null && typeof opt.mark !== 'function'
+	)
 	const options = Mark || hasSlots ? coreOptions : undefined
 	const tokens = store.state.tokens.use()
 
