@@ -20,7 +20,6 @@ export function MarkRenderer() {
 	const markPropsData: MarkProps = {
 		value: node.value,
 		meta: node.meta,
-		nested: node.nested?.content,
 		children: node.children.length > 0 ? children : undefined,
 	}
 

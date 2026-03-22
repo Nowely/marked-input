@@ -33,12 +33,13 @@ export function useSlot(
 	const optionConfig = type === 'mark' ? option?.mark : option?.overlay
 	const props = resolveOptionSlot(optionConfig as any, baseProps ?? {})
 
-	const Comp = (props.slot || globalComponent || defaultComponent) as Component
+	const optionComponent = (type === 'mark' ? option?.Mark : option?.Overlay) as Component | undefined
+	const Comp = (optionComponent || globalComponent || defaultComponent) as Component
 
 	if (!Comp) {
 		throw new Error(
 			`No ${type} component found. ` +
-				`Provide either option.${type}.slot, global ${type === 'mark' ? 'Mark' : 'Overlay'}, or a defaultComponent.`
+				`Provide either option.${type === 'mark' ? 'Mark' : 'Overlay'}, global ${type === 'mark' ? 'Mark' : 'Overlay'}, or a defaultComponent.`
 		)
 	}
 

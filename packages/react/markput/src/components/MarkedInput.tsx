@@ -33,13 +33,13 @@ import styles from '@markput/core/styles.module.css'
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
 	/** Ref to handler */
 	ref?: Ref<MarkputHandler>
-	/** Global component used for rendering markups (fallback for option.mark.slot) */
+	/** Global component used for rendering markups (fallback for option.Mark) */
 	Mark?: ComponentType<TMarkProps>
-	/** Global component used for rendering overlays (fallback for option.overlay.slot) */
+	/** Global component used for rendering overlays (fallback for option.Overlay) */
 	Overlay?: ComponentType<TOverlayProps>
 	/**
 	 * Configuration options for markups and overlays.
-	 * Each option can specify its own slot component via mark.slot or overlay.slot.
+	 * Each option can specify its own component via option.Mark or option.Overlay.
 	 * Falls back to global Mark/Overlay components when not specified.
 	 */
 	options?: Option<TMarkProps, TOverlayProps>[]

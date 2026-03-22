@@ -132,9 +132,9 @@ export const MultipleLevels: Story = {
 const HtmlMarkup: Markup = '<__value__>__nested__</__value__>'
 
 const HtmlLikeMark = defineComponent({
-	props: {value: String, nested: String, children: {type: null}},
+	props: {value: String, children: {type: null}},
 	setup(props, {slots}) {
-		return () => h(props.value || 'span', {}, slots.default?.() ?? props.nested)
+		return () => h(props.value || 'span', {}, slots.default?.())
 	},
 })
 

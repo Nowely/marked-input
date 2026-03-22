@@ -23,7 +23,7 @@ const mdContainerStyle = {maxWidth: '700px', margin: '0 auto', paddingLeft: '52p
 const mdEditorStyle = {minHeight: '200px', padding: '12px', border: '1px solid #e0e0e0', borderRadius: '8px'}
 
 const MarkdownMark = defineComponent({
-	props: {value: String, meta: String, nested: String, style: {type: Object}},
+	props: {value: String, meta: String, style: {type: Object}},
 	setup(props, {slots}) {
 		return () =>
 			h(

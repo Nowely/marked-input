@@ -5,14 +5,10 @@ import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
  * Props passed to Mark components.
  */
 export interface MarkProps {
-	/** Custom component to render this mark */
-	slot?: ComponentType<MarkProps>
 	/** Main content value of the mark */
 	value?: string
 	/** Additional metadata for the mark */
 	meta?: string
-	/** Nested content as string (raw, unparsed) */
-	nested?: string
 	/** Rendered children content (ReactNode) for nested marks */
 	children?: ReactNode
 }
@@ -21,8 +17,6 @@ export interface MarkProps {
  * Props for Overlay components.
  */
 export interface OverlayProps {
-	/** Custom component to render this overlay */
-	slot?: ComponentType<OverlayProps>
 	/** Trigger character(s) that activate the overlay */
 	trigger?: string
 	/** Data array for suggestions/autocomplete */
@@ -46,11 +40,15 @@ export interface OverlayProps {
  * }
  */
 export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
+	/** Per-option component for rendering this mark */
+	Mark?: ComponentType<TMarkProps>
 	/**
 	 * Props for the mark component.
 	 * Can be a static object or a function that transforms MarkProps.
 	 */
 	mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
+	/** Per-option component for rendering this overlay */
+	Overlay?: ComponentType<TOverlayProps>
 	/**
 	 * Props for the overlay component.
 	 */
