@@ -26,6 +26,12 @@ function getBlocks(container: Element) {
 	return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
+/** Get all rows (both mark blocks and DraggableBlocks) as direct children of the markput container */
+function getAllRows(container: Element) {
+	const markputContainer = container.querySelector('[class*="Container"]') as HTMLElement
+	return Array.from(markputContainer.children) as HTMLElement[]
+}
+
 /** Read the raw value from the PlainValuePanel's data-value attribute */
 function getRawValue(container: Element) {
 	return container.querySelector<HTMLElement>('pre[data-value]')!.dataset.value!
@@ -83,7 +89,7 @@ describe('Feature: drag rows', () => {
 
 	it('should render 5 rows for MarkdownDrag', async () => {
 		const {container} = await render(<MarkdownDrag />)
-		expect(getGrips(container)).toHaveLength(5)
+		expect(getAllRows(container)).toHaveLength(5)
 	})
 
 	it('should render no grip buttons in read-only mode', async () => {
@@ -303,13 +309,13 @@ describe('Feature: drag rows', () => {
 
 		it('should create a new empty row after a mark row when pressing Enter', async () => {
 			const {container} = await render(<MarkdownDrag />)
-			const before = getBlocks(container).length
-			// block[0] is the h1 mark row
-			const markBlock = getBlocks(container)[0]
+			const before = getAllRows(container).length
+			// row[0] is the h1 mark row
+			const markBlock = getAllRows(container)[0]
 			markBlock.focus()
 			await userEvent.keyboard('{Enter}')
 
-			expect(getGrips(container)).toHaveLength(before + 1)
+			expect(getAllRows(container)).toHaveLength(before + 1)
 		})
 	})
 
@@ -617,23 +623,23 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('should NOT reduce row count when Backspace at start of text row after mark row', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const before = getBlocks(container).length
+				const before = getAllRows(container).length
 
-				// block[1] is the first text row following the h1 mark row
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				// First text row (getBlocks[0]) follows the h1 mark row
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(getBlocks(container)).toHaveLength(before)
+				expect(getAllRows(container)).toHaveLength(before)
 			})
 
 			it('should move focus to the mark row on Backspace at mark boundary', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const markBlock = getBlocks(container)[0]
+				const markRow = getAllRows(container)[0]
 
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(document.activeElement).toBe(markBlock)
+				expect(document.activeElement).toBe(markRow)
 			})
 		})
 	})
@@ -729,22 +735,23 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('should NOT reduce row count when Delete at start of text row after mark row', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const before = getBlocks(container).length
+				const before = getAllRows(container).length
 
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				// First text row (getBlocks[0]) follows the h1 mark row
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(getBlocks(container)).toHaveLength(before)
+				expect(getAllRows(container)).toHaveLength(before)
 			})
 
 			it('should move focus to mark row on Delete at mark boundary', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const markBlock = getBlocks(container)[0]
+				const markRow = getAllRows(container)[0]
 
-				await focusAtStart(getEditableInBlock(getBlocks(container)[1]))
+				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(document.activeElement).toBe(markBlock)
+				expect(document.activeElement).toBe(markRow)
 			})
 		})
 	})
@@ -781,10 +788,11 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('should append character after last mark when typing at end of mark row', async () => {
 			const {container} = await render(<MarkdownDrag />)
-			const blocks = getBlocks(container)
-			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
-			await focusAtEnd(blocks[0])
-			dispatchInsertText(blocks[0], '!')
+			const markRow = getAllRows(container)[0]
+			const editable = getEditableInBlock(markRow)
+			// row[0] is the h1 mark row: '# Welcome to Draggable Blocks\n\n'
+			await focusAtEnd(editable)
+			dispatchInsertText(editable, '!')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
@@ -793,14 +801,15 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('should insert character at correct position mid-text within a mark row', async () => {
 			const {container} = await render(<MarkdownDrag />)
-			const blocks = getBlocks(container)
-			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
+			const markRow = getAllRows(container)[0]
+			const editable = getEditableInBlock(markRow)
+			// row[0] is the h1 mark row: '# Welcome to Draggable Blocks\n\n'
 			// h1 renders nested children: 'Welcome to Draggable Blocks' (no '# ' prefix visible)
 			// focusAtStart → cursor before 'W' (raw pos 2, after '# ')
 			// ArrowRight x2 → before 'l' (raw pos 4)
-			await focusAtStart(blocks[0])
+			await focusAtStart(editable)
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}')
-			dispatchInsertText(blocks[0], 'X')
+			dispatchInsertText(editable, 'X')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
@@ -834,10 +843,11 @@ describe('Feature: drag row keyboard navigation', () => {
 
 		it('should update raw value when pasting text at end of a mark row', async () => {
 			const {container} = await render(<MarkdownDrag />)
-			const blocks = getBlocks(container)
-			// block[0] raw = '# Welcome to Draggable Blocks\n\n'
-			await focusAtEnd(blocks[0])
-			dispatchPaste(blocks[0], '!')
+			const markRow = getAllRows(container)[0]
+			const editable = getEditableInBlock(markRow)
+			// row[0] is the h1 mark row: '# Welcome to Draggable Blocks\n\n'
+			await focusAtEnd(editable)
+			dispatchPaste(editable, '!')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]

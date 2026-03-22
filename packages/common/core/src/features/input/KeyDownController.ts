@@ -691,11 +691,13 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
 	if (!sel) return
 
 	const blockChildren = Array.from(blockDiv.children)
+	// DraggableBlock wraps tokens in a div with a side panel as child[0].
+	// Mark blocks rendered without DraggableBlock have no side panel.
+	const hasSidePanel = blockDiv.hasAttribute('data-testid')
 
 	for (let i = 0; i < block.tokens.length; i++) {
 		const token = block.tokens[i]
-		// child[0] is the side panel; token[i] maps to child[i+1]
-		const domChild = blockChildren[i + 1] as HTMLElement | undefined
+		const domChild = blockChildren[i + (hasSidePanel ? 1 : 0)] as HTMLElement | undefined
 		if (!domChild) continue
 
 		// At a boundary between tokens, prefer the later (next) token so that
@@ -749,6 +751,16 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 		return block.endPos
 	}
 
+	// When the text node is a direct child of blockDiv (mark blocks without
+	// DraggableBlock wrapper), resolve position using the mark token directly.
+	if (node.nodeType === Node.TEXT_NODE && node.parentElement === blockDiv) {
+		const token = block.tokens[0]
+		if (token) {
+			return getDomRawPosInMark(node, offset, blockDiv, token as MarkToken)
+		}
+		return block.endPos
+	}
+
 	let child: Node | null = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
 	while (child && child.parentElement !== blockDiv) {
 		child = child.parentElement
@@ -758,8 +770,10 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	const childIndex = Array.from(blockDiv.children).indexOf(child as Element)
 	if (childIndex < 0) return block.endPos
 
-	// child[0] is the side panel div (drag handle); tokens start at child[1]
-	const tokenIndex = childIndex - 1
+	// DraggableBlock wraps tokens in a div with a side panel as child[0].
+	// Mark blocks rendered without DraggableBlock have no side panel.
+	const hasSidePanel = blockDiv.hasAttribute('data-testid')
+	const tokenIndex = childIndex - (hasSidePanel ? 1 : 0)
 	if (tokenIndex < 0) return block.startPos
 	if (tokenIndex >= block.tokens.length) return block.endPos
 
