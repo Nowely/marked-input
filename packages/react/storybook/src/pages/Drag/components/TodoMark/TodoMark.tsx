@@ -13,29 +13,29 @@ const useTodo = () => {
 		setIsDone(newDone)
 		mark.value = newDone ? 'x' : ' '
 	}
-	return {isDone, toggle, readOnly: mark.readOnly ?? false, childrenSource: mark.childrenSource}
+	return {isDone, toggle, readOnly: mark.readOnly ?? false, childrenRaw: mark.childrenRaw}
 }
 
 // ─── Mark components (one per option) ─────────────────────────────────────────
 
 export const TodoItemMark = () => {
-	const {isDone, toggle, readOnly, childrenSource} = useTodo()
+	const {isDone, toggle, readOnly, childrenRaw} = useTodo()
 
 	return (
 		<span className={`${styles.todo} ${isDone ? styles.done : ''}`.trim()}>
 			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
-			{childrenSource}
+			{childrenRaw}
 		</span>
 	)
 }
 
 export const TodoIndent1Mark = () => {
-	const {isDone, toggle, readOnly, childrenSource} = useTodo()
+	const {isDone, toggle, readOnly, childrenRaw} = useTodo()
 
 	return (
 		<span className={`${styles.todoIndent1} ${isDone ? styles.done : ''}`.trim()}>
 			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
-			{childrenSource}
+			{childrenRaw}
 		</span>
 	)
 }

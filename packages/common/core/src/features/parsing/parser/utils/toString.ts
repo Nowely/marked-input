@@ -31,7 +31,7 @@ export function toString(tokens: Token[]): string {
 		const children = hasChildren
 			? token.children.length > 0
 				? toString(token.children)
-				: token.childrenSource?.content
+				: token.childrenRaw?.content
 			: undefined
 
 		result += annotate(markup, {

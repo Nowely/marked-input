@@ -22,7 +22,7 @@ export interface MarkToken {
 	descriptor: MarkupDescriptor
 	value: string
 	meta?: string
-	childrenSource?: {
+	childrenRaw?: {
 		content: string
 		start: number
 		end: number

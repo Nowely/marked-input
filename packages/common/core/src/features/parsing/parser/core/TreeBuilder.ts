@@ -197,7 +197,7 @@ export class TreeBuilder {
 			value: valueContent,
 			meta,
 			position: {start: match.start, end: match.end},
-			childrenSource: this.createChildrenSourceInfo(match, childrenContent),
+			childrenRaw: this.createChildrenSourceInfo(match, childrenContent),
 		}
 	}
 
@@ -244,7 +244,7 @@ export class TreeBuilder {
 	/**
 	 * Creates children source info object if children content exists
 	 */
-	private createChildrenSourceInfo(match: Match, childrenContent: string | undefined): MarkToken['childrenSource'] {
+	private createChildrenSourceInfo(match: Match, childrenContent: string | undefined): MarkToken['childrenRaw'] {
 		if (!childrenContent || match.gaps.children === undefined) {
 			return undefined
 		}

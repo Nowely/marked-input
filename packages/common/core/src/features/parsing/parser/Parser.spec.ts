@@ -127,9 +127,9 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello @[world]]" [0-17] [value="hello @[world]", childrenSource="hello @[world]"]
+							 1: MARK "@[hello @[world]]" [0-17] [value="hello @[world]", childrenRaw="hello @[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "@[world]" [8-16] [value="world", childrenSource="world"]
+								1.1: MARK "@[world]" [8-16] [value="world", childrenRaw="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
@@ -143,11 +143,11 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="level1 @[level2 @[level3]]", childrenSource="level1 @[level2 @[level3]]"]
+							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="level1 @[level2 @[level3]]", childrenRaw="level1 @[level2 @[level3]]"]
 								1.0: TEXT "level1 " [2-9]
-								1.1: MARK "@[level2 @[level3]]" [9-28] [value="level2 @[level3]", childrenSource="level2 @[level3]"]
+								1.1: MARK "@[level2 @[level3]]" [9-28] [value="level2 @[level3]", childrenRaw="level2 @[level3]"]
 									1.1.0: TEXT "level2 " [11-18]
-									1.1.1: MARK "@[level3]" [18-27] [value="level3", childrenSource="level3"]
+									1.1.1: MARK "@[level3]" [18-27] [value="level3", childrenRaw="level3"]
 									1.1.2: TEXT "" [27-27]
 								1.2: TEXT "" [28-28]
 							 2: TEXT "" [29-29]"
@@ -161,9 +161,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]]" [0-17] [value="hello #[world]", childrenSource="hello #[world]"]
+							 1: MARK "@[hello #[world]]" [0-17] [value="hello #[world]", childrenRaw="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [value="world", childrenSource="world"]
+								1.1: MARK "#[world]" [8-16] [value="world", childrenRaw="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
 						`)
@@ -176,9 +176,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]](value)" [0-24] [value="hello #[world]", meta="value", childrenSource="hello #[world]"]
+							 1: MARK "@[hello #[world]](value)" [0-24] [value="hello #[world]", meta="value", childrenRaw="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [value="world", childrenSource="world"]
+								1.1: MARK "#[world]" [8-16] [value="world", childrenRaw="world"]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [24-24]"
 						`)
@@ -191,9 +191,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[user](Hello #[world])" [0-23] [value="user", childrenSource="Hello #[world]"]
+							 1: MARK "@[user](Hello #[world])" [0-23] [value="user", childrenRaw="Hello #[world]"]
 								1.0: TEXT "Hello " [8-14]
-								1.1: MARK "#[world]" [14-22] [value="world", childrenSource="world"]
+								1.1: MARK "#[world]" [14-22] [value="world", childrenRaw="world"]
 								1.2: TEXT "" [22-22]
 							 2: TEXT "" [23-23]"
 						`)
@@ -206,11 +206,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [value="user", childrenSource="Text with #[tag] and **bold**"]
+							 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [value="user", childrenRaw="Text with #[tag] and **bold**"]
 								1.0: TEXT "Text with " [8-18]
-								1.1: MARK "#[tag]" [18-24] [value="tag", childrenSource="tag"]
+								1.1: MARK "#[tag]" [18-24] [value="tag", childrenRaw="tag"]
 								1.2: TEXT " and " [24-29]
-								1.3: MARK "**bold**" [29-37] [value="bold", childrenSource="bold"]
+								1.3: MARK "**bold**" [29-37] [value="bold", childrenRaw="bold"]
 								1.4: TEXT "" [37-37]
 							 2: TEXT "" [38-38]"
 						`)
@@ -236,9 +236,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class>Content with **bold**</div>" [0-38] [value="div", meta="class", childrenSource="Content with **bold**"]
+							 1: MARK "<div class>Content with **bold**</div>" [0-38] [value="div", meta="class", childrenRaw="Content with **bold**"]
 								1.0: TEXT "Content with " [11-24]
-								1.1: MARK "**bold**" [24-32] [value="bold", childrenSource="bold"]
+								1.1: MARK "**bold**" [24-32] [value="bold", childrenRaw="bold"]
 								1.2: TEXT "" [32-32]
 							 2: TEXT "" [38-38]"
 						`)
@@ -256,9 +256,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", childrenSource="Content with **bold** </span>"]
+							 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", childrenRaw="Content with **bold** </span>"]
 								1.0: TEXT "Content with " [11-24]
-								1.1: MARK "**bold**" [24-32] [value="bold", childrenSource="bold"]
+								1.1: MARK "**bold**" [24-32] [value="bold", childrenRaw="bold"]
 								1.2: TEXT " </span>" [32-40]
 							 2: TEXT "" [46-46]"
 						`)
@@ -271,9 +271,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", childrenSource="Text #[tag]"]
+							 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", childrenRaw="Text #[tag]"]
 								1.0: TEXT "Text " [7-12]
-								1.1: MARK "#[tag]" [12-18] [value="tag", childrenSource="tag"]
+								1.1: MARK "#[tag]" [12-18] [value="tag", childrenRaw="tag"]
 								1.2: TEXT "" [18-18]
 							 2: TEXT "" [25-25]"
 						`)
@@ -294,9 +294,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class><p>Text</p></div>" [0-28] [value="div", meta="class", childrenSource="<p>Text</p>"]
+							 1: MARK "<div class><p>Text</p></div>" [0-28] [value="div", meta="class", childrenRaw="<p>Text</p>"]
 								1.0: TEXT "" [11-11]
-								1.1: MARK "<p>Text</p>" [11-22] [value="p", childrenSource="Text"]
+								1.1: MARK "<p>Text</p>" [11-22] [value="p", childrenRaw="Text"]
 								1.2: TEXT "" [22-22]
 							 2: TEXT "" [28-28]"
 						`)
@@ -317,11 +317,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", childrenSource="<p>Text **bold**</p>"]
+							 1: MARK "<div class><p>Text **bold**</p></div>" [0-37] [value="div", meta="class", childrenRaw="<p>Text **bold**</p>"]
 								1.0: TEXT "" [11-11]
-								1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", childrenSource="Text **bold**"]
+								1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", childrenRaw="Text **bold**"]
 									1.1.0: TEXT "Text " [14-19]
-									1.1.1: MARK "**bold**" [19-27] [value="bold", childrenSource="bold"]
+									1.1.1: MARK "**bold**" [19-27] [value="bold", childrenRaw="bold"]
 									1.1.2: TEXT "" [27-27]
 								1.2: TEXT "" [31-31]
 							 2: TEXT "" [37-37]"
@@ -345,9 +345,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<div class><p>Text <span/>bold</p></div>" [0-40] [value="div", meta="class", childrenSource="<p>Text <span/>bold</p>"]
+							 1: MARK "<div class><p>Text <span/>bold</p></div>" [0-40] [value="div", meta="class", childrenRaw="<p>Text <span/>bold</p>"]
 								1.0: TEXT "" [11-11]
-								1.1: MARK "<p>Text <span/>bold</p>" [11-34] [value="p", childrenSource="Text <span/>bold"]
+								1.1: MARK "<p>Text <span/>bold</p>" [11-34] [value="p", childrenRaw="Text <span/>bold"]
 								1.2: TEXT "" [34-34]
 							 2: TEXT "" [40-40]"
 						`)
@@ -397,7 +397,7 @@ describe('ParserV2', () => {
 						// Should have only one mark, with #[world] as plain text in value
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello](#[world])" [0-18] [value="hello", meta="#[world]", childrenSource="hello"]
+							 1: MARK "@[hello](#[world])" [0-18] [value="hello", meta="#[world]", childrenRaw="hello"]
 							 2: TEXT "" [18-18]"
 						`)
 
@@ -428,9 +428,9 @@ describe('ParserV2', () => {
 						// Second case: nesting in __children__
 						expect(tokensToDebugTree(result2)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "#[**bold**]" [0-11] [value="**bold**", childrenSource="**bold**"]
+							 1: MARK "#[**bold**]" [0-11] [value="**bold**", childrenRaw="**bold**"]
 								1.0: TEXT "" [2-2]
-								1.1: MARK "**bold**" [2-10] [value="bold", childrenSource="bold"]
+								1.1: MARK "**bold**" [2-10] [value="bold", childrenRaw="bold"]
 								1.2: TEXT "" [10-10]
 							 2: TEXT "" [11-11]"
 						`)
@@ -612,9 +612,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="Text with **bold**", meta="note", childrenSource="Text with **bold**"]
+						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="Text with **bold**", meta="note", childrenRaw="Text with **bold**"]
 							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "**bold**" [18-26] [value="bold", childrenSource="bold"]
+							1.1: MARK "**bold**" [18-26] [value="bold", childrenRaw="bold"]
 							1.2: TEXT "" [26-26]
 						 2: TEXT "" [27-27]"
 					`)
@@ -631,9 +631,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "[name](url)(Content **bold**)" [0-29] [value="name", meta="url", childrenSource="Content **bold**"]
+						 1: MARK "[name](url)(Content **bold**)" [0-29] [value="name", meta="url", childrenRaw="Content **bold**"]
 							1.0: TEXT "Content " [12-20]
-							1.1: MARK "**bold**" [20-28] [value="bold", childrenSource="bold"]
+							1.1: MARK "**bold**" [20-28] [value="bold", childrenRaw="bold"]
 							1.2: TEXT "" [28-28]
 						 2: TEXT "" [29-29]"
 					`)
@@ -874,9 +874,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="Bold <i>italic</i> text", childrenSource="Bold <i>italic</i> text"]
+							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="Bold <i>italic</i> text", childrenRaw="Bold <i>italic</i> text"]
 								1.0: TEXT "Bold " [3-8]
-								1.1: MARK "<i>italic</i>" [8-21] [value="italic", childrenSource="italic"]
+								1.1: MARK "<i>italic</i>" [8-21] [value="italic", childrenRaw="italic"]
 								1.2: TEXT " text" [21-26]
 							 2: TEXT "" [30-30]"
 						`)
@@ -1002,55 +1002,55 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="Welcome to **Marked Input**", childrenSource="Welcome to **Marked Input**"]
+							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="Welcome to **Marked Input**", childrenRaw="Welcome to **Marked Input**"]
 								1.0: TEXT "Welcome to " [2-13]
-								1.1: MARK "**Marked Input**" [13-29] [value="Marked Input", childrenSource="Marked Input"]
+								1.1: MARK "**Marked Input**" [13-29] [value="Marked Input", childrenRaw="Marked Input"]
 								1.2: TEXT "" [29-29]
 							 2: TEXT "↲This is a " [30-41]
-							 3: MARK "*powerful*" [41-51] [value="powerful", childrenSource="powerful"]
+							 3: MARK "*powerful*" [41-51] [value="powerful", childrenRaw="powerful"]
 							 4: TEXT " library for parsing " [51-72]
-							 5: MARK "**rich text**" [72-85] [value="rich text", childrenSource="rich text"]
+							 5: MARK "**rich text**" [72-85] [value="rich text", childrenRaw="rich text"]
 							 6: TEXT " with " [85-91]
-							 7: MARK "*markdown*" [91-101] [value="markdown", childrenSource="markdown"]
+							 7: MARK "*markdown*" [91-101] [value="markdown", childrenRaw="markdown"]
 							 8: TEXT " formatting.↲You can use " [101-126]
 							 9: MARK "\`inline code\`" [126-139] [value="inline code"]
 							 10: TEXT " snippets like " [139-154]
 							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [value="const parser = new ParserV2()"]
 							 12: TEXT " in your text.↲↲" [185-201]
-							 13: MARK "## Features↲" [201-213] [value="Features", childrenSource="Features"]
+							 13: MARK "## Features↲" [201-213] [value="Features", childrenRaw="Features"]
 							 14: TEXT "↲" [213-214]
-							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="**Bold text** with **strong emphasis**", childrenSource="**Bold text** with **strong emphasis**"]
+							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="**Bold text** with **strong emphasis**", childrenRaw="**Bold text** with **strong emphasis**"]
 								15.0: TEXT "" [216-216]
-								15.1: MARK "**Bold text**" [216-229] [value="Bold text", childrenSource="Bold text"]
+								15.1: MARK "**Bold text**" [216-229] [value="Bold text", childrenRaw="Bold text"]
 								15.2: TEXT " with " [229-235]
-								15.3: MARK "**strong emphasis**" [235-254] [value="strong emphasis", childrenSource="strong emphasis"]
+								15.3: MARK "**strong emphasis**" [235-254] [value="strong emphasis", childrenRaw="strong emphasis"]
 								15.4: TEXT "" [254-254]
 							 16: TEXT "" [255-255]
-							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="*Italic text* and *emphasis* support", childrenSource="*Italic text* and *emphasis* support"]
+							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="*Italic text* and *emphasis* support", childrenRaw="*Italic text* and *emphasis* support"]
 								17.0: TEXT "" [257-257]
-								17.1: MARK "*Italic text*" [257-270] [value="Italic text", childrenSource="Italic text"]
+								17.1: MARK "*Italic text*" [257-270] [value="Italic text", childrenRaw="Italic text"]
 								17.2: TEXT " and " [270-275]
-								17.3: MARK "*emphasis*" [275-285] [value="emphasis", childrenSource="emphasis"]
+								17.3: MARK "*emphasis*" [275-285] [value="emphasis", childrenRaw="emphasis"]
 								17.4: TEXT " support" [285-293]
 							 18: TEXT "" [294-294]
-							 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="\`Code snippets\` and \`code blocks\`", childrenSource="\`Code snippets\` and \`code blocks\`"]
+							 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="\`Code snippets\` and \`code blocks\`", childrenRaw="\`Code snippets\` and \`code blocks\`"]
 								19.0: TEXT "" [296-296]
 								19.1: MARK "\`Code snippets\`" [296-311] [value="Code snippets"]
 								19.2: TEXT " and " [311-316]
 								19.3: MARK "\`code blocks\`" [316-329] [value="code blocks"]
 								19.4: TEXT "" [329-329]
 							 20: TEXT "" [330-330]
-							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="~~Strikethrough~~ for deleted content", childrenSource="~~Strikethrough~~ for deleted content"]
+							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="~~Strikethrough~~ for deleted content", childrenRaw="~~Strikethrough~~ for deleted content"]
 								21.0: TEXT "" [332-332]
 								21.1: MARK "~~Strikethrough~~" [332-349] [value="Strikethrough"]
 								21.2: TEXT " for deleted content" [349-369]
 							 22: TEXT "" [370-370]
-							 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="Links like [GitHub](https://github.com)", childrenSource="Links like [GitHub](https://github.com)"]
+							 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="Links like [GitHub](https://github.com)", childrenRaw="Links like [GitHub](https://github.com)"]
 								23.0: TEXT "Links like " [372-383]
 								23.1: MARK "[GitHub](https://github.com)" [383-411] [value="GitHub", meta="https://github.com"]
 								23.2: TEXT "" [411-411]
 							 24: TEXT "↲" [412-413]
-							 25: MARK "## Example↲" [413-424] [value="Example", childrenSource="Example"]
+							 25: MARK "## Example↲" [413-424] [value="Example", childrenRaw="Example"]
 							 26: TEXT "↲Here's how to use it:↲↲" [424-448]
 							 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲\`\`\`" [448-575] [value="javascript", meta="const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲"]
 							 28: TEXT "↲↲Visit our " [575-587]
@@ -1120,11 +1120,11 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="**Bold text** with **strong emphasis**", childrenSource="**Bold text** with **strong emphasis**"]
+							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="**Bold text** with **strong emphasis**", childrenRaw="**Bold text** with **strong emphasis**"]
 								1.0: TEXT "" [2-2]
-								1.1: MARK "**Bold text**" [2-15] [value="Bold text", childrenSource="Bold text"]
+								1.1: MARK "**Bold text**" [2-15] [value="Bold text", childrenRaw="Bold text"]
 								1.2: TEXT " with " [15-21]
-								1.3: MARK "**strong emphasis**" [21-40] [value="strong emphasis", childrenSource="strong emphasis"]
+								1.3: MARK "**strong emphasis**" [21-40] [value="strong emphasis", childrenRaw="strong emphasis"]
 								1.4: TEXT "" [40-40]
 							 2: TEXT "" [41-41]"
 						`)
@@ -1386,8 +1386,8 @@ function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
 				infoParts.push(`meta="${escapeString(token.meta)}"`)
 			}
 
-			if (token.childrenSource) {
-				infoParts.push(`childrenSource="${escapeString(token.childrenSource.content)}"`)
+			if (token.childrenRaw) {
+				infoParts.push(`childrenRaw="${escapeString(token.childrenRaw.content)}"`)
 			}
 
 			const labelValueInfo = `[${infoParts.join(', ')}]`

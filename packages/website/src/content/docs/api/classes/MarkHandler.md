@@ -44,12 +44,12 @@ Defined in: [common/core/src/features/mark/MarkHandler.ts:15](https://github.com
 
 ## Accessors
 
-### childrenSource
+### childrenRaw
 
 #### Get Signature
 
 ```ts
-get childrenSource(): string | undefined;
+get childrenRaw(): string | undefined;
 ```
 
 Defined in: [common/core/src/features/mark/MarkHandler.ts:56](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/mark/MarkHandler.ts#L56)

@@ -23,6 +23,6 @@ export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?:
 			segmentGlobalIndices: [],
 		},
 		children: [],
-		childrenSource: undefined,
+		childrenRaw: undefined,
 	}
 }

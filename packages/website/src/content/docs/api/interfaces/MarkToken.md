@@ -19,10 +19,10 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:30](https://github
 
 ***
 
-### childrenSource?
+### childrenRaw?
 
 ```ts
-optional childrenSource: object;
+optional childrenRaw: object;
 ```
 
 Defined in: [common/core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L25)

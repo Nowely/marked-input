@@ -627,8 +627,8 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 
 	if (!markToken.children || markToken.children.length === 0) {
 		// Simple mark: renders nested content as a single text node.
-		const nestedStart = markToken.childrenSource?.start ?? markToken.position.start
-		const nestedEnd = markToken.childrenSource?.end ?? markToken.position.end
+		const nestedStart = markToken.childrenRaw?.start ?? markToken.position.start
+		const nestedEnd = markToken.childrenRaw?.end ?? markToken.position.end
 		const offsetInNested = Math.max(0, Math.min(rawAbsolutePos - nestedStart, nestedEnd - nestedStart))
 		const walker = document.createTreeWalker(markElement, 4 /* SHOW_TEXT */)
 		const textNode = walker.nextNode() as Text | null
@@ -807,18 +807,18 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
 	if (!markToken.children || markToken.children.length === 0) {
 		if (offset === 0) return markToken.position.start
-		const nestedLen = markToken.childrenSource?.content.length ?? markToken.value.length
+		const nestedLen = markToken.childrenRaw?.content.length ?? markToken.value.length
 		if (nestedLen > 0 && offset >= nestedLen) {
 			// When the mark's raw content ends with a block separator, the cursor
 			// at the visual end should map to nested.end (before the separator),
 			// not position.end (after it). Otherwise use position.end to place
 			// the cursor after the closing delimiter (e.g. ** in bold).
-			if (markToken.content.endsWith('\n\n') && markToken.childrenSource) {
-				return markToken.childrenSource.end
+			if (markToken.content.endsWith('\n\n') && markToken.childrenRaw) {
+				return markToken.childrenRaw.end
 			}
 			return markToken.position.end
 		}
-		return (markToken.childrenSource?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
+		return (markToken.childrenRaw?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
 	}
 
 	// Walk child nodes of markElement and match to token children.
@@ -842,5 +842,5 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 	}
 
 	// Fallback: cursor at or beyond end of nested content
-	return markToken.childrenSource?.end ?? markToken.position.end
+	return markToken.childrenRaw?.end ?? markToken.position.end
 }
