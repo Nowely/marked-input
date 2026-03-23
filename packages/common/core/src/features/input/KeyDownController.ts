@@ -607,6 +607,14 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	}
 }
 
+/** A text-token span has no attributes, or only the contenteditable attribute. */
+function isTextTokenSpan(el: HTMLElement): boolean {
+	return (
+		el.tagName === 'SPAN' &&
+		(el.attributes.length === 0 || (el.attributes.length === 1 && el.hasAttribute('contenteditable')))
+	)
+}
+
 /**
  * Recursively sets the caret inside a mark token's rendered DOM element.
  *
@@ -633,6 +641,8 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 		const tokenChild = markToken.children[tokenIdx]
 
 		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
+			if (!isTextTokenSpan(childNode as HTMLElement)) continue
 			// Text token rendered as <span> element — place caret inside its text node.
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
 				const textNode = childNode.firstChild as Text | null
@@ -791,6 +801,14 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	// DraggableBlock wraps tokens in a div with a side panel as child[0].
 	// Mark blocks rendered without DraggableBlock have no side panel.
 	const hasSidePanel = blockDiv.hasAttribute('data-testid')
+
+	// When blockDiv IS the mark element (no DragMark wrapper, single mark token),
+	// delegate to getDomRawPosInMark. The mark component may render non-token
+	// children (e.g. checkboxes) that break token-index arithmetic.
+	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
+		return getDomRawPosInMark(node, offset, blockDiv, block.tokens[0] as MarkToken)
+	}
+
 	const tokenIndex = childIndex - (hasSidePanel ? 1 : 0)
 	if (tokenIndex < 0) return block.startPos
 	if (tokenIndex >= block.tokens.length) return block.endPos
@@ -839,6 +857,8 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 		const tokenChild = markToken.children[tokenIdx]
 
 		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
+			if (!isTextTokenSpan(childNode as HTMLElement)) continue
 			if (node === childNode) {
 				// Element-level offset: 0 = before children, >= childNodes.length = after all children
 				const charOffset = offset === 0 ? 0 : tokenChild.content.length
