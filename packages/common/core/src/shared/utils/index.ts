@@ -1,4 +1,5 @@
 export {shallow} from './shallow'
+export {getDirectChildIndex} from './getDirectChildIndex'
 export {convertDataAttrs} from './dataAttributes'
 export {cx} from './cx'
 export {merge} from './merge'

@@ -21,6 +21,12 @@ export class DragController {
 		if (value == null || !this.store.state.onChange.get()) return
 		const blocks = splitTokensIntoDragRows(this.store.state.tokens.get())
 		this.store.applyValue(addDragRow(value, blocks, afterIndex))
+		queueMicrotask(() => {
+			const container = this.store.refs.container
+			if (!container) return
+			const target = container.children[afterIndex + 1] as HTMLElement | undefined
+			target?.focus()
+		})
 	}
 
 	delete(index: number) {

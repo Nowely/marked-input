@@ -8,6 +8,10 @@ export interface Block {
 	endPos: number
 }
 
+export const EMPTY_BLOCK: Block = {id: 'block-empty', tokens: [], startPos: 0, endPos: 0}
+
+export const isMarkBlock = (block: Block): boolean => block.tokens.length === 1 && block.tokens[0].type === 'mark'
+
 export interface TextPart {
 	content: string
 	position: {start: number; end: number}

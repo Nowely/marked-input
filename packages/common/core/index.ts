@@ -7,6 +7,7 @@ export {
 	resolveOptionSlot,
 	resolveSlot,
 	resolveSlotProps,
+	getDirectChildIndex,
 	type SlotName,
 } from './src/shared/utils'
 export {
@@ -95,6 +96,8 @@ export {
 	mergeDragRows,
 	getMergeDragRowJoinPos,
 	BLOCK_SEPARATOR,
+	EMPTY_BLOCK,
+	isMarkBlock,
 	getAlwaysShowHandleDrag,
 	type Block,
 	type TextPart,
