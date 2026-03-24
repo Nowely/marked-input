@@ -43,7 +43,7 @@ export interface MarkdownRule {
 export const MARKDOWN_RULES: MarkdownRule[] = [
     {
         id: 'bold',
-        markup: '**__children__**',
+        markup: '**__slot__**',
         component: BoldMark,
         icon: 'B',
         label: 'Bold',
@@ -52,7 +52,7 @@ export const MARKDOWN_RULES: MarkdownRule[] = [
     },
     {
         id: 'italic',
-        markup: '*__children__*',
+        markup: '*__slot__*',
         component: ItalicMark,
         icon: 'I',
         label: 'Italic',

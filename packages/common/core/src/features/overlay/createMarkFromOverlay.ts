@@ -18,11 +18,11 @@ export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?:
 			index: 0,
 			segments: [],
 			gapTypes: [],
-			hasChildren: false,
+			hasSlot: false,
 			hasTwoValues: false,
 			segmentGlobalIndices: [],
 		},
 		children: [],
-		childrenRaw: undefined,
+		slot: undefined,
 	}
 }

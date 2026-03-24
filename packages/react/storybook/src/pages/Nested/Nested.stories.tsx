@@ -29,8 +29,8 @@ type Story = StoryObj<typeof meta>
 // Example 1: Simple Nesting (Markdown-style)
 // ============================================================================
 
-const BoldMarkup: Markup = '**__children__**'
-const ItalicMarkup: Markup = '*__children__*'
+const BoldMarkup: Markup = '**__slot__**'
+const ItalicMarkup: Markup = '*__slot__*'
 
 interface SimpleMarkProps extends MarkProps {
 	style?: CSSProperties
@@ -67,9 +67,9 @@ export const SimpleNesting: StoryObj<MarkedInputProps<SimpleMarkProps>> = {
 // Example 2: Multiple Nesting Levels
 // ============================================================================
 
-const TagMarkup: Markup = '#[__children__]'
-const MentionMarkup: Markup = '@[__children__]'
-const CodeMarkup: Markup = '`__children__`'
+const TagMarkup: Markup = '#[__slot__]'
+const MentionMarkup: Markup = '@[__slot__]'
+const CodeMarkup: Markup = '`__slot__`'
 
 interface MultiLevelMarkProps extends MarkProps {
 	style?: CSSProperties
@@ -134,7 +134,7 @@ export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
 // Example 3: HTML-like Tags
 // ============================================================================
 
-const HtmlMarkup: Markup = '<__value__>__children__</__value__>'
+const HtmlMarkup: Markup = '<__value__>__slot__</__value__>'
 
 const HtmlLikeMark = ({children, value}: MarkProps) => {
 	const Tag = value! as React.ElementType
@@ -191,7 +191,7 @@ export const InteractiveNested: StoryObj<MarkedInputProps<MarkProps>> = {
 	args: {
 		Mark: InteractiveMark,
 		value: '@[Click me @[or me @[or even me]]]',
-		options: [{markup: '@[__children__]'}],
+		options: [{markup: '@[__slot__]'}],
 	},
 }
 

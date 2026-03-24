@@ -36,8 +36,8 @@ describe('Utility: denote', () => {
 	})
 
 	it('should handle nested annotations recursively', () => {
-		const markup1: Markup = '@[__children__]'
-		const markup2: Markup = '#[__children__]'
+		const markup1: Markup = '@[__slot__]'
+		const markup2: Markup = '#[__slot__]'
 		const annotatedText = '@[Hello #[world]]'
 		const result = denote(annotatedText, mark => mark.value, [markup1, markup2])
 		expect(result).toBe('Hello world')

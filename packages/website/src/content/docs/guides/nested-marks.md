@@ -1,6 +1,6 @@
 ---
 title: 🚧 Nested Marks
-description: Nested marks tutorial - hierarchical text structures, __children__ placeholder, markdown formatting, HTML-like tags in Markput
+description: Nested marks tutorial - hierarchical text structures, __slot__ placeholder, markdown formatting, HTML-like tags in Markput
 keywords: [nested marks, hierarchical structures, token tree, children, markdown, HTML-like tags, nesting]
 ---
 
@@ -18,17 +18,17 @@ value: '@[Hello *world*]'
 // Result: One mark with value = "Hello *world*" (literal asterisks)
 ```
 
-**Nested marks** (`__children__`): Content can contain other marks.
+**Nested marks** (`__slot__`): Content can contain other marks.
 
 ```tsx
-markup: '*__children__*'
+markup: '*__slot__*'
 value: '*Hello **world***'
 // Result: Italic mark containing "Hello " + bold mark "world"
 ```
 
 ### Key Differences
 
-| Feature          | `__value__`          | `__children__`                           |
+| Feature          | `__value__`          | `__slot__`                           |
 | ---------------- | -------------------- | -------------------------------------- |
 | **Content Type** | Plain text           | Supports child marks                   |
 | **Parsing**      | No recursive parsing | Recursive parsing                      |
@@ -37,11 +37,11 @@ value: '*Hello **world***'
 
 ## Enabling Nested Marks
 
-Use the `__children__` placeholder instead of `__value__`:
+Use the `__slot__` placeholder instead of `__value__`:
 
 ```tsx
 // ✅ Supports nesting
-const NestedMarkup = '**__children__**'
+const NestedMarkup = '**__slot__**'
 
 // ❌ Does not support nesting
 const FlatMarkup = '**__value__**'
@@ -69,7 +69,7 @@ function MarkdownEditor() {
             Mark={FormatMark}
             options={[
                 {
-                    markup: '**__children__**',
+                    markup: '**__slot__**',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -78,7 +78,7 @@ function MarkdownEditor() {
                     },
                 },
                 {
-                    markup: '*__children__*',
+                    markup: '*__slot__*',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -94,7 +94,7 @@ function MarkdownEditor() {
 
 ## Props for Nested Marks
 
-When using `__children__`, your Mark component receives:
+When using `__slot__`, your Mark component receives:
 
 ```tsx
 interface MarkProps {
@@ -144,7 +144,7 @@ function SimpleNested() {
             Mark={SimpleMark}
             options={[
                 {
-                    markup: '**__children__**',
+                    markup: '**__slot__**',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -153,7 +153,7 @@ function SimpleNested() {
                     },
                 },
                 {
-                    markup: '*__children__*',
+                    markup: '*__slot__*',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -181,7 +181,7 @@ function SimpleNested() {
 ParserV2 supports **two values patterns** where opening and closing tags must match:
 
 ```tsx
-markup: '<__value__>__children__</__value__>'
+markup: '<__value__>__slot__</__value__>'
 ```
 
 **How it works:**
@@ -212,7 +212,7 @@ function HtmlEditor() {
             value={value}
             onChange={setValue}
             Mark={HtmlLikeMark}
-            options={[{markup: '<__value__>__children__</__value__>'}]}
+            options={[{markup: '<__value__>__slot__</__value__>'}]}
         />
     )
 }
@@ -234,15 +234,15 @@ function HtmlEditor() {
 
 ```tsx
 // BBCode-style
-markup: '[__value__]__children__[/__value__]'
+markup: '[__value__]__slot__[/__value__]'
 // Matches: [b]text[/b], [i]text[/i]
 
 // Template tags
-markup: '{{__value__}}__children__{{/__value__}}'
+markup: '{{__value__}}__slot__{{/__value__}}'
 // Matches: {{section}}content{{/section}}
 
 // Custom brackets
-markup: '<<__value__>>__children__<</value__>>'
+markup: '<<__value__>>__slot__<</value__>>'
 // Matches: <<tag>>content<</tag>>
 ```
 
@@ -276,7 +276,7 @@ function MultiLevelEditor() {
             Mark={({children}) => <span>{children}</span>}
             options={[
                 {
-                    markup: '**__children__**',
+                    markup: '**__slot__**',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -285,7 +285,7 @@ function MultiLevelEditor() {
                     },
                 },
                 {
-                    markup: '*__children__*',
+                    markup: '*__slot__*',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -294,7 +294,7 @@ function MultiLevelEditor() {
                     },
                 },
                 {
-                    markup: '~~__children__~~',
+                    markup: '~~__slot__~~',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -303,7 +303,7 @@ function MultiLevelEditor() {
                     },
                 },
                 {
-                    markup: '!!__children__!!',
+                    markup: '!!__slot__!!',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -370,10 +370,10 @@ function CollapsibleMark({children}) {
 
 ## Mixed Nesting and Metadata
 
-Combine `__children__` with `__meta__`:
+Combine `__slot__` with `__meta__`:
 
 ```tsx
-markup: '@[__children__](__meta__)'
+markup: '@[__slot__](__meta__)'
 ```
 
 **Example: Colored nested text**
@@ -394,9 +394,9 @@ function ColoredMark({children, meta}) {
     value="@[Red text with **bold**](red) and @[Blue](blue)"
     Mark={ColoredMark}
     options={[
-        {markup: '@[__children__](__meta__)'},
+        {markup: '@[__slot__](__meta__)'},
         {
-            markup: '**__children__**',
+            markup: '**__slot__**',
             slotProps: {
                 mark: ({children}) => ({
                     children,
@@ -430,7 +430,7 @@ function MarkdownEditor() {
             Mark={MarkdownMark}
             options={[
                 {
-                    markup: '**__children__**',
+                    markup: '**__slot__**',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -439,7 +439,7 @@ function MarkdownEditor() {
                     },
                 },
                 {
-                    markup: '*__children__*',
+                    markup: '*__slot__*',
                     slotProps: {
                         mark: ({children}) => ({
                             children,
@@ -481,7 +481,7 @@ function HtmlEditor() {
             value={value}
             onChange={setValue}
             Mark={HtmlTagMark}
-            options={[{markup: '<__value__>__children__</__value__>'}]}
+            options={[{markup: '<__value__>__slot__</__value__>'}]}
         />
     )
 }
@@ -510,7 +510,7 @@ function BBCodeEditor() {
             value={value}
             onChange={setValue}
             Mark={BBCodeMark}
-            options={[{markup: '[__value__]__children__[/__value__]'}]}
+            options={[{markup: '[__value__]__slot__[/__value__]'}]}
         />
     )
 }
@@ -549,7 +549,7 @@ maxDepth: 5
 
 ```tsx
 // If you don't need nesting, use __value__
-markup: '@[__value__]' // Faster than __children__
+markup: '@[__value__]' // Faster than __slot__
 ```
 
 ### Parsing Performance
@@ -598,13 +598,13 @@ function Bad({children}) {
     return <span>{children.toUpperCase()}</span> // Error!
 }
 
-// Don't use value with __children__
+// Don't use value with __slot__
 function Bad({value}) {
     return <span>{value}</span> // value is undefined!
 }
 
 // Don't create infinite loops
-markup: '**__children__**'
+markup: '**__slot__**'
 value: '**text **nested****' // Can cause issues
 ```
 
@@ -643,7 +643,7 @@ function HtmlMark({value, children}: HtmlMarkProps) {
 
 **Key Takeaways:**
 
-- Use `__children__` placeholder for hierarchical structures
+- Use `__slot__` placeholder for hierarchical structures
 - Render `children` prop in your Mark component
 - Two values pattern (`<__value__>...</__value__>`) for matching tags
 - Access nesting info with `useMark()` hook

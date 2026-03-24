@@ -835,18 +835,18 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
 	if (!markToken.children || markToken.children.length === 0) {
 		if (offset === 0) return markToken.position.start
-		const nestedLen = markToken.childrenRaw?.content.length ?? markToken.value.length
+		const nestedLen = markToken.slot?.content.length ?? markToken.value.length
 		if (nestedLen > 0 && offset >= nestedLen) {
 			// When the mark's raw content ends with a block separator, the cursor
 			// at the visual end should map to nested.end (before the separator),
 			// not position.end (after it). Otherwise use position.end to place
 			// the cursor after the closing delimiter (e.g. ** in bold).
-			if (markToken.content.endsWith('\n\n') && markToken.childrenRaw) {
-				return markToken.childrenRaw.end
+			if (markToken.content.endsWith('\n\n') && markToken.slot) {
+				return markToken.slot.end
 			}
 			return markToken.position.end
 		}
-		return (markToken.childrenRaw?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
+		return (markToken.slot?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
 	}
 
 	// Walk child nodes of markElement and match to token children.
@@ -882,5 +882,5 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 	}
 
 	// Fallback: cursor at or beyond end of nested content
-	return markToken.childrenRaw?.end ?? markToken.position.end
+	return markToken.slot?.end ?? markToken.position.end
 }

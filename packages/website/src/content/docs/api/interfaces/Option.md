@@ -65,12 +65,12 @@ optional markup: Markup;
 Defined in: [common/core/src/shared/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L36)
 
 Template string in which the mark is rendered.
-Must contain placeholders: `__value__`, `__meta__`, and/or `__children__`
+Must contain placeholders: `__value__`, `__meta__`, and/or `__slot__`
 
 Placeholder types:
 - `__value__` - main content (plain text, no nesting)
 - `__meta__` - additional metadata (plain text, no nesting)
-- `__children__` - content supporting nested structures
+- `__slot__` - content supporting nested structures
 
 #### Examples
 
@@ -86,7 +86,7 @@ Placeholder types:
 
 ```ts
 // Nested content support
-"@[__children__]"
+"@[__slot__]"
 ```
 
 #### Inherited from

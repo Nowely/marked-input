@@ -22,8 +22,8 @@ describe('Utility: toString', () => {
 	})
 
 	it('should reconstruct nested annotations', () => {
-		const markup1: Markup = '@[__children__]'
-		const markup2: Markup = '#[__children__]'
+		const markup1: Markup = '@[__slot__]'
+		const markup2: Markup = '#[__slot__]'
 		const text = '@[Hello #[world]]'
 		const tokens = new Parser([markup1, markup2]).parse(text)
 		const result = toString(tokens)
@@ -47,8 +47,8 @@ describe('Utility: toString', () => {
 	})
 
 	it('should reconstruct complex nested structure', () => {
-		const markup1: Markup = '@[__value__](__children__)'
-		const markup2: Markup = '#[__children__]'
+		const markup1: Markup = '@[__value__](__slot__)'
+		const markup2: Markup = '#[__slot__]'
 		const text = '@[user](Hello #[world])'
 		const tokens = new Parser([markup1, markup2]).parse(text)
 		const result = toString(tokens)
@@ -64,7 +64,7 @@ describe('Utility: toString', () => {
 	})
 
 	it('should reconstruct HTML-like patterns', () => {
-		const markup: Markup = '<__value__>__children__</__value__>'
+		const markup: Markup = '<__value__>__slot__</__value__>'
 		const text = '<div>Content here</div>'
 		const tokens = new Parser([markup]).parse(text)
 		const result = toString(tokens)

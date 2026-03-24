@@ -328,7 +328,7 @@ export const HtmlLikeEditor: FC = () => {
 
     const tagOptions = [
         {
-            markup: '<__value__>__children__</__value__>',
+            markup: '<__value__>__slot__</__value__>',
             slots: {
                 mark: (props: any) => {
                     const tagName = props.value as TagType

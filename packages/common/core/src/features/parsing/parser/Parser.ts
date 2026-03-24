@@ -15,7 +15,7 @@ import {toString as tokensToString} from './utils/toString'
  *
  * @example
  * ```typescript
- * const parser = new Parser(['@[__value__](__meta__)', '#[__children__]'])
+ * const parser = new Parser(['@[__value__](__meta__)', '#[__slot__]'])
  * const tokens = parser.parse('Hello @[world](test) and #[tag]')
  * const text = parser.stringify(tokens)
  * ```
@@ -32,7 +32,7 @@ export class Parser {
 	 * @param markups - Array of markup pattern strings with placeholders (can include undefined values):
 	 *   - `__value__` - main content (plain text, no nesting)
 	 *   - `__meta__` - metadata (plain text, no nesting)
-	 *   - `__children__` - content supporting nested structures
+	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
 	 *
 	 * @example
@@ -40,8 +40,8 @@ export class Parser {
 	 * const parser = new Parser([
 	 *   '@[__value__](__meta__)',  // @[label](value) - descriptor.index = 0
 	 *   undefined,                 // skipped
-	 *   '#[__children__]',           // #[nested content] - descriptor.index = 2
-	 *   '**__children__**'           // **bold text** - descriptor.index = 3
+	 *   '#[__slot__]',           // #[nested content] - descriptor.index = 2
+	 *   '**__slot__**'           // **bold text** - descriptor.index = 3
 	 * ])
 	 * ```
 	 */
@@ -181,7 +181,7 @@ export class Parser {
 	 *
 	 * @example
 	 * ```typescript
-	 * const parser = new Parser(['**__children__**', '@[__value__]'])
+	 * const parser = new Parser(['**__slot__**', '@[__value__]'])
 	 * const escaped = parser.escape('Hello **world** and @[user]')
 	 * // Returns: 'Hello \*\*world\*\* and \@[user]'
 	 * ```
@@ -204,7 +204,7 @@ export class Parser {
 	 *
 	 * @example
 	 * ```typescript
-	 * const parser = new Parser(['**__children__**', '@[__value__]'])
+	 * const parser = new Parser(['**__slot__**', '@[__value__]'])
 	 * const unescaped = parser.unescape('Hello \*\*world\*\* and \@[user]')
 	 * // Returns: 'Hello **world** and @[user]'
 	 * ```

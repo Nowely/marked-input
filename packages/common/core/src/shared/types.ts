@@ -14,12 +14,12 @@ import type {NodeProxy} from './classes/NodeProxy'
 export interface CoreOption {
 	/**
 	 * Template string in which the mark is rendered.
-	 * Must contain placeholders: `__value__`, `__meta__`, and/or `__children__`
+	 * Must contain placeholders: `__value__`, `__meta__`, and/or `__slot__`
 	 *
 	 * Placeholder types:
 	 * - `__value__` - main content (plain text, no nesting)
 	 * - `__meta__` - additional metadata (plain text, no nesting)
-	 * - `__children__` - content supporting nested structures
+	 * - `__slot__` - content supporting nested structures
 	 *
 	 * @example
 	 * // Simple value
@@ -31,7 +31,7 @@ export interface CoreOption {
 	 *
 	 * @example
 	 * // Nested content support
-	 * "@[__children__]"
+	 * "@[__slot__]"
 	 */
 	markup?: Markup
 }

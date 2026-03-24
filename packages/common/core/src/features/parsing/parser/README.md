@@ -35,8 +35,8 @@ const tokens = parser.parse('Hello @[world](test) and #[tag]')
 const text = parser.stringify(tokens)
 // Returns: 'Hello @[world](test) and #[tag]'
 
-// Patterns with __children__ - supports nesting
-const nestedMarkups = ['@[__children__]', '#[__children__]']
+// Patterns with __slot__ - supports nesting
+const nestedMarkups = ['@[__slot__]', '#[__slot__]']
 const nestedParser = new Parser(nestedMarkups)
 
 const nestedResult = nestedParser.parse('@[hello #[world]]')
@@ -341,11 +341,11 @@ annotate('@[__value__](__meta__)', {value: 'Hello', meta: 'world'})
 // Returns: '@[Hello](world)'
 
 // Nested content
-annotate('@[__children__]', {nested: 'Hello #[world]'})
+annotate('@[__slot__]', {nested: 'Hello #[world]'})
 // Returns: '@[Hello #[world]]'
 
 // HTML-like with all placeholders
-annotate('<__value__ __meta__>__children__</__value__>', {
+annotate('<__value__ __meta__>__slot__</__value__>', {
     value: 'div',
     meta: 'class',
     nested: 'Content',
@@ -371,7 +371,7 @@ import {denote} from '@markput/core'
 const text = '@[Hello](world) and #[nested @[content]]'
 
 // Extract all values recursively
-transform(text, mark => mark.value, '@[__value__](__meta__)', '#[__children__]')
+transform(text, mark => mark.value, '@[__value__](__meta__)', '#[__slot__]')
 // Returns: 'Hello and nested content'
 
 // Extract meta values
@@ -398,7 +398,7 @@ function toString(tokens: Token[]): string
 ```typescript
 import {Parser, toString} from '@markput/core'
 
-const markups = ['@[__value__](__meta__)', '#[__children__]']
+const markups = ['@[__value__](__meta__)', '#[__slot__]']
 const text = '@[Hello](world) #[test]'
 
 // Parse and reconstruct
@@ -463,36 +463,36 @@ MarkToken: { type: 'mark', content, children: [], descriptor, value, meta?, nest
 
 Patterns consist of **static segments** and **placeholders**:
 
-- **Placeholders**: `__meta__`, `__value__`, and `__children__`
+- **Placeholders**: `__meta__`, `__value__`, and `__slot__`
 - **Valid pattern examples**:
     - `@[__meta__]` - value without nesting support
-    - `@[__children__]` - content with nesting support
+    - `@[__slot__]` - content with nesting support
     - `@[__meta__](__meta__)` - value and value
-    - `@[__children__](__meta__)` - nested content and value
-    - `@[__meta__](__children__)` - value and nested content (combined pattern)
+    - `@[__slot__](__meta__)` - nested content and value
+    - `@[__meta__](__slot__)` - value and nested content (combined pattern)
     - `<__meta__>__meta__</__meta__>` - two values (HTML-like)
-    - `<__meta__ __meta__>__children__</__meta__>` - HTML-like with nesting
+    - `<__meta__ __meta__>__slot__</__meta__>` - HTML-like with nesting
     - `(__meta__)@[__meta__]` - value before content (any order allowed)
 
 #### Pattern Validation
 
 - `__meta__` can occur **0, 1, or 2 times**
-- `__children__` can occur **0 or 1 time**
-- `__meta__` and `__children__` **can be used together** in one pattern (e.g., `@[__meta__](__children__)`)
-- Pattern must contain **at least one** `__meta__` or `__children__`
+- `__slot__` can occur **0 or 1 time**
+- `__meta__` and `__slot__` **can be used together** in one pattern (e.g., `@[__meta__](__slot__)`)
+- Pattern must contain **at least one** `__meta__` or `__slot__`
 - `__value__` can occur **0 or 1 time**
 - `__value__` **can appear in any position** - before, between, or after content placeholders
 - Pattern must contain **at least one static segment**
-- **For patterns with two `__meta__`** (e.g., `<__meta__>__children__</__meta__>`): both values must be **identical**, otherwise pattern doesn't match
+- **For patterns with two `__meta__`** (e.g., `<__meta__>__slot__</__meta__>`): both values must be **identical**, otherwise pattern doesn't match
 
 **Validation error examples:**
 
 ```typescript
 // ❌ No content placeholder
-'@[](__meta__)' // Error: Must have at least one "__meta__" or "__children__" placeholder
+'@[](__meta__)' // Error: Must have at least one "__meta__" or "__slot__" placeholder
 
-// ❌ Too many __children__ placeholders
-'@[__children__](__children__)' // Error: Expected 0 or 1 "__children__" placeholder, but found 2
+// ❌ Too many __slot__ placeholders
+'@[__slot__](__slot__)' // Error: Expected 0 or 1 "__slot__" placeholder, but found 2
 
 // ❌ Too many __meta__ placeholders
 '@[__meta__](__meta__)(__meta__)' // Error: Expected 0 or 1 "__meta__" placeholder, but found 2
@@ -504,21 +504,21 @@ Patterns consist of **static segments** and **placeholders**:
 **Valid combination examples:**
 
 ```typescript
-// ✅ Combination of __meta__ and __children__
-'@[__meta__](__children__)' // value for identification, nested for nested content
+// ✅ Combination of __meta__ and __slot__
+'@[__meta__](__slot__)' // value for identification, nested for nested content
 
 // ✅ Combination of __meta__ and __meta__
 '@[__meta__](__meta__)' // value for identification, value for simple value
 
-// ✅ Combination of __children__ and __meta__
-'@[__children__](__meta__)' // nested content and simple value
+// ✅ Combination of __slot__ and __meta__
+'@[__slot__](__meta__)' // nested content and simple value
 
 // ✅ HTML-like with label, value, and nested
-'<__meta__ __meta__>__children__</__meta__>' // full HTML-like tag with attributes and content
+'<__meta__ __meta__>__slot__</__meta__>' // full HTML-like tag with attributes and content
 
 // ✅ Value before content placeholder
 '(__meta__)@[__meta__]' // value can be in any position
-'[__meta__](__meta__)(__children__)' // value between value and nested
+'[__meta__](__meta__)(__slot__)' // value between value and nested
 ```
 
 #### Trigger and Symmetry
@@ -706,7 +706,7 @@ Return roots
 #### Nesting Rules
 
 - **Parent-child relationship**: child is fully contained in parent's **nestedStart..nestedEnd** (or **labelStart..labelEnd** for backward compatibility)
-- \***\*nested** sections support nesting\*\*: matches inside `__children__` are preserved and form tree
+- \***\*nested** sections support nesting\*\*: matches inside `__slot__` are preserved and form tree
 - \***\*meta** and **meta** sections are not parsed\*\*: matches inside these sections are ignored
 - **Self-nesting is not supported**: pattern cannot be nested within itself
 
@@ -737,7 +737,7 @@ Return roots
 
 - ❌ **Self-nesting** - `@[outer @[inner]]` won't create nesting for same pattern
 - ❌ **Parsing inside **meta\*\*\*\* - value is treated as plain text
-- ❌ **Parsing inside **meta\*\*\*\* - value is treated as plain text (use `__children__` for nesting)
+- ❌ **Parsing inside **meta\*\*\*\* - value is treated as plain text (use `__slot__` for nesting)
 - ❌ **Bracket counting** - pattern closes at first closing segment
 
 #### **nested** vs **meta**
@@ -745,7 +745,7 @@ Return roots
 **Key difference:**
 
 - `__meta__` - content is treated as **plain text**, nested patterns are ignored
-- `__children__` - content **supports nesting**, nested patterns are parsed
+- `__slot__` - content **supports nesting**, nested patterns are parsed
 
 **When to use `__meta__`:**
 
@@ -753,7 +753,7 @@ Return roots
 - For links, tags, labels, names
 - When you need guarantee that content will be plain text
 
-**When to use `__children__`:**
+**When to use `__slot__`:**
 
 - For formatted text (markdown, HTML)
 - When nesting support is needed
@@ -767,8 +767,8 @@ const parser1 = new ParserV2(['@[__meta__]', '#[__meta__]'])
 parser1.parse('@[hello #[world]]')
 // → [MarkToken{meta: "hello #[world]", children: []}] - no nesting
 
-// ✅ With __children__ - nesting works
-const parser2 = new ParserV2(['@[__children__]', '#[__children__]'])
+// ✅ With __slot__ - nesting works
+const parser2 = new ParserV2(['@[__slot__]', '#[__slot__]'])
 parser2.parse('@[hello #[world]]')
 // → [MarkToken{meta: "hello #[world]", children: [MarkToken{meta: "world"}]}] - has nesting
 ```
@@ -791,7 +791,7 @@ Output: [
 
 ```typescript
 Input: '@[hello #[world]]'
-Markups: ['@[__children__]', '#[__children__]']
+Markups: ['@[__slot__]', '#[__slot__]']
 Output: [
     TextToken('', 0, 0),
     MarkToken(
@@ -838,7 +838,7 @@ Output: [
 
 ```typescript
 Input: '@[user](Hello #[world])'
-Markups: ['@[__meta__](__children__)', '#[__children__]']
+Markups: ['@[__meta__](__slot__)', '#[__slot__]']
 Output: [
     TextToken('', 0, 0),
     MarkToken(
@@ -861,7 +861,7 @@ Output: [
 
 ```typescript
 Input: '<div class>Content with **bold**</div>'
-Markups: ['<__meta__ __meta__>__children__</__meta__>', '**__children__**']
+Markups: ['<__meta__ __meta__>__slot__</__meta__>', '**__slot__**']
 Output: [
     TextToken('', 0, 0),
     MarkToken(
@@ -898,7 +898,7 @@ Output: [
 
 ```typescript
 Input: '<div1>text</div2>'
-Markup: '<__meta__>__children__</__meta__>'
+Markup: '<__meta__>__slot__</__meta__>'
 Output: [TextToken('<div1>text</div2>', 0, 17)]
 // Does NOT match - opening tag "div1" doesn't match closing tag "div2"
 // Patterns with two __meta__ require identical labels
@@ -983,8 +983,8 @@ Output: [
 ```typescript
 Input: '<div class><p>Text</p></div>'
 Markups: [
-    '<__value__>__children__</__value__>', // 4 segments
-    '<__value__ __meta__>__children__</__value__>', // 5 segments - higher priority
+    '<__value__>__slot__</__value__>', // 4 segments
+    '<__value__ __meta__>__slot__</__value__>', // 5 segments - higher priority
 ]
 Output: [
     TextToken('', 0, 0),
@@ -1010,8 +1010,8 @@ Output: [
 ```typescript
 Input: '<div class><p>Text</p></div>'
 Markups: [
-    '<__value__ __meta__>__children__</__value__>', // 5 segments, 2 collected at start
-    '<__value__>__children__</__value__>', // 4 segments, 1 collected at start
+    '<__value__ __meta__>__slot__</__value__>', // 5 segments, 2 collected at start
+    '<__value__>__slot__</__value__>', // 4 segments, 1 collected at start
 ]
 Output: [
     TextToken('<div class>', 0, 11),
@@ -1038,6 +1038,6 @@ Output: [TextToken('', 0, 0), MarkToken('**bold**', 0, 8, (value = 'bold'), (chi
 - **Use longer first segments**: Patterns like `**text**` will have priority over `*text*`
 - **Order patterns by specificity**: More complex patterns (more segments) should come first
 - **Test pattern interactions**: Priority system is deterministic, but complex interactions may surprise you
-- **Use `__children__` for nested content**: This allows creating hierarchical structure
+- **Use `__slot__` for nested content**: This allows creating hierarchical structure
 - **Use `__value__` for simple text**: When nesting is not needed
 - **Monitor performance**: State machine approach is optimized, but complex pattern sets may need tuning

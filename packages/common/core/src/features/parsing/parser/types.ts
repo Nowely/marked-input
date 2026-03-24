@@ -22,7 +22,7 @@ export interface MarkToken {
 	descriptor: MarkupDescriptor
 	value: string
 	meta?: string
-	childrenRaw?: {
+	slot?: {
 		content: string
 		start: number
 		end: number
@@ -44,30 +44,30 @@ export interface PositionRange {
  */
 export type ValueMarkup = `${string}${typeof PLACEHOLDER.Value}${string}`
 export type MetaMarkup = `${string}${typeof PLACEHOLDER.Meta}${string}`
-export type ChildrenMarkup = `${string}${typeof PLACEHOLDER.Children}${string}`
+export type SlotMarkup = `${string}${typeof PLACEHOLDER.Slot}${string}`
 
 /**
- * Modern Markup type supporting value, meta, and children placeholders
+ * Modern Markup type supporting value, meta, and slot placeholders
  *
  * Examples:
  * - "@[__value__]" - simple value
  * - "@[__value__](__meta__)" - value with metadata
- * - "@[__children__]" - nested content
- * - "@[__value__](__children__)" - value with nested content
- * - "<__value__ __meta__>__children__</__value__>" - HTML-like with all features
+ * - "@[__slot__]" - nested content
+ * - "@[__value__](__slot__)" - value with nested content
+ * - "<__value__ __meta__>__slot__</__value__>" - HTML-like with all features
  */
 export type Markup =
 	| `${ValueMarkup}`
 	| `${ValueMarkup}${MetaMarkup}`
-	| `${ValueMarkup}${MetaMarkup}${ChildrenMarkup}`
-	| `${ValueMarkup}${ChildrenMarkup}`
-	| `${ValueMarkup}${ChildrenMarkup}${MetaMarkup}`
-	| `${ChildrenMarkup}`
-	| `${ChildrenMarkup}${MetaMarkup}`
-	| `${ChildrenMarkup}${MetaMarkup}${ValueMarkup}`
-	| `${ChildrenMarkup}${ValueMarkup}`
-	| `${ChildrenMarkup}${ValueMarkup}${MetaMarkup}`
+	| `${ValueMarkup}${MetaMarkup}${SlotMarkup}`
+	| `${ValueMarkup}${SlotMarkup}`
+	| `${ValueMarkup}${SlotMarkup}${MetaMarkup}`
+	| `${SlotMarkup}`
+	| `${SlotMarkup}${MetaMarkup}`
+	| `${SlotMarkup}${MetaMarkup}${ValueMarkup}`
+	| `${SlotMarkup}${ValueMarkup}`
+	| `${SlotMarkup}${ValueMarkup}${MetaMarkup}`
 	| `${MetaMarkup}${ValueMarkup}`
-	| `${MetaMarkup}${ValueMarkup}${ChildrenMarkup}`
-	| `${MetaMarkup}${ChildrenMarkup}`
-	| `${MetaMarkup}${ChildrenMarkup}${ValueMarkup}`
+	| `${MetaMarkup}${ValueMarkup}${SlotMarkup}`
+	| `${MetaMarkup}${SlotMarkup}`
+	| `${MetaMarkup}${SlotMarkup}${ValueMarkup}`

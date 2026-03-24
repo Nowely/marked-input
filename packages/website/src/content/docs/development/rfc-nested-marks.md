@@ -253,16 +253,16 @@ The ParserV2 core parsing engine has been fully implemented with the following f
 2. **Placeholder Types**:
     - `__value__` - main content (plain text, no nesting)
     - `__meta__` - additional metadata (plain text, no nesting)
-    - `__children__` - content supporting nested structures
+    - `__slot__` - content supporting nested structures
 
 3. **Pattern Examples**:
 
     ```typescript
     '@[__value__]' // Simple value
     '@[__value__](__meta__)' // Value with metadata
-    '@[__children__]' // Nested content
-    '@[__value__](__children__)' // Value with nested content
-    '<__value__ __meta__>__children__</__value__>' // HTML-like with all features
+    '@[__slot__]' // Nested content
+    '@[__value__](__slot__)' // Value with nested content
+    '<__value__ __meta__>__slot__</__value__>' // HTML-like with all features
     ```
 
 4. **Performance Metrics**:
@@ -405,12 +405,12 @@ Input Text → Aho-Corasick → SegmentMatches
   )}
   options={[
     {
-      markup: '**__children__**',
+      markup: '**__slot__**',
       trigger: '**',
       data: ['bold', 'strong'],
     },
     {
-      markup: '*__children__*',
+      markup: '*__slot__*',
       trigger: '*',
       data: ['italic', 'emphasis'],
     },

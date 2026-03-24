@@ -139,10 +139,10 @@ export class Match {
 		if (this.start >= previousMatch.end) return false
 
 		// If there's overlap, check if it's valid nesting
-		if (!previousMatch.descriptor.hasChildren) return true
-		if (previousMatch.gaps.children === undefined) return true
+		if (!previousMatch.descriptor.hasSlot) return true
+		if (previousMatch.gaps.slot === undefined) return true
 
-		// Valid nesting: this match is completely inside the children section
-		return !(this.start >= previousMatch.gaps.children.start && this.end <= previousMatch.gaps.children.end)
+		// Valid nesting: this match is completely inside the slot section
+		return !(this.start >= previousMatch.gaps.slot.start && this.end <= previousMatch.gaps.slot.end)
 	}
 }
