@@ -2,147 +2,92 @@
 
 ## Project
 
-- markput — editable text with inline custom components
-- Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
+markput — editable text field with inline custom components.
+Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`.
 
-## Setup
+## Quick Start
 
-- pnpm >= 9 required (enforced, no npm/yarn)
-- pnpm workspaces (catalog for shared deps)
-- `pnpm install`
-
-## Commands
-
-- `pnpm test` — run all tests
+- pnpm >= 9 required (enforced — no npm/yarn)
+- `pnpm install` to set up all packages
+- `pnpm test` — run all unit tests
 - `pnpm run build` — build all packages
-- `pnpm run lint` — oxlint
-- `pnpm run lint:fix` — oxlint with auto-fix
 - `pnpm run typecheck` — tsc + vue-tsc
-- `pnpm run format` — oxfmt check
-- `pnpm run format:fix` — oxfmt
-- `pnpm run dev:react:sb` — React Storybook
-- `pnpm run dev:vue:sb` — Vue Storybook
-- `pnpm run dev:react:app` — React E2E test app
-- `pnpm run dev:vue:app` — Vue E2E test app
-- `pnpm run dev:website` — Docs site
+- `pnpm run lint` / `pnpm run lint:fix` — oxlint
+- `pnpm run format` / `pnpm run format:fix` — oxfmt
+- `pnpm run dev:react:sb` / `pnpm run dev:vue:sb` — Storybook
+- `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
+- `pnpm run dev:website` — Astro/Starlight docs site
 
-## Structure
+## Monorepo Layout
 
-- `packages/common/core/` — framework-agnostic core logic
-- `packages/react/markput/` — React adapter (published)
-- `packages/vue/markput/` — Vue adapter (published)
+- `packages/common/core/` — framework-agnostic core logic (published as `@markput/core`)
+- `packages/react/markput/` — React adapter (published as `@markput/react`)
+- `packages/vue/markput/` — Vue adapter (published as `@markput/vue`)
 - `packages/react/storybook/` — React Storybook + component tests
-- `packages/vue/storybook/` — Vue Storybook
+- `packages/vue/storybook/` — Vue Storybook + component tests
 - `packages/react/app/`, `packages/vue/app/` — E2E test apps
-- `packages/website/` — Astro/Starlight docs
+- `packages/website/` — Astro/Starlight documentation site
 
-## Code Rules
-
-- ESM-only, TypeScript strict, `verbatimModuleSyntax: true`
-- `import type` for type-only imports (enforced by linter)
-- Exports must be sorted (enforced by linter)
-- No circular imports (`import/no-cycle` is error-level)
-- No semicolons, single quotes, tabs, trailing commas (ES5)
-- `arrowParens: "avoid"`
-
-## Documentation
-
-Keep documentation synchronized with code changes to maintain project quality.
-
-### When to Update
-
-Update documentation when:
-
-- Modifying APIs (function signatures, interfaces, types)
-- Adding new features or components
-- Changing architecture or data flow
-- Modifying configuration options
-- Fixing bugs that affect user-facing behavior
-- Adding or updating dependencies
-
-### Verification Checklist
-
-Before submitting changes:
-
-- [ ] Code examples compile and work
-- [ ] Website docs updated for user-facing changes
-- [ ] AGENTS.md updated if new patterns introduced
-- [ ] Conventional commit messages used (required for CHANGELOG auto-generation)
-- [ ] Type definitions accurate (run `pnpm run typecheck`)
-- [ ] README.md updated if usage changes
-
-### Website Documentation
-
-The project documentation website is located at `packages/website/`:
-
-- **Tech Stack**: Astro + Starlight documentation framework
-- **Content Location**: `packages/website/src/content/docs/` (.md/.mdx files)
-- **Run locally**: `pnpm run dev:website`
-- **Structure**: File-based routing (each .md/.mdx becomes a route)
-- **API Docs**: Auto-generated via TypeDoc in `packages/website/src/content/docs/api/`
-- **RFC Files**: Place feature RFCs in `packages/website/src/content/docs/development/` (e.g., `rfc-nested-marks.md`)
-
-## Naming
-
-- Components: PascalCase (`MarkedInput.tsx`, `Container.vue`)
-- Hooks: camelCase with `use` prefix (`useMark.ts`)
-- Features: kebab-case dirs (`text-manipulation/`)
-- Tests: co-located `*.spec.ts(x)` next to source
+Shared dependency versions are managed via pnpm catalog in `pnpm-workspace.yaml`.
 
 ## Architecture
 
 ### Core (`@markput/core`)
 
-Framework-agnostic logic using class-based controllers:
+- **Store** — central state container; holds reactive state (`defineState()`), DOM refs, controllers, and lifecycle
+- **FeatureManager** — registers and toggles feature modules (parsing, overlay, focus, blocks, etc.)
+- **Parser** — tokenizes input text into `TextToken` and `MarkToken` segments
+- **Controllers** — `FocusController`, `KeyDownController`, `OverlayController`, `TextSelectionController`, `SystemListenerController`, `ContentEditableController`
+- **Caret** — static helpers for cursor/selection positioning in contenteditable
 
-- **`Store`** — Central state container. Holds all state via `defineState()`, DOM node refs, controllers, and lifecycle. Created once per component instance.
-- **`FeatureManager`** — Registers and enables/disables feature modules (parsing, overlay, focus, etc.)
-- **`Caret`** — Static helpers for cursor/selection position in contenteditable
-- **`Parser`** — Tokenizes input text into `TextToken` and `MarkToken` segments
-- **Controllers** — `FocusController`, `KeyDownController`, `OverlayController`, `TextSelectionController`, `SystemListenerController`
+### Reactivity
 
-### Reactivity System
-
-- **`Reactive<T>`** — Minimal reactive primitive with `get()`, `set()`, `on(fn)` subscription
-- **`defineState<T>()`** — Creates reactive state object where each property is a `Signal<T>`
-- **`defineEvents<T>()`** — Creates typed event emitters with `on(fn)` subscription
-- **`Signal<T>`** — Interface: `{ get(), set(), on(), use() }`
+- **Reactive\<T\>** — minimal reactive primitive: `get()`, `set()`, `on(fn)`
+- **defineState\<T\>()** — creates reactive state object where each property is a `Signal<T>`
+- **defineEvents\<T\>()** — typed event emitters
+- **Signal\<T\>** — interface: `get()`, `set()`, `on()`, `use()`
 
 ### Framework Adapters
 
-React/Vue adapters bridge core to framework reactivity via `createUseHook`:
+React and Vue adapters bridge core signals to framework reactivity via `createUseHook`.
+Data flow: Core state → `Signal.use()` → component re-render.
 
-```ts
-// React: creates useState + useEffect subscription
-const createUseHook = signal => () => {
-    const [value, setValue] = useState(() => signal.get())
-    useEffect(() => signal.on(setValue), [signal])
-    return value
-}
+## Code Rules
 
-// Vue: returns computed ref
-const createUseHook = signal => () => computed(() => signal.get())
-```
-
-Data flow: Core state → Signal.use() → Component re-render
-
-### Package Dependencies
-
-```
-@markput/react  ─┐
-                 ├─→ @markput/core
-@markput/vue    ─┘
-```
+- ESM-only, TypeScript strict, `verbatimModuleSyntax: true`
+- Use `import type` for type-only imports (enforced by linter)
+- Exports must be sorted (enforced by linter)
+- No circular imports (`import/no-cycle` is error-level)
+- Formatting and style enforced by oxlint + oxfmt via pre-commit hook — do not manually enforce
 
 ## Testing
 
-- Vitest for unit tests (core, co-located `*.spec.ts`)
-- Vitest Browser Mode + Playwright for component tests (storybook package)
-- Browser: Chromium headless
+- **Framework**: Vitest
+- **Unit tests**: co-located `*.spec.ts` files next to source
+- **Component tests**: Vitest Browser Mode + Playwright (Chromium) in storybook packages
+- **Run**: `pnpm test` (all), `pnpm test:watch`, `pnpm test:coverage`
 
-## Git
+## Git & CI
 
-- Default branch: `next` (not main)
-- Conventional Commits required for PR titles
-- Pre-commit hook: oxlint --fix + oxfmt via lint-staged
-- Release via release-please on `next` branch
+- **Default branch**: `next` (not main)
+- **Conventional Commits**: required for PR titles (enforced by CI)
+- **Pre-commit hook**: oxlint --fix + oxfmt via lint-staged
+- **Release**: automated via release-please on `next` branch
+
+### CI Checks (all must pass to merge)
+
+1. Lint PR title (conventional commit format)
+2. `pnpm test`
+3. `pnpm run typecheck`
+4. `pnpm run lint`
+5. `pnpm run build`
+6. `pnpm run format`
+
+## Common Pitfalls
+
+- **Wrong package manager**: always use `pnpm`, never `npm` or `yarn`
+- **Wrong default branch**: PRs target `next`, not `main`
+- **Missing `import type`**: use `import type { Foo }` for type-only imports — the linter will reject bare `import { Foo }` for types
+- **Adding deps without catalog**: shared dependencies must be added to the pnpm catalog in `pnpm-workspace.yaml`, not directly in package.json
+- **Forgetting typecheck**: `pnpm run typecheck` runs both `tsc` and `vue-tsc` — run it before submitting
+- **Test file naming**: tests must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
