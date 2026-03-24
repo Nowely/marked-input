@@ -3,7 +3,9 @@ import {
 	resolveSlotProps,
 	splitTokensIntoDragRows,
 	getAlwaysShowHandleDrag,
-	type Block,
+	getDirectChildIndex,
+	EMPTY_BLOCK,
+	isMarkBlock,
 } from '@markput/core'
 import type {DragEvent, ElementType, MouseEvent} from 'react'
 import {memo, useCallback, useMemo, useRef, useState} from 'react'
@@ -16,20 +18,6 @@ import {Token} from './Token'
 import styles from '@markput/core/styles.module.css'
 
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
-
-const EMPTY_BLOCK: Block = {id: 'block-empty', tokens: [], startPos: 0, endPos: 0}
-
-const isMarkBlock = (block: Block) => block.tokens.length === 1 && block.tokens[0].type === 'mark'
-
-function getDirectChildIndex(container: HTMLElement, target: EventTarget | null): number {
-	if (!target || !(target instanceof Node)) return -1
-	let node: Node | null = target as Node
-	while (node && node.parentNode !== container) {
-		node = node.parentNode
-	}
-	if (!node) return -1
-	return Array.from(container.children).indexOf(node as Element)
-}
 
 interface MenuState {
 	index: number
@@ -65,18 +53,7 @@ export const DragContainer = memo(() => {
 		return result.length > 0 ? result : [EMPTY_BLOCK]
 	}, [tokens])
 
-	const handleAdd = useCallback(
-		(afterIndex: number) => {
-			dragCtrl.add(afterIndex)
-			queueMicrotask(() => {
-				const container = store.refs.container
-				if (!container) return
-				const target = container.children[afterIndex + 1] as HTMLElement | undefined
-				target?.focus()
-			})
-		},
-		[store, dragCtrl]
-	)
+	const handleAdd = useCallback((afterIndex: number) => dragCtrl.add(afterIndex), [dragCtrl])
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {
 		setMenuState({index, position: {top: rect.bottom + 4, left: rect.left}})
