@@ -113,7 +113,7 @@ export class KeyDownController {
 		if (blockIndex >= blocks.length) return
 
 		const block = blocks[blockIndex]
-		const value = this.store.state.value.get() ?? this.store.state.previousValue.get() ?? ''
+		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 		if (!this.store.state.onChange.get()) return
 
 		if (event.key === KEYBOARD.BACKSPACE) {
@@ -290,7 +290,7 @@ export class KeyDownController {
 		const block = blocks[blockIndex]
 		if (!block) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
-		const value = this.store.state.value.get() ?? ''
+		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 
 		if (!this.store.state.onChange.get()) return
 
@@ -533,7 +533,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	if (blockIndex >= blocks.length) return
 
 	const block = blocks[blockIndex]
-	const value = store.state.value.get() ?? store.state.previousValue.get() ?? ''
+	const value = store.state.previousValue.get() ?? store.state.value.get() ?? ''
 
 	const focusAndSetCaret = (newRawPos: number) => {
 		queueMicrotask(() => {
