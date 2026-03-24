@@ -89,8 +89,7 @@ export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/ma
 
 // Blocks
 export {
-	splitTokensIntoDragRows,
-	splitTextByBlockSeparator,
+	tokensToBlocks,
 	reorderDragRows,
 	addDragRow,
 	deleteDragRow,
@@ -102,7 +101,6 @@ export {
 	isMarkBlock,
 	getAlwaysShowHandleDrag,
 	type Block,
-	type TextPart,
 } from './src/features/blocks'
 
 // Navigation & Input

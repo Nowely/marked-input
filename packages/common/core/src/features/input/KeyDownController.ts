@@ -2,7 +2,7 @@ import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {BLOCK_SEPARATOR} from '../blocks/config'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
-import {splitTokensIntoDragRows, type Block} from '../blocks/splitTokensIntoDragRows'
+import {tokensToBlocks, type Block} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
@@ -109,7 +109,7 @@ export class KeyDownController {
 		if (blockIndex === -1) return
 
 		const tokens = this.store.state.tokens.get()
-		const blocks = splitTokensIntoDragRows(tokens)
+		const blocks = tokensToBlocks(tokens, this.store.key)
 		if (blockIndex >= blocks.length) return
 
 		const block = blocks[blockIndex]
@@ -164,7 +164,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 							const updatedBlock = updatedBlocks[blockIndex - 1]
 							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 						}
@@ -205,7 +205,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 							const updatedBlock = updatedBlocks[blockIndex - 1]
 							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 						}
@@ -239,7 +239,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 							const updatedBlock = updatedBlocks[blockIndex]
 							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
 						}
@@ -286,7 +286,7 @@ export class KeyDownController {
 		if (blockIndex === -1) return
 
 		const tokens = this.store.state.tokens.get()
-		const blocks = splitTokensIntoDragRows(tokens)
+		const blocks = tokensToBlocks(tokens, this.store.key)
 		const block = blocks[blockIndex]
 		if (!block) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
@@ -312,11 +312,7 @@ export class KeyDownController {
 
 		// Text row: split at caret position
 		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
-		// Inserting '\n\n' at position 0 of a row doesn't create a new leading row
-		// because the leading separator is ignored by splitTokensIntoDragRows. Use a double
-		// separator to produce an empty text row before the existing content.
-		const sep = absolutePos === block.startPos ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : BLOCK_SEPARATOR
-		const newValue = value.slice(0, absolutePos) + sep + value.slice(absolutePos)
+		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
 		this.store.applyValue(newValue)
 
 		// Focus the new block after re-render
@@ -529,7 +525,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 
 	const blockDiv = blockDivs[blockIndex]
 	const tokens = store.state.tokens.get()
-	const blocks = splitTokensIntoDragRows(tokens)
+	const blocks = tokensToBlocks(tokens, store.key)
 	if (blockIndex >= blocks.length) return
 
 	const block = blocks[blockIndex]
@@ -541,7 +537,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			if (!target) return
 			target.focus()
 			// Use updated tokens (post-applyValue) for correct token positions
-			const updatedBlocks = splitTokensIntoDragRows(store.state.tokens.get())
+			const updatedBlocks = tokensToBlocks(store.state.tokens.get(), store.key)
 			const updatedBlock = updatedBlocks[blockIndex]
 			if (updatedBlock) setCaretAtRawPos(target, updatedBlock, newRawPos)
 		})

@@ -1,11 +1,4 @@
-export {
-	splitTokensIntoDragRows,
-	splitTextByBlockSeparator,
-	EMPTY_BLOCK,
-	isMarkBlock,
-	type Block,
-	type TextPart,
-} from './splitTokensIntoDragRows'
+export {tokensToBlocks, EMPTY_BLOCK, isMarkBlock, type Block} from './splitTokensIntoDragRows'
 export {
 	addDragRow,
 	deleteDragRow,

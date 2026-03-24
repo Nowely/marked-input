@@ -29,9 +29,6 @@ function separatorBetween(a: Block, b: Block): string {
 export function addDragRow(value: string, rows: Block[], afterIndex: number): string {
 	if (rows.length === 0) return value + BLOCK_SEPARATOR
 
-	// Last row: append `\n\n` — splitTokensIntoDragRows will create a trailing empty text row.
-	// Special case: when value is empty, appending '\n\n' creates only 1 empty row (no content
-	// precedes the separator). Use double separator to ensure 2 empty rows exist.
 	if (afterIndex >= rows.length - 1) {
 		return value === '' ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : value + BLOCK_SEPARATOR
 	}
@@ -41,12 +38,9 @@ export function addDragRow(value: string, rows: Block[], afterIndex: number): st
 	const gap = next.startPos - curr.endPos
 
 	if (gap === 0) {
-		// Marks are adjacent (no separator) — insert one `\n\n` between them.
-		// splitTokensIntoDragRows will see the separator before the next mark and create one empty row.
 		return value.slice(0, curr.endPos) + BLOCK_SEPARATOR + value.slice(next.startPos)
 	}
 
-	// gap = 2 (existing `\n\n`): insert one more `\n\n` at next.startPos → `\n\n\n\n` gap → empty row.
 	return value.slice(0, next.startPos) + BLOCK_SEPARATOR + value.slice(next.startPos)
 }
 
