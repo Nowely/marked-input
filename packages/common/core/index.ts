@@ -72,6 +72,7 @@ export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
 export {TextSelectionController} from './src/features/selection'
 export {ContentEditableController} from './src/features/editable'
+export {DragController} from './src/features/drag'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Feature Management
