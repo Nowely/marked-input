@@ -5,7 +5,7 @@ prev: false
 title: "MarkputHandler"
 ---
 
-Defined in: [common/core/src/shared/types.ts:130](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L130)
+Defined in: [common/core/src/shared/types.ts:131](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L131)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [common/core/src/shared/types.ts:130](https://github.com/Nowely/mark
 readonly container: HTMLDivElement | null;
 ```
 
-Defined in: [common/core/src/shared/types.ts:131](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L131)
+Defined in: [common/core/src/shared/types.ts:132](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L132)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [common/core/src/shared/types.ts:131](https://github.com/Nowely/mark
 readonly overlay: HTMLElement | null;
 ```
 
-Defined in: [common/core/src/shared/types.ts:132](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L132)
+Defined in: [common/core/src/shared/types.ts:133](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L133)
 
 ## Methods
 
@@ -35,7 +35,7 @@ Defined in: [common/core/src/shared/types.ts:132](https://github.com/Nowely/mark
 focus(): void;
 ```
 
-Defined in: [common/core/src/shared/types.ts:133](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L133)
+Defined in: [common/core/src/shared/types.ts:134](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/shared/types.ts#L134)
 
 #### Returns
 

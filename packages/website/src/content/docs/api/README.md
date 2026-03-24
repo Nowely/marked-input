@@ -31,5 +31,6 @@ title: "@markput/react"
 - [annotate](/api/functions/annotate/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
+- [Span](/api/functions/span/)
 - [useMark](/api/functions/usemark/)
 - [useOverlay](/api/functions/useoverlay/)

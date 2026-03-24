@@ -18,9 +18,9 @@ Make annotation from the markup for ParserV2
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
 | `markup` | [`Markup`](/api/type-aliases/markup/) | Markup pattern with __value__, __meta__, and/or __slot__ placeholders |
-| `params` | \{ `slot?`: `string`; `meta?`: `string`; `value?`: `string`; \} | Object with optional value, meta, and slot strings |
-| `params.slot?` | `string` | - |
+| `params` | \{ `meta?`: `string`; `slot?`: `string`; `value?`: `string`; \} | Object with optional value, meta, and slot strings |
 | `params.meta?` | `string` | - |
+| `params.slot?` | `string` | - |
 | `params.value?` | `string` | - |
 
 ## Returns

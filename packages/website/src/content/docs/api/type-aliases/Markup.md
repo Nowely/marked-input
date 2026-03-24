@@ -25,7 +25,7 @@ type Markup =
 
 Defined in: [common/core/src/features/parsing/parser/types.ts:59](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L59)
 
-Modern Markup type supporting value, meta, and children placeholders
+Modern Markup type supporting value, meta, and slot placeholders
 
 Examples:
 - "@[__value__]" - simple value

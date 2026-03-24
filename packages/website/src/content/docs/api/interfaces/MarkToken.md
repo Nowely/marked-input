@@ -19,34 +19,6 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:30](https://github
 
 ***
 
-### slot?
-
-```ts
-optional slot: object;
-```
-
-Defined in: [common/core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L25)
-
-#### content
-
-```ts
-content: string;
-```
-
-#### end
-
-```ts
-end: number;
-```
-
-#### start
-
-```ts
-start: number;
-```
-
-***
-
 ### content
 
 ```ts
@@ -84,6 +56,34 @@ position: object;
 ```
 
 Defined in: [common/core/src/features/parsing/parser/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L18)
+
+#### end
+
+```ts
+end: number;
+```
+
+#### start
+
+```ts
+start: number;
+```
+
+***
+
+### slot?
+
+```ts
+optional slot: object;
+```
+
+Defined in: [common/core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L25)
+
+#### content
+
+```ts
+content: string;
+```
 
 #### end
 
