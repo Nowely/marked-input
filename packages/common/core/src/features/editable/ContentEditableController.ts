@@ -1,4 +1,4 @@
-import {splitTokensIntoDragRows} from '../blocks'
+import {tokensToBlocks} from '../blocks'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
@@ -40,7 +40,7 @@ export class ContentEditableController {
 			// In drag mode, only set contentEditable on text blocks (DragMark divs).
 			// Mark blocks get tabIndex for focusability but are not contentEditable.
 			const tokens = this.store.state.tokens.get()
-			const blocks = splitTokensIntoDragRows(tokens)
+			const blocks = tokensToBlocks(tokens, this.store.key)
 			for (let i = 0; i < blocks.length && i < children.length; i++) {
 				const el = children[i] as HTMLElement
 				const isMark = blocks[i].tokens.length === 1 && blocks[i].tokens[0].type === 'mark'
@@ -124,7 +124,7 @@ export class ContentEditableController {
 
 	#syncDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
 		const editable = readOnly ? 'false' : 'true'
-		const blocks = splitTokensIntoDragRows(tokens)
+		const blocks = tokensToBlocks(tokens, this.store.key)
 		for (let bi = 0; bi < blocks.length; bi++) {
 			const block = blocks[bi]
 			const blockEl = container.children[bi] as HTMLElement | undefined

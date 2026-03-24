@@ -1,5 +1,5 @@
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from '../blocks/dragOperations'
-import {EMPTY_BLOCK, splitTokensIntoDragRows} from '../blocks/splitTokensIntoDragRows'
+import {EMPTY_BLOCK, tokensToBlocks} from '../blocks/splitTokensIntoDragRows'
 import type {Store} from '../store/Store'
 
 export class DragController {
@@ -11,7 +11,7 @@ export class DragController {
 	reorder(sourceIndex: number, targetIndex: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const blocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const blocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 		const newValue = reorderDragRows(value, blocks, sourceIndex, targetIndex)
 		if (newValue !== value) this.store.applyValue(newValue)
 	}
@@ -19,7 +19,7 @@ export class DragController {
 	add(afterIndex: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const rawBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const rawBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 		const blocks = rawBlocks.length > 0 ? rawBlocks : [EMPTY_BLOCK]
 		this.store.applyValue(addDragRow(value, blocks, afterIndex))
 		queueMicrotask(() => {
@@ -33,14 +33,14 @@ export class DragController {
 	delete(index: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const blocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const blocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 		this.store.applyValue(deleteDragRow(value, blocks, index))
 	}
 
 	duplicate(index: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const blocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const blocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
 		this.store.applyValue(duplicateDragRow(value, blocks, index))
 	}
 }
