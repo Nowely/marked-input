@@ -1,3 +1,4 @@
+import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '@markput/core'
 import type {ReactNode, DragEvent, CSSProperties, MouseEvent} from 'react'
 import {Children, memo, useCallback, useRef, useState} from 'react'
 
@@ -56,9 +57,7 @@ export const DragMark = memo(
 
 			if (!blockRef.current) return
 
-			const rect = blockRef.current.getBoundingClientRect()
-			const midY = rect.top + rect.height / 2
-			setDropPosition(e.clientY < midY ? 'before' : 'after')
+			setDropPosition(getDragDropPosition(e.clientY, blockRef.current.getBoundingClientRect()))
 		}, [])
 
 		const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -69,10 +68,10 @@ export const DragMark = memo(
 		const handleDrop = useCallback(
 			(e: DragEvent<HTMLDivElement>) => {
 				e.preventDefault()
-				const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
-				if (isNaN(sourceIndex)) return
+				const sourceIndex = parseDragSourceIndex(e.dataTransfer)
+				if (sourceIndex === null) return
 
-				const targetIndex = dropPosition === 'before' ? blockIndex : blockIndex + 1
+				const targetIndex = getDragTargetIndex(blockIndex, dropPosition ?? 'after')
 				setDropPosition(null)
 				onReorder(sourceIndex, targetIndex)
 			},

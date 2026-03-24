@@ -1,4 +1,4 @@
-import {cx} from '@markput/core'
+import {cx, isClickOutside, isEscapeKey} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useEffect, useRef, useState} from 'react'
 
@@ -29,12 +29,10 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 
 	useEffect(() => {
 		const handleMouseDown = (e: globalThis.MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				onCloseRef.current()
-			}
+			if (isClickOutside(e.target, menuRef.current)) onCloseRef.current()
 		}
 		const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-			if (e.key === 'Escape') onCloseRef.current()
+			if (isEscapeKey(e)) onCloseRef.current()
 		}
 		document.addEventListener('mousedown', handleMouseDown)
 		document.addEventListener('keydown', handleKeyDown)
