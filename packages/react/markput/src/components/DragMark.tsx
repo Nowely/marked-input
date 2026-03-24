@@ -96,7 +96,6 @@ export const DragMark = memo(
 			background: 'transparent',
 			borderRadius: 3,
 			minHeight: '1.2em',
-			userSelect: 'none',
 			outline: 'none',
 		}
 
