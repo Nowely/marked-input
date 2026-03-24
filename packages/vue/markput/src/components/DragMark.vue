@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex, isClickOutside, isEscapeKey} from '@markput/core'
 import {ref, computed, watch, onUnmounted, nextTick, type CSSProperties} from 'vue'
 
 import styles from '@markput/core/styles.module.css'
@@ -140,12 +141,9 @@ function onDragEnd() {
 
 function onDragOver(e: DragEvent) {
 	e.preventDefault()
-	if (!e.dataTransfer) return
+	if (!e.dataTransfer || !blockRef.value) return
 	e.dataTransfer.dropEffect = 'move'
-	if (!blockRef.value) return
-	const rect = blockRef.value.getBoundingClientRect()
-	const midY = rect.top + rect.height / 2
-	dropPosition.value = e.clientY < midY ? 'before' : 'after'
+	dropPosition.value = getDragDropPosition(e.clientY, blockRef.value.getBoundingClientRect())
 }
 
 function onDragLeave(e: DragEvent) {
@@ -156,9 +154,9 @@ function onDragLeave(e: DragEvent) {
 function onDrop(e: DragEvent) {
 	e.preventDefault()
 	if (!e.dataTransfer) return
-	const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10)
-	if (isNaN(sourceIndex)) return
-	const targetIndex = dropPosition.value === 'before' ? props.blockIndex : props.blockIndex + 1
+	const sourceIndex = parseDragSourceIndex(e.dataTransfer)
+	if (sourceIndex === null) return
+	const targetIndex = getDragTargetIndex(props.blockIndex, dropPosition.value ?? 'after')
 	dropPosition.value = null
 	emit('reorder', sourceIndex, targetIndex)
 }
@@ -177,10 +175,10 @@ function closeMenu() {
 }
 
 function onMouseDownOutside(e: MouseEvent) {
-	if (menuRef.value && !menuRef.value.contains(e.target as Node)) closeMenu()
+	if (isClickOutside(e.target, menuRef.value)) closeMenu()
 }
 function onKeyDownEscape(e: KeyboardEvent) {
-	if (e.key === 'Escape') closeMenu()
+	if (isEscapeKey(e)) closeMenu()
 }
 
 let cleanupMenuListeners: (() => void) | null = null
