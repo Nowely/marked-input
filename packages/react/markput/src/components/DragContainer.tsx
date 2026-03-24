@@ -1,19 +1,15 @@
 import {
-	cx,
 	resolveSlot,
 	resolveSlotProps,
 	splitTokensIntoDragRows,
-	reorderDragRows,
-	addDragRow,
-	deleteDragRow,
-	duplicateDragRow,
 	getAlwaysShowHandleDrag,
 	type Block,
 } from '@markput/core'
-import type {CSSProperties, DragEvent, ElementType, MouseEvent} from 'react'
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import type {DragEvent, ElementType, MouseEvent} from 'react'
+import {memo, useCallback, useMemo, useRef, useState} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
+import {BlockMenu} from './BlockMenu'
 import {DragMark, type MenuPosition} from './DragMark'
 import {Token} from './Token'
 
@@ -35,127 +31,6 @@ function getDirectChildIndex(container: HTMLElement, target: EventTarget | null)
 	return Array.from(container.children).indexOf(node as Element)
 }
 
-interface BlockMenuProps {
-	position: MenuPosition
-	onAdd: () => void
-	onDelete: () => void
-	onDuplicate: () => void
-	onClose: () => void
-}
-
-const separatorStyle: CSSProperties = {
-	height: 1,
-	background: 'rgba(55, 53, 47, 0.09)',
-	margin: '4px 0',
-}
-
-const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
-	const menuRef = useRef<HTMLDivElement>(null)
-	const [hoveredItem, setHoveredItem] = useState<string | null>(null)
-
-	// Keep a ref so the effect stays stable (empty deps) while always calling
-	// the latest onClose without re-registering listeners on every render.
-	const onCloseRef = useRef(onClose)
-	onCloseRef.current = onClose
-
-	useEffect(() => {
-		const handleMouseDown = (e: globalThis.MouseEvent) => {
-			if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-				onCloseRef.current()
-			}
-		}
-		const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-			if (e.key === 'Escape') onCloseRef.current()
-		}
-		document.addEventListener('mousedown', handleMouseDown)
-		document.addEventListener('keydown', handleKeyDown)
-		return () => {
-			document.removeEventListener('mousedown', handleMouseDown)
-			document.removeEventListener('keydown', handleKeyDown)
-		}
-	}, [])
-
-	const menuStyle: CSSProperties = {
-		position: 'fixed',
-		top: position.top,
-		left: position.left,
-		background: 'white',
-		border: '1px solid rgba(55, 53, 47, 0.16)',
-		borderRadius: 6,
-		boxShadow: '0 4px 16px rgba(15, 15, 15, 0.12)',
-		padding: 4,
-		zIndex: 9999,
-		minWidth: 160,
-		fontSize: 14,
-	}
-
-	const itemStyle = (key: string): CSSProperties => ({
-		display: 'flex',
-		alignItems: 'center',
-		gap: 8,
-		padding: '6px 10px',
-		borderRadius: 4,
-		cursor: 'pointer',
-		color: key === 'delete' ? '#eb5757' : 'rgba(55, 53, 47, 0.85)',
-		background:
-			hoveredItem === key
-				? key === 'delete'
-					? 'rgba(235, 87, 87, 0.06)'
-					: 'rgba(55, 53, 47, 0.06)'
-				: 'transparent',
-		transition: 'background 0.1s ease',
-		userSelect: 'none',
-		lineHeight: 1,
-	})
-
-	return (
-		<div ref={menuRef} style={menuStyle}>
-			<div
-				style={itemStyle('add')}
-				onMouseEnter={() => setHoveredItem('add')}
-				onMouseLeave={() => setHoveredItem(null)}
-				onMouseDown={e => {
-					e.preventDefault()
-					onAdd()
-					onClose()
-				}}
-			>
-				<span className={cx(styles.Icon, styles.IconAdd)} />
-				<span>Add below</span>
-			</div>
-			<div
-				style={itemStyle('duplicate')}
-				onMouseEnter={() => setHoveredItem('duplicate')}
-				onMouseLeave={() => setHoveredItem(null)}
-				onMouseDown={e => {
-					e.preventDefault()
-					onDuplicate()
-					onClose()
-				}}
-			>
-				<span className={cx(styles.Icon, styles.IconDuplicate)} />
-				<span>Duplicate</span>
-			</div>
-			<div style={separatorStyle} />
-			<div
-				style={itemStyle('delete')}
-				onMouseEnter={() => setHoveredItem('delete')}
-				onMouseLeave={() => setHoveredItem(null)}
-				onMouseDown={e => {
-					e.preventDefault()
-					onDelete()
-					onClose()
-				}}
-			>
-				<span className={cx(styles.Icon, styles.IconTrash)} />
-				<span>Delete</span>
-			</div>
-		</div>
-	)
-})
-
-BlockMenu.displayName = 'BlockMenu'
-
 interface MenuState {
 	index: number
 	position: MenuPosition
@@ -173,6 +48,7 @@ export const DragContainer = memo(() => {
 	const alwaysShowHandle = getAlwaysShowHandleDrag(drag)
 	const key = store.key
 	const refs = store.refs
+	const dragCtrl = store.controllers.drag
 
 	const [menuState, setMenuState] = useState<MenuState | null>(null)
 	const [hoveredMarkIndex, setHoveredMarkIndex] = useState<number | null>(null)
@@ -188,51 +64,18 @@ export const DragContainer = memo(() => {
 		const result = splitTokensIntoDragRows(tokens)
 		return result.length > 0 ? result : [EMPTY_BLOCK]
 	}, [tokens])
-	const blocksRef = useRef<Block[]>(blocks)
-	blocksRef.current = blocks
-
-	const handleReorder = useCallback(
-		(sourceIndex: number, targetIndex: number) => {
-			const value = store.state.value.get()
-			if (value == null || !store.state.onChange.get()) return
-			const newValue = reorderDragRows(value, blocksRef.current, sourceIndex, targetIndex)
-			if (newValue !== value) store.applyValue(newValue)
-		},
-		[store]
-	)
 
 	const handleAdd = useCallback(
 		(afterIndex: number) => {
-			const value = store.state.value.get()
-			if (value == null || !store.state.onChange.get()) return
-			store.applyValue(addDragRow(value, blocksRef.current, afterIndex))
+			dragCtrl.add(afterIndex)
 			queueMicrotask(() => {
 				const container = store.refs.container
 				if (!container) return
-				const newBlockIndex = afterIndex + 1
-				const target = container.children[newBlockIndex] as HTMLElement | undefined
+				const target = container.children[afterIndex + 1] as HTMLElement | undefined
 				target?.focus()
 			})
 		},
-		[store]
-	)
-
-	const handleDelete = useCallback(
-		(index: number) => {
-			const value = store.state.value.get()
-			if (value == null || !store.state.onChange.get()) return
-			store.applyValue(deleteDragRow(value, blocksRef.current, index))
-		},
-		[store]
-	)
-
-	const handleDuplicate = useCallback(
-		(index: number) => {
-			const value = store.state.value.get()
-			if (value == null || !store.state.onChange.get()) return
-			store.applyValue(duplicateDragRow(value, blocksRef.current, index))
-		},
-		[store]
+		[store, dragCtrl]
 	)
 
 	const handleRequestMenu = useCallback((index: number, rect: DOMRect) => {
@@ -255,14 +98,14 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || !isMarkBlock(blocksRef.current[childIndex])) {
+			if (childIndex === -1 || !isMarkBlock(blocks[childIndex])) {
 				scheduleHideMarkGrip()
 				return
 			}
 			cancelHideMarkGrip()
 			setHoveredMarkIndex(childIndex)
 		},
-		[refs, scheduleHideMarkGrip, cancelHideMarkGrip]
+		[refs, blocks, scheduleHideMarkGrip, cancelHideMarkGrip]
 	)
 
 	const handleContainerMouseLeave = useCallback(() => scheduleHideMarkGrip(), [scheduleHideMarkGrip])
@@ -272,14 +115,14 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || !isMarkBlock(blocksRef.current[childIndex])) return
+			if (childIndex === -1 || !isMarkBlock(blocks[childIndex])) return
 			e.preventDefault()
 			const el = container.children[childIndex] as HTMLElement
 			const rect = el.getBoundingClientRect()
 			const mid = rect.left + rect.width / 2
 			setMarkDropTarget({index: childIndex, position: e.clientX < mid ? 'before' : 'after'})
 		},
-		[refs]
+		[refs, blocks]
 	)
 
 	const handleContainerDragLeave = useCallback(
@@ -299,9 +142,9 @@ export const DragContainer = memo(() => {
 			if (isNaN(sourceIndex)) return
 			const targetIndex = markDropTarget.position === 'before' ? markDropTarget.index : markDropTarget.index + 1
 			setMarkDropTarget(null)
-			handleReorder(sourceIndex, targetIndex)
+			dragCtrl.reorder(sourceIndex, targetIndex)
 		},
-		[markDropTarget, handleReorder]
+		[markDropTarget, dragCtrl]
 	)
 
 	const handleMarkGripDragStart = useCallback(
@@ -343,7 +186,7 @@ export const DragContainer = memo(() => {
 							blockIndex={index}
 							readOnly={readOnly}
 							alwaysShowHandle={alwaysShowHandle}
-							onReorder={handleReorder}
+							onReorder={(s, t) => dragCtrl.reorder(s, t)}
 							onRequestMenu={handleRequestMenu}
 						>
 							{block.tokens.map(token => (
@@ -428,11 +271,11 @@ export const DragContainer = memo(() => {
 						closeMenu()
 					}}
 					onDelete={() => {
-						handleDelete(menuState.index)
+						dragCtrl.delete(menuState.index)
 						closeMenu()
 					}}
 					onDuplicate={() => {
-						handleDuplicate(menuState.index)
+						dragCtrl.duplicate(menuState.index)
 						closeMenu()
 					}}
 					onClose={closeMenu}

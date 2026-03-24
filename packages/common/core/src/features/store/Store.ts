@@ -7,6 +7,7 @@ import {
 	type StateObject,
 } from '../../shared/classes'
 import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
@@ -52,6 +53,7 @@ export class Store {
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
 		contentEditable: new ContentEditableController(this),
+		drag: new DragController(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)
