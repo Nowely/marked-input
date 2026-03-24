@@ -17,7 +17,7 @@ describe('Nested Marks Rendering', () => {
 	}
 
 	it('should render simple nested marks', async () => {
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[outer @[inner]]'
 
 		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -32,7 +32,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should render multiple nesting levels', async () => {
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[level0 @[level1 @[level2]]]'
 
 		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -47,7 +47,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should render multiple nested marks at same level', async () => {
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[outer @[first] and @[second]]'
 
 		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -70,8 +70,8 @@ describe('Nested Marks Rendering', () => {
 			)
 		}
 
-		const tagMarkup: Markup = '#[__children__]'
-		const mentionMarkup: Markup = '@[__children__]'
+		const tagMarkup: Markup = '#[__slot__]'
+		const mentionMarkup: Markup = '@[__slot__]'
 		const value = '#[tag with @[mention]]'
 
 		render(
@@ -95,7 +95,7 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('should handle empty nested marks', async () => {
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[@[]]'
 
 		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -122,7 +122,7 @@ describe('Nested Marks Rendering', () => {
 			)
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[before @[nested] after]'
 
 		const {container} = await render(<MarkedInput Mark={CapturingMark} value={value} options={[{markup}]} />)
@@ -143,7 +143,7 @@ describe('Nested Marks Tree Navigation', () => {
 			return <span data-depth={mark.depth}>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[d0 @[d1 @[d2]]]'
 
 		const {container} = await render(<MarkedInput Mark={DepthMark} value={value} options={[{markup}]} />)
@@ -159,7 +159,7 @@ describe('Nested Marks Tree Navigation', () => {
 			return <span data-has-children={mark.hasChildren}>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[parent @[child]]'
 
 		const {container} = await render(<MarkedInput Mark={ChildrenMark} value={value} options={[{markup}]} />)
@@ -181,7 +181,7 @@ describe('Nested Marks Tree Navigation', () => {
 			return <span>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[parent @[child1] text @[child2]]'
 
 		await render(<MarkedInput Mark={ChildrenCountMark} value={value} options={[{markup}]} />)
@@ -247,7 +247,7 @@ describe('Complex Nesting Scenarios', () => {
 			return <span data-testid="mark">{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[first]@[second]'
 
 		await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -262,7 +262,7 @@ describe('Complex Nesting Scenarios', () => {
 			return <span data-depth={mark.depth}>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[@[@[@[@[deep]]]]]'
 
 		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -284,7 +284,7 @@ describe('Complex Nesting Scenarios', () => {
 			)
 		}
 
-		const nestedMarkup: Markup = '@[__children__]'
+		const nestedMarkup: Markup = '@[__slot__]'
 		const value = '@[nested @[child]] @[another]'
 
 		await render(<MarkedInput Mark={MixedMark} value={value} options={[{markup: nestedMarkup}]} />)
@@ -301,7 +301,7 @@ describe('Complex Nesting Scenarios', () => {
 			return <span data-testid="rendering-mark">{mark.hasChildren ? children : mark.value}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[Hello @[World] from @[Nested] marks]'
 
 		const {container} = await render(<MarkedInput Mark={RenderingMark} value={value} options={[{markup}]} />)
@@ -321,7 +321,7 @@ describe('Edge Cases', () => {
 			return <span>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = ''
 
 		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -334,7 +334,7 @@ describe('Edge Cases', () => {
 			return <span>{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = 'Just plain text'
 
 		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
@@ -347,7 +347,7 @@ describe('Edge Cases', () => {
 			return <span data-testid="mark">{children}</span>
 		}
 
-		const markup: Markup = '@[__children__]'
+		const markup: Markup = '@[__slot__]'
 		const value = '@[unclosed @[nested'
 
 		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)

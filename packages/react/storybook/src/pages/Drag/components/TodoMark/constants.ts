@@ -3,8 +3,8 @@ import type {Option} from '@markput/react'
 import {TodoIndent1Mark, TodoItemMark} from './TodoMark'
 
 export const TODO_OPTIONS: Option[] = [
-	{markup: '- [__value__] __children__\n', Mark: TodoItemMark},
-	{markup: '\t- [__value__] __children__\n', Mark: TodoIndent1Mark},
+	{markup: '- [__value__] __slot__\n', Mark: TodoItemMark},
+	{markup: '\t- [__value__] __slot__\n', Mark: TodoIndent1Mark},
 ]
 
 export const TODO_VALUE = `

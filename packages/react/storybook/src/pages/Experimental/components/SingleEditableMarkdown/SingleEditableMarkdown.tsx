@@ -6,9 +6,9 @@ import {MarkdownContainer, MarkdownMark, MarkdownText} from './components'
 import {htmlToMarkdown} from './utils'
 
 // Markdown markup patterns
-const BoldMarkup: Markup = '**__children__**'
-const ItalicMarkup: Markup = '*__children__*'
-const CodeMarkup: Markup = '`__children__`'
+const BoldMarkup: Markup = '**__slot__**'
+const ItalicMarkup: Markup = '*__slot__*'
+const CodeMarkup: Markup = '`__slot__`'
 const LinkMarkup: Markup = '[__value__](__meta__)'
 const HeadingMarkup: Markup = '# __value__\n'
 const BlockquoteMarkup: Markup = '> __value__'

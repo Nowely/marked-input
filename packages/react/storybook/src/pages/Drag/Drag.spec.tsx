@@ -26,7 +26,7 @@ function getBlocks(container: Element) {
 	return Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 }
 
-/** Get all rows (both mark blocks and DraggableBlocks) as direct children of the markput container */
+/** Get all rows (both mark blocks and DragMarks) as direct children of the markput container */
 function getAllRows(container: Element) {
 	const markputContainer = container.querySelector('[class*="Container"]') as HTMLElement
 	return Array.from(markputContainer.children) as HTMLElement[]
@@ -639,7 +639,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(document.activeElement).toBe(markRow)
+				expect(markRow.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
@@ -751,7 +751,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInBlock(getBlocks(container)[0]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(document.activeElement).toBe(markRow)
+				expect(markRow.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})

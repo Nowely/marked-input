@@ -1,5 +1,5 @@
 import type {MarkputHandler, Store} from '@markput/core'
-import {useEffect, useImperativeHandle} from 'react'
+import {useEffect, useImperativeHandle, useLayoutEffect} from 'react'
 
 import type {Option} from '../../types'
 
@@ -16,15 +16,17 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	const value = store.state.value.use()
 	const Mark = store.state.Mark.use()
 	const coreOptions = store.state.options.use()
-	const hasSlots = (coreOptions as Option[] | undefined)?.some(
-		opt => opt.mark != null && typeof opt.mark !== 'function'
-	)
-	const options = Mark || hasSlots ? coreOptions : undefined
+	const hasPerOptionMark = (coreOptions as Option[] | undefined)?.some(opt => opt.Mark != null)
+	const options = Mark || hasPerOptionMark ? coreOptions : undefined
 	const tokens = store.state.tokens.use()
 
 	useEffect(() => {
 		store.lifecycle.syncParser(value, options)
 	}, [value, options])
+
+	useLayoutEffect(() => {
+		store.controllers.contentEditable.sync()
+	}, [tokens])
 
 	useEffect(() => {
 		store.lifecycle.recoverFocus()

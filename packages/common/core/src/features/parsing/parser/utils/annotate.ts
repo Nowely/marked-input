@@ -4,15 +4,15 @@ import type {Markup} from '../types'
 /**
  * Make annotation from the markup for ParserV2
  *
- * @param markup - Markup pattern with __value__, __meta__, and/or __children__ placeholders
- * @param params - Object with optional value, meta, and children strings
+ * @param markup - Markup pattern with __value__, __meta__, and/or __slot__ placeholders
+ * @param params - Object with optional value, meta, and slot strings
  * @returns Annotated string with placeholders replaced
  *
  * @example
  * ```typescript
  * annotate('@[__value__]', { value: 'Hello' }) // '@[Hello]'
  * annotate('@[__value__](__meta__)', { value: 'Hello', meta: 'world' }) // '@[Hello](world)'
- * annotate('@[__children__]', { children: 'content' }) // '@[content]'
+ * annotate('@[__slot__]', { slot: 'content' }) // '@[content]'
  * ```
  */
 export function annotate(
@@ -20,7 +20,7 @@ export function annotate(
 	params: {
 		value?: string
 		meta?: string
-		children?: string
+		slot?: string
 	}
 ): string {
 	let annotation = markup as string
@@ -33,8 +33,8 @@ export function annotate(
 		annotation = annotation.replaceAll(PLACEHOLDER.Meta, params.meta)
 	}
 
-	if (params.children !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.Children, params.children)
+	if (params.slot !== undefined) {
+		annotation = annotation.replaceAll(PLACEHOLDER.Slot, params.slot)
 	}
 
 	return annotation

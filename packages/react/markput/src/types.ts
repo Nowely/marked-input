@@ -61,11 +61,8 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 export interface Slots {
 	/** Root container component */
 	container?: ElementType<HTMLAttributes<HTMLDivElement>>
-	/** Text span component for rendering text tokens */
-	span?: ElementType<HTMLAttributes<HTMLSpanElement>>
 }
 
 export interface SlotProps {
 	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
-	span?: HTMLAttributes<HTMLSpanElement> & DataAttributes
 }

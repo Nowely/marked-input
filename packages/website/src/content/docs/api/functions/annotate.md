@@ -17,10 +17,10 @@ Make annotation from the markup for ParserV2
 
 | Parameter | Type | Description |
 | ------ | ------ | ------ |
-| `markup` | [`Markup`](/api/type-aliases/markup/) | Markup pattern with __value__, __meta__, and/or __children__ placeholders |
-| `params` | \{ `children?`: `string`; `meta?`: `string`; `value?`: `string`; \} | Object with optional value, meta, and children strings |
-| `params.children?` | `string` | - |
+| `markup` | [`Markup`](/api/type-aliases/markup/) | Markup pattern with __value__, __meta__, and/or __slot__ placeholders |
+| `params` | \{ `meta?`: `string`; `slot?`: `string`; `value?`: `string`; \} | Object with optional value, meta, and slot strings |
 | `params.meta?` | `string` | - |
+| `params.slot?` | `string` | - |
 | `params.value?` | `string` | - |
 
 ## Returns
@@ -34,5 +34,5 @@ Annotated string with placeholders replaced
 ```typescript
 annotate('@[__value__]', { value: 'Hello' }) // '@[Hello]'
 annotate('@[__value__](__meta__)', { value: 'Hello', meta: 'world' }) // '@[Hello](world)'
-annotate('@[__children__]', { children: 'content' }) // '@[content]'
+annotate('@[__slot__]', { slot: 'content' }) // '@[content]'
 ```

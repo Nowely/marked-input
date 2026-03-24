@@ -23,8 +23,8 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 // Example 1: Simple Nesting (Markdown-style)
 // ============================================================================
 
-const BoldMarkup: Markup = '**__children__**'
-const ItalicMarkup: Markup = '*__children__*'
+const BoldMarkup: Markup = '**__slot__**'
+const ItalicMarkup: Markup = '*__slot__*'
 
 const SimpleMark = defineComponent({
 	props: {value: String, children: {type: null}, style: {type: Object}},
@@ -63,9 +63,9 @@ export const SimpleNesting: Story = {
 // Example 2: Multiple Nesting Levels
 // ============================================================================
 
-const TagMarkup: Markup = '#[__children__]'
-const MentionMarkup: Markup = '@[__children__]'
-const CodeMarkup: Markup = '`__children__`'
+const TagMarkup: Markup = '#[__slot__]'
+const MentionMarkup: Markup = '@[__slot__]'
+const CodeMarkup: Markup = '`__slot__`'
 
 const MultiLevelMark = defineComponent({
 	props: {value: String, children: {type: null}, style: {type: Object}},
@@ -129,7 +129,7 @@ export const MultipleLevels: Story = {
 // Example 3: HTML-like Tags
 // ============================================================================
 
-const HtmlMarkup: Markup = '<__value__>__children__</__value__>'
+const HtmlMarkup: Markup = '<__value__>__slot__</__value__>'
 
 const HtmlLikeMark = defineComponent({
 	props: {value: String, children: {type: null}},

@@ -103,9 +103,9 @@ describe('SegmentMatcher', () => {
 		it('should correctly segment complex HTML-like structure', () => {
 			// Use MarkupRegistry to generate segments from the actual markup patterns
 			const markups: Markup[] = [
-				'<__value__ __meta__>__children__</__value__>',
-				'<__value__>__children__</__value__>',
-				'**__children__**',
+				'<__value__ __meta__>__slot__</__value__>',
+				'<__value__>__slot__</__value__>',
+				'**__slot__**',
 			]
 			const registry = new MarkupRegistry(markups)
 			const matcher = new SegmentMatcher(registry.segments)

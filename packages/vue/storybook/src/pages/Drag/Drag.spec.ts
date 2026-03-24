@@ -772,9 +772,10 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('should insert character at correct position mid-text within a mark row', async () => {
 			const {container} = await render(MarkdownDrag)
 			const blocks = getBlocks(container)
-			await focusAtStart(blocks[0])
+			const editable = getEditableInBlock(blocks[0])
+			await focusAtStart(editable)
 			await userEvent.keyboard('{ArrowRight}{ArrowRight}')
-			dispatchInsertText(blocks[0], 'X')
+			dispatchInsertText(editable, 'X')
 			await new Promise(r => setTimeout(r, 50))
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
@@ -862,7 +863,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		it('should insert new empty row after mark row when pressing Enter on mark', async () => {
 			const {container} = await render(MarkdownDrag)
 			const blocks = getBlocks(container)
-			await focusAtEnd(blocks[0])
+			await focusAtEnd(getEditableInBlock(blocks[0]))
 			await userEvent.keyboard('{Enter}')
 
 			const raw = getRawValue(container)

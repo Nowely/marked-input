@@ -123,7 +123,7 @@ export class TreeBuilder {
 			const markToken = this.createMarkToken(match)
 
 			// If match has children content, push to stack for processing children
-			if (this.hasChildrenContent(match)) {
+			if (this.hasSlotContent(match)) {
 				const bounds = this.getContentBounds(match)
 				parentStack.push({
 					match,
@@ -163,14 +163,7 @@ export class TreeBuilder {
 	 * Finalizes a parent token by adding final text token if needed
 	 */
 	private finalizeParent(parent: ParentContext, endPos: number): void {
-		const hasNestedMarks = parent.token.children.some(child => child.type === 'mark')
-		if (hasNestedMarks) {
-			// Add final text token within parent's content
-			parent.token.children.push(this.createTextToken(parent.textPos, endPos))
-		} else {
-			// No nested marks — clear children (no text-only children in output)
-			parent.token.children = []
-		}
+		parent.token.children.push(this.createTextToken(parent.textPos, endPos))
 	}
 
 	/**
@@ -179,25 +172,25 @@ export class TreeBuilder {
 	private createMarkToken(match: Match): MarkToken {
 		// Extract content using helper functions
 		const value = this.extractSubstring(match.gaps.value?.start, match.gaps.value?.end)
-		const childrenStr = this.extractSubstring(match.gaps.children?.start, match.gaps.children?.end)
+		const slotStr = this.extractSubstring(match.gaps.slot?.start, match.gaps.slot?.end)
 		const metaStr = this.extractSubstring(match.gaps.meta?.start, match.gaps.meta?.end)
 
-		// Convert empty strings to undefined for children, but meta can be empty string
-		const childrenContent = childrenStr || undefined
+		// Convert empty strings to undefined for slot, but meta can be empty string
+		const slotContent = slotStr || undefined
 		const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
-		// Use value if present, otherwise use children content
-		const valueContent = value || childrenContent || ''
+		// Use value if present, otherwise use slot content
+		const valueContent = value || slotContent || ''
 
 		return {
 			type: 'mark',
 			content: this.input.substring(match.start, match.end),
-			children: [], // Will be populated if match has children content
+			children: [], // Will be populated if match has slot content
 			descriptor: match.descriptor,
 			value: valueContent,
 			meta,
 			position: {start: match.start, end: match.end},
-			childrenSource: this.createChildrenSourceInfo(match, childrenContent),
+			slot: this.createSlotSourceInfo(match, slotContent),
 		}
 	}
 
@@ -208,8 +201,8 @@ export class TreeBuilder {
 	 * Priority: nested content if present, otherwise value content
 	 */
 	private getContentBounds(match: Match): PositionRange {
-		if (match.gaps.children) {
-			return match.gaps.children
+		if (match.gaps.slot) {
+			return match.gaps.slot
 		}
 		if (match.gaps.value) {
 			return match.gaps.value
@@ -223,8 +216,8 @@ export class TreeBuilder {
 	/**
 	 * Checks if a match has children content capability
 	 */
-	private hasChildrenContent(match: Match): boolean {
-		return match.gaps.children !== undefined
+	private hasSlotContent(match: Match): boolean {
+		return match.gaps.slot !== undefined
 	}
 
 	/**
@@ -244,14 +237,14 @@ export class TreeBuilder {
 	/**
 	 * Creates children source info object if children content exists
 	 */
-	private createChildrenSourceInfo(match: Match, childrenContent: string | undefined): MarkToken['childrenSource'] {
-		if (!childrenContent || match.gaps.children === undefined) {
+	private createSlotSourceInfo(match: Match, slotContent: string | undefined): MarkToken['slot'] {
+		if (!slotContent || match.gaps.slot === undefined) {
 			return undefined
 		}
 		return {
-			content: childrenContent,
-			start: match.gaps.children.start,
-			end: match.gaps.children.end,
+			content: slotContent,
+			start: match.gaps.slot.start,
+			end: match.gaps.slot.end,
 		}
 	}
 }

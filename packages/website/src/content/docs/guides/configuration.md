@@ -84,11 +84,11 @@ markup: '@(__meta__)[__value__]'
 // Matches: @(user:1)[Alice], @(user:2)[Bob]
 
 // Nested marks
-markup: '**__children__**'
+markup: '**__slot__**'
 // Matches: **bold text**, **bold with *italic***
 
 // HTML-like tags
-markup: '<__value__>__children__</__value__>'
+markup: '<__value__>__slot__</__value__>'
 // Matches: <div>content</div>, <span>text</span>
 ```
 
@@ -96,7 +96,7 @@ markup: '<__value__>__children__</__value__>'
 
 - `__value__` - Main content (plain text)
 - `__meta__` - Metadata (plain text)
-- `__children__` - Content that can contain other marks
+- `__slot__` - Content that can contain other marks
 
 See [How It Works](../introduction/how-it-works#markup-patterns) for detailed explanation of markup patterns.
 
@@ -123,7 +123,7 @@ slotProps: {
 
 - `value` - Content from `__value__` placeholder
 - `meta` - Content from `__meta__` placeholder
-- `nested` - Raw string from `__children__` placeholder
+- `nested` - Raw string from `__slot__` placeholder
 - `children` - Rendered React nodes for nested marks
 
 **Example:** Twitter-style mentions
@@ -550,13 +550,13 @@ function TypedEditor() {
 ```tsx
 options={[
   {
-    markup: '**__children__**',
+    markup: '**__slot__**',
     slotProps: {
       mark: ({ children }) => ({ style: { fontWeight: 'bold' }, children })
     }
   },
   {
-    markup: '*__children__*',
+    markup: '*__slot__*',
     slotProps: {
       mark: ({ children }) => ({ style: { fontStyle: 'italic' }, children })
     }

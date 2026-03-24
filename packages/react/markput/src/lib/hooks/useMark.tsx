@@ -11,10 +11,6 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	const token = useToken()
 	const ref = useRef<HTMLElement>(null) as unknown as RefObject<T>
 
-	if (token.type !== 'mark') {
-		throw new Error('useMark can only be used with mark tokens')
-	}
-
 	const [mark] = useState(() => new MarkHandler<T>({ref, store, token: token as MarkToken}))
 
 	useUncontrolledInit(ref, options, token as MarkToken)

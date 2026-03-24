@@ -10,7 +10,7 @@ export interface MenuPosition {
 	left: number
 }
 
-interface DraggableBlockProps {
+interface DragMarkProps {
 	blockIndex: number
 	children: ReactNode
 	readOnly: boolean
@@ -21,8 +21,8 @@ interface DraggableBlockProps {
 
 type DropPosition = 'before' | 'after' | null
 
-export const DraggableBlock = memo(
-	({blockIndex, children, readOnly, alwaysShowHandle, onReorder, onRequestMenu}: DraggableBlockProps) => {
+export const DragMark = memo(
+	({blockIndex, children, readOnly, alwaysShowHandle, onReorder, onRequestMenu}: DragMarkProps) => {
 		const [isHovered, setIsHovered] = useState(false)
 		const [isDragging, setIsDragging] = useState(false)
 		const [dropPosition, setDropPosition] = useState<DropPosition>(null)
@@ -181,4 +181,4 @@ export const DraggableBlock = memo(
 	}
 )
 
-DraggableBlock.displayName = 'DraggableBlock'
+DragMark.displayName = 'DragMark'

@@ -1,28 +1,22 @@
 import type {Token as TokenType} from '@markput/core'
 import {memo} from 'react'
 
+import {useTokenSlot} from '../lib/hooks/useSlot'
+import {useStore} from '../lib/providers/StoreContext'
 import {TokenContext} from '../lib/providers/TokenContext'
-// eslint-disable-next-line import/no-cycle
-import {MarkRenderer} from './MarkRenderer'
-import {TextSpan} from './TextSpan'
 
-/** Renders a token - marks via MarkRenderer, text via TextSpan or plain text if nested */
-export const Token = memo(({mark, isNested = false}: {mark: TokenType; isNested?: boolean}) => {
-	if (mark.type === 'mark') {
-		return (
-			<TokenContext value={mark}>
-				<MarkRenderer />
-			</TokenContext>
-		)
-	}
+export const Token = memo(({mark}: {mark: TokenType}) => {
+	const store = useStore()
+	const [Component, props] = useTokenSlot(mark)
 
-	if (isNested) {
-		return <>{mark.content}</>
-	}
+	const children =
+		mark.type === 'mark' && mark.children.length > 0
+			? mark.children.map(child => <Token key={store.key.get(child)} mark={child} />)
+			: undefined
 
 	return (
 		<TokenContext value={mark}>
-			<TextSpan />
+			<Component {...props} children={children} />
 		</TokenContext>
 	)
 })

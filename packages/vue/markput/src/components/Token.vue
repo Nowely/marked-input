@@ -1,28 +1,40 @@
 <script lang="ts">
 import type {Token as TokenType} from '@markput/core'
-import {defineComponent, h, provide, toRef, type PropType} from 'vue'
+import {computed, defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
+import {useTokenSlot} from '../lib/hooks/useSlot'
+import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
-// eslint-disable-next-line import/no-cycle
-import MarkRenderer from './MarkRenderer.vue'
-import TextSpan from './TextSpan.vue'
 
-export default defineComponent({
+const Token = defineComponent({
+	name: 'Token',
 	props: {
 		mark: {type: Object as PropType<TokenType>, required: true},
-		isNested: {type: Boolean, default: false},
 	},
-	setup(props) {
+	setup(props): () => VNode {
 		provide(
 			TOKEN_KEY,
 			toRef(() => props.mark)
 		)
 
+		const store = useStore()
+		const key = store.key
+
+		const resolved = computed(() => useTokenSlot(props.mark))
+
 		return () => {
-			if (props.mark.type === 'mark') return h(MarkRenderer)
-			if (props.isNested) return props.mark.content
-			return h(TextSpan)
+			const [Comp, compProps] = resolved.value
+
+			const mark = props.mark
+			const children =
+				mark.type === 'mark' && mark.children.length > 0
+					? () => mark.children.map(child => h(markRaw(Token), {key: key.get(child), mark: child}))
+					: undefined
+
+			return h(Comp, compProps, children)
 		}
 	},
 })
+
+export default Token
 </script>

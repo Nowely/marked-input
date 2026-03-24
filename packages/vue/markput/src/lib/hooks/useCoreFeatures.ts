@@ -21,13 +21,21 @@ export function useCoreFeatures(store: Store) {
 	watch(
 		[value, coreOptions, Mark],
 		() => {
-			const options = Mark.value ? coreOptions.value : undefined
+			const hasPerOptionMark = (coreOptions.value as Option[] | undefined)?.some(opt => opt.Mark != null)
+			const options = Mark.value || hasPerOptionMark ? coreOptions.value : undefined
 			store.lifecycle.syncParser(value.value, options)
 		},
 		{flush: 'post', immediate: true}
 	)
 
 	const tokens = store.state.tokens.use()
+	watch(
+		tokens,
+		() => {
+			store.controllers.contentEditable.sync()
+		},
+		{flush: 'post'}
+	)
 	watch(
 		tokens,
 		() => {

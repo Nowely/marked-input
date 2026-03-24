@@ -1,4 +1,5 @@
 import {useMark} from '@markput/react'
+import type {MarkProps} from '@markput/react'
 import {useState} from 'react'
 
 import styles from './TodoMark.module.css'
@@ -13,29 +14,29 @@ const useTodo = () => {
 		setIsDone(newDone)
 		mark.value = newDone ? 'x' : ' '
 	}
-	return {isDone, toggle, readOnly: mark.readOnly ?? false, childrenSource: mark.childrenSource}
+	return {isDone, toggle, readOnly: mark.readOnly ?? false}
 }
 
 // ─── Mark components (one per option) ─────────────────────────────────────────
 
-export const TodoItemMark = () => {
-	const {isDone, toggle, readOnly, childrenSource} = useTodo()
+export const TodoItemMark = ({children}: MarkProps) => {
+	const {isDone, toggle, readOnly} = useTodo()
 
 	return (
-		<span className={`${styles.todo} ${isDone ? styles.done : ''}`.trim()}>
+		<div className={`${styles.todo} ${isDone ? styles.done : ''}`.trim()}>
 			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
-			{childrenSource}
-		</span>
+			{children}
+		</div>
 	)
 }
 
-export const TodoIndent1Mark = () => {
-	const {isDone, toggle, readOnly, childrenSource} = useTodo()
+export const TodoIndent1Mark = ({children}: MarkProps) => {
+	const {isDone, toggle, readOnly} = useTodo()
 
 	return (
 		<span className={`${styles.todoIndent1} ${isDone ? styles.done : ''}`.trim()}>
 			<input type="checkbox" className={styles.checkbox} checked={isDone} onChange={toggle} disabled={readOnly} />
-			{childrenSource}
+			{children}
 		</span>
 	)
 }

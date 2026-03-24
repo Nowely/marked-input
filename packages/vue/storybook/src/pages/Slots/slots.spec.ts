@@ -117,65 +117,56 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toHaveTextContent('Hello world')
 		})
 
-		it('should use custom component from slots.span', async () => {
+		it('should use custom component from Span prop', async () => {
 			const CustomSpan = defineComponent({
-				setup(_, {slots}) {
-					return () => h('span', {'data-testid': 'custom-span'}, slots.default?.())
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {'data-testid': 'custom-span'}, props.value)
 				},
 			})
 
 			await render(MarkedInput, {
-				props: {
-					Mark: TestMark,
-					value: 'Hello world',
-					slots: {
-						span: CustomSpan,
-					},
-				},
+				props: {Mark: TestMark, value: 'Hello world', Span: CustomSpan},
 			})
 
 			await expect.element(page.getByTestId('custom-span')).toBeInTheDocument()
 		})
 
-		it('should pass slotProps.span to the span component', async () => {
-			const {container} = await render(MarkedInput, {
-				props: {
-					Mark: TestMark,
-					value: 'Hello world',
-					slotProps: {
-						span: {
-							className: 'custom-span-class',
-							dataSpanCustom: 'span-value',
-						},
-					},
+		it('should apply custom className via custom Span component', async () => {
+			const CustomSpan = defineComponent({
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {class: 'custom-span-class'}, props.value)
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			await render(MarkedInput, {
+				props: {Mark: TestMark, value: 'Hello world', Span: CustomSpan},
+			})
+
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toHaveClass('custom-span-class')
-			await expect.element(textSpan).toHaveAttribute('data-span-custom', 'span-value')
 		})
 
-		it('should merge style from slotProps.span', async () => {
-			const {container} = await render(MarkedInput, {
-				props: {
-					Mark: TestMark,
-					value: 'Hello world',
-					slotProps: {
-						span: {
-							style: {fontWeight: 'bold', fontSize: '16px'},
-						},
-					},
+		it('should apply custom style via custom Span component', async () => {
+			const CustomSpan = defineComponent({
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {style: {fontWeight: 'bold', fontSize: '16px'}}, props.value)
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			await render(MarkedInput, {
+				props: {Mark: TestMark, value: 'Hello world', Span: CustomSpan},
+			})
+
+			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toHaveStyle({fontWeight: 'bold', fontSize: '16px'})
 		})
 	})
 
 	describe('Both slots', () => {
-		it('should allow overriding both container and span slots simultaneously', async () => {
+		it('should allow overriding both container and Span simultaneously', async () => {
 			const CustomContainer = defineComponent({
 				setup(_, {slots}) {
 					return () => h('div', {'data-testid': 'custom-container'}, slots.default?.())
@@ -183,8 +174,9 @@ describe('Slots API', () => {
 			})
 
 			const CustomSpan = defineComponent({
-				setup(_, {slots}) {
-					return () => h('span', {'data-testid': 'custom-span'}, slots.default?.())
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {'data-testid': 'custom-span', 'data-span-prop': 'span'}, props.value)
 				},
 			})
 
@@ -192,18 +184,9 @@ describe('Slots API', () => {
 				props: {
 					Mark: TestMark,
 					value: 'Hello world',
-					slots: {
-						container: CustomContainer,
-						span: CustomSpan,
-					},
-					slotProps: {
-						container: {
-							dataContainerProp: 'container',
-						},
-						span: {
-							dataSpanProp: 'span',
-						},
-					},
+					Span: CustomSpan,
+					slots: {container: CustomContainer},
+					slotProps: {container: {dataContainerProp: 'container'}},
 				},
 			})
 
@@ -230,17 +213,11 @@ describe('Slots API', () => {
 				props: {
 					Mark: TestMark,
 					value: 'Hello',
-					slots: {
-						container: CustomDiv,
-						span: 'span',
-					},
+					slots: {container: CustomDiv},
 					slotProps: {
 						container: {
 							onKeydown: () => {},
 							className: 'test',
-						},
-						span: {
-							style: {color: 'red'},
 						},
 					},
 				},
@@ -297,19 +274,16 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toBeInTheDocument()
 		})
 
-		it('should maintain contentEditable on span with custom slot', async () => {
+		it('should maintain contentEditable on span with custom Span', async () => {
 			const CustomSpan = defineComponent({
-				setup(_, {slots}) {
-					return () => h('span', {'data-testid': 'custom-editable-span'}, slots.default?.())
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {'data-testid': 'custom-editable-span'}, props.value)
 				},
 			})
 
 			await render(MarkedInput, {
-				props: {
-					Mark: TestMark,
-					value: 'Hello world',
-					slots: {span: CustomSpan},
-				},
+				props: {Mark: TestMark, value: 'Hello world', Span: CustomSpan},
 			})
 
 			const span = page.getByTestId('custom-editable-span')
@@ -429,23 +403,20 @@ describe('Slots API', () => {
 			await expect.element(container).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 
-		it('should allow native HTML elements as slots', async () => {
+		it('should allow native HTML elements as container slot', async () => {
 			const {container} = await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
 					value: 'Hello world',
-					slots: {
-						container: 'article',
-						span: 'div',
-					},
+					slots: {container: 'article'},
 				},
 			})
 
 			const article = container.querySelector('article') as HTMLElement
-			const div = container.querySelector('div[contenteditable]') as HTMLElement
+			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
 
 			await expect.element(article).toBeInTheDocument()
-			await expect.element(div).toBeInTheDocument()
+			await expect.element(textSpan).toBeInTheDocument()
 		})
 	})
 
@@ -492,18 +463,19 @@ describe('Slots API', () => {
 			await expect.element(div).toBeInTheDocument()
 		})
 
-		it('should handle multiple marked values with custom slots', async () => {
+		it('should handle multiple marked values with custom Span', async () => {
+			const CustomSpan = defineComponent({
+				props: {value: String},
+				setup(props) {
+					return () => h('span', {'data-testid': 'text-span'}, props.value)
+				},
+			})
+
 			const {container} = await render(MarkedInput, {
 				props: {
 					Mark: TestMark,
 					value: '@[hello] world @[test]',
-					slots: {
-						span: defineComponent({
-							setup(_, {slots}) {
-								return () => h('span', {'data-testid': 'text-span'}, slots.default?.())
-							},
-						}),
-					},
+					Span: CustomSpan,
 				},
 			})
 

@@ -20,6 +20,7 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 }
 
 export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+	Span?: Component
 	Mark?: Component
 	Overlay?: Component
 	options?: Option<TMarkProps, TOverlayProps>[]
@@ -40,10 +41,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 
 export interface Slots {
 	container?: string | Component
-	span?: string | Component
 }
 
 export interface SlotProps {
 	container?: Record<string, unknown> & DataAttributes
-	span?: Record<string, unknown> & DataAttributes
 }

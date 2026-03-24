@@ -607,6 +607,14 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	}
 }
 
+/** A text-token span has no attributes, or only the contenteditable attribute. */
+function isTextTokenSpan(el: HTMLElement): boolean {
+	return (
+		el.tagName === 'SPAN' &&
+		(el.attributes.length === 0 || (el.attributes.length === 1 && el.hasAttribute('contenteditable')))
+	)
+}
+
 /**
  * Recursively sets the caret inside a mark token's rendered DOM element.
  *
@@ -625,30 +633,39 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 	const sel = window.getSelection()
 	if (!sel) return false
 
-	if (!markToken.children || markToken.children.length === 0) {
-		// Simple mark: renders nested content as a single text node.
-		const nestedStart = markToken.childrenSource?.start ?? markToken.position.start
-		const nestedEnd = markToken.childrenSource?.end ?? markToken.position.end
-		const offsetInNested = Math.max(0, Math.min(rawAbsolutePos - nestedStart, nestedEnd - nestedStart))
-		const walker = document.createTreeWalker(markElement, 4 /* SHOW_TEXT */)
-		const textNode = walker.nextNode() as Text | null
-		if (!textNode) return false
-		const range = document.createRange()
-		range.setStart(textNode, Math.min(offsetInNested, textNode.length))
-		range.collapse(true)
-		sel.removeAllRanges()
-		sel.addRange(range)
-		return true
-	}
-
-	// Complex mark: walk childNodes in parallel with token children.
+	// Walk childNodes in parallel with token children.
 	// Comment / fragment nodes are skipped without advancing the token index.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
+			if (!isTextTokenSpan(childNode as HTMLElement)) continue
+			// Text token rendered as <span> element — place caret inside its text node.
+			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
+				const textNode = childNode.firstChild as Text | null
+				const offset = rawAbsolutePos - tokenChild.position.start
+				if (textNode) {
+					const range = document.createRange()
+					range.setStart(textNode, Math.min(offset, textNode.length))
+					range.collapse(true)
+					sel.removeAllRanges()
+					sel.addRange(range)
+				} else {
+					// Empty span — place caret at start of the element
+					const range = document.createRange()
+					range.setStart(childNode, 0)
+					range.collapse(true)
+					sel.removeAllRanges()
+					sel.addRange(range)
+				}
+				return true
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+			// Legacy: text token as direct text node
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
 				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, (childNode as Text).length)
 				const range = document.createRange()
@@ -694,6 +711,14 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
 	// DraggableBlock wraps tokens in a div with a side panel as child[0].
 	// Mark blocks rendered without DraggableBlock have no side panel.
 	const hasSidePanel = blockDiv.hasAttribute('data-testid')
+
+	// In drag mode, mark blocks render the mark element directly as blockDiv
+	// (no DragMark wrapper). So blockDiv IS the mark element itself.
+	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
+		if (setCaretInMarkAtRawPos(blockDiv, block.tokens[0] as MarkToken, rawAbsolutePos)) return
+		Caret.setCaretToEnd(blockDiv)
+		return
+	}
 
 	for (let i = 0; i < block.tokens.length; i++) {
 		const token = block.tokens[i]
@@ -755,8 +780,11 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	// DraggableBlock wrapper), resolve position using the mark token directly.
 	if (node.nodeType === Node.TEXT_NODE && node.parentElement === blockDiv) {
 		const token = block.tokens[0]
-		if (token) {
-			return getDomRawPosInMark(node, offset, blockDiv, token as MarkToken)
+		if (token?.type === 'mark') {
+			return getDomRawPosInMark(node, offset, blockDiv, token)
+		}
+		if (token?.type === 'text') {
+			return token.position.start + Math.min(offset, token.content.length)
 		}
 		return block.endPos
 	}
@@ -773,6 +801,14 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 	// DraggableBlock wraps tokens in a div with a side panel as child[0].
 	// Mark blocks rendered without DraggableBlock have no side panel.
 	const hasSidePanel = blockDiv.hasAttribute('data-testid')
+
+	// When blockDiv IS the mark element (no DragMark wrapper, single mark token),
+	// delegate to getDomRawPosInMark. The mark component may render non-token
+	// children (e.g. checkboxes) that break token-index arithmetic.
+	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
+		return getDomRawPosInMark(node, offset, blockDiv, block.tokens[0] as MarkToken)
+	}
+
 	const tokenIndex = childIndex - (hasSidePanel ? 1 : 0)
 	if (tokenIndex < 0) return block.startPos
 	if (tokenIndex >= block.tokens.length) return block.endPos
@@ -799,28 +835,40 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: 
 function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
 	if (!markToken.children || markToken.children.length === 0) {
 		if (offset === 0) return markToken.position.start
-		const nestedLen = markToken.childrenSource?.content.length ?? markToken.value.length
+		const nestedLen = markToken.slot?.content.length ?? markToken.value.length
 		if (nestedLen > 0 && offset >= nestedLen) {
 			// When the mark's raw content ends with a block separator, the cursor
 			// at the visual end should map to nested.end (before the separator),
 			// not position.end (after it). Otherwise use position.end to place
 			// the cursor after the closing delimiter (e.g. ** in bold).
-			if (markToken.content.endsWith('\n\n') && markToken.childrenSource) {
-				return markToken.childrenSource.end
+			if (markToken.content.endsWith('\n\n') && markToken.slot) {
+				return markToken.slot.end
 			}
 			return markToken.position.end
 		}
-		return (markToken.childrenSource?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
+		return (markToken.slot?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
 	}
 
 	// Walk child nodes of markElement and match to token children.
-	// TextToken children render as text nodes; MarkToken children render as elements.
+	// TextToken children render as span elements; MarkToken children render as elements.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
+			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
+			if (!isTextTokenSpan(childNode as HTMLElement)) continue
+			if (node === childNode) {
+				// Element-level offset: 0 = before children, >= childNodes.length = after all children
+				const charOffset = offset === 0 ? 0 : tokenChild.content.length
+				return tokenChild.position.start + Math.min(charOffset, tokenChild.content.length)
+			}
+			if ((childNode as Element).contains(node)) {
+				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
+			}
+			tokenIdx++
+		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
 			if (node === childNode) {
 				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
 			}
@@ -834,5 +882,5 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 	}
 
 	// Fallback: cursor at or beyond end of nested content
-	return markToken.childrenSource?.end ?? markToken.position.end
+	return markToken.slot?.end ?? markToken.position.end
 }

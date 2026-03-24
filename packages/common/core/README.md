@@ -99,7 +99,7 @@ const store = new Store()
 - `DEFAULT_MARKUP` - Default markup template
 - `DEFAULT_OVERLAY_TRIGGER` - Default trigger character
 - `KEYBOARD` - Keyboard constants
-- `PLACEHOLDER` - Placeholder constants (`__label__`, `__value__`, `__children__`)
+- `PLACEHOLDER` - Placeholder constants (`__label__`, `__value__`, `__slot__`)
 
 > **Note**: Default configuration options are now framework-specific. For React, see `@markput` package.
 

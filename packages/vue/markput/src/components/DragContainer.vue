@@ -13,7 +13,7 @@ import type {Component} from 'vue'
 import {computed} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
-import DraggableBlock from './DraggableBlock.vue'
+import DragMark from './DragMark.vue'
 import Token from './Token.vue'
 
 const store = useStore()
@@ -64,7 +64,7 @@ function handleDuplicate(index: number) {
 		:class="className"
 		:style="style"
 	>
-		<DraggableBlock
+		<DragMark
 			v-for="(block, index) in blocks"
 			:key="block.id"
 			:block-index="index"
@@ -76,6 +76,6 @@ function handleDuplicate(index: number) {
 			@duplicate="handleDuplicate"
 		>
 			<Token v-for="token in block.tokens" :key="key.get(token)" :mark="token" />
-		</DraggableBlock>
+		</DragMark>
 	</component>
 </template>

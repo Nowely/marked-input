@@ -1,4 +1,5 @@
 export {MarkedInput} from './src/components/MarkedInput'
+export {Span} from './src/components/Span'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'
 
