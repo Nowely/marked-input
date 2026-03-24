@@ -1,5 +1,5 @@
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from '../blocks/dragOperations'
-import {splitTokensIntoDragRows} from '../blocks/splitTokensIntoDragRows'
+import {EMPTY_BLOCK, splitTokensIntoDragRows} from '../blocks/splitTokensIntoDragRows'
 import type {Store} from '../store/Store'
 
 export class DragController {
@@ -19,7 +19,8 @@ export class DragController {
 	add(afterIndex: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const blocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const rawBlocks = splitTokensIntoDragRows(this.store.state.tokens.get())
+		const blocks = rawBlocks.length > 0 ? rawBlocks : [EMPTY_BLOCK]
 		this.store.applyValue(addDragRow(value, blocks, afterIndex))
 		queueMicrotask(() => {
 			const container = this.store.refs.container

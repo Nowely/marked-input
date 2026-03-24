@@ -114,6 +114,7 @@ export function resetDragRowIdCounter(): void {
  * - Mark + text or text + mark: gap = 0
  * - A trailing `\n\n` creates an empty text row at the end
  * - Two consecutive `\n\n` in a text region creates an empty text row between them
+ * - A `\n\n` after a mark (not after text) creates an empty row before the next item
  */
 export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 	if (tokens.length === 0) return []
@@ -126,17 +127,24 @@ export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 	// Used to detect consecutive separators (→ empty text row) or trailing separators.
 	let afterSeparatorPos: number | null = null
 
+	// True when the last row pushed was a mark. Used to decide whether a pending
+	// separator should create an empty text row:
+	//   - separator after a mark  → empty row (explicit gap between mark rows)
+	//   - separator after text    → absorbed (natural text-to-mark boundary)
+	let lastPushedWasMark = false
+
 	for (const token of tokens) {
 		if (token.type === 'mark') {
-			// If a `\n\n` separator preceded this mark, create an empty text row for it
-			// before the mark row (single separator → one empty row between marks).
-			if (afterSeparatorPos !== null) {
+			// A separator that follows a mark (not text content) signals an explicit
+			// empty slot between two mark rows — create it before this mark.
+			if (afterSeparatorPos !== null && lastPushedWasMark) {
 				rows.push({
 					id: generateRowId(afterSeparatorPos),
 					tokens: [],
 					startPos: afterSeparatorPos,
 					endPos: afterSeparatorPos,
 				})
+				lastPushedWasMark = false
 			}
 			afterSeparatorPos = null
 			rows.push({
@@ -145,6 +153,7 @@ export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 				startPos: token.position.start,
 				endPos: token.position.end,
 			})
+			lastPushedWasMark = true
 		} else if (token.type === 'text') {
 			const parts = splitTextByBlockSeparator(token as TextToken)
 			for (const part of parts) {
@@ -158,10 +167,22 @@ export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 							startPos: afterSeparatorPos,
 							endPos: afterSeparatorPos,
 						})
+						lastPushedWasMark = false
 					}
 					afterSeparatorPos = part.position.end
 				} else if (part.content.trim().length > 0) {
+					// A separator that follows a mark (leading separator in the text token)
+					// signals an explicit empty slot — create it before this content.
+					if (afterSeparatorPos !== null && lastPushedWasMark) {
+						rows.push({
+							id: generateRowId(afterSeparatorPos),
+							tokens: [],
+							startPos: afterSeparatorPos,
+							endPos: afterSeparatorPos,
+						})
+					}
 					afterSeparatorPos = null
+					lastPushedWasMark = false
 					rows.push({
 						id: generateRowId(part.position.start),
 						tokens: [
