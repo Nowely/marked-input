@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.7.0](https://github.com/Nowely/marked-input/compare/0.6.0...0.7.0) (2026-03-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename __nested__ placeholder to __children__ ([#156](https://github.com/Nowely/marked-input/issues/156))
+* **types:** replace slot properties with top-level Mark/Overlay on Option ([#155](https://github.com/Nowely/marked-input/issues/155))
+
+### Features
+
+* **BlockContainer:** drag-and-drop reordering for mark blocks ([#153](https://github.com/Nowely/marked-input/issues/153)) ([e9f18ff](https://github.com/Nowely/marked-input/commit/e9f18ffc783b55d39051c79b4491142db5628e32))
+
+
+### Bug Fixes
+
+* **KeyDownController:** prioritize previousValue over value for input handling ([#158](https://github.com/Nowely/marked-input/issues/158)) ([dbac2d4](https://github.com/Nowely/marked-input/commit/dbac2d4882066ecfc98f327a2ec7a220a95c228d))
+
+
+### Refactoring
+
+* rename __nested__ placeholder to __children__ ([#156](https://github.com/Nowely/marked-input/issues/156)) ([eb797a5](https://github.com/Nowely/marked-input/commit/eb797a5d6d4671b339a077ace81b1f00e80f5255))
+* Replace __children__ with __slot__, consolidate token rendering, and enhance drag mode ([#157](https://github.com/Nowely/marked-input/issues/157)) ([00d57ed](https://github.com/Nowely/marked-input/commit/00d57edf780b8919dab64fc9954d7a9015d66cce))
+* **types:** replace slot properties with top-level Mark/Overlay on Option ([#155](https://github.com/Nowely/marked-input/issues/155)) ([2b5d558](https://github.com/Nowely/marked-input/commit/2b5d558147f6c6797650a1b1c98e5529f9190b67))
+
+
+### Documentation
+
+* rewrite AGENTS.md  ([#159](https://github.com/Nowely/marked-input/issues/159)) ([4fc49b7](https://github.com/Nowely/marked-input/commit/4fc49b78b937619e0c6ed3b29e083139e467d6d1))
+
 ## [0.6.0](https://github.com/Nowely/marked-input/compare/0.5.0...0.6.0) (2026-03-15)
 
 
