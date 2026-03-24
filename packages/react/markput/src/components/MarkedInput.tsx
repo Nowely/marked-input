@@ -8,6 +8,7 @@ import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
+import {DragContainer} from './DragContainer'
 import {OverlayRenderer} from './OverlayRenderer'
 
 import styles from '@markput/core/styles.module.css'
@@ -121,9 +122,11 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 
 	useCoreFeatures(store, ref)
 
+	const ContainerImpl = drag ? DragContainer : Container
+
 	return (
 		<StoreContext value={store}>
-			<Container />
+			<ContainerImpl />
 			<OverlayRenderer />
 		</StoreContext>
 	)
