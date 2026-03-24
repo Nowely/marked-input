@@ -124,8 +124,16 @@ export function splitTokensIntoDragRows(tokens: Token[]): Block[] {
 
 	for (const token of tokens) {
 		if (token.type === 'mark') {
-			// A mark absorbs any pending separator gap — no empty text row is created
-			// between a `\n\n` separator and the following mark.
+			// If a `\n\n` separator preceded this mark, create an empty text row for it
+			// before the mark row (single separator → one empty row between marks).
+			if (afterSeparatorPos !== null) {
+				rows.push({
+					id: generateRowId(afterSeparatorPos),
+					tokens: [],
+					startPos: afterSeparatorPos,
+					endPos: afterSeparatorPos,
+				})
+			}
 			afterSeparatorPos = null
 			rows.push({
 				id: generateRowId(token.position.start),

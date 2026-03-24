@@ -41,9 +41,9 @@ export function addDragRow(value: string, rows: Block[], afterIndex: number): st
 	const gap = next.startPos - curr.endPos
 
 	if (gap === 0) {
-		// Marks are adjacent (no separator) — insert `\n\n\n\n` to carve out a visible empty slot:
-		// the double-separator will produce an empty text row between the two `\n\n` boundaries.
-		return value.slice(0, curr.endPos) + BLOCK_SEPARATOR + BLOCK_SEPARATOR + value.slice(next.startPos)
+		// Marks are adjacent (no separator) — insert one `\n\n` between them.
+		// splitTokensIntoDragRows will see the separator before the next mark and create one empty row.
+		return value.slice(0, curr.endPos) + BLOCK_SEPARATOR + value.slice(next.startPos)
 	}
 
 	// gap = 2 (existing `\n\n`): insert one more `\n\n` at next.startPos → `\n\n\n\n` gap → empty row.
