@@ -97,7 +97,6 @@ export {
 	mergeDragRows,
 	getMergeDragRowJoinPos,
 	canMergeRows,
-	BLOCK_SEPARATOR,
 	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
 } from './src/features/blocks'

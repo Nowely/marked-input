@@ -1,5 +1,6 @@
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from '../blocks/dragOperations'
 import {EMPTY_TEXT_TOKEN, filterDragTokens} from '../blocks/splitTokensIntoDragRows'
+import {annotate} from '../parsing'
 import type {Store} from '../store/Store'
 
 export class DragController {
@@ -21,7 +22,8 @@ export class DragController {
 		if (value == null || !this.store.state.onChange.get()) return
 		const rawRows = filterDragTokens(this.store.state.tokens.get())
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
-		this.store.applyValue(addDragRow(value, rows, afterIndex))
+		const newRowContent = this.#createRowContent()
+		this.store.applyValue(addDragRow(value, rows, afterIndex, newRowContent))
 		queueMicrotask(() => {
 			const container = this.store.refs.container
 			if (!container) return
@@ -42,5 +44,11 @@ export class DragController {
 		if (value == null || !this.store.state.onChange.get()) return
 		const rows = filterDragTokens(this.store.state.tokens.get())
 		this.store.applyValue(duplicateDragRow(value, rows, index))
+	}
+
+	#createRowContent(): string {
+		const firstOption = this.store.state.options.get()?.[0]
+		if (!firstOption?.markup) return '\n'
+		return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
 	}
 }
