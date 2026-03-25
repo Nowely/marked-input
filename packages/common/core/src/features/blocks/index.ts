@@ -8,4 +8,4 @@ export {
 	reorderDragRows,
 	canMergeRows,
 } from './dragOperations'
-export {BLOCK_SEPARATOR, getAlwaysShowHandleDrag} from './config'
+export {getAlwaysShowHandleDrag} from './config'

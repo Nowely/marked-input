@@ -1,12 +1,12 @@
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
-import {BLOCK_SEPARATOR} from '../blocks/config'
-import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow, canMergeRows} from '../blocks/dragOperations'
+import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../blocks/dragOperations'
 import {filterDragTokens} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {MarkToken, Token} from '../parsing'
+import {annotate} from '../parsing'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 
@@ -16,6 +16,12 @@ export class KeyDownController {
 	#beforeInputHandler?: (e: InputEvent) => void
 
 	constructor(private store: Store) {}
+
+	#createRowContent(): string {
+		const firstOption = this.store.state.options.get()?.[0]
+		if (!firstOption?.markup) return '\n'
+		return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
+	}
 
 	enable() {
 		if (this.#keydownHandler) return
@@ -280,8 +286,10 @@ export class KeyDownController {
 
 		if (!this.store.state.onChange.get()) return
 
-		if (!isTextRow(token)) {
-			const newValue = addDragRow(value, rows, blockIndex)
+		const newRowContent = this.#createRowContent()
+
+		if (token.type !== 'text') {
+			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 			this.store.applyValue(newValue)
 			queueMicrotask(() => {
 				const newBlockDivs = container.children
@@ -296,7 +304,7 @@ export class KeyDownController {
 		}
 
 		const absolutePos = getCaretRawPosInBlock(blockDiv, token)
-		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
+		const newValue = value.slice(0, absolutePos) + newRowContent + value.slice(absolutePos)
 		this.store.applyValue(newValue)
 
 		queueMicrotask(() => {

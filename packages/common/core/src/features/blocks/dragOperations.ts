@@ -1,39 +1,22 @@
 import type {Token} from '../parsing'
-import {BLOCK_SEPARATOR} from './config'
 
-function isTextRow(row: Token): boolean {
-	return row.type === 'text'
-}
-
-function gapBetween(a: Token, b: Token): number {
-	return b.position.start - a.position.end
+function gapText(value: string, a: Token, b: Token): string {
+	return value.substring(a.position.end, b.position.start)
 }
 
 /**
- * Returns the separator that should sit between two adjacent rows in the value.
- * Text-text pairs need `\n\n`; everything else is adjacent with no separator.
- */
-function separatorBetween(a: Token, b: Token): string {
-	return isTextRow(a) && isTextRow(b) ? BLOCK_SEPARATOR : ''
-}
-
-/**
- * Returns whether two adjacent rows can be merged (Backspace/Delete).
- * Only text-text pairs separated by exactly `\n\n` are mergeable.
+ * Returns whether two adjacent text rows can be merged (Backspace/Delete).
  */
 export function canMergeRows(a: Token, b: Token): boolean {
-	return isTextRow(a) && isTextRow(b) && gapBetween(a, b) === BLOCK_SEPARATOR.length
+	return a.type === 'text' && b.type === 'text' && b.position.start > a.position.end
 }
 
-export function addDragRow(value: string, rows: Token[], afterIndex: number): string {
-	if (rows.length === 0) return value + BLOCK_SEPARATOR
-
-	if (afterIndex >= rows.length - 1) {
-		return value === '' ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : value + BLOCK_SEPARATOR
-	}
+export function addDragRow(value: string, rows: Token[], afterIndex: number, newRowContent: string): string {
+	if (rows.length === 0) return value + newRowContent
+	if (afterIndex >= rows.length - 1) return value + newRowContent
 
 	const insertPos = rows[afterIndex + 1].position.start
-	return value.slice(0, insertPos) + BLOCK_SEPARATOR + value.slice(insertPos)
+	return value.slice(0, insertPos) + newRowContent + value.slice(insertPos)
 }
 
 export function deleteDragRow(value: string, rows: Token[], index: number): string {
@@ -50,13 +33,11 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
 	const row = rows[index]
 	const rowText = value.substring(row.position.start, row.position.end)
 
-	if (index >= rows.length - 1) {
-		return value + separatorBetween(row, row) + rowText
-	}
+	if (index >= rows.length - 1) return value + rowText
 
 	const next = rows[index + 1]
-	const sep = gapBetween(row, next) === 0 ? '' : separatorBetween(row, row)
-	return value.slice(0, next.position.start) + rowText + sep + value.slice(next.position.start)
+	const gap = gapText(value, row, next)
+	return value.slice(0, next.position.start) + rowText + gap + value.slice(next.position.start)
 }
 
 /**
@@ -69,7 +50,7 @@ export function getMergeDragRowJoinPos(rows: Token[], index: number): number {
 }
 
 /**
- * Merges row[index] into row[index - 1] by removing the separator between them.
+ * Merges row[index] into row[index - 1] by removing the gap between them.
  */
 export function mergeDragRows(value: string, rows: Token[], index: number): string {
 	if (index <= 0 || index >= rows.length) return value
@@ -80,7 +61,7 @@ export function mergeDragRows(value: string, rows: Token[], index: number): stri
 
 /**
  * Reorders rows by moving the row at `sourceIndex` to `targetIndex`.
- * Separators between adjacent rows are determined by their types.
+ * Gaps between adjacent rows are extracted from the original value and preserved.
  */
 export function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
@@ -89,24 +70,27 @@ export function reorderDragRows(value: string, rows: Token[], sourceIndex: numbe
 	if (targetIndex < 0 || targetIndex > rows.length) return value
 
 	const texts = rows.map(row => value.substring(row.position.start, row.position.end))
+	const gaps = rows.slice(0, -1).map((row, i) => gapText(value, row, rows[i + 1]))
 
-	const reordered = [...rows]
-	const [movedRow] = reordered.splice(sourceIndex, 1)
 	const [movedText] = texts.splice(sourceIndex, 1)
+	// Remove the gap associated with the source position
+	const gapIndex = sourceIndex < gaps.length ? sourceIndex : sourceIndex - 1
+	gaps.splice(gapIndex, 1)
 
 	const insertAt = targetIndex > sourceIndex ? targetIndex - 1 : targetIndex
-	reordered.splice(insertAt, 0, movedRow)
 	texts.splice(insertAt, 0, movedText)
+	// Insert a gap for the new position (use '' — marks are self-delimiting)
+	if (insertAt < texts.length - 1) {
+		gaps.splice(insertAt, 0, '')
+	}
 
 	const parts: string[] = []
 	for (let i = 0; i < texts.length; i++) {
 		parts.push(texts[i])
-		if (i < texts.length - 1) {
-			parts.push(separatorBetween(reordered[i], reordered[i + 1]))
+		if (i < gaps.length) {
+			parts.push(gaps[i])
 		}
 	}
 
 	return parts.join('')
 }
-
-export {isTextRow}
