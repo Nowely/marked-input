@@ -1,7 +1,7 @@
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {BLOCK_SEPARATOR} from '../blocks/config'
-import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
+import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow, canMergeRows} from '../blocks/dragOperations'
 import {filterDragTokens} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
@@ -149,8 +149,7 @@ export class KeyDownController {
 			if (caretAtStart && blockIndex > 0) {
 				const prevToken = rows[blockIndex - 1]
 				const currToken = rows[blockIndex]
-				const gap = currToken.position.start - prevToken.position.end
-				if (isTextRow(prevToken) && isTextRow(currToken) && gap === 2) {
+				if (canMergeRows(prevToken, currToken)) {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
@@ -188,8 +187,7 @@ export class KeyDownController {
 			if (caretAtStart && blockIndex > 0) {
 				const prevToken = rows[blockIndex - 1]
 				const currToken = rows[blockIndex]
-				const gap = currToken.position.start - prevToken.position.end
-				if (isTextRow(prevToken) && isTextRow(currToken) && gap === 2) {
+				if (canMergeRows(prevToken, currToken)) {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
@@ -220,8 +218,7 @@ export class KeyDownController {
 			if (caretAtEnd && blockIndex < rows.length - 1) {
 				const currToken = rows[blockIndex]
 				const nextToken = rows[blockIndex + 1]
-				const gap = nextToken.position.start - currToken.position.end
-				if (isTextRow(currToken) && isTextRow(nextToken) && gap === 2) {
+				if (canMergeRows(currToken, nextToken)) {
 					event.preventDefault()
 					const joinPos = currToken.position.end
 					const newValue = mergeDragRows(value, rows, blockIndex + 1)

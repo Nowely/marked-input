@@ -96,6 +96,7 @@ export {
 	duplicateDragRow,
 	mergeDragRows,
 	getMergeDragRowJoinPos,
+	canMergeRows,
 	BLOCK_SEPARATOR,
 	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
