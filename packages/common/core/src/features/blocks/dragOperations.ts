@@ -1,29 +1,28 @@
 import type {Token} from '../parsing'
 import {BLOCK_SEPARATOR} from './config'
 
-/**
- * In drag mode the gap between two adjacent rows can be:
- *   0  — marks are auto-delimited by their syntax (no separator needed)
- *   2  — `\n\n` required between two text rows
- *
- * These helpers account for 0-gap adjacency.
- */
-
-function rowGap(rows: Token[], index: number): number {
-	if (index >= rows.length - 1) return 0
-	return rows[index + 1].position.start - rows[index].position.end
-}
-
 function isTextRow(row: Token): boolean {
 	return row.type === 'text'
 }
 
+function gapBetween(a: Token, b: Token): number {
+	return b.position.start - a.position.end
+}
+
 /**
- * Returns the separator that should sit between row[a] and row[b] in the value.
+ * Returns the separator that should sit between two adjacent rows in the value.
  * Text-text pairs need `\n\n`; everything else is adjacent with no separator.
  */
 function separatorBetween(a: Token, b: Token): string {
 	return isTextRow(a) && isTextRow(b) ? BLOCK_SEPARATOR : ''
+}
+
+/**
+ * Returns whether two adjacent rows can be merged (Backspace/Delete).
+ * Only text-text pairs separated by exactly `\n\n` are mergeable.
+ */
+export function canMergeRows(a: Token, b: Token): boolean {
+	return isTextRow(a) && isTextRow(b) && gapBetween(a, b) === BLOCK_SEPARATOR.length
 }
 
 export function addDragRow(value: string, rows: Token[], afterIndex: number): string {
@@ -33,15 +32,8 @@ export function addDragRow(value: string, rows: Token[], afterIndex: number): st
 		return value === '' ? BLOCK_SEPARATOR + BLOCK_SEPARATOR : value + BLOCK_SEPARATOR
 	}
 
-	const curr = rows[afterIndex]
-	const next = rows[afterIndex + 1]
-	const gap = next.position.start - curr.position.end
-
-	if (gap === 0) {
-		return value.slice(0, curr.position.end) + BLOCK_SEPARATOR + value.slice(next.position.start)
-	}
-
-	return value.slice(0, next.position.start) + BLOCK_SEPARATOR + value.slice(next.position.start)
+	const insertPos = rows[afterIndex + 1].position.start
+	return value.slice(0, insertPos) + BLOCK_SEPARATOR + value.slice(insertPos)
 }
 
 export function deleteDragRow(value: string, rows: Token[], index: number): string {
@@ -59,20 +51,17 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
 	const rowText = value.substring(row.position.start, row.position.end)
 
 	if (index >= rows.length - 1) {
-		const sep = isTextRow(row) ? BLOCK_SEPARATOR : BLOCK_SEPARATOR
-		return value + sep + rowText
+		return value + separatorBetween(row, row) + rowText
 	}
 
 	const next = rows[index + 1]
-	const gap = next.position.start - row.position.end
-	const sep = gap === 0 ? '' : BLOCK_SEPARATOR
+	const sep = gapBetween(row, next) === 0 ? '' : separatorBetween(row, row)
 	return value.slice(0, next.position.start) + rowText + sep + value.slice(next.position.start)
 }
 
 /**
  * Returns the raw-value position of the join point between row[index-1] and row[index]
  * for use as the caret position after a merge.
- * Only meaningful for text-text merges (gap = 2).
  */
 export function getMergeDragRowJoinPos(rows: Token[], index: number): number {
 	if (index <= 0 || index >= rows.length) return 0
@@ -80,8 +69,7 @@ export function getMergeDragRowJoinPos(rows: Token[], index: number): number {
 }
 
 /**
- * Merges row[index] into row[index - 1] by removing the `\n\n` separator between them.
- * Only has an effect when both rows are text rows (gap = 2).
+ * Merges row[index] into row[index - 1] by removing the separator between them.
  */
 export function mergeDragRows(value: string, rows: Token[], index: number): string {
 	if (index <= 0 || index >= rows.length) return value
@@ -92,9 +80,7 @@ export function mergeDragRows(value: string, rows: Token[], index: number): stri
 
 /**
  * Reorders rows by moving the row at `sourceIndex` to `targetIndex`.
- * After reordering, separator between adjacent rows is determined by their types:
- *   text + text → `\n\n`
- *   anything else → `""` (marks are auto-delimited)
+ * Separators between adjacent rows are determined by their types.
  */
 export function reorderDragRows(value: string, rows: Token[], sourceIndex: number, targetIndex: number): string {
 	if (sourceIndex === targetIndex || sourceIndex === targetIndex - 1) return value
@@ -123,4 +109,4 @@ export function reorderDragRows(value: string, rows: Token[], sourceIndex: numbe
 	return parts.join('')
 }
 
-export {rowGap, isTextRow}
+export {isTextRow}

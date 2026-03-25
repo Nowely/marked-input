@@ -6,5 +6,6 @@ export {
 	mergeDragRows,
 	getMergeDragRowJoinPos,
 	reorderDragRows,
+	canMergeRows,
 } from './dragOperations'
 export {BLOCK_SEPARATOR, getAlwaysShowHandleDrag} from './config'
