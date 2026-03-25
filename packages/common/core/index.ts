@@ -75,20 +75,11 @@ export {KeyDownController} from './src/features/input'
 export {SystemListenerController} from './src/features/events'
 export {TextSelectionController} from './src/features/selection'
 export {ContentEditableController} from './src/features/editable'
-export {DragController, getDragDropPosition, parseDragSourceIndex, getDragTargetIndex} from './src/features/drag'
-export {Caret, TriggerFinder} from './src/features/caret'
-
-// Feature Management
-export {FeatureManager, asFeature, type Feature, createCoreFeatures} from './src/features/feature-manager'
-
-// Lifecycle
-export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
-
-// Mark Handler
-export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
-
-// Blocks
 export {
+	DragController,
+	getDragDropPosition,
+	parseDragSourceIndex,
+	getDragTargetIndex,
 	filterDragTokens,
 	reorderDragRows,
 	addDragRow,
@@ -99,7 +90,17 @@ export {
 	canMergeRows,
 	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
-} from './src/features/blocks'
+} from './src/features/drag'
+export {Caret, TriggerFinder} from './src/features/caret'
+
+// Feature Management
+export {FeatureManager, asFeature, type Feature, createCoreFeatures} from './src/features/feature-manager'
+
+// Lifecycle
+export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
+
+// Mark Handler
+export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
 
 // Navigation & Input
 export {shiftFocusPrev, shiftFocusNext} from './src/features/navigation'
