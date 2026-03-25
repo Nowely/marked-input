@@ -16,7 +16,7 @@ export const Token = memo(({mark}: {mark: TokenType}) => {
 
 	return (
 		<TokenContext value={mark}>
-			<Component {...props} children={children} />
+			<Component children={children} {...props} />
 		</TokenContext>
 	)
 })
