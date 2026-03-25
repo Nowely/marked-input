@@ -2,11 +2,11 @@ import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {BLOCK_SEPARATOR} from '../blocks/config'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, isTextRow} from '../blocks/dragOperations'
-import {tokensToBlocks, type Block} from '../blocks/splitTokensIntoDragRows'
+import {filterDragTokens} from '../blocks/splitTokensIntoDragRows'
 import {Caret} from '../caret'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import type {MarkToken} from '../parsing'
+import type {MarkToken, Token} from '../parsing'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 
@@ -108,11 +108,10 @@ export class KeyDownController {
 		)
 		if (blockIndex === -1) return
 
-		const tokens = this.store.state.tokens.get()
-		const blocks = tokensToBlocks(tokens, this.store.key)
-		if (blockIndex >= blocks.length) return
+		const rows = filterDragTokens(this.store.state.tokens.get())
+		if (blockIndex >= rows.length) return
 
-		const block = blocks[blockIndex]
+		const token = rows[blockIndex]
 		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 		if (!this.store.state.onChange.get()) return
 
@@ -120,19 +119,18 @@ export class KeyDownController {
 			const blockDiv = blockDivs[blockIndex] as HTMLElement
 			const caretAtStart = Caret.getCaretIndex(blockDiv) === 0
 
-			// Empty block: delete the block entirely
-			const blockText = block.tokens.map(t => ('content' in t ? (t as {content: string}).content : '')).join('')
+			const blockText = 'content' in token ? token.content : ''
 			if (blockText === '') {
 				event.preventDefault()
 				const newValue =
-					blocks.length <= 1
+					rows.length <= 1
 						? ''
 						: (() => {
-								if (blockIndex >= blocks.length - 1)
-									return value.slice(0, blocks[blockIndex - 1].endPos)
+								if (blockIndex >= rows.length - 1)
+									return value.slice(0, rows[blockIndex - 1].position.end)
 								return (
-									value.slice(0, blocks[blockIndex].startPos) +
-									value.slice(blocks[blockIndex + 1].startPos)
+									value.slice(0, rows[blockIndex].position.start) +
+									value.slice(rows[blockIndex + 1].position.start)
 								)
 							})()
 				this.store.applyValue(newValue)
@@ -148,30 +146,27 @@ export class KeyDownController {
 				return
 			}
 
-			// Non-empty block at position 0: merge with previous block
 			if (caretAtStart && blockIndex > 0) {
-				const prevBlock = blocks[blockIndex - 1]
-				const currBlock = blocks[blockIndex]
-				const gap = currBlock.startPos - prevBlock.endPos
-				if (isTextRow(prevBlock) && isTextRow(currBlock) && gap === 2) {
-					// Text-text merge: remove the \n\n separator
+				const prevToken = rows[blockIndex - 1]
+				const currToken = rows[blockIndex]
+				const gap = currToken.position.start - prevToken.position.end
+				if (isTextRow(prevToken) && isTextRow(currToken) && gap === 2) {
 					event.preventDefault()
-					const joinPos = getMergeDragRowJoinPos(blocks, blockIndex)
-					const newValue = mergeDragRows(value, blocks, blockIndex)
+					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
+					const newValue = mergeDragRows(value, rows, blockIndex)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
 						const newDivs = container.children
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
-							const updatedBlock = updatedBlocks[blockIndex - 1]
-							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedToken = updatedRows[blockIndex - 1]
+							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
 				}
-				// Previous row is a mark (or gap=0): navigate only
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
@@ -190,29 +185,27 @@ export class KeyDownController {
 			const caretAtEnd = caretIndex === blockDiv.textContent?.length
 			const caretAtStart = caretIndex === 0
 
-			// Caret at start of non-first block: merge current block into previous (like Backspace at start)
 			if (caretAtStart && blockIndex > 0) {
-				const prevBlock = blocks[blockIndex - 1]
-				const currBlock = blocks[blockIndex]
-				const gap = currBlock.startPos - prevBlock.endPos
-				if (isTextRow(prevBlock) && isTextRow(currBlock) && gap === 2) {
+				const prevToken = rows[blockIndex - 1]
+				const currToken = rows[blockIndex]
+				const gap = currToken.position.start - prevToken.position.end
+				if (isTextRow(prevToken) && isTextRow(currToken) && gap === 2) {
 					event.preventDefault()
-					const joinPos = getMergeDragRowJoinPos(blocks, blockIndex)
-					const newValue = mergeDragRows(value, blocks, blockIndex)
+					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
+					const newValue = mergeDragRows(value, rows, blockIndex)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
 						const newDivs = container.children
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
-							const updatedBlock = updatedBlocks[blockIndex - 1]
-							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedToken = updatedRows[blockIndex - 1]
+							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
 				}
-				// Previous row is a mark: navigate only
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
@@ -224,29 +217,27 @@ export class KeyDownController {
 				return
 			}
 
-			// Caret at end of non-last block: merge next block into current
-			if (caretAtEnd && blockIndex < blocks.length - 1) {
-				const currBlock = blocks[blockIndex]
-				const nextBlock = blocks[blockIndex + 1]
-				const gap = nextBlock.startPos - currBlock.endPos
-				if (isTextRow(currBlock) && isTextRow(nextBlock) && gap === 2) {
+			if (caretAtEnd && blockIndex < rows.length - 1) {
+				const currToken = rows[blockIndex]
+				const nextToken = rows[blockIndex + 1]
+				const gap = nextToken.position.start - currToken.position.end
+				if (isTextRow(currToken) && isTextRow(nextToken) && gap === 2) {
 					event.preventDefault()
-					const joinPos = currBlock.endPos
-					const newValue = mergeDragRows(value, blocks, blockIndex + 1)
+					const joinPos = currToken.position.end
+					const newValue = mergeDragRows(value, rows, blockIndex + 1)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
 						const newDivs = container.children
 						const target = newDivs[blockIndex] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedBlocks = tokensToBlocks(this.store.state.tokens.get(), this.store.key)
-							const updatedBlock = updatedBlocks[blockIndex]
-							if (updatedBlock) setCaretAtRawPos(target, updatedBlock, joinPos)
+							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedToken = updatedRows[blockIndex]
+							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
 				}
-				// Next row is a mark: navigate only
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex + 1] as HTMLElement | undefined
@@ -274,7 +265,6 @@ export class KeyDownController {
 
 		event.preventDefault()
 
-		// Find which block (container child) contains the active element
 		const blockDivs = container.children
 		let blockIndex = -1
 		for (let i = 0; i < blockDivs.length; i++) {
@@ -285,44 +275,40 @@ export class KeyDownController {
 		}
 		if (blockIndex === -1) return
 
-		const tokens = this.store.state.tokens.get()
-		const blocks = tokensToBlocks(tokens, this.store.key)
-		const block = blocks[blockIndex]
-		if (!block) return
+		const rows = filterDragTokens(this.store.state.tokens.get())
+		const token = rows[blockIndex]
+		if (!token) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
 		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 
 		if (!this.store.state.onChange.get()) return
 
-		if (!isTextRow(block)) {
-			// Mark row in drag mode: add a new empty text row after this row
-			const newValue = addDragRow(value, blocks, blockIndex)
+		if (!isTextRow(token)) {
+			const newValue = addDragRow(value, rows, blockIndex)
 			this.store.applyValue(newValue)
 			queueMicrotask(() => {
 				const newBlockDivs = container.children
 				const newBlockIndex = blockIndex + 1
 				if (newBlockIndex < newBlockDivs.length) {
-					const newBlock = newBlockDivs[newBlockIndex] as HTMLElement
-					newBlock.focus()
-					Caret.trySetIndex(newBlock, 0)
+					const newBlockEl = newBlockDivs[newBlockIndex] as HTMLElement
+					newBlockEl.focus()
+					Caret.trySetIndex(newBlockEl, 0)
 				}
 			})
 			return
 		}
 
-		// Text row: split at caret position
-		const absolutePos = getCaretRawPosInBlock(blockDiv, block)
+		const absolutePos = getCaretRawPosInBlock(blockDiv, token)
 		const newValue = value.slice(0, absolutePos) + BLOCK_SEPARATOR + value.slice(absolutePos)
 		this.store.applyValue(newValue)
 
-		// Focus the new block after re-render
 		queueMicrotask(() => {
 			const newBlockDivs = container.children
 			const newBlockIndex = blockIndex + 1
 			if (newBlockIndex < newBlockDivs.length) {
-				const newBlock = newBlockDivs[newBlockIndex] as HTMLElement
-				newBlock.focus()
-				Caret.trySetIndex(newBlock, 0)
+				const newBlockEl = newBlockDivs[newBlockIndex] as HTMLElement
+				newBlockEl.focus()
+				Caret.trySetIndex(newBlockEl, 0)
 			}
 		})
 	}
@@ -374,14 +360,14 @@ export class KeyDownController {
  *
  * Delegates to `getDomRawPos` using the current selection's focus node and offset.
  */
-function getCaretRawPosInBlock(blockDiv: HTMLElement, block: Block): number {
+function getCaretRawPosInBlock(blockDiv: HTMLElement, token: Token): number {
 	const selection = window.getSelection()
-	if (!selection?.rangeCount) return block.endPos
+	if (!selection?.rangeCount) return token.position.end
 
 	const {focusNode, focusOffset} = selection
-	if (!focusNode) return block.endPos
+	if (!focusNode) return token.position.end
 
-	return getDomRawPos(focusNode, focusOffset, blockDiv, block)
+	return getDomRawPos(focusNode, focusOffset, blockDiv, token)
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
@@ -398,7 +384,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.state.selecting.set(undefined)
 
-	// In block/drag mode the focus target is a block div, not a text span.
+	// In drag mode the focus target is a block div, not a text span.
 	// Block-level keys (Enter, Backspace, Delete) are handled by KeyDownController.
 	// Text insertions and in-block deletions need special handling to update state.
 	if (store.state.drag.get()) {
@@ -524,11 +510,10 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	if (blockIndex === -1) return
 
 	const blockDiv = blockDivs[blockIndex]
-	const tokens = store.state.tokens.get()
-	const blocks = tokensToBlocks(tokens, store.key)
-	if (blockIndex >= blocks.length) return
+	const rows = filterDragTokens(store.state.tokens.get())
+	if (blockIndex >= rows.length) return
 
-	const block = blocks[blockIndex]
+	const token = rows[blockIndex]
 	const value = store.state.previousValue.get() ?? store.state.value.get() ?? ''
 
 	const focusAndSetCaret = (newRawPos: number) => {
@@ -536,10 +521,9 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			const target = container.children[blockIndex] as HTMLElement | undefined
 			if (!target) return
 			target.focus()
-			// Use updated tokens (post-applyValue) for correct token positions
-			const updatedBlocks = tokensToBlocks(store.state.tokens.get(), store.key)
-			const updatedBlock = updatedBlocks[blockIndex]
-			if (updatedBlock) setCaretAtRawPos(target, updatedBlock, newRawPos)
+			const updatedRows = filterDragTokens(store.state.tokens.get())
+			const updatedToken = updatedRows[blockIndex]
+			if (updatedToken) setCaretAtRawPos(target, updatedToken, newRawPos)
 		})
 	}
 
@@ -551,13 +535,11 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			let rawFrom: number
 			let rawTo: number
 			if (ranges.length > 0) {
-				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
-				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, token)
+				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, token)
 				;[rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 			} else {
-				// getTargetRanges() can be empty when the caret is adjacent to a mark element.
-				// Fall back to reading the caret position directly from the selection.
-				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, block)
+				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
 			store.applyValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + data.length)
@@ -571,13 +553,11 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			let rawFrom: number
 			let rawTo: number
 			if (ranges.length > 0) {
-				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
-				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+				const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, token)
+				const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, token)
 				;[rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 			} else {
-				// Fall back to current selection when target ranges are unavailable
-				// (e.g. synthetic events used in tests, or caret adjacent to mark elements).
-				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, block)
+				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
 			store.applyValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + pasteData.length)
@@ -591,8 +571,8 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 		case 'deleteSoftLineForward': {
 			const ranges = event.getTargetRanges()
 			if (!ranges.length) return
-			const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, block)
-			const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, block)
+			const rawStart = getDomRawPos(ranges[0].startContainer, ranges[0].startOffset, blockDiv, token)
+			const rawEnd = getDomRawPos(ranges[0].endContainer, ranges[0].endOffset, blockDiv, token)
 			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 			if (rawFrom === rawTo) return
 			event.preventDefault()
@@ -629,17 +609,13 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 	const sel = window.getSelection()
 	if (!sel) return false
 
-	// Walk childNodes in parallel with token children.
-	// Comment / fragment nodes are skipped without advancing the token index.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
 		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
-			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
 			if (!isTextTokenSpan(childNode as HTMLElement)) continue
-			// Text token rendered as <span> element — place caret inside its text node.
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
 				const textNode = childNode.firstChild as Text | null
 				const offset = rawAbsolutePos - tokenChild.position.start
@@ -650,7 +626,6 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 					sel.removeAllRanges()
 					sel.addRange(range)
 				} else {
-					// Empty span — place caret at start of the element
 					const range = document.createRange()
 					range.setStart(childNode, 0)
 					range.collapse(true)
@@ -661,7 +636,6 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 			}
 			tokenIdx++
 		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
-			// Legacy: text token as direct text node
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
 				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, (childNode as Text).length)
 				const range = document.createRange()
@@ -673,7 +647,6 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 			}
 			tokenIdx++
 		} else if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'mark') {
-			// At a boundary, prefer the next sibling text over the current mark end.
 			const nextChild = tokenIdx + 1 < markToken.children.length ? markToken.children[tokenIdx + 1] : null
 			const atBoundary =
 				rawAbsolutePos === tokenChild.position.end && nextChild?.position.start === rawAbsolutePos
@@ -686,70 +659,39 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 			}
 			tokenIdx++
 		}
-		// Other node types (comments, etc.) — skip without advancing tokenIdx.
 	}
 
 	return false
 }
 
 /**
- * Sets the caret at an absolute raw-value position within a block's DOM element.
- * Finds the token that contains `rawAbsolutePos`, then directly positions the
- * caret in that token's DOM text node — bypassing visual character counting
- * which is incorrect when mark tokens are present (raw length ≠ visual length).
+ * Sets the caret at an absolute raw-value position within a drag row's DOM element.
  * For mark tokens, recursively searches nested content via setCaretInMarkAtRawPos.
  */
-function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: number): void {
+function setCaretAtRawPos(blockDiv: HTMLElement, token: Token, rawAbsolutePos: number): void {
 	const sel = window.getSelection()
 	if (!sel) return
 
-	const blockChildren = Array.from(blockDiv.children)
-	// DraggableBlock wraps tokens in a div with a side panel as child[0].
-	// Mark blocks rendered without DraggableBlock have no side panel.
-	const hasSidePanel = blockDiv.hasAttribute('data-testid')
-
-	// In drag mode, mark blocks render the mark element directly as blockDiv
-	// (no DragMark wrapper). So blockDiv IS the mark element itself.
-	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
-		if (setCaretInMarkAtRawPos(blockDiv, block.tokens[0] as MarkToken, rawAbsolutePos)) return
+	if (token.type === 'mark') {
+		if (setCaretInMarkAtRawPos(blockDiv, token, rawAbsolutePos)) return
 		Caret.setCaretToEnd(blockDiv)
 		return
 	}
 
-	for (let i = 0; i < block.tokens.length; i++) {
-		const token = block.tokens[i]
-		const domChild = blockChildren[i + (hasSidePanel ? 1 : 0)] as HTMLElement | undefined
-		if (!domChild) continue
-
-		// At a boundary between tokens, prefer the later (next) token so that
-		// a position equal to the end of a mark resolves into the following text.
-		const nextToken = block.tokens[i + 1]
-		if (nextToken && rawAbsolutePos === token.position.end && rawAbsolutePos === nextToken.position.start) {
-			continue
-		}
-
-		if (rawAbsolutePos >= token.position.start && rawAbsolutePos <= token.position.end) {
-			if (token.type === 'text') {
-				const offsetWithinToken = rawAbsolutePos - token.position.start
-				const walker = document.createTreeWalker(domChild, 4 /* SHOW_TEXT */)
-				const textNode = walker.nextNode() as Text | null
-				if (textNode) {
-					const charOffset = Math.min(offsetWithinToken, textNode.length)
-					const range = document.createRange()
-					range.setStart(textNode, charOffset)
-					range.collapse(true)
-					sel.removeAllRanges()
-					sel.addRange(range)
-					return
-				}
-			}
-			// Mark token: recurse into its nested DOM content
-			if (setCaretInMarkAtRawPos(domChild, token as MarkToken, rawAbsolutePos)) return
-			break
-		}
+	// Text token: position caret directly in the text node
+	const offsetWithinToken = rawAbsolutePos - token.position.start
+	const walker = document.createTreeWalker(blockDiv, 4 /* SHOW_TEXT */)
+	const textNode = walker.nextNode() as Text | null
+	if (textNode) {
+		const charOffset = Math.min(offsetWithinToken, textNode.length)
+		const range = document.createRange()
+		range.setStart(textNode, charOffset)
+		range.collapse(true)
+		sel.removeAllRanges()
+		sel.addRange(range)
+		return
 	}
 
-	// Fallback: position caret at end of block
 	Caret.setCaretToEnd(blockDiv)
 }
 
@@ -759,62 +701,37 @@ function setCaretAtRawPos(blockDiv: HTMLElement, block: Block, rawAbsolutePos: n
  * to the corresponding token's raw position. For mark tokens with nested
  * content, recursively resolves the position within the mark's children.
  */
-function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, block: Block): number {
-	// When the browser represents the caret as (blockDiv, childNodeOffset) — common
-	// at element boundaries (e.g. after a mark span in Vue where comment nodes
-	// shift childNode indices) — fall back to the current selection which gives
-	// a more precise (textNode, offset) position.
+function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, token: Token): number {
 	if (node === blockDiv) {
 		const sel = window.getSelection()
 		if (sel?.focusNode && sel.focusNode !== blockDiv) {
-			return getDomRawPos(sel.focusNode, sel.focusOffset, blockDiv, block)
+			return getDomRawPos(sel.focusNode, sel.focusOffset, blockDiv, token)
 		}
-		return block.endPos
+		return token.position.end
 	}
 
-	// When the text node is a direct child of blockDiv (mark blocks without
-	// DraggableBlock wrapper), resolve position using the mark token directly.
+	// When the text node is a direct child of blockDiv (mark tokens without
+	// DraggableBlock wrapper), resolve position using the token directly.
 	if (node.nodeType === Node.TEXT_NODE && node.parentElement === blockDiv) {
-		const token = block.tokens[0]
-		if (token?.type === 'mark') {
+		if (token.type === 'mark') {
 			return getDomRawPosInMark(node, offset, blockDiv, token)
 		}
-		if (token?.type === 'text') {
-			return token.position.start + Math.min(offset, token.content.length)
-		}
-		return block.endPos
+		return token.position.start + Math.min(offset, token.content.length)
 	}
 
 	let child: Node | null = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
 	while (child && child.parentElement !== blockDiv) {
 		child = child.parentElement
 	}
-	if (!child) return block.endPos
+	if (!child) return token.position.end
 
-	const childIndex = Array.from(blockDiv.children).indexOf(child as Element)
-	if (childIndex < 0) return block.endPos
-
-	// DraggableBlock wraps tokens in a div with a side panel as child[0].
-	// Mark blocks rendered without DraggableBlock have no side panel.
-	const hasSidePanel = blockDiv.hasAttribute('data-testid')
-
-	// When blockDiv IS the mark element (no DragMark wrapper, single mark token),
-	// delegate to getDomRawPosInMark. The mark component may render non-token
-	// children (e.g. checkboxes) that break token-index arithmetic.
-	if (!hasSidePanel && block.tokens.length === 1 && block.tokens[0].type === 'mark') {
-		return getDomRawPosInMark(node, offset, blockDiv, block.tokens[0] as MarkToken)
+	// For mark tokens (no DragMark wrapper), delegate to getDomRawPosInMark.
+	if (token.type === 'mark') {
+		return getDomRawPosInMark(node, offset, blockDiv, token)
 	}
 
-	const tokenIndex = childIndex - (hasSidePanel ? 1 : 0)
-	if (tokenIndex < 0) return block.startPos
-	if (tokenIndex >= block.tokens.length) return block.endPos
-
-	const token = block.tokens[tokenIndex]
-	if (token.type === 'text') {
-		return token.position.start + Math.min(offset, token.content.length)
-	}
-	// For mark tokens: recursively resolve position within nested mark structure
-	return getDomRawPosInMark(node, offset, child as HTMLElement, token)
+	// Text token
+	return token.position.start + Math.min(offset, token.content.length)
 }
 
 /**
@@ -833,10 +750,6 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 		if (offset === 0) return markToken.position.start
 		const nestedLen = markToken.slot?.content.length ?? markToken.value.length
 		if (nestedLen > 0 && offset >= nestedLen) {
-			// When the mark's raw content ends with a block separator, the cursor
-			// at the visual end should map to nested.end (before the separator),
-			// not position.end (after it). Otherwise use position.end to place
-			// the cursor after the closing delimiter (e.g. ** in bold).
 			if (markToken.content.endsWith('\n\n') && markToken.slot) {
 				return markToken.slot.end
 			}
@@ -845,18 +758,14 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 		return (markToken.slot?.start ?? markToken.position.start) + Math.min(offset, nestedLen)
 	}
 
-	// Walk child nodes of markElement and match to token children.
-	// TextToken children render as span elements; MarkToken children render as elements.
 	let tokenIdx = 0
 	for (const childNode of Array.from(markElement.childNodes)) {
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
 		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
-			// Skip non-text-token elements (e.g. checkboxes rendered by mark components).
 			if (!isTextTokenSpan(childNode as HTMLElement)) continue
 			if (node === childNode) {
-				// Element-level offset: 0 = before children, >= childNodes.length = after all children
 				const charOffset = offset === 0 ? 0 : tokenChild.content.length
 				return tokenChild.position.start + Math.min(charOffset, tokenChild.content.length)
 			}
@@ -877,6 +786,5 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 		}
 	}
 
-	// Fallback: cursor at or beyond end of nested content
 	return markToken.slot?.end ?? markToken.position.end
 }

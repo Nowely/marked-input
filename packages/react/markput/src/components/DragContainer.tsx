@@ -1,11 +1,10 @@
 import {
 	resolveSlot,
 	resolveSlotProps,
-	tokensToBlocks,
+	filterDragTokens,
 	getAlwaysShowHandleDrag,
 	getDirectChildIndex,
-	EMPTY_BLOCK,
-	isMarkBlock,
+	EMPTY_TEXT_TOKEN,
 } from '@markput/core'
 import type {DragEvent, ElementType, MouseEvent} from 'react'
 import {memo, useCallback, useMemo, useRef, useState} from 'react'
@@ -48,10 +47,10 @@ export const DragContainer = memo(() => {
 	const ContainerComponent = useMemo(() => resolveSlot<ElementType>('container', slots), [slots])
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
-	const blocks = useMemo(() => {
-		const result = tokensToBlocks(tokens, store.key)
-		return result.length > 0 ? result : [EMPTY_BLOCK]
-	}, [tokens, store.key])
+	const rows = useMemo(() => {
+		const result = filterDragTokens(tokens)
+		return result.length > 0 ? result : [EMPTY_TEXT_TOKEN]
+	}, [tokens])
 
 	const handleAdd = useCallback((afterIndex: number) => dragCtrl.add(afterIndex), [dragCtrl])
 
@@ -75,14 +74,14 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || !isMarkBlock(blocks[childIndex])) {
+			if (childIndex === -1 || rows[childIndex]?.type !== 'mark') {
 				scheduleHideMarkGrip()
 				return
 			}
 			cancelHideMarkGrip()
 			setHoveredMarkIndex(childIndex)
 		},
-		[refs, blocks, scheduleHideMarkGrip, cancelHideMarkGrip]
+		[refs, rows, scheduleHideMarkGrip, cancelHideMarkGrip]
 	)
 
 	const handleContainerMouseLeave = useCallback(() => scheduleHideMarkGrip(), [scheduleHideMarkGrip])
@@ -92,14 +91,14 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || !isMarkBlock(blocks[childIndex])) return
+			if (childIndex === -1 || rows[childIndex]?.type !== 'mark') return
 			e.preventDefault()
 			const el = container.children[childIndex] as HTMLElement
 			const rect = el.getBoundingClientRect()
 			const mid = rect.left + rect.width / 2
 			setMarkDropTarget({index: childIndex, position: e.clientX < mid ? 'before' : 'after'})
 		},
-		[refs, blocks]
+		[refs, rows]
 	)
 
 	const handleContainerDragLeave = useCallback(
@@ -154,21 +153,19 @@ export const DragContainer = memo(() => {
 				onDragLeave={handleContainerDragLeave}
 				onDrop={handleContainerDrop}
 			>
-				{blocks.map((block, index) =>
-					isMarkBlock(block) ? (
-						<Token key={key.get(block.tokens[0])} mark={block.tokens[0]} />
+				{rows.map((token, index) =>
+					token.type === 'mark' ? (
+						<Token key={key.get(token)} mark={token} />
 					) : (
 						<DragMark
-							key={block.id}
+							key={key.get(token)}
 							blockIndex={index}
 							readOnly={readOnly}
 							alwaysShowHandle={alwaysShowHandle}
 							onReorder={(s, t) => dragCtrl.reorder(s, t)}
 							onRequestMenu={handleRequestMenu}
 						>
-							{block.tokens.map(token => (
-								<Token key={key.get(token)} mark={token} />
-							))}
+							<Token key={key.get(token)} mark={token} />
 						</DragMark>
 					)
 				)}

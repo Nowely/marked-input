@@ -89,7 +89,7 @@ export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/ma
 
 // Blocks
 export {
-	tokensToBlocks,
+	filterDragTokens,
 	reorderDragRows,
 	addDragRow,
 	deleteDragRow,
@@ -97,10 +97,8 @@ export {
 	mergeDragRows,
 	getMergeDragRowJoinPos,
 	BLOCK_SEPARATOR,
-	EMPTY_BLOCK,
-	isMarkBlock,
+	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
-	type Block,
 } from './src/features/blocks'
 
 // Navigation & Input
