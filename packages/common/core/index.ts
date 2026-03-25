@@ -1,5 +1,4 @@
 // Shared exports
-export {assertNonNullable} from './src/shared/checkers'
 export {
 	convertDataAttrs,
 	cx,
@@ -10,7 +9,6 @@ export {
 	getDirectChildIndex,
 	isClickOutside,
 	isEscapeKey,
-	type SlotName,
 } from './src/shared/utils'
 export {
 	KEYBOARD,
@@ -52,42 +50,23 @@ export {
 export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
 
 // Reactive system
-export {Reactive} from './src/shared/classes/Reactive'
-export {defineState, defineEvents} from './src/shared/classes'
-export type {Signal, Emitter, UseHookFactory} from './src/shared/classes'
+export type {Signal, UseHookFactory} from './src/shared/classes'
 
 // Utilities
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/parsing/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/editing'
-export {Store, type StoreOptions} from './src/features/store'
-export {
-	OverlayController,
-	createMarkFromOverlay,
-	filterSuggestions,
-	navigateSuggestions,
-	type NavigationAction,
-	type NavigationResult,
-} from './src/features/overlay'
-export {FocusController} from './src/features/focus'
-export {KeyDownController} from './src/features/input'
-export {SystemListenerController} from './src/features/events'
-export {TextSelectionController} from './src/features/selection'
-export {ContentEditableController} from './src/features/editable'
+export {Store} from './src/features/store'
+export {OverlayController, createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
+
+// Drag
 export {
 	DragController,
 	getDragDropPosition,
 	parseDragSourceIndex,
 	getDragTargetIndex,
 	filterDragTokens,
-	reorderDragRows,
-	addDragRow,
-	deleteDragRow,
-	duplicateDragRow,
-	mergeDragRows,
-	getMergeDragRowJoinPos,
-	canMergeRows,
 	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
 } from './src/features/drag'
