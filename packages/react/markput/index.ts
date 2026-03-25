@@ -9,4 +9,4 @@ export type {Option, MarkProps, OverlayProps} from './src/types'
 
 // Re-export from core
 export {denote, annotate, MarkHandler} from '@markput/core'
-export type {MarkputHandler, Markup, Token, TextToken, MarkToken, Block} from '@markput/core'
+export type {MarkputHandler, Markup, Token, TextToken, MarkToken} from '@markput/core'

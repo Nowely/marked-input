@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {resolveSlot, resolveSlotProps, tokensToBlocks, getAlwaysShowHandleDrag} from '@markput/core'
+import {resolveSlot, resolveSlotProps, filterDragTokens, getAlwaysShowHandleDrag} from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
 
@@ -22,7 +22,7 @@ const dragCtrl = store.controllers.drag
 const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
 const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
 
-const blocks = computed(() => tokensToBlocks(tokens.value, key))
+const rows = computed(() => filterDragTokens(tokens.value))
 </script>
 
 <template>
@@ -34,8 +34,8 @@ const blocks = computed(() => tokensToBlocks(tokens.value, key))
 		:style="style"
 	>
 		<DragMark
-			v-for="(block, index) in blocks"
-			:key="block.id"
+			v-for="(token, index) in rows"
+			:key="key.get(token)"
 			:block-index="index"
 			:read-only="readOnly"
 			:always-show-handle="alwaysShowHandle"
@@ -44,7 +44,7 @@ const blocks = computed(() => tokensToBlocks(tokens.value, key))
 			@delete="i => dragCtrl.delete(i)"
 			@duplicate="i => dragCtrl.duplicate(i)"
 		>
-			<Token v-for="token in block.tokens" :key="key.get(token)" :mark="token" />
+			<Token :key="key.get(token)" :mark="token" />
 		</DragMark>
 	</component>
 </template>

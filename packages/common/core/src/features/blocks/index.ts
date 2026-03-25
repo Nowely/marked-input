@@ -1,4 +1,4 @@
-export {tokensToBlocks, EMPTY_BLOCK, isMarkBlock, type Block} from './splitTokensIntoDragRows'
+export {filterDragTokens, EMPTY_TEXT_TOKEN} from './splitTokensIntoDragRows'
 export {
 	addDragRow,
 	deleteDragRow,

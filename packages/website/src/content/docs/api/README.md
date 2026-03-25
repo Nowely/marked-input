@@ -11,7 +11,6 @@ title: "@markput/react"
 
 ## Interfaces
 
-- [Block](/api/interfaces/block/)
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
 - [MarkProps](/api/interfaces/markprops/)
 - [MarkputHandler](/api/interfaces/markputhandler/)
