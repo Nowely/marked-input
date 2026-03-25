@@ -1,7 +1,7 @@
 import {annotate} from '../parsing'
 import type {Store} from '../store/Store'
-import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './dragOperations'
-import {EMPTY_TEXT_TOKEN, filterDragTokens} from './splitTokensIntoDragRows'
+import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
+import {EMPTY_TEXT_TOKEN, filterDragTokens} from './tokens'
 
 export class DragController {
 	constructor(private store: Store) {}

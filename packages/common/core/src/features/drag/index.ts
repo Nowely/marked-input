@@ -1,4 +1,4 @@
 export {DragController} from './DragController'
-export {getDragDropPosition, parseDragSourceIndex, getDragTargetIndex} from './dragEventHandlers'
-export {filterDragTokens, EMPTY_TEXT_TOKEN} from './splitTokensIntoDragRows'
+export {getDragDropPosition, parseDragSourceIndex, getDragTargetIndex} from './eventHandlers'
+export {filterDragTokens, EMPTY_TEXT_TOKEN} from './tokens'
 export {getAlwaysShowHandleDrag} from './config'
