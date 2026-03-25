@@ -1,5 +1,6 @@
+import type {Markup} from '@markput/core'
 import {MarkedInput} from '@markput/react'
-import type {MarkProps, MarkedInputProps} from '@markput/react'
+import type {MarkProps, MarkedInputProps, Option} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties} from 'react'
 
@@ -42,10 +43,16 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 	},
 }
 
+const ParagraphMark = ({children}: MarkProps) => <span>{children}</span>
+
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+
 export const PlainTextDrag: Story = {
 	parameters: {docs: {disable: true}, plainValue: 'bottom'},
 	args: {
-		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text',
+		Mark: ParagraphMark,
+		options: paragraphOptions,
+		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n',
 		drag: true,
 	},
 }
@@ -55,7 +62,7 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 	args: {
 		Mark: MarkdownMark,
 		options: markdownOptions,
-		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover',
+		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover\n\n',
 		drag: true,
 	},
 }
@@ -63,7 +70,9 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 export const ReadOnlyDrag: Story = {
 	parameters: {docs: {disable: true}},
 	args: {
-		value: 'Read-Only Content\n\nSection A\n\nSection B',
+		Mark: ParagraphMark,
+		options: paragraphOptions,
+		value: 'Read-Only Content\n\nSection A\n\nSection B\n\n',
 		readOnly: true,
 		drag: true,
 	},
