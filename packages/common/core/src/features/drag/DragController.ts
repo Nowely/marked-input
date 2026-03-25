@@ -1,7 +1,7 @@
-import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from '../blocks/dragOperations'
-import {EMPTY_TEXT_TOKEN, filterDragTokens} from '../blocks/splitTokensIntoDragRows'
 import {annotate} from '../parsing'
 import type {Store} from '../store/Store'
+import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './dragOperations'
+import {EMPTY_TEXT_TOKEN, filterDragTokens} from './splitTokensIntoDragRows'
 
 export class DragController {
 	constructor(private store: Store) {}

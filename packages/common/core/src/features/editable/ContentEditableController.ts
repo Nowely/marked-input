@@ -1,4 +1,4 @@
-import {filterDragTokens} from '../blocks'
+import {filterDragTokens} from '../drag'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
