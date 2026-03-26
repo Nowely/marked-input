@@ -8,6 +8,7 @@ import {
 	type StateObject,
 } from '../../shared/classes'
 import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
@@ -33,6 +34,12 @@ export class Store {
 	}
 
 	readonly state: StateObject<MarkputState>
+
+	readonly slot: {
+		container: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+		block: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+		span: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+	}
 
 	readonly events = defineEvents<{
 		change: void
@@ -87,6 +94,29 @@ export class Store {
 			},
 			options.createUseHook
 		)
+		this.slot = {
+			container: {
+				use: () =>
+					[
+						resolveSlot('container', this.state.slots.use()),
+						resolveSlotProps('container', this.state.slotProps.use()),
+					] as const,
+			},
+			block: {
+				use: () =>
+					[
+						resolveSlot('block', this.state.slots.use()),
+						resolveSlotProps('block', this.state.slotProps.use()),
+					] as const,
+			},
+			span: {
+				use: () =>
+					[
+						resolveSlot('span', this.state.slots.use()),
+						resolveSlotProps('span', this.state.slotProps.use()),
+					] as const,
+			},
+		}
 	}
 
 	applyValue(newValue: string): void {

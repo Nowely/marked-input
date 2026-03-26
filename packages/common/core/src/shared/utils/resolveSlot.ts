@@ -1,10 +1,11 @@
 import type {CoreSlotProps, CoreSlots} from '../types'
 import {convertDataAttrs} from './dataAttributes'
 
-export type SlotName = 'container' | 'span'
+export type SlotName = 'container' | 'block' | 'span'
 
 const defaultSlots: Record<SlotName, string> = {
 	container: 'div',
+	block: 'div',
 	span: 'span',
 }
 
