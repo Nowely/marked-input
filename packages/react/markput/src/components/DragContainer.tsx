@@ -1,7 +1,6 @@
 import {
 	resolveSlot,
 	resolveSlotProps,
-	filterDragTokens,
 	getAlwaysShowHandleDrag,
 	getDirectChildIndex,
 	EMPTY_TEXT_TOKEN,
@@ -48,8 +47,7 @@ export const DragContainer = memo(() => {
 	const containerProps = useMemo(() => resolveSlotProps('container', slotProps), [slotProps])
 
 	const rows = useMemo(() => {
-		const result = filterDragTokens(tokens)
-		return result.length > 0 ? result : [EMPTY_TEXT_TOKEN]
+		return tokens.length > 0 ? tokens : [EMPTY_TEXT_TOKEN]
 	}, [tokens])
 
 	const handleAdd = useCallback((afterIndex: number) => dragCtrl.add(afterIndex), [dragCtrl])

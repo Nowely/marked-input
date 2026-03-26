@@ -1,4 +1,3 @@
-import {filterDragTokens} from '../drag'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
@@ -40,10 +39,9 @@ export class ContentEditableController {
 			// In drag mode, only set contentEditable on text rows (DragMark divs).
 			// Mark rows get tabIndex for focusability but are not contentEditable.
 			const tokens = this.store.state.tokens.get()
-			const rows = filterDragTokens(tokens)
-			for (let i = 0; i < rows.length && i < children.length; i++) {
+			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = children[i] as HTMLElement
-				if (rows[i].type === 'mark') {
+				if (tokens[i].type === 'mark') {
 					if (!readOnly) el.tabIndex = 0
 				} else {
 					el.contentEditable = value
@@ -123,9 +121,8 @@ export class ContentEditableController {
 
 	#syncDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
 		const editable = readOnly ? 'false' : 'true'
-		const rows = filterDragTokens(tokens)
-		for (let ri = 0; ri < rows.length; ri++) {
-			const token = rows[ri]
+		for (let ri = 0; ri < tokens.length; ri++) {
+			const token = tokens[ri]
 			const blockEl = container.children[ri] as HTMLElement | undefined
 			if (!blockEl) continue
 

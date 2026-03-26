@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {resolveSlot, resolveSlotProps, filterDragTokens, getAlwaysShowHandleDrag} from '@markput/core'
+import {resolveSlot, resolveSlotProps, getAlwaysShowHandleDrag} from '@markput/core'
 import type {Component} from 'vue'
 import {computed} from 'vue'
 
@@ -22,7 +22,7 @@ const dragCtrl = store.controllers.drag
 const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
 const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
 
-const rows = computed(() => filterDragTokens(tokens.value))
+const rows = computed(() => tokens.value)
 </script>
 
 <template>

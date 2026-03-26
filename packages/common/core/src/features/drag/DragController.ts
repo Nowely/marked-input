@@ -1,7 +1,7 @@
 import {annotate} from '../parsing'
 import type {Store} from '../store/Store'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
-import {EMPTY_TEXT_TOKEN, filterDragTokens} from './tokens'
+import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragController {
 	constructor(private store: Store) {}
@@ -12,7 +12,7 @@ export class DragController {
 	reorder(sourceIndex: number, targetIndex: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const rows = filterDragTokens(this.store.state.tokens.get())
+		const rows = this.store.state.tokens.get()
 		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
 		if (newValue !== value) this.store.applyValue(newValue)
 	}
@@ -20,7 +20,7 @@ export class DragController {
 	add(afterIndex: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const rawRows = filterDragTokens(this.store.state.tokens.get())
+		const rawRows = this.store.state.tokens.get()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = this.#createRowContent()
 		this.store.applyValue(addDragRow(value, rows, afterIndex, newRowContent))
@@ -35,14 +35,14 @@ export class DragController {
 	delete(index: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const rows = filterDragTokens(this.store.state.tokens.get())
+		const rows = this.store.state.tokens.get()
 		this.store.applyValue(deleteDragRow(value, rows, index))
 	}
 
 	duplicate(index: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
-		const rows = filterDragTokens(this.store.state.tokens.get())
+		const rows = this.store.state.tokens.get()
 		this.store.applyValue(duplicateDragRow(value, rows, index))
 	}
 
