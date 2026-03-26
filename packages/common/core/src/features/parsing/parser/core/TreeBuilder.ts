@@ -185,15 +185,12 @@ export class TreeBuilder {
 		const slotContent = slotStr || undefined
 		const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
-		// Use value if present, otherwise use slot content
-		const valueContent = value || slotContent || ''
-
 		return {
 			type: 'mark',
 			content: this.input.substring(match.start, match.end),
 			children: [], // Will be populated if match has slot content
 			descriptor: match.descriptor,
-			value: valueContent,
+			value,
 			meta,
 			position: {start: match.start, end: match.end},
 			slot: this.createSlotSourceInfo(match, slotContent),

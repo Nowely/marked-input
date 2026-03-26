@@ -127,9 +127,9 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello @[world]]" [0-17] [value="hello @[world]", slot="hello @[world]"]
+							 1: MARK "@[hello @[world]]" [0-17] [value="", slot="hello @[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "@[world]" [8-16] [value="world", slot="world"]
+								1.1: MARK "@[world]" [8-16] [value="", slot="world"]
 									1.1.0: TEXT "world" [10-15]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
@@ -144,11 +144,11 @@ describe('ParserV2', () => {
 						// Without self-nesting support, the first closing ] ends the outer pattern
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="level1 @[level2 @[level3]]", slot="level1 @[level2 @[level3]]"]
+							 1: MARK "@[level1 @[level2 @[level3]]]" [0-29] [value="", slot="level1 @[level2 @[level3]]"]
 								1.0: TEXT "level1 " [2-9]
-								1.1: MARK "@[level2 @[level3]]" [9-28] [value="level2 @[level3]", slot="level2 @[level3]"]
+								1.1: MARK "@[level2 @[level3]]" [9-28] [value="", slot="level2 @[level3]"]
 									1.1.0: TEXT "level2 " [11-18]
-									1.1.1: MARK "@[level3]" [18-27] [value="level3", slot="level3"]
+									1.1.1: MARK "@[level3]" [18-27] [value="", slot="level3"]
 										1.1.1.0: TEXT "level3" [20-26]
 									1.1.2: TEXT "" [27-27]
 								1.2: TEXT "" [28-28]
@@ -163,9 +163,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]]" [0-17] [value="hello #[world]", slot="hello #[world]"]
+							 1: MARK "@[hello #[world]]" [0-17] [value="", slot="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [value="world", slot="world"]
+								1.1: MARK "#[world]" [8-16] [value="", slot="world"]
 									1.1.0: TEXT "world" [10-15]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [17-17]"
@@ -179,9 +179,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello #[world]](value)" [0-24] [value="hello #[world]", meta="value", slot="hello #[world]"]
+							 1: MARK "@[hello #[world]](value)" [0-24] [value="", meta="value", slot="hello #[world]"]
 								1.0: TEXT "hello " [2-8]
-								1.1: MARK "#[world]" [8-16] [value="world", slot="world"]
+								1.1: MARK "#[world]" [8-16] [value="", slot="world"]
 									1.1.0: TEXT "world" [10-15]
 								1.2: TEXT "" [16-16]
 							 2: TEXT "" [24-24]"
@@ -197,7 +197,7 @@ describe('ParserV2', () => {
 							"0: TEXT "" [0-0]
 							 1: MARK "@[user](Hello #[world])" [0-23] [value="user", slot="Hello #[world]"]
 								1.0: TEXT "Hello " [8-14]
-								1.1: MARK "#[world]" [14-22] [value="world", slot="world"]
+								1.1: MARK "#[world]" [14-22] [value="", slot="world"]
 									1.1.0: TEXT "world" [16-21]
 								1.2: TEXT "" [22-22]
 							 2: TEXT "" [23-23]"
@@ -213,10 +213,10 @@ describe('ParserV2', () => {
 							"0: TEXT "" [0-0]
 							 1: MARK "@[user](Text with #[tag] and **bold**)" [0-38] [value="user", slot="Text with #[tag] and **bold**"]
 								1.0: TEXT "Text with " [8-18]
-								1.1: MARK "#[tag]" [18-24] [value="tag", slot="tag"]
+								1.1: MARK "#[tag]" [18-24] [value="", slot="tag"]
 									1.1.0: TEXT "tag" [20-23]
 								1.2: TEXT " and " [24-29]
-								1.3: MARK "**bold**" [29-37] [value="bold", slot="bold"]
+								1.3: MARK "**bold**" [29-37] [value="", slot="bold"]
 									1.3.0: TEXT "bold" [31-35]
 								1.4: TEXT "" [37-37]
 							 2: TEXT "" [38-38]"
@@ -246,7 +246,7 @@ describe('ParserV2', () => {
 							"0: TEXT "" [0-0]
 							 1: MARK "<div class>Content with **bold**</div>" [0-38] [value="div", meta="class", slot="Content with **bold**"]
 								1.0: TEXT "Content with " [11-24]
-								1.1: MARK "**bold**" [24-32] [value="bold", slot="bold"]
+								1.1: MARK "**bold**" [24-32] [value="", slot="bold"]
 									1.1.0: TEXT "bold" [26-30]
 								1.2: TEXT "" [32-32]
 							 2: TEXT "" [38-38]"
@@ -267,7 +267,7 @@ describe('ParserV2', () => {
 							"0: TEXT "" [0-0]
 							 1: MARK "<div class>Content with **bold** </span></div>" [0-46] [value="div", meta="class", slot="Content with **bold** </span>"]
 								1.0: TEXT "Content with " [11-24]
-								1.1: MARK "**bold**" [24-32] [value="bold", slot="bold"]
+								1.1: MARK "**bold**" [24-32] [value="", slot="bold"]
 									1.1.0: TEXT "bold" [26-30]
 								1.2: TEXT " </span>" [32-40]
 							 2: TEXT "" [46-46]"
@@ -283,7 +283,7 @@ describe('ParserV2', () => {
 							"0: TEXT "" [0-0]
 							 1: MARK "<span >Text #[tag]</span>" [0-25] [value="span", meta="", slot="Text #[tag]"]
 								1.0: TEXT "Text " [7-12]
-								1.1: MARK "#[tag]" [12-18] [value="tag", slot="tag"]
+								1.1: MARK "#[tag]" [12-18] [value="", slot="tag"]
 									1.1.0: TEXT "tag" [14-17]
 								1.2: TEXT "" [18-18]
 							 2: TEXT "" [25-25]"
@@ -333,7 +333,7 @@ describe('ParserV2', () => {
 								1.0: TEXT "" [11-11]
 								1.1: MARK "<p>Text **bold**</p>" [11-31] [value="p", slot="Text **bold**"]
 									1.1.0: TEXT "Text " [14-19]
-									1.1.1: MARK "**bold**" [19-27] [value="bold", slot="bold"]
+									1.1.1: MARK "**bold**" [19-27] [value="", slot="bold"]
 										1.1.1.0: TEXT "bold" [21-25]
 									1.1.2: TEXT "" [27-27]
 								1.2: TEXT "" [31-31]
@@ -411,7 +411,7 @@ describe('ParserV2', () => {
 						// Should have only one mark, with #[world] as plain text in value
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "@[hello](#[world])" [0-18] [value="hello", meta="#[world]", slot="hello"]
+							 1: MARK "@[hello](#[world])" [0-18] [value="", meta="#[world]", slot="hello"]
 								1.0: TEXT "hello" [2-7]
 							 2: TEXT "" [18-18]"
 						`)
@@ -444,9 +444,9 @@ describe('ParserV2', () => {
 						// Second case: nesting in __slot__
 						expect(tokensToDebugTree(result2)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "#[**bold**]" [0-11] [value="**bold**", slot="**bold**"]
+							 1: MARK "#[**bold**]" [0-11] [value="", slot="**bold**"]
 								1.0: TEXT "" [2-2]
-								1.1: MARK "**bold**" [2-10] [value="bold", slot="bold"]
+								1.1: MARK "**bold**" [2-10] [value="", slot="bold"]
 									1.1.0: TEXT "bold" [4-8]
 								1.2: TEXT "" [10-10]
 							 2: TEXT "" [11-11]"
@@ -629,9 +629,9 @@ describe('ParserV2', () => {
 
 					expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 						"0: TEXT "" [0-0]
-						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="Text with **bold**", meta="note", slot="Text with **bold**"]
+						 1: MARK "(note)#[Text with **bold**]" [0-27] [value="", meta="note", slot="Text with **bold**"]
 							1.0: TEXT "Text with " [8-18]
-							1.1: MARK "**bold**" [18-26] [value="bold", slot="bold"]
+							1.1: MARK "**bold**" [18-26] [value="", slot="bold"]
 								1.1.0: TEXT "bold" [20-24]
 							1.2: TEXT "" [26-26]
 						 2: TEXT "" [27-27]"
@@ -651,7 +651,7 @@ describe('ParserV2', () => {
 						"0: TEXT "" [0-0]
 						 1: MARK "[name](url)(Content **bold**)" [0-29] [value="name", meta="url", slot="Content **bold**"]
 							1.0: TEXT "Content " [12-20]
-							1.1: MARK "**bold**" [20-28] [value="bold", slot="bold"]
+							1.1: MARK "**bold**" [20-28] [value="", slot="bold"]
 								1.1.0: TEXT "bold" [22-26]
 							1.2: TEXT "" [28-28]
 						 2: TEXT "" [29-29]"
@@ -893,9 +893,9 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="Bold <i>italic</i> text", slot="Bold <i>italic</i> text"]
+							 1: MARK "<b>Bold <i>italic</i> text</b>" [0-30] [value="", slot="Bold <i>italic</i> text"]
 								1.0: TEXT "Bold " [3-8]
-								1.1: MARK "<i>italic</i>" [8-21] [value="italic", slot="italic"]
+								1.1: MARK "<i>italic</i>" [8-21] [value="", slot="italic"]
 									1.1.0: TEXT "italic" [11-17]
 								1.2: TEXT " text" [21-26]
 							 2: TEXT "" [30-30]"
@@ -1022,64 +1022,64 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="Welcome to **Marked Input**", slot="Welcome to **Marked Input**"]
+							 1: MARK "# Welcome to **Marked Input**↲" [0-30] [value="", slot="Welcome to **Marked Input**"]
 								1.0: TEXT "Welcome to " [2-13]
-								1.1: MARK "**Marked Input**" [13-29] [value="Marked Input", slot="Marked Input"]
+								1.1: MARK "**Marked Input**" [13-29] [value="", slot="Marked Input"]
 									1.1.0: TEXT "Marked Input" [15-27]
 								1.2: TEXT "" [29-29]
 							 2: TEXT "↲This is a " [30-41]
-							 3: MARK "*powerful*" [41-51] [value="powerful", slot="powerful"]
+							 3: MARK "*powerful*" [41-51] [value="", slot="powerful"]
 								3.0: TEXT "powerful" [42-50]
 							 4: TEXT " library for parsing " [51-72]
-							 5: MARK "**rich text**" [72-85] [value="rich text", slot="rich text"]
+							 5: MARK "**rich text**" [72-85] [value="", slot="rich text"]
 								5.0: TEXT "rich text" [74-83]
 							 6: TEXT " with " [85-91]
-							 7: MARK "*markdown*" [91-101] [value="markdown", slot="markdown"]
+							 7: MARK "*markdown*" [91-101] [value="", slot="markdown"]
 								7.0: TEXT "markdown" [92-100]
 							 8: TEXT " formatting.↲You can use " [101-126]
 							 9: MARK "\`inline code\`" [126-139] [value="inline code"]
 							 10: TEXT " snippets like " [139-154]
 							 11: MARK "\`const parser = new ParserV2()\`" [154-185] [value="const parser = new ParserV2()"]
 							 12: TEXT " in your text.↲↲" [185-201]
-							 13: MARK "## Features↲" [201-213] [value="Features", slot="Features"]
+							 13: MARK "## Features↲" [201-213] [value="", slot="Features"]
 								13.0: TEXT "Features" [204-212]
 							 14: TEXT "↲" [213-214]
-							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="**Bold text** with **strong emphasis**", slot="**Bold text** with **strong emphasis**"]
+							 15: MARK "- **Bold text** with **strong emphasis**↲" [214-255] [value="", slot="**Bold text** with **strong emphasis**"]
 								15.0: TEXT "" [216-216]
-								15.1: MARK "**Bold text**" [216-229] [value="Bold text", slot="Bold text"]
+								15.1: MARK "**Bold text**" [216-229] [value="", slot="Bold text"]
 									15.1.0: TEXT "Bold text" [218-227]
 								15.2: TEXT " with " [229-235]
-								15.3: MARK "**strong emphasis**" [235-254] [value="strong emphasis", slot="strong emphasis"]
+								15.3: MARK "**strong emphasis**" [235-254] [value="", slot="strong emphasis"]
 									15.3.0: TEXT "strong emphasis" [237-252]
 								15.4: TEXT "" [254-254]
 							 16: TEXT "" [255-255]
-							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="*Italic text* and *emphasis* support", slot="*Italic text* and *emphasis* support"]
+							 17: MARK "- *Italic text* and *emphasis* support↲" [255-294] [value="", slot="*Italic text* and *emphasis* support"]
 								17.0: TEXT "" [257-257]
-								17.1: MARK "*Italic text*" [257-270] [value="Italic text", slot="Italic text"]
+								17.1: MARK "*Italic text*" [257-270] [value="", slot="Italic text"]
 									17.1.0: TEXT "Italic text" [258-269]
 								17.2: TEXT " and " [270-275]
-								17.3: MARK "*emphasis*" [275-285] [value="emphasis", slot="emphasis"]
+								17.3: MARK "*emphasis*" [275-285] [value="", slot="emphasis"]
 									17.3.0: TEXT "emphasis" [276-284]
 								17.4: TEXT " support" [285-293]
 							 18: TEXT "" [294-294]
-							 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="\`Code snippets\` and \`code blocks\`", slot="\`Code snippets\` and \`code blocks\`"]
+							 19: MARK "- \`Code snippets\` and \`code blocks\`↲" [294-330] [value="", slot="\`Code snippets\` and \`code blocks\`"]
 								19.0: TEXT "" [296-296]
 								19.1: MARK "\`Code snippets\`" [296-311] [value="Code snippets"]
 								19.2: TEXT " and " [311-316]
 								19.3: MARK "\`code blocks\`" [316-329] [value="code blocks"]
 								19.4: TEXT "" [329-329]
 							 20: TEXT "" [330-330]
-							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="~~Strikethrough~~ for deleted content", slot="~~Strikethrough~~ for deleted content"]
+							 21: MARK "- ~~Strikethrough~~ for deleted content↲" [330-370] [value="", slot="~~Strikethrough~~ for deleted content"]
 								21.0: TEXT "" [332-332]
 								21.1: MARK "~~Strikethrough~~" [332-349] [value="Strikethrough"]
 								21.2: TEXT " for deleted content" [349-369]
 							 22: TEXT "" [370-370]
-							 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="Links like [GitHub](https://github.com)", slot="Links like [GitHub](https://github.com)"]
+							 23: MARK "- Links like [GitHub](https://github.com)↲" [370-412] [value="", slot="Links like [GitHub](https://github.com)"]
 								23.0: TEXT "Links like " [372-383]
 								23.1: MARK "[GitHub](https://github.com)" [383-411] [value="GitHub", meta="https://github.com"]
 								23.2: TEXT "" [411-411]
 							 24: TEXT "↲" [412-413]
-							 25: MARK "## Example↲" [413-424] [value="Example", slot="Example"]
+							 25: MARK "## Example↲" [413-424] [value="", slot="Example"]
 								25.0: TEXT "Example" [416-423]
 							 26: TEXT "↲Here's how to use it:↲↲" [424-448]
 							 27: MARK "\`\`\`javascript↲const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲\`\`\`" [448-575] [value="javascript", meta="const parser = new ParserV2(['**__value__**', '*__value__*'])↲const result = parser.parse('Hello **world**!')↲"]
@@ -1150,12 +1150,12 @@ describe('ParserV2', () => {
 
 						expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
 							"0: TEXT "" [0-0]
-							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="**Bold text** with **strong emphasis**", slot="**Bold text** with **strong emphasis**"]
+							 1: MARK "- **Bold text** with **strong emphasis**↲" [0-41] [value="", slot="**Bold text** with **strong emphasis**"]
 								1.0: TEXT "" [2-2]
-								1.1: MARK "**Bold text**" [2-15] [value="Bold text", slot="Bold text"]
+								1.1: MARK "**Bold text**" [2-15] [value="", slot="Bold text"]
 									1.1.0: TEXT "Bold text" [4-13]
 								1.2: TEXT " with " [15-21]
-								1.3: MARK "**strong emphasis**" [21-40] [value="strong emphasis", slot="strong emphasis"]
+								1.3: MARK "**strong emphasis**" [21-40] [value="", slot="strong emphasis"]
 									1.3.0: TEXT "strong emphasis" [23-38]
 								1.4: TEXT "" [40-40]
 							 2: TEXT "" [41-41]"
@@ -1502,6 +1502,106 @@ describe('ParserV2', () => {
 				expect(result).toHaveLength(1)
 				expect(result[0].type).toBe('mark')
 			})
+		})
+	})
+
+	describe('slot-leading single-segment patterns', () => {
+		it('parses __slot__\\n\\n into mark tokens with slot content', () => {
+			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const result = parser.parse('First\n\nSecond\n\n')
+
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: MARK "First↲↲" [0-7] [value="", slot="First"]
+					0.0: TEXT "First" [0-5]
+				 1: MARK "Second↲↲" [7-15] [value="", slot="Second"]
+					1.0: TEXT "Second" [7-13]"
+			`)
+		})
+
+		it('produces correct token structure with boundary text tokens', () => {
+			const parser = new Parser(['__slot__\n\n'])
+			const result = parser.parse('First\n\nSecond\n\n')
+
+			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+				"0: TEXT "" [0-0]
+				 1: MARK "First↲↲" [0-7] [value="", slot="First"]
+					1.0: TEXT "First" [0-5]
+				 2: TEXT "" [7-7]
+				 3: MARK "Second↲↲" [7-15] [value="", slot="Second"]
+					3.0: TEXT "Second" [7-13]
+				 4: TEXT "" [15-15]"
+			`)
+		})
+
+		it('handles trailing text without delimiter as text token', () => {
+			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const result = parser.parse('First\n\nTrailing')
+
+			expect(result).toHaveLength(2)
+			expect(result[0].type).toBe('mark')
+			expect(result[0].content).toBe('First\n\n')
+			expect(result[1].type).toBe('text')
+			expect(result[1].content).toBe('Trailing')
+		})
+
+		it('handles empty input', () => {
+			const parser = new Parser(['__slot__\n\n'])
+			const result = parser.parse('')
+
+			expect(result).toHaveLength(1)
+			expect(result[0].type).toBe('text')
+		})
+
+		it('supports nesting with other markups', () => {
+			const parser = new Parser(['__slot__\n\n', '@[__value__]'], {skipEmptyText: true})
+			const result = parser.parse('Hello @[world]\n\n')
+
+			expect(result).toHaveLength(1)
+			const mark = result[0] as MarkToken
+			expect(mark.type).toBe('mark')
+			expect(mark.content).toBe('Hello @[world]\n\n')
+			expect(mark.children).toHaveLength(3)
+			expect(mark.children[0].type).toBe('text')
+			expect(mark.children[0].content).toBe('Hello ')
+			expect(mark.children[1].type).toBe('mark')
+			expect(mark.children[2].type).toBe('text')
+		})
+
+		it('works with skipEmptyText', () => {
+			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const result = parser.parse('First\n\nSecond\n\n')
+
+			expect(result).toHaveLength(2)
+			expect(result.every(t => t.type === 'mark')).toBe(true)
+		})
+
+		it('round-trips through Parser.stringify', () => {
+			const input = 'First\n\nSecond\n\n'
+			const parser = new Parser(['__slot__\n\n'])
+			const tokens = parser.parse(input)
+
+			expect(Parser.stringify(tokens)).toBe(input)
+		})
+
+		it('handles single paragraph', () => {
+			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const result = parser.parse('Only\n\n')
+
+			expect(result).toHaveLength(1)
+			expect(result[0].type).toBe('mark')
+			expect(result[0].content).toBe('Only\n\n')
+			const mark = result[0] as MarkToken
+			expect(mark.value).toBe('')
+			expect(mark.slot?.content).toBe('Only')
+		})
+
+		it('handles empty slot content (just delimiter)', () => {
+			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const result = parser.parse('\n\n')
+
+			expect(result).toHaveLength(1)
+			expect(result[0].type).toBe('mark')
+			expect(result[0].content).toBe('\n\n')
 		})
 	})
 })
