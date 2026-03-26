@@ -2,7 +2,7 @@ import {MarkupRegistry} from './core/MarkupRegistry'
 import {PatternMatcher} from './core/PatternMatcher'
 import {SegmentMatcher} from './core/SegmentMatcher'
 import {TreeBuilder} from './core/TreeBuilder'
-import type {MarkToken, Markup, Token} from './types'
+import type {MarkToken, Markup, ParseOptions, Token} from './types'
 import {createTextToken} from './utils/createTextToken'
 import {processTokensWithCallback} from './utils/processTokens'
 import {toString as tokensToString} from './utils/toString'
@@ -25,6 +25,7 @@ export class Parser {
 	private readonly segmentMatcher: SegmentMatcher
 	private readonly patternMatcher: PatternMatcher
 	private readonly treeBuilder: TreeBuilder
+	private readonly parseOptions: ParseOptions
 
 	/**
 	 * Creates a new Parser instance with the specified markup patterns
@@ -34,6 +35,9 @@ export class Parser {
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
+	 * @param options - Optional parse options to control token output:
+	 *   - `marksOnly` - return only MarkTokens, drop all TextTokens
+	 *   - `skipEmptyText` - drop zero-length TextTokens (where start === end)
 	 *
 	 * @example
 	 * ```typescript
@@ -45,18 +49,19 @@ export class Parser {
 	 * ])
 	 * ```
 	 */
-	constructor(markups: (Markup | undefined)[]) {
+	constructor(markups: (Markup | undefined)[], options?: ParseOptions) {
 		this.registry = new MarkupRegistry(markups)
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
-		this.treeBuilder = new TreeBuilder()
+		this.parseOptions = options ?? {}
+		this.treeBuilder = new TreeBuilder(this.parseOptions)
 	}
 
 	/**
 	 * Parses text into tokens (static convenience method)
 	 *
 	 * @param value - Text to parse
-	 * @param options - Options with markup patterns
+	 * @param options - Options with markup patterns and token filtering
 	 * @returns Array of tokens (TextToken and MarkToken)
 	 *
 	 * @example
@@ -66,12 +71,13 @@ export class Parser {
 	 * })
 	 * ```
 	 */
-	static parse(value: string, options?: {markup: Markup[]}): Token[] {
+	static parse(value: string, options?: {markup: Markup[]} & ParseOptions): Token[] {
 		const markups = options?.markup
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
 		}
-		return new Parser(markups).parse(value)
+		const {markup: _, ...parseOptions} = options!
+		return new Parser(markups, parseOptions).parse(value)
 	}
 
 	/**

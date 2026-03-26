@@ -1398,6 +1398,112 @@ describe('ParserV2', () => {
 			})
 		})
 	})
+
+	describe('ParseOptions', () => {
+		describe('marksOnly', () => {
+			it('returns only mark tokens at root level', () => {
+				const parser = new Parser(markups, {marksOnly: true})
+				const result = parser.parse('Hello @[world](test) and #[tag]')
+
+				expect(result.every(t => t.type === 'mark')).toBe(true)
+				expect(result).toHaveLength(2)
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: MARK "@[world](test)" [6-20] [value="world", meta="test"]
+					 1: MARK "#[tag]" [25-31] [value="tag"]"
+				`)
+			})
+
+			it('returns empty array when input has no marks', () => {
+				const parser = new Parser(markups, {marksOnly: true})
+				const result = parser.parse('Hello world')
+
+				expect(result).toHaveLength(0)
+			})
+
+			it('preserves text tokens in nested children', () => {
+				const parser = new Parser(['@[__slot__]', '#[__slot__]'], {marksOnly: true})
+				const result = parser.parse('@[hello #[world]]')
+
+				expect(result).toHaveLength(1)
+				const mark = result[0] as MarkToken
+				expect(mark.children).toHaveLength(3)
+				expect(mark.children[0].type).toBe('text')
+				expect(mark.children[1].type).toBe('mark')
+				expect(mark.children[2].type).toBe('text')
+			})
+
+			it('works with adjacent marks', () => {
+				const parser = new Parser(markups, {marksOnly: true})
+				const result = parser.parse('@[first](1)@[second](2)')
+
+				expect(result).toHaveLength(2)
+			})
+
+			it('works via static Parser.parse()', () => {
+				const result = Parser.parse('Hello @[world](test)', {
+					markup: ['@[__value__](__meta__)'],
+					marksOnly: true,
+				})
+
+				expect(result.every(t => t.type === 'mark')).toBe(true)
+				expect(result).toHaveLength(1)
+			})
+		})
+
+		describe('skipEmptyText', () => {
+			it('removes zero-length text tokens', () => {
+				const parser = new Parser(markups, {skipEmptyText: true})
+				const result = parser.parse('@[hello](world)')
+
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: MARK "@[hello](world)" [0-15] [value="hello", meta="world"]"
+				`)
+			})
+
+			it('keeps non-empty text tokens', () => {
+				const parser = new Parser(markups, {skipEmptyText: true})
+				const result = parser.parse('Hello @[world](test) and #[tag]')
+
+				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
+					"0: TEXT "Hello " [0-6]
+					 1: MARK "@[world](test)" [6-20] [value="world", meta="test"]
+					 2: TEXT " and " [20-25]
+					 3: MARK "#[tag]" [25-31] [value="tag"]"
+				`)
+			})
+
+			it('preserves all text tokens in nested children', () => {
+				const parser = new Parser(['@[__slot__]', '#[__slot__]'], {skipEmptyText: true})
+				const result = parser.parse('@[hello #[world]]')
+
+				const mark = result[0] as MarkToken
+				expect(mark.children).toHaveLength(3)
+				expect(mark.children[0].type).toBe('text')
+				expect(mark.children[0].content).toBe('hello ')
+				expect(mark.children[1].type).toBe('mark')
+				expect(mark.children[2].type).toBe('text')
+				expect(mark.children[2].position.start).toBe(mark.children[2].position.end)
+			})
+
+			it('handles adjacent marks by removing empty text between them', () => {
+				const parser = new Parser(markups, {skipEmptyText: true})
+				const result = parser.parse('#[tag1]#[tag2]#[tag3]')
+
+				expect(result).toHaveLength(3)
+				expect(result.every(t => t.type === 'mark')).toBe(true)
+			})
+
+			it('works via static Parser.parse()', () => {
+				const result = Parser.parse('@[hello](world)', {
+					markup: ['@[__value__](__meta__)'],
+					skipEmptyText: true,
+				})
+
+				expect(result).toHaveLength(1)
+				expect(result[0].type).toBe('mark')
+			})
+		})
+	})
 })
 
 function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {

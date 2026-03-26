@@ -47,7 +47,7 @@ export {
 	getRangeMap,
 	parseWithParser,
 } from './src/features/parsing'
-export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
+export type {Markup, Token, TextToken, MarkToken, TokenContext, ParseOptions} from './src/features/parsing'
 
 // Reactive system
 export type {Signal, UseHookFactory} from './src/shared/classes'
