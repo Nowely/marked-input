@@ -2,9 +2,12 @@ import {cx, isClickOutside, isEscapeKey} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useEffect, useRef, useState} from 'react'
 
-import type {MenuPosition} from './DragMark'
-
 import styles from '@markput/core/styles.module.css'
+
+export interface MenuPosition {
+	top: number
+	left: number
+}
 
 export interface BlockMenuProps {
 	position: MenuPosition
