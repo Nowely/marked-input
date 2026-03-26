@@ -2,7 +2,6 @@ import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
-import {filterDragTokens} from '../drag/tokens'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {MarkToken, Token} from '../parsing'
@@ -114,7 +113,7 @@ export class KeyDownController {
 		)
 		if (blockIndex === -1) return
 
-		const rows = filterDragTokens(this.store.state.tokens.get())
+		const rows = this.store.state.tokens.get()
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
@@ -165,7 +164,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex - 1]
 							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
@@ -203,7 +202,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex - 1]
 							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
@@ -234,7 +233,7 @@ export class KeyDownController {
 						const target = newDivs[blockIndex] as HTMLElement | undefined
 						if (target) {
 							target.focus()
-							const updatedRows = filterDragTokens(this.store.state.tokens.get())
+							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex]
 							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
 						}
@@ -278,7 +277,7 @@ export class KeyDownController {
 		}
 		if (blockIndex === -1) return
 
-		const rows = filterDragTokens(this.store.state.tokens.get())
+		const rows = this.store.state.tokens.get()
 		const token = rows[blockIndex]
 		if (!token) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
@@ -515,7 +514,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	if (blockIndex === -1) return
 
 	const blockDiv = blockDivs[blockIndex]
-	const rows = filterDragTokens(store.state.tokens.get())
+	const rows = store.state.tokens.get()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -526,7 +525,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			const target = container.children[blockIndex] as HTMLElement | undefined
 			if (!target) return
 			target.focus()
-			const updatedRows = filterDragTokens(store.state.tokens.get())
+			const updatedRows = store.state.tokens.get()
 			const updatedToken = updatedRows[blockIndex]
 			if (updatedToken) setCaretAtRawPos(target, updatedToken, newRawPos)
 		})

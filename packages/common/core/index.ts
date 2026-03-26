@@ -66,7 +66,6 @@ export {
 	getDragDropPosition,
 	parseDragSourceIndex,
 	getDragTargetIndex,
-	filterDragTokens,
 	EMPTY_TEXT_TOKEN,
 	getAlwaysShowHandleDrag,
 } from './src/features/drag'
