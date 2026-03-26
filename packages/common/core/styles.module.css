@@ -72,6 +72,49 @@
 	user-select: none;
 }
 
+.BlockMenu {
+	position: fixed;
+	background: white;
+	border: 1px solid rgba(55, 53, 47, 0.16);
+	border-radius: 6px;
+	box-shadow: 0 4px 16px rgba(15, 15, 15, 0.12);
+	padding: 4px;
+	z-index: 9999;
+	min-width: 160px;
+	font-size: 14px;
+}
+
+.BlockMenuItem {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+	color: rgba(55, 53, 47, 0.85);
+	transition: background 0.1s ease;
+	user-select: none;
+	line-height: 1;
+}
+
+.BlockMenuItem:hover {
+	background: rgba(55, 53, 47, 0.06);
+}
+
+.BlockMenuItemDelete {
+	color: #eb5757;
+}
+
+.BlockMenuItemDelete:hover {
+	background: rgba(235, 87, 87, 0.06);
+}
+
+.BlockMenuSeparator {
+	height: 1px;
+	background: rgba(55, 53, 47, 0.09);
+	margin: 4px 0;
+}
+
 .DropIndicator {
 	position: absolute;
 	left: 0;

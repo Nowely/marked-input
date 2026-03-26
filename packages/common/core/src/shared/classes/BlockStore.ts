@@ -1,5 +1,6 @@
 import type {DragController} from '../../features/drag/DragController'
 import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../features/drag/eventHandlers'
+import {isClickOutside, isEscapeKey} from '../utils'
 import {defineState, type StateObject, type UseHookFactory} from './defineState'
 
 export type DropPosition = 'before' | 'after' | null
@@ -23,6 +24,7 @@ export class BlockStore {
 	#dragCtrl: DragController | null = null
 	#cleanupContainer?: () => void
 	#cleanupGrip?: () => void
+	#cleanupMenu?: () => void
 
 	constructor(createUseHook: UseHookFactory) {
 		this.state = defineState<BlockState>(
@@ -109,6 +111,24 @@ export class BlockStore {
 			el.removeEventListener('dragstart', onDragStart)
 			el.removeEventListener('dragend', onDragEnd)
 			el.removeEventListener('click', onClick)
+		}
+	}
+
+	attachMenu(el: HTMLElement | null) {
+		this.#cleanupMenu?.()
+		if (!el) return
+
+		const onMouseDown = (e: MouseEvent) => {
+			if (isClickOutside(e.target, el)) this.closeMenu()
+		}
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (isEscapeKey(e)) this.closeMenu()
+		}
+		document.addEventListener('mousedown', onMouseDown)
+		document.addEventListener('keydown', onKeyDown)
+		this.#cleanupMenu = () => {
+			document.removeEventListener('mousedown', onMouseDown)
+			document.removeEventListener('keydown', onKeyDown)
 		}
 	}
 
