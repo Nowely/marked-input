@@ -1,41 +1,31 @@
 import {cx, isClickOutside, isEscapeKey} from '@markput/core'
+import type {Token} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useEffect, useRef, useState} from 'react'
 
+import {useStore} from '../lib/providers/StoreContext'
+
 import styles from '@markput/core/styles.module.css'
 
-export interface MenuPosition {
-	top: number
-	left: number
-}
+export const BlockMenu = memo(({token}: {token: Token}) => {
+	const store = useStore()
+	const blockStore = store.blocks.get(token)
+	const menuOpen = blockStore.state.menuOpen.use()
+	const menuPosition = blockStore.state.menuPosition.use()
 
-export interface BlockMenuProps {
-	position: MenuPosition
-	onAdd: () => void
-	onDelete: () => void
-	onDuplicate: () => void
-	onClose: () => void
-}
-
-const separatorStyle: CSSProperties = {
-	height: 1,
-	background: 'rgba(55, 53, 47, 0.09)',
-	margin: '4px 0',
-}
-
-export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}: BlockMenuProps) => {
 	const menuRef = useRef<HTMLDivElement>(null)
 	const [hoveredItem, setHoveredItem] = useState<string | null>(null)
 
-	const onCloseRef = useRef(onClose)
-	onCloseRef.current = onClose
+	const closeMenuRef = useRef(blockStore.closeMenu)
+	closeMenuRef.current = blockStore.closeMenu
 
 	useEffect(() => {
+		if (!menuOpen) return
 		const handleMouseDown = (e: globalThis.MouseEvent) => {
-			if (isClickOutside(e.target, menuRef.current)) onCloseRef.current()
+			if (isClickOutside(e.target, menuRef.current)) closeMenuRef.current()
 		}
 		const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-			if (isEscapeKey(e)) onCloseRef.current()
+			if (isEscapeKey(e)) closeMenuRef.current()
 		}
 		document.addEventListener('mousedown', handleMouseDown)
 		document.addEventListener('keydown', handleKeyDown)
@@ -43,12 +33,14 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 			document.removeEventListener('mousedown', handleMouseDown)
 			document.removeEventListener('keydown', handleKeyDown)
 		}
-	}, [])
+	}, [menuOpen])
+
+	if (!menuOpen) return null
 
 	const menuStyle: CSSProperties = {
 		position: 'fixed',
-		top: position.top,
-		left: position.left,
+		top: menuPosition.top,
+		left: menuPosition.left,
 		background: 'white',
 		border: '1px solid rgba(55, 53, 47, 0.16)',
 		borderRadius: 6,
@@ -78,6 +70,12 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 		lineHeight: 1,
 	})
 
+	const separatorStyle: CSSProperties = {
+		height: 1,
+		background: 'rgba(55, 53, 47, 0.09)',
+		margin: '4px 0',
+	}
+
 	return (
 		<div ref={menuRef} style={menuStyle}>
 			<div
@@ -86,8 +84,7 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 				onMouseLeave={() => setHoveredItem(null)}
 				onMouseDown={e => {
 					e.preventDefault()
-					onAdd()
-					onClose()
+					blockStore.addBlock()
 				}}
 			>
 				<span className={cx(styles.Icon, styles.IconAdd)} />
@@ -99,8 +96,7 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 				onMouseLeave={() => setHoveredItem(null)}
 				onMouseDown={e => {
 					e.preventDefault()
-					onDuplicate()
-					onClose()
+					blockStore.duplicateBlock()
 				}}
 			>
 				<span className={cx(styles.Icon, styles.IconDuplicate)} />
@@ -113,8 +109,7 @@ export const BlockMenu = memo(({position, onAdd, onDelete, onDuplicate, onClose}
 				onMouseLeave={() => setHoveredItem(null)}
 				onMouseDown={e => {
 					e.preventDefault()
-					onDelete()
-					onClose()
+					blockStore.deleteBlock()
 				}}
 			>
 				<span className={cx(styles.Icon, styles.IconTrash)} />
