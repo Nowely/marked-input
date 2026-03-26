@@ -72,7 +72,8 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || rows[childIndex]?.type !== 'mark') {
+			const token = rows[childIndex]
+			if (childIndex === -1 || token?.type !== 'mark' || token.children.length > 0) {
 				scheduleHideMarkGrip()
 				return
 			}
@@ -89,7 +90,8 @@ export const DragContainer = memo(() => {
 			const container = refs.container
 			if (!container) return
 			const childIndex = getDirectChildIndex(container, e.target)
-			if (childIndex === -1 || rows[childIndex]?.type !== 'mark') return
+			const token = rows[childIndex]
+			if (childIndex === -1 || token?.type !== 'mark' || token.children.length > 0) return
 			e.preventDefault()
 			const el = container.children[childIndex] as HTMLElement
 			const rect = el.getBoundingClientRect()
@@ -151,8 +153,9 @@ export const DragContainer = memo(() => {
 				onDragLeave={handleContainerDragLeave}
 				onDrop={handleContainerDrop}
 			>
-				{rows.map((token, index) =>
-					token.type === 'mark' ? (
+				{rows.map((token, index) => {
+					const isInlineMarkRow = token.type === 'mark' && token.children.length === 0
+					return isInlineMarkRow ? (
 						<Token key={key.get(token)} mark={token} />
 					) : (
 						<DragMark
@@ -166,7 +169,7 @@ export const DragContainer = memo(() => {
 							<Token key={key.get(token)} mark={token} />
 						</DragMark>
 					)
-				)}
+				})}
 			</ContainerComponent>
 			{hoveredMarkIndex !== null &&
 				!readOnly &&
