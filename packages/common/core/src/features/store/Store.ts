@@ -1,6 +1,7 @@
 import {
 	defineState,
 	defineEvents,
+	BlockRegistry,
 	KeyGenerator,
 	NodeProxy,
 	type UseHookFactory,
@@ -24,6 +25,7 @@ export interface StoreOptions {
 
 export class Store {
 	readonly key = new KeyGenerator()
+	readonly blocks: BlockRegistry
 
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
@@ -59,6 +61,7 @@ export class Store {
 	readonly lifecycle = new Lifecycle(this)
 
 	constructor(options: StoreOptions) {
+		this.blocks = new BlockRegistry(options.createUseHook)
 		this.state = defineState<MarkputState>(
 			{
 				tokens: [],
