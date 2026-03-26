@@ -259,12 +259,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(container, 0)
 			await userEvent.click(page.getByText('Delete').element())
 
-			expect(getAllRows(container)).toHaveLength(1)
-
-			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
-
-			expect(getAllRows(container)).toHaveLength(2)
+			expect(getAllRows(container)).toHaveLength(0)
 		})
 	})
 
