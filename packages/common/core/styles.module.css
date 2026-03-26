@@ -49,9 +49,24 @@
 	position: absolute;
 	top: 0;
 	bottom: 0;
+	left: -24px;
 	width: 24px;
 	display: flex;
 	align-items: center;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.15s ease;
+}
+
+.SidePanelVisible {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.SidePanelAlways {
+	opacity: 1;
+	pointer-events: auto;
+	transition: none;
 }
 
 .GripButton {
@@ -70,6 +85,11 @@
 	line-height: 1;
 	flex-shrink: 0;
 	user-select: none;
+	cursor: grab;
+}
+
+.GripButtonDragging {
+	cursor: grabbing;
 }
 
 .BlockMenu {
