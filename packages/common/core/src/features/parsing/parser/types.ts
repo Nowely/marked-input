@@ -30,6 +30,13 @@ export interface MarkToken {
 	children: Token[]
 }
 
+export interface ParseOptions {
+	/** Return only MarkTokens, drop all TextTokens */
+	marksOnly?: boolean
+	/** Drop zero-length TextTokens (where start === end) */
+	skipEmptyText?: boolean
+}
+
 /**
  * Position range representing a span in text with start and end positions
  * Used for various positioning needs throughout the parser
