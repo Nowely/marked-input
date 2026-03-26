@@ -1,4 +1,4 @@
-import {getAlwaysShowHandleDrag} from '@markput/core'
+import {cx, getAlwaysShowHandleDrag} from '@markput/core'
 import type {Token as TokenType} from '@markput/core'
 import {memo, useMemo} from 'react'
 
@@ -21,20 +21,16 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 
 	return (
 		<div
-			className={styles.SidePanel}
-			style={{
-				left: -24,
-				opacity: alwaysShowHandle || (isHovered && !isDragging) ? 1 : 0,
-				transition: alwaysShowHandle ? undefined : 'opacity 0.15s ease',
-				pointerEvents: alwaysShowHandle || isHovered ? 'auto' : 'none',
-			}}
+			className={cx(
+				styles.SidePanel,
+				alwaysShowHandle ? styles.SidePanelAlways : isHovered && !isDragging && styles.SidePanelVisible
+			)}
 		>
 			<button
 				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, store.controllers.drag)}
 				type="button"
 				draggable
-				className={styles.GripButton}
-				style={{cursor: isDragging ? 'grabbing' : 'grab'}}
+				className={cx(styles.GripButton, isDragging && styles.GripButtonDragging)}
 				aria-label="Drag to reorder or click for options"
 			>
 				<span className={iconGrip} />
