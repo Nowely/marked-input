@@ -1,18 +1,28 @@
-import type {Token} from '../parsing'
+import type {MarkToken, Token} from '../parsing'
 
 function gapText(value: string, a: Token, b: Token): string {
 	return value.substring(a.position.end, b.position.start)
 }
 
+function isSlotLeadingMark(token: Token): token is MarkToken {
+	return token.type === 'mark' && token.descriptor.hasSlot && token.descriptor.segments.length === 1
+}
+
 /**
- * Returns whether two adjacent text rows can be merged (Backspace/Delete).
+ * Returns whether two adjacent rows can be merged (Backspace/Delete).
+ * Text rows merge when there's a gap between them.
+ * Slot-leading mark rows of the same descriptor merge by removing the first mark's suffix.
  */
 export function canMergeRows(a: Token, b: Token): boolean {
-	return a.type === 'text' && b.type === 'text' && b.position.start > a.position.end
+	if (a.type === 'text' && b.type === 'text' && b.position.start > a.position.end) return true
+	if (isSlotLeadingMark(a) && isSlotLeadingMark(b) && a.descriptor === b.descriptor) return true
+	return false
 }
 
 export function addDragRow(value: string, rows: Token[], afterIndex: number, newRowContent: string): string {
 	if (rows.length === 0) return value + newRowContent
+	if (value === '' || (rows.length === 1 && rows[0].type === 'text' && rows[0].content === ''))
+		return newRowContent + newRowContent
 	if (afterIndex >= rows.length - 1) return value + newRowContent
 
 	const insertPos = rows[afterIndex + 1].position.start
@@ -46,16 +56,24 @@ export function duplicateDragRow(value: string, rows: Token[], index: number): s
  */
 export function getMergeDragRowJoinPos(rows: Token[], index: number): number {
 	if (index <= 0 || index >= rows.length) return 0
-	return rows[index - 1].position.end
+	const prev = rows[index - 1]
+	if (isSlotLeadingMark(prev) && prev.slot) return prev.slot.end
+	return prev.position.end
 }
 
 /**
- * Merges row[index] into row[index - 1] by removing the gap between them.
+ * Merges row[index] into row[index - 1] by removing the boundary between them.
+ * For text rows: removes the gap between them.
+ * For slot-leading marks: removes the first mark's literal suffix, merging slot content.
  */
 export function mergeDragRows(value: string, rows: Token[], index: number): string {
 	if (index <= 0 || index >= rows.length) return value
 	const prev = rows[index - 1]
 	const curr = rows[index]
+	if (isSlotLeadingMark(prev) && isSlotLeadingMark(curr)) {
+		const slotEnd = prev.slot ? prev.slot.end : prev.position.end
+		return value.slice(0, slotEnd) + value.slice(curr.position.start)
+	}
 	return value.slice(0, prev.position.end) + value.slice(curr.position.start)
 }
 

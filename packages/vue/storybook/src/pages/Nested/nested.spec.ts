@@ -423,7 +423,7 @@ describe('Complex Nesting Scenarios', () => {
 			setup(props, {slots}) {
 				const mark = useMark()
 				return () =>
-					h('span', {'data-testid': 'rendering-mark'}, mark.hasChildren ? slots.default?.() : props.value)
+					h('span', {'data-testid': 'rendering-mark'}, mark.hasChildren ? slots.default?.() : mark.slot)
 			},
 		})
 

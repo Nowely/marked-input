@@ -9,6 +9,11 @@ import {annotate} from '../parsing'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 
+function isTextLikeRow(token: Token): boolean {
+	if (token.type === 'text') return true
+	return token.type === 'mark' && token.descriptor.hasSlot && token.descriptor.segments.length === 1
+}
+
 export class KeyDownController {
 	#keydownHandler?: (e: KeyboardEvent) => void
 	#pasteHandler?: (e: ClipboardEvent) => void
@@ -30,9 +35,9 @@ export class KeyDownController {
 
 		this.#keydownHandler = e => {
 			if (e.key === KEYBOARD.LEFT) {
-				shiftFocusPrev(this.store, e)
+				if (!this.#handleBlockArrowLeftRight(e, 'left')) shiftFocusPrev(this.store, e)
 			} else if (e.key === KEYBOARD.RIGHT) {
-				shiftFocusNext(this.store, e)
+				if (!this.#handleBlockArrowLeftRight(e, 'right')) shiftFocusNext(this.store, e)
 			} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
 				this.#handleArrowUpDown(e)
 			}
@@ -225,7 +230,7 @@ export class KeyDownController {
 				const nextToken = rows[blockIndex + 1]
 				if (canMergeRows(currToken, nextToken)) {
 					event.preventDefault()
-					const joinPos = currToken.position.end
+					const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 					const newValue = mergeDragRows(value, rows, blockIndex + 1)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
@@ -287,7 +292,7 @@ export class KeyDownController {
 
 		const newRowContent = this.#createRowContent()
 
-		if (token.type !== 'text') {
+		if (!isTextLikeRow(token)) {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 			this.store.applyValue(newValue)
 			queueMicrotask(() => {
@@ -315,6 +320,42 @@ export class KeyDownController {
 				Caret.trySetIndex(newBlockEl, 0)
 			}
 		})
+	}
+
+	#handleBlockArrowLeftRight(event: KeyboardEvent, direction: 'left' | 'right'): boolean {
+		if (!this.store.state.drag.get()) return false
+
+		const container = this.store.refs.container
+		if (!container) return false
+
+		const activeElement = document.activeElement as HTMLElement | null
+		if (!activeElement || !container.contains(activeElement)) return false
+
+		const blockDivs = Array.from(container.children) as HTMLElement[]
+		const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
+		if (blockIndex === -1) return false
+
+		const blockDiv = blockDivs[blockIndex]
+
+		if (direction === 'left') {
+			if (Caret.getCaretIndex(blockDiv) !== 0) return false
+			if (blockIndex === 0) return true
+			event.preventDefault()
+			const prevBlock = blockDivs[blockIndex - 1]
+			prevBlock.focus()
+			Caret.setCaretToEnd(prevBlock)
+			return true
+		}
+
+		const caretIndex = Caret.getCaretIndex(blockDiv)
+		const textLen = blockDiv.textContent?.length ?? 0
+		if (caretIndex !== textLen) return false
+		if (blockIndex >= blockDivs.length - 1) return true
+		event.preventDefault()
+		const nextBlock = blockDivs[blockIndex + 1]
+		nextBlock.focus()
+		Caret.trySetIndex(nextBlock, 0)
+		return true
 	}
 
 	#handleArrowUpDown(event: KeyboardEvent) {

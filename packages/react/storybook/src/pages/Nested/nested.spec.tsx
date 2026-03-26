@@ -296,9 +296,7 @@ describe('Complex Nesting Scenarios', () => {
 	it('should render nested structure when Mark component renders children', async () => {
 		const RenderingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
-			// This Mark component explicitly renders children
-			// For nested marks, render the value; for parent marks, render children
-			return <span data-testid="rendering-mark">{mark.hasChildren ? children : mark.value}</span>
+			return <span data-testid="rendering-mark">{mark.hasChildren ? children : mark.slot}</span>
 		}
 
 		const markup: Markup = '@[__slot__]'
