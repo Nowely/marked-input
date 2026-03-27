@@ -181,7 +181,7 @@ export class KeyDownController {
 					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						Caret.setCaretToEnd(target)
+						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 					}
 				})
 				return
@@ -219,7 +219,7 @@ export class KeyDownController {
 					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
 					if (target) {
 						target.focus()
-						Caret.setCaretToEnd(target)
+						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 					}
 				})
 				return
