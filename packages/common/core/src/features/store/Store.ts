@@ -7,7 +7,7 @@ import {
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
-import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import type {CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
@@ -98,22 +98,22 @@ export class Store {
 			container: {
 				use: () =>
 					[
-						resolveSlot('container', this.state.slots.use()),
-						resolveSlotProps('container', this.state.slotProps.use()),
+						resolveSlot('container', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('container', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
 			},
 			block: {
 				use: () =>
 					[
-						resolveSlot('block', this.state.slots.use()),
-						resolveSlotProps('block', this.state.slotProps.use()),
+						resolveSlot('block', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('block', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
 			},
 			span: {
 				use: () =>
 					[
-						resolveSlot('span', this.state.slots.use()),
-						resolveSlotProps('span', this.state.slotProps.use()),
+						resolveSlot('span', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('span', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
 			},
 		}
