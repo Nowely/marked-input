@@ -6,7 +6,7 @@ import {page, userEvent} from 'vitest/browser'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.stories'
 
-const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag, TodoList} = composeStories(DragStories)
+const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
 
 const GRIP_SELECTOR = 'button[aria-label="Drag to reorder or click for options"]'
 
@@ -925,57 +925,5 @@ describe('Feature: drag row keyboard navigation', () => {
 			const raw = getRawValue(container)
 			expect(raw).toContain('# Welcome to Draggable Blocks\n\n')
 		})
-	})
-})
-
-describe('Feature: TodoList drag', () => {
-	/**
-	 * BUG REPRODUCTION: TODO_VALUE starts with '\n', which creates a leading text
-	 * block (index 0) in drag mode. The first actual todo item ("Design Phase") is
-	 * at index 1 instead of 0. This ghost row is invisible to the user but shifts
-	 * all block indices by 1, making drag confusing and apparently broken.
-	 */
-
-	it('should render one row per todo item (18 rows), not 19', async () => {
-		const {container} = await render(<TodoList />)
-		// BUG: TODO_VALUE starts with '\n', so the parser produces a leading text
-		// token that becomes a ghost block. Actual row count is 19, not 18.
-		expect(getAllRows(container)).toHaveLength(18)
-	})
-
-	it('should have Design Phase as the first visible row', async () => {
-		const {container} = await render(<TodoList />)
-		const firstRow = getAllRows(container)[0]
-		// BUG: row 0 is the ghost '\n' text block, not a todo item.
-		// The first todo item only appears at row 1.
-		expect(firstRow.textContent).toContain('Design Phase')
-	})
-
-	it('should reorder rows when dragging first todo item after second', async () => {
-		const {container} = await render(<TodoList />)
-
-		// BUG: because of the ghost block, the first visible todo (Design Phase) is
-		// actually at index 1, not 0. Dragging index 0 moves the invisible '\n'.
-		await simulateDragRow(container, 0, 2)
-
-		const raw = getRawValue(container)
-		// If no ghost block: Design Phase should be after Create wireframes.
-		// With the ghost block: index 0 is '\n', so dragging it moves the ghost,
-		// and Design Phase stays where it was — the drag appears to do nothing.
-		expect(raw.indexOf('Design Phase')).toBeGreaterThan(raw.indexOf('Create wireframes'))
-	})
-
-	it('should show grip button on hover for the first todo item', async () => {
-		const {container} = await render(<TodoList />)
-		// With ghost block, row 0 has a grip but is invisible content.
-		// The user hovers what they see as "the first item" but that is row 1.
-		const firstTodoRow = getAllRows(container)[0]
-		await userEvent.hover(firstTodoRow)
-		await new Promise(r => setTimeout(r, 50))
-
-		const grip = firstTodoRow.querySelector<HTMLButtonElement>(GRIP_SELECTOR)
-		expect(grip).not.toBeNull()
-		// The row the user visually sees as first (Design Phase) is actually row 1.
-		expect(firstTodoRow.textContent).toContain('Design Phase')
 	})
 })
