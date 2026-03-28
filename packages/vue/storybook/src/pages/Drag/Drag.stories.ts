@@ -235,17 +235,28 @@ const TODO_VALUE = `# \u{1F4CB} Project Launch Checklist
 
 const testStyle = {minHeight: '100px', padding: '8px', border: '1px solid #e0e0e0'}
 
+const ParagraphMark = defineComponent({
+	props: {value: String, children: {type: null}},
+	setup(props, {slots}) {
+		return () => h('span', {}, slots.default?.() ?? props.value)
+	},
+})
+
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+
 export const PlainTextDrag: Story = {
 	parameters: {docs: {disable: true}},
 	render: () =>
 		defineComponent({
 			setup() {
 				const value = ref(
-					'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text'
+					'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
 				)
 				return () =>
 					h('div', {}, [
 						h(MarkedInput, {
+							Mark: ParagraphMark,
+							options: paragraphOptions,
 							value: value.value,
 							drag: true,
 							style: testStyle,
@@ -265,7 +276,7 @@ export const MarkdownDrag: Story = {
 		defineComponent({
 			setup() {
 				const value = ref(
-					'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover'
+					'# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover\n\n'
 				)
 				return () =>
 					h('div', {}, [
@@ -288,7 +299,9 @@ export const MarkdownDrag: Story = {
 export const ReadOnlyDrag: Story = {
 	parameters: {docs: {disable: true}},
 	args: {
-		value: 'Read-Only Content\n\nSection A\n\nSection B',
+		Mark: ParagraphMark,
+		options: paragraphOptions,
+		value: 'Read-Only Content\n\nSection A\n\nSection B\n\n',
 		readOnly: true,
 		drag: true,
 		style: testStyle,

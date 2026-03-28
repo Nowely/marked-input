@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
 import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
-import {computed, provide, shallowRef, watch} from 'vue'
+import {provide, shallowRef, watch} from 'vue'
 
 import {createUseHook} from '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
-import DragContainer from './DragContainer.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
 import styles from '@markput/core/styles.module.css'
@@ -19,8 +18,6 @@ const props = withDefaults(defineProps<MarkedInputProps>(), {
 	readOnly: false,
 	drag: false,
 })
-
-const ContainerImpl = computed(() => (props.drag ? DragContainer : Container))
 
 const emit = defineEmits<{
 	change: [value: string]
@@ -83,6 +80,6 @@ defineExpose(handler)
 </script>
 
 <template>
-	<component :is="ContainerImpl" />
+	<Container />
 	<OverlayRenderer />
 </template>

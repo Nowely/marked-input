@@ -30,7 +30,7 @@ export class Match {
 	 * - -1: invalid, should be discarded
 	 */
 	public expectedSegmentIndex: number
-	public readonly start: number
+	public start: number
 	public end: number
 
 	constructor(
@@ -44,7 +44,15 @@ export class Match {
 		// Auto-complete single segment patterns
 		if (descriptor.segments.length === 1) {
 			this.expectedSegmentIndex = NaN
-			this.gaps.value = {start: this.start, end: this.end}
+
+			//TODO need review it. before it was only value gap type
+			const gapType = descriptor.gapTypes[0] ?? 'value'
+			if (gapType === 'slot') {
+				// Slot-leading: real range resolved by PatternMatcher.resolveSlotLeadingMatches
+				this.gaps.slot = {start: this.start, end: this.start}
+			} else {
+				this.gaps[gapType] = {start: this.start, end: this.end}
+			}
 		}
 
 		if (descriptor.hasTwoValues && firstSegment.captured) {

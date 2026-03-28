@@ -2,7 +2,7 @@
 // Public API for parsing and text manipulation
 
 export {Parser} from './parser/Parser'
-export type {Token, TextToken, MarkToken, Markup} from './parser/types'
+export type {Token, TextToken, MarkToken, Markup, ParseOptions} from './parser/types'
 export {annotate} from './parser/utils/annotate'
 export {denote} from './parser/utils/denote'
 export {toString} from './parser/utils/toString'

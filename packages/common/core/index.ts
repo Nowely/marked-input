@@ -1,5 +1,4 @@
 // Shared exports
-export {assertNonNullable} from './src/shared/checkers'
 export {
 	convertDataAttrs,
 	cx,
@@ -7,7 +6,9 @@ export {
 	resolveOptionSlot,
 	resolveSlot,
 	resolveSlotProps,
-	type SlotName,
+	getDirectChildIndex,
+	isClickOutside,
+	isEscapeKey,
 } from './src/shared/utils'
 export {
 	KEYBOARD,
@@ -46,32 +47,28 @@ export {
 	getRangeMap,
 	parseWithParser,
 } from './src/features/parsing'
-export type {Markup, Token, TextToken, MarkToken, TokenContext} from './src/features/parsing'
+export type {Markup, Token, TextToken, MarkToken, TokenContext, ParseOptions} from './src/features/parsing'
 
 // Reactive system
-export {Reactive} from './src/shared/classes/Reactive'
-export {defineState, defineEvents} from './src/shared/classes'
-export type {Signal, Emitter, UseHookFactory} from './src/shared/classes'
+export type {Signal, UseHookFactory} from './src/shared/classes'
 
 // Utilities
 export {escape} from './src/shared/escape'
 export {findGap, getClosestIndexes} from './src/features/parsing/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/editing'
-export {Store, type StoreOptions} from './src/features/store'
+export {Store} from './src/features/store'
+export {OverlayController, createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
+
+// Drag
 export {
-	OverlayController,
-	createMarkFromOverlay,
-	filterSuggestions,
-	navigateSuggestions,
-	type NavigationAction,
-	type NavigationResult,
-} from './src/features/overlay'
-export {FocusController} from './src/features/focus'
-export {KeyDownController} from './src/features/input'
-export {SystemListenerController} from './src/features/events'
-export {TextSelectionController} from './src/features/selection'
-export {ContentEditableController} from './src/features/editable'
+	DragController,
+	getDragDropPosition,
+	parseDragSourceIndex,
+	getDragTargetIndex,
+	EMPTY_TEXT_TOKEN,
+	getAlwaysShowHandleDrag,
+} from './src/features/drag'
 export {Caret, TriggerFinder} from './src/features/caret'
 
 // Feature Management
@@ -82,22 +79,6 @@ export {Lifecycle, type LifecycleOptions} from './src/features/lifecycle'
 
 // Mark Handler
 export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
-
-// Blocks
-export {
-	splitTokensIntoDragRows,
-	splitTextByBlockSeparator,
-	reorderDragRows,
-	addDragRow,
-	deleteDragRow,
-	duplicateDragRow,
-	mergeDragRows,
-	getMergeDragRowJoinPos,
-	BLOCK_SEPARATOR,
-	getAlwaysShowHandleDrag,
-	type Block,
-	type TextPart,
-} from './src/features/blocks'
 
 // Navigation & Input
 export {shiftFocusPrev, shiftFocusNext} from './src/features/navigation'

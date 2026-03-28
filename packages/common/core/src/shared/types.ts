@@ -120,11 +120,13 @@ export type GenericAttributes = Record<string, unknown>
 
 export interface CoreSlots {
 	container?: GenericElement
+	block?: GenericElement
 	span?: GenericElement
 }
 
 export interface CoreSlotProps {
 	container?: GenericAttributes & {className?: string; style?: StyleProperties}
+	block?: GenericAttributes & {className?: string; style?: StyleProperties}
 	span?: GenericAttributes & {className?: string; style?: StyleProperties}
 }
 

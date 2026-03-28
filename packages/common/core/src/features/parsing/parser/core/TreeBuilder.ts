@@ -1,4 +1,4 @@
-import type {MarkToken, PositionRange, TextToken, Token} from '../types'
+import type {MarkToken, ParseOptions, PositionRange, TextToken, Token} from '../types'
 import {createTextToken} from '../utils/createTextToken'
 import type {Match} from './Match'
 
@@ -32,6 +32,11 @@ interface ParentContext {
 export class TreeBuilder {
 	// Instance fields - only what's needed for single pass
 	private input!: string
+	private readonly options: ParseOptions
+
+	constructor(options?: ParseOptions) {
+		this.options = options ?? {}
+	}
 
 	// ===== PUBLIC API =====
 
@@ -55,10 +60,11 @@ export class TreeBuilder {
 		this.input = input
 
 		if (matches.length === 0) {
-			return [this.createTextToken(0, input.length)]
+			return this.filterTokens([this.createTextToken(0, input.length)])
 		}
 
-		return this.buildSinglePass(matches)
+		const tokens = this.buildSinglePass(matches)
+		return this.filterTokens(tokens)
 	}
 
 	// ===== SINGLE-PASS ALGORITHM =====
@@ -179,15 +185,12 @@ export class TreeBuilder {
 		const slotContent = slotStr || undefined
 		const meta = match.gaps.meta !== undefined ? metaStr : undefined
 
-		// Use value if present, otherwise use slot content
-		const valueContent = value || slotContent || ''
-
 		return {
 			type: 'mark',
 			content: this.input.substring(match.start, match.end),
 			children: [], // Will be populated if match has slot content
 			descriptor: match.descriptor,
-			value: valueContent,
+			value,
 			meta,
 			position: {start: match.start, end: match.end},
 			slot: this.createSlotSourceInfo(match, slotContent),
@@ -246,5 +249,19 @@ export class TreeBuilder {
 			start: match.gaps.slot.start,
 			end: match.gaps.slot.end,
 		}
+	}
+
+	// ===== TOKEN FILTERING. TODO: Is a hack =====
+
+	private filterTokens(tokens: Token[]): Token[] {
+		const {marksOnly, skipEmptyText} = this.options
+		if (!marksOnly && !skipEmptyText) return tokens
+
+		return tokens.filter(token => {
+			if (token.type !== 'text') return true
+			if (marksOnly) return false
+			if (skipEmptyText && token.position.start === token.position.end) return false
+			return true
+		})
 	}
 }

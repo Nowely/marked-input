@@ -32,7 +32,7 @@ let hasSaved = false // Prevent duplicate saves
 
 // Utility functions
 function calculateStats(values: number[]) {
-	const sorted = [...values].sort((a, b) => a - b)
+	const sorted = [...values].toSorted((a, b) => a - b)
 	const len = sorted.length
 	return {
 		avg: Math.round(values.reduce((a, b) => a + b, 0) / len),

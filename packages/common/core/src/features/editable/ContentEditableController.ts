@@ -1,4 +1,3 @@
-import {splitTokensIntoDragRows} from '../blocks'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
@@ -37,14 +36,12 @@ export class ContentEditableController {
 		const isDrag = !!this.store.state.drag.get()
 
 		if (isDrag) {
-			// In drag mode, only set contentEditable on text blocks (DragMark divs).
-			// Mark blocks get tabIndex for focusability but are not contentEditable.
+			// In drag mode, only set contentEditable on text rows (DragMark divs).
+			// Mark rows get tabIndex for focusability but are not contentEditable.
 			const tokens = this.store.state.tokens.get()
-			const blocks = splitTokensIntoDragRows(tokens)
-			for (let i = 0; i < blocks.length && i < children.length; i++) {
+			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = children[i] as HTMLElement
-				const isMark = blocks[i].tokens.length === 1 && blocks[i].tokens[0].type === 'mark'
-				if (isMark) {
+				if (tokens[i].type === 'mark') {
 					if (!readOnly) el.tabIndex = 0
 				} else {
 					el.contentEditable = value
@@ -124,39 +121,33 @@ export class ContentEditableController {
 
 	#syncDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
 		const editable = readOnly ? 'false' : 'true'
-		const blocks = splitTokensIntoDragRows(tokens)
-		for (let bi = 0; bi < blocks.length; bi++) {
-			const block = blocks[bi]
-			const blockEl = container.children[bi] as HTMLElement | undefined
+		for (let ri = 0; ri < tokens.length; ri++) {
+			const token = tokens[ri]
+			const blockEl = container.children[ri] as HTMLElement | undefined
 			if (!blockEl) continue
 
-			const isMark = block.tokens.length === 1 && block.tokens[0].type === 'mark'
-			if (isMark) {
-				const markToken = block.tokens[0]
-				if (markToken.type === 'mark' && markToken.children.length > 0) {
-					// In Vue, mark blocks are wrapped in DragMark (has data-testid).
-					// In React, mark blocks render directly as the mark element.
+			if (token.type === 'mark') {
+				if (token.children.length > 0) {
+					// In Vue, mark rows are wrapped in DragMark (has data-testid).
+					// In React, mark rows render directly as the mark element.
 					const hasDragWrapper = blockEl.hasAttribute('data-testid')
 					const markEl = hasDragWrapper
 						? (blockEl.children[readOnly ? 0 : 1] as HTMLElement | undefined)
 						: blockEl
 					if (markEl) {
-						this.#syncMarkChildren(markToken.children, markEl, editable)
+						this.#syncMarkChildren(token.children, markEl, editable)
 					}
 				}
 				continue
 			}
 
-			// Text block: DragMark div with side panel offset
+			// Text row: DragMark div with side panel offset
 			const offset = readOnly ? 0 : 1
-			for (let ti = 0; ti < block.tokens.length; ti++) {
-				const token = block.tokens[ti]
-				const el = blockEl.children[ti + offset] as HTMLElement | undefined
-				if (!el) continue
-				if (token.type === 'text') {
-					if (el.textContent !== token.content) {
-						el.textContent = token.content
-					}
+			const el = blockEl.children[offset] as HTMLElement | undefined
+			if (!el) continue
+			if (token.type === 'text') {
+				if (el.textContent !== token.content) {
+					el.textContent = token.content
 				}
 			}
 		}

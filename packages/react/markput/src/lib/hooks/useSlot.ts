@@ -1,4 +1,4 @@
-import {resolveOptionSlot, resolveSlot, resolveSlotProps} from '@markput/core'
+import {resolveOptionSlot} from '@markput/core'
 import type {Token} from '@markput/core'
 import type {ComponentType, ElementType} from 'react'
 
@@ -34,11 +34,7 @@ export function useSlot(
 	const store = useStore()
 
 	if (type === 'span') {
-		const slots = store.state.slots.use()
-		const slotProps = store.state.slotProps.use()
-		const Component = resolveSlot<ElementType>('span', slots)
-		const props = resolveSlotProps('span', slotProps)
-		return [Component, props]
+		return store.slot.span.use() as SpanSlotReturn
 	}
 
 	const Mark = store.state.Mark.use()

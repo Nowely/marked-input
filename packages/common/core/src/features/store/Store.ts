@@ -1,12 +1,15 @@
 import {
 	defineState,
 	defineEvents,
+	BlockRegistry,
 	KeyGenerator,
 	NodeProxy,
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
-import type {MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import type {CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
+import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
@@ -23,6 +26,7 @@ export interface StoreOptions {
 
 export class Store {
 	readonly key = new KeyGenerator()
+	readonly blocks: BlockRegistry
 
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
@@ -30,6 +34,12 @@ export class Store {
 	}
 
 	readonly state: StateObject<MarkputState>
+
+	readonly slot: {
+		container: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+		block: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+		span: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+	}
 
 	readonly events = defineEvents<{
 		change: void
@@ -52,11 +62,13 @@ export class Store {
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
 		contentEditable: new ContentEditableController(this),
+		drag: new DragController(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)
 
 	constructor(options: StoreOptions) {
+		this.blocks = new BlockRegistry(options.createUseHook)
 		this.state = defineState<MarkputState>(
 			{
 				tokens: [],
@@ -82,6 +94,29 @@ export class Store {
 			},
 			options.createUseHook
 		)
+		this.slot = {
+			container: {
+				use: () =>
+					[
+						resolveSlot('container', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('container', this.state.slotProps.use() as CoreSlotProps | undefined),
+					] as const,
+			},
+			block: {
+				use: () =>
+					[
+						resolveSlot('block', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('block', this.state.slotProps.use() as CoreSlotProps | undefined),
+					] as const,
+			},
+			span: {
+				use: () =>
+					[
+						resolveSlot('span', this.state.slots.use() as CoreSlots | undefined),
+						resolveSlotProps('span', this.state.slotProps.use() as CoreSlotProps | undefined),
+					] as const,
+			},
+		}
 	}
 
 	applyValue(newValue: string): void {
