@@ -33,8 +33,8 @@ describe(`Component: MarkedInput`, () => {
 		const {container} = await render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
-		const firstSpanLength = firstSpan.textContent?.length ?? 0
-		const firstAbbrLength = firstAbbr.textContent?.length ?? 0
+		const firstSpanLength = firstSpan.textContent.length
+		const firstAbbrLength = firstAbbr.textContent.length
 
 		await focusAtStart(firstSpan)
 		await expect.element(firstSpan).toHaveFocus()

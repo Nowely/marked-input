@@ -46,7 +46,7 @@ export class Lifecycle {
 		const {store} = this
 
 		const markups = options?.map(opt => opt.markup)
-		if (markups && markups.some(Boolean)) {
+		if (markups?.some(Boolean)) {
 			const isDrag = !!store.state.drag.get()
 			const parseOptions = isDrag ? {skipEmptyText: true} : undefined
 			store.state.parser.set(new Parser(markups, parseOptions))

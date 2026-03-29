@@ -16,7 +16,7 @@ export function createVisualTests(storiesModule: any) {
 			it(`Story ${name}`, async () => {
 				const StoryComponent = Story as React.ComponentType<any>
 				const {container} = await render(React.createElement(StoryComponent))
-				expect(container.textContent?.length).toBeTruthy()
+				expect(container.textContent.length).toBeTruthy()
 				await expect(container).toMatchScreenshot()
 			})
 		}

@@ -540,17 +540,15 @@ function buildMethodTree(
 		rootMethod.subMethods ??= {}
 		rootMethod.subMethods['SegmentMatcher.search'] = {
 			name: 'SegmentMatcher.search',
-			calls: segmentMethod?.callCount ?? 0,
+			calls: segmentMethod.callCount,
 			percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(T)',
-			times: segmentMethod
-				? [
-						Math.round(segmentMethod.minTime * 1000) / 1000,
-						Math.round(segmentMethod.avgTime * 1000) / 1000,
-						Math.round(segmentMethod.maxTime * 1000) / 1000,
-					]
-				: [0, 0, 0],
-			firstParamLength: segmentMethod?.avgParamLength,
+			times: [
+				Math.round(segmentMethod.minTime * 1000) / 1000,
+				Math.round(segmentMethod.avgTime * 1000) / 1000,
+				Math.round(segmentMethod.maxTime * 1000) / 1000,
+			],
+			firstParamLength: segmentMethod.avgParamLength,
 			// No subMethods for SegmentMatcher.search
 		}
 	}
@@ -707,8 +705,6 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 	// Compare each test case
 	for (const [testName, result2] of Object.entries(run2.tests)) {
 		const result1 = run1.tests[testName]
-		if (!result1) continue
-
 		const durationChange = result2.duration - result1.duration
 		const durationChangePercent = result1.duration > 0 ? (durationChange / result1.duration) * 100 : 0
 
@@ -744,15 +740,11 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			const subMethods1 = method1.subMethods ?? {}
 			for (const [subName, subMethod2] of Object.entries(subMethods2)) {
 				const subMethod1 = subMethods1[subName]
-				if (subMethod1) {
-					compareMethods(subMethod1, subMethod2, fullName)
-				}
+				compareMethods(subMethod1, subMethod2, fullName)
 			}
 		}
 
-		if (result1.mainMethod && result2.mainMethod) {
-			compareMethods(result1.mainMethod, result2.mainMethod)
-		}
+		compareMethods(result1.mainMethod, result2.mainMethod)
 
 		differences.push({
 			testName,
@@ -788,16 +780,12 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 		.filter(d => d.durationChangePercent > 1)
 		.toSorted((a, b) => b.durationChangePercent - a.durationChangePercent)[0]
 
-	if (biggestImprovement) {
-		summary.push(
-			`Best improvement: ${biggestImprovement.testName} (+${Math.abs(biggestImprovement.durationChangePercent).toFixed(0)}%)`
-		)
-	}
-	if (biggestDegradation) {
-		summary.push(
-			`Worst degradation: ${biggestDegradation.testName} (-${biggestDegradation.durationChangePercent.toFixed(0)}%)`
-		)
-	}
+	summary.push(
+		`Best improvement: ${biggestImprovement.testName} (+${Math.abs(biggestImprovement.durationChangePercent).toFixed(0)}%)`
+	)
+	summary.push(
+		`Worst degradation: ${biggestDegradation.testName} (-${biggestDegradation.durationChangePercent.toFixed(0)}%)`
+	)
 
 	return {
 		run1Timestamp: run1.timestamp,
@@ -904,7 +892,7 @@ describe('parser Complete Profiling', () => {
 		loadExistingHistory()
 
 		// Clear current results for fresh profiling
-		Object.keys(currentRunResults).forEach(key => delete currentRunResults[key])
+		Object.keys(currentRunResults).forEach(key => Reflect.deleteProperty(currentRunResults, key))
 
 		const testCases = [
 			{name: '10 marks', markCount: 10},

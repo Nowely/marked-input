@@ -33,7 +33,7 @@ export class SystemListenerController {
 			const token = tokens[focus.index]
 			if (token.type === 'text') {
 				token.content = focus.content
-			} else if (token.type === 'mark') {
+			} else {
 				token.value = focus.content
 			}
 
@@ -42,7 +42,6 @@ export class SystemListenerController {
 		})
 
 		this.#deleteUnsubscribe = this.store.events.delete.on(data => {
-			if (!data) return
 			const {token} = data
 			const onChange = this.store.state.onChange.get()
 
@@ -54,7 +53,6 @@ export class SystemListenerController {
 		})
 
 		this.#selectUnsubscribe = this.store.events.select.on(event => {
-			if (!event) return
 			const Mark = this.store.state.Mark.get()
 			const onChange = this.store.state.onChange.get()
 			const {

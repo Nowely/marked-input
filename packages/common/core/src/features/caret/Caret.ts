@@ -23,7 +23,7 @@ export class Caret {
 
 	//TODO add the returned type: "{left: CSSProperties["left"], top: CSSProperties["top"]}"?
 	static getAbsolutePosition() {
-		const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect?.()
+		const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
 		if (rect) return {left: rect.left, top: rect.top + rect.height + 1}
 		return {left: 0, top: 0}
 	}
@@ -121,7 +121,7 @@ export class Caret {
 
 		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 
-		while (node) {
+		while (node as Text | null) {
 			const next = walker.nextNode() as Text | null
 			if (!next || remaining <= node.length) {
 				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
@@ -173,8 +173,8 @@ export class Caret {
 		if (!selection?.anchorNode || !selection.rangeCount) return
 
 		const range = selection.getRangeAt(0)
-		range?.setStart(range.startContainer.firstChild ?? range.startContainer, offset)
-		range?.setEnd(range.startContainer.firstChild ?? range.startContainer, offset)
+		range.setStart(range.startContainer.firstChild ?? range.startContainer, offset)
+		range.setEnd(range.startContainer.firstChild ?? range.startContainer, offset)
 	}
 
 	setCaretRightTo(element: HTMLElement, offset: number) {

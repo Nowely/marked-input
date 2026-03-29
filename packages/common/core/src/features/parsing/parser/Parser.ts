@@ -76,7 +76,7 @@ export class Parser {
 		if (!markups || markups.length === 0) {
 			return [createTextToken(value)]
 		}
-		const {markup: _, ...parseOptions} = options!
+		const {markup: _, ...parseOptions} = options
 		return new Parser(markups, parseOptions).parse(value)
 	}
 

@@ -44,7 +44,7 @@ export class NodeProxy {
 		if (!this.target) return
 
 		const caretIndex = Caret.getCaretIndex(this.target)
-		return caretIndex === this.target.textContent?.length
+		return caretIndex === this.target.textContent.length
 	}
 
 	get index() {
@@ -63,7 +63,7 @@ export class NodeProxy {
 	}
 
 	get length() {
-		return this.target?.textContent?.length ?? -1
+		return this.target?.textContent.length ?? -1
 	}
 
 	get content(): string {

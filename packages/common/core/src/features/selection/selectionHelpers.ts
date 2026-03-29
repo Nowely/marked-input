@@ -3,7 +3,7 @@ import type {Store} from '../store'
 export function isFullSelection(store: Store): boolean {
 	const sel = window.getSelection()
 	const container = store.refs.container
-	if (!sel?.rangeCount || !container?.firstChild || !container?.lastChild) return false
+	if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
 
 	try {
 		const range = sel.getRangeAt(0)

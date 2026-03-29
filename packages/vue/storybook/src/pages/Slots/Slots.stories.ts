@@ -46,7 +46,7 @@ const EventLogComponent = defineComponent({
 			h('h3', 'Styling & Events via slotProps'),
 			h('p', 'Customize styling and add custom event handlers without replacing components:'),
 			h(MarkedInput, {
-				Mark: (props.Mark as any) ?? SimpleMark,
+				Mark: props.Mark ?? SimpleMark,
 				value: currentValue.value,
 				onChange: (v: string) => {
 					currentValue.value = v

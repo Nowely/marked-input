@@ -73,7 +73,7 @@ export class ContentEditableController {
 				if (el.textContent !== token.content) {
 					el.textContent = token.content
 				}
-			} else if (token.type === 'mark' && token.children.length > 0) {
+			} else if (token.children.length > 0) {
 				this.#syncMarkChildren(token.children, el)
 			}
 		}
@@ -103,7 +103,7 @@ export class ContentEditableController {
 					if (editable !== undefined) el.contentEditable = editable
 					childIdx++
 				}
-			} else if (token.type === 'mark' && token.children.length > 0) {
+			} else if (token.children.length > 0) {
 				// Find next element with attributes (mark element)
 				while (childIdx < children.length) {
 					const el = children[childIdx] as HTMLElement
@@ -145,10 +145,8 @@ export class ContentEditableController {
 			const offset = readOnly ? 0 : 1
 			const el = blockEl.children[offset] as HTMLElement | undefined
 			if (!el) continue
-			if (token.type === 'text') {
-				if (el.textContent !== token.content) {
-					el.textContent = token.content
-				}
+			if (el.textContent !== token.content) {
+				el.textContent = token.content
 			}
 		}
 	}

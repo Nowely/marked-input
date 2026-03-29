@@ -54,6 +54,7 @@ export class FocusController {
 		const {anchor, caret, isNext} = recovery
 		const isStale = !anchor.target || !anchor.target.isConnected
 
+		// eslint-disable-next-line switch-exhaustiveness-check
 		switch (true) {
 			case isNext && isStale: {
 				const container = this.store.refs.container

@@ -40,11 +40,11 @@ function getBlocks(container: Element) {
 }
 
 function getRawValue(container: Element) {
-	return container.querySelector('pre')!.textContent!
+	return container.querySelector('pre')!.textContent
 }
 
 function getEditableInRow(row: HTMLElement) {
-	return (row.querySelector('[contenteditable="true"]') ?? row) as HTMLElement
+	return row.querySelector('[contenteditable="true"]') ?? row
 }
 
 /**
@@ -419,7 +419,7 @@ describe('Feature: drag rows', () => {
 		await userEvent.click(page.getByText('Add below').element())
 
 		const activeEl = document.activeElement as HTMLElement
-		expect(activeEl?.closest('[class*="Container"]')).toBeTruthy()
+		expect(activeEl.closest('[class*="Container"]')).toBeTruthy()
 	})
 
 	it('should split row at caret when pressing Enter at the beginning', async () => {

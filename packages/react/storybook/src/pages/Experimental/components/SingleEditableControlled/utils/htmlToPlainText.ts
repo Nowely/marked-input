@@ -26,8 +26,8 @@ export function htmlToPlainText(html: string): string {
 			// Handle <mark> elements - convert back to markup
 			if (el.tagName === 'MARK') {
 				// Read current text content (allows editing inside marks)
-				const value = el.textContent ?? ''
-				const meta = el.dataset.meta ?? ''
+				const value = el.textContent
+				const meta = el.dataset.meta
 				return `@[${value}](${meta})`
 			}
 

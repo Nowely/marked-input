@@ -12,7 +12,6 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	const tokens = store.state.tokens.get()
 	const [span1, , span2] = tokens.splice(focus.index - placeIndex, 3)
-	if (!span1 || !span2) return
 	const content1 = span1.type === 'text' ? span1.content : span1.content
 	const content2 = span2.type === 'text' ? span2.content : span2.content
 	store.state.tokens.set(

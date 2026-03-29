@@ -87,7 +87,6 @@ export const withPlainValue = (Story: any, context: any) => {
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
 	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
-	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
 
 	// Stories that don't opt in to the panel, or are uncontrolled.
 	if (!showPanel || !isControlled) {
@@ -99,7 +98,7 @@ export const withPlainValue = (Story: any, context: any) => {
 		return <Story args={{...mergedArgs, onChange: (v: string) => updateArgs({value: v})}} />
 	}
 
-	const position = rawPosition ?? globalPosition
+	const position = rawPosition
 
 	return (
 		<PanelContainer

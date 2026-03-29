@@ -74,7 +74,7 @@ describe('Nested Marks Rendering', () => {
 		const mentionMarkup: Markup = '@[__slot__]'
 		const value = '#[tag with @[mention]]'
 
-		render(
+		await render(
 			<MarkedInput
 				Mark={TagMark}
 				value={value}

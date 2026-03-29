@@ -112,7 +112,7 @@ function saveResults() {
 				const currentTest = tests[testName]
 				const prevTest = previousRun.tests[testName]
 
-				if (prevTest && prevTest.performance && Array.isArray(prevTest.performance)) {
+				if (prevTest?.performance && Array.isArray(prevTest.performance)) {
 					// Calculate change based on average value (index 1 in the array)
 					const currentAvg = currentTest.performance[1] // current average
 					const prevAvg = prevTest.performance[1] // previous average
@@ -155,7 +155,7 @@ function saveResults() {
 				Object.keys(currentRun.tests).forEach(testName => {
 					const test = currentRun.tests[testName]
 					const prevTest = previousRun.tests?.[testName]
-					if (prevTest && prevTest.performance && Array.isArray(prevTest.performance)) {
+					if (prevTest?.performance && Array.isArray(prevTest.performance)) {
 						const diff = ((test.performance[1] - prevTest.performance[1]) / prevTest.performance[1]) * 100
 						if (diff < -5) regressions.push(testName)
 					}

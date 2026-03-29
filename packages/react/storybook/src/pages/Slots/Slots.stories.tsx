@@ -55,7 +55,7 @@ const FancySpan = ({ref, ...props}: React.HTMLAttributes<HTMLSpanElement> & {ref
  * Using slots to completely replace container and span components.
  * This is useful when you need full control over the component structure.
  */
-export const CustomComponents: StoryObj<MarkedInputProps<MarkProps>> = {
+export const CustomComponents: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
 		value: 'Both @[container] and @[span] are @[customized]',
@@ -66,7 +66,7 @@ export const CustomComponents: StoryObj<MarkedInputProps<MarkProps>> = {
 	},
 }
 
-function EventLogStory(args: MarkedInputProps<MarkProps>) {
+function EventLogStory(args: MarkedInputProps) {
 	const [events, setEvents] = useState<string[]>([])
 
 	const addEvent = (event: string) => {
@@ -116,7 +116,7 @@ function EventLogStory(args: MarkedInputProps<MarkProps>) {
  * Using slotProps to customize styling and add event handlers.
  * This is useful when you want to keep the default components but customize their behavior.
  */
-export const WithSlotProps: StoryObj<MarkedInputProps<MarkProps>> = {
+export const WithSlotProps: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
 		value: 'Try pressing @[Enter] or clicking',
@@ -157,7 +157,7 @@ const StyledContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> &
  * Edge case: Style merging when both slots and slotProps provide styles.
  * Shows that slotProps styles take precedence.
  */
-export const StyleMerging: StoryObj<MarkedInputProps<MarkProps>> = {
+export const StyleMerging: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
 		value: 'Container has @[merged] styles from multiple sources',
@@ -179,7 +179,7 @@ export const StyleMerging: StoryObj<MarkedInputProps<MarkProps>> = {
  * Data attributes support using camelCase notation.
  * React automatically converts camelCase properties like 'dataUserId' to HTML attributes like 'data-user-id'.
  */
-export const DataAttributes: StoryObj<MarkedInputProps<MarkProps>> = {
+export const DataAttributes: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: SimpleMark,
 		value: 'Use @[data] attributes for testing and tracking',

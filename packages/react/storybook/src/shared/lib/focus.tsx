@@ -51,7 +51,7 @@ export async function focusAtStart(element: HTMLElement) {
  */
 export async function focusAtEnd(element: HTMLElement) {
 	await userEvent.click(element)
-	const textLength = element.textContent?.length ?? 0
+	const textLength = element.textContent.length
 	setCaretPosition(element, textLength)
 	await expect.element(element).toHaveFocus()
 

@@ -12,7 +12,6 @@ export const withPlainValue = (story: any, context: any) => {
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
 	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
-	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
 
 	// Stories that don't opt in to the panel, or are uncontrolled.
 	if (!showPanel || !isControlled) {
@@ -26,7 +25,7 @@ export const withPlainValue = (story: any, context: any) => {
 		})
 	}
 
-	const position = rawPosition ?? globalPosition
+	const position = rawPosition
 
 	return defineComponent({
 		setup() {
@@ -42,7 +41,7 @@ export const withPlainValue = (story: any, context: any) => {
 				const preNode = h(
 					'pre',
 					{style: {padding: '8px', fontFamily: 'monospace', fontSize: '14px', margin: 0}},
-					value.value ?? ''
+					value.value
 				)
 
 				if (position === 'right') {
