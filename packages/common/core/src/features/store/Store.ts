@@ -15,6 +15,7 @@ import {
 	resolveSlotProps,
 	type SlotOption,
 } from '../../shared/utils/resolveSlot'
+import {shallow} from '../../shared/utils/shallow'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
@@ -119,7 +120,8 @@ export class Store {
 				slotProps: undefined,
 				drag: false,
 			},
-			options.createUseHook
+			options.createUseHook,
+			{equals: {style: shallow}}
 		)
 		this.slot = {
 			container: {

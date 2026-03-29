@@ -30,11 +30,16 @@ export type StateObject<T> = {
 	set(values: Partial<T>): void
 }
 
-export function defineState<T extends object>(initial: T, createUseHook: UseHookFactory): StateObject<T> {
+export function defineState<T extends object>(
+	initial: T,
+	createUseHook: UseHookFactory,
+	options?: {equals?: {[K in keyof T]?: false | ((a: T[K], b: T[K]) => boolean)}}
+): StateObject<T> {
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key in initial) {
-		reactives.set(key, new Reactive(initial[key]))
+		const equals = options?.equals?.[key]
+		reactives.set(key, new Reactive(initial[key], equals != null ? {equals} : undefined))
 	}
 
 	return new Proxy(initial, {
