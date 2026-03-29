@@ -9,7 +9,7 @@ declare module '@markput/core' {
 		use(token: Token): readonly [ComponentType<any>, MarkProps]
 	}
 	interface OverlaySlot {
-		use(option?: CoreOption, defaultComponent?: ComponentType<any>): readonly [ComponentType<any>, OverlayProps]
+		use(option?: CoreOption, defaultComponent?: unknown): readonly [ComponentType<any>, OverlayProps]
 	}
 	interface Slot {
 		use(): readonly [ElementType, Record<string, unknown> | undefined]
