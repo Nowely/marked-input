@@ -170,7 +170,7 @@ export class Store {
 				use: (token: Token) =>
 					resolveMarkSlot(
 						token,
-						this.state.options.use() as unknown as SlotOption[] | undefined,
+						this.state.options.get() as unknown as SlotOption[] | undefined,
 						this.state.Mark.use(),
 						this.state.Span.use(),
 						this._defaultSpan
