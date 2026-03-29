@@ -1,4 +1,3 @@
-import type {ElementType} from 'react'
 import {memo} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
@@ -15,10 +14,7 @@ export const Container = memo(() => {
 	const key = store.key
 	const refs = store.refs
 
-	const [ContainerComponent, containerProps] = store.slot.container.use() as [
-		ElementType,
-		Record<string, unknown> | undefined,
-	]
+	const [ContainerComponent, containerProps] = store.slot.container.use()
 
 	return (
 		<ContainerComponent

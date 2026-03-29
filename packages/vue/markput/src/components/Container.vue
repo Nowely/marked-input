@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import {resolveSlot, resolveSlotProps} from '@markput/core'
-import type {Component} from 'vue'
 import {computed} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
@@ -11,26 +9,30 @@ const store = useStore()
 const drag = store.state.drag.use()
 const readOnly = store.state.readOnly.use()
 const tokens = store.state.tokens.use()
-const slots = store.state.slots.use()
-const slotProps = store.state.slotProps.use()
+const slotsRef = store.state.slots.use()
+const slotPropsRef = store.state.slotProps.use()
 const className = store.state.className.use()
 const style = store.state.style.use()
 const key = store.key
 
-const containerTag = computed(() => resolveSlot<string | Component>('container', slots.value))
-const containerProps = computed(() => resolveSlotProps('container', slotProps.value))
+const containerSlot = computed(() => {
+	// Access .value to register reactive dependencies
+	slotsRef.value
+	slotPropsRef.value
+	return store.slot.container.get()
+})
 const containerStyle = computed(() => (drag.value && !readOnly.value ? {paddingLeft: 24, ...style.value} : style.value))
 </script>
 
 <template>
 	<component
-		:is="containerTag"
+		:is="containerSlot[0]"
 		:ref="
 			(el: any) => {
 				store.refs.container = el?.$el ?? el
 			}
 		"
-		v-bind="containerProps"
+		v-bind="containerSlot[1]"
 		:class="className"
 		:style="containerStyle"
 	>

@@ -108,6 +108,63 @@ describe('Utility: defineState', () => {
 			expect(() => state.set({unknown: 42} as any)).not.toThrow()
 			expect(state.x.get()).toBe(0)
 		})
+
+		it('should update all values before firing any subscriber', () => {
+			const state = defineState({x: 0, y: 0}, createUseHook)
+			const snapshot = vi.fn(() => {
+				// Subscriber for x should see the new y value
+				// because batching updates all values first
+				capturedY = state.y.get()
+			})
+			let capturedY = 0
+
+			state.x.on(snapshot)
+			state.set({x: 1, y: 2})
+
+			expect(capturedY).toBe(2)
+			expect(snapshot).toHaveBeenCalledOnce()
+		})
+
+		it('should notify each changed key once', () => {
+			const state = defineState({a: 0, b: 0}, createUseHook)
+			const subA = vi.fn()
+			const subB = vi.fn()
+
+			state.a.on(subA)
+			state.b.on(subB)
+			state.set({a: 1, b: 1})
+
+			expect(subA).toHaveBeenCalledOnce()
+			expect(subA).toHaveBeenCalledWith(1)
+			expect(subB).toHaveBeenCalledOnce()
+			expect(subB).toHaveBeenCalledWith(1)
+		})
+
+		it('should not notify subscribers for unchanged values', () => {
+			const state = defineState({x: 42, y: 0}, createUseHook)
+			const subX = vi.fn()
+			const subY = vi.fn()
+
+			state.x.on(subX)
+			state.y.on(subY)
+			state.set({x: 42, y: 1}) // x unchanged, y changed
+
+			expect(subX).not.toHaveBeenCalled()
+			expect(subY).toHaveBeenCalledOnce()
+		})
+
+		it('should not notify any subscriber when all values are unchanged', () => {
+			const state = defineState({x: 1, y: 2}, createUseHook)
+			const subX = vi.fn()
+			const subY = vi.fn()
+
+			state.x.on(subX)
+			state.y.on(subY)
+			state.set({x: 1, y: 2})
+
+			expect(subX).not.toHaveBeenCalled()
+			expect(subY).not.toHaveBeenCalled()
+		})
 	})
 
 	describe('signal identity', () => {

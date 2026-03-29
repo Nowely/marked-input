@@ -1,7 +1,4 @@
 export {shallow} from './shallow'
-export {isClickOutside, isEscapeKey} from './menuUtils'
-export {getDirectChildIndex} from './getDirectChildIndex'
-export {convertDataAttrs} from './dataAttributes'
 export {cx} from './cx'
 export {merge} from './merge'
 export {resolveOptionSlot} from './resolveOptionSlot'

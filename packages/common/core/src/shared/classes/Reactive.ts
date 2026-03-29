@@ -21,9 +21,8 @@ export class Reactive<T = void> {
 	}
 
 	set value(val: T) {
-		if (this.#equals === false || !this.#equals(this.#value, val)) {
-			this.#value = val
-			this.#subs.forEach(fn => fn(val))
+		if (this.setSilent(val)) {
+			this.notify()
 		}
 	}
 
@@ -45,5 +44,17 @@ export class Reactive<T = void> {
 
 	set(value: T): void {
 		this.value = value
+	}
+
+	setSilent(val: T): boolean {
+		if (this.#equals === false || !this.#equals(this.#value, val)) {
+			this.#value = val
+			return true
+		}
+		return false
+	}
+
+	notify(): void {
+		this.#subs.forEach(fn => fn(this.#value))
 	}
 }

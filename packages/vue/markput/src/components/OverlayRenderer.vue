@@ -2,20 +2,22 @@
 import type {OverlayMatch} from '@markput/core'
 import {computed, type Ref} from 'vue'
 
-import {useSlot} from '../lib/hooks/useSlot'
 import {useStore} from '../lib/hooks/useStore'
 import type {Option} from '../types'
 import Suggestions from './Suggestions/Suggestions.vue'
 
 const store = useStore()
 const overlayMatchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option> | undefined>
+const OverlayRef = store.state.Overlay.use()
 
 const overlayKey = computed(() => (overlayMatchRef.value ? store.key.get(overlayMatchRef.value.option) : undefined))
 
 const resolved = computed(() => {
 	const match = overlayMatchRef.value
 	if (!match) return null
-	return useSlot('overlay', match.option, undefined, Suggestions)
+	// Access .value to register Overlay as a reactive dependency
+	OverlayRef.value
+	return store.slot.overlay.get(match.option, Suggestions)
 })
 </script>
 

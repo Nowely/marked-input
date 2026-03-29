@@ -1,5 +1,4 @@
 import type {Token as TokenType} from '@markput/core'
-import type {ElementType} from 'react'
 import {memo} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
@@ -17,10 +16,7 @@ interface BlockProps {
 
 export const Block = memo(({token, blockIndex}: BlockProps) => {
 	const store = useStore()
-	const [ContainerComponent, containerProps] = store.slot.block.use() as [
-		ElementType,
-		Record<string, unknown> | undefined,
-	]
+	const [ContainerComponent, containerProps] = store.slot.block.use()
 
 	const blockStore = store.blocks.get(token)
 	const isDragging = blockStore.state.isDragging.use()

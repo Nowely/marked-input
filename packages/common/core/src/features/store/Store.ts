@@ -7,8 +7,15 @@ import {
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
-import type {CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
-import {resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
+import type {CoreOption, CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {
+	resolveMarkSlot,
+	resolveOverlaySlot,
+	resolveSlot,
+	resolveSlotProps,
+	type SlotOption,
+} from '../../shared/utils/resolveSlot'
+import {shallow} from '../../shared/utils/shallow'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
@@ -22,6 +29,22 @@ import {TextSelectionController} from '../selection'
 
 export interface StoreOptions {
 	createUseHook: UseHookFactory
+	defaultSpan: unknown
+}
+
+export interface Slot {
+	use(...args: any[]): readonly unknown[]
+	get(...args: any[]): readonly unknown[]
+}
+
+export interface MarkSlot {
+	use(token: Token): readonly unknown[]
+	get(token: Token): readonly unknown[]
+}
+
+export interface OverlaySlot {
+	use(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
+	get(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
 }
 
 export class Store {
@@ -36,9 +59,11 @@ export class Store {
 	readonly state: StateObject<MarkputState>
 
 	readonly slot: {
-		container: {use(): readonly [unknown, Record<string, unknown> | undefined]}
-		block: {use(): readonly [unknown, Record<string, unknown> | undefined]}
-		span: {use(): readonly [unknown, Record<string, unknown> | undefined]}
+		container: Slot
+		block: Slot
+		span: Slot
+		overlay: OverlaySlot
+		mark: MarkSlot
 	}
 
 	readonly events = defineEvents<{
@@ -67,7 +92,10 @@ export class Store {
 
 	readonly lifecycle = new Lifecycle(this)
 
+	private readonly _defaultSpan: unknown
+
 	constructor(options: StoreOptions) {
+		this._defaultSpan = options.defaultSpan
 		this.blocks = new BlockRegistry(options.createUseHook)
 		this.state = defineState<MarkputState>(
 			{
@@ -92,7 +120,8 @@ export class Store {
 				slotProps: undefined,
 				drag: false,
 			},
-			options.createUseHook
+			options.createUseHook,
+			{equals: {style: shallow}}
 		)
 		this.slot = {
 			container: {
@@ -101,21 +130,60 @@ export class Store {
 						resolveSlot('container', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('container', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
-			},
+				get: () =>
+					[
+						resolveSlot('container', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('container', this.state.slotProps.get() as CoreSlotProps | undefined),
+					] as const,
+			} as Slot,
 			block: {
 				use: () =>
 					[
 						resolveSlot('block', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('block', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
-			},
+				get: () =>
+					[
+						resolveSlot('block', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('block', this.state.slotProps.get() as CoreSlotProps | undefined),
+					] as const,
+			} as Slot,
 			span: {
 				use: () =>
 					[
 						resolveSlot('span', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('span', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
-			},
+				get: () =>
+					[
+						resolveSlot('span', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('span', this.state.slotProps.get() as CoreSlotProps | undefined),
+					] as const,
+			} as Slot,
+			overlay: {
+				use: (option?: CoreOption, defaultComponent?: unknown) =>
+					resolveOverlaySlot(this.state.Overlay.use(), option, defaultComponent),
+				get: (option?: CoreOption, defaultComponent?: unknown) =>
+					resolveOverlaySlot(this.state.Overlay.get(), option, defaultComponent),
+			} as unknown as OverlaySlot,
+			mark: {
+				use: (token: Token) =>
+					resolveMarkSlot(
+						token,
+						this.state.options.get() as unknown as SlotOption[] | undefined,
+						this.state.Mark.use(),
+						this.state.Span.use(),
+						this._defaultSpan
+					),
+				get: (token: Token) =>
+					resolveMarkSlot(
+						token,
+						this.state.options.get() as unknown as SlotOption[] | undefined,
+						this.state.Mark.get(),
+						this.state.Span.get(),
+						this._defaultSpan
+					),
+			} as unknown as MarkSlot,
 		}
 	}
 
