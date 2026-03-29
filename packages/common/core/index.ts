@@ -20,7 +20,7 @@ export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 export type {Signal, UseHookFactory} from './src/shared/classes'
 
 // Store
-export {Store} from './src/features/store'
+export {Store, type Slot, type MarkSlot, type OverlaySlot} from './src/features/store'
 
 // Overlay
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
