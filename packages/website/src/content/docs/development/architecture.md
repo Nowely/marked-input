@@ -1,7 +1,7 @@
 ---
 title: Architecture
-description: Markput internal architecture - React layer, parser engine, token renderer, store, component hierarchy and data flow
-keywords: [architecture, parser engine, token renderer, React hooks, component design, data flow, system design]
+description: Markput internal architecture - core layer, parser engine, token renderer, store, component hierarchy and data flow
+keywords: [architecture, parser engine, token renderer, hooks, component design, data flow, system design]
 ---
 
 This guide explains Markput's internal architecture, data flow, and design decisions.
@@ -10,19 +10,19 @@ This guide explains Markput's internal architecture, data flow, and design decis
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        MarkedInput                          │
+│                         Markput                             │
 │  ┌───────────────────────────────────────────────────────┐  │
-│  │                   React Layer                         │  │
-│  │  • Components (MarkedInput, Suggestions)             │  │
-│  │  • Hooks (useMark, useOverlay, useListener)          │  │
-│  │  • Context Providers                                  │  │
+│  │              Framework Layer (React / Vue)             │  │
+│  │  • Components (MarkedInput, Container, Token, Block)  │  │
+│  │  • Hooks (useMark, useOverlay, useStore)              │  │
+│  │  • Context Providers (StoreContext)                    │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                          ↓                                   │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │                    Core Layer                         │  │
 │  │  • Parser (markup → tokens)                           │  │
-│  │  • Store (state management)                           │  │
-│  │  • EventBus (inter-component communication)           │  │
+│  │  • Store (state + events + controllers)               │  │
+│  │  • Signals (framework-agnostic reactivity)            │  │
 │  │  • Caret (cursor positioning)                         │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                          ↓                                   │
@@ -37,39 +37,42 @@ This guide explains Markput's internal architecture, data flow, and design decis
 
 ## Component Hierarchy
 
-### React Component Tree
+### Component Tree (React & Vue)
+
+Both framework adapters share the same component structure:
 
 ```
-<MarkedInput>
-  ├─ <StoreProvider>             # Provides store to child components
-  │   ├─ <Container>             # contenteditable element
-  │   │   ├─ <TextNode>          # Plain text token
-  │   │   ├─ <MarkNode>          # Mark token
-  │   │   │   └─ <Mark>          # User's custom Mark component
-  │   │   │       └─ uses useMark() hook
-  │   │   ├─ <TextNode>
-  │   │   └─ <MarkNode>
-  │   │       └─ <Mark>
-  │   │
-  │   └─ <OverlayPortal>         # Portal for overlay
-  │       └─ <Overlay>           # User's custom Overlay component
-  │           └─ uses useOverlay() hook
+<MarkedInput>                        # Root: creates Store, provides context
+  <Container>                        # contenteditable element
+  │ ├─ (drag=false)
+  │ │   └─ <Token mark={t} />       # Unified renderer for text & mark tokens
+  │ │       └─ <Token mark={child}> # Recursive for __slot__ children
+  │ │
+  │ └─ (drag=true)
+  │     └─ <Block token={t}>        # Drag-mode wrapper per token
+  │         ├─ <DropIndicator position="before" />
+  │         ├─ <DragHandle />
+  │         ├─ <Token mark={t} />
+  │         ├─ <DropIndicator position="after" />
+  │         └─ <BlockMenu />
   │
-  └─ Event Handlers              # Input, focus, blur, keyboard events
+  <OverlayRenderer>                  # Portal for overlay
+      └─ <Overlay />                 # User's custom Overlay component
 ```
 
 ### Component Responsibilities
 
-| Component         | Responsibility                                      |
-| ----------------- | --------------------------------------------------- |
-| **MarkedInput**   | Entry point, props validation, store initialization |
-| **StoreProvider** | React context for store access                      |
-| **Container**     | contenteditable management, event handling          |
-| **TextNode**      | Renders plain text tokens                           |
-| **MarkNode**      | Renders mark tokens, provides mark context          |
-| **Mark**          | User's custom mark component                        |
-| **OverlayPortal** | React portal for overlay positioning                |
-| **Overlay**       | User's custom overlay component                     |
+| Component            | Responsibility                                               |
+| -------------------- | ------------------------------------------------------------ |
+| **MarkedInput**      | Entry point, store initialization, lifecycle management      |
+| **Container**        | contenteditable management, renders tokens or blocks         |
+| **Token**            | Unified renderer for both text and mark tokens (recursive)   |
+| **Block**            | Drag-mode wrapper with handle, menu, and drop indicators     |
+| **DragHandle**       | Drag grip UI element                                         |
+| **BlockMenu**        | Context menu for block operations (add, delete, duplicate)   |
+| **DropIndicator**    | Visual drop target indicator during drag                     |
+| **OverlayRenderer**  | Portal renderer for overlay component                        |
+| **Span**             | Default text span renderer                                   |
 
 ## Data Flow
 
@@ -78,73 +81,49 @@ This guide explains Markput's internal architecture, data flow, and design decis
 ```
 1. User types in contenteditable
         ↓
-2. onInput event fires
+2. ContentEditableController detects input
         ↓
-3. Extract text from DOM
+3. store.events.change() emitted
         ↓
-4. Call onChange(newText)
+4. SystemListenerController reads DOM, mutates focused token in-place
         ↓
-5. Parent updates value prop
+5. store.events.parse() emitted
         ↓
-6. MarkedInput receives new value
+6. getTokensByUI() re-parses that token's content
         ↓
-7. Parser.parse(value) → tokens
+7. store.state.tokens updated (Signal)
         ↓
-8. Store.tokens = newTokens
+8. React/Vue re-renders via Signal.use()
         ↓
-9. React re-renders with new tokens
-        ↓
-10. DOM updates with new marks
+9. FocusController.recover() restores caret position
 ```
+
+There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
 
 ### Trigger Flow (Overlay Opens)
 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. onInput event fires
+2. store.events.checkOverlay() emitted
         ↓
-3. CheckTrigger event sent
+3. OverlayController checks for trigger match
         ↓
-4. TriggerFinder.find() checks for trigger
+4. If found:
+   - store.state.overlayMatch set
         ↓
-5. If found:
-   - Store.overlayMatch = { trigger, value, ... }
-   - SystemEvent.CheckTrigger sent
+5. Overlay component receives match via useOverlay()
         ↓
-6. Overlay component receives match via useOverlay()
+6. Overlay renders at cursor position
         ↓
-7. Overlay renders at cursor position
-        ↓
-8. User selects item:
+7. User selects item:
    - Overlay calls select({ value, meta })
-   - SystemEvent.Select sent
         ↓
-9. Markup inserted: annotate(markup, { value, meta })
+8. store.events.select() emitted
         ↓
-10. onChange called with new text
-```
-
-### Selection Flow (Overlay Item Selected)
-
-```
-1. User clicks/enters on overlay item
+9. Markup inserted, onChange called with new text
         ↓
-2. Overlay.select({ value, meta })
-        ↓
-3. SystemEvent.Select sent
-        ↓
-4. Store receives Select event
-        ↓
-5. Create markup: annotate(markup, { value, meta })
-        ↓
-6. Replace trigger span with markup
-        ↓
-7. Update DOM and cursor position
-        ↓
-8. Call onChange(newText)
-        ↓
-9. Close overlay (ClearTrigger event)
+10. store.events.clearOverlay() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -160,60 +139,50 @@ Input: "Hello @[Alice](123) and #[react]"
 ```typescript
 const parser = new Parser([
     '@[__value__](__meta__)', // Mention pattern
-    '#[__value__]', // Hashtag pattern
+    '#[__value__]',           // Hashtag pattern
 ])
 ```
 
-### Stage 3: Tokenization
+### Stage 3: Tokenization (3-stage pipeline)
 
-Parser converts text into token tree:
+1. **SegmentMatcher** — finds all opening/closing bracket positions
+2. **PatternMatcher** — groups segments into complete markup matches, resolves nesting
+3. **TreeBuilder** — single-pass algorithm builds nested token tree using a parent stack for `__slot__` content
+
+Tokens carry `descriptor.index` pointing back to which option/markup created them.
 
 ```typescript
-;[
-    {
-        type: 'text',
-        content: 'Hello ',
-        position: {start: 0, end: 6},
-    },
+[
+    { type: 'text', content: 'Hello ' },
     {
         type: 'mark',
         content: '@[Alice](123)',
-        position: {start: 6, end: 19},
         value: 'Alice',
         meta: '123',
-        descriptor: {index: 0, markup: '@[__value__](__meta__)'},
+        descriptor: { index: 0, markup: '@[__value__](__meta__)' },
         children: [],
     },
-    {
-        type: 'text',
-        content: ' and ',
-        position: {start: 19, end: 24},
-    },
+    { type: 'text', content: ' and ' },
     {
         type: 'mark',
         content: '#[react]',
-        position: {start: 24, end: 32},
         value: 'react',
-        descriptor: {index: 1, markup: '#[__value__]'},
+        descriptor: { index: 1, markup: '#[__value__]' },
         children: [],
     },
 ]
 ```
 
-### Stage 4: React Rendering
+### Stage 4: Rendering
 
-Each token renders as React component:
+Each token renders via the unified `Token` component:
 
 ```jsx
 <Container>
-    <TextNode>Hello </TextNode>
-    <MarkNode>
-        <MentionMark value="Alice" meta="123" />
-    </MarkNode>
-    <TextNode> and </TextNode>
-    <MarkNode>
-        <HashtagMark value="react" />
-    </MarkNode>
+    <Token mark={textToken} />   {/* renders as <span> */}
+    <Token mark={markToken} />   {/* renders user's Mark component */}
+    <Token mark={textToken} />
+    <Token mark={markToken} />
 </Container>
 ```
 
@@ -228,10 +197,9 @@ For nested marks like `**bold @[mention]**`:
    ↓
 3. Recursively parse nested content
    ↓
-4. Build token tree:
+4. Build token tree with children:
    {
      type: 'mark',
-     nested: { content: 'bold @[mention]', ... },
      children: [
        { type: 'text', content: 'bold ' },
        { type: 'mark', value: 'mention', ... }
@@ -241,271 +209,330 @@ For nested marks like `**bold @[mention]**`:
 
 ## Event System
 
-### Event Bus Architecture
+### Emitter Architecture
+
+Events use `defineEvents<T>()` which creates typed emitters:
 
 ```typescript
-class EventBus {
-    private listeners = new Map<EventKey, Set<Function>>()
-
-    on(event: EventKey, handler: Function): void
-    off(event: EventKey, handler: Function): void
-    send(event: EventKey, data?: any): void
+export type Emitter<T = void> = {
+    (payload?: T): void
+    on(fn: (value: T) => void): () => void  // returns unsubscribe
 }
 ```
 
-### System Events
+### Store Events
 
-| Event           | When Fired                | Payload             |
-| --------------- | ------------------------- | ------------------- |
-| `STORE_UPDATED` | Store state changes       | Updated store       |
-| `Change`        | Text content changes      | `{ value: string }` |
-| `Parse`         | Parsing triggered         | -                   |
-| `CheckTrigger`  | Check for overlay trigger | -                   |
-| `ClearTrigger`  | Close overlay             | -                   |
-| `Select`        | Overlay item selected     | `{ mark, match }`   |
-| `Delete`        | Mark deleted              | `{ token }`         |
+| Event           | When Fired                  | Payload                          |
+| --------------- | --------------------------- | -------------------------------- |
+| `change`        | Text content changes        | `void`                           |
+| `parse`         | Parsing triggered           | `void`                           |
+| `checkOverlay`  | Check for overlay trigger   | `void`                           |
+| `clearOverlay`  | Close overlay               | `void`                           |
+| `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `delete`        | Mark deleted                | `{ token: Token }`               |
 
-### Event Flow Example
+### Event Usage
 
 ```typescript
-// Component sends event
-store.bus.send(SystemEvent.Change, {value: 'new text'})
+// Emit an event
+store.events.change()
 
-// Multiple listeners can subscribe
-store.bus.on(SystemEvent.Change, data => {
-    console.log('Text changed:', data.value)
+// Subscribe to an event (returns unsubscribe function)
+const unsubscribe = store.events.change.on(() => {
+    console.log('Text changed')
 })
 
-store.bus.on(SystemEvent.Change, data => {
-    saveToLocalStorage(data.value)
-})
-
-// Clean up when done
-store.bus.off(SystemEvent.Change, handler)
+// Clean up
+unsubscribe()
 ```
 
 ## State Management
+
+### Reactive Signals
+
+State is managed through `defineState<T>()` which creates a `StateObject` — a Proxy where each property is a `Signal<T>`:
+
+```typescript
+export interface Signal<T> {
+    get(): T              // Read value
+    set(value: T): void   // Write value
+    on(fn: (value: T) => void): () => void  // Subscribe
+    use(): T              // Framework-specific hook (React/Vue)
+}
+```
+
+The framework adapter injects `createUseHook` at Store construction:
+- **React**: `use()` returns the value via `useState` + `useEffect(signal.on)`
+- **Vue**: `use()` returns a `Ref<T>` backed by `shallowRef` + `signal.on()`
+
+This is the **only framework coupling point**.
 
 ### Store Structure
 
 ```typescript
 class Store {
-    // Configuration
-    props: MarkedInputProps
+    readonly key: KeyGenerator
+    readonly blocks: BlockRegistry
 
-    // Document state
-    tokens: Token[]
-    parser: Parser
-    previousValue?: string
-
-    // UI state
-    refs: {
-        container: HTMLDivElement | null
-        overlay: HTMLElement | null
-    }
-    selecting?: boolean
-
-    // Overlay state
-    overlayMatch?: OverlayMatch
-
-    // Navigation
-    nodes: {
+    readonly nodes: {
         focus: NodeProxy
         input: NodeProxy
     }
-    recovery?: Recovery
 
-    // Event system
-    bus: EventBus
-    key: KeyGenerator
+    readonly state: StateObject<MarkputState>
+    // Properties: tokens, parser, previousValue, recovery, selecting,
+    // overlayMatch, value, defaultValue, onChange, readOnly, options,
+    // showOverlayOn, Span, Mark, Overlay, className, style, slots,
+    // slotProps, drag
+
+    readonly slot: {
+        container: { use(): readonly [Component, SlotProps] }
+        block: { use(): readonly [Component, SlotProps] }
+        span: { use(): readonly [Component, SlotProps] }
+    }
+
+    readonly events: {
+        change: Emitter<void>
+        parse: Emitter<void>
+        delete: Emitter<{ token: Token }>
+        select: Emitter<{ mark: Token; match: OverlayMatch }>
+        clearOverlay: Emitter<void>
+        checkOverlay: Emitter<void>
+    }
+
+    readonly refs: {
+        container: HTMLDivElement | null
+        overlay: HTMLElement | null
+    }
+
+    readonly controllers: {
+        overlay: OverlayController
+        focus: FocusController
+        keydown: KeyDownController
+        system: SystemListenerController
+        textSelection: TextSelectionController
+        contentEditable: ContentEditableController
+        drag: DragController
+    }
+
+    readonly lifecycle: Lifecycle
 }
 ```
 
-### State Updates
-
-Store uses Proxy pattern for reactive updates:
+### State Access
 
 ```typescript
-const store = new Proxy(new Store(props), {
-    set(target, prop, value) {
-        if (IMMUTABLE_KEYS.has(prop)) {
-            return false // Prevent mutation of immutable properties
-        }
+// Read state
+store.state.tokens.get()
 
-        if (target[prop] === value) {
-            return true // No change, skip update
-        }
+// Write state
+store.state.tokens.set(newTokens)
 
-        target[prop] = value
-        target.bus.send(SystemEvent.STORE_UPDATED, store)
-        return true
-    },
-})
+// Batch update
+store.state.set({ tokens: newTokens, readOnly: true })
+
+// Use in component (framework-specific reactive binding)
+const tokens = store.state.tokens.use()
 ```
 
-### State Access in React
+## Controllers
+
+7 controllers, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.events` (emitters), and `store.nodes` (DOM refs):
+
+| Controller                    | Responsibility                                           |
+| ----------------------------- | -------------------------------------------------------- |
+| **FocusController**           | Caret tracking, focus recovery after re-renders          |
+| **KeyDownController**         | Keyboard event handling, navigation between tokens       |
+| **OverlayController**         | Overlay trigger detection, position, open/close          |
+| **TextSelectionController**   | Text selection state tracking                            |
+| **SystemListenerController**  | DOM mutation detection, token content synchronization    |
+| **ContentEditableController** | contenteditable attribute management                     |
+| **DragController**            | Drag-and-drop reordering of blocks                       |
+
+Managed by `FeatureManager`, which allows selective feature activation.
+
+## Lifecycle Timing
+
+React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// Via hook
-const store = useStore()
+// 1. Enable controllers and event subscriptions
+lifecycle.enable()
 
-// Via selector (for performance)
-const tokens = useStore(store => store.tokens)
-const overlayMatch = useStore(store => store.overlayMatch)
+// 2. Sync parser with value/options (layout effect)
+lifecycle.syncParser(value, options)
+
+// 3. Sync contenteditable attributes (layout effect)
+contentEditable.sync()
+
+// 4. Recover focus after DOM commits (effect)
+lifecycle.recoverFocus()
 ```
 
-## Re-render Optimization
+## Block System (Drag Mode)
 
-### Token Memoization
+Normal mode: tokens render inline as alternating `[text, mark, text, ...]`.
 
-Tokens are memoized to prevent unnecessary re-parsing:
+Drag mode (`drag={true}`): each token is wrapped in a `<Block>` component with:
+- `DragHandle` — grip for initiating drag
+- `DropIndicator` — visual feedback for drop position (before/after)
+- `BlockMenu` — context menu (add, delete, duplicate)
 
-```typescript
-const tokens = useMemo(() => {
-    return parser.parse(value)
-}, [value, parser])
-```
-
-### Mark Component Memoization
-
-Each mark component is wrapped with React.memo:
+`BlockRegistry` (WeakMap keyed by token) stores per-token UI state via `BlockStore`:
 
 ```typescript
-const MemoizedMark = memo(({ value, meta }) => {
-  return <span>{value}</span>
-})
-```
-
-### Selective Re-rendering
-
-Only changed tokens trigger re-renders:
-
-```typescript
-function TokenRenderer({ tokens }) {
-  return tokens.map((token, index) => (
-    <MemoizedToken
-      key={token.position.start} // Stable key prevents re-mount
-      token={token}
-    />
-  ))
+interface BlockState {
+    isHovered: boolean
+    isDragging: boolean
+    dropPosition: 'before' | 'after' | null
+    menuOpen: boolean
+    menuPosition: { top: number; left: number }
 }
 ```
 
-### Store Selectors
-
-Use selectors to subscribe to specific state:
-
-```typescript
-// ❌ Re-renders on ANY store change
-const store = useStore()
-
-// ✅ Only re-renders when tokens change
-const tokens = useStore(store => store.tokens)
-
-// ✅ Only re-renders when overlay state changes
-const overlayMatch = useStore(store => store.overlayMatch)
-```
+WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 ## Cursor Management
 
-### Caret Position
+### Caret Class
 
-Cursor position is managed through:
-
-1. **Before change**: Save current cursor position
-2. **After change**: Restore cursor to correct position
+Static helpers for cursor/selection positioning in contenteditable:
 
 ```typescript
 class Caret {
-    static save(): Recovery {
-        const selection = window.getSelection()
-        // Save range, offset, etc.
-    }
+    // Selection queries
+    static get isSelectedPosition(): boolean
+    static getCurrentPosition(): number
+    static getSelectedNode(): Node
 
-    static restore(recovery: Recovery): void {
-        // Restore cursor to saved position
-    }
+    // Position calculations
+    static getAbsolutePosition(): { left: number; top: number }
+    static getCaretRect(): DOMRect | null
+    static isCaretOnFirstLine(element: HTMLElement): boolean
+    static isCaretOnLastLine(element: HTMLElement): boolean
 
-    static getAbsolutePosition(): {left: number; top: number} {
-        // Get cursor coordinates for overlay
-    }
+    // Caret positioning
+    static setAtX(element: HTMLElement, x: number, y?: number): void
+    static setIndex(element: HTMLElement, offset: number): void
+    static setCaretToEnd(element: HTMLElement | null | undefined): void
+
+    // Index helpers
+    static getCaretIndex(element: HTMLElement): number
+    static getIndex(): number
 }
 ```
 
-### Cursor Restoration
+### NodeProxy — Stateful DOM Navigation
 
-After DOM updates, cursor must be restored:
+Wraps an HTMLElement with navigation helpers:
+- `.next` / `.prev` — sibling navigation
+- `.isSpan` / `.isMark` — even/odd index check
+- `.caret` — caret position
+- `.head` / `.tail` — container bounds
+
+## Framework Hooks
+
+### useMark
+
+Available in both React and Vue. Provides access to the current mark token:
 
 ```typescript
-function handleInput() {
-    const recovery = Caret.save() // 1. Save cursor
-    const newText = extractText(dom) // 2. Get new text
-    onChange(newText) // 3. Update value (triggers re-render)
+const { ref } = useMark<HTMLDivElement>({ controlled: false })
+```
 
-    // After re-render:
-    useEffect(() => {
-        Caret.restore(recovery) // 4. Restore cursor
-    })
+### useOverlay
+
+Available in both React and Vue. Provides overlay state and actions:
+
+```typescript
+const { style, close, select, match, ref } = useOverlay()
+```
+
+| Property | Type                                     | Description                    |
+| -------- | ---------------------------------------- | ------------------------------ |
+| `style`  | `{ left, top }`                          | Positioning coordinates        |
+| `close`  | `() => void`                             | Close the overlay              |
+| `select` | `(value: { value, meta? }) => void`      | Select an overlay item         |
+| `match`  | `OverlayMatch`                           | Current trigger match          |
+| `ref`    | `RefObject<HTMLElement>`                  | Ref to attach to overlay DOM   |
+
+### useStore
+
+Returns the Store instance from context:
+
+```typescript
+const store = useStore()
+```
+
+## Extensibility Points
+
+### 1. Custom Mark Components
+
+```typescript
+<MarkedInput Mark={CustomMark} />
+```
+
+### 2. Custom Overlay
+
+```typescript
+<MarkedInput Overlay={CustomOverlay} />
+```
+
+### 3. Custom Slots
+
+Replace internal rendering components:
+
+```typescript
+<MarkedInput
+  slots={{
+    container: MyCustomContainer,
+    span: MyCustomSpan,
+    block: MyCustomBlock,       // drag mode only
+  }}
+/>
+```
+
+## Common Architectural Patterns
+
+### Pattern: Controlled Component
+
+```typescript
+function App() {
+  const [value, setValue] = useState('')
+
+  return (
+    <MarkedInput
+      value={value}
+      onChange={setValue}
+      Mark={MyMark}
+    />
+  )
 }
 ```
 
-## contenteditable Management
-
-### DOM Structure
-
-```html
-<div contenteditable="true" class="marked-input">
-    <span>Hello </span>
-    <span data-mark="mention">
-        <MentionMark value="Alice" />
-    </span>
-    <span> and </span>
-    <span data-mark="hashtag">
-        <HashtagMark value="react" />
-    </span>
-</div>
-```
-
-### Text Extraction
-
-Extract plain text from DOM, preserving marks:
+### Pattern: Uncontrolled Component
 
 ```typescript
-function extractText(element: HTMLElement): string {
-    let text = ''
-
-    for (const node of element.childNodes) {
-        if (node.nodeType === Node.TEXT_NODE) {
-            text += node.textContent
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-            const el = node as HTMLElement
-            if (el.dataset.mark) {
-                // Extract mark syntax from data attributes
-                text += el.dataset.markup || ''
-            } else {
-                text += extractText(el) // Recurse
-            }
-        }
-    }
-
-    return text
+function App() {
+  return (
+    <MarkedInput
+      defaultValue="Initial"
+      Mark={MyMark}
+    />
+  )
 }
 ```
 
-### Mark Synchronization
-
-Ensure DOM marks match token tree:
+### Pattern: Drag Mode
 
 ```typescript
-function syncDOMWithTokens(container: HTMLElement, tokens: Token[]) {
-    // 1. Build new DOM tree from tokens
-    const newDOM = tokensToDOM(tokens)
-
-    // 2. Diff with current DOM
-    const patches = diff(container.childNodes, newDOM)
-
-    // 3. Apply minimal patches
-    applyPatches(container, patches)
+function App() {
+  return (
+    <MarkedInput
+      drag={true}
+      Mark={MyMark}
+    />
+  )
 }
 ```
 
@@ -520,196 +547,13 @@ function syncDOMWithTokens(container: HTMLElement, tokens: Token[]) {
 | 10,000 chars  | ~10ms      | Acceptable            |
 | 100,000 chars | ~100ms     | Consider optimization |
 
-### Re-render Performance
+### Re-render Optimization
 
-With proper memoization:
-
-- **Token changes**: Only changed tokens re-render
-- **Overlay opens**: Only overlay component re-renders
-- **Store updates**: Only components using affected state re-render
-
-### Memory Usage
-
-Typical memory footprint:
-
-- **Parser**: ~100KB (markup registry, matcher caches)
-- **Store**: ~10KB (state objects)
-- **Tokens**: ~100 bytes per token
-- **React components**: ~50 bytes per mark
-
-## Design Patterns
-
-### Separation of Concerns
-
-```
-┌─────────────────┐
-│  React Layer    │  UI components, hooks, context
-├─────────────────┤
-│  Core Layer     │  Parser, Store, EventBus
-├─────────────────┤
-│  DOM Layer      │  contenteditable, native events
-└─────────────────┘
-```
-
-### Inversion of Control
-
-User provides custom components:
-
-```typescript
-<MarkedInput
-  Mark={UserMark}        // User controls mark rendering
-  Overlay={UserOverlay}  // User controls overlay rendering
-/>
-```
-
-### Observer Pattern
-
-Event bus implements pub/sub:
-
-```typescript
-bus.on(event, handler) // Subscribe
-bus.send(event, data) // Publish
-bus.off(event, handler) // Unsubscribe
-```
-
-### Proxy Pattern
-
-Store uses Proxy for reactive updates:
-
-```typescript
-const store = new Proxy(new Store(), {set})
-```
-
-## Extensibility Points
-
-### 1. Custom Mark Components
-
-Replace default mark rendering:
-
-```typescript
-const CustomMark: FC<MarkProps> = ({ value }) => (
-  <button>{value}</button>
-)
-
-<MarkedInput Mark={CustomMark} />
-```
-
-### 2. Custom Overlay
-
-Replace autocomplete UI:
-
-```typescript
-const CustomOverlay: FC = () => {
-  const { match } = useOverlay()
-  return <MyCustomSuggestions query={match.value} />
-}
-
-<MarkedInput Overlay={CustomOverlay} />
-```
-
-### 3. Custom Slots
-
-Replace internal components:
-
-```typescript
-<MarkedInput
-  slots={{
-    container: MyCustomContainer,
-    span: MyCustomSpan
-  }}
-/>
-```
-
-### 4. Event Listeners
-
-Hook into system events:
-
-```typescript
-useListener('change', data => {
-    console.log('Changed:', data)
-})
-```
-
-## Common Architectural Patterns
-
-### Pattern: Controlled Component
-
-```typescript
-function App() {
-  const [value, setValue] = useState('')
-
-  return (
-    <MarkedInput
-      value={value}           // Parent controls state
-      onChange={setValue}     // Parent receives updates
-      Mark={MyMark}
-    />
-  )
-}
-```
-
-### Pattern: Uncontrolled Component
-
-```typescript
-function App() {
-  return (
-    <MarkedInput
-      defaultValue="Initial"  // Component manages state
-      Mark={MyMark}
-    />
-  )
-}
-```
-
-### Pattern: Compound Components
-
-```typescript
-<MarkedInput Mark={MyMark}>
-  {/* Future: Allow children for toolbars, etc. */}
-</MarkedInput>
-```
-
-## Debugging Architecture
-
-### Inspect Store
-
-```typescript
-// In React DevTools console
-const store = useStore()
-console.log('Store:', store)
-console.log('Tokens:', store.tokens)
-console.log('Overlay:', store.overlayMatch)
-```
-
-### Monitor Events
-
-```typescript
-// Log all events
-const events = [SystemEvent.STORE_UPDATED, SystemEvent.Change, SystemEvent.CheckTrigger, SystemEvent.Select]
-
-events.forEach(event => {
-    store.bus.on(event, data => {
-        console.log(`[Event] ${event.description}`, data)
-    })
-})
-```
-
-### Visualize Token Tree
-
-```typescript
-function printTokenTree(tokens: Token[], indent = 0) {
-    tokens.forEach(token => {
-        const prefix = '  '.repeat(indent)
-        if (token.type === 'text') {
-            console.log(`${prefix}Text: "${token.content}"`)
-        } else {
-            console.log(`${prefix}Mark: ${token.value}`)
-            printTokenTree(token.children, indent + 1)
-        }
-    })
-}
-```
+- **Signal-based**: only components that call `.use()` on a changed signal re-render
+- **Token changes**: only affected tokens re-render (not the entire tree)
+- **Overlay opens**: only the overlay component re-renders
 
 **See also:**
 
 - [How It Works](../introduction/how-it-works) - Understanding how Markput processes text
+- [Performance](./performance) - Detailed performance analysis
