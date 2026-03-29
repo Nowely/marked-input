@@ -1,7 +1,8 @@
+import type {ComponentType} from 'react'
 import {memo, useMemo} from 'react'
 
-import {useSlot} from '../lib/hooks/useSlot'
 import {useStore} from '../lib/providers/StoreContext'
+import type {OverlayProps} from '../types'
 import {Suggestions} from './Suggestions'
 
 export const OverlayRenderer = memo(() => {
@@ -9,7 +10,8 @@ export const OverlayRenderer = memo(() => {
 	const overlayMatch = store.state.overlayMatch.use()
 	const key = useMemo(() => (overlayMatch ? store.key.get(overlayMatch.option) : undefined), [overlayMatch])
 
-	const [Overlay, props] = useSlot('overlay', overlayMatch?.option, undefined, Suggestions)
+	const result = store.slot.overlay.use(overlayMatch?.option, Suggestions)
+	const [Overlay, props] = result as readonly [ComponentType<any>, OverlayProps]
 
 	if (key) return <Overlay key={key} {...(props ?? {})} />
 })

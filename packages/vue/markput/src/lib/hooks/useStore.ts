@@ -1,12 +1,22 @@
-import type {Store} from '@markput/core'
+import type {Store, Token} from '@markput/core'
 import {inject} from 'vue'
-import type {Ref} from 'vue'
+import type {Component, Ref} from 'vue'
 
+import type {MarkProps, Option, OverlayProps} from '../../types'
 import {STORE_KEY} from '../providers/storeKey'
 
 declare module '@markput/core' {
 	interface Signal<T> {
 		use(): Ref<T>
+	}
+	interface MarkSlot {
+		use(token: Token): readonly [Component, MarkProps]
+	}
+	interface OverlaySlot {
+		use(option?: Option, defaultComponent?: Component): readonly [Component, OverlayProps]
+	}
+	interface Slot {
+		use(): readonly [Component | string, Record<string, unknown> | undefined]
 	}
 }
 

@@ -58,6 +58,7 @@ export {findGap, getClosestIndexes} from './src/features/parsing/preparsing'
 export {toString} from './src/features/parsing'
 export {shallow, createNewSpan, deleteMark} from './src/features/editing'
 export {Store} from './src/features/store'
+export type {Slot, MarkSlot, OverlaySlot, StoreOptions} from './src/features/store'
 export {OverlayController, createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag

@@ -1,21 +1,25 @@
 <script setup lang="ts">
+import {resolveOptionSlot} from '@markput/core'
 import type {OverlayMatch} from '@markput/core'
-import {computed, type Ref} from 'vue'
+import {computed, type Component, type Ref} from 'vue'
 
-import {useSlot} from '../lib/hooks/useSlot'
 import {useStore} from '../lib/hooks/useStore'
 import type {Option} from '../types'
 import Suggestions from './Suggestions/Suggestions.vue'
 
 const store = useStore()
 const overlayMatchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option> | undefined>
+const GlobalOverlayRef = store.state.Overlay.use() as Ref<Component | undefined>
 
 const overlayKey = computed(() => (overlayMatchRef.value ? store.key.get(overlayMatchRef.value.option) : undefined))
 
 const resolved = computed(() => {
 	const match = overlayMatchRef.value
 	if (!match) return null
-	return useSlot('overlay', match.option, undefined, Suggestions)
+	const option = match.option
+	const Comp = (option?.Overlay || GlobalOverlayRef.value || Suggestions) as Component
+	const props = resolveOptionSlot(option?.overlay, {})
+	return [Comp, props] as const
 })
 </script>
 

@@ -1,5 +1,20 @@
-import type {Store} from '@markput/core'
+import type {CoreOption, Store, Token} from '@markput/core'
+import type {ComponentType, ElementType} from 'react'
 import {createContext, useContext} from 'react'
+
+import type {MarkProps, OverlayProps} from '../../types'
+
+declare module '@markput/core' {
+	interface MarkSlot {
+		use(token: Token): readonly [ComponentType<any>, MarkProps]
+	}
+	interface OverlaySlot {
+		use(option?: CoreOption, defaultComponent?: ComponentType<any>): readonly [ComponentType<any>, OverlayProps]
+	}
+	interface Slot {
+		use(): readonly [ElementType, Record<string, unknown> | undefined]
+	}
+}
 
 export const StoreContext = createContext<Store | undefined>(undefined)
 StoreContext.displayName = 'StoreContext'
