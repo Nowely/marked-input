@@ -1,6 +1,6 @@
 import type {DragController} from '../../features/drag/DragController'
 import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../features/drag/eventHandlers'
-import {isClickOutside, isEscapeKey} from '../utils'
+import {isClickOutside, isEscapeKey} from '../utils/menuUtils'
 import {defineState, type StateObject, type UseHookFactory} from './defineState'
 
 export type DropPosition = 'before' | 'after' | null
