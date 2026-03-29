@@ -90,8 +90,10 @@ Detailed docs live in `packages/website/src/content/docs/`:
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 describe('Feature', () => {
-  beforeEach(() => vi.clearAllMocks())
-  it('should ...', () => { /* ... */ })
+    beforeEach(() => vi.clearAllMocks())
+    it('should ...', () => {
+        /* ... */
+    })
 })
 ```
 
@@ -151,4 +153,3 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
 - `Store.state` properties are lazy Signals behind a Proxy — accessing a new property auto-creates it
-
