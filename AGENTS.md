@@ -71,12 +71,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 ## Code Rules
 
 - **Keep docs in sync**: when changing public API, behavior, or architecture, update the relevant documentation in `packages/website/src/content/docs/` and this CLAUDE.md file. Outdated docs are worse than no docs — treat doc updates as part of the implementation, not a follow-up task.
-- ESM-only, TypeScript strict, `verbatimModuleSyntax: true`
-- `import type` for type-only imports (linter-enforced)
-- Exports must be sorted (linter-enforced)
-- No circular imports (`import/no-cycle` is error-level)
-- Style: tabs (width 4), single quotes, no semicolons, line width 120
-- Formatting enforced by oxlint + oxfmt via pre-commit hook — do not manually format
+- Use reactive's `use()` conistency by framework reactivity system.
 
 ### Do NOT
 
