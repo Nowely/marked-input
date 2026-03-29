@@ -1,15 +1,5 @@
 // Shared exports
-export {
-	convertDataAttrs,
-	cx,
-	merge,
-	resolveOptionSlot,
-	resolveSlot,
-	resolveSlotProps,
-	getDirectChildIndex,
-	isClickOutside,
-	isEscapeKey,
-} from './src/shared/utils'
+export {convertDataAttrs, cx, merge, getDirectChildIndex, isClickOutside, isEscapeKey} from './src/shared/utils'
 export {
 	KEYBOARD,
 	DEFAULT_MARKUP,

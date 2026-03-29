@@ -8,8 +8,13 @@ import {
 	type StateObject,
 } from '../../shared/classes'
 import type {CoreOption, CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
-import {resolveOptionSlot} from '../../shared/utils/resolveOptionSlot'
-import {resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
+import {
+	resolveMarkSlot,
+	resolveOverlaySlot,
+	resolveSlot,
+	resolveSlotProps,
+	type SlotOption,
+} from '../../shared/utils/resolveSlot'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
@@ -28,14 +33,17 @@ export interface StoreOptions {
 
 export interface Slot {
 	use(...args: any[]): readonly unknown[]
+	get(...args: any[]): readonly unknown[]
 }
 
 export interface MarkSlot {
 	use(token: Token): readonly unknown[]
+	get(token: Token): readonly unknown[]
 }
 
 export interface OverlaySlot {
 	use(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
+	get(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
 }
 
 export class Store {
@@ -120,12 +128,22 @@ export class Store {
 						resolveSlot('container', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('container', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
+				get: () =>
+					[
+						resolveSlot('container', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('container', this.state.slotProps.get() as CoreSlotProps | undefined),
+					] as const,
 			} as Slot,
 			block: {
 				use: () =>
 					[
 						resolveSlot('block', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('block', this.state.slotProps.use() as CoreSlotProps | undefined),
+					] as const,
+				get: () =>
+					[
+						resolveSlot('block', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('block', this.state.slotProps.get() as CoreSlotProps | undefined),
 					] as const,
 			} as Slot,
 			span: {
@@ -134,39 +152,36 @@ export class Store {
 						resolveSlot('span', this.state.slots.use() as CoreSlots | undefined),
 						resolveSlotProps('span', this.state.slotProps.use() as CoreSlotProps | undefined),
 					] as const,
+				get: () =>
+					[
+						resolveSlot('span', this.state.slots.get() as CoreSlots | undefined),
+						resolveSlotProps('span', this.state.slotProps.get() as CoreSlotProps | undefined),
+					] as const,
 			} as Slot,
 			overlay: {
-				use: (option?: CoreOption, defaultComponent?: unknown) => {
-					const globalComponent = this.state.Overlay.use()
-					const optionComponent = (option as any)?.Overlay
-					const Component = optionComponent || globalComponent || defaultComponent
-					if (!Component)
-						throw new Error(
-							'No overlay component found. Provide either option.Overlay, global Overlay, or a defaultComponent.'
-						)
-					const props = resolveOptionSlot<Record<string, unknown>>((option as any)?.overlay, {})
-					return [Component, props] as const
-				},
-			},
+				use: (option?: CoreOption, defaultComponent?: unknown) =>
+					resolveOverlaySlot(this.state.Overlay.use(), option, defaultComponent),
+				get: (option?: CoreOption, defaultComponent?: unknown) =>
+					resolveOverlaySlot(this.state.Overlay.get(), option, defaultComponent),
+			} as unknown as OverlaySlot,
 			mark: {
-				use: (token: Token) => {
-					const tokenOptions = this.state.options.use() as unknown as CoreOption[] | undefined
-					const GlobalMark = this.state.Mark.use()
-					const GlobalSpan = this.state.Span.use()
-
-					if (token.type === 'text') {
-						return [GlobalSpan ?? this._defaultSpan, {value: token.content}] as const
-					}
-
-					const option = tokenOptions?.[token.descriptor.index]
-					const baseProps = {value: token.value, meta: token.meta}
-					const props = resolveOptionSlot((option as any)?.mark, baseProps)
-					const Component = (option as any)?.Mark || GlobalMark
-					if (!Component)
-						throw new Error('No mark component found. Provide either option.Mark or global Mark.')
-					return [Component, props] as const
-				},
-			},
+				use: (token: Token) =>
+					resolveMarkSlot(
+						token,
+						this.state.options.use() as unknown as SlotOption[] | undefined,
+						this.state.Mark.use(),
+						this.state.Span.use(),
+						this._defaultSpan
+					),
+				get: (token: Token) =>
+					resolveMarkSlot(
+						token,
+						this.state.options.get() as unknown as SlotOption[] | undefined,
+						this.state.Mark.get(),
+						this.state.Span.get(),
+						this._defaultSpan
+					),
+			} as unknown as MarkSlot,
 		}
 	}
 

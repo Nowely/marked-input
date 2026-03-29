@@ -10,10 +10,14 @@ export const OverlayRenderer = memo(() => {
 	const overlayMatch = store.state.overlayMatch.use()
 	const key = useMemo(() => (overlayMatch ? store.key.get(overlayMatch.option) : undefined), [overlayMatch])
 
-	const result = store.slot.overlay.use(overlayMatch?.option, Suggestions)
-	const [Overlay, props] = result as readonly [ComponentType<any>, OverlayProps]
+	const [Overlay, props] = store.slot.overlay.use(overlayMatch?.option, Suggestions) as readonly [
+		ComponentType<any>,
+		OverlayProps,
+	]
 
-	if (key) return <Overlay key={key} {...(props ?? {})} />
+	if (!key) return
+
+	return <Overlay key={key} {...(props ?? {})} />
 })
 
 OverlayRenderer.displayName = 'OverlayRenderer'

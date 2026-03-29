@@ -11,12 +11,15 @@ declare module '@markput/core' {
 	}
 	interface MarkSlot {
 		use(token: Token): readonly [Component, MarkProps]
+		get(token: Token): readonly [Component, MarkProps]
 	}
 	interface OverlaySlot {
 		use(option?: Option, defaultComponent?: Component): readonly [Component, OverlayProps]
+		get(option?: Option, defaultComponent?: Component): readonly [Component, OverlayProps]
 	}
 	interface Slot {
 		use(): readonly [Component | string, Record<string, unknown> | undefined]
+		get(): readonly [Component | string, Record<string, unknown> | undefined]
 	}
 }
 
