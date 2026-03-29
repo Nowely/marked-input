@@ -19,6 +19,16 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 
 Run a single test file: `pnpm --filter @markput/core exec vitest run path/to/file.spec.ts`
 
+### Before submitting — run all checks
+
+Always run these commands and ensure they all pass before considering any task complete (no has errors):
+
+1. `pnpm test`
+2. `pnpm run build`
+3. `pnpm run typecheck`
+4. `pnpm run lint`
+5. `pnpm run format`
+
 ## Monorepo Layout
 
 ```
