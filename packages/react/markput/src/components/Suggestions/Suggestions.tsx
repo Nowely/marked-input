@@ -11,7 +11,7 @@ export const Suggestions = () => {
 	const store = useStore()
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
-	const data = match.option.overlay?.data || []
+	const data = match.option.overlay?.data ?? []
 	const filtered = useMemo(() => filterSuggestions(data, match.value), [match.value, data])
 	const length = filtered.length
 

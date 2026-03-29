@@ -379,7 +379,7 @@ describe('Complex Nesting Scenarios', () => {
 		})
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el =>
-			parseInt(el.getAttribute('data-depth') || '0')
+			parseInt(el.getAttribute('data-depth') ?? '0')
 		)
 
 		expect(Math.max(...depths)).toBe(4)

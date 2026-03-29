@@ -31,7 +31,7 @@ interface MarkdownMarkProps extends MarkProps {
 }
 
 const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
-	<span style={{...style, margin: '0 1px'}}>{children || value}</span>
+	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
 )
 
 export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {

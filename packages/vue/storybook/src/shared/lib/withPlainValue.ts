@@ -42,7 +42,7 @@ export const withPlainValue = (story: any, context: any) => {
 				const preNode = h(
 					'pre',
 					{style: {padding: '8px', fontFamily: 'monospace', fontSize: '14px', margin: 0}},
-					value.value || ''
+					value.value ?? ''
 				)
 
 				if (position === 'right') {

@@ -28,7 +28,7 @@ export const HTMLMark = ({value, meta, children}: MarkProps) => {
 				e.currentTarget.style.backgroundColor = '#e8f3ff'
 			}}
 		>
-			{children || value}
+			{children ?? value}
 		</mark>
 	)
 }

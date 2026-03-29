@@ -53,7 +53,7 @@ describe('Utility: denote', () => {
 
 	it('should handle callback returning meta', () => {
 		const annotatedText = '@[Hello](world)'
-		const result = denote(annotatedText, mark => mark.meta || '', [markup])
+		const result = denote(annotatedText, mark => mark.meta ?? '', [markup])
 		expect(result).toBe('world')
 	})
 })

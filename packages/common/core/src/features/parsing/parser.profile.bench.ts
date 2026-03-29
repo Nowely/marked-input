@@ -119,7 +119,7 @@ function updateMethodStats(
 	complexity?: string,
 	firstParamLength?: number
 ): void {
-	const existing = globalProfileStats.get(methodName) || {times: [], paramLengths: [], count: 0}
+	const existing = globalProfileStats.get(methodName) ?? {times: [], paramLengths: [], count: 0}
 	existing.times.push(duration)
 	if (firstParamLength !== undefined) {
 		existing.paramLengths.push(firstParamLength)
@@ -537,10 +537,10 @@ function buildMethodTree(
 	if (segmentMatcherMethods.length > 0) {
 		const segmentTime = segmentMatcherMethods.reduce((sum, m) => sum + m.totalTime, 0)
 		const segmentMethod = segmentMatcherMethods[0]
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods ??= {}
 		rootMethod.subMethods['SegmentMatcher.search'] = {
 			name: 'SegmentMatcher.search',
-			calls: segmentMethod?.callCount || 0,
+			calls: segmentMethod?.callCount ?? 0,
 			percentage: Math.round((segmentTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(T)',
 			times: segmentMethod
@@ -566,7 +566,7 @@ function buildMethodTree(
 
 		const patternMatcherRoot: MethodProfile = {
 			name: 'PatternMatcher.process',
-			calls: mainPatternMethod?.callCount || 0,
+			calls: mainPatternMethod?.callCount ?? 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: 'O(S)',
 			times: mainPatternMethod
@@ -599,7 +599,7 @@ function buildMethodTree(
 
 		// Only add subMethods if there are any
 		if (subMethods.length > 0) {
-			if (!patternMatcherRoot.subMethods) patternMatcherRoot.subMethods = {}
+			patternMatcherRoot.subMethods ??= {}
 			subMethods.forEach(subMethod => {
 				patternMatcherRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
 			})
@@ -607,7 +607,7 @@ function buildMethodTree(
 			delete patternMatcherRoot.subMethods
 		}
 
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods ??= {}
 		rootMethod.subMethods['PatternMatcher.process'] = patternMatcherRoot
 	}
 
@@ -622,7 +622,7 @@ function buildMethodTree(
 
 		const treeBuilderRoot: MethodProfile = {
 			name: 'TreeBuilder.build',
-			calls: mainTreeMethod?.callCount || 0,
+			calls: mainTreeMethod?.callCount ?? 0,
 			percentage: Math.round((mainMethodTime / totalTime) * 100 * 10) / 10, // round to 1 decimal
 			complexity: getComplexityForMethod('TreeBuilder.build'),
 			times: mainTreeMethod
@@ -654,7 +654,7 @@ function buildMethodTree(
 
 		// Only add subMethods if there are any
 		if (subMethods.length > 0) {
-			if (!treeBuilderRoot.subMethods) treeBuilderRoot.subMethods = {}
+			treeBuilderRoot.subMethods ??= {}
 			subMethods.forEach(subMethod => {
 				treeBuilderRoot.subMethods![subMethod.name.split('.').pop()!] = subMethod
 			})
@@ -662,7 +662,7 @@ function buildMethodTree(
 			delete treeBuilderRoot.subMethods
 		}
 
-		if (!rootMethod.subMethods) rootMethod.subMethods = {}
+		rootMethod.subMethods ??= {}
 		rootMethod.subMethods['TreeBuilder.build'] = treeBuilderRoot
 	}
 
@@ -730,7 +730,7 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			const timeChange = avgTime2 - avgTime1
 			const timeChangePercent = avgTime1 > 0 ? (timeChange / avgTime1) * 100 : 0
 			const callsChange = method2.calls - method1.calls
-			const percentageChange = (method2.percentage || 0) - (method1.percentage || 0)
+			const percentageChange = (method2.percentage ?? 0) - (method1.percentage ?? 0)
 
 			methodChanges[fullName] = {
 				timeChange,
@@ -740,8 +740,8 @@ function compareProfilingResults(run1: ProfilingRun, run2: ProfilingRun): Profil
 			}
 
 			// Compare sub-methods if they exist
-			const subMethods2 = method2.subMethods || {}
-			const subMethods1 = method1.subMethods || {}
+			const subMethods2 = method2.subMethods ?? {}
+			const subMethods1 = method1.subMethods ?? {}
 			for (const [subName, subMethod2] of Object.entries(subMethods2)) {
 				const subMethod1 = subMethods1[subName]
 				if (subMethod1) {

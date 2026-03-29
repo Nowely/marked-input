@@ -173,8 +173,8 @@ export class Caret {
 		if (!selection?.anchorNode || !selection.rangeCount) return
 
 		const range = selection.getRangeAt(0)
-		range?.setStart(range.startContainer.firstChild || range.startContainer, offset)
-		range?.setEnd(range.startContainer.firstChild || range.startContainer, offset)
+		range?.setStart(range.startContainer.firstChild ?? range.startContainer, offset)
+		range?.setEnd(range.startContainer.firstChild ?? range.startContainer, offset)
 	}
 
 	setCaretRightTo(element: HTMLElement, offset: number) {

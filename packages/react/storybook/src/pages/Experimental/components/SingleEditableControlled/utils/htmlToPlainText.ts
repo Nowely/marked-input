@@ -17,7 +17,7 @@ export function htmlToPlainText(html: string): string {
 	// Walk through nodes and convert to text
 	function processNode(node: Node): string {
 		if (node.nodeType === Node.TEXT_NODE) {
-			return node.textContent || ''
+			return node.textContent ?? ''
 		}
 
 		if (node.nodeType === Node.ELEMENT_NODE) {
@@ -26,8 +26,8 @@ export function htmlToPlainText(html: string): string {
 			// Handle <mark> elements - convert back to markup
 			if (el.tagName === 'MARK') {
 				// Read current text content (allows editing inside marks)
-				const value = el.textContent || ''
-				const meta = el.dataset.meta || ''
+				const value = el.textContent ?? ''
+				const meta = el.dataset.meta ?? ''
 				return `@[${value}](${meta})`
 			}
 
