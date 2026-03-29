@@ -29,7 +29,9 @@
     "eslint/sort-exports": "error",
     "eslint/no-unused-private-class-members": "error",
     "eslint/no-unused-vars": "error",
+    "eslint/no-shadow": "off",
     "eslint/no-throw-literal": "warn",
+    "eslint/no-await-in-loop": "off",
     "typescript/consistent-type-imports": "error",
     "typescript/consistent-type-exports": "error",
     "typescript/no-explicit-any": "warn",
@@ -38,6 +40,7 @@
     "typescript/no-unsafe-type-assertion": "warn",
     "typescript/dot-notation": "warn",
     "typescript/no-unnecessary-type-parameters": "warn",
+    "typescript/no-redundant-type-constituents": "off",
     "typescript/consistent-return": "warn",
     "typescript/no-unnecessary-condition": "warn",
     "typescript/switch-exhaustiveness-check": "warn",
@@ -69,6 +72,12 @@
         "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-member-access": "off",
         "typescript/no-unsafe-return": "off"
+      }
+    },
+    {
+      "files": ["**/*.vue"],
+      "rules": {
+        "eslint/no-unused-expressions": "off"
       }
     }
   ],
