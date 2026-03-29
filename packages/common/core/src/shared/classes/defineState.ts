@@ -41,8 +41,15 @@ export function defineState<T extends object>(initial: T, createUseHook: UseHook
 		get(_, key: string) {
 			if (key === 'set') {
 				return (values: Partial<T>) => {
+					const changed: Reactive<any>[] = []
 					for (const k in values) {
-						reactives.get(k)?.set(values[k])
+						const reactive = reactives.get(k)
+						if (reactive?.setSilent(values[k])) {
+							changed.push(reactive)
+						}
+					}
+					for (const reactive of changed) {
+						reactive.notify()
 					}
 				}
 			}

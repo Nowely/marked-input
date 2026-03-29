@@ -9,6 +9,7 @@ import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
+import {Span as DefaultSpan} from './Span'
 
 import styles from '@markput/core/styles.module.css'
 
@@ -81,42 +82,26 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {
-		ref,
-		value,
-		defaultValue,
-		onChange,
-		readOnly = false,
-		drag = false,
-		Span,
-		Mark,
-		Overlay,
-		slots,
-		slotProps,
-		options = DEFAULT_OPTIONS,
-		showOverlayOn = 'change',
-		className: classNameProp,
-		style: styleProp,
-	} = props
-	const className = cx(styles.Container, classNameProp, slotProps?.container?.className)
-	const style = merge(styleProp, slotProps?.container?.style)
-	const [store] = useState(() => new Store({createUseHook}))
+	const {ref} = props
+	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
+	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
+	const [store] = useState(() => new Store({createUseHook, defaultSpan: DefaultSpan}))
 
 	store.state.set({
-		value,
-		defaultValue,
-		onChange,
-		readOnly,
-		drag,
-		options,
-		showOverlayOn,
-		Span,
-		Mark,
-		Overlay,
+		value: props.value,
+		defaultValue: props.defaultValue,
+		onChange: props.onChange,
+		readOnly: props.readOnly ?? false,
+		drag: props.drag ?? false,
+		options: props.options ?? DEFAULT_OPTIONS,
+		showOverlayOn: props.showOverlayOn ?? 'change',
+		Span: props.Span,
+		Mark: props.Mark,
+		Overlay: props.Overlay,
 		className,
-		style: style as StyleProperties,
-		slots: slots as CoreSlots,
-		slotProps: slotProps as CoreSlotProps,
+		style,
+		slots: props.slots as CoreSlots,
+		slotProps: props.slotProps as CoreSlotProps,
 	})
 
 	useCoreFeatures(store, ref)
