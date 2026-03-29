@@ -29,33 +29,51 @@
     "eslint/sort-exports": "error",
     "eslint/no-unused-private-class-members": "error",
     "eslint/no-unused-vars": "error",
+    "eslint/no-throw-literal": "warn",
     "typescript/consistent-type-imports": "error",
     "typescript/consistent-type-exports": "error",
-
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/no-dynamic-delete": "warn",
+    "typescript/no-unsafe-type-assertion": "warn",
+    "typescript/dot-notation": "warn",
+    "typescript/no-unnecessary-type-parameters": "warn",
+    "typescript/consistent-return": "warn",
+    "typescript/no-unnecessary-condition": "warn",
+    "typescript/switch-exhaustiveness-check": "warn",
+    "typescript/prefer-optional-chain": "warn",
+    "typescript/prefer-nullish-coalescing": "warn",
+    "typescript/no-misused-promises": "warn",
+    "typescript/no-unsafe-argument": "warn",
+    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-unsafe-call": "warn",
+    "typescript/no-unsafe-member-access": "warn",
+    "typescript/no-unsafe-return": "warn",
+    "unicorn/no-useless-spread": "warn",
+    "unicorn/prefer-module": "warn",
+    "unicorn/prefer-ternary": "warn",
     "react/no-children-prop": "allow",
     "react/exhaustive-deps": "off",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-object-as-prop": "off",
-    "jsx_a11y/click-events-have-key-events": "off",
-
-    "typescript/dot-notation": "warn",
-    "typescript/no-unnecessary-type-parameters": "warn",
-    "typescript/consistent-return": "warn",
-    "unicorn/prefer-module": "warn",
-    "unicorn/prefer-ternary": "warn"
+    "jsx_a11y/click-events-have-key-events": "off"
   },
+  "overrides": [
+    {
+      "files": ["**/*.spec.ts", "**/*.stories.ts", "**/*.stories.tsx"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "typescript/no-non-null-assertion": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-call": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-return": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["packages/website/**"],
   "settings": {
-    "jsx-a11y": {
-      "polymorphicPropName": null,
-      "components": {}
-    },
-    "next": {
-      "rootDir": []
-    },
-    "react": {
-      "formComponents": [],
-      "linkComponents": []
-    },
     "jsdoc": {
       "ignorePrivate": false,
       "ignoreInternal": false,
@@ -71,7 +89,7 @@
     "builtin": true
   },
   "options": {
-    "typeAware": false,
+    "typeAware": true,
     "typeCheck": false
   }
 }
