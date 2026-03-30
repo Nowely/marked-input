@@ -7,6 +7,7 @@ import {
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
+// oxlint-disable-next-line no-unused-vars
 import type {CoreOption, CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {
 	resolveMarkSlot,
@@ -206,7 +207,7 @@ export class Store {
 				return refs.overlay
 			},
 			focus() {
-				nodes.focus.head.focus()
+				nodes.focus.head?.focus()
 			},
 		}
 	}

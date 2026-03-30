@@ -25,6 +25,6 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 
 function useUncontrolledInit(ref: RefObject<HTMLElement>, options: MarkOptions, token: MarkToken) {
 	useEffect(() => {
-		if (!options.controlled) ref.current.textContent = token.content
+		if (!options.controlled && ref.current) ref.current.textContent = token.content
 	}, [])
 }

@@ -75,11 +75,11 @@ export class NodeProxy {
 	}
 
 	get head() {
-		return this.#store.refs.container?.firstChild as HTMLElement
+		return this.#store.refs.container?.firstElementChild as HTMLElement | null
 	}
 
 	get tail() {
-		return this.#store.refs.container?.lastChild as HTMLElement
+		return this.#store.refs.container?.lastElementChild as HTMLElement | null
 	}
 
 	get isFocused() {
