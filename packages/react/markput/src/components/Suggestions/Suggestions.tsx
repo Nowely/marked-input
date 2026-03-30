@@ -40,6 +40,8 @@ export const Suggestions = () => {
 					select({value: suggestion, meta: result.index.toString()})
 					break
 				}
+				case 'none':
+					break
 			}
 		}
 
