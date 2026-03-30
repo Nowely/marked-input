@@ -59,7 +59,10 @@
     "react/exhaustive-deps": "off",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-object-as-prop": "off",
-    "jsx_a11y/click-events-have-key-events": "off"
+    "jsx_a11y/click-events-have-key-events": "off",
+    "vitest/warn-todo": "off",
+    "jest/valid-expect": "off",
+    "import/no-unassigned-import": ["warn", {"allow": ["**/*.css"]}]
   },
   "overrides": [
     {
