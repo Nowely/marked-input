@@ -66,11 +66,11 @@ export class Caret {
 		const elRect = element.getBoundingClientRect()
 		const targetY = y ?? elRect.top + elRect.height / 2
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		/* eslint-disable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
 		const caretPos =
 			(document as any).caretRangeFromPoint?.(x, targetY) ??
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(document as any).caretPositionFromPoint?.(x, targetY)
+		/* eslint-enable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
 
 		if (!caretPos) return
 
@@ -83,6 +83,7 @@ export class Caret {
 		} else if (caretPos && typeof caretPos === 'object' && 'offsetNode' in caretPos) {
 			// Firefox CaretPosition
 			domRange = document.createRange()
+			// oxlint-disable-next-line no-unsafe-member-access
 			domRange.setStart(caretPos.offsetNode as Node, caretPos.offset as number)
 			domRange.collapse(true)
 		} else {

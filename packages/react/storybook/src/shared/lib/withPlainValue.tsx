@@ -78,6 +78,7 @@ function PanelContainer({Story, args, value: valueProp, position: positionProp, 
 
 export const withPlainValue = (Story: any, context: any) => {
 	// Only Storybook hooks at this level — no React hooks.
+	/* oxlint-disable no-unsafe-member-access */
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
 

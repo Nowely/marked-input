@@ -4,6 +4,7 @@ import {defineComponent, h, ref} from 'vue'
 
 export const withPlainValue = (story: () => VNode, context: any) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
+	/* oxlint-disable no-unsafe-member-access, no-unsafe-argument */
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
 
