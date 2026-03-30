@@ -11,15 +11,12 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot(slotName: SlotName, slots: CoreSlots | undefined): string {
-	return (slots?.[slotName] ?? defaultSlots[slotName]) as string
+export function resolveSlot(slotName: SlotName, slots: unknown): string {
+	return ((slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]) as string
 }
 
-export function resolveSlotProps(
-	slotName: SlotName,
-	slotProps: CoreSlotProps | undefined
-): Record<string, unknown> | undefined {
-	const props = slotProps?.[slotName]
+export function resolveSlotProps(slotName: SlotName, slotProps: unknown): Record<string, unknown> | undefined {
+	const props = (slotProps as CoreSlotProps | undefined)?.[slotName]
 	return props ? convertDataAttrs(props as Record<string, unknown>) : undefined
 }
 
