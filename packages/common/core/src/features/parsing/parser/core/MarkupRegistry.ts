@@ -55,7 +55,6 @@ export class MarkupRegistry {
 	 */
 	private addToFirstSegmentIndexMap(descriptor: MarkupDescriptor): void {
 		const firstSegmentIndex = descriptor.segmentGlobalIndices[0]
-		if (firstSegmentIndex === undefined) return
 
 		getOrCreate(this.firstSegmentIndexMap, firstSegmentIndex).push(descriptor)
 	}

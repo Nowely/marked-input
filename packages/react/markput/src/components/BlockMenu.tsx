@@ -20,9 +20,8 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			className={styles.BlockMenu}
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>
-			<div
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
 				className={styles.BlockMenuItem}
 				onMouseDown={e => {
 					e.preventDefault()
@@ -31,10 +30,9 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			>
 				<span className={cx(styles.Icon, styles.IconAdd)} />
 				<span>Add below</span>
-			</div>
-			<div
-				role="button"
-				tabIndex={0}
+			</button>
+			<button
+				type="button"
 				className={styles.BlockMenuItem}
 				onMouseDown={e => {
 					e.preventDefault()
@@ -43,11 +41,10 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			>
 				<span className={cx(styles.Icon, styles.IconDuplicate)} />
 				<span>Duplicate</span>
-			</div>
+			</button>
 			<div className={styles.BlockMenuSeparator} />
-			<div
-				role="button"
-				tabIndex={0}
+			<button
+				type="button"
 				className={cx(styles.BlockMenuItem, styles.BlockMenuItemDelete)}
 				onMouseDown={e => {
 					e.preventDefault()
@@ -56,7 +53,7 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			>
 				<span className={cx(styles.Icon, styles.IconTrash)} />
 				<span>Delete</span>
-			</div>
+			</button>
 		</div>
 	)
 })

@@ -70,13 +70,11 @@ export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
 export function getRangeMap(store: Store): number[] {
 	let position = 0
 	const tokens = store.state.tokens.get()
-	return (
-		tokens.map(token => {
-			const length = token.content.length
-			position += length
-			return position - length
-		}) ?? []
-	)
+	return tokens.map(token => {
+		const length = token.content.length
+		position += length
+		return position - length
+	})
 }
 
 export function parseWithParser(store: Store, value: string): Token[] {

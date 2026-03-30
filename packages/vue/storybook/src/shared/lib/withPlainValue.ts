@@ -1,7 +1,8 @@
 import {useArgs, useGlobals} from 'storybook/preview-api'
+import type {VNode} from 'vue'
 import {defineComponent, h, ref} from 'vue'
 
-export const withPlainValue = (story: any, context: any) => {
+export const withPlainValue = (story: () => VNode, context: any) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
