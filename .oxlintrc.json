@@ -62,6 +62,8 @@
     "jsx_a11y/click-events-have-key-events": "off",
     "vitest/warn-todo": "off",
     "jest/valid-expect": "off",
+    "jest/no-disabled-tests": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
     "import/no-unassigned-import": ["warn", {"allow": ["**/*.css"]}]
   },
   "overrides": [

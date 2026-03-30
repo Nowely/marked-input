@@ -26,7 +26,7 @@ interface TestResult {
 }
 
 const testResults: TestResult[] = []
-const resultsPath = path.join(__dirname, 'parser.bench.result.json')
+const resultsPath = path.join(import.meta.dirname, 'parser.bench.result.json')
 let isCollecting = false // Prevent duplicate collection
 let hasSaved = false // Prevent duplicate saves
 

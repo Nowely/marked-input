@@ -494,7 +494,7 @@ function getComplexityForMethod(methodName: string): string {
  */
 const currentRunResults: Record<string, TestProfile> = {}
 const profilingHistory: ProfilingRun[] = []
-const resultsPath = path.join(__dirname, 'parser.profile.json')
+const resultsPath = path.join(import.meta.dirname, 'parser.profile.json')
 const MAX_HISTORY_RUNS = 2
 
 /**

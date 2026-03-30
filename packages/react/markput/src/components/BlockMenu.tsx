@@ -21,6 +21,8 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>
 			<div
+				role="button"
+				tabIndex={0}
 				className={styles.BlockMenuItem}
 				onMouseDown={e => {
 					e.preventDefault()
@@ -31,6 +33,8 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 				<span>Add below</span>
 			</div>
 			<div
+				role="button"
+				tabIndex={0}
 				className={styles.BlockMenuItem}
 				onMouseDown={e => {
 					e.preventDefault()
@@ -42,6 +46,8 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			</div>
 			<div className={styles.BlockMenuSeparator} />
 			<div
+				role="button"
+				tabIndex={0}
 				className={cx(styles.BlockMenuItem, styles.BlockMenuItemDelete)}
 				onMouseDown={e => {
 					e.preventDefault()

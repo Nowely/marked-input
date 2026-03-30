@@ -102,8 +102,8 @@ function EventLogStory(args: MarkedInputProps) {
 					<p style={{marginTop: '8px', color: '#666'}}>No events yet</p>
 				) : (
 					<ul style={{marginTop: '8px', paddingLeft: '20px'}}>
-						{events.map((event, i) => (
-							<li key={i}>{event}</li>
+						{events.map(event => (
+							<li key={event}>{event}</li>
 						))}
 					</ul>
 				)}

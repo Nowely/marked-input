@@ -129,12 +129,13 @@ export class SegmentMatcher {
 		if (this.static) {
 			const {regex, toIndex} = this.static
 			for (const match of text.matchAll(regex)) {
+				if (match.index == null) continue
 				const index = toIndex.get(match[0])
 				if (index !== undefined) {
 					results.push({
 						index,
-						start: match.index!,
-						end: match.index! + match[0].length,
+						start: match.index,
+						end: match.index + match[0].length,
 						value: match[0],
 					})
 				}
@@ -146,7 +147,8 @@ export class SegmentMatcher {
 			const {regex, entries, indices} = this.dynamic
 			for (const match of text.matchAll(regex)) {
 				const matchedText = match[0]
-				const start = match.index!
+				if (match.index == null) continue
+				const start = match.index
 
 				let matchedIndex: number | undefined
 				let captured: string | undefined

@@ -159,6 +159,8 @@ const InteractiveMark = ({children}: MarkProps) => {
 
 	return (
 		<span
+			role="button"
+			tabIndex={0}
 			onClick={e => {
 				e.stopPropagation()
 				console.log('Mark clicked:', {

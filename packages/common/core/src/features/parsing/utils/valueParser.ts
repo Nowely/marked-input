@@ -31,30 +31,29 @@ export function getTokensByValue(store: Store): Token[] {
 	store.state.previousValue.set(value)
 	const tokens = store.state.tokens.get()
 
-	switch (true) {
-		case gap.left !== undefined &&
-			ranges.includes(gap.left) &&
-			gap.right !== undefined &&
-			Math.abs(gap.left - gap.right) > 1: {
-			const updatedIndex = ranges.indexOf(gap.left)
-			const parsed = parseUnionLabels(store, updatedIndex - 1, updatedIndex)
-			return tokens.toSpliced(updatedIndex - 1, 2, ...parsed)
-		}
-		case gap.left !== undefined: {
-			const [updatedIndex] = getClosestIndexes(ranges, gap.left)
-			const parsed = parseUnionLabels(store, updatedIndex)
-			if (parsed.length === 1) return tokens
-			return tokens.toSpliced(updatedIndex, 1, ...parsed)
-		}
-		case gap.right !== undefined: {
-			const [updatedIndex] = getClosestIndexes(ranges, gap.right)
-			const parsed = parseUnionLabels(store, updatedIndex)
-			if (parsed.length === 1) return tokens
-			return tokens.toSpliced(updatedIndex, 1, ...parsed)
-		}
-		default:
-			return parseWithParser(store, value ?? '')
+	if (
+		gap.left !== undefined &&
+		ranges.includes(gap.left) &&
+		gap.right !== undefined &&
+		Math.abs(gap.left - gap.right) > 1
+	) {
+		const updatedIndex = ranges.indexOf(gap.left)
+		const parsed = parseUnionLabels(store, updatedIndex - 1, updatedIndex)
+		return tokens.toSpliced(updatedIndex - 1, 2, ...parsed)
 	}
+	if (gap.left !== undefined) {
+		const [updatedIndex] = getClosestIndexes(ranges, gap.left)
+		const parsed = parseUnionLabels(store, updatedIndex)
+		if (parsed.length === 1) return tokens
+		return tokens.toSpliced(updatedIndex, 1, ...parsed)
+	}
+	if (gap.right !== undefined) {
+		const [updatedIndex] = getClosestIndexes(ranges, gap.right)
+		const parsed = parseUnionLabels(store, updatedIndex)
+		if (parsed.length === 1) return tokens
+		return tokens.toSpliced(updatedIndex, 1, ...parsed)
+	}
+	return parseWithParser(store, value ?? '')
 }
 
 export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
