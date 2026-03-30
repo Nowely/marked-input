@@ -44,7 +44,7 @@ export class NodeProxy {
 		if (!this.target) return
 
 		const caretIndex = Caret.getCaretIndex(this.target)
-		return caretIndex === this.target.textContent?.length
+		return caretIndex === this.target.textContent.length
 	}
 
 	get index() {
@@ -63,7 +63,7 @@ export class NodeProxy {
 	}
 
 	get length() {
-		return this.target?.textContent?.length ?? -1
+		return this.target?.textContent.length ?? -1
 	}
 
 	get content(): string {
@@ -75,11 +75,11 @@ export class NodeProxy {
 	}
 
 	get head() {
-		return this.#store.refs.container?.firstChild as HTMLElement
+		return this.#store.refs.container?.firstElementChild as HTMLElement | null
 	}
 
 	get tail() {
-		return this.#store.refs.container?.lastChild as HTMLElement
+		return this.#store.refs.container?.lastElementChild as HTMLElement | null
 	}
 
 	get isFocused() {

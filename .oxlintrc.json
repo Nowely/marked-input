@@ -29,7 +29,9 @@
     "eslint/sort-exports": "error",
     "eslint/no-unused-private-class-members": "error",
     "eslint/no-unused-vars": "error",
+    "eslint/no-shadow": "off",
     "eslint/no-throw-literal": "warn",
+    "eslint/no-await-in-loop": "off",
     "typescript/consistent-type-imports": "error",
     "typescript/consistent-type-exports": "error",
     "typescript/no-explicit-any": "warn",
@@ -38,29 +40,38 @@
     "typescript/no-unsafe-type-assertion": "warn",
     "typescript/dot-notation": "warn",
     "typescript/no-unnecessary-type-parameters": "warn",
-    "typescript/consistent-return": "warn",
+    "typescript/no-redundant-type-constituents": "off",
+    "typescript/consistent-return": "off",
     "typescript/no-unnecessary-condition": "warn",
     "typescript/switch-exhaustiveness-check": "warn",
     "typescript/prefer-optional-chain": "warn",
     "typescript/prefer-nullish-coalescing": "warn",
     "typescript/no-misused-promises": "warn",
     "typescript/no-unsafe-argument": "warn",
-    "typescript/no-unsafe-assignment": "warn",
+    "typescript/no-unsafe-assignment": "off",
     "typescript/no-unsafe-call": "warn",
     "typescript/no-unsafe-member-access": "warn",
     "typescript/no-unsafe-return": "warn",
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-module": "warn",
     "unicorn/prefer-ternary": "warn",
+    "unicorn/consistent-function-scoping": "off",
     "react/no-children-prop": "allow",
     "react/exhaustive-deps": "off",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-object-as-prop": "off",
-    "jsx_a11y/click-events-have-key-events": "off"
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "jsx_a11y/click-events-have-key-events": "off",
+    "vitest/warn-todo": "off",
+    "jest/valid-expect": "off",
+    "jest/no-disabled-tests": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
+    "react-perf/jsx-no-new-array-as-prop": "off",
+    "import/no-unassigned-import": ["warn", {"allow": ["**/*.css"]}]
   },
   "overrides": [
     {
-      "files": ["**/*.spec.ts", "**/*.stories.ts", "**/*.stories.tsx"],
+      "files": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.stories.ts", "**/*.stories.tsx", "**/*.bench.ts", "**/*.js"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off",
@@ -68,7 +79,14 @@
         "typescript/no-unsafe-assignment": "off",
         "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-member-access": "off",
-        "typescript/no-unsafe-return": "off"
+        "typescript/no-unsafe-return": "off",
+        "typescript/unbound-method": "off"
+      }
+    },
+    {
+      "files": ["**/*.vue"],
+      "rules": {
+        "eslint/no-unused-expressions": "off"
       }
     }
   ],

@@ -12,7 +12,7 @@ function setCaretPosition(element: HTMLElement, offset: number) {
 
 	let node = walker.nextNode()
 	while (node) {
-		const nodeLength = node.textContent?.length || 0
+		const nodeLength = node.textContent?.length ?? 0
 		if (currentOffset + nodeLength >= offset) {
 			range.setStart(node, offset - currentOffset)
 			range.collapse(true)
@@ -40,7 +40,7 @@ export async function focusAtStart(element: HTMLElement) {
 
 export async function focusAtEnd(element: HTMLElement) {
 	await userEvent.click(element)
-	const textLength = element.textContent?.length || 0
+	const textLength = element.textContent.length
 	setCaretPosition(element, textLength)
 	await expect.element(element).toHaveFocus()
 

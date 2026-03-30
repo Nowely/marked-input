@@ -23,7 +23,7 @@ export class Caret {
 
 	//TODO add the returned type: "{left: CSSProperties["left"], top: CSSProperties["top"]}"?
 	static getAbsolutePosition() {
-		const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect?.()
+		const rect = window.getSelection()?.getRangeAt(0).getBoundingClientRect()
 		if (rect) return {left: rect.left, top: rect.top + rect.height + 1}
 		return {left: 0, top: 0}
 	}
@@ -66,11 +66,11 @@ export class Caret {
 		const elRect = element.getBoundingClientRect()
 		const targetY = y ?? elRect.top + elRect.height / 2
 
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		/* eslint-disable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
 		const caretPos =
 			(document as any).caretRangeFromPoint?.(x, targetY) ??
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(document as any).caretPositionFromPoint?.(x, targetY)
+		/* eslint-enable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
 
 		if (!caretPos) return
 
@@ -83,6 +83,7 @@ export class Caret {
 		} else if (caretPos && typeof caretPos === 'object' && 'offsetNode' in caretPos) {
 			// Firefox CaretPosition
 			domRange = document.createRange()
+			// oxlint-disable-next-line no-unsafe-member-access
 			domRange.setStart(caretPos.offsetNode as Node, caretPos.offset as number)
 			domRange.collapse(true)
 		} else {
@@ -121,7 +122,7 @@ export class Caret {
 
 		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 
-		while (node) {
+		while (node as Text | null) {
 			const next = walker.nextNode() as Text | null
 			if (!next || remaining <= node.length) {
 				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
@@ -173,8 +174,8 @@ export class Caret {
 		if (!selection?.anchorNode || !selection.rangeCount) return
 
 		const range = selection.getRangeAt(0)
-		range?.setStart(range.startContainer.firstChild || range.startContainer, offset)
-		range?.setEnd(range.startContainer.firstChild || range.startContainer, offset)
+		range.setStart(range.startContainer.firstChild ?? range.startContainer, offset)
+		range.setEnd(range.startContainer.firstChild ?? range.startContainer, offset)
 	}
 
 	setCaretRightTo(element: HTMLElement, offset: number) {

@@ -29,7 +29,7 @@ const Button = ({label, primary, onClick}: {label: string; primary?: boolean; on
 const options = [
 	{
 		markup: PrimaryMarkup,
-		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+		mark: ({value, meta}: MarkProps) => ({label: value ?? '', primary: true, onClick: () => alert(meta)}),
 		overlay: {
 			trigger: '@',
 			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
@@ -37,7 +37,7 @@ const options = [
 	},
 	{
 		markup: DefaultMarkup,
-		mark: ({value}: MarkProps) => ({label: value || ''}),
+		mark: ({value}: MarkProps) => ({label: value ?? ''}),
 		overlay: {
 			trigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],

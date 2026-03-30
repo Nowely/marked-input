@@ -252,9 +252,9 @@ describe('ParserV2', () => {
 							 2: TEXT "" [38-38]"
 						`)
 
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].value).toBe('div')
-						expect(marks[0].meta).toBe('class')
+						const mark = result.find(t => t.type === 'mark')!
+						expect(mark.value).toBe('div')
+						expect(mark.meta).toBe('class')
 					})
 
 					it('handles HTML-like pattern with mismatched closing tags', () => {
@@ -289,9 +289,9 @@ describe('ParserV2', () => {
 							 2: TEXT "" [25-25]"
 						`)
 
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].value).toBe('span')
-						expect(marks[0].meta).toBe('')
+						const mark = result.find(t => t.type === 'mark')!
+						expect(mark.value).toBe('span')
+						expect(mark.meta).toBe('')
 					})
 
 					it('handles HTML-like pattern with label+value containing nested pattern with label only', () => {
@@ -313,9 +313,9 @@ describe('ParserV2', () => {
 							 2: TEXT "" [28-28]"
 						`)
 
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].value).toBe('div')
-						expect(marks[0].meta).toBe('class')
+						const mark = result.find(t => t.type === 'mark')!
+						expect(mark.value).toBe('div')
+						expect(mark.meta).toBe('class')
 					})
 
 					it('handles complex HTML-like nested structure', () => {
@@ -341,10 +341,10 @@ describe('ParserV2', () => {
 						`)
 
 						// Verify correct nesting
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-						expect(marks[0].value).toBe('div')
-						expect(marks[0].meta).toBe('class')
-						expect(marks[0].children.length).toBeGreaterThan(0)
+						const mark = result.find(t => t.type === 'mark')!
+						expect(mark.value).toBe('div')
+						expect(mark.meta).toBe('class')
+						expect(mark.children.length).toBeGreaterThan(0)
 					})
 
 					it('handles complex HTML-like nested structure', () => {
@@ -379,7 +379,7 @@ describe('ParserV2', () => {
 						"0: TEXT "<div1>text</div2>" [0-17]"
 						`)
 
-						const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+						const marks = result.filter(t => t.type === 'mark')
 						expect(marks).toHaveLength(0)
 					})
 
@@ -397,7 +397,7 @@ describe('ParserV2', () => {
 					`)
 
 						// Verify no nested marks
-						const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
+						const markTokens = result.filter(t => t.type === 'mark')
 						expect(markTokens).toHaveLength(1)
 						expect(markTokens[0].children).toEqual([])
 					})
@@ -417,7 +417,7 @@ describe('ParserV2', () => {
 						`)
 
 						// Verify no nested marks
-						const markTokens = result.filter(t => t.type === 'mark') as MarkToken[]
+						const markTokens = result.filter(t => t.type === 'mark')
 						expect(markTokens).toHaveLength(1)
 						expect(markTokens[0].children).toHaveLength(1)
 						expect(markTokens[0].children[0].type).toBe('text')
@@ -547,7 +547,7 @@ describe('ParserV2', () => {
 					const input = `@[${longText}](value)`
 					const result = parser.parse(input)
 
-					const marks = result.filter(token => token.type === 'mark') as MarkToken[]
+					const marks = result.filter(token => token.type === 'mark')
 					expect(marks).toHaveLength(1)
 					expect(marks[0].value).toBe(longText)
 					expect(marks[0].meta).toBe('value')
@@ -616,9 +616,9 @@ describe('ParserV2', () => {
 						 2: TEXT "" [12-12]"
 					`)
 
-					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].value).toBe('link')
-					expect(marks[0].meta).toBe('url')
+					const mark = result.find(t => t.type === 'mark')!
+					expect(mark.value).toBe('link')
+					expect(mark.meta).toBe('url')
 				})
 
 				it('handles __value__ before nested placeholder', () => {
@@ -637,8 +637,8 @@ describe('ParserV2', () => {
 						 2: TEXT "" [27-27]"
 					`)
 
-					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].meta).toBe('note')
+					const mark = result.find(t => t.type === 'mark')!
+					expect(mark.meta).toBe('note')
 				})
 
 				it('handles complex pattern with value in middle', () => {
@@ -657,9 +657,9 @@ describe('ParserV2', () => {
 						 2: TEXT "" [29-29]"
 					`)
 
-					const marks = result.filter(t => t.type === 'mark') as MarkToken[]
-					expect(marks[0].value).toBe('name')
-					expect(marks[0].meta).toBe('url')
+					const mark = result.find(t => t.type === 'mark')!
+					expect(mark.value).toBe('name')
+					expect(mark.meta).toBe('url')
 				})
 			})
 		})
@@ -1256,7 +1256,7 @@ describe('ParserV2', () => {
 				const input = `${message} @[${userName}](${userValue}) says hi!`
 				const result = parser.parse(input)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				const marks = result.filter(t => t.type === 'mark')
 				expect(marks).toHaveLength(1)
 
 				const mark = marks[0]
@@ -1278,7 +1278,7 @@ describe('ParserV2', () => {
 				const input = `${text} #[${hashtag1}] #[${hashtag2}]`
 				const result = parser.parse(input)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				const marks = result.filter(t => t.type === 'mark')
 				expect(marks).toHaveLength(2)
 
 				expect(marks[0].value).toBe(hashtag1)
@@ -1299,7 +1299,7 @@ describe('ParserV2', () => {
 				const input = `${description} @[${userName}](user) #[${project}]`
 				const result = parser.parse(input)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				const marks = result.filter(t => t.type === 'mark')
 				expect(marks).toHaveLength(2)
 
 				const userMark = marks.find(m => m.meta === 'user')
@@ -1326,7 +1326,7 @@ describe('ParserV2', () => {
 				const input = `${prefix} @[${outerName} #[${innerTag}](${innerValue})]`
 				const result = parser.parse(input)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				const marks = result.filter(t => t.type === 'mark')
 				expect(marks.length).toBeGreaterThan(0)
 
 				// Should have outer mark
@@ -1355,7 +1355,7 @@ describe('ParserV2', () => {
 			testCases.forEach(({text, expectedMarks}) => {
 				const result = parser.parse(text)
 
-				const marks = result.filter(t => t.type === 'mark') as MarkToken[]
+				const marks = result.filter(t => t.type === 'mark')
 				expect(marks).toHaveLength(expectedMarks)
 
 				// Verify all marks have required properties
@@ -1661,7 +1661,7 @@ function countMarks(tokens: Token[]): number {
 	const countInNode = (node: Token): number => {
 		let nodeCount = node.type === 'mark' ? 1 : 0
 
-		if (node.type === 'mark' && node.children) {
+		if (node.type === 'mark') {
 			nodeCount += node.children.reduce((sum, child) => sum + countInNode(child), 0)
 		}
 
@@ -1681,7 +1681,7 @@ function findMaxDepth(tokens: Token[]): number {
 			return 0
 		}
 
-		if (node.type !== 'mark' || !node.children || node.children.length === 0) {
+		if (node.children.length === 0) {
 			return 1 // mark without children has depth 1
 		}
 

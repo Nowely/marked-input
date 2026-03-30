@@ -62,7 +62,7 @@ describe('Api: keyboard', () => {
 		await focusAtStart(firstSpan)
 
 		const secondSpan = page.getByText('!').element() as HTMLElement
-		const firstSpanLength = firstSpan.textContent?.length ?? 0
+		const firstSpanLength = firstSpan.textContent.length
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		await expect.element(secondSpan).toHaveFocus()
 

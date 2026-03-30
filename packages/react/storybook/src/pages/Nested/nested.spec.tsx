@@ -74,7 +74,7 @@ describe('Nested Marks Rendering', () => {
 		const mentionMarkup: Markup = '@[__slot__]'
 		const value = '#[tag with @[mention]]'
 
-		render(
+		await render(
 			<MarkedInput
 				Mark={TagMark}
 				value={value}
@@ -268,7 +268,7 @@ describe('Complex Nesting Scenarios', () => {
 		const {container} = await render(<MarkedInput Mark={TestMark} value={value} options={[{markup}]} />)
 
 		const depths = Array.from(container.querySelectorAll('[data-depth]')).map(el =>
-			parseInt(el.getAttribute('data-depth') || '0')
+			parseInt(el.getAttribute('data-depth') ?? '0')
 		)
 
 		expect(Math.max(...depths)).toBe(4) // 5 levels: 0, 1, 2, 3, 4

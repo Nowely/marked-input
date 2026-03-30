@@ -31,7 +31,7 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						...baseStyle,
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</strong>
 			)
 
@@ -45,7 +45,7 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						...baseStyle,
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</em>
 			)
 
@@ -63,7 +63,7 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						borderRadius: '3px',
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</code>
 			)
 
@@ -91,7 +91,7 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						e.currentTarget.style.backgroundColor = 'transparent'
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</a>
 			)
 
@@ -106,7 +106,7 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						...baseStyle,
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</strong>
 			)
 
@@ -122,14 +122,14 @@ export const MarkdownMark = ({value, children, type = 'text'}: MarkProps & {type
 						...baseStyle,
 					}}
 				>
-					{children || value}
+					{children ?? value}
 				</span>
 			)
 
 		default:
 			return (
 				<span data-type="text" style={baseStyle}>
-					{children || value}
+					{children ?? value}
 				</span>
 			)
 	}

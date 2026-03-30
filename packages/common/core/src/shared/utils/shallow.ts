@@ -2,6 +2,7 @@ export function shallow<T>(objA: T, objB: T) {
 	if (Object.is(objA, objB)) {
 		return true
 	}
+	// oxlint-disable-next-line no-unnecessary-condition
 	if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
 		return false
 	}
@@ -11,7 +12,7 @@ export function shallow<T>(objA: T, objB: T) {
 	}
 	for (let i = 0; i < keysA.length; i++) {
 		if (
-			!Object.prototype.hasOwnProperty.call(objB, keysA[i] as string) ||
+			!Object.prototype.hasOwnProperty.call(objB, keysA[i]) ||
 			!Object.is(objA[keysA[i] as keyof T], objB[keysA[i] as keyof T])
 		) {
 			return false

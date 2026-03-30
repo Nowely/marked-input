@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
-import api from '@microsoft/api-extractor'
+import {Extractor, ExtractorConfig} from '@microsoft/api-extractor'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -58,8 +58,9 @@ function prepareAndCopyPackage() {
 function rollupTypes() {
 	console.log('Start rollup types:')
 
-	const config = api.ExtractorConfig.prepare(getOptions())
-	const result = api.Extractor.invoke(config, {showVerboseMessages: true})
+	const config = ExtractorConfig.prepare(getOptions())
+	const result = Extractor.invoke(config, {showVerboseMessages: true})
+	// oxlint-disable-next-line typescript/switch-exhaustiveness-check
 	switch (true) {
 		case result.succeeded: {
 			console.log(`Types rollup completed successfully`)

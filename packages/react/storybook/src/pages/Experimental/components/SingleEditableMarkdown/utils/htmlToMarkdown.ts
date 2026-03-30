@@ -20,7 +20,7 @@ export function htmlToMarkdown(html: string): string {
 	// Walk through nodes and convert to markdown
 	function processNode(node: Node): string {
 		if (node.nodeType === Node.TEXT_NODE) {
-			return node.textContent || ''
+			return node.textContent ?? ''
 		}
 
 		if (node.nodeType === Node.ELEMENT_NODE) {
@@ -47,7 +47,7 @@ export function htmlToMarkdown(html: string): string {
 			// Handle <a> elements → [text](url)
 			if (el.tagName === 'A') {
 				const content = Array.from(el.childNodes).map(processNode).join('')
-				const href = el.getAttribute('href') || ''
+				const href = el.getAttribute('href') ?? ''
 				return `[${content}](${href})`
 			}
 

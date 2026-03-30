@@ -10,7 +10,7 @@ export const useFetch = <T,>(url: string, deps: unknown[]) => {
 			.then(setData)
 			.catch(error => {
 				// Ignore aborts triggered during cleanup to avoid noisy test errors.
-				if ((error as DOMException)?.name === 'AbortError') return
+				if ((error as DOMException).name === 'AbortError') return
 				console.error(error)
 			})
 

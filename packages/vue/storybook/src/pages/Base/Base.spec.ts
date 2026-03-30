@@ -35,7 +35,7 @@ describe('Component: MarkedInput', () => {
 
 	const FocusableMark = defineComponent({
 		setup() {
-			const mark = useMark<HTMLElement>({controlled: true})
+			const mark = useMark({controlled: true})
 			const elRef = ref<HTMLElement | null>(null)
 
 			onMounted(() => {
@@ -76,9 +76,9 @@ describe('Component: MarkedInput', () => {
 		const spans = document.querySelectorAll('span[contenteditable]')
 		const [firstSpan, secondSpan] = Array.from(spans) as HTMLElement[]
 		const abbrs = document.querySelectorAll('abbr')
-		const [firstAbbr] = Array.from(abbrs) as HTMLElement[]
-		const firstSpanLength = firstSpan.textContent?.length ?? 0
-		const firstAbbrLength = firstAbbr.textContent?.length ?? 0
+		const [firstAbbr] = Array.from(abbrs)
+		const firstSpanLength = firstSpan.textContent.length
+		const firstAbbrLength = firstAbbr.textContent.length
 
 		await focusAtStart(firstSpan)
 		await expect.element(firstSpan).toHaveFocus()

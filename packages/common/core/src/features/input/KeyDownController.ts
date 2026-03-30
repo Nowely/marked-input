@@ -11,7 +11,7 @@ import type {Store} from '../store/Store'
 
 function isTextLikeRow(token: Token): boolean {
 	if (token.type === 'text') return true
-	return token.type === 'mark' && token.descriptor.hasSlot && token.descriptor.segments.length === 1
+	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
 export class KeyDownController {
@@ -171,7 +171,7 @@ export class KeyDownController {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex - 1]
-							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
+							setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
@@ -191,7 +191,7 @@ export class KeyDownController {
 		if (event.key === KEYBOARD.DELETE) {
 			const blockDiv = blockDivs[blockIndex] as HTMLElement
 			const caretIndex = Caret.getCaretIndex(blockDiv)
-			const caretAtEnd = caretIndex === blockDiv.textContent?.length
+			const caretAtEnd = caretIndex === blockDiv.textContent.length
 			const caretAtStart = caretIndex === 0
 
 			if (caretAtStart && blockIndex > 0) {
@@ -209,7 +209,7 @@ export class KeyDownController {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex - 1]
-							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
+							setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
@@ -240,7 +240,7 @@ export class KeyDownController {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
 							const updatedToken = updatedRows[blockIndex]
-							if (updatedToken) setCaretAtRawPos(target, updatedToken, joinPos)
+							setCaretAtRawPos(target, updatedToken, joinPos)
 						}
 					})
 					return
@@ -284,7 +284,6 @@ export class KeyDownController {
 
 		const rows = this.store.state.tokens.get()
 		const token = rows[blockIndex]
-		if (!token) return
 		const blockDiv = blockDivs[blockIndex] as HTMLElement
 		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 
@@ -348,7 +347,7 @@ export class KeyDownController {
 		}
 
 		const caretIndex = Caret.getCaretIndex(blockDiv)
-		const textLen = blockDiv.textContent?.length ?? 0
+		const textLen = blockDiv.textContent.length
 		if (caretIndex !== textLen) return false
 		if (blockIndex >= blockDivs.length - 1) return true
 		event.preventDefault()
@@ -568,7 +567,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			target.focus()
 			const updatedRows = store.state.tokens.get()
 			const updatedToken = updatedRows[blockIndex]
-			if (updatedToken) setCaretAtRawPos(target, updatedToken, newRawPos)
+			setCaretAtRawPos(target, updatedToken, newRawPos)
 		})
 	}
 
@@ -700,7 +699,7 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 				rawAbsolutePos >= tokenChild.position.start &&
 				rawAbsolutePos <= tokenChild.position.end
 			) {
-				return setCaretInMarkAtRawPos(childNode as HTMLElement, tokenChild as MarkToken, rawAbsolutePos)
+				return setCaretInMarkAtRawPos(childNode as HTMLElement, tokenChild, rawAbsolutePos)
 			}
 			tokenIdx++
 		}
@@ -791,7 +790,7 @@ function getDomRawPos(node: Node, offset: number, blockDiv: HTMLElement, token: 
  * - cursor in the middle → raw position within nested content
  */
 function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement, markToken: MarkToken): number {
-	if (!markToken.children || markToken.children.length === 0) {
+	if (markToken.children.length === 0) {
 		if (offset === 0) return markToken.position.start
 		const nestedLen = markToken.slot?.content.length ?? markToken.value.length
 		if (nestedLen > 0 && offset >= nestedLen) {

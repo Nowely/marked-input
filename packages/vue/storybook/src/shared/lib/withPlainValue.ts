@@ -1,8 +1,10 @@
 import {useArgs, useGlobals} from 'storybook/preview-api'
+import type {VNode} from 'vue'
 import {defineComponent, h, ref} from 'vue'
 
-export const withPlainValue = (story: any, context: any) => {
+export const withPlainValue = (story: () => VNode, context: any) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
+	/* oxlint-disable no-unsafe-member-access, no-unsafe-argument */
 	const [args, updateArgs] = useArgs()
 	const [globals] = useGlobals()
 
@@ -12,7 +14,6 @@ export const withPlainValue = (story: any, context: any) => {
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
 	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
-	const globalPosition: 'right' | 'bottom' = globalValue === 'hide' ? 'right' : globalValue
 
 	// Stories that don't opt in to the panel, or are uncontrolled.
 	if (!showPanel || !isControlled) {
@@ -26,7 +27,7 @@ export const withPlainValue = (story: any, context: any) => {
 		})
 	}
 
-	const position = rawPosition ?? globalPosition
+	const position = rawPosition
 
 	return defineComponent({
 		setup() {
@@ -42,7 +43,7 @@ export const withPlainValue = (story: any, context: any) => {
 				const preNode = h(
 					'pre',
 					{style: {padding: '8px', fontFamily: 'monospace', fontSize: '14px', margin: 0}},
-					value.value || ''
+					value.value
 				)
 
 				if (position === 'right') {

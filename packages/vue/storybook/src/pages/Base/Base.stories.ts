@@ -31,7 +31,7 @@ const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 const configuredOptions = [
 	{
 		markup: PrimaryMarkup,
-		mark: ({value, meta}: MarkProps) => ({label: value || '', primary: true, onClick: () => alert(meta)}),
+		mark: ({value, meta}: MarkProps) => ({label: value ?? '', primary: true, onClick: () => alert(meta)}),
 		overlay: {
 			trigger: '@',
 			data: ['First', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'],
@@ -39,7 +39,7 @@ const configuredOptions = [
 	},
 	{
 		markup: DefaultMarkup,
-		mark: ({value}: MarkProps) => ({label: value || ''}),
+		mark: ({value}: MarkProps) => ({label: value ?? ''}),
 		overlay: {
 			trigger: '/',
 			data: ['Seventh', 'Eight', 'Ninth'],

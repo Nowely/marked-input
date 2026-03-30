@@ -10,5 +10,6 @@ export function getClosestIndexes(array: number[], target: number) {
 		}
 	}
 	if (array[left] == target) right = left
+	// oxlint-disable-next-line no-unnecessary-condition
 	return [left, right].filter(v => array[v] !== undefined)
 }

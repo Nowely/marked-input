@@ -31,7 +31,7 @@ const getTests =
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(<Story />)
-			expect(container.textContent?.length).toBeTruthy()
+			expect(container.textContent.length).toBeTruthy()
 		})
 
 describe('Component: stories', () => {

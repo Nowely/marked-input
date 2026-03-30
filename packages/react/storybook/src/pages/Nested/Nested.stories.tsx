@@ -36,7 +36,7 @@ interface SimpleMarkProps extends MarkProps {
 	style?: CSSProperties
 }
 
-const SimpleMark = ({children, style, value}: SimpleMarkProps) => <span style={style}>{children || value}</span>
+const SimpleMark = ({children, style, value}: SimpleMarkProps) => <span style={style}>{children ?? value}</span>
 
 export const SimpleNesting: StoryObj<MarkedInputProps<SimpleMarkProps>> = {
 	args: {
@@ -76,7 +76,7 @@ interface MultiLevelMarkProps extends MarkProps {
 }
 
 const MultiLevelMark = ({children, style, value}: MultiLevelMarkProps) => (
-	<span style={{...style, margin: '0 2px'}}>{children || value}</span>
+	<span style={{...style, margin: '0 2px'}}>{children ?? value}</span>
 )
 
 export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
@@ -141,7 +141,7 @@ const HtmlLikeMark = ({children, value}: MarkProps) => {
 	return <Tag>{children}</Tag>
 }
 
-export const HtmlLikeTags: StoryObj<MarkedInputProps<MarkProps>> = {
+export const HtmlLikeTags: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: HtmlLikeMark,
 		value: '<div>This is a div with <mark>a mark inside</mark> and <b>bold text with <del>nested del</del></b></div>',
@@ -158,7 +158,8 @@ const InteractiveMark = ({children}: MarkProps) => {
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
 	return (
-		<span
+		<button
+			type="button"
 			onClick={e => {
 				e.stopPropagation()
 				console.log('Mark clicked:', {
@@ -183,11 +184,11 @@ const InteractiveMark = ({children}: MarkProps) => {
 			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
 		>
 			{children}
-		</span>
+		</button>
 	)
 }
 
-export const InteractiveNested: StoryObj<MarkedInputProps<MarkProps>> = {
+export const InteractiveNested: StoryObj<MarkedInputProps> = {
 	args: {
 		Mark: InteractiveMark,
 		value: '@[Click me @[or me @[or even me]]]',
@@ -204,7 +205,7 @@ interface MarkdownMarkProps extends MarkProps {
 }
 
 const MarkdownMark = ({children, value, style}: MarkdownMarkProps) => (
-	<span style={{...style, margin: '0 1px'}}>{children || value}</span>
+	<span style={{...style, margin: '0 1px'}}>{children ?? value}</span>
 )
 
 function TabbedMarkdownView({value, onChange}: {value: string; onChange?: (v: string) => void}) {
@@ -238,7 +239,7 @@ export const ComplexMarkdown: Story = {
 // ============================================================================
 
 const HtmlDocMark = ({children, value}: MarkProps) => {
-	const tagName = value?.toLowerCase() || 'span'
+	const tagName = value?.toLowerCase() ?? 'span'
 
 	const tagStyles: Record<string, React.CSSProperties> = {
 		div: {
@@ -385,7 +386,7 @@ const HtmlDocMark = ({children, value}: MarkProps) => {
 	}
 
 	const Tag = tagName as React.ElementType
-	const style = tagStyles[tagName] || {}
+	const style = tagStyles[tagName] ?? {}
 
 	return <Tag style={style}>{children}</Tag>
 }

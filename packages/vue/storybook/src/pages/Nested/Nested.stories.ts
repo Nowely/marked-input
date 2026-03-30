@@ -134,7 +134,7 @@ const HtmlMarkup: Markup = '<__value__>__slot__</__value__>'
 const HtmlLikeMark = defineComponent({
 	props: {value: String, children: {type: null}},
 	setup(props, {slots}) {
-		return () => h(props.value || 'span', {}, slots.default?.())
+		return () => h(props.value ?? 'span', {}, slots.default?.())
 	},
 })
 

@@ -12,7 +12,7 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 
 const DynamicMark = defineComponent({
 	setup() {
-		const mark = useMark<HTMLElement>()
+		const mark = useMark()
 		const elRef = ref<HTMLElement | null>(null)
 
 		onMounted(() => {
@@ -60,7 +60,7 @@ export const Removable: Story = {
 
 const Abbr = defineComponent({
 	setup() {
-		const mark = useMark<HTMLElement>()
+		const mark = useMark()
 		const elRef = ref<HTMLElement | null>(null)
 
 		onMounted(() => {

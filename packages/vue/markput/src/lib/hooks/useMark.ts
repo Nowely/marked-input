@@ -1,4 +1,4 @@
-import type {MarkOptions, MarkToken} from '@markput/core'
+import type {MarkOptions, MarkToken, RefAccessor} from '@markput/core'
 import {MarkHandler} from '@markput/core'
 import {inject, ref, watch, onMounted} from 'vue'
 
@@ -18,6 +18,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	const elRef = ref<T | null>(null)
 	const refAccessor = {
 		get current() {
+			// oxlint-disable-next-line no-unsafe-return
 			return elRef.value
 		},
 		set current(v: T | null) {
@@ -25,10 +26,11 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		},
 	}
 
-	const mark = new MarkHandler<T>({ref: refAccessor as any, store, token: token as MarkToken})
+	const mark = new MarkHandler<T>({ref: refAccessor as RefAccessor<T>, store, token: token as MarkToken})
 
 	onMounted(() => {
 		if (elRef.value && !options.controlled) {
+			// oxlint-disable-next-line no-unsafe-member-access
 			elRef.value.textContent = (token as MarkToken).content
 		}
 	})

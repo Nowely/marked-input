@@ -34,7 +34,7 @@ const Overlay = () => {
 		<Popover style={style} visible>
 			<i>
 				{' '}
-				Press the <b>'Enter'</b> to create: <b>{`${match.value}`}</b>{' '}
+				Press the <b>'Enter'</b> to create: <b>{match.value}</b>{' '}
 			</i>
 		</Popover>
 	)

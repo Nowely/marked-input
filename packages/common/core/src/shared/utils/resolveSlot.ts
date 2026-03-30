@@ -11,16 +11,13 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot<T = string>(slotName: SlotName, slots: CoreSlots | undefined): T {
-	return (slots?.[slotName] ?? defaultSlots[slotName]) as T
+export function resolveSlot(slotName: SlotName, slots: unknown): string {
+	return ((slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]) as string
 }
 
-export function resolveSlotProps<T = Record<string, unknown>>(
-	slotName: SlotName,
-	slotProps: CoreSlotProps | undefined
-): T | undefined {
-	const props = slotProps?.[slotName]
-	return props ? (convertDataAttrs(props as Record<string, unknown>) as T) : undefined
+export function resolveSlotProps(slotName: SlotName, slotProps: unknown): Record<string, unknown> | undefined {
+	const props = (slotProps as CoreSlotProps | undefined)?.[slotName]
+	return props ? convertDataAttrs(props as Record<string, unknown>) : undefined
 }
 
 /**
@@ -36,7 +33,7 @@ export interface SlotOption extends CoreOption {
 
 export function resolveOverlaySlot(globalComponent: unknown, option?: CoreOption, defaultComponent?: unknown) {
 	const slotOption = option as SlotOption | undefined
-	const Component = slotOption?.Overlay || globalComponent || defaultComponent
+	const Component = slotOption?.Overlay ?? globalComponent ?? defaultComponent
 	if (!Component)
 		throw new Error(
 			'No overlay component found. Provide either option.Overlay, global Overlay, or a defaultComponent.'
@@ -68,7 +65,7 @@ export function resolveMarkSlot(
 			| undefined,
 		baseProps
 	)
-	const Component = option?.Mark || GlobalMark
+	const Component = option?.Mark ?? GlobalMark
 	if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')
 	return [Component, props] as const
 }

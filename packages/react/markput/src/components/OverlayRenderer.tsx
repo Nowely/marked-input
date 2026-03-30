@@ -12,7 +12,7 @@ export const OverlayRenderer = memo(() => {
 
 	if (!key) return
 
-	return <Overlay key={key} {...(props ?? {})} />
+	return <Overlay key={key} {...props} />
 })
 
 OverlayRenderer.displayName = 'OverlayRenderer'

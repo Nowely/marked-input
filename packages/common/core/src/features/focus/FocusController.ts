@@ -54,6 +54,7 @@ export class FocusController {
 		const {anchor, caret, isNext} = recovery
 		const isStale = !anchor.target || !anchor.target.isConnected
 
+		// eslint-disable-next-line switch-exhaustiveness-check
 		switch (true) {
 			case isNext && isStale: {
 				const container = this.store.refs.container
@@ -66,7 +67,7 @@ export class FocusController {
 				if (targetChild) {
 					targetChild.focus()
 				} else {
-					this.store.nodes.focus.tail.focus()
+					this.store.nodes.focus.tail?.focus()
 				}
 				break
 			}
@@ -74,7 +75,7 @@ export class FocusController {
 				anchor.prev.focus()
 				break
 			case isStale:
-				this.store.nodes.focus.head.focus()
+				this.store.nodes.focus.head?.focus()
 				break
 			default:
 				anchor.next.focus()

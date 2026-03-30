@@ -7,7 +7,7 @@ import {
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
-import type {CoreOption, CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {
 	resolveMarkSlot,
 	resolveOverlaySlot,
@@ -127,37 +127,37 @@ export class Store {
 			container: {
 				use: () =>
 					[
-						resolveSlot('container', this.state.slots.use() as CoreSlots | undefined),
-						resolveSlotProps('container', this.state.slotProps.use() as CoreSlotProps | undefined),
+						resolveSlot('container', this.state.slots.use()),
+						resolveSlotProps('container', this.state.slotProps.use()),
 					] as const,
 				get: () =>
 					[
-						resolveSlot('container', this.state.slots.get() as CoreSlots | undefined),
-						resolveSlotProps('container', this.state.slotProps.get() as CoreSlotProps | undefined),
+						resolveSlot('container', this.state.slots.get()),
+						resolveSlotProps('container', this.state.slotProps.get()),
 					] as const,
 			} as Slot,
 			block: {
 				use: () =>
 					[
-						resolveSlot('block', this.state.slots.use() as CoreSlots | undefined),
-						resolveSlotProps('block', this.state.slotProps.use() as CoreSlotProps | undefined),
+						resolveSlot('block', this.state.slots.use()),
+						resolveSlotProps('block', this.state.slotProps.use()),
 					] as const,
 				get: () =>
 					[
-						resolveSlot('block', this.state.slots.get() as CoreSlots | undefined),
-						resolveSlotProps('block', this.state.slotProps.get() as CoreSlotProps | undefined),
+						resolveSlot('block', this.state.slots.get()),
+						resolveSlotProps('block', this.state.slotProps.get()),
 					] as const,
 			} as Slot,
 			span: {
 				use: () =>
 					[
-						resolveSlot('span', this.state.slots.use() as CoreSlots | undefined),
-						resolveSlotProps('span', this.state.slotProps.use() as CoreSlotProps | undefined),
+						resolveSlot('span', this.state.slots.use()),
+						resolveSlotProps('span', this.state.slotProps.use()),
 					] as const,
 				get: () =>
 					[
-						resolveSlot('span', this.state.slots.get() as CoreSlots | undefined),
-						resolveSlotProps('span', this.state.slotProps.get() as CoreSlotProps | undefined),
+						resolveSlot('span', this.state.slots.get()),
+						resolveSlotProps('span', this.state.slotProps.get()),
 					] as const,
 			} as Slot,
 			overlay: {

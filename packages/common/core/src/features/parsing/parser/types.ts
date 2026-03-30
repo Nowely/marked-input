@@ -64,12 +64,12 @@ export type SlotMarkup = `${string}${typeof PLACEHOLDER.Slot}${string}`
  * - "<__value__ __meta__>__slot__</__value__>" - HTML-like with all features
  */
 export type Markup =
-	| `${ValueMarkup}`
+	| ValueMarkup
 	| `${ValueMarkup}${MetaMarkup}`
 	| `${ValueMarkup}${MetaMarkup}${SlotMarkup}`
 	| `${ValueMarkup}${SlotMarkup}`
 	| `${ValueMarkup}${SlotMarkup}${MetaMarkup}`
-	| `${SlotMarkup}`
+	| SlotMarkup
 	| `${SlotMarkup}${MetaMarkup}`
 	| `${SlotMarkup}${MetaMarkup}${ValueMarkup}`
 	| `${SlotMarkup}${ValueMarkup}`
