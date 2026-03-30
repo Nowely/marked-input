@@ -55,6 +55,7 @@
     "unicorn/no-useless-spread": "warn",
     "unicorn/prefer-module": "warn",
     "unicorn/prefer-ternary": "warn",
+    "unicorn/consistent-function-scoping": "off",
     "react/no-children-prop": "allow",
     "react/exhaustive-deps": "off",
     "react/react-in-jsx-scope": "off",
