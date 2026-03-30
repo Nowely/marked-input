@@ -65,6 +65,7 @@
     "jest/valid-expect": "off",
     "jest/no-disabled-tests": "off",
     "react-perf/jsx-no-jsx-as-prop": "off",
+    "react-perf/jsx-no-new-array-as-prop": "off",
     "import/no-unassigned-import": ["warn", {"allow": ["**/*.css"]}]
   },
   "overrides": [
