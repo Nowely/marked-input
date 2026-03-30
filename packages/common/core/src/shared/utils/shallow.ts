@@ -2,6 +2,7 @@ export function shallow<T>(objA: T, objB: T) {
 	if (Object.is(objA, objB)) {
 		return true
 	}
+	// oxlint-disable-next-line no-unnecessary-condition
 	if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
 		return false
 	}

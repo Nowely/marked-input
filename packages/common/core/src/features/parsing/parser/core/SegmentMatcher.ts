@@ -129,7 +129,6 @@ export class SegmentMatcher {
 		if (this.static) {
 			const {regex, toIndex} = this.static
 			for (const match of text.matchAll(regex)) {
-				if (match.index == null) continue
 				const index = toIndex.get(match[0])
 				if (index !== undefined) {
 					results.push({
@@ -147,7 +146,6 @@ export class SegmentMatcher {
 			const {regex, entries, indices} = this.dynamic
 			for (const match of text.matchAll(regex)) {
 				const matchedText = match[0]
-				if (match.index == null) continue
 				const start = match.index
 
 				let matchedIndex: number | undefined
@@ -156,6 +154,7 @@ export class SegmentMatcher {
 				if (match.groups) {
 					for (let i = 0; i < entries.length; i++) {
 						const groupValue = match.groups[`seg${i}`]
+						// oxlint-disable-next-line no-unnecessary-condition
 						if (groupValue !== undefined) {
 							matchedIndex = entries[i].index
 							if (indices.has(matchedIndex)) {
