@@ -193,7 +193,7 @@ describe(`Utility: ${Caret.name}`, () => {
 
 		it('should return default position when no range', () => {
 			mockGetRangeAt.mockReturnValue({
-				getBoundingClientRect: undefined,
+				getBoundingClientRect: () => undefined,
 			})
 
 			const result = Caret.getAbsolutePosition()

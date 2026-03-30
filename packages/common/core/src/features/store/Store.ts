@@ -7,7 +7,7 @@ import {
 	type UseHookFactory,
 	type StateObject,
 } from '../../shared/classes'
-import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import type {CoreOption, CoreSlotProps, CoreSlots, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {
 	resolveMarkSlot,
 	resolveOverlaySlot,

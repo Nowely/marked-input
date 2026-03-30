@@ -7,12 +7,12 @@ title: "Markup"
 
 ```ts
 type Markup = 
-  | `${ValueMarkup}`
+  | ValueMarkup
   | `${ValueMarkup}${MetaMarkup}`
   | `${ValueMarkup}${MetaMarkup}${SlotMarkup}`
   | `${ValueMarkup}${SlotMarkup}`
   | `${ValueMarkup}${SlotMarkup}${MetaMarkup}`
-  | `${SlotMarkup}`
+  | SlotMarkup
   | `${SlotMarkup}${MetaMarkup}`
   | `${SlotMarkup}${MetaMarkup}${ValueMarkup}`
   | `${SlotMarkup}${ValueMarkup}`

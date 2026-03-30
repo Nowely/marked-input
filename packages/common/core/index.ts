@@ -32,4 +32,4 @@ export {getAlwaysShowHandleDrag} from './src/features/drag'
 export {Caret} from './src/features/caret'
 
 // Mark Handler
-export {MarkHandler, type MarkOptions} from './src/features/mark'
+export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
