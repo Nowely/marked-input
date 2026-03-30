@@ -59,6 +59,7 @@
     "react/exhaustive-deps": "off",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-object-as-prop": "off",
+    "react-perf/jsx-no-new-function-as-prop": "off",
     "jsx_a11y/click-events-have-key-events": "off",
     "vitest/warn-todo": "off",
     "jest/valid-expect": "off",
@@ -68,7 +69,7 @@
   },
   "overrides": [
     {
-      "files": ["**/*.spec.ts", "**/*.stories.ts", "**/*.stories.tsx"],
+      "files": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.stories.ts", "**/*.stories.tsx", "**/*.bench.ts", "**/*.js"],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off",
@@ -76,7 +77,8 @@
         "typescript/no-unsafe-assignment": "off",
         "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-member-access": "off",
-        "typescript/no-unsafe-return": "off"
+        "typescript/no-unsafe-return": "off",
+        "typescript/unbound-method": "off"
       }
     },
     {
