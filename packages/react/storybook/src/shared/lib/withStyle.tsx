@@ -2,7 +2,8 @@ import {useInsertionEffect} from 'react'
 import type {ComponentType} from 'react'
 
 const ensureStyleLink = (id: string) => {
-	let link = document.getElementById(id) as HTMLLinkElement | null
+	let el = document.getElementById(id)
+	let link = el instanceof HTMLLinkElement ? el : null
 
 	if (!link) {
 		link = document.createElement('link')

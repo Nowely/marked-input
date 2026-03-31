@@ -77,7 +77,7 @@ export class OverlayController {
 		}
 
 		this.#clickHandler = e => {
-			const target = e.target as HTMLElement | null
+			const target = e.target instanceof HTMLElement ? e.target : null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
 			this.store.events.clearOverlay()

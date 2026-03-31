@@ -6,7 +6,7 @@ export interface Tab {
 }
 
 export interface TabsProps {
-	tabs: Tab[]
+	tabs: readonly Tab[]
 	activeTabId: string
 	onChange: (tabId: string) => void
 	children?: ReactNode

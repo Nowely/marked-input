@@ -25,7 +25,7 @@ export class Lifecycle {
 		this.#subscribeParse()
 
 		if (options?.getTrigger) {
-			this.#subscribeOverlay(options.getTrigger as TriggerExtractor<CoreOption>)
+			this.#subscribeOverlay(options.getTrigger)
 		}
 	}
 
@@ -94,7 +94,7 @@ export class Lifecycle {
 		)
 	}
 
-	#subscribeOverlay(getTrigger: TriggerExtractor<CoreOption>) {
+	#subscribeOverlay<TOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
 		const {store} = this
 
 		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))

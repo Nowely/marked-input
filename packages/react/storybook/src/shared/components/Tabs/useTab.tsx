@@ -13,7 +13,7 @@ export const useTab = <const T extends readonly Tab[]>(tabs: T) => {
 		}
 	}
 
-	const Tab = () => <Tabs tabs={tabs as unknown as Tab[]} activeTabId={activeTab} onChange={handleChange} />
+	const Tab = () => <Tabs tabs={tabs} activeTabId={activeTab} onChange={handleChange} />
 
 	return {
 		Tab,
