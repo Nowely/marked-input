@@ -4,6 +4,7 @@ import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 import {defineComponent, h} from 'vue'
 
+import {firstChild, childAt} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils'
 import * as BaseStories from '../Base/Base.stories'
@@ -16,7 +17,7 @@ describe('API: Overlay and Triggers', () => {
 	it('should work with empty options array', async () => {
 		await render(withProps(DefaultOverlay, {options: []}))
 
-		const element = document.querySelector('span[contenteditable]') as HTMLElement
+		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
@@ -26,7 +27,7 @@ describe('API: Overlay and Triggers', () => {
 	it('should typed with default values of options', async () => {
 		await render(DefaultOverlay)
 
-		const element = document.querySelector('span[contenteditable]') as HTMLElement
+		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
@@ -57,7 +58,7 @@ describe('API: Overlay and Triggers', () => {
 			})
 		)
 
-		const element = document.querySelector('span[contenteditable]') as HTMLElement
+		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('@')
 
@@ -88,7 +89,7 @@ describe('API: Overlay and Triggers', () => {
 			})
 		)
 
-		const element = document.querySelector('span[contenteditable]') as HTMLElement
+		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 
 		await userEvent.keyboard('@')
@@ -125,7 +126,7 @@ describe('API: Overlay and Triggers', () => {
 			})
 		)
 
-		const element = document.querySelector('span[contenteditable]') as HTMLElement
+		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
@@ -159,8 +160,8 @@ describe('API: Overlay and Triggers', () => {
 			})
 		)
 
-		const editableContainer = container.firstElementChild as HTMLElement
-		const middleSpan = editableContainer.children[2] as HTMLElement
+		const editableContainer = firstChild(container)!
+		const middleSpan = childAt(editableContainer, 2)!
 		await focusAtEnd(middleSpan)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()

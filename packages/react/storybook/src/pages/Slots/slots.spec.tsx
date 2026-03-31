@@ -15,7 +15,7 @@ describe('Slots API', () => {
 				<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />
 			)
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toBeInTheDocument()
 		})
 
@@ -53,7 +53,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveAttribute('data-custom', 'test-value')
 		})
 
@@ -71,7 +71,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveClass('default-class')
 		})
 
@@ -89,7 +89,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 	})
@@ -202,7 +202,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveAttribute('data-test-id', 'my-container')
 			await expect.element(containerDiv).toHaveAttribute('data-user-id', 'user-123')
 			await expect.element(containerDiv).toHaveAttribute('data-user-name', 'John')
@@ -260,7 +260,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 			await userEvent.keyboard('{Enter}')
 
@@ -282,7 +282,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 
 			expect(handleClick).toHaveBeenCalled()
@@ -305,7 +305,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 			expect(handleFocus).toHaveBeenCalled()
 
@@ -347,7 +347,7 @@ describe('Slots API', () => {
 				<MarkedInput Mark={TestMark} value="Hello world" slots={{container: 'article'}} />
 			)
 
-			const article = container.querySelector('article') as HTMLElement
+			const article = container.querySelector<HTMLElement>('article')!
 			await expect.element(article).toBeInTheDocument()
 			const textSpan = page.getByText('Hello world')
 			await expect.element(textSpan).toBeInTheDocument()
@@ -359,14 +359,14 @@ describe('Slots API', () => {
 		it('should handle empty value', async () => {
 			const {container} = await render(<MarkedInput Mark={TestMark} value="" />)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
 		it('should handle undefined slotProps gracefully', async () => {
 			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" slotProps={undefined} />)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
@@ -383,7 +383,7 @@ describe('Slots API', () => {
 				/>
 			)
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 

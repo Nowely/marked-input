@@ -14,6 +14,7 @@ for (const [path, module] of Object.entries(storiesModules)) {
 	if (!match) continue
 
 	const category = match[1]
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const stories = composeStories(module as Parameters<typeof composeStories>[0])
 
 	if (!storiesByCategory.has(category)) {

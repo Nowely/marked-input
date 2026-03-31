@@ -22,7 +22,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toBeInTheDocument()
 		})
 
@@ -62,7 +62,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveAttribute('data-custom', 'test-value')
 		})
 
@@ -80,7 +80,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveClass('default-class')
 		})
 
@@ -98,7 +98,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 	})
@@ -112,7 +112,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
 			await expect.element(textSpan).toBeInTheDocument()
 			await expect.element(textSpan).toHaveTextContent('Hello world')
 		})
@@ -241,7 +241,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const containerDiv = container.querySelector('div') as HTMLElement
+			const containerDiv = container.querySelector<HTMLElement>('div')!
 			await expect.element(containerDiv).toHaveAttribute('data-test-id', 'my-container')
 			await expect.element(containerDiv).toHaveAttribute('data-user-id', 'user-123')
 			await expect.element(containerDiv).toHaveAttribute('data-user-name', 'John')
@@ -257,7 +257,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable="true"]') as HTMLElement
+			const textSpan = container.querySelector<HTMLElement>('span[contenteditable="true"]')!
 			await expect.element(textSpan).toBeInTheDocument()
 		})
 
@@ -270,7 +270,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable="false"]') as HTMLElement
+			const textSpan = container.querySelector<HTMLElement>('span[contenteditable="false"]')!
 			await expect.element(textSpan).toBeInTheDocument()
 		})
 
@@ -298,7 +298,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
 			await expect.element(textSpan).toBeInTheDocument()
 		})
 	})
@@ -319,7 +319,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 			await userEvent.keyboard('{Enter}')
 
@@ -341,7 +341,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 
 			expect(handleClick).toHaveBeenCalled()
@@ -364,7 +364,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await userEvent.click(div)
 			expect(handleFocus).toHaveBeenCalled()
 
@@ -412,8 +412,8 @@ describe('Slots API', () => {
 				},
 			})
 
-			const article = container.querySelector('article') as HTMLElement
-			const textSpan = container.querySelector('span[contenteditable]') as HTMLElement
+			const article = container.querySelector<HTMLElement>('article')!
+			const textSpan = container.querySelector<HTMLElement>('span[contenteditable]')!
 
 			await expect.element(article).toBeInTheDocument()
 			await expect.element(textSpan).toBeInTheDocument()
@@ -429,7 +429,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
@@ -442,7 +442,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
@@ -459,7 +459,7 @@ describe('Slots API', () => {
 				},
 			})
 
-			const div = container.querySelector('div') as HTMLElement
+			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
