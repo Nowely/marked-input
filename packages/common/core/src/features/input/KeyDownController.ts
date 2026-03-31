@@ -65,8 +65,8 @@ export class KeyDownController {
 		if (!container || !this.#keydownHandler) return
 
 		container.removeEventListener('keydown', this.#keydownHandler)
-		container.removeEventListener('paste', this.#pasteHandler!)
-		container.removeEventListener('beforeinput', this.#beforeInputHandler!, true)
+		if (this.#pasteHandler) container.removeEventListener('paste', this.#pasteHandler)
+		if (this.#beforeInputHandler) container.removeEventListener('beforeinput', this.#beforeInputHandler, true)
 
 		this.#keydownHandler = undefined
 		this.#pasteHandler = undefined

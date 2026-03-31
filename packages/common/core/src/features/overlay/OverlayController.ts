@@ -40,7 +40,7 @@ export class OverlayController {
 			}
 		})
 
-		this.#selectionChangeHandler = () => {
+		const selectionChangeHandler = () => {
 			const showOverlayOn = this.store.state.showOverlayOn.get()!
 			const type: OverlayTrigger = 'selectionChange'
 
@@ -48,13 +48,14 @@ export class OverlayController {
 				this.store.events.checkOverlay()
 			}
 		}
+		this.#selectionChangeHandler = selectionChangeHandler
 
 		this.#focusinHandler = () => {
-			document.addEventListener('selectionchange', this.#selectionChangeHandler!)
+			document.addEventListener('selectionchange', selectionChangeHandler)
 		}
 
 		this.#focusoutHandler = () => {
-			document.removeEventListener('selectionchange', this.#selectionChangeHandler!)
+			document.removeEventListener('selectionchange', selectionChangeHandler)
 		}
 
 		const container = this.store.refs.container
@@ -87,7 +88,7 @@ export class OverlayController {
 	disableClose() {
 		if (this.#escHandler) {
 			window.removeEventListener('keydown', this.#escHandler)
-			document.removeEventListener('click', this.#clickHandler!, true)
+			if (this.#clickHandler) document.removeEventListener('click', this.#clickHandler, true)
 			this.#escHandler = undefined
 			this.#clickHandler = undefined
 		}
@@ -98,7 +99,7 @@ export class OverlayController {
 
 		if (container && this.#focusinHandler) {
 			container.removeEventListener('focusin', this.#focusinHandler)
-			container.removeEventListener('focusout', this.#focusoutHandler!)
+			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
 		}
 
 		if (this.#selectionChangeHandler) {

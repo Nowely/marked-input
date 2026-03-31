@@ -54,9 +54,10 @@ export class TextSelectionController {
 	disable() {
 		if (this.#mousedownHandler) {
 			document.removeEventListener('mousedown', this.#mousedownHandler)
-			document.removeEventListener('mousemove', this.#mousemoveHandler!)
-			document.removeEventListener('mouseup', this.#mouseupHandler!)
-			document.removeEventListener('selectionchange', this.#selectionchangeHandler!)
+			if (this.#mousemoveHandler) document.removeEventListener('mousemove', this.#mousemoveHandler)
+			if (this.#mouseupHandler) document.removeEventListener('mouseup', this.#mouseupHandler)
+			if (this.#selectionchangeHandler)
+				document.removeEventListener('selectionchange', this.#selectionchangeHandler)
 
 			this.#mousedownHandler = undefined
 			this.#mousemoveHandler = undefined

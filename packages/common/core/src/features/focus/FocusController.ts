@@ -39,8 +39,8 @@ export class FocusController {
 		if (!container || !this.#focusinHandler) return
 
 		container.removeEventListener('focusin', this.#focusinHandler)
-		container.removeEventListener('focusout', this.#focusoutHandler!)
-		container.removeEventListener('click', this.#clickHandler!)
+		if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
+		if (this.#clickHandler) container.removeEventListener('click', this.#clickHandler)
 
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined
