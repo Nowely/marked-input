@@ -45,6 +45,7 @@ const configuredOptions = [
 			data: ['Seventh', 'Eight', 'Ninth'],
 		},
 	},
+	// oxlint-disable-next-line no-unsafe-type-assertion
 ] as Option[]
 
 export const Configured: Story = {
@@ -73,6 +74,7 @@ export const Autocomplete: Story = {
 		defaultValue: 'Hello, clickable marked @world!',
 		options: [
 			{
+				// oxlint-disable-next-line no-unsafe-type-assertion
 				markup: '@__value__' as Markup,
 				overlay: {
 					trigger: '@',

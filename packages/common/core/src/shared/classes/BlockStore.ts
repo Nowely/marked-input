@@ -56,7 +56,8 @@ export class BlockStore {
 			this.state.dropPosition.set(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
 		}
 		const onDragLeave = (e: DragEvent) => {
-			if ((e.currentTarget as Element).contains(e.relatedTarget as Node)) return
+			const ct = e.currentTarget
+			if (ct instanceof Node && ct.contains(e.relatedTarget instanceof Node ? e.relatedTarget : null)) return
 			this.state.dropPosition.set(null)
 		}
 		const onDrop = (e: DragEvent) => {

@@ -20,7 +20,9 @@ export const withPlainValue = (story: () => VNode, context: StoryContext) => {
 	const rawGlobal = globals.showPlainValue ?? 'right'
 	const globalValue = (
 		rawGlobal === 'right' || rawGlobal === 'bottom' || rawGlobal === 'hide' ? rawGlobal : 'right'
-	) as 'right' | 'bottom' | 'hide'
+	) as
+		// oxlint-disable-next-line no-unsafe-type-assertion
+		'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
 
 	// Stories that don't opt in to the panel, or are uncontrolled.

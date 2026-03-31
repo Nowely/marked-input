@@ -137,6 +137,7 @@ export const MultipleLevels: StoryObj<MarkedInputProps<MultiLevelMarkProps>> = {
 const HtmlMarkup: Markup = '<__value__>__slot__</__value__>'
 
 const HtmlLikeMark = ({children, value}: MarkProps) => {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const Tag = value! as React.ElementType
 	return <Tag>{children}</Tag>
 }
@@ -385,6 +386,7 @@ const HtmlDocMark = ({children, value}: MarkProps) => {
 		},
 	}
 
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const Tag = tagName as React.ElementType
 	const style = tagStyles[tagName] ?? {}
 

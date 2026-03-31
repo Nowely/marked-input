@@ -156,6 +156,7 @@ describe(`Utility: ${Caret.name}`, () => {
 			const detachedNode = {textContent: 'detached'}
 			mockSelection.anchorNode = detachedNode
 			mockGetSelection.mockReturnValue(mockSelection)
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			;(document.contains as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
 
 			expect(() => Caret.getSelectedNode()).toThrow('Anchor node of selection is not exists!')

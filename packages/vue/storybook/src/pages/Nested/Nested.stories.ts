@@ -73,6 +73,7 @@ const MultiLevelMark = defineComponent({
 		return () =>
 			h(
 				'span',
+				// oxlint-disable-next-line no-unsafe-type-assertion
 				{style: {...(props.style as Record<string, string>), margin: '0 2px'}},
 				slots.default?.() ?? props.value
 			)

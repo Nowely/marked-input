@@ -119,4 +119,5 @@ export const markdownOptions = buildMarkdownOptions(defaultMarkdownTheme)
  * Use in drag mode so inline marks (bold, italic, code, link, strikethrough)
  * are not each split into their own draggable row.
  */
+// oxlint-disable-next-line no-unsafe-type-assertion
 export const blockLevelMarkdownOptions = markdownOptions.filter(opt => (opt.markup as string).includes('\n\n'))

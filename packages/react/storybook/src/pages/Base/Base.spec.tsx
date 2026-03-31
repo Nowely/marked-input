@@ -98,6 +98,7 @@ describe(`Component: MarkedInput`, () => {
 				Mark={({value}) => <mark>{value}</mark>}
 				options={[
 					{
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](test:__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['one', 'two', 'three']},
 					},

@@ -130,6 +130,7 @@ describe(`Utility: ${shallow.name}`, () => {
 			}
 			Constructor.prototype.inheritedProp = 'inherited'
 
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			const obj1 = new (Constructor as unknown as new () => {ownProp: string})()
 			const obj2 = {ownProp: 'value'}
 

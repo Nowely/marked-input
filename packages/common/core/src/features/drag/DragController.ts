@@ -1,3 +1,4 @@
+import {childAt} from '../../shared/checkers'
 import {annotate} from '../parsing'
 import type {Store} from '../store/Store'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
@@ -27,7 +28,7 @@ export class DragController {
 		queueMicrotask(() => {
 			const container = this.store.refs.container
 			if (!container) return
-			const target = container.children[afterIndex + 1] as HTMLElement | undefined
+			const target = childAt(container, afterIndex + 1)
 			target?.focus()
 		})
 	}

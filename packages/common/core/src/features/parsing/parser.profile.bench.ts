@@ -146,6 +146,7 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 		updateMethodStats(methodName, end - start, className, complexity, firstParamLength)
 		methodCallStack.pop()
 		return result
+		// oxlint-disable-next-line no-unsafe-type-assertion
 	}) as T
 }
 

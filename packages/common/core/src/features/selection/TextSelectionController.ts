@@ -1,3 +1,4 @@
+import {htmlChildren, nodeTarget} from '../../shared/checkers'
 import type {Store} from '../store/Store'
 
 export class TextSelectionController {
@@ -14,7 +15,7 @@ export class TextSelectionController {
 		if (this.#mousedownHandler) return
 
 		this.#mousedownHandler = e => {
-			this.#pressedNode = e.target as Node
+			this.#pressedNode = nodeTarget(e)
 			this.#isPressed = true
 		}
 
@@ -41,7 +42,7 @@ export class TextSelectionController {
 			const container = this.store.refs.container
 			if (!container) return
 
-			const nodes = [...container.children] as HTMLElement[]
+			const nodes = htmlChildren(container)
 			const preservedState = nodes.map(value => value.contentEditable)
 
 			nodes.forEach(value => (value.contentEditable = 'false'))

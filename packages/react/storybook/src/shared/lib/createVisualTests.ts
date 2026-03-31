@@ -14,6 +14,7 @@ export function createVisualTests(storiesModule: Parameters<typeof composeStorie
 	describe('Visual regression tests', () => {
 		for (const [name, Story] of Object.entries(stories)) {
 			it(`Story ${name}`, async () => {
+				// oxlint-disable-next-line no-unsafe-type-assertion
 				const StoryComponent = Story as React.ComponentType<Record<string, unknown>>
 				const {container} = await render(React.createElement(StoryComponent))
 				expect(container.textContent.length).toBeTruthy()

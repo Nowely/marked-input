@@ -1,3 +1,4 @@
+import {nextText} from '../../shared/checkers'
 //TODO refact caret
 export class Caret {
 	static get isSelectedPosition() {
@@ -118,13 +119,13 @@ export class Caret {
 		if (!selection) return
 
 		const walker = document.createTreeWalker(element, 4 /* NodeFilter.SHOW_TEXT */)
-		let node = walker.nextNode() as Text | null
+		let node = nextText(walker)
 		if (!node) return
 
 		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 
-		while (node as Text | null) {
-			const next = walker.nextNode() as Text | null
+		while (node) {
+			const next = nextText(walker)
 			if (!next || remaining <= node.length) {
 				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
 				const range = document.createRange()

@@ -49,12 +49,15 @@ export const Overridden = () => {
 	return (
 		<Input
 			as={MarkedInput}
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			Mark={Tag as ComponentType<MarkProps>}
 			Overlay={Overlay}
 			value={value}
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			onChange={(_, value) => setValue(value as unknown as string)}
 			options={[
 				{
+					// oxlint-disable-next-line no-unsafe-type-assertion
 					markup: '@[__value__](common)' as Markup,
 					mark: ({value}: {value?: string}) => ({children: value}),
 					overlay: {trigger: '@'},
@@ -66,6 +69,7 @@ export const Overridden = () => {
 
 export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 	args: {
+		// oxlint-disable-next-line no-unsafe-type-assertion
 		Mark: Tag as ComponentType<TagProps>,
 		Overlay,
 		value: initialState,
@@ -76,6 +80,7 @@ export const TaggedInput: StoryObj<MarkedInputProps<TagProps>> = {
 		},
 		options: [
 			{
+				// oxlint-disable-next-line no-unsafe-type-assertion
 				markup: '@[__value__](common)' as Markup,
 				mark: ({value}: MarkProps) => ({children: value, style: {marginLeft: 0}}),
 				overlay: {trigger: '@'},

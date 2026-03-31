@@ -46,7 +46,9 @@ describe('Component: MarkedInput', () => {
 			return () =>
 				h('abbr', {
 					ref: (el: Element | ComponentPublicInstance | null) => {
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						elRef.value = el as HTMLElement | null
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						mark.ref.current = el as HTMLElement | null
 					},
 					title: mark.meta,
@@ -166,6 +168,7 @@ describe('Component: MarkedInput', () => {
 				Mark,
 				options: [
 					{
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](test:__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['one', 'two', 'three']},
 					},
