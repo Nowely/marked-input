@@ -11,7 +11,7 @@ export const withPlainValue = (story: () => VNode, context: StoryContext) => {
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
+	const rawPosition = context.parameters.plainValue as 'right' | 'bottom' | undefined
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
 	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
