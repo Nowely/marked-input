@@ -36,7 +36,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:16](https://github.com/N
 ### ref
 
 ```ts
-ref: RefObject<HTMLElement>;
+ref: RefObject<HTMLElement | null>;
 ```
 
 Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L17)

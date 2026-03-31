@@ -5,7 +5,7 @@ import type {Store} from '../store'
 
 type TriggerExtractor<T> = (option: T) => string | undefined
 
-export interface LifecycleOptions<TOption = CoreOption> {
+export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
 	getTrigger?: TriggerExtractor<TOption>
 }
 
@@ -15,7 +15,7 @@ export class Lifecycle {
 
 	constructor(private store: Store) {}
 
-	enable<TOption = CoreOption>(options?: LifecycleOptions<TOption>) {
+	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
 		const {store} = this
 
 		const features = createCoreFeatures(store)
@@ -94,7 +94,7 @@ export class Lifecycle {
 		)
 	}
 
-	#subscribeOverlay<TOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
+	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
 		const {store} = this
 
 		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))

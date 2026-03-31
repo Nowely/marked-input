@@ -1,4 +1,4 @@
-import type {CoreSlotProps, CoreSlots, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
@@ -84,6 +84,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 ) {
 	const {ref} = props
 	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
+	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
 	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
 	const [store] = useState(() => new Store({createUseHook, defaultSpan: DefaultSpan}))
 
@@ -100,7 +101,8 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 		Overlay: props.Overlay,
 		className,
 		style,
-		slots: props.slots as CoreSlots,
+		slots: props.slots,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
 		slotProps: props.slotProps as CoreSlotProps,
 	})
 

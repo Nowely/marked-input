@@ -1,5 +1,5 @@
 import type {Token} from '../../features/parsing'
-import type {CoreOption, CoreSlotProps, CoreSlots} from '../types'
+import type {CoreOption, CoreSlotProps, CoreSlots, GenericElement} from '../types'
 import {convertDataAttrs} from './dataAttributes'
 import {resolveOptionSlot} from './resolveOptionSlot'
 
@@ -11,14 +11,18 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot(slotName: SlotName, slots: unknown): string {
-	return ((slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]) as string
+export function resolveSlot(slotName: SlotName, slots: unknown): GenericElement {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- `slots` is `CoreSlots | undefined` at runtime; typed as unknown for Vue Ref<T> cross-framework compat
+	return (slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]
 }
 
 export function resolveSlotProps(slotName: SlotName, slotProps: unknown): Record<string, unknown> | undefined {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- `slotProps` is `CoreSlotProps | undefined` at runtime; typed as unknown for Vue Ref<T> cross-framework compat
 	const props = (slotProps as CoreSlotProps | undefined)?.[slotName]
-	return props ? convertDataAttrs(props as Record<string, unknown>) : undefined
+	return props ? convertDataAttrs(props) : undefined
 }
+
+type SlotProp = Record<string, unknown> | ((base: Record<string, unknown>) => Record<string, unknown>)
 
 /**
  * Internal view of a framework-specific Option for slot resolution.
@@ -26,46 +30,32 @@ export function resolveSlotProps(slotName: SlotName, slotProps: unknown): Record
  */
 export interface SlotOption extends CoreOption {
 	Mark?: unknown
-	mark?: unknown
+	mark?: SlotProp
 	Overlay?: unknown
-	overlay?: unknown
+	overlay?: SlotProp
 }
 
-export function resolveOverlaySlot(globalComponent: unknown, option?: CoreOption, defaultComponent?: unknown) {
-	const slotOption = option as SlotOption | undefined
-	const Component = slotOption?.Overlay ?? globalComponent ?? defaultComponent
+export function resolveOverlaySlot(globalComponent: unknown, option?: SlotOption, defaultComponent?: unknown) {
+	const Component = option?.Overlay ?? globalComponent ?? defaultComponent
 	if (!Component)
 		throw new Error(
 			'No overlay component found. Provide either option.Overlay, global Overlay, or a defaultComponent.'
 		)
-	const props = resolveOptionSlot<Record<string, unknown>>(
-		slotOption?.overlay as
-			| Record<string, unknown>
-			| ((base: Record<string, unknown>) => Record<string, unknown>)
-			| undefined,
-		{}
-	)
+	const props = resolveOptionSlot<Record<string, unknown>>(option?.overlay, {})
 	return [Component, props] as const
 }
 
 export function resolveMarkSlot(
 	token: Token,
-	tokenOptions: CoreOption[] | undefined,
+	tokenOptions: SlotOption[] | undefined,
 	GlobalMark: unknown,
 	GlobalSpan: unknown,
 	defaultSpan: unknown
 ) {
 	if (token.type === 'text') return [GlobalSpan ?? defaultSpan, {value: token.content}] as const
-	// oxlint-disable-next-line no-unsafe-type-assertion -- SlotOption extends CoreOption; framework layers always pass SlotOption[]
-	const option = tokenOptions?.[token.descriptor.index] as SlotOption | undefined
+	const option = tokenOptions?.[token.descriptor.index]
 	const baseProps = {value: token.value, meta: token.meta}
-	const props = resolveOptionSlot(
-		option?.mark as
-			| Record<string, unknown>
-			| ((base: Record<string, unknown>) => Record<string, unknown>)
-			| undefined,
-		baseProps
-	)
+	const props = resolveOptionSlot(option?.mark, baseProps)
 	const Component = option?.Mark ?? GlobalMark
 	if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')
 	return [Component, props] as const

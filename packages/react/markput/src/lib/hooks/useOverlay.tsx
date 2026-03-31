@@ -14,7 +14,7 @@ export interface OverlayHandler {
 	close: () => void
 	select: (value: {value: string; meta?: string}) => void
 	match: OverlayMatch<Option>
-	ref: RefObject<HTMLElement>
+	ref: RefObject<HTMLElement | null>
 }
 
 export function useOverlay(): OverlayHandler {
@@ -33,16 +33,15 @@ export function useOverlay(): OverlayHandler {
 		[match]
 	)
 
-	const ref = useMemo<RefObject<HTMLElement>>(
-		() =>
-			({
-				get current() {
-					return store.refs.overlay
-				},
-				set current(v: HTMLElement | null) {
-					store.refs.overlay = v
-				},
-			}) as RefObject<HTMLElement>,
+	const ref = useMemo(
+		(): RefObject<HTMLElement | null> => ({
+			get current() {
+				return store.refs.overlay
+			},
+			set current(v: HTMLElement | null) {
+				store.refs.overlay = v
+			},
+		}),
 		[]
 	)
 

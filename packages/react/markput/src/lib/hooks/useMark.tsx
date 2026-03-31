@@ -1,6 +1,5 @@
 import type {MarkOptions, MarkToken} from '@markput/core'
 import {MarkHandler} from '@markput/core'
-import type {RefObject} from 'react'
 import {useEffect, useRef, useState} from 'react'
 
 import {useStore} from '../providers/StoreContext'
@@ -9,11 +8,12 @@ import {useToken} from '../providers/TokenContext'
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
 	const token = useToken()
-	const ref = useRef<HTMLElement>(null) as unknown as RefObject<T>
+	if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
+	const ref = useRef<T>(null)
 
-	const [mark] = useState(() => new MarkHandler<T>({ref, store, token: token as MarkToken}))
+	const [mark] = useState(() => new MarkHandler<T>({ref, store, token}))
 
-	useUncontrolledInit(ref, options, token as MarkToken)
+	useUncontrolledInit(ref, options, token)
 
 	const readOnly = store.state.readOnly.use()
 	useEffect(() => {
@@ -23,7 +23,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	return mark
 }
 
-function useUncontrolledInit(ref: RefObject<HTMLElement | null>, options: MarkOptions, token: MarkToken) {
+function useUncontrolledInit(ref: {readonly current: HTMLElement | null}, options: MarkOptions, token: MarkToken) {
 	useEffect(() => {
 		if (!options.controlled && ref.current) ref.current.textContent = token.content
 	}, [])

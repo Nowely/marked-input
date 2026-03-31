@@ -1,5 +1,5 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {OverlayMatch, OverlayTrigger} from '../../shared/types'
+import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
 
@@ -17,7 +17,10 @@ export class OverlayController {
 
 	constructor(private store: Store) {}
 
-	enableTrigger<T>(getTrigger: TriggerExtractor<T>, onMatch: (match: OverlayMatch | undefined) => void) {
+	enableTrigger<T extends CoreOption>(
+		getTrigger: TriggerExtractor<T>,
+		onMatch: (match: OverlayMatch<T> | undefined) => void
+	) {
 		if (this.#clearUnsubscribe) return
 
 		this.#clearUnsubscribe = this.store.events.clearOverlay.on(() => {
@@ -25,9 +28,8 @@ export class OverlayController {
 		})
 
 		this.#checkUnsubscribe = this.store.events.checkOverlay.on(() => {
-			const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger) as
-				| OverlayMatch
-				| undefined
+			// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
+			const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
 			onMatch(match)
 		})
 

@@ -1,4 +1,4 @@
-import type {MarkOptions, MarkToken, RefAccessor} from '@markput/core'
+import type {MarkOptions, RefAccessor} from '@markput/core'
 import {MarkHandler} from '@markput/core'
 import {inject, ref, watch, onMounted} from 'vue'
 
@@ -14,9 +14,10 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	}
 
 	const token = tokenRef.value
+	if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
 
 	const elRef = ref<T | null>(null)
-	const refAccessor = {
+	const refAccessor: RefAccessor<T> = {
 		get current() {
 			// oxlint-disable-next-line no-unsafe-return
 			return elRef.value
@@ -26,12 +27,11 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		},
 	}
 
-	const mark = new MarkHandler<T>({ref: refAccessor as RefAccessor<T>, store, token: token as MarkToken})
+	const mark = new MarkHandler<T>({ref: refAccessor, store, token})
 
 	onMounted(() => {
 		if (elRef.value && !options.controlled) {
-			// oxlint-disable-next-line no-unsafe-member-access
-			elRef.value.textContent = (token as MarkToken).content
+			elRef.value.textContent = token.content
 		}
 	})
 
