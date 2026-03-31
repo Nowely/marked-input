@@ -33,8 +33,8 @@ export interface StoreOptions {
 }
 
 export interface Slot {
-	use(...args: any[]): readonly unknown[]
-	get(...args: any[]): readonly unknown[]
+	use(...args: unknown[]): readonly unknown[]
+	get(...args: unknown[]): readonly unknown[]
 }
 
 export interface MarkSlot {

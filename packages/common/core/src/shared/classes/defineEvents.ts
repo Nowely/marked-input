@@ -19,6 +19,7 @@ type EventSchema = Record<string, unknown>
 
 export function defineEvents<T extends EventSchema>(schema?: T): {[K in keyof T]: Emitter<T[K]>} {
 	const keys = schema ? (Object.keys(schema) as (keyof T)[]) : []
+	// eslint-disable-next-line typescript-eslint/no-explicit-any -- heterogeneous map: Proxy reconstructs per-key types
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key of keys) {

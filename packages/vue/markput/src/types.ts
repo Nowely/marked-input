@@ -1,10 +1,10 @@
 import type {CoreOption, DataAttributes, OverlayTrigger} from '@markput/core'
-import type {Component, CSSProperties} from 'vue'
+import type {Component, CSSProperties, VNodeChild} from 'vue'
 
 export interface MarkProps {
 	value?: string
 	meta?: string
-	children?: any
+	children?: VNodeChild
 }
 
 export interface OverlayProps {

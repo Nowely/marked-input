@@ -35,6 +35,7 @@ export function defineState<T extends object>(
 	createUseHook: UseHookFactory,
 	options?: {equals?: {[K in keyof T]?: false | ((a: T[K], b: T[K]) => boolean)}}
 ): StateObject<T> {
+	// eslint-disable-next-line typescript-eslint/no-explicit-any -- heterogeneous map: Proxy reconstructs per-key types
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key in initial) {
@@ -46,6 +47,7 @@ export function defineState<T extends object>(
 		get(_, key: string) {
 			if (key === 'set') {
 				return (values: Partial<T>) => {
+					// eslint-disable-next-line typescript-eslint/no-explicit-any -- heterogeneous map: Proxy reconstructs per-key types
 					const changed: Reactive<any>[] = []
 					for (const k in values) {
 						const reactive = reactives.get(k)

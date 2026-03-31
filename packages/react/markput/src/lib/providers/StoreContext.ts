@@ -6,10 +6,10 @@ import type {MarkProps, OverlayProps} from '../../types'
 
 declare module '@markput/core' {
 	interface MarkSlot {
-		use(token: Token): readonly [ComponentType<any>, MarkProps]
+		use(token: Token): readonly [ComponentType<MarkProps>, MarkProps]
 	}
 	interface OverlaySlot {
-		use(option?: CoreOption, defaultComponent?: unknown): readonly [ComponentType<any>, OverlayProps]
+		use(option?: CoreOption, defaultComponent?: unknown): readonly [ComponentType<OverlayProps>, OverlayProps]
 	}
 	interface Slot {
 		use(): readonly [ElementType, Record<string, unknown> | undefined]
