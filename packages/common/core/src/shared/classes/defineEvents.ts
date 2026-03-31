@@ -11,6 +11,7 @@ function createEmitter<T>(reactive: Reactive<T | undefined>): Emitter<T> {
 			reactive.emit(payload)
 		},
 		{
+			// oxlint-disable-next-line no-unsafe-type-assertion -- contravariant function cast: (value: T) => void is runtime-compatible with (v: T | undefined) => void
 			on: (fn: (value: T) => void) => reactive.on(fn as (v: T | undefined) => void),
 		}
 	)
