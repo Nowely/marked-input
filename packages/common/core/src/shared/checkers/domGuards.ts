@@ -47,5 +47,5 @@ export function nodeTarget(event: {target: EventTarget | null}): Node | null {
 /** Get the next node from a TreeWalker as Text, or null. */
 export function nextText(walker: TreeWalker): Text | null {
 	const node = walker.nextNode()
-	return node && isTextNode(node) ? node : null
+	return node?.nodeType === 3 /* Node.TEXT_NODE */ ? (node as Text) : null
 }

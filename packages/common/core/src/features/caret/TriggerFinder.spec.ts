@@ -1,3 +1,4 @@
+/* oxlint-disable no-unsafe-type-assertion */
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import type {Markup} from '../parsing'
@@ -10,7 +11,6 @@ const mockCreateTextNode = vi.fn(
 		({
 			nodeType: 3,
 			textContent: text,
-			// oxlint-disable-next-line no-unsafe-type-assertion
 		}) as Text
 )
 
@@ -27,7 +27,6 @@ Object.defineProperty(global, 'Text', {
 		return {
 			nodeType: 3,
 			textContent: text,
-			// oxlint-disable-next-line no-unsafe-type-assertion
 		} as Text
 	},
 	writable: true,

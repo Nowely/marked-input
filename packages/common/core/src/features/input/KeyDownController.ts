@@ -178,10 +178,8 @@ export class KeyDownController {
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex - 1]
-					if (target) {
-						target.focus()
-						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
-					}
+					target.focus()
+					if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 				})
 				return
 			}
@@ -215,10 +213,8 @@ export class KeyDownController {
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex - 1]
-					if (target) {
-						target.focus()
-						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
-					}
+					target.focus()
+					if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 				})
 				return
 			}
@@ -245,10 +241,8 @@ export class KeyDownController {
 				event.preventDefault()
 				queueMicrotask(() => {
 					const target = blockDivs[blockIndex + 1]
-					if (target) {
-						target.focus()
-						Caret.trySetIndex(target, 0)
-					}
+					target.focus()
+					Caret.trySetIndex(target, 0)
 				})
 				return
 			}

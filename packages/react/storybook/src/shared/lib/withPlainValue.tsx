@@ -5,6 +5,14 @@ import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {PlainValuePanel} from '../components/Text'
 
+function narrowPosition(v: unknown): 'right' | 'bottom' | undefined {
+	return v === 'right' || v === 'bottom' ? v : undefined
+}
+
+function narrowGlobal(v: unknown): 'right' | 'bottom' | 'hide' {
+	return v === 'right' || v === 'bottom' || v === 'hide' ? v : 'right'
+}
+
 // ─── Proper React component that owns all local state ─────────────────────────
 // withPlainValue (a Storybook decorator) is NOT called as a React component —
 // it is invoked as a plain function inside Storybook's hookify wrapper.
@@ -86,18 +94,9 @@ export const withPlainValue: Decorator = (Story, context) => {
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const plainValue = context.parameters?.plainValue
-	const rawPosition = (plainValue === 'right' || plainValue === 'bottom' ? plainValue : undefined) as
-		| 'right'
-		| 'bottom'
-		| undefined
+	const rawPosition = narrowPosition(context.parameters?.plainValue)
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const rawGlobal = globals.showPlainValue ?? 'right'
-	const globalValue = (
-		rawGlobal === 'right' || rawGlobal === 'bottom' || rawGlobal === 'hide' ? rawGlobal : 'right'
-	) as
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		'right' | 'bottom' | 'hide'
+	const globalValue = narrowGlobal(globals.showPlainValue ?? 'right')
 	const showPlainValue = globalValue !== 'hide'
 
 	// Stories that don't opt in to the panel, or are uncontrolled.

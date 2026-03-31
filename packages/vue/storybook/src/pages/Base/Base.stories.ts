@@ -28,7 +28,7 @@ export const Default: Story = {
 const PrimaryMarkup: Markup = '@[__value__](primary:__meta__)'
 const DefaultMarkup: Markup = '@[__value__](default:__meta__)'
 
-const configuredOptions = [
+const configuredOptions: Option[] = [
 	{
 		markup: PrimaryMarkup,
 		mark: ({value, meta}: MarkProps) => ({label: value ?? '', primary: true, onClick: () => alert(meta)}),
@@ -45,8 +45,7 @@ const configuredOptions = [
 			data: ['Seventh', 'Eight', 'Ninth'],
 		},
 	},
-	// oxlint-disable-next-line no-unsafe-type-assertion
-] as Option[]
+]
 
 export const Configured: Story = {
 	parameters: {plainValue: 'right'},

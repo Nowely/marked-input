@@ -133,7 +133,7 @@ export class Caret {
 
 		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 
-		while (true) {
+		for (;;) {
 			const next = nextText(walker)
 			if (!next || remaining <= node.length) {
 				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
