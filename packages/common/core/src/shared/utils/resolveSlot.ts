@@ -50,13 +50,14 @@ export function resolveOverlaySlot(globalComponent: unknown, option?: CoreOption
 
 export function resolveMarkSlot(
 	token: Token,
-	tokenOptions: SlotOption[] | undefined,
+	tokenOptions: CoreOption[] | undefined,
 	GlobalMark: unknown,
 	GlobalSpan: unknown,
 	defaultSpan: unknown
 ) {
 	if (token.type === 'text') return [GlobalSpan ?? defaultSpan, {value: token.content}] as const
-	const option = tokenOptions?.[token.descriptor.index]
+	// oxlint-disable-next-line no-unsafe-type-assertion -- SlotOption extends CoreOption; framework layers always pass SlotOption[]
+	const option = tokenOptions?.[token.descriptor.index] as SlotOption | undefined
 	const baseProps = {value: token.value, meta: token.meta}
 	const props = resolveOptionSlot(
 		option?.mark as

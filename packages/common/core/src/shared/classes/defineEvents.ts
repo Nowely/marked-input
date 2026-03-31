@@ -6,13 +6,17 @@ export type Emitter<T = void> = {
 }
 
 function createEmitter<T>(reactive: Reactive<T | undefined>): Emitter<T> {
-	const emitter = function (payload?: T): void {
-		reactive.emit(payload)
-	} as Emitter<T>
-
-	emitter.on = (fn: (value: T) => void) => reactive.on(fn as (value: T | undefined) => void)
-
-	return emitter
+	return Object.assign(
+		(payload?: T): void => {
+			reactive.emit(payload)
+		},
+		{
+			on: (fn: (value: T) => void) =>
+				reactive.on(v => {
+					if (v !== undefined) fn(v)
+				}),
+		}
+	)
 }
 
 type EventSchema = Record<string, unknown>
@@ -23,10 +27,13 @@ export function defineEvents<T extends EventSchema>(schema?: T): {[K in keyof T]
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key of keys) {
+		// oxlint-disable-next-line no-unsafe-type-assertion -- key is keyof T where T extends Record<string, unknown>, so it is always a string
 		reactives.set(key as string, Reactive.event())
 	}
 
-	return new Proxy({} as T, {
+	const target: object = {}
+	// oxlint-disable-next-line no-unsafe-type-assertion -- typed Proxy pattern; target is a dummy object, return type is the mapped schema
+	return new Proxy(target, {
 		get(_, key: string) {
 			let reactive = reactives.get(key)
 			if (!reactive) {

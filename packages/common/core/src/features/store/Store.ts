@@ -8,13 +8,7 @@ import {
 	type StateObject,
 } from '../../shared/classes'
 import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
-import {
-	resolveMarkSlot,
-	resolveOverlaySlot,
-	resolveSlot,
-	resolveSlotProps,
-	type SlotOption,
-} from '../../shared/utils/resolveSlot'
+import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
@@ -33,8 +27,8 @@ export interface StoreOptions {
 }
 
 export interface Slot {
-	use(...args: unknown[]): readonly unknown[]
-	get(...args: unknown[]): readonly unknown[]
+	use(): readonly unknown[]
+	get(): readonly unknown[]
 }
 
 export interface MarkSlot {
@@ -160,17 +154,19 @@ export class Store {
 						resolveSlotProps('span', this.state.slotProps.get()),
 					] as const,
 			} as Slot,
+			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
 			overlay: {
 				use: (option?: CoreOption, defaultComponent?: unknown) =>
 					resolveOverlaySlot(this.state.Overlay.use(), option, defaultComponent),
 				get: (option?: CoreOption, defaultComponent?: unknown) =>
 					resolveOverlaySlot(this.state.Overlay.get(), option, defaultComponent),
 			} as unknown as OverlaySlot,
+			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
 			mark: {
 				use: (token: Token) =>
 					resolveMarkSlot(
 						token,
-						this.state.options.get() as unknown as SlotOption[] | undefined,
+						this.state.options.get(),
 						this.state.Mark.use(),
 						this.state.Span.use(),
 						this._defaultSpan
@@ -178,7 +174,7 @@ export class Store {
 				get: (token: Token) =>
 					resolveMarkSlot(
 						token,
-						this.state.options.get() as unknown as SlotOption[] | undefined,
+						this.state.options.get(),
 						this.state.Mark.get(),
 						this.state.Span.get(),
 						this._defaultSpan
