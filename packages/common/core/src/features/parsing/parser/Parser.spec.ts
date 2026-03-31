@@ -821,7 +821,7 @@ describe('ParserV2', () => {
 					safePrefixes.forEach(prefix => {
 						it(`parses markup with prefix "${prefix}"`, () => {
 							const markup = generateSimpleMarkup(prefix)
-							const parser = new Parser([markup as any])
+							const parser = new Parser([markup as Markup])
 							const input = `Hello ${prefix}[world]!`
 							const result = parser.parse(input)
 
@@ -856,7 +856,7 @@ describe('ParserV2', () => {
 					htmlTags.forEach(({tag}) => {
 						it(`parses HTML <${tag}> tag`, () => {
 							const markup = `<${tag}>__value__</${tag}>`
-							const parser = new Parser([markup as any])
+							const parser = new Parser([markup as Markup])
 							const input = `This is <${tag}>content</${tag}> text`
 							const result = parser.parse(input)
 
@@ -868,7 +868,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__</__value__> format', () => {
-						const parser = new Parser(['<__value__>__meta__</__value__>' as any])
+						const parser = new Parser(['<__value__>__meta__</__value__>' as Markup])
 						const input = 'Check <img>photo.jpg</img> image'
 						const result = parser.parse(input)
 
@@ -880,7 +880,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__<__value__> format', () => {
-						const parser = new Parser(['<__value__>__meta__<__value__>' as any])
+						const parser = new Parser(['<__value__>__meta__<__value__>' as Markup])
 						const input = 'Check <img>photo.jpg<img> image'
 						const result = parser.parse(input)
 
@@ -892,7 +892,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses nested HTML tags', () => {
-						const markups = ['<b>__slot__</b>' as any, '<i>__slot__</i>' as any]
+						const markups = ['<b>__slot__</b>' as Markup, '<i>__slot__</i>' as Markup]
 						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'
 						const result = parser.parse(input)
@@ -928,7 +928,7 @@ describe('ParserV2', () => {
 
 					markdownPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses markdown pattern ${pattern}`, () => {
-							const parser = new Parser([pattern as any])
+							const parser = new Parser([pattern as Markup])
 							const result = parser.parse(input)
 
 							// Find mark token
@@ -938,7 +938,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses markdown links', () => {
-						const parser = new Parser(['[__value__](__meta__)' as any])
+						const parser = new Parser(['[__value__](__meta__)' as Markup])
 						const input = 'Check [Google](https://google.com) for search'
 						const result = parser.parse(input)
 
@@ -950,7 +950,7 @@ describe('ParserV2', () => {
 					})
 
 					it('parses markdown images', () => {
-						const parser = new Parser(['![__value__](__meta__)' as any])
+						const parser = new Parser(['![__value__](__meta__)' as Markup])
 						const input = 'See ![cat](cat.jpg) image'
 						const result = parser.parse(input)
 
@@ -1233,7 +1233,7 @@ describe('ParserV2', () => {
 
 					customPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses custom pattern "${pattern}"`, () => {
-							const parser = new Parser([pattern as any])
+							const parser = new Parser([pattern as Markup])
 							const result = parser.parse(input)
 
 							// Find mark token

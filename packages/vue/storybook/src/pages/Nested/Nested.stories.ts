@@ -70,7 +70,12 @@ const CodeMarkup: Markup = '`__slot__`'
 const MultiLevelMark = defineComponent({
 	props: {value: String, children: {type: null}, style: {type: Object}},
 	setup(props, {slots}) {
-		return () => h('span', {style: {...(props.style as any), margin: '0 2px'}}, slots.default?.() ?? props.value)
+		return () =>
+			h(
+				'span',
+				{style: {...(props.style as Record<string, string>), margin: '0 2px'}},
+				slots.default?.() ?? props.value
+			)
 	},
 })
 

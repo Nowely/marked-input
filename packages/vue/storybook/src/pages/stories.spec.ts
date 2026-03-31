@@ -11,7 +11,7 @@ for (const [path, module] of Object.entries(storiesModules)) {
 	if (!match) continue
 
 	const category = match[1]
-	const stories = composeStories(module as any)
+	const stories = composeStories(module as Parameters<typeof composeStories>[0])
 
 	if (!storiesByCategory.has(category)) {
 		storiesByCategory.set(category, {})

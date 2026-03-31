@@ -113,14 +113,14 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 
 	describe('WeakMap behavior', () => {
 		it('should not prevent garbage collection of objects', () => {
-			let obj = {temporary: true}
+			let obj: {temporary: boolean} | null = {temporary: true}
 			const key = keyGenerator.get(obj)
 
 			expect(key).toBe(1)
 
 			// Simulate object going out of scope
 			// Note: In a real environment, this would allow GC, but we can't test GC directly
-			obj = null as any
+			obj = null
 
 			// The WeakMap should still work for new objects
 			const newObj = {new: true}

@@ -67,6 +67,7 @@ export class Caret {
 		const targetY = y ?? elRect.top + elRect.height / 2
 
 		/* eslint-disable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
+		// oxlint-disable-next-line no-unsafe-type-assertion
 		const caretPos =
 			(document as any).caretRangeFromPoint?.(x, targetY) ??
 			(document as any).caretPositionFromPoint?.(x, targetY)

@@ -17,8 +17,8 @@ describe('Utility: defineState', () => {
 		})
 
 		it('should return undefined for a key not present in the initial object', () => {
-			const state = defineState({count: 0} as any, createUseHook)
-			expect((state as any).missing).toBeUndefined()
+			const state = defineState({count: 0}, createUseHook)
+			expect((state as Record<string, unknown>).missing).toBeUndefined()
 		})
 
 		it('should support object and array initial values', () => {
@@ -104,8 +104,8 @@ describe('Utility: defineState', () => {
 		})
 
 		it('should silently ignore keys not in the initial state', () => {
-			const state = defineState({x: 0} as any, createUseHook)
-			expect(() => state.set({unknown: 42} as any)).not.toThrow()
+			const state = defineState({x: 0}, createUseHook)
+			expect(() => state.set({unknown: 42} as unknown as Parameters<typeof state.set>[0])).not.toThrow()
 			expect(state.x.get()).toBe(0)
 		})
 

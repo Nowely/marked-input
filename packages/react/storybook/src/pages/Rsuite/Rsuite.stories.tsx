@@ -49,7 +49,7 @@ export const Overridden = () => {
 	return (
 		<Input
 			as={MarkedInput}
-			Mark={Tag as any}
+			Mark={Tag as ComponentType<MarkProps>}
 			Overlay={Overlay}
 			value={value}
 			onChange={(_, value) => setValue(value as unknown as string)}

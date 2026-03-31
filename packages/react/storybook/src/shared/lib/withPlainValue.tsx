@@ -86,9 +86,16 @@ export const withPlainValue: Decorator = (Story, context) => {
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
+	const plainValue = context.parameters?.plainValue
+	const rawPosition = (plainValue === 'right' || plainValue === 'bottom' ? plainValue : undefined) as
+		| 'right'
+		| 'bottom'
+		| undefined
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
+	const rawGlobal = globals.showPlainValue ?? 'right'
+	const globalValue = (
+		rawGlobal === 'right' || rawGlobal === 'bottom' || rawGlobal === 'hide' ? rawGlobal : 'right'
+	) as 'right' | 'bottom' | 'hide'
 	const showPlainValue = globalValue !== 'hide'
 
 	// Stories that don't opt in to the panel, or are uncontrolled.

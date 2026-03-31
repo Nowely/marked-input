@@ -325,6 +325,7 @@ function formatTime(ms: number): string {
  * Patch SegmentMatcher with automatic profiling
  */
 function patchSegmentMatcher(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const segmentMatcher = (parser as any).segmentMatcher
 	return autoProfileObject(segmentMatcher, 'SegmentMatcher')
 }
@@ -333,6 +334,7 @@ function patchSegmentMatcher(parser: Parser): () => void {
  * Patch PatternMatcher with automatic profiling
  */
 function patchPatternMatcher(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const patternMatcher = (parser as any).patternMatcher
 	return autoProfileObject(patternMatcher, 'PatternMatcher')
 }
@@ -341,6 +343,7 @@ function patchPatternMatcher(parser: Parser): () => void {
  * Patch TreeBuilder with automatic profiling
  */
 function patchTreeBuilder(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const treeBuilder = (parser as any).treeBuilder
 	return autoProfileObject(treeBuilder, 'TreeBuilder')
 }

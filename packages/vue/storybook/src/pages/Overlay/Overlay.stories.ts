@@ -1,4 +1,5 @@
 import {MarkedInput, useOverlay} from '@markput/vue'
+import type {Markup} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, type ComponentPublicInstance} from 'vue'
 
@@ -107,6 +108,6 @@ export const SelectableOverlay: Story = {
 		Mark,
 		Overlay: List,
 		defaultValue: 'Hello, suggest overlay by trigger @!',
-		options: [{markup: '@[__value__](__meta__)' as any, overlay: {trigger: '@'}}],
+		options: [{markup: '@[__value__](__meta__)' as Markup, overlay: {trigger: '@'}}],
 	},
 }
