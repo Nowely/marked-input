@@ -103,7 +103,7 @@ export class BlockStore {
 		}
 		const onClick = (e: MouseEvent) => {
 			e.preventDefault()
-			const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect()
+			const rect = el.getBoundingClientRect()
 			this.state.menuPosition.set({top: rect.bottom + 4, left: rect.left})
 			this.state.menuOpen.set(true)
 		}

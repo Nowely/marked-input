@@ -30,8 +30,9 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	const mark = new MarkHandler<T>({ref: refAccessor, store, token})
 
 	onMounted(() => {
-		if (elRef.value && !options.controlled) {
-			elRef.value.textContent = token.content
+		const el = elRef.value
+		if (el instanceof HTMLElement && !options.controlled) {
+			el.textContent = token.content
 		}
 	})
 

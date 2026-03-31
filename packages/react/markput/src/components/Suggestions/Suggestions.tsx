@@ -1,5 +1,4 @@
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import type {RefObject} from 'react'
 import {useEffect, useMemo, useRef, useState} from 'react'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
@@ -52,7 +51,13 @@ export const Suggestions = () => {
 	if (!filtered.length) return null
 
 	return (
-		<ul ref={ref as RefObject<HTMLUListElement>} className={styles.Suggestions} style={style}>
+		<ul
+			ref={(el: HTMLUListElement | null) => {
+				ref.current = el
+			}}
+			className={styles.Suggestions}
+			style={style}
+		>
 			{filtered.map((suggestion, index) => {
 				const className = index === active ? styles.suggestionActive : undefined
 
