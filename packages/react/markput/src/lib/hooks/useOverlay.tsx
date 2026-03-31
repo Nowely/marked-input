@@ -19,7 +19,8 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const match = store.state.overlayMatch.use()!
+	const match = store.state.overlayMatch.use()
+	if (!match) throw new Error('useOverlay requires an active overlay match')
 	const style = useMemo(() => Caret.getAbsolutePosition(), [match])
 
 	const close = useCallback(() => store.events.clearOverlay(), [])

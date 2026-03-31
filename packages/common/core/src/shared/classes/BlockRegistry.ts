@@ -10,9 +10,11 @@ export class BlockRegistry {
 	}
 
 	get(token: object): BlockStore {
-		if (!this.#map.has(token)) {
-			this.#map.set(token, new BlockStore(this.#createUseHook))
+		let store = this.#map.get(token)
+		if (!store) {
+			store = new BlockStore(this.#createUseHook)
+			this.#map.set(token, store)
 		}
-		return this.#map.get(token)!
+		return store
 	}
 }

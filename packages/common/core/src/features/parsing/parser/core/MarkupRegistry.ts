@@ -68,9 +68,8 @@ export class MarkupRegistry {
 		const segmentKey = this.getSegmentKey(segment)
 		if (!segmentKey) return
 
-		this.registerSegment(segment, segmentKey, segmentIndexMap)
+		const globalIndex = this.registerSegment(segment, segmentKey, segmentIndexMap)
 
-		const globalIndex = segmentIndexMap.get(segmentKey)!
 		descriptor.segmentGlobalIndices[segmentIndex] = globalIndex
 
 		// Register static parts of dynamic segments
@@ -89,12 +88,13 @@ export class MarkupRegistry {
 		segment: SegmentDefinition,
 		segmentKey: string,
 		segmentIndexMap: Map<string, number>
-	): void {
-		if (!segmentIndexMap.has(segmentKey)) {
-			const globalIndex = this.segments.length
-			this.segments.push(segment)
-			segmentIndexMap.set(segmentKey, globalIndex)
-		}
+	): number {
+		const existing = segmentIndexMap.get(segmentKey)
+		if (existing !== undefined) return existing
+		const globalIndex = this.segments.length
+		this.segments.push(segment)
+		segmentIndexMap.set(segmentKey, globalIndex)
+		return globalIndex
 	}
 
 	/**

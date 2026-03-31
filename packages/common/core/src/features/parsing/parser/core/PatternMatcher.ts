@@ -103,7 +103,8 @@ export class PatternMatcher {
 	 * Adds a state to the waiting list for the next expected segment
 	 */
 	private addToWaiting(match: Match): void {
-		const segmentIndex = match.nextSegment!
+		const segmentIndex = match.nextSegment
+		if (segmentIndex === undefined) return
 		const map = match.isAwaitingLastSegment ? this.completingStates : this.pendingStates
 		getOrCreate(map, segmentIndex).push(match)
 	}

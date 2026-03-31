@@ -32,7 +32,8 @@ export class OverlayController {
 		})
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()!
+			const showOverlayOn = this.store.state.showOverlayOn.get()
+			if (!showOverlayOn) return
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -41,7 +42,8 @@ export class OverlayController {
 		})
 
 		const selectionChangeHandler = () => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()!
+			const showOverlayOn = this.store.state.showOverlayOn.get()
+			if (!showOverlayOn) return
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {

@@ -50,21 +50,23 @@ export class BlockStore {
 		const onMouseEnter = () => this.state.isHovered.set(true)
 		const onMouseLeave = () => this.state.isHovered.set(false)
 		const onDragOver = (e: DragEvent) => {
+			if (!e.dataTransfer) return
 			e.preventDefault()
-			e.dataTransfer!.dropEffect = 'move'
-			this.state.dropPosition.set(getDragDropPosition(e.clientY, this.refs.container!.getBoundingClientRect()))
+			e.dataTransfer.dropEffect = 'move'
+			this.state.dropPosition.set(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
 		}
 		const onDragLeave = (e: DragEvent) => {
 			if ((e.currentTarget as Element).contains(e.relatedTarget as Node)) return
 			this.state.dropPosition.set(null)
 		}
 		const onDrop = (e: DragEvent) => {
+			if (!e.dataTransfer) return
 			e.preventDefault()
-			const sourceIndex = parseDragSourceIndex(e.dataTransfer!)
+			const sourceIndex = parseDragSourceIndex(e.dataTransfer)
 			if (sourceIndex === null) return
 			const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition.get() ?? 'after')
 			this.state.dropPosition.set(null)
-			this.#dragCtrl!.reorder(sourceIndex, targetIndex)
+			dragCtrl.reorder(sourceIndex, targetIndex)
 		}
 
 		el.addEventListener('mouseenter', onMouseEnter)
@@ -88,10 +90,11 @@ export class BlockStore {
 		if (!el) return
 
 		const onDragStart = (e: DragEvent) => {
-			e.dataTransfer!.effectAllowed = 'move'
-			e.dataTransfer!.setData('text/plain', String(this.#blockIndex))
+			if (!e.dataTransfer) return
+			e.dataTransfer.effectAllowed = 'move'
+			e.dataTransfer.setData('text/plain', String(this.#blockIndex))
 			this.state.isDragging.set(true)
-			if (this.refs.container) e.dataTransfer!.setDragImage(this.refs.container, 0, 0)
+			if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
 		}
 		const onDragEnd = () => {
 			this.state.isDragging.set(false)
@@ -134,15 +137,18 @@ export class BlockStore {
 
 	closeMenu = () => this.state.menuOpen.set(false)
 	addBlock = () => {
-		this.#dragCtrl!.add(this.#blockIndex)
+		if (!this.#dragCtrl) return
+		this.#dragCtrl.add(this.#blockIndex)
 		this.closeMenu()
 	}
 	deleteBlock = () => {
-		this.#dragCtrl!.delete(this.#blockIndex)
+		if (!this.#dragCtrl) return
+		this.#dragCtrl.delete(this.#blockIndex)
 		this.closeMenu()
 	}
 	duplicateBlock = () => {
-		this.#dragCtrl!.duplicate(this.#blockIndex)
+		if (!this.#dragCtrl) return
+		this.#dragCtrl.duplicate(this.#blockIndex)
 		this.closeMenu()
 	}
 }

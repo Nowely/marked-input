@@ -19,10 +19,11 @@ export class TextSelectionController {
 		}
 
 		this.#mousemoveHandler = e => {
+			const container = this.store.refs.container
+			if (!container) return
 			const isPressed = this.#isPressed
-			const isNotInnerSome =
-				!this.store.refs.container?.contains(this.#pressedNode) || this.#pressedNode !== e.target
-			const isInside = window.getSelection()?.containsNode(this.store.refs.container!, true)
+			const isNotInnerSome = !container.contains(this.#pressedNode) || this.#pressedNode !== e.target
+			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
 				this.store.state.selecting.set('drag')
@@ -37,8 +38,10 @@ export class TextSelectionController {
 
 		this.#selectionchangeHandler = () => {
 			if (this.store.state.selecting.get() !== 'drag') return
+			const container = this.store.refs.container
+			if (!container) return
 
-			const nodes = [...this.store.refs.container!.children] as HTMLElement[]
+			const nodes = [...container.children] as HTMLElement[]
 			const preservedState = nodes.map(value => value.contentEditable)
 
 			nodes.forEach(value => (value.contentEditable = 'false'))

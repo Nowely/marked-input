@@ -58,7 +58,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	}
 
 	get depth(): number {
-		return findToken(this.#store.state.tokens.get(), this.#token)!.depth
+		return findToken(this.#store.state.tokens.get(), this.#token)?.depth ?? 0
 	}
 
 	get hasChildren(): boolean {

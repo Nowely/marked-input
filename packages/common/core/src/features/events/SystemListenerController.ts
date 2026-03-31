@@ -60,13 +60,16 @@ export class SystemListenerController {
 				match: {option, span, index, source},
 			} = event
 
+			const markup = option.markup
+			if (!markup) return
+
 			const annotation =
 				mark.type === 'mark'
-					? annotate(option.markup!, {
+					? annotate(markup, {
 							value: mark.value,
 							meta: mark.meta,
 						})
-					: annotate(option.markup!, {
+					: annotate(markup, {
 							value: mark.content,
 						})
 
