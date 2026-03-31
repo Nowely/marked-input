@@ -11,10 +11,7 @@ function createEmitter<T>(reactive: Reactive<T | undefined>): Emitter<T> {
 			reactive.emit(payload)
 		},
 		{
-			on: (fn: (value: T) => void) =>
-				reactive.on(v => {
-					if (v !== undefined) fn(v)
-				}),
+			on: (fn: (value: T) => void) => reactive.on(fn as (v: T | undefined) => void),
 		}
 	)
 }
