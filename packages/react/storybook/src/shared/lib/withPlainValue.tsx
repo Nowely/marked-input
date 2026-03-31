@@ -1,4 +1,6 @@
+import type {Decorator} from '@storybook/react'
 import {useCallback, useEffect, useRef, useState} from 'react'
+import type {ComponentType} from 'react'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {PlainValuePanel} from '../components/Text'
@@ -12,8 +14,8 @@ import {PlainValuePanel} from '../components/Text'
 // for it, so useState always initialises correctly.
 
 interface PanelContainerProps {
-	Story: any
-	args: any
+	Story: ComponentType<{args?: Record<string, unknown>}>
+	args: Record<string, unknown>
 	value: string
 	position: 'right' | 'bottom'
 	updateArgs: (update: Record<string, unknown>) => void
@@ -76,7 +78,7 @@ function PanelContainer({Story, args, value: valueProp, position: positionProp, 
 
 // ─── Global Storybook decorator ───────────────────────────────────────────────
 
-export const withPlainValue = (Story: any, context: any) => {
+export const withPlainValue: Decorator = (Story, context) => {
 	// Only Storybook hooks at this level — no React hooks.
 	/* oxlint-disable no-unsafe-member-access */
 	const [args, updateArgs] = useArgs()

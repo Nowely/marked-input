@@ -1,5 +1,6 @@
 import {MarkedInput} from '@markput/react'
 import {useEffect, useState} from 'react'
+import type {ComponentPropsWithRef} from 'react'
 
 import {CustomContainer, HTMLMark, PlainTextSpan} from './components'
 import {htmlToPlainText} from './utils'
@@ -52,7 +53,7 @@ export const SingleEditableUncontrolled = ({onValueChange}: SingleEditableUncont
 			slotProps={{
 				container: {
 					ref: setContainer,
-				} as any,
+				} as ComponentPropsWithRef<'div'>,
 			}}
 		/>
 	)

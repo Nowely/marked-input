@@ -1,8 +1,9 @@
+import type {StoryContext} from '@storybook/vue3-vite'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 import type {VNode} from 'vue'
 import {defineComponent, h, ref} from 'vue'
 
-export const withPlainValue = (story: () => VNode, context: any) => {
+export const withPlainValue = (story: () => VNode, context: StoryContext) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
 	/* oxlint-disable no-unsafe-member-access, no-unsafe-argument */
 	const [args, updateArgs] = useArgs()
