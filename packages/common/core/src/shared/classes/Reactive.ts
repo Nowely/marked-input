@@ -31,9 +31,11 @@ export class Reactive<T = void> {
 		return () => this.#subs.delete(fn)
 	}
 
+	emit(): void
+	emit(value: T): void
 	emit(value?: T): void {
-		if (arguments.length > 0) {
-			this.#value = value as T
+		if (value !== undefined) {
+			this.#value = value
 		}
 		this.#subs.forEach(fn => fn(this.#value))
 	}

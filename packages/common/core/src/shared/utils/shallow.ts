@@ -5,6 +5,10 @@ export function shallow(objA: unknown, objB: unknown) {
 	if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
 		return false
 	}
+	return shallowObjects(objA, objB)
+}
+
+function shallowObjects(objA: object, objB: object) {
 	const a = objA as Record<string, unknown>
 	const b = objB as Record<string, unknown>
 	const keysA = Object.keys(a)
