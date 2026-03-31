@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.8.0](https://github.com/Nowely/marked-input/compare/0.7.0...0.8.0) (2026-03-31)
+
+
+### Features
+
+* **drag:** refactor drag-and-drop into Block system ([#160](https://github.com/Nowely/marked-input/issues/160)) ([a3098b7](https://github.com/Nowely/marked-input/commit/a3098b7980cffa40179a8303c603c04e3ab5bd9c))
+
+
+### Refactoring
+
+* **core:** centralize slot resolution, batch state updates, and trim public API ([#163](https://github.com/Nowely/marked-input/issues/163)) ([b0687e7](https://github.com/Nowely/marked-input/commit/b0687e7afd8cc1ffe57d9c4456ba29e686933dcf))
+* resolve all lint warnings and enforce type-safety rules ([#167](https://github.com/Nowely/marked-input/issues/167)) ([a77e942](https://github.com/Nowely/marked-input/commit/a77e94209e638d90aa574ac50d8a5aa4876db163))
+
+
+### Documentation
+
+* update AGENTS.md, add CLAUDE.md, and refresh architecture docs ([#162](https://github.com/Nowely/marked-input/issues/162)) ([45e585c](https://github.com/Nowely/marked-input/commit/45e585c95b3d197cc602637cf6b075d97ecd23a5))
+
+
+### Miscellaneous
+
+* **deps:** update package dependencies and versions ([#164](https://github.com/Nowely/marked-input/issues/164)) ([1e3ddb2](https://github.com/Nowely/marked-input/commit/1e3ddb28c1a0ced3f1084e8472e71d0a13ff85da))
+* improve type safety and fix lint rules across packages ([#166](https://github.com/Nowely/marked-input/issues/166)) ([084b6f8](https://github.com/Nowely/marked-input/commit/084b6f8e7a1a930954c28b2e3698e59fe86122e1))
+* **lint:** update ESLint configuration and add TypeScript rules ([#165](https://github.com/Nowely/marked-input/issues/165)) ([fa56e39](https://github.com/Nowely/marked-input/commit/fa56e39616eb0d4b97a127501095745d6cef4c60))
+
 ## [0.7.0](https://github.com/Nowely/marked-input/compare/0.6.0...0.7.0) (2026-03-24)
 
 
