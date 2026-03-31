@@ -23,7 +23,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	return mark
 }
 
-function useUncontrolledInit(ref: RefObject<HTMLElement>, options: MarkOptions, token: MarkToken) {
+function useUncontrolledInit(ref: RefObject<HTMLElement | null>, options: MarkOptions, token: MarkToken) {
 	useEffect(() => {
 		if (!options.controlled && ref.current) ref.current.textContent = token.content
 	}, [])

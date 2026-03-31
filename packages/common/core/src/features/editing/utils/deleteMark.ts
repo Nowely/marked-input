@@ -11,7 +11,9 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const {focus} = store.nodes
 
 	const tokens = store.state.tokens.get()
-	const [span1, , span2] = tokens.splice(focus.index - placeIndex, 3)
+	const spliced = tokens.splice(focus.index - placeIndex, 3)
+	const span1 = spliced.at(0)
+	const span2 = spliced.at(2)
 	const content1 = span1?.content ?? ''
 	const content2 = span2?.content ?? ''
 	store.state.tokens.set(
