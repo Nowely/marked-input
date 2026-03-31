@@ -3,6 +3,14 @@ import {beforeEach, describe, expect, it} from 'vitest'
 
 import {Parser} from './Parser'
 import type {MarkToken, Markup, Token} from './types'
+import {isMarkToken} from './types'
+
+function getMarkToken(tokens: Token[]): MarkToken {
+	const mark = tokens.find(isMarkToken)
+	expect(mark).toBeDefined()
+	if (!mark) throw new Error('MarkToken not found')
+	return mark
+}
 
 describe('ParserV2', () => {
 	let parser: Parser
@@ -252,7 +260,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [38-38]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 					})
@@ -289,7 +297,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [25-25]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('span')
 						expect(mark.meta).toBe('')
 					})
@@ -313,7 +321,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [28-28]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 					})
@@ -341,7 +349,7 @@ describe('ParserV2', () => {
 						`)
 
 						// Verify correct nesting
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 						expect(mark.children.length).toBeGreaterThan(0)
@@ -616,7 +624,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [12-12]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.value).toBe('link')
 					expect(mark.meta).toBe('url')
 				})
@@ -637,7 +645,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [27-27]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.meta).toBe('note')
 				})
 
@@ -657,7 +665,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [29-29]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.value).toBe('name')
 					expect(mark.meta).toBe('url')
 				})
@@ -818,8 +826,7 @@ describe('ParserV2', () => {
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe('world')
 							expect(markToken.content).toBe(`${prefix}[world]`)
 
@@ -854,8 +861,7 @@ describe('ParserV2', () => {
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe('content')
 							expect(markToken.content).toBe(`<${tag}>content</${tag}>`)
 						})
@@ -926,8 +932,7 @@ describe('ParserV2', () => {
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
@@ -1232,8 +1237,7 @@ describe('ParserV2', () => {
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
@@ -1425,7 +1429,7 @@ describe('ParserV2', () => {
 				const result = parser.parse('@[hello #[world]]')
 
 				expect(result).toHaveLength(1)
-				const mark = result[0] as MarkToken
+				const mark = getMarkToken(result)
 				expect(mark.children).toHaveLength(3)
 				expect(mark.children[0].type).toBe('text')
 				expect(mark.children[1].type).toBe('mark')
@@ -1476,7 +1480,7 @@ describe('ParserV2', () => {
 				const parser = new Parser(['@[__slot__]', '#[__slot__]'], {skipEmptyText: true})
 				const result = parser.parse('@[hello #[world]]')
 
-				const mark = result[0] as MarkToken
+				const mark = getMarkToken(result)
 				expect(mark.children).toHaveLength(3)
 				expect(mark.children[0].type).toBe('text')
 				expect(mark.children[0].content).toBe('hello ')
@@ -1557,7 +1561,7 @@ describe('ParserV2', () => {
 			const result = parser.parse('Hello @[world]\n\n')
 
 			expect(result).toHaveLength(1)
-			const mark = result[0] as MarkToken
+			const mark = getMarkToken(result)
 			expect(mark.type).toBe('mark')
 			expect(mark.content).toBe('Hello @[world]\n\n')
 			expect(mark.children).toHaveLength(3)
@@ -1590,7 +1594,7 @@ describe('ParserV2', () => {
 			expect(result).toHaveLength(1)
 			expect(result[0].type).toBe('mark')
 			expect(result[0].content).toBe('Only\n\n')
-			const mark = result[0] as MarkToken
+			const mark = getMarkToken(result)
 			expect(mark.value).toBe('')
 			expect(mark.slot?.content).toBe('Only')
 		})
