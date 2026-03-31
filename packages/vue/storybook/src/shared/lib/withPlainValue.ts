@@ -1,8 +1,17 @@
+import type {StoryContext} from '@storybook/vue3-vite'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 import type {VNode} from 'vue'
 import {defineComponent, h, ref} from 'vue'
 
-export const withPlainValue = (story: () => VNode, context: any) => {
+function narrowPosition(v: unknown): 'right' | 'bottom' | undefined {
+	return v === 'right' || v === 'bottom' ? v : undefined
+}
+
+function narrowGlobal(v: unknown): 'right' | 'bottom' | 'hide' {
+	return v === 'right' || v === 'bottom' || v === 'hide' ? v : 'right'
+}
+
+export const withPlainValue = (story: () => VNode, context: StoryContext) => {
 	// Storybook hooks — ok to call here (hookify wrapper active at decorator level)
 	/* oxlint-disable no-unsafe-member-access, no-unsafe-argument */
 	const [args, updateArgs] = useArgs()
@@ -10,9 +19,9 @@ export const withPlainValue = (story: () => VNode, context: any) => {
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
+	const rawPosition = narrowPosition(context.parameters.plainValue)
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
+	const globalValue = narrowGlobal(globals.showPlainValue ?? 'right')
 	const showPlainValue = globalValue !== 'hide'
 
 	// Stories that don't opt in to the panel, or are uncontrolled.

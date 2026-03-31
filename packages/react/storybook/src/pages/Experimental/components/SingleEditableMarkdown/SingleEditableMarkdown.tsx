@@ -1,6 +1,7 @@
-import type {Markup} from '@markput/react'
+import type {Markup, MarkProps} from '@markput/react'
 import {MarkedInput} from '@markput/react'
 import {useEffect, useState} from 'react'
+import type {ComponentPropsWithRef} from 'react'
 
 import {MarkdownContainer, MarkdownMark, MarkdownText} from './components'
 import {htmlToMarkdown} from './utils'
@@ -16,7 +17,7 @@ const BlockquoteMarkup: Markup = '> __value__'
 const MARKDOWN_OPTIONS = [
 	{
 		markup: BoldMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'bold',
@@ -24,7 +25,7 @@ const MARKDOWN_OPTIONS = [
 	},
 	{
 		markup: ItalicMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'italic',
@@ -32,7 +33,7 @@ const MARKDOWN_OPTIONS = [
 	},
 	{
 		markup: CodeMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'code',
@@ -40,7 +41,7 @@ const MARKDOWN_OPTIONS = [
 	},
 	{
 		markup: LinkMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'link',
@@ -48,7 +49,7 @@ const MARKDOWN_OPTIONS = [
 	},
 	{
 		markup: HeadingMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'heading',
@@ -56,7 +57,7 @@ const MARKDOWN_OPTIONS = [
 	},
 	{
 		markup: BlockquoteMarkup,
-		mark: ({value, children}: any) => ({
+		mark: ({value, children}: MarkProps) => ({
 			value,
 			children,
 			type: 'blockquote',
@@ -124,7 +125,7 @@ Try editing this text with **bold**, *italic*, \`code\`, and [links](https://exa
 			slotProps={{
 				container: {
 					ref: setContainer,
-				} as any,
+				} as ComponentPropsWithRef<'div'>,
 			}}
 			options={MARKDOWN_OPTIONS}
 		/>

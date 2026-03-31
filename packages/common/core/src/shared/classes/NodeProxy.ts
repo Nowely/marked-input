@@ -1,5 +1,6 @@
 import {Caret} from '../../features/caret'
 import type {Store} from '../../features/store'
+import {isHtmlElement, firstHtmlChild, lastHtmlChild} from '../checkers'
 
 export class NodeProxy {
 	#target?: HTMLElement
@@ -10,7 +11,7 @@ export class NodeProxy {
 	}
 
 	set target(value: Node | HTMLElement | EventTarget | undefined | null) {
-		this.#target = value as HTMLElement | undefined
+		this.#target = isHtmlElement(value) ? value : undefined
 	}
 
 	get next() {
@@ -75,11 +76,11 @@ export class NodeProxy {
 	}
 
 	get head() {
-		return this.#store.refs.container?.firstElementChild as HTMLElement | null
+		return firstHtmlChild(this.#store.refs.container ?? undefined)
 	}
 
 	get tail() {
-		return this.#store.refs.container?.lastElementChild as HTMLElement | null
+		return lastHtmlChild(this.#store.refs.container ?? undefined)
 	}
 
 	get isFocused() {

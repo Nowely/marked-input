@@ -8,13 +8,14 @@ import {render} from 'vitest-browser-react'
  *
  * @param storiesModule - imported stories file (namespace import)
  */
-export function createVisualTests(storiesModule: any) {
+export function createVisualTests(storiesModule: Parameters<typeof composeStories>[0]) {
 	const stories = composeStories(storiesModule)
 
 	describe('Visual regression tests', () => {
 		for (const [name, Story] of Object.entries(stories)) {
 			it(`Story ${name}`, async () => {
-				const StoryComponent = Story as React.ComponentType<any>
+				// oxlint-disable-next-line no-unsafe-type-assertion
+				const StoryComponent = Story as React.ComponentType<Record<string, unknown>>
 				const {container} = await render(React.createElement(StoryComponent))
 				expect(container.textContent.length).toBeTruthy()
 				await expect(container).toMatchScreenshot()

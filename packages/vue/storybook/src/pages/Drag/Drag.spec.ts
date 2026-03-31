@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 
+import {childrenOf, firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.stories'
 
@@ -18,18 +19,16 @@ const GRIP_SELECTOR = 'button[aria-label="Drag to reorder or click for options"]
 function findMarkputRowHost(container: Element): HTMLElement | null {
 	const candidates = Array.from(container.querySelectorAll<HTMLElement>('[class*="Container"]'))
 	for (const el of candidates) {
-		const hasBlockChild = Array.from(el.children).some(
-			c => c instanceof HTMLElement && c.dataset.testid === 'block'
-		)
+		const hasBlockChild = childrenOf(el).some(c => c instanceof HTMLElement && c.dataset.testid === 'block')
 		if (hasBlockChild) return el
 	}
-	return container.querySelector('[class*="Container"]') as HTMLElement | null
+	return container.querySelector<HTMLElement>('[class*="Container"]')
 }
 
 /** Get all rows (both mark blocks and DragMarks) as direct children of the markput container */
 function getAllRows(container: Element) {
 	const host = findMarkputRowHost(container)
-	return host ? (Array.from(host.children) as HTMLElement[]) : []
+	return host ? childrenOf(host) : []
 }
 
 /** Get only DragMark text blocks (have data-testid="block") within the resolved editor */
@@ -195,7 +194,7 @@ describe('Feature: drag rows', () => {
 			await openMenuForRow(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 
-			await userEvent.click(container.firstElementChild!)
+			await userEvent.click(firstChild(container)!)
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
 		})
 	})
@@ -204,7 +203,7 @@ describe('Feature: drag rows', () => {
 		it('should increase row count by 1 when adding below first row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 
 			expect(getAllRows(container)).toHaveLength(6)
 		})
@@ -212,7 +211,7 @@ describe('Feature: drag rows', () => {
 		it('should increase row count by 1 when adding below middle row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 2)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 
 			expect(getAllRows(container)).toHaveLength(6)
 		})
@@ -220,7 +219,7 @@ describe('Feature: drag rows', () => {
 		it('should increase row count by 1 when adding below last row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 4)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 
 			expect(getAllRows(container)).toHaveLength(6)
 		})
@@ -228,7 +227,7 @@ describe('Feature: drag rows', () => {
 		it('should insert an empty row between the target and next row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 
 			const raw = getRawValue(container)
 			expect(raw).toContain('First block of plain text\n\n\n\nSecond block of plain text')
@@ -237,7 +236,7 @@ describe('Feature: drag rows', () => {
 		it('should not create a trailing separator when adding below last row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 4)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 
 			const raw = getRawValue(container)
 			expect(raw.endsWith('\n\n\n\n\n\n')).toBe(false)
@@ -249,10 +248,10 @@ describe('Feature: drag rows', () => {
 			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
-				await userEvent.click(page.getByText('Delete').element())
+				await userEvent.click(getElement(page.getByText('Delete')))
 			}
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Delete').element())
+			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(getRawValue(container)).toBe('')
 		})
@@ -262,7 +261,7 @@ describe('Feature: drag rows', () => {
 		it('should decrease count by 1 when deleting middle row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 2)
-			await userEvent.click(page.getByText('Delete').element())
+			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(getAllRows(container)).toHaveLength(4)
 		})
@@ -270,7 +269,7 @@ describe('Feature: drag rows', () => {
 		it('should preserve remaining content when deleting first row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Delete').element())
+			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(getAllRows(container)).toHaveLength(4)
 			expect(getRawValue(container)).toContain('Second block of plain text')
@@ -279,7 +278,7 @@ describe('Feature: drag rows', () => {
 		it('should decrease count by 1 when deleting last row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 4)
-			await userEvent.click(page.getByText('Delete').element())
+			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(getAllRows(container)).toHaveLength(4)
 			expect(getRawValue(container)).toContain('Fourth block of plain text')
@@ -292,13 +291,13 @@ describe('Feature: drag rows', () => {
 			// eslint-disable-next-line no-await-in-loop
 			for (let i = 4; i > 0; i--) {
 				await openMenuForRow(container, i)
-				await userEvent.click(page.getByText('Delete').element())
+				await userEvent.click(getElement(page.getByText('Delete')))
 			}
 
 			expect(getAllRows(container)).toHaveLength(1)
 
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Delete').element())
+			await userEvent.click(getElement(page.getByText('Delete')))
 
 			expect(getRawValue(container)).toBe('')
 		})
@@ -308,7 +307,7 @@ describe('Feature: drag rows', () => {
 		it('should increase count by 1 when duplicating first row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Duplicate').element())
+			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			expect(getAllRows(container)).toHaveLength(6)
 		})
@@ -316,7 +315,7 @@ describe('Feature: drag rows', () => {
 		it('should create a copy with the same text content', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Duplicate').element())
+			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			const matches = getRawValue(container).match(/First block of plain text/g)
 			expect(matches).toHaveLength(2)
@@ -325,7 +324,7 @@ describe('Feature: drag rows', () => {
 		it('should increase count by 1 when duplicating last row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 4)
-			await userEvent.click(page.getByText('Duplicate').element())
+			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			expect(getAllRows(container)).toHaveLength(6)
 		})
@@ -393,7 +392,7 @@ describe('Feature: drag rows', () => {
 			const {container} = await render(PlainTextDrag)
 
 			await openMenuForRow(container, 0)
-			await userEvent.click(page.getByText('Add below').element())
+			await userEvent.click(getElement(page.getByText('Add below')))
 			expect(getAllRows(container)).toHaveLength(6)
 
 			const newRow = getAllRows(container)[1]
@@ -416,9 +415,9 @@ describe('Feature: drag rows', () => {
 	it('should focus a row after Add below', async () => {
 		const {container} = await render(PlainTextDrag)
 		await openMenuForRow(container, 0)
-		await userEvent.click(page.getByText('Add below').element())
+		await userEvent.click(getElement(page.getByText('Add below')))
 
-		const activeEl = document.activeElement as HTMLElement
+		const activeEl = getActiveElement()
 		expect(activeEl.closest('[class*="Container"]')).toBeTruthy()
 	})
 
@@ -437,11 +436,11 @@ describe('Feature: drag rows', () => {
 		const original = getRawValue(container)
 
 		await openMenuForRow(container, 0)
-		await userEvent.click(page.getByText('Add below').element())
+		await userEvent.click(getElement(page.getByText('Add below')))
 		expect(getAllRows(container)).toHaveLength(6)
 
 		await openMenuForRow(container, 1)
-		await userEvent.click(page.getByText('Delete').element())
+		await userEvent.click(getElement(page.getByText('Delete')))
 		expect(getAllRows(container)).toHaveLength(5)
 
 		expect(getRawValue(container)).toBe(original)
@@ -452,11 +451,11 @@ describe('Feature: drag rows', () => {
 		const original = getRawValue(container)
 
 		await openMenuForRow(container, 0)
-		await userEvent.click(page.getByText('Duplicate').element())
+		await userEvent.click(getElement(page.getByText('Duplicate')))
 		expect(getAllRows(container)).toHaveLength(6)
 
 		await openMenuForRow(container, 1)
-		await userEvent.click(page.getByText('Delete').element())
+		await userEvent.click(getElement(page.getByText('Delete')))
 		expect(getAllRows(container)).toHaveLength(5)
 
 		expect(getRawValue(container)).toBe(original)

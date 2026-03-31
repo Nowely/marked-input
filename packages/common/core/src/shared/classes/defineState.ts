@@ -15,10 +15,12 @@ export interface Signal<T> {
 }
 
 function createSignal<T>(reactive: Reactive<T>, createUseHook: UseHookFactory): Signal<T> {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- circular construction: signal must exist before use() can be assigned
 	const signal = {} as Signal<T>
 	signal.get = () => reactive.get()
 	signal.set = (value: T) => reactive.set(value)
 	signal.on = (fn: (value: T) => void) => reactive.on(fn)
+	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework augments Signal<T>['use'] via module augmentation
 	signal.use = createUseHook(signal) as Signal<T>['use']
 
 	return signal
@@ -35,6 +37,7 @@ export function defineState<T extends object>(
 	createUseHook: UseHookFactory,
 	options?: {equals?: {[K in keyof T]?: false | ((a: T[K], b: T[K]) => boolean)}}
 ): StateObject<T> {
+	// eslint-disable-next-line typescript-eslint/no-explicit-any -- heterogeneous map: Proxy reconstructs per-key types
 	const reactives = new Map<string, Reactive<any>>()
 
 	for (const key in initial) {
@@ -42,10 +45,12 @@ export function defineState<T extends object>(
 		reactives.set(key, new Reactive(initial[key], equals != null ? {equals} : undefined))
 	}
 
+	// oxlint-disable-next-line no-unsafe-type-assertion -- typed Proxy pattern; target is the initial object, return type is the mapped StateObject<T>
 	return new Proxy(initial, {
 		get(_, key: string) {
 			if (key === 'set') {
 				return (values: Partial<T>) => {
+					// eslint-disable-next-line typescript-eslint/no-explicit-any -- heterogeneous map: Proxy reconstructs per-key types
 					const changed: Reactive<any>[] = []
 					for (const k in values) {
 						const reactive = reactives.get(k)

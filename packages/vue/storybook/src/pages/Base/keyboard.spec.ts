@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 
+import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils'
 import * as BaseStories from './Base.stories'
@@ -13,7 +14,7 @@ describe('Api: keyboard', () => {
 	it('should support the "Backspace" button', async () => {
 		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
-		const tailSpan = page.getByText('!').element() as HTMLElement
+		const tailSpan = getElement(page.getByText('!'))
 		await focusAtEnd(tailSpan)
 
 		await userEvent.keyboard('{Backspace}')
@@ -25,7 +26,7 @@ describe('Api: keyboard', () => {
 		await expect.element(mark).not.toBeInTheDocument()
 		await expect.element(tailSpan).not.toBeInTheDocument()
 
-		const headSpan = page.getByText(/Hello/).element() as HTMLElement
+		const headSpan = getElement(page.getByText(/Hello/))
 		await focusAtEnd(headSpan)
 		await expect.element(headSpan).toHaveTextContent('Hello')
 		await expect.element(headSpan).toHaveFocus()
@@ -36,7 +37,7 @@ describe('Api: keyboard', () => {
 	it('should support the "Delete" button', async () => {
 		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
-		const firstSpan = page.getByText(/Hello/).element() as HTMLElement
+		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
 
 		await userEvent.keyboard('{Delete>6/}')
@@ -48,7 +49,7 @@ describe('Api: keyboard', () => {
 		await expect.element(mark).not.toBeInTheDocument()
 		await expect.element(firstSpan).not.toBeInTheDocument()
 
-		const secondSpan = page.getByText('!').element() as HTMLElement
+		const secondSpan = getElement(page.getByText('!'))
 		await expect.element(secondSpan).toHaveFocus()
 		await expect.element(secondSpan).toHaveTextContent('!')
 		await userEvent.keyboard('{Delete>2/}')
@@ -58,10 +59,10 @@ describe('Api: keyboard', () => {
 	it('should support focus navigation between spans', async () => {
 		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
-		const firstSpan = page.getByText(/Hello/).element() as HTMLElement
+		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
 
-		const secondSpan = page.getByText('!').element() as HTMLElement
+		const secondSpan = getElement(page.getByText('!'))
 		const firstSpanLength = firstSpan.textContent.length
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
 		await expect.element(secondSpan).toHaveFocus()

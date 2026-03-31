@@ -45,6 +45,7 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 
 const ParagraphMark = ({children}: MarkProps) => <span>{children}</span>
 
+// oxlint-disable-next-line no-unsafe-type-assertion
 const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
 
 export const PlainTextDrag: Story = {

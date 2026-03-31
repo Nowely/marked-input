@@ -1,5 +1,5 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {OverlayMatch, OverlayTrigger} from '../../shared/types'
+import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
 
@@ -17,7 +17,10 @@ export class OverlayController {
 
 	constructor(private store: Store) {}
 
-	enableTrigger<T>(getTrigger: TriggerExtractor<T>, onMatch: (match: OverlayMatch | undefined) => void) {
+	enableTrigger<T extends CoreOption>(
+		getTrigger: TriggerExtractor<T>,
+		onMatch: (match: OverlayMatch<T> | undefined) => void
+	) {
 		if (this.#clearUnsubscribe) return
 
 		this.#clearUnsubscribe = this.store.events.clearOverlay.on(() => {
@@ -25,14 +28,14 @@ export class OverlayController {
 		})
 
 		this.#checkUnsubscribe = this.store.events.checkOverlay.on(() => {
-			const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger) as
-				| OverlayMatch
-				| undefined
+			// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
+			const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
 			onMatch(match)
 		})
 
 		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()!
+			const showOverlayOn = this.store.state.showOverlayOn.get()
+			if (!showOverlayOn) return
 			const type: OverlayTrigger = 'change'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -40,21 +43,23 @@ export class OverlayController {
 			}
 		})
 
-		this.#selectionChangeHandler = () => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()!
+		const selectionChangeHandler = () => {
+			const showOverlayOn = this.store.state.showOverlayOn.get()
+			if (!showOverlayOn) return
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
 				this.store.events.checkOverlay()
 			}
 		}
+		this.#selectionChangeHandler = selectionChangeHandler
 
 		this.#focusinHandler = () => {
-			document.addEventListener('selectionchange', this.#selectionChangeHandler!)
+			document.addEventListener('selectionchange', selectionChangeHandler)
 		}
 
 		this.#focusoutHandler = () => {
-			document.removeEventListener('selectionchange', this.#selectionChangeHandler!)
+			document.removeEventListener('selectionchange', selectionChangeHandler)
 		}
 
 		const container = this.store.refs.container
@@ -74,7 +79,7 @@ export class OverlayController {
 		}
 
 		this.#clickHandler = e => {
-			const target = e.target as HTMLElement | null
+			const target = e.target instanceof HTMLElement ? e.target : null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
 			this.store.events.clearOverlay()
@@ -87,7 +92,7 @@ export class OverlayController {
 	disableClose() {
 		if (this.#escHandler) {
 			window.removeEventListener('keydown', this.#escHandler)
-			document.removeEventListener('click', this.#clickHandler!, true)
+			if (this.#clickHandler) document.removeEventListener('click', this.#clickHandler, true)
 			this.#escHandler = undefined
 			this.#clickHandler = undefined
 		}
@@ -98,7 +103,7 @@ export class OverlayController {
 
 		if (container && this.#focusinHandler) {
 			container.removeEventListener('focusin', this.#focusinHandler)
-			container.removeEventListener('focusout', this.#focusoutHandler!)
+			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
 		}
 
 		if (this.#selectionChangeHandler) {

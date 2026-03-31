@@ -1,3 +1,4 @@
+/* oxlint-disable no-unsafe-type-assertion */
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import type {Markup} from '../parsing'

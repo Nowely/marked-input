@@ -148,7 +148,8 @@ export class TreeBuilder {
 
 		// Close remaining parents
 		while (parentStack.length > 0) {
-			const parent = parentStack.pop()!
+			const parent = parentStack[parentStack.length - 1]
+			parentStack.pop()
 			const parentBounds = this.getContentBounds(parent.match)
 			this.finalizeParent(parent, parentBounds.end)
 

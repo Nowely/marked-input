@@ -21,6 +21,7 @@ export function htmlToPlainText(html: string): string {
 		}
 
 		if (node.nodeType === Node.ELEMENT_NODE) {
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			const el = node as HTMLElement
 
 			// Handle <mark> elements - convert back to markup

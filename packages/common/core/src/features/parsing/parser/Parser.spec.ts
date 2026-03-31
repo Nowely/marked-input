@@ -3,6 +3,14 @@ import {beforeEach, describe, expect, it} from 'vitest'
 
 import {Parser} from './Parser'
 import type {MarkToken, Markup, Token} from './types'
+import {isMarkToken} from './types'
+
+function getMarkToken(tokens: Token[]): MarkToken {
+	const mark = tokens.find(isMarkToken)
+	expect(mark).toBeDefined()
+	if (!mark) throw new Error('MarkToken not found')
+	return mark
+}
 
 describe('ParserV2', () => {
 	let parser: Parser
@@ -252,7 +260,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [38-38]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 					})
@@ -289,7 +297,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [25-25]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('span')
 						expect(mark.meta).toBe('')
 					})
@@ -313,7 +321,7 @@ describe('ParserV2', () => {
 							 2: TEXT "" [28-28]"
 						`)
 
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 					})
@@ -341,7 +349,7 @@ describe('ParserV2', () => {
 						`)
 
 						// Verify correct nesting
-						const mark = result.find(t => t.type === 'mark')!
+						const mark = getMarkToken(result)
 						expect(mark.value).toBe('div')
 						expect(mark.meta).toBe('class')
 						expect(mark.children.length).toBeGreaterThan(0)
@@ -616,7 +624,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [12-12]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.value).toBe('link')
 					expect(mark.meta).toBe('url')
 				})
@@ -637,7 +645,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [27-27]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.meta).toBe('note')
 				})
 
@@ -657,7 +665,7 @@ describe('ParserV2', () => {
 						 2: TEXT "" [29-29]"
 					`)
 
-					const mark = result.find(t => t.type === 'mark')!
+					const mark = getMarkToken(result)
 					expect(mark.value).toBe('name')
 					expect(mark.meta).toBe('url')
 				})
@@ -813,13 +821,13 @@ describe('ParserV2', () => {
 					safePrefixes.forEach(prefix => {
 						it(`parses markup with prefix "${prefix}"`, () => {
 							const markup = generateSimpleMarkup(prefix)
-							const parser = new Parser([markup as any])
+							// oxlint-disable-next-line no-unsafe-type-assertion
+							const parser = new Parser([markup as Markup])
 							const input = `Hello ${prefix}[world]!`
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe('world')
 							expect(markToken.content).toBe(`${prefix}[world]`)
 
@@ -849,20 +857,21 @@ describe('ParserV2', () => {
 					htmlTags.forEach(({tag}) => {
 						it(`parses HTML <${tag}> tag`, () => {
 							const markup = `<${tag}>__value__</${tag}>`
-							const parser = new Parser([markup as any])
+							// oxlint-disable-next-line no-unsafe-type-assertion
+							const parser = new Parser([markup as Markup])
 							const input = `This is <${tag}>content</${tag}> text`
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe('content')
 							expect(markToken.content).toBe(`<${tag}>content</${tag}>`)
 						})
 					})
 
 					it('parses HTML tags with <__value__>__meta__</__value__> format', () => {
-						const parser = new Parser(['<__value__>__meta__</__value__>' as any])
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						const parser = new Parser(['<__value__>__meta__</__value__>' as Markup])
 						const input = 'Check <img>photo.jpg</img> image'
 						const result = parser.parse(input)
 
@@ -874,7 +883,8 @@ describe('ParserV2', () => {
 					})
 
 					it('parses HTML tags with <__value__>__meta__<__value__> format', () => {
-						const parser = new Parser(['<__value__>__meta__<__value__>' as any])
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						const parser = new Parser(['<__value__>__meta__<__value__>' as Markup])
 						const input = 'Check <img>photo.jpg<img> image'
 						const result = parser.parse(input)
 
@@ -886,7 +896,8 @@ describe('ParserV2', () => {
 					})
 
 					it('parses nested HTML tags', () => {
-						const markups = ['<b>__slot__</b>' as any, '<i>__slot__</i>' as any]
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						const markups = ['<b>__slot__</b>' as Markup, '<i>__slot__</i>' as Markup]
 						const parser = new Parser(markups)
 						const input = '<b>Bold <i>italic</i> text</b>'
 						const result = parser.parse(input)
@@ -922,18 +933,19 @@ describe('ParserV2', () => {
 
 					markdownPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses markdown pattern ${pattern}`, () => {
-							const parser = new Parser([pattern as any])
+							// oxlint-disable-next-line no-unsafe-type-assertion
+							const parser = new Parser([pattern as Markup])
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
 
 					it('parses markdown links', () => {
-						const parser = new Parser(['[__value__](__meta__)' as any])
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						const parser = new Parser(['[__value__](__meta__)' as Markup])
 						const input = 'Check [Google](https://google.com) for search'
 						const result = parser.parse(input)
 
@@ -945,7 +957,8 @@ describe('ParserV2', () => {
 					})
 
 					it('parses markdown images', () => {
-						const parser = new Parser(['![__value__](__meta__)' as any])
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						const parser = new Parser(['![__value__](__meta__)' as Markup])
 						const input = 'See ![cat](cat.jpg) image'
 						const result = parser.parse(input)
 
@@ -1228,12 +1241,12 @@ describe('ParserV2', () => {
 
 					customPatterns.forEach(({pattern, input, expectedLabel}) => {
 						it(`parses custom pattern "${pattern}"`, () => {
-							const parser = new Parser([pattern as any])
+							// oxlint-disable-next-line no-unsafe-type-assertion
+							const parser = new Parser([pattern as Markup])
 							const result = parser.parse(input)
 
 							// Find mark token
-							const markToken = result.find(token => token.type === 'mark') as MarkToken
-							expect(markToken).toBeDefined()
+							const markToken = getMarkToken(result)
 							expect(markToken.value).toBe(expectedLabel)
 						})
 					})
@@ -1425,7 +1438,7 @@ describe('ParserV2', () => {
 				const result = parser.parse('@[hello #[world]]')
 
 				expect(result).toHaveLength(1)
-				const mark = result[0] as MarkToken
+				const mark = getMarkToken(result)
 				expect(mark.children).toHaveLength(3)
 				expect(mark.children[0].type).toBe('text')
 				expect(mark.children[1].type).toBe('mark')
@@ -1476,7 +1489,7 @@ describe('ParserV2', () => {
 				const parser = new Parser(['@[__slot__]', '#[__slot__]'], {skipEmptyText: true})
 				const result = parser.parse('@[hello #[world]]')
 
-				const mark = result[0] as MarkToken
+				const mark = getMarkToken(result)
 				expect(mark.children).toHaveLength(3)
 				expect(mark.children[0].type).toBe('text')
 				expect(mark.children[0].content).toBe('hello ')
@@ -1557,7 +1570,7 @@ describe('ParserV2', () => {
 			const result = parser.parse('Hello @[world]\n\n')
 
 			expect(result).toHaveLength(1)
-			const mark = result[0] as MarkToken
+			const mark = getMarkToken(result)
 			expect(mark.type).toBe('mark')
 			expect(mark.content).toBe('Hello @[world]\n\n')
 			expect(mark.children).toHaveLength(3)
@@ -1590,7 +1603,7 @@ describe('ParserV2', () => {
 			expect(result).toHaveLength(1)
 			expect(result[0].type).toBe('mark')
 			expect(result[0].content).toBe('Only\n\n')
-			const mark = result[0] as MarkToken
+			const mark = getMarkToken(result)
 			expect(mark.value).toBe('')
 			expect(mark.slot?.content).toBe('Only')
 		})

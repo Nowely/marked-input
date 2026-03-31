@@ -1,7 +1,17 @@
+import type {Decorator} from '@storybook/react'
 import {useCallback, useEffect, useRef, useState} from 'react'
+import type {ComponentType} from 'react'
 import {useArgs, useGlobals} from 'storybook/preview-api'
 
 import {PlainValuePanel} from '../components/Text'
+
+function narrowPosition(v: unknown): 'right' | 'bottom' | undefined {
+	return v === 'right' || v === 'bottom' ? v : undefined
+}
+
+function narrowGlobal(v: unknown): 'right' | 'bottom' | 'hide' {
+	return v === 'right' || v === 'bottom' || v === 'hide' ? v : 'right'
+}
 
 // ─── Proper React component that owns all local state ─────────────────────────
 // withPlainValue (a Storybook decorator) is NOT called as a React component —
@@ -12,8 +22,8 @@ import {PlainValuePanel} from '../components/Text'
 // for it, so useState always initialises correctly.
 
 interface PanelContainerProps {
-	Story: any
-	args: any
+	Story: ComponentType<{args?: Record<string, unknown>}>
+	args: Record<string, unknown>
 	value: string
 	position: 'right' | 'bottom'
 	updateArgs: (update: Record<string, unknown>) => void
@@ -76,7 +86,7 @@ function PanelContainer({Story, args, value: valueProp, position: positionProp, 
 
 // ─── Global Storybook decorator ───────────────────────────────────────────────
 
-export const withPlainValue = (Story: any, context: any) => {
+export const withPlainValue: Decorator = (Story, context) => {
 	// Only Storybook hooks at this level — no React hooks.
 	/* oxlint-disable no-unsafe-member-access */
 	const [args, updateArgs] = useArgs()
@@ -84,9 +94,9 @@ export const withPlainValue = (Story: any, context: any) => {
 
 	const mergedArgs = {...context.args, ...args}
 	const isControlled = 'value' in mergedArgs
-	const rawPosition = context.parameters?.plainValue as 'right' | 'bottom' | undefined
+	const rawPosition = narrowPosition(context.parameters?.plainValue)
 	const showPanel = rawPosition === 'right' || rawPosition === 'bottom'
-	const globalValue = (globals.showPlainValue ?? 'right') as 'right' | 'bottom' | 'hide'
+	const globalValue = narrowGlobal(globals.showPlainValue ?? 'right')
 	const showPlainValue = globalValue !== 'hide'
 
 	// Stories that don't opt in to the panel, or are uncontrolled.

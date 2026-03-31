@@ -1,7 +1,9 @@
 import {useInsertionEffect} from 'react'
+import type {ComponentType} from 'react'
 
 const ensureStyleLink = (id: string) => {
-	let link = document.getElementById(id) as HTMLLinkElement | null
+	let el = document.getElementById(id)
+	let link = el instanceof HTMLLinkElement ? el : null
 
 	if (!link) {
 		link = document.createElement('link')
@@ -16,7 +18,7 @@ const ensureStyleLink = (id: string) => {
 	return link
 }
 
-export const withStyle = (id: string) => (Story: any) => {
+export const withStyle = (id: string) => (Story: ComponentType) => {
 	useStyleInsertion(id)
 	return <Story />
 }

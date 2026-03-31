@@ -1,3 +1,17 @@
+import {nextText} from '../../shared/checkers'
+
+/** Firefox-only CaretPosition (absent from TypeScript DOM lib) */
+interface CaretPosition {
+	readonly offsetNode: Node
+	readonly offset: number
+}
+
+/** Non-standard document caret APIs absent from TypeScript DOM lib */
+interface DocumentWithCaretFromPoint {
+	caretRangeFromPoint?(x: number, y: number): Range | null
+	caretPositionFromPoint?(x: number, y: number): CaretPosition | null
+}
+
 //TODO refact caret
 export class Caret {
 	static get isSelectedPosition() {
@@ -66,11 +80,9 @@ export class Caret {
 		const elRect = element.getBoundingClientRect()
 		const targetY = y ?? elRect.top + elRect.height / 2
 
-		/* eslint-disable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
-		const caretPos =
-			(document as any).caretRangeFromPoint?.(x, targetY) ??
-			(document as any).caretPositionFromPoint?.(x, targetY)
-		/* eslint-enable @typescript-eslint/no-explicit-any, no-unsafe-call, no-unsafe-member-access */
+		// oxlint-disable-next-line no-unsafe-type-assertion -- non-standard DOM APIs not in TS lib
+		const caretDoc = document as unknown as DocumentWithCaretFromPoint
+		const caretPos = caretDoc.caretRangeFromPoint?.(x, targetY) ?? caretDoc.caretPositionFromPoint?.(x, targetY)
 
 		if (!caretPos) return
 
@@ -80,11 +92,10 @@ export class Caret {
 		let domRange: Range
 		if (caretPos instanceof Range) {
 			domRange = caretPos
-		} else if (caretPos && typeof caretPos === 'object' && 'offsetNode' in caretPos) {
+		} else if ('offsetNode' in caretPos) {
 			// Firefox CaretPosition
 			domRange = document.createRange()
-			// oxlint-disable-next-line no-unsafe-member-access
-			domRange.setStart(caretPos.offsetNode as Node, caretPos.offset as number)
+			domRange.setStart(caretPos.offsetNode, caretPos.offset)
 			domRange.collapse(true)
 		} else {
 			return
@@ -117,13 +128,13 @@ export class Caret {
 		if (!selection) return
 
 		const walker = document.createTreeWalker(element, 4 /* NodeFilter.SHOW_TEXT */)
-		let node = walker.nextNode() as Text | null
+		let node = nextText(walker)
 		if (!node) return
 
 		let remaining = isFinite(offset) ? Math.max(0, offset) : Infinity
 
-		while (node as Text | null) {
-			const next = walker.nextNode() as Text | null
+		for (;;) {
+			const next = nextText(walker)
 			if (!next || remaining <= node.length) {
 				const charOffset = isFinite(remaining) ? Math.min(remaining, node.length) : node.length
 				const range = document.createRange()

@@ -29,7 +29,9 @@ const DynamicMark = defineComponent({
 		return () =>
 			h('mark', {
 				ref: (el: Element | ComponentPublicInstance | null) => {
+					// oxlint-disable-next-line no-unsafe-type-assertion
 					elRef.value = el as HTMLElement | null
+					// oxlint-disable-next-line no-unsafe-type-assertion
 					mark.ref.current = el as HTMLElement | null
 				},
 				contentEditable: true,
@@ -77,7 +79,9 @@ const Abbr = defineComponent({
 		return () =>
 			h('abbr', {
 				ref: (el: Element | ComponentPublicInstance | null) => {
+					// oxlint-disable-next-line no-unsafe-type-assertion
 					elRef.value = el as HTMLElement | null
+					// oxlint-disable-next-line no-unsafe-type-assertion
 					mark.ref.current = el as HTMLElement | null
 				},
 				title: mark.meta,

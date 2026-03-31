@@ -136,8 +136,14 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 	methodName: string,
 	className?: string,
 	complexity?: string
-): T {
-	return ((...args: any[]) => {
+): T
+function createProfiledMethod(
+	method: (...args: any[]) => any,
+	methodName: string,
+	className?: string,
+	complexity?: string
+): (...args: any[]) => any {
+	return (...args: any[]) => {
 		methodCallStack.push(methodName)
 		const start = performance.now()
 		const result = method(...args)
@@ -146,7 +152,7 @@ function createProfiledMethod<T extends (...args: any[]) => any>(
 		updateMethodStats(methodName, end - start, className, complexity, firstParamLength)
 		methodCallStack.pop()
 		return result
-	}) as T
+	}
 }
 
 /**
@@ -214,8 +220,8 @@ function createProfilingResult(currentRun: ProfilingRun, comparison?: ProfilingC
 function discoverClassMethods(
 	obj: any,
 	className: string
-): Array<{name: string; method: Function; original: Function}> {
-	const methods: Array<{name: string; method: Function; original: Function}> = []
+): Array<{name: string; method: (...args: any[]) => any; original: (...args: any[]) => any}> {
+	const methods: Array<{name: string; method: (...args: any[]) => any; original: (...args: any[]) => any}> = []
 	const prototype = Object.getPrototypeOf(obj)
 
 	// Get all methods from prototype
@@ -262,7 +268,7 @@ function autoProfileObject(obj: any, className: string, excludeMethods: string[]
 		if (excludeMethods.includes(name)) continue
 
 		const complexity = estimateComplexity(name)
-		const profiledMethod = createProfiledMethod(original as (...args: any[]) => any, name, className, complexity)
+		const profiledMethod = createProfiledMethod(original, name, className, complexity)
 
 		const methodName = name.split('.').pop()!
 
@@ -325,6 +331,7 @@ function formatTime(ms: number): string {
  * Patch SegmentMatcher with automatic profiling
  */
 function patchSegmentMatcher(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const segmentMatcher = (parser as any).segmentMatcher
 	return autoProfileObject(segmentMatcher, 'SegmentMatcher')
 }
@@ -333,6 +340,7 @@ function patchSegmentMatcher(parser: Parser): () => void {
  * Patch PatternMatcher with automatic profiling
  */
 function patchPatternMatcher(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const patternMatcher = (parser as any).patternMatcher
 	return autoProfileObject(patternMatcher, 'PatternMatcher')
 }
@@ -341,6 +349,7 @@ function patchPatternMatcher(parser: Parser): () => void {
  * Patch TreeBuilder with automatic profiling
  */
 function patchTreeBuilder(parser: Parser): () => void {
+	// oxlint-disable-next-line no-unsafe-type-assertion
 	const treeBuilder = (parser as any).treeBuilder
 	return autoProfileObject(treeBuilder, 'TreeBuilder')
 }

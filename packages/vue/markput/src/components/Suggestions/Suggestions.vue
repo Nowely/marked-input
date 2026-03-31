@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import {ref, computed, onMounted, onUnmounted} from 'vue'
+import {ref, computed, onMounted, onUnmounted, type ComponentPublicInstance} from 'vue'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {useStore} from '../../lib/hooks/useStore'
@@ -53,8 +53,8 @@ function handleItemClick(suggestion: string, index: number) {
 	select({value: suggestion, meta: index.toString()})
 }
 
-function setOverlayRef(el: any) {
-	overlayRef.current = el
+function setOverlayRef(el: Element | ComponentPublicInstance | null) {
+	overlayRef.current = el instanceof HTMLElement ? el : null
 }
 
 function scrollActiveIntoView(el: HTMLElement | null, index: number) {

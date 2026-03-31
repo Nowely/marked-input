@@ -102,10 +102,10 @@ describe(`Utility: ${shallow.name}`, () => {
 
 	describe('mixed types', () => {
 		it('should return false when comparing object to non-object', () => {
-			expect(shallow({}, null as any)).toBe(false)
-			expect(shallow({}, undefined as any)).toBe(false)
-			expect(shallow({}, 5 as any)).toBe(false)
-			expect(shallow({}, 'string' as any)).toBe(false)
+			expect(shallow({}, null)).toBe(false)
+			expect(shallow({}, undefined)).toBe(false)
+			expect(shallow({}, 5)).toBe(false)
+			expect(shallow({}, 'string')).toBe(false)
 		})
 
 		it('should return true when comparing empty array and empty object', () => {
@@ -130,7 +130,8 @@ describe(`Utility: ${shallow.name}`, () => {
 			}
 			Constructor.prototype.inheritedProp = 'inherited'
 
-			const obj1 = new (Constructor as any)()
+			// oxlint-disable-next-line no-unsafe-type-assertion
+			const obj1 = new (Constructor as unknown as new () => {ownProp: string})()
 			const obj2 = {ownProp: 'value'}
 
 			expect(shallow(obj1, obj2)).toBe(true)

@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
+import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DynamicStories from '../Dynamic/Dynamic.stories'
 import * as BaseStories from './Base.stories'
@@ -69,7 +70,7 @@ describe(`Component: MarkedInput`, () => {
 	it('should support editable marks', async () => {
 		await render(<Focusable />)
 
-		const worldElement = page.getByText('world').first().element() as HTMLElement
+		const worldElement = getElement(page.getByText('world').first())
 		await focusAtEnd(worldElement)
 		await userEvent.keyboard('123')
 
@@ -84,7 +85,7 @@ describe(`Component: MarkedInput`, () => {
 			<MarkedInput Mark={() => null} Overlay={Overlay} showOverlayOn="selectionChange" defaultValue="Hello @" />
 		)
 		const span = page.getByText(/hello/i)
-		await focusAtEnd(span.element() as HTMLElement)
+		await focusAtEnd(getElement(span))
 		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(span).toHaveFocus()
 
@@ -97,6 +98,7 @@ describe(`Component: MarkedInput`, () => {
 				Mark={({value}) => <mark>{value}</mark>}
 				options={[
 					{
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](test:__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['one', 'two', 'three']},
 					},
@@ -105,7 +107,7 @@ describe(`Component: MarkedInput`, () => {
 			/>
 		)
 		const span = page.getByText(/hello/i)
-		await focusAtEnd(span.element() as HTMLElement)
+		await focusAtEnd(getElement(span))
 		await userEvent.keyboard('{ArrowRight}')
 		await userEvent.keyboard('{Enter}')
 

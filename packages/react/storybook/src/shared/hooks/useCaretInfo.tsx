@@ -26,9 +26,10 @@ export function useCaretInfo(enabled?: boolean): void {
 		const handleSelectionChange = () => {
 			const selection = window.getSelection()
 			const range = selection?.rangeCount ? selection.getRangeAt(0) : null
-			const container = document.activeElement?.closest('[contenteditable]')
+			const activeElement = document.activeElement
+			const container = activeElement?.closest('[contenteditable]')
 
-			if (!range || !container) {
+			if (!range || !container || !activeElement) {
 				tooltip.style.display = 'none'
 				return
 			}
@@ -39,7 +40,7 @@ export function useCaretInfo(enabled?: boolean): void {
 			tooltip.style.display = 'block'
 			tooltip.style.left = `${rect.left}px`
 			tooltip.style.top = `${rect.bottom + 2}px`
-			tooltip.textContent = `${document.activeElement!.tagName} | offset: ${range.startOffset} | total: ${totalOffset}`
+			tooltip.textContent = `${activeElement.tagName} | offset: ${range.startOffset} | total: ${totalOffset}`
 		}
 
 		document.addEventListener('selectionchange', handleSelectionChange)

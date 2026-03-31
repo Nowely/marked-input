@@ -1,3 +1,4 @@
+import {htmlChildren, nodeTarget} from '../../shared/checkers'
 import type {Store} from '../store/Store'
 
 export class TextSelectionController {
@@ -14,15 +15,16 @@ export class TextSelectionController {
 		if (this.#mousedownHandler) return
 
 		this.#mousedownHandler = e => {
-			this.#pressedNode = e.target as Node
+			this.#pressedNode = nodeTarget(e)
 			this.#isPressed = true
 		}
 
 		this.#mousemoveHandler = e => {
+			const container = this.store.refs.container
+			if (!container) return
 			const isPressed = this.#isPressed
-			const isNotInnerSome =
-				!this.store.refs.container?.contains(this.#pressedNode) || this.#pressedNode !== e.target
-			const isInside = window.getSelection()?.containsNode(this.store.refs.container!, true)
+			const isNotInnerSome = !container.contains(this.#pressedNode) || this.#pressedNode !== e.target
+			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
 				this.store.state.selecting.set('drag')
@@ -37,8 +39,10 @@ export class TextSelectionController {
 
 		this.#selectionchangeHandler = () => {
 			if (this.store.state.selecting.get() !== 'drag') return
+			const container = this.store.refs.container
+			if (!container) return
 
-			const nodes = [...this.store.refs.container!.children] as HTMLElement[]
+			const nodes = htmlChildren(container)
 			const preservedState = nodes.map(value => value.contentEditable)
 
 			nodes.forEach(value => (value.contentEditable = 'false'))
@@ -54,9 +58,10 @@ export class TextSelectionController {
 	disable() {
 		if (this.#mousedownHandler) {
 			document.removeEventListener('mousedown', this.#mousedownHandler)
-			document.removeEventListener('mousemove', this.#mousemoveHandler!)
-			document.removeEventListener('mouseup', this.#mouseupHandler!)
-			document.removeEventListener('selectionchange', this.#selectionchangeHandler!)
+			if (this.#mousemoveHandler) document.removeEventListener('mousemove', this.#mousemoveHandler)
+			if (this.#mouseupHandler) document.removeEventListener('mouseup', this.#mouseupHandler)
+			if (this.#selectionchangeHandler)
+				document.removeEventListener('selectionchange', this.#selectionchangeHandler)
 
 			this.#mousedownHandler = undefined
 			this.#mousemoveHandler = undefined

@@ -3,7 +3,7 @@ import {MarkedInput} from '@markput/react'
 import type {ChipProps} from '@mui/material'
 import {Chip, Input} from '@mui/material'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import type {ComponentType} from 'react'
+import type {ComponentType, ChangeEvent} from 'react'
 import {useState} from 'react'
 
 import {MaterialMentions} from './components/MaterialMentions'
@@ -23,6 +23,7 @@ const initialValue = 'Hello beautiful the @[first](outlined:1) world from the @[
 
 export const Chipped: StoryObj<MarkedInputProps<ChipProps>> = {
 	args: {
+		// oxlint-disable-next-line no-unsafe-type-assertion
 		Mark: Chip as ComponentType<ChipProps>,
 		value: initialValue,
 		options: [
@@ -43,7 +44,8 @@ export const Overridden = () => {
 
 	return (
 		<Input
-			inputComponent={MarkedInput as any}
+			// oxlint-disable-next-line no-unsafe-type-assertion
+			inputComponent={MarkedInput as ComponentType<MarkedInputProps<ChipProps>>}
 			inputProps={{
 				Mark: Chip,
 				options: [
@@ -62,7 +64,7 @@ export const Overridden = () => {
 				],
 			}}
 			value={value}
-			onChange={setValue as any}
+			onChange={(e: ChangeEvent<HTMLInputElement>) => setValue(e.target.value)}
 		/>
 	)
 }

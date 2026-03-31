@@ -58,8 +58,9 @@ export async function focusAtOffset(element: HTMLElement, offset: number) {
 export function verifyCaretPosition(element: HTMLElement, expectedOffset: number) {
 	const position = getCaretPosition()
 	expect(position, 'Caret position not available').not.toBeNull()
+	if (!position) return
 
-	const length = measureTextLength(element, position!.node, position!.offset)
+	const length = measureTextLength(element, position.node, position.offset)
 	expect(length).toBe(expectedOffset)
 
 	function getCaretPosition() {

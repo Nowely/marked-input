@@ -63,6 +63,7 @@ export const PositionedOverlay: Story = {
 const List = () => {
 	const {select, ref} = useOverlay()
 	return (
+		// oxlint-disable-next-line no-unsafe-type-assertion
 		<ul ref={ref as RefObject<HTMLUListElement>}>
 			<li onClick={() => select({value: 'First'})}>Clickable First</li>
 			<li onClick={() => select({value: 'Second'})}>Clickable Second</li>

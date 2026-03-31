@@ -24,6 +24,7 @@ export function htmlToMarkdown(html: string): string {
 		}
 
 		if (node.nodeType === Node.ELEMENT_NODE) {
+			// oxlint-disable-next-line no-unsafe-type-assertion
 			const el = node as HTMLElement
 
 			// Handle <strong> elements → **text**

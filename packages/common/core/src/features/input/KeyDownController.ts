@@ -1,3 +1,4 @@
+import {childAt, htmlChildren, isHtmlElement, isTextNode, nextText} from '../../shared/checkers'
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
@@ -65,8 +66,8 @@ export class KeyDownController {
 		if (!container || !this.#keydownHandler) return
 
 		container.removeEventListener('keydown', this.#keydownHandler)
-		container.removeEventListener('paste', this.#pasteHandler!)
-		container.removeEventListener('beforeinput', this.#beforeInputHandler!, true)
+		if (this.#pasteHandler) container.removeEventListener('paste', this.#pasteHandler)
+		if (this.#beforeInputHandler) container.removeEventListener('beforeinput', this.#beforeInputHandler, true)
 
 		this.#keydownHandler = undefined
 		this.#pasteHandler = undefined
@@ -112,9 +113,9 @@ export class KeyDownController {
 		const container = this.store.refs.container
 		if (!container) return
 
-		const blockDivs = Array.from(container.children)
+		const blockDivs = htmlChildren(container)
 		const blockIndex = blockDivs.findIndex(
-			div => div === document.activeElement || div.contains(document.activeElement as Node)
+			div => div === document.activeElement || div.contains(document.activeElement)
 		)
 		if (blockIndex === -1) return
 
@@ -126,7 +127,7 @@ export class KeyDownController {
 		if (!this.store.state.onChange.get()) return
 
 		if (event.key === KEYBOARD.BACKSPACE) {
-			const blockDiv = blockDivs[blockIndex] as HTMLElement
+			const blockDiv = blockDivs[blockIndex]
 			const caretAtStart = Caret.getCaretIndex(blockDiv) === 0
 
 			const blockText = 'content' in token ? token.content : ''
@@ -145,9 +146,8 @@ export class KeyDownController {
 							})()
 				this.store.applyValue(newValue)
 				queueMicrotask(() => {
-					const newDivs = container.children
 					const targetIndex = Math.max(0, blockIndex - 1)
-					const target = newDivs[targetIndex] as HTMLElement | undefined
+					const target = childAt(container, targetIndex)
 					if (target) {
 						target.focus()
 						Caret.setCaretToEnd(target)
@@ -165,8 +165,7 @@ export class KeyDownController {
 					const newValue = mergeDragRows(value, rows, blockIndex)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
-						const newDivs = container.children
-						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+						const target = childAt(container, blockIndex - 1)
 						if (target) {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
@@ -178,18 +177,16 @@ export class KeyDownController {
 				}
 				event.preventDefault()
 				queueMicrotask(() => {
-					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
-					if (target) {
-						target.focus()
-						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
-					}
+					const target = blockDivs[blockIndex - 1]
+					target.focus()
+					if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 				})
 				return
 			}
 		}
 
 		if (event.key === KEYBOARD.DELETE) {
-			const blockDiv = blockDivs[blockIndex] as HTMLElement
+			const blockDiv = blockDivs[blockIndex]
 			const caretIndex = Caret.getCaretIndex(blockDiv)
 			const caretAtEnd = caretIndex === blockDiv.textContent.length
 			const caretAtStart = caretIndex === 0
@@ -203,8 +200,7 @@ export class KeyDownController {
 					const newValue = mergeDragRows(value, rows, blockIndex)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
-						const newDivs = container.children
-						const target = newDivs[blockIndex - 1] as HTMLElement | undefined
+						const target = childAt(container, blockIndex - 1)
 						if (target) {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
@@ -216,11 +212,9 @@ export class KeyDownController {
 				}
 				event.preventDefault()
 				queueMicrotask(() => {
-					const target = blockDivs[blockIndex - 1] as HTMLElement | undefined
-					if (target) {
-						target.focus()
-						if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
-					}
+					const target = blockDivs[blockIndex - 1]
+					target.focus()
+					if (prevToken.type !== 'mark') Caret.setCaretToEnd(target)
 				})
 				return
 			}
@@ -234,8 +228,7 @@ export class KeyDownController {
 					const newValue = mergeDragRows(value, rows, blockIndex + 1)
 					this.store.applyValue(newValue)
 					queueMicrotask(() => {
-						const newDivs = container.children
-						const target = newDivs[blockIndex] as HTMLElement | undefined
+						const target = childAt(container, blockIndex)
 						if (target) {
 							target.focus()
 							const updatedRows = this.store.state.tokens.get()
@@ -247,11 +240,9 @@ export class KeyDownController {
 				}
 				event.preventDefault()
 				queueMicrotask(() => {
-					const target = blockDivs[blockIndex + 1] as HTMLElement | undefined
-					if (target) {
-						target.focus()
-						Caret.trySetIndex(target, 0)
-					}
+					const target = blockDivs[blockIndex + 1]
+					target.focus()
+					Caret.trySetIndex(target, 0)
 				})
 				return
 			}
@@ -267,12 +258,12 @@ export class KeyDownController {
 		const container = this.store.refs.container
 		if (!container) return
 
-		const activeElement = document.activeElement as HTMLElement | null
-		if (!activeElement || !container.contains(activeElement)) return
+		const activeElement = document.activeElement
+		if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
 		event.preventDefault()
 
-		const blockDivs = container.children
+		const blockDivs = htmlChildren(container)
 		let blockIndex = -1
 		for (let i = 0; i < blockDivs.length; i++) {
 			if (blockDivs[i] === activeElement || blockDivs[i].contains(activeElement)) {
@@ -284,7 +275,7 @@ export class KeyDownController {
 
 		const rows = this.store.state.tokens.get()
 		const token = rows[blockIndex]
-		const blockDiv = blockDivs[blockIndex] as HTMLElement
+		const blockDiv = blockDivs[blockIndex]
 		const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
 
 		if (!this.store.state.onChange.get()) return
@@ -295,12 +286,13 @@ export class KeyDownController {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 			this.store.applyValue(newValue)
 			queueMicrotask(() => {
-				const newBlockDivs = container.children
 				const newBlockIndex = blockIndex + 1
-				if (newBlockIndex < newBlockDivs.length) {
-					const newBlockEl = newBlockDivs[newBlockIndex] as HTMLElement
-					newBlockEl.focus()
-					Caret.trySetIndex(newBlockEl, 0)
+				if (newBlockIndex < container.children.length) {
+					const newBlockEl = childAt(container, newBlockIndex)
+					if (newBlockEl) {
+						newBlockEl.focus()
+						Caret.trySetIndex(newBlockEl, 0)
+					}
 				}
 			})
 			return
@@ -311,12 +303,13 @@ export class KeyDownController {
 		this.store.applyValue(newValue)
 
 		queueMicrotask(() => {
-			const newBlockDivs = container.children
 			const newBlockIndex = blockIndex + 1
-			if (newBlockIndex < newBlockDivs.length) {
-				const newBlockEl = newBlockDivs[newBlockIndex] as HTMLElement
-				newBlockEl.focus()
-				Caret.trySetIndex(newBlockEl, 0)
+			if (newBlockIndex < container.children.length) {
+				const newBlockEl = childAt(container, newBlockIndex)
+				if (newBlockEl) {
+					newBlockEl.focus()
+					Caret.trySetIndex(newBlockEl, 0)
+				}
 			}
 		})
 	}
@@ -327,10 +320,10 @@ export class KeyDownController {
 		const container = this.store.refs.container
 		if (!container) return false
 
-		const activeElement = document.activeElement as HTMLElement | null
-		if (!activeElement || !container.contains(activeElement)) return false
+		const activeElement = document.activeElement
+		if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return false
 
-		const blockDivs = Array.from(container.children) as HTMLElement[]
+		const blockDivs = htmlChildren(container)
 		const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
 		if (blockIndex === -1) return false
 
@@ -363,14 +356,14 @@ export class KeyDownController {
 		const container = this.store.refs.container
 		if (!container) return
 
-		const activeElement = document.activeElement as HTMLElement | null
-		if (!activeElement || !container.contains(activeElement)) return
+		const activeElement = document.activeElement
+		if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
-		const blockDivs = Array.from(container.children)
+		const blockDivs = htmlChildren(container)
 		const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
 		if (blockIndex === -1) return
 
-		const blockDiv = blockDivs[blockIndex] as HTMLElement
+		const blockDiv = blockDivs[blockIndex]
 
 		if (event.key === KEYBOARD.UP) {
 			if (!Caret.isCaretOnFirstLine(blockDiv)) return
@@ -379,7 +372,7 @@ export class KeyDownController {
 			event.preventDefault()
 			const caretRect = Caret.getCaretRect()
 			const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
-			const prevBlockDiv = blockDivs[blockIndex - 1] as HTMLElement
+			const prevBlockDiv = blockDivs[blockIndex - 1]
 			prevBlockDiv.focus()
 			const prevRect = prevBlockDiv.getBoundingClientRect()
 			Caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
@@ -390,7 +383,7 @@ export class KeyDownController {
 			event.preventDefault()
 			const caretRect = Caret.getCaretRect()
 			const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
-			const nextBlockDiv = blockDivs[blockIndex + 1] as HTMLElement
+			const nextBlockDiv = blockDivs[blockIndex + 1]
 			nextBlockDiv.focus()
 			const nextRect = nextBlockDiv.getBoundingClientRect()
 			Caret.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
@@ -524,7 +517,8 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	}
 
 	queueMicrotask(() => {
-		const firstChild = store.refs.container?.firstChild as HTMLElement | null
+		const rawFirstChild = store.refs.container?.firstChild
+		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
 		if (firstChild) {
 			store.state.recovery.set({
 				anchor: store.nodes.focus,
@@ -546,10 +540,10 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 	const container = store.refs.container
 	if (!container) return
 
-	const activeElement = document.activeElement as HTMLElement | null
-	if (!activeElement || !container.contains(activeElement)) return
+	const activeElement = document.activeElement
+	if (!isHtmlElement(activeElement) || !container.contains(activeElement)) return
 
-	const blockDivs = Array.from(container.children) as HTMLElement[]
+	const blockDivs = htmlChildren(container)
 	const blockIndex = blockDivs.findIndex(div => div === activeElement || div.contains(activeElement))
 	if (blockIndex === -1) return
 
@@ -562,7 +556,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 
 	const focusAndSetCaret = (newRawPos: number) => {
 		queueMicrotask(() => {
-			const target = container.children[blockIndex] as HTMLElement | undefined
+			const target = childAt(container, blockIndex)
 			if (!target) return
 			target.focus()
 			const updatedRows = store.state.tokens.get()
@@ -658,10 +652,11 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
-			if (!isTextTokenSpan(childNode as HTMLElement)) continue
+		if (isHtmlElement(childNode) && tokenChild.type === 'text') {
+			if (!isTextTokenSpan(childNode)) continue
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
-				const textNode = childNode.firstChild as Text | null
+				const rawTextNode = childNode.firstChild
+				const textNode = isTextNode(rawTextNode) ? rawTextNode : null
 				const offset = rawAbsolutePos - tokenChild.position.start
 				if (textNode) {
 					const range = document.createRange()
@@ -679,9 +674,9 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 				return true
 			}
 			tokenIdx++
-		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		} else if (isTextNode(childNode) && tokenChild.type === 'text') {
 			if (rawAbsolutePos >= tokenChild.position.start && rawAbsolutePos <= tokenChild.position.end) {
-				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, (childNode as Text).length)
+				const offset = Math.min(rawAbsolutePos - tokenChild.position.start, childNode.length)
 				const range = document.createRange()
 				range.setStart(childNode, offset)
 				range.collapse(true)
@@ -690,7 +685,7 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 				return true
 			}
 			tokenIdx++
-		} else if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'mark') {
+		} else if (isHtmlElement(childNode) && tokenChild.type === 'mark') {
 			const nextChild = tokenIdx + 1 < markToken.children.length ? markToken.children[tokenIdx + 1] : null
 			const atBoundary =
 				rawAbsolutePos === tokenChild.position.end && nextChild?.position.start === rawAbsolutePos
@@ -699,7 +694,7 @@ function setCaretInMarkAtRawPos(markElement: HTMLElement, markToken: MarkToken, 
 				rawAbsolutePos >= tokenChild.position.start &&
 				rawAbsolutePos <= tokenChild.position.end
 			) {
-				return setCaretInMarkAtRawPos(childNode as HTMLElement, tokenChild, rawAbsolutePos)
+				return setCaretInMarkAtRawPos(childNode, tokenChild, rawAbsolutePos)
 			}
 			tokenIdx++
 		}
@@ -725,7 +720,7 @@ function setCaretAtRawPos(blockDiv: HTMLElement, token: Token, rawAbsolutePos: n
 	// Text token: position caret directly in the text node
 	const offsetWithinToken = rawAbsolutePos - token.position.start
 	const walker = document.createTreeWalker(blockDiv, 4 /* SHOW_TEXT */)
-	const textNode = walker.nextNode() as Text | null
+	const textNode = nextText(walker)
 	if (textNode) {
 		const charOffset = Math.min(offsetWithinToken, textNode.length)
 		const range = document.createRange()
@@ -807,24 +802,24 @@ function getDomRawPosInMark(node: Node, offset: number, markElement: HTMLElement
 		if (tokenIdx >= markToken.children.length) break
 		const tokenChild = markToken.children[tokenIdx]
 
-		if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'text') {
-			if (!isTextTokenSpan(childNode as HTMLElement)) continue
+		if (isHtmlElement(childNode) && tokenChild.type === 'text') {
+			if (!isTextTokenSpan(childNode)) continue
 			if (node === childNode) {
 				const charOffset = offset === 0 ? 0 : tokenChild.content.length
 				return tokenChild.position.start + Math.min(charOffset, tokenChild.content.length)
 			}
-			if ((childNode as Element).contains(node)) {
+			if (childNode.contains(node)) {
 				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
 			}
 			tokenIdx++
-		} else if (childNode.nodeType === Node.TEXT_NODE && tokenChild.type === 'text') {
+		} else if (isTextNode(childNode) && tokenChild.type === 'text') {
 			if (node === childNode) {
 				return tokenChild.position.start + Math.min(offset, tokenChild.content.length)
 			}
 			tokenIdx++
-		} else if (childNode.nodeType === Node.ELEMENT_NODE && tokenChild.type === 'mark') {
-			if (childNode === node || (childNode as Element).contains(node)) {
-				return getDomRawPosInMark(node, offset, childNode as HTMLElement, tokenChild)
+		} else if (isHtmlElement(childNode) && tokenChild.type === 'mark') {
+			if (childNode === node || childNode.contains(node)) {
+				return getDomRawPosInMark(node, offset, childNode, tokenChild)
 			}
 			tokenIdx++
 		}

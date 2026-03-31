@@ -3,7 +3,7 @@
  * Useful for closing a menu when the user clicks outside of it.
  */
 export function isClickOutside(target: EventTarget | null, element: Element | null): boolean {
-	return !!element && !element.contains(target as Node)
+	return !!element && !element.contains(target instanceof Node ? target : null)
 }
 
 /**

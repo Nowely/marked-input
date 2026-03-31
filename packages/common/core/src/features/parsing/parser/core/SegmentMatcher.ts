@@ -99,7 +99,8 @@ export class SegmentMatcher {
 			const entries: SegmentEntry[] = []
 
 			dynamics.forEach(({segment, index}) => {
-				const [before, after, exclusions] = segment as readonly [string, string, string]
+				if (typeof segment === 'string') return
+				const [before, after, exclusions] = segment
 				indices.add(index)
 				const pattern = computeDynamicPattern(before, after, exclusions)
 				const namedPattern = pattern.replace('(', `(?<content${index}>`)

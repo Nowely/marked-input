@@ -1,3 +1,4 @@
+import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
 import type {Store} from '../store/Store'
 
 export class FocusController {
@@ -14,7 +15,8 @@ export class FocusController {
 		if (!container) return
 
 		this.#focusinHandler = e => {
-			this.store.nodes.focus.target = e.target as HTMLElement
+			const target = isHtmlElement(e.target) ? e.target : undefined
+			this.store.nodes.focus.target = target
 		}
 
 		this.#focusoutHandler = () => {
@@ -24,7 +26,8 @@ export class FocusController {
 		this.#clickHandler = () => {
 			const tokens = this.store.state.tokens.get()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const element = this.store.refs.container?.firstElementChild as HTMLElement | undefined
+				const container = this.store.refs.container
+				const element = container ? firstHtmlChild(container) : null
 				element?.focus()
 			}
 		}
@@ -39,8 +42,8 @@ export class FocusController {
 		if (!container || !this.#focusinHandler) return
 
 		container.removeEventListener('focusin', this.#focusinHandler)
-		container.removeEventListener('focusout', this.#focusoutHandler!)
-		container.removeEventListener('click', this.#clickHandler!)
+		if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
+		if (this.#clickHandler) container.removeEventListener('click', this.#clickHandler)
 
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined
@@ -61,9 +64,7 @@ export class FocusController {
 				// After re-parse, text at childIndex splits into [text, mark, text]
 				// Focus the text span after the mark (childIndex + 2)
 				const targetChild =
-					recovery.childIndex != null
-						? (container?.children[recovery.childIndex + 2] as HTMLElement | undefined)
-						: undefined
+					recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
 				if (targetChild) {
 					targetChild.focus()
 				} else {

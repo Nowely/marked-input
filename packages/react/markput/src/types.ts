@@ -1,4 +1,4 @@
-import type {CoreOption, DataAttributes} from '@markput/core'
+import type {CoreOption, CoreSlots, DataAttributes} from '@markput/core'
 import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
 
 /**
@@ -58,7 +58,7 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
 /**
  * Available slots for customizing MarkedInput internal components
  */
-export interface Slots {
+export interface Slots extends CoreSlots {
 	/** Root container component */
 	container?: ElementType<HTMLAttributes<HTMLDivElement>>
 }

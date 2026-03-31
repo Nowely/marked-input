@@ -1,4 +1,5 @@
 import {MarkedInput, useOverlay} from '@markput/vue'
+import type {Markup} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
 import {defineComponent, h, type ComponentPublicInstance} from 'vue'
 
@@ -91,6 +92,7 @@ const List = defineComponent({
 				'ul',
 				{
 					ref: (el: Element | ComponentPublicInstance | null) => {
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						overlayRef.current = el as HTMLElement | null
 					},
 				},
@@ -107,6 +109,7 @@ export const SelectableOverlay: Story = {
 		Mark,
 		Overlay: List,
 		defaultValue: 'Hello, suggest overlay by trigger @!',
-		options: [{markup: '@[__value__](__meta__)' as any, overlay: {trigger: '@'}}],
+		// oxlint-disable-next-line no-unsafe-type-assertion
+		options: [{markup: '@[__value__](__meta__)' as Markup, overlay: {trigger: '@'}}],
 	},
 }

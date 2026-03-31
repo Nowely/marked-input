@@ -6,6 +6,7 @@ import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 import {defineComponent, h, onMounted, ref, type ComponentPublicInstance} from 'vue'
 
+import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils'
 import * as BaseStories from './Base.stories'
@@ -45,7 +46,9 @@ describe('Component: MarkedInput', () => {
 			return () =>
 				h('abbr', {
 					ref: (el: Element | ComponentPublicInstance | null) => {
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						elRef.value = el as HTMLElement | null
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						mark.ref.current = el as HTMLElement | null
 					},
 					title: mark.meta,
@@ -73,8 +76,8 @@ describe('Component: MarkedInput', () => {
 			})
 		)
 
-		const spans = document.querySelectorAll('span[contenteditable]')
-		const [firstSpan, secondSpan] = Array.from(spans) as HTMLElement[]
+		const spans = document.querySelectorAll<HTMLElement>('span[contenteditable]')
+		const [firstSpan, secondSpan] = Array.from(spans)
 		const abbrs = document.querySelectorAll('abbr')
 		const [firstAbbr] = Array.from(abbrs)
 		const firstSpanLength = firstSpan.textContent.length
@@ -121,7 +124,7 @@ describe('Component: MarkedInput', () => {
 			})
 		)
 
-		const worldElement = page.getByText('world').first().element() as HTMLElement
+		const worldElement = getElement(page.getByText('world').first())
 		await focusAtEnd(worldElement)
 		await userEvent.keyboard('123')
 
@@ -145,7 +148,7 @@ describe('Component: MarkedInput', () => {
 		)
 
 		const span = page.getByText(/hello/i)
-		await focusAtEnd(span.element() as HTMLElement)
+		await focusAtEnd(getElement(span))
 		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(span).toHaveFocus()
 
@@ -165,6 +168,7 @@ describe('Component: MarkedInput', () => {
 				Mark,
 				options: [
 					{
+						// oxlint-disable-next-line no-unsafe-type-assertion
 						markup: '@[__value__](test:__meta__)' as Markup,
 						overlay: {trigger: '@', data: ['one', 'two', 'three']},
 					},
@@ -174,7 +178,7 @@ describe('Component: MarkedInput', () => {
 		)
 
 		const span = page.getByText(/hello/i)
-		await focusAtEnd(span.element() as HTMLElement)
+		await focusAtEnd(getElement(span))
 		await userEvent.keyboard('{ArrowRight}')
 		await userEvent.keyboard('{Enter}')
 
