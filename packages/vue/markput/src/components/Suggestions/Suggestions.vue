@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import {ref, computed, onMounted, onUnmounted, type ComponentPublicInstance} from 'vue'
+import {ref, computed, onMounted, onUnmounted} from 'vue'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {useStore} from '../../lib/hooks/useStore'
-
-import styles from '@markput/core/styles.module.css'
+import List from '../Popup/List.vue'
+import ListItem from '../Popup/ListItem.vue'
+import Popup from '../Popup/Popup.vue'
 
 const store = useStore()
 const {match, select, style: overlayStyle, ref: overlayRef} = useOverlay()
@@ -37,43 +38,34 @@ function handleKeyDown(event: KeyboardEvent) {
 
 onMounted(() => {
 	const container = store.refs.container
-	if (container) {
-		container.addEventListener('keydown', handleKeyDown)
-	}
+	if (container) container.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
 	const container = store.refs.container
-	if (container) {
-		container.removeEventListener('keydown', handleKeyDown)
-	}
+	if (container) container.removeEventListener('keydown', handleKeyDown)
 })
 
 function handleItemClick(suggestion: string, index: number) {
 	select({value: suggestion, meta: index.toString()})
 }
 
-function setOverlayRef(el: Element | ComponentPublicInstance | null) {
-	overlayRef.current = el instanceof HTMLElement ? el : null
-}
-
-function scrollActiveIntoView(el: HTMLElement | null, index: number) {
-	if (index === active.value && el) {
-		el.scrollIntoView(false)
-	}
+function setOverlayRef(el: HTMLElement | null) {
+	overlayRef.current = el
 }
 </script>
 
 <template>
-	<ul v-if="filtered.length" :ref="setOverlayRef" :class="styles.Suggestions" :style="overlayStyle">
-		<li
-			v-for="(suggestion, index) in filtered"
-			:key="suggestion"
-			:ref="el => scrollActiveIntoView(el as HTMLElement, index)"
-			:class="index === active ? styles.suggestionActive : undefined"
-			@click="handleItemClick(suggestion, index)"
-		>
-			{{ suggestion }}
-		</li>
-	</ul>
+	<Popup v-if="filtered.length" :style="overlayStyle" :attach-ref="setOverlayRef">
+		<List>
+			<ListItem
+				v-for="(suggestion, index) in filtered"
+				:key="suggestion"
+				:active="index === active"
+				@click="handleItemClick(suggestion, index)"
+			>
+				{{ suggestion }}
+			</ListItem>
+		</List>
+	</Popup>
 </template>
