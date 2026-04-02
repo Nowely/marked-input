@@ -3,8 +3,9 @@ import {useEffect, useMemo, useRef, useState} from 'react'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'
 import {useStore} from '../../lib/providers/StoreContext'
-
-import styles from '@markput/core/styles.module.css'
+import {List} from '../Popup/List'
+import {ListItem} from '../Popup/ListItem'
+import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
 	const store = useStore()
@@ -51,28 +52,18 @@ export const Suggestions = () => {
 	if (!filtered.length) return null
 
 	return (
-		<ul
-			ref={(el: HTMLUListElement | null) => {
-				ref.current = el
-			}}
-			className={styles.Suggestions}
-			style={style}
-		>
-			{filtered.map((suggestion, index) => {
-				const className = index === active ? styles.suggestionActive : undefined
-
-				return (
-					<li
+		<Popup ref={ref} style={style}>
+			<List>
+				{filtered.map((suggestion, index) => (
+					<ListItem
 						key={suggestion}
-						ref={el => {
-							if (className && el) el.scrollIntoView(false)
-						}}
-						className={className}
-						onClick={_ => select({value: suggestion, meta: index.toString()})}
-						children={suggestion}
-					/>
-				)
-			})}
-		</ul>
+						active={index === active}
+						onClick={() => select({value: suggestion, meta: index.toString()})}
+					>
+						{suggestion}
+					</ListItem>
+				))}
+			</List>
+		</Popup>
 	)
 }
