@@ -1,0 +1,102 @@
+/* ============================================================
+   PlainValuePanel styles (pvp-*)
+   ============================================================ */
+
+/* --- Dashed divider for bottom mode --- */
+.pvp-divider {
+	border: none;
+	margin: 16px 0 0;
+}
+
+/* --- Outer container --- */
+.pvp-container {
+	display: flex;
+	flex-direction: column;
+	position: relative;
+}
+
+/* Right mode: proportional flex column panel, full height */
+.pvp-right {
+	flex: 2;
+	min-width: 280px;
+	border-left: 1px solid #e5e7eb;
+	height: 100%;
+	overflow: hidden;
+}
+
+/* Bottom mode: full width, stacked below editor */
+.pvp-bottom {
+	width: 100%;
+	border-top: 1px solid #e5e7eb;
+}
+
+/* --- Copy button --- */
+.pvp-copy {
+	position: absolute;
+	top: 8px;
+	right: 12px;
+	z-index: 10;
+	font-size: 10px;
+	padding: 2px 8px;
+	border: 1px solid #d1d5db;
+	border-radius: 4px;
+	background: white;
+	cursor: pointer;
+	color: #6b7280;
+	white-space: nowrap;
+	font-family: Arial, Helvetica, sans-serif;
+	line-height: 1.6;
+}
+
+.pvp-copy:hover {
+	background: #f3f4f6;
+}
+
+/* --- Scrollable content area --- */
+.pvp-scroll {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
+}
+
+/* --- Monospace text directly on white surface --- */
+.pvp-pre {
+	font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: 11px;
+	line-height: 1.6;
+	tab-size: 2;
+	background: transparent;
+	color: #374151;
+	padding: 12px 14px;
+	margin: 0;
+	border: none;
+	border-radius: 0;
+	white-space: pre;
+	overflow-x: auto;
+}
+
+/* --- Stats footer --- */
+.pvp-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 10px;
+	color: #9ca3af;
+	padding: 5px 12px 6px;
+	border-top: 1px solid #d1d5db;
+	flex-shrink: 0;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+/* --- Footer label --- */
+.pvp-footer-label {
+	font-size: 10px;
+	color: #9ca3af;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+/* --- Empty placeholder --- */
+.pvp-empty {
+	color: #9ca3af;
+	font-style: italic;
+}
