@@ -5,7 +5,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {childrenOf, firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as DragStories from './Drag.stories'
+import * as DragStories from './Drag.stories.react'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
 

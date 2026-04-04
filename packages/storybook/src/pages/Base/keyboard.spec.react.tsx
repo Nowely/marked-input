@@ -5,7 +5,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as BaseStories from './Base.stories'
+import * as BaseStories from './Base.stories.react'
 
 const {Default} = composeStories(BaseStories)
 

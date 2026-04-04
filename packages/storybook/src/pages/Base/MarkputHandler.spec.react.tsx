@@ -3,7 +3,7 @@ import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 
-import * as BaseStories from './Base.stories'
+import * as BaseStories from './Base.stories.react'
 
 const {Default} = composeStories(BaseStories)
 

@@ -5,8 +5,8 @@ import {page, userEvent} from 'vitest/browser'
 
 import {firstChild, childAt} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
-import * as BaseStories from '../Base/Base.stories'
-import * as OverlayStories from './Overlay.stories'
+import * as BaseStories from '../Base/Base.stories.react'
+import * as OverlayStories from './Overlay.stories.react'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
