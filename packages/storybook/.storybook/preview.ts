@@ -30,7 +30,7 @@ const preview: ProjectAnnotations<Renderer> = {
 		options: {
 			storySort: {
 				method: 'alphabetical',
-				order: isReact ? ['MarkedInput', 'Styled'] : ['MarkedInput', 'API'],
+				order: ['MarkedInput', 'Styled', 'API'],
 				locales: 'en-US',
 			},
 		},
