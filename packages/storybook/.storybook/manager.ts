@@ -1,5 +1,4 @@
 import {IconButton} from '@storybook/components'
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-type-assertion */
 import {addons, types, useStorybookApi} from '@storybook/manager-api'
 import React from 'react'
 
@@ -11,8 +10,10 @@ const ADDON_ID = 'framework-switcher'
 const TOOL_ID = `${ADDON_ID}/tool`
 
 function FrameworkSwitcherTool() {
-	const api = useStorybookApi() as any
-	const storyId = api.getCurrentStoryData()?.id as string | undefined
+	// oxlint-disable-next-line typescript-eslint/no-unsafe-call, typescript-eslint/no-unsafe-member-access
+	const api = useStorybookApi()
+	// oxlint-disable-next-line typescript-eslint/no-unsafe-call, typescript-eslint/no-unsafe-member-access
+	const storyId = api.getCurrentStoryData()?.id
 	const path = storyId ? `?path=/story/${storyId}` : ''
 	const url = `http://localhost:${otherPort}/${path}`
 
@@ -23,9 +24,12 @@ function FrameworkSwitcherTool() {
 	)
 }
 
-;(addons as any).register(ADDON_ID, () => {
-	;(addons as any).add(TOOL_ID, {
-		type: (types as any).TOOL,
+// oxlint-disable-next-line typescript-eslint/no-unsafe-call, typescript-eslint/no-unsafe-member-access
+addons.register(ADDON_ID, () => {
+	// oxlint-disable-next-line typescript-eslint/no-unsafe-call, typescript-eslint/no-unsafe-member-access
+	addons.add(TOOL_ID, {
+		// oxlint-disable-next-line typescript-eslint/no-unsafe-member-access
+		type: types.TOOL,
 		title: otherLabel,
 		render: FrameworkSwitcherTool,
 	})
