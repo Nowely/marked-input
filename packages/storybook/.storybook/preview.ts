@@ -1,4 +1,4 @@
-import type {Preview} from '@storybook/react-vite'
+import type {Preview} from 'storybook'
 
 import {withPlainValue as withPlainValueReact} from '../src/shared/lib/withPlainValue.react'
 import {withPlainValue as withPlainValueVue} from '../src/shared/lib/withPlainValue.vue'
