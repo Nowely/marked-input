@@ -1,11 +1,9 @@
-import type {Preview} from 'storybook'
-
 import {withPlainValue as withPlainValueReact} from '../src/shared/lib/withPlainValue.react'
 import {withPlainValue as withPlainValueVue} from '../src/shared/lib/withPlainValue.vue'
 
 const isReact = process.env.FRAMEWORK === 'react'
 
-const preview: Preview = {
+const preview = {
 	decorators: [isReact ? withPlainValueReact : withPlainValueVue],
 	globalTypes: {
 		showPlainValue: {

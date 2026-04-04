@@ -1,5 +1,5 @@
 import {setProjectAnnotations} from '@storybook/vue3-vite'
 
-import preview from './.storybook-vue/preview'
+import preview from './.storybook/preview'
 
 setProjectAnnotations(preview)
