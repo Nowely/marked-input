@@ -19,6 +19,7 @@ export default defineConfig({
 			defineProject({
 				plugins: [react()],
 				resolve: {dedupe: ['react', 'react-dom']},
+				define: {'process.env.FRAMEWORK': JSON.stringify('react')},
 				test: {
 					name: 'react',
 					globals: true,
@@ -32,6 +33,7 @@ export default defineConfig({
 			defineProject({
 				plugins: [vue()],
 				resolve: {dedupe: ['vue']},
+				define: {'process.env.FRAMEWORK': JSON.stringify('vue')},
 				test: {
 					name: 'vue',
 					globals: true,
