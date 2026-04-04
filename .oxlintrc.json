@@ -71,7 +71,16 @@
   },
   "overrides": [
     {
-      "files": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.stories.ts", "**/*.stories.tsx", "**/*.bench.ts", "**/*.js"],
+      "files": [
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/*.spec.react.tsx",
+        "**/*.stories.ts",
+        "**/*.stories.tsx",
+        "**/*.stories.react.tsx",
+        "**/*.bench.ts",
+        "**/*.js"
+      ],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off",

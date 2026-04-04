@@ -1,0 +1,1 @@
+export {htmlToPlainText} from './htmlToPlainText'
