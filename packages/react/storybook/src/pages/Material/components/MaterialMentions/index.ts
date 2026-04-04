@@ -1,1 +1,0 @@
-export {MaterialMentions} from './MaterialMentions'

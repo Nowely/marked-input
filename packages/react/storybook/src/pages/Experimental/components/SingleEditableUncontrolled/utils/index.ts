@@ -1,1 +1,0 @@
-export {htmlToPlainText} from './htmlToPlainText'
