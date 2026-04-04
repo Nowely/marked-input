@@ -7,13 +7,14 @@ const browser = {
 	enabled: true,
 	// oxlint-disable-next-line typescript-eslint/no-unsafe-call
 	provider: playwright(),
-	instances: [{browser: 'chromium'}],
+	instances: [{browser: 'chromium' as const}],
 	viewport: {width: 1280, height: 720},
 	headless: true,
 }
 
 export default defineConfig({
 	test: {
+		coverage: {provider: 'v8', reporter: ['text', 'json', 'html']},
 		projects: [
 			// oxlint-disable-next-line typescript-eslint/no-unsafe-call
 			defineProject({
@@ -23,9 +24,8 @@ export default defineConfig({
 				test: {
 					name: 'react',
 					globals: true,
-					setupFiles: ['./vitest.setup.react.ts'],
+					setupFiles: ['./vitest.setup.ts'],
 					include: ['src/pages/**/*.react.spec.tsx'],
-					coverage: {provider: 'v8', reporter: ['text', 'json', 'html']},
 					browser,
 				},
 			}),
@@ -37,9 +37,8 @@ export default defineConfig({
 				test: {
 					name: 'vue',
 					globals: true,
-					setupFiles: ['./vitest.setup.vue.ts'],
+					setupFiles: ['./vitest.setup.ts'],
 					include: ['src/pages/**/*.vue.spec.ts'],
-					coverage: {provider: 'v8', reporter: ['text', 'json', 'html']},
 					browser,
 				},
 			}),

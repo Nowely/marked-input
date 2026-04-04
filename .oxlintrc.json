@@ -97,6 +97,12 @@
       "rules": {
         "eslint/no-unused-expressions": "off"
       }
+    },
+    {
+      "files": ["**/vitest.setup*.ts"],
+      "rules": {
+        "typescript/no-unsafe-call": "off"
+      }
     }
   ],
   "ignorePatterns": ["packages/website/**"],
