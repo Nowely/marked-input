@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-type-assertion */
 import type {StorybookConfig} from '@storybook/react-vite'
 import vue from '@vitejs/plugin-vue'
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+// oxlint-disable-next-line @typescript-eslint/no-unsafe-member-access
 const isReact = process.env.FRAMEWORK === 'react'
 
+// oxlint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-type-assertion
 const config = {
 	stories: isReact ? ['../src/pages/**/*.react.stories.tsx'] : ['../src/pages/**/*.vue.stories.ts'],
 	staticDirs: isReact ? ['../public'] : [],
