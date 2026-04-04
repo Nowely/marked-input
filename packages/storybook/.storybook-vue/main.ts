@@ -1,4 +1,5 @@
 import type {StorybookConfig} from '@storybook/vue3-vite'
+import vue from '@vitejs/plugin-vue'
 
 const config: StorybookConfig = {
 	stories: ['../src/pages/**/*.vue.stories.ts'],
@@ -9,6 +10,11 @@ const config: StorybookConfig = {
 	},
 	core: {
 		disableTelemetry: true,
+	},
+	async viteFinal(config) {
+		config.plugins = config.plugins ?? []
+		config.plugins.push(vue())
+		return config
 	},
 }
 
