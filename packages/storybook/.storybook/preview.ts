@@ -1,9 +1,11 @@
+import type {ProjectAnnotations, Renderer} from 'storybook/internal/types'
+
 import {withPlainValue as withPlainValueReact} from '../src/shared/lib/withPlainValue.react'
 import {withPlainValue as withPlainValueVue} from '../src/shared/lib/withPlainValue.vue'
 
 const isReact = process.env.FRAMEWORK === 'react'
 
-const preview = {
+const preview: ProjectAnnotations<Renderer> = {
 	decorators: [isReact ? withPlainValueReact : withPlainValueVue],
 	globalTypes: {
 		showPlainValue: {

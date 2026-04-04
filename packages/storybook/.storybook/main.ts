@@ -1,6 +1,5 @@
 import type {StorybookConfig as ReactConfig} from '@storybook/react-vite'
 import type {StorybookConfig as VueConfig} from '@storybook/vue3-vite'
-import vue from '@vitejs/plugin-vue'
 
 const shared = {
 	addons: ['@storybook/addon-links', '@storybook/addon-docs'],
@@ -19,10 +18,6 @@ const vue3: VueConfig = {
 	...shared,
 	stories: ['../src/pages/**/*.vue.stories.ts'],
 	framework: {name: '@storybook/vue3-vite', options: {}},
-	viteFinal: viteConfig => ({
-		...viteConfig,
-		plugins: [...(viteConfig.plugins ?? []), vue()],
-	}),
 }
 
 export default process.env.FRAMEWORK === 'react' ? react : vue3

@@ -13,6 +13,7 @@ const browser = {
 }
 
 export default defineConfig({
+	plugins: process.env.FRAMEWORK === 'react' ? [react()] : [vue()],
 	test: {
 		coverage: {provider: 'v8', reporter: ['text', 'json', 'html']},
 		projects: [
