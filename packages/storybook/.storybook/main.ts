@@ -11,7 +11,6 @@ const react: ReactConfig = {
 	stories: ['../src/pages/**/*.react.stories.tsx'],
 	staticDirs: ['../public'],
 	framework: {name: '@storybook/react-vite', options: {}},
-	refs: {vue: {title: 'Vue', url: 'http://localhost:6007'}},
 }
 
 const vue3: VueConfig = {
