@@ -7,8 +7,8 @@ import {page, userEvent} from 'vitest/browser'
 
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as DynamicStories from '../Dynamic/Dynamic.stories.react'
-import * as BaseStories from './Base.stories.react'
+import * as DynamicStories from '../Dynamic/Dynamic.react.stories'
+import * as BaseStories from './Base.react.stories'
 
 //createVisualTests(BaseStories)
 

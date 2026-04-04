@@ -10,7 +10,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		setupFiles: ['./vitest.setup.react.ts'],
-		include: ['src/pages/**/*.spec.react.tsx'],
+		include: ['src/pages/**/*.react.spec.tsx'],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],

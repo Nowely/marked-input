@@ -1,33 +1,32 @@
-import {composeStories} from '@storybook/react-vite'
+// oxlint-disable typescript-eslint/no-unsafe-argument
+import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-react'
+import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import * as BaseStories from './Base.stories.react'
+import {withProps} from '../../shared/lib/testUtils.vue'
+import * as BaseStories from './Base.vue.stories'
 
 const {Default} = composeStories(BaseStories)
 
 describe('Api: keyboard', () => {
 	it('should support the "Backspace" button', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
 		const tailSpan = getElement(page.getByText('!'))
 		await focusAtEnd(tailSpan)
 
-		//Remove last span
 		await userEvent.keyboard('{Backspace}')
 		await expect.element(tailSpan).toHaveTextContent('')
 
-		//Remove mark
-		const mark = page.getByText(/mark/)
+		const mark = page.getByText(/world/)
 		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Backspace}')
 		await expect.element(mark).not.toBeInTheDocument()
 		await expect.element(tailSpan).not.toBeInTheDocument()
 
-		// Remove first span
 		const headSpan = getElement(page.getByText(/Hello/))
 		await focusAtEnd(headSpan)
 		await expect.element(headSpan).toHaveTextContent('Hello')
@@ -37,7 +36,7 @@ describe('Api: keyboard', () => {
 	})
 
 	it('should support the "Delete" button', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -45,7 +44,7 @@ describe('Api: keyboard', () => {
 		await userEvent.keyboard('{Delete>6/}')
 		await expect.element(firstSpan).toHaveTextContent('')
 
-		const mark = page.getByText(/mark/)
+		const mark = page.getByText(/world/)
 		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Delete}')
 		await expect.element(mark).not.toBeInTheDocument()
@@ -59,7 +58,7 @@ describe('Api: keyboard', () => {
 	})
 
 	it('should support focus navigation between spans', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -73,9 +72,8 @@ describe('Api: keyboard', () => {
 		await expect.element(firstSpan).toHaveFocus()
 	})
 
-	// It's not working in browser mode, but works in real
 	it.skip('should select all text with keyboard shortcut "Ctrl+A"', async () => {
-		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+		const {container} = await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
 
 		expect(window.getSelection()?.toString()).toBe('')
 
@@ -85,11 +83,6 @@ describe('Api: keyboard', () => {
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 
-	// Ctrl+A fix tests - issue #1 in INCONSISTENCIES.md
-	// NOTE: These tests cannot be reliably automated with Vitest browser mode
-	// because beforeinput events are not properly captured on contentEditable elements.
-	// The fix is implemented and works in production, but automated testing is limited
-	// by Vitest browser environment. Manual verification via Storybook is recommended.
 	it.todo('should replace all content when Ctrl+A then type')
 	it.todo('should replace all content when Ctrl+A then paste')
 	it.todo('should clear all content when Ctrl+A then delete')

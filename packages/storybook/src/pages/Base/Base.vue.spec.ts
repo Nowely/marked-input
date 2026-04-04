@@ -10,7 +10,7 @@ import {defineComponent, h, onMounted, ref, type ComponentPublicInstance} from '
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
-import * as BaseStories from './Base.stories.vue'
+import * as BaseStories from './Base.vue.stories'
 
 const {Default} = composeStories(BaseStories)
 

@@ -1,15 +1,13 @@
-import {composeStories} from '@storybook/react-vite'
+// oxlint-disable typescript-eslint/no-explicit-any typescript-eslint/no-non-null-assertion
+import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
-import {render} from 'vitest-browser-react'
+import {render} from 'vitest-browser-vue'
 
-// Automatically import all stories files
-const storiesModules = import.meta.glob('./**/*.stories.react.tsx', {eager: true})
+const storiesModules = import.meta.glob('./**/*.vue.stories.ts', {eager: true})
 
-// Group stories by category
 const storiesByCategory = new Map<string, Record<string, any>>()
 
 for (const [path, module] of Object.entries(storiesModules)) {
-	// Extract category from the path: ./Ant/Ant.stories.tsx -> Ant
 	const match = path.match(/\.\/([^/]+)\//)
 	if (!match) continue
 
@@ -21,17 +19,15 @@ for (const [path, module] of Object.entries(storiesModules)) {
 		storiesByCategory.set(category, {})
 	}
 
-	// Merge stories from the same category file
 	const categoryStories = storiesByCategory.get(category)!
 	Object.assign(categoryStories, stories)
 }
 
-//TODO correct type
 const getTests =
 	() =>
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
-			const {container} = await render(<Story />)
+			const {container} = await render(Story)
 			expect(container.textContent.length).toBeTruthy()
 		})
 

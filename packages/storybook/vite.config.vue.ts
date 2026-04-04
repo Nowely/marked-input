@@ -10,7 +10,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		setupFiles: ['./vitest.setup.vue.ts'],
-		include: ['src/pages/**/*.spec.vue.ts'],
+		include: ['src/pages/**/*.vue.spec.ts'],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],

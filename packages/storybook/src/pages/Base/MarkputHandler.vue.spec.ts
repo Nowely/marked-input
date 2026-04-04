@@ -4,7 +4,7 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {ref} from 'vue'
 
-import * as BaseStories from './Base.stories.vue'
+import * as BaseStories from './Base.vue.stories'
 
 const {Default} = composeStories(BaseStories)
 
