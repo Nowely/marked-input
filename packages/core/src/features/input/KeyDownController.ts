@@ -2,6 +2,7 @@ import {childAt, htmlChildren, isHtmlElement, isTextNode, nextText} from '../../
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
+import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
@@ -49,6 +50,7 @@ export class KeyDownController {
 		}
 
 		this.#pasteHandler = e => {
+			captureMarkupPaste(e)
 			handlePaste(this.store, e)
 		}
 
@@ -432,9 +434,46 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
 
+	// Intercept markput paste before span-level handling to update raw value directly
+	if (
+		(event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') &&
+		handleMarkputSpanPaste(store, focus, event)
+	) {
+		return
+	}
+
 	if (applySpanInput(focus, event)) {
 		store.events.change()
 	}
+}
+
+/**
+ * Handles paste with markput data in non-drag mode.
+ * Updates the raw value directly (which triggers re-parsing) instead of
+ * inserting markup text into a single span (which would cause recursive DOM updates).
+ */
+function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
+	const markup = consumeMarkupPaste()
+	if (!markup) return false
+
+	event.preventDefault()
+
+	const tokens = store.state.tokens.get()
+	const token = tokens[focus.index]
+	const offset = focus.caret
+	const currentValue = store.state.previousValue.get() ?? store.state.value.get() ?? ''
+
+	const ranges = event.getTargetRanges()
+	const start = ranges[0]?.startOffset ?? offset
+	const rawInsertPos = token.position.start + start
+
+	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawInsertPos)
+	store.applyValue(newValue)
+	store.state.recovery.set({
+		anchor: store.nodes.focus,
+		caret: rawInsertPos + markup.length,
+	})
+	return true
 }
 
 export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
@@ -468,7 +507,8 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
-			const text = event.dataTransfer?.getData('text/plain') ?? ''
+			const markup = consumeMarkupPaste()
+			const text = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			const start = ranges[0]?.startOffset ?? offset
 			const end = ranges[0]?.endOffset ?? offset
@@ -494,7 +534,8 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const newContent = event.clipboardData?.getData('text/plain') ?? ''
+	const markup = consumeMarkupPaste()
+	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
 }
 
@@ -586,7 +627,8 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			event.preventDefault()
-			const pasteData = event.dataTransfer?.getData('text/plain') ?? ''
+			const markup = consumeMarkupPaste()
+			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			let rawFrom: number
 			let rawTo: number

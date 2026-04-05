@@ -10,6 +10,7 @@ import {
 import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
+import {CopyController} from '../clipboard'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
@@ -82,6 +83,7 @@ export class Store {
 		textSelection: new TextSelectionController(this),
 		contentEditable: new ContentEditableController(this),
 		drag: new DragController(this),
+		copy: new CopyController(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)
@@ -185,11 +187,10 @@ export class Store {
 
 	applyValue(newValue: string): void {
 		const onChange = this.state.onChange.get()
-		if (!onChange) return
 		const newTokens = parseWithParser(this, newValue)
 		this.state.tokens.set(newTokens)
 		this.state.previousValue.set(newValue)
-		onChange(newValue)
+		onChange?.(newValue)
 	}
 
 	createHandler(): MarkputHandler {
