@@ -1,10 +1,25 @@
 import React from 'react'
-import {Button} from 'storybook/internal/components'
+import {Select} from 'storybook/internal/components'
 import {addons, types, useStorybookApi} from 'storybook/manager-api'
 
-const isReact = window.location.port === '6006'
-const otherPort = isReact ? '6007' : '6006'
-const otherLabel = isReact ? 'Vue' : 'React'
+const FRAMEWORKS = [
+	{id: 'react', label: 'React', devPort: 6006},
+	{id: 'vue', label: 'Vue', devPort: 6007},
+]
+
+const currentFrameworkId = process.env.FRAMEWORK ?? 'react'
+
+function getUrlForFramework(targetId: string, storyId?: string): string {
+	const target = FRAMEWORKS.find(f => f.id === targetId) ?? FRAMEWORKS[0]
+	const path = storyId ? `?path=/story/${storyId}` : ''
+
+	if (window.location.hostname === 'localhost') {
+		return `http://localhost:${target.devPort}/${path}`
+	}
+
+	const hostname = window.location.hostname.replace(currentFrameworkId, targetId)
+	return `${window.location.protocol}//${hostname}/${path}`
+}
 
 const ADDON_ID = 'framework-switcher'
 const TOOL_ID = `${ADDON_ID}/tool`
@@ -12,20 +27,22 @@ const TOOL_ID = `${ADDON_ID}/tool`
 function FrameworkSwitcherTool() {
 	const api = useStorybookApi()
 	const storyId = api.getCurrentStoryData().id
-	const path = storyId ? `?path=/story/${storyId}` : ''
-	const url = `http://localhost:${otherPort}/${path}`
 
-	return React.createElement(
-		Button,
-		{onClick: () => window.open(url, '_blank'), title: `Open in ${otherLabel} Storybook`},
-		otherLabel
-	)
+	return React.createElement(Select, {
+		ariaLabel: 'Framework',
+		options: FRAMEWORKS.map(f => ({value: f.id, title: f.label})),
+		defaultOptions: currentFrameworkId,
+		onSelect: value => {
+			if (typeof value !== 'string' || value === currentFrameworkId) return
+			window.location.href = getUrlForFramework(value, storyId)
+		},
+	})
 }
 
 addons.register(ADDON_ID, () => {
 	addons.add(TOOL_ID, {
 		type: types.TOOL,
-		title: otherLabel,
+		title: 'Framework',
 		render: FrameworkSwitcherTool,
 	})
 })
