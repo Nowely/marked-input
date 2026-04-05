@@ -17,6 +17,13 @@ const vue3: VueConfig = {
 	...shared,
 	stories: ['../src/pages/**/*.vue.stories.ts'],
 	framework: {name: '@storybook/vue3-vite', options: {}},
+	// async viteFinal(config) {
+	// 	const {mergeConfig} = await import('vite')
+	// 	return mergeConfig(config, {
+	// 		resolve: {dedupe: ['react', 'react-dom', '@mdx-js/react']},
+	// 		optimizeDeps: {include: ['react', 'react-dom']},
+	// 	})
+	// },
 }
 
 export default process.env.FRAMEWORK === 'react' ? react : vue3
