@@ -71,7 +71,16 @@
   },
   "overrides": [
     {
-      "files": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.stories.ts", "**/*.stories.tsx", "**/*.bench.ts", "**/*.js"],
+      "files": [
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/*.spec.react.tsx",
+        "**/*.stories.ts",
+        "**/*.stories.tsx",
+        "**/*.stories.react.tsx",
+        "**/*.bench.ts",
+        "**/*.js"
+      ],
       "rules": {
         "typescript/no-explicit-any": "off",
         "typescript/no-non-null-assertion": "off",
@@ -87,6 +96,12 @@
       "files": ["**/*.vue"],
       "rules": {
         "eslint/no-unused-expressions": "off"
+      }
+    },
+    {
+      "files": ["**/vitest.setup*.ts"],
+      "rules": {
+        "typescript/no-unsafe-call": "off"
       }
     }
   ],

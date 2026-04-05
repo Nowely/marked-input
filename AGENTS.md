@@ -14,7 +14,8 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 - `pnpm run typecheck` — tsc + vue-tsc
 - `pnpm run lint` / `pnpm run lint:fix` — oxlint
 - `pnpm run format` / `pnpm run format:fix` — oxfmt
-- `pnpm run dev:react:sb` / `pnpm run dev:vue:sb` — Storybook dev servers
+- `pnpm run dev:sb` — Start both Storybook dev servers (React 6006 + Vue 6007)
+- `pnpm run dev:sb:react` / `pnpm run dev:sb:vue` — Individual Storybook dev servers
 - `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
 
 Run a single test file: `pnpm --filter @markput/core exec vitest run path/to/file.spec.ts`
@@ -35,9 +36,8 @@ Always run these commands and ensure they all pass before considering any task c
 packages/
   common/core/        → @markput/core (zero external deps, pure TS)
   react/markput/      → @markput/react (peer: react 19)
-  react/storybook/    → React component tests (Vitest Browser Mode)
+  storybook/          → Unified React + Vue component tests (Vitest Browser Mode)
   vue/markput/        → @markput/vue (peer: vue 3)
-  vue/storybook/      → Vue component tests (Vitest Browser Mode)
   react/app/, vue/app/ → E2E test apps
   website/            → Astro/Starlight docs
 ```
@@ -50,7 +50,8 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 - Core shared utilities → `packages/common/core/src/shared/`
 - React components → `packages/react/markput/src/components/`
 - Vue components → `packages/vue/markput/src/components/`
-- React/Vue shared test helpers → `packages/<framework>/storybook/src/shared/lib/`
+- Storybook stories and tests → `packages/storybook/src/pages/`
+- Shared storybook helpers → `packages/storybook/src/shared/lib/`
 
 ## Architecture
 
@@ -106,13 +107,15 @@ Parser tests use `toMatchInlineSnapshot()` with `tokensToDebugTree()` helper. Us
 
 ### Writing component tests (storybook)
 
+Stories and tests live in `packages/storybook/` with framework-suffixed naming (`*.react.stories.tsx`, `*.vue.stories.ts`, `*.react.spec.tsx`, `*.vue.spec.ts`).
+
 Tests compose Storybook stories as fixtures and use real browser interactions:
 
 ```typescript
 import {composeStories} from '@storybook/react-vite'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
-import * as Stories from './Component.stories'
+import * as Stories from './Component.react.stories'
 
 const {Default} = composeStories(Stories)
 
@@ -123,9 +126,9 @@ it('should handle input', async () => {
 })
 ```
 
-Shared helpers: `focusAtStart()`, `focusAtEnd()`, `focusAtOffset()`, `verifyCaretPosition()` in `storybook/src/shared/lib/focus.tsx`.
+Shared helpers: `focusAtStart()`, `focusAtEnd()`, `focusAtOffset()`, `verifyCaretPosition()` in `packages/storybook/src/shared/lib/focus.ts`.
 
-Vue component tests use `withProps(story, props)` helper from `shared/lib/testUtils.ts`.
+Vue component tests use `withProps(story, props)` helper from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
 
 ## Git & CI
 
