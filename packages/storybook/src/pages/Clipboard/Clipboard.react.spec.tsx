@@ -366,4 +366,52 @@ describe('Clipboard: paste', () => {
 		expect(marksAfter[0]?.textContent).toBe('world')
 		expect(marksAfter[1]?.textContent).toBe('test')
 	})
+
+	it('caret should land immediately after pasted mark', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')!
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const lastSpan = spans[spans.length - 1]
+		const lastText = firstTextNode(lastSpan)! // " foo"
+
+		// Copy the full mark
+		const markText = firstTextNode(mark)!
+		setSelection(markText, 0, markText, markText.length)
+		const copyDt = new DataTransfer()
+		root.dispatchEvent(new ClipboardEvent('copy', {clipboardData: copyDt, bubbles: true}))
+		expect(copyDt.getData('application/x-markput')).toBe('@[world](1)')
+
+		// Place caret at " |foo" (offset 1 — after the space)
+		lastSpan.focus()
+		await new Promise(r => queueMicrotask(r))
+		window.getSelection()!.collapse(lastText, 1)
+
+		// Paste
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: copyDt, bubbles: true}))
+		const inputRange = document.createRange()
+		inputRange.setStart(lastText, 1)
+		inputRange.setEnd(lastText, 1)
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
+		root.dispatchEvent(inputEvent)
+
+		// Wait for React re-render
+		await new Promise(r => setTimeout(r, 100))
+
+		// DOM should be: hello [world] [world]foo
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+
+		// Caret must be in "foo" at offset 0 — right after the pasted mark
+		const sel = window.getSelection()!
+		expect(sel.isCollapsed).toBe(true)
+		expect(sel.anchorNode?.textContent).toBe('foo')
+		expect(sel.anchorOffset).toBe(0)
+	})
 })

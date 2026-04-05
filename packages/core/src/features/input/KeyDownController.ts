@@ -467,11 +467,25 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const start = ranges[0]?.startOffset ?? offset
 	const rawInsertPos = token.position.start + start
 
+	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawInsertPos)
 	store.applyValue(newValue)
+
+	// Find which text token contains caretPos in the re-parsed token array.
+	// Use isNext+childIndex so FocusController navigates to childAt(childIndex+2)
+	// even after the anchor span is replaced by re-render.
+	const newTokens = store.state.tokens.get()
+	let targetIdx = newTokens.findIndex(
+		t => t.type === 'text' && caretPos >= t.position.start && caretPos <= t.position.end
+	)
+	if (targetIdx === -1) targetIdx = newTokens.length - 1
+	const caretWithinToken = caretPos - newTokens[targetIdx].position.start
+
 	store.state.recovery.set({
 		anchor: store.nodes.focus,
-		caret: rawInsertPos + markup.length,
+		caret: caretWithinToken,
+		isNext: true,
+		childIndex: targetIdx - 2,
 	})
 	return true
 }
