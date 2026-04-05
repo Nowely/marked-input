@@ -10,7 +10,8 @@ const FRAMEWORKS = [
 const currentFrameworkId = process.env.FRAMEWORK ?? 'react'
 
 function getUrlForFramework(targetId: string, storyId?: string): string {
-	const target = FRAMEWORKS.find(f => f.id === targetId) ?? FRAMEWORKS[0]
+	const target = FRAMEWORKS.find(f => f.id === targetId)
+	if (!target) throw new Error(`Unknown framework: ${targetId}`)
 	const path = storyId ? `?path=/story/${storyId}` : ''
 
 	if (window.location.hostname === 'localhost') {
