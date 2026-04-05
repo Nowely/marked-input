@@ -7,7 +7,11 @@ const FRAMEWORKS = [
 	{id: 'vue', label: 'Vue', devPort: 6007},
 ]
 
-const currentFrameworkId = process.env.FRAMEWORK ?? 'react'
+const currentFramework =
+	window.location.hostname === 'localhost'
+		? FRAMEWORKS.find(f => f.devPort === parseInt(window.location.port))
+		: FRAMEWORKS.find(f => window.location.hostname.includes(f.id))
+const currentFrameworkId = currentFramework?.id ?? 'react'
 
 function getUrlForFramework(targetId: string, storyId?: string): string {
 	const target = FRAMEWORKS.find(f => f.id === targetId)
