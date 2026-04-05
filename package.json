@@ -4,10 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm -r run dev",
+    "dev": "pnpm -F @markput/storybook run dev",
     "dev:react:app": "pnpm -F @markput/react-app dev",
     "dev:vue:app": "pnpm -F @markput/vue-app dev",
-    "dev:sb": "pnpm -F @markput/storybook run dev",
     "dev:sb:react": "pnpm -F @markput/storybook run dev:react",
     "dev:sb:vue": "pnpm -F @markput/storybook run dev:vue",
     "dev:website": "pnpm -F @markput/website run dev",
