@@ -1,7 +1,28 @@
 import {toString} from '../parsing'
+import type {Token} from '../parsing'
 import type {Store} from '../store'
 import {MARKPUT_MIME} from './pasteMarkup'
-import {selectionToTokens} from './selectionToTokens'
+import {type SelectionTokenRange, selectionToTokens} from './selectionToTokens'
+
+/**
+ * Trim boundary text tokens to the selected portion.
+ * Mark tokens are always kept in full — partial mark selection expands to full mark.
+ */
+function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRange): Token[] {
+	if (tokens.length === 0) return tokens
+
+	return tokens.map((token, i) => {
+		if (token.type !== 'text') return token
+
+		const isFirst = i === 0
+		const isLast = i === tokens.length - 1
+
+		if (isFirst && isLast) return {...token, content: token.content.slice(startOffset, endOffset)}
+		if (isFirst) return {...token, content: token.content.slice(startOffset)}
+		if (isLast) return {...token, content: token.content.slice(0, endOffset)}
+		return token
+	})
+}
 
 export class CopyController {
 	#copyHandler?: (e: ClipboardEvent) => void
@@ -26,7 +47,7 @@ export class CopyController {
 			const result = selectionToTokens(this.store)
 			if (!result) return
 
-			// text/plain: visual selected text (partial marks = just selected text)
+			// text/plain: visual selected text
 			const plainText = range.toString()
 
 			// text/html: rendered DOM HTML from the actual selection
@@ -35,16 +56,14 @@ export class CopyController {
 			div.appendChild(fragment)
 			const html = div.innerHTML
 
-			// application/x-markput: only when selection covers complete tokens
-			// partial selections fall back to text/plain on paste
-			const isFullTokenRange = result.firstFullySelected && result.lastFullySelected
+			// application/x-markput: boundary text tokens trimmed to selected portion,
+			// mark tokens always expanded to full markup syntax
+			const markup = toString(trimBoundaryTokens(result))
 
 			e.preventDefault()
 			e.clipboardData?.setData('text/plain', plainText)
 			e.clipboardData?.setData('text/html', html)
-			if (isFullTokenRange) {
-				e.clipboardData?.setData(MARKPUT_MIME, toString(result.tokens))
-			}
+			e.clipboardData?.setData(MARKPUT_MIME, markup)
 		}
 
 		this.store.refs.container?.addEventListener('copy', this.#copyHandler)

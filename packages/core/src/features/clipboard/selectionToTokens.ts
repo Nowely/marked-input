@@ -20,46 +20,33 @@ function findContainerChildIndex(node: Node, container: HTMLElement): number {
 }
 
 /**
- * Check whether the selection range fully covers a container child element
- * at the given boundary (start or end).
- *
- * Uses text-node-level ranges for comparison because browser selections
- * resolve to text nodes, while selectNodeContents resolves to the element —
- * making compareBoundaryPoints mismatch.
+ * Returns the character offset of a range boundary within a container child.
+ * For text nodes directly inside the child, uses the range offset directly.
+ * Falls back to 0 (start) or full text length (end) for element-level boundaries.
  */
-function isBoundaryFullyCovered(range: Range, container: HTMLElement, childIndex: number, isStart: boolean): boolean {
-	const child = container.children.item(childIndex)
-	if (!child) return false
-
-	// Find the first and last text nodes inside the child
+function getBoundaryOffset(range: Range, child: Element, isStart: boolean): number {
 	const walker = document.createTreeWalker(child, NodeFilter.SHOW_TEXT)
-	const firstText = walker.nextNode()
-	if (!firstText) return false
+	// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
+	const firstText = walker.nextNode() as Text | null
+	if (!firstText) return 0
 
-	let lastText = firstText
-	while (walker.nextNode()) {
-		lastText = walker.currentNode
-	}
+	const node = isStart ? range.startContainer : range.endContainer
+	const offset = isStart ? range.startOffset : range.endOffset
 
-	const fullRange = document.createRange()
-	fullRange.setStart(firstText, 0)
-	fullRange.setEnd(lastText, lastText.textContent?.length ?? 0)
-
-	if (isStart) {
-		return range.compareBoundaryPoints(Range.START_TO_START, fullRange) <= 0
-	}
-	return range.compareBoundaryPoints(Range.END_TO_END, fullRange) >= 0
+	if (node === firstText) return offset
+	return isStart ? 0 : child.textContent.length
 }
 
 export interface SelectionTokenRange {
 	tokens: Token[]
-	firstFullySelected: boolean
-	lastFullySelected: boolean
+	/** Char offset within the first token where the selection starts. */
+	startOffset: number
+	/** Char offset within the last token where the selection ends. */
+	endOffset: number
 }
 
 /**
  * Map a browser Selection to the subset of tokens it covers.
- * Reports whether boundary tokens are fully covered by the selection.
  * Returns null if selection is collapsed, empty, or outside the container.
  */
 export function selectionToTokens(store: Store): SelectionTokenRange | null {
@@ -86,11 +73,12 @@ export function selectionToTokens(store: Store): SelectionTokenRange | null {
 		;[startIndex, endIndex] = [endIndex, startIndex]
 	}
 
-	const selectedTokens = tokens.slice(startIndex, endIndex + 1)
+	const startChild = container.children.item(startIndex)
+	const endChild = container.children.item(endIndex)
 
 	return {
-		tokens: selectedTokens,
-		firstFullySelected: isBoundaryFullyCovered(range, container, startIndex, true),
-		lastFullySelected: isBoundaryFullyCovered(range, container, endIndex, false),
+		tokens: tokens.slice(startIndex, endIndex + 1),
+		startOffset: startChild ? getBoundaryOffset(range, startChild, true) : 0,
+		endOffset: endChild ? getBoundaryOffset(range, endChild, false) : 0,
 	}
 }

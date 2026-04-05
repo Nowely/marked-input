@@ -53,7 +53,7 @@ function allTextNodes(el: Element): Text[] {
 }
 
 describe('Clipboard: copy', () => {
-	it('partial text selection should NOT set markput MIME', async () => {
+	it('partial text selection should set markput MIME with trimmed text', async () => {
 		const {container} = await render(<Inline />)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
@@ -67,7 +67,7 @@ describe('Clipboard: copy', () => {
 		root.dispatchEvent(event)
 
 		const markput = clipboardData.getData('application/x-markput')
-		expect(markput).toBe('')
+		expect(markput).toBe('ll')
 
 		const plainText = clipboardData.getData('text/plain')
 		expect(plainText).toBe('ll')
@@ -93,7 +93,7 @@ describe('Clipboard: copy', () => {
 		expect(plainText).toBe('hello ')
 	})
 
-	it('partial mark selection should NOT set markput MIME', async () => {
+	it('partial mark selection should set markput MIME with full mark expanded', async () => {
 		const {container} = await render(<Inline />)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
@@ -106,8 +106,9 @@ describe('Clipboard: copy', () => {
 		const {event, clipboardData} = createCopyEvent(root)
 		root.dispatchEvent(event)
 
+		// Partial mark selection → full mark is always expanded in markup
 		const markput = clipboardData.getData('application/x-markput')
-		expect(markput).toBe('')
+		expect(markput).toBe('@[world](1)')
 
 		const plainText = clipboardData.getData('text/plain')
 		expect(plainText).toBe('orl')
@@ -133,14 +134,13 @@ describe('Clipboard: copy', () => {
 		expect(plainText).toBe('world')
 	})
 
-	it('cross-token partial selection should NOT set markput MIME', async () => {
+	it('cross-token partial selection should set markput MIME with trimmed text and full mark', async () => {
 		const {container} = await render(<Inline />)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
 		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
 
-		// Select from middle of first span to middle of last span
-		// "llo @[world](1) fo"
+		// Select "lo world fo" — partial first span + full mark + partial last span
 		const textNode1 = firstTextNode(spans[0])!
 		const textNode2 = firstTextNode(spans[1])!
 		setSelection(textNode1, 3, textNode2, 3)
@@ -148,11 +148,55 @@ describe('Clipboard: copy', () => {
 		const {event, clipboardData} = createCopyEvent(root)
 		root.dispatchEvent(event)
 
+		// Boundary text tokens trimmed, mark always expanded
 		const markput = clipboardData.getData('application/x-markput')
-		expect(markput).toBe('')
+		expect(markput).toBe('lo @[world](1) fo')
 
 		const plainText = clipboardData.getData('text/plain')
 		expect(plainText).toBe('lo world fo')
+	})
+
+	it('cross-token partial selection paste should reconstruct mark with surrounding text', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+
+		// Select "lo world f" — offset 3 in "hello " to offset 2 in " foo"
+		const textNode1 = firstTextNode(spans[0])!
+		const textNode2 = firstTextNode(spans[1])!
+		setSelection(textNode1, 3, textNode2, 2)
+
+		const {event, clipboardData} = createCopyEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('lo @[world](1) f')
+
+		// Paste at end of last span
+		const lastSpan = spans[spans.length - 1]
+		const lastText = firstTextNode(lastSpan)!
+		lastSpan.focus()
+		await new Promise<void>(r => queueMicrotask(r))
+		window.getSelection()!.collapse(lastText, lastText.length)
+
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData, bubbles: true}))
+		const inputRange = document.createRange()
+		inputRange.setStart(lastText, lastText.length)
+		inputRange.setEnd(lastText, lastText.length)
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: clipboardData})
+		root.dispatchEvent(inputEvent)
+
+		await new Promise(r => setTimeout(r, 100))
+
+		// Result: "hello [world] foo" + "lo [world] f" appended
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		expect(root.textContent).toBe('hello world foolo world f')
 	})
 
 	it('full multi-token selection should set markput MIME', async () => {
@@ -229,7 +273,7 @@ describe('Clipboard: copy', () => {
 
 		const targetSpan = targetRoot.querySelector<HTMLElement>('span')!
 		targetSpan.focus()
-		await new Promise(r => queueMicrotask(r))
+		await new Promise<void>(r => queueMicrotask(r))
 		expect(document.activeElement).toBe(targetSpan)
 
 		const targetTextNode = firstTextNode(targetSpan)!
@@ -278,7 +322,7 @@ describe('Clipboard: paste', () => {
 		// Find the text span and click it to activate focus
 		const span = root.querySelector<HTMLElement>('span')!
 		span.focus()
-		await new Promise(r => queueMicrotask(r))
+		await new Promise<void>(r => queueMicrotask(r))
 
 		// Confirm focus is set
 		expect(document.activeElement).toBe(span)
@@ -331,7 +375,7 @@ describe('Clipboard: paste', () => {
 		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
 		const lastSpan = spans[spans.length - 1]
 		lastSpan.focus()
-		await new Promise(r => queueMicrotask(r))
+		await new Promise<void>(r => queueMicrotask(r))
 		expect(document.activeElement).toBe(lastSpan)
 
 		const textNode = firstTextNode(lastSpan)!
@@ -385,7 +429,7 @@ describe('Clipboard: paste', () => {
 
 		// Place caret at " |foo" (offset 1 — after the space)
 		lastSpan.focus()
-		await new Promise(r => queueMicrotask(r))
+		await new Promise<void>(r => queueMicrotask(r))
 		window.getSelection()!.collapse(lastText, 1)
 
 		// Paste
