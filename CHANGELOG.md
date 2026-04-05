@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/Nowely/marked-input/compare/0.8.0...0.9.0) (2026-04-05)
+
+
+### Features
+
+* **selection:** enable cross-element text selection across mark tokens ([#172](https://github.com/Nowely/marked-input/issues/172)) ([b19b926](https://github.com/Nowely/marked-input/commit/b19b926f4fd19cf35c7c6889817d7c0ea138eb71))
+* **storybook:** consolidate React and Vue packages into unified storybook ([#170](https://github.com/Nowely/marked-input/issues/170)) ([8b6f560](https://github.com/Nowely/marked-input/commit/8b6f560376f03eeafedd401f05387d2e0c278cb4))
+
+
+### Refactoring
+
+* extract shared Popup/List/ListItem from Suggestions and BlockMenu ([#168](https://github.com/Nowely/marked-input/issues/168)) ([3c07bb8](https://github.com/Nowely/marked-input/commit/3c07bb833e5622173c166d6f22782816bc898db9))
+* move @markput/core from packages/common/core to packages/core ([#171](https://github.com/Nowely/marked-input/issues/171)) ([6a0a7d2](https://github.com/Nowely/marked-input/commit/6a0a7d238746c527c2a1b134ff29191f2d002c2a))
+
 ## [0.8.0](https://github.com/Nowely/marked-input/compare/0.7.0...0.8.0) (2026-03-31)
 
 
