@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev:react": "cross-env FRAMEWORK=react storybook dev --port 6006 -c .storybook",
-    "dev:vue": "cross-env FRAMEWORK=vue storybook dev --port 6007 -c .storybook",
+    "dev:react": "cross-env FRAMEWORK=react storybook dev -c .storybook",
+    "dev:vue": "cross-env FRAMEWORK=vue storybook dev -c .storybook",
     "dev": "concurrently \"pnpm run dev:react\" \"pnpm run dev:vue\"",
     "build:react": "cross-env FRAMEWORK=react storybook build -c .storybook -o ./dist-react",
     "build:vue": "cross-env FRAMEWORK=vue storybook build -c .storybook -o ./dist-vue",
