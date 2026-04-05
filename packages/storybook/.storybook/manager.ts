@@ -27,7 +27,8 @@ const TOOL_ID = `${ADDON_ID}/tool`
 
 function FrameworkSwitcherTool() {
 	const api = useStorybookApi()
-	const storyId = api.getCurrentStoryData().id
+	// oxlint-disable-next-line typescript-eslint/no-unnecessary-condition
+	const storyId = api.getCurrentStoryData()?.id
 
 	return React.createElement(Select, {
 		ariaLabel: 'Framework',
