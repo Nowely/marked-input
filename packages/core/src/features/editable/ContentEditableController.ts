@@ -12,6 +12,7 @@ function isTextTokenSpan(el: HTMLElement) {
 
 export class ContentEditableController {
 	#unsubscribe?: () => void
+	#unsubSelecting?: () => void
 
 	constructor(private store: Store) {}
 
@@ -19,12 +20,17 @@ export class ContentEditableController {
 		if (this.#unsubscribe) return
 
 		this.#unsubscribe = this.store.state.readOnly.on(() => this.sync())
+		this.#unsubSelecting = this.store.state.selecting.on(value => {
+			if (value === undefined) this.sync()
+		})
 		this.sync()
 	}
 
 	disable() {
 		this.#unsubscribe?.()
 		this.#unsubscribe = undefined
+		this.#unsubSelecting?.()
+		this.#unsubSelecting = undefined
 	}
 
 	sync() {

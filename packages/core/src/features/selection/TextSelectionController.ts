@@ -1,4 +1,4 @@
-import {htmlChildren, nodeTarget} from '../../shared/checkers'
+import {nodeTarget} from '../../shared/checkers'
 import type {Store} from '../store/Store'
 
 export class TextSelectionController {
@@ -6,6 +6,7 @@ export class TextSelectionController {
 	#mousemoveHandler?: (e: MouseEvent) => void
 	#mouseupHandler?: () => void
 	#selectionchangeHandler?: () => void
+	#unsubSelecting?: () => void
 	#pressedNode: Node | null = null
 	#isPressed = false
 
@@ -27,27 +28,39 @@ export class TextSelectionController {
 			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
-				this.store.state.selecting.set('drag')
+				if (this.store.state.selecting.get() !== 'drag') {
+					this.store.state.selecting.set('drag')
+				}
 			}
 		}
 
 		this.#mouseupHandler = () => {
 			this.#isPressed = false
 			this.#pressedNode = null
-			this.store.state.selecting.set(undefined)
+			if (this.store.state.selecting.get() === 'drag') {
+				const sel = window.getSelection()
+				if (!sel || sel.isCollapsed) {
+					this.store.state.selecting.set(undefined)
+				}
+			}
 		}
 
 		this.#selectionchangeHandler = () => {
 			if (this.store.state.selecting.get() !== 'drag') return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) {
+				this.store.state.selecting.set(undefined)
+			}
+		}
+
+		this.#unsubSelecting = this.store.state.selecting.on(value => {
+			if (value !== 'drag') return
 			const container = this.store.refs.container
 			if (!container) return
-
-			const nodes = htmlChildren(container)
-			const preservedState = nodes.map(value => value.contentEditable)
-
-			nodes.forEach(value => (value.contentEditable = 'false'))
-			nodes.forEach((value, index) => (value.contentEditable = preservedState[index]))
-		}
+			container
+				.querySelectorAll<HTMLElement>('[contenteditable="true"]')
+				.forEach(el => (el.contentEditable = 'false'))
+		})
 
 		document.addEventListener('mousedown', this.#mousedownHandler)
 		document.addEventListener('mousemove', this.#mousemoveHandler)
@@ -56,6 +69,14 @@ export class TextSelectionController {
 	}
 
 	disable() {
+		if (this.store.state.selecting.get() === 'drag') {
+			// Set state before unsubscribing so ContentEditableController.sync() still fires
+			this.store.state.selecting.set(undefined)
+		}
+
+		this.#unsubSelecting?.()
+		this.#unsubSelecting = undefined
+
 		if (this.#mousedownHandler) {
 			document.removeEventListener('mousedown', this.#mousedownHandler)
 			if (this.#mousemoveHandler) document.removeEventListener('mousemove', this.#mousemoveHandler)
