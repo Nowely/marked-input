@@ -5,7 +5,7 @@ prev: false
 title: "MarkToken"
 ---
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L19)
+Defined in: [core/src/features/parsing/parser/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L19)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:19](https://github
 children: Token[];
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L34)
+Defined in: [core/src/features/parsing/parser/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L34)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:34](https://github
 content: string;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L21)
+Defined in: [core/src/features/parsing/parser/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L21)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:21](https://github
 descriptor: MarkupDescriptor;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:26](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L26)
+Defined in: [core/src/features/parsing/parser/types.ts:26](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L26)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:26](https://github
 optional meta: string;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L28)
+Defined in: [core/src/features/parsing/parser/types.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L28)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:28](https://github
 position: object;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L22)
+Defined in: [core/src/features/parsing/parser/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L22)
 
 #### end
 
@@ -77,7 +77,7 @@ start: number;
 optional slot: object;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:29](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L29)
+Defined in: [core/src/features/parsing/parser/types.ts:29](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L29)
 
 #### content
 
@@ -105,7 +105,7 @@ start: number;
 type: "mark";
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L20)
+Defined in: [core/src/features/parsing/parser/types.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L20)
 
 ***
 
@@ -115,4 +115,4 @@ Defined in: [common/core/src/features/parsing/parser/types.ts:20](https://github
 value: string;
 ```
 
-Defined in: [common/core/src/features/parsing/parser/types.ts:27](https://github.com/Nowely/marked-input/blob/next/packages/common/core/src/features/parsing/parser/types.ts#L27)
+Defined in: [core/src/features/parsing/parser/types.ts:27](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L27)

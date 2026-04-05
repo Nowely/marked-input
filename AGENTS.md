@@ -34,7 +34,7 @@ Always run these commands and ensure they all pass before considering any task c
 
 ```
 packages/
-  common/core/        → @markput/core (zero external deps, pure TS)
+  core/               → @markput/core (zero external deps, pure TS)
   react/markput/      → @markput/react (peer: react 19)
   storybook/          → Unified React + Vue component tests (Vitest Browser Mode)
   vue/markput/        → @markput/vue (peer: vue 3)
@@ -46,8 +46,8 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ### Where to put new code
 
-- Core features/controllers → `packages/common/core/src/features/<feature-name>/`
-- Core shared utilities → `packages/common/core/src/shared/`
+- Core features/controllers → `packages/core/src/features/<feature-name>/`
+- Core shared utilities → `packages/core/src/shared/`
 - React components → `packages/react/markput/src/components/`
 - Vue components → `packages/vue/markput/src/components/`
 - Storybook stories and tests → `packages/storybook/src/pages/`

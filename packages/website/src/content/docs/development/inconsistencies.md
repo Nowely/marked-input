@@ -190,7 +190,7 @@ Each `<span>` is an isolated editable island. Operations that should flow across
 | **Expected**   | Container has `role="textbox"`, `aria-multiline="true"`, and an `aria-label` or `aria-labelledby`. `tabIndex=0` for keyboard accessibility |
 | **Actual**     | Container has `role=null`, `aria-label=null`, `tabIndex=-1`. Screen readers will not announce it as an editable text field                 |
 | **Root cause** | No ARIA attributes are set on the container `<div>`                                                                                        |
-| **File**       | `packages/common/core/src/shared/utils/resolveSlot.ts` — default container is a plain `<div>`                                              |
+| **File**       | `packages/core/src/shared/utils/resolveSlot.ts` — default container is a plain `<div>`                                              |
 
 ---
 
