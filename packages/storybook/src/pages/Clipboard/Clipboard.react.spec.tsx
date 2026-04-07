@@ -1,5 +1,5 @@
 import {composeStories} from '@storybook/react-vite'
-import {describe, expect, it} from 'vitest'
+import {beforeEach, describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 
 import * as Stories from './Clipboard.react.stories'
@@ -310,6 +310,13 @@ describe('Clipboard: copy', () => {
 })
 
 describe('Clipboard: paste', () => {
+	beforeEach(() => {
+		// Ensure no stale markup state leaks between tests.
+		// With per-container WeakMap scoping (Task 1), this mainly guards against
+		// tests that exit early before consuming captured markup.
+		window.getSelection()?.removeAllRanges()
+	})
+
 	it('pasting markput data should reconstruct the mark in plain text', async () => {
 		// Start with plain text — no marks at all
 		const {container} = await render(<PlainText />)
@@ -515,9 +522,7 @@ describe('Clipboard: paste', () => {
 		firstBlock.focus()
 		await new Promise<void>(r => queueMicrotask(r))
 
-		const walker = document.createTreeWalker(firstBlock, NodeFilter.SHOW_TEXT)
-		// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
-		const firstBlockText = walker.nextNode() as Text | null
+		const firstBlockText = firstTextNode(firstBlock)
 		if (!firstBlockText) throw new Error('no text node in first block')
 
 		window.getSelection()!.collapse(firstBlockText, firstBlockText.length)
