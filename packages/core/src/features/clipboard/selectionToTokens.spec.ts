@@ -1,7 +1,13 @@
 import {describe, expect, it} from 'vitest'
 
+// NOTE: The core package runs under vitest's node environment without jsdom.
+// We cannot call window.getSelection() or document.createRange() here.
+// These tests validate the tree-walk algorithm used inside getBoundaryOffset
+// using a minimal mock DOM. Integration coverage for the actual DOM path
+// is provided by the storybook browser tests.
+
 // ---------------------------------------------------------------------------
-// Minimal DOM mock — supports the subset of DOM APIs used by computeOffset:
+// Minimal DOM mock — supports the subset of DOM APIs used by getBoundaryOffset:
 //   Node / Text / HTMLElement creation, appendChild, contains, createTreeWalker
 // ---------------------------------------------------------------------------
 
@@ -17,7 +23,7 @@ class MockNode {
 
 	contains(node: MockNode | null): boolean {
 		if (!node) return false
-		// eslint-disable-next-line @typescript-eslint/no-this-alias
+		// oxlint-disable-next-line no-this-alias
 		let current: MockNode | null = node
 		while (current) {
 			if (current === this) return true
@@ -60,7 +66,7 @@ function textNodesInOrder(node: MockNode): MockText[] {
 }
 
 // ---------------------------------------------------------------------------
-// computeOffset — mirrors the fixed getBoundaryOffset logic
+// computeOffset — mirrors the getBoundaryOffset algorithm from selectionToTokens.ts
 // ---------------------------------------------------------------------------
 
 function computeOffset(child: MockElement, targetNode: MockNode, targetOffset: number): number {
