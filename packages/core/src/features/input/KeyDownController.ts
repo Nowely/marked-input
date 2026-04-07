@@ -50,7 +50,8 @@ export class KeyDownController {
 		}
 
 		this.#pasteHandler = e => {
-			captureMarkupPaste(e)
+			const c = this.store.refs.container
+			if (c) captureMarkupPaste(e, c)
 			handlePaste(this.store, e)
 		}
 
@@ -453,7 +454,9 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
  * inserting markup text into a single span (which would cause recursive DOM updates).
  */
 function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
-	const markup = consumeMarkupPaste()
+	const container = store.refs.container
+	if (!container) return false
+	const markup = consumeMarkupPaste(container)
 	if (!markup) return false
 
 	event.preventDefault()
@@ -521,8 +524,7 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
-			const markup = consumeMarkupPaste()
-			const text = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
+			const text = event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			const start = ranges[0]?.startOffset ?? offset
 			const end = ranges[0]?.endOffset ?? offset
@@ -548,7 +550,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const markup = consumeMarkupPaste()
+	const markup = store.refs.container ? consumeMarkupPaste(store.refs.container) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
 }
@@ -641,7 +643,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			event.preventDefault()
-			const markup = consumeMarkupPaste()
+			const markup = store.refs.container ? consumeMarkupPaste(store.refs.container) : undefined
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			let rawFrom: number
