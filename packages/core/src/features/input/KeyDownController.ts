@@ -2,6 +2,7 @@ import {childAt, htmlChildren, isHtmlElement, isTextNode, nextText} from '../../
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
+import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
@@ -49,6 +50,8 @@ export class KeyDownController {
 		}
 
 		this.#pasteHandler = e => {
+			const c = this.store.refs.container
+			if (c) captureMarkupPaste(e, c)
 			handlePaste(this.store, e)
 		}
 
@@ -432,9 +435,72 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
 
+	// Intercept markput paste before span-level handling to update raw value directly
+	if (
+		(event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') &&
+		handleMarkputSpanPaste(store, focus, event)
+	) {
+		return
+	}
+
 	if (applySpanInput(focus, event)) {
 		store.events.change()
 	}
+}
+
+/**
+ * Handles paste with markput data in non-drag mode.
+ * Updates the raw value directly (which triggers re-parsing) instead of
+ * inserting markup text into a single span (which would cause recursive DOM updates).
+ */
+function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
+	const container = store.refs.container
+	if (!container) return false
+	const markup = consumeMarkupPaste(container)
+	if (!markup) return false
+
+	event.preventDefault()
+
+	const tokens = store.state.tokens.get()
+	const token = tokens[focus.index]
+	const offset = focus.caret
+	const currentValue = store.state.previousValue.get() ?? store.state.value.get() ?? ''
+
+	const ranges = event.getTargetRanges()
+	const childElement = container.children[focus.index]
+	let rawInsertPos: number
+	let rawEndPos: number
+	if (ranges.length > 0) {
+		const cumStart = getBoundaryOffset(ranges[0], childElement, true)
+		const cumEnd = getBoundaryOffset(ranges[0], childElement, false)
+		rawInsertPos = token.position.start + cumStart
+		rawEndPos = token.position.start + cumEnd
+	} else {
+		rawInsertPos = token.position.start + offset
+		rawEndPos = token.position.start + offset
+	}
+
+	const caretPos = rawInsertPos + markup.length
+	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
+	store.applyValue(newValue)
+
+	// Find which text token contains caretPos in the re-parsed token array.
+	// Use isNext+childIndex so FocusController navigates to childAt(childIndex+2)
+	// even after the anchor span is replaced by re-render.
+	const newTokens = store.state.tokens.get()
+	let targetIdx = newTokens.findIndex(
+		t => t.type === 'text' && caretPos >= t.position.start && caretPos <= t.position.end
+	)
+	if (targetIdx === -1) targetIdx = newTokens.length - 1
+	const caretWithinToken = caretPos - newTokens[targetIdx].position.start
+
+	store.state.recovery.set({
+		anchor: store.nodes.focus,
+		caret: caretWithinToken,
+		isNext: true,
+		childIndex: targetIdx - 2,
+	})
+	return true
 }
 
 export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
@@ -494,7 +560,8 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const newContent = event.clipboardData?.getData('text/plain') ?? ''
+	const markup = store.refs.container ? consumeMarkupPaste(store.refs.container) : undefined
+	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
 }
 
@@ -586,7 +653,8 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			event.preventDefault()
-			const pasteData = event.dataTransfer?.getData('text/plain') ?? ''
+			const markup = store.refs.container ? consumeMarkupPaste(store.refs.container) : undefined
+			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()
 			let rawFrom: number
 			let rawTo: number

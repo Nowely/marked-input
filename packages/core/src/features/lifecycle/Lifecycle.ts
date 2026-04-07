@@ -63,6 +63,7 @@ export class Lifecycle {
 
 		const inputValue = value ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
+		store.state.previousValue.set(inputValue)
 
 		this.#initialized = true
 	}
