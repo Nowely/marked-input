@@ -468,10 +468,12 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	const ranges = event.getTargetRanges()
 	const start = ranges[0]?.startOffset ?? offset
+	const end = ranges[0]?.endOffset ?? offset
 	const rawInsertPos = token.position.start + start
+	const rawEndPos = token.position.start + end
 
 	const caretPos = rawInsertPos + markup.length
-	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawInsertPos)
+	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
 	store.applyValue(newValue)
 
 	// Find which text token contains caretPos in the re-parsed token array.

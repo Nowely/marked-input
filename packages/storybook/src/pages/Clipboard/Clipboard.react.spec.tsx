@@ -411,6 +411,45 @@ describe('Clipboard: paste', () => {
 		expect(marksAfter[1]?.textContent).toBe('test')
 	})
 
+	it('pasting markup over a selection within a span should replace the selection', async () => {
+		const {container} = await render(<PlainText />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+
+		const span = root.querySelector<HTMLElement>('span')!
+		span.focus()
+		await new Promise<void>(r => queueMicrotask(r))
+
+		const textNode = firstTextNode(span)!
+		// PlainText story starts with value "abc". Select "b" (offset 1..2).
+		setSelection(textNode, 1, textNode, 2)
+
+		const pasteClipboard = new DataTransfer()
+		pasteClipboard.setData('text/plain', 'world')
+		pasteClipboard.setData('application/x-markput', '@[world](1)')
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: pasteClipboard, bubbles: true}))
+
+		const inputRange = document.createRange()
+		inputRange.setStart(textNode, 1)
+		inputRange.setEnd(textNode, 2) // selection of "b"
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
+		root.dispatchEvent(inputEvent)
+
+		await new Promise(r => setTimeout(r, 50))
+
+		// "abc" with "b" replaced by "@[world](1)" → "a[world]c"
+		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')
+		expect(mark).not.toBeNull()
+		expect(mark?.textContent).toBe('world')
+		expect(root.textContent).toBe('aworldc')
+	})
+
 	it('caret should land immediately after pasted mark', async () => {
 		const {container} = await render(<Inline />)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
