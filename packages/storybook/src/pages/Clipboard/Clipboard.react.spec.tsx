@@ -4,7 +4,7 @@ import {render} from 'vitest-browser-react'
 
 import * as Stories from './Clipboard.react.stories'
 
-const {Inline, PlainText, Drag} = composeStories(Stories)
+const {Inline, PlainText, Drag, NestedMarkStory} = composeStories(Stories)
 
 /**
  * Create a ClipboardEvent with a mock DataTransfer for testing copy/paste handlers.
@@ -553,5 +553,185 @@ describe('Clipboard: paste', () => {
 		const marks = root.querySelectorAll('[data-testid="mark"]')
 		expect(marks.length).toBe(2)
 		expect(marks[0]?.textContent).toBe('test')
+	})
+})
+
+describe('Clipboard: nested marks', () => {
+	beforeEach(() => {
+		window.getSelection()?.removeAllRanges()
+	})
+
+	it('partial selection within nested mark children should copy correct text', async () => {
+		const {container} = await render(<NestedMarkStory />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')!
+
+		// NestedMark renders: <mark><strong>wor</strong><em>ld</em></mark>
+		// Two text nodes: "wor" and "ld"
+		const textNodes = allTextNodes(mark)
+		expect(textNodes.length).toBe(2)
+		expect(textNodes[0].textContent).toBe('wor')
+		expect(textNodes[1].textContent).toBe('ld')
+
+		// Select "rl" — offset 2 in "wor" to offset 1 in "ld"
+		setSelection(textNodes[0], 2, textNodes[1], 1)
+
+		const {event, clipboardData} = createCopyEvent(root)
+		root.dispatchEvent(event)
+
+		// Full mark is expanded in markput MIME
+		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
+		// Plain text is the visual selection: "wor"[2:] + "ld"[:1] = "rl"
+		expect(clipboardData.getData('text/plain')).toBe('rl')
+	})
+
+	it('paste into nested mark should use cumulative offsets', async () => {
+		const {container} = await render(<NestedMarkStory />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')!
+
+		// Copy the full mark first
+		const markTextNodes = allTextNodes(mark)
+		setSelection(
+			markTextNodes[0],
+			0,
+			markTextNodes[markTextNodes.length - 1],
+			markTextNodes[markTextNodes.length - 1].length
+		)
+		const copyDt = new DataTransfer()
+		root.dispatchEvent(new ClipboardEvent('copy', {clipboardData: copyDt, bubbles: true}))
+		expect(copyDt.getData('application/x-markput')).toBe('@[world](1)')
+
+		// Focus the last span " foo" and paste at offset 1
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const lastSpan = spans[spans.length - 1]
+		const lastText = firstTextNode(lastSpan)!
+		lastSpan.focus()
+		await new Promise<void>(r => queueMicrotask(r))
+		window.getSelection()!.collapse(lastText, 1)
+
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: copyDt, bubbles: true}))
+		const inputRange = document.createRange()
+		inputRange.setStart(lastText, 1)
+		inputRange.setEnd(lastText, 1)
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
+		root.dispatchEvent(inputEvent)
+
+		await new Promise(r => setTimeout(r, 100))
+
+		// Result: "hello [world] [world]foo" — two marks, original + pasted
+		const marksAfter = root.querySelectorAll('[data-testid="mark"]')
+		expect(marksAfter.length).toBe(2)
+		expect(root.textContent).toBe('hello world worldfoo')
+	})
+})
+
+describe('Clipboard: cut', () => {
+	beforeEach(() => {
+		window.getSelection()?.removeAllRanges()
+	})
+
+	function createCutEvent(target: HTMLElement): {event: ClipboardEvent; clipboardData: DataTransfer} {
+		const clipboardData = new DataTransfer()
+		const event = new ClipboardEvent('cut', {clipboardData, bubbles: true})
+		Object.defineProperty(event, 'target', {value: target, writable: false})
+		return {event, clipboardData}
+	}
+
+	it('cut partial text should write to clipboard and remove selection', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+
+		// Select "ll" from "hello "
+		const textNode = firstTextNode(spans[0])!
+		setSelection(textNode, 2, textNode, 4)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('ll')
+		expect(clipboardData.getData('text/plain')).toBe('ll')
+
+		await new Promise(r => setTimeout(r, 50))
+
+		// "hello " with "ll" removed → "he" + "o " + mark + " foo"
+		expect(root.textContent).toBe('heo world foo')
+		const mark = root.querySelector('[data-testid="mark"]')
+		expect(mark).not.toBeNull()
+	})
+
+	it('cut across tokens should write trimmed markup and remove selection', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+
+		// Select "lo world fo" — partial first span + full mark + partial last span
+		const textNode1 = firstTextNode(spans[0])!
+		const textNode2 = firstTextNode(spans[1])!
+		setSelection(textNode1, 3, textNode2, 3)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('lo @[world](1) fo')
+
+		await new Promise(r => setTimeout(r, 50))
+
+		// "hello [world] foo" with "lo [world] fo" removed → "hel" + "o" = "helo"
+		expect(root.textContent).toBe('helo')
+	})
+
+	it('cut full mark should remove the mark', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')!
+
+		// Select the entire mark
+		const textNode = firstTextNode(mark)!
+		setSelection(textNode, 0, textNode, textNode.length)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
+
+		await new Promise(r => setTimeout(r, 50))
+
+		// Mark removed, text spans merge: "hello " + " foo" = "hello  foo"
+		expect(root.textContent).toBe('hello  foo')
+		expect(root.querySelector('[data-testid="mark"]')).toBeNull()
+	})
+
+	it('cut all content should clear the editor', async () => {
+		const {container} = await render(<Inline />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+
+		// Select from start of first span to end of last span
+		const textNode1 = firstTextNode(spans[0])!
+		const textNode2 = firstTextNode(spans[1])!
+		setSelection(textNode1, 0, textNode2, textNode2.length)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
+
+		await new Promise(r => setTimeout(r, 50))
+
+		expect(root.querySelector('[data-testid="mark"]')).toBeNull()
 	})
 })

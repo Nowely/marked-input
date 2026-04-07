@@ -31,6 +31,7 @@ function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRang
 
 export class CopyController {
 	#copyHandler?: (e: ClipboardEvent) => void
+	#cutHandler?: (e: ClipboardEvent) => void
 
 	constructor(private store: Store) {}
 
@@ -38,46 +39,91 @@ export class CopyController {
 		if (this.#copyHandler) return
 
 		this.#copyHandler = (e: ClipboardEvent) => {
-			const container = this.store.refs.container
-			if (!container) return
-
-			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed || !sel.rangeCount) return
-
-			const range = sel.getRangeAt(0)
-			if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
-				return
-			}
-
-			const result = selectionToTokens(this.store)
-			if (!result) return
-
-			// text/plain: visual selected text
-			const plainText = range.toString()
-
-			// text/html: rendered DOM HTML from the actual selection
-			const fragment = range.cloneContents()
-			const div = document.createElement('div')
-			div.appendChild(fragment)
-			const html = div.innerHTML
-
-			// application/x-markput: boundary text tokens trimmed to selected portion,
-			// mark tokens always expanded to full markup syntax
-			const markup = toString(trimBoundaryTokens(result))
-
-			e.preventDefault()
-			e.clipboardData?.setData('text/plain', plainText)
-			e.clipboardData?.setData('text/html', html)
-			e.clipboardData?.setData(MARKPUT_MIME, markup)
+			this.#handleCopy(e)
 		}
 
-		this.store.refs.container?.addEventListener('copy', this.#copyHandler)
+		this.#cutHandler = (e: ClipboardEvent) => {
+			if (!this.#handleCopy(e)) return
+
+			const result = selectionToTokens(this.store)
+			if (!result || result.tokens.length === 0) return
+
+			const first = result.tokens[0]
+			const last = result.tokens[result.tokens.length - 1]
+
+			const rawStart = first.type === 'text' ? first.position.start + result.startOffset : first.position.start
+			const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
+
+			const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
+			if (rawStart === rawEnd) return
+
+			const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
+			this.store.applyValue(newValue)
+
+			const newTokens = this.store.state.tokens.get()
+			let targetIdx = newTokens.findIndex(
+				t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
+			)
+			if (targetIdx === -1) targetIdx = newTokens.length - 1
+			const caretWithinToken = rawStart - newTokens[targetIdx].position.start
+
+			this.store.state.recovery.set({
+				anchor: this.store.nodes.focus,
+				caret: caretWithinToken,
+				isNext: true,
+				childIndex: targetIdx - 2,
+			})
+		}
+
+		const container = this.store.refs.container
+		container?.addEventListener('copy', this.#copyHandler)
+		container?.addEventListener('cut', this.#cutHandler)
 	}
 
 	disable() {
+		const container = this.store.refs.container
 		if (this.#copyHandler) {
-			this.store.refs.container?.removeEventListener('copy', this.#copyHandler)
+			container?.removeEventListener('copy', this.#copyHandler)
 			this.#copyHandler = undefined
 		}
+		if (this.#cutHandler) {
+			container?.removeEventListener('cut', this.#cutHandler)
+			this.#cutHandler = undefined
+		}
+	}
+
+	#handleCopy(e: ClipboardEvent): boolean {
+		const container = this.store.refs.container
+		if (!container) return false
+
+		const sel = window.getSelection()
+		if (!sel || sel.isCollapsed || !sel.rangeCount) return false
+
+		const range = sel.getRangeAt(0)
+		if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
+			return false
+		}
+
+		const result = selectionToTokens(this.store)
+		if (!result) return false
+
+		// text/plain: visual selected text
+		const plainText = range.toString()
+
+		// text/html: rendered DOM HTML from the actual selection
+		const fragment = range.cloneContents()
+		const div = document.createElement('div')
+		div.appendChild(fragment)
+		const html = div.innerHTML
+
+		// application/x-markput: boundary text tokens trimmed to selected portion,
+		// mark tokens always expanded to full markup syntax
+		const markup = toString(trimBoundaryTokens(result))
+
+		e.preventDefault()
+		e.clipboardData?.setData('text/plain', plainText)
+		e.clipboardData?.setData('text/html', html)
+		e.clipboardData?.setData(MARKPUT_MIME, markup)
+		return true
 	}
 }

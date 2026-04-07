@@ -39,3 +39,21 @@ export const Drag: Story = {
 		defaultValue: 'hello\n@[world](1)\nfoo',
 	},
 }
+
+/** Mark component with nested HTML producing multiple text nodes inside the mark element. */
+function NestedMark({value}: MarkProps) {
+	const mid = Math.ceil(value.length / 2)
+	return (
+		<mark data-testid="mark">
+			<strong>{value.slice(0, mid)}</strong>
+			<em>{value.slice(mid)}</em>
+		</mark>
+	)
+}
+
+export const NestedMarkStory: Story = {
+	args: {
+		Mark: NestedMark,
+		defaultValue: 'hello @[world](1) foo',
+	},
+}

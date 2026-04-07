@@ -2,7 +2,7 @@ import {childAt, htmlChildren, isHtmlElement, isTextNode, nextText} from '../../
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
-import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
+import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {deleteMark} from '../editing'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
@@ -467,10 +467,18 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const currentValue = store.state.previousValue.get() ?? store.state.value.get() ?? ''
 
 	const ranges = event.getTargetRanges()
-	const start = ranges[0]?.startOffset ?? offset
-	const end = ranges[0]?.endOffset ?? offset
-	const rawInsertPos = token.position.start + start
-	const rawEndPos = token.position.start + end
+	const childElement = container.children[focus.index]
+	let rawInsertPos: number
+	let rawEndPos: number
+	if (ranges.length > 0) {
+		const cumStart = getBoundaryOffset(ranges[0], childElement, true)
+		const cumEnd = getBoundaryOffset(ranges[0], childElement, false)
+		rawInsertPos = token.position.start + cumStart
+		rawEndPos = token.position.start + cumEnd
+	} else {
+		rawInsertPos = token.position.start + offset
+		rawEndPos = token.position.start + offset
+	}
 
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)

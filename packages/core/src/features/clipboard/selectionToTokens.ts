@@ -19,13 +19,23 @@ function findContainerChildIndex(node: Node, container: HTMLElement): number {
 	return Array.from(container.children).indexOf(current)
 }
 
+/** Structural type shared by Range and StaticRange — only boundary properties are read. */
+export interface RangeBoundary {
+	readonly startContainer: Node
+	readonly startOffset: number
+	readonly endContainer: Node
+	readonly endOffset: number
+}
+
 /**
  * Returns the character offset of a range boundary within a container child.
  * Walks all text nodes in document order to compute a cumulative character
  * offset, which correctly handles nested marks with multiple text nodes.
  * Falls back to 0 (start) or full text length (end) for out-of-child boundaries.
+ *
+ * Spec: selectionToTokens.spec.ts (unit) · Clipboard.react.spec.tsx (integration)
  */
-function getBoundaryOffset(range: Range, child: Element, isStart: boolean): number {
+export function getBoundaryOffset(range: RangeBoundary, child: Element, isStart: boolean): number {
 	const targetNode = isStart ? range.startContainer : range.endContainer
 	const targetOffset = isStart ? range.startOffset : range.endOffset
 
