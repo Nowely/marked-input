@@ -21,19 +21,31 @@ function findContainerChildIndex(node: Node, container: HTMLElement): number {
 
 /**
  * Returns the character offset of a range boundary within a container child.
- * For text nodes directly inside the child, uses the range offset directly.
- * Falls back to 0 (start) or full text length (end) for element-level boundaries.
+ * Walks all text nodes in document order to compute a cumulative character
+ * offset, which correctly handles nested marks with multiple text nodes.
+ * Falls back to 0 (start) or full text length (end) for out-of-child boundaries.
  */
 function getBoundaryOffset(range: Range, child: Element, isStart: boolean): number {
+	const targetNode = isStart ? range.startContainer : range.endContainer
+	const targetOffset = isStart ? range.startOffset : range.endOffset
+
+	if (!child.contains(targetNode)) {
+		return isStart ? 0 : child.textContent.length
+	}
+
+	let charOffset = 0
 	const walker = document.createTreeWalker(child, NodeFilter.SHOW_TEXT)
 	// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
-	const firstText = walker.nextNode() as Text | null
-	if (!firstText) return 0
+	let current = walker.nextNode() as Text | null
+	while (current) {
+		if (current === targetNode) {
+			return charOffset + targetOffset
+		}
+		charOffset += current.length
+		// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
+		current = walker.nextNode() as Text | null
+	}
 
-	const node = isStart ? range.startContainer : range.endContainer
-	const offset = isStart ? range.startOffset : range.endOffset
-
-	if (node === firstText) return offset
 	return isStart ? 0 : child.textContent.length
 }
 
