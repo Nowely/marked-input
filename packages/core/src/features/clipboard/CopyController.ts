@@ -7,6 +7,11 @@ import {type SelectionTokenRange, selectionToTokens} from './selectionToTokens'
 /**
  * Trim boundary text tokens to the selected portion.
  * Mark tokens are always kept in full — partial mark selection expands to full mark.
+ *
+ * NOTE: Returned text tokens have stale `position` fields — the start/end positions
+ * still reflect the original token, not the trimmed content. Only `content` is
+ * authoritative on the returned tokens. `toString` is safe because it reads `content`
+ * directly; do not use `position` on the returned tokens for any other purpose.
  */
 function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRange): Token[] {
 	if (tokens.length === 0) return tokens
