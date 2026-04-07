@@ -4,7 +4,7 @@ import {render} from 'vitest-browser-react'
 
 import * as Stories from './Clipboard.react.stories'
 
-const {Inline, PlainText} = composeStories(Stories)
+const {Inline, PlainText, Drag} = composeStories(Stories)
 
 /**
  * Create a ClipboardEvent with a mock DataTransfer for testing copy/paste handlers.
@@ -496,5 +496,57 @@ describe('Clipboard: paste', () => {
 		expect(sel.isCollapsed).toBe(true)
 		expect(sel.anchorNode?.textContent).toBe('foo')
 		expect(sel.anchorOffset).toBe(0)
+	})
+
+	it('pasting markput data in drag mode should reconstruct the mark in a block', async () => {
+		// Drag story: drag=true, defaultValue="hello\n@[world](1)\nfoo"
+		// Each line is a separate draggable block (div > contenteditable span).
+		const {container} = await render(<Drag />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+
+		// Confirm the editor rendered with existing mark
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(1)
+
+		// Focus the first block ("hello") and place caret at end
+		const blocks = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
+		expect(blocks.length).toBeGreaterThan(0)
+		const firstBlock = blocks[0]
+		firstBlock.focus()
+		await new Promise<void>(r => queueMicrotask(r))
+
+		const walker = document.createTreeWalker(firstBlock, NodeFilter.SHOW_TEXT)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- SHOW_TEXT guarantees Text
+		const firstBlockText = walker.nextNode() as Text | null
+		if (!firstBlockText) throw new Error('no text node in first block')
+
+		window.getSelection()!.collapse(firstBlockText, firstBlockText.length)
+
+		// Paste markup
+		const pasteClipboard = new DataTransfer()
+		pasteClipboard.setData('text/plain', ' test')
+		pasteClipboard.setData('application/x-markput', '@[test](99)')
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: pasteClipboard, bubbles: true}))
+
+		const inputRange = document.createRange()
+		inputRange.setStart(firstBlockText, firstBlockText.length)
+		inputRange.setEnd(firstBlockText, firstBlockText.length)
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
+		root.dispatchEvent(inputEvent)
+
+		await new Promise(r => setTimeout(r, 100))
+
+		// Should now have two marks: pasted "test" (block 0) + original "world" (block 1)
+		// In drag mode, the pasted mark is inserted into the first block, which precedes
+		// the original "world" mark block in DOM order — so marks[0] is "test".
+		const marks = root.querySelectorAll('[data-testid="mark"]')
+		expect(marks.length).toBe(2)
+		expect(marks[0]?.textContent).toBe('test')
 	})
 })
