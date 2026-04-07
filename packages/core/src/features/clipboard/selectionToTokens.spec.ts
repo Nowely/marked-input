@@ -1,10 +1,12 @@
 import {describe, expect, it} from 'vitest'
 
 // NOTE: The core package runs under vitest's node environment without jsdom.
-// We cannot call window.getSelection() or document.createRange() here.
-// These tests validate the tree-walk algorithm used inside getBoundaryOffset
-// using a minimal mock DOM. Integration coverage for the actual DOM path
-// is provided by the storybook browser tests.
+// window.getSelection(), document.createRange(), and document.createTreeWalker()
+// are all unavailable here (document.createTreeWalker is the specific API
+// getBoundaryOffset uses internally). These tests validate the tree-walk algorithm
+// used inside getBoundaryOffset using a minimal pure-JS mock DOM. Integration
+// coverage for the actual DOM path (real TreeWalker + Selection API) is provided
+// by the storybook browser tests (Clipboard.react.spec.tsx: copy and paste tests).
 
 // ---------------------------------------------------------------------------
 // Minimal DOM mock — supports the subset of DOM APIs used by getBoundaryOffset:
