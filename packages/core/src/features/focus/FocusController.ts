@@ -56,6 +56,7 @@ export class FocusController {
 
 		const {anchor, caret, isNext} = recovery
 		const isStale = !anchor.target || !anchor.target.isConnected
+		let target: HTMLElement | undefined
 
 		// eslint-disable-next-line switch-exhaustiveness-check
 		switch (true) {
@@ -65,24 +66,26 @@ export class FocusController {
 				// Focus the text span after the mark (childIndex + 2)
 				const targetChild =
 					recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
-				if (targetChild) {
-					targetChild.focus()
-				} else {
-					this.store.nodes.focus.tail?.focus()
-				}
+				target = targetChild ?? this.store.nodes.focus.tail ?? undefined
 				break
 			}
 			case isNext:
-				anchor.prev.focus()
+				target = anchor.prev.target
 				break
 			case isStale:
-				this.store.nodes.focus.head?.focus()
+				target = this.store.nodes.focus.head ?? undefined
 				break
 			default:
-				anchor.next.focus()
+				target = anchor.next.target
 		}
 
-		this.store.nodes.focus.caret = caret
+		this.store.nodes.focus.target = target
+		target?.focus()
+		queueMicrotask(() => {
+			if (!target?.isConnected) return
+			this.store.nodes.focus.target = target
+			this.store.nodes.focus.caret = caret
+		})
 		this.store.state.recovery.set(undefined)
 	}
 }

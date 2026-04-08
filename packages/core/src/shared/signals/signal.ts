@@ -1,4 +1,4 @@
-import {signal as alienSignal, effect as alienEffect, getActiveSub} from '../alien-signals/src/index.js'
+import {signal as alienSignal, effect as alienEffect, getActiveSub, setActiveSub} from '../alien-signals/src/index.js'
 import {getUseHookFactory} from './registry.js'
 
 export {alienEffect as effect}
@@ -183,6 +183,11 @@ export function watch(dep: () => unknown, fn: () => void): () => void {
 			initialized = true
 			return
 		}
-		fn()
+		const prevSub = setActiveSub(undefined)
+		try {
+			fn()
+		} finally {
+			setActiveSub(prevSub)
+		}
 	})
 }

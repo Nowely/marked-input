@@ -60,6 +60,19 @@ describe('OverlayController', () => {
 			expect(onMatch).toHaveBeenCalled()
 		})
 
+		it('should not react when showOverlayOn changes without a new change event', () => {
+			const onMatch = vi.fn()
+			const getTrigger = () => undefined
+
+			controller.enableTrigger(getTrigger, onMatch)
+
+			store.events.change()
+			expect(onMatch).not.toHaveBeenCalled()
+
+			store.state.showOverlayOn.set('change')
+			expect(onMatch).not.toHaveBeenCalled()
+		})
+
 		it('should be idempotent — calling enableTrigger twice does not double-subscribe', () => {
 			const onMatch = vi.fn()
 			const getTrigger = () => undefined

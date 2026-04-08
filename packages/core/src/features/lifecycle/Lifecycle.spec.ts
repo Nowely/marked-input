@@ -124,5 +124,24 @@ describe('Lifecycle', () => {
 
 			lifecycle.disable()
 		})
+
+		it('does not re-run the parse subscription when recovery changes after a parse event', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			lifecycle.syncParser('hello', [])
+			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
+
+			const setSpy = vi.spyOn(store.state.tokens, 'set')
+
+			store.events.parse()
+			expect(setSpy).toHaveBeenCalledTimes(1)
+
+			setSpy.mockClear()
+			store.state.recovery.set({caret: 1, anchor: store.nodes.focus})
+			expect(setSpy).not.toHaveBeenCalled()
+
+			lifecycle.disable()
+		})
 	})
 })

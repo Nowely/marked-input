@@ -341,6 +341,73 @@ describe('watch()', () => {
 		s(2)
 		expect(fn).toHaveBeenCalledTimes(1) // no additional call
 	})
+
+	it('should not track reactive reads inside the callback', () => {
+		const source = signal(0)
+		const extra = signal(0)
+		const fn = vi.fn(() => {
+			extra()
+		})
+
+		const dispose = watch(source, fn)
+		disposers.push(dispose)
+
+		source(1)
+		expect(fn).toHaveBeenCalledTimes(1)
+
+		extra(1)
+		expect(fn).toHaveBeenCalledTimes(1)
+	})
+
+	it('should allow callbacks to emit void events', () => {
+		const source = voidEvent()
+		const emitted = voidEvent()
+		const runs = vi.fn()
+
+		trackedEffect(() => {
+			emitted()
+			runs()
+		})
+
+		const dispose = watch(
+			() => source(),
+			() => {
+				emitted()
+			}
+		)
+		disposers.push(dispose)
+
+		expect(runs).toHaveBeenCalledTimes(1)
+		source()
+		expect(runs).toHaveBeenCalledTimes(2)
+	})
+
+	it('should not replay stale payloads on unrelated reactive changes', () => {
+		const source = payloadEvent<number>()
+		const extra = signal(0)
+		const seen: number[] = []
+
+		const dispose = watch(
+			() => source(),
+			() => {
+				const latest = source()
+				if (latest !== undefined) {
+					seen.push(latest)
+				}
+				extra()
+			}
+		)
+		disposers.push(dispose)
+
+		source(1)
+		expect(seen).toEqual([1])
+
+		extra(1)
+		expect(seen).toEqual([1])
+
+		source(2)
+		expect(seen).toEqual([1, 2])
+	})
 })
 
 // ---------------------------------------------------------------------------

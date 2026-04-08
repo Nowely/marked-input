@@ -1,7 +1,7 @@
 import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
 import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useState} from 'react'
+import {useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
@@ -87,24 +87,46 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
 	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
 	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
-	const [store] = useState(() => new Store({defaultSpan: DefaultSpan}))
+	// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
+	const slotProps = props.slotProps as CoreSlotProps
+	const [store] = useState(() => {
+		const nextStore = new Store({defaultSpan: DefaultSpan})
+		nextStore.state.set({
+			value: props.value,
+			defaultValue: props.defaultValue,
+			onChange: props.onChange,
+			readOnly: props.readOnly ?? false,
+			drag: props.drag ?? false,
+			options: props.options ?? DEFAULT_OPTIONS,
+			showOverlayOn: props.showOverlayOn ?? 'change',
+			Span: props.Span,
+			Mark: props.Mark,
+			Overlay: props.Overlay,
+			className,
+			style,
+			slots: props.slots,
+			slotProps,
+		})
+		return nextStore
+	})
 
-	store.state.set({
-		value: props.value,
-		defaultValue: props.defaultValue,
-		onChange: props.onChange,
-		readOnly: props.readOnly ?? false,
-		drag: props.drag ?? false,
-		options: props.options ?? DEFAULT_OPTIONS,
-		showOverlayOn: props.showOverlayOn ?? 'change',
-		Span: props.Span,
-		Mark: props.Mark,
-		Overlay: props.Overlay,
-		className,
-		style,
-		slots: props.slots,
-		// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
-		slotProps: props.slotProps as CoreSlotProps,
+	useLayoutEffect(() => {
+		store.state.set({
+			value: props.value,
+			defaultValue: props.defaultValue,
+			onChange: props.onChange,
+			readOnly: props.readOnly ?? false,
+			drag: props.drag ?? false,
+			options: props.options ?? DEFAULT_OPTIONS,
+			showOverlayOn: props.showOverlayOn ?? 'change',
+			Span: props.Span,
+			Mark: props.Mark,
+			Overlay: props.Overlay,
+			className,
+			style,
+			slots: props.slots,
+			slotProps,
+		})
 	})
 
 	useCoreFeatures(store, ref)

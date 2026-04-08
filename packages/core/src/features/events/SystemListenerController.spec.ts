@@ -54,8 +54,30 @@ describe('SystemListenerController', () => {
 			store.events.delete({token})
 
 			// After delete, the token should be removed from the tokens array
-			expect(store.state.tokens.get()).toEqual([token2])
+			expect(store.state.tokens.get()).toEqual([
+				{
+					type: 'text',
+					content: 'b',
+					position: {start: 0, end: 1},
+				},
+			])
 			expect(onChange).toHaveBeenCalled()
+		})
+
+		it('should ignore delete events for tokens that are not in state', () => {
+			const onChange = vi.fn()
+			store.state.onChange.set(onChange)
+			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
+			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
+			const missingToken = {type: 'text' as const, content: 'c', position: {start: 2, end: 3}}
+			store.state.tokens.set([token, token2])
+
+			controller.enable()
+
+			store.events.delete({token: missingToken})
+
+			expect(store.state.tokens.get()).toEqual([token, token2])
+			expect(onChange).not.toHaveBeenCalled()
 		})
 
 		it('should react to select event with mark and match', () => {

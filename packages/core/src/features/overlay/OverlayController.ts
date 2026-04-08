@@ -1,5 +1,5 @@
 import {KEYBOARD} from '../../shared/constants'
-import {effectScope, setActiveSub, watch} from '../../shared/signals/index.js'
+import {effectScope, watch} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
@@ -47,13 +47,7 @@ export class OverlayController {
 					const type: OverlayTrigger = 'change'
 
 					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						// Break out of reactive context so checkOverlay emits instead of reads
-						const prevSub = setActiveSub(undefined)
-						try {
-							this.store.events.checkOverlay()
-						} finally {
-							setActiveSub(prevSub)
-						}
+						this.store.events.checkOverlay()
 					}
 				}
 			)

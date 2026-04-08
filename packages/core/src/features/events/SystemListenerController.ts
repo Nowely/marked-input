@@ -1,6 +1,6 @@
-import {effectScope, setActiveSub, watch} from '../../shared/signals/index.js'
+import {effectScope, watch} from '../../shared/signals/index.js'
 import {createNewSpan} from '../editing'
-import {annotate, toString} from '../parsing'
+import {annotate, findToken, toString} from '../parsing'
 import type {Store} from '../store/Store'
 
 export class SystemListenerController {
@@ -40,49 +40,30 @@ export class SystemListenerController {
 					}
 
 					onChange?.(toString(tokens))
-					// Break out of reactive context so parse emits instead of reads
-					const prevSub = setActiveSub(undefined)
-					try {
-						this.store.events.parse()
-					} finally {
-						setActiveSub(prevSub)
-					}
+					this.store.events.parse()
 				}
 			)
 
 			watch(
 				() => this.store.events.delete(),
 				() => {
-					const prevSub = setActiveSub(undefined)
-					let payload: ReturnType<typeof this.store.events.delete>
-					try {
-						payload = this.store.events.delete()
-					} finally {
-						setActiveSub(prevSub)
-					}
+					const payload = this.store.events.delete()
 					if (!payload) return
 
 					const {token} = payload
-					const onChange = this.store.state.onChange.get()
-
 					const tokens = this.store.state.tokens.get()
-					const index = tokens.indexOf(token)
-					this.store.state.tokens.set(tokens.toSpliced(index, 1))
+					if (!findToken(tokens, token)) return
 
-					onChange?.(toString(this.store.state.tokens.get()))
+					const value = toString(tokens)
+					const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
+					this.store.applyValue(nextValue)
 				}
 			)
 
 			watch(
 				() => this.store.events.select(),
 				() => {
-					const prevSub = setActiveSub(undefined)
-					let event: ReturnType<typeof this.store.events.select>
-					try {
-						event = this.store.events.select()
-					} finally {
-						setActiveSub(prevSub)
-					}
+					const event = this.store.events.select()
 					if (!event) return
 
 					const Mark = this.store.state.Mark.get()
@@ -129,13 +110,7 @@ export class SystemListenerController {
 						this.store.nodes.focus.target = this.store.nodes.input.target
 						this.store.nodes.input.clear()
 						onChange?.(toString(tokens))
-						// Break out of reactive context so parse emits instead of reads
-						const prevSubForParse = setActiveSub(undefined)
-						try {
-							this.store.events.parse()
-						} finally {
-							setActiveSub(prevSubForParse)
-						}
+						this.store.events.parse()
 					}
 				}
 			)
