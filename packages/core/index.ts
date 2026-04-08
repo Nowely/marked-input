@@ -25,7 +25,6 @@ export {
 	voidEvent,
 	payloadEvent,
 	defineState,
-	defineEvents,
 	watch,
 } from './src/shared/signals'
 

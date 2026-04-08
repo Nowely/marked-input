@@ -1,7 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {effect} from './alien-signals'
-import {defineEvents} from './defineEvents'
 import {defineState} from './defineState'
 import {setUseHookFactory, getUseHookFactory} from './registry'
 import type {UseHookFactory} from './registry'
@@ -491,57 +490,6 @@ describe('defineState()', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 		state.count(0) // same value
 		expect(runs).toHaveBeenCalledTimes(2)
-	})
-})
-
-// ---------------------------------------------------------------------------
-// defineEvents() integration
-// ---------------------------------------------------------------------------
-
-describe('defineEvents()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return the object with correctly typed events', () => {
-		const events = defineEvents<{change: void; delete: {id: number}}>({
-			change: voidEvent(),
-			delete: payloadEvent<{id: number}>(),
-		})
-
-		expect(typeof events.change).toBe('function')
-		expect(typeof events.delete).toBe('function')
-	})
-
-	it('should have returned events work identically to standalone voidEvent', () => {
-		const events = defineEvents<{ping: void}>({
-			ping: voidEvent(),
-		})
-
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			events.ping()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		events.ping() // emit
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-
-	it('should have returned events work identically to standalone payloadEvent', () => {
-		const events = defineEvents<{data: {id: number}}>({
-			data: payloadEvent<{id: number}>(),
-		})
-
-		let captured: {id: number} | undefined
-
-		trackedEffect(() => {
-			captured = events.data()
-		})
-
-		expect(captured).toBeUndefined()
-		events.data({id: 42})
-		expect(captured).toEqual({id: 42})
 	})
 })
 

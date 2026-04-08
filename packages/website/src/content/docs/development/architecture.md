@@ -211,7 +211,7 @@ For nested marks like `**bold @[mention]**`:
 
 ### Emitter Architecture
 
-Events use `defineEvents()` which creates typed emitters using reactive signals:
+Events use `voidEvent()` and `payloadEvent<T>()` to create typed emitters using reactive signals:
 
 - **`VoidEvent`** — callable with no arguments; subscribable via `watch(() => event(), fn)`
 - **`PayloadEvent<T>`** — callable with a payload to emit, or with no arguments to read the last payload inside a reactive context
