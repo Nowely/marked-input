@@ -1,6 +1,6 @@
 import {startBatch, endBatch} from './alien-signals'
-import {signal} from './signal.js'
-import type {Signal} from './signal.js'
+import {signal} from './signal'
+import type {Signal} from './signal'
 
 export type StateObject<T> = {
 	[K in keyof T]: Signal<T[K]>

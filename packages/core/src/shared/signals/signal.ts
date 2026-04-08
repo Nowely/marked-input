@@ -1,5 +1,5 @@
 import {signal as alienSignal, effect as alienEffect, getActiveSub, setActiveSub} from './alien-signals'
-import {getUseHookFactory} from './registry.js'
+import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
 

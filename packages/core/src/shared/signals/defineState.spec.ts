@@ -1,8 +1,8 @@
 import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest'
 
 import {effect} from './alien-signals'
-import {defineState} from './defineState.js'
-import {watch} from './signal.js'
+import {defineState} from './defineState'
+import {watch} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
