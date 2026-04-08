@@ -211,14 +211,10 @@ For nested marks like `**bold @[mention]**`:
 
 ### Emitter Architecture
 
-Events use `defineEvents<T>()` which creates typed emitters:
+Events use `defineEvents()` which creates typed emitters using reactive signals:
 
-```typescript
-export type Emitter<T = void> = {
-    (payload?: T): void
-    on(fn: (value: T) => void): () => void  // returns unsubscribe
-}
-```
+- **`VoidEvent`** — callable with no arguments; subscribable via `watch(() => event(), fn)`
+- **`PayloadEvent<T>`** — callable with a payload to emit, or with no arguments to read the last payload inside a reactive context
 
 ### Store Events
 
@@ -234,36 +230,47 @@ export type Emitter<T = void> = {
 ### Event Usage
 
 ```typescript
-// Emit an event
+// Emit a void event
 store.events.change()
 
-// Subscribe to an event (returns unsubscribe function)
-const unsubscribe = store.events.change.on(() => {
-    console.log('Text changed')
+// Emit a payload event
+store.events.delete({ token })
+
+// Subscribe inside an effectScope (cleanup is automatic when scope disposes)
+import {watch, effectScope} from '@markput/core'
+
+const dispose = effectScope(() => {
+    watch(
+        () => store.events.change(),
+        () => {
+            console.log('Text changed')
+        }
+    )
 })
 
-// Clean up
-unsubscribe()
+// Clean up all subscriptions in the scope
+dispose()
 ```
 
 ## State Management
 
 ### Reactive Signals
 
-State is managed through `defineState<T>()` which creates a `StateObject` — a Proxy where each property is a `Signal<T>`:
+State is managed through `defineState()` with explicit initial keys. Each property is a `Signal<T>`:
 
 ```typescript
 export interface Signal<T> {
-    get(): T              // Read value
-    set(value: T): void   // Write value
-    on(fn: (value: T) => void): () => void  // Subscribe
-    use(): T              // Framework-specific hook (React/Vue)
+    (): T                 // Read value (also tracks as reactive dependency)
+    (value: T): void      // Write value
+    get(): T              // Alias for read
+    set(value: T): void   // Alias for write
+    use(): T              // Framework-specific reactive hook (React/Vue)
 }
 ```
 
-The framework adapter injects `createUseHook` at Store construction:
-- **React**: `use()` returns the value via `useState` + `useEffect(signal.on)`
-- **Vue**: `use()` returns a `Ref<T>` backed by `shallowRef` + `signal.on()`
+The framework adapter calls `setUseHookFactory()` once at module load (in `createUseHook.ts`) to register a framework-specific subscriber:
+- **React**: `use()` calls `useSyncExternalStore`; the subscribe function creates an `effect()` that tracks the signal and calls the store callback on change
+- **Vue**: `use()` creates a `shallowRef`, drives it with `effect()`, and disposes on `onUnmounted`
 
 This is the **only framework coupling point**.
 
