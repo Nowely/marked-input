@@ -20,6 +20,14 @@ export interface Signal<T> {
 	use(): T
 }
 
+/**
+ * Derives a plain-value object type from an object of signals.
+ * `{ foo: Signal<string>, bar: Signal<number> }` → `{ foo: string, bar: number }`
+ */
+export type SignalValues<T> = {
+	[K in keyof T]: T[K] extends Signal<infer V> ? V : never
+}
+
 interface SignalOptions<T> {
 	equals?: false | ((a: T, b: T) => boolean)
 }
