@@ -483,11 +483,9 @@ describe('defineEvents()', () => {
 // ---------------------------------------------------------------------------
 
 describe('registry', () => {
-	it('getUseHookFactory should throw with a clear message if factory not set', async () => {
-		// We can't easily unset the factory in the same module scope,
-		// but we can verify the error message format from the source.
-		// Since setUseHookFactory was already called in earlier tests,
-		// we verify it doesn't throw when set.
+	it('getUseHookFactory should not throw once a factory has been set', async () => {
+		// setUseHookFactory was called in earlier tests in this suite.
+		// Verify it does not throw when a factory is already registered.
 		expect(() => getUseHookFactory()).not.toThrow()
 	})
 })
