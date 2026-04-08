@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
+import {setUseHookFactory, effect} from '../../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {
@@ -101,6 +101,19 @@ describe('Store', () => {
 		it('should not throw when called with an empty object', () => {
 			const store = new Store({defaultSpan: null})
 			expect(() => store.setState({})).not.toThrow()
+		})
+
+		it('should batch updates so effects fire once', () => {
+			const store = new Store({defaultSpan: null})
+			const effectSpy = vi.fn()
+			effect(() => {
+				store.state.value.get()
+				store.state.readOnly.get()
+				effectSpy()
+			})
+			effectSpy.mockClear()
+			store.setState({value: 'hello', readOnly: true})
+			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
 	})
 })
