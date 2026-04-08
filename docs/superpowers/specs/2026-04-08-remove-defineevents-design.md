@@ -9,9 +9,11 @@
 ## Current State
 
 `defineEvents` is used in 1 production site:
+
 1. **`Store.ts`** — wraps 6 event declarations (`change`, `parse`, `delete`, `select`, `clearOverlay`, `checkOverlay`)
 
 It has:
+
 - Dedicated tests: `defineEvents.spec.ts` (185 lines)
 - Integration tests in `signals.spec.ts` (lines 501-546)
 - Public API export from `core/index.ts`
@@ -54,16 +56,16 @@ No consumer changes — all `store.events.X()` calls remain identical.
 
 ## File Structure
 
-| Action | File | Purpose |
-|--------|------|---------|
-| Modify | `packages/core/src/features/store/Store.ts` | Replace `defineEvents` with plain object |
-| Modify | `packages/core/src/shared/signals/index.ts` | Remove `defineEvents` export |
-| Modify | `packages/core/src/shared/classes/index.ts` | Remove `defineEvents` re-export |
-| Modify | `packages/core/index.ts` | Remove `defineEvents` from public API |
-| Delete | `packages/core/src/shared/signals/defineEvents.ts` | Remove the utility |
-| Delete | `packages/core/src/shared/signals/defineEvents.spec.ts` | Remove its tests |
-| Modify | `packages/core/src/shared/signals/signals.spec.ts` | Remove `defineEvents()` block and import |
-| Modify | `packages/website/src/content/docs/development/architecture.md` | Update event system docs |
+| Action | File                                                            | Purpose                                  |
+| ------ | --------------------------------------------------------------- | ---------------------------------------- |
+| Modify | `packages/core/src/features/store/Store.ts`                     | Replace `defineEvents` with plain object |
+| Modify | `packages/core/src/shared/signals/index.ts`                     | Remove `defineEvents` export             |
+| Modify | `packages/core/src/shared/classes/index.ts`                     | Remove `defineEvents` re-export          |
+| Modify | `packages/core/index.ts`                                        | Remove `defineEvents` from public API    |
+| Delete | `packages/core/src/shared/signals/defineEvents.ts`              | Remove the utility                       |
+| Delete | `packages/core/src/shared/signals/defineEvents.spec.ts`         | Remove its tests                         |
+| Modify | `packages/core/src/shared/signals/signals.spec.ts`              | Remove `defineEvents()` block and import |
+| Modify | `packages/website/src/content/docs/development/architecture.md` | Update event system docs                 |
 
 ## Self-Review
 

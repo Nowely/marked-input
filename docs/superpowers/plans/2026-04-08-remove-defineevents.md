@@ -12,22 +12,23 @@
 
 ## File Structure
 
-| Action | File | Purpose |
-|--------|------|---------|
-| Modify | `packages/core/src/features/store/Store.ts` | Replace `defineEvents` with plain object |
-| Modify | `packages/core/src/shared/signals/index.ts` | Remove `defineEvents` export |
-| Modify | `packages/core/src/shared/classes/index.ts` | Remove `defineEvents` re-export |
-| Modify | `packages/core/index.ts` | Remove `defineEvents` from public API |
-| Delete | `packages/core/src/shared/signals/defineEvents.ts` | Remove the utility |
-| Delete | `packages/core/src/shared/signals/defineEvents.spec.ts` | Remove its tests |
-| Modify | `packages/core/src/shared/signals/signals.spec.ts` | Remove `defineEvents()` block and import |
-| Modify | `packages/website/src/content/docs/development/architecture.md` | Update event system docs |
+| Action | File                                                            | Purpose                                  |
+| ------ | --------------------------------------------------------------- | ---------------------------------------- |
+| Modify | `packages/core/src/features/store/Store.ts`                     | Replace `defineEvents` with plain object |
+| Modify | `packages/core/src/shared/signals/index.ts`                     | Remove `defineEvents` export             |
+| Modify | `packages/core/src/shared/classes/index.ts`                     | Remove `defineEvents` re-export          |
+| Modify | `packages/core/index.ts`                                        | Remove `defineEvents` from public API    |
+| Delete | `packages/core/src/shared/signals/defineEvents.ts`              | Remove the utility                       |
+| Delete | `packages/core/src/shared/signals/defineEvents.spec.ts`         | Remove its tests                         |
+| Modify | `packages/core/src/shared/signals/signals.spec.ts`              | Remove `defineEvents()` block and import |
+| Modify | `packages/website/src/content/docs/development/architecture.md` | Update event system docs                 |
 
 ---
 
 ### Task 1: Replace `defineEvents` in Store with plain object literal
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts`
 
 - [ ] **Step 1: Update the import line in Store.ts**
@@ -101,6 +102,7 @@ git commit -m "refactor(core): remove defineEvents from Store, use plain object"
 ### Task 2: Delete `defineEvents` utility and its dedicated tests
 
 **Files:**
+
 - Delete: `packages/core/src/shared/signals/defineEvents.ts`
 - Delete: `packages/core/src/shared/signals/defineEvents.spec.ts`
 
@@ -123,6 +125,7 @@ git commit -m "refactor(core): delete defineEvents utility and tests"
 ### Task 3: Clean up exports — signals, classes, core index
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/index.ts`
 - Modify: `packages/core/src/shared/classes/index.ts`
 - Modify: `packages/core/index.ts`
@@ -142,26 +145,18 @@ In the re-export block (lines 6-15), remove `defineEvents,`:
 ```typescript
 // FROM:
 export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	voidEvent,
-	payloadEvent,
-	defineState,
-	defineEvents,
-	watch,
+    setUseHookFactory,
+    getUseHookFactory,
+    effect,
+    voidEvent,
+    payloadEvent,
+    defineState,
+    defineEvents,
+    watch,
 } from '../signals'
 
 // TO:
-export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	voidEvent,
-	payloadEvent,
-	defineState,
-	watch,
-} from '../signals'
+export {setUseHookFactory, getUseHookFactory, effect, voidEvent, payloadEvent, defineState, watch} from '../signals'
 ```
 
 - [ ] **Step 3: Update `packages/core/index.ts`**
@@ -171,25 +166,25 @@ In the value export block (lines 21-30), remove `defineEvents,`:
 ```typescript
 // FROM:
 export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	voidEvent,
-	payloadEvent,
-	defineState,
-	defineEvents,
-	watch,
+    setUseHookFactory,
+    getUseHookFactory,
+    effect,
+    voidEvent,
+    payloadEvent,
+    defineState,
+    defineEvents,
+    watch,
 } from './src/shared/signals'
 
 // TO:
 export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	voidEvent,
-	payloadEvent,
-	defineState,
-	watch,
+    setUseHookFactory,
+    getUseHookFactory,
+    effect,
+    voidEvent,
+    payloadEvent,
+    defineState,
+    watch,
 } from './src/shared/signals'
 ```
 
@@ -215,6 +210,7 @@ git commit -m "refactor(core): remove defineEvents from all exports"
 ### Task 4: Remove `defineEvents()` integration tests from `signals.spec.ts`
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signals.spec.ts`
 
 - [ ] **Step 1: Remove the `defineEvents` import on line 4**
@@ -245,6 +241,7 @@ git commit -m "test(core): remove defineEvents integration tests from signals.sp
 ### Task 5: Update architecture docs
 
 **Files:**
+
 - Modify: `packages/website/src/content/docs/development/architecture.md`
 
 - [ ] **Step 1: Update the Event System section**
@@ -253,9 +250,11 @@ In `architecture.md` line 214, change:
 
 ```markdown
 <!-- FROM: -->
+
 Events use `defineEvents()` which creates typed emitters using reactive signals:
 
 <!-- TO: -->
+
 Events are declared as plain object literals using `voidEvent()` and `payloadEvent<T>()`:
 ```
 
