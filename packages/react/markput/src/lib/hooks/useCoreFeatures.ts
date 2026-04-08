@@ -25,10 +25,6 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	}, [value, options])
 
 	useLayoutEffect(() => {
-		store.controllers.contentEditable.sync()
-	}, [tokens])
-
-	useEffect(() => {
 		store.lifecycle.recoverFocus()
 	}, [tokens])
 }

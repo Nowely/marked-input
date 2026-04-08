@@ -109,6 +109,25 @@ export class KeyDownController {
 					return
 				}
 			}
+
+			if (focus.isSpan && focus.isEditable && window.getSelection()?.isCollapsed) {
+				const content = focus.content
+				const caret = focus.caret
+				if (event.key === KEYBOARD.BACKSPACE && caret > 0) {
+					event.preventDefault()
+					focus.content = content.slice(0, caret - 1) + content.slice(caret)
+					focus.caret = caret - 1
+					this.store.events.change()
+					return
+				}
+				if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
+					event.preventDefault()
+					focus.content = content.slice(0, caret) + content.slice(caret + 1)
+					focus.caret = caret
+					this.store.events.change()
+					return
+				}
+			}
 		}
 
 		if (!isDragMode) return
@@ -524,9 +543,22 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 		case 'deleteSoftLineBackward':
 		case 'deleteSoftLineForward': {
 			const ranges = event.getTargetRanges()
-			if (!ranges.length) return false
-			const {startOffset, endOffset} = ranges[0]
-			if (startOffset === endOffset) return false
+			let startOffset: number
+			let endOffset: number
+			if (ranges.length > 0 && ranges[0].startOffset !== ranges[0].endOffset) {
+				startOffset = ranges[0].startOffset
+				endOffset = ranges[0].endOffset
+			} else {
+				if (event.inputType === 'deleteContentBackward' && offset > 0) {
+					startOffset = offset - 1
+					endOffset = offset
+				} else if (event.inputType === 'deleteContentForward' && offset < content.length) {
+					startOffset = offset
+					endOffset = offset + 1
+				} else {
+					return false
+				}
+			}
 			event.preventDefault()
 			newContent = content.slice(0, startOffset) + content.slice(endOffset)
 			newCaret = startOffset

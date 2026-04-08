@@ -1,4 +1,5 @@
 import {childAt} from '../../shared/checkers'
+import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
@@ -11,26 +12,27 @@ function isTextTokenSpan(el: HTMLElement) {
 }
 
 export class ContentEditableController {
-	#unsubscribe?: () => void
-	#unsubSelecting?: () => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#unsubscribe) return
+		if (this.#scope) return
 
-		this.#unsubscribe = this.store.state.readOnly.on(() => this.sync())
-		this.#unsubSelecting = this.store.state.selecting.on(value => {
-			if (value === undefined) this.sync()
+		this.#scope = effectScope(() => {
+			effect(() => {
+				this.store.state.readOnly()
+				this.sync()
+			})
+			effect(() => {
+				if (this.store.state.selecting() === undefined) this.sync()
+			})
 		})
-		this.sync()
 	}
 
 	disable() {
-		this.#unsubscribe?.()
-		this.#unsubscribe = undefined
-		this.#unsubSelecting?.()
-		this.#unsubSelecting = undefined
+		this.#scope?.()
+		this.#scope = undefined
 	}
 
 	sync() {

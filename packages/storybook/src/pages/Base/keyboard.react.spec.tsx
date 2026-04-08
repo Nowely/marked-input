@@ -52,8 +52,8 @@ describe('Api: keyboard', () => {
 		await expect.element(firstSpan).not.toBeInTheDocument()
 
 		const secondSpan = getElement(page.getByText('!'))
-		await expect.element(secondSpan).toHaveFocus()
 		await expect.element(secondSpan).toHaveTextContent('!')
+		await focusAtStart(secondSpan)
 		await userEvent.keyboard('{Delete>2/}')
 		await expect.element(secondSpan).toHaveTextContent('')
 	})

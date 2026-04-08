@@ -1,12 +1,13 @@
-import type {Signal, UseHookFactory} from '@markput/core'
-import {type Ref, shallowRef} from 'vue'
+import {effect, setUseHookFactory} from '@markput/core'
+import {type Ref, shallowRef, onUnmounted} from 'vue'
 
-export const createUseHook: UseHookFactory =
-	<T>(signal: Signal<T>) =>
-	(): Ref<T> => {
-		const value = shallowRef(signal.get()) as Ref<T>
-		signal.on(v => {
-			value.value = v
-		})
-		return value
-	}
+setUseHookFactory((sig: unknown) => () => {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- sig is a Signal callable; cast to {(): unknown} to invoke it without a generic parameter
+	const s = sig as {(): unknown}
+	const r = shallowRef(s())
+	const stop = effect(() => {
+		r.value = s()
+	})
+	onUnmounted(stop)
+	return r as Ref<unknown>
+})

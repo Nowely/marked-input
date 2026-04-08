@@ -1,3 +1,4 @@
+import {childAt} from '../../../shared/checkers'
 import {toString} from '../../parsing'
 import type {Store} from '../../store'
 
@@ -9,6 +10,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	}
 	const placeIndex = placeMap[place]
 	const {focus} = store.nodes
+	const targetIndex = Math.max(0, focus.index - placeIndex)
 
 	const tokens = store.state.tokens.get()
 	const spliced = tokens.splice(focus.index - placeIndex, 3)
@@ -36,4 +38,12 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	store.state.recovery.set({anchor: caretAnchor.prev, caret})
 
 	store.state.onChange.get()?.(toString(store.state.tokens.get()))
+
+	queueMicrotask(() => {
+		const target = childAt(store.refs.container, targetIndex)
+		if (!target) return
+		store.nodes.focus.target = target
+		target.focus()
+		store.nodes.focus.caret = caret
+	})
 }

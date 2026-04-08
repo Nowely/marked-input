@@ -1,7 +1,7 @@
 import type {DragController} from '../../features/drag/DragController'
 import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../features/drag/eventHandlers'
+import {defineState, type StateObject} from '../signals'
 import {isClickOutside, isEscapeKey} from '../utils/menuUtils'
-import {defineState, type StateObject, type UseHookFactory} from './defineState'
 
 export type DropPosition = 'before' | 'after' | null
 
@@ -26,17 +26,14 @@ export class BlockStore {
 	#cleanupGrip?: () => void
 	#cleanupMenu?: () => void
 
-	constructor(createUseHook: UseHookFactory) {
-		this.state = defineState<BlockState>(
-			{
-				isHovered: false,
-				isDragging: false,
-				dropPosition: null,
-				menuOpen: false,
-				menuPosition: {top: 0, left: 0},
-			},
-			createUseHook
-		)
+	constructor() {
+		this.state = defineState<BlockState>({
+			isHovered: false,
+			isDragging: false,
+			dropPosition: null,
+			menuOpen: false,
+			menuPosition: {top: 0, left: 0},
+		})
 	}
 
 	attachContainer(el: HTMLElement | null, blockIndex: number, dragCtrl: DragController) {

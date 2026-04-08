@@ -1,23 +1,37 @@
-import {beforeEach, describe, it, expect, vi} from 'vitest'
+import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest'
 
-import {defineState} from './defineState'
-import type {Signal, UseHookFactory} from './defineState'
+import {effect} from '../alien-signals/src/index.js'
+import {defineState} from '../signals/defineState.js'
+import {watch} from '../signals/signal.js'
 
-describe('Utility: defineState', () => {
-	const createUseHook: UseHookFactory = vi.fn(signal => vi.fn(() => signal.get()))
+// Helper to track and dispose effects created during tests
+let disposers: (() => void)[]
 
-	beforeEach(() => {
-		vi.clearAllMocks()
-	})
+beforeEach(() => {
+	disposers = []
+	vi.clearAllMocks()
+})
 
+afterEach(() => {
+	for (const dispose of disposers) dispose()
+	disposers = []
+})
+
+function trackedEffect(fn: () => void): () => void {
+	const dispose = effect(fn)
+	disposers.push(dispose)
+	return dispose
+}
+
+describe('Utility: defineState (signals API)', () => {
 	describe('get', () => {
-		it('should return the initial value via signal.get()', () => {
-			const state = defineState({count: 42}, createUseHook)
-			expect(state.count.get()).toBe(42)
+		it('should return the initial value via state.key()', () => {
+			const state = defineState({count: 42})
+			expect(state.count()).toBe(42)
 		})
 
 		it('should return undefined for a key not present in the initial object', () => {
-			const state = defineState({count: 0}, createUseHook)
+			const state = defineState({count: 0})
 			// oxlint-disable-next-line no-unsafe-type-assertion
 			expect((state as Record<string, unknown>).missing).toBeUndefined()
 		})
@@ -25,173 +39,203 @@ describe('Utility: defineState', () => {
 		it('should support object and array initial values', () => {
 			const obj = {x: 1}
 			const arr = [1, 2, 3]
-			const state = defineState({obj, arr}, createUseHook)
-			expect(state.obj.get()).toBe(obj)
-			expect(state.arr.get()).toEqual([1, 2, 3])
+			const state = defineState({obj, arr})
+			expect(state.obj()).toBe(obj)
+			expect(state.arr()).toEqual([1, 2, 3])
+		})
+
+		it('should support .get() as a read alias', () => {
+			const state = defineState({name: 'Alice'})
+			expect(state.name.get()).toBe('Alice')
 		})
 	})
 
-	describe('signal.set', () => {
-		it('should update the value returned by signal.get()', () => {
-			const state = defineState({name: 'Alice'}, createUseHook)
+	describe('set (write)', () => {
+		it('should update the value when called with an argument', () => {
+			const state = defineState({name: 'Alice'})
+			state.name('Bob')
+			expect(state.name()).toBe('Bob')
+		})
+
+		it('should support .set() as a write alias', () => {
+			const state = defineState({name: 'Alice'})
 			state.name.set('Bob')
-			expect(state.name.get()).toBe('Bob')
+			expect(state.name()).toBe('Bob')
 		})
 
-		it('should notify subscriber when the value changes', () => {
-			const state = defineState({value: 0}, createUseHook)
+		it('should notify a watcher when the value changes', () => {
+			const state = defineState({value: 0})
 			const subscriber = vi.fn()
-			state.value.on(subscriber)
-			state.value.set(1)
+			const dispose = watch(() => state.value(), subscriber)
+			disposers.push(dispose)
+			state.value(1)
 			expect(subscriber).toHaveBeenCalledOnce()
-			expect(subscriber).toHaveBeenCalledWith(1)
 		})
 
-		it('should NOT notify subscribers when the same reference is set', () => {
+		it('should NOT notify watchers when the same value is set', () => {
 			const ref = {id: 1}
-			const state = defineState({ref}, createUseHook)
+			const state = defineState({ref})
 			const subscriber = vi.fn()
-			state.ref.on(subscriber)
-			state.ref.set(ref) // same reference
+			const dispose = watch(() => state.ref(), subscriber)
+			disposers.push(dispose)
+			state.ref(ref) // same reference
 			expect(subscriber).not.toHaveBeenCalled()
 		})
 	})
 
-	describe('signal.on (subscription)', () => {
-		it('should call the subscriber each time the value changes', () => {
-			const state = defineState({n: 0}, createUseHook)
-			const subscriber = vi.fn()
-			state.n.on(subscriber)
-			state.n.set(1)
-			state.n.set(2)
-			expect(subscriber).toHaveBeenCalledTimes(2)
+	describe('reactive tracking', () => {
+		it('should re-run an effect that reads the signal when it changes', () => {
+			const state = defineState({n: 0})
+			const runs = vi.fn()
+
+			trackedEffect(() => {
+				state.n()
+				runs()
+			})
+
+			expect(runs).toHaveBeenCalledTimes(1)
+			state.n(1)
+			state.n(2)
+			expect(runs).toHaveBeenCalledTimes(3)
 		})
 
-		it('should return an unsubscribe function that stops future notifications', () => {
-			const state = defineState({n: 0}, createUseHook)
+		it('should stop re-running after the watcher is disposed', () => {
+			const state = defineState({n: 0})
 			const subscriber = vi.fn()
-			const unsubscribe = state.n.on(subscriber)
-			state.n.set(1)
-			unsubscribe()
-			state.n.set(2)
+			const dispose = watch(() => state.n(), subscriber)
+			disposers.push(dispose)
+
+			state.n(1)
+			dispose()
+			state.n(2)
 			expect(subscriber).toHaveBeenCalledOnce()
 		})
 
-		it('should notify all registered subscribers', () => {
-			const state = defineState({n: 0}, createUseHook)
+		it('should notify all watchers registered on the same signal', () => {
+			const state = defineState({n: 0})
 			const a = vi.fn()
 			const b = vi.fn()
-			state.n.on(a)
-			state.n.on(b)
-			state.n.set(99)
-			expect(a).toHaveBeenCalledWith(99)
-			expect(b).toHaveBeenCalledWith(99)
+			const disposeA = watch(() => state.n(), a)
+			const disposeB = watch(() => state.n(), b)
+			disposers.push(disposeA, disposeB)
+
+			state.n(99)
+			expect(a).toHaveBeenCalledOnce()
+			expect(b).toHaveBeenCalledOnce()
 		})
 	})
 
 	describe('state.set (batch)', () => {
 		it('should update multiple keys at once', () => {
-			const state = defineState({x: 0, y: 0}, createUseHook)
+			const state = defineState({x: 0, y: 0})
 			state.set({x: 10, y: 20})
-			expect(state.x.get()).toBe(10)
-			expect(state.y.get()).toBe(20)
+			expect(state.x()).toBe(10)
+			expect(state.y()).toBe(20)
 		})
 
 		it('should only update the keys that are provided', () => {
-			const state = defineState({x: 0, y: 0}, createUseHook)
+			const state = defineState({x: 0, y: 0})
 			state.set({x: 5})
-			expect(state.x.get()).toBe(5)
-			expect(state.y.get()).toBe(0)
+			expect(state.x()).toBe(5)
+			expect(state.y()).toBe(0)
 		})
 
 		it('should silently ignore keys not in the initial state', () => {
-			const state = defineState({x: 0}, createUseHook)
+			const state = defineState({x: 0})
 			// oxlint-disable-next-line no-unsafe-type-assertion
 			expect(() => state.set({unknown: 42} as unknown as Parameters<typeof state.set>[0])).not.toThrow()
-			expect(state.x.get()).toBe(0)
+			expect(state.x()).toBe(0)
 		})
 
-		it('should update all values before firing any subscriber', () => {
-			const state = defineState({x: 0, y: 0}, createUseHook)
-			const snapshot = vi.fn(() => {
-				// Subscriber for x should see the new y value
-				// because batching updates all values first
-				capturedY = state.y.get()
+		it('should batch — effect reading two signals runs only once after state.set()', () => {
+			const state = defineState({x: 0, y: 0})
+			const runs = vi.fn()
+
+			trackedEffect(() => {
+				state.x()
+				state.y()
+				runs()
 			})
-			let capturedY = 0
 
-			state.x.on(snapshot)
+			expect(runs).toHaveBeenCalledTimes(1)
 			state.set({x: 1, y: 2})
-
-			expect(capturedY).toBe(2)
-			expect(snapshot).toHaveBeenCalledOnce()
-		})
-
-		it('should notify each changed key once', () => {
-			const state = defineState({a: 0, b: 0}, createUseHook)
-			const subA = vi.fn()
-			const subB = vi.fn()
-
-			state.a.on(subA)
-			state.b.on(subB)
-			state.set({a: 1, b: 1})
-
-			expect(subA).toHaveBeenCalledOnce()
-			expect(subA).toHaveBeenCalledWith(1)
-			expect(subB).toHaveBeenCalledOnce()
-			expect(subB).toHaveBeenCalledWith(1)
+			expect(runs).toHaveBeenCalledTimes(2) // initial + one batched re-run
 		})
 
 		it('should not notify subscribers for unchanged values', () => {
-			const state = defineState({x: 42, y: 0}, createUseHook)
+			const state = defineState({x: 42, y: 0})
 			const subX = vi.fn()
 			const subY = vi.fn()
+			const disposeX = watch(() => state.x(), subX)
+			const disposeY = watch(() => state.y(), subY)
+			disposers.push(disposeX, disposeY)
 
-			state.x.on(subX)
-			state.y.on(subY)
 			state.set({x: 42, y: 1}) // x unchanged, y changed
-
 			expect(subX).not.toHaveBeenCalled()
 			expect(subY).toHaveBeenCalledOnce()
 		})
 
 		it('should not notify any subscriber when all values are unchanged', () => {
-			const state = defineState({x: 1, y: 2}, createUseHook)
+			const state = defineState({x: 1, y: 2})
 			const subX = vi.fn()
 			const subY = vi.fn()
+			const disposeX = watch(() => state.x(), subX)
+			const disposeY = watch(() => state.y(), subY)
+			disposers.push(disposeX, disposeY)
 
-			state.x.on(subX)
-			state.y.on(subY)
 			state.set({x: 1, y: 2})
-
 			expect(subX).not.toHaveBeenCalled()
 			expect(subY).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('signal identity', () => {
-		it('should share the same underlying reactive when the same key is accessed twice', () => {
-			const state = defineState({n: 0}, createUseHook)
-			// Subscribe via first access, set via second — both must work together
+		it('should return a stable signal reference on repeated property access', () => {
+			const state = defineState({n: 0})
+			const ref1 = state.n
+			const ref2 = state.n
+			expect(ref1).toBe(ref2)
+		})
+
+		it('should share the same underlying signal — subscribe and set through different references', () => {
+			const state = defineState({n: 0})
 			const subscriber = vi.fn()
-			state.n.on(subscriber)
-			state.n.set(7)
-			expect(subscriber).toHaveBeenCalledWith(7)
+			// Access signal once to register watcher, then write through a fresh access
+			const sig = state.n
+			const dispose = watch(() => sig(), subscriber)
+			disposers.push(dispose)
+			state.n(7)
+			expect(subscriber).toHaveBeenCalledOnce()
 		})
 	})
 
-	describe('use property', () => {
-		it('should call createUseHook with the signal when the signal is first accessed', () => {
-			const state = defineState({n: 0}, createUseHook)
-			const signal: Signal<number> = state.n
-			expect(createUseHook).toHaveBeenCalledWith(signal)
+	describe('custom equals option', () => {
+		it('should support per-key custom equals', () => {
+			const state = defineState({item: {id: 1, name: 'a'}}, {equals: {item: (a, b) => a.id === b.id}})
+			const runs = vi.fn()
+
+			trackedEffect(() => {
+				state.item()
+				runs()
+			})
+
+			expect(runs).toHaveBeenCalledTimes(1)
+			state.item({id: 1, name: 'changed'}) // same id — should skip
+			expect(runs).toHaveBeenCalledTimes(1)
 		})
 
-		it('should assign the return value of createUseHook to signal.use', () => {
-			const useHook = vi.fn()
-			const factory: UseHookFactory = vi.fn(() => useHook)
-			const state = defineState({n: 0}, factory)
-			expect(state.n.use).toBe(useHook)
+		it('should support equals: false to fire even for the same value', () => {
+			const state = defineState({count: 0}, {equals: {count: false}})
+			const runs = vi.fn()
+
+			trackedEffect(() => {
+				state.count()
+				runs()
+			})
+
+			expect(runs).toHaveBeenCalledTimes(1)
+			state.count(0) // same value — should still fire
+			expect(runs).toHaveBeenCalledTimes(2)
 		})
 	})
 })

@@ -3,7 +3,8 @@ import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@m
 import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import {markRaw, provide, shallowRef, watch} from 'vue'
 
-import {createUseHook} from '../lib/hooks/createUseHook'
+// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
+import '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
@@ -24,7 +25,7 @@ const emit = defineEmits<{
 	change: [value: string]
 }>()
 
-const store = shallowRef(new Store({createUseHook, defaultSpan: markRaw(Span)}))
+const store = shallowRef(new Store({defaultSpan: markRaw(Span)}))
 
 provide(STORE_KEY, store.value)
 
