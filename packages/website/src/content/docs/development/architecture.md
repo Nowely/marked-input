@@ -269,7 +269,7 @@ export interface Signal<T> {
 ```
 
 The framework adapter calls `setUseHookFactory()` once at module load (in `createUseHook.ts`) to register a framework-specific subscriber:
-- **React**: `use()` calls `useSyncExternalStore`; the subscribe function creates an `effect()` that tracks the signal and calls the store callback on change
+- **React**: `use()` calls `useSyncExternalStore`; the subscribe function creates an `effect()` that tracks the signal and calls the notify callback on each re-run
 - **Vue**: `use()` creates a `shallowRef`, drives it with `effect()`, and disposes on `onUnmounted`
 
 This is the **only framework coupling point**.
@@ -299,12 +299,12 @@ class Store {
     }
 
     readonly events: {
-        change: Emitter<void>
-        parse: Emitter<void>
-        delete: Emitter<{ token: Token }>
-        select: Emitter<{ mark: Token; match: OverlayMatch }>
-        clearOverlay: Emitter<void>
-        checkOverlay: Emitter<void>
+        change: VoidEvent
+        parse: VoidEvent
+        delete: PayloadEvent<{ token: Token }>
+        select: PayloadEvent<{ mark: Token; match: OverlayMatch }>
+        clearOverlay: VoidEvent
+        checkOverlay: VoidEvent
     }
 
     readonly refs: {
