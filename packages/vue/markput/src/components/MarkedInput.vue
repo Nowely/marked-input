@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
-import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
+import {cx, DEFAULT_OPTIONS, merge, startBatch, endBatch, Store} from '@markput/core'
 import {markRaw, provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
@@ -36,22 +36,23 @@ function syncProps() {
 		props.slotProps?.container?.style as StyleProperties | undefined
 	)
 
-	store.value.state.set({
-		value: props.value,
-		defaultValue: props.defaultValue,
-		onChange: (v: string) => emit('change', v),
-		readOnly: props.readOnly,
-		drag: props.drag,
-		options: props.options,
-		showOverlayOn: props.showOverlayOn,
-		Span: props.Span,
-		Mark: props.Mark,
-		Overlay: props.Overlay,
-		className,
-		style: style as StyleProperties,
-		slots: props.slots as CoreSlots,
-		slotProps: props.slotProps as CoreSlotProps,
-	})
+	const s = store.value.state
+	startBatch()
+	s.value(props.value)
+	s.defaultValue(props.defaultValue)
+	s.onChange((v: string) => emit('change', v))
+	s.readOnly(props.readOnly)
+	s.drag(props.drag)
+	s.options(props.options)
+	s.showOverlayOn(props.showOverlayOn)
+	s.Span(props.Span)
+	s.Mark(props.Mark)
+	s.Overlay(props.Overlay)
+	s.className(className)
+	s.style(style as StyleProperties)
+	s.slots(props.slots as CoreSlots)
+	s.slotProps(props.slotProps as CoreSlotProps)
+	endBatch()
 }
 
 syncProps()

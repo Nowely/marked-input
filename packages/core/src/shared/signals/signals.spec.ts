@@ -1,7 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {effect} from './alien-signals'
-import {defineState} from './defineState'
 import {setUseHookFactory, getUseHookFactory} from './registry'
 import type {UseHookFactory} from './registry'
 import {signal, voidEvent, payloadEvent, watch} from './signal'
@@ -406,90 +405,6 @@ describe('watch()', () => {
 
 		source(2)
 		expect(seen).toEqual([1, 2])
-	})
-})
-
-// ---------------------------------------------------------------------------
-// defineState()
-// ---------------------------------------------------------------------------
-
-describe('defineState()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return an object with a Signal<T> per key', () => {
-		const state = defineState({count: 0, name: 'test'})
-		expect(typeof state.count).toBe('function')
-		expect(typeof state.name).toBe('function')
-		expect(state.count()).toBe(0)
-		expect(state.name()).toBe('test')
-	})
-
-	it('should return stable signal references on repeated access', () => {
-		const state = defineState({x: 1})
-		const ref1 = state.x
-		const ref2 = state.x
-		expect(ref1).toBe(ref2)
-	})
-
-	it('should set a value via state.key(v)', () => {
-		const state = defineState({count: 0})
-		state.count(5)
-		expect(state.count()).toBe(5)
-	})
-
-	it('should read a value via state.key()', () => {
-		const state = defineState({count: 42})
-		expect(state.count()).toBe(42)
-	})
-
-	it('should update multiple keys via state.set()', () => {
-		const state = defineState({x: 0, y: 0})
-		state.set({x: 10, y: 20})
-		expect(state.x()).toBe(10)
-		expect(state.y()).toBe(20)
-	})
-
-	it('should batch updates — effect reading two signals runs once, not twice', () => {
-		const state = defineState({x: 0, y: 0})
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			state.x()
-			state.y()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.set({x: 1, y: 2})
-		expect(runs).toHaveBeenCalledTimes(2) // once initial + once after batched set
-	})
-
-	it('should support per-key custom equals option', () => {
-		const state = defineState({item: {id: 1, name: 'a'}}, {equals: {item: (a, b) => a.id === b.id}})
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			state.item()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.item({id: 1, name: 'changed'}) // same id — should skip
-		expect(runs).toHaveBeenCalledTimes(1)
-	})
-
-	it('should support equals: false to fire even for same value', () => {
-		const state = defineState({count: 0}, {equals: {count: false}})
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			state.count()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.count(0) // same value
-		expect(runs).toHaveBeenCalledTimes(2)
 	})
 })
 

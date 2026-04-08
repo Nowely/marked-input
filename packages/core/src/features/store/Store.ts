@@ -1,6 +1,17 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
-import {defineState, voidEvent, payloadEvent, type StateObject} from '../../shared/signals'
-import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
+import {signal, voidEvent, payloadEvent} from '../../shared/signals'
+import type {Signal} from '../../shared/signals'
+import type {
+	CoreOption,
+	MarkputHandler,
+	OverlayMatch,
+	OverlayTrigger,
+	Recovery,
+	GenericComponent,
+	StyleProperties,
+	CoreSlots,
+	CoreSlotProps,
+} from '../../shared/types'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
 import {CopyController} from '../clipboard'
@@ -12,7 +23,7 @@ import {KeyDownController} from '../input'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
 import {parseWithParser} from '../parsing'
-import type {Token} from '../parsing'
+import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 
 export interface StoreOptions {
@@ -43,7 +54,43 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: StateObject<MarkputState>
+	readonly state: {
+		// Data
+		tokens: Signal<Token[]>
+		parser: Signal<Parser | undefined>
+		value: Signal<string | undefined>
+		defaultValue: Signal<string | undefined>
+		previousValue: Signal<string | undefined>
+		recovery: Signal<Recovery | undefined>
+
+		// Selection
+		selecting: Signal<'drag' | 'all' | undefined>
+		drag: Signal<boolean | {alwaysShowHandle: boolean}>
+
+		// Overlay
+		overlayMatch: Signal<OverlayMatch | undefined>
+		showOverlayOn: Signal<OverlayTrigger | undefined>
+
+		// Callbacks
+		onChange: Signal<((value: string) => void) | undefined>
+
+		// Config
+		options: Signal<CoreOption[] | undefined>
+		readOnly: Signal<boolean>
+
+		// Component overrides
+		Span: Signal<GenericComponent | undefined>
+		Mark: Signal<GenericComponent | undefined>
+		Overlay: Signal<GenericComponent | undefined>
+
+		// Styling
+		className: Signal<string | undefined>
+		style: Signal<StyleProperties | undefined>
+
+		// Slot system
+		slots: Signal<CoreSlots | undefined>
+		slotProps: Signal<CoreSlotProps | undefined>
+	}
 
 	readonly slot: {
 		container: Slot
@@ -85,31 +132,43 @@ export class Store {
 	constructor(options: StoreOptions) {
 		this._defaultSpan = options.defaultSpan
 		this.blocks = new BlockRegistry()
-		this.state = defineState<MarkputState>(
-			{
-				tokens: [],
-				parser: undefined,
-				previousValue: undefined,
-				recovery: undefined,
-				selecting: undefined,
-				overlayMatch: undefined,
-				value: undefined,
-				defaultValue: undefined,
-				onChange: undefined,
-				readOnly: false,
-				options: undefined,
-				showOverlayOn: undefined,
-				Span: undefined,
-				Mark: undefined,
-				Overlay: undefined,
-				className: undefined,
-				style: undefined,
-				slots: undefined,
-				slotProps: undefined,
-				drag: false,
-			},
-			{equals: {style: shallow}}
-		)
+		this.state = {
+			// Data
+			tokens: signal<Token[]>([]),
+			parser: signal<Parser | undefined>(undefined),
+			value: signal<string | undefined>(undefined),
+			defaultValue: signal<string | undefined>(undefined),
+			previousValue: signal<string | undefined>(undefined),
+			recovery: signal<Recovery | undefined>(undefined),
+
+			// Selection
+			selecting: signal<'drag' | 'all' | undefined>(undefined),
+			drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
+
+			// Overlay
+			overlayMatch: signal<OverlayMatch | undefined>(undefined),
+			showOverlayOn: signal<OverlayTrigger | undefined>(undefined),
+
+			// Callbacks
+			onChange: signal<((value: string) => void) | undefined>(undefined),
+
+			// Config
+			options: signal<CoreOption[] | undefined>(undefined),
+			readOnly: signal<boolean>(false),
+
+			// Component overrides
+			Span: signal<GenericComponent | undefined>(undefined),
+			Mark: signal<GenericComponent | undefined>(undefined),
+			Overlay: signal<GenericComponent | undefined>(undefined),
+
+			// Styling
+			className: signal<string | undefined>(undefined),
+			style: signal<StyleProperties | undefined>(undefined, {equals: shallow}),
+
+			// Slot system
+			slots: signal<CoreSlots | undefined>(undefined),
+			slotProps: signal<CoreSlotProps | undefined>(undefined),
+		}
 		this.slot = {
 			container: {
 				use: () =>
