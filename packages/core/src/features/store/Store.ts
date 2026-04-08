@@ -1,5 +1,5 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
-import {defineState, defineEvents, voidEvent, payloadEvent, type StateObject} from '../../shared/signals'
+import {defineState, voidEvent, payloadEvent, type StateObject} from '../../shared/signals'
 import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
@@ -53,21 +53,14 @@ export class Store {
 		mark: MarkSlot
 	}
 
-	readonly events = defineEvents<{
-		change: void
-		parse: void
-		delete: {token: Token}
-		select: {mark: Token; match: OverlayMatch}
-		clearOverlay: void
-		checkOverlay: void
-	}>({
+	readonly events = {
 		change: voidEvent(),
 		parse: voidEvent(),
 		delete: payloadEvent<{token: Token}>(),
 		select: payloadEvent<{mark: Token; match: OverlayMatch}>(),
 		clearOverlay: voidEvent(),
 		checkOverlay: voidEvent(),
-	})
+	}
 
 	readonly refs = {
 		container: null as HTMLDivElement | null,
