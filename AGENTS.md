@@ -160,4 +160,4 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
 - Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
-- `Store.state` properties are lazy Signals behind a Proxy — accessing a new property auto-creates it
+- `Store.state` properties are Signals defined in the initial `defineState()` call — do not access properties that weren't defined there
