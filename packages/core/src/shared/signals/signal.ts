@@ -1,4 +1,11 @@
-import {signal as alienSignal, effect as alienEffect, getActiveSub, setActiveSub} from './alien-signals'
+import {
+	signal as alienSignal,
+	effect as alienEffect,
+	getActiveSub,
+	setActiveSub,
+	startBatch,
+	endBatch,
+} from './alien-signals'
 import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
@@ -198,4 +205,17 @@ export function watch(dep: () => unknown, fn: () => void): () => void {
 			setActiveSub(prevSub)
 		}
 	})
+}
+
+// ---------------------------------------------------------------------------
+// batch() — defer effect flush until callback completes
+// ---------------------------------------------------------------------------
+
+export function batch(fn: () => void): void {
+	startBatch()
+	try {
+		fn()
+	} finally {
+		endBatch()
+	}
 }

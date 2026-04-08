@@ -1,5 +1,5 @@
 export {setUseHookFactory, getUseHookFactory} from './registry'
 export type {UseHookFactory} from './registry'
-export {signal, effect, voidEvent, payloadEvent, watch} from './signal'
+export {signal, effect, voidEvent, payloadEvent, watch, batch} from './signal'
 export type {Signal, VoidEvent, PayloadEvent, SignalValues} from './signal'
-export {effectScope, setActiveSub, startBatch, endBatch} from './alien-signals'
+export {effectScope, setActiveSub} from './alien-signals'

@@ -26,8 +26,7 @@ export {
 	payloadEvent,
 	signal,
 	watch,
-	startBatch,
-	endBatch,
+	batch,
 } from './src/shared/signals'
 
 // Store
