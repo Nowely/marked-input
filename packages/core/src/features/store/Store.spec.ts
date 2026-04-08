@@ -82,4 +82,25 @@ describe('Store', () => {
 			// NodeProxy.head is undefined by default, so focus() is a no-op
 		})
 	})
+
+	describe('setState', () => {
+		it('should update provided state values', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({value: 'hello', readOnly: true})
+			expect(store.state.value.get()).toBe('hello')
+			expect(store.state.readOnly.get()).toBe(true)
+		})
+
+		it('should leave unprovided keys unchanged', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({readOnly: true})
+			expect(store.state.value.get()).toBeUndefined()
+			expect(store.state.readOnly.get()).toBe(true)
+		})
+
+		it('should not throw when called with an empty object', () => {
+			const store = new Store({defaultSpan: null})
+			expect(() => store.setState({})).not.toThrow()
+		})
+	})
 })

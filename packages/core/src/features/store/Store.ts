@@ -1,5 +1,6 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
-import {signal, voidEvent, payloadEvent} from '../../shared/signals'
+import {signal, voidEvent, payloadEvent, startBatch, endBatch} from '../../shared/signals'
+import type {SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
 	MarkputHandler,
@@ -202,6 +203,18 @@ export class Store {
 		this.state.tokens.set(newTokens)
 		this.state.previousValue.set(newValue)
 		onChange?.(newValue)
+	}
+
+	setState(values: Partial<SignalValues<typeof this.state>>): void {
+		startBatch()
+		try {
+			for (const k in values) {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
+				this.state[k as keyof typeof this.state].set(values[k as keyof typeof values] as never)
+			}
+		} finally {
+			endBatch()
+		}
 	}
 
 	createHandler(): MarkputHandler {
