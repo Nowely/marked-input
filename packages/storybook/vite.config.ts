@@ -1,4 +1,4 @@
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
 import vue from '@vitejs/plugin-vue'
 import {playwright} from '@vitest/browser-playwright'
 import {defineConfig, defineProject} from 'vitest/config'
