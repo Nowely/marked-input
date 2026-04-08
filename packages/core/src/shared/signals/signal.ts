@@ -1,7 +1,7 @@
 import {signal as alienSignal, effect as alienEffect, getActiveSub} from '../alien-signals/src/index.js'
+import {getUseHookFactory} from './registry.js'
 
 export {alienEffect as effect}
-import {getUseHookFactory} from './registry.js'
 
 // ---------------------------------------------------------------------------
 // Signal<T> — reactive state value
