@@ -1,5 +1,5 @@
-import {effectScope, effect} from '../../shared/alien-signals/src/index.js'
 import {childAt} from '../../shared/checkers'
+import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 

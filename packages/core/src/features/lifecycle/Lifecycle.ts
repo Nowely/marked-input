@@ -1,5 +1,4 @@
-import {effectScope} from '../../shared/alien-signals/src/index.js'
-import {watch} from '../../shared/signals/signal.js'
+import {effectScope, watch} from '../../shared/signals/index.js'
 import type {CoreOption} from '../../shared/types'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'

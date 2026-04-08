@@ -1,6 +1,5 @@
-import {effectScope, setActiveSub} from '../../shared/alien-signals/src/index.js'
 import {KEYBOARD} from '../../shared/constants'
-import {watch} from '../../shared/signals/signal.js'
+import {effectScope, setActiveSub, watch} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'

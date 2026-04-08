@@ -1,5 +1,4 @@
-import {effectScope, setActiveSub} from '../../shared/alien-signals/src/index.js'
-import {watch} from '../../shared/signals/signal.js'
+import {effectScope, setActiveSub, watch} from '../../shared/signals/index.js'
 import {createNewSpan} from '../editing'
 import {annotate, toString} from '../parsing'
 import type {Store} from '../store/Store'

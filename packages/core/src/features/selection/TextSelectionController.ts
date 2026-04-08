@@ -1,5 +1,5 @@
-import {effectScope, effect} from '../../shared/alien-signals/src/index.js'
 import {nodeTarget} from '../../shared/checkers'
+import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Store} from '../store/Store'
 
 export class TextSelectionController {
