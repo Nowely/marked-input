@@ -53,7 +53,13 @@ export class SystemListenerController {
 			watch(
 				() => this.store.events.delete(),
 				() => {
-					const payload = this.store.events.delete()
+					const prevSub = setActiveSub(undefined)
+					let payload: ReturnType<typeof this.store.events.delete>
+					try {
+						payload = this.store.events.delete()
+					} finally {
+						setActiveSub(prevSub)
+					}
 					if (!payload) return
 
 					const {token} = payload
@@ -70,7 +76,13 @@ export class SystemListenerController {
 			watch(
 				() => this.store.events.select(),
 				() => {
-					const event = this.store.events.select()
+					const prevSub = setActiveSub(undefined)
+					let event: ReturnType<typeof this.store.events.select>
+					try {
+						event = this.store.events.select()
+					} finally {
+						setActiveSub(prevSub)
+					}
 					if (!event) return
 
 					const Mark = this.store.state.Mark.get()
