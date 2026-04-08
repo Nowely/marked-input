@@ -130,11 +130,11 @@ export class SystemListenerController {
 						this.store.nodes.input.clear()
 						onChange?.(toString(tokens))
 						// Break out of reactive context so parse emits instead of reads
-						const prevSub = setActiveSub(undefined)
+						const prevSubForParse = setActiveSub(undefined)
 						try {
 							this.store.events.parse()
 						} finally {
-							setActiveSub(prevSub)
+							setActiveSub(prevSubForParse)
 						}
 					}
 				}
