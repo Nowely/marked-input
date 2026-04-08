@@ -17,7 +17,17 @@ export {annotate, denote} from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 
 // Reactive system
-export type {Signal, UseHookFactory} from './src/shared/classes'
+export type {Signal, VoidEvent, PayloadEvent, UseHookFactory, StateObject} from './src/shared/signals'
+export {
+	setUseHookFactory,
+	getUseHookFactory,
+	effect,
+	voidEvent,
+	payloadEvent,
+	defineState,
+	defineEvents,
+	watch,
+} from './src/shared/signals'
 
 // Store
 export {Store, type Slot, type MarkSlot, type OverlaySlot} from './src/features/store'

@@ -3,7 +3,8 @@ import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useState} from 'react'
 
-import {createUseHook} from '../lib/hooks/createUseHook'
+// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
+import '../lib/hooks/createUseHook'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
@@ -86,7 +87,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
 	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
 	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
-	const [store] = useState(() => new Store({createUseHook, defaultSpan: DefaultSpan}))
+	const [store] = useState(() => new Store({defaultSpan: DefaultSpan}))
 
 	store.state.set({
 		value: props.value,

@@ -1,3 +1,4 @@
+import {effectScope, effect} from '../../shared/alien-signals/src/index.js'
 import {nodeTarget} from '../../shared/checkers'
 import type {Store} from '../store/Store'
 
@@ -6,7 +7,7 @@ export class TextSelectionController {
 	#mousemoveHandler?: (e: MouseEvent) => void
 	#mouseupHandler?: () => void
 	#selectionchangeHandler?: () => void
-	#unsubSelecting?: () => void
+	#scope?: () => void
 	#pressedNode: Node | null = null
 	#isPressed = false
 
@@ -53,13 +54,16 @@ export class TextSelectionController {
 			}
 		}
 
-		this.#unsubSelecting = this.store.state.selecting.on(value => {
-			if (value !== 'drag') return
-			const container = this.store.refs.container
-			if (!container) return
-			container
-				.querySelectorAll<HTMLElement>('[contenteditable="true"]')
-				.forEach(el => (el.contentEditable = 'false'))
+		this.#scope = effectScope(() => {
+			effect(() => {
+				const value = this.store.state.selecting()
+				if (value !== 'drag') return
+				const container = this.store.refs.container
+				if (!container) return
+				container
+					.querySelectorAll<HTMLElement>('[contenteditable="true"]')
+					.forEach(el => (el.contentEditable = 'false'))
+			})
 		})
 
 		document.addEventListener('mousedown', this.#mousedownHandler)
@@ -74,8 +78,8 @@ export class TextSelectionController {
 			this.store.state.selecting.set(undefined)
 		}
 
-		this.#unsubSelecting?.()
-		this.#unsubSelecting = undefined
+		this.#scope?.()
+		this.#scope = undefined
 
 		if (this.#mousedownHandler) {
 			document.removeEventListener('mousedown', this.#mousedownHandler)

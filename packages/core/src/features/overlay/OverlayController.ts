@@ -1,4 +1,6 @@
+import {effectScope, setActiveSub} from '../../shared/alien-signals/src/index.js'
 import {KEYBOARD} from '../../shared/constants'
+import {watch} from '../../shared/signals/signal.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
@@ -6,9 +8,7 @@ import type {Store} from '../store/Store'
 type TriggerExtractor<T> = (option: T, index: number) => string | undefined
 
 export class OverlayController {
-	#clearUnsubscribe?: () => void
-	#checkUnsubscribe?: () => void
-	#changeUnsubscribe?: () => void
+	#triggerScope?: () => void
 	#selectionChangeHandler?: () => void
 	#focusinHandler?: (e: FocusEvent) => void
 	#focusoutHandler?: (e: FocusEvent) => void
@@ -21,26 +21,43 @@ export class OverlayController {
 		getTrigger: TriggerExtractor<T>,
 		onMatch: (match: OverlayMatch<T> | undefined) => void
 	) {
-		if (this.#clearUnsubscribe) return
+		if (this.#triggerScope) return
 
-		this.#clearUnsubscribe = this.store.events.clearOverlay.on(() => {
-			onMatch(undefined)
-		})
+		this.#triggerScope = effectScope(() => {
+			watch(
+				() => this.store.events.clearOverlay(),
+				() => {
+					onMatch(undefined)
+				}
+			)
 
-		this.#checkUnsubscribe = this.store.events.checkOverlay.on(() => {
-			// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
-			const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
-			onMatch(match)
-		})
+			watch(
+				() => this.store.events.checkOverlay(),
+				() => {
+					// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
+					const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
+					onMatch(match)
+				}
+			)
 
-		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()
-			if (!showOverlayOn) return
-			const type: OverlayTrigger = 'change'
+			watch(
+				() => this.store.events.change(),
+				() => {
+					const showOverlayOn = this.store.state.showOverlayOn.get()
+					if (!showOverlayOn) return
+					const type: OverlayTrigger = 'change'
 
-			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.events.checkOverlay()
-			}
+					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+						// Break out of reactive context so checkOverlay emits instead of reads
+						const prevSub = setActiveSub(undefined)
+						try {
+							this.store.events.checkOverlay()
+						} finally {
+							setActiveSub(prevSub)
+						}
+					}
+				}
+			)
 		})
 
 		const selectionChangeHandler = () => {
@@ -112,13 +129,8 @@ export class OverlayController {
 
 		this.disableClose()
 
-		this.#clearUnsubscribe?.()
-		this.#checkUnsubscribe?.()
-		this.#changeUnsubscribe?.()
-
-		this.#clearUnsubscribe = undefined
-		this.#checkUnsubscribe = undefined
-		this.#changeUnsubscribe = undefined
+		this.#triggerScope?.()
+		this.#triggerScope = undefined
 		this.#selectionChangeHandler = undefined
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined

@@ -1,10 +1,16 @@
-export {Reactive} from './Reactive'
-export type {Signal, UseHookFactory, StateObject} from './defineState'
-export {defineState} from './defineState'
-export type {Emitter} from './defineEvents'
-export {defineEvents} from './defineEvents'
 export {BlockRegistry} from './BlockRegistry'
 export {BlockStore} from './BlockStore'
 export type {DropPosition} from './BlockStore'
 export {KeyGenerator} from './KeyGenerator'
 export {NodeProxy} from './NodeProxy'
+export {
+	setUseHookFactory,
+	getUseHookFactory,
+	effect,
+	voidEvent,
+	payloadEvent,
+	defineState,
+	defineEvents,
+	watch,
+} from '../signals'
+export type {Signal, VoidEvent, PayloadEvent, UseHookFactory, StateObject} from '../signals'

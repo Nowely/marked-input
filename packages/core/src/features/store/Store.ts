@@ -1,12 +1,5 @@
-import {
-	defineState,
-	defineEvents,
-	BlockRegistry,
-	KeyGenerator,
-	NodeProxy,
-	type UseHookFactory,
-	type StateObject,
-} from '../../shared/classes'
+import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
+import {defineState, defineEvents, voidEvent, payloadEvent, type StateObject} from '../../shared/signals'
 import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
@@ -23,7 +16,6 @@ import type {Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 
 export interface StoreOptions {
-	createUseHook: UseHookFactory
 	defaultSpan: unknown
 }
 
@@ -68,7 +60,14 @@ export class Store {
 		select: {mark: Token; match: OverlayMatch}
 		clearOverlay: void
 		checkOverlay: void
-	}>()
+	}>({
+		change: voidEvent(),
+		parse: voidEvent(),
+		delete: payloadEvent<{token: Token}>(),
+		select: payloadEvent<{mark: Token; match: OverlayMatch}>(),
+		clearOverlay: voidEvent(),
+		checkOverlay: voidEvent(),
+	})
 
 	readonly refs = {
 		container: null as HTMLDivElement | null,
@@ -92,7 +91,7 @@ export class Store {
 
 	constructor(options: StoreOptions) {
 		this._defaultSpan = options.defaultSpan
-		this.blocks = new BlockRegistry(options.createUseHook)
+		this.blocks = new BlockRegistry()
 		this.state = defineState<MarkputState>(
 			{
 				tokens: [],
@@ -116,7 +115,6 @@ export class Store {
 				slotProps: undefined,
 				drag: false,
 			},
-			options.createUseHook,
 			{equals: {style: shallow}}
 		)
 		this.slot = {

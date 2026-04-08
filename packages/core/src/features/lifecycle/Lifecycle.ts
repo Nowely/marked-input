@@ -1,3 +1,5 @@
+import {effectScope} from '../../shared/alien-signals/src/index.js'
+import {watch} from '../../shared/signals/signal.js'
 import type {CoreOption} from '../../shared/types'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
@@ -10,30 +12,38 @@ export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
 }
 
 export class Lifecycle {
-	#unsubscribers: (() => void)[] = []
+	#scope?: () => void
+	#stopFeatures?: () => void
+	#stopOverlay?: () => void
 	#initialized = false
 
 	constructor(private store: Store) {}
 
 	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
+		if (this.#scope) return // idempotency guard
+
 		const {store} = this
 
 		const features = createCoreFeatures(store)
 		features.enableAll()
-		this.#unsubscribers.push(() => features.disableAll())
+		this.#stopFeatures = () => features.disableAll()
 
-		this.#subscribeParse()
+		this.#scope = effectScope(() => {
+			this.#subscribeParse()
 
-		if (options?.getTrigger) {
-			this.#subscribeOverlay(options.getTrigger)
-		}
+			if (options?.getTrigger) {
+				this.#subscribeOverlay(options.getTrigger)
+			}
+		})
 	}
 
 	disable() {
-		for (const unsub of this.#unsubscribers) {
-			unsub()
-		}
-		this.#unsubscribers = []
+		this.#scope?.()
+		this.#scope = undefined
+		this.#stopFeatures?.()
+		this.#stopFeatures = undefined
+		this.#stopOverlay?.()
+		this.#stopOverlay = undefined
 		this.#initialized = false
 	}
 
@@ -82,8 +92,9 @@ export class Lifecycle {
 	#subscribeParse() {
 		const {store} = this
 
-		this.#unsubscribers.push(
-			store.events.parse.on(() => {
+		watch(
+			() => store.events.parse(),
+			() => {
 				if (store.state.recovery.get()) {
 					const text = toString(store.state.tokens.get())
 					store.state.tokens.set(parseWithParser(store, text))
@@ -91,7 +102,7 @@ export class Lifecycle {
 					return
 				}
 				store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
-			})
+			}
 		)
 	}
 
@@ -99,17 +110,18 @@ export class Lifecycle {
 		const {store} = this
 
 		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
-		this.#unsubscribers.push(() => store.controllers.overlay.disable())
+		this.#stopOverlay = () => store.controllers.overlay.disable()
 
-		this.#unsubscribers.push(
-			store.state.overlayMatch.on(match => {
-				if (match) {
+		watch(
+			() => store.state.overlayMatch(),
+			() => {
+				if (store.state.overlayMatch()) {
 					store.nodes.input.target = store.nodes.focus.target
 					store.controllers.overlay.enableClose()
 				} else {
 					store.controllers.overlay.disableClose()
 				}
-			})
+			}
 		)
 	}
 }

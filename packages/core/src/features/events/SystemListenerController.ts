@@ -1,113 +1,138 @@
+import {effectScope, setActiveSub} from '../../shared/alien-signals/src/index.js'
+import {watch} from '../../shared/signals/signal.js'
 import {createNewSpan} from '../editing'
 import {annotate, toString} from '../parsing'
 import type {Store} from '../store/Store'
 
 export class SystemListenerController {
-	#changeUnsubscribe?: () => void
-	#deleteUnsubscribe?: () => void
-	#selectUnsubscribe?: () => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#changeUnsubscribe) return
+		if (this.#scope) return
 
-		this.#changeUnsubscribe = this.store.events.change.on(() => {
-			const onChange = this.store.state.onChange.get()
-			const {focus} = this.store.nodes
+		this.#scope = effectScope(() => {
+			watch(
+				() => this.store.events.change(),
+				() => {
+					const onChange = this.store.state.onChange.get()
+					const {focus} = this.store.nodes
 
-			// Programmatic mark change or non-editable focus (e.g. a checkbox):
-			// the token was already mutated in-place by MarkHandler — serialize it
-			// directly and force a re-render without reading stale DOM content.
-			if (!focus.target || !focus.target.isContentEditable) {
-				const tokens = this.store.state.tokens.get()
-				const serialized = toString(tokens)
-				onChange?.(serialized)
-				this.store.state.previousValue.set(serialized)
-				this.store.state.tokens.set([...tokens])
-				return
-			}
+					// Programmatic mark change or non-editable focus (e.g. a checkbox):
+					// the token was already mutated in-place by MarkHandler — serialize it
+					// directly and force a re-render without reading stale DOM content.
+					if (!focus.target || !focus.target.isContentEditable) {
+						const tokens = this.store.state.tokens.get()
+						const serialized = toString(tokens)
+						onChange?.(serialized)
+						this.store.state.previousValue.set(serialized)
+						this.store.state.tokens.set([...tokens])
+						return
+					}
 
-			// User typed in a contentEditable element: sync DOM content → token state.
-			const tokens = this.store.state.tokens.get()
-			const token = tokens[focus.index]
-			if (token.type === 'text') {
-				token.content = focus.content
-			} else {
-				token.value = focus.content
-			}
+					// User typed in a contentEditable element: sync DOM content → token state.
+					const tokens = this.store.state.tokens.get()
+					const token = tokens[focus.index]
+					if (token.type === 'text') {
+						token.content = focus.content
+					} else {
+						token.value = focus.content
+					}
 
-			onChange?.(toString(tokens))
-			this.store.events.parse()
-		})
-
-		this.#deleteUnsubscribe = this.store.events.delete.on(data => {
-			const {token} = data
-			const onChange = this.store.state.onChange.get()
-
-			const tokens = this.store.state.tokens.get()
-			const index = tokens.indexOf(token)
-			this.store.state.tokens.set(tokens.toSpliced(index, 1))
-
-			onChange?.(toString(this.store.state.tokens.get()))
-		})
-
-		this.#selectUnsubscribe = this.store.events.select.on(event => {
-			const Mark = this.store.state.Mark.get()
-			const onChange = this.store.state.onChange.get()
-			const {
-				mark,
-				match: {option, span, index, source},
-			} = event
-
-			const markup = option.markup
-			if (!markup) return
-
-			const annotation =
-				mark.type === 'mark'
-					? annotate(markup, {
-							value: mark.value,
-							meta: mark.meta,
-						})
-					: annotate(markup, {
-							value: mark.content,
-						})
-
-			const newSpan = createNewSpan(span, annotation, index, source)
-
-			this.store.state.recovery.set(
-				Mark
-					? {
-							caret: 0,
-							anchor: this.store.nodes.input.next,
-							isNext: true,
-							childIndex: this.store.nodes.input.index,
-						}
-					: {caret: index + annotation.length, anchor: this.store.nodes.input}
+					onChange?.(toString(tokens))
+					// Break out of reactive context so parse emits instead of reads
+					const prevSub = setActiveSub(undefined)
+					try {
+						this.store.events.parse()
+					} finally {
+						setActiveSub(prevSub)
+					}
+				}
 			)
 
-			if (this.store.nodes.input.target) {
-				this.store.nodes.input.content = newSpan
-				const tokens = this.store.state.tokens.get()
-				const inputToken = tokens[this.store.nodes.input.index]
-				if (inputToken.type === 'text') {
-					inputToken.content = newSpan
-				}
+			watch(
+				() => this.store.events.delete(),
+				() => {
+					const payload = this.store.events.delete()
+					if (!payload) return
 
-				this.store.nodes.focus.target = this.store.nodes.input.target
-				this.store.nodes.input.clear()
-				onChange?.(toString(tokens))
-				this.store.events.parse()
-			}
+					const {token} = payload
+					const onChange = this.store.state.onChange.get()
+
+					const tokens = this.store.state.tokens.get()
+					const index = tokens.indexOf(token)
+					this.store.state.tokens.set(tokens.toSpliced(index, 1))
+
+					onChange?.(toString(this.store.state.tokens.get()))
+				}
+			)
+
+			watch(
+				() => this.store.events.select(),
+				() => {
+					const event = this.store.events.select()
+					if (!event) return
+
+					const Mark = this.store.state.Mark.get()
+					const onChange = this.store.state.onChange.get()
+					const {
+						mark,
+						match: {option, span, index, source},
+					} = event
+
+					const markup = option.markup
+					if (!markup) return
+
+					const annotation =
+						mark.type === 'mark'
+							? annotate(markup, {
+									value: mark.value,
+									meta: mark.meta,
+								})
+							: annotate(markup, {
+									value: mark.content,
+								})
+
+					const newSpan = createNewSpan(span, annotation, index, source)
+
+					this.store.state.recovery.set(
+						Mark
+							? {
+									caret: 0,
+									anchor: this.store.nodes.input.next,
+									isNext: true,
+									childIndex: this.store.nodes.input.index,
+								}
+							: {caret: index + annotation.length, anchor: this.store.nodes.input}
+					)
+
+					if (this.store.nodes.input.target) {
+						this.store.nodes.input.content = newSpan
+						const tokens = this.store.state.tokens.get()
+						const inputToken = tokens[this.store.nodes.input.index]
+						if (inputToken.type === 'text') {
+							inputToken.content = newSpan
+						}
+
+						this.store.nodes.focus.target = this.store.nodes.input.target
+						this.store.nodes.input.clear()
+						onChange?.(toString(tokens))
+						// Break out of reactive context so parse emits instead of reads
+						const prevSub = setActiveSub(undefined)
+						try {
+							this.store.events.parse()
+						} finally {
+							setActiveSub(prevSub)
+						}
+					}
+				}
+			)
 		})
 	}
 
 	disable() {
-		this.#changeUnsubscribe?.()
-		this.#deleteUnsubscribe?.()
-		this.#selectUnsubscribe?.()
-		this.#changeUnsubscribe = undefined
-		this.#deleteUnsubscribe = undefined
-		this.#selectUnsubscribe = undefined
+		this.#scope?.()
+		this.#scope = undefined
 	}
 }
