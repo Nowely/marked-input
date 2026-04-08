@@ -1,4 +1,4 @@
-import {createReactiveSystem, ReactiveFlags, type ReactiveNode} from './system.js'
+import {createReactiveSystem, ReactiveFlags, type ReactiveNode} from './system'
 
 interface EffectNode extends ReactiveNode {
 	fn(): void

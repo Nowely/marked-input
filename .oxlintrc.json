@@ -105,7 +105,7 @@
       }
     }
   ],
-  "ignorePatterns": ["packages/website/**", "packages/core/src/shared/alien-signals/**"],
+  "ignorePatterns": ["packages/website/**", "packages/core/src/shared/signals/alien-signals/**"],
   "settings": {
     "jsdoc": {
       "ignorePrivate": false,

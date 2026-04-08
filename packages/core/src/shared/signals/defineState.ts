@@ -1,4 +1,4 @@
-import {startBatch, endBatch} from '../alien-signals/src/index.js'
+import {startBatch, endBatch} from './alien-signals'
 import {signal} from './signal.js'
 import type {Signal} from './signal.js'
 

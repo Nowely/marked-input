@@ -1,8 +1,8 @@
 import {afterEach, beforeEach, describe, it, expect, vi} from 'vitest'
 
-import {effect} from '../alien-signals/src/index.js'
-import {defineEvents} from '../signals/defineEvents.js'
-import {voidEvent, payloadEvent, watch} from '../signals/signal.js'
+import {effect} from './alien-signals'
+import {defineEvents} from './defineEvents.js'
+import {voidEvent, payloadEvent, watch} from './signal.js'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]

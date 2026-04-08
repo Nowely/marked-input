@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {effect} from '../alien-signals/src/index.js'
+import {effect} from './alien-signals'
 import {defineEvents} from './defineEvents.js'
 import {defineState} from './defineState.js'
 import {setUseHookFactory, getUseHookFactory} from './registry.js'
