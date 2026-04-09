@@ -140,25 +140,45 @@ export function event<T = void>(): Event<T> {
 // watch() — skip-first-run helper for event subscriptions
 // ---------------------------------------------------------------------------
 
+// Strips `void` from the return type of a callable dep (Signal or Event overloads).
+type DepValue<D extends () => unknown> = D extends () => infer R ? Exclude<R, void> : never
+
 /**
  * Creates an effect that skips its first execution.
- * Useful for subscribing to events without firing on initial creation.
+ * Useful for subscribing to signals/events without firing on initial creation.
+ * The callback receives `(newValue, oldValue)` on each subsequent run.
  *
- * @param dep - dependency reader (called to establish tracking)
- * @param fn - callback invoked on subsequent runs
+ * Accepts a signal, event, or getter function as the dependency source:
+ *   watch(store.events.delete, (payload) => { ... })
+ *   watch(store.state.name,    (next, prev) => { ... })
+ *   watch(() => computed(),    (next, prev) => { ... })  // getter form still valid
+ *
+ * @param dep - dependency source (signal, event, or getter function)
+ * @param fn  - callback invoked on subsequent runs with (newValue, oldValue)
  * @returns dispose function
  */
-export function watch(dep: () => unknown, fn: () => void): () => void {
+export function watch<D extends () => unknown>(
+	dep: D,
+	fn: (newValue: DepValue<D>, oldValue: DepValue<D> | undefined) => void
+): () => void {
 	let initialized = false
+	let oldValue: DepValue<D> | undefined
+	// oxlint-disable-next-line no-unsafe-type-assertion -- casting fn to avoid narrowing issues from Signal/Event overloads; DepValue<D> strips `void` which is never the actual runtime value
+	const castFn = fn as (newValue: unknown, oldValue: DepValue<D> | undefined) => void
 	return alienEffect(() => {
-		dep()
+		const newValue = dep()
 		if (!initialized) {
 			initialized = true
+			// oxlint-disable-next-line no-unsafe-type-assertion -- same reasoning: Signal/Event overloads include `void` in return type but runtime value is always the non-void branch
+			oldValue = newValue as DepValue<D>
 			return
 		}
+		const prev = oldValue
+		// oxlint-disable-next-line no-unsafe-type-assertion -- same reasoning
+		oldValue = newValue as DepValue<D>
 		const prevSub = setActiveSub(undefined)
 		try {
-			fn()
+			castFn(newValue, prev)
 		} finally {
 			setActiveSub(prevSub)
 		}

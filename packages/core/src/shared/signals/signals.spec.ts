@@ -383,6 +383,57 @@ describe('watch()', () => {
 		source.emit(2)
 		expect(seen).toEqual([1, 2])
 	})
+
+	it('should pass newValue and oldValue to callback', () => {
+		const s = signal(0)
+		const calls: Array<[number, number | undefined]> = []
+
+		const dispose = watch(s, (newVal, oldVal) => {
+			calls.push([newVal, oldVal])
+		})
+		disposers.push(dispose)
+
+		s(1)
+		s(2)
+		s(3)
+
+		expect(calls).toEqual([
+			[1, 0],
+			[2, 1],
+			[3, 2],
+		])
+	})
+
+	it('should pass newValue and oldValue for events', () => {
+		const ev = event<number>()
+		const calls: Array<[number | undefined, number | undefined]> = []
+
+		const dispose = watch(ev, (newVal, oldVal) => {
+			calls.push([newVal, oldVal])
+		})
+		disposers.push(dispose)
+
+		ev.emit(10)
+		ev.emit(20)
+
+		expect(calls).toEqual([
+			[10, undefined],
+			[20, 10],
+		])
+	})
+
+	it('should accept signal directly (not wrapped in getter)', () => {
+		const s = signal('a')
+		const seen: string[] = []
+
+		const dispose = watch(s, v => seen.push(v))
+		disposers.push(dispose)
+
+		s('b')
+		s('c')
+
+		expect(seen).toEqual(['b', 'c'])
+	})
 })
 
 // ---------------------------------------------------------------------------
