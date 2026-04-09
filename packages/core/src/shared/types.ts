@@ -1,3 +1,5 @@
+import type {Properties} from 'csstype'
+
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
 import type {NodeProxy} from './classes/NodeProxy'
@@ -110,7 +112,7 @@ export type Recovery = {
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 
-export type StyleProperties = Record<string, string | number>
+export type StyleProperties = Properties<string | number>
 
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
