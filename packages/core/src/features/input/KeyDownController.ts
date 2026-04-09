@@ -631,7 +631,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 /**
  * Handles `beforeinput` events when the editor is in drag mode.
  * Intercepts text insertion and in-block deletion to update the raw value via
- * `store.applyValue`, since `applySpanInput` is designed for span-level editing only.
+ * `store.state.innerValue.set`, since `applySpanInput` is designed for span-level editing only.
  * Block-level operations (Enter, Backspace/Delete at boundaries) are handled by
  * `KeyDownController` via `keydown` events.
  */
