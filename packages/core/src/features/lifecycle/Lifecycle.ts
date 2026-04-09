@@ -108,17 +108,13 @@ export class Lifecycle {
 		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
 		this.#stopOverlay = () => store.controllers.overlay.disable()
 
-		watch(
-			store.state.overlayMatch,
-			(match: typeof store.state.overlayMatch extends () => infer T ? Exclude<T, void> : never) => {
-				// oxlint-disable-next-line no-unnecessary-condition -- match type cannot be narrowed correctly by static analysis
-				if (match) {
-					store.nodes.input.target = store.nodes.focus.target
-					store.controllers.overlay.enableClose()
-				} else {
-					store.controllers.overlay.disableClose()
-				}
+		watch(store.state.overlayMatch, match => {
+			if (match) {
+				store.nodes.input.target = store.nodes.focus.target
+				store.controllers.overlay.enableClose()
+			} else {
+				store.controllers.overlay.disableClose()
 			}
-		)
+		})
 	}
 }
