@@ -166,7 +166,7 @@ export class KeyDownController {
 									value.slice(rows[blockIndex + 1].position.start)
 								)
 							})()
-				this.store.applyValue(newValue)
+				this.store.state.innerValue.set(newValue)
 				queueMicrotask(() => {
 					const targetIndex = Math.max(0, blockIndex - 1)
 					const target = childAt(container, targetIndex)
@@ -185,7 +185,7 @@ export class KeyDownController {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
-					this.store.applyValue(newValue)
+					this.store.state.innerValue.set(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex - 1)
 						if (target) {
@@ -220,7 +220,7 @@ export class KeyDownController {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
-					this.store.applyValue(newValue)
+					this.store.state.innerValue.set(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex - 1)
 						if (target) {
@@ -248,7 +248,7 @@ export class KeyDownController {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 					const newValue = mergeDragRows(value, rows, blockIndex + 1)
-					this.store.applyValue(newValue)
+					this.store.state.innerValue.set(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex)
 						if (target) {
@@ -306,7 +306,7 @@ export class KeyDownController {
 
 		if (!isTextLikeRow(token)) {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-			this.store.applyValue(newValue)
+			this.store.state.innerValue.set(newValue)
 			queueMicrotask(() => {
 				const newBlockIndex = blockIndex + 1
 				if (newBlockIndex < container.children.length) {
@@ -322,7 +322,7 @@ export class KeyDownController {
 
 		const absolutePos = getCaretRawPosInBlock(blockDiv, token)
 		const newValue = value.slice(0, absolutePos) + newRowContent + value.slice(absolutePos)
-		this.store.applyValue(newValue)
+		this.store.state.innerValue.set(newValue)
 
 		queueMicrotask(() => {
 			const newBlockIndex = blockIndex + 1
@@ -501,7 +501,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
-	store.applyValue(newValue)
+	store.state.innerValue.set(newValue)
 
 	// Find which text token contains caretPos in the re-parsed token array.
 	// Use isNext+childIndex so FocusController navigates to childAt(childIndex+2)
@@ -678,7 +678,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			} else {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
-			store.applyValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
+			store.state.innerValue.set(value.slice(0, rawFrom) + data + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + data.length)
 			break
 		}
@@ -697,7 +697,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			} else {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
-			store.applyValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
+			store.state.innerValue.set(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + pasteData.length)
 			break
 		}
@@ -714,7 +714,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 			if (rawFrom === rawTo) return
 			event.preventDefault()
-			store.applyValue(value.slice(0, rawFrom) + value.slice(rawTo))
+			store.state.innerValue.set(value.slice(0, rawFrom) + value.slice(rawTo))
 			focusAndSetCaret(rawFrom)
 			break
 		}
