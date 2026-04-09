@@ -19,6 +19,7 @@ type StoreState = {
 	value: Signal<string | undefined>
 	defaultValue: Signal<string | undefined>
 	previousValue: Signal<string | undefined>
+	innerValue: Signal<string | undefined>
 	recovery: Signal<Recovery | undefined>
 	selecting: Signal<'drag' | 'all' | undefined>
 	drag: Signal<boolean | {alwaysShowHandle: boolean}>
@@ -125,6 +126,7 @@ export class Store {
 		value: signal<string | undefined>(undefined),
 		defaultValue: signal<string | undefined>(undefined),
 		previousValue: signal<string | undefined>(undefined),
+		innerValue: signal<string | undefined>(undefined),
 		recovery: signal<Recovery | undefined>(undefined),
 
 		// Selection

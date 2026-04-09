@@ -1,7 +1,8 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {setUseHookFactory, effect} from '../../shared/signals'
+import {setUseHookFactory, effect, effectScope, watch, batch} from '../../shared/signals'
+import {parseWithParser} from '../parsing'
 import {Store} from './Store'
 
 describe('Store', () => {
@@ -213,6 +214,48 @@ describe('Store', () => {
 			expect(store.state.containerClass.get()).toBe('base')
 			store.setState({slotProps: {container: {className: 'extra'}}})
 			expect(store.state.containerClass.get()).toBe('base extra')
+		})
+	})
+
+	describe('innerValue', () => {
+		it('should update tokens synchronously when innerValue is set inside an effectScope', () => {
+			const store = new Store({defaultSpan: null})
+			const dispose = effectScope(() => {
+				watch(store.state.innerValue, newValue => {
+					if (newValue === undefined) return
+					const newTokens = parseWithParser(store, newValue)
+					batch(() => {
+						store.state.tokens.set(newTokens)
+						store.state.previousValue.set(newValue)
+					})
+					store.state.onChange.get()?.(newValue)
+				})
+			})
+
+			store.state.innerValue.set('hello')
+			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.state.previousValue.get()).toBe('hello')
+
+			dispose()
+		})
+
+		it('should call onChange when innerValue changes', () => {
+			const store = new Store({defaultSpan: null})
+			const onChange = vi.fn()
+			store.state.onChange.set(onChange)
+
+			const dispose = effectScope(() => {
+				watch(store.state.innerValue, newValue => {
+					if (newValue === undefined) return
+					store.state.onChange.get()?.(newValue)
+				})
+			})
+
+			store.state.innerValue.set('world')
+			expect(onChange).toHaveBeenCalledOnce()
+			expect(onChange).toHaveBeenCalledWith('world')
+
+			dispose()
 		})
 	})
 
