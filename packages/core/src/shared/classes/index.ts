@@ -1,4 +1,5 @@
 export {BlockRegistry} from './BlockRegistry'
+export {MarkputHandler} from './MarkputHandler'
 export {BlockStore} from './BlockStore'
 export type {DropPosition} from './BlockStore'
 export {KeyGenerator} from './KeyGenerator'

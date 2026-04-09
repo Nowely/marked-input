@@ -5,12 +5,12 @@ export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
-	MarkputHandler,
 	StyleProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
 } from './src/shared/types'
+export {MarkputHandler} from './src/shared/classes'
 
 // Parsing exports (modern API)
 export {annotate, denote} from './src/features/parsing'

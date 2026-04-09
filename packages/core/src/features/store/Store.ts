@@ -1,10 +1,9 @@
-import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
+import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {signal, event, batch} from '../../shared/signals'
 import type {Signal, SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
-	MarkputHandler,
 	OverlayMatch,
 	OverlayTrigger,
 	Recovery,
@@ -151,6 +150,8 @@ export class Store {
 		overlay: null as HTMLElement | null,
 	}
 
+	readonly handler = new MarkputHandler(this)
+
 	readonly controllers = {
 		overlay: new OverlayController(this),
 		focus: new FocusController(this),
@@ -187,20 +188,5 @@ export class Store {
 				state[k as keyof typeof state].set(values[k as keyof typeof values] as never)
 			}
 		})
-	}
-
-	createHandler(): MarkputHandler {
-		const {refs, nodes} = this
-		return {
-			get container() {
-				return refs.container
-			},
-			get overlay() {
-				return refs.overlay
-			},
-			focus() {
-				nodes.focus.head?.focus()
-			},
-		}
 	}
 }

@@ -55,10 +55,10 @@ describe('Store', () => {
 		})
 	})
 
-	describe('createHandler', () => {
+	describe('handler', () => {
 		it('should return an object with container, overlay, and focus properties', () => {
 			const store = new Store({defaultSpan: null})
-			const handler = store.createHandler()
+			const handler = store.handler
 			expect('container' in handler).toBe(true)
 			expect('overlay' in handler).toBe(true)
 			expect('focus' in handler).toBe(true)
@@ -66,9 +66,8 @@ describe('Store', () => {
 
 		it('should reflect refs.container via handler.container', () => {
 			const store = new Store({defaultSpan: null})
-			const handler = store.createHandler()
+			const handler = store.handler
 			expect(handler.container).toBe(null)
-			// Assign a stub (no real DOM needed — just a reference check)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
 			store.refs.container = stub
@@ -77,7 +76,7 @@ describe('Store', () => {
 
 		it('should reflect refs.overlay via handler.overlay', () => {
 			const store = new Store({defaultSpan: null})
-			const handler = store.createHandler()
+			const handler = store.handler
 			expect(handler.overlay).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLElement
@@ -87,10 +86,8 @@ describe('Store', () => {
 
 		it('should expose focus as a callable function', () => {
 			const store = new Store({defaultSpan: null})
-			const handler = store.createHandler()
+			const handler = store.handler
 			expect(typeof handler.focus).toBe('function')
-			// focus() with no focus node attached should not throw
-			// NodeProxy.head is undefined by default, so focus() is a no-op
 		})
 	})
 
