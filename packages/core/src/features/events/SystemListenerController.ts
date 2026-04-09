@@ -48,7 +48,7 @@ export class SystemListenerController {
 
 				const value = toString(tokens)
 				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
-				this.store.applyValue(nextValue)
+				this.store.state.innerValue.set(nextValue)
 			})
 
 			watch(this.store.state.innerValue, newValue => {
