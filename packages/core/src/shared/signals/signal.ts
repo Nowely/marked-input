@@ -53,6 +53,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
 				if (args[0] === undefined) {
+					if (hasDefault && inner() === undefined) return
 					inner(undefined)
 				} else {
 					inner({v: args[0], seq: seq++})
@@ -65,6 +66,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		callable.get = () => read()
 		callable.set = (v: T | undefined) => {
 			if (v === undefined) {
+				if (hasDefault && inner() === undefined) return
 				inner(undefined)
 			} else {
 				inner({v, seq: seq++})
