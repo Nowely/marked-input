@@ -58,7 +58,7 @@ export class CopyController {
 			if (rawStart === rawEnd) return
 
 			const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-			this.store.applyValue(newValue)
+			this.store.state.innerValue.set(newValue)
 
 			const newTokens = this.store.state.tokens.get()
 			let targetIdx = newTokens.findIndex(
