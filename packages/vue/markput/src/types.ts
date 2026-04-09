@@ -24,7 +24,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	Mark?: Component
 	Overlay?: Component
 	options?: Option<TMarkProps, TOverlayProps>[]
-	className?: string
+	class?: string
 	style?: CSSProperties
 	slots?: Slots
 	slotProps?: SlotProps
