@@ -14,30 +14,31 @@
 
 ## File Map
 
-| File | Change |
-|------|--------|
-| `packages/core/src/shared/signals/signal.ts` | Add `Event<T>` interface + `event<T>()` factory; delete `VoidEvent`, `PayloadEvent`, `voidEvent`, `payloadEvent` |
-| `packages/core/src/shared/signals/signals.spec.ts` | Replace `voidEvent`/`payloadEvent` test blocks with `event<T>()` block; update `watch()` tests |
-| `packages/core/src/shared/signals/index.ts` | Swap exports |
-| `packages/core/src/shared/classes/index.ts` | Swap exports |
-| `packages/core/index.ts` | Swap public exports |
-| `packages/core/src/features/store/Store.ts` | `voidEvent()` → `event()`, `payloadEvent<T>()` → `event<T>()` |
-| `packages/core/src/features/store/Store.spec.ts` | Update test description string |
-| `packages/core/src/features/mark/MarkHandler.ts` | `events.change()` → `events.change.emit()`, `events.delete(...)` → `events.delete.emit(...)` |
-| `packages/core/src/features/input/KeyDownController.ts` | `events.change()` → `events.change.emit()` |
-| `packages/core/src/features/overlay/OverlayController.ts` | `events.clearOverlay()` → `events.clearOverlay.emit()`, `events.checkOverlay()` → `events.checkOverlay.emit()` |
-| `packages/core/src/features/events/SystemListenerController.ts` | `events.parse()` → `events.parse.emit()` |
-| `packages/core/src/features/lifecycle/Lifecycle.ts` | `events.parse()` → `events.parse.emit()` |
-| `packages/vue/markput/src/lib/hooks/useOverlay.ts` | `events.clearOverlay()` → `events.clearOverlay.emit()`, `events.select(...)` → `events.select.emit(...)` |
-| `packages/core/src/features/events/SystemListenerController.spec.ts` | All `store.events.X()` emit calls → `store.events.X.emit()` |
-| `packages/core/src/features/overlay/OverlayController.spec.ts` | All emit calls → `.emit()` |
-| `packages/core/src/features/lifecycle/Lifecycle.spec.ts` | All emit calls → `.emit()` |
+| File                                                                 | Change                                                                                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `packages/core/src/shared/signals/signal.ts`                         | Add `Event<T>` interface + `event<T>()` factory; delete `VoidEvent`, `PayloadEvent`, `voidEvent`, `payloadEvent` |
+| `packages/core/src/shared/signals/signals.spec.ts`                   | Replace `voidEvent`/`payloadEvent` test blocks with `event<T>()` block; update `watch()` tests                   |
+| `packages/core/src/shared/signals/index.ts`                          | Swap exports                                                                                                     |
+| `packages/core/src/shared/classes/index.ts`                          | Swap exports                                                                                                     |
+| `packages/core/index.ts`                                             | Swap public exports                                                                                              |
+| `packages/core/src/features/store/Store.ts`                          | `voidEvent()` → `event()`, `payloadEvent<T>()` → `event<T>()`                                                    |
+| `packages/core/src/features/store/Store.spec.ts`                     | Update test description string                                                                                   |
+| `packages/core/src/features/mark/MarkHandler.ts`                     | `events.change()` → `events.change.emit()`, `events.delete(...)` → `events.delete.emit(...)`                     |
+| `packages/core/src/features/input/KeyDownController.ts`              | `events.change()` → `events.change.emit()`                                                                       |
+| `packages/core/src/features/overlay/OverlayController.ts`            | `events.clearOverlay()` → `events.clearOverlay.emit()`, `events.checkOverlay()` → `events.checkOverlay.emit()`   |
+| `packages/core/src/features/events/SystemListenerController.ts`      | `events.parse()` → `events.parse.emit()`                                                                         |
+| `packages/core/src/features/lifecycle/Lifecycle.ts`                  | `events.parse()` → `events.parse.emit()`                                                                         |
+| `packages/vue/markput/src/lib/hooks/useOverlay.ts`                   | `events.clearOverlay()` → `events.clearOverlay.emit()`, `events.select(...)` → `events.select.emit(...)`         |
+| `packages/core/src/features/events/SystemListenerController.spec.ts` | All `store.events.X()` emit calls → `store.events.X.emit()`                                                      |
+| `packages/core/src/features/overlay/OverlayController.spec.ts`       | All emit calls → `.emit()`                                                                                       |
+| `packages/core/src/features/lifecycle/Lifecycle.spec.ts`             | All emit calls → `.emit()`                                                                                       |
 
 ---
 
 ## Task 1: Add `event<T>()` — failing tests first
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signals.spec.ts`
 
 - [ ] **Step 1: Add failing `event<T>()` describe block to signals.spec.ts**
@@ -50,116 +51,122 @@ Add this block after the existing `payloadEvent<T>()` describe block (around lin
 // ---------------------------------------------------------------------------
 
 describe('event<T>()', () => {
-	beforeEach(() => vi.clearAllMocks())
+    beforeEach(() => vi.clearAllMocks())
 
-	it('should return undefined before first emit', () => {
-		const ev = event<string>()
-		expect(ev()).toBeUndefined()
-	})
+    it('should return undefined before first emit', () => {
+        const ev = event<string>()
+        expect(ev()).toBeUndefined()
+    })
 
-	it('should return void event undefined before first emit', () => {
-		const ev = event()
-		expect(ev()).toBeUndefined()
-	})
+    it('should return void event undefined before first emit', () => {
+        const ev = event()
+        expect(ev()).toBeUndefined()
+    })
 
-	it('should auto-track inside effect and re-run when emitted', () => {
-		const ev = event<number>()
-		const runs = vi.fn()
+    it('should auto-track inside effect and re-run when emitted', () => {
+        const ev = event<number>()
+        const runs = vi.fn()
 
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
+        trackedEffect(() => {
+            ev()
+            runs()
+        })
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit(42)
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
+        expect(runs).toHaveBeenCalledTimes(1)
+        ev.emit(42)
+        expect(runs).toHaveBeenCalledTimes(2)
+    })
 
-	it('should re-run effect when void event is emitted', () => {
-		const ev = event()
-		const runs = vi.fn()
+    it('should re-run effect when void event is emitted', () => {
+        const ev = event()
+        const runs = vi.fn()
 
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
+        trackedEffect(() => {
+            ev()
+            runs()
+        })
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit()
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
+        expect(runs).toHaveBeenCalledTimes(1)
+        ev.emit()
+        expect(runs).toHaveBeenCalledTimes(2)
+    })
 
-	it('should return latest payload from read', () => {
-		const ev = event<number>()
-		let captured: number | undefined
+    it('should return latest payload from read', () => {
+        const ev = event<number>()
+        let captured: number | undefined
 
-		trackedEffect(() => {
-			captured = ev()
-		})
+        trackedEffect(() => {
+            captured = ev()
+        })
 
-		expect(captured).toBeUndefined()
-		ev.emit(42)
-		expect(captured).toBe(42)
-	})
+        expect(captured).toBeUndefined()
+        ev.emit(42)
+        expect(captured).toBe(42)
+    })
 
-	it('should fire subscribers even when emitting same payload reference', () => {
-		const ev = event<{id: number}>()
-		const payload = {id: 1}
-		const runs = vi.fn()
+    it('should fire subscribers even when emitting same payload reference', () => {
+        const ev = event<{id: number}>()
+        const payload = {id: 1}
+        const runs = vi.fn()
 
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
+        trackedEffect(() => {
+            ev()
+            runs()
+        })
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit(payload)
-		expect(runs).toHaveBeenCalledTimes(2)
-		ev.emit(payload) // same reference
-		expect(runs).toHaveBeenCalledTimes(3)
-	})
+        expect(runs).toHaveBeenCalledTimes(1)
+        ev.emit(payload)
+        expect(runs).toHaveBeenCalledTimes(2)
+        ev.emit(payload) // same reference
+        expect(runs).toHaveBeenCalledTimes(3)
+    })
 
-	it('should allow multiple effects to subscribe independently', () => {
-		const ev = event()
-		const runsA = vi.fn()
-		const runsB = vi.fn()
+    it('should allow multiple effects to subscribe independently', () => {
+        const ev = event()
+        const runsA = vi.fn()
+        const runsB = vi.fn()
 
-		trackedEffect(() => { ev(); runsA() })
-		trackedEffect(() => { ev(); runsB() })
+        trackedEffect(() => {
+            ev()
+            runsA()
+        })
+        trackedEffect(() => {
+            ev()
+            runsB()
+        })
 
-		expect(runsA).toHaveBeenCalledTimes(1)
-		expect(runsB).toHaveBeenCalledTimes(1)
+        expect(runsA).toHaveBeenCalledTimes(1)
+        expect(runsB).toHaveBeenCalledTimes(1)
 
-		ev.emit()
-		expect(runsA).toHaveBeenCalledTimes(2)
-		expect(runsB).toHaveBeenCalledTimes(2)
-	})
+        ev.emit()
+        expect(runsA).toHaveBeenCalledTimes(2)
+        expect(runsB).toHaveBeenCalledTimes(2)
+    })
 
-	it('should not cause infinite loop when e() called inside effect', () => {
-		const ev = event()
-		let count = 0
+    it('should not cause infinite loop when e() called inside effect', () => {
+        const ev = event()
+        let count = 0
 
-		trackedEffect(() => {
-			ev()
-			count++
-		})
+        trackedEffect(() => {
+            ev()
+            count++
+        })
 
-		expect(count).toBe(1)
-	})
+        expect(count).toBe(1)
+    })
 
-	it('.use() should call the registered factory', () => {
-		const mockHook = vi.fn(() => 'event-hook')
-		const factory: UseHookFactory = vi.fn(() => mockHook)
-		setUseHookFactory(factory)
+    it('.use() should call the registered factory', () => {
+        const mockHook = vi.fn(() => 'event-hook')
+        const factory: UseHookFactory = vi.fn(() => mockHook)
+        setUseHookFactory(factory)
 
-		const ev = event<number>()
-		const result = ev.use()
+        const ev = event<number>()
+        const result = ev.use()
 
-		expect(factory).toHaveBeenCalledWith(ev)
-		expect(mockHook).toHaveBeenCalled()
-		expect(result).toBe('event-hook')
-	})
+        expect(factory).toHaveBeenCalledWith(ev)
+        expect(mockHook).toHaveBeenCalled()
+        expect(result).toBe('event-hook')
+    })
 })
 ```
 
@@ -182,6 +189,7 @@ Expected: failures on all `event<T>()` tests — `event is not a function` or si
 ## Task 2: Implement `event<T>()` in signal.ts
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signal.ts`
 
 - [ ] **Step 1: Add `Event<T>` interface and `event<T>()` factory**
@@ -194,29 +202,29 @@ Insert after the closing `}` of `payloadEvent<T>()` (after line 179), before the
 // ---------------------------------------------------------------------------
 
 export interface Event<T = void> {
-	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
-	(): T | undefined
-	/** Emit — always fires even when payload reference is unchanged. */
-	emit(payload: T): void
-	/** Framework hook bridge. */
-	use(): T | undefined
+    /** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
+    (): T | undefined
+    /** Emit — always fires even when payload reference is unchanged. */
+    emit(payload: T): void
+    /** Framework hook bridge. */
+    use(): T | undefined
 }
 
 export function event<T = void>(): Event<T> {
-	let seq = 0
-	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
+    let seq = 0
+    const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
-	const callable = function eventCallable() {
-		const box = inner()
-		return box !== undefined ? box.v : undefined
-	} as unknown as Event<T>
+    // oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
+    const callable = function eventCallable() {
+        const box = inner()
+        return box !== undefined ? box.v : undefined
+    } as unknown as Event<T>
 
-	callable.emit = (payload: T) => inner({v: payload, id: ++seq})
-	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
-	callable.use = () => getUseHookFactory()(callable)() as T | undefined
+    callable.emit = (payload: T) => inner({v: payload, id: ++seq})
+    // oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
+    callable.use = () => getUseHookFactory()(callable)() as T | undefined
 
-	return callable
+    return callable
 }
 ```
 
@@ -240,6 +248,7 @@ git commit -m "feat(core): add event<T>() unified reactive event primitive"
 ## Task 3: Remove old primitives from signal.ts and update exports
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signal.ts`
 - Modify: `packages/core/src/shared/signals/index.ts`
 - Modify: `packages/core/src/shared/classes/index.ts`
@@ -252,13 +261,7 @@ Remove lines 117–179 (the two old sections and their interfaces). The file sho
 Also remove the `getActiveSub` import on line 4 if it is now unused (check — `watch()` uses `setActiveSub` but not `getActiveSub`):
 
 ```ts
-import {
-	signal as alienSignal,
-	effect as alienEffect,
-	setActiveSub,
-	startBatch,
-	endBatch,
-} from './alien-signals'
+import {signal as alienSignal, effect as alienEffect, setActiveSub, startBatch, endBatch} from './alien-signals'
 ```
 
 - [ ] **Step 2: Update signals/index.ts**
@@ -286,15 +289,7 @@ Replace lines 20–30:
 ```ts
 // Reactive system
 export type {Signal, Event, UseHookFactory} from './src/shared/signals'
-export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	event,
-	signal,
-	watch,
-	batch,
-} from './src/shared/signals'
+export {setUseHookFactory, getUseHookFactory, effect, event, signal, watch, batch} from './src/shared/signals'
 ```
 
 - [ ] **Step 5: Update import in signals.spec.ts**
@@ -325,6 +320,7 @@ git commit -m "refactor(core): remove voidEvent and payloadEvent, export event<T
 ## Task 4: Remove old `voidEvent`/`payloadEvent` test blocks from signals.spec.ts
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signals.spec.ts`
 
 - [ ] **Step 1: Delete the `voidEvent()` describe block (lines 155–216)**
@@ -437,6 +433,7 @@ git commit -m "test(core): replace voidEvent/payloadEvent tests with event<T> te
 ## Task 5: Migrate Store.ts and its test
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts`
 - Modify: `packages/core/src/features/store/Store.spec.ts`
 
@@ -492,6 +489,7 @@ git commit -m "refactor(core): migrate Store events to event<T> primitive"
 ## Task 6: Migrate emit sites in MarkHandler and KeyDownController
 
 **Files:**
+
 - Modify: `packages/core/src/features/mark/MarkHandler.ts`
 - Modify: `packages/core/src/features/input/KeyDownController.ts`
 
@@ -545,6 +543,7 @@ git commit -m "refactor(core): migrate MarkHandler and KeyDownController emit ca
 ## Task 7: Migrate emit sites in OverlayController, SystemListenerController, Lifecycle
 
 **Files:**
+
 - Modify: `packages/core/src/features/overlay/OverlayController.ts`
 - Modify: `packages/core/src/features/events/SystemListenerController.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
@@ -624,6 +623,7 @@ git commit -m "refactor(core): migrate controller emit calls to event.emit()"
 ## Task 8: Migrate emit sites in Vue useOverlay
 
 **Files:**
+
 - Modify: `packages/vue/markput/src/lib/hooks/useOverlay.ts`
 
 - [ ] **Step 1: Update useOverlay.ts emit sites**
@@ -661,6 +661,7 @@ git commit -m "refactor(vue): migrate useOverlay emit calls to event.emit()"
 ## Task 9: Update controller spec files
 
 **Files:**
+
 - Modify: `packages/core/src/features/events/SystemListenerController.spec.ts`
 - Modify: `packages/core/src/features/overlay/OverlayController.spec.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.spec.ts`
