@@ -140,9 +140,6 @@ export function event<T = void>(): Event<T> {
 // watch() — skip-first-run helper for event subscriptions
 // ---------------------------------------------------------------------------
 
-// Strips `void` from the return type of a callable dep (Signal or Event overloads).
-type DepValue<D extends () => unknown> = D extends () => infer R ? Exclude<R, void> : never
-
 /**
  * Creates an effect that skips its first execution.
  * Useful for subscribing to signals/events without firing on initial creation.
@@ -157,28 +154,28 @@ type DepValue<D extends () => unknown> = D extends () => infer R ? Exclude<R, vo
  * @param fn  - callback invoked on subsequent runs with (newValue, oldValue)
  * @returns dispose function
  */
-export function watch<D extends () => unknown>(
-	dep: D,
-	fn: (newValue: DepValue<D>, oldValue: DepValue<D> | undefined) => void
+export function watch<T>(dep: Signal<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(dep: Event<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(dep: () => T, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(
+	dep: Signal<T> | Event<T> | (() => T),
+	fn: (newValue: T, oldValue: T | undefined) => void
 ): () => void {
 	let initialized = false
-	let oldValue: DepValue<D> | undefined
-	// oxlint-disable-next-line no-unsafe-type-assertion -- casting fn to avoid narrowing issues from Signal/Event overloads; DepValue<D> strips `void` which is never the actual runtime value
-	const castFn = fn as (newValue: unknown, oldValue: DepValue<D> | undefined) => void
+	let oldValue: T | undefined
 	return alienEffect(() => {
-		const newValue = dep()
+		// oxlint-disable-next-line no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
+		const newValue = dep() as T
 		if (!initialized) {
 			initialized = true
-			// oxlint-disable-next-line no-unsafe-type-assertion -- same reasoning: Signal/Event overloads include `void` in return type but runtime value is always the non-void branch
-			oldValue = newValue as DepValue<D>
+			oldValue = newValue
 			return
 		}
 		const prev = oldValue
-		// oxlint-disable-next-line no-unsafe-type-assertion -- same reasoning
-		oldValue = newValue as DepValue<D>
+		oldValue = newValue
 		const prevSub = setActiveSub(undefined)
 		try {
-			castFn(newValue, prev)
+			fn(newValue, prev)
 		} finally {
 			setActiveSub(prevSub)
 		}
