@@ -83,7 +83,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref} = props
+	const {ref, ...rest} = props
 	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
 	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
 	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
@@ -91,42 +91,12 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const slotProps = props.slotProps as CoreSlotProps
 	const [store] = useState(() => {
 		const nextStore = new Store({defaultSpan: DefaultSpan})
-		nextStore.setState({
-			value: props.value,
-			defaultValue: props.defaultValue,
-			onChange: props.onChange,
-			readOnly: props.readOnly,
-			drag: props.drag,
-			options: props.options,
-			showOverlayOn: props.showOverlayOn,
-			Span: props.Span,
-			Mark: props.Mark,
-			Overlay: props.Overlay,
-			className,
-			style,
-			slots: props.slots,
-			slotProps,
-		})
+		nextStore.setState({...rest, className, style, slotProps})
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.setState({
-			value: props.value,
-			defaultValue: props.defaultValue,
-			onChange: props.onChange,
-			readOnly: props.readOnly,
-			drag: props.drag,
-			options: props.options,
-			showOverlayOn: props.showOverlayOn,
-			Span: props.Span,
-			Mark: props.Mark,
-			Overlay: props.Overlay,
-			className,
-			style,
-			slots: props.slots,
-			slotProps,
-		})
+		store.setState({...rest, className, style, slotProps})
 	})
 
 	useCoreFeatures(store, ref)
