@@ -117,14 +117,14 @@ export class KeyDownController {
 					event.preventDefault()
 					focus.content = content.slice(0, caret - 1) + content.slice(caret)
 					focus.caret = caret - 1
-					this.store.events.change()
+					this.store.events.change.emit()
 					return
 				}
 				if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
 					event.preventDefault()
 					focus.content = content.slice(0, caret) + content.slice(caret + 1)
 					focus.caret = caret
-					this.store.events.change()
+					this.store.events.change.emit()
 					return
 				}
 			}
@@ -463,7 +463,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 
 	if (applySpanInput(focus, event)) {
-		store.events.change()
+		store.events.change.emit()
 	}
 }
 
