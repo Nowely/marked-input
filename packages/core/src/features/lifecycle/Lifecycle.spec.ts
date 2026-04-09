@@ -16,7 +16,7 @@ describe('Lifecycle', () => {
 
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
-		store = new Store({defaultSpan: null})
+		store = new Store()
 	})
 
 	describe('enable()', () => {

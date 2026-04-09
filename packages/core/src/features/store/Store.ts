@@ -54,10 +54,6 @@ import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 import {createSlots} from '../slots'
 
-export interface StoreOptions {
-	defaultSpan: unknown
-}
-
 export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
@@ -121,7 +117,6 @@ export class Store {
 		options: this.state.options,
 		Mark: this.state.Mark,
 		Span: this.state.Span,
-		getDefaultSpan: () => this._defaultSpan,
 	})
 
 	readonly events = {
@@ -152,12 +147,6 @@ export class Store {
 	}
 
 	readonly lifecycle = new Lifecycle(this)
-
-	private readonly _defaultSpan: unknown
-
-	constructor(options: StoreOptions) {
-		this._defaultSpan = options.defaultSpan
-	}
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {

@@ -10,7 +10,6 @@ import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
-import {Span as DefaultSpan} from './Span'
 
 import styles from '@markput/core/styles.module.css'
 
@@ -89,7 +88,7 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
 	const style = rest.style as StyleProperties | undefined
 	const [store] = useState(() => {
-		const nextStore = new Store({defaultSpan: DefaultSpan})
+		const nextStore = new Store()
 		nextStore.setState({...rest, style, baseClassName: styles.Container, slotProps})
 		return nextStore
 	})

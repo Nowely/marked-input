@@ -1,5 +1,4 @@
 export {default as MarkedInput} from './src/components/MarkedInput.vue'
-export {default as Span} from './src/components/Span.vue'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'
 

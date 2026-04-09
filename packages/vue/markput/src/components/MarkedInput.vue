@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, StyleProperties} from '@markput/core'
 import {Store} from '@markput/core'
-import {markRaw, provide, shallowRef, watch} from 'vue'
+import {provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
@@ -10,7 +10,6 @@ import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
-import Span from './Span.vue'
 
 import styles from '@markput/core/styles.module.css'
 
@@ -20,7 +19,7 @@ const emit = defineEmits<{
 	change: [value: string]
 }>()
 
-const store = shallowRef(new Store({defaultSpan: markRaw(Span)}))
+const store = shallowRef(new Store())
 
 provide(STORE_KEY, store.value)
 

@@ -23,7 +23,7 @@ describe('OverlayController', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		setUseHookFactory(() => () => undefined)
-		store = new Store({defaultSpan: null})
+		store = new Store()
 		controller = store.controllers.overlay
 	})
 

@@ -11,7 +11,7 @@ describe('SystemListenerController', () => {
 
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
-		store = new Store({defaultSpan: null})
+		store = new Store()
 		controller = store.controllers.system
 	})
 

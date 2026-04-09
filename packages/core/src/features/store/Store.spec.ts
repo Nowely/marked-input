@@ -10,24 +10,24 @@ describe('Store', () => {
 		setUseHookFactory(() => () => undefined)
 	})
 
-	it('should construct with only defaultSpan option', () => {
-		const store = new Store({defaultSpan: null})
+	it('should construct with no arguments', () => {
+		const store = new Store()
 		expect(store.state.tokens()).toEqual([])
 		expect(store.state.readOnly()).toBe(false)
 	})
 
 	it('should return default for showOverlayOn when not set', () => {
-		const store = new Store({defaultSpan: null})
+		const store = new Store()
 		expect(store.state.showOverlayOn.get()).toBe('change')
 	})
 
 	it('should return default for options when not set', () => {
-		const store = new Store({defaultSpan: null})
+		const store = new Store()
 		expect(store.state.options.get()).toEqual(DEFAULT_OPTIONS)
 	})
 
 	it('should have events', () => {
-		const store = new Store({defaultSpan: null})
+		const store = new Store()
 		expect(typeof store.events.parse).toBe('function')
 		expect(typeof store.events.change).toBe('function')
 		expect(typeof store.events.delete).toBe('function')
@@ -35,7 +35,7 @@ describe('Store', () => {
 
 	describe('handler', () => {
 		it('should return an object with container, overlay, and focus properties', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const handler = store.handler
 			expect('container' in handler).toBe(true)
 			expect('overlay' in handler).toBe(true)
@@ -43,7 +43,7 @@ describe('Store', () => {
 		})
 
 		it('should reflect refs.container via handler.container', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
@@ -53,7 +53,7 @@ describe('Store', () => {
 		})
 
 		it('should reflect refs.overlay via handler.overlay', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const handler = store.handler
 			expect(handler.overlay).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
@@ -63,7 +63,7 @@ describe('Store', () => {
 		})
 
 		it('should expose focus as a callable function', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const handler = store.handler
 			expect(typeof handler.focus).toBe('function')
 		})
@@ -71,26 +71,26 @@ describe('Store', () => {
 
 	describe('setState', () => {
 		it('should update provided state values', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({value: 'hello', readOnly: true})
 			expect(store.state.value.get()).toBe('hello')
 			expect(store.state.readOnly.get()).toBe(true)
 		})
 
 		it('should leave unprovided keys unchanged', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({readOnly: true})
 			expect(store.state.value.get()).toBeUndefined()
 			expect(store.state.readOnly.get()).toBe(true)
 		})
 
 		it('should not throw when called with an empty object', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			expect(() => store.setState({})).not.toThrow()
 		})
 
 		it('should batch updates so effects fire once', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
 				store.state.value.get()
@@ -105,7 +105,7 @@ describe('Store', () => {
 
 	describe('containerClass (computed)', () => {
 		it('should merge baseClassName + className + slotProps.container.className', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({
 				baseClassName: 'Container_hash1',
 				className: 'user-class',
@@ -115,18 +115,18 @@ describe('Store', () => {
 		})
 
 		it('should return baseClassName only when no user or slot className', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({baseClassName: 'Container_hash1'})
 			expect(store.state.containerClass.get()).toBe('Container_hash1')
 		})
 
 		it('should return undefined when nothing is set', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			expect(store.state.containerClass.get()).toBeUndefined()
 		})
 
 		it('should react to className changes', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({baseClassName: 'base', className: 'old'})
 			expect(store.state.containerClass.get()).toBe('base old')
 			store.setState({className: 'new'})
@@ -134,7 +134,7 @@ describe('Store', () => {
 		})
 
 		it('should react to slotProps changes', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({baseClassName: 'base'})
 			expect(store.state.containerClass.get()).toBe('base')
 			store.setState({slotProps: {container: {className: 'extra'}}})
@@ -144,7 +144,7 @@ describe('Store', () => {
 
 	describe('innerValue', () => {
 		it('should update tokens and previousValue when innerValue is set', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
@@ -163,7 +163,7 @@ describe('Store', () => {
 		})
 
 		it('should call onChange when set', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const onChange = vi.fn()
 			store.state.onChange.set(onChange)
 			const dispose = effectScope(() => {
@@ -184,7 +184,7 @@ describe('Store', () => {
 		})
 
 		it('should not throw when onChange is not set', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
@@ -203,7 +203,7 @@ describe('Store', () => {
 
 	describe('containerStyle (computed)', () => {
 		it('should merge style + slotProps.container.style', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
@@ -212,18 +212,18 @@ describe('Store', () => {
 		})
 
 		it('should return style only when no slotProps.container.style', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({style: {color: 'red'}})
 			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
 		})
 
 		it('should return undefined when nothing is set', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			expect(store.state.containerStyle.get()).toBeUndefined()
 		})
 
 		it('should react to style changes', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({style: {color: 'red'}})
 			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({style: {color: 'blue'}})
@@ -231,7 +231,7 @@ describe('Store', () => {
 		})
 
 		it('should react to slotProps changes', () => {
-			const store = new Store({defaultSpan: null})
+			const store = new Store()
 			store.setState({style: {color: 'red'}})
 			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
