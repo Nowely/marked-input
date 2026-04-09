@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
-import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
+import {cx, merge, Store} from '@markput/core'
 import {markRaw, provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
@@ -14,12 +14,7 @@ import Span from './Span.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = withDefaults(defineProps<MarkedInputProps>(), {
-	options: () => DEFAULT_OPTIONS,
-	showOverlayOn: 'change',
-	readOnly: false,
-	drag: false,
-})
+const props = defineProps<MarkedInputProps>()
 
 const emit = defineEmits<{
 	change: [value: string]
