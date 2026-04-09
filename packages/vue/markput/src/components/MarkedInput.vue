@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, CoreSlots, StyleProperties} from '@markput/core'
 import {cx, merge, Store} from '@markput/core'
 import {markRaw, provide, shallowRef, watch} from 'vue'
 
@@ -72,8 +72,7 @@ watch(
 
 useCoreFeatures(store.value)
 
-const handler: MarkputHandler = store.value.createHandler()
-defineExpose(handler)
+defineExpose(store.value.handler)
 </script>
 
 <template>
