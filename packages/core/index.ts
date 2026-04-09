@@ -9,6 +9,8 @@ export type {
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
+	DragAction,
+	DragActions,
 } from './src/shared/types'
 export {MarkputHandler} from './src/shared/classes'
 

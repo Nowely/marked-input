@@ -46,7 +46,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ### Where to put new code
 
-- Core features/controllers → `packages/core/src/features/<feature-name>/`
+- Core features → `packages/core/src/features/<feature-name>/`
 - Core shared utilities → `packages/core/src/shared/`
 - React components → `packages/react/markput/src/components/`
 - Vue components → `packages/vue/markput/src/components/`
@@ -55,7 +55,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 7 controllers, BlockRegistry, event bus, and Lifecycle. Controllers are decoupled — they communicate only through `store.state`, `store.events`, and `store.nodes`. The parser is a 3-stage pipeline (SegmentMatcher → PatternMatcher → TreeBuilder).
+Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.events`, and `store.nodes`. The parser is a 3-stage pipeline (SegmentMatcher → PatternMatcher → TreeBuilder). Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -76,7 +76,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 ### Do NOT
 
-- Do not add direct imports between controllers — all communication goes through `store.state`, `store.events`, or `store.nodes`
+- Do not add direct imports between features — all communication goes through `store.state`, `store.events`, or `store.nodes`
 - Do not manually create Signals for new state — add new state keys to the initial object passed to `defineState()` in `Store.ts`
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
@@ -139,7 +139,7 @@ Vue component tests use `withProps(story, props)` helper from `packages/storyboo
 
 ### Commit scopes
 
-Use these scopes in conventional commits: `core`, `react`, `vue`, `storybook`, `drag`, `docs`, `next` (release). Controller-level scopes (e.g., `KeyDownController`, `FocusController`) are acceptable for targeted fixes. Omit scope for cross-cutting changes.
+Use these scopes in conventional commits: `core`, `react`, `vue`, `storybook`, `drag`, `docs`, `next` (release). Feature-level scopes (e.g., `InputFeature`, `BlockEditFeature`, `FocusFeature`) are acceptable for targeted fixes. Omit scope for cross-cutting changes.
 
 Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs:`
 
