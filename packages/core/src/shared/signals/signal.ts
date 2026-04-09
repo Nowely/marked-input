@@ -179,6 +179,36 @@ export function payloadEvent<T>(): PayloadEvent<T> {
 }
 
 // ---------------------------------------------------------------------------
+// Event<T> — unified reactive event primitive
+// ---------------------------------------------------------------------------
+
+export interface Event<T = void> {
+	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
+	(): T | undefined
+	/** Emit — always fires even when payload reference is unchanged. */
+	emit(payload: T): void
+	/** Framework hook bridge. */
+	use(): T | undefined
+}
+
+export function event<T = void>(): Event<T> {
+	let seq = 0
+	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
+
+	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
+	const callable = function eventCallable() {
+		const box = inner()
+		return box !== undefined ? box.v : undefined
+	} as unknown as Event<T>
+
+	callable.emit = (payload: T) => inner({v: payload, id: ++seq})
+	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
+	callable.use = () => getUseHookFactory()(callable)() as T | undefined
+
+	return callable
+}
+
+// ---------------------------------------------------------------------------
 // watch() — skip-first-run helper for event subscriptions
 // ---------------------------------------------------------------------------
 
