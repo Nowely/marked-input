@@ -1,5 +1,6 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
+import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {setUseHookFactory, effect} from '../../shared/signals'
 import {Store} from './Store'
 
@@ -12,6 +13,16 @@ describe('Store', () => {
 		const store = new Store({defaultSpan: null})
 		expect(store.state.tokens()).toEqual([])
 		expect(store.state.readOnly()).toBe(false)
+	})
+
+	it('should return default for showOverlayOn when not set', () => {
+		const store = new Store({defaultSpan: null})
+		expect(store.state.showOverlayOn.get()).toBe('change')
+	})
+
+	it('should return default for options when not set', () => {
+		const store = new Store({defaultSpan: null})
+		expect(store.state.options.get()).toEqual(DEFAULT_OPTIONS)
 	})
 
 	it('should have events', () => {

@@ -1,4 +1,5 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
+import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {signal, event, batch} from '../../shared/signals'
 import type {SignalValues} from '../../shared/signals'
 import type {
@@ -69,13 +70,13 @@ export class Store {
 
 		// Overlay
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
-		showOverlayOn: signal<OverlayTrigger | undefined>(undefined),
+		showOverlayOn: signal<OverlayTrigger>('change'),
 
 		// Callbacks
 		onChange: signal<((value: string) => void) | undefined>(undefined),
 
 		// Config
-		options: signal<CoreOption[] | undefined>(undefined),
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
 		readOnly: signal<boolean>(false),
 
 		// Component overrides
