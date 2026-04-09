@@ -1,11 +1,4 @@
-import {
-	signal as alienSignal,
-	effect as alienEffect,
-	getActiveSub,
-	setActiveSub,
-	startBatch,
-	endBatch,
-} from './alien-signals'
+import {signal as alienSignal, effect as alienEffect, setActiveSub, startBatch, endBatch} from './alien-signals'
 import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
@@ -110,71 +103,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	callable.set = (v: T) => inner(v)
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
-	return callable
-}
-
-// ---------------------------------------------------------------------------
-// VoidEvent — zero-payload event
-// ---------------------------------------------------------------------------
-
-export interface VoidEvent {
-	/** Inside an effect: subscribes (reads counter). Outside: emits (increments counter). */
-	(): void
-	/** Framework hook bridge (mostly unused for events). */
-	use(): void
-}
-
-export function voidEvent(): VoidEvent {
-	const counter = alienSignal(0)
-
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches VoidEvent interface but TS can't verify the conditional call signature
-	const callable = function voidEventCallable() {
-		if (getActiveSub() !== undefined) {
-			// Inside an effect — read to subscribe
-			counter()
-		} else {
-			// Outside an effect — write to emit
-			counter(counter() + 1)
-		}
-	} as unknown as VoidEvent
-
-	callable.use = () => {
-		/* no-op for void events */
-	}
-	return callable
-}
-
-// ---------------------------------------------------------------------------
-// PayloadEvent<T> — event carrying a payload
-// ---------------------------------------------------------------------------
-
-export interface PayloadEvent<T> {
-	/** Emit: writes payload (always fires). */
-	(payload: T): void
-	/** Read: returns latest payload (auto-tracks inside effects). */
-	(): T | undefined
-	/** Framework hook bridge. */
-	use(): T | undefined
-}
-
-export function payloadEvent<T>(): PayloadEvent<T> {
-	let seq = 0
-	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
-
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches PayloadEvent<T> interface but TS can't verify the overloaded call signature
-	const callable = function payloadEventCallable(...args: [T] | []) {
-		if (args.length) {
-			// Emit — always fires because each box is a new object
-			inner({v: args[0], id: ++seq})
-		} else {
-			// Read — returns unwrapped payload (auto-tracks)
-			const box = inner()
-			return box !== undefined ? box.v : undefined
-		}
-	} as unknown as PayloadEvent<T>
-
-	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by PayloadEvent<T> contract
-	callable.use = () => getUseHookFactory()(callable)() as T | undefined
 	return callable
 }
 
