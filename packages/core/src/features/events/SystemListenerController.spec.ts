@@ -51,7 +51,7 @@ describe('SystemListenerController', () => {
 
 			controller.enable()
 
-			store.events.delete({token})
+			store.events.delete.emit({token})
 
 			// After delete, the token should be removed from the tokens array
 			expect(store.state.tokens.get()).toEqual([
@@ -74,7 +74,7 @@ describe('SystemListenerController', () => {
 
 			controller.enable()
 
-			store.events.delete({token: missingToken})
+			store.events.delete.emit({token: missingToken})
 
 			expect(store.state.tokens.get()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -129,7 +129,7 @@ describe('SystemListenerController', () => {
 			controller.enable()
 			controller.disable()
 
-			store.events.delete({token})
+			store.events.delete.emit({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
