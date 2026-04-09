@@ -33,29 +33,6 @@ describe('Store', () => {
 		expect(typeof store.events.delete).toBe('function')
 	})
 
-	describe('applyValue', () => {
-		it('should update tokens and previousValue when parser is undefined', () => {
-			const store = new Store({defaultSpan: null})
-			store.applyValue('hello')
-			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			expect(store.state.previousValue.get()).toBe('hello')
-		})
-
-		it('should call onChange when set', () => {
-			const store = new Store({defaultSpan: null})
-			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
-			store.applyValue('world')
-			expect(onChange).toHaveBeenCalledOnce()
-			expect(onChange).toHaveBeenCalledWith('world')
-		})
-
-		it('should not throw when onChange is not set', () => {
-			const store = new Store({defaultSpan: null})
-			expect(() => store.applyValue('test')).not.toThrow()
-		})
-	})
-
 	describe('handler', () => {
 		it('should return an object with container, overlay, and focus properties', () => {
 			const store = new Store({defaultSpan: null})
@@ -218,7 +195,7 @@ describe('Store', () => {
 	})
 
 	describe('innerValue', () => {
-		it('should update tokens synchronously when innerValue is set inside an effectScope', () => {
+		it('should update tokens and previousValue when innerValue is set', () => {
 			const store = new Store({defaultSpan: null})
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
@@ -231,30 +208,47 @@ describe('Store', () => {
 					store.state.onChange.get()?.(newValue)
 				})
 			})
-
 			store.state.innerValue.set('hello')
 			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.state.previousValue.get()).toBe('hello')
-
 			dispose()
 		})
 
-		it('should call onChange when innerValue changes', () => {
+		it('should call onChange when set', () => {
 			const store = new Store({defaultSpan: null})
 			const onChange = vi.fn()
 			store.state.onChange.set(onChange)
-
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
+					const newTokens = parseWithParser(store, newValue)
+					batch(() => {
+						store.state.tokens.set(newTokens)
+						store.state.previousValue.set(newValue)
+					})
 					store.state.onChange.get()?.(newValue)
 				})
 			})
-
 			store.state.innerValue.set('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
+			dispose()
+		})
 
+		it('should not throw when onChange is not set', () => {
+			const store = new Store({defaultSpan: null})
+			const dispose = effectScope(() => {
+				watch(store.state.innerValue, newValue => {
+					if (newValue === undefined) return
+					const newTokens = parseWithParser(store, newValue)
+					batch(() => {
+						store.state.tokens.set(newTokens)
+						store.state.previousValue.set(newValue)
+					})
+					store.state.onChange.get()?.(newValue)
+				})
+			})
+			expect(() => store.state.innerValue.set('test')).not.toThrow()
 			dispose()
 		})
 	})

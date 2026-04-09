@@ -52,7 +52,6 @@ import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
-import {parseWithParser} from '../parsing'
 import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 
@@ -207,14 +206,6 @@ export class Store {
 
 	constructor(options: StoreOptions) {
 		this._defaultSpan = options.defaultSpan
-	}
-
-	applyValue(newValue: string): void {
-		const onChange = this.state.onChange.get()
-		const newTokens = parseWithParser(this, newValue)
-		this.state.tokens.set(newTokens)
-		this.state.previousValue.set(newValue)
-		onChange?.(newValue)
 	}
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
