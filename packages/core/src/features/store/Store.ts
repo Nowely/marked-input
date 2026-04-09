@@ -41,8 +41,6 @@ type StoreState = {
 }
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
-import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
-import type {SlotName} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
 import {CopyController} from '../clipboard'
 import {DragController} from '../drag'
@@ -54,59 +52,10 @@ import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
 import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
-
-function createNamedSlot(
-	slots: Signal<CoreSlots | undefined>,
-	slotProps: Signal<CoreSlotProps | undefined>,
-	name: SlotName
-): Slot {
-	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
-	return {
-		use: () => [resolveSlot(name, slots.use()), resolveSlotProps(name, slotProps.use())] as const,
-		get: () => [resolveSlot(name, slots.get()), resolveSlotProps(name, slotProps.get())] as const,
-	} as unknown as Slot
-}
-
-function createOverlaySlot(overlay: Signal<GenericComponent | undefined>): OverlaySlot {
-	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
-	return {
-		use: (option?: CoreOption, defaultComponent?: unknown) =>
-			resolveOverlaySlot(overlay.use(), option, defaultComponent),
-		get: (option?: CoreOption, defaultComponent?: unknown) =>
-			resolveOverlaySlot(overlay.get(), option, defaultComponent),
-	} as unknown as OverlaySlot
-}
-
-function createMarkSlot(
-	options: Signal<CoreOption[]>,
-	mark: Signal<GenericComponent | undefined>,
-	span: Signal<GenericComponent | undefined>,
-	getDefaultSpan: () => unknown
-): MarkSlot {
-	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
-	return {
-		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use(), getDefaultSpan()),
-		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get(), getDefaultSpan()),
-	} as unknown as MarkSlot
-}
+import {createSlots} from '../slots'
 
 export interface StoreOptions {
 	defaultSpan: unknown
-}
-
-export interface Slot {
-	use(): readonly unknown[]
-	get(): readonly unknown[]
-}
-
-export interface MarkSlot {
-	use(token: Token): readonly unknown[]
-	get(token: Token): readonly unknown[]
-}
-
-export interface OverlaySlot {
-	use(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
-	get(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
 }
 
 export class Store {
@@ -165,13 +114,15 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
-	readonly slot = {
-		container: createNamedSlot(this.state.slots, this.state.slotProps, 'container'),
-		block: createNamedSlot(this.state.slots, this.state.slotProps, 'block'),
-		span: createNamedSlot(this.state.slots, this.state.slotProps, 'span'),
-		overlay: createOverlaySlot(this.state.Overlay),
-		mark: createMarkSlot(this.state.options, this.state.Mark, this.state.Span, () => this._defaultSpan),
-	}
+	readonly slot = createSlots({
+		slots: this.state.slots,
+		slotProps: this.state.slotProps,
+		Overlay: this.state.Overlay,
+		options: this.state.options,
+		Mark: this.state.Mark,
+		Span: this.state.Span,
+		getDefaultSpan: () => this._defaultSpan,
+	})
 
 	readonly events = {
 		change: event(),

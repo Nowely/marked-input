@@ -21,7 +21,8 @@ export type {Signal, Computed, Event, UseHookFactory} from './src/shared/signals
 export {setUseHookFactory, getUseHookFactory, effect, event, signal, computed, watch, batch} from './src/shared/signals'
 
 // Store
-export {Store, type Slot, type MarkSlot, type OverlaySlot} from './src/features/store'
+export {Store} from './src/features/store'
+export type {Slot, MarkSlot, OverlaySlot} from './src/features/slots'
 
 // Overlay
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'

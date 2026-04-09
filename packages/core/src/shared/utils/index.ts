@@ -1,5 +1,3 @@
 export {shallow} from './shallow'
 export {cx} from './cx'
 export {merge} from './merge'
-export {resolveOptionSlot} from './resolveOptionSlot'
-export {resolveSlot, resolveSlotProps, type SlotName} from './resolveSlot'
