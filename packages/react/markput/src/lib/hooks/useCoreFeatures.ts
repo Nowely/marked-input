@@ -16,13 +16,11 @@ export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | u
 	const value = store.state.value.use()
 	const Mark = store.state.Mark.use()
 	const coreOptions = store.state.options.use()
-	const hasPerOptionMark = (coreOptions as Option[] | undefined)?.some(opt => opt.Mark != null)
-	const options = Mark || hasPerOptionMark ? coreOptions : undefined
 	const tokens = store.state.tokens.use()
 
 	useEffect(() => {
-		store.lifecycle.syncParser(value, options)
-	}, [value, options])
+		store.lifecycle.syncParser()
+	}, [value, Mark, coreOptions])
 
 	useLayoutEffect(() => {
 		store.lifecycle.recoverFocus()

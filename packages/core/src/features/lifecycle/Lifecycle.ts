@@ -43,8 +43,10 @@ export class Lifecycle {
 		this.#initialized = false
 	}
 
-	syncParser(value: string | undefined, options: CoreOption[] | undefined) {
+	syncParser() {
 		const {store} = this
+
+		const options = this.#getEffectiveOptions()
 
 		const markups = options?.map(opt => opt.markup)
 		if (markups?.some(Boolean)) {
@@ -62,11 +64,24 @@ export class Lifecycle {
 			return
 		}
 
-		const inputValue = value ?? store.state.defaultValue.get() ?? ''
+		const inputValue = store.state.value.get() ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
 		store.state.previousValue.set(inputValue)
 
 		this.#initialized = true
+	}
+
+	#getEffectiveOptions() {
+		const Mark = this.store.state.Mark.get()
+		const coreOptions = this.store.state.options.get()
+		const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
+			opt =>
+				typeof opt === 'object' &&
+				opt !== null &&
+				'Mark' in opt &&
+				(opt as Record<string, unknown>).Mark != null
+		)
+		return Mark || hasPerOptionMark ? coreOptions : undefined
 	}
 
 	recoverFocus() {

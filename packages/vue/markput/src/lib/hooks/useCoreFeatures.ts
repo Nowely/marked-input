@@ -21,9 +21,7 @@ export function useCoreFeatures(store: Store) {
 	watch(
 		[value, coreOptions, Mark],
 		() => {
-			const hasPerOptionMark = (coreOptions.value as Option[] | undefined)?.some(opt => opt.Mark != null)
-			const options = Mark.value || hasPerOptionMark ? coreOptions.value : undefined
-			store.lifecycle.syncParser(value.value, options)
+			store.lifecycle.syncParser()
 		},
 		{flush: 'post', immediate: true}
 	)
