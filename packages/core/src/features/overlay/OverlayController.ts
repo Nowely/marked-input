@@ -23,34 +23,25 @@ export class OverlayController {
 		if (this.#triggerScope) return
 
 		this.#triggerScope = effectScope(() => {
-			watch(
-				() => this.store.events.clearOverlay(),
-				() => {
-					onMatch(undefined)
-				}
-			)
+			watch(this.store.events.clearOverlay, () => {
+				onMatch(undefined)
+			})
 
-			watch(
-				() => this.store.events.checkOverlay(),
-				() => {
-					// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
-					const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
-					onMatch(match)
-				}
-			)
+			watch(this.store.events.checkOverlay, () => {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
+				const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
+				onMatch(match)
+			})
 
-			watch(
-				() => this.store.events.change(),
-				() => {
-					const showOverlayOn = this.store.state.showOverlayOn.get()
-					if (!showOverlayOn) return
-					const type: OverlayTrigger = 'change'
+			watch(this.store.events.change, () => {
+				const showOverlayOn = this.store.state.showOverlayOn.get()
+				if (!showOverlayOn) return
+				const type: OverlayTrigger = 'change'
 
-					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						this.store.events.checkOverlay.emit()
-					}
+				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+					this.store.events.checkOverlay.emit()
 				}
-			)
+			})
 		})
 
 		const selectionChangeHandler = () => {
