@@ -14,7 +14,7 @@ describe('Store', () => {
 		expect(store.state.readOnly()).toBe(false)
 	})
 
-	it('should have events with voidEvent and payloadEvent', () => {
+	it('should have events', () => {
 		const store = new Store({defaultSpan: null})
 		expect(typeof store.events.parse).toBe('function')
 		expect(typeof store.events.change).toBe('function')

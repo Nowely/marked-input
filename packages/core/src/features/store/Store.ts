@@ -1,5 +1,5 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
-import {signal, voidEvent, payloadEvent, batch} from '../../shared/signals'
+import {signal, event, batch} from '../../shared/signals'
 import type {SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
@@ -101,12 +101,12 @@ export class Store {
 	}
 
 	readonly events = {
-		change: voidEvent(),
-		parse: voidEvent(),
-		delete: payloadEvent<{token: Token}>(),
-		select: payloadEvent<{mark: Token; match: OverlayMatch}>(),
-		clearOverlay: voidEvent(),
-		checkOverlay: voidEvent(),
+		change: event(),
+		parse: event(),
+		delete: event<{token: Token}>(),
+		select: event<{mark: Token; match: OverlayMatch}>(),
+		clearOverlay: event(),
+		checkOverlay: event(),
 	}
 
 	readonly refs = {
