@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionController etc.)
+// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionFeature etc.)
 vi.mock('../feature-manager', () => ({
 	createCoreFeatures: () => ({
 		enableAll: vi.fn(),

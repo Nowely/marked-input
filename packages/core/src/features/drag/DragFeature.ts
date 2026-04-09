@@ -5,7 +5,7 @@ import type {Store} from '../store/Store'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
-export class DragController {
+export class DragFeature {
 	constructor(private store: Store) {}
 
 	#unsub?: () => void

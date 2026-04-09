@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../store/Store'
-import type {OverlayController} from './OverlayController'
+import type {OverlayFeature} from './OverlayFeature'
 
 const stubDocument = {
 	addEventListener: vi.fn(),
@@ -29,9 +29,9 @@ const stubMatch: OverlayMatch = {
 	option: {},
 }
 
-describe('OverlayController', () => {
+describe('OverlayFeature', () => {
 	let store: Store
-	let controller: OverlayController
+	let controller: OverlayFeature
 
 	beforeEach(() => {
 		vi.clearAllMocks()

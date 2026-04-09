@@ -3,7 +3,7 @@ import {createNewSpan} from '../editing'
 import {annotate, findToken, parseWithParser, toString} from '../parsing'
 import type {Store} from '../store/Store'
 
-export class SystemListenerController {
+export class SystemListenerFeature {
 	#scope?: () => void
 
 	constructor(private store: Store) {}

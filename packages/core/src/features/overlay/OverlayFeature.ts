@@ -4,7 +4,7 @@ import type {OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
 
-export class OverlayController {
+export class OverlayFeature {
 	#scope?: () => void
 	#selectionChangeHandler?: () => void
 	#focusinHandler?: (e: FocusEvent) => void

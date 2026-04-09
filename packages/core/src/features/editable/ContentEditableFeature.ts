@@ -4,7 +4,7 @@ import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 import {isTextTokenSpan} from './isTextTokenSpan'
 
-export class ContentEditableController {
+export class ContentEditableFeature {
 	#scope?: () => void
 
 	constructor(private store: Store) {}

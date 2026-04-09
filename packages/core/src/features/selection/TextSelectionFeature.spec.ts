@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Stub global `document` for TextSelectionController which calls document.addEventListener/removeEventListener
+// Stub global `document` for TextSelectionFeature which calls document.addEventListener/removeEventListener
 const listeners: Record<string, Function[]> = {}
 const mockDocument = {
 	addEventListener: vi.fn((event: string, handler: Function) => {
@@ -16,7 +16,7 @@ const mockDocument = {
 	}),
 }
 
-describe('TextSelectionController', () => {
+describe('TextSelectionFeature', () => {
 	let store: Store
 
 	beforeEach(() => {
@@ -69,7 +69,7 @@ describe('TextSelectionController', () => {
 		const container = {
 			querySelectorAll: vi.fn(() => [span]),
 		}
-		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionController in tests
+		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionFeature in tests
 		store.refs.container = container as unknown as HTMLDivElement
 
 		const controller = store.features.textSelection

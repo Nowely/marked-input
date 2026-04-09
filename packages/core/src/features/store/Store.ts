@@ -45,17 +45,17 @@ import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import {BlockEditFeature} from '../block-editing'
-import {CopyController} from '../clipboard'
-import {DragController} from '../drag'
-import {ContentEditableController} from '../editable'
-import {SystemListenerController} from '../events'
-import {FocusController} from '../focus'
+import {CopyFeature} from '../clipboard'
+import {DragFeature} from '../drag'
+import {ContentEditableFeature} from '../editable'
+import {SystemListenerFeature} from '../events'
+import {FocusFeature} from '../focus'
 import {InputFeature} from '../input'
 import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
-import {OverlayController} from '../overlay'
+import {OverlayFeature} from '../overlay'
 import type {Parser, Token} from '../parsing'
-import {TextSelectionController} from '../selection'
+import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
 
 export type {DragAction} from '../../shared/types'
@@ -146,16 +146,16 @@ export class Store {
 	readonly handler = new MarkputHandler(this)
 
 	readonly features = {
-		overlay: new OverlayController(this),
-		focus: new FocusController(this),
+		overlay: new OverlayFeature(this),
+		focus: new FocusFeature(this),
 		input: new InputFeature(this),
 		blockEditing: new BlockEditFeature(this),
 		keynav: new KeyNavFeature(this),
-		system: new SystemListenerController(this),
-		textSelection: new TextSelectionController(this),
-		contentEditable: new ContentEditableController(this),
-		drag: new DragController(this),
-		copy: new CopyController(this),
+		system: new SystemListenerFeature(this),
+		textSelection: new TextSelectionFeature(this),
+		contentEditable: new ContentEditableFeature(this),
+		drag: new DragFeature(this),
+		copy: new CopyFeature(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)

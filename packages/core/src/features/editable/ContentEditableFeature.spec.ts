@@ -2,11 +2,11 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
-import type {ContentEditableController} from './ContentEditableController'
+import type {ContentEditableFeature} from './ContentEditableFeature'
 
-describe('ContentEditableController', () => {
+describe('ContentEditableFeature', () => {
 	let store: Store
-	let controller: ContentEditableController
+	let controller: ContentEditableFeature
 
 	beforeEach(() => {
 		vi.clearAllMocks()

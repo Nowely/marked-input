@@ -1,2 +1,2 @@
-export {ContentEditableController} from './ContentEditableController'
+export {ContentEditableFeature} from './ContentEditableFeature'
 export {isTextTokenSpan} from './isTextTokenSpan'
