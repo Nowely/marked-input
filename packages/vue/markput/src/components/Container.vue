@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {StyleProperties} from '@markput/core'
+import type {CSSProperties} from '@markput/core'
 import {computed, type Ref} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
@@ -13,7 +13,7 @@ const tokens = store.state.tokens.use()
 const slotsRef = store.state.slots.use()
 const slotPropsRef = store.state.slotProps.use()
 const className = store.state.containerClass.use()
-const style = store.state.containerStyle.use() as unknown as Ref<StyleProperties | undefined>
+const style = store.state.containerStyle.use() as unknown as Ref<CSSProperties | undefined>
 const key = store.key
 
 const containerSlot = computed(() => {

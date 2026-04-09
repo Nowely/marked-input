@@ -1,4 +1,4 @@
-import type {Properties} from 'csstype'
+import type * as CSS from 'csstype'
 
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
@@ -65,7 +65,7 @@ export interface MarkputState {
 	Mark: GenericComponent | undefined
 	Overlay: GenericComponent | undefined
 	className: string | undefined
-	style: StyleProperties | undefined
+	style: CSSProperties | undefined
 	slots: CoreSlots | undefined
 	slotProps: CoreSlotProps | undefined
 	drag: boolean | {alwaysShowHandle: boolean}
@@ -112,8 +112,7 @@ export type Recovery = {
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 
-export type StyleProperties = Properties<string | number>
-
+export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
 export type GenericComponent = unknown
@@ -127,9 +126,9 @@ export interface CoreSlots {
 }
 
 export interface CoreSlotProps {
-	container?: GenericAttributes & {className?: string; style?: StyleProperties}
-	block?: GenericAttributes & {className?: string; style?: StyleProperties}
-	span?: GenericAttributes & {className?: string; style?: StyleProperties}
+	container?: GenericAttributes & {className?: string; style?: CSSProperties}
+	block?: GenericAttributes & {className?: string; style?: CSSProperties}
+	span?: GenericAttributes & {className?: string; style?: CSSProperties}
 }
 
 export type DragAction =

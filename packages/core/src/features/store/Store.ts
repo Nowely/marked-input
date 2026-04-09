@@ -8,7 +8,7 @@ import type {
 	OverlayTrigger,
 	Recovery,
 	GenericComponent,
-	StyleProperties,
+	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DragAction,
@@ -34,10 +34,10 @@ type StoreState = {
 	Mark: Signal<GenericComponent | undefined>
 	Overlay: Signal<GenericComponent | undefined>
 	className: Signal<string | undefined>
-	style: Signal<StyleProperties | undefined>
+	style: Signal<CSSProperties | undefined>
 	baseClassName: Signal<string | undefined>
 	containerClass: Computed<string | undefined>
-	containerStyle: Computed<StyleProperties | undefined>
+	containerStyle: Computed<CSSProperties | undefined>
 	slots: Signal<CoreSlots | undefined>
 	slotProps: Signal<CoreSlotProps | undefined>
 }
@@ -102,7 +102,7 @@ export class Store {
 
 		// Styling
 		className: signal<string | undefined>(undefined),
-		style: signal<StyleProperties | undefined>(undefined, {equals: shallow}),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
 		baseClassName: signal<string | undefined>(undefined),
 		containerClass: computed(() =>
 			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)

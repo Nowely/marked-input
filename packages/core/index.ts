@@ -5,7 +5,7 @@ export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
-	StyleProperties,
+	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
