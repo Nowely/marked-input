@@ -51,6 +51,7 @@ import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
+import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
 import type {Parser, Token} from '../parsing'
@@ -149,6 +150,7 @@ export class Store {
 		focus: new FocusController(this),
 		keydown: new KeyDownController(this),
 		blockEditing: new BlockEditFeature(this),
+		keynav: new KeyNavFeature(this),
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
 		contentEditable: new ContentEditableController(this),

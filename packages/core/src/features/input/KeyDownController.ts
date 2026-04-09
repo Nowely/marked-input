@@ -3,8 +3,7 @@ import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {deleteMark} from '../editing/utils/deleteMark'
-import {shiftFocusNext, shiftFocusPrev} from '../navigation'
-import {isFullSelection, selectAllText} from '../selection'
+import {isFullSelection} from '../selection'
 import type {Store} from '../store/Store'
 
 export class KeyDownController {
@@ -22,14 +21,8 @@ export class KeyDownController {
 
 		this.#keydownHandler = e => {
 			if (!this.store.state.drag.get()) {
-				if (e.key === KEYBOARD.LEFT) {
-					shiftFocusPrev(this.store, e)
-				} else if (e.key === KEYBOARD.RIGHT) {
-					shiftFocusNext(this.store, e)
-				}
 				this.#handleDelete(e)
 			}
-			selectAllText(this.store, e)
 		}
 
 		this.#pasteHandler = e => {
