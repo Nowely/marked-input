@@ -44,6 +44,7 @@ type StoreState = {
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
+import {BlockEditFeature} from '../block-editing'
 import {CopyController} from '../clipboard'
 import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
@@ -147,6 +148,7 @@ export class Store {
 		overlay: new OverlayController(this),
 		focus: new FocusController(this),
 		keydown: new KeyDownController(this),
+		blockEditing: new BlockEditFeature(this),
 		system: new SystemListenerController(this),
 		textSelection: new TextSelectionController(this),
 		contentEditable: new ContentEditableController(this),
