@@ -4,13 +4,17 @@ import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 import type {OverlayController} from './OverlayController'
 
-// Stub global document for tests that call disable() which references document.removeEventListener
 const stubDocument = {
 	addEventListener: vi.fn(),
 	removeEventListener: vi.fn(),
 }
 
+const stubWindow = {
+	getSelection: vi.fn(),
+}
+
 vi.stubGlobal('document', stubDocument)
+vi.stubGlobal('window', stubWindow)
 
 describe('OverlayController', () => {
 	let store: Store
@@ -63,6 +67,7 @@ describe('OverlayController', () => {
 		it('should not react when showOverlayOn changes without a new change event', () => {
 			const onMatch = vi.fn()
 			const getTrigger = () => undefined
+			store.state.showOverlayOn.set('selectionChange')
 
 			controller.enableTrigger(getTrigger, onMatch)
 

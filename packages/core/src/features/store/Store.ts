@@ -180,9 +180,11 @@ export class Store {
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
+			const state = this.state
 			for (const k in values) {
+				if (!(k in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-				this.state[k as keyof typeof this.state].set(values[k as keyof typeof values] as never)
+				state[k as keyof typeof state].set(values[k as keyof typeof values] as never)
 			}
 		})
 	}
