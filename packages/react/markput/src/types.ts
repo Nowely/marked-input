@@ -1,5 +1,5 @@
 import type {CoreOption, CoreSlots, DataAttributes} from '@markput/core'
-import type {ComponentType, ElementType, HTMLAttributes, ReactNode} from 'react'
+import type {ComponentType, ElementType, ReactNode} from 'react'
 
 /**
  * Props passed to Mark components.
@@ -60,9 +60,9 @@ export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> ex
  */
 export interface Slots extends CoreSlots {
 	/** Root container component */
-	container?: ElementType<HTMLAttributes<HTMLDivElement>>
+	container?: ElementType<Record<string, unknown>>
 }
 
 export interface SlotProps {
-	container?: HTMLAttributes<HTMLDivElement> & DataAttributes
+	container?: Record<string, unknown> & DataAttributes
 }
