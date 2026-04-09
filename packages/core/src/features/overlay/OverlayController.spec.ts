@@ -24,7 +24,7 @@ describe('OverlayController', () => {
 		vi.clearAllMocks()
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
-		controller = store.controllers.overlay
+		controller = store.features.overlay
 	})
 
 	describe('enableTrigger()', () => {

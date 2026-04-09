@@ -24,6 +24,7 @@ type StoreState = {
 	selecting: Signal<'drag' | 'all' | undefined>
 	drag: Signal<boolean | {alwaysShowHandle: boolean}>
 	overlayMatch: Signal<OverlayMatch | undefined>
+	overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
 	showOverlayOn: Signal<OverlayTrigger>
 	onChange: Signal<((value: string) => void) | undefined>
 	options: Signal<CoreOption[]>
@@ -85,6 +86,7 @@ export class Store {
 
 		// Overlay
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
+		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 		showOverlayOn: signal<OverlayTrigger>('change'),
 
 		// Callbacks
@@ -144,7 +146,7 @@ export class Store {
 
 	readonly handler = new MarkputHandler(this)
 
-	readonly controllers = {
+	readonly features = {
 		overlay: new OverlayController(this),
 		focus: new FocusController(this),
 		keydown: new KeyDownController(this),

@@ -83,9 +83,9 @@ export class Lifecycle {
 	 * since focus recovery requires the new DOM to be committed.
 	 */
 	recoverFocus() {
-		this.store.controllers.contentEditable.sync()
+		this.store.features.contentEditable.sync()
 		if (!this.store.state.Mark.get()) return
-		this.store.controllers.focus.recover()
+		this.store.features.focus.recover()
 	}
 
 	#subscribeParse() {
@@ -105,15 +105,15 @@ export class Lifecycle {
 	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
 		const {store} = this
 
-		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
-		this.#stopOverlay = () => store.controllers.overlay.disable()
+		store.features.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
+		this.#stopOverlay = () => store.features.overlay.disable()
 
 		watch(store.state.overlayMatch, match => {
 			if (match) {
 				store.nodes.input.target = store.nodes.focus.target
-				store.controllers.overlay.enableClose()
+				store.features.overlay.enableClose()
 			} else {
-				store.controllers.overlay.disableClose()
+				store.features.overlay.disableClose()
 			}
 		})
 	}

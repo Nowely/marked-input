@@ -5,12 +5,12 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 	const manager = new FeatureManager()
 
 	manager
-		.register(asFeature('keydown', store.controllers.keydown))
-		.register(asFeature('system', store.controllers.system))
-		.register(asFeature('focus', store.controllers.focus))
-		.register(asFeature('textSelection', store.controllers.textSelection))
-		.register(asFeature('contentEditable', store.controllers.contentEditable))
-		.register(asFeature('copy', store.controllers.copy))
+		.register(asFeature('keydown', store.features.keydown))
+		.register(asFeature('system', store.features.system))
+		.register(asFeature('focus', store.features.focus))
+		.register(asFeature('textSelection', store.features.textSelection))
+		.register(asFeature('contentEditable', store.features.contentEditable))
+		.register(asFeature('copy', store.features.copy))
 
 	return manager
 }

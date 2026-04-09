@@ -12,7 +12,7 @@ describe('SystemListenerController', () => {
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
-		controller = store.controllers.system
+		controller = store.features.system
 	})
 
 	describe('enable()', () => {

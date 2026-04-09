@@ -18,7 +18,7 @@ const isDragging = blockStore.state.isDragging.use()
 
 <template>
 	<div
-		:ref="el => blockStore.attachContainer(el as HTMLElement | null, props.blockIndex, store.controllers.drag)"
+		:ref="el => blockStore.attachContainer(el as HTMLElement | null, props.blockIndex, store.features.drag)"
 		v-bind="{'data-testid': 'block'}"
 		:class="styles.Block"
 		:style="{opacity: isDragging ? 0.4 : 1}"

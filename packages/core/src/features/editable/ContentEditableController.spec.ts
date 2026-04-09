@@ -12,7 +12,7 @@ describe('ContentEditableController', () => {
 		vi.clearAllMocks()
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
-		controller = store.controllers.contentEditable
+		controller = store.features.contentEditable
 	})
 
 	it('enable() calls sync() immediately (effect fires on creation)', () => {

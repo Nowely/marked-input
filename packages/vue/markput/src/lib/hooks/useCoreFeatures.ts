@@ -32,7 +32,7 @@ export function useCoreFeatures(store: Store) {
 	watch(
 		tokens,
 		() => {
-			store.controllers.contentEditable.sync()
+			store.features.contentEditable.sync()
 		},
 		{flush: 'post'}
 	)

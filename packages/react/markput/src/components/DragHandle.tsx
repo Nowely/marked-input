@@ -27,7 +27,7 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			)}
 		>
 			<button
-				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, store.controllers.drag)}
+				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, store.features.drag)}
 				type="button"
 				draggable
 				className={cx(styles.GripButton, isDragging && styles.GripButtonDragging)}
