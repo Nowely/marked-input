@@ -19,6 +19,7 @@ These tasks add the new events and rename controllers→features without changin
 ### Task 1: Add new events to Store
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts:122-129`
 - Test: `packages/core/src/features/store/Store.spec.ts`
 
@@ -28,10 +29,10 @@ In `packages/core/src/features/store/Store.ts`, add the `DragAction` type and th
 
 ```ts
 export type DragAction =
-	| {type: 'reorder'; source: number; target: number}
-	| {type: 'add'; afterIndex: number}
-	| {type: 'delete'; index: number}
-	| {type: 'duplicate'; index: number}
+    | {type: 'reorder'; source: number; target: number}
+    | {type: 'add'; afterIndex: number}
+    | {type: 'delete'; index: number}
+    | {type: 'duplicate'; index: number}
 ```
 
 Then extend the `events` declaration:
@@ -69,6 +70,7 @@ git commit -m "refactor(core): add sync, recoverFocus, and dragAction events to 
 The overlay trigger config is currently passed via `Lifecycle.enable({getTrigger})`. For OverlayFeature to self-manage, it needs to read this from store state.
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts:66-115` (state declaration and StoreState type)
 - Modify: `packages/core/src/features/store/Store.ts:16-41` (StoreState type)
 
@@ -105,6 +107,7 @@ git commit -m "refactor(core): add overlayTrigger signal to Store state"
 ### Task 3: Rename controllers → features in Store
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts` (imports + `controllers` property)
 
 - [ ] **Step 1: Rename the `controllers` property to `features`**
@@ -127,6 +130,7 @@ readonly features = {
 - [ ] **Step 2: Update all internal references from `store.controllers` to `store.features`**
 
 Search and replace across the entire core package: `store.controllers.` → `store.features.`. This includes:
+
 - `packages/core/src/features/lifecycle/Lifecycle.ts`
 - `packages/core/src/features/feature-manager/coreFeatures.ts`
 - Any other core files referencing `store.controllers`
@@ -140,6 +144,7 @@ Search and replace across React and Vue packages: `store.controllers.` → `stor
 Use: `rg "store\.controllers" packages/react/ packages/vue/` to find all references.
 
 Known locations:
+
 - `packages/react/markput/src/components/Block.tsx` (line 26)
 - `packages/react/markput/src/components/DragHandle.tsx` (line 25)
 - `packages/vue/markput/src/components/Block.vue` (line 21)
@@ -169,6 +174,7 @@ Each task converts one feature to subscribe to events instead of being called di
 ### Task 4: Convert ContentEditableFeature to subscribe to `sync` event
 
 **Files:**
+
 - Modify: `packages/core/src/features/editable/ContentEditableController.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
 - Modify: `packages/vue/markput/src/lib/hooks/useCoreFeatures.ts`
@@ -215,11 +221,11 @@ The result should be:
 ```ts
 const tokens = store.state.tokens.use()
 watch(
-	tokens,
-	() => {
-		store.lifecycle.recoverFocus()
-	},
-	{flush: 'post'}
+    tokens,
+    () => {
+        store.lifecycle.recoverFocus()
+    },
+    {flush: 'post'}
 )
 ```
 
@@ -240,6 +246,7 @@ git commit -m "refactor(core): ContentEditableFeature subscribes to sync event"
 ### Task 5: Convert FocusFeature to subscribe to `recoverFocus` event
 
 **Files:**
+
 - Modify: `packages/core/src/features/focus/FocusController.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
 
@@ -293,6 +300,7 @@ git commit -m "refactor(core): FocusFeature subscribes to recoverFocus event"
 This is the most complex conversion. OverlayController currently has 4 methods called by Lifecycle.
 
 **Files:**
+
 - Modify: `packages/core/src/features/overlay/OverlayController.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
 - Modify: `packages/core/src/features/store/Store.ts` (overlayTrigger signal, already added in Task 2)
@@ -301,6 +309,7 @@ This is the most complex conversion. OverlayController currently has 4 methods c
 - [ ] **Step 1: Rewrite OverlayController.enable() to self-manage**
 
 The new `enable()` must:
+
 1. Subscribe to `store.events.change` and `store.events.checkOverlay` for trigger detection (same as current `enableTrigger`)
 2. Subscribe to `store.events.clearOverlay` to clear match
 3. Watch `store.state.overlayTrigger` reactively to get the trigger extractor
@@ -383,10 +392,8 @@ disable() {
 In `coreFeatures.ts`, add overlay to the registration:
 
 ```ts
-manager
-	.register(asFeature('overlay', store.features.overlay))
-	.register(asFeature('keydown', store.features.keydown))
-	// ... rest unchanged
+manager.register(asFeature('overlay', store.features.overlay)).register(asFeature('keydown', store.features.keydown))
+// ... rest unchanged
 ```
 
 - [ ] **Step 5: Run tests**
@@ -406,6 +413,7 @@ git commit -m "refactor(core): OverlayFeature self-manages via events and reacti
 ### Task 7: Convert DragFeature to subscribe to `dragAction` event
 
 **Files:**
+
 - Modify: `packages/core/src/features/drag/DragController.ts`
 - Modify: `packages/core/src/shared/classes/BlockStore.ts`
 - Modify: `packages/react/markput/src/components/Block.tsx`
@@ -443,31 +451,45 @@ Add `#unsub` private field. Keep `reorder`, `add`, `delete`, `duplicate` as priv
 In `BlockStore.ts`, change the constructor/methods to accept `events` (with `dragAction` event) instead of `DragController`:
 
 Change `attachContainer` signature:
+
 ```ts
 attachContainer(el: HTMLElement | null, blockIndex: number, events: {dragAction: Event<DragAction>})
 ```
 
 Store events reference instead of drag controller:
+
 ```ts
 #events: {dragAction: Event<DragAction>} | null = null
 ```
 
 Update `onDrop` handler:
+
 ```ts
 onDrop: (e: DragEvent) => {
-	// ... existing source/target index computation ...
-	this.#events?.dragAction.emit({type: 'reorder', source: sourceIndex, target: targetIndex})
+    // ... existing source/target index computation ...
+    this.#events?.dragAction.emit({type: 'reorder', source: sourceIndex, target: targetIndex})
 }
 ```
 
 Update action methods:
+
 ```ts
-addBlock = () => { this.#events?.dragAction.emit({type: 'add', afterIndex: this.#blockIndex}); this.closeMenu() }
-deleteBlock = () => { this.#events?.dragAction.emit({type: 'delete', index: this.#blockIndex}); this.closeMenu() }
-duplicateBlock = () => { this.#events?.dragAction.emit({type: 'duplicate', index: this.#blockIndex}); this.closeMenu() }
+addBlock = () => {
+    this.#events?.dragAction.emit({type: 'add', afterIndex: this.#blockIndex})
+    this.closeMenu()
+}
+deleteBlock = () => {
+    this.#events?.dragAction.emit({type: 'delete', index: this.#blockIndex})
+    this.closeMenu()
+}
+duplicateBlock = () => {
+    this.#events?.dragAction.emit({type: 'duplicate', index: this.#blockIndex})
+    this.closeMenu()
+}
 ```
 
 Add the import for `Event` and `DragAction`:
+
 ```ts
 import type {Event} from '../../features/store/Store'
 import type {DragAction} from '../../features/store/Store'
@@ -477,7 +499,7 @@ Wait — this creates a shared→features dependency. Instead, define `DragActio
 
 ```ts
 export interface DragActions {
-	dragAction: {emit(action: DragAction): void}
+    dragAction: {emit(action: DragAction): void}
 }
 ```
 
@@ -503,14 +525,14 @@ In `coreFeatures.ts`, add drag:
 
 ```ts
 manager
-	.register(asFeature('overlay', store.features.overlay))
-	.register(asFeature('keydown', store.features.keydown))
-	.register(asFeature('system', store.features.system))
-	.register(asFeature('focus', store.features.focus))
-	.register(asFeature('textSelection', store.features.textSelection))
-	.register(asFeature('contentEditable', store.features.contentEditable))
-	.register(asFeature('copy', store.features.copy))
-	.register(asFeature('drag', store.features.drag))
+    .register(asFeature('overlay', store.features.overlay))
+    .register(asFeature('keydown', store.features.keydown))
+    .register(asFeature('system', store.features.system))
+    .register(asFeature('focus', store.features.focus))
+    .register(asFeature('textSelection', store.features.textSelection))
+    .register(asFeature('contentEditable', store.features.contentEditable))
+    .register(asFeature('copy', store.features.copy))
+    .register(asFeature('drag', store.features.drag))
 ```
 
 - [ ] **Step 5: Run tests**
@@ -532,6 +554,7 @@ git commit -m "refactor(core): DragFeature subscribes to dragAction event, Block
 After Tasks 4-7, Lifecycle should no longer call any feature directly. Verify and clean up.
 
 **Files:**
+
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
 
 - [ ] **Step 1: Verify Lifecycle has no direct feature references**
@@ -548,56 +571,56 @@ import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from
 import type {Store} from '../store'
 
 export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
-	getTrigger?: (option: TOption) => string | undefined
+    getTrigger?: (option: TOption) => string | undefined
 }
 
 export class Lifecycle {
-	#scope?: () => void
-	#stopFeatures?: () => void
-	#initialized = false
+    #scope?: () => void
+    #stopFeatures?: () => void
+    #initialized = false
 
-	constructor(private store: Store) {}
+    constructor(private store: Store) {}
 
-	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
-		if (this.#scope) return
+    enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
+        if (this.#scope) return
 
-		const {store} = this
+        const {store} = this
 
-		if (options?.getTrigger) {
-			store.state.overlayTrigger.set(options.getTrigger)
-		}
+        if (options?.getTrigger) {
+            store.state.overlayTrigger.set(options.getTrigger)
+        }
 
-		const features = createCoreFeatures(store)
-		features.enableAll()
-		this.#stopFeatures = () => features.disableAll()
+        const features = createCoreFeatures(store)
+        features.enableAll()
+        this.#stopFeatures = () => features.disableAll()
 
-		this.#scope = effectScope(() => {
-			this.#subscribeParse()
-		})
-	}
+        this.#scope = effectScope(() => {
+            this.#subscribeParse()
+        })
+    }
 
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
-		this.#stopFeatures?.()
-		this.#stopFeatures = undefined
-		this.store.state.overlayTrigger.set(undefined)
-		this.#initialized = false
-	}
+    disable() {
+        this.#scope?.()
+        this.#scope = undefined
+        this.#stopFeatures?.()
+        this.#stopFeatures = undefined
+        this.store.state.overlayTrigger.set(undefined)
+        this.#initialized = false
+    }
 
-	syncParser(value: string | undefined, options: CoreOption[] | undefined) {
-		// ... unchanged ...
-	}
+    syncParser(value: string | undefined, options: CoreOption[] | undefined) {
+        // ... unchanged ...
+    }
 
-	recoverFocus() {
-		this.store.events.sync.emit()
-		if (!this.store.state.Mark.get()) return
-		this.store.events.recoverFocus.emit()
-	}
+    recoverFocus() {
+        this.store.events.sync.emit()
+        if (!this.store.state.Mark.get()) return
+        this.store.events.recoverFocus.emit()
+    }
 
-	#subscribeParse() {
-		// ... unchanged ...
-	}
+    #subscribeParse() {
+        // ... unchanged ...
+    }
 }
 ```
 
@@ -628,6 +651,7 @@ This is the largest change. Split the 929-line God Controller into 3 features.
 Before decomposition, extract duplicated code into shared locations.
 
 **Files:**
+
 - Create: `packages/core/src/features/editing/createRowContent.ts`
 - Create: `packages/core/src/features/editable/isTextTokenSpan.ts`
 - Modify: `packages/core/src/features/editing/index.ts`
@@ -645,9 +669,9 @@ import {annotate} from '../parsing'
 import type {CoreOption} from '../../../shared/types'
 
 export function createRowContent(options: CoreOption[]): string {
-	const firstOption = options[0]
-	if (!firstOption.markup) return '\n'
-	return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
+    const firstOption = options[0]
+    if (!firstOption.markup) return '\n'
+    return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
 }
 ```
 
@@ -659,7 +683,10 @@ Create `packages/core/src/features/editable/isTextTokenSpan.ts`:
 
 ```ts
 export function isTextTokenSpan(el: Element): boolean {
-	return el.tagName === 'SPAN' && (!el.attributes.length || (el.attributes.length === 1 && el.attributes[0].name === 'contenteditable'))
+    return (
+        el.tagName === 'SPAN' &&
+        (!el.attributes.length || (el.attributes.length === 1 && el.attributes[0].name === 'contenteditable'))
+    )
 }
 ```
 
@@ -668,17 +695,20 @@ Export from `packages/core/src/features/editable/index.ts`.
 - [ ] **Step 3: Update KeyDownController to use shared utilities**
 
 In `KeyDownController.ts`:
+
 - Remove `#createRowContent()` private method, import `createRowContent` from editing
 - Remove `isTextTokenSpan()` module-level function, import from editable
 
 - [ ] **Step 4: Update DragController to use shared `createRowContent`**
 
 In `DragController.ts`:
+
 - Remove `#createRowContent()` private method, import `createRowContent` from editing
 
 - [ ] **Step 5: Update ContentEditableController to use shared `isTextTokenSpan`**
 
 In `ContentEditableController.ts`:
+
 - Remove local `isTextTokenSpan()` function, import from `../editable` (or adjust path since it's in the same directory — import from the new file directly)
 
 - [ ] **Step 6: Run tests**
@@ -700,6 +730,7 @@ git commit -m "refactor(core): extract shared createRowContent and isTextTokenSp
 Extract all drag-mode keyboard operations + raw position mapping into a new feature.
 
 **Files:**
+
 - Create: `packages/core/src/features/block-editing/BlockEditFeature.ts`
 - Create: `packages/core/src/features/block-editing/rawPosition.ts`
 - Create: `packages/core/src/features/block-editing/index.ts`
@@ -709,6 +740,7 @@ Extract all drag-mode keyboard operations + raw position mapping into a new feat
 - [ ] **Step 1: Create `rawPosition.ts` with position mapping functions**
 
 Move these module-level functions from `KeyDownController.ts` into `packages/core/src/features/block-editing/rawPosition.ts`:
+
 - `getCaretRawPosInBlock`
 - `getDomRawPos`
 - `getDomRawPosInMark`
@@ -721,6 +753,7 @@ These are pure utility functions — no changes needed, just moved.
 - [ ] **Step 2: Create `BlockEditFeature.ts`**
 
 Create `packages/core/src/features/block-editing/BlockEditFeature.ts`. Move these methods from `KeyDownController`:
+
 - `#handleDelete` drag-mode branch (lines 133-271)
 - `#handleEnter` (lines 274-337)
 - `#handleBlockArrowLeftRight` (lines 339-373)
@@ -728,25 +761,26 @@ Create `packages/core/src/features/block-editing/BlockEditFeature.ts`. Move thes
 - `handleBlockBeforeInput` (module-level, lines 638-722) — now a private method
 
 The feature:
+
 ```ts
 import type {Store} from '../store'
 import type {Token} from '../parsing'
 
 export class BlockEditFeature {
-	constructor(private store: Store) {}
+    constructor(private store: Store) {}
 
-	enable() {
-		const {store} = this
-		this.#container = store.refs.container
-		// Register beforeinput listener for drag mode
-		// Register keydown listener for drag-mode keys
-	}
+    enable() {
+        const {store} = this
+        this.#container = store.refs.container
+        // Register beforeinput listener for drag mode
+        // Register keydown listener for drag-mode keys
+    }
 
-	disable() {
-		// Remove all listeners
-	}
+    disable() {
+        // Remove all listeners
+    }
 
-	// ... private methods for drag-mode keyboard handling
+    // ... private methods for drag-mode keyboard handling
 }
 ```
 
@@ -756,12 +790,19 @@ The `enable()` method registers a `beforeinput` listener (filtered to drag-mode 
 
 ```ts
 export {BlockEditFeature} from './BlockEditFeature'
-export {getCaretRawPosInBlock, getDomRawPos, getDomRawPosInMark, setCaretAtRawPos, setCaretInMarkAtRawPos} from './rawPosition'
+export {
+    getCaretRawPosInBlock,
+    getDomRawPos,
+    getDomRawPosInMark,
+    setCaretAtRawPos,
+    setCaretInMarkAtRawPos,
+} from './rawPosition'
 ```
 
 - [ ] **Step 4: Remove drag-mode code from KeyDownController**
 
 From `KeyDownController.ts`, remove:
+
 - Drag-mode branches of `#handleDelete` (keep only non-drag branch)
 - `#handleEnter` (entire method)
 - `#handleBlockArrowLeftRight` (entire method)
@@ -775,6 +816,7 @@ Update `enable()` to only register listeners for non-drag mode. The `keydown` ha
 - [ ] **Step 5: Add `blockEditing` to Store.features**
 
 In `Store.ts`:
+
 - Import `BlockEditFeature`
 - Add `blockEditing: new BlockEditFeature(this)` to `features`
 
@@ -805,6 +847,7 @@ git commit -m "refactor(core): extract BlockEditFeature from KeyDownController"
 Extract the thin arrow-key navigation dispatch into its own feature.
 
 **Files:**
+
 - Create: `packages/core/src/features/keynav/KeyNavFeature.ts`
 - Create: `packages/core/src/features/keynav/index.ts`
 - Modify: `packages/core/src/features/input/KeyDownController.ts`
@@ -820,37 +863,37 @@ import {selectAllText} from '../selection'
 import type {Store} from '../store'
 
 export class KeyNavFeature {
-	constructor(private store: Store) {}
+    constructor(private store: Store) {}
 
-	enable() {
-		const {store} = this
-		this.#container = store.refs.container
-		this.#keydownHandler = (e: KeyboardEvent) => {
-			if (store.state.drag.get()) return
-			if (!store.nodes.focus.target) return
+    enable() {
+        const {store} = this
+        this.#container = store.refs.container
+        this.#keydownHandler = (e: KeyboardEvent) => {
+            if (store.state.drag.get()) return
+            if (!store.nodes.focus.target) return
 
-			switch (e.key) {
-				case 'ArrowLeft':
-					if (shiftFocusPrev(store)) e.preventDefault()
-					break
-				case 'ArrowRight':
-					if (shiftFocusNext(store)) e.preventDefault()
-					break
-				case 'a':
-					if (e.ctrlKey || e.metaKey) {
-						e.preventDefault()
-						selectAllText(store)
-					}
-					break
-			}
-		}
-		this.#container?.addEventListener('keydown', this.#keydownHandler)
-	}
+            switch (e.key) {
+                case 'ArrowLeft':
+                    if (shiftFocusPrev(store)) e.preventDefault()
+                    break
+                case 'ArrowRight':
+                    if (shiftFocusNext(store)) e.preventDefault()
+                    break
+                case 'a':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault()
+                        selectAllText(store)
+                    }
+                    break
+            }
+        }
+        this.#container?.addEventListener('keydown', this.#keydownHandler)
+    }
 
-	disable() {
-		this.#container?.removeEventListener('keydown', this.#keydownHandler)
-		this.#keydownHandler = undefined
-	}
+    disable() {
+        this.#container?.removeEventListener('keydown', this.#keydownHandler)
+        this.#keydownHandler = undefined
+    }
 }
 ```
 
@@ -865,6 +908,7 @@ export {KeyNavFeature} from './KeyNavFeature'
 - [ ] **Step 3: Remove arrow/selectAll dispatch from KeyDownController**
 
 From `KeyDownController.enable()` keydown handler, remove:
+
 - Arrow left/right dispatch to `shiftFocusPrev`/`shiftFocusNext`
 - Ctrl/Cmd+A dispatch to `selectAllText`
 
@@ -897,6 +941,7 @@ git commit -m "refactor(core): extract KeyNavFeature from KeyDownController"
 The remaining KeyDownController now only handles non-drag input (beforeinput, paste, mark deletion). Rename it.
 
 **Files:**
+
 - Rename: `packages/core/src/features/input/KeyDownController.ts` → `packages/core/src/features/input/InputFeature.ts`
 - Modify: `packages/core/src/features/input/index.ts`
 - Modify: `packages/core/src/features/store/Store.ts`
@@ -915,6 +960,7 @@ In `InputFeature.ts`, rename `KeyDownController` to `InputFeature`.
 - [ ] **Step 3: Update index.ts exports**
 
 In `packages/core/src/features/input/index.ts`:
+
 ```ts
 export {InputFeature} from './InputFeature'
 export {handleBeforeInput, handlePaste, replaceAllContentWith, applySpanInput} from './InputFeature'
@@ -925,6 +971,7 @@ Note: The exported functions (`handleBeforeInput`, `handlePaste`, etc.) may now 
 - [ ] **Step 4: Update Store.features**
 
 In `Store.ts`:
+
 ```ts
 import {InputFeature} from './input'
 // ...
@@ -963,25 +1010,27 @@ git commit -m "refactor(core): rename KeyDownController to InputFeature"
 ### Task 13: Rename all remaining *Controller classes to *Feature
 
 **Files:**
+
 - Rename classes in: overlay, focus, events, selection, editable, drag, clipboard
 - Update all index.ts files
 - Update Store.features key names if needed
 
 For each controller:
 
-| Old Class | New Class | New features key |
-|---|---|---|
-| `OverlayController` | `OverlayFeature` | `overlay` (unchanged) |
-| `FocusController` | `FocusFeature` | `focus` (unchanged) |
-| `SystemListenerController` | `SystemListenerFeature` | `system` (unchanged) |
-| `TextSelectionController` | `TextSelectionFeature` | `textSelection` (unchanged) |
+| Old Class                   | New Class                | New features key              |
+| --------------------------- | ------------------------ | ----------------------------- |
+| `OverlayController`         | `OverlayFeature`         | `overlay` (unchanged)         |
+| `FocusController`           | `FocusFeature`           | `focus` (unchanged)           |
+| `SystemListenerController`  | `SystemListenerFeature`  | `system` (unchanged)          |
+| `TextSelectionController`   | `TextSelectionFeature`   | `textSelection` (unchanged)   |
 | `ContentEditableController` | `ContentEditableFeature` | `contentEditable` (unchanged) |
-| `DragController` | `DragFeature` | `drag` (unchanged) |
-| `CopyController` | `CopyFeature` | `copy` (unchanged) |
+| `DragController`            | `DragFeature`            | `drag` (unchanged)            |
+| `CopyController`            | `CopyFeature`            | `copy` (unchanged)            |
 
 - [ ] **Step 1: Rename each class file**
 
 For each controller:
+
 ```bash
 mv features/overlay/OverlayController.ts features/overlay/OverlayFeature.ts
 mv features/focus/FocusController.ts features/focus/FocusFeature.ts
@@ -1029,6 +1078,7 @@ git commit -m "refactor(core): rename all *Controller classes to *Feature"
 ### Task 14: Update public API exports
 
 **Files:**
+
 - Modify: `packages/core/index.ts`
 
 - [ ] **Step 1: Update core package exports**
@@ -1066,12 +1116,14 @@ git commit -m "refactor: clean up public exports after controller→feature migr
 ### Task 15: Update documentation
 
 **Files:**
+
 - Modify: `packages/website/src/content/docs/development/architecture.md`
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Update architecture docs**
 
 In `packages/website/src/content/docs/development/architecture.md`, update:
+
 - Replace all `*Controller` references with `*Feature`
 - Replace `Store.controllers` with `Store.features`
 - Document the new event-driven architecture
@@ -1082,6 +1134,7 @@ In `packages/website/src/content/docs/development/architecture.md`, update:
 - [ ] **Step 2: Update AGENTS.md**
 
 In `AGENTS.md` (or CLAUDE.md):
+
 - Update "7 controllers" references to "10 features"
 - Replace `Store.controllers` with `Store.features`
 - Update the rule about cross-feature communication to mention events

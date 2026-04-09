@@ -31,8 +31,8 @@ Every feature implements exactly one interface:
 
 ```ts
 interface Feature {
-  enable(): void
-  disable(): void
+    enable(): void
+    disable(): void
 }
 ```
 
@@ -63,23 +63,23 @@ All `sync` subscribers complete before `recoverFocus` subscribers begin. No race
 
 ### KeyDownController → 3 features
 
-| New Feature | Directory | Responsibility | ~Lines |
-|---|---|---|---|
-| **InputFeature** | `features/input/` | Non-drag span editing: beforeInput, paste, mark deletion, applySpanInput, replaceAllContentWith, handleMarkputSpanPaste | ~350 |
-| **BlockEditFeature** | `features/block-editing/` | Drag-mode keyboard ops: enter, delete, arrow keys + raw DOM<->value position mapping (getCaretRawPosInBlock, getDomRawPos, setCaretAtRawPos, etc.) | ~350 |
-| **KeyNavFeature** | `features/keynav/` | Thin arrow dispatch: shiftFocusPrev/Next, selectAllText | ~50 |
+| New Feature          | Directory                 | Responsibility                                                                                                                                     | ~Lines |
+| -------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **InputFeature**     | `features/input/`         | Non-drag span editing: beforeInput, paste, mark deletion, applySpanInput, replaceAllContentWith, handleMarkputSpanPaste                            | ~350   |
+| **BlockEditFeature** | `features/block-editing/` | Drag-mode keyboard ops: enter, delete, arrow keys + raw DOM<->value position mapping (getCaretRawPosInBlock, getDomRawPos, setCaretAtRawPos, etc.) | ~350   |
+| **KeyNavFeature**    | `features/keynav/`        | Thin arrow dispatch: shiftFocusPrev/Next, selectAllText                                                                                            | ~50    |
 
 ### Existing controllers → features (renamed)
 
-| Old Name | New Name | Directory | Changes |
-|---|---|---|---|
-| `OverlayController` | `OverlayFeature` | `features/overlay/` | Standard enable/disable. Self-manages trigger detection + close behavior via reactive subscriptions. No more 4-method API. |
-| `FocusController` | `FocusFeature` | `features/focus/` | Subscribes to `recoverFocus` event instead of being called directly. |
-| `ContentEditableController` | `ContentEditableFeature` | `features/editable/` | Subscribes to `sync` event instead of being called directly. |
-| `SystemListenerController` | `SystemListenerFeature` | `features/events/` | No structural changes. Already event-driven. |
-| `TextSelectionController` | `TextSelectionFeature` | `features/selection/` | No structural changes. |
-| `CopyController` | `CopyFeature` | `features/clipboard/` | No structural changes. |
-| `DragController` | `DragFeature` | `features/drag/` | Subscribes to `dragAction` event. No more imperative methods. BlockStore emits events instead of calling methods. |
+| Old Name                    | New Name                 | Directory             | Changes                                                                                                                    |
+| --------------------------- | ------------------------ | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `OverlayController`         | `OverlayFeature`         | `features/overlay/`   | Standard enable/disable. Self-manages trigger detection + close behavior via reactive subscriptions. No more 4-method API. |
+| `FocusController`           | `FocusFeature`           | `features/focus/`     | Subscribes to `recoverFocus` event instead of being called directly.                                                       |
+| `ContentEditableController` | `ContentEditableFeature` | `features/editable/`  | Subscribes to `sync` event instead of being called directly.                                                               |
+| `SystemListenerController`  | `SystemListenerFeature`  | `features/events/`    | No structural changes. Already event-driven.                                                                               |
+| `TextSelectionController`   | `TextSelectionFeature`   | `features/selection/` | No structural changes.                                                                                                     |
+| `CopyController`            | `CopyFeature`            | `features/clipboard/` | No structural changes.                                                                                                     |
+| `DragController`            | `DragFeature`            | `features/drag/`      | Subscribes to `dragAction` event. No more imperative methods. BlockStore emits events instead of calling methods.          |
 
 ### Total: 10 features (up from 8 controllers)
 
@@ -110,10 +110,10 @@ readonly events = {
 
 ```ts
 type DragAction =
-  | {type: 'reorder'; source: number; target: number}
-  | {type: 'add'; afterIndex: number}
-  | {type: 'delete'; index: number}
-  | {type: 'duplicate'; index: number}
+    | {type: 'reorder'; source: number; target: number}
+    | {type: 'add'; afterIndex: number}
+    | {type: 'delete'; index: number}
+    | {type: 'duplicate'; index: number}
 ```
 
 ---
@@ -125,6 +125,7 @@ type DragAction =
 **Before**: 4 methods (`enableTrigger`, `disable`, `enableClose`, `disableClose`) called by Lifecycle.
 
 **After**: Standard enable/disable.
+
 - `enable()`: subscribes to `change` + `checkOverlay` events for trigger detection; watches `overlayMatch` signal to auto-register close handlers when overlay appears; subscribes to `clearOverlay` to dismiss
 - `disable()`: unsubscribes everything
 
@@ -135,6 +136,7 @@ Lifecycle no longer touches overlay. The feature self-manages via reactive subsc
 **Before**: `recover()` called directly by Lifecycle.
 
 **After**: Subscribes to `recoverFocus` event.
+
 - `enable()`: subscribes to `store.events.recoverFocus`
 - Handler: same logic as current `recover()` — reads `store.state.recovery`, resolves target, focuses, clears recovery
 
@@ -143,6 +145,7 @@ Lifecycle no longer touches overlay. The feature self-manages via reactive subsc
 **Before**: `sync()` called directly by Lifecycle and Vue useCoreFeatures.
 
 **After**: Subscribes to `sync` event.
+
 - `enable()`: subscribes to `store.events.sync`; also watches `readOnly` and `selecting` reactively (same as current)
 - Handler: same `sync()` logic — walks container children, syncs contentEditable attributes and textContent
 
@@ -151,6 +154,7 @@ Lifecycle no longer touches overlay. The feature self-manages via reactive subsc
 **Before**: Imperative methods (`reorder`, `add`, `delete`, `duplicate`) called directly by BlockStore. Empty `enable()`/`disable()`.
 
 **After**: Subscribes to `dragAction` event.
+
 - `enable()`: subscribes to `store.events.dragAction`
 - Handler: switches on `action.type` — same logic as current methods
 - `disable()`: unsubscribes
@@ -158,6 +162,7 @@ Lifecycle no longer touches overlay. The feature self-manages via reactive subsc
 ### InputFeature (from KeyDownController)
 
 Owns all non-drag keyboard input:
+
 - `beforeinput` event handler (non-drag branch)
 - `paste` event handler (non-drag branch)
 - `handleMarkputSpanPaste`
@@ -167,12 +172,14 @@ Owns all non-drag keyboard input:
 - Subscribes to `change` event? No — emits `store.events.change` after mutations, same as current
 
 Moves duplicated code into shared location:
+
 - `#createRowContent()` → shared utility in `features/editing/` or `features/drag/`
 - `isTextTokenSpan()` → shared utility in `features/editable/` or `shared/`
 
 ### BlockEditFeature (from KeyDownController)
 
 Owns all drag-mode keyboard operations:
+
 - Drag-mode delete/merge (from `handleDelete` drag branch)
 - Drag-mode enter (from `handleEnter`)
 - Drag-mode arrow keys (`handleArrowUpDown`, `handleBlockArrowLeftRight`)
@@ -183,6 +190,7 @@ These form a self-contained subsystem — all position mapping functions are onl
 ### KeyNavFeature (from KeyDownController)
 
 Thin dispatch feature:
+
 - Arrow key event listener
 - Dispatches to `shiftFocusPrev`/`shiftFocusNext` (from `features/navigation/`)
 - `selectAllText` (from `features/selection/`)
@@ -257,21 +265,21 @@ class Lifecycle {
 
 ```ts
 class Lifecycle {
-  enable() {
-    const features = createCoreFeatures(store)
-    features.enableAll()
-    this.#scope = effectScope(() => {
-      this.#subscribeParse()
-    })
-  }
+    enable() {
+        const features = createCoreFeatures(store)
+        features.enableAll()
+        this.#scope = effectScope(() => {
+            this.#subscribeParse()
+        })
+    }
 
-  recoverFocus() {
-    store.events.sync.emit()
-    if (!store.state.Mark.get()) return
-    store.events.recoverFocus.emit()
-  }
+    recoverFocus() {
+        store.events.sync.emit()
+        if (!store.state.Mark.get()) return
+        store.events.recoverFocus.emit()
+    }
 
-  // #subscribeOverlay() is removed entirely — OverlayFeature handles it
+    // #subscribeOverlay() is removed entirely — OverlayFeature handles it
 }
 ```
 
@@ -335,10 +343,10 @@ Both frameworks have **zero direct feature access**. All communication goes thro
 
 ## Deduplicated Code
 
-| Duplicated Code | New Location |
-|---|---|
-| `#createRowContent()` (in KeyDownController + DragController) | `features/drag/utils.ts` or `features/editing/createRowContent.ts` |
-| `isTextTokenSpan()` (in ContentEditableController + KeyDownController) | `features/editable/isTextTokenSpan.ts` or `shared/utils/` |
+| Duplicated Code                                                        | New Location                                                       |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `#createRowContent()` (in KeyDownController + DragController)          | `features/drag/utils.ts` or `features/editing/createRowContent.ts` |
+| `isTextTokenSpan()` (in ContentEditableController + KeyDownController) | `features/editable/isTextTokenSpan.ts` or `shared/utils/`          |
 
 ---
 
@@ -363,27 +371,27 @@ Steps 1-8 are mechanical renames + wiring changes. Step 9 is the substantive dec
 
 ## Problems Solved
 
-| # | Problem | How Solved |
-|---|---|---|
-| 1 | God Controller (929 lines) | Decomposed into 3 features (~350 + ~350 + ~50) |
-| 2 | Lifecycle bypasses FeatureManager | Lifecycle only emits events, never calls features directly |
-| 3 | Overlay/Drag not in coreFeatures | All 10 features registered in FeatureManager |
-| 4 | Framework accesses store.controllers | Framework only accesses store.events + store.lifecycle |
-| 5 | Vue calls sync() twice | Both frameworks use same event-driven path through recoverFocus() |
-| 6 | BlockStore inverted dependency | BlockStore depends on store.events (shared layer), not features |
-| 7 | KeyDownController imports from 5 directories | Each new feature imports from relevant subset; InputFeature doesn't import drag ops |
-| 8 | DragController is a service | DragFeature is a real feature with enable/disable that subscribes to events |
-| 9 | Duplicated code | Extracted to shared utilities |
-| 10 | Inconsistent controller interfaces | All features implement identical Feature interface |
+| #   | Problem                                      | How Solved                                                                          |
+| --- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| 1   | God Controller (929 lines)                   | Decomposed into 3 features (~350 + ~350 + ~50)                                      |
+| 2   | Lifecycle bypasses FeatureManager            | Lifecycle only emits events, never calls features directly                          |
+| 3   | Overlay/Drag not in coreFeatures             | All 10 features registered in FeatureManager                                        |
+| 4   | Framework accesses store.controllers         | Framework only accesses store.events + store.lifecycle                              |
+| 5   | Vue calls sync() twice                       | Both frameworks use same event-driven path through recoverFocus()                   |
+| 6   | BlockStore inverted dependency               | BlockStore depends on store.events (shared layer), not features                     |
+| 7   | KeyDownController imports from 5 directories | Each new feature imports from relevant subset; InputFeature doesn't import drag ops |
+| 8   | DragController is a service                  | DragFeature is a real feature with enable/disable that subscribes to events         |
+| 9   | Duplicated code                              | Extracted to shared utilities                                                       |
+| 10  | Inconsistent controller interfaces           | All features implement identical Feature interface                                  |
 
 ---
 
 ## Risks and Mitigations
 
-| Risk | Mitigation |
-|---|---|
-| Event chains harder to debug than direct calls | Events are synchronous and named descriptively. Call stack still shows full chain. IDE "find usages" works on events. |
-| Adding many new events increases store.events surface | Only 3 new events. Each has a clear purpose and single emitter. |
-| Performance of event dispatch vs direct call | Negligible — synchronous event dispatch is functionally identical to a method call (just iterating a subscriber array). |
-| OverlayFeature needs trigger config that was passed via Lifecycle method | Add `getTrigger` to store state as a signal. OverlayFeature reads it reactively. |
-| Decomposing KeyDownController might miss edge cases | Comprehensive test coverage exists. Tests migrate with the code. |
+| Risk                                                                     | Mitigation                                                                                                              |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Event chains harder to debug than direct calls                           | Events are synchronous and named descriptively. Call stack still shows full chain. IDE "find usages" works on events.   |
+| Adding many new events increases store.events surface                    | Only 3 new events. Each has a clear purpose and single emitter.                                                         |
+| Performance of event dispatch vs direct call                             | Negligible — synchronous event dispatch is functionally identical to a method call (just iterating a subscriber array). |
+| OverlayFeature needs trigger config that was passed via Lifecycle method | Add `getTrigger` to store state as a signal. OverlayFeature reads it reactively.                                        |
+| Decomposing KeyDownController might miss edge cases                      | Comprehensive test coverage exists. Tests migrate with the code.                                                        |

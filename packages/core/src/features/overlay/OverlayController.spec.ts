@@ -1,6 +1,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
+import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../store/Store'
 import type {OverlayController} from './OverlayController'
 
@@ -11,10 +12,22 @@ const stubDocument = {
 
 const stubWindow = {
 	getSelection: vi.fn(),
+	addEventListener: vi.fn(),
+	removeEventListener: vi.fn(),
 }
 
 vi.stubGlobal('document', stubDocument)
 vi.stubGlobal('window', stubWindow)
+
+const stubMatch: OverlayMatch = {
+	value: 'test',
+	source: '@',
+	span: 'test',
+	// oxlint-disable-next-line no-unsafe-type-assertion -- test stub
+	node: {} as unknown as Node,
+	index: 0,
+	option: {},
+}
 
 describe('OverlayController', () => {
 	let store: Store
@@ -27,96 +40,89 @@ describe('OverlayController', () => {
 		controller = store.features.overlay
 	})
 
-	describe('enableTrigger()', () => {
-		it('should call onMatch(undefined) when clearOverlay is emitted', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
+	describe('enable()', () => {
+		it('should clear overlayMatch when clearOverlay is emitted', () => {
+			store.state.overlayTrigger.set(() => undefined)
+			controller.enable()
 
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.clearOverlay.emit()
 
-			expect(onMatch).toHaveBeenCalledWith(undefined)
+			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
 
-		it('should call onMatch when checkOverlay is emitted', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
-
-			controller.enableTrigger(getTrigger, onMatch)
+		it('should set overlayMatch when checkOverlay is emitted', () => {
+			store.state.overlayTrigger.set(() => undefined)
+			controller.enable()
 
 			store.events.checkOverlay.emit()
 
-			// onMatch is called with whatever TriggerFinder.find returns (undefined when no options)
-			expect(onMatch).toHaveBeenCalled()
+			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
 
 		it('should react to change event when showOverlayOn includes change', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
+			store.state.overlayTrigger.set(() => undefined)
 			store.state.showOverlayOn.set('change')
+			controller.enable()
 
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.change.emit()
 
-			// change handler should trigger checkOverlay, which calls onMatch
-			expect(onMatch).toHaveBeenCalled()
+			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
 
-		it('should not react when showOverlayOn changes without a new change event', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
+		it('should not react to change event when showOverlayOn does not include change', () => {
+			store.state.overlayTrigger.set(() => undefined)
 			store.state.showOverlayOn.set('selectionChange')
+			controller.enable()
 
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.change.emit()
-			expect(onMatch).not.toHaveBeenCalled()
 
-			store.state.showOverlayOn.set('change')
-			expect(onMatch).not.toHaveBeenCalled()
+			expect(store.state.overlayMatch.get()).toBe(stubMatch)
 		})
 
-		it('should be idempotent — calling enableTrigger twice does not double-subscribe', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
+		it('should be idempotent — calling enable twice does not double-subscribe', () => {
+			store.state.overlayTrigger.set(() => undefined)
+			controller.enable()
+			controller.enable()
 
-			controller.enableTrigger(getTrigger, onMatch)
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.clearOverlay.emit()
 
-			expect(onMatch).toHaveBeenCalledTimes(1)
+			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
 	})
 
 	describe('disable()', () => {
 		it('should stop reacting to events after disable', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
-
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayTrigger.set(() => undefined)
+			controller.enable()
 			controller.disable()
+
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.clearOverlay.emit()
 			store.events.checkOverlay.emit()
 
-			expect(onMatch).not.toHaveBeenCalled()
+			expect(store.state.overlayMatch.get()).toBe(stubMatch)
 		})
 
 		it('should allow re-enabling after disable', () => {
-			const onMatch = vi.fn()
-			const getTrigger = () => undefined
-
-			controller.enableTrigger(getTrigger, onMatch)
+			store.state.overlayTrigger.set(() => undefined)
+			controller.enable()
 			controller.disable()
-			controller.enableTrigger(getTrigger, onMatch)
+			controller.enable()
+
+			store.state.overlayMatch.set(stubMatch)
 
 			store.events.clearOverlay.emit()
 
-			expect(onMatch).toHaveBeenCalledWith(undefined)
-			expect(onMatch).toHaveBeenCalledTimes(1)
+			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
 	})
 })

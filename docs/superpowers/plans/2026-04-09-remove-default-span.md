@@ -13,6 +13,7 @@
 ### Task 1: Update `resolveMarkSlot` to hardcode `'span'` fallback
 
 **Files:**
+
 - Modify: `packages/core/src/features/slots/resolveSlot.ts:48-61`
 - Test: `packages/core/src/features/slots/createSlots.spec.ts`
 
@@ -22,18 +23,18 @@ In `packages/core/src/features/slots/resolveSlot.ts`, remove the `defaultSpan` p
 
 ```typescript
 export function resolveMarkSlot(
-	token: Token,
-	tokenOptions: SlotOption[] | undefined,
-	GlobalMark: unknown,
-	GlobalSpan: unknown
+    token: Token,
+    tokenOptions: SlotOption[] | undefined,
+    GlobalMark: unknown,
+    GlobalSpan: unknown
 ) {
-	if (token.type === 'text') return [GlobalSpan ?? 'span', {value: token.content}] as const
-	const option = tokenOptions?.[token.descriptor.index]
-	const baseProps = {value: token.value, meta: token.meta}
-	const props = resolveOptionSlot(option?.mark, baseProps)
-	const Component = option?.Mark ?? GlobalMark
-	if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')
-	return [Component, props] as const
+    if (token.type === 'text') return [GlobalSpan ?? 'span', {value: token.content}] as const
+    const option = tokenOptions?.[token.descriptor.index]
+    const baseProps = {value: token.value, meta: token.meta}
+    const props = resolveOptionSlot(option?.mark, baseProps)
+    const Component = option?.Mark ?? GlobalMark
+    if (!Component) throw new Error('No mark component found. Provide either option.Mark or global Mark.')
+    return [Component, props] as const
 }
 ```
 
@@ -47,6 +48,7 @@ Expected: FAIL — `createSlots` still passes `getDefaultSpan`
 ### Task 2: Remove `getDefaultSpan` from `createSlots`
 
 **Files:**
+
 - Modify: `packages/core/src/features/slots/createSlots.ts:30-61`
 
 - [ ] **Step 1: Remove `getDefaultSpan` from `createMarkSlot` and `SlotSignals`**
@@ -55,19 +57,22 @@ In `packages/core/src/features/slots/createSlots.ts`:
 
 1. Remove `getDefaultSpan: () => unknown` from the `SlotSignals` interface (line 50)
 2. Remove `getDefaultSpan` parameter from `createMarkSlot` function (line 34):
+
 ```typescript
 function createMarkSlot(
-	options: Signal<CoreOption[]>,
-	mark: Signal<GenericComponent | undefined>,
-	span: Signal<GenericComponent | undefined>
+    options: Signal<CoreOption[]>,
+    mark: Signal<GenericComponent | undefined>,
+    span: Signal<GenericComponent | undefined>
 ): MarkSlot {
-	return {
-		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use()),
-		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get()),
-	} as unknown as MarkSlot
+    return {
+        use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use()),
+        get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get()),
+    } as unknown as MarkSlot
 }
 ```
+
 3. Remove `getDefaultSpan` from `createSlots` function call to `createMarkSlot` (line 59):
+
 ```typescript
 mark: createMarkSlot(signals.options, signals.Mark, signals.Span),
 ```
@@ -82,6 +87,7 @@ Expected: FAIL — test setup still passes `getDefaultSpan`
 ### Task 3: Update `createSlots.spec.ts` to remove `getDefaultSpan`
 
 **Files:**
+
 - Modify: `packages/core/src/features/slots/createSlots.spec.ts`
 
 - [ ] **Step 1: Update the `setup` helper and inline `createSlots` calls**
@@ -89,29 +95,31 @@ Expected: FAIL — test setup still passes `getDefaultSpan`
 In `packages/core/src/features/slots/createSlots.spec.ts`:
 
 1. Change `setup` function to remove `defaultSpan` param and `getDefaultSpan`:
+
 ```typescript
 function setup(): ReturnType<typeof createSlots> {
-	return createSlots({
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
-		Overlay: signal<GenericComponent | undefined>(undefined),
-		options: signal<CoreOption[]>([]),
-		Mark: signal<GenericComponent | undefined>(undefined),
-		Span: signal<GenericComponent | undefined>(undefined),
-	})
+    return createSlots({
+        slots: signal<CoreSlots | undefined>(undefined),
+        slotProps: signal<CoreSlotProps | undefined>(undefined),
+        Overlay: signal<GenericComponent | undefined>(undefined),
+        options: signal<CoreOption[]>([]),
+        Mark: signal<GenericComponent | undefined>(undefined),
+        Span: signal<GenericComponent | undefined>(undefined),
+    })
 }
 ```
 
 2. Remove `getDefaultSpan: () => defaultSpan` from both inline `createSlots` calls (lines 50 and 66).
 
 3. Update the "should resolve mark slot for text token using defaultSpan" test — since `'span'` is now hardcoded, the test should verify the string fallback:
+
 ```typescript
 it('should resolve mark slot for text token using hardcoded span fallback', () => {
-	const slot = setup()
-	const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-	const [component, props] = slot.mark.get(token)
-	expect(component).toBe('span')
-	expect(props).toEqual({value: 'hello'})
+    const slot = setup()
+    const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
+    const [component, props] = slot.mark.get(token)
+    expect(component).toBe('span')
+    expect(props).toEqual({value: 'hello'})
 })
 ```
 
@@ -125,6 +133,7 @@ Expected: PASS
 ### Task 4: Remove `defaultSpan` from Store
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts`
 
 - [ ] **Step 1: Remove `StoreOptions`, `_defaultSpan`, constructor, and `getDefaultSpan`**
@@ -132,16 +141,18 @@ Expected: PASS
 In `packages/core/src/features/store/Store.ts`:
 
 1. Remove the entire `StoreOptions` interface (lines 57-59):
+
 ```typescript
 // DELETE these lines:
 export interface StoreOptions {
-	defaultSpan: unknown
+    defaultSpan: unknown
 }
 ```
 
 2. Remove `getDefaultSpan: () => this._defaultSpan,` from the `slot` creation (line 124).
 
 3. Remove `private readonly _defaultSpan: unknown` (line 156) and the constructor (lines 158-160):
+
 ```typescript
 // DELETE these lines:
 private readonly _defaultSpan: unknown
@@ -152,6 +163,7 @@ constructor(options: StoreOptions) {
 ```
 
 4. In `packages/core/src/features/store/index.ts`, remove `StoreOptions` from the re-export:
+
 ```typescript
 export {Store} from './Store'
 ```
@@ -166,6 +178,7 @@ Expected: FAIL — tests still use `new Store({defaultSpan: null})`
 ### Task 5: Update `Store.spec.ts`
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.spec.ts`
 
 - [ ] **Step 1: Replace all `new Store({defaultSpan: null})` with `new Store()`**
@@ -179,9 +192,10 @@ Expected: PASS
 
 ---
 
-### Task 6: Update remaining core spec files**
+### Task 6: Update remaining core spec files\*\*
 
 **Files:**
+
 - Modify: `packages/core/src/features/overlay/OverlayController.spec.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.spec.ts`
 - Modify: `packages/core/src/features/events/SystemListenerController.spec.ts`
@@ -202,6 +216,7 @@ Expected: PASS
 ### Task 7: Update React package
 
 **Files:**
+
 - Modify: `packages/react/markput/src/components/MarkedInput.tsx`
 
 - [ ] **Step 1: Remove `defaultSpan` from Store construction and remove Span import**
@@ -214,6 +229,7 @@ In `packages/react/markput/src/components/MarkedInput.tsx`:
 - [ ] **Step 2: Verify Span.tsx can be deleted**
 
 Check that `Span.tsx` is not imported anywhere else (it isn't — confirmed in exploration). Then delete:
+
 ```
 rm packages/react/markput/src/components/Span.tsx
 ```
@@ -228,6 +244,7 @@ Expected: PASS
 ### Task 8: Update Vue package
 
 **Files:**
+
 - Modify: `packages/vue/markput/src/components/MarkedInput.vue`
 
 - [ ] **Step 1: Remove `defaultSpan` from Store construction and remove Span import**
@@ -241,6 +258,7 @@ In `packages/vue/markput/src/components/MarkedInput.vue`:
 - [ ] **Step 2: Delete Span.vue**
 
 Check that `Span.vue` is not imported anywhere else (it isn't). Then delete:
+
 ```
 rm packages/vue/markput/src/components/Span.vue
 ```

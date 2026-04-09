@@ -13,6 +13,7 @@
 ### Task 1: Refactor BlockStore state initialization
 
 **Files:**
+
 - Modify: `packages/core/src/shared/classes/BlockStore.ts`
 
 - [ ] **Step 1: Replace state declaration and constructor with class field**

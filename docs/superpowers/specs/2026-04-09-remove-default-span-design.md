@@ -15,25 +15,30 @@ Hardcode `'span'` as the fallback in `resolveMarkSlot()` instead of accepting it
 ### Core
 
 **`packages/core/src/features/store/Store.ts`:**
+
 - Remove `StoreOptions` interface
 - Remove `_defaultSpan` private field
 - Remove `getDefaultSpan` from `slot` creation
 - Remove constructor (or make parameterless)
 
 **`packages/core/src/features/slots/resolveSlot.ts`:**
+
 - `resolveMarkSlot()`: remove `defaultSpan` parameter, use `'span'` literal as fallback on line 55
 
 **`packages/core/src/features/slots/createSlots.ts`:**
+
 - Remove `getDefaultSpan` from `SlotSignals` interface
 - Remove `getDefaultSpan` argument from `createMarkSlot()` and its callers
 
 ### Framework packages
 
 **`packages/react/markput/src/components/MarkedInput.tsx`:**
+
 - `new Store()` instead of `new Store({defaultSpan: DefaultSpan})`
 - Remove `import {Span as DefaultSpan} from './Span'`
 
 **`packages/vue/markput/src/components/MarkedInput.vue`:**
+
 - `new Store()` instead of `new Store({defaultSpan: markRaw(Span)})`
 - Remove `import Span from './Span.vue'` if unused elsewhere
 

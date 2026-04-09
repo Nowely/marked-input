@@ -4,24 +4,26 @@ import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
 
-type TriggerExtractor<T> = (option: T) => string | undefined
-
 export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
-	getTrigger?: TriggerExtractor<TOption>
+	getTrigger?: (option: TOption) => string | undefined
 }
 
 export class Lifecycle {
 	#scope?: () => void
 	#stopFeatures?: () => void
-	#stopOverlay?: () => void
 	#initialized = false
 
 	constructor(private store: Store) {}
 
 	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
-		if (this.#scope) return // idempotency guard
+		if (this.#scope) return
 
 		const {store} = this
+
+		if (options?.getTrigger) {
+			// oxlint-disable-next-line no-unsafe-type-assertion -- TOption extends CoreOption, safe covariant cast for the signal
+			store.state.overlayTrigger.set(options.getTrigger as (option: CoreOption) => string | undefined)
+		}
 
 		const features = createCoreFeatures(store)
 		features.enableAll()
@@ -29,10 +31,6 @@ export class Lifecycle {
 
 		this.#scope = effectScope(() => {
 			this.#subscribeParse()
-
-			if (options?.getTrigger) {
-				this.#subscribeOverlay(options.getTrigger)
-			}
 		})
 	}
 
@@ -41,16 +39,10 @@ export class Lifecycle {
 		this.#scope = undefined
 		this.#stopFeatures?.()
 		this.#stopFeatures = undefined
-		this.#stopOverlay?.()
-		this.#stopOverlay = undefined
+		this.store.state.overlayTrigger.set(undefined)
 		this.#initialized = false
 	}
 
-	/**
-	 * Synchronizes the parser with current options and handles parsing.
-	 * Must be called by the framework layer when value or options change,
-	 * since these are props set synchronously during render.
-	 */
 	syncParser(value: string | undefined, options: CoreOption[] | undefined) {
 		const {store} = this
 
@@ -77,11 +69,6 @@ export class Lifecycle {
 		this.#initialized = true
 	}
 
-	/**
-	 * Recovers focus after tokens change.
-	 * Must be called by the framework layer after DOM updates,
-	 * since focus recovery requires the new DOM to be committed.
-	 */
 	recoverFocus() {
 		this.store.events.sync.emit()
 		if (!this.store.state.Mark.get()) return
@@ -99,22 +86,6 @@ export class Lifecycle {
 				return
 			}
 			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
-		})
-	}
-
-	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
-		const {store} = this
-
-		store.features.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
-		this.#stopOverlay = () => store.features.overlay.disable()
-
-		watch(store.state.overlayMatch, match => {
-			if (match) {
-				store.nodes.input.target = store.nodes.focus.target
-				store.features.overlay.enableClose()
-			} else {
-				store.features.overlay.disableClose()
-			}
 		})
 	}
 }
