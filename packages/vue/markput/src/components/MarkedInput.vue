@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, CoreSlots} from '@markput/core'
 import {Store} from '@markput/core'
 import {provide, shallowRef, watch} from 'vue'
 
@@ -36,7 +36,7 @@ function syncProps() {
 		Mark: props.Mark,
 		Overlay: props.Overlay,
 		className: props.className,
-		style: props.style as StyleProperties | undefined,
+		style: props.style,
 		baseClassName: styles.Container,
 		slots: props.slots as CoreSlots,
 		slotProps: props.slotProps as CoreSlotProps,

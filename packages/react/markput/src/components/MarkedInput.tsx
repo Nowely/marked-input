@@ -87,12 +87,12 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const slotProps = props.slotProps as CoreSlotProps
 	const [store] = useState(() => {
 		const nextStore = new Store()
-		nextStore.setState({...rest, style: rest.style, baseClassName: styles.Container, slotProps})
+		nextStore.setState({...rest, baseClassName: styles.Container, slotProps})
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.setState({...rest, style: rest.style, baseClassName: styles.Container, slotProps})
+		store.setState({...rest, baseClassName: styles.Container, slotProps})
 	})
 
 	useCoreFeatures(store, ref)
