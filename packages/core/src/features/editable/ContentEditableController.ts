@@ -1,5 +1,5 @@
 import {childAt} from '../../shared/checkers'
-import {effectScope, effect} from '../../shared/signals/index.js'
+import {effectScope, effect, watch} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
 
@@ -26,6 +26,9 @@ export class ContentEditableController {
 			})
 			effect(() => {
 				if (this.store.state.selecting() === undefined) this.sync()
+			})
+			watch(this.store.events.sync, () => {
+				this.sync()
 			})
 		})
 	}

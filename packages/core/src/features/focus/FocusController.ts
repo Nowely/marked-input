@@ -1,4 +1,5 @@
 import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
+import {watch} from '../../shared/signals/index.js'
 import type {Store} from '../store/Store'
 
 export class FocusController {
@@ -35,6 +36,10 @@ export class FocusController {
 		container.addEventListener('focusin', this.#focusinHandler)
 		container.addEventListener('focusout', this.#focusoutHandler)
 		container.addEventListener('click', this.#clickHandler)
+
+		watch(this.store.events.recoverFocus, () => {
+			this.#recover()
+		})
 	}
 
 	disable() {
@@ -50,7 +55,7 @@ export class FocusController {
 		this.#clickHandler = undefined
 	}
 
-	recover() {
+	#recover() {
 		const recovery = this.store.state.recovery.get()
 		if (!recovery) return
 

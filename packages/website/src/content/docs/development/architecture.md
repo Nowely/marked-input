@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusController.recover() restores caret position
+9. FocusController.#recover() restores caret position
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
