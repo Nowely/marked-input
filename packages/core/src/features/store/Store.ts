@@ -54,6 +54,12 @@ import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 import {createSlots} from '../slots'
 
+export type DragAction =
+	| {type: 'reorder'; source: number; target: number}
+	| {type: 'add'; afterIndex: number}
+	| {type: 'delete'; index: number}
+	| {type: 'duplicate'; index: number}
+
 export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
@@ -126,6 +132,9 @@ export class Store {
 		select: event<{mark: Token; match: OverlayMatch}>(),
 		clearOverlay: event(),
 		checkOverlay: event(),
+		sync: event(),
+		recoverFocus: event(),
+		dragAction: event<DragAction>(),
 	}
 
 	readonly refs = {
