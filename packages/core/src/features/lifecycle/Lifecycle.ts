@@ -91,18 +91,15 @@ export class Lifecycle {
 	#subscribeParse() {
 		const {store} = this
 
-		watch(
-			() => store.events.parse(),
-			() => {
-				if (store.state.recovery.get()) {
-					const text = toString(store.state.tokens.get())
-					store.state.tokens.set(parseWithParser(store, text))
-					store.state.previousValue.set(text)
-					return
-				}
-				store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		watch(store.events.parse, () => {
+			if (store.state.recovery.get()) {
+				const text = toString(store.state.tokens.get())
+				store.state.tokens.set(parseWithParser(store, text))
+				store.state.previousValue.set(text)
+				return
 			}
-		)
+			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		})
 	}
 
 	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
@@ -112,9 +109,10 @@ export class Lifecycle {
 		this.#stopOverlay = () => store.controllers.overlay.disable()
 
 		watch(
-			() => store.state.overlayMatch(),
-			() => {
-				if (store.state.overlayMatch()) {
+			store.state.overlayMatch,
+			(match: typeof store.state.overlayMatch extends () => infer T ? Exclude<T, void> : never) => {
+				// oxlint-disable-next-line no-unnecessary-condition -- match type cannot be narrowed correctly by static analysis
+				if (match) {
 					store.nodes.input.target = store.nodes.focus.target
 					store.controllers.overlay.enableClose()
 				} else {
