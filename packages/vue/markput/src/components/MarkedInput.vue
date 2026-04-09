@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots} from '@markput/core'
 import {Store} from '@markput/core'
 import {provide, shallowRef, watch} from 'vue'
 
@@ -38,8 +37,8 @@ function syncProps() {
 		className: props.class,
 		style: props.style,
 		baseClassName: styles.Container,
-		slots: props.slots as CoreSlots,
-		slotProps: props.slotProps as CoreSlotProps,
+		slots: props.slots,
+		slotProps: props.slotProps,
 	})
 }
 
