@@ -24,7 +24,7 @@ describe('SystemListenerController', () => {
 			controller.enable()
 
 			// Emit change — handler should serialize tokens and call onChange
-			store.events.change()
+			store.events.change.emit()
 
 			expect(onChange).toHaveBeenCalled()
 		})
@@ -37,7 +37,7 @@ describe('SystemListenerController', () => {
 			controller.enable()
 			controller.enable()
 
-			store.events.change()
+			store.events.change.emit()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
@@ -102,7 +102,7 @@ describe('SystemListenerController', () => {
 				node: {} as unknown as Node,
 			} as unknown as OverlayMatch
 
-			store.events.select({mark, match})
+			store.events.select.emit({mark, match})
 		})
 	})
 
@@ -115,7 +115,7 @@ describe('SystemListenerController', () => {
 			controller.enable()
 			controller.disable()
 
-			store.events.change()
+			store.events.change.emit()
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -143,7 +143,7 @@ describe('SystemListenerController', () => {
 			controller.disable()
 			controller.enable()
 
-			store.events.change()
+			store.events.change.emit()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
