@@ -65,7 +65,7 @@ export class Lifecycle {
 
 		if (this.#initialized) {
 			if (!store.state.recovery.get()) {
-				store.events.parse()
+				store.events.parse.emit()
 			}
 			return
 		}

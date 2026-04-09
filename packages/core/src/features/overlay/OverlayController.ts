@@ -47,7 +47,7 @@ export class OverlayController {
 					const type: OverlayTrigger = 'change'
 
 					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-						this.store.events.checkOverlay()
+						this.store.events.checkOverlay.emit()
 					}
 				}
 			)
@@ -59,7 +59,7 @@ export class OverlayController {
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.events.checkOverlay()
+				this.store.events.checkOverlay.emit()
 			}
 		}
 		this.#selectionChangeHandler = selectionChangeHandler
@@ -84,7 +84,7 @@ export class OverlayController {
 
 		this.#escHandler = e => {
 			if (e.key === KEYBOARD.ESC) {
-				this.store.events.clearOverlay()
+				this.store.events.clearOverlay.emit()
 			}
 		}
 
@@ -92,7 +92,7 @@ export class OverlayController {
 			const target = e.target instanceof HTMLElement ? e.target : null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
-			this.store.events.clearOverlay()
+			this.store.events.clearOverlay.emit()
 		}
 
 		window.addEventListener('keydown', this.#escHandler)

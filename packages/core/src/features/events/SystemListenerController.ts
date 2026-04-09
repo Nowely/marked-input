@@ -40,7 +40,7 @@ export class SystemListenerController {
 					}
 
 					onChange?.(toString(tokens))
-					this.store.events.parse()
+					this.store.events.parse.emit()
 				}
 			)
 
@@ -110,7 +110,7 @@ export class SystemListenerController {
 						this.store.nodes.focus.target = this.store.nodes.input.target
 						this.store.nodes.input.clear()
 						onChange?.(toString(tokens))
-						this.store.events.parse()
+						this.store.events.parse.emit()
 					}
 				}
 			)
