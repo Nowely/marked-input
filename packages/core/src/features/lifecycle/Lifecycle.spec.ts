@@ -1,14 +1,30 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
+import {setUseHookFactory, watch} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionFeature etc.)
 vi.mock('../feature-manager', () => ({
 	createCoreFeatures: () => ({
 		enableAll: vi.fn(),
 		disableAll: vi.fn(),
 	}),
+}))
+
+vi.mock('../parsing', () => ({
+	Parser: class {
+		parse(value: string) {
+			return [{type: 'text', content: value, position: {start: 0, end: value.length}}]
+		}
+	},
+	toString: (tokens: Array<{content: string}>) => tokens.map(t => t.content).join(''),
+	getTokensByUI: (store: Store) => store.state.tokens.get(),
+	getTokensByValue: (store: Store) => {
+		const value = store.state.value.get() ?? ''
+		return [{type: 'text', content: value, position: {start: 0, end: value.length}}]
+	},
+	parseWithParser: (_store: Store, value: string) => [
+		{type: 'text', content: value, position: {start: 0, end: value.length}},
+	],
 }))
 
 describe('Lifecycle', () => {
@@ -24,11 +40,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.enable() // second call should be a no-op
+			lifecycle.enable()
 
-			// If double-subscribed, parse would fire handler twice producing wrong state.
-			// We verify by calling syncParser then emitting parse, checking tokens are set once.
 			lifecycle.syncParser('hello', [])
+
 			const tokensAfterSync = store.state.tokens.get()
 			expect(tokensAfterSync).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
@@ -37,7 +52,7 @@ describe('Lifecycle', () => {
 	})
 
 	describe('disable()', () => {
-		it('stops parse subscription — emitting parse after disable does not run handler', () => {
+		it('stops all subscriptions — emitting parse after disable does not run handler', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
@@ -45,7 +60,6 @@ describe('Lifecycle', () => {
 
 			lifecycle.disable()
 
-			// After disable, emitting parse should NOT update tokens
 			const tokensBefore = store.state.tokens.get()
 			store.events.parse.emit()
 			const tokensAfter = store.state.tokens.get()
@@ -53,7 +67,7 @@ describe('Lifecycle', () => {
 			expect(tokensAfter).toBe(tokensBefore)
 		})
 
-		it('resets initialized state — re-enable and syncParser works fresh', () => {
+		it('resets subscriptions — re-enable and syncParser works fresh', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
@@ -71,17 +85,27 @@ describe('Lifecycle', () => {
 	})
 
 	describe('syncParser()', () => {
-		it('calls events.parse() when already initialized and in recovery mode', () => {
+		it('parses value and updates tokens', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			lifecycle.syncParser('hello world', [])
+
+			expect(store.state.tokens.get()).toEqual([
+				{type: 'text', content: 'hello world', position: {start: 0, end: 11}},
+			])
+
+			lifecycle.disable()
+		})
+
+		it('skips parse emission when in recovery mode', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
 			lifecycle.syncParser('initial', [])
 
-			// Put store in recovery mode so syncParser skips parse() emission
-			// but we can manually emit parse and verify the handler re-parses
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
-			// Emit parse directly — handler should re-parse from token text
 			store.events.parse.emit()
 
 			const tokens = store.state.tokens.get()
@@ -112,10 +136,8 @@ describe('Lifecycle', () => {
 			lifecycle.enable()
 			lifecycle.syncParser('test', [])
 
-			// Set recovery state
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
-			// Emit parse — should re-parse from token text
 			store.events.parse.emit()
 
 			const tokens = store.state.tokens.get()
@@ -142,6 +164,38 @@ describe('Lifecycle', () => {
 			expect(setSpy).not.toHaveBeenCalled()
 
 			lifecycle.disable()
+		})
+	})
+
+	describe('recoverFocus', () => {
+		it('emits sync and recoverFocus events', () => {
+			const lifecycle = store.lifecycle
+			const syncSpy = vi.fn()
+			const recoverFocusSpy = vi.fn()
+			const stopSyncWatch = watch(store.events.sync, syncSpy)
+			const stopRecoverWatch = watch(store.events.recoverFocus, recoverFocusSpy)
+
+			store.state.Mark.set(() => null)
+
+			lifecycle.recoverFocus()
+
+			expect(syncSpy).toHaveBeenCalledTimes(1)
+			expect(recoverFocusSpy).toHaveBeenCalledTimes(1)
+
+			stopSyncWatch()
+			stopRecoverWatch()
+		})
+
+		it('does not emit recoverFocus when Mark is not set', () => {
+			const lifecycle = store.lifecycle
+			const recoverFocusSpy = vi.fn()
+			const stopWatch = watch(store.events.recoverFocus, recoverFocusSpy)
+
+			lifecycle.recoverFocus()
+
+			expect(recoverFocusSpy).not.toHaveBeenCalled()
+
+			stopWatch()
 		})
 	})
 })
