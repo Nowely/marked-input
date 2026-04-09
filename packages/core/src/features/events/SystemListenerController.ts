@@ -1,6 +1,6 @@
-import {effectScope, watch} from '../../shared/signals/index.js'
+import {batch, effectScope, watch} from '../../shared/signals/index.js'
 import {createNewSpan} from '../editing'
-import {annotate, findToken, toString} from '../parsing'
+import {annotate, findToken, parseWithParser, toString} from '../parsing'
 import type {Store} from '../store/Store'
 
 export class SystemListenerController {
@@ -49,6 +49,16 @@ export class SystemListenerController {
 				const value = toString(tokens)
 				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
 				this.store.applyValue(nextValue)
+			})
+
+			watch(this.store.state.innerValue, newValue => {
+				if (newValue === undefined) return
+				const newTokens = parseWithParser(this.store, newValue)
+				batch(() => {
+					this.store.state.tokens.set(newTokens)
+					this.store.state.previousValue.set(newValue)
+				})
+				this.store.state.onChange.get()?.(newValue)
 			})
 
 			watch(this.store.events.select, event => {
