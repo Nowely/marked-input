@@ -6,7 +6,7 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 
 	manager
 		.register(asFeature('overlay', store.features.overlay))
-		.register(asFeature('keydown', store.features.keydown))
+		.register(asFeature('input', store.features.input))
 		.register(asFeature('blockEditing', store.features.blockEditing))
 		.register(asFeature('keynav', store.features.keynav))
 		.register(asFeature('system', store.features.system))

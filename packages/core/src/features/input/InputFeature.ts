@@ -6,7 +6,7 @@ import {deleteMark} from '../editing/utils/deleteMark'
 import {isFullSelection} from '../selection'
 import type {Store} from '../store/Store'
 
-export class KeyDownController {
+export class InputFeature {
 	#keydownHandler?: (e: KeyboardEvent) => void
 	#pasteHandler?: (e: ClipboardEvent) => void
 	#beforeInputHandler?: (e: InputEvent) => void

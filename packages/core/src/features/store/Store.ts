@@ -50,7 +50,7 @@ import {DragController} from '../drag'
 import {ContentEditableController} from '../editable'
 import {SystemListenerController} from '../events'
 import {FocusController} from '../focus'
-import {KeyDownController} from '../input'
+import {InputFeature} from '../input'
 import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
@@ -148,7 +148,7 @@ export class Store {
 	readonly features = {
 		overlay: new OverlayController(this),
 		focus: new FocusController(this),
-		keydown: new KeyDownController(this),
+		input: new InputFeature(this),
 		blockEditing: new BlockEditFeature(this),
 		keynav: new KeyNavFeature(this),
 		system: new SystemListenerController(this),

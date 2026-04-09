@@ -1,6 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {applySpanInput} from './KeyDownController'
+import {applySpanInput} from './InputFeature'
 
 describe('applySpanInput()', () => {
 	it('should delete the next character when deleteContentForward has no target ranges', () => {
