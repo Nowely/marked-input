@@ -117,8 +117,6 @@ export type DataAttributes = Record<`data${Capitalize<string>}`, string | number
 
 export type GenericComponent = unknown
 export type GenericElement = unknown
-export type GenericAttributes = Record<string, unknown>
-
 export interface CoreSlots {
 	container?: GenericElement
 	block?: GenericElement
@@ -126,9 +124,9 @@ export interface CoreSlots {
 }
 
 export interface CoreSlotProps {
-	container?: GenericAttributes & {className?: string; style?: CSSProperties}
-	block?: GenericAttributes & {className?: string; style?: CSSProperties}
-	span?: GenericAttributes & {className?: string; style?: CSSProperties}
+	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	span?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 }
 
 export type DragAction =
