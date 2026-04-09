@@ -154,7 +154,10 @@ export class Store {
 		containerClass: computed(() =>
 			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)
 		),
-		containerStyle: computed(() => merge(this.state.style(), this.state.slotProps()?.container?.style)),
+		containerStyle: computed(prev => {
+			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
+			return prev && shallow(prev, next) ? prev : next
+		}),
 
 		// Slot system
 		slots: signal<CoreSlots | undefined>(undefined),
