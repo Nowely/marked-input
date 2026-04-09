@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 import {effect} from './alien-signals'
 import {setUseHookFactory, getUseHookFactory} from './registry'
 import type {UseHookFactory} from './registry'
-import {signal, voidEvent, payloadEvent, watch, event} from './signal'
+import {signal, watch, event} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -148,152 +148,6 @@ describe('signal<T>', () => {
 		expect(factory).toHaveBeenCalledWith(s)
 		expect(mockHook).toHaveBeenCalled()
 		expect(result).toBe('hook-result')
-	})
-})
-
-// ---------------------------------------------------------------------------
-// voidEvent()
-// ---------------------------------------------------------------------------
-
-describe('voidEvent()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should increment internal state when called outside an effect (emits)', () => {
-		const ev = voidEvent()
-		// Calling outside effect should not throw
-		expect(() => ev()).not.toThrow()
-	})
-
-	it('should re-run an effect that reads the event when emitted from outside', () => {
-		const ev = voidEvent()
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			ev() // subscribe inside effect
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev() // emit outside effect
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-
-	it('should allow multiple effects to subscribe to the same event', () => {
-		const ev = voidEvent()
-		const runsA = vi.fn()
-		const runsB = vi.fn()
-
-		trackedEffect(() => {
-			ev()
-			runsA()
-		})
-		trackedEffect(() => {
-			ev()
-			runsB()
-		})
-
-		expect(runsA).toHaveBeenCalledTimes(1)
-		expect(runsB).toHaveBeenCalledTimes(1)
-
-		ev() // emit
-		expect(runsA).toHaveBeenCalledTimes(2)
-		expect(runsB).toHaveBeenCalledTimes(2)
-	})
-
-	it('should not cause infinite loop when called inside an effect', () => {
-		const ev = voidEvent()
-		let count = 0
-
-		// Inside the effect, ev() reads (subscribes), it should not emit
-		trackedEffect(() => {
-			ev()
-			count++
-		})
-
-		// Should have run exactly once, not infinitely
-		expect(count).toBe(1)
-	})
-})
-
-// ---------------------------------------------------------------------------
-// payloadEvent<T>()
-// ---------------------------------------------------------------------------
-
-describe('payloadEvent<T>()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return undefined before first emit', () => {
-		const ev = payloadEvent<string>()
-		expect(ev()).toBeUndefined()
-	})
-
-	it('should set the current payload when called with an argument', () => {
-		const ev = payloadEvent<string>()
-		ev('hello')
-		// Read outside effect — we need an effect to track, but we can just call ev()
-		// Actually payloadEvent reads track inside effects. Let's read in an effect.
-		let captured: string | undefined
-		trackedEffect(() => {
-			captured = ev()
-		})
-		expect(captured).toBe('hello')
-	})
-
-	it('should return the payload after emitting', () => {
-		const ev = payloadEvent<number>()
-		let captured: number | undefined
-
-		trackedEffect(() => {
-			captured = ev()
-		})
-
-		expect(captured).toBeUndefined()
-		ev(42)
-		expect(captured).toBe(42)
-	})
-
-	it('should fire subscribers even when emitting same payload object twice (reference boxing)', () => {
-		const ev = payloadEvent<{id: number}>()
-		const payload = {id: 1}
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev(payload)
-		expect(runs).toHaveBeenCalledTimes(2)
-		ev(payload) // same reference
-		expect(runs).toHaveBeenCalledTimes(3)
-	})
-
-	it('should re-run an effect that reads ev() when ev(payload) is called', () => {
-		const ev = payloadEvent<string>()
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev('data')
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-
-	it('.use() should call the registered factory', () => {
-		const mockHook = vi.fn(() => 'payload-hook')
-		const factory: UseHookFactory = vi.fn(() => mockHook)
-		setUseHookFactory(factory)
-
-		const ev = payloadEvent<number>()
-		const result = ev.use()
-
-		expect(factory).toHaveBeenCalledWith(ev)
-		expect(mockHook).toHaveBeenCalled()
-		expect(result).toBe('payload-hook')
 	})
 })
 
@@ -481,8 +335,8 @@ describe('watch()', () => {
 	})
 
 	it('should allow callbacks to emit void events', () => {
-		const source = voidEvent()
-		const emitted = voidEvent()
+		const source = event()
+		const emitted = event()
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -493,18 +347,18 @@ describe('watch()', () => {
 		const dispose = watch(
 			() => source(),
 			() => {
-				emitted()
+				emitted.emit()
 			}
 		)
 		disposers.push(dispose)
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		source()
+		source.emit()
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
 	it('should not replay stale payloads on unrelated reactive changes', () => {
-		const source = payloadEvent<number>()
+		const source = event<number>()
 		const extra = signal(0)
 		const seen: number[] = []
 
@@ -520,13 +374,13 @@ describe('watch()', () => {
 		)
 		disposers.push(dispose)
 
-		source(1)
+		source.emit(1)
 		expect(seen).toEqual([1])
 
 		extra(1)
 		expect(seen).toEqual([1])
 
-		source(2)
+		source.emit(2)
 		expect(seen).toEqual([1, 2])
 	})
 })
