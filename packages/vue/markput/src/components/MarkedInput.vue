@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, MarkputHandler, StyleProperties} from '@markput/core'
-import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
+import type {CoreSlotProps, CoreSlots, StyleProperties} from '@markput/core'
+import {Store} from '@markput/core'
 import {markRaw, provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
@@ -14,12 +14,7 @@ import Span from './Span.vue'
 
 import styles from '@markput/core/styles.module.css'
 
-const props = withDefaults(defineProps<MarkedInputProps>(), {
-	options: () => DEFAULT_OPTIONS,
-	showOverlayOn: 'change',
-	readOnly: false,
-	drag: false,
-})
+const props = defineProps<MarkedInputProps>()
 
 const emit = defineEmits<{
 	change: [value: string]
@@ -30,13 +25,7 @@ const store = shallowRef(new Store({defaultSpan: markRaw(Span)}))
 provide(STORE_KEY, store.value)
 
 function syncProps() {
-	const className = cx(styles.Container, props.className, props.slotProps?.container?.className as string | undefined)
-	const style = merge(
-		props.style as StyleProperties | undefined,
-		props.slotProps?.container?.style as StyleProperties | undefined
-	)
-
-	store.value.state.set({
+	store.value.setState({
 		value: props.value,
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
@@ -47,8 +36,9 @@ function syncProps() {
 		Span: props.Span,
 		Mark: props.Mark,
 		Overlay: props.Overlay,
-		className,
-		style: style as StyleProperties,
+		className: props.className,
+		style: props.style as StyleProperties | undefined,
+		baseClassName: styles.Container,
 		slots: props.slots as CoreSlots,
 		slotProps: props.slotProps as CoreSlotProps,
 	})
@@ -77,8 +67,7 @@ watch(
 
 useCoreFeatures(store.value)
 
-const handler: MarkputHandler = store.value.createHandler()
-defineExpose(handler)
+defineExpose(store.value.handler)
 </script>
 
 <template>

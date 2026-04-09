@@ -1,24 +1,23 @@
 import type {DragController} from '../../features/drag/DragController'
 import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../features/drag/eventHandlers'
-import {defineState, type StateObject} from '../signals'
+import {signal} from '../signals'
+import type {Signal} from '../signals'
 import {isClickOutside, isEscapeKey} from '../utils/menuUtils'
 
 export type DropPosition = 'before' | 'after' | null
-
-interface BlockState {
-	isHovered: boolean
-	isDragging: boolean
-	dropPosition: DropPosition
-	menuOpen: boolean
-	menuPosition: {top: number; left: number}
-}
 
 export class BlockStore {
 	readonly refs = {
 		container: null as HTMLElement | null,
 	}
 
-	readonly state: StateObject<BlockState>
+	readonly state: {
+		isHovered: Signal<boolean>
+		isDragging: Signal<boolean>
+		dropPosition: Signal<DropPosition>
+		menuOpen: Signal<boolean>
+		menuPosition: Signal<{top: number; left: number}>
+	}
 
 	#blockIndex = 0
 	#dragCtrl: DragController | null = null
@@ -27,13 +26,13 @@ export class BlockStore {
 	#cleanupMenu?: () => void
 
 	constructor() {
-		this.state = defineState<BlockState>({
-			isHovered: false,
-			isDragging: false,
-			dropPosition: null,
-			menuOpen: false,
-			menuPosition: {top: 0, left: 0},
-		})
+		this.state = {
+			isHovered: signal(false),
+			isDragging: signal(false),
+			dropPosition: signal<DropPosition>(null),
+			menuOpen: signal(false),
+			menuPosition: signal({top: 0, left: 0}),
+		}
 	}
 
 	attachContainer(el: HTMLElement | null, blockIndex: number, dragCtrl: DragController) {

@@ -15,7 +15,7 @@ export class DragController {
 		if (value == null || !this.store.state.onChange.get()) return
 		const rows = this.store.state.tokens.get()
 		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
-		if (newValue !== value) this.store.applyValue(newValue)
+		if (newValue !== value) this.store.state.innerValue.set(newValue)
 	}
 
 	add(afterIndex: number) {
@@ -24,7 +24,7 @@ export class DragController {
 		const rawRows = this.store.state.tokens.get()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = this.#createRowContent()
-		this.store.applyValue(addDragRow(value, rows, afterIndex, newRowContent))
+		this.store.state.innerValue.set(addDragRow(value, rows, afterIndex, newRowContent))
 		queueMicrotask(() => {
 			const container = this.store.refs.container
 			if (!container) return
@@ -37,19 +37,19 @@ export class DragController {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
 		const rows = this.store.state.tokens.get()
-		this.store.applyValue(deleteDragRow(value, rows, index))
+		this.store.state.innerValue.set(deleteDragRow(value, rows, index))
 	}
 
 	duplicate(index: number) {
 		const value = this.store.state.value.get()
 		if (value == null || !this.store.state.onChange.get()) return
 		const rows = this.store.state.tokens.get()
-		this.store.applyValue(duplicateDragRow(value, rows, index))
+		this.store.state.innerValue.set(duplicateDragRow(value, rows, index))
 	}
 
 	#createRowContent(): string {
-		const firstOption = this.store.state.options.get()?.[0]
-		if (!firstOption?.markup) return '\n'
+		const firstOption = this.store.state.options.get()[0]
+		if (!firstOption.markup) return '\n'
 		return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
 	}
 }

@@ -4,13 +4,17 @@ import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 import type {OverlayController} from './OverlayController'
 
-// Stub global document for tests that call disable() which references document.removeEventListener
 const stubDocument = {
 	addEventListener: vi.fn(),
 	removeEventListener: vi.fn(),
 }
 
+const stubWindow = {
+	getSelection: vi.fn(),
+}
+
 vi.stubGlobal('document', stubDocument)
+vi.stubGlobal('window', stubWindow)
 
 describe('OverlayController', () => {
 	let store: Store
@@ -30,7 +34,7 @@ describe('OverlayController', () => {
 
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.clearOverlay()
+			store.events.clearOverlay.emit()
 
 			expect(onMatch).toHaveBeenCalledWith(undefined)
 		})
@@ -41,7 +45,7 @@ describe('OverlayController', () => {
 
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.checkOverlay()
+			store.events.checkOverlay.emit()
 
 			// onMatch is called with whatever TriggerFinder.find returns (undefined when no options)
 			expect(onMatch).toHaveBeenCalled()
@@ -54,7 +58,7 @@ describe('OverlayController', () => {
 
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.change()
+			store.events.change.emit()
 
 			// change handler should trigger checkOverlay, which calls onMatch
 			expect(onMatch).toHaveBeenCalled()
@@ -63,10 +67,11 @@ describe('OverlayController', () => {
 		it('should not react when showOverlayOn changes without a new change event', () => {
 			const onMatch = vi.fn()
 			const getTrigger = () => undefined
+			store.state.showOverlayOn.set('selectionChange')
 
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.change()
+			store.events.change.emit()
 			expect(onMatch).not.toHaveBeenCalled()
 
 			store.state.showOverlayOn.set('change')
@@ -80,7 +85,7 @@ describe('OverlayController', () => {
 			controller.enableTrigger(getTrigger, onMatch)
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.clearOverlay()
+			store.events.clearOverlay.emit()
 
 			expect(onMatch).toHaveBeenCalledTimes(1)
 		})
@@ -94,8 +99,8 @@ describe('OverlayController', () => {
 			controller.enableTrigger(getTrigger, onMatch)
 			controller.disable()
 
-			store.events.clearOverlay()
-			store.events.checkOverlay()
+			store.events.clearOverlay.emit()
+			store.events.checkOverlay.emit()
 
 			expect(onMatch).not.toHaveBeenCalled()
 		})
@@ -108,7 +113,7 @@ describe('OverlayController', () => {
 			controller.disable()
 			controller.enableTrigger(getTrigger, onMatch)
 
-			store.events.clearOverlay()
+			store.events.clearOverlay.emit()
 
 			expect(onMatch).toHaveBeenCalledWith(undefined)
 			expect(onMatch).toHaveBeenCalledTimes(1)

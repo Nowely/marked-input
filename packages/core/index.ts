@@ -5,32 +5,24 @@ export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
-	MarkputHandler,
 	StyleProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
 } from './src/shared/types'
+export {MarkputHandler} from './src/shared/classes'
 
 // Parsing exports (modern API)
 export {annotate, denote} from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 
 // Reactive system
-export type {Signal, VoidEvent, PayloadEvent, UseHookFactory, StateObject} from './src/shared/signals'
-export {
-	setUseHookFactory,
-	getUseHookFactory,
-	effect,
-	voidEvent,
-	payloadEvent,
-	defineState,
-	defineEvents,
-	watch,
-} from './src/shared/signals'
+export type {Signal, Computed, Event, UseHookFactory} from './src/shared/signals'
+export {setUseHookFactory, getUseHookFactory, effect, event, signal, computed, watch, batch} from './src/shared/signals'
 
 // Store
-export {Store, type Slot, type MarkSlot, type OverlaySlot} from './src/features/store'
+export {Store} from './src/features/store'
+export type {Slot, MarkSlot, OverlaySlot} from './src/features/slots'
 
 // Overlay
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'

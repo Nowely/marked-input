@@ -8,12 +8,12 @@ title: "@markput/react"
 ## Classes
 
 - [MarkHandler](/api/classes/markhandler/)
+- [MarkputHandler](/api/classes/markputhandler/)
 
 ## Interfaces
 
 - [MarkedInputProps](/api/interfaces/markedinputprops/)
 - [MarkProps](/api/interfaces/markprops/)
-- [MarkputHandler](/api/interfaces/markputhandler/)
 - [MarkToken](/api/interfaces/marktoken/)
 - [Option](/api/interfaces/option/)
 - [OverlayHandler](/api/interfaces/overlayhandler/)

@@ -47,7 +47,7 @@ describe('Lifecycle', () => {
 
 			// After disable, emitting parse should NOT update tokens
 			const tokensBefore = store.state.tokens.get()
-			store.events.parse()
+			store.events.parse.emit()
 			const tokensAfter = store.state.tokens.get()
 
 			expect(tokensAfter).toBe(tokensBefore)
@@ -82,7 +82,7 @@ describe('Lifecycle', () => {
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
 			// Emit parse directly — handler should re-parse from token text
-			store.events.parse()
+			store.events.parse.emit()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'initial', position: {start: 0, end: 7}}])
@@ -116,7 +116,7 @@ describe('Lifecycle', () => {
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
 			// Emit parse — should re-parse from token text
-			store.events.parse()
+			store.events.parse.emit()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
@@ -134,7 +134,7 @@ describe('Lifecycle', () => {
 
 			const setSpy = vi.spyOn(store.state.tokens, 'set')
 
-			store.events.parse()
+			store.events.parse.emit()
 			expect(setSpy).toHaveBeenCalledTimes(1)
 
 			setSpy.mockClear()

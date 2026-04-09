@@ -1,5 +1,5 @@
 import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
-import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
+import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useLayoutEffect, useState} from 'react'
 
@@ -83,50 +83,19 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref} = props
-	const className = cx(styles.Container, props.className, props.slotProps?.container?.className)
-	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
-	const style = merge(props.style, props.slotProps?.container?.style) as StyleProperties
+	const {ref, ...rest} = props
 	// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
 	const slotProps = props.slotProps as CoreSlotProps
+	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
+	const style = rest.style as StyleProperties | undefined
 	const [store] = useState(() => {
 		const nextStore = new Store({defaultSpan: DefaultSpan})
-		nextStore.state.set({
-			value: props.value,
-			defaultValue: props.defaultValue,
-			onChange: props.onChange,
-			readOnly: props.readOnly ?? false,
-			drag: props.drag ?? false,
-			options: props.options ?? DEFAULT_OPTIONS,
-			showOverlayOn: props.showOverlayOn ?? 'change',
-			Span: props.Span,
-			Mark: props.Mark,
-			Overlay: props.Overlay,
-			className,
-			style,
-			slots: props.slots,
-			slotProps,
-		})
+		nextStore.setState({...rest, style, baseClassName: styles.Container, slotProps})
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.state.set({
-			value: props.value,
-			defaultValue: props.defaultValue,
-			onChange: props.onChange,
-			readOnly: props.readOnly ?? false,
-			drag: props.drag ?? false,
-			options: props.options ?? DEFAULT_OPTIONS,
-			showOverlayOn: props.showOverlayOn ?? 'change',
-			Span: props.Span,
-			Mark: props.Mark,
-			Overlay: props.Overlay,
-			className,
-			style,
-			slots: props.slots,
-			slotProps,
-		})
+		store.setState({...rest, style, baseClassName: styles.Container, slotProps})
 	})
 
 	useCoreFeatures(store, ref)

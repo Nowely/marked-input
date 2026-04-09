@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import {computed} from 'vue'
+import type {StyleProperties} from '@markput/core'
+import {computed, type Ref} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import Block from './Block.vue'
@@ -11,8 +12,8 @@ const readOnly = store.state.readOnly.use()
 const tokens = store.state.tokens.use()
 const slotsRef = store.state.slots.use()
 const slotPropsRef = store.state.slotProps.use()
-const className = store.state.className.use()
-const style = store.state.style.use()
+const className = store.state.containerClass.use()
+const style = store.state.containerStyle.use() as unknown as Ref<StyleProperties | undefined>
 const key = store.key
 
 const containerSlot = computed(() => {
@@ -21,7 +22,13 @@ const containerSlot = computed(() => {
 	slotPropsRef.value
 	return store.slot.container.get()
 })
-const containerStyle = computed(() => (drag.value && !readOnly.value ? {paddingLeft: 24, ...style.value} : style.value))
+const containerStyle = computed(() => {
+	const s = style.value
+	if (drag.value && !readOnly.value) {
+		return s ? {paddingLeft: 24, ...s} : {paddingLeft: 24}
+	}
+	return s
+})
 </script>
 
 <template>

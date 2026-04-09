@@ -65,7 +65,7 @@ export class Lifecycle {
 
 		if (this.#initialized) {
 			if (!store.state.recovery.get()) {
-				store.events.parse()
+				store.events.parse.emit()
 			}
 			return
 		}
@@ -91,18 +91,15 @@ export class Lifecycle {
 	#subscribeParse() {
 		const {store} = this
 
-		watch(
-			() => store.events.parse(),
-			() => {
-				if (store.state.recovery.get()) {
-					const text = toString(store.state.tokens.get())
-					store.state.tokens.set(parseWithParser(store, text))
-					store.state.previousValue.set(text)
-					return
-				}
-				store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		watch(store.events.parse, () => {
+			if (store.state.recovery.get()) {
+				const text = toString(store.state.tokens.get())
+				store.state.tokens.set(parseWithParser(store, text))
+				store.state.previousValue.set(text)
+				return
 			}
-		)
+			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		})
 	}
 
 	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
@@ -111,16 +108,13 @@ export class Lifecycle {
 		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
 		this.#stopOverlay = () => store.controllers.overlay.disable()
 
-		watch(
-			() => store.state.overlayMatch(),
-			() => {
-				if (store.state.overlayMatch()) {
-					store.nodes.input.target = store.nodes.focus.target
-					store.controllers.overlay.enableClose()
-				} else {
-					store.controllers.overlay.disableClose()
-				}
+		watch(store.state.overlayMatch, match => {
+			if (match) {
+				store.nodes.input.target = store.nodes.focus.target
+				store.controllers.overlay.enableClose()
+			} else {
+				store.controllers.overlay.disableClose()
 			}
-		)
+		})
 	}
 }

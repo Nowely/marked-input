@@ -211,10 +211,9 @@ For nested marks like `**bold @[mention]**`:
 
 ### Emitter Architecture
 
-Events use `defineEvents()` which creates typed emitters using reactive signals:
+Events use `event<T>()` to create typed emitters backed by reactive signals:
 
-- **`VoidEvent`** — callable with no arguments; subscribable via `watch(() => event(), fn)`
-- **`PayloadEvent<T>`** — callable with a payload to emit, or with no arguments to read the last payload inside a reactive context
+- **`Event<T>`** — call `.emit(payload)` to fire (for `void` events, `.emit()` with no arguments); subscribable via `watch(event, fn)`
 
 ### Store Events
 
@@ -231,17 +230,17 @@ Events use `defineEvents()` which creates typed emitters using reactive signals:
 
 ```typescript
 // Emit a void event
-store.events.change()
+store.events.change.emit()
 
 // Emit a payload event
-store.events.delete({ token })
+store.events.delete.emit({ token })
 
-// Subscribe inside an effectScope (cleanup is automatic when scope disposes)
+// Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        () => store.events.change(),
+        store.events.change,
         () => {
             console.log('Text changed')
         }
@@ -256,7 +255,7 @@ dispose()
 
 ### Reactive Signals
 
-State is managed through `defineState()` with explicit initial keys. Each property is a `Signal<T>`:
+State is managed through direct signal declarations. Each property is a `Signal<T>`:
 
 ```typescript
 export interface Signal<T> {

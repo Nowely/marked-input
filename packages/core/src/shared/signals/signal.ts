@@ -1,5 +1,12 @@
-import {signal as alienSignal, effect as alienEffect, getActiveSub, setActiveSub} from '../alien-signals/src/index.js'
-import {getUseHookFactory} from './registry.js'
+import {
+	signal as alienSignal,
+	effect as alienEffect,
+	computed as alienComputed,
+	setActiveSub,
+	startBatch,
+	endBatch,
+} from './alien-signals'
+import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
 
@@ -8,16 +15,19 @@ export {alienEffect as effect}
 // ---------------------------------------------------------------------------
 
 export interface Signal<T> {
-	/** Read current value (auto-tracks inside effects). */
 	(): T
-	/** Write a new value. */
-	(value: T): void
-	/** Read alias (compat). */
+	(value: T | undefined): void
 	get(): T
-	/** Write alias (compat). */
-	set(value: T): void
-	/** Framework hook bridge. */
+	set(value: T | undefined): void
 	use(): T
+}
+
+/**
+ * Derives a plain-value object type from an object of signals.
+ * `{ foo: Signal<string>, bar: Signal<number> }` → `{ foo: string, bar: number }`
+ */
+export type SignalValues<T> = {
+	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : never
 }
 
 interface SignalOptions<T> {
@@ -32,46 +42,86 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	// oxlint-disable-next-line no-non-null-assertion, no-unnecessary-type-assertion -- opts is defined when hasCustomEquals is true; TS does not narrow opts from the boolean variable
 	const equalsOpt = hasCustomEquals ? opts!.equals : undefined
 	if (hasCustomEquals && equalsOpt === false) {
-		// Always-fire mode: box each value so alien-signals' !== always sees a new ref
+		const _default = initial
+		const hasDefault = initial !== undefined
 		let seq = 0
-		const inner = alienSignal<{v: T; seq: number}>({v: initial, seq: seq++})
+		const inner = alienSignal<{v: T; seq: number} | undefined>(undefined)
+
+		const read = (): T => {
+			const box = inner()
+			if (box === undefined) {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so returning undefined is safe
+				return hasDefault ? _default : (undefined as T)
+			}
+			return box.v
+		}
 
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T] | []) {
+		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
-				inner({v: args[0], seq: seq++})
+				if (args[0] === undefined) {
+					if (hasDefault && inner() === undefined) return
+					inner(undefined)
+				} else {
+					inner({v: args[0], seq: seq++})
+				}
 			} else {
-				return inner().v
+				return read()
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => inner().v
-		callable.set = (v: T) => inner({v, seq: seq++})
+		callable.get = () => read()
+		callable.set = (v: T | undefined) => {
+			if (v === undefined) {
+				if (hasDefault && inner() === undefined) return
+				inner(undefined)
+			} else {
+				inner({v, seq: seq++})
+			}
+		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 		return callable
 	}
 
 	if (hasCustomEquals && typeof equalsOpt === 'function') {
-		// Custom equals: wrap setter to skip when equal
 		const equalsFn = equalsOpt
-		const inner = alienSignal<T>(initial)
+		const _default = initial
+		const hasDefault = initial !== undefined
+		const inner = alienSignal<T | undefined>(undefined)
+
+		const read = (): T => {
+			const v = inner()
+			if (v === undefined && hasDefault) return _default
+			// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
+			return v as T
+		}
 
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T] | []) {
+		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
-				if (!equalsFn(inner(), args[0])) {
-					inner(args[0])
+				if (args[0] === undefined) {
+					if (hasDefault && inner() === undefined) return
+					inner(undefined)
+				} else {
+					if (!equalsFn(read(), args[0])) {
+						inner(args[0])
+					}
 				}
 			} else {
-				return inner()
+				return read()
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => inner()
-		callable.set = (v: T) => {
-			if (!equalsFn(inner(), v)) {
-				inner(v)
+		callable.get = () => read()
+		callable.set = (v: T | undefined) => {
+			if (v === undefined) {
+				if (hasDefault && inner() === undefined) return
+				inner(undefined)
+			} else {
+				if (!equalsFn(read(), v)) {
+					inner(v)
+				}
 			}
 		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
@@ -79,87 +129,106 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		return callable
 	}
 
-	// Default: alien-signals' built-in !== equality
-	const inner = alienSignal<T>(initial)
+	const _default = initial
+	const hasDefault = initial !== undefined
+	const inner = alienSignal<T | undefined>(undefined)
+
+	const read = (): T => {
+		const v = inner()
+		if (v === undefined && hasDefault) return _default
+		// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
+		return v as T
+	}
 
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	const callable = function signalCallable(...args: [T] | []) {
+	const callable = function signalCallable(...args: [T | undefined] | []) {
 		if (args.length) {
-			inner(args[0])
+			const v = args[0]
+			if (v === undefined && hasDefault) {
+				if (inner() === undefined) return
+				inner(undefined)
+			} else {
+				const current = inner()
+				const effectiveCurrent = current === undefined && hasDefault ? _default : current
+				if (effectiveCurrent !== v) {
+					inner(v)
+				}
+			}
 		} else {
-			return inner()
+			return read()
 		}
 	} as unknown as Signal<T>
 
-	callable.get = () => inner()
-	callable.set = (v: T) => inner(v)
+	callable.get = () => read()
+	callable.set = (v: T | undefined) => {
+		if (v === undefined && hasDefault) {
+			if (inner() === undefined) return
+			inner(undefined)
+		} else {
+			const current = inner()
+			const effectiveCurrent = current === undefined && hasDefault ? _default : current
+			if (effectiveCurrent !== v) {
+				inner(v)
+			}
+		}
+	}
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 	return callable
 }
 
 // ---------------------------------------------------------------------------
-// VoidEvent — zero-payload event
+// Computed<T> — derived reactive value
 // ---------------------------------------------------------------------------
 
-export interface VoidEvent {
-	/** Inside an effect: subscribes (reads counter). Outside: emits (increments counter). */
-	(): void
-	/** Framework hook bridge (mostly unused for events). */
-	use(): void
+export interface Computed<T> {
+	(): T
+	get(): T
+	use(): T
 }
 
-export function voidEvent(): VoidEvent {
-	const counter = alienSignal(0)
+export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
+	const inner = alienComputed(getter)
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches VoidEvent interface but TS can't verify the conditional call signature
-	const callable = function voidEventCallable() {
-		if (getActiveSub() !== undefined) {
-			// Inside an effect — read to subscribe
-			counter()
-		} else {
-			// Outside an effect — write to emit
-			counter(counter() + 1)
-		}
-	} as unknown as VoidEvent
+	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
+	const callable = function computedCallable(): T {
+		return inner()
+	} as unknown as Computed<T>
 
-	callable.use = () => {
-		/* no-op for void events */
-	}
+	callable.get = () => inner()
+	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
+	callable.use = (() => getUseHookFactory()(callable)()) as Computed<T>['use']
+
 	return callable
 }
 
 // ---------------------------------------------------------------------------
-// PayloadEvent<T> — event carrying a payload
+// Event<T> — unified reactive event primitive
 // ---------------------------------------------------------------------------
 
-export interface PayloadEvent<T> {
-	/** Emit: writes payload (always fires). */
-	(payload: T): void
-	/** Read: returns latest payload (auto-tracks inside effects). */
+export interface Event<T = void> {
+	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
 	(): T | undefined
+	/** Emit — always fires even when payload reference is unchanged. */
+	emit(payload: T): void
 	/** Framework hook bridge. */
 	use(): T | undefined
 }
 
-export function payloadEvent<T>(): PayloadEvent<T> {
+export function event<T = void>(): Event<T> {
 	let seq = 0
 	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches PayloadEvent<T> interface but TS can't verify the overloaded call signature
-	const callable = function payloadEventCallable(...args: [T] | []) {
-		if (args.length) {
-			// Emit — always fires because each box is a new object
-			inner({v: args[0], id: ++seq})
-		} else {
-			// Read — returns unwrapped payload (auto-tracks)
-			const box = inner()
-			return box !== undefined ? box.v : undefined
-		}
-	} as unknown as PayloadEvent<T>
+	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
+	const callable = function eventCallable() {
+		const box = inner()
+		return box !== undefined ? box.v : undefined
+	} as unknown as Event<T>
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by PayloadEvent<T> contract
+	callable.emit = (payload: T) => inner({v: payload, id: ++seq})
+	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
 	callable.use = () => getUseHookFactory()(callable)() as T | undefined
+
 	return callable
 }
 
@@ -169,25 +238,55 @@ export function payloadEvent<T>(): PayloadEvent<T> {
 
 /**
  * Creates an effect that skips its first execution.
- * Useful for subscribing to events without firing on initial creation.
+ * Useful for subscribing to signals/events without firing on initial creation.
+ * The callback receives `(newValue, oldValue)` on each subsequent run.
  *
- * @param dep - dependency reader (called to establish tracking)
- * @param fn - callback invoked on subsequent runs
+ * Accepts a signal, event, or getter function as the dependency source:
+ *   watch(store.events.delete, (payload) => { ... })
+ *   watch(store.state.name,    (next, prev) => { ... })
+ *   watch(() => computed(),    (next, prev) => { ... })  // getter form still valid
+ *
+ * @param dep - dependency source (signal, event, or getter function)
+ * @param fn  - callback invoked on subsequent runs with (newValue, oldValue)
  * @returns dispose function
  */
-export function watch(dep: () => unknown, fn: () => void): () => void {
+export function watch<T>(dep: Signal<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(dep: Event<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(dep: () => T, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+export function watch<T>(
+	dep: Signal<T> | Event<T> | (() => T),
+	fn: (newValue: T, oldValue: T | undefined) => void
+): () => void {
 	let initialized = false
+	let oldValue: T | undefined
 	return alienEffect(() => {
-		dep()
+		// oxlint-disable-next-line no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
+		const newValue = dep() as T
 		if (!initialized) {
 			initialized = true
+			oldValue = newValue
 			return
 		}
+		const prev = oldValue
+		oldValue = newValue
 		const prevSub = setActiveSub(undefined)
 		try {
-			fn()
+			fn(newValue, prev)
 		} finally {
 			setActiveSub(prevSub)
 		}
 	})
+}
+
+// ---------------------------------------------------------------------------
+// batch() — defer effect flush until callback completes
+// ---------------------------------------------------------------------------
+
+export function batch(fn: () => void): void {
+	startBatch()
+	try {
+		fn()
+	} finally {
+		endBatch()
+	}
 }

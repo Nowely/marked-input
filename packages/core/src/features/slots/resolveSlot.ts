@@ -1,6 +1,6 @@
-import type {Token} from '../../features/parsing'
-import type {CoreOption, CoreSlotProps, CoreSlots, GenericElement} from '../types'
-import {convertDataAttrs} from './dataAttributes'
+import type {CoreOption, CoreSlotProps, CoreSlots, GenericElement} from '../../shared/types'
+import {convertDataAttrs} from '../../shared/utils/dataAttributes'
+import type {Token} from '../parsing'
 import {resolveOptionSlot} from './resolveOptionSlot'
 
 export type SlotName = 'container' | 'block' | 'span'

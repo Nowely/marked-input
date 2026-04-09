@@ -1,11 +1,9 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {effect} from '../alien-signals/src/index.js'
-import {defineEvents} from './defineEvents.js'
-import {defineState} from './defineState.js'
-import {setUseHookFactory, getUseHookFactory} from './registry.js'
-import type {UseHookFactory} from './registry.js'
-import {signal, voidEvent, payloadEvent, watch} from './signal.js'
+import {effect} from './alien-signals'
+import {setUseHookFactory, getUseHookFactory} from './registry'
+import type {UseHookFactory} from './registry'
+import {signal, watch, event} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -151,37 +149,175 @@ describe('signal<T>', () => {
 		expect(mockHook).toHaveBeenCalled()
 		expect(result).toBe('hook-result')
 	})
+
+	describe('default fallback', () => {
+		it('should return initial value as default when set to undefined', () => {
+			const s = signal<string>('change')
+			expect(s()).toBe('change')
+			s.set(undefined)
+			expect(s()).toBe('change')
+			expect(s.get()).toBe('change')
+		})
+
+		it('should return the actual value when set to a non-undefined value', () => {
+			const s = signal<string>('change')
+			s('focus')
+			expect(s()).toBe('focus')
+		})
+
+		it('should NOT apply fallback when initial value is undefined', () => {
+			const s = signal<string | undefined>(undefined)
+			expect(s()).toBeUndefined()
+			s('hello')
+			expect(s()).toBe('hello')
+			s.set(undefined)
+			expect(s()).toBeUndefined()
+		})
+
+		it('should work with .use() returning default', () => {
+			let readSignal: (() => boolean) | undefined
+			const mockHook = vi.fn(() => readSignal?.())
+			const factory: UseHookFactory = s => {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- test mocks the signal as a callable
+				readSignal = s as () => boolean
+				return mockHook
+			}
+			setUseHookFactory(factory)
+
+			const s = signal<boolean>(false)
+			s.set(undefined)
+			const result = s.use()
+			expect(result).toBe(false)
+		})
+
+		it('should work with equals: false and default fallback', () => {
+			const s = signal<boolean>(false, {equals: false})
+			expect(s()).toBe(false)
+			s.set(undefined)
+			expect(s()).toBe(false)
+			s.set(true)
+			expect(s()).toBe(true)
+		})
+
+		it('should work with custom equals and default fallback', () => {
+			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			s.set(undefined)
+			expect(s()).toEqual({id: 1, name: 'a'})
+		})
+
+		it('should notify subscribers when reverting from value to default', () => {
+			const s = signal<boolean>(false)
+			s.set(true)
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			runs.mockClear()
+			s.set(undefined)
+			expect(runs).toHaveBeenCalledTimes(1)
+			expect(s()).toBe(false)
+		})
+
+		it('should not notify when setting undefined and already at default', () => {
+			const s = signal<boolean>(false)
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			runs.mockClear()
+			s.set(undefined)
+			expect(runs).toHaveBeenCalledTimes(0)
+		})
+
+		it('should work with array defaults', () => {
+			const s = signal<number[]>([1, 2, 3])
+			s.set(undefined)
+			expect(s()).toEqual([1, 2, 3])
+			s.set([4, 5])
+			expect(s()).toEqual([4, 5])
+		})
+	})
 })
 
 // ---------------------------------------------------------------------------
-// voidEvent()
+// event<T>()
 // ---------------------------------------------------------------------------
 
-describe('voidEvent()', () => {
+describe('event<T>()', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should increment internal state when called outside an effect (emits)', () => {
-		const ev = voidEvent()
-		// Calling outside effect should not throw
-		expect(() => ev()).not.toThrow()
+	it('should return undefined before first emit', () => {
+		const ev = event<string>()
+		expect(ev()).toBeUndefined()
 	})
 
-	it('should re-run an effect that reads the event when emitted from outside', () => {
-		const ev = voidEvent()
+	it('should return void event undefined before first emit', () => {
+		const ev = event()
+		expect(ev()).toBeUndefined()
+	})
+
+	it('should auto-track inside effect and re-run when emitted', () => {
+		const ev = event<number>()
 		const runs = vi.fn()
 
 		trackedEffect(() => {
-			ev() // subscribe inside effect
+			ev()
 			runs()
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		ev() // emit outside effect
+		ev.emit(42)
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('should allow multiple effects to subscribe to the same event', () => {
-		const ev = voidEvent()
+	it('should re-run effect when void event is emitted', () => {
+		const ev = event()
+		const runs = vi.fn()
+
+		trackedEffect(() => {
+			ev()
+			runs()
+		})
+
+		expect(runs).toHaveBeenCalledTimes(1)
+		ev.emit()
+		expect(runs).toHaveBeenCalledTimes(2)
+	})
+
+	it('should return latest payload from read', () => {
+		const ev = event<number>()
+		let captured: number | undefined
+
+		trackedEffect(() => {
+			captured = ev()
+		})
+
+		expect(captured).toBeUndefined()
+		ev.emit(42)
+		expect(captured).toBe(42)
+	})
+
+	it('should fire subscribers even when emitting same payload reference', () => {
+		const ev = event<{id: number}>()
+		const payload = {id: 1}
+		const runs = vi.fn()
+
+		trackedEffect(() => {
+			ev()
+			runs()
+		})
+
+		expect(runs).toHaveBeenCalledTimes(1)
+		ev.emit(payload)
+		expect(runs).toHaveBeenCalledTimes(2)
+		ev.emit(payload) // same reference
+		expect(runs).toHaveBeenCalledTimes(3)
+	})
+
+	it('should allow multiple effects to subscribe independently', () => {
+		const ev = event()
 		const runsA = vi.fn()
 		const runsB = vi.fn()
 
@@ -197,105 +333,34 @@ describe('voidEvent()', () => {
 		expect(runsA).toHaveBeenCalledTimes(1)
 		expect(runsB).toHaveBeenCalledTimes(1)
 
-		ev() // emit
+		ev.emit()
 		expect(runsA).toHaveBeenCalledTimes(2)
 		expect(runsB).toHaveBeenCalledTimes(2)
 	})
 
-	it('should not cause infinite loop when called inside an effect', () => {
-		const ev = voidEvent()
+	it('should not cause infinite loop when e() called inside effect', () => {
+		const ev = event()
 		let count = 0
 
-		// Inside the effect, ev() reads (subscribes), it should not emit
 		trackedEffect(() => {
 			ev()
 			count++
 		})
 
-		// Should have run exactly once, not infinitely
 		expect(count).toBe(1)
-	})
-})
-
-// ---------------------------------------------------------------------------
-// payloadEvent<T>()
-// ---------------------------------------------------------------------------
-
-describe('payloadEvent<T>()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return undefined before first emit', () => {
-		const ev = payloadEvent<string>()
-		expect(ev()).toBeUndefined()
-	})
-
-	it('should set the current payload when called with an argument', () => {
-		const ev = payloadEvent<string>()
-		ev('hello')
-		// Read outside effect — we need an effect to track, but we can just call ev()
-		// Actually payloadEvent reads track inside effects. Let's read in an effect.
-		let captured: string | undefined
-		trackedEffect(() => {
-			captured = ev()
-		})
-		expect(captured).toBe('hello')
-	})
-
-	it('should return the payload after emitting', () => {
-		const ev = payloadEvent<number>()
-		let captured: number | undefined
-
-		trackedEffect(() => {
-			captured = ev()
-		})
-
-		expect(captured).toBeUndefined()
-		ev(42)
-		expect(captured).toBe(42)
-	})
-
-	it('should fire subscribers even when emitting same payload object twice (reference boxing)', () => {
-		const ev = payloadEvent<{id: number}>()
-		const payload = {id: 1}
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev(payload)
-		expect(runs).toHaveBeenCalledTimes(2)
-		ev(payload) // same reference
-		expect(runs).toHaveBeenCalledTimes(3)
-	})
-
-	it('should re-run an effect that reads ev() when ev(payload) is called', () => {
-		const ev = payloadEvent<string>()
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			ev()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		ev('data')
-		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
 	it('.use() should call the registered factory', () => {
-		const mockHook = vi.fn(() => 'payload-hook')
+		const mockHook = vi.fn(() => 'event-hook')
 		const factory: UseHookFactory = vi.fn(() => mockHook)
 		setUseHookFactory(factory)
 
-		const ev = payloadEvent<number>()
+		const ev = event<number>()
 		const result = ev.use()
 
 		expect(factory).toHaveBeenCalledWith(ev)
 		expect(mockHook).toHaveBeenCalled()
-		expect(result).toBe('payload-hook')
+		expect(result).toBe('event-hook')
 	})
 })
 
@@ -360,8 +425,8 @@ describe('watch()', () => {
 	})
 
 	it('should allow callbacks to emit void events', () => {
-		const source = voidEvent()
-		const emitted = voidEvent()
+		const source = event()
+		const emitted = event()
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -372,18 +437,18 @@ describe('watch()', () => {
 		const dispose = watch(
 			() => source(),
 			() => {
-				emitted()
+				emitted.emit()
 			}
 		)
 		disposers.push(dispose)
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		source()
+		source.emit()
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
 	it('should not replay stale payloads on unrelated reactive changes', () => {
-		const source = payloadEvent<number>()
+		const source = event<number>()
 		const extra = signal(0)
 		const seen: number[] = []
 
@@ -399,149 +464,65 @@ describe('watch()', () => {
 		)
 		disposers.push(dispose)
 
-		source(1)
+		source.emit(1)
 		expect(seen).toEqual([1])
 
 		extra(1)
 		expect(seen).toEqual([1])
 
-		source(2)
+		source.emit(2)
 		expect(seen).toEqual([1, 2])
 	})
-})
 
-// ---------------------------------------------------------------------------
-// defineState()
-// ---------------------------------------------------------------------------
+	it('should pass newValue and oldValue to callback', () => {
+		const s = signal(0)
+		const calls: Array<[number, number | undefined]> = []
 
-describe('defineState()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return an object with a Signal<T> per key', () => {
-		const state = defineState({count: 0, name: 'test'})
-		expect(typeof state.count).toBe('function')
-		expect(typeof state.name).toBe('function')
-		expect(state.count()).toBe(0)
-		expect(state.name()).toBe('test')
-	})
-
-	it('should return stable signal references on repeated access', () => {
-		const state = defineState({x: 1})
-		const ref1 = state.x
-		const ref2 = state.x
-		expect(ref1).toBe(ref2)
-	})
-
-	it('should set a value via state.key(v)', () => {
-		const state = defineState({count: 0})
-		state.count(5)
-		expect(state.count()).toBe(5)
-	})
-
-	it('should read a value via state.key()', () => {
-		const state = defineState({count: 42})
-		expect(state.count()).toBe(42)
-	})
-
-	it('should update multiple keys via state.set()', () => {
-		const state = defineState({x: 0, y: 0})
-		state.set({x: 10, y: 20})
-		expect(state.x()).toBe(10)
-		expect(state.y()).toBe(20)
-	})
-
-	it('should batch updates — effect reading two signals runs once, not twice', () => {
-		const state = defineState({x: 0, y: 0})
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			state.x()
-			state.y()
-			runs()
+		const dispose = watch(s, (newVal, oldVal) => {
+			calls.push([newVal, oldVal])
 		})
+		disposers.push(dispose)
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.set({x: 1, y: 2})
-		expect(runs).toHaveBeenCalledTimes(2) // once initial + once after batched set
+		s(1)
+		s(2)
+		s(3)
+
+		expect(calls).toEqual([
+			[1, 0],
+			[2, 1],
+			[3, 2],
+		])
 	})
 
-	it('should support per-key custom equals option', () => {
-		const state = defineState({item: {id: 1, name: 'a'}}, {equals: {item: (a, b) => a.id === b.id}})
-		const runs = vi.fn()
+	it('should pass newValue and oldValue for events', () => {
+		const ev = event<number>()
+		const calls: Array<[number | undefined, number | undefined]> = []
 
-		trackedEffect(() => {
-			state.item()
-			runs()
+		const dispose = watch(ev, (newVal, oldVal) => {
+			calls.push([newVal, oldVal])
 		})
+		disposers.push(dispose)
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.item({id: 1, name: 'changed'}) // same id — should skip
-		expect(runs).toHaveBeenCalledTimes(1)
+		ev.emit(10)
+		ev.emit(20)
+
+		expect(calls).toEqual([
+			[10, undefined],
+			[20, 10],
+		])
 	})
 
-	it('should support equals: false to fire even for same value', () => {
-		const state = defineState({count: 0}, {equals: {count: false}})
-		const runs = vi.fn()
+	it('should accept signal directly (not wrapped in getter)', () => {
+		const s = signal('a')
+		const seen: string[] = []
 
-		trackedEffect(() => {
-			state.count()
-			runs()
-		})
+		const dispose = watch(s, v => seen.push(v))
+		disposers.push(dispose)
 
-		expect(runs).toHaveBeenCalledTimes(1)
-		state.count(0) // same value
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-})
+		s('b')
+		s('c')
 
-// ---------------------------------------------------------------------------
-// defineEvents() integration
-// ---------------------------------------------------------------------------
-
-describe('defineEvents()', () => {
-	beforeEach(() => vi.clearAllMocks())
-
-	it('should return the object with correctly typed events', () => {
-		const events = defineEvents<{change: void; delete: {id: number}}>({
-			change: voidEvent(),
-			delete: payloadEvent<{id: number}>(),
-		})
-
-		expect(typeof events.change).toBe('function')
-		expect(typeof events.delete).toBe('function')
-	})
-
-	it('should have returned events work identically to standalone voidEvent', () => {
-		const events = defineEvents<{ping: void}>({
-			ping: voidEvent(),
-		})
-
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			events.ping()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		events.ping() // emit
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-
-	it('should have returned events work identically to standalone payloadEvent', () => {
-		const events = defineEvents<{data: {id: number}}>({
-			data: payloadEvent<{id: number}>(),
-		})
-
-		let captured: {id: number} | undefined
-
-		trackedEffect(() => {
-			captured = events.data()
-		})
-
-		expect(captured).toBeUndefined()
-		events.data({id: 42})
-		expect(captured).toEqual({id: 42})
+		expect(seen).toEqual(['b', 'c'])
 	})
 })
 

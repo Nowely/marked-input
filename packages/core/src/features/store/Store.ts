@@ -1,7 +1,46 @@
-import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
-import {defineState, defineEvents, voidEvent, payloadEvent, type StateObject} from '../../shared/signals'
-import type {CoreOption, MarkputHandler, MarkputState, OverlayMatch} from '../../shared/types'
-import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
+import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
+import {DEFAULT_OPTIONS} from '../../shared/constants'
+import {signal, computed, event, batch} from '../../shared/signals'
+import type {Signal, Computed, SignalValues} from '../../shared/signals'
+import type {
+	CoreOption,
+	OverlayMatch,
+	OverlayTrigger,
+	Recovery,
+	GenericComponent,
+	StyleProperties,
+	CoreSlots,
+	CoreSlotProps,
+} from '../../shared/types'
+
+type StoreState = {
+	tokens: Signal<Token[]>
+	parser: Signal<Parser | undefined>
+	value: Signal<string | undefined>
+	defaultValue: Signal<string | undefined>
+	previousValue: Signal<string | undefined>
+	innerValue: Signal<string | undefined>
+	recovery: Signal<Recovery | undefined>
+	selecting: Signal<'drag' | 'all' | undefined>
+	drag: Signal<boolean | {alwaysShowHandle: boolean}>
+	overlayMatch: Signal<OverlayMatch | undefined>
+	showOverlayOn: Signal<OverlayTrigger>
+	onChange: Signal<((value: string) => void) | undefined>
+	options: Signal<CoreOption[]>
+	readOnly: Signal<boolean>
+	Span: Signal<GenericComponent | undefined>
+	Mark: Signal<GenericComponent | undefined>
+	Overlay: Signal<GenericComponent | undefined>
+	className: Signal<string | undefined>
+	style: Signal<StyleProperties | undefined>
+	baseClassName: Signal<string | undefined>
+	containerClass: Computed<string | undefined>
+	containerStyle: Computed<StyleProperties | undefined>
+	slots: Signal<CoreSlots | undefined>
+	slotProps: Signal<CoreSlotProps | undefined>
+}
+import {cx} from '../../shared/utils/cx'
+import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
 import {CopyController} from '../clipboard'
 import {DragController} from '../drag'
@@ -11,68 +50,95 @@ import {FocusController} from '../focus'
 import {KeyDownController} from '../input'
 import {Lifecycle} from '../lifecycle'
 import {OverlayController} from '../overlay'
-import {parseWithParser} from '../parsing'
-import type {Token} from '../parsing'
+import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
+import {createSlots} from '../slots'
 
 export interface StoreOptions {
 	defaultSpan: unknown
 }
 
-export interface Slot {
-	use(): readonly unknown[]
-	get(): readonly unknown[]
-}
-
-export interface MarkSlot {
-	use(token: Token): readonly unknown[]
-	get(token: Token): readonly unknown[]
-}
-
-export interface OverlaySlot {
-	use(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
-	get(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
-}
-
 export class Store {
 	readonly key = new KeyGenerator()
-	readonly blocks: BlockRegistry
+	readonly blocks = new BlockRegistry()
 
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: StateObject<MarkputState>
+	readonly state: StoreState = {
+		// Data
+		tokens: signal<Token[]>([]),
+		parser: signal<Parser | undefined>(undefined),
+		value: signal<string | undefined>(undefined),
+		defaultValue: signal<string | undefined>(undefined),
+		previousValue: signal<string | undefined>(undefined),
+		innerValue: signal<string | undefined>(undefined),
+		recovery: signal<Recovery | undefined>(undefined),
 
-	readonly slot: {
-		container: Slot
-		block: Slot
-		span: Slot
-		overlay: OverlaySlot
-		mark: MarkSlot
+		// Selection
+		selecting: signal<'drag' | 'all' | undefined>(undefined),
+		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
+
+		// Overlay
+		overlayMatch: signal<OverlayMatch | undefined>(undefined),
+		showOverlayOn: signal<OverlayTrigger>('change'),
+
+		// Callbacks
+		onChange: signal<((value: string) => void) | undefined>(undefined),
+
+		// Config
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
+		readOnly: signal<boolean>(false),
+
+		// Component overrides
+		Span: signal<GenericComponent | undefined>(undefined),
+		Mark: signal<GenericComponent | undefined>(undefined),
+		Overlay: signal<GenericComponent | undefined>(undefined),
+
+		// Styling
+		className: signal<string | undefined>(undefined),
+		style: signal<StyleProperties | undefined>(undefined, {equals: shallow}),
+		baseClassName: signal<string | undefined>(undefined),
+		containerClass: computed(() =>
+			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)
+		),
+		containerStyle: computed(prev => {
+			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
+			return prev && shallow(prev, next) ? prev : next
+		}),
+
+		// Slot system
+		slots: signal<CoreSlots | undefined>(undefined),
+		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
-	readonly events = defineEvents<{
-		change: void
-		parse: void
-		delete: {token: Token}
-		select: {mark: Token; match: OverlayMatch}
-		clearOverlay: void
-		checkOverlay: void
-	}>({
-		change: voidEvent(),
-		parse: voidEvent(),
-		delete: payloadEvent<{token: Token}>(),
-		select: payloadEvent<{mark: Token; match: OverlayMatch}>(),
-		clearOverlay: voidEvent(),
-		checkOverlay: voidEvent(),
+	readonly slot = createSlots({
+		slots: this.state.slots,
+		slotProps: this.state.slotProps,
+		Overlay: this.state.Overlay,
+		options: this.state.options,
+		Mark: this.state.Mark,
+		Span: this.state.Span,
+		getDefaultSpan: () => this._defaultSpan,
 	})
+
+	readonly events = {
+		change: event(),
+		parse: event(),
+		delete: event<{token: Token}>(),
+		select: event<{mark: Token; match: OverlayMatch}>(),
+		clearOverlay: event(),
+		checkOverlay: event(),
+	}
 
 	readonly refs = {
 		container: null as HTMLDivElement | null,
 		overlay: null as HTMLElement | null,
 	}
+
+	readonly handler = new MarkputHandler(this)
 
 	readonly controllers = {
 		overlay: new OverlayController(this),
@@ -91,118 +157,20 @@ export class Store {
 
 	constructor(options: StoreOptions) {
 		this._defaultSpan = options.defaultSpan
-		this.blocks = new BlockRegistry()
-		this.state = defineState<MarkputState>(
-			{
-				tokens: [],
-				parser: undefined,
-				previousValue: undefined,
-				recovery: undefined,
-				selecting: undefined,
-				overlayMatch: undefined,
-				value: undefined,
-				defaultValue: undefined,
-				onChange: undefined,
-				readOnly: false,
-				options: undefined,
-				showOverlayOn: undefined,
-				Span: undefined,
-				Mark: undefined,
-				Overlay: undefined,
-				className: undefined,
-				style: undefined,
-				slots: undefined,
-				slotProps: undefined,
-				drag: false,
-			},
-			{equals: {style: shallow}}
-		)
-		this.slot = {
-			container: {
-				use: () =>
-					[
-						resolveSlot('container', this.state.slots.use()),
-						resolveSlotProps('container', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('container', this.state.slots.get()),
-						resolveSlotProps('container', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			block: {
-				use: () =>
-					[
-						resolveSlot('block', this.state.slots.use()),
-						resolveSlotProps('block', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('block', this.state.slots.get()),
-						resolveSlotProps('block', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			span: {
-				use: () =>
-					[
-						resolveSlot('span', this.state.slots.use()),
-						resolveSlotProps('span', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('span', this.state.slots.get()),
-						resolveSlotProps('span', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
-			overlay: {
-				use: (option?: CoreOption, defaultComponent?: unknown) =>
-					resolveOverlaySlot(this.state.Overlay.use(), option, defaultComponent),
-				get: (option?: CoreOption, defaultComponent?: unknown) =>
-					resolveOverlaySlot(this.state.Overlay.get(), option, defaultComponent),
-			} as unknown as OverlaySlot,
-			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
-			mark: {
-				use: (token: Token) =>
-					resolveMarkSlot(
-						token,
-						this.state.options.get(),
-						this.state.Mark.use(),
-						this.state.Span.use(),
-						this._defaultSpan
-					),
-				get: (token: Token) =>
-					resolveMarkSlot(
-						token,
-						this.state.options.get(),
-						this.state.Mark.get(),
-						this.state.Span.get(),
-						this._defaultSpan
-					),
-			} as unknown as MarkSlot,
-		}
 	}
 
-	applyValue(newValue: string): void {
-		const onChange = this.state.onChange.get()
-		const newTokens = parseWithParser(this, newValue)
-		this.state.tokens.set(newTokens)
-		this.state.previousValue.set(newValue)
-		onChange?.(newValue)
-	}
-
-	createHandler(): MarkputHandler {
-		const {refs, nodes} = this
-		return {
-			get container() {
-				return refs.container
-			},
-			get overlay() {
-				return refs.overlay
-			},
-			focus() {
-				nodes.focus.head?.focus()
-			},
-		}
+	setState(values: Partial<SignalValues<typeof this.state>>): void {
+		batch(() => {
+			const state = this.state
+			for (const k in values) {
+				if (typeof k !== 'string' || !(k in state)) continue
+				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
+				const sig = state[k as keyof StoreState]
+				if ('set' in sig) {
+					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
+					sig.set(values[k as keyof typeof values] as never)
+				}
+			}
+		})
 	}
 }
