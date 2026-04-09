@@ -27,7 +27,7 @@ export interface Signal<T> {
  * `{ foo: Signal<string>, bar: Signal<number> }` → `{ foo: string, bar: number }`
  */
 export type SignalValues<T> = {
-	[K in keyof T]: T[K] extends Signal<infer V> ? V : never
+	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : never
 }
 
 interface SignalOptions<T> {

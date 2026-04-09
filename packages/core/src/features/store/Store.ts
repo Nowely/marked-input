@@ -1,7 +1,7 @@
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {signal, event, batch} from '../../shared/signals'
-import type {Signal, SignalValues} from '../../shared/signals'
+import {signal, computed, event, batch} from '../../shared/signals'
+import type {Signal, Computed, SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -12,6 +12,34 @@ import type {
 	CoreSlots,
 	CoreSlotProps,
 } from '../../shared/types'
+
+type StoreState = {
+	tokens: Signal<Token[]>
+	parser: Signal<Parser | undefined>
+	value: Signal<string | undefined>
+	defaultValue: Signal<string | undefined>
+	previousValue: Signal<string | undefined>
+	recovery: Signal<Recovery | undefined>
+	selecting: Signal<'drag' | 'all' | undefined>
+	drag: Signal<boolean | {alwaysShowHandle: boolean}>
+	overlayMatch: Signal<OverlayMatch | undefined>
+	showOverlayOn: Signal<OverlayTrigger>
+	onChange: Signal<((value: string) => void) | undefined>
+	options: Signal<CoreOption[]>
+	readOnly: Signal<boolean>
+	Span: Signal<GenericComponent | undefined>
+	Mark: Signal<GenericComponent | undefined>
+	Overlay: Signal<GenericComponent | undefined>
+	className: Signal<string | undefined>
+	style: Signal<StyleProperties | undefined>
+	baseClassName: Signal<string | undefined>
+	containerClass: Computed<string | undefined>
+	containerStyle: Computed<StyleProperties | undefined>
+	slots: Signal<CoreSlots | undefined>
+	slotProps: Signal<CoreSlotProps | undefined>
+}
+import {cx} from '../../shared/utils/cx'
+import {merge} from '../../shared/utils/merge'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
 import type {SlotName} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
@@ -90,7 +118,7 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state = {
+	readonly state: StoreState = {
 		// Data
 		tokens: signal<Token[]>([]),
 		parser: signal<Parser | undefined>(undefined),
@@ -122,6 +150,11 @@ export class Store {
 		// Styling
 		className: signal<string | undefined>(undefined),
 		style: signal<StyleProperties | undefined>(undefined, {equals: shallow}),
+		baseClassName: signal<string | undefined>(undefined),
+		containerClass: computed(() =>
+			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)
+		),
+		containerStyle: computed(() => merge(this.state.style(), this.state.slotProps()?.container?.style)),
 
 		// Slot system
 		slots: signal<CoreSlots | undefined>(undefined),
@@ -183,9 +216,13 @@ export class Store {
 		batch(() => {
 			const state = this.state
 			for (const k in values) {
-				if (!(k in state)) continue
+				if (typeof k !== 'string' || !(k in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-				state[k as keyof typeof state].set(values[k as keyof typeof values] as never)
+				const sig = state[k as keyof StoreState]
+				if ('set' in sig) {
+					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
+					sig.set(values[k as keyof typeof values] as never)
+				}
 			}
 		})
 	}

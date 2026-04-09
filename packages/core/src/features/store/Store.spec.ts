@@ -176,4 +176,81 @@ describe('Store', () => {
 			expect(() => store.slot.mark.get(token)).toThrow('No mark component found')
 		})
 	})
+
+	describe('containerClass (computed)', () => {
+		it('should merge baseClassName + className + slotProps.container.className', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({
+				baseClassName: 'Container_hash1',
+				className: 'user-class',
+				slotProps: {container: {className: 'slot-class'}},
+			})
+			expect(store.state.containerClass.get()).toBe('Container_hash1 user-class slot-class')
+		})
+
+		it('should return baseClassName only when no user or slot className', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({baseClassName: 'Container_hash1'})
+			expect(store.state.containerClass.get()).toBe('Container_hash1')
+		})
+
+		it('should return undefined when nothing is set', () => {
+			const store = new Store({defaultSpan: null})
+			expect(store.state.containerClass.get()).toBeUndefined()
+		})
+
+		it('should react to className changes', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({baseClassName: 'base', className: 'old'})
+			expect(store.state.containerClass.get()).toBe('base old')
+			store.setState({className: 'new'})
+			expect(store.state.containerClass.get()).toBe('base new')
+		})
+
+		it('should react to slotProps changes', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({baseClassName: 'base'})
+			expect(store.state.containerClass.get()).toBe('base')
+			store.setState({slotProps: {container: {className: 'extra'}}})
+			expect(store.state.containerClass.get()).toBe('base extra')
+		})
+	})
+
+	describe('containerStyle (computed)', () => {
+		it('should merge style + slotProps.container.style', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({
+				style: {color: 'red'},
+				slotProps: {container: {style: {fontSize: 14}}},
+			})
+			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+		})
+
+		it('should return style only when no slotProps.container.style', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({style: {color: 'red'}})
+			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+		})
+
+		it('should return undefined when nothing is set', () => {
+			const store = new Store({defaultSpan: null})
+			expect(store.state.containerStyle.get()).toBeUndefined()
+		})
+
+		it('should react to style changes', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({style: {color: 'red'}})
+			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			store.setState({style: {color: 'blue'}})
+			expect(store.state.containerStyle.get()).toEqual({color: 'blue'})
+		})
+
+		it('should react to slotProps changes', () => {
+			const store = new Store({defaultSpan: null})
+			store.setState({style: {color: 'red'}})
+			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
+			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+		})
+	})
 })
