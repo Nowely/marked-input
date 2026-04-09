@@ -1,6 +1,6 @@
-import type {DragController} from '../../features/drag/DragController'
-import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../../features/drag/eventHandlers'
 import {signal} from '../signals'
+import type {DragAction, DragActions} from '../types'
+import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../utils/dragUtils'
 import {isClickOutside, isEscapeKey} from '../utils/menuUtils'
 
 export type DropPosition = 'before' | 'after' | null
@@ -19,14 +19,14 @@ export class BlockStore {
 	}
 
 	#blockIndex = 0
-	#dragCtrl: DragController | null = null
+	#dragAction: DragActions['dragAction'] | null = null
 	#cleanupContainer?: () => void
 	#cleanupGrip?: () => void
 	#cleanupMenu?: () => void
 
-	attachContainer(el: HTMLElement | null, blockIndex: number, dragCtrl: DragController) {
+	attachContainer(el: HTMLElement | null, blockIndex: number, actions: DragActions) {
 		this.#blockIndex = blockIndex
-		this.#dragCtrl = dragCtrl
+		this.#dragAction = actions.dragAction
 		if (el === this.refs.container) return
 		this.#cleanupContainer?.()
 		this.refs.container = el
@@ -52,7 +52,7 @@ export class BlockStore {
 			if (sourceIndex === null) return
 			const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition.get() ?? 'after')
 			this.state.dropPosition.set(null)
-			dragCtrl.reorder(sourceIndex, targetIndex)
+			this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
 		}
 
 		el.addEventListener('mouseenter', onMouseEnter)
@@ -69,9 +69,9 @@ export class BlockStore {
 		}
 	}
 
-	attachGrip(el: HTMLButtonElement | null, blockIndex: number, dragCtrl: DragController) {
+	attachGrip(el: HTMLButtonElement | null, blockIndex: number, actions: DragActions) {
 		this.#blockIndex = blockIndex
-		this.#dragCtrl = dragCtrl
+		this.#dragAction = actions.dragAction
 		this.#cleanupGrip?.()
 		if (!el) return
 
@@ -123,18 +123,19 @@ export class BlockStore {
 
 	closeMenu = () => this.state.menuOpen.set(false)
 	addBlock = () => {
-		if (!this.#dragCtrl) return
-		this.#dragCtrl.add(this.#blockIndex)
+		this.#emit({type: 'add', afterIndex: this.#blockIndex})
 		this.closeMenu()
 	}
 	deleteBlock = () => {
-		if (!this.#dragCtrl) return
-		this.#dragCtrl.delete(this.#blockIndex)
+		this.#emit({type: 'delete', index: this.#blockIndex})
 		this.closeMenu()
 	}
 	duplicateBlock = () => {
-		if (!this.#dragCtrl) return
-		this.#dragCtrl.duplicate(this.#blockIndex)
+		this.#emit({type: 'duplicate', index: this.#blockIndex})
 		this.closeMenu()
+	}
+
+	#emit(action: DragAction) {
+		this.#dragAction?.emit(action)
 	}
 }

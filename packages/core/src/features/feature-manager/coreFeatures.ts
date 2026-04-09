@@ -12,6 +12,7 @@ export const createCoreFeatures = (store: Store): FeatureManager => {
 		.register(asFeature('textSelection', store.features.textSelection))
 		.register(asFeature('contentEditable', store.features.contentEditable))
 		.register(asFeature('copy', store.features.copy))
+		.register(asFeature('drag', store.features.drag))
 
 	return manager
 }

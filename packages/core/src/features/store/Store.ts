@@ -11,6 +11,7 @@ import type {
 	StyleProperties,
 	CoreSlots,
 	CoreSlotProps,
+	DragAction,
 } from '../../shared/types'
 
 type StoreState = {
@@ -55,11 +56,7 @@ import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
 import {createSlots} from '../slots'
 
-export type DragAction =
-	| {type: 'reorder'; source: number; target: number}
-	| {type: 'add'; afterIndex: number}
-	| {type: 'delete'; index: number}
-	| {type: 'duplicate'; index: number}
+export type {DragAction} from '../../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()

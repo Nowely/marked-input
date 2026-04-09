@@ -4,10 +4,11 @@ import {KEYBOARD} from '../../shared/constants'
 import {Caret} from '../caret'
 import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
-import {deleteMark} from '../editing'
+import {isTextTokenSpan} from '../editable'
+import {createRowContent} from '../editing'
+import {deleteMark} from '../editing/utils/deleteMark'
 import {shiftFocusNext, shiftFocusPrev} from '../navigation'
 import type {MarkToken, Token} from '../parsing'
-import {annotate} from '../parsing'
 import {isFullSelection, selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 
@@ -22,12 +23,6 @@ export class KeyDownController {
 	#beforeInputHandler?: (e: InputEvent) => void
 
 	constructor(private store: Store) {}
-
-	#createRowContent(): string {
-		const firstOption = this.store.state.options.get()[0]
-		if (!firstOption.markup) return '\n'
-		return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
-	}
 
 	enable() {
 		if (this.#keydownHandler) return
@@ -302,7 +297,7 @@ export class KeyDownController {
 
 		if (!this.store.state.onChange.get()) return
 
-		const newRowContent = this.#createRowContent()
+		const newRowContent = createRowContent(this.store.state.options.get())
 
 		if (!isTextLikeRow(token)) {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
@@ -719,14 +714,6 @@ function handleBlockBeforeInput(store: Store, event: InputEvent): void {
 			break
 		}
 	}
-}
-
-/** A text-token span has no attributes, or only the contenteditable attribute. */
-function isTextTokenSpan(el: HTMLElement): boolean {
-	return (
-		el.tagName === 'SPAN' &&
-		(el.attributes.length === 0 || (el.attributes.length === 1 && el.hasAttribute('contenteditable')))
-	)
 }
 
 /**

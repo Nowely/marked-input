@@ -129,3 +129,13 @@ export interface CoreSlotProps {
 	block?: GenericAttributes & {className?: string; style?: StyleProperties}
 	span?: GenericAttributes & {className?: string; style?: StyleProperties}
 }
+
+export type DragAction =
+	| {type: 'reorder'; source: number; target: number}
+	| {type: 'add'; afterIndex: number}
+	| {type: 'delete'; index: number}
+	| {type: 'duplicate'; index: number}
+
+export interface DragActions {
+	dragAction: {emit(action: DragAction): void}
+}
