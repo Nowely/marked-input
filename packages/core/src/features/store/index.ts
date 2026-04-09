@@ -1,1 +1,1 @@
-export {Store, type StoreOptions} from './Store'
+export {Store} from './Store'

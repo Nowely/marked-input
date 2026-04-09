@@ -30,13 +30,12 @@ function createOverlaySlot(overlay: Signal<GenericComponent | undefined>): Overl
 function createMarkSlot(
 	options: Signal<CoreOption[]>,
 	mark: Signal<GenericComponent | undefined>,
-	span: Signal<GenericComponent | undefined>,
-	getDefaultSpan: () => unknown
+	span: Signal<GenericComponent | undefined>
 ): MarkSlot {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
 	return {
-		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use(), getDefaultSpan()),
-		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get(), getDefaultSpan()),
+		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use()),
+		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get()),
 	} as unknown as MarkSlot
 }
 
@@ -47,7 +46,6 @@ export interface SlotSignals {
 	options: Signal<CoreOption[]>
 	Mark: Signal<GenericComponent | undefined>
 	Span: Signal<GenericComponent | undefined>
-	getDefaultSpan: () => unknown
 }
 
 export function createSlots(signals: SlotSignals) {
@@ -56,6 +54,6 @@ export function createSlots(signals: SlotSignals) {
 		block: createNamedSlot(signals.slots, signals.slotProps, 'block'),
 		span: createNamedSlot(signals.slots, signals.slotProps, 'span'),
 		overlay: createOverlaySlot(signals.Overlay),
-		mark: createMarkSlot(signals.options, signals.Mark, signals.Span, signals.getDefaultSpan),
+		mark: createMarkSlot(signals.options, signals.Mark, signals.Span),
 	}
 }

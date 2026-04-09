@@ -10,7 +10,7 @@ describe('createSlots', () => {
 		setUseHookFactory(() => () => undefined)
 	})
 
-	function setup(defaultSpan: unknown = null): ReturnType<typeof createSlots> {
+	function setup(): ReturnType<typeof createSlots> {
 		return createSlots({
 			slots: signal<CoreSlots | undefined>(undefined),
 			slotProps: signal<CoreSlotProps | undefined>(undefined),
@@ -18,7 +18,6 @@ describe('createSlots', () => {
 			options: signal<CoreOption[]>([]),
 			Mark: signal<GenericComponent | undefined>(undefined),
 			Span: signal<GenericComponent | undefined>(undefined),
-			getDefaultSpan: () => defaultSpan,
 		})
 	}
 
@@ -47,7 +46,6 @@ describe('createSlots', () => {
 			options: signal<CoreOption[]>([]),
 			Mark: signal<GenericComponent | undefined>(undefined),
 			Span: signal<GenericComponent | undefined>(undefined),
-			getDefaultSpan: () => null,
 		} satisfies SlotSignals)
 		slots.set({container: 'section'})
 		expect(sut.container.get()).toEqual(['section', undefined])
@@ -63,7 +61,6 @@ describe('createSlots', () => {
 			options: signal<CoreOption[]>([]),
 			Mark: signal<GenericComponent | undefined>(undefined),
 			Span: signal<GenericComponent | undefined>(undefined),
-			getDefaultSpan: () => null,
 		} satisfies SlotSignals)
 		slots.set({span: 'strong'})
 		slotProps.set({span: {className: 'bold'}})
@@ -71,11 +68,27 @@ describe('createSlots', () => {
 		expect(props).toEqual({className: 'bold'})
 	})
 
-	it('should resolve mark slot for text token using defaultSpan', () => {
-		const slot = setup('span')
+	it('should resolve mark slot for text token using hardcoded span fallback', () => {
+		const slot = setup()
 		const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
 		const [component, props] = slot.mark.get(token)
 		expect(component).toBe('span')
+		expect(props).toEqual({})
+	})
+
+	it('should pass value prop to custom Span component for text token', () => {
+		const CustomSpan = () => {}
+		const slot = createSlots({
+			slots: signal<CoreSlots | undefined>(undefined),
+			slotProps: signal<CoreSlotProps | undefined>(undefined),
+			Overlay: signal<GenericComponent | undefined>(undefined),
+			options: signal<CoreOption[]>([]),
+			Mark: signal<GenericComponent | undefined>(undefined),
+			Span: signal<GenericComponent | undefined>(CustomSpan),
+		})
+		const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
+		const [component, props] = slot.mark.get(token)
+		expect(component).toBe(CustomSpan)
 		expect(props).toEqual({value: 'hello'})
 	})
 

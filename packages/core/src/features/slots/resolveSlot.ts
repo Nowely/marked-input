@@ -49,10 +49,11 @@ export function resolveMarkSlot(
 	token: Token,
 	tokenOptions: SlotOption[] | undefined,
 	GlobalMark: unknown,
-	GlobalSpan: unknown,
-	defaultSpan: unknown
+	GlobalSpan: unknown
 ) {
-	if (token.type === 'text') return [GlobalSpan ?? defaultSpan, {value: token.content}] as const
+	if (token.type === 'text') {
+		return [GlobalSpan ?? 'span', GlobalSpan ? {value: token.content} : {}] as const
+	}
 	const option = tokenOptions?.[token.descriptor.index]
 	const baseProps = {value: token.value, meta: token.meta}
 	const props = resolveOptionSlot(option?.mark, baseProps)

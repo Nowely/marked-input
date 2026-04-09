@@ -25,7 +25,7 @@ describe('TextSelectionController', () => {
 		setUseHookFactory(() => () => undefined)
 		// Provide a global document stub
 		vi.stubGlobal('document', mockDocument)
-		store = new Store({defaultSpan: null})
+		store = new Store()
 	})
 
 	afterEach(() => {
