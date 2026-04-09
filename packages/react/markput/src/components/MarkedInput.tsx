@@ -1,5 +1,5 @@
 import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
-import {cx, DEFAULT_OPTIONS, merge, Store} from '@markput/core'
+import {cx, merge, Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useLayoutEffect, useState} from 'react'
 
@@ -95,10 +95,10 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 			value: props.value,
 			defaultValue: props.defaultValue,
 			onChange: props.onChange,
-			readOnly: props.readOnly ?? false,
-			drag: props.drag ?? false,
-			options: props.options ?? DEFAULT_OPTIONS,
-			showOverlayOn: props.showOverlayOn ?? 'change',
+			readOnly: props.readOnly,
+			drag: props.drag,
+			options: props.options,
+			showOverlayOn: props.showOverlayOn,
 			Span: props.Span,
 			Mark: props.Mark,
 			Overlay: props.Overlay,
@@ -115,10 +115,10 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 			value: props.value,
 			defaultValue: props.defaultValue,
 			onChange: props.onChange,
-			readOnly: props.readOnly ?? false,
-			drag: props.drag ?? false,
-			options: props.options ?? DEFAULT_OPTIONS,
-			showOverlayOn: props.showOverlayOn ?? 'change',
+			readOnly: props.readOnly,
+			drag: props.drag,
+			options: props.options,
+			showOverlayOn: props.showOverlayOn,
 			Span: props.Span,
 			Mark: props.Mark,
 			Overlay: props.Overlay,
