@@ -8,15 +8,10 @@ export {alienEffect as effect}
 // ---------------------------------------------------------------------------
 
 export interface Signal<T> {
-	/** Read current value (auto-tracks inside effects). */
 	(): T
-	/** Write a new value. */
-	(value: T): void
-	/** Read alias (compat). */
+	(value: T | undefined): void
 	get(): T
-	/** Write alias (compat). */
-	set(value: T): void
-	/** Framework hook bridge. */
+	set(value: T | undefined): void
 	use(): T
 }
 
@@ -40,46 +35,84 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	// oxlint-disable-next-line no-non-null-assertion, no-unnecessary-type-assertion -- opts is defined when hasCustomEquals is true; TS does not narrow opts from the boolean variable
 	const equalsOpt = hasCustomEquals ? opts!.equals : undefined
 	if (hasCustomEquals && equalsOpt === false) {
-		// Always-fire mode: box each value so alien-signals' !== always sees a new ref
+		const _default = initial
+		const hasDefault = initial !== undefined
 		let seq = 0
-		const inner = alienSignal<{v: T; seq: number}>({v: initial, seq: seq++})
+		const inner = alienSignal<{v: T; seq: number} | undefined>(undefined)
+
+		const read = (): T => {
+			const box = inner()
+			if (box === undefined) {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so returning undefined is safe
+				return hasDefault ? _default : (undefined as T)
+			}
+			return box.v
+		}
 
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T] | []) {
+		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
-				inner({v: args[0], seq: seq++})
+				if (args[0] === undefined) {
+					inner(undefined)
+				} else {
+					inner({v: args[0], seq: seq++})
+				}
 			} else {
-				return inner().v
+				return read()
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => inner().v
-		callable.set = (v: T) => inner({v, seq: seq++})
+		callable.get = () => read()
+		callable.set = (v: T | undefined) => {
+			if (v === undefined) {
+				inner(undefined)
+			} else {
+				inner({v, seq: seq++})
+			}
+		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 		return callable
 	}
 
 	if (hasCustomEquals && typeof equalsOpt === 'function') {
-		// Custom equals: wrap setter to skip when equal
 		const equalsFn = equalsOpt
-		const inner = alienSignal<T>(initial)
+		const _default = initial
+		const hasDefault = initial !== undefined
+		const inner = alienSignal<T | undefined>(undefined)
+
+		const read = (): T => {
+			const v = inner()
+			if (v === undefined && hasDefault) return _default
+			// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
+			return v as T
+		}
 
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T] | []) {
+		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
-				if (!equalsFn(inner(), args[0])) {
-					inner(args[0])
+				if (args[0] === undefined) {
+					if (hasDefault && inner() === undefined) return
+					inner(undefined)
+				} else {
+					if (!equalsFn(read(), args[0])) {
+						inner(args[0])
+					}
 				}
 			} else {
-				return inner()
+				return read()
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => inner()
-		callable.set = (v: T) => {
-			if (!equalsFn(inner(), v)) {
-				inner(v)
+		callable.get = () => read()
+		callable.set = (v: T | undefined) => {
+			if (v === undefined) {
+				if (hasDefault && inner() === undefined) return
+				inner(undefined)
+			} else {
+				if (!equalsFn(read(), v)) {
+					inner(v)
+				}
 			}
 		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
@@ -87,20 +120,49 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		return callable
 	}
 
-	// Default: alien-signals' built-in !== equality
-	const inner = alienSignal<T>(initial)
+	const _default = initial
+	const hasDefault = initial !== undefined
+	const inner = alienSignal<T | undefined>(undefined)
+
+	const read = (): T => {
+		const v = inner()
+		if (v === undefined && hasDefault) return _default
+		// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
+		return v as T
+	}
 
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	const callable = function signalCallable(...args: [T] | []) {
+	const callable = function signalCallable(...args: [T | undefined] | []) {
 		if (args.length) {
-			inner(args[0])
+			const v = args[0]
+			if (v === undefined && hasDefault) {
+				if (inner() === undefined) return
+				inner(undefined)
+			} else {
+				const current = inner()
+				const effectiveCurrent = current === undefined && hasDefault ? _default : current
+				if (effectiveCurrent !== v) {
+					inner(v)
+				}
+			}
 		} else {
-			return inner()
+			return read()
 		}
 	} as unknown as Signal<T>
 
-	callable.get = () => inner()
-	callable.set = (v: T) => inner(v)
+	callable.get = () => read()
+	callable.set = (v: T | undefined) => {
+		if (v === undefined && hasDefault) {
+			if (inner() === undefined) return
+			inner(undefined)
+		} else {
+			const current = inner()
+			const effectiveCurrent = current === undefined && hasDefault ? _default : current
+			if (effectiveCurrent !== v) {
+				inner(v)
+			}
+		}
+	}
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 	return callable

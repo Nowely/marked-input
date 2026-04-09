@@ -149,6 +149,96 @@ describe('signal<T>', () => {
 		expect(mockHook).toHaveBeenCalled()
 		expect(result).toBe('hook-result')
 	})
+
+	describe('default fallback', () => {
+		it('should return initial value as default when set to undefined', () => {
+			const s = signal<string>('change')
+			expect(s()).toBe('change')
+			s.set(undefined)
+			expect(s()).toBe('change')
+			expect(s.get()).toBe('change')
+		})
+
+		it('should return the actual value when set to a non-undefined value', () => {
+			const s = signal<string>('change')
+			s('focus')
+			expect(s()).toBe('focus')
+		})
+
+		it('should NOT apply fallback when initial value is undefined', () => {
+			const s = signal<string | undefined>(undefined)
+			expect(s()).toBeUndefined()
+			s('hello')
+			expect(s()).toBe('hello')
+			s.set(undefined)
+			expect(s()).toBeUndefined()
+		})
+
+		it('should work with .use() returning default', () => {
+			let readSignal: (() => boolean) | undefined
+			const mockHook = vi.fn(() => readSignal?.())
+			const factory: UseHookFactory = s => {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- test mocks the signal as a callable
+				readSignal = s as () => boolean
+				return mockHook
+			}
+			setUseHookFactory(factory)
+
+			const s = signal<boolean>(false)
+			s.set(undefined)
+			const result = s.use()
+			expect(result).toBe(false)
+		})
+
+		it('should work with equals: false and default fallback', () => {
+			const s = signal<boolean>(false, {equals: false})
+			expect(s()).toBe(false)
+			s.set(undefined)
+			expect(s()).toBe(false)
+			s.set(true)
+			expect(s()).toBe(true)
+		})
+
+		it('should work with custom equals and default fallback', () => {
+			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			s.set(undefined)
+			expect(s()).toEqual({id: 1, name: 'a'})
+		})
+
+		it('should notify subscribers when reverting from value to default', () => {
+			const s = signal<boolean>(false)
+			s.set(true)
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			runs.mockClear()
+			s.set(undefined)
+			expect(runs).toHaveBeenCalledTimes(1)
+			expect(s()).toBe(false)
+		})
+
+		it('should not notify when setting undefined and already at default', () => {
+			const s = signal<boolean>(false)
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			runs.mockClear()
+			s.set(undefined)
+			expect(runs).toHaveBeenCalledTimes(0)
+		})
+
+		it('should work with array defaults', () => {
+			const s = signal<number[]>([1, 2, 3])
+			s.set(undefined)
+			expect(s()).toEqual([1, 2, 3])
+			s.set([4, 5])
+			expect(s()).toEqual([4, 5])
+		})
+	})
 })
 
 // ---------------------------------------------------------------------------
