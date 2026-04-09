@@ -4,7 +4,7 @@ import {useEffect, useImperativeHandle, useLayoutEffect} from 'react'
 import type {Option} from '../../types'
 
 export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | undefined) {
-	useImperativeHandle(ref, () => store.createHandler(), [store])
+	useImperativeHandle(ref, () => store.handler, [store])
 
 	useEffect(() => {
 		store.lifecycle.enable<Option>({
