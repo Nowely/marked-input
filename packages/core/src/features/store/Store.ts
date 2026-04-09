@@ -1,7 +1,7 @@
 import {BlockRegistry, KeyGenerator, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {signal, event, batch} from '../../shared/signals'
-import type {SignalValues} from '../../shared/signals'
+import type {Signal, SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
 	MarkputHandler,
@@ -14,6 +14,7 @@ import type {
 	CoreSlotProps,
 } from '../../shared/types'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../../shared/utils/resolveSlot'
+import type {SlotName} from '../../shared/utils/resolveSlot'
 import {shallow} from '../../shared/utils/shallow'
 import {CopyController} from '../clipboard'
 import {DragController} from '../drag'
@@ -26,6 +27,41 @@ import {OverlayController} from '../overlay'
 import {parseWithParser} from '../parsing'
 import type {Parser, Token} from '../parsing'
 import {TextSelectionController} from '../selection'
+
+function createNamedSlot(
+	slots: Signal<CoreSlots | undefined>,
+	slotProps: Signal<CoreSlotProps | undefined>,
+	name: SlotName
+): Slot {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+	return {
+		use: () => [resolveSlot(name, slots.use()), resolveSlotProps(name, slotProps.use())] as const,
+		get: () => [resolveSlot(name, slots.get()), resolveSlotProps(name, slotProps.get())] as const,
+	} as unknown as Slot
+}
+
+function createOverlaySlot(overlay: Signal<GenericComponent | undefined>): OverlaySlot {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
+	return {
+		use: (option?: CoreOption, defaultComponent?: unknown) =>
+			resolveOverlaySlot(overlay.use(), option, defaultComponent),
+		get: (option?: CoreOption, defaultComponent?: unknown) =>
+			resolveOverlaySlot(overlay.get(), option, defaultComponent),
+	} as unknown as OverlaySlot
+}
+
+function createMarkSlot(
+	options: Signal<CoreOption[]>,
+	mark: Signal<GenericComponent | undefined>,
+	span: Signal<GenericComponent | undefined>,
+	getDefaultSpan: () => unknown
+): MarkSlot {
+	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
+	return {
+		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use(), getDefaultSpan()),
+		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get(), getDefaultSpan()),
+	} as unknown as MarkSlot
+}
 
 export interface StoreOptions {
 	defaultSpan: unknown
@@ -93,12 +129,12 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
-	readonly slot: {
-		container: Slot
-		block: Slot
-		span: Slot
-		overlay: OverlaySlot
-		mark: MarkSlot
+	readonly slot = {
+		container: createNamedSlot(this.state.slots, this.state.slotProps, 'container'),
+		block: createNamedSlot(this.state.slots, this.state.slotProps, 'block'),
+		span: createNamedSlot(this.state.slots, this.state.slotProps, 'span'),
+		overlay: createOverlaySlot(this.state.Overlay),
+		mark: createMarkSlot(this.state.options, this.state.Mark, this.state.Span, () => this._defaultSpan),
 	}
 
 	readonly events = {
@@ -132,70 +168,6 @@ export class Store {
 
 	constructor(options: StoreOptions) {
 		this._defaultSpan = options.defaultSpan
-		this.slot = {
-			container: {
-				use: () =>
-					[
-						resolveSlot('container', this.state.slots.use()),
-						resolveSlotProps('container', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('container', this.state.slots.get()),
-						resolveSlotProps('container', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			block: {
-				use: () =>
-					[
-						resolveSlot('block', this.state.slots.use()),
-						resolveSlotProps('block', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('block', this.state.slots.get()),
-						resolveSlotProps('block', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			span: {
-				use: () =>
-					[
-						resolveSlot('span', this.state.slots.use()),
-						resolveSlotProps('span', this.state.slotProps.use()),
-					] as const,
-				get: () =>
-					[
-						resolveSlot('span', this.state.slots.get()),
-						resolveSlotProps('span', this.state.slotProps.get()),
-					] as const,
-			} as Slot,
-			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
-			overlay: {
-				use: (option?: CoreOption, defaultComponent?: unknown) =>
-					resolveOverlaySlot(this.state.Overlay.use(), option, defaultComponent),
-				get: (option?: CoreOption, defaultComponent?: unknown) =>
-					resolveOverlaySlot(this.state.Overlay.get(), option, defaultComponent),
-			} as unknown as OverlaySlot,
-			// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
-			mark: {
-				use: (token: Token) =>
-					resolveMarkSlot(
-						token,
-						this.state.options.get(),
-						this.state.Mark.use(),
-						this.state.Span.use(),
-						this._defaultSpan
-					),
-				get: (token: Token) =>
-					resolveMarkSlot(
-						token,
-						this.state.options.get(),
-						this.state.Mark.get(),
-						this.state.Span.get(),
-						this._defaultSpan
-					),
-			} as unknown as MarkSlot,
-		}
 	}
 
 	applyValue(newValue: string): void {

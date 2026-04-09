@@ -127,4 +127,56 @@ describe('Store', () => {
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
 	})
+
+	describe('slot', () => {
+		it('should return default container slot', () => {
+			const store = new Store({defaultSpan: null})
+			expect(store.slot.container.get()).toEqual(['div', undefined])
+		})
+
+		it('should return default block slot', () => {
+			const store = new Store({defaultSpan: null})
+			expect(store.slot.block.get()).toEqual(['div', undefined])
+		})
+
+		it('should return default span slot', () => {
+			const store = new Store({defaultSpan: null})
+			expect(store.slot.span.get()).toEqual(['span', undefined])
+		})
+
+		it('should resolve custom container slot', () => {
+			const store = new Store({defaultSpan: null})
+			store.state.slots.set({container: 'section'})
+			expect(store.slot.container.get()).toEqual(['section', undefined])
+		})
+
+		it('should resolve custom slot with props', () => {
+			const store = new Store({defaultSpan: null})
+			store.state.slots.set({span: 'strong'})
+			store.state.slotProps.set({span: {className: 'bold'}})
+			const [, props] = store.slot.span.get()
+			expect(props).toEqual({className: 'bold'})
+		})
+
+		it('should resolve mark slot for text token using defaultSpan', () => {
+			const store = new Store({defaultSpan: 'span'})
+			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
+			const [component, props] = store.slot.mark.get(token)
+			expect(component).toBe('span')
+			expect(props).toEqual({value: 'hello'})
+		})
+
+		it('should throw for mark token without Mark component', () => {
+			const store = new Store({defaultSpan: null})
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for test, token shape is intentionally partial
+			const token = {
+				type: 'mark',
+				value: '@john',
+				meta: undefined,
+				descriptor: {index: 0},
+				position: {start: 0, end: 5},
+			} as any
+			expect(() => store.slot.mark.get(token)).toThrow('No mark component found')
+		})
+	})
 })
