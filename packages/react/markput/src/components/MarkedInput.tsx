@@ -1,4 +1,4 @@
-import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
+import type {CoreSlotProps, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useLayoutEffect, useState} from 'react'
@@ -85,16 +85,14 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps
 	const {ref, ...rest} = props
 	// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
 	const slotProps = props.slotProps as CoreSlotProps
-	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
-	const style = rest.style as StyleProperties | undefined
 	const [store] = useState(() => {
 		const nextStore = new Store()
-		nextStore.setState({...rest, style, baseClassName: styles.Container, slotProps})
+		nextStore.setState({...rest, style: rest.style, baseClassName: styles.Container, slotProps})
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.setState({...rest, style, baseClassName: styles.Container, slotProps})
+		store.setState({...rest, style: rest.style, baseClassName: styles.Container, slotProps})
 	})
 
 	useCoreFeatures(store, ref)
