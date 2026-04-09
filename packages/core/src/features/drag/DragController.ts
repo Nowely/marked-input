@@ -48,8 +48,8 @@ export class DragController {
 	}
 
 	#createRowContent(): string {
-		const firstOption = this.store.state.options.get()?.[0]
-		if (!firstOption?.markup) return '\n'
+		const firstOption = this.store.state.options.get()[0]
+		if (!firstOption.markup) return '\n'
 		return annotate(firstOption.markup, {value: '', slot: '', meta: ''})
 	}
 }

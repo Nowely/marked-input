@@ -35,7 +35,6 @@ export class OverlayController {
 
 			watch(this.store.events.change, () => {
 				const showOverlayOn = this.store.state.showOverlayOn.get()
-				if (!showOverlayOn) return
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -46,7 +45,6 @@ export class OverlayController {
 
 		const selectionChangeHandler = () => {
 			const showOverlayOn = this.store.state.showOverlayOn.get()
-			if (!showOverlayOn) return
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
