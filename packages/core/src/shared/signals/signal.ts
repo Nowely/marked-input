@@ -1,4 +1,11 @@
-import {signal as alienSignal, effect as alienEffect, setActiveSub, startBatch, endBatch} from './alien-signals'
+import {
+	signal as alienSignal,
+	effect as alienEffect,
+	computed as alienComputed,
+	setActiveSub,
+	startBatch,
+	endBatch,
+} from './alien-signals'
 import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
@@ -167,6 +174,31 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	}
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+	return callable
+}
+
+// ---------------------------------------------------------------------------
+// Computed<T> — derived reactive value
+// ---------------------------------------------------------------------------
+
+export interface Computed<T> {
+	(): T
+	get(): T
+	use(): T
+}
+
+export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
+	const inner = alienComputed(getter)
+
+	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
+	const callable = function computedCallable(): T {
+		return inner()
+	} as unknown as Computed<T>
+
+	callable.get = () => inner()
+	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
+	callable.use = (() => getUseHookFactory()(callable)()) as Computed<T>['use']
+
 	return callable
 }
 
