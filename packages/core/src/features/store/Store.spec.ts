@@ -169,34 +169,34 @@ describe('Store', () => {
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
 		})
 
 		it('should return style only when no slotProps.container.style', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 		})
 
 		it('should return undefined when nothing is set', () => {
 			const store = new Store()
-			expect(store.state.containerStyle.get()).toBeUndefined()
+			expect(store.computed.containerStyle.get()).toBeUndefined()
 		})
 
 		it('should react to style changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({style: {color: 'blue'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'blue'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'blue'})
 		})
 
 		it('should react to slotProps changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
 		})
 	})
 })

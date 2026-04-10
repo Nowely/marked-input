@@ -14,8 +14,8 @@ watch(tokens, () => store.events.afterTokensRendered.emit(), {flush: 'post', imm
 
 const slotsRef = store.state.slots.use()
 const slotPropsRef = store.state.slotProps.use()
-const className = store.state.containerClass.use()
-const style = store.state.containerStyle.use() as unknown as Ref<CSSProperties | undefined>
+const className = store.computed.containerClass.use()
+const style = store.computed.containerStyle.use() as unknown as Ref<CSSProperties | undefined>
 const key = store.key
 
 const containerSlot = computed(() => {

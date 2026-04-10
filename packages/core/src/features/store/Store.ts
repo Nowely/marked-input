@@ -37,10 +37,12 @@ type StoreState = {
 	Overlay: Signal<GenericComponent | undefined>
 	className: Signal<string | undefined>
 	style: Signal<CSSProperties | undefined>
-	containerClass: Computed<string | undefined>
-	containerStyle: Computed<CSSProperties | undefined>
 	slots: Signal<CoreSlots | undefined>
 	slotProps: Signal<CoreSlotProps | undefined>
+}
+type StoreComputed = {
+	containerClass: Computed<string | undefined>
+	containerStyle: Computed<CSSProperties | undefined>
 }
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
@@ -104,6 +106,13 @@ export class Store {
 		// Styling
 		className: signal<string | undefined>(undefined),
 		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
+
+		// Slot system
+		slots: signal<CoreSlots | undefined>(undefined),
+		slotProps: signal<CoreSlotProps | undefined>(undefined),
+	}
+
+	readonly computed: StoreComputed = {
 		containerClass: computed(() =>
 			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
 		),
@@ -111,10 +120,6 @@ export class Store {
 			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
 			return prev && shallow(prev, next) ? prev : next
 		}),
-
-		// Slot system
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
 	readonly slot = createSlots({
@@ -165,15 +170,10 @@ export class Store {
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
-			const state = this.state
-			for (const k in values) {
-				if (typeof k !== 'string' || !(k in state)) continue
-				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-				const sig = state[k as keyof StoreState]
-				if ('set' in sig) {
-					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-					sig.set(values[k as keyof typeof values] as never)
-				}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+			for (const key of Object.keys(values) as (keyof StoreState)[]) {
+				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+				this.state[key].set(values[key] as never)
 			}
 		})
 	}

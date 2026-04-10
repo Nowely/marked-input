@@ -13,8 +13,8 @@ export const Container = memo(() => {
 		store.events.afterTokensRendered.emit()
 	}, [tokens])
 
-	const className = store.state.containerClass.use()
-	const style = store.state.containerStyle.use()
+	const className = store.computed.containerClass.use()
+	const style = store.computed.containerStyle.use()
 	const readOnly = store.state.readOnly.use()
 	const key = store.key
 	const refs = store.refs
