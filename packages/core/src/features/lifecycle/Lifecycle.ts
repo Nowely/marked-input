@@ -13,12 +13,7 @@ export class Lifecycle {
 	#onUpdated() {
 		if (!this.#enabled) {
 			this.enable()
-			this.store.features.parse.sync()
 			return
-		}
-		if (!this.store.features.parse.hasChanged()) return
-		if (!this.store.state.recovery()) {
-			this.store.event.parse()
 		}
 	}
 

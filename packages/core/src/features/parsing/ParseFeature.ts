@@ -14,8 +14,10 @@ export class ParseFeature {
 
 	enable() {
 		if (this.#scope) return
+		this.sync()
 		this.#scope = effectScope(() => {
 			this.#subscribeParse()
+			this.#subscribeUpdated()
 		})
 	}
 
@@ -55,6 +57,17 @@ export class ParseFeature {
 				return
 			}
 			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		})
+	}
+
+	#subscribeUpdated() {
+		const {store} = this
+
+		watch(store.event.updated, () => {
+			if (!this.hasChanged()) return
+			if (!store.state.recovery()) {
+				store.event.parse()
+			}
 		})
 	}
 }
