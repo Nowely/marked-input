@@ -19,8 +19,27 @@ export {annotate, denote} from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 
 // Reactive system
-export type {Signal, Computed, Event, UseHookFactory} from './src/shared/signals'
-export {setUseHookFactory, getUseHookFactory, effect, event, signal, computed, watch, batch} from './src/shared/signals'
+export type {
+	Signal,
+	Computed,
+	Event,
+	UseHookFactory,
+	Subscribable,
+	LifecycleAdapter,
+	LifecycleAdapterFactory,
+} from './src/shared/signals'
+export {
+	setUseHookFactory,
+	getUseHookFactory,
+	setLifecycleAdapterFactory,
+	getLifecycleAdapterFactory,
+	effect,
+	event,
+	signal,
+	computed,
+	watch,
+	batch,
+} from './src/shared/signals'
 
 // Store
 export {Store} from './src/features/store'

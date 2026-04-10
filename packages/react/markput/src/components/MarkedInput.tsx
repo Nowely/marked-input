@@ -5,6 +5,8 @@ import {useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
+// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React lifecycle adapter factory via setLifecycleAdapterFactory
+import '../lib/hooks/createLifecycleAdapter'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'

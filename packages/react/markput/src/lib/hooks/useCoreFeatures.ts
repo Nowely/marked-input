@@ -1,24 +1,14 @@
 import type {MarkputHandler, Store} from '@markput/core'
-import {useEffect, useImperativeHandle, useLayoutEffect} from 'react'
+import {getLifecycleAdapterFactory} from '@markput/core'
+import {useImperativeHandle} from 'react'
 
 export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | undefined) {
 	useImperativeHandle(ref, () => store.handler, [store])
 
-	useEffect(() => {
-		store.lifecycle.enable()
-		return () => store.lifecycle.disable()
-	}, [])
-
-	const value = store.state.value.use()
-	const Mark = store.state.Mark.use()
-	const coreOptions = store.state.options.use()
-	const tokens = store.state.tokens.use()
-
-	useEffect(() => {
-		store.lifecycle.syncParser()
-	}, [value, Mark, coreOptions])
-
-	useLayoutEffect(() => {
-		store.lifecycle.recoverFocus()
-	}, [tokens])
+	// oxlint-disable-next-line no-non-null-assertion -- factory is always registered via side-effect import in MarkedInput.tsx
+	const adapter = getLifecycleAdapterFactory()!()
+	store.lifecycle.setup(adapter)
+	// activate() registers React hooks (useEffect/useLayoutEffect) — React-specific extension
+	// oxlint-disable-next-line no-unsafe-type-assertion -- React adapter always has activate(); core interface doesn't expose it
+	;(adapter as unknown as {activate(): void}).activate()
 }

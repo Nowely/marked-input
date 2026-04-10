@@ -4,6 +4,8 @@ import {provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
+// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue lifecycle adapter factory via setLifecycleAdapterFactory
+import '../lib/hooks/createLifecycleAdapter'
 import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'

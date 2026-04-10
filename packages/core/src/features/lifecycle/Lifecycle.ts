@@ -1,4 +1,5 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
+import type {LifecycleAdapter} from '../../shared/signals/lifecycle-adapter'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
@@ -9,6 +10,15 @@ export class Lifecycle {
 	#initialized = false
 
 	constructor(private store: Store) {}
+
+	setup(adapter: LifecycleAdapter): void {
+		adapter.onMount(() => this.enable())
+		adapter.onUnmount(() => this.disable())
+		adapter.watchPostRender([this.store.state.value, this.store.state.Mark, this.store.state.options], () =>
+			this.syncParser()
+		)
+		adapter.watchPostCommit(this.store.state.tokens, () => this.recoverFocus())
+	}
 
 	enable() {
 		if (this.#scope) return
