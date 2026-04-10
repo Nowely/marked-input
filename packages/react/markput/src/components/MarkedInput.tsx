@@ -80,11 +80,9 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
 	const [store] = useState(() => new Store())
-
 	store.setState(props)
 
 	useLayoutEffect(() => store.on.updated.emit())
-
 	useEffect(() => () => store.on.unmounted.emit(), [store])
 
 	useImperativeHandle(props.ref, () => store.handler, [store])
