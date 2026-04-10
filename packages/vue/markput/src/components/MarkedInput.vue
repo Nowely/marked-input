@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import {Store} from '@markput/core'
-import {provide, shallowRef, watch} from 'vue'
+import {onMounted, onUnmounted, onUpdated, provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
-import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
@@ -60,7 +59,9 @@ watch(
 	syncProps
 )
 
-useCoreFeatures(store.value)
+onMounted(() => store.value.event.updated())
+onUpdated(() => store.value.event.updated())
+onUnmounted(() => store.value.event.unmounted())
 
 defineExpose(store.value.handler)
 </script>

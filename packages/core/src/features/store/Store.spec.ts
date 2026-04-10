@@ -28,9 +28,9 @@ describe('Store', () => {
 
 	it('should have events', () => {
 		const store = new Store()
-		expect(typeof store.events.parse).toBe('function')
-		expect(typeof store.events.change).toBe('function')
-		expect(typeof store.events.delete).toBe('function')
+		expect(typeof store.event.parse).toBe('function')
+		expect(typeof store.event.change).toBe('function')
+		expect(typeof store.event.delete).toBe('function')
 	})
 
 	describe('handler', () => {
@@ -169,34 +169,75 @@ describe('Store', () => {
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
 		})
 
 		it('should return style only when no slotProps.container.style', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 		})
 
 		it('should return undefined when nothing is set', () => {
 			const store = new Store()
-			expect(store.state.containerStyle.get()).toBeUndefined()
+			expect(store.computed.containerStyle.get()).toBeUndefined()
 		})
 
 		it('should react to style changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({style: {color: 'blue'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'blue'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'blue'})
 		})
 
 		it('should react to slotProps changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
 			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
-			expect(store.state.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+		})
+	})
+
+	describe('hasMark (computed)', () => {
+		it('should return false when no Mark override and no per-option Mark', () => {
+			const store = new Store()
+			expect(store.computed.hasMark.get()).toBe(false)
+		})
+
+		it('should return true when Mark override is set', () => {
+			const store = new Store()
+			store.state.Mark.set(() => null)
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return true when option has per-option Mark', () => {
+			const store = new Store()
+			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return true when Mark override is set even without per-option Mark', () => {
+			const store = new Store()
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return false when option has Mark set to null', () => {
+			const store = new Store()
+			store.state.options.set([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
+			expect(store.computed.hasMark.get()).toBe(false)
+		})
+
+		it('should react to Mark override changes', () => {
+			const store = new Store()
+			expect(store.computed.hasMark.get()).toBe(false)
+			store.state.Mark.set(() => null)
+			expect(store.computed.hasMark.get()).toBe(true)
+			store.state.Mark.set(undefined)
+			expect(store.computed.hasMark.get()).toBe(false)
 		})
 	})
 })

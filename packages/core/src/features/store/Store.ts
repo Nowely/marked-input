@@ -1,7 +1,7 @@
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {signal, computed, event, batch} from '../../shared/signals'
-import type {Signal, Computed, SignalValues} from '../../shared/signals'
+import type {SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -13,38 +13,10 @@ import type {
 	CoreSlotProps,
 	DragAction,
 } from '../../shared/types'
-
-import styles from '../../../styles.module.css'
-
-type StoreState = {
-	tokens: Signal<Token[]>
-	parser: Signal<Parser | undefined>
-	value: Signal<string | undefined>
-	defaultValue: Signal<string | undefined>
-	previousValue: Signal<string | undefined>
-	innerValue: Signal<string | undefined>
-	recovery: Signal<Recovery | undefined>
-	selecting: Signal<'drag' | 'all' | undefined>
-	drag: Signal<boolean | {alwaysShowHandle: boolean}>
-	overlayMatch: Signal<OverlayMatch | undefined>
-	overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
-	showOverlayOn: Signal<OverlayTrigger>
-	onChange: Signal<((value: string) => void) | undefined>
-	options: Signal<CoreOption[]>
-	readOnly: Signal<boolean>
-	Span: Signal<GenericComponent | undefined>
-	Mark: Signal<GenericComponent | undefined>
-	Overlay: Signal<GenericComponent | undefined>
-	className: Signal<string | undefined>
-	style: Signal<CSSProperties | undefined>
-	containerClass: Computed<string | undefined>
-	containerStyle: Computed<CSSProperties | undefined>
-	slots: Signal<CoreSlots | undefined>
-	slotProps: Signal<CoreSlotProps | undefined>
-}
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
+import {ArrowNavFeature} from '../arrownav'
 import {BlockEditFeature} from '../block-editing'
 import {CopyFeature} from '../clipboard'
 import {DragFeature} from '../drag'
@@ -52,12 +24,14 @@ import {ContentEditableFeature} from '../editable'
 import {SystemListenerFeature} from '../events'
 import {FocusFeature} from '../focus'
 import {InputFeature} from '../input'
-import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
 import {OverlayFeature} from '../overlay'
-import type {Parser, Token} from '../parsing'
+import {Parser} from '../parsing'
+import type {Token} from '../parsing'
 import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
+
+import styles from '../../../styles.module.css'
 
 export type {DragAction} from '../../shared/types'
 
@@ -70,10 +44,9 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: StoreState = {
+	readonly state = {
 		// Data
 		tokens: signal<Token[]>([]),
-		parser: signal<Parser | undefined>(undefined),
 		value: signal<string | undefined>(undefined),
 		defaultValue: signal<string | undefined>(undefined),
 		previousValue: signal<string | undefined>(undefined),
@@ -104,6 +77,27 @@ export class Store {
 		// Styling
 		className: signal<string | undefined>(undefined),
 		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
+
+		// Slot system
+		slots: signal<CoreSlots | undefined>(undefined),
+		slotProps: signal<CoreSlotProps | undefined>(undefined),
+	}
+
+	readonly computed = {
+		hasMark: computed(() => {
+			const Mark = this.state.Mark.get()
+			if (Mark) return true
+			return this.state.options.get().some(opt => 'Mark' in opt && opt.Mark != null)
+		}),
+		parser: computed(() => {
+			if (!this.computed.hasMark.get()) return
+
+			const markups = this.state.options.get().map(opt => opt.markup)
+			if (!markups.some(Boolean)) return
+
+			const isDrag = !!this.state.drag.get()
+			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
+		}),
 		containerClass: computed(() =>
 			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
 		),
@@ -111,10 +105,6 @@ export class Store {
 			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
 			return prev && shallow(prev, next) ? prev : next
 		}),
-
-		// Slot system
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
 	readonly slot = createSlots({
@@ -126,7 +116,7 @@ export class Store {
 		Span: this.state.Span,
 	})
 
-	readonly events = {
+	readonly event = {
 		change: event(),
 		parse: event(),
 		delete: event<{token: Token}>(),
@@ -136,6 +126,9 @@ export class Store {
 		sync: event(),
 		recoverFocus: event(),
 		dragAction: event<DragAction>(),
+		updated: event(),
+		afterTokensRendered: event(),
+		unmounted: event(),
 	}
 
 	readonly refs = {
@@ -150,7 +143,7 @@ export class Store {
 		focus: new FocusFeature(this),
 		input: new InputFeature(this),
 		blockEditing: new BlockEditFeature(this),
-		keynav: new KeyNavFeature(this),
+		arrowNav: new ArrowNavFeature(this),
 		system: new SystemListenerFeature(this),
 		textSelection: new TextSelectionFeature(this),
 		contentEditable: new ContentEditableFeature(this),
@@ -163,14 +156,11 @@ export class Store {
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
 			const state = this.state
-			for (const k in values) {
-				if (typeof k !== 'string' || !(k in state)) continue
-				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-				const sig = state[k as keyof StoreState]
-				if ('set' in sig) {
-					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous map: per-key signal types verified by SignalValues<T> at the call site
-					sig.set(values[k as keyof typeof values] as never)
-				}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
+				if (!(key in state)) continue
+				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+				state[key].set(values[key] as never)
 			}
 		})
 	}

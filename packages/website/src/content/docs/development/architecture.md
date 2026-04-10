@@ -83,11 +83,11 @@ Both framework adapters share the same component structure:
         ↓
 2. ContentEditableFeature detects input
         ↓
-3. store.events.change() emitted
+3. store.event.change() emitted
         ↓
 4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
-5. store.events.parse() emitted
+5. store.event.parse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusFeature restores caret position via store.events.recoverFocus
+9. FocusFeature restores caret position via store.event.recoverFocus
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -105,7 +105,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. store.events.checkOverlay() emitted
+2. store.event.checkOverlay() emitted
         ↓
 3. OverlayFeature checks for trigger match
         ↓
@@ -119,11 +119,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 7. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-8. store.events.select() emitted
+8. store.event.select() emitted
         ↓
 9. Markup inserted, onChange called with new text
         ↓
-10. store.events.clearOverlay() closes overlay
+10. store.event.clearOverlay() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -213,7 +213,7 @@ For nested marks like `**bold @[mention]**`:
 
 Events use `event<T>()` to create typed emitters backed by reactive signals:
 
-- **`Event<T>`** — call `.emit(payload)` to fire (for `void` events, `.emit()` with no arguments); subscribable via `watch(event, fn)`
+- **`Event<T>`** — call `event(payload)` to fire; use `event.read()` to read/subscribe; subscribable via `watch(event, fn)`
 
 ### Store Events
 
@@ -227,23 +227,26 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `delete`        | Mark deleted                | `{ token: Token }`               |
 | `sync`          | Value/options sync needed   | `void`                           |
 | `recoverFocus`  | Focus recovery after render | `void`                           |
+| `updated`       | Framework mount/update      | `void`                           |
+| `afterTokensRendered` | After tokens render  | `void`                           |
+| `unmounted`     | Framework unmount           | `void`                           |
 | `dragAction`    | Drag-and-drop action        | `{ type: string, token: Token }` |
 
 ### Event Usage
 
 ```typescript
 // Emit a void event
-store.events.change.emit()
+store.event.change()
 
 // Emit a payload event
-store.events.delete.emit({ token })
+store.event.delete({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.events.change,
+        store.event.change,
         () => {
             console.log('Text changed')
         }
@@ -289,10 +292,17 @@ class Store {
     }
 
     readonly state: StateObject<MarkputState>
-    // Properties: tokens, parser, previousValue, recovery, selecting,
+    // Properties: tokens, previousValue, recovery, selecting,
     // overlayMatch, value, defaultValue, onChange, readOnly, options,
     // showOverlayOn, Span, Mark, Overlay, className, style, slots,
     // slotProps, drag
+
+    readonly computed: {
+        hasMark: Computed<boolean>
+        parser: Computed<Parser | undefined>
+        containerClass: Computed<string | undefined>
+        containerStyle: Computed<CSSProperties | undefined>
+    }
 
     readonly slot: {
         container: { use(): readonly [Component, SlotProps] }
@@ -300,16 +310,19 @@ class Store {
         span: { use(): readonly [Component, SlotProps] }
     }
 
-    readonly events: {
-        change: VoidEvent
-        parse: VoidEvent
-        delete: PayloadEvent<{ token: Token }>
-        select: PayloadEvent<{ mark: Token; match: OverlayMatch }>
-        clearOverlay: VoidEvent
-        checkOverlay: VoidEvent
-        sync: VoidEvent
-        recoverFocus: VoidEvent
-        dragAction: PayloadEvent<{ type: string; token: Token }>
+    readonly event: {
+        change: Event<void>
+        parse: Event<void>
+        delete: Event<{ token: Token }>
+        select: Event<{ mark: Token; match: OverlayMatch }>
+        clearOverlay: Event<void>
+        checkOverlay: Event<void>
+        sync: Event<void>
+        recoverFocus: Event<void>
+        dragAction: Event<{ type: string; token: Token }>
+        updated: Event<void>
+        afterTokensRendered: Event<void>
+        unmounted: Event<void>
     }
 
     readonly refs: {
@@ -320,7 +333,7 @@ class Store {
     readonly features: {
         input: InputFeature
         blockEdit: BlockEditFeature
-        keyNav: KeyNavFeature
+        arrowNav: ArrowNavFeature
         overlay: OverlayFeature
         focus: FocusFeature
         system: SystemListenerFeature
@@ -352,13 +365,13 @@ const tokens = store.state.tokens.use()
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.events` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.event` (emitters), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **InputFeature**              | Handles text input events, character insertion           |
 | **BlockEditFeature**          | Block-level editing operations (delete, split, merge)    |
-| **KeyNavFeature**             | Keyboard navigation between tokens                       |
+| **ArrowNavFeature**           | Keyboard navigation between tokens                       |
 | **FocusFeature**              | Caret tracking, focus recovery after re-renders          |
 | **OverlayFeature**            | Overlay trigger detection, position, open/close          |
 | **TextSelectionFeature**      | Text selection state tracking                            |
@@ -367,26 +380,28 @@ const tokens = store.state.tokens.use()
 | **DragFeature**               | Drag-and-drop reordering of blocks                       |
 | **CopyFeature**               | Clipboard copy/cut handling                              |
 
-The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `KeyNavFeature` (keyboard navigation).
+The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `ArrowNavFeature` (keyboard navigation).
 
-Managed by `FeatureManager`, which allows selective feature activation.
+Managed by `Lifecycle`, which enables/disables all features as a unit.
 
 ## Lifecycle Timing
 
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Enable features and event subscriptions
-lifecycle.enable()
+// 1. Framework emits store.event.updated() on mount/update
 
-// 2. Sync parser with value/options via store.events.sync
+// 2. Lifecycle enables and syncs on first updated()
+lifecycle.enable()
 lifecycle.syncParser(value, options)
 
 // 3. Sync contenteditable attributes (layout effect)
 contentEditable.sync()
 
-// 4. Recover focus after DOM commits via store.events.recoverFocus
-lifecycle.recoverFocus()
+// 4. Framework emits store.event.afterTokensRendered() after tokens render
+
+// 5. Framework emits store.event.unmounted() on unmount
+lifecycle.disable()
 ```
 
 ## Block System (Drag Mode)

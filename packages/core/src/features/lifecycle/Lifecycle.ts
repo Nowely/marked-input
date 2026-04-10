@@ -1,14 +1,53 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
-import {createCoreFeatures} from '../feature-manager'
-import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
+import {toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
+import type {Parser} from '../parsing'
 import type {Store} from '../store'
 
 export class Lifecycle {
 	#scope?: () => void
-	#stopFeatures?: () => void
+	#featuresEnabled = false
 	#initialized = false
+	#lastValue: string | undefined
+	#lastParser: Parser | undefined
 
-	constructor(private store: Store) {}
+	constructor(private store: Store) {
+		// Permanent watches — bridge from framework lifecycle events to Lifecycle methods.
+		// These live for the Store's lifetime so that remount (e.g., React strict mode)
+		// correctly re-triggers enable/sync via store.event.updated().
+		watch(store.event.updated, () => this.#onUpdated())
+		watch(store.event.afterTokensRendered, () => this.recoverFocus())
+		watch(store.event.unmounted, () => this.disable())
+	}
+
+	#onUpdated() {
+		if (!this.#scope) {
+			this.enable()
+			this.syncParser()
+			return
+		}
+		const value = this.store.state.value.get()
+		const parser = this.store.computed.parser.get()
+		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return
+		this.#lastValue = value
+		this.#lastParser = parser
+		if (!this.store.state.recovery.get()) {
+			this.store.event.parse()
+		}
+	}
+
+	#enableFeatures() {
+		if (this.#featuresEnabled) return
+		this.#featuresEnabled = true
+		const {features} = this.store
+		for (const f of Object.values(features)) f.enable()
+	}
+
+	#disableFeatures() {
+		if (!this.#featuresEnabled) return
+		this.#featuresEnabled = false
+		const {features} = this.store
+		for (const f of Object.values(features)) f.disable()
+	}
 
 	enable() {
 		if (this.#scope) return
@@ -17,9 +56,7 @@ export class Lifecycle {
 
 		store.state.overlayTrigger.set(option => option.overlay?.trigger)
 
-		const features = createCoreFeatures(store)
-		features.enableAll()
-		this.#stopFeatures = () => features.disableAll()
+		this.#enableFeatures()
 
 		this.#scope = effectScope(() => {
 			this.#subscribeParse()
@@ -29,63 +66,31 @@ export class Lifecycle {
 	disable() {
 		this.#scope?.()
 		this.#scope = undefined
-		this.#stopFeatures?.()
-		this.#stopFeatures = undefined
+		this.#disableFeatures()
 		this.store.state.overlayTrigger.set(undefined)
 		this.#initialized = false
 	}
 
 	syncParser() {
 		const {store} = this
-
-		const options = this.#getEffectiveOptions()
-
-		const markups = options?.map(opt => opt.markup)
-		if (markups?.some(Boolean)) {
-			const isDrag = !!store.state.drag.get()
-			const parseOptions = isDrag ? {skipEmptyText: true} : undefined
-			store.state.parser.set(new Parser(markups, parseOptions))
-		} else {
-			store.state.parser.set(undefined)
-		}
-
-		if (this.#initialized) {
-			if (!store.state.recovery.get()) {
-				store.events.parse.emit()
-			}
-			return
-		}
-
 		const inputValue = store.state.value.get() ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
 		store.state.previousValue.set(inputValue)
-
+		this.#lastValue = store.state.value.get()
+		this.#lastParser = store.computed.parser.get()
 		this.#initialized = true
 	}
 
-	#getEffectiveOptions() {
-		const Mark = this.store.state.Mark.get()
-		const coreOptions = this.store.state.options.get()
-		const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
-			opt =>
-				typeof opt === 'object' &&
-				opt !== null &&
-				'Mark' in opt &&
-				(opt as Record<string, unknown>).Mark != null
-		)
-		return Mark || hasPerOptionMark ? coreOptions : undefined
-	}
-
 	recoverFocus() {
-		this.store.events.sync.emit()
+		this.store.event.sync()
 		if (!this.store.state.Mark.get()) return
-		this.store.events.recoverFocus.emit()
+		this.store.event.recoverFocus()
 	}
 
 	#subscribeParse() {
 		const {store} = this
 
-		watch(store.events.parse, () => {
+		watch(store.event.parse, () => {
 			if (store.state.recovery.get()) {
 				const text = toString(store.state.tokens.get())
 				store.state.tokens.set(parseWithParser(store, text))

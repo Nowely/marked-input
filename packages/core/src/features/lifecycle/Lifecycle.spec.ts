@@ -3,20 +3,17 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionFeature etc.)
-vi.mock('../feature-manager', () => ({
-	createCoreFeatures: () => ({
-		enableAll: vi.fn(),
-		disableAll: vi.fn(),
-	}),
-}))
-
 describe('Lifecycle', () => {
 	let store: Store
 
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
+		const features = store.features as Record<string, {enable(): void; disable(): void}>
+		for (const key of Object.keys(features)) {
+			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+		}
 	})
 
 	describe('enable()', () => {
@@ -77,7 +74,7 @@ describe('Lifecycle', () => {
 
 			// After disable, emitting parse should NOT update tokens
 			const tokensBefore = store.state.tokens.get()
-			store.events.parse.emit()
+			store.event.parse()
 			const tokensAfter = store.state.tokens.get()
 
 			expect(tokensAfter).toBe(tokensBefore)
@@ -122,7 +119,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeUndefined()
+			expect(store.computed.parser.get()).toBeUndefined()
 
 			lifecycle.disable()
 		})
@@ -135,7 +132,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeDefined()
+			expect(store.computed.parser.get()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -147,7 +144,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeDefined()
+			expect(store.computed.parser.get()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -161,11 +158,32 @@ describe('Lifecycle', () => {
 
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
-			store.events.parse.emit()
+			store.event.parse()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'initial', position: {start: 0, end: 7}}])
 			expect(store.state.previousValue.get()).toBe('initial')
+
+			lifecycle.disable()
+		})
+
+		it('parser auto-updates when drag changes (computed reactivity)', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
+
+			const parserBefore = store.computed.parser.get()
+			expect(parserBefore).toBeDefined()
+
+			store.state.drag.set(true)
+			const parserAfter = store.computed.parser.get()
+
+			expect(parserAfter).toBeDefined()
+			expect(parserAfter).not.toBe(parserBefore)
 
 			lifecycle.disable()
 		})
@@ -197,7 +215,7 @@ describe('Lifecycle', () => {
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
 			// Emit parse — should re-parse from token text
-			store.events.parse.emit()
+			store.event.parse()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
@@ -216,7 +234,7 @@ describe('Lifecycle', () => {
 
 			const setSpy = vi.spyOn(store.state.tokens, 'set')
 
-			store.events.parse.emit()
+			store.event.parse()
 			expect(setSpy).toHaveBeenCalledTimes(1)
 
 			setSpy.mockClear()
@@ -224,6 +242,125 @@ describe('Lifecycle', () => {
 			expect(setSpy).not.toHaveBeenCalled()
 
 			lifecycle.disable()
+		})
+	})
+
+	describe('lifecycle events', () => {
+		it('updated() first call triggers enable() and syncParser()', () => {
+			const lifecycle = store.lifecycle
+			store.state.value.set('hello')
+
+			const enableSpy = vi.spyOn(lifecycle, 'enable')
+			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
+
+			store.event.updated()
+
+			expect(enableSpy).toHaveBeenCalledOnce()
+			expect(syncParserSpy).toHaveBeenCalledOnce()
+			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+
+			store.event.unmounted()
+		})
+
+		it('updated() subsequent call with unchanged deps skips parse()', () => {
+			store.state.value.set('hello')
+			store.event.updated()
+
+			const parseSpy = vi.spyOn(store.event, 'parse')
+			store.event.updated()
+
+			expect(parseSpy).not.toHaveBeenCalled()
+
+			store.event.unmounted()
+		})
+
+		it('updated() emits parse when value changes', () => {
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			store.state.value.set('hello')
+			store.event.updated()
+
+			store.state.value.set('world')
+			const parseSpy = vi.spyOn(store.event, 'parse').mockImplementation(() => {})
+			store.event.updated()
+
+			expect(parseSpy).toHaveBeenCalledOnce()
+			parseSpy.mockRestore()
+
+			store.event.unmounted()
+		})
+
+		it('updated() does not call sync or recoverFocus (committed handles those)', () => {
+			store.state.Mark.set(() => null)
+			store.state.value.set('hello')
+
+			const syncSpy = vi.spyOn(store.event, 'sync')
+			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
+			store.event.updated()
+
+			expect(syncSpy).not.toHaveBeenCalled()
+			expect(recoverFocusSpy).not.toHaveBeenCalled()
+
+			store.event.unmounted()
+		})
+
+		it('afterTokensRendered() always calls sync', () => {
+			store.event.updated()
+
+			const syncSpy = vi.spyOn(store.event, 'sync')
+			store.event.afterTokensRendered()
+
+			expect(syncSpy).toHaveBeenCalledOnce()
+
+			store.event.unmounted()
+		})
+
+		it('afterTokensRendered() calls recoverFocus when Mark is set', () => {
+			store.state.Mark.set(() => null)
+			store.event.updated()
+
+			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
+			store.event.afterTokensRendered()
+
+			expect(recoverFocusSpy).toHaveBeenCalledOnce()
+
+			store.event.unmounted()
+		})
+
+		it('afterTokensRendered() does not call recoverFocus when Mark is not set', () => {
+			store.event.updated()
+
+			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
+			store.event.afterTokensRendered()
+
+			expect(recoverFocusSpy).not.toHaveBeenCalled()
+
+			store.event.unmounted()
+		})
+
+		it('unmounted() triggers disable()', () => {
+			const lifecycle = store.lifecycle
+			store.event.updated()
+
+			const disableSpy = vi.spyOn(lifecycle, 'disable')
+			store.event.unmounted()
+
+			expect(disableSpy).toHaveBeenCalledOnce()
+		})
+
+		it('remount: unmounted then updated re-enables and re-syncs', () => {
+			store.state.value.set('first')
+			store.event.updated()
+			store.event.unmounted()
+
+			store.state.value.set('second')
+			const enableSpy = vi.spyOn(store.lifecycle, 'enable')
+			store.event.updated()
+
+			expect(enableSpy).toHaveBeenCalledOnce()
+			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+
+			store.event.unmounted()
 		})
 	})
 })

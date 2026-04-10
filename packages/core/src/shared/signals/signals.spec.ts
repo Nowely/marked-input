@@ -250,12 +250,12 @@ describe('event<T>()', () => {
 
 	it('should return undefined before first emit', () => {
 		const ev = event<string>()
-		expect(ev()).toBeUndefined()
+		expect(ev.read()).toBeUndefined()
 	})
 
 	it('should return void event undefined before first emit', () => {
 		const ev = event()
-		expect(ev()).toBeUndefined()
+		expect(ev.read()).toBeUndefined()
 	})
 
 	it('should auto-track inside effect and re-run when emitted', () => {
@@ -263,12 +263,12 @@ describe('event<T>()', () => {
 		const runs = vi.fn()
 
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			runs()
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit(42)
+		ev(42)
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
@@ -277,12 +277,12 @@ describe('event<T>()', () => {
 		const runs = vi.fn()
 
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			runs()
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit()
+		ev()
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
@@ -291,11 +291,11 @@ describe('event<T>()', () => {
 		let captured: number | undefined
 
 		trackedEffect(() => {
-			captured = ev()
+			captured = ev.read()
 		})
 
 		expect(captured).toBeUndefined()
-		ev.emit(42)
+		ev(42)
 		expect(captured).toBe(42)
 	})
 
@@ -305,14 +305,14 @@ describe('event<T>()', () => {
 		const runs = vi.fn()
 
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			runs()
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		ev.emit(payload)
+		ev(payload)
 		expect(runs).toHaveBeenCalledTimes(2)
-		ev.emit(payload) // same reference
+		ev(payload) // same reference
 		expect(runs).toHaveBeenCalledTimes(3)
 	})
 
@@ -322,28 +322,28 @@ describe('event<T>()', () => {
 		const runsB = vi.fn()
 
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			runsA()
 		})
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			runsB()
 		})
 
 		expect(runsA).toHaveBeenCalledTimes(1)
 		expect(runsB).toHaveBeenCalledTimes(1)
 
-		ev.emit()
+		ev()
 		expect(runsA).toHaveBeenCalledTimes(2)
 		expect(runsB).toHaveBeenCalledTimes(2)
 	})
 
-	it('should not cause infinite loop when e() called inside effect', () => {
+	it('should not cause infinite loop when e.read() called inside effect', () => {
 		const ev = event()
 		let count = 0
 
 		trackedEffect(() => {
-			ev()
+			ev.read()
 			count++
 		})
 
@@ -358,7 +358,7 @@ describe('event<T>()', () => {
 		const ev = event<number>()
 		const result = ev.use()
 
-		expect(factory).toHaveBeenCalledWith(ev)
+		expect(factory).toHaveBeenCalledWith(ev.read)
 		expect(mockHook).toHaveBeenCalled()
 		expect(result).toBe('event-hook')
 	})
@@ -430,20 +430,20 @@ describe('watch()', () => {
 		const runs = vi.fn()
 
 		trackedEffect(() => {
-			emitted()
+			emitted.read()
 			runs()
 		})
 
 		const dispose = watch(
-			() => source(),
+			() => source.read(),
 			() => {
-				emitted.emit()
+				emitted()
 			}
 		)
 		disposers.push(dispose)
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		source.emit()
+		source()
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
@@ -453,9 +453,9 @@ describe('watch()', () => {
 		const seen: number[] = []
 
 		const dispose = watch(
-			() => source(),
+			() => source.read(),
 			() => {
-				const latest = source()
+				const latest = source.read()
 				if (latest !== undefined) {
 					seen.push(latest)
 				}
@@ -464,13 +464,13 @@ describe('watch()', () => {
 		)
 		disposers.push(dispose)
 
-		source.emit(1)
+		source(1)
 		expect(seen).toEqual([1])
 
 		extra(1)
 		expect(seen).toEqual([1])
 
-		source.emit(2)
+		source(2)
 		expect(seen).toEqual([1, 2])
 	})
 
@@ -503,8 +503,8 @@ describe('watch()', () => {
 		})
 		disposers.push(dispose)
 
-		ev.emit(10)
-		ev.emit(20)
+		ev(10)
+		ev(20)
 
 		expect(calls).toEqual([
 			[10, undefined],

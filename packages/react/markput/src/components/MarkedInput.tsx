@@ -1,11 +1,10 @@
 import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useLayoutEffect, useState} from 'react'
+import {useEffect, useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
-import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
@@ -80,18 +79,13 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const {ref, ...rest} = props
-	const [store] = useState(() => {
-		const nextStore = new Store()
-		nextStore.setState(rest)
-		return nextStore
-	})
+	const [store] = useState(() => new Store())
+	store.setState(props)
 
-	useLayoutEffect(() => {
-		store.setState(rest)
-	})
+	useLayoutEffect(() => store.event.updated())
+	useEffect(() => () => store.event.unmounted(), [store])
 
-	useCoreFeatures(store, ref)
+	useImperativeHandle(props.ref, () => store.handler, [store])
 
 	return (
 		<StoreContext value={store}>

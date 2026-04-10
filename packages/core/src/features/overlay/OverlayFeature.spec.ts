@@ -47,7 +47,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.clearOverlay.emit()
+			store.event.clearOverlay()
 
 			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
@@ -56,7 +56,7 @@ describe('OverlayFeature', () => {
 			store.state.overlayTrigger.set(() => undefined)
 			controller.enable()
 
-			store.events.checkOverlay.emit()
+			store.event.checkOverlay()
 
 			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
@@ -68,7 +68,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.change.emit()
+			store.event.change()
 
 			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
@@ -80,7 +80,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.change.emit()
+			store.event.change()
 
 			expect(store.state.overlayMatch.get()).toBe(stubMatch)
 		})
@@ -92,7 +92,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.clearOverlay.emit()
+			store.event.clearOverlay()
 
 			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
@@ -106,8 +106,8 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.clearOverlay.emit()
-			store.events.checkOverlay.emit()
+			store.event.clearOverlay()
+			store.event.checkOverlay()
 
 			expect(store.state.overlayMatch.get()).toBe(stubMatch)
 		})
@@ -120,7 +120,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch.set(stubMatch)
 
-			store.events.clearOverlay.emit()
+			store.event.clearOverlay()
 
 			expect(store.state.overlayMatch.get()).toBeUndefined()
 		})
