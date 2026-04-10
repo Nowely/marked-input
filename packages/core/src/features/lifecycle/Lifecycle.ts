@@ -7,7 +7,6 @@ export class Lifecycle {
 
 	constructor(private store: Store) {
 		watch(store.event.updated, () => this.#onUpdated())
-		watch(store.event.afterTokensRendered, () => this.recoverFocus())
 		watch(store.event.unmounted, () => this.disable())
 	}
 
@@ -49,11 +48,5 @@ export class Lifecycle {
 		this.#enabled = false
 		this.#disableFeatures()
 		this.store.state.overlayTrigger(undefined)
-	}
-
-	recoverFocus() {
-		this.store.event.sync()
-		if (!this.store.state.Mark()) return
-		this.store.event.recoverFocus()
 	}
 }

@@ -40,6 +40,12 @@ export class FocusFeature {
 		watch(this.store.event.recoverFocus, () => {
 			this.#recover()
 		})
+
+		watch(this.store.event.afterTokensRendered, () => {
+			this.store.event.sync()
+			if (!this.store.state.Mark()) return
+			this.store.event.recoverFocus()
+		})
 	}
 
 	disable() {

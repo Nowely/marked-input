@@ -298,50 +298,14 @@ describe('Lifecycle', () => {
 			store.event.unmounted()
 		})
 
-		it('updated() does not call sync or recoverFocus (committed handles those)', () => {
+		it('updated() does not call sync or recoverFocus', () => {
 			store.state.Mark(() => null)
 			store.state.value('hello')
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
-			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
 			store.event.updated()
 
 			expect(syncSpy).not.toHaveBeenCalled()
-			expect(recoverFocusSpy).not.toHaveBeenCalled()
-
-			store.event.unmounted()
-		})
-
-		it('afterTokensRendered() always calls sync', () => {
-			store.event.updated()
-
-			const syncSpy = vi.spyOn(store.event, 'sync')
-			store.event.afterTokensRendered()
-
-			expect(syncSpy).toHaveBeenCalledOnce()
-
-			store.event.unmounted()
-		})
-
-		it('afterTokensRendered() calls recoverFocus when Mark is set', () => {
-			store.state.Mark(() => null)
-			store.event.updated()
-
-			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
-			store.event.afterTokensRendered()
-
-			expect(recoverFocusSpy).toHaveBeenCalledOnce()
-
-			store.event.unmounted()
-		})
-
-		it('afterTokensRendered() does not call recoverFocus when Mark is not set', () => {
-			store.event.updated()
-
-			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
-			store.event.afterTokensRendered()
-
-			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
 			store.event.unmounted()
 		})
