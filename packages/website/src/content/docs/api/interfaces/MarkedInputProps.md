@@ -26,7 +26,7 @@ Props for MarkedInput component.
 | Type Parameter | Default type | Description |
 | ------ | ------ | ------ |
 | `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the global Mark component |
-| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the global Overlay component |
+| `TOverlayProps` *extends* `CoreOption`\[`"overlay"`\] | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the global Overlay component |
 
 ## Properties
 

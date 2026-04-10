@@ -36,6 +36,7 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
+	overlay?: {trigger?: string}
 }
 
 /**

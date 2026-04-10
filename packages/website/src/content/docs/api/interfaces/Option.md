@@ -27,7 +27,7 @@ const option: Option<ChipProps> = {
 | Type Parameter | Default type | Description |
 | ------ | ------ | ------ |
 | `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the mark component |
-| `TOverlayProps` | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the overlay component |
+| `TOverlayProps` *extends* `CoreOption`\[`"overlay"`\] | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the overlay component |
 
 ## Properties
 
@@ -62,7 +62,7 @@ Per-option component for rendering this mark
 optional markup: Markup;
 ```
 
-Defined in: [core/src/shared/types.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L36)
+Defined in: [core/src/shared/types.ts:38](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L38)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__slot__`
@@ -106,6 +106,12 @@ optional overlay: TOverlayProps;
 Defined in: [react/markput/src/types.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L55)
 
 Props for the overlay component.
+
+#### Overrides
+
+```ts
+CoreOption.overlay
+```
 
 ***
 

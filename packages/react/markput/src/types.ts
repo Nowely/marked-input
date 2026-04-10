@@ -39,7 +39,10 @@ export interface OverlayProps {
  *   mark: { slot: Chip, label: 'Click' }
  * }
  */
-export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
+export interface Option<
+	TMarkProps = MarkProps,
+	TOverlayProps extends CoreOption['overlay'] = OverlayProps,
+> extends CoreOption {
 	/** Per-option component for rendering this mark */
 	Mark?: ComponentType<TMarkProps>
 	/**

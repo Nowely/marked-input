@@ -1,4 +1,4 @@
-import type {MarkputHandler, OverlayTrigger} from '@markput/core'
+import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useLayoutEffect, useState} from 'react'
@@ -30,7 +30,7 @@ import styles from '@markput/core/styles.module.css'
  * />
  * ```
  */
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps> {
 	/** Ref to handler */
 	ref?: Ref<MarkputHandler>
 	/** Global component used for rendering text tokens (default: built-in Span) */
@@ -79,7 +79,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	drag?: boolean | {alwaysShowHandle: boolean}
 }
 
-export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
+export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
 	const {ref, ...rest} = props
