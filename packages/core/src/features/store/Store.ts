@@ -27,6 +27,7 @@ import {Lifecycle} from '../lifecycle'
 import {OverlayFeature} from '../overlay'
 import {Parser} from '../parsing'
 import type {Token} from '../parsing'
+import {ParseFeature} from '../parsing/ParseFeature'
 import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
 
@@ -148,6 +149,7 @@ export class Store {
 		contentEditable: new ContentEditableFeature(this),
 		drag: new DragFeature(this),
 		copy: new CopyFeature(this),
+		parse: new ParseFeature(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)

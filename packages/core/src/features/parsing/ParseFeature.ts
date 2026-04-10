@@ -1,0 +1,60 @@
+import {effectScope, watch} from '../../shared/signals/index.js'
+import type {Store} from '../store/Store'
+import type {Parser} from './parser/Parser'
+import {toString} from './parser/utils/toString'
+import {getTokensByUI, getTokensByValue, parseWithParser} from './utils/valueParser'
+
+export class ParseFeature {
+	#scope?: () => void
+	#initialized = false
+	#lastValue: string | undefined
+	#lastParser: Parser | undefined
+
+	constructor(private store: Store) {}
+
+	enable() {
+		if (this.#scope) return
+		this.#scope = effectScope(() => {
+			this.#subscribeParse()
+		})
+	}
+
+	disable() {
+		this.#scope?.()
+		this.#scope = undefined
+		this.#initialized = false
+	}
+
+	sync() {
+		const {store} = this
+		const inputValue = store.state.value() ?? store.state.defaultValue() ?? ''
+		store.state.tokens(parseWithParser(store, inputValue))
+		store.state.previousValue(inputValue)
+		this.#lastValue = store.state.value()
+		this.#lastParser = store.computed.parser()
+		this.#initialized = true
+	}
+
+	hasChanged(): boolean {
+		const value = this.store.state.value()
+		const parser = this.store.computed.parser()
+		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return false
+		this.#lastValue = value
+		this.#lastParser = parser
+		return true
+	}
+
+	#subscribeParse() {
+		const {store} = this
+
+		watch(store.event.parse, () => {
+			if (store.state.recovery()) {
+				const text = toString(store.state.tokens())
+				store.state.tokens(parseWithParser(store, text))
+				store.state.previousValue(text)
+				return
+			}
+			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+		})
+	}
+}
