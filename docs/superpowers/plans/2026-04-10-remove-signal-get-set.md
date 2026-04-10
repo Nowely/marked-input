@@ -13,6 +13,7 @@
 ### Task 1: Update signal interfaces and implementation
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signal.ts`
 
 This is the foundation — after this change, TypeScript will flag every remaining `.get()` / `.set()` call as a type error.
@@ -23,11 +24,11 @@ In `signal.ts`, change the `Signal<T>` interface from:
 
 ```typescript
 export interface Signal<T> {
-	(): T
-	(value: T | undefined): void
-	get(): T
-	set(value: T | undefined): void
-	use(): T
+    (): T
+    (value: T | undefined): void
+    get(): T
+    set(value: T | undefined): void
+    use(): T
 }
 ```
 
@@ -35,9 +36,9 @@ to:
 
 ```typescript
 export interface Signal<T> {
-	(): T
-	(value: T | undefined): void
-	use(): T
+    (): T
+    (value: T | undefined): void
+    use(): T
 }
 ```
 
@@ -47,9 +48,9 @@ Change the `Computed<T>` interface from:
 
 ```typescript
 export interface Computed<T> {
-	(): T
-	get(): T
-	use(): T
+    (): T
+    get(): T
+    use(): T
 }
 ```
 
@@ -57,8 +58,8 @@ to:
 
 ```typescript
 export interface Computed<T> {
-	(): T
-	use(): T
+    (): T
+    use(): T
 }
 ```
 
@@ -69,12 +70,12 @@ In the **`equals: false` branch** (boxed value, ~lines 60-84), remove:
 ```typescript
 callable.get = () => read()
 callable.set = (v: T | undefined) => {
-	if (v === undefined) {
-		if (hasDefault && inner() === undefined) return
-		inner(undefined)
-	} else {
-		inner({v, seq: seq++})
-	}
+    if (v === undefined) {
+        if (hasDefault && inner() === undefined) return
+        inner(undefined)
+    } else {
+        inner({v, seq: seq++})
+    }
 }
 ```
 
@@ -83,14 +84,14 @@ In the **custom equals branch** (~lines 100-129), remove:
 ```typescript
 callable.get = () => read()
 callable.set = (v: T | undefined) => {
-	if (v === undefined) {
-		if (hasDefault && inner() === undefined) return
-		inner(undefined)
-	} else {
-		if (!equalsFn(read(), v)) {
-			inner(v)
-		}
-	}
+    if (v === undefined) {
+        if (hasDefault && inner() === undefined) return
+        inner(undefined)
+    } else {
+        if (!equalsFn(read(), v)) {
+            inner(v)
+        }
+    }
 }
 ```
 
@@ -99,16 +100,16 @@ In the **default branch** (~lines 144-177), remove:
 ```typescript
 callable.get = () => read()
 callable.set = (v: T | undefined) => {
-	if (v === undefined && hasDefault) {
-		if (inner() === undefined) return
-		inner(undefined)
-	} else {
-		const current = inner()
-		const effectiveCurrent = current === undefined && hasDefault ? _default : current
-		if (effectiveCurrent !== v) {
-			inner(v)
-		}
-	}
+    if (v === undefined && hasDefault) {
+        if (inner() === undefined) return
+        inner(undefined)
+    } else {
+        const current = inner()
+        const effectiveCurrent = current === undefined && hasDefault ? _default : current
+        if (effectiveCurrent !== v) {
+            inner(v)
+        }
+    }
 }
 ```
 
@@ -137,6 +138,7 @@ git commit -m "refactor(core): remove .get()/.set() from Signal and Computed int
 ### Task 2: Migrate signal test files
 
 **Files:**
+
 - Modify: `packages/core/src/shared/signals/signals.spec.ts`
 - Modify: `packages/core/src/shared/signals/computed.spec.ts`
 
@@ -146,35 +148,35 @@ Migrate all `.get()` → `()` and `.set(v)` → `(v)` in the signal unit tests. 
 
 Replace all `s.get()` → `s()` and `s.set(value)` → `s(value)` throughout the file. Specific replacements:
 
-| Line | Before | After |
-|------|--------|-------|
-| 46 | `expect(s.get()).toBe('hello')` | `expect(s()).toBe('hello')` |
-| 51 | `s.set('world')` | `s('world')` |
-| 52 | `expect(s.get()).toBe('world')` | `expect(s()).toBe('world')` |
-| 157 | `s.set(undefined)` | `s(undefined)` |
-| 159 | `expect(s.get()).toBe('change')` | `expect(s()).toBe('change')` |
-| 173 | `s.set(undefined)` | `s(undefined)` |
-| 188 | `s.set(undefined)` | `s(undefined)` |
-| 196 | `s.set(undefined)` | `s(undefined)` |
-| 198 | `s.set(true)` | `s(true)` |
-| 204 | `s.set(undefined)` | `s(undefined)` |
-| 210 | `s.set(true)` | `s(true)` |
-| 217 | `s.set(undefined)` | `s(undefined)` |
-| 230 | `s.set(undefined)` | `s(undefined)` |
-| 236 | `s.set(undefined)` | `s(undefined)` |
-| 238 | `s.set([4, 5])` | `s([4, 5])` |
+| Line | Before                           | After                        |
+| ---- | -------------------------------- | ---------------------------- |
+| 46   | `expect(s.get()).toBe('hello')`  | `expect(s()).toBe('hello')`  |
+| 51   | `s.set('world')`                 | `s('world')`                 |
+| 52   | `expect(s.get()).toBe('world')`  | `expect(s()).toBe('world')`  |
+| 157  | `s.set(undefined)`               | `s(undefined)`               |
+| 159  | `expect(s.get()).toBe('change')` | `expect(s()).toBe('change')` |
+| 173  | `s.set(undefined)`               | `s(undefined)`               |
+| 188  | `s.set(undefined)`               | `s(undefined)`               |
+| 196  | `s.set(undefined)`               | `s(undefined)`               |
+| 198  | `s.set(true)`                    | `s(true)`                    |
+| 204  | `s.set(undefined)`               | `s(undefined)`               |
+| 210  | `s.set(true)`                    | `s(true)`                    |
+| 217  | `s.set(undefined)`               | `s(undefined)`               |
+| 230  | `s.set(undefined)`               | `s(undefined)`               |
+| 236  | `s.set(undefined)`               | `s(undefined)`               |
+| 238  | `s.set([4, 5])`                  | `s([4, 5])`                  |
 
 - [ ] **Step 2: Migrate `computed.spec.ts`**
 
-| Line | Before | After |
-|------|--------|-------|
-| 21 | `expect(doubled.get()).toBe(2)` | `expect(doubled()).toBe(2)` |
-| 34 | `count.set(5)` | `count(5)` |
-| 60 | `count.set(2)` | `count(2)` |
-| 74 | `count.set(3)` | `count(3)` |
-| 83 | `count.set(5)` | `count(5)` |
-| 106 | `a.set(10)` | `a(10)` |
-| 107 | `b.set(20)` | `b(20)` |
+| Line | Before                          | After                       |
+| ---- | ------------------------------- | --------------------------- |
+| 21   | `expect(doubled.get()).toBe(2)` | `expect(doubled()).toBe(2)` |
+| 34   | `count.set(5)`                  | `count(5)`                  |
+| 60   | `count.set(2)`                  | `count(2)`                  |
+| 74   | `count.set(3)`                  | `count(3)`                  |
+| 83   | `count.set(5)`                  | `count(5)`                  |
+| 106  | `a.set(10)`                     | `a(10)`                     |
+| 107  | `b.set(20)`                     | `b(20)`                     |
 
 - [ ] **Step 3: Run tests**
 
@@ -193,6 +195,7 @@ git commit -m "refactor(core): migrate signal tests to callable form"
 ### Task 3: Migrate Store
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts`
 - Modify: `packages/core/src/features/store/Store.spec.ts`
 
@@ -200,14 +203,14 @@ git commit -m "refactor(core): migrate signal tests to callable form"
 
 Replace all `.get()` → `()` and `.set(v)` → `(v)`:
 
-| Line | Before | After |
-|------|--------|-------|
-| 88 | `this.state.Mark.get()` | `this.state.Mark()` |
-| 90 | `this.state.options.get().some(...)` | `this.state.options().some(...)` |
-| 93 | `this.computed.hasMark.get()` | `this.computed.hasMark()` |
-| 95 | `this.state.options.get().map(...)` | `this.state.options().map(...)` |
-| 98 | `this.state.drag.get()` | `this.state.drag()` |
-| 163 | `state[key].set(values[key] as never)` | `state[key](values[key] as never)` |
+| Line | Before                                 | After                              |
+| ---- | -------------------------------------- | ---------------------------------- |
+| 88   | `this.state.Mark.get()`                | `this.state.Mark()`                |
+| 90   | `this.state.options.get().some(...)`   | `this.state.options().some(...)`   |
+| 93   | `this.computed.hasMark.get()`          | `this.computed.hasMark()`          |
+| 95   | `this.state.options.get().map(...)`    | `this.state.options().map(...)`    |
+| 98   | `this.state.drag.get()`                | `this.state.drag()`                |
+| 163  | `state[key].set(values[key] as never)` | `state[key](values[key] as never)` |
 
 - [ ] **Step 2: Migrate `Store.spec.ts`**
 
@@ -230,6 +233,7 @@ git commit -m "refactor(core): migrate Store to callable signal form"
 ### Task 4: Migrate Lifecycle
 
 **Files:**
+
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.ts`
 - Modify: `packages/core/src/features/lifecycle/Lifecycle.spec.ts`
 
@@ -237,25 +241,25 @@ git commit -m "refactor(core): migrate Store to callable signal form"
 
 Replace all `.get()` → `()` and `.set(v)` → `(v)`:
 
-| Line | Before | After |
-|------|--------|-------|
-| 28 | `this.store.state.value.get()` | `this.store.state.value()` |
-| 29 | `this.store.computed.parser.get()` | `this.store.computed.parser()` |
-| 33 | `this.store.state.recovery.get()` | `this.store.state.recovery()` |
-| 57 | `store.state.overlayTrigger.set(...)` | `store.state.overlayTrigger(...)` |
-| 70 | `this.store.state.overlayTrigger.set(undefined)` | `this.store.state.overlayTrigger(undefined)` |
-| 76 | `store.state.value.get()` | `store.state.value()` |
-| 76 | `store.state.defaultValue.get()` | `store.state.defaultValue()` |
-| 77 | `store.state.tokens.set(...)` | `store.state.tokens(...)` |
-| 78 | `store.state.previousValue.set(...)` | `store.state.previousValue(...)` |
-| 79 | `store.state.value.get()` | `store.state.value()` |
-| 80 | `store.computed.parser.get()` | `store.computed.parser()` |
-| 86 | `this.store.state.Mark.get()` | `this.store.state.Mark()` |
-| 94 | `store.state.recovery.get()` | `store.state.recovery()` |
-| 95 | `store.state.tokens.get()` | `store.state.tokens()` |
-| 96 | `store.state.tokens.set(...)` | `store.state.tokens(...)` |
-| 97 | `store.state.previousValue.set(...)` | `store.state.previousValue(...)` |
-| 100 | `store.state.tokens.set(...)` | `store.state.tokens(...)` |
+| Line | Before                                           | After                                        |
+| ---- | ------------------------------------------------ | -------------------------------------------- |
+| 28   | `this.store.state.value.get()`                   | `this.store.state.value()`                   |
+| 29   | `this.store.computed.parser.get()`               | `this.store.computed.parser()`               |
+| 33   | `this.store.state.recovery.get()`                | `this.store.state.recovery()`                |
+| 57   | `store.state.overlayTrigger.set(...)`            | `store.state.overlayTrigger(...)`            |
+| 70   | `this.store.state.overlayTrigger.set(undefined)` | `this.store.state.overlayTrigger(undefined)` |
+| 76   | `store.state.value.get()`                        | `store.state.value()`                        |
+| 76   | `store.state.defaultValue.get()`                 | `store.state.defaultValue()`                 |
+| 77   | `store.state.tokens.set(...)`                    | `store.state.tokens(...)`                    |
+| 78   | `store.state.previousValue.set(...)`             | `store.state.previousValue(...)`             |
+| 79   | `store.state.value.get()`                        | `store.state.value()`                        |
+| 80   | `store.computed.parser.get()`                    | `store.computed.parser()`                    |
+| 86   | `this.store.state.Mark.get()`                    | `this.store.state.Mark()`                    |
+| 94   | `store.state.recovery.get()`                     | `store.state.recovery()`                     |
+| 95   | `store.state.tokens.get()`                       | `store.state.tokens()`                       |
+| 96   | `store.state.tokens.set(...)`                    | `store.state.tokens(...)`                    |
+| 97   | `store.state.previousValue.set(...)`             | `store.state.previousValue(...)`             |
+| 100  | `store.state.tokens.set(...)`                    | `store.state.tokens(...)`                    |
 
 - [ ] **Step 2: Migrate `Lifecycle.spec.ts`**
 
@@ -278,32 +282,33 @@ git commit -m "refactor(core): migrate Lifecycle to callable signal form"
 ### Task 5: Migrate InputFeature
 
 **Files:**
+
 - Modify: `packages/core/src/features/input/InputFeature.ts`
 
 - [ ] **Step 1: Migrate `InputFeature.ts`**
 
 Replace all `.get()` → `()` and `.set(v)` → `(v)`:
 
-| Line | Before | After |
-|------|--------|-------|
-| 23 | `this.store.state.drag.get()` | `this.store.state.drag()` |
-| 109 | `store.state.selecting.get()` | `store.state.selecting()` |
-| 120 | `store.state.selecting.set(undefined)` | `store.state.selecting(undefined)` |
-| 122 | `store.state.drag.get()` | `store.state.drag()` |
-| 147 | `store.state.tokens.get()` | `store.state.tokens()` |
-| 150 | `store.state.previousValue.get()` | `store.state.previousValue()` |
-| 150 | `store.state.value.get()` | `store.state.value()` |
-| 168 | `store.state.innerValue.set(newValue)` | `store.state.innerValue(newValue)` |
-| 170 | `store.state.tokens.get()` | `store.state.tokens()` |
-| 177 | `store.state.recovery.set({...})` | `store.state.recovery({...})` |
-| 249 | `store.state.selecting.get()` | `store.state.selecting()` |
-| 251 | `store.state.selecting.set(undefined)` | `store.state.selecting(undefined)` |
-| 263 | `store.state.selecting.set(undefined)` | `store.state.selecting(undefined)` |
-| 265 | `store.state.onChange.get()?.(...)` | `store.state.onChange()?.(...)` |
-| 267 | `store.state.value.get()` | `store.state.value()` |
-| 268 | `store.state.tokens.set(...)` | `store.state.tokens(...)` |
-| 269 | `store.computed.parser.get()?.parse(...)` | `store.computed.parser()?.parse(...)` |
-| 283 | `store.state.recovery.set({...})` | `store.state.recovery({...})` |
+| Line | Before                                    | After                                 |
+| ---- | ----------------------------------------- | ------------------------------------- |
+| 23   | `this.store.state.drag.get()`             | `this.store.state.drag()`             |
+| 109  | `store.state.selecting.get()`             | `store.state.selecting()`             |
+| 120  | `store.state.selecting.set(undefined)`    | `store.state.selecting(undefined)`    |
+| 122  | `store.state.drag.get()`                  | `store.state.drag()`                  |
+| 147  | `store.state.tokens.get()`                | `store.state.tokens()`                |
+| 150  | `store.state.previousValue.get()`         | `store.state.previousValue()`         |
+| 150  | `store.state.value.get()`                 | `store.state.value()`                 |
+| 168  | `store.state.innerValue.set(newValue)`    | `store.state.innerValue(newValue)`    |
+| 170  | `store.state.tokens.get()`                | `store.state.tokens()`                |
+| 177  | `store.state.recovery.set({...})`         | `store.state.recovery({...})`         |
+| 249  | `store.state.selecting.get()`             | `store.state.selecting()`             |
+| 251  | `store.state.selecting.set(undefined)`    | `store.state.selecting(undefined)`    |
+| 263  | `store.state.selecting.set(undefined)`    | `store.state.selecting(undefined)`    |
+| 265  | `store.state.onChange.get()?.(...)`       | `store.state.onChange()?.(...)`       |
+| 267  | `store.state.value.get()`                 | `store.state.value()`                 |
+| 268  | `store.state.tokens.set(...)`             | `store.state.tokens(...)`             |
+| 269  | `store.computed.parser.get()?.parse(...)` | `store.computed.parser()?.parse(...)` |
+| 283  | `store.state.recovery.set({...})`         | `store.state.recovery({...})`         |
 
 - [ ] **Step 2: Run typecheck**
 
@@ -322,19 +327,20 @@ git commit -m "refactor(core): migrate InputFeature to callable signal form"
 ### Task 6: Migrate OverlayFeature
 
 **Files:**
+
 - Modify: `packages/core/src/features/overlay/OverlayFeature.ts`
 - Modify: `packages/core/src/features/overlay/OverlayFeature.spec.ts`
 
 - [ ] **Step 1: Migrate `OverlayFeature.ts`**
 
-| Line | Before | After |
-|------|--------|-------|
-| 22 | `this.store.state.overlayMatch.set(undefined)` | `this.store.state.overlayMatch(undefined)` |
-| 26 | `this.store.state.overlayTrigger.get()` | `this.store.state.overlayTrigger()` |
-| 28 | `this.store.state.options.get()` | `this.store.state.options()` |
-| 29 | `this.store.state.overlayMatch.set(match)` | `this.store.state.overlayMatch(match)` |
-| 33 | `this.store.state.showOverlayOn.get()` | `this.store.state.showOverlayOn()` |
-| 52 | `this.store.state.showOverlayOn.get()` | `this.store.state.showOverlayOn()` |
+| Line | Before                                         | After                                      |
+| ---- | ---------------------------------------------- | ------------------------------------------ |
+| 22   | `this.store.state.overlayMatch.set(undefined)` | `this.store.state.overlayMatch(undefined)` |
+| 26   | `this.store.state.overlayTrigger.get()`        | `this.store.state.overlayTrigger()`        |
+| 28   | `this.store.state.options.get()`               | `this.store.state.options()`               |
+| 29   | `this.store.state.overlayMatch.set(match)`     | `this.store.state.overlayMatch(match)`     |
+| 33   | `this.store.state.showOverlayOn.get()`         | `this.store.state.showOverlayOn()`         |
+| 52   | `this.store.state.showOverlayOn.get()`         | `this.store.state.showOverlayOn()`         |
 
 - [ ] **Step 2: Migrate `OverlayFeature.spec.ts`**
 
@@ -357,6 +363,7 @@ git commit -m "refactor(core): migrate OverlayFeature to callable signal form"
 ### Task 7: Migrate DragFeature
 
 **Files:**
+
 - Modify: `packages/core/src/features/drag/DragFeature.ts`
 
 - [ ] **Step 1: Migrate `DragFeature.ts`**
@@ -380,6 +387,7 @@ git commit -m "refactor(core): migrate DragFeature to callable signal form"
 ### Task 8: Migrate BlockEditFeature
 
 **Files:**
+
 - Modify: `packages/core/src/features/block-editing/BlockEditFeature.ts`
 
 - [ ] **Step 1: Migrate `BlockEditFeature.ts`**
@@ -387,6 +395,7 @@ git commit -m "refactor(core): migrate DragFeature to callable signal form"
 Replace all 15 `.get()` → `()` and 9 `.set(v)` → `(v)`.
 
 Key patterns:
+
 - `this.store.state.tokens.get()` → `this.store.state.tokens()`
 - `this.store.state.previousValue.get()` → `this.store.state.previousValue()`
 - `this.store.state.value.get()` → `this.store.state.value()`
@@ -412,6 +421,7 @@ git commit -m "refactor(core): migrate BlockEditFeature to callable signal form"
 ### Task 9: Migrate remaining feature files
 
 **Files:**
+
 - Modify: `packages/core/src/features/focus/FocusFeature.ts`
 - Modify: `packages/core/src/features/selection/TextSelectionFeature.ts`
 - Modify: `packages/core/src/features/selection/TextSelectionFeature.spec.ts`
@@ -469,6 +479,7 @@ git commit -m "refactor(core): migrate remaining features to callable signal for
 ### Task 10: Migrate BlockStore and slots
 
 **Files:**
+
 - Modify: `packages/core/src/shared/classes/BlockStore.ts`
 - Modify: `packages/core/src/features/slots/createSlots.ts`
 - Modify: `packages/core/src/features/slots/createSlots.spec.ts`
@@ -481,15 +492,15 @@ Replace all `this.state.X.get()` → `this.state.X()` and `this.state.X.set(v)` 
 
 Here the slot `.get()` method is part of the Slot API (not signal `.get()`), so it stays. But internally it calls signal `.get()` which must change to callable form:
 
-| Line | Before | After |
-|------|--------|-------|
-| 16 | `slots.get()` | `slots()` |
-| 16 | `slotProps.get()` | `slotProps()` |
-| 25 | `overlay.get()` | `overlay()` |
-| 37 | `options.get()` | `options()` |
-| 38 | `options.get()` | `options()` |
-| 38 | `mark.get()` | `mark()` |
-| 38 | `span.get()` | `span()` |
+| Line | Before            | After         |
+| ---- | ----------------- | ------------- |
+| 16   | `slots.get()`     | `slots()`     |
+| 16   | `slotProps.get()` | `slotProps()` |
+| 25   | `overlay.get()`   | `overlay()`   |
+| 37   | `options.get()`   | `options()`   |
+| 38   | `options.get()`   | `options()`   |
+| 38   | `mark.get()`      | `mark()`      |
+| 38   | `span.get()`      | `span()`      |
 
 Note: `mark.use()` and `span.use()` stay unchanged.
 
@@ -497,11 +508,11 @@ Note: `mark.use()` and `span.use()` stay unchanged.
 
 The slot `.get()` calls are on the slot API (not signals), so they stay. But `slots.set(...)` and `slotProps.set(...)` are signal `.set()` calls that need migration:
 
-| Line | Before | After |
-|------|--------|-------|
-| 50 | `slots.set({container: 'section'})` | `slots({container: 'section'})` |
-| 65 | `slots.set({span: 'strong'})` | `slots({span: 'strong'})` |
-| 66 | `slotProps.set({span: {className: 'bold'}})` | `slotProps({span: {className: 'bold'}})` |
+| Line | Before                                       | After                                    |
+| ---- | -------------------------------------------- | ---------------------------------------- |
+| 50   | `slots.set({container: 'section'})`          | `slots({container: 'section'})`          |
+| 65   | `slots.set({span: 'strong'})`                | `slots({span: 'strong'})`                |
+| 66   | `slotProps.set({span: {className: 'bold'}})` | `slotProps({span: {className: 'bold'}})` |
 
 - [ ] **Step 4: Run tests**
 

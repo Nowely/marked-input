@@ -21,7 +21,7 @@ This violates single-responsibility: Lifecycle should manage mount/unmount/re-re
 
 **File**: `packages/core/src/features/parsing/ParseFeature.ts`
 
-Owns the parse dispatch strategy — deciding *when* and *how* to re-parse tokens.
+Owns the parse dispatch strategy — deciding _when_ and _how_ to re-parse tokens.
 
 ```typescript
 export class ParseFeature {
@@ -101,22 +101,22 @@ Add `parse: new ParseFeature(this)` to `store.features` and import `ParseFeature
 
 ## File changes
 
-| File | Change |
-|------|--------|
-| `features/parsing/ParseFeature.ts` | **New** — extracted parse orchestration logic |
-| `features/parsing/index.ts` | Export `ParseFeature` |
-| `features/lifecycle/Lifecycle.ts` | Remove parse logic, delegate to `store.features.parse` |
-| `features/store/Store.ts` | Add `parse` to `store.features` |
+| File                               | Change                                                 |
+| ---------------------------------- | ------------------------------------------------------ |
+| `features/parsing/ParseFeature.ts` | **New** — extracted parse orchestration logic          |
+| `features/parsing/index.ts`        | Export `ParseFeature`                                  |
+| `features/lifecycle/Lifecycle.ts`  | Remove parse logic, delegate to `store.features.parse` |
+| `features/store/Store.ts`          | Add `parse` to `store.features`                        |
 
 ## Testing
 
 - Existing tests pass unchanged (same behavior)
 - New `ParseFeature.spec.ts` co-located next to `ParseFeature.ts`:
-  - `sync()` sets tokens and previousValue from value/defaultValue
-  - `sync()` updates `#lastValue`/`#lastParser`/`#initialized`
-  - `hasChanged()` returns false when value and parser unchanged
-  - `hasChanged()` returns true when value changes
-  - `hasChanged()` returns true when parser changes (options updated)
-  - `#subscribeParse` dispatches `parseWithParser` in recovery mode
-  - `#subscribeParse` dispatches `getTokensByUI` when focus target exists
-  - `#subscribeParse` dispatches `getTokensByValue` when no focus target
+    - `sync()` sets tokens and previousValue from value/defaultValue
+    - `sync()` updates `#lastValue`/`#lastParser`/`#initialized`
+    - `hasChanged()` returns false when value and parser unchanged
+    - `hasChanged()` returns true when value changes
+    - `hasChanged()` returns true when parser changes (options updated)
+    - `#subscribeParse` dispatches `parseWithParser` in recovery mode
+    - `#subscribeParse` dispatches `getTokensByUI` when focus target exists
+    - `#subscribeParse` dispatches `getTokensByValue` when no focus target
