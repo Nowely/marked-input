@@ -17,6 +17,8 @@ export class OverlayFeature {
 	enable() {
 		if (this.#scope) return
 
+		this.store.state.overlayTrigger(option => option.overlay?.trigger)
+
 		this.#scope = effectScope(() => {
 			watch(this.store.event.clearOverlay, () => {
 				this.store.state.overlayMatch(undefined)
@@ -86,6 +88,8 @@ export class OverlayFeature {
 		}
 
 		this.#disableClose()
+
+		this.store.state.overlayTrigger(undefined)
 
 		this.#scope?.()
 		this.#scope = undefined

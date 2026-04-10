@@ -41,8 +41,25 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('enable()', () => {
+		it('sets default overlayTrigger extractor', () => {
+			controller.enable()
+
+			const getTrigger = store.state.overlayTrigger()
+			expect(getTrigger).toBeDefined()
+
+			const option = {overlay: {trigger: '@'}}
+			expect(getTrigger!(option)).toBe('@')
+
+			const optionWithoutTrigger = {overlay: {}}
+			expect(getTrigger!(optionWithoutTrigger)).toBeUndefined()
+
+			const optionWithoutOverlay = {}
+			expect(getTrigger!(optionWithoutOverlay)).toBeUndefined()
+
+			controller.disable()
+		})
+
 		it('should clear overlayMatch when clearOverlay is emitted', () => {
-			store.state.overlayTrigger(() => undefined)
 			controller.enable()
 
 			store.state.overlayMatch(stubMatch)
@@ -53,7 +70,6 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should set overlayMatch when checkOverlay is emitted', () => {
-			store.state.overlayTrigger(() => undefined)
 			controller.enable()
 
 			store.event.checkOverlay()
@@ -62,7 +78,6 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should react to change event when showOverlayOn includes change', () => {
-			store.state.overlayTrigger(() => undefined)
 			store.state.showOverlayOn('change')
 			controller.enable()
 
@@ -74,7 +89,6 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should not react to change event when showOverlayOn does not include change', () => {
-			store.state.overlayTrigger(() => undefined)
 			store.state.showOverlayOn('selectionChange')
 			controller.enable()
 
@@ -86,7 +100,6 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should be idempotent — calling enable twice does not double-subscribe', () => {
-			store.state.overlayTrigger(() => undefined)
 			controller.enable()
 			controller.enable()
 
@@ -99,8 +112,15 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('disable()', () => {
+		it('clears overlayTrigger on disable', () => {
+			controller.enable()
+			expect(store.state.overlayTrigger()).toBeDefined()
+
+			controller.disable()
+			expect(store.state.overlayTrigger()).toBeUndefined()
+		})
+
 		it('should stop reacting to events after disable', () => {
-			store.state.overlayTrigger(() => undefined)
 			controller.enable()
 			controller.disable()
 
@@ -113,7 +133,6 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should allow re-enabling after disable', () => {
-			store.state.overlayTrigger(() => undefined)
 			controller.enable()
 			controller.disable()
 			controller.enable()

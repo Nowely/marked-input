@@ -38,8 +38,6 @@ export class Lifecycle {
 
 	enable() {
 		if (this.#enabled) return
-		const {store} = this
-		store.state.overlayTrigger(option => option.overlay?.trigger)
 		this.#enableFeatures()
 		this.#enabled = true
 	}
@@ -47,6 +45,5 @@ export class Lifecycle {
 	disable() {
 		this.#enabled = false
 		this.#disableFeatures()
-		this.store.state.overlayTrigger(undefined)
 	}
 }
