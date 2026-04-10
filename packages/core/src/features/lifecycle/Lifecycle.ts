@@ -1,5 +1,4 @@
 import {effectScope, event, watch} from '../../shared/signals/index.js'
-import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
 
@@ -12,7 +11,7 @@ export class Lifecycle {
 	readonly unmounted = event()
 
 	#scope?: () => void
-	#stopFeatures?: () => void
+	#featuresEnabled = false
 	#initialized = false
 	#lastSyncValue: string | undefined
 	#lastSyncMark: unknown
@@ -49,6 +48,20 @@ export class Lifecycle {
 		this.syncParser()
 	}
 
+	#enableFeatures() {
+		if (this.#featuresEnabled) return
+		this.#featuresEnabled = true
+		const {features} = this.store
+		for (const f of Object.values(features)) f.enable()
+	}
+
+	#disableFeatures() {
+		if (!this.#featuresEnabled) return
+		this.#featuresEnabled = false
+		const {features} = this.store
+		for (const f of Object.values(features)) f.disable()
+	}
+
 	enable() {
 		if (this.#scope) return
 
@@ -56,9 +69,7 @@ export class Lifecycle {
 
 		store.state.overlayTrigger.set(option => option.overlay?.trigger)
 
-		const features = createCoreFeatures(store)
-		features.enableAll()
-		this.#stopFeatures = () => features.disableAll()
+		this.#enableFeatures()
 
 		this.#scope = effectScope(() => {
 			this.#subscribeParse()
@@ -68,8 +79,7 @@ export class Lifecycle {
 	disable() {
 		this.#scope?.()
 		this.#scope = undefined
-		this.#stopFeatures?.()
-		this.#stopFeatures = undefined
+		this.#disableFeatures()
 		this.store.state.overlayTrigger.set(undefined)
 		this.#initialized = false
 	}

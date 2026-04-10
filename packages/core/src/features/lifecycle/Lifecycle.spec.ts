@@ -3,20 +3,17 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionFeature etc.)
-vi.mock('../feature-manager', () => ({
-	createCoreFeatures: () => ({
-		enableAll: vi.fn(),
-		disableAll: vi.fn(),
-	}),
-}))
-
 describe('Lifecycle', () => {
 	let store: Store
 
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
+		const features = store.features as Record<string, {enable(): void; disable(): void}>
+		for (const key of Object.keys(features)) {
+			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+		}
 	})
 
 	describe('enable()', () => {
