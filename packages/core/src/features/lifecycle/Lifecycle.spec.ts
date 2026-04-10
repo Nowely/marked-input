@@ -288,37 +288,37 @@ describe('Lifecycle', () => {
 			lifecycle.unmounted.emit()
 		})
 
-		it('committed.emit() always emits sync', () => {
+		it('afterTokensRendered.emit() always emits sync', () => {
 			const lifecycle = store.lifecycle
 			lifecycle.updated.emit()
 
 			const syncSpy = vi.spyOn(store.events.sync, 'emit')
-			lifecycle.committed.emit()
+			lifecycle.afterTokensRendered.emit()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
 			lifecycle.unmounted.emit()
 		})
 
-		it('committed.emit() emits recoverFocus when Mark is set', () => {
+		it('afterTokensRendered.emit() emits recoverFocus when Mark is set', () => {
 			const lifecycle = store.lifecycle
 			store.state.Mark.set(() => null)
 			lifecycle.updated.emit()
 
 			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			lifecycle.committed.emit()
+			lifecycle.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).toHaveBeenCalledOnce()
 
 			lifecycle.unmounted.emit()
 		})
 
-		it('committed.emit() does not emit recoverFocus when Mark is not set', () => {
+		it('afterTokensRendered.emit() does not emit recoverFocus when Mark is not set', () => {
 			const lifecycle = store.lifecycle
 			lifecycle.updated.emit()
 
 			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			lifecycle.committed.emit()
+			lifecycle.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 

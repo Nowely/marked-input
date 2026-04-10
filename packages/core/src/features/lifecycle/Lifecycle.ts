@@ -6,8 +6,8 @@ import type {Store} from '../store'
 export class Lifecycle {
 	/** Framework emits after every render (props may have changed). Drives syncParser. */
 	readonly updated = event()
-	/** Framework emits after token changes are committed to the DOM. Drives sync/recoverFocus. */
-	readonly committed = event()
+	/** Framework emits after token changes are rendered to the DOM. Drives sync/recoverFocus. */
+	readonly afterTokensRendered = event()
 	/** Framework emits when component unmounts. */
 	readonly unmounted = event()
 
@@ -21,7 +21,7 @@ export class Lifecycle {
 	constructor(private store: Store) {
 		effectScope(() => {
 			watch(this.updated, () => this.#onUpdated())
-			watch(this.committed, () => this.recoverFocus())
+			watch(this.afterTokensRendered, () => this.recoverFocus())
 			watch(this.unmounted, () => this.disable())
 		})
 	}

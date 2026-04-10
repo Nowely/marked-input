@@ -86,19 +86,10 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		return nextStore
 	})
 
-	// Subscribe to tokens so we re-render when tokens change, enabling the committed layout effect.
-	const tokens = store.state.tokens.use()
-
 	useLayoutEffect(() => {
 		store.setState(rest)
 		store.lifecycle.updated.emit()
 	})
-
-	// Fires after token changes are committed to the DOM — required for sync/recoverFocus
-	// which set text content on spans via DOM manipulation (not React rendering).
-	useLayoutEffect(() => {
-		store.lifecycle.committed.emit()
-	}, [tokens])
 
 	useEffect(() => () => store.lifecycle.unmounted.emit(), [store])
 

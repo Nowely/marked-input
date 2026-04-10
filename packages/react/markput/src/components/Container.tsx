@@ -1,4 +1,4 @@
-import {memo} from 'react'
+import {memo, useLayoutEffect} from 'react'
 
 import {useStore} from '../lib/providers/StoreContext'
 import {Block} from './Block'
@@ -8,6 +8,11 @@ export const Container = memo(() => {
 	const store = useStore()
 	const drag = store.state.drag.use()
 	const tokens = store.state.tokens.use()
+
+	useLayoutEffect(() => {
+		store.lifecycle.afterTokensRendered.emit()
+	}, [tokens])
+
 	const className = store.state.containerClass.use()
 	const style = store.state.containerStyle.use()
 	const readOnly = store.state.readOnly.use()

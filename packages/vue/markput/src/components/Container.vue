@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {CSSProperties} from '@markput/core'
-import {computed, type Ref} from 'vue'
+import {computed, watch, type Ref} from 'vue'
 
 import {useStore} from '../lib/hooks/useStore'
 import Block from './Block.vue'
@@ -10,6 +10,8 @@ const store = useStore()
 const drag = store.state.drag.use()
 const readOnly = store.state.readOnly.use()
 const tokens = store.state.tokens.use()
+watch(tokens, () => store.lifecycle.afterTokensRendered.emit(), {flush: 'post', immediate: true})
+
 const slotsRef = store.state.slots.use()
 const slotPropsRef = store.state.slotProps.use()
 const className = store.state.containerClass.use()
