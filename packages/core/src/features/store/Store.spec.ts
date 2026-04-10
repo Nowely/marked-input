@@ -199,4 +199,45 @@ describe('Store', () => {
 			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
 		})
 	})
+
+	describe('hasMark (computed)', () => {
+		it('should return false when no Mark override and no per-option Mark', () => {
+			const store = new Store()
+			expect(store.computed.hasMark.get()).toBe(false)
+		})
+
+		it('should return true when Mark override is set', () => {
+			const store = new Store()
+			store.state.Mark.set(() => null)
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return true when option has per-option Mark', () => {
+			const store = new Store()
+			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return true when Mark override is set even without per-option Mark', () => {
+			const store = new Store()
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			expect(store.computed.hasMark.get()).toBe(true)
+		})
+
+		it('should return false when option has Mark set to null', () => {
+			const store = new Store()
+			store.state.options.set([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
+			expect(store.computed.hasMark.get()).toBe(false)
+		})
+
+		it('should react to Mark override changes', () => {
+			const store = new Store()
+			expect(store.computed.hasMark.get()).toBe(false)
+			store.state.Mark.set(() => null)
+			expect(store.computed.hasMark.get()).toBe(true)
+			store.state.Mark.set(undefined)
+			expect(store.computed.hasMark.get()).toBe(false)
+		})
+	})
 })
