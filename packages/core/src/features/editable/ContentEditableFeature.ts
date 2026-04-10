@@ -1,17 +1,10 @@
 import {childAt} from '../../shared/checkers'
-import {effectScope, effect} from '../../shared/signals/index.js'
+import {effectScope, effect, watch} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import type {Store} from '../store/Store'
+import {isTextTokenSpan} from './isTextTokenSpan'
 
-/** A text-token span has no attributes, or only the contenteditable attribute. */
-function isTextTokenSpan(el: HTMLElement) {
-	return (
-		el.tagName === 'SPAN' &&
-		(el.attributes.length === 0 || (el.attributes.length === 1 && el.hasAttribute('contenteditable')))
-	)
-}
-
-export class ContentEditableController {
+export class ContentEditableFeature {
 	#scope?: () => void
 
 	constructor(private store: Store) {}
@@ -26,6 +19,9 @@ export class ContentEditableController {
 			})
 			effect(() => {
 				if (this.store.state.selecting() === undefined) this.sync()
+			})
+			watch(this.store.events.sync, () => {
+				this.sync()
 			})
 		})
 	}

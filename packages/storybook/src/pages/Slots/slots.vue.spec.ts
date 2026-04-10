@@ -72,7 +72,7 @@ describe('Slots API', () => {
 				props: {
 					Mark: TestMark,
 					value: 'Hello world',
-					className: 'default-class',
+					class: 'default-class',
 					slotProps: {
 						container: {
 							className: 'custom-class',
@@ -386,7 +386,7 @@ describe('Slots API', () => {
 				props: {
 					Mark: TestMark,
 					value: 'Hello world',
-					className: 'outer-class',
+					class: 'outer-class',
 					style: {color: 'red'},
 					slots: {container: CustomContainer},
 					slotProps: {

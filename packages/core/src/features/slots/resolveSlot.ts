@@ -28,7 +28,7 @@ type SlotProp = Record<string, unknown> | ((base: Record<string, unknown>) => Re
  * Internal view of a framework-specific Option for slot resolution.
  * Framework Option types (React, Vue) extend CoreOption with these properties.
  */
-export interface SlotOption extends CoreOption {
+export interface SlotOption extends Omit<CoreOption, 'overlay'> {
 	Mark?: unknown
 	mark?: SlotProp
 	Overlay?: unknown

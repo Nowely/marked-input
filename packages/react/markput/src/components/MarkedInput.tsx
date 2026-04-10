@@ -1,4 +1,4 @@
-import type {CoreSlotProps, MarkputHandler, OverlayTrigger, StyleProperties} from '@markput/core'
+import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useLayoutEffect, useState} from 'react'
@@ -10,8 +10,6 @@ import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
-
-import styles from '@markput/core/styles.module.css'
 
 /**
  * Props for MarkedInput component.
@@ -30,7 +28,7 @@ import styles from '@markput/core/styles.module.css'
  * />
  * ```
  */
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps> {
 	/** Ref to handler */
 	ref?: Ref<MarkputHandler>
 	/** Global component used for rendering text tokens (default: built-in Span) */
@@ -79,22 +77,18 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = Overla
 	drag?: boolean | {alwaysShowHandle: boolean}
 }
 
-export function MarkedInput<TMarkProps = MarkProps, TOverlayProps = OverlayProps>(
+export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
 	const {ref, ...rest} = props
-	// oxlint-disable-next-line no-unsafe-type-assertion -- HTMLAttributes lacks index signature but is structurally compatible at runtime
-	const slotProps = props.slotProps as CoreSlotProps
-	// oxlint-disable-next-line no-unsafe-type-assertion -- CSSProperties is structurally compatible with StyleProperties at runtime
-	const style = rest.style as StyleProperties | undefined
 	const [store] = useState(() => {
 		const nextStore = new Store()
-		nextStore.setState({...rest, style, baseClassName: styles.Container, slotProps})
+		nextStore.setState(rest)
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.setState({...rest, style, baseClassName: styles.Container, slotProps})
+		store.setState(rest)
 	})
 
 	useCoreFeatures(store, ref)

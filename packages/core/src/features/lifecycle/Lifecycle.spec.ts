@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionController etc.)
+// Mock createCoreFeatures to avoid DOM dependencies (TextSelectionFeature etc.)
 vi.mock('../feature-manager', () => ({
 	createCoreFeatures: () => ({
 		enableAll: vi.fn(),
@@ -24,15 +24,44 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.enable() // second call should be a no-op
+			lifecycle.enable()
 
-			// If double-subscribed, parse would fire handler twice producing wrong state.
-			// We verify by calling syncParser then emitting parse, checking tokens are set once.
-			lifecycle.syncParser('hello', [])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
 			const tokensAfterSync = store.state.tokens.get()
 			expect(tokensAfterSync).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			lifecycle.disable()
+		})
+
+		it('sets default overlayTrigger extractor', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+
+			const getTrigger = store.state.overlayTrigger.get()
+			expect(getTrigger).toBeDefined()
+
+			const option = {overlay: {trigger: '@'}}
+			expect(getTrigger!(option)).toBe('@')
+
+			const optionWithoutTrigger = {overlay: {}}
+			expect(getTrigger!(optionWithoutTrigger)).toBeUndefined()
+
+			const optionWithoutOverlay = {}
+			expect(getTrigger!(optionWithoutOverlay)).toBeUndefined()
+
+			lifecycle.disable()
+		})
+
+		it('clears overlayTrigger on disable', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			expect(store.state.overlayTrigger.get()).toBeDefined()
+
+			lifecycle.disable()
+			expect(store.state.overlayTrigger.get()).toBeUndefined()
 		})
 	})
 
@@ -41,7 +70,8 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('hello', [])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
 
 			lifecycle.disable()
 
@@ -57,11 +87,13 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('first', [])
+			store.state.value.set('first')
+			lifecycle.syncParser()
 			lifecycle.disable()
 
 			lifecycle.enable()
-			lifecycle.syncParser('second', [])
+			store.state.value.set('second')
+			lifecycle.syncParser()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
@@ -71,17 +103,64 @@ describe('Lifecycle', () => {
 	})
 
 	describe('syncParser()', () => {
-		it('calls events.parse() when already initialized and in recovery mode', () => {
+		it('derives options from store.state — reads value and options signals', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('initial', [])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
 
-			// Put store in recovery mode so syncParser skips parse() emission
-			// but we can manually emit parse and verify the handler re-parses
+			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+
+			lifecycle.disable()
+		})
+
+		it('derives effective options — skips markup when no Mark override and no per-option Mark', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.options.set([{markup: '@[__value__]'}])
+			lifecycle.syncParser()
+
+			expect(store.state.parser.get()).toBeUndefined()
+
+			lifecycle.disable()
+		})
+
+		it('derives effective options — uses markup when Mark override is set', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			lifecycle.syncParser()
+
+			expect(store.state.parser.get()).toBeDefined()
+
+			lifecycle.disable()
+		})
+
+		it('derives effective options — uses markup when option has per-option Mark', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			lifecycle.syncParser()
+
+			expect(store.state.parser.get()).toBeDefined()
+
+			lifecycle.disable()
+		})
+
+		it('skips parse emission when in recovery mode', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.value.set('initial')
+			lifecycle.syncParser()
+
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
-			// Emit parse directly — handler should re-parse from token text
 			store.events.parse.emit()
 
 			const tokens = store.state.tokens.get()
@@ -97,7 +176,8 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('hello world', [])
+			store.state.value.set('hello world')
+			lifecycle.syncParser()
 
 			expect(store.state.tokens.get()).toEqual([
 				{type: 'text', content: 'hello world', position: {start: 0, end: 11}},
@@ -110,7 +190,8 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('test', [])
+			store.state.value.set('test')
+			lifecycle.syncParser()
 
 			// Set recovery state
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
@@ -129,7 +210,8 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			lifecycle.syncParser('hello', [])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
 			const setSpy = vi.spyOn(store.state.tokens, 'set')

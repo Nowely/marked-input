@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type {CoreSlotProps, CoreSlots, StyleProperties} from '@markput/core'
 import {Store} from '@markput/core'
 import {provide, shallowRef, watch} from 'vue'
 
@@ -10,8 +9,6 @@ import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
-
-import styles from '@markput/core/styles.module.css'
 
 const props = defineProps<MarkedInputProps>()
 
@@ -35,11 +32,10 @@ function syncProps() {
 		Span: props.Span,
 		Mark: props.Mark,
 		Overlay: props.Overlay,
-		className: props.className,
-		style: props.style as StyleProperties | undefined,
-		baseClassName: styles.Container,
-		slots: props.slots as CoreSlots,
-		slotProps: props.slotProps as CoreSlotProps,
+		className: props.class,
+		style: props.style,
+		slots: props.slots,
+		slotProps: props.slotProps,
 	})
 }
 
@@ -55,7 +51,7 @@ watch(
 		props.Span,
 		props.Mark,
 		props.Overlay,
-		props.className,
+		props.class,
 		props.style,
 		props.slots,
 		props.slotProps,

@@ -3,16 +3,16 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../store/Store'
-import type {SystemListenerController} from './SystemListenerController'
+import type {SystemListenerFeature} from './SystemListenerFeature'
 
-describe('SystemListenerController', () => {
+describe('SystemListenerFeature', () => {
 	let store: Store
-	let controller: SystemListenerController
+	let controller: SystemListenerFeature
 
 	beforeEach(() => {
 		setUseHookFactory(() => () => undefined)
 		store = new Store()
-		controller = store.controllers.system
+		controller = store.features.system
 	})
 
 	describe('enable()', () => {

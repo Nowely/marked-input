@@ -1,1 +1,1 @@
-export {FocusController} from './FocusController'
+export {FocusFeature} from './FocusFeature'

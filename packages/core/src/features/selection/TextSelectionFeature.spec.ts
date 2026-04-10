@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../store/Store'
 
-// Stub global `document` for TextSelectionController which calls document.addEventListener/removeEventListener
+// Stub global `document` for TextSelectionFeature which calls document.addEventListener/removeEventListener
 const listeners: Record<string, Function[]> = {}
 const mockDocument = {
 	addEventListener: vi.fn((event: string, handler: Function) => {
@@ -16,7 +16,7 @@ const mockDocument = {
 	}),
 }
 
-describe('TextSelectionController', () => {
+describe('TextSelectionFeature', () => {
 	let store: Store
 
 	beforeEach(() => {
@@ -33,14 +33,14 @@ describe('TextSelectionController', () => {
 	})
 
 	it('enable() sets up the selecting subscription via effect', () => {
-		const controller = store.controllers.textSelection
+		const controller = store.features.textSelection
 		controller.enable()
 		// The effect runs immediately; no error means subscription is established.
 		expect(mockDocument.addEventListener).toHaveBeenCalledTimes(4)
 	})
 
 	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.controllers.textSelection
+		const controller = store.features.textSelection
 		controller.enable()
 		const callCount = mockDocument.addEventListener.mock.calls.length
 		controller.enable()
@@ -48,7 +48,7 @@ describe('TextSelectionController', () => {
 	})
 
 	it('disable() removes the reactive subscription', () => {
-		const controller = store.controllers.textSelection
+		const controller = store.features.textSelection
 		controller.enable()
 		controller.disable()
 		// After disable, setting selecting to "drag" should not cause errors
@@ -56,7 +56,7 @@ describe('TextSelectionController', () => {
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
-		const controller = store.controllers.textSelection
+		const controller = store.features.textSelection
 		controller.enable()
 		store.state.selecting.set('drag')
 		controller.disable()
@@ -69,10 +69,10 @@ describe('TextSelectionController', () => {
 		const container = {
 			querySelectorAll: vi.fn(() => [span]),
 		}
-		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionController in tests
+		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionFeature in tests
 		store.refs.container = container as unknown as HTMLDivElement
 
-		const controller = store.controllers.textSelection
+		const controller = store.features.textSelection
 		controller.enable()
 		store.state.selecting.set('drag')
 

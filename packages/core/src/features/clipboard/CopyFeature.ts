@@ -29,7 +29,7 @@ function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRang
 	})
 }
 
-export class CopyController {
+export class CopyFeature {
 	#copyHandler?: (e: ClipboardEvent) => void
 	#cutHandler?: (e: ClipboardEvent) => void
 

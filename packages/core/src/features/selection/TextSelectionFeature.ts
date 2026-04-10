@@ -2,7 +2,7 @@ import {nodeTarget} from '../../shared/checkers'
 import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Store} from '../store/Store'
 
-export class TextSelectionController {
+export class TextSelectionFeature {
 	#mousedownHandler?: (e: MouseEvent) => void
 	#mousemoveHandler?: (e: MouseEvent) => void
 	#mouseupHandler?: () => void
@@ -74,7 +74,7 @@ export class TextSelectionController {
 
 	disable() {
 		if (this.store.state.selecting.get() === 'drag') {
-			// Set state before unsubscribing so ContentEditableController.sync() still fires
+			// Set state before unsubscribing so ContentEditableFeature.sync() still fires
 			this.store.state.selecting.set(undefined)
 		}
 

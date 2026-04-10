@@ -12,19 +12,22 @@ export interface OverlayProps {
 	data?: string[]
 }
 
-export interface Option<TMarkProps = MarkProps, TOverlayProps = OverlayProps> extends CoreOption {
+export interface Option<
+	TMarkProps = MarkProps,
+	TOverlayProps extends CoreOption['overlay'] = OverlayProps,
+> extends CoreOption {
 	Mark?: Component
 	mark?: TMarkProps | ((props: MarkProps) => TMarkProps)
 	Overlay?: Component
 	overlay?: TOverlayProps
 }
 
-export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps = OverlayProps> {
+export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps> {
 	Span?: Component
 	Mark?: Component
 	Overlay?: Component
 	options?: Option<TMarkProps, TOverlayProps>[]
-	className?: string
+	class?: string
 	style?: CSSProperties
 	slots?: Slots
 	slotProps?: SlotProps

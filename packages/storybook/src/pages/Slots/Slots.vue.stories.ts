@@ -33,7 +33,7 @@ const SimpleMark = defineComponent({
 })
 
 const EventLogComponent = defineComponent({
-	props: {Mark: {type: null}, value: String, className: String},
+	props: {Mark: {type: null}, value: String, class: String},
 	setup(props) {
 		const currentValue = ref(props.value ?? '')
 		const events = reactive<string[]>([])
@@ -52,7 +52,7 @@ const EventLogComponent = defineComponent({
 				onChange: (v: string) => {
 					currentValue.value = v
 				},
-				className: props.className,
+				class: props.class,
 				slotProps: {
 					container: {
 						onKeydown: (e: KeyboardEvent) => {
@@ -94,7 +94,7 @@ const EventLogComponent = defineComponent({
 })
 
 export const WithSlotProps: Story = {
-	args: {Mark: SimpleMark, value: 'Try pressing @[Enter] or clicking', className: 'custom-container'},
+	args: {Mark: SimpleMark, value: 'Try pressing @[Enter] or clicking', class: 'custom-container'},
 	render: () => EventLogComponent,
 }
 

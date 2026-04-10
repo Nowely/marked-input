@@ -1,13 +1,11 @@
 import {KEYBOARD} from '../../shared/constants'
 import {effectScope, watch} from '../../shared/signals/index.js'
-import type {CoreOption, OverlayMatch, OverlayTrigger} from '../../shared/types'
+import type {OverlayTrigger} from '../../shared/types'
 import {TriggerFinder} from '../caret'
 import type {Store} from '../store/Store'
 
-type TriggerExtractor<T> = (option: T, index: number) => string | undefined
-
-export class OverlayController {
-	#triggerScope?: () => void
+export class OverlayFeature {
+	#scope?: () => void
 	#selectionChangeHandler?: () => void
 	#focusinHandler?: (e: FocusEvent) => void
 	#focusoutHandler?: (e: FocusEvent) => void
@@ -16,21 +14,19 @@ export class OverlayController {
 
 	constructor(private store: Store) {}
 
-	enableTrigger<T extends CoreOption>(
-		getTrigger: TriggerExtractor<T>,
-		onMatch: (match: OverlayMatch<T> | undefined) => void
-	) {
-		if (this.#triggerScope) return
+	enable() {
+		if (this.#scope) return
 
-		this.#triggerScope = effectScope(() => {
+		this.#scope = effectScope(() => {
 			watch(this.store.events.clearOverlay, () => {
-				onMatch(undefined)
+				this.store.state.overlayMatch.set(undefined)
 			})
 
 			watch(this.store.events.checkOverlay, () => {
-				// oxlint-disable-next-line no-unsafe-type-assertion -- state.options is CoreOption[] but callers always pass T[] which extends CoreOption
-				const match = TriggerFinder.find(this.store.state.options.get() as T[], getTrigger)
-				onMatch(match)
+				const getTrigger = this.store.state.overlayTrigger.get()
+				if (!getTrigger) return
+				const match = TriggerFinder.find(this.store.state.options.get(), getTrigger)
+				this.store.state.overlayMatch.set(match)
 			})
 
 			watch(this.store.events.change, () => {
@@ -39,6 +35,15 @@ export class OverlayController {
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
 					this.store.events.checkOverlay.emit()
+				}
+			})
+
+			watch(this.store.state.overlayMatch, match => {
+				if (match) {
+					this.store.nodes.input.target = this.store.nodes.focus.target
+					this.#enableClose()
+				} else {
+					this.#disableClose()
 				}
 			})
 		})
@@ -68,7 +73,28 @@ export class OverlayController {
 		}
 	}
 
-	enableClose() {
+	disable() {
+		const container = this.store.refs.container
+
+		if (container && this.#focusinHandler) {
+			container.removeEventListener('focusin', this.#focusinHandler)
+			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
+		}
+
+		if (this.#selectionChangeHandler) {
+			document.removeEventListener('selectionchange', this.#selectionChangeHandler)
+		}
+
+		this.#disableClose()
+
+		this.#scope?.()
+		this.#scope = undefined
+		this.#selectionChangeHandler = undefined
+		this.#focusinHandler = undefined
+		this.#focusoutHandler = undefined
+	}
+
+	#enableClose() {
 		if (this.#escHandler) return
 
 		this.#escHandler = e => {
@@ -88,33 +114,12 @@ export class OverlayController {
 		document.addEventListener('click', this.#clickHandler, true)
 	}
 
-	disableClose() {
+	#disableClose() {
 		if (this.#escHandler) {
 			window.removeEventListener('keydown', this.#escHandler)
 			if (this.#clickHandler) document.removeEventListener('click', this.#clickHandler, true)
 			this.#escHandler = undefined
 			this.#clickHandler = undefined
 		}
-	}
-
-	disable() {
-		const container = this.store.refs.container
-
-		if (container && this.#focusinHandler) {
-			container.removeEventListener('focusin', this.#focusinHandler)
-			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
-		}
-
-		if (this.#selectionChangeHandler) {
-			document.removeEventListener('selectionchange', this.#selectionChangeHandler)
-		}
-
-		this.disableClose()
-
-		this.#triggerScope?.()
-		this.#triggerScope = undefined
-		this.#selectionChangeHandler = undefined
-		this.#focusinHandler = undefined
-		this.#focusoutHandler = undefined
 	}
 }

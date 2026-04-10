@@ -1,27 +1,21 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
-import type {CoreOption} from '../../shared/types'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
 
-type TriggerExtractor<T> = (option: T) => string | undefined
-
-export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
-	getTrigger?: TriggerExtractor<TOption>
-}
-
 export class Lifecycle {
 	#scope?: () => void
 	#stopFeatures?: () => void
-	#stopOverlay?: () => void
 	#initialized = false
 
 	constructor(private store: Store) {}
 
-	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
-		if (this.#scope) return // idempotency guard
+	enable() {
+		if (this.#scope) return
 
 		const {store} = this
+
+		store.state.overlayTrigger.set(option => option.overlay?.trigger)
 
 		const features = createCoreFeatures(store)
 		features.enableAll()
@@ -29,10 +23,6 @@ export class Lifecycle {
 
 		this.#scope = effectScope(() => {
 			this.#subscribeParse()
-
-			if (options?.getTrigger) {
-				this.#subscribeOverlay(options.getTrigger)
-			}
 		})
 	}
 
@@ -41,18 +31,14 @@ export class Lifecycle {
 		this.#scope = undefined
 		this.#stopFeatures?.()
 		this.#stopFeatures = undefined
-		this.#stopOverlay?.()
-		this.#stopOverlay = undefined
+		this.store.state.overlayTrigger.set(undefined)
 		this.#initialized = false
 	}
 
-	/**
-	 * Synchronizes the parser with current options and handles parsing.
-	 * Must be called by the framework layer when value or options change,
-	 * since these are props set synchronously during render.
-	 */
-	syncParser(value: string | undefined, options: CoreOption[] | undefined) {
+	syncParser() {
 		const {store} = this
+
+		const options = this.#getEffectiveOptions()
 
 		const markups = options?.map(opt => opt.markup)
 		if (markups?.some(Boolean)) {
@@ -70,22 +56,30 @@ export class Lifecycle {
 			return
 		}
 
-		const inputValue = value ?? store.state.defaultValue.get() ?? ''
+		const inputValue = store.state.value.get() ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
 		store.state.previousValue.set(inputValue)
 
 		this.#initialized = true
 	}
 
-	/**
-	 * Recovers focus after tokens change.
-	 * Must be called by the framework layer after DOM updates,
-	 * since focus recovery requires the new DOM to be committed.
-	 */
+	#getEffectiveOptions() {
+		const Mark = this.store.state.Mark.get()
+		const coreOptions = this.store.state.options.get()
+		const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
+			opt =>
+				typeof opt === 'object' &&
+				opt !== null &&
+				'Mark' in opt &&
+				(opt as Record<string, unknown>).Mark != null
+		)
+		return Mark || hasPerOptionMark ? coreOptions : undefined
+	}
+
 	recoverFocus() {
-		this.store.controllers.contentEditable.sync()
+		this.store.events.sync.emit()
 		if (!this.store.state.Mark.get()) return
-		this.store.controllers.focus.recover()
+		this.store.events.recoverFocus.emit()
 	}
 
 	#subscribeParse() {
@@ -99,22 +93,6 @@ export class Lifecycle {
 				return
 			}
 			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
-		})
-	}
-
-	#subscribeOverlay<TOption extends CoreOption = CoreOption>(getTrigger: TriggerExtractor<TOption>) {
-		const {store} = this
-
-		store.controllers.overlay.enableTrigger(getTrigger, match => store.state.overlayMatch.set(match))
-		this.#stopOverlay = () => store.controllers.overlay.disable()
-
-		watch(store.state.overlayMatch, match => {
-			if (match) {
-				store.nodes.input.target = store.nodes.focus.target
-				store.controllers.overlay.enableClose()
-			} else {
-				store.controllers.overlay.disableClose()
-			}
 		})
 	}
 }

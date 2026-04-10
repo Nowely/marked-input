@@ -21,7 +21,7 @@ This guide explains Markput's internal architecture, data flow, and design decis
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │                    Core Layer                         │  │
 │  │  • Parser (markup → tokens)                           │  │
-│  │  • Store (state + events + controllers)               │  │
+│  │  • Store (state + events + features)                  │  │
 │  │  • Signals (framework-agnostic reactivity)            │  │
 │  │  • Caret (cursor positioning)                         │  │
 │  └───────────────────────────────────────────────────────┘  │
@@ -81,11 +81,11 @@ Both framework adapters share the same component structure:
 ```
 1. User types in contenteditable
         ↓
-2. ContentEditableController detects input
+2. ContentEditableFeature detects input
         ↓
 3. store.events.change() emitted
         ↓
-4. SystemListenerController reads DOM, mutates focused token in-place
+4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
 5. store.events.parse() emitted
         ↓
@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusController.recover() restores caret position
+9. FocusFeature restores caret position via store.events.recoverFocus
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -107,7 +107,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
         ↓
 2. store.events.checkOverlay() emitted
         ↓
-3. OverlayController checks for trigger match
+3. OverlayFeature checks for trigger match
         ↓
 4. If found:
    - store.state.overlayMatch set
@@ -225,6 +225,9 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `clearOverlay`  | Close overlay               | `void`                           |
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `delete`        | Mark deleted                | `{ token: Token }`               |
+| `sync`          | Value/options sync needed   | `void`                           |
+| `recoverFocus`  | Focus recovery after render | `void`                           |
+| `dragAction`    | Drag-and-drop action        | `{ type: string, token: Token }` |
 
 ### Event Usage
 
@@ -304,6 +307,9 @@ class Store {
         select: PayloadEvent<{ mark: Token; match: OverlayMatch }>
         clearOverlay: VoidEvent
         checkOverlay: VoidEvent
+        sync: VoidEvent
+        recoverFocus: VoidEvent
+        dragAction: PayloadEvent<{ type: string; token: Token }>
     }
 
     readonly refs: {
@@ -311,14 +317,17 @@ class Store {
         overlay: HTMLElement | null
     }
 
-    readonly controllers: {
-        overlay: OverlayController
-        focus: FocusController
-        keydown: KeyDownController
-        system: SystemListenerController
-        textSelection: TextSelectionController
-        contentEditable: ContentEditableController
-        drag: DragController
+    readonly features: {
+        input: InputFeature
+        blockEdit: BlockEditFeature
+        keyNav: KeyNavFeature
+        overlay: OverlayFeature
+        focus: FocusFeature
+        system: SystemListenerFeature
+        textSelection: TextSelectionFeature
+        contentEditable: ContentEditableFeature
+        drag: DragFeature
+        copy: CopyFeature
     }
 
     readonly lifecycle: Lifecycle
@@ -341,19 +350,24 @@ store.state.set({ tokens: newTokens, readOnly: true })
 const tokens = store.state.tokens.use()
 ```
 
-## Controllers
+## Features
 
-7 controllers, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.events` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.events` (emitters), and `store.nodes` (DOM refs):
 
-| Controller                    | Responsibility                                           |
+| Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
-| **FocusController**           | Caret tracking, focus recovery after re-renders          |
-| **KeyDownController**         | Keyboard event handling, navigation between tokens       |
-| **OverlayController**         | Overlay trigger detection, position, open/close          |
-| **TextSelectionController**   | Text selection state tracking                            |
-| **SystemListenerController**  | DOM mutation detection, token content synchronization    |
-| **ContentEditableController** | contenteditable attribute management                     |
-| **DragController**            | Drag-and-drop reordering of blocks                       |
+| **InputFeature**              | Handles text input events, character insertion           |
+| **BlockEditFeature**          | Block-level editing operations (delete, split, merge)    |
+| **KeyNavFeature**             | Keyboard navigation between tokens                       |
+| **FocusFeature**              | Caret tracking, focus recovery after re-renders          |
+| **OverlayFeature**            | Overlay trigger detection, position, open/close          |
+| **TextSelectionFeature**      | Text selection state tracking                            |
+| **SystemListenerFeature**     | DOM mutation detection, token content synchronization    |
+| **ContentEditableFeature**    | contenteditable attribute management                     |
+| **DragFeature**               | Drag-and-drop reordering of blocks                       |
+| **CopyFeature**               | Clipboard copy/cut handling                              |
+
+The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `KeyNavFeature` (keyboard navigation).
 
 Managed by `FeatureManager`, which allows selective feature activation.
 
@@ -362,16 +376,16 @@ Managed by `FeatureManager`, which allows selective feature activation.
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Enable controllers and event subscriptions
+// 1. Enable features and event subscriptions
 lifecycle.enable()
 
-// 2. Sync parser with value/options (layout effect)
+// 2. Sync parser with value/options via store.events.sync
 lifecycle.syncParser(value, options)
 
 // 3. Sync contenteditable attributes (layout effect)
 contentEditable.sync()
 
-// 4. Recover focus after DOM commits (effect)
+// 4. Recover focus after DOM commits via store.events.recoverFocus
 lifecycle.recoverFocus()
 ```
 

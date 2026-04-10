@@ -5,10 +5,12 @@ export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
-	StyleProperties,
+	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DataAttributes,
+	DragAction,
+	DragActions,
 } from './src/shared/types'
 export {MarkputHandler} from './src/shared/classes'
 

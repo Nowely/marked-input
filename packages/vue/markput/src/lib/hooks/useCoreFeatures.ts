@@ -1,13 +1,9 @@
 import type {Store} from '@markput/core'
 import {onMounted, onUnmounted, watch} from 'vue'
 
-import type {Option} from '../../types'
-
 export function useCoreFeatures(store: Store) {
 	onMounted(() => {
-		store.lifecycle.enable<Option>({
-			getTrigger: option => option.overlay?.trigger,
-		})
+		store.lifecycle.enable()
 	})
 
 	onUnmounted(() => {
@@ -21,21 +17,12 @@ export function useCoreFeatures(store: Store) {
 	watch(
 		[value, coreOptions, Mark],
 		() => {
-			const hasPerOptionMark = (coreOptions.value as Option[] | undefined)?.some(opt => opt.Mark != null)
-			const options = Mark.value || hasPerOptionMark ? coreOptions.value : undefined
-			store.lifecycle.syncParser(value.value, options)
+			store.lifecycle.syncParser()
 		},
 		{flush: 'post', immediate: true}
 	)
 
 	const tokens = store.state.tokens.use()
-	watch(
-		tokens,
-		() => {
-			store.controllers.contentEditable.sync()
-		},
-		{flush: 'post'}
-	)
 	watch(
 		tokens,
 		() => {

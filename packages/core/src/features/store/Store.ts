@@ -8,10 +8,13 @@ import type {
 	OverlayTrigger,
 	Recovery,
 	GenericComponent,
-	StyleProperties,
+	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
+	DragAction,
 } from '../../shared/types'
+
+import styles from '../../../styles.module.css'
 
 type StoreState = {
 	tokens: Signal<Token[]>
@@ -24,6 +27,7 @@ type StoreState = {
 	selecting: Signal<'drag' | 'all' | undefined>
 	drag: Signal<boolean | {alwaysShowHandle: boolean}>
 	overlayMatch: Signal<OverlayMatch | undefined>
+	overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
 	showOverlayOn: Signal<OverlayTrigger>
 	onChange: Signal<((value: string) => void) | undefined>
 	options: Signal<CoreOption[]>
@@ -32,27 +36,30 @@ type StoreState = {
 	Mark: Signal<GenericComponent | undefined>
 	Overlay: Signal<GenericComponent | undefined>
 	className: Signal<string | undefined>
-	style: Signal<StyleProperties | undefined>
-	baseClassName: Signal<string | undefined>
+	style: Signal<CSSProperties | undefined>
 	containerClass: Computed<string | undefined>
-	containerStyle: Computed<StyleProperties | undefined>
+	containerStyle: Computed<CSSProperties | undefined>
 	slots: Signal<CoreSlots | undefined>
 	slotProps: Signal<CoreSlotProps | undefined>
 }
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
-import {CopyController} from '../clipboard'
-import {DragController} from '../drag'
-import {ContentEditableController} from '../editable'
-import {SystemListenerController} from '../events'
-import {FocusController} from '../focus'
-import {KeyDownController} from '../input'
+import {BlockEditFeature} from '../block-editing'
+import {CopyFeature} from '../clipboard'
+import {DragFeature} from '../drag'
+import {ContentEditableFeature} from '../editable'
+import {SystemListenerFeature} from '../events'
+import {FocusFeature} from '../focus'
+import {InputFeature} from '../input'
+import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
-import {OverlayController} from '../overlay'
+import {OverlayFeature} from '../overlay'
 import type {Parser, Token} from '../parsing'
-import {TextSelectionController} from '../selection'
+import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
+
+export type {DragAction} from '../../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()
@@ -79,6 +86,7 @@ export class Store {
 
 		// Overlay
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
+		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 		showOverlayOn: signal<OverlayTrigger>('change'),
 
 		// Callbacks
@@ -95,10 +103,9 @@ export class Store {
 
 		// Styling
 		className: signal<string | undefined>(undefined),
-		style: signal<StyleProperties | undefined>(undefined, {equals: shallow}),
-		baseClassName: signal<string | undefined>(undefined),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
 		containerClass: computed(() =>
-			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)
+			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
 		),
 		containerStyle: computed(prev => {
 			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
@@ -126,6 +133,9 @@ export class Store {
 		select: event<{mark: Token; match: OverlayMatch}>(),
 		clearOverlay: event(),
 		checkOverlay: event(),
+		sync: event(),
+		recoverFocus: event(),
+		dragAction: event<DragAction>(),
 	}
 
 	readonly refs = {
@@ -135,15 +145,17 @@ export class Store {
 
 	readonly handler = new MarkputHandler(this)
 
-	readonly controllers = {
-		overlay: new OverlayController(this),
-		focus: new FocusController(this),
-		keydown: new KeyDownController(this),
-		system: new SystemListenerController(this),
-		textSelection: new TextSelectionController(this),
-		contentEditable: new ContentEditableController(this),
-		drag: new DragController(this),
-		copy: new CopyController(this),
+	readonly features = {
+		overlay: new OverlayFeature(this),
+		focus: new FocusFeature(this),
+		input: new InputFeature(this),
+		blockEditing: new BlockEditFeature(this),
+		keynav: new KeyNavFeature(this),
+		system: new SystemListenerFeature(this),
+		textSelection: new TextSelectionFeature(this),
+		contentEditable: new ContentEditableFeature(this),
+		drag: new DragFeature(this),
+		copy: new CopyFeature(this),
 	}
 
 	readonly lifecycle = new Lifecycle(this)

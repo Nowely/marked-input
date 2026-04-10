@@ -1,3 +1,5 @@
+import type * as CSS from 'csstype'
+
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
 import type {NodeProxy} from './classes/NodeProxy'
@@ -34,6 +36,7 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
+	overlay?: {trigger?: string}
 }
 
 /**
@@ -63,7 +66,7 @@ export interface MarkputState {
 	Mark: GenericComponent | undefined
 	Overlay: GenericComponent | undefined
 	className: string | undefined
-	style: StyleProperties | undefined
+	style: CSSProperties | undefined
 	slots: CoreSlots | undefined
 	slotProps: CoreSlotProps | undefined
 	drag: boolean | {alwaysShowHandle: boolean}
@@ -110,14 +113,11 @@ export type Recovery = {
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 
-export type StyleProperties = Record<string, string | number>
-
+export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
 export type GenericComponent = unknown
 export type GenericElement = unknown
-export type GenericAttributes = Record<string, unknown>
-
 export interface CoreSlots {
 	container?: GenericElement
 	block?: GenericElement
@@ -125,7 +125,17 @@ export interface CoreSlots {
 }
 
 export interface CoreSlotProps {
-	container?: GenericAttributes & {className?: string; style?: StyleProperties}
-	block?: GenericAttributes & {className?: string; style?: StyleProperties}
-	span?: GenericAttributes & {className?: string; style?: StyleProperties}
+	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	span?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+}
+
+export type DragAction =
+	| {type: 'reorder'; source: number; target: number}
+	| {type: 'add'; afterIndex: number}
+	| {type: 'delete'; index: number}
+	| {type: 'duplicate'; index: number}
+
+export interface DragActions {
+	dragAction: {emit(action: DragAction): void}
 }
