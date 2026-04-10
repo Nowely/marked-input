@@ -224,128 +224,123 @@ describe('Lifecycle', () => {
 		})
 	})
 
-	describe('lifecycle methods', () => {
-		it('onUpdated() first call triggers enable() and syncParser()', () => {
+	describe('lifecycle events', () => {
+		it('updated.emit() first call triggers enable() and syncParser()', () => {
 			const lifecycle = store.lifecycle
 			store.state.value.set('hello')
 
 			const enableSpy = vi.spyOn(lifecycle, 'enable')
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
 
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			expect(enableSpy).toHaveBeenCalledOnce()
 			expect(syncParserSpy).toHaveBeenCalledOnce()
 			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onUpdated() subsequent call with unchanged deps skips syncParser()', () => {
+		it('updated.emit() subsequent call with unchanged deps skips syncParser()', () => {
 			const lifecycle = store.lifecycle
 			store.state.value.set('hello')
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			expect(syncParserSpy).not.toHaveBeenCalled()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onUpdated() re-runs syncParser when value changes', () => {
+		it('updated.emit() re-runs syncParser when value changes', () => {
 			const lifecycle = store.lifecycle
 			store.state.value.set('hello')
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			store.state.value.set('world')
 			// mock to prevent parse.emit() downstream (getTokensByValue not suitable for test env)
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser').mockImplementation(() => {})
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			expect(syncParserSpy).toHaveBeenCalledOnce()
 			syncParserSpy.mockRestore()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onUpdated() does not emit sync or recoverFocus (committed handles those)', () => {
-			const lifecycle = store.lifecycle
+		it('updated.emit() does not emit sync or recoverFocus (committed handles those)', () => {
 			store.state.Mark.set(() => null)
 			store.state.value.set('hello')
 
 			const syncSpy = vi.spyOn(store.events.sync, 'emit')
 			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onAfterTokensRendered() always emits sync', () => {
-			const lifecycle = store.lifecycle
-			lifecycle.onUpdated()
+		it('afterTokensRendered.emit() always emits sync', () => {
+			store.events.updated.emit()
 
 			const syncSpy = vi.spyOn(store.events.sync, 'emit')
-			lifecycle.onAfterTokensRendered()
+			store.events.afterTokensRendered.emit()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onAfterTokensRendered() emits recoverFocus when Mark is set', () => {
-			const lifecycle = store.lifecycle
+		it('afterTokensRendered.emit() emits recoverFocus when Mark is set', () => {
 			store.state.Mark.set(() => null)
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			lifecycle.onAfterTokensRendered()
+			store.events.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).toHaveBeenCalledOnce()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onAfterTokensRendered() does not emit recoverFocus when Mark is not set', () => {
-			const lifecycle = store.lifecycle
-			lifecycle.onUpdated()
+		it('afterTokensRendered.emit() does not emit recoverFocus when Mark is not set', () => {
+			store.events.updated.emit()
 
 			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			lifecycle.onAfterTokensRendered()
+			store.events.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 
-		it('onUnmounted() triggers disable()', () => {
+		it('unmounted.emit() triggers disable()', () => {
 			const lifecycle = store.lifecycle
-			lifecycle.onUpdated()
+			store.events.updated.emit()
 
 			const disableSpy = vi.spyOn(lifecycle, 'disable')
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 
 			expect(disableSpy).toHaveBeenCalledOnce()
 		})
 
-		it('remount: onUnmounted then onUpdated re-enables and re-syncs', () => {
-			const lifecycle = store.lifecycle
+		it('remount: unmounted then updated re-enables and re-syncs', () => {
 			store.state.value.set('first')
-			lifecycle.onUpdated()
-			lifecycle.onUnmounted()
+			store.events.updated.emit()
+			store.events.unmounted.emit()
 
 			store.state.value.set('second')
-			const enableSpy = vi.spyOn(lifecycle, 'enable')
-			lifecycle.onUpdated()
+			const enableSpy = vi.spyOn(store.lifecycle, 'enable')
+			store.events.updated.emit()
 
 			expect(enableSpy).toHaveBeenCalledOnce()
 			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 
-			lifecycle.onUnmounted()
+			store.events.unmounted.emit()
 		})
 	})
 })

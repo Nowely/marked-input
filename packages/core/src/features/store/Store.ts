@@ -136,6 +136,9 @@ export class Store {
 		sync: event(),
 		recoverFocus: event(),
 		dragAction: event<DragAction>(),
+		updated: event(),
+		afterTokensRendered: event(),
+		unmounted: event(),
 	}
 
 	readonly refs = {

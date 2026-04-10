@@ -10,19 +10,15 @@ export class Lifecycle {
 	#lastSyncMark: unknown
 	#lastSyncOptions: unknown
 
-	constructor(private store: Store) {}
+	constructor(private store: Store) {
+		watch(store.events.updated, () => this.#onUpdated())
+		watch(store.events.afterTokensRendered, () => this.recoverFocus())
+		watch(store.events.unmounted, () => this.disable())
+	}
 
-	onUpdated() {
+	#onUpdated() {
 		if (!this.#scope) this.enable()
 		this.#maybeSyncParser()
-	}
-
-	onAfterTokensRendered() {
-		this.recoverFocus()
-	}
-
-	onUnmounted() {
-		this.disable()
 	}
 
 	#maybeSyncParser() {
