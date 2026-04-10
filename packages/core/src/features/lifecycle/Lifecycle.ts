@@ -1,14 +1,14 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
-import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
+import {toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
+import type {Parser} from '../parsing'
 import type {Store} from '../store'
 
 export class Lifecycle {
 	#scope?: () => void
 	#featuresEnabled = false
 	#initialized = false
-	#lastSyncValue: string | undefined
-	#lastSyncMark: unknown
-	#lastSyncOptions: unknown
+	#lastValue: string | undefined
+	#lastParser: Parser | undefined
 
 	constructor(private store: Store) {
 		watch(store.event.updated, () => this.#onUpdated())
@@ -17,26 +17,19 @@ export class Lifecycle {
 	}
 
 	#onUpdated() {
-		if (!this.#scope) this.enable()
-		this.#maybeSyncParser()
-	}
-
-	#maybeSyncParser() {
-		const {store} = this
-		const value = store.state.value.get()
-		const Mark = store.state.Mark.get()
-		const options = store.state.options.get()
-		if (
-			this.#initialized &&
-			value === this.#lastSyncValue &&
-			Mark === this.#lastSyncMark &&
-			options === this.#lastSyncOptions
-		)
+		if (!this.#scope) {
+			this.enable()
+			this.syncParser()
 			return
-		this.#lastSyncValue = value
-		this.#lastSyncMark = Mark
-		this.#lastSyncOptions = options
-		this.syncParser()
+		}
+		const value = this.store.state.value.get()
+		const parser = this.store.computed.parser.get()
+		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return
+		this.#lastValue = value
+		this.#lastParser = parser
+		if (!this.store.state.recovery.get()) {
+			this.store.event.parse()
+		}
 	}
 
 	#enableFeatures() {
@@ -77,43 +70,12 @@ export class Lifecycle {
 
 	syncParser() {
 		const {store} = this
-
-		const options = this.#getEffectiveOptions()
-
-		const markups = options?.map(opt => opt.markup)
-		if (markups?.some(Boolean)) {
-			const isDrag = !!store.state.drag.get()
-			const parseOptions = isDrag ? {skipEmptyText: true} : undefined
-			store.state.parser.set(new Parser(markups, parseOptions))
-		} else {
-			store.state.parser.set(undefined)
-		}
-
-		if (this.#initialized) {
-			if (!store.state.recovery.get()) {
-				store.event.parse()
-			}
-			return
-		}
-
 		const inputValue = store.state.value.get() ?? store.state.defaultValue.get() ?? ''
 		store.state.tokens.set(parseWithParser(store, inputValue))
 		store.state.previousValue.set(inputValue)
-
+		this.#lastValue = store.state.value.get()
+		this.#lastParser = store.computed.parser.get()
 		this.#initialized = true
-	}
-
-	#getEffectiveOptions() {
-		const Mark = this.store.state.Mark.get()
-		const coreOptions = this.store.state.options.get()
-		const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
-			opt =>
-				typeof opt === 'object' &&
-				opt !== null &&
-				'Mark' in opt &&
-				(opt as Record<string, unknown>).Mark != null
-		)
-		return Mark || hasPerOptionMark ? coreOptions : undefined
 	}
 
 	recoverFocus() {

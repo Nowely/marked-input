@@ -18,7 +18,6 @@ import styles from '../../../styles.module.css'
 
 type StoreState = {
 	tokens: Signal<Token[]>
-	parser: Signal<Parser | undefined>
 	value: Signal<string | undefined>
 	defaultValue: Signal<string | undefined>
 	previousValue: Signal<string | undefined>
@@ -41,6 +40,7 @@ type StoreState = {
 	slotProps: Signal<CoreSlotProps | undefined>
 }
 type StoreComputed = {
+	parser: Computed<Parser | undefined>
 	containerClass: Computed<string | undefined>
 	containerStyle: Computed<CSSProperties | undefined>
 }
@@ -57,7 +57,8 @@ import {FocusFeature} from '../focus'
 import {InputFeature} from '../input'
 import {Lifecycle} from '../lifecycle'
 import {OverlayFeature} from '../overlay'
-import type {Parser, Token} from '../parsing'
+import {Parser} from '../parsing'
+import type {Token} from '../parsing'
 import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
 
@@ -75,7 +76,6 @@ export class Store {
 	readonly state: StoreState = {
 		// Data
 		tokens: signal<Token[]>([]),
-		parser: signal<Parser | undefined>(undefined),
 		value: signal<string | undefined>(undefined),
 		defaultValue: signal<string | undefined>(undefined),
 		previousValue: signal<string | undefined>(undefined),
@@ -113,6 +113,22 @@ export class Store {
 	}
 
 	readonly computed: StoreComputed = {
+		parser: computed(() => {
+			const Mark = this.state.Mark.get()
+			const coreOptions = this.state.options.get()
+			const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
+				opt =>
+					typeof opt === 'object' &&
+					opt !== null &&
+					'Mark' in opt &&
+					(opt as Record<string, unknown>).Mark != null
+			)
+			const effectiveOptions = Mark || hasPerOptionMark ? coreOptions : undefined
+			const markups = effectiveOptions?.map(opt => opt.markup)
+			if (!markups?.some(Boolean)) return undefined
+			const isDrag = !!this.state.drag.get()
+			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
+		}),
 		containerClass: computed(() =>
 			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
 		),

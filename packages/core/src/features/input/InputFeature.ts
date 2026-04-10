@@ -266,7 +266,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 
 	if (store.state.value.get() === undefined) {
 		store.state.tokens.set(
-			store.state.parser.get()?.parse(newContent) ?? [
+			store.computed.parser.get()?.parse(newContent) ?? [
 				{
 					type: 'text' as const,
 					content: newContent,
