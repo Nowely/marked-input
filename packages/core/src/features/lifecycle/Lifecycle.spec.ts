@@ -119,7 +119,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeUndefined()
+			expect(store.computed.parser.get()).toBeUndefined()
 
 			lifecycle.disable()
 		})
@@ -132,7 +132,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeDefined()
+			expect(store.computed.parser.get()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -144,7 +144,7 @@ describe('Lifecycle', () => {
 			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
 			lifecycle.syncParser()
 
-			expect(store.state.parser.get()).toBeDefined()
+			expect(store.computed.parser.get()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -163,6 +163,27 @@ describe('Lifecycle', () => {
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'initial', position: {start: 0, end: 7}}])
 			expect(store.state.previousValue.get()).toBe('initial')
+
+			lifecycle.disable()
+		})
+
+		it('parser auto-updates when drag changes (computed reactivity)', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
+			store.state.value.set('hello')
+			lifecycle.syncParser()
+
+			const parserBefore = store.computed.parser.get()
+			expect(parserBefore).toBeDefined()
+
+			store.state.drag.set(true)
+			const parserAfter = store.computed.parser.get()
+
+			expect(parserAfter).toBeDefined()
+			expect(parserAfter).not.toBe(parserBefore)
 
 			lifecycle.disable()
 		})
@@ -241,31 +262,30 @@ describe('Lifecycle', () => {
 			store.event.unmounted()
 		})
 
-		it('updated() subsequent call with unchanged deps skips syncParser()', () => {
-			const lifecycle = store.lifecycle
+		it('updated() subsequent call with unchanged deps skips parse()', () => {
 			store.state.value.set('hello')
 			store.event.updated()
 
-			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
+			const parseSpy = vi.spyOn(store.event, 'parse')
 			store.event.updated()
 
-			expect(syncParserSpy).not.toHaveBeenCalled()
+			expect(parseSpy).not.toHaveBeenCalled()
 
 			store.event.unmounted()
 		})
 
-		it('updated() re-runs syncParser when value changes', () => {
-			const lifecycle = store.lifecycle
+		it('updated() emits parse when value changes', () => {
+			store.state.Mark.set(() => null)
+			store.state.options.set([{markup: '@[__value__]'}])
 			store.state.value.set('hello')
 			store.event.updated()
 
 			store.state.value.set('world')
-			// mock to prevent parse() downstream (getTokensByValue not suitable for test env)
-			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser').mockImplementation(() => {})
+			const parseSpy = vi.spyOn(store.event, 'parse').mockImplementation(() => {})
 			store.event.updated()
 
-			expect(syncParserSpy).toHaveBeenCalledOnce()
-			syncParserSpy.mockRestore()
+			expect(parseSpy).toHaveBeenCalledOnce()
+			parseSpy.mockRestore()
 
 			store.event.unmounted()
 		})
