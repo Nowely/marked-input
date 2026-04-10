@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
-import {Store} from '../store/Store'
+import {Store} from '../../store/Store'
 
 // oxlint-disable-next-line no-unsafe-type-assertion -- test stub for container ref
 const stubContainer = {

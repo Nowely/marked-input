@@ -1,5 +1,5 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
-import type {Store} from '../store/Store'
+import type {Store} from '../../store/Store'
 import type {Parser} from './parser/Parser'
 import {toString} from './parser/utils/toString'
 import {getTokensByUI, getTokensByValue, parseWithParser} from './utils/valueParser'

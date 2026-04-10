@@ -14,28 +14,28 @@
 
 ### Moving
 
-| Current | New |
-|---------|-----|
-| `packages/core/src/features/store/Store.ts` | `packages/core/src/store/Store.ts` |
-| `packages/core/src/features/store/Store.spec.ts` | `packages/core/src/store/Store.spec.ts` |
-| `packages/core/src/features/store/index.ts` | `packages/core/src/store/index.ts` |
-| `packages/core/src/features/store/README.md` | `packages/core/src/store/README.md` |
-| `packages/core/src/shared/classes/BlockStore.ts` | `packages/core/src/store/BlockStore.ts` |
+| Current                                             | New                                        |
+| --------------------------------------------------- | ------------------------------------------ |
+| `packages/core/src/features/store/Store.ts`         | `packages/core/src/store/Store.ts`         |
+| `packages/core/src/features/store/Store.spec.ts`    | `packages/core/src/store/Store.spec.ts`    |
+| `packages/core/src/features/store/index.ts`         | `packages/core/src/store/index.ts`         |
+| `packages/core/src/features/store/README.md`        | `packages/core/src/store/README.md`        |
+| `packages/core/src/shared/classes/BlockStore.ts`    | `packages/core/src/store/BlockStore.ts`    |
 | `packages/core/src/shared/classes/BlockRegistry.ts` | `packages/core/src/store/BlockRegistry.ts` |
 
 ### Modifying (import path updates)
 
-| File | Change |
-|------|--------|
-| `packages/core/src/store/Store.ts` | Update shared/classes import paths |
-| `packages/core/src/store/Store.spec.ts` | Update shared import paths |
-| `packages/core/src/store/BlockStore.ts` | Update shared import paths |
-| `packages/core/src/store/BlockRegistry.ts` | Update BlockStore import path |
-| `packages/core/src/store/index.ts` | New barrel — export Store, BlockStore, BlockRegistry, DropPosition |
-| `packages/core/src/shared/classes/index.ts` | Remove BlockStore, BlockRegistry, DropPosition exports |
-| `packages/core/index.ts` | Change `./src/features/store` → `./src/store` |
-| 18 feature files | Update `'../store/Store'` → `'../../store/Store'` |
-| 6 feature spec files | Update `'../store/Store'` → `'../../store/Store'` |
+| File                                        | Change                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| `packages/core/src/store/Store.ts`          | Update shared/classes import paths                                 |
+| `packages/core/src/store/Store.spec.ts`     | Update shared import paths                                         |
+| `packages/core/src/store/BlockStore.ts`     | Update shared import paths                                         |
+| `packages/core/src/store/BlockRegistry.ts`  | Update BlockStore import path                                      |
+| `packages/core/src/store/index.ts`          | New barrel — export Store, BlockStore, BlockRegistry, DropPosition |
+| `packages/core/src/shared/classes/index.ts` | Remove BlockStore, BlockRegistry, DropPosition exports             |
+| `packages/core/index.ts`                    | Change `./src/features/store` → `./src/store`                      |
+| 18 feature files                            | Update `'../store/Store'` → `'../../store/Store'`                  |
+| 6 feature spec files                        | Update `'../store/Store'` → `'../../store/Store'`                  |
 
 ### Deleting
 
@@ -46,6 +46,7 @@
 ## Task 1: Move Store files to `src/store/`
 
 **Files:**
+
 - Move: `packages/core/src/features/store/Store.ts` → `packages/core/src/store/Store.ts`
 - Move: `packages/core/src/features/store/Store.spec.ts` → `packages/core/src/store/Store.spec.ts`
 - Move: `packages/core/src/features/store/index.ts` → `packages/core/src/store/index.ts`
@@ -65,15 +66,19 @@ rmdir packages/core/src/features/store
 - [ ] **Step 2: Update Store.ts imports from shared**
 
 In `packages/core/src/store/Store.ts`, the shared import was:
+
 ```typescript
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 ```
+
 Change to (one level deeper now):
+
 ```typescript
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 ```
 
 Also update these shared imports from `'../../shared/...'` to `'../shared/...'`:
+
 - `import {DEFAULT_OPTIONS} from '../../shared/constants'` → `import {DEFAULT_OPTIONS} from '../shared/constants'`
 - `import {signal, computed, event, batch, watch} from '../../shared/signals'` → `import {signal, computed, event, batch, watch} from '../shared/signals'`
 - `import type {SignalValues} from '../../shared/signals'` → `import type {SignalValues} from '../shared/signals'`
@@ -84,6 +89,7 @@ Also update these shared imports from `'../../shared/...'` to `'../shared/...'`:
 - CSS module import: `'../../styles.module.css'` → `'../styles.module.css'`
 
 And feature imports from `'../featureName'` → `'../features/featureName'`:
+
 - `'../arrownav'` → `'../features/arrownav'`
 - `'../block-editing'` → `'../features/block-editing'`
 - `'../clipboard'` → `'../features/clipboard'`
@@ -101,6 +107,7 @@ And feature imports from `'../featureName'` → `'../features/featureName'`:
 - [ ] **Step 3: Update Store.spec.ts imports**
 
 In `packages/core/src/store/Store.spec.ts`:
+
 - `import {DEFAULT_OPTIONS} from '../../shared/constants'` → `import {DEFAULT_OPTIONS} from '../shared/constants'`
 - `import {setUseHookFactory, effect, effectScope, watch, batch} from '../../shared/signals'` → `import {setUseHookFactory, effect, effectScope, watch, batch} from '../shared/signals'`
 - `import {parseWithParser} from '../parsing'` → `import {parseWithParser} from '../features/parsing'`
@@ -108,10 +115,13 @@ In `packages/core/src/store/Store.spec.ts`:
 - [ ] **Step 4: Update `packages/core/index.ts`**
 
 Change:
+
 ```typescript
 export {Store} from './src/features/store'
 ```
+
 To:
+
 ```typescript
 export {Store} from './src/store'
 ```
@@ -121,6 +131,7 @@ export {Store} from './src/store'
 Every feature file that imports Store currently uses `'../store/Store'`. Since Store moved up one level, they now need `'../../store/Store'`.
 
 Files to update (all use `import type {Store} from '../store/Store'` except specs which use `import {Store}`):
+
 - `packages/core/src/features/parsing/ParseFeature.ts`: `'../store/Store'` → `'../../store/Store'`
 - `packages/core/src/features/parsing/ParseFeature.spec.ts`: `'../store/Store'` → `'../../store/Store'`
 - `packages/core/src/features/parsing/utils/valueParser.ts`: `'../../store/Store'` → `'../../../store/Store'`
@@ -160,6 +171,7 @@ git commit -m "refactor(core): move Store from features/store/ to src/store/"
 ## Task 2: Move BlockStore and BlockRegistry to `src/store/`
 
 **Files:**
+
 - Move: `packages/core/src/shared/classes/BlockStore.ts` → `packages/core/src/store/BlockStore.ts`
 - Move: `packages/core/src/shared/classes/BlockRegistry.ts` → `packages/core/src/store/BlockRegistry.ts`
 - Modify: `packages/core/src/shared/classes/index.ts`
@@ -184,15 +196,19 @@ In `packages/core/src/store/BlockStore.ts`, the imports from shared used relativ
 - [ ] **Step 3: Update BlockRegistry.ts import**
 
 In `packages/core/src/store/BlockRegistry.ts`:
+
 - `import {BlockStore} from './BlockStore'` — no change needed (same directory).
 
 - [ ] **Step 4: Update Store.ts to import BlockRegistry from local**
 
 In `packages/core/src/store/Store.ts`, change:
+
 ```typescript
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 ```
+
 To:
+
 ```typescript
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {BlockRegistry} from './BlockRegistry'
@@ -201,6 +217,7 @@ import {BlockRegistry} from './BlockRegistry'
 - [ ] **Step 5: Update `packages/core/src/shared/classes/index.ts`**
 
 Remove these lines:
+
 ```typescript
 export {BlockStore} from './BlockStore'
 export type {DropPosition} from './BlockStore'
@@ -210,6 +227,7 @@ export {BlockRegistry} from './BlockRegistry'
 - [ ] **Step 6: Update `packages/core/src/store/index.ts`**
 
 Replace contents with:
+
 ```typescript
 export {Store} from './Store'
 export {BlockStore} from './BlockStore'

@@ -1,4 +1,4 @@
-import type {Store} from '../../store/Store'
+import type {Store} from '../../../store/Store'
 import type {Token} from '../parser/types'
 import {findGap, getClosestIndexes} from '../preparsing'
 

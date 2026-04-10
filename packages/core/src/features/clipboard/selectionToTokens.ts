@@ -1,5 +1,5 @@
+import type {Store} from '../../store'
 import type {Token} from '../parsing'
-import type {Store} from '../store'
 
 /**
  * Walk up the DOM from `node` until reaching a direct child of `container`.

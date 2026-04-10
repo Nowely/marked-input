@@ -1,6 +1,6 @@
+import type {Store} from '../../store'
 import type {MarkToken, Token} from '../parsing'
 import {findToken} from '../parsing'
-import type {Store} from '../store'
 
 export interface RefAccessor<T> {
 	current: T | null

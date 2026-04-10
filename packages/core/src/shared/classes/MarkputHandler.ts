@@ -1,4 +1,4 @@
-import type {Store} from '../../features/store'
+import type {Store} from '../../store'
 
 export class MarkputHandler {
 	constructor(private store: Store) {}

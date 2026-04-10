@@ -1,6 +1,6 @@
 import {nodeTarget} from '../../shared/checkers'
 import {effectScope, effect} from '../../shared/signals/index.js'
-import type {Store} from '../store/Store'
+import type {Store} from '../../store/Store'
 
 export class TextSelectionFeature {
 	#mousedownHandler?: (e: MouseEvent) => void

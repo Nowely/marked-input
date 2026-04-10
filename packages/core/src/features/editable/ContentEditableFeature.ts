@@ -1,7 +1,7 @@
 import {childAt} from '../../shared/checkers'
 import {effectScope, effect, watch} from '../../shared/signals/index.js'
+import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
-import type {Store} from '../store/Store'
 import {isTextTokenSpan} from './isTextTokenSpan'
 
 export class ContentEditableFeature {

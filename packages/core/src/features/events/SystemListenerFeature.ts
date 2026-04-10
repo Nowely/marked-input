@@ -1,7 +1,7 @@
 import {batch, effectScope, watch} from '../../shared/signals/index.js'
+import type {Store} from '../../store/Store'
 import {createNewSpan} from '../editing'
 import {annotate, findToken, parseWithParser, toString} from '../parsing'
-import type {Store} from '../store/Store'
 
 export class SystemListenerFeature {
 	#scope?: () => void

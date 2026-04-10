@@ -1,7 +1,7 @@
 import {childAt} from '../../shared/checkers'
 import {watch} from '../../shared/signals'
+import type {Store} from '../../store/Store'
 import {createRowContent} from '../editing'
-import type {Store} from '../store/Store'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 

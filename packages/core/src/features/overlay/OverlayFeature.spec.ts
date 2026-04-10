@@ -2,7 +2,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
 import type {OverlayMatch} from '../../shared/types'
-import {Store} from '../store/Store'
+import {Store} from '../../store/Store'
 import type {OverlayFeature} from './OverlayFeature'
 
 const stubDocument = {

@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
-import {Store} from '../store/Store'
+import {Store} from '../../store/Store'
 
 // Stub global `document` for TextSelectionFeature which calls document.addEventListener/removeEventListener
 const listeners: Record<string, Function[]> = {}

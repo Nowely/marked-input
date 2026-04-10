@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
-import {Store} from '../store/Store'
+import {Store} from '../../store/Store'
 
 describe('ParseFeature', () => {
 	let store: Store

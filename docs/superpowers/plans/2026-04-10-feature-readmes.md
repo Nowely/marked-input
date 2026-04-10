@@ -30,6 +30,7 @@ Every new README must follow this structure (matching `caret/README.md` style):
 ```
 
 **Rules:**
+
 - Keep each README under 50 lines
 - No placeholders — every section must have real content
 - Import paths use `@markput/core` or relative paths as appropriate
@@ -39,26 +40,26 @@ Every new README must follow this structure (matching `caret/README.md` style):
 
 ## Current State
 
-| Feature | Has README? | Action Needed |
-|---------|-------------|---------------|
-| arrownav | No | Create |
-| block-editing | No | Create |
-| caret | Yes | None (good) |
-| clipboard | No | Create |
-| drag | No | Create |
-| editable | No | Create |
-| editing | No | Create |
-| events | Yes (outdated) | Update |
-| focus | No | Create |
-| input | No | Create |
-| lifecycle | No | Create |
-| mark | No | Create |
-| navigation | No | Create |
-| overlay | No | Create |
-| parsing | Yes (3 READMEs) | None (comprehensive) |
-| selection | No | Create |
-| slots | No | Create |
-| store | Yes (slightly outdated) | Update |
+| Feature       | Has README?             | Action Needed        |
+| ------------- | ----------------------- | -------------------- |
+| arrownav      | No                      | Create               |
+| block-editing | No                      | Create               |
+| caret         | Yes                     | None (good)          |
+| clipboard     | No                      | Create               |
+| drag          | No                      | Create               |
+| editable      | No                      | Create               |
+| editing       | No                      | Create               |
+| events        | Yes (outdated)          | Update               |
+| focus         | No                      | Create               |
+| input         | No                      | Create               |
+| lifecycle     | No                      | Create               |
+| mark          | No                      | Create               |
+| navigation    | No                      | Create               |
+| overlay       | No                      | Create               |
+| parsing       | Yes (3 READMEs)         | None (comprehensive) |
+| selection     | No                      | Create               |
+| slots         | No                      | Create               |
+| store         | Yes (slightly outdated) | Update               |
 
 **Total: 14 new READMEs + 2 updates = 16 files**
 
@@ -67,6 +68,7 @@ Every new README must follow this structure (matching `caret/README.md` style):
 ### Task 1: Create arrownav/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/arrownav/README.md`
 
 - [ ] **Step 1: Create README**
@@ -95,6 +97,7 @@ Expected: file exists
 ### Task 2: Create block-editing/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/block-editing/README.md`
 
 - [ ] **Step 1: Create README**
@@ -127,11 +130,12 @@ Expected: file exists
 ### Task 3: Create clipboard/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/clipboard/README.md`
 
 - [ ] **Step 1: Create README**
 
-```markdown
+````markdown
 # Clipboard Feature
 
 Provides copy, cut, and paste operations with rich markup support. On copy, writes three MIME types to the clipboard (`text/plain`, `text/html`, `application/x-markput`) to preserve markup fidelity on internal paste.
@@ -152,9 +156,11 @@ import {selectionToTokens} from '@markput/core'
 const range = selectionToTokens(tokens, selection)
 // range: { startToken, endToken, startOffset, endOffset }
 ```
+````
 
 The `CopyFeature` is registered by the Store automatically. The custom MIME type (`application/x-markput`) preserves full markup syntax on internal copy/paste operations.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -188,7 +194,7 @@ The feature uses pure functions from `operations.ts` for manipulating the raw va
 ## Usage
 
 The feature is registered by the Store and activates when drag mode is enabled. Drag actions are dispatched via `store.event.dragAction`.
-```
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -200,6 +206,7 @@ Expected: file exists
 ### Task 5: Create editable/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/editable/README.md`
 
 - [ ] **Step 1: Create README**
@@ -229,11 +236,12 @@ Expected: file exists
 ### Task 6: Create editing/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/editing/README.md`
 
 - [ ] **Step 1: Create README**
 
-```markdown
+````markdown
 # Editing Feature
 
 Provides shared text editing utilities used by other features: creating new block rows, replacing trigger text with annotated markup, and deleting mark tokens.
@@ -252,9 +260,11 @@ import {createRowContent} from '@markput/core'
 const content = createRowContent(options)
 // Returns annotated markup string for a new empty row
 ```
+````
 
 These utilities are used internally by InputFeature, BlockEditFeature, and SystemListenerFeature.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -288,7 +298,7 @@ Central event wiring that connects store events to data flow. Handles change det
 ## Usage
 
 The feature is registered by the Store and runs automatically. It acts as the bridge between raw DOM events and the reactive store state.
-```
+````
 
 - [ ] **Step 2: Verify file content is accurate**
 
@@ -299,6 +309,7 @@ Read the file and confirm it no longer references `EventBus`, `EventKey`, or `Sy
 ### Task 8: Create focus/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/focus/README.md`
 
 - [ ] **Step 1: Create README**
@@ -311,10 +322,10 @@ Manages focus tracking and recovery within the editor. Tracks the currently focu
 ## Components
 
 - **FocusFeature**: Feature class that:
-  - Listens for `focusin`/`focusout`/`click` events on the container
-  - Subscribes to `recoverFocus` events and restores focus/caret from recovery descriptors (handles stale DOM nodes, next/prev navigation, child index offset)
-  - Subscribes to `afterTokensRendered` to trigger sync and focus recovery when a Mark is active
-  - Auto-focuses the first child on click when the editor is empty
+    - Listens for `focusin`/`focusout`/`click` events on the container
+    - Subscribes to `recoverFocus` events and restores focus/caret from recovery descriptors (handles stale DOM nodes, next/prev navigation, child index offset)
+    - Subscribes to `afterTokensRendered` to trigger sync and focus recovery when a Mark is active
+    - Auto-focuses the first child on click when the editor is empty
 
 ## Usage
 
@@ -331,6 +342,7 @@ Expected: file exists
 ### Task 9: Create input/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/input/README.md`
 
 - [ ] **Step 1: Create README**
@@ -342,7 +354,7 @@ Core input handling for the contentEditable editor in non-drag mode. Attaches `k
 
 ## Components
 
-- **InputFeature**: Feature class handling Backspace/Delete on marks and span boundaries, BeforeInput events (insertText, deleteContent*, insertFromPaste, insertReplacementText), paste with markput custom MIME support, and select-all replacement
+- **InputFeature**: Feature class handling Backspace/Delete on marks and span boundaries, BeforeInput events (insertText, deleteContent\*, insertFromPaste, insertReplacementText), paste with markput custom MIME support, and select-all replacement
 - **handleBeforeInput**: Processes `beforeinput` events for text insertion and deletion
 - **handlePaste**: Handles paste events with markput MIME support
 - **replaceAllContentWith**: Replaces entire editor content and schedules focus recovery
@@ -363,6 +375,7 @@ Expected: file exists
 ### Task 10: Create lifecycle/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/lifecycle/README.md`
 
 - [ ] **Step 1: Create README**
@@ -375,11 +388,11 @@ Orchestrates the enable/disable lifecycle of all features. Watches store events 
 ## Components
 
 - **Lifecycle**: Class that manages feature lifecycle:
-  - Watches `store.event.updated` to enable all registered features on first update
-  - Watches `store.event.unmounted` to disable all features on unmount
-  - `enable()` — enables all features in `store.features`
-  - `disable()` — disables all features
-  - Internal flags guard against double-enable/disable
+    - Watches `store.event.updated` to enable all registered features on first update
+    - Watches `store.event.unmounted` to disable all features on unmount
+    - `enable()` — enables all features in `store.features`
+    - `disable()` — disables all features
+    - Internal flags guard against double-enable/disable
 
 ## Usage
 
@@ -396,11 +409,12 @@ Expected: file exists
 ### Task 11: Create mark/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/mark/README.md`
 
 - [ ] **Step 1: Create README**
 
-```markdown
+````markdown
 # Mark Feature
 
 Provides the API for framework-level mark components to interact with their token. `MarkHandler` is instantiated by React/Vue wrappers to expose reactive getters/setters for mark token properties.
@@ -408,8 +422,8 @@ Provides the API for framework-level mark components to interact with their toke
 ## Components
 
 - **MarkHandler**: Class instantiated per mark component with reactive access to `content`, `value`, `meta`, `slot`, `readOnly`, plus computed `depth`, `hasChildren`, `parent`, `tokens`. Methods:
-  - `change({content, value?, meta?})` — batch update multiple fields and emit change event
-  - `remove()` — delete the mark from the value
+    - `change({content, value?, meta?})` — batch update multiple fields and emit change event
+    - `remove()` — delete the mark from the value
 - **MarkOptions**: Configuration type (`controlled` flag for controlled mode)
 - **RefAccessor**: Generic interface for framework ref objects (`{ current: T | null }`)
 
@@ -422,9 +436,11 @@ import {MarkHandler} from '@markput/core'
 const handler = new MarkHandler(refAccessor, store)
 handler.change({content: 'new content', value: 'new value'})
 ```
+````
 
 Framework users interact with marks through React/Vue wrapper components, not directly with `MarkHandler`.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -460,10 +476,11 @@ shiftFocusNext(currentElement, container)
 
 // Move focus to previous focusable element
 shiftFocusPrev(currentElement, container)
-```
+````
 
 Used by `ArrowNavFeature` and `FocusFeature` for keyboard navigation and focus recovery.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -501,10 +518,11 @@ const filtered = filterSuggestions(['Apple', 'Banana', 'Cherry'], 'ap')
 
 const result = navigateSuggestions(action, {index: 0, total: 3})
 // Returns: {index: 1} for 'next' action
-```
+````
 
 The `OverlayFeature` is registered by the Store. It uses `TriggerFinder` from the caret feature for trigger detection.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -534,7 +552,7 @@ Manages text selection state, particularly cross-element drag selection across m
 ## Usage
 
 The feature is registered by the Store automatically. `selectAllText` is also called by `ArrowNavFeature` for Ctrl+A handling.
-```
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -546,11 +564,12 @@ Expected: file exists
 ### Task 15: Create slots/README.md
 
 **Files:**
+
 - Create: `packages/core/src/features/slots/README.md`
 
 - [ ] **Step 1: Create README**
 
-```markdown
+````markdown
 # Slots Feature
 
 Implements the component slot/customization system that allows framework wrappers to override default HTML elements (container, block, span, overlay, mark) with custom components.
@@ -572,9 +591,11 @@ import {createSlots} from '@markput/core'
 const slots = createSlots(options, store)
 const [Container, containerProps] = slots.container.use()
 ```
+````
 
 Slots are created by the Store and consumed by framework wrappers (React/Vue) to render customizable components.
-```
+
+````
 
 - [ ] **Step 2: Verify file was created**
 
@@ -617,10 +638,11 @@ import {Store} from '@markput/core'
 
 const store = new Store(options)
 store.setState({value: 'Hello @[world](test)', readOnly: false})
-```
+````
 
 The Store is created by framework wrappers and passed to all features. Features communicate exclusively through `store.state`, `store.event`, and `store.nodes`.
-```
+
+````
 
 - [ ] **Step 2: Verify file content is accurate**
 
@@ -640,4 +662,4 @@ Expected: All 18 features show YES
 ```bash
 git add packages/core/src/features/*/README.md
 git commit -m "docs(core): add README to all feature directories"
-```
+````

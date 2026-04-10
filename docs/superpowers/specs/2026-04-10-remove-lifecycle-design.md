@@ -47,6 +47,7 @@ No guards needed — `mounted` and `unmounted` each fire exactly once per lifecy
 ### 4. Delete Lifecycle feature folder
 
 Remove entirely:
+
 - `packages/core/src/features/lifecycle/Lifecycle.ts`
 - `packages/core/src/features/lifecycle/Lifecycle.spec.ts`
 - `packages/core/src/features/lifecycle/index.ts`
@@ -69,11 +70,11 @@ The 12 test cases in `Lifecycle.spec.ts` are deleted. The enable/disable behavio
 
 ## Files affected
 
-| File | Change |
-|------|--------|
-| `packages/core/src/features/store/Store.ts` | Remove Lifecycle import, inline watches, add `mounted` event |
-| `packages/core/src/features/lifecycle/*` | Delete entire folder |
-| `packages/react/markput/src/components/MarkedInput.tsx` | Emit `mounted()` on mount |
-| `packages/vue/markput/src/components/MarkedInput.vue` | Emit `mounted()` in `onMounted` |
-| `packages/website/src/content/docs/development/architecture.md` | Update lifecycle section |
-| `AGENTS.md` | Remove Lifecycle references |
+| File                                                            | Change                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------ |
+| `packages/core/src/features/store/Store.ts`                     | Remove Lifecycle import, inline watches, add `mounted` event |
+| `packages/core/src/features/lifecycle/*`                        | Delete entire folder                                         |
+| `packages/react/markput/src/components/MarkedInput.tsx`         | Emit `mounted()` on mount                                    |
+| `packages/vue/markput/src/components/MarkedInput.vue`           | Emit `mounted()` in `onMounted`                              |
+| `packages/website/src/content/docs/development/architecture.md` | Update lifecycle section                                     |
+| `AGENTS.md`                                                     | Remove Lifecycle references                                  |

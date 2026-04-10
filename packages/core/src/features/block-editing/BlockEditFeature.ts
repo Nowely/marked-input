@@ -1,11 +1,11 @@
 import {childAt, htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
+import type {Store} from '../../store/Store'
 import {Caret} from '../caret'
 import {consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {createRowContent} from '../editing'
 import type {Token} from '../parsing'
-import type {Store} from '../store/Store'
 import {getCaretRawPosInBlock, getDomRawPos, setCaretAtRawPos} from './rawPosition'
 
 function isTextLikeRow(token: Token): boolean {

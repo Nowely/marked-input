@@ -1,8 +1,8 @@
 import {KEYBOARD} from '../../shared/constants'
 import {effectScope, watch} from '../../shared/signals/index.js'
 import type {OverlayTrigger} from '../../shared/types'
+import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
-import type {Store} from '../store/Store'
 
 export class OverlayFeature {
 	#scope?: () => void

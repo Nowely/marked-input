@@ -1,7 +1,21 @@
-import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
-import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {signal, computed, event, batch, watch} from '../../shared/signals'
-import type {SignalValues} from '../../shared/signals'
+import {ArrowNavFeature} from '../features/arrownav'
+import {BlockEditFeature} from '../features/block-editing'
+import {CopyFeature} from '../features/clipboard'
+import {DragFeature} from '../features/drag'
+import {ContentEditableFeature} from '../features/editable'
+import {SystemListenerFeature} from '../features/events'
+import {FocusFeature} from '../features/focus'
+import {InputFeature} from '../features/input'
+import {OverlayFeature} from '../features/overlay'
+import {Parser} from '../features/parsing'
+import type {Token} from '../features/parsing'
+import {ParseFeature} from '../features/parsing/ParseFeature'
+import {TextSelectionFeature} from '../features/selection'
+import {createSlots} from '../features/slots'
+import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
+import {DEFAULT_OPTIONS} from '../shared/constants'
+import {signal, computed, event, batch, watch} from '../shared/signals'
+import type {SignalValues} from '../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -11,28 +25,14 @@ import type {
 	CoreSlots,
 	CoreSlotProps,
 	DragAction,
-} from '../../shared/types'
-import {cx} from '../../shared/utils/cx'
-import {merge} from '../../shared/utils/merge'
-import {shallow} from '../../shared/utils/shallow'
-import {ArrowNavFeature} from '../arrownav'
-import {BlockEditFeature} from '../block-editing'
-import {CopyFeature} from '../clipboard'
-import {DragFeature} from '../drag'
-import {ContentEditableFeature} from '../editable'
-import {SystemListenerFeature} from '../events'
-import {FocusFeature} from '../focus'
-import {InputFeature} from '../input'
-import {OverlayFeature} from '../overlay'
-import {Parser} from '../parsing'
-import type {Token} from '../parsing'
-import {ParseFeature} from '../parsing/ParseFeature'
-import {TextSelectionFeature} from '../selection'
-import {createSlots} from '../slots'
+} from '../shared/types'
+import {cx} from '../shared/utils/cx'
+import {merge} from '../shared/utils/merge'
+import {shallow} from '../shared/utils/shallow'
 
-import styles from '../../../styles.module.css'
+import styles from '../../styles.module.css'
 
-export type {DragAction} from '../../shared/types'
+export type {DragAction} from '../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()

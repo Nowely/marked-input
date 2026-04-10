@@ -1,10 +1,10 @@
 import {isHtmlElement} from '../../shared/checkers'
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
+import type {Store} from '../../store/Store'
 import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {deleteMark} from '../editing/utils/deleteMark'
 import {isFullSelection} from '../selection'
-import type {Store} from '../store/Store'
 
 export class InputFeature {
 	#keydownHandler?: (e: KeyboardEvent) => void

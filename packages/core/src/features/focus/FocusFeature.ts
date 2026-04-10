@@ -1,6 +1,6 @@
 import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
 import {watch} from '../../shared/signals/index.js'
-import type {Store} from '../store/Store'
+import type {Store} from '../../store/Store'
 
 export class FocusFeature {
 	#focusinHandler?: (e: FocusEvent) => void

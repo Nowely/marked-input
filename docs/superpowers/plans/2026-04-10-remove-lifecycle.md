@@ -13,6 +13,7 @@
 ### Task 1: Add `mounted` event to Store and inline lifecycle watches
 
 **Files:**
+
 - Modify: `packages/core/src/features/store/Store.ts`
 
 - [ ] **Step 1: Add `mounted` event**
@@ -76,6 +77,7 @@ git commit -m "refactor(core): add mounted event, inline lifecycle watches into 
 ### Task 2: Update React to emit `mounted()`
 
 **Files:**
+
 - Modify: `packages/react/markput/src/components/MarkedInput.tsx`
 
 - [ ] **Step 1: Add `mounted()` emission**
@@ -114,6 +116,7 @@ git commit -m "feat(react): emit mounted event on component mount"
 ### Task 3: Update Vue to emit `mounted()`
 
 **Files:**
+
 - Modify: `packages/vue/markput/src/components/MarkedInput.vue`
 
 - [ ] **Step 1: Add `mounted()` emission**
@@ -156,6 +159,7 @@ git commit -m "feat(vue): emit mounted event on component mount"
 ### Task 4: Delete Lifecycle feature folder
 
 **Files:**
+
 - Delete: `packages/core/src/features/lifecycle/Lifecycle.ts`
 - Delete: `packages/core/src/features/lifecycle/Lifecycle.spec.ts`
 - Delete: `packages/core/src/features/lifecycle/index.ts`
@@ -169,6 +173,7 @@ rm -rf packages/core/src/features/lifecycle
 - [ ] **Step 2: Check for any remaining imports**
 
 Search codebase for `lifecycle` references that might break:
+
 ```bash
 rg -i 'lifecycle' packages/core/src/ packages/react/ packages/vue/ packages/storybook/ --type ts --type tsx --type vue
 ```
@@ -192,6 +197,7 @@ git commit -m "refactor(core): remove Lifecycle class"
 ### Task 5: Update architecture documentation
 
 **Files:**
+
 - Modify: `packages/website/src/content/docs/development/architecture.md`
 - Modify: `AGENTS.md`
 
@@ -222,7 +228,7 @@ readonly event: {
 Add `mounted` to the events table (around line 220-233):
 
 ```markdown
-| `mounted`       | Framework initial mount      | `void`                           |
+| `mounted` | Framework initial mount | `void` |
 ```
 
 Insert it between `afterTokensRendered` and `unmounted`.
@@ -231,7 +237,7 @@ Insert it between `afterTokensRendered` and `unmounted`.
 
 Replace the "Lifecycle Timing" section (lines 387-405) with:
 
-```markdown
+````markdown
 ## Lifecycle Timing
 
 React/Vue render asynchronously, so initialization order matters:
@@ -251,6 +257,7 @@ React/Vue render asynchronously, so initialization order matters:
 // 5. Framework emits store.event.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
+````
 
 - [ ] **Step 4: Update Features section**
 
@@ -267,13 +274,13 @@ Also update the feature count in the section header from "10 features" to "11 fe
 In the Component Responsibilities table (line 67), change:
 
 ```markdown
-| **MarkedInput**      | Entry point, store initialization, lifecycle management      |
+| **MarkedInput** | Entry point, store initialization, lifecycle management |
 ```
 
 To:
 
 ```markdown
-| **MarkedInput**      | Entry point, store initialization, mount/unmount signaling    |
+| **MarkedInput** | Entry point, store initialization, mount/unmount signaling |
 ```
 
 - [ ] **Step 6: Commit**
@@ -288,11 +295,13 @@ git commit -m "docs: update architecture docs for mounted/unmounted lifecycle"
 ### Task 6: Update AGENTS.md
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Remove Lifecycle references**
 
 Search AGENTS.md for any mention of "Lifecycle" and remove or update it. Specifically:
+
 - If the architecture summary mentions Lifecycle, remove that line
 - If feature list includes Lifecycle, remove it
 

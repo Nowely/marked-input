@@ -1,8 +1,8 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {setUseHookFactory, effect, effectScope, watch, batch} from '../../shared/signals'
-import {parseWithParser} from '../parsing'
+import {parseWithParser} from '../features/parsing'
+import {DEFAULT_OPTIONS} from '../shared/constants'
+import {setUseHookFactory, effect, effectScope, watch, batch} from '../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {

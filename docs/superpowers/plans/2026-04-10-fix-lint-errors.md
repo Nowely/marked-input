@@ -13,6 +13,7 @@
 ### Task 1: Add `bundledPackages` to React API Extractor config
 
 **Files:**
+
 - Modify: `packages/react/markput/prepack.js:90-102`
 
 - [ ] **Step 1: Add `bundledPackages` to the config object**
@@ -37,6 +38,7 @@ const configObject = {
 The exact change at `packages/react/markput/prepack.js:91-93` — add one line between `projectFolder` and `mainEntryPointFilePath`:
 
 Old (lines 91-93):
+
 ```js
 			projectFolder: path.resolve(__dirname),
 			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
@@ -44,6 +46,7 @@ Old (lines 91-93):
 ```
 
 New:
+
 ```js
 			projectFolder: path.resolve(__dirname),
 			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
@@ -67,6 +70,7 @@ Expected: **no matches** (all core types inlined)
 ### Task 2: Add `bundledPackages` to Vue API Extractor config
 
 **Files:**
+
 - Modify: `packages/vue/markput/prepack.js:86-89`
 
 - [ ] **Step 1: Add `bundledPackages` to the config object**
@@ -74,6 +78,7 @@ Expected: **no matches** (all core types inlined)
 Same change as Task 1 but in `packages/vue/markput/prepack.js`. Inside `getOptions()` → `configObject`, add `bundledPackages` after `mainEntryPointFilePath`:
 
 Old (lines 87-89):
+
 ```js
 			projectFolder: path.resolve(__dirname),
 			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
@@ -81,6 +86,7 @@ Old (lines 87-89):
 ```
 
 New:
+
 ```js
 			projectFolder: path.resolve(__dirname),
 			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
@@ -106,6 +112,7 @@ Expected: **no matches**
 - [ ] **Step 1: Run all 5 checks**
 
 Run each and verify all pass:
+
 1. `pnpm test`
 2. `pnpm run build`
 3. `pnpm run typecheck`

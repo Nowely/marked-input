@@ -1,4 +1,4 @@
-import type {Store} from '../store'
+import type {Store} from '../../store'
 
 export function isFullSelection(store: Store): boolean {
 	const sel = window.getSelection()

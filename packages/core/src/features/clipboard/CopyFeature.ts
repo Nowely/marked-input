@@ -1,6 +1,6 @@
+import type {Store} from '../../store'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
-import type {Store} from '../store'
 import {MARKPUT_MIME} from './pasteMarkup'
 import {type SelectionTokenRange, selectionToTokens} from './selectionToTokens'
 
