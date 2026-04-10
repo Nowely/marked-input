@@ -10,7 +10,7 @@ const store = useStore()
 const drag = store.state.drag.use()
 const readOnly = store.state.readOnly.use()
 const tokens = store.state.tokens.use()
-watch(tokens, () => store.lifecycle.afterTokensRendered.emit(), {flush: 'post', immediate: true})
+watch(tokens, () => store.lifecycle.onAfterTokensRendered(), {flush: 'post', immediate: true})
 
 const slotsRef = store.state.slots.use()
 const slotPropsRef = store.state.slotProps.use()

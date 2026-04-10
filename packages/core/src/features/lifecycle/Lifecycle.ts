@@ -1,15 +1,8 @@
-import {effectScope, event, watch} from '../../shared/signals/index.js'
+import {effectScope, watch} from '../../shared/signals/index.js'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
 
 export class Lifecycle {
-	/** Framework emits after every render (props may have changed). Drives syncParser. */
-	readonly updated = event()
-	/** Framework emits after token changes are rendered to the DOM. Drives sync/recoverFocus. */
-	readonly afterTokensRendered = event()
-	/** Framework emits when component unmounts. */
-	readonly unmounted = event()
-
 	#scope?: () => void
 	#featuresEnabled = false
 	#initialized = false
@@ -17,17 +10,19 @@ export class Lifecycle {
 	#lastSyncMark: unknown
 	#lastSyncOptions: unknown
 
-	constructor(private store: Store) {
-		effectScope(() => {
-			watch(this.updated, () => this.#onUpdated())
-			watch(this.afterTokensRendered, () => this.recoverFocus())
-			watch(this.unmounted, () => this.disable())
-		})
-	}
+	constructor(private store: Store) {}
 
-	#onUpdated() {
+	onUpdated() {
 		if (!this.#scope) this.enable()
 		this.#maybeSyncParser()
+	}
+
+	onAfterTokensRendered() {
+		this.recoverFocus()
+	}
+
+	onUnmounted() {
+		this.disable()
 	}
 
 	#maybeSyncParser() {

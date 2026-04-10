@@ -59,9 +59,9 @@ watch(
 	syncProps
 )
 
-onMounted(() => store.value.lifecycle.updated.emit())
-onUpdated(() => store.value.lifecycle.updated.emit())
-onUnmounted(() => store.value.lifecycle.unmounted.emit())
+onMounted(() => store.value.lifecycle.onUpdated())
+onUpdated(() => store.value.lifecycle.onUpdated())
+onUnmounted(() => store.value.lifecycle.onUnmounted())
 
 defineExpose(store.value.handler)
 </script>
