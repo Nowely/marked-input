@@ -1,35 +1,23 @@
-import {effectScope, watch} from '../../shared/signals/index.js'
-import {toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
-import type {Parser} from '../parsing'
+import {watch} from '../../shared/signals/index.js'
 import type {Store} from '../store'
 
 export class Lifecycle {
-	#scope?: () => void
+	#enabled = false
 	#featuresEnabled = false
-	#initialized = false
-	#lastValue: string | undefined
-	#lastParser: Parser | undefined
 
 	constructor(private store: Store) {
-		// Permanent watches — bridge from framework lifecycle events to Lifecycle methods.
-		// These live for the Store's lifetime so that remount (e.g., React strict mode)
-		// correctly re-triggers enable/sync via store.event.updated().
 		watch(store.event.updated, () => this.#onUpdated())
 		watch(store.event.afterTokensRendered, () => this.recoverFocus())
 		watch(store.event.unmounted, () => this.disable())
 	}
 
 	#onUpdated() {
-		if (!this.#scope) {
+		if (!this.#enabled) {
 			this.enable()
-			this.syncParser()
+			this.store.features.parse.sync()
 			return
 		}
-		const value = this.store.state.value()
-		const parser = this.store.computed.parser()
-		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return
-		this.#lastValue = value
-		this.#lastParser = parser
+		if (!this.store.features.parse.hasChanged()) return
 		if (!this.store.state.recovery()) {
 			this.store.event.parse()
 		}
@@ -50,54 +38,22 @@ export class Lifecycle {
 	}
 
 	enable() {
-		if (this.#scope) return
-
+		if (this.#enabled) return
 		const {store} = this
-
 		store.state.overlayTrigger(option => option.overlay?.trigger)
-
 		this.#enableFeatures()
-
-		this.#scope = effectScope(() => {
-			this.#subscribeParse()
-		})
+		this.#enabled = true
 	}
 
 	disable() {
-		this.#scope?.()
-		this.#scope = undefined
+		this.#enabled = false
 		this.#disableFeatures()
 		this.store.state.overlayTrigger(undefined)
-		this.#initialized = false
-	}
-
-	syncParser() {
-		const {store} = this
-		const inputValue = store.state.value() ?? store.state.defaultValue() ?? ''
-		store.state.tokens(parseWithParser(store, inputValue))
-		store.state.previousValue(inputValue)
-		this.#lastValue = store.state.value()
-		this.#lastParser = store.computed.parser()
-		this.#initialized = true
 	}
 
 	recoverFocus() {
 		this.store.event.sync()
 		if (!this.store.state.Mark()) return
 		this.store.event.recoverFocus()
-	}
-
-	#subscribeParse() {
-		const {store} = this
-
-		watch(store.event.parse, () => {
-			if (store.state.recovery()) {
-				const text = toString(store.state.tokens())
-				store.state.tokens(parseWithParser(store, text))
-				store.state.previousValue(text)
-				return
-			}
-			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
-		})
 	}
 }
