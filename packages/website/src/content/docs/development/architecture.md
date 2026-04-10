@@ -320,7 +320,7 @@ class Store {
     readonly features: {
         input: InputFeature
         blockEdit: BlockEditFeature
-        keyNav: KeyNavFeature
+        arrowNav: ArrowNavFeature
         overlay: OverlayFeature
         focus: FocusFeature
         system: SystemListenerFeature
@@ -358,7 +358,7 @@ const tokens = store.state.tokens.use()
 | ----------------------------- | -------------------------------------------------------- |
 | **InputFeature**              | Handles text input events, character insertion           |
 | **BlockEditFeature**          | Block-level editing operations (delete, split, merge)    |
-| **KeyNavFeature**             | Keyboard navigation between tokens                       |
+| **ArrowNavFeature**           | Keyboard navigation between tokens                       |
 | **FocusFeature**              | Caret tracking, focus recovery after re-renders          |
 | **OverlayFeature**            | Overlay trigger detection, position, open/close          |
 | **TextSelectionFeature**      | Text selection state tracking                            |
@@ -367,7 +367,7 @@ const tokens = store.state.tokens.use()
 | **DragFeature**               | Drag-and-drop reordering of blocks                       |
 | **CopyFeature**               | Clipboard copy/cut handling                              |
 
-The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `KeyNavFeature` (keyboard navigation).
+The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `ArrowNavFeature` (keyboard navigation).
 
 Managed by `FeatureManager`, which allows selective feature activation.
 

@@ -3,7 +3,7 @@ import {shiftFocusPrev, shiftFocusNext} from '../navigation'
 import {selectAllText} from '../selection'
 import type {Store} from '../store/Store'
 
-export class KeyNavFeature {
+export class ArrowNavFeature {
 	#keydownHandler?: (e: KeyboardEvent) => void
 
 	constructor(private store: Store) {}

@@ -1,1 +1,1 @@
-export {KeyNavFeature} from './KeyNavFeature'
+export {ArrowNavFeature} from './ArrowNavFeature'

@@ -47,6 +47,7 @@ type StoreComputed = {
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
+import {ArrowNavFeature} from '../arrownav'
 import {BlockEditFeature} from '../block-editing'
 import {CopyFeature} from '../clipboard'
 import {DragFeature} from '../drag'
@@ -54,7 +55,6 @@ import {ContentEditableFeature} from '../editable'
 import {SystemListenerFeature} from '../events'
 import {FocusFeature} from '../focus'
 import {InputFeature} from '../input'
-import {KeyNavFeature} from '../keynav'
 import {Lifecycle} from '../lifecycle'
 import {OverlayFeature} from '../overlay'
 import type {Parser, Token} from '../parsing'
@@ -158,7 +158,7 @@ export class Store {
 		focus: new FocusFeature(this),
 		input: new InputFeature(this),
 		blockEditing: new BlockEditFeature(this),
-		keynav: new KeyNavFeature(this),
+		arrowNav: new ArrowNavFeature(this),
 		system: new SystemListenerFeature(this),
 		textSelection: new TextSelectionFeature(this),
 		contentEditable: new ContentEditableFeature(this),
