@@ -12,8 +12,10 @@ export class Lifecycle {
 	constructor(private store: Store) {}
 
 	setup(adapter: LifecycleAdapter): void {
-		adapter.onMount(() => this.enable())
-		adapter.onUnmount(() => this.disable())
+		adapter.onLifecycle(
+			() => this.enable(),
+			() => this.disable()
+		)
 		adapter.watchPostRender([this.store.state.value, this.store.state.Mark, this.store.state.options], () =>
 			this.syncParser()
 		)

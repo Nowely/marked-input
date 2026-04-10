@@ -45,16 +45,14 @@ describe('Lifecycle.setup()', () => {
 		store = new Store()
 	})
 
-	it('wires onMount to enable() and onUnmount to disable()', () => {
+	it('wires onLifecycle to enable() and disable()', () => {
 		let mountCb: (() => void) | undefined
 		let unmountCb: (() => void) | undefined
 
 		const adapter: LifecycleAdapter = {
-			onMount: vi.fn(cb => {
-				mountCb = cb
-			}),
-			onUnmount: vi.fn(cb => {
-				unmountCb = cb
+			onLifecycle: vi.fn((mount, unmount) => {
+				mountCb = mount
+				unmountCb = unmount
 			}),
 			watchPostRender: vi.fn(),
 			watchPostCommit: vi.fn(),
@@ -62,8 +60,7 @@ describe('Lifecycle.setup()', () => {
 
 		store.lifecycle.setup(adapter)
 
-		expect(adapter.onMount).toHaveBeenCalledOnce()
-		expect(adapter.onUnmount).toHaveBeenCalledOnce()
+		expect(adapter.onLifecycle).toHaveBeenCalledOnce()
 
 		const enableSpy = vi.spyOn(store.lifecycle, 'enable')
 		const disableSpy = vi.spyOn(store.lifecycle, 'disable')
@@ -77,8 +74,7 @@ describe('Lifecycle.setup()', () => {
 
 	it('wires watchPostRender with value, Mark, options deps and syncParser callback', () => {
 		const adapter: LifecycleAdapter = {
-			onMount: vi.fn(),
-			onUnmount: vi.fn(),
+			onLifecycle: vi.fn(),
 			watchPostRender: vi.fn(),
 			watchPostCommit: vi.fn(),
 		}
@@ -101,8 +97,7 @@ describe('Lifecycle.setup()', () => {
 
 	it('wires watchPostCommit with tokens dep and recoverFocus callback', () => {
 		const adapter: LifecycleAdapter = {
-			onMount: vi.fn(),
-			onUnmount: vi.fn(),
+			onLifecycle: vi.fn(),
 			watchPostRender: vi.fn(),
 			watchPostCommit: vi.fn(),
 		}

@@ -2,17 +2,10 @@
 export type Subscribable<T = unknown> = (() => T) & {use(): T}
 
 export interface LifecycleAdapter {
-	onMount(callback: () => void): void
-	onUnmount(callback: () => void): void
-	/**
-	 * Watch signal deps and run callback after framework render.
-	 * First run is immediate (matches Vue immediate:true / React mount effect).
-	 */
+	onLifecycle(mount: () => void, unmount: () => void): void
+	/** Watch signal deps and run callback after framework render. First run is immediate. */
 	watchPostRender(deps: Subscribable[], callback: () => void): void
-	/**
-	 * Watch a signal dep and run callback after framework DOM commit.
-	 * First run is skipped (only fires on changes).
-	 */
+	/** Watch a signal dep and run callback after framework DOM commit. First run is skipped. */
 	watchPostCommit(dep: Subscribable, callback: () => void): void
 }
 

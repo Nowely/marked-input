@@ -4,11 +4,9 @@ import type {WatchSource} from 'vue'
 import {onMounted, onUnmounted, watch as vueWatch} from 'vue'
 
 setLifecycleAdapterFactory(() => ({
-	onMount(cb) {
-		onMounted(cb)
-	},
-	onUnmount(cb) {
-		onUnmounted(cb)
+	onLifecycle(mount, unmount) {
+		onMounted(mount)
+		onUnmounted(unmount)
 	},
 
 	watchPostRender(deps: Subscribable[], cb) {
