@@ -1,13 +1,12 @@
 import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
-import {Store} from '@markput/core'
+import {Store, getLifecycleAdapterFactory} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useLayoutEffect, useState} from 'react'
+import {useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React lifecycle adapter factory via setLifecycleAdapterFactory
 import '../lib/hooks/createLifecycleAdapter'
-import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
@@ -93,7 +92,14 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		store.setState(rest)
 	})
 
-	useCoreFeatures(store, ref)
+	useImperativeHandle(ref, () => store.handler, [store])
+
+	// oxlint-disable-next-line no-non-null-assertion -- factory is always registered via side-effect import above
+	const adapter = getLifecycleAdapterFactory()!()
+	store.lifecycle.setup(adapter)
+	// activate() registers React hooks (useEffect/useLayoutEffect) — React-specific extension
+	// oxlint-disable-next-line no-unsafe-type-assertion -- React adapter always has activate(); core interface doesn't expose it
+	;(adapter as unknown as {activate(): void}).activate()
 
 	return (
 		<StoreContext value={store}>

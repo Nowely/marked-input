@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import {Store} from '@markput/core'
+import {Store, getLifecycleAdapterFactory} from '@markput/core'
 import {provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue lifecycle adapter factory via setLifecycleAdapterFactory
 import '../lib/hooks/createLifecycleAdapter'
-import {useCoreFeatures} from '../lib/hooks/useCoreFeatures'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
@@ -62,7 +61,9 @@ watch(
 	syncProps
 )
 
-useCoreFeatures(store.value)
+// oxlint-disable-next-line no-non-null-assertion -- factory is always registered via side-effect import above
+const adapter = getLifecycleAdapterFactory()!()
+store.value.lifecycle.setup(adapter)
 
 defineExpose(store.value.handler)
 </script>
