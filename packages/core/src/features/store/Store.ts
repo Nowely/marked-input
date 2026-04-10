@@ -111,18 +111,14 @@ export class Store {
 		containerStyle: Computed<CSSProperties | undefined>
 	} = {
 		parser: computed(() => {
-			const Mark = this.state.Mark.get()
 			const coreOptions = this.state.options.get()
-			const hasPerOptionMark = (coreOptions as unknown[] | undefined)?.some(
-				opt =>
-					typeof opt === 'object' &&
-					opt !== null &&
-					'Mark' in opt &&
-					(opt as Record<string, unknown>).Mark != null
-			)
-			const effectiveOptions = Mark || hasPerOptionMark ? coreOptions : undefined
-			const markups = effectiveOptions?.map(opt => opt.markup)
-			if (!markups?.some(Boolean)) return undefined
+			const markups = coreOptions.map(opt => opt.markup)
+			if (!markups.some(Boolean)) return undefined
+
+			const Mark = this.state.Mark.get()
+			const hasPerOptionMark = coreOptions.some(opt => 'Mark' in opt && opt.Mark != null)
+			if (!Mark && !hasPerOptionMark) return undefined
+
 			const isDrag = !!this.state.drag.get()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
