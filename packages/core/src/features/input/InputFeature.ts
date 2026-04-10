@@ -91,14 +91,14 @@ export class InputFeature {
 				event.preventDefault()
 				focus.content = content.slice(0, caret - 1) + content.slice(caret)
 				focus.caret = caret - 1
-				this.store.on.change()
+				this.store.event.change()
 				return
 			}
 			if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
 				event.preventDefault()
 				focus.content = content.slice(0, caret) + content.slice(caret + 1)
 				focus.caret = caret
-				this.store.on.change()
+				this.store.event.change()
 				return
 			}
 		}
@@ -132,7 +132,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 
 	if (applySpanInput(focus, event)) {
-		store.on.change()
+		store.event.change()
 	}
 }
 

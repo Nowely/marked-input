@@ -23,12 +23,12 @@ export function useOverlay(): OverlayHandler {
 	if (!match) throw new Error('useOverlay requires an active overlay match')
 	const style = useMemo(() => Caret.getAbsolutePosition(), [match])
 
-	const close = useCallback(() => store.on.clearOverlay(), [])
+	const close = useCallback(() => store.event.clearOverlay(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			store.on.select({mark, match})
-			store.on.clearOverlay()
+			store.event.select({mark, match})
+			store.event.clearOverlay()
 		},
 		[match]
 	)

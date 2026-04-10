@@ -131,7 +131,7 @@ export class Store {
 		Span: this.state.Span,
 	})
 
-	readonly on = {
+	readonly event = {
 		change: event(),
 		parse: event(),
 		delete: event<{token: Token}>(),

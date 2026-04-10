@@ -28,9 +28,9 @@ describe('Store', () => {
 
 	it('should have events', () => {
 		const store = new Store()
-		expect(typeof store.on.parse).toBe('function')
-		expect(typeof store.on.change).toBe('function')
-		expect(typeof store.on.delete).toBe('function')
+		expect(typeof store.event.parse).toBe('function')
+		expect(typeof store.event.change).toBe('function')
+		expect(typeof store.event.delete).toBe('function')
 	})
 
 	describe('handler', () => {
