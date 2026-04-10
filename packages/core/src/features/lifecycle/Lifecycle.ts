@@ -1,12 +1,7 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
-import type {CoreOption} from '../../shared/types'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
-
-export interface LifecycleOptions<TOption extends CoreOption = CoreOption> {
-	getTrigger?: (option: TOption) => string | undefined
-}
 
 export class Lifecycle {
 	#scope?: () => void
@@ -15,15 +10,12 @@ export class Lifecycle {
 
 	constructor(private store: Store) {}
 
-	enable<TOption extends CoreOption = CoreOption>(options?: LifecycleOptions<TOption>) {
+	enable() {
 		if (this.#scope) return
 
 		const {store} = this
 
-		if (options?.getTrigger) {
-			// oxlint-disable-next-line no-unsafe-type-assertion -- TOption extends CoreOption, safe covariant cast for the signal
-			store.state.overlayTrigger.set(options.getTrigger as (option: CoreOption) => string | undefined)
-		}
+		store.state.overlayTrigger.set(option => option.overlay?.trigger)
 
 		const features = createCoreFeatures(store)
 		features.enableAll()

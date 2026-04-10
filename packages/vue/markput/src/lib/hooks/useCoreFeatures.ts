@@ -1,13 +1,9 @@
 import type {Store} from '@markput/core'
 import {onMounted, onUnmounted, watch} from 'vue'
 
-import type {Option} from '../../types'
-
 export function useCoreFeatures(store: Store) {
 	onMounted(() => {
-		store.lifecycle.enable<Option>({
-			getTrigger: option => option.overlay?.trigger,
-		})
+		store.lifecycle.enable()
 	})
 
 	onUnmounted(() => {

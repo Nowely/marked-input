@@ -1,1 +1,1 @@
-export {Lifecycle, type LifecycleOptions} from './Lifecycle'
+export {Lifecycle} from './Lifecycle'

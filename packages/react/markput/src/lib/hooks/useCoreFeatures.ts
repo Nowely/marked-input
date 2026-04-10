@@ -1,15 +1,11 @@
 import type {MarkputHandler, Store} from '@markput/core'
 import {useEffect, useImperativeHandle, useLayoutEffect} from 'react'
 
-import type {Option} from '../../types'
-
 export function useCoreFeatures(store: Store, ref: React.Ref<MarkputHandler> | undefined) {
 	useImperativeHandle(ref, () => store.handler, [store])
 
 	useEffect(() => {
-		store.lifecycle.enable<Option>({
-			getTrigger: option => option.overlay?.trigger,
-		})
+		store.lifecycle.enable()
 		return () => store.lifecycle.disable()
 	}, [])
 

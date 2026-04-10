@@ -33,6 +33,36 @@ describe('Lifecycle', () => {
 
 			lifecycle.disable()
 		})
+
+		it('sets default overlayTrigger extractor', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+
+			const getTrigger = store.state.overlayTrigger.get()
+			expect(getTrigger).toBeDefined()
+
+			const option = {overlay: {trigger: '@'}}
+			expect(getTrigger!(option)).toBe('@')
+
+			const optionWithoutTrigger = {overlay: {}}
+			expect(getTrigger!(optionWithoutTrigger)).toBeUndefined()
+
+			const optionWithoutOverlay = {}
+			expect(getTrigger!(optionWithoutOverlay)).toBeUndefined()
+
+			lifecycle.disable()
+		})
+
+		it('clears overlayTrigger on disable', () => {
+			const lifecycle = store.lifecycle
+
+			lifecycle.enable()
+			expect(store.state.overlayTrigger.get()).toBeDefined()
+
+			lifecycle.disable()
+			expect(store.state.overlayTrigger.get()).toBeUndefined()
+		})
 	})
 
 	describe('disable()', () => {
