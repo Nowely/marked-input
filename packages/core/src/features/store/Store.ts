@@ -152,15 +152,14 @@ export class Store {
 		parse: new ParseFeature(this),
 	}
 
-	// oxlint-disable-next-line no-unused-private-class-members -- IIFE for side-effect-only watches
-	readonly #lifecycle = (() => {
+	constructor() {
 		watch(this.event.mounted, () => {
 			for (const f of Object.values(this.features)) f.enable()
 		})
 		watch(this.event.unmounted, () => {
 			for (const f of Object.values(this.features)) f.disable()
 		})
-	})()
+	}
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
