@@ -59,7 +59,10 @@ watch(
 	syncProps
 )
 
-onMounted(() => store.value.event.updated())
+onMounted(() => {
+	store.value.event.mounted()
+	store.value.event.updated()
+})
 onUpdated(() => store.value.event.updated())
 onUnmounted(() => store.value.event.unmounted())
 
