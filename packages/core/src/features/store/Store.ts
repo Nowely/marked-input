@@ -13,37 +13,6 @@ import type {
 	CoreSlotProps,
 	DragAction,
 } from '../../shared/types'
-
-import styles from '../../../styles.module.css'
-
-type StoreState = {
-	tokens: Signal<Token[]>
-	value: Signal<string | undefined>
-	defaultValue: Signal<string | undefined>
-	previousValue: Signal<string | undefined>
-	innerValue: Signal<string | undefined>
-	recovery: Signal<Recovery | undefined>
-	selecting: Signal<'drag' | 'all' | undefined>
-	drag: Signal<boolean | {alwaysShowHandle: boolean}>
-	overlayMatch: Signal<OverlayMatch | undefined>
-	overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
-	showOverlayOn: Signal<OverlayTrigger>
-	onChange: Signal<((value: string) => void) | undefined>
-	options: Signal<CoreOption[]>
-	readOnly: Signal<boolean>
-	Span: Signal<GenericComponent | undefined>
-	Mark: Signal<GenericComponent | undefined>
-	Overlay: Signal<GenericComponent | undefined>
-	className: Signal<string | undefined>
-	style: Signal<CSSProperties | undefined>
-	slots: Signal<CoreSlots | undefined>
-	slotProps: Signal<CoreSlotProps | undefined>
-}
-type StoreComputed = {
-	parser: Computed<Parser | undefined>
-	containerClass: Computed<string | undefined>
-	containerStyle: Computed<CSSProperties | undefined>
-}
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
@@ -62,6 +31,8 @@ import type {Token} from '../parsing'
 import {TextSelectionFeature} from '../selection'
 import {createSlots} from '../slots'
 
+import styles from '../../../styles.module.css'
+
 export type {DragAction} from '../../shared/types'
 
 export class Store {
@@ -73,7 +44,29 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: StoreState = {
+	readonly state: {
+		tokens: Signal<Token[]>
+		value: Signal<string | undefined>
+		defaultValue: Signal<string | undefined>
+		previousValue: Signal<string | undefined>
+		innerValue: Signal<string | undefined>
+		recovery: Signal<Recovery | undefined>
+		selecting: Signal<'drag' | 'all' | undefined>
+		drag: Signal<boolean | {alwaysShowHandle: boolean}>
+		overlayMatch: Signal<OverlayMatch | undefined>
+		overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
+		showOverlayOn: Signal<OverlayTrigger>
+		onChange: Signal<((value: string) => void) | undefined>
+		options: Signal<CoreOption[]>
+		readOnly: Signal<boolean>
+		Span: Signal<GenericComponent | undefined>
+		Mark: Signal<GenericComponent | undefined>
+		Overlay: Signal<GenericComponent | undefined>
+		className: Signal<string | undefined>
+		style: Signal<CSSProperties | undefined>
+		slots: Signal<CoreSlots | undefined>
+		slotProps: Signal<CoreSlotProps | undefined>
+	} = {
 		// Data
 		tokens: signal<Token[]>([]),
 		value: signal<string | undefined>(undefined),
@@ -112,7 +105,11 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
-	readonly computed: StoreComputed = {
+	readonly computed: {
+		parser: Computed<Parser | undefined>
+		containerClass: Computed<string | undefined>
+		containerStyle: Computed<CSSProperties | undefined>
+	} = {
 		parser: computed(() => {
 			const Mark = this.state.Mark.get()
 			const coreOptions = this.state.options.get()
@@ -188,7 +185,7 @@ export class Store {
 		batch(() => {
 			const state = this.state
 			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-			for (const key of Object.keys(values) as (keyof StoreState)[]) {
+			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
 				if (!(key in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
 				state[key].set(values[key] as never)
