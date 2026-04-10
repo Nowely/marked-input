@@ -55,7 +55,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.on`, and `store.nodes`. The parser is a 3-stage pipeline (SegmentMatcher → PatternMatcher → TreeBuilder). Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
+Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.computed`, `store.event`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -76,8 +76,8 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 ### Do NOT
 
-- Do not add direct imports between features — all communication goes through `store.state`, `store.on`, or `store.nodes`
-- Do not manually create Signals for new state — add new state keys to the initial object passed to `defineState()` in `Store.ts`
+- Do not add direct imports between features — all communication goes through `store.state`, `store.event`, or `store.nodes`
+- Do not manually create Signals for new state — add new state keys to the `state` object in `Store.ts`
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
 - Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.
@@ -160,4 +160,4 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
 - Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
-- `Store.state` properties are Signals defined in the initial `defineState()` call — do not access properties that weren't defined there
+- `Store.state` properties are Signals defined in the initial `state` object in `Store.ts` — do not access properties that weren't defined there
