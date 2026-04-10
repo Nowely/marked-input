@@ -12,7 +12,7 @@ import type {Token} from '../features/parsing'
 import {ParseFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
 import {createSlots} from '../features/slots'
-import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
+import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
 import type {SignalValues} from '../shared/signals'
@@ -29,6 +29,7 @@ import type {
 import {cx} from '../shared/utils/cx'
 import {merge} from '../shared/utils/merge'
 import {shallow} from '../shared/utils/shallow'
+import {BlockRegistry} from './BlockRegistry'
 
 import styles from '../../styles.module.css'
 
