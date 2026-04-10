@@ -55,7 +55,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.computed`, `store.event`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
+Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.state`, `store.computed`, `store.event`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
