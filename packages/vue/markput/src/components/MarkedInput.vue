@@ -10,8 +10,6 @@ import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
 import OverlayRenderer from './OverlayRenderer.vue'
 
-import styles from '@markput/core/styles.module.css'
-
 const props = defineProps<MarkedInputProps>()
 
 const emit = defineEmits<{
@@ -36,7 +34,6 @@ function syncProps() {
 		Overlay: props.Overlay,
 		className: props.class,
 		style: props.style,
-		baseClassName: styles.Container,
 		slots: props.slots,
 		slotProps: props.slotProps,
 	})

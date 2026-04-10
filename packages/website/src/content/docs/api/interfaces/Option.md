@@ -37,7 +37,7 @@ const option: Option<ChipProps> = {
 optional mark: TMarkProps | (props) => TMarkProps;
 ```
 
-Defined in: [react/markput/src/types.ts:49](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L49)
+Defined in: [react/markput/src/types.ts:52](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L52)
 
 Props for the mark component.
 Can be a static object or a function that transforms MarkProps.
@@ -50,7 +50,7 @@ Can be a static object or a function that transforms MarkProps.
 optional Mark: ComponentType<TMarkProps>;
 ```
 
-Defined in: [react/markput/src/types.ts:44](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L44)
+Defined in: [react/markput/src/types.ts:47](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L47)
 
 Per-option component for rendering this mark
 
@@ -103,7 +103,7 @@ CoreOption.markup
 optional overlay: TOverlayProps;
 ```
 
-Defined in: [react/markput/src/types.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L55)
+Defined in: [react/markput/src/types.ts:58](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L58)
 
 Props for the overlay component.
 
@@ -121,6 +121,6 @@ CoreOption.overlay
 optional Overlay: ComponentType<TOverlayProps>;
 ```
 
-Defined in: [react/markput/src/types.ts:51](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L51)
+Defined in: [react/markput/src/types.ts:54](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L54)
 
 Per-option component for rendering this overlay

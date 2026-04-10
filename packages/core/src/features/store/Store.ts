@@ -14,6 +14,8 @@ import type {
 	DragAction,
 } from '../../shared/types'
 
+import styles from '../../../styles.module.css'
+
 type StoreState = {
 	tokens: Signal<Token[]>
 	parser: Signal<Parser | undefined>
@@ -35,7 +37,6 @@ type StoreState = {
 	Overlay: Signal<GenericComponent | undefined>
 	className: Signal<string | undefined>
 	style: Signal<CSSProperties | undefined>
-	baseClassName: Signal<string | undefined>
 	containerClass: Computed<string | undefined>
 	containerStyle: Computed<CSSProperties | undefined>
 	slots: Signal<CoreSlots | undefined>
@@ -103,9 +104,8 @@ export class Store {
 		// Styling
 		className: signal<string | undefined>(undefined),
 		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
-		baseClassName: signal<string | undefined>(undefined),
 		containerClass: computed(() =>
-			cx(this.state.baseClassName(), this.state.className(), this.state.slotProps()?.container?.className)
+			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
 		),
 		containerStyle: computed(prev => {
 			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)

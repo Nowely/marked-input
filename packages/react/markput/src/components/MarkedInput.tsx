@@ -11,8 +11,6 @@ import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
 
-import styles from '@markput/core/styles.module.css'
-
 /**
  * Props for MarkedInput component.
  *
@@ -85,12 +83,12 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 	const {ref, ...rest} = props
 	const [store] = useState(() => {
 		const nextStore = new Store()
-		nextStore.setState({...rest, baseClassName: styles.Container})
+		nextStore.setState(rest)
 		return nextStore
 	})
 
 	useLayoutEffect(() => {
-		store.setState({...rest, baseClassName: styles.Container})
+		store.setState(rest)
 	})
 
 	useCoreFeatures(store, ref)

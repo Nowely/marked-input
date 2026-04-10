@@ -103,45 +103,6 @@ describe('Store', () => {
 		})
 	})
 
-	describe('containerClass (computed)', () => {
-		it('should merge baseClassName + className + slotProps.container.className', () => {
-			const store = new Store()
-			store.setState({
-				baseClassName: 'Container_hash1',
-				className: 'user-class',
-				slotProps: {container: {className: 'slot-class'}},
-			})
-			expect(store.state.containerClass.get()).toBe('Container_hash1 user-class slot-class')
-		})
-
-		it('should return baseClassName only when no user or slot className', () => {
-			const store = new Store()
-			store.setState({baseClassName: 'Container_hash1'})
-			expect(store.state.containerClass.get()).toBe('Container_hash1')
-		})
-
-		it('should return undefined when nothing is set', () => {
-			const store = new Store()
-			expect(store.state.containerClass.get()).toBeUndefined()
-		})
-
-		it('should react to className changes', () => {
-			const store = new Store()
-			store.setState({baseClassName: 'base', className: 'old'})
-			expect(store.state.containerClass.get()).toBe('base old')
-			store.setState({className: 'new'})
-			expect(store.state.containerClass.get()).toBe('base new')
-		})
-
-		it('should react to slotProps changes', () => {
-			const store = new Store()
-			store.setState({baseClassName: 'base'})
-			expect(store.state.containerClass.get()).toBe('base')
-			store.setState({slotProps: {container: {className: 'extra'}}})
-			expect(store.state.containerClass.get()).toBe('base extra')
-		})
-	})
-
 	describe('innerValue', () => {
 		it('should update tokens and previousValue when innerValue is set', () => {
 			const store = new Store()
