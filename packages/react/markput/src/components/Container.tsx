@@ -21,12 +21,14 @@ export const Container = memo(() => {
 
 	const [ContainerComponent, containerProps] = store.slot.container.use()
 
+	const containerStyle = drag && !readOnly ? (style ? {paddingLeft: 24, ...style} : {paddingLeft: 24}) : style
+
 	return (
 		<ContainerComponent
 			ref={(el: HTMLDivElement | null) => (refs.container = el)}
 			{...containerProps}
 			className={className}
-			style={drag && !readOnly ? {paddingLeft: 24, ...style} : style}
+			style={containerStyle}
 		>
 			{drag
 				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
