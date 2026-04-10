@@ -37,7 +37,7 @@ export class FocusFeature {
 		container.addEventListener('focusout', this.#focusoutHandler)
 		container.addEventListener('click', this.#clickHandler)
 
-		watch(this.store.events.recoverFocus, () => {
+		watch(this.store.on.recoverFocus, () => {
 			this.#recover()
 		})
 	}

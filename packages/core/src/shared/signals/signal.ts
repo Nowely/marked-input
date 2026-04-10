@@ -242,7 +242,7 @@ export function event<T = void>(): Event<T> {
  * The callback receives `(newValue, oldValue)` on each subsequent run.
  *
  * Accepts a signal, event, or getter function as the dependency source:
- *   watch(store.events.delete, (payload) => { ... })
+ *   watch(store.on.delete, (payload) => { ... })
  *   watch(store.state.name,    (next, prev) => { ... })
  *   watch(() => computed(),    (next, prev) => { ... })  // getter form still valid
  *

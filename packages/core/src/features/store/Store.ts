@@ -131,7 +131,7 @@ export class Store {
 		Span: this.state.Span,
 	})
 
-	readonly events = {
+	readonly on = {
 		change: event(),
 		parse: event(),
 		delete: event<{token: Token}>(),
@@ -170,10 +170,12 @@ export class Store {
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
+			const state = this.state
 			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
 			for (const key of Object.keys(values) as (keyof StoreState)[]) {
+				if (!(key in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				this.state[key].set(values[key] as never)
+				state[key].set(values[key] as never)
 			}
 		})
 	}

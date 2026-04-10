@@ -55,7 +55,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.events`, and `store.nodes`. The parser is a 3-stage pipeline (SegmentMatcher → PatternMatcher → TreeBuilder). Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
+Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, event bus, and Lifecycle. Features are decoupled — they communicate only through `store.state`, `store.on`, and `store.nodes`. The parser is a 3-stage pipeline (SegmentMatcher → PatternMatcher → TreeBuilder). Lifecycle does not directly access features — it emits events (`sync`, `recoverFocus`) that features subscribe to.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -76,7 +76,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 ### Do NOT
 
-- Do not add direct imports between features — all communication goes through `store.state`, `store.events`, or `store.nodes`
+- Do not add direct imports between features — all communication goes through `store.state`, `store.on`, or `store.nodes`
 - Do not manually create Signals for new state — add new state keys to the initial object passed to `defineState()` in `Store.ts`
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first

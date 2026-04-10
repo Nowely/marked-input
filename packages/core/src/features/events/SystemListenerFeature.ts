@@ -12,7 +12,7 @@ export class SystemListenerFeature {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.events.change, () => {
+			watch(this.store.on.change, () => {
 				const onChange = this.store.state.onChange.get()
 				const {focus} = this.store.nodes
 
@@ -38,10 +38,10 @@ export class SystemListenerFeature {
 				}
 
 				onChange?.(toString(tokens))
-				this.store.events.parse.emit()
+				this.store.on.parse.emit()
 			})
 
-			watch(this.store.events.delete, payload => {
+			watch(this.store.on.delete, payload => {
 				const {token} = payload
 				const tokens = this.store.state.tokens.get()
 				if (!findToken(tokens, token)) return
@@ -61,7 +61,7 @@ export class SystemListenerFeature {
 				this.store.state.onChange.get()?.(newValue)
 			})
 
-			watch(this.store.events.select, event => {
+			watch(this.store.on.select, event => {
 				const Mark = this.store.state.Mark.get()
 				const onChange = this.store.state.onChange.get()
 				const {
@@ -106,7 +106,7 @@ export class SystemListenerFeature {
 					this.store.nodes.focus.target = this.store.nodes.input.target
 					this.store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this.store.events.parse.emit()
+					this.store.on.parse.emit()
 				}
 			})
 		})

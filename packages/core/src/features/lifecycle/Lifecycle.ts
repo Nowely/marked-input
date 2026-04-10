@@ -11,9 +11,9 @@ export class Lifecycle {
 	#lastSyncOptions: unknown
 
 	constructor(private store: Store) {
-		watch(store.events.updated, () => this.#onUpdated())
-		watch(store.events.afterTokensRendered, () => this.recoverFocus())
-		watch(store.events.unmounted, () => this.disable())
+		watch(store.on.updated, () => this.#onUpdated())
+		watch(store.on.afterTokensRendered, () => this.recoverFocus())
+		watch(store.on.unmounted, () => this.disable())
 	}
 
 	#onUpdated() {
@@ -91,7 +91,7 @@ export class Lifecycle {
 
 		if (this.#initialized) {
 			if (!store.state.recovery.get()) {
-				store.events.parse.emit()
+				store.on.parse.emit()
 			}
 			return
 		}
@@ -117,15 +117,15 @@ export class Lifecycle {
 	}
 
 	recoverFocus() {
-		this.store.events.sync.emit()
+		this.store.on.sync.emit()
 		if (!this.store.state.Mark.get()) return
-		this.store.events.recoverFocus.emit()
+		this.store.on.recoverFocus.emit()
 	}
 
 	#subscribeParse() {
 		const {store} = this
 
-		watch(store.events.parse, () => {
+		watch(store.on.parse, () => {
 			if (store.state.recovery.get()) {
 				const text = toString(store.state.tokens.get())
 				store.state.tokens.set(parseWithParser(store, text))

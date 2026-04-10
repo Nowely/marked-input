@@ -74,7 +74,7 @@ describe('Lifecycle', () => {
 
 			// After disable, emitting parse should NOT update tokens
 			const tokensBefore = store.state.tokens.get()
-			store.events.parse.emit()
+			store.on.parse.emit()
 			const tokensAfter = store.state.tokens.get()
 
 			expect(tokensAfter).toBe(tokensBefore)
@@ -158,7 +158,7 @@ describe('Lifecycle', () => {
 
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
-			store.events.parse.emit()
+			store.on.parse.emit()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'initial', position: {start: 0, end: 7}}])
@@ -194,7 +194,7 @@ describe('Lifecycle', () => {
 			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
 
 			// Emit parse — should re-parse from token text
-			store.events.parse.emit()
+			store.on.parse.emit()
 
 			const tokens = store.state.tokens.get()
 			expect(tokens).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
@@ -213,7 +213,7 @@ describe('Lifecycle', () => {
 
 			const setSpy = vi.spyOn(store.state.tokens, 'set')
 
-			store.events.parse.emit()
+			store.on.parse.emit()
 			expect(setSpy).toHaveBeenCalledTimes(1)
 
 			setSpy.mockClear()
@@ -232,115 +232,115 @@ describe('Lifecycle', () => {
 			const enableSpy = vi.spyOn(lifecycle, 'enable')
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
 
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			expect(enableSpy).toHaveBeenCalledOnce()
 			expect(syncParserSpy).toHaveBeenCalledOnce()
 			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('updated.emit() subsequent call with unchanged deps skips syncParser()', () => {
 			const lifecycle = store.lifecycle
 			store.state.value.set('hello')
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			expect(syncParserSpy).not.toHaveBeenCalled()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('updated.emit() re-runs syncParser when value changes', () => {
 			const lifecycle = store.lifecycle
 			store.state.value.set('hello')
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			store.state.value.set('world')
 			// mock to prevent parse.emit() downstream (getTokensByValue not suitable for test env)
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser').mockImplementation(() => {})
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			expect(syncParserSpy).toHaveBeenCalledOnce()
 			syncParserSpy.mockRestore()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('updated.emit() does not emit sync or recoverFocus (committed handles those)', () => {
 			store.state.Mark.set(() => null)
 			store.state.value.set('hello')
 
-			const syncSpy = vi.spyOn(store.events.sync, 'emit')
-			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			store.events.updated.emit()
+			const syncSpy = vi.spyOn(store.on.sync, 'emit')
+			const recoverFocusSpy = vi.spyOn(store.on.recoverFocus, 'emit')
+			store.on.updated.emit()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('afterTokensRendered.emit() always emits sync', () => {
-			store.events.updated.emit()
+			store.on.updated.emit()
 
-			const syncSpy = vi.spyOn(store.events.sync, 'emit')
-			store.events.afterTokensRendered.emit()
+			const syncSpy = vi.spyOn(store.on.sync, 'emit')
+			store.on.afterTokensRendered.emit()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('afterTokensRendered.emit() emits recoverFocus when Mark is set', () => {
 			store.state.Mark.set(() => null)
-			store.events.updated.emit()
+			store.on.updated.emit()
 
-			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			store.events.afterTokensRendered.emit()
+			const recoverFocusSpy = vi.spyOn(store.on.recoverFocus, 'emit')
+			store.on.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).toHaveBeenCalledOnce()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('afterTokensRendered.emit() does not emit recoverFocus when Mark is not set', () => {
-			store.events.updated.emit()
+			store.on.updated.emit()
 
-			const recoverFocusSpy = vi.spyOn(store.events.recoverFocus, 'emit')
-			store.events.afterTokensRendered.emit()
+			const recoverFocusSpy = vi.spyOn(store.on.recoverFocus, 'emit')
+			store.on.afterTokensRendered.emit()
 
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 
 		it('unmounted.emit() triggers disable()', () => {
 			const lifecycle = store.lifecycle
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			const disableSpy = vi.spyOn(lifecycle, 'disable')
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 
 			expect(disableSpy).toHaveBeenCalledOnce()
 		})
 
 		it('remount: unmounted then updated re-enables and re-syncs', () => {
 			store.state.value.set('first')
-			store.events.updated.emit()
-			store.events.unmounted.emit()
+			store.on.updated.emit()
+			store.on.unmounted.emit()
 
 			store.state.value.set('second')
 			const enableSpy = vi.spyOn(store.lifecycle, 'enable')
-			store.events.updated.emit()
+			store.on.updated.emit()
 
 			expect(enableSpy).toHaveBeenCalledOnce()
 			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 
-			store.events.unmounted.emit()
+			store.on.unmounted.emit()
 		})
 	})
 })

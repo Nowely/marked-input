@@ -18,23 +18,23 @@ export class OverlayFeature {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.events.clearOverlay, () => {
+			watch(this.store.on.clearOverlay, () => {
 				this.store.state.overlayMatch.set(undefined)
 			})
 
-			watch(this.store.events.checkOverlay, () => {
+			watch(this.store.on.checkOverlay, () => {
 				const getTrigger = this.store.state.overlayTrigger.get()
 				if (!getTrigger) return
 				const match = TriggerFinder.find(this.store.state.options.get(), getTrigger)
 				this.store.state.overlayMatch.set(match)
 			})
 
-			watch(this.store.events.change, () => {
+			watch(this.store.on.change, () => {
 				const showOverlayOn = this.store.state.showOverlayOn.get()
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.store.events.checkOverlay.emit()
+					this.store.on.checkOverlay.emit()
 				}
 			})
 
@@ -53,7 +53,7 @@ export class OverlayFeature {
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.events.checkOverlay.emit()
+				this.store.on.checkOverlay.emit()
 			}
 		}
 		this.#selectionChangeHandler = selectionChangeHandler
@@ -99,7 +99,7 @@ export class OverlayFeature {
 
 		this.#escHandler = e => {
 			if (e.key === KEYBOARD.ESC) {
-				this.store.events.clearOverlay.emit()
+				this.store.on.clearOverlay.emit()
 			}
 		}
 
@@ -107,7 +107,7 @@ export class OverlayFeature {
 			const target = e.target instanceof HTMLElement ? e.target : null
 			if (this.store.refs.overlay?.contains(target)) return
 			if (this.store.refs.container?.contains(target)) return
-			this.store.events.clearOverlay.emit()
+			this.store.on.clearOverlay.emit()
 		}
 
 		window.addEventListener('keydown', this.#escHandler)

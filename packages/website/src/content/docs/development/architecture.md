@@ -83,11 +83,11 @@ Both framework adapters share the same component structure:
         ↓
 2. ContentEditableFeature detects input
         ↓
-3. store.events.change() emitted
+3. store.on.change() emitted
         ↓
 4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
-5. store.events.parse() emitted
+5. store.on.parse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusFeature restores caret position via store.events.recoverFocus
+9. FocusFeature restores caret position via store.on.recoverFocus
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -105,7 +105,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. store.events.checkOverlay() emitted
+2. store.on.checkOverlay() emitted
         ↓
 3. OverlayFeature checks for trigger match
         ↓
@@ -119,11 +119,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 7. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-8. store.events.select() emitted
+8. store.on.select() emitted
         ↓
 9. Markup inserted, onChange called with new text
         ↓
-10. store.events.clearOverlay() closes overlay
+10. store.on.clearOverlay() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -233,17 +233,17 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ```typescript
 // Emit a void event
-store.events.change.emit()
+store.on.change.emit()
 
 // Emit a payload event
-store.events.delete.emit({ token })
+store.on.delete.emit({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.events.change,
+        store.on.change,
         () => {
             console.log('Text changed')
         }
@@ -300,7 +300,7 @@ class Store {
         span: { use(): readonly [Component, SlotProps] }
     }
 
-    readonly events: {
+    readonly on: {
         change: VoidEvent
         parse: VoidEvent
         delete: PayloadEvent<{ token: Token }>
@@ -352,7 +352,7 @@ const tokens = store.state.tokens.use()
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.events` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.on` (emitters), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -379,13 +379,13 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Enable features and event subscriptions
 lifecycle.enable()
 
-// 2. Sync parser with value/options via store.events.sync
+// 2. Sync parser with value/options via store.on.sync
 lifecycle.syncParser(value, options)
 
 // 3. Sync contenteditable attributes (layout effect)
 contentEditable.sync()
 
-// 4. Recover focus after DOM commits via store.events.recoverFocus
+// 4. Recover focus after DOM commits via store.on.recoverFocus
 lifecycle.recoverFocus()
 ```
 

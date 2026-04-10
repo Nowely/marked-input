@@ -23,7 +23,7 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 
 	return (
 		<ContainerComponent
-			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, store.events)}
+			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, store.on)}
 			data-testid="block"
 			{...containerProps}
 			className={styles.Block}

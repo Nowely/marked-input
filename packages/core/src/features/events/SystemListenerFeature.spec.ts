@@ -24,7 +24,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 
 			// Emit change — handler should serialize tokens and call onChange
-			store.events.change.emit()
+			store.on.change.emit()
 
 			expect(onChange).toHaveBeenCalled()
 		})
@@ -37,7 +37,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.enable()
 
-			store.events.change.emit()
+			store.on.change.emit()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
@@ -51,7 +51,7 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.events.delete.emit({token})
+			store.on.delete.emit({token})
 
 			// After delete, the token should be removed from the tokens array
 			expect(store.state.tokens.get()).toEqual([
@@ -74,7 +74,7 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.events.delete.emit({token: missingToken})
+			store.on.delete.emit({token: missingToken})
 
 			expect(store.state.tokens.get()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -102,7 +102,7 @@ describe('SystemListenerFeature', () => {
 				node: {} as unknown as Node,
 			} as unknown as OverlayMatch
 
-			store.events.select.emit({mark, match})
+			store.on.select.emit({mark, match})
 		})
 	})
 
@@ -115,7 +115,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.events.change.emit()
+			store.on.change.emit()
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -129,7 +129,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.events.delete.emit({token})
+			store.on.delete.emit({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -143,7 +143,7 @@ describe('SystemListenerFeature', () => {
 			controller.disable()
 			controller.enable()
 
-			store.events.change.emit()
+			store.on.change.emit()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
