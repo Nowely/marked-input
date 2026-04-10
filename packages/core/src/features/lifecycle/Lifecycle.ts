@@ -11,6 +11,9 @@ export class Lifecycle {
 	#lastParser: Parser | undefined
 
 	constructor(private store: Store) {
+		// Permanent watches — bridge from framework lifecycle events to Lifecycle methods.
+		// These live for the Store's lifetime so that remount (e.g., React strict mode)
+		// correctly re-triggers enable/sync via store.event.updated().
 		watch(store.event.updated, () => this.#onUpdated())
 		watch(store.event.afterTokensRendered, () => this.recoverFocus())
 		watch(store.event.unmounted, () => this.disable())
