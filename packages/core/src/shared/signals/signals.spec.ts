@@ -43,13 +43,13 @@ describe('signal<T>', () => {
 
 	it('should support .get() as a read alias', () => {
 		const s = signal('hello')
-		expect(s.get()).toBe('hello')
+		expect(s()).toBe('hello')
 	})
 
 	it('should support .set() as a write alias', () => {
 		const s = signal('hello')
-		s.set('world')
-		expect(s.get()).toBe('world')
+		s('world')
+		expect(s()).toBe('world')
 	})
 
 	it('should NOT re-notify when the same value is set', () => {
@@ -154,9 +154,9 @@ describe('signal<T>', () => {
 		it('should return initial value as default when set to undefined', () => {
 			const s = signal<string>('change')
 			expect(s()).toBe('change')
-			s.set(undefined)
+			s(undefined)
 			expect(s()).toBe('change')
-			expect(s.get()).toBe('change')
+			expect(s()).toBe('change')
 		})
 
 		it('should return the actual value when set to a non-undefined value', () => {
@@ -170,7 +170,7 @@ describe('signal<T>', () => {
 			expect(s()).toBeUndefined()
 			s('hello')
 			expect(s()).toBe('hello')
-			s.set(undefined)
+			s(undefined)
 			expect(s()).toBeUndefined()
 		})
 
@@ -185,7 +185,7 @@ describe('signal<T>', () => {
 			setUseHookFactory(factory)
 
 			const s = signal<boolean>(false)
-			s.set(undefined)
+			s(undefined)
 			const result = s.use()
 			expect(result).toBe(false)
 		})
@@ -193,28 +193,28 @@ describe('signal<T>', () => {
 		it('should work with equals: false and default fallback', () => {
 			const s = signal<boolean>(false, {equals: false})
 			expect(s()).toBe(false)
-			s.set(undefined)
+			s(undefined)
 			expect(s()).toBe(false)
-			s.set(true)
+			s(true)
 			expect(s()).toBe(true)
 		})
 
 		it('should work with custom equals and default fallback', () => {
 			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
-			s.set(undefined)
+			s(undefined)
 			expect(s()).toEqual({id: 1, name: 'a'})
 		})
 
 		it('should notify subscribers when reverting from value to default', () => {
 			const s = signal<boolean>(false)
-			s.set(true)
+			s(true)
 			const runs = vi.fn()
 			trackedEffect(() => {
 				s()
 				runs()
 			})
 			runs.mockClear()
-			s.set(undefined)
+			s(undefined)
 			expect(runs).toHaveBeenCalledTimes(1)
 			expect(s()).toBe(false)
 		})
@@ -227,15 +227,15 @@ describe('signal<T>', () => {
 				runs()
 			})
 			runs.mockClear()
-			s.set(undefined)
+			s(undefined)
 			expect(runs).toHaveBeenCalledTimes(0)
 		})
 
 		it('should work with array defaults', () => {
 			const s = signal<number[]>([1, 2, 3])
-			s.set(undefined)
+			s(undefined)
 			expect(s()).toEqual([1, 2, 3])
-			s.set([4, 5])
+			s([4, 5])
 			expect(s()).toEqual([4, 5])
 		})
 	})

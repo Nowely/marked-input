@@ -23,9 +23,9 @@ describe('Lifecycle', () => {
 			lifecycle.enable()
 			lifecycle.enable()
 
-			store.state.value.set('hello')
+			store.state.value('hello')
 			lifecycle.syncParser()
-			const tokensAfterSync = store.state.tokens.get()
+			const tokensAfterSync = store.state.tokens()
 			expect(tokensAfterSync).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			lifecycle.disable()
@@ -36,7 +36,7 @@ describe('Lifecycle', () => {
 
 			lifecycle.enable()
 
-			const getTrigger = store.state.overlayTrigger.get()
+			const getTrigger = store.state.overlayTrigger()
 			expect(getTrigger).toBeDefined()
 
 			const option = {overlay: {trigger: '@'}}
@@ -55,10 +55,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			expect(store.state.overlayTrigger.get()).toBeDefined()
+			expect(store.state.overlayTrigger()).toBeDefined()
 
 			lifecycle.disable()
-			expect(store.state.overlayTrigger.get()).toBeUndefined()
+			expect(store.state.overlayTrigger()).toBeUndefined()
 		})
 	})
 
@@ -67,15 +67,15 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('hello')
+			store.state.value('hello')
 			lifecycle.syncParser()
 
 			lifecycle.disable()
 
 			// After disable, emitting parse should NOT update tokens
-			const tokensBefore = store.state.tokens.get()
+			const tokensBefore = store.state.tokens()
 			store.event.parse()
-			const tokensAfter = store.state.tokens.get()
+			const tokensAfter = store.state.tokens()
 
 			expect(tokensAfter).toBe(tokensBefore)
 		})
@@ -84,15 +84,15 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('first')
+			store.state.value('first')
 			lifecycle.syncParser()
 			lifecycle.disable()
 
 			lifecycle.enable()
-			store.state.value.set('second')
+			store.state.value('second')
 			lifecycle.syncParser()
 
-			const tokens = store.state.tokens.get()
+			const tokens = store.state.tokens()
 			expect(tokens).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 
 			lifecycle.disable()
@@ -104,10 +104,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('hello')
+			store.state.value('hello')
 			lifecycle.syncParser()
 
-			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			lifecycle.disable()
 		})
@@ -116,10 +116,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.options.set([{markup: '@[__value__]'}])
+			store.state.options([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.computed.parser.get()).toBeUndefined()
+			expect(store.computed.parser()).toBeUndefined()
 
 			lifecycle.disable()
 		})
@@ -128,11 +128,11 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.Mark.set(() => null)
-			store.state.options.set([{markup: '@[__value__]'}])
+			store.state.Mark(() => null)
+			store.state.options([{markup: '@[__value__]'}])
 			lifecycle.syncParser()
 
-			expect(store.computed.parser.get()).toBeDefined()
+			expect(store.computed.parser()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -141,10 +141,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			store.state.options([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
 			lifecycle.syncParser()
 
-			expect(store.computed.parser.get()).toBeDefined()
+			expect(store.computed.parser()).toBeDefined()
 
 			lifecycle.disable()
 		})
@@ -153,16 +153,16 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('initial')
+			store.state.value('initial')
 			lifecycle.syncParser()
 
-			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
+			store.state.recovery({caret: 0, anchor: store.nodes.focus})
 
 			store.event.parse()
 
-			const tokens = store.state.tokens.get()
+			const tokens = store.state.tokens()
 			expect(tokens).toEqual([{type: 'text', content: 'initial', position: {start: 0, end: 7}}])
-			expect(store.state.previousValue.get()).toBe('initial')
+			expect(store.state.previousValue()).toBe('initial')
 
 			lifecycle.disable()
 		})
@@ -171,16 +171,16 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.Mark.set(() => null)
-			store.state.options.set([{markup: '@[__value__]'}])
-			store.state.value.set('hello')
+			store.state.Mark(() => null)
+			store.state.options([{markup: '@[__value__]'}])
+			store.state.value('hello')
 			lifecycle.syncParser()
 
-			const parserBefore = store.computed.parser.get()
+			const parserBefore = store.computed.parser()
 			expect(parserBefore).toBeDefined()
 
-			store.state.drag.set(true)
-			const parserAfter = store.computed.parser.get()
+			store.state.drag(true)
+			const parserAfter = store.computed.parser()
 
 			expect(parserAfter).toBeDefined()
 			expect(parserAfter).not.toBe(parserBefore)
@@ -194,10 +194,10 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('hello world')
+			store.state.value('hello world')
 			lifecycle.syncParser()
 
-			expect(store.state.tokens.get()).toEqual([
+			expect(store.state.tokens()).toEqual([
 				{type: 'text', content: 'hello world', position: {start: 0, end: 11}},
 			])
 
@@ -208,18 +208,18 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('test')
+			store.state.value('test')
 			lifecycle.syncParser()
 
 			// Set recovery state
-			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
+			store.state.recovery({caret: 0, anchor: store.nodes.focus})
 
 			// Emit parse — should re-parse from token text
 			store.event.parse()
 
-			const tokens = store.state.tokens.get()
+			const tokens = store.state.tokens()
 			expect(tokens).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
-			expect(store.state.previousValue.get()).toBe('test')
+			expect(store.state.previousValue()).toBe('test')
 
 			lifecycle.disable()
 		})
@@ -228,19 +228,26 @@ describe('Lifecycle', () => {
 			const lifecycle = store.lifecycle
 
 			lifecycle.enable()
-			store.state.value.set('hello')
+			store.state.value('hello')
 			lifecycle.syncParser()
-			store.state.recovery.set({caret: 0, anchor: store.nodes.focus})
+			store.state.recovery({caret: 0, anchor: store.nodes.focus})
 
-			const setSpy = vi.spyOn(store.state.tokens, 'set')
+			let callCount = 0
+			const original = store.state.tokens
+			const tokensWrapper = (...args: unknown[]) => {
+				if (args.length) callCount++
+				return (original as (...args: unknown[]) => unknown)(...args)
+			}
+			;(store.state as Record<string, unknown>).tokens = tokensWrapper
 
 			store.event.parse()
-			expect(setSpy).toHaveBeenCalledTimes(1)
+			expect(callCount).toBe(1)
 
-			setSpy.mockClear()
-			store.state.recovery.set({caret: 1, anchor: store.nodes.focus})
-			expect(setSpy).not.toHaveBeenCalled()
+			callCount = 0
+			store.state.recovery({caret: 1, anchor: store.nodes.focus})
+			expect(callCount).toBe(0)
 
+			;(store.state as Record<string, unknown>).tokens = original
 			lifecycle.disable()
 		})
 	})
@@ -248,7 +255,7 @@ describe('Lifecycle', () => {
 	describe('lifecycle events', () => {
 		it('updated() first call triggers enable() and syncParser()', () => {
 			const lifecycle = store.lifecycle
-			store.state.value.set('hello')
+			store.state.value('hello')
 
 			const enableSpy = vi.spyOn(lifecycle, 'enable')
 			const syncParserSpy = vi.spyOn(lifecycle, 'syncParser')
@@ -257,13 +264,13 @@ describe('Lifecycle', () => {
 
 			expect(enableSpy).toHaveBeenCalledOnce()
 			expect(syncParserSpy).toHaveBeenCalledOnce()
-			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.event.unmounted()
 		})
 
 		it('updated() subsequent call with unchanged deps skips parse()', () => {
-			store.state.value.set('hello')
+			store.state.value('hello')
 			store.event.updated()
 
 			const parseSpy = vi.spyOn(store.event, 'parse')
@@ -275,12 +282,12 @@ describe('Lifecycle', () => {
 		})
 
 		it('updated() emits parse when value changes', () => {
-			store.state.Mark.set(() => null)
-			store.state.options.set([{markup: '@[__value__]'}])
-			store.state.value.set('hello')
+			store.state.Mark(() => null)
+			store.state.options([{markup: '@[__value__]'}])
+			store.state.value('hello')
 			store.event.updated()
 
-			store.state.value.set('world')
+			store.state.value('world')
 			const parseSpy = vi.spyOn(store.event, 'parse').mockImplementation(() => {})
 			store.event.updated()
 
@@ -291,8 +298,8 @@ describe('Lifecycle', () => {
 		})
 
 		it('updated() does not call sync or recoverFocus (committed handles those)', () => {
-			store.state.Mark.set(() => null)
-			store.state.value.set('hello')
+			store.state.Mark(() => null)
+			store.state.value('hello')
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
 			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
@@ -316,7 +323,7 @@ describe('Lifecycle', () => {
 		})
 
 		it('afterTokensRendered() calls recoverFocus when Mark is set', () => {
-			store.state.Mark.set(() => null)
+			store.state.Mark(() => null)
 			store.event.updated()
 
 			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
@@ -349,16 +356,16 @@ describe('Lifecycle', () => {
 		})
 
 		it('remount: unmounted then updated re-enables and re-syncs', () => {
-			store.state.value.set('first')
+			store.state.value('first')
 			store.event.updated()
 			store.event.unmounted()
 
-			store.state.value.set('second')
+			store.state.value('second')
 			const enableSpy = vi.spyOn(store.lifecycle, 'enable')
 			store.event.updated()
 
 			expect(enableSpy).toHaveBeenCalledOnce()
-			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 
 			store.event.unmounted()
 		})

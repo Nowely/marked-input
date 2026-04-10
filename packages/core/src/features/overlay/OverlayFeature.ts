@@ -19,18 +19,18 @@ export class OverlayFeature {
 
 		this.#scope = effectScope(() => {
 			watch(this.store.event.clearOverlay, () => {
-				this.store.state.overlayMatch.set(undefined)
+				this.store.state.overlayMatch(undefined)
 			})
 
 			watch(this.store.event.checkOverlay, () => {
-				const getTrigger = this.store.state.overlayTrigger.get()
+				const getTrigger = this.store.state.overlayTrigger()
 				if (!getTrigger) return
-				const match = TriggerFinder.find(this.store.state.options.get(), getTrigger)
-				this.store.state.overlayMatch.set(match)
+				const match = TriggerFinder.find(this.store.state.options(), getTrigger)
+				this.store.state.overlayMatch(match)
 			})
 
 			watch(this.store.event.change, () => {
-				const showOverlayOn = this.store.state.showOverlayOn.get()
+				const showOverlayOn = this.store.state.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -49,7 +49,7 @@ export class OverlayFeature {
 		})
 
 		const selectionChangeHandler = () => {
-			const showOverlayOn = this.store.state.showOverlayOn.get()
+			const showOverlayOn = this.store.state.showOverlayOn()
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {

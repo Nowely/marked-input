@@ -7,7 +7,6 @@ import type {
 	OverlayMatch,
 	OverlayTrigger,
 	Recovery,
-	GenericComponent,
 	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
@@ -70,9 +69,9 @@ export class Store {
 		readOnly: signal<boolean>(false),
 
 		// Component overrides
-		Span: signal<GenericComponent | undefined>(undefined),
-		Mark: signal<GenericComponent | undefined>(undefined),
-		Overlay: signal<GenericComponent | undefined>(undefined),
+		Span: signal<unknown>(undefined),
+		Mark: signal<unknown>(undefined),
+		Overlay: signal<unknown>(undefined),
 
 		// Styling
 		className: signal<string | undefined>(undefined),
@@ -85,17 +84,17 @@ export class Store {
 
 	readonly computed = {
 		hasMark: computed(() => {
-			const Mark = this.state.Mark.get()
+			const Mark = this.state.Mark()
 			if (Mark) return true
-			return this.state.options.get().some(opt => 'Mark' in opt && opt.Mark != null)
+			return this.state.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
 		parser: computed(() => {
-			if (!this.computed.hasMark.get()) return
+			if (!this.computed.hasMark()) return
 
-			const markups = this.state.options.get().map(opt => opt.markup)
+			const markups = this.state.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.state.drag.get()
+			const isDrag = !!this.state.drag()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerClass: computed(() =>
@@ -160,7 +159,7 @@ export class Store {
 			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
 				if (!(key in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				state[key].set(values[key] as never)
+				state[key](values[key] as never)
 			}
 		})
 	}

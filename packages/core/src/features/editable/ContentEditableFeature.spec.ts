@@ -33,7 +33,7 @@ describe('ContentEditableFeature', () => {
 	it('changing readOnly after enable() triggers sync() again', () => {
 		controller.enable()
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.state.readOnly.set(true)
+		store.state.readOnly(true)
 		expect(syncSpy).toHaveBeenCalled()
 	})
 
@@ -41,22 +41,22 @@ describe('ContentEditableFeature', () => {
 		controller.enable()
 		controller.disable()
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.state.readOnly.set(true)
+		store.state.readOnly(true)
 		expect(syncSpy).not.toHaveBeenCalled()
 	})
 
 	it('selecting becoming undefined after enable() triggers sync()', () => {
 		controller.enable()
-		store.state.selecting.set('drag')
+		store.state.selecting('drag')
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.state.selecting.set(undefined)
+		store.state.selecting(undefined)
 		expect(syncSpy).toHaveBeenCalled()
 	})
 
 	it('selecting changing to non-undefined does not trigger sync()', () => {
 		controller.enable()
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.state.selecting.set('drag')
+		store.state.selecting('drag')
 		expect(syncSpy).not.toHaveBeenCalled()
 	})
 })

@@ -35,15 +35,15 @@ export class ContentEditableFeature {
 		const container = this.store.refs.container
 		if (!container) return
 
-		const readOnly = this.store.state.readOnly.get()
+		const readOnly = this.store.state.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isDrag = !!this.store.state.drag.get()
+		const isDrag = !!this.store.state.drag()
 
 		if (isDrag) {
 			// In drag mode, only set contentEditable on text rows (DragMark divs).
 			// Mark rows get tabIndex for focusability but are not contentEditable.
-			const tokens = this.store.state.tokens.get()
+			const tokens = this.store.state.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = childAt(container, i)
 				if (!el) continue
@@ -62,7 +62,7 @@ export class ContentEditableFeature {
 		}
 
 		// Sync textContent for all text spans (including nested)
-		const tokens = this.store.state.tokens.get()
+		const tokens = this.store.state.tokens()
 		if (isDrag) {
 			this.#syncDragTextContent(tokens, container, readOnly)
 		} else {

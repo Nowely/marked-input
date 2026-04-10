@@ -84,7 +84,7 @@ export function selectionToTokens(store: Store): SelectionTokenRange | null {
 		return null
 	}
 
-	const tokens = store.state.tokens.get()
+	const tokens = store.state.tokens()
 
 	let startIndex = findContainerChildIndex(range.startContainer, container)
 	let endIndex = findContainerChildIndex(range.endContainer, container)

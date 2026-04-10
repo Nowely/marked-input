@@ -18,8 +18,8 @@ describe('SystemListenerFeature', () => {
 	describe('enable()', () => {
 		it('should react to change event after enable', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
-			store.state.tokens.set([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.state.onChange(onChange)
+			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			controller.enable()
 
@@ -31,8 +31,8 @@ describe('SystemListenerFeature', () => {
 
 		it('should be idempotent — calling enable twice does not double-subscribe', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
-			store.state.tokens.set([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
+			store.state.onChange(onChange)
+			store.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
 
 			controller.enable()
 			controller.enable()
@@ -44,17 +44,17 @@ describe('SystemListenerFeature', () => {
 
 		it('should react to delete event with correct token', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
+			store.state.onChange(onChange)
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
-			store.state.tokens.set([token, token2])
+			store.state.tokens([token, token2])
 
 			controller.enable()
 
 			store.event.delete({token})
 
 			// After delete, the token should be removed from the tokens array
-			expect(store.state.tokens.get()).toEqual([
+			expect(store.state.tokens()).toEqual([
 				{
 					type: 'text',
 					content: 'b',
@@ -66,30 +66,30 @@ describe('SystemListenerFeature', () => {
 
 		it('should ignore delete events for tokens that are not in state', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
+			store.state.onChange(onChange)
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
 			const missingToken = {type: 'text' as const, content: 'c', position: {start: 2, end: 3}}
-			store.state.tokens.set([token, token2])
+			store.state.tokens([token, token2])
 
 			controller.enable()
 
 			store.event.delete({token: missingToken})
 
-			expect(store.state.tokens.get()).toEqual([token, token2])
+			expect(store.state.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
 		})
 
 		it('should react to select event with mark and match', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
+			store.state.onChange(onChange)
 
 			controller.enable()
 
 			// For select, we just verify the handler runs without error
 			// The full behavior requires DOM setup, so we verify the effect subscribes
 			const mark = {type: 'text' as const, content: '@user', position: {start: 0, end: 5}}
-			store.state.tokens.set([mark])
+			store.state.tokens([mark])
 
 			// oxlint-disable-next-line no-unsafe-type-assertion -- test stub with minimal OverlayMatch shape
 			const match = {
@@ -109,8 +109,8 @@ describe('SystemListenerFeature', () => {
 	describe('disable()', () => {
 		it('should stop reacting to events after disable', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
-			store.state.tokens.set([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.state.onChange(onChange)
+			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			controller.enable()
 			controller.disable()
@@ -122,9 +122,9 @@ describe('SystemListenerFeature', () => {
 
 		it('should stop reacting to delete events after disable', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
+			store.state.onChange(onChange)
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
-			store.state.tokens.set([token])
+			store.state.tokens([token])
 
 			controller.enable()
 			controller.disable()
@@ -136,8 +136,8 @@ describe('SystemListenerFeature', () => {
 
 		it('should allow re-enabling after disable', () => {
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
-			store.state.tokens.set([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.state.onChange(onChange)
+			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			controller.enable()
 			controller.disable()

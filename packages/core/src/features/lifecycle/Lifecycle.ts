@@ -25,12 +25,12 @@ export class Lifecycle {
 			this.syncParser()
 			return
 		}
-		const value = this.store.state.value.get()
-		const parser = this.store.computed.parser.get()
+		const value = this.store.state.value()
+		const parser = this.store.computed.parser()
 		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return
 		this.#lastValue = value
 		this.#lastParser = parser
-		if (!this.store.state.recovery.get()) {
+		if (!this.store.state.recovery()) {
 			this.store.event.parse()
 		}
 	}
@@ -54,7 +54,7 @@ export class Lifecycle {
 
 		const {store} = this
 
-		store.state.overlayTrigger.set(option => option.overlay?.trigger)
+		store.state.overlayTrigger(option => option.overlay?.trigger)
 
 		this.#enableFeatures()
 
@@ -67,23 +67,23 @@ export class Lifecycle {
 		this.#scope?.()
 		this.#scope = undefined
 		this.#disableFeatures()
-		this.store.state.overlayTrigger.set(undefined)
+		this.store.state.overlayTrigger(undefined)
 		this.#initialized = false
 	}
 
 	syncParser() {
 		const {store} = this
-		const inputValue = store.state.value.get() ?? store.state.defaultValue.get() ?? ''
-		store.state.tokens.set(parseWithParser(store, inputValue))
-		store.state.previousValue.set(inputValue)
-		this.#lastValue = store.state.value.get()
-		this.#lastParser = store.computed.parser.get()
+		const inputValue = store.state.value() ?? store.state.defaultValue() ?? ''
+		store.state.tokens(parseWithParser(store, inputValue))
+		store.state.previousValue(inputValue)
+		this.#lastValue = store.state.value()
+		this.#lastParser = store.computed.parser()
 		this.#initialized = true
 	}
 
 	recoverFocus() {
 		this.store.event.sync()
-		if (!this.store.state.Mark.get()) return
+		if (!this.store.state.Mark()) return
 		this.store.event.recoverFocus()
 	}
 
@@ -91,13 +91,13 @@ export class Lifecycle {
 		const {store} = this
 
 		watch(store.event.parse, () => {
-			if (store.state.recovery.get()) {
-				const text = toString(store.state.tokens.get())
-				store.state.tokens.set(parseWithParser(store, text))
-				store.state.previousValue.set(text)
+			if (store.state.recovery()) {
+				const text = toString(store.state.tokens())
+				store.state.tokens(parseWithParser(store, text))
+				store.state.previousValue(text)
 				return
 			}
-			store.state.tokens.set(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
 		})
 	}
 }

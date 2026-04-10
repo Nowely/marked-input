@@ -62,9 +62,9 @@ export interface MarkputState {
 	options: CoreOption[] | undefined
 	/** Events that trigger overlay display */
 	showOverlayOn: OverlayTrigger | undefined
-	Span: GenericComponent | undefined
-	Mark: GenericComponent | undefined
-	Overlay: GenericComponent | undefined
+	Span: unknown
+	Mark: unknown
+	Overlay: unknown
 	className: string | undefined
 	style: CSSProperties | undefined
 	slots: CoreSlots | undefined
@@ -116,12 +116,10 @@ export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 's
 export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
-export type GenericComponent = unknown
-export type GenericElement = unknown
 export interface CoreSlots {
-	container?: GenericElement
-	block?: GenericElement
-	span?: GenericElement
+	container?: unknown
+	block?: unknown
+	span?: unknown
 }
 
 export interface CoreSlotProps {
