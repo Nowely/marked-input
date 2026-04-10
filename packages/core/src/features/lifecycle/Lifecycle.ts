@@ -1,25 +1,52 @@
-import {effectScope, watch} from '../../shared/signals/index.js'
-import type {LifecycleAdapter} from '../../shared/signals/lifecycle-adapter'
+import {effectScope, event, watch} from '../../shared/signals/index.js'
 import {createCoreFeatures} from '../feature-manager'
 import {Parser, toString, getTokensByUI, getTokensByValue, parseWithParser} from '../parsing'
 import type {Store} from '../store'
 
 export class Lifecycle {
+	/** Framework emits after every render (props may have changed). Drives syncParser. */
+	readonly updated = event()
+	/** Framework emits after token changes are committed to the DOM. Drives sync/recoverFocus. */
+	readonly committed = event()
+	/** Framework emits when component unmounts. */
+	readonly unmounted = event()
+
 	#scope?: () => void
 	#stopFeatures?: () => void
 	#initialized = false
+	#lastSyncValue: string | undefined
+	#lastSyncMark: unknown
+	#lastSyncOptions: unknown
 
-	constructor(private store: Store) {}
+	constructor(private store: Store) {
+		effectScope(() => {
+			watch(this.updated, () => this.#onUpdated())
+			watch(this.committed, () => this.recoverFocus())
+			watch(this.unmounted, () => this.disable())
+		})
+	}
 
-	setup(adapter: LifecycleAdapter): void {
-		adapter.onLifecycle(
-			() => this.enable(),
-			() => this.disable()
+	#onUpdated() {
+		if (!this.#scope) this.enable()
+		this.#maybeSyncParser()
+	}
+
+	#maybeSyncParser() {
+		const {store} = this
+		const value = store.state.value.get()
+		const Mark = store.state.Mark.get()
+		const options = store.state.options.get()
+		if (
+			this.#initialized &&
+			value === this.#lastSyncValue &&
+			Mark === this.#lastSyncMark &&
+			options === this.#lastSyncOptions
 		)
-		adapter.watchPostRender([this.store.state.value, this.store.state.Mark, this.store.state.options], () =>
-			this.syncParser()
-		)
-		adapter.watchPostCommit(this.store.state.tokens, () => this.recoverFocus())
+			return
+		this.#lastSyncValue = value
+		this.#lastSyncMark = Mark
+		this.#lastSyncOptions = options
+		this.syncParser()
 	}
 
 	enable() {

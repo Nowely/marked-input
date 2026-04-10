@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import {Store, getLifecycleAdapterFactory} from '@markput/core'
-import {provide, shallowRef, watch} from 'vue'
+import {Store} from '@markput/core'
+import type {WatchSource} from 'vue'
+import {onMounted, onUnmounted, onUpdated, provide, shallowRef, watch} from 'vue'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
-// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue lifecycle adapter factory via setLifecycleAdapterFactory
-import '../lib/hooks/createLifecycleAdapter'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
@@ -61,9 +60,17 @@ watch(
 	syncProps
 )
 
-// oxlint-disable-next-line no-non-null-assertion -- factory is always registered via side-effect import above
-const adapter = getLifecycleAdapterFactory()!()
-store.value.lifecycle.setup(adapter)
+onMounted(() => store.value.lifecycle.updated.emit())
+onUpdated(() => store.value.lifecycle.updated.emit())
+onUnmounted(() => store.value.lifecycle.unmounted.emit())
+
+// Fires after token changes are committed to the DOM — required for sync/recoverFocus
+// which set text content on spans via DOM manipulation (not Vue template rendering).
+// oxlint-disable-next-line no-unsafe-type-assertion -- .use() returns Vue Ref; core types it as unknown at the framework boundary
+watch(store.value.state.tokens.use() as WatchSource, () => store.value.lifecycle.committed.emit(), {
+	flush: 'post',
+	immediate: true,
+})
 
 defineExpose(store.value.handler)
 </script>

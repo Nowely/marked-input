@@ -1,12 +1,10 @@
 import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
-import {Store, getLifecycleAdapterFactory} from '@markput/core'
+import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useImperativeHandle, useLayoutEffect, useState} from 'react'
+import {useEffect, useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
-// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React lifecycle adapter factory via setLifecycleAdapterFactory
-import '../lib/hooks/createLifecycleAdapter'
 import {StoreContext} from '../lib/providers/StoreContext'
 import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
 import {Container} from './Container'
@@ -88,14 +86,23 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		return nextStore
 	})
 
+	// Subscribe to tokens so we re-render when tokens change, enabling the committed layout effect.
+	const tokens = store.state.tokens.use()
+
 	useLayoutEffect(() => {
 		store.setState(rest)
+		store.lifecycle.updated.emit()
 	})
 
-	useImperativeHandle(ref, () => store.handler, [store])
+	// Fires after token changes are committed to the DOM — required for sync/recoverFocus
+	// which set text content on spans via DOM manipulation (not React rendering).
+	useLayoutEffect(() => {
+		store.lifecycle.committed.emit()
+	}, [tokens])
 
-	// oxlint-disable-next-line no-non-null-assertion -- factory is always registered via side-effect import above
-	store.lifecycle.setup(getLifecycleAdapterFactory()!())
+	useEffect(() => () => store.lifecycle.unmounted.emit(), [store])
+
+	useImperativeHandle(ref, () => store.handler, [store])
 
 	return (
 		<StoreContext value={store}>
