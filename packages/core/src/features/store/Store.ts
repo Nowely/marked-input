@@ -1,6 +1,6 @@
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {signal, computed, event, batch} from '../../shared/signals'
+import {signal, computed, event, batch, watch} from '../../shared/signals'
 import type {SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
@@ -23,7 +23,6 @@ import {ContentEditableFeature} from '../editable'
 import {SystemListenerFeature} from '../events'
 import {FocusFeature} from '../focus'
 import {InputFeature} from '../input'
-import {Lifecycle} from '../lifecycle'
 import {OverlayFeature} from '../overlay'
 import {Parser} from '../parsing'
 import type {Token} from '../parsing'
@@ -128,6 +127,7 @@ export class Store {
 		dragAction: event<DragAction>(),
 		updated: event(),
 		afterTokensRendered: event(),
+		mounted: event(),
 		unmounted: event(),
 	}
 
@@ -152,7 +152,15 @@ export class Store {
 		parse: new ParseFeature(this),
 	}
 
-	readonly lifecycle = new Lifecycle(this)
+	// oxlint-disable-next-line no-unused-private-class-members -- IIFE for side-effect-only watches
+	readonly #lifecycle = (() => {
+		watch(this.event.mounted, () => {
+			for (const f of Object.values(this.features)) f.enable()
+		})
+		watch(this.event.unmounted, () => {
+			for (const f of Object.values(this.features)) f.disable()
+		})
+	})()
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
