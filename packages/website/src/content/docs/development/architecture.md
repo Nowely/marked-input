@@ -64,7 +64,7 @@ Both framework adapters share the same component structure:
 
 | Component            | Responsibility                                               |
 | -------------------- | ------------------------------------------------------------ |
-| **MarkedInput**      | Entry point, store initialization, lifecycle management      |
+| **MarkedInput**      | Entry point, store initialization, mount/unmount signaling    |
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
 | **Block**            | Drag-mode wrapper with handle, menu, and drop indicators     |
@@ -229,6 +229,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `recoverFocus`  | Focus recovery after render | `void`                           |
 | `updated`       | Framework mount/update      | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
+| `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
 | `dragAction`    | Drag-and-drop action        | `{ type: string, token: Token }` |
 
@@ -322,6 +323,7 @@ class Store {
         dragAction: Event<{ type: string; token: Token }>
         updated: Event<void>
         afterTokensRendered: Event<void>
+        mounted: Event<void>
         unmounted: Event<void>
     }
 
@@ -342,8 +344,6 @@ class Store {
         drag: DragFeature
         copy: CopyFeature
     }
-
-    readonly lifecycle: Lifecycle
 }
 ```
 
@@ -382,26 +382,24 @@ const tokens = store.state.tokens.use()
 
 The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `ArrowNavFeature` (keyboard navigation).
 
-Managed by `Lifecycle`, which enables/disables all features as a unit.
-
 ## Lifecycle Timing
 
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.event.updated() on mount/update
+// 1. Framework emits store.event.mounted() on initial mount
+//    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. Lifecycle enables and syncs on first updated()
-lifecycle.enable()
-lifecycle.syncParser(value, options)
+// 2. Framework emits store.event.updated() on mount/update
+//    → ParseFeature syncs value/options, triggers parse if changed
 
 // 3. Sync contenteditable attributes (layout effect)
-contentEditable.sync()
+//    → ContentEditableFeature.sync()
 
 // 4. Framework emits store.event.afterTokensRendered() after tokens render
 
 // 5. Framework emits store.event.unmounted() on unmount
-lifecycle.disable()
+//    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
 
 ## Block System (Drag Mode)
