@@ -136,6 +136,6 @@ export class BlockStore {
 	}
 
 	#emit(action: DragAction) {
-		this.#dragAction?.emit(action)
+		this.#dragAction?.(action)
 	}
 }

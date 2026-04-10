@@ -10,7 +10,7 @@ export const Container = memo(() => {
 	const tokens = store.state.tokens.use()
 
 	useLayoutEffect(() => {
-		store.on.afterTokensRendered.emit()
+		store.on.afterTokensRendered()
 	}, [tokens])
 
 	const className = store.computed.containerClass.use()

@@ -34,13 +34,13 @@ export function useOverlay(): OverlayHandler {
 		}
 	})
 
-	const close = () => store.on.clearOverlay.emit()
+	const close = () => store.on.clearOverlay()
 	const select = (value: {value: string; meta?: string}) => {
 		const match = matchRef.value
 		if (!match) return
 		const mark = createMarkFromOverlay(match, value.value, value.meta)
-		store.on.select.emit({mark, match})
-		store.on.clearOverlay.emit()
+		store.on.select({mark, match})
+		store.on.clearOverlay()
 	}
 
 	const ref = {

@@ -91,7 +91,7 @@ export class Lifecycle {
 
 		if (this.#initialized) {
 			if (!store.state.recovery.get()) {
-				store.on.parse.emit()
+				store.on.parse()
 			}
 			return
 		}
@@ -117,9 +117,9 @@ export class Lifecycle {
 	}
 
 	recoverFocus() {
-		this.store.on.sync.emit()
+		this.store.on.sync()
 		if (!this.store.state.Mark.get()) return
-		this.store.on.recoverFocus.emit()
+		this.store.on.recoverFocus()
 	}
 
 	#subscribeParse() {

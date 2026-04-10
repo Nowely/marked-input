@@ -207,10 +207,10 @@ export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
 // ---------------------------------------------------------------------------
 
 export interface Event<T = void> {
-	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
-	(): T | undefined
 	/** Emit — always fires even when payload reference is unchanged. */
-	emit(payload: T): void
+	(payload: T): void
+	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
+	read(): T | undefined
 	/** Framework hook bridge. */
 	use(): T | undefined
 }
@@ -220,14 +220,16 @@ export function event<T = void>(): Event<T> {
 	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
 
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
-	const callable = function eventCallable() {
-		const box = inner()
-		return box !== undefined ? box.v : undefined
+	const callable = function eventCallable(payload: T) {
+		inner({v: payload, id: ++seq})
 	} as unknown as Event<T>
 
-	callable.emit = (payload: T) => inner({v: payload, id: ++seq})
-	// oxlint-disable-next-line no-unsafe-type-assertion -- getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
-	callable.use = () => getUseHookFactory()(callable)() as T | undefined
+	callable.read = () => {
+		const box = inner()
+		return box !== undefined ? box.v : undefined
+	}
+	// oxlint-disable-next-line no-unsafe-type-assertion, typescript-eslint/unbound-method -- callable.read is an arrow function (no this); getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
+	callable.use = () => getUseHookFactory()(callable.read)() as T | undefined
 
 	return callable
 }
@@ -261,7 +263,7 @@ export function watch<T>(
 	let oldValue: T | undefined
 	return alienEffect(() => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
-		const newValue = dep() as T
+		const newValue = ('read' in dep ? dep.read() : dep()) as T
 		if (!initialized) {
 			initialized = true
 			oldValue = newValue
