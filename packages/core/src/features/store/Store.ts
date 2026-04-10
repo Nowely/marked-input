@@ -1,7 +1,7 @@
 import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
 import {DEFAULT_OPTIONS} from '../../shared/constants'
 import {signal, computed, event, batch} from '../../shared/signals'
-import type {Signal, Computed, SignalValues} from '../../shared/signals'
+import type {SignalValues} from '../../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -44,29 +44,7 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly state: {
-		tokens: Signal<Token[]>
-		value: Signal<string | undefined>
-		defaultValue: Signal<string | undefined>
-		previousValue: Signal<string | undefined>
-		innerValue: Signal<string | undefined>
-		recovery: Signal<Recovery | undefined>
-		selecting: Signal<'drag' | 'all' | undefined>
-		drag: Signal<boolean | {alwaysShowHandle: boolean}>
-		overlayMatch: Signal<OverlayMatch | undefined>
-		overlayTrigger: Signal<((option: CoreOption) => string | undefined) | undefined>
-		showOverlayOn: Signal<OverlayTrigger>
-		onChange: Signal<((value: string) => void) | undefined>
-		options: Signal<CoreOption[]>
-		readOnly: Signal<boolean>
-		Span: Signal<GenericComponent | undefined>
-		Mark: Signal<GenericComponent | undefined>
-		Overlay: Signal<GenericComponent | undefined>
-		className: Signal<string | undefined>
-		style: Signal<CSSProperties | undefined>
-		slots: Signal<CoreSlots | undefined>
-		slotProps: Signal<CoreSlotProps | undefined>
-	} = {
+	readonly state = {
 		// Data
 		tokens: signal<Token[]>([]),
 		value: signal<string | undefined>(undefined),
@@ -105,19 +83,17 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
-	readonly computed: {
-		parser: Computed<Parser | undefined>
-		containerClass: Computed<string | undefined>
-		containerStyle: Computed<CSSProperties | undefined>
-	} = {
-		parser: computed(() => {
-			const coreOptions = this.state.options.get()
-			const markups = coreOptions.map(opt => opt.markup)
-			if (!markups.some(Boolean)) return undefined
-
+	readonly computed = {
+		hasMark: computed(() => {
 			const Mark = this.state.Mark.get()
-			const hasPerOptionMark = coreOptions.some(opt => 'Mark' in opt && opt.Mark != null)
-			if (!Mark && !hasPerOptionMark) return undefined
+			if (Mark) return true
+			return this.state.options.get().some(opt => 'Mark' in opt && opt.Mark != null)
+		}),
+		parser: computed(() => {
+			if (!this.computed.hasMark.get()) return
+
+			const markups = this.state.options.get().map(opt => opt.markup)
+			if (!markups.some(Boolean)) return
 
 			const isDrag = !!this.state.drag.get()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
