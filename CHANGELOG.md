@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.10.0](https://github.com/Nowely/marked-input/compare/0.9.0...0.10.0) (2026-04-10)
+
+
+### Features
+
+* **clipboard:** implement enhanced copy/cut/paste with cross-token selection support ([#176](https://github.com/Nowely/marked-input/issues/176)) ([09a3ea0](https://github.com/Nowely/marked-input/commit/09a3ea09218aee0d8b0d93a8cf29f0e03155f667))
+* **react:** migrate from @vitejs/plugin-react-swc to @vitejs/plugin-react ([#179](https://github.com/Nowely/marked-input/issues/179)) ([62d9b36](https://github.com/Nowely/marked-input/commit/62d9b362889de1fb3584aad132f92eab435dea85))
+
+
+### Refactoring
+
+* **core:** event-driven features architecture ([#183](https://github.com/Nowely/marked-input/issues/183)) ([17e6c5c](https://github.com/Nowely/marked-input/commit/17e6c5c2c2a180e0094123f3670e80face703b9b))
+* **core:** modernize signal/event system and simplify store architecture ([#180](https://github.com/Nowely/marked-input/issues/180)) ([34a9fd5](https://github.com/Nowely/marked-input/commit/34a9fd5b37f19e7d32cef681c59805c3e302dfc4))
+* **core:** move BlockStore state init to class field ([#182](https://github.com/Nowely/marked-input/issues/182)) ([e28c9c2](https://github.com/Nowely/marked-input/commit/e28c9c2d65bb9241bfa8873bd7e14773f5932220))
+* **core:** remove defaultSpan from Store constructor ([#181](https://github.com/Nowely/marked-input/issues/181)) ([2257f96](https://github.com/Nowely/marked-input/commit/2257f96199223c938d1f8bd9c52b806f98bb05d8))
+* **core:** simplify event bus, lifecycle, parser derivation, and store structure ([#184](https://github.com/Nowely/marked-input/issues/184)) ([10c9971](https://github.com/Nowely/marked-input/commit/10c9971ba2bacb2d0a0b917e0162cdacd0d1af7a))
+* Migrate on alien signals ([#178](https://github.com/Nowely/marked-input/issues/178)) ([8de20b9](https://github.com/Nowely/marked-input/commit/8de20b95af4b4346a0c140263794cf4aff48cf6a))
+
 ## [0.9.0](https://github.com/Nowely/marked-input/compare/0.8.0...0.9.0) (2026-04-05)
 
 
