@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.1](https://github.com/Nowely/marked-input/compare/0.10.0...0.10.1) (2026-04-11)
+
+
+### Refactoring
+
+* **core:** restructure Store, extract ParseFeature, remove Lifecycle, migrate signal API ([#185](https://github.com/Nowely/marked-input/issues/185)) ([afd5b1c](https://github.com/Nowely/marked-input/commit/afd5b1c78d15e4528b99ff5d89e0c39831ad1118))
+
+
+### Build
+
+* inline @markput/core types into published packages ([#187](https://github.com/Nowely/marked-input/issues/187)) ([d8f44ff](https://github.com/Nowely/marked-input/commit/d8f44ff4d421812844b6ffe87f827b6e8e923470))
+
 ## [0.10.0](https://github.com/Nowely/marked-input/compare/0.9.0...0.10.0) (2026-04-10)
 
 
