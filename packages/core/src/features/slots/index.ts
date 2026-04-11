@@ -1,4 +1,3 @@
-export {createSlots, type SlotSignals} from './createSlots'
 export type {Slot, MarkSlot, OverlaySlot} from './types'
 export {
 	resolveSlot,
