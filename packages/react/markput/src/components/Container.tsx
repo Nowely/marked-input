@@ -6,7 +6,7 @@ import {Token} from './Token'
 
 export const Container = memo(() => {
 	const store = useStore()
-	const drag = store.state.drag.use()
+	const drag = store.props.drag.use()
 	const tokens = store.state.tokens.use()
 
 	useLayoutEffect(() => {
@@ -15,7 +15,7 @@ export const Container = memo(() => {
 
 	const className = store.computed.containerClass.use()
 	const style = store.computed.containerStyle.use()
-	const readOnly = store.state.readOnly.use()
+	const readOnly = store.props.readOnly.use()
 	const key = store.key
 	const refs = store.refs
 

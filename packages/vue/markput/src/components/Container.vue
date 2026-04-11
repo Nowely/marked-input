@@ -7,8 +7,8 @@ import Block from './Block.vue'
 import Token from './Token.vue'
 
 const store = useStore()
-const drag = store.state.drag.use()
-const readOnly = store.state.readOnly.use()
+const drag = store.props.drag.use()
+const readOnly = store.props.readOnly.use()
 const tokens = store.state.tokens.use()
 watch(tokens, () => store.event.afterTokensRendered(), {flush: 'post', immediate: true})
 

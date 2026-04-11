@@ -8,4 +8,4 @@ Handles left/right arrow key navigation between text spans and marks in non-drag
 
 ## Usage
 
-The feature is automatically registered and enabled by the Store. It activates only when drag mode is off (`store.state.drag()` is false). No direct usage is needed — it hooks into the editor's event system internally.
+The feature is automatically registered and enabled by the Store. It activates only when drag mode is off (`store.props.drag()` is false). No direct usage is needed — it hooks into the editor's event system internally.

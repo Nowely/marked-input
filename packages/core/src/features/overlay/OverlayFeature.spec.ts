@@ -78,7 +78,7 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should react to change event when showOverlayOn includes change', () => {
-			store.state.showOverlayOn('change')
+			store.props.showOverlayOn('change')
 			controller.enable()
 
 			store.state.overlayMatch(stubMatch)
@@ -89,7 +89,7 @@ describe('OverlayFeature', () => {
 		})
 
 		it('should not react to change event when showOverlayOn does not include change', () => {
-			store.state.showOverlayOn('selectionChange')
+			store.props.showOverlayOn('selectionChange')
 			controller.enable()
 
 			store.state.overlayMatch(stubMatch)

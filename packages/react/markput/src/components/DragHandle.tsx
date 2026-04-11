@@ -10,8 +10,8 @@ const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
 	const store = useStore()
-	const readOnly = store.state.readOnly.use()
-	const drag = store.state.drag.use()
+	const readOnly = store.props.readOnly.use()
+	const drag = store.props.drag.use()
 	const blockStore = store.blocks.get(token)
 	const isDragging = blockStore.state.isDragging.use()
 	const isHovered = blockStore.state.isHovered.use()

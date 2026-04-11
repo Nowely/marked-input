@@ -48,40 +48,16 @@ export class Store {
 	readonly state = {
 		// Data
 		tokens: signal<Token[]>([]),
-		value: signal<string | undefined>(undefined),
-		defaultValue: signal<string | undefined>(undefined),
 		previousValue: signal<string | undefined>(undefined),
 		innerValue: signal<string | undefined>(undefined),
 		recovery: signal<Recovery | undefined>(undefined),
 
 		// Selection
 		selecting: signal<'drag' | 'all' | undefined>(undefined),
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
 
-		// Overlay
+		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
 		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
-		showOverlayOn: signal<OverlayTrigger>('change'),
-
-		// Callbacks
-		onChange: signal<((value: string) => void) | undefined>(undefined),
-
-		// Config
-		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
-		readOnly: signal<boolean>(false),
-
-		// Component overrides
-		Span: signal<unknown>(undefined),
-		Mark: signal<unknown>(undefined),
-		Overlay: signal<unknown>(undefined),
-
-		// Styling
-		className: signal<string | undefined>(undefined),
-		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
-
-		// Slot system
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
 	readonly props = {

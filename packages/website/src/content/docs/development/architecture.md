@@ -347,17 +347,22 @@ class Store {
 }
 ```
 
-### State Access
+### State and props access
+
+Internal feature state lives on `store.state`. Values and options passed from React/Vue live on `store.props` and are updated via `setProps()`.
 
 ```typescript
-// Read state
+// Read internal state
 store.state.tokens.get()
 
-// Write state
+// Write internal state
 store.state.tokens.set(newTokens)
 
-// Batch update
-store.state.set({ tokens: newTokens, readOnly: true })
+// Batch internal state updates
+store.setState({tokens: newTokens})
+
+// Framework-provided props (MarkedInput calls setProps on each render)
+store.setProps({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
 const tokens = store.state.tokens.use()
@@ -365,7 +370,7 @@ const tokens = store.state.tokens.use()
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.event` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (internal signals), `store.props` (framework-provided signals), `store.event` (emitters), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |

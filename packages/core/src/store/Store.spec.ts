@@ -13,17 +13,17 @@ describe('Store', () => {
 	it('should construct with no arguments', () => {
 		const store = new Store()
 		expect(store.state.tokens()).toEqual([])
-		expect(store.state.readOnly()).toBe(false)
+		expect(store.props.readOnly()).toBe(false)
 	})
 
 	it('should return default for showOverlayOn when not set', () => {
 		const store = new Store()
-		expect(store.state.showOverlayOn()).toBe('change')
+		expect(store.props.showOverlayOn()).toBe('change')
 	})
 
 	it('should return default for options when not set', () => {
 		const store = new Store()
-		expect(store.state.options()).toEqual(DEFAULT_OPTIONS)
+		expect(store.props.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
 	it('should have events', () => {
@@ -70,18 +70,17 @@ describe('Store', () => {
 	})
 
 	describe('setState', () => {
-		it('should update provided state values', () => {
+		it('should update provided internal state values', () => {
 			const store = new Store()
-			store.setState({value: 'hello', readOnly: true})
-			expect(store.state.value()).toBe('hello')
-			expect(store.state.readOnly()).toBe(true)
+			store.setState({previousValue: 'hello'})
+			expect(store.state.previousValue()).toBe('hello')
 		})
 
 		it('should leave unprovided keys unchanged', () => {
 			const store = new Store()
-			store.setState({readOnly: true})
-			expect(store.state.value()).toBeUndefined()
-			expect(store.state.readOnly()).toBe(true)
+			store.setState({selecting: 'drag'})
+			expect(store.state.selecting()).toBe('drag')
+			expect(store.state.tokens()).toEqual([])
 		})
 
 		it('should not throw when called with an empty object', () => {
@@ -93,12 +92,12 @@ describe('Store', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.state.value()
-				store.state.readOnly()
+				store.state.tokens()
+				store.state.selecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
-			store.setState({value: 'hello', readOnly: true})
+			store.setState({selecting: 'all'})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
 	})
@@ -145,7 +144,7 @@ describe('Store', () => {
 						store.state.tokens(newTokens)
 						store.state.previousValue(newValue)
 					})
-					store.state.onChange()?.(newValue)
+					store.props.onChange()?.(newValue)
 				})
 			})
 			store.state.innerValue('hello')
@@ -157,7 +156,7 @@ describe('Store', () => {
 		it('should call onChange when set', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.state.onChange(onChange)
+			store.props.onChange(onChange)
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
@@ -166,7 +165,7 @@ describe('Store', () => {
 						store.state.tokens(newTokens)
 						store.state.previousValue(newValue)
 					})
-					store.state.onChange()?.(newValue)
+					store.props.onChange()?.(newValue)
 				})
 			})
 			store.state.innerValue('world')
@@ -185,7 +184,7 @@ describe('Store', () => {
 						store.state.tokens(newTokens)
 						store.state.previousValue(newValue)
 					})
-					store.state.onChange()?.(newValue)
+					store.props.onChange()?.(newValue)
 				})
 			})
 			expect(() => store.state.innerValue('test')).not.toThrow()
@@ -196,7 +195,7 @@ describe('Store', () => {
 	describe('containerStyle (computed)', () => {
 		it('should merge style + slotProps.container.style', () => {
 			const store = new Store()
-			store.setState({
+			store.setProps({
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
@@ -205,7 +204,7 @@ describe('Store', () => {
 
 		it('should return style only when no slotProps.container.style', () => {
 			const store = new Store()
-			store.setState({style: {color: 'red'}})
+			store.setProps({style: {color: 'red'}})
 			expect(store.computed.containerStyle()).toEqual({color: 'red'})
 		})
 
@@ -216,17 +215,17 @@ describe('Store', () => {
 
 		it('should react to style changes', () => {
 			const store = new Store()
-			store.setState({style: {color: 'red'}})
+			store.setProps({style: {color: 'red'}})
 			expect(store.computed.containerStyle()).toEqual({color: 'red'})
-			store.setState({style: {color: 'blue'}})
+			store.setProps({style: {color: 'blue'}})
 			expect(store.computed.containerStyle()).toEqual({color: 'blue'})
 		})
 
 		it('should react to slotProps changes', () => {
 			const store = new Store()
-			store.setState({style: {color: 'red'}})
+			store.setProps({style: {color: 'red'}})
 			expect(store.computed.containerStyle()).toEqual({color: 'red'})
-			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
+			store.setProps({slotProps: {container: {style: {fontSize: 14}}}})
 			expect(store.computed.containerStyle()).toEqual({color: 'red', fontSize: 14})
 		})
 	})
@@ -239,35 +238,35 @@ describe('Store', () => {
 
 		it('should return true when Mark override is set', () => {
 			const store = new Store()
-			store.state.Mark(() => null)
+			store.props.Mark(() => null)
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when option has per-option Mark', () => {
 			const store = new Store()
-			store.state.options([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			store.props.options([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when Mark override is set even without per-option Mark', () => {
 			const store = new Store()
-			store.state.Mark(() => null)
-			store.state.options([{markup: '@[__value__]'}])
+			store.props.Mark(() => null)
+			store.props.options([{markup: '@[__value__]'}])
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return false when option has Mark set to null', () => {
 			const store = new Store()
-			store.state.options([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
+			store.props.options([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
 			expect(store.computed.hasMark()).toBe(false)
 		})
 
 		it('should react to Mark override changes', () => {
 			const store = new Store()
 			expect(store.computed.hasMark()).toBe(false)
-			store.state.Mark(() => null)
+			store.props.Mark(() => null)
 			expect(store.computed.hasMark()).toBe(true)
-			store.state.Mark(undefined)
+			store.props.Mark(undefined)
 			expect(store.computed.hasMark()).toBe(false)
 		})
 	})
@@ -290,13 +289,13 @@ describe('Store', () => {
 
 		it('should resolve custom container slot', () => {
 			const store = new Store()
-			store.setState({slots: {container: 'section'}})
+			store.setProps({slots: {container: 'section'}})
 			expect(store.computed.container()).toEqual(['section', undefined])
 		})
 
 		it('should resolve custom span slot with props', () => {
 			const store = new Store()
-			store.setState({
+			store.setProps({
 				slots: {span: 'strong'},
 				slotProps: {span: {className: 'bold'}},
 			})
@@ -316,7 +315,7 @@ describe('Store', () => {
 		it('should pass value prop to custom Span component for text token', () => {
 			const CustomSpan = () => null
 			const store = new Store()
-			store.setState({Span: CustomSpan})
+			store.setProps({Span: CustomSpan})
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
 			const [component, props] = store.computed.mark()(token)
 			expect(component).toBe(CustomSpan)
@@ -339,7 +338,7 @@ describe('Store', () => {
 		it('should resolve overlay from global Overlay component', () => {
 			const CustomOverlay = () => null
 			const store = new Store()
-			store.setState({Overlay: CustomOverlay})
+			store.setProps({Overlay: CustomOverlay})
 			const [Component, props] = store.computed.overlay()()
 			expect(Component).toBe(CustomOverlay)
 			expect(props).toEqual({})
