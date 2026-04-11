@@ -26,7 +26,7 @@ export class BlockEditFeature {
 		if (!container) return
 
 		this.#keydownHandler = e => {
-			if (!this.store.state.drag()) return
+			if (!this.store.props.drag()) return
 
 			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
 				this.#handleBlockArrowLeftRight(e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
@@ -39,7 +39,7 @@ export class BlockEditFeature {
 		}
 
 		this.#beforeInputHandler = e => {
-			if (!this.store.state.drag()) return
+			if (!this.store.props.drag()) return
 			if (e.defaultPrevented) return
 			this.#handleBlockBeforeInput(e)
 		}
@@ -73,8 +73,8 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.state.value() ?? ''
-		if (!this.store.state.onChange()) return
+		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
+		if (!this.store.props.onChange()) return
 
 		if (event.key === KEYBOARD.BACKSPACE) {
 			const blockDiv = blockDivs[blockIndex]
@@ -224,11 +224,11 @@ export class BlockEditFeature {
 		const rows = this.store.state.tokens()
 		const token = rows[blockIndex]
 		const blockDiv = blockDivs[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.state.value() ?? ''
+		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
 
-		if (!this.store.state.onChange()) return
+		if (!this.store.props.onChange()) return
 
-		const newRowContent = createRowContent(this.store.state.options())
+		const newRowContent = createRowContent(this.store.props.options())
 
 		if (!isTextLikeRow(token)) {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
@@ -350,7 +350,7 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.state.value() ?? ''
+		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
 
 		const focusAndSetCaret = (newRawPos: number) => {
 			queueMicrotask(() => {

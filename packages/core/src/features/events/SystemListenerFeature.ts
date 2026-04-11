@@ -13,7 +13,7 @@ export class SystemListenerFeature {
 
 		this.#scope = effectScope(() => {
 			watch(this.store.event.change, () => {
-				const onChange = this.store.state.onChange()
+				const onChange = this.store.props.onChange()
 				const {focus} = this.store.nodes
 
 				// Programmatic mark change or non-editable focus (e.g. a checkbox):
@@ -58,12 +58,12 @@ export class SystemListenerFeature {
 					this.store.state.tokens(newTokens)
 					this.store.state.previousValue(newValue)
 				})
-				this.store.state.onChange()?.(newValue)
+				this.store.props.onChange()?.(newValue)
 			})
 
 			watch(this.store.event.select, event => {
-				const Mark = this.store.state.Mark()
-				const onChange = this.store.state.onChange()
+				const Mark = this.store.props.Mark()
+				const onChange = this.store.props.onChange()
 				const {
 					mark,
 					match: {option, span, index, source},

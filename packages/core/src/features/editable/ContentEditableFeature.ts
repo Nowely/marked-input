@@ -14,7 +14,7 @@ export class ContentEditableFeature {
 
 		this.#scope = effectScope(() => {
 			effect(() => {
-				this.store.state.readOnly()
+				this.store.props.readOnly()
 				this.sync()
 			})
 			effect(() => {
@@ -35,10 +35,10 @@ export class ContentEditableFeature {
 		const container = this.store.refs.container
 		if (!container) return
 
-		const readOnly = this.store.state.readOnly()
+		const readOnly = this.store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isDrag = !!this.store.state.drag()
+		const isDrag = !!this.store.props.drag()
 
 		if (isDrag) {
 			// In drag mode, only set contentEditable on text rows (DragMark divs).

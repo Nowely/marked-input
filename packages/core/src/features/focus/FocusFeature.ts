@@ -43,7 +43,7 @@ export class FocusFeature {
 
 		watch(this.store.event.afterTokensRendered, () => {
 			this.store.event.sync()
-			if (!this.store.state.Mark()) return
+			if (!this.store.props.Mark()) return
 			this.store.event.recoverFocus()
 		})
 	}

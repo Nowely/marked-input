@@ -29,16 +29,16 @@ export class ParseFeature {
 
 	sync() {
 		const {store} = this
-		const inputValue = store.state.value() ?? store.state.defaultValue() ?? ''
+		const inputValue = store.props.value() ?? store.props.defaultValue() ?? ''
 		store.state.tokens(parseWithParser(store, inputValue))
 		store.state.previousValue(inputValue)
-		this.#lastValue = store.state.value()
+		this.#lastValue = store.props.value()
 		this.#lastParser = store.computed.parser()
 		this.#initialized = true
 	}
 
 	hasChanged(): boolean {
-		const value = this.store.state.value()
+		const value = this.store.props.value()
 		const parser = this.store.computed.parser()
 		if (this.#initialized && value === this.#lastValue && parser === this.#lastParser) return false
 		this.#lastValue = value
