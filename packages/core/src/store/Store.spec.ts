@@ -240,4 +240,78 @@ describe('Store', () => {
 			expect(store.computed.hasMark()).toBe(false)
 		})
 	})
+
+	describe('computed slots', () => {
+		it('should return default container slot', () => {
+			const store = new Store()
+			expect(store.computed.container()).toEqual(['div', undefined])
+		})
+
+		it('should return default block slot', () => {
+			const store = new Store()
+			expect(store.computed.block()).toEqual(['div', undefined])
+		})
+
+		it('should return default span slot', () => {
+			const store = new Store()
+			expect(store.computed.span()).toEqual(['span', undefined])
+		})
+
+		it('should resolve custom container slot', () => {
+			const store = new Store()
+			store.setState({slots: {container: 'section'}})
+			expect(store.computed.container()).toEqual(['section', undefined])
+		})
+
+		it('should resolve custom span slot with props', () => {
+			const store = new Store()
+			store.setState({
+				slots: {span: 'strong'},
+				slotProps: {span: {className: 'bold'}},
+			})
+			const [component, props] = store.computed.span()
+			expect(component).toBe('strong')
+			expect(props).toEqual({className: 'bold'})
+		})
+
+		it('should resolve mark slot for text token using span fallback', () => {
+			const store = new Store()
+			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
+			const [component, props] = store.computed.mark()(token)
+			expect(component).toBe('span')
+			expect(props).toEqual({})
+		})
+
+		it('should pass value prop to custom Span component for text token', () => {
+			const CustomSpan = () => null
+			const store = new Store()
+			store.setState({Span: CustomSpan})
+			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
+			const [component, props] = store.computed.mark()(token)
+			expect(component).toBe(CustomSpan)
+			expect(props).toEqual({value: 'hello'})
+		})
+
+		it('should throw for mark token without Mark component', () => {
+			const store = new Store()
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for test
+			const token = {
+				type: 'mark',
+				value: '@john',
+				meta: undefined,
+				descriptor: {index: 0},
+				position: {start: 0, end: 5},
+			} as any
+			expect(() => store.computed.mark()(token)).toThrow('No mark component found')
+		})
+
+		it('should resolve overlay from global Overlay component', () => {
+			const CustomOverlay = () => null
+			const store = new Store()
+			store.setState({Overlay: CustomOverlay})
+			const [Component, props] = store.computed.overlay()()
+			expect(Component).toBe(CustomOverlay)
+			expect(props).toEqual({})
+		})
+	})
 })
