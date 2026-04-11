@@ -103,6 +103,37 @@ describe('Store', () => {
 		})
 	})
 
+	describe('setProps()', () => {
+		it('sets individual prop signals', () => {
+			const store = new Store()
+			store.setProps({value: 'hello'})
+			expect(store.props.value()).toBe('hello')
+		})
+
+		it('sets multiple prop signals atomically', () => {
+			const store = new Store()
+			store.setProps({value: 'foo', readOnly: true, className: 'bar'})
+			expect(store.props.value()).toBe('foo')
+			expect(store.props.readOnly()).toBe(true)
+			expect(store.props.className()).toBe('bar')
+		})
+
+		it('ignores unknown keys gracefully', () => {
+			const store = new Store()
+			// TypeScript prevents this at compile time, but guard handles JS callers
+			// oxlint-disable-next-line no-unsafe-type-assertion
+			store.setProps({nonExistentKey: 'x'} as never)
+			// Should not throw
+		})
+
+		it('does not modify state when setProps is called', () => {
+			const store = new Store()
+			const tokensBefore = store.state.tokens()
+			store.setProps({value: 'test'})
+			expect(store.state.tokens()).toBe(tokensBefore)
+		})
+	})
+
 	describe('innerValue', () => {
 		it('should update tokens and previousValue when innerValue is set', () => {
 			const store = new Store()
