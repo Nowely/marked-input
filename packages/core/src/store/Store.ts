@@ -122,14 +122,18 @@ export class Store {
 			resolveSlotProps('span', this.state.slotProps()),
 		]) as unknown as Slot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
-		overlay: computed(
-			() => (option?: CoreOption, defaultComponent?: unknown) =>
-				resolveOverlaySlot(this.state.Overlay(), option, defaultComponent)
-		) as unknown as OverlaySlot,
+		overlay: computed(() => {
+			const Overlay = this.state.Overlay()
+			return (option?: CoreOption, defaultComponent?: unknown) =>
+				resolveOverlaySlot(Overlay, option, defaultComponent)
+		}) as unknown as OverlaySlot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
-		mark: computed(
-			() => (token: Token) => resolveMarkSlot(token, this.state.options(), this.state.Mark(), this.state.Span())
-		) as unknown as MarkSlot,
+		mark: computed(() => {
+			const options = this.state.options()
+			const Mark = this.state.Mark()
+			const Span = this.state.Span()
+			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+		}) as unknown as MarkSlot,
 	}
 
 	readonly event = {
