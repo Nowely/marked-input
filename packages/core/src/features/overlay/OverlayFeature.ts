@@ -27,12 +27,12 @@ export class OverlayFeature {
 			watch(this.store.event.checkOverlay, () => {
 				const getTrigger = this.store.state.overlayTrigger()
 				if (!getTrigger) return
-				const match = TriggerFinder.find(this.store.state.options(), getTrigger)
+				const match = TriggerFinder.find(this.store.props.options(), getTrigger)
 				this.store.state.overlayMatch(match)
 			})
 
 			watch(this.store.event.change, () => {
-				const showOverlayOn = this.store.state.showOverlayOn()
+				const showOverlayOn = this.store.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -51,7 +51,7 @@ export class OverlayFeature {
 		})
 
 		const selectionChangeHandler = () => {
-			const showOverlayOn = this.store.state.showOverlayOn()
+			const showOverlayOn = this.store.props.showOverlayOn()
 			const type: OverlayTrigger = 'selectionChange'
 
 			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {

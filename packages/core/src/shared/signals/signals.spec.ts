@@ -3,7 +3,7 @@ import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 import {effect} from './alien-signals'
 import {setUseHookFactory, getUseHookFactory} from './registry'
 import type {UseHookFactory} from './registry'
-import {signal, watch, event} from './signal'
+import {signal, watch, event, batch} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -237,6 +237,100 @@ describe('signal<T>', () => {
 			expect(s()).toEqual([1, 2, 3])
 			s([4, 5])
 			expect(s()).toEqual([4, 5])
+		})
+	})
+
+	describe('readonly option', () => {
+		it('should ignore direct writes when readonly is true', () => {
+			const s = signal(42, {readonly: true})
+			s(99)
+			expect(s()).toBe(42)
+		})
+
+		it('should allow writes inside batch with writable: true', () => {
+			const s = signal(42, {readonly: true})
+			batch(
+				() => {
+					s(99)
+				},
+				{writable: true}
+			)
+			expect(s()).toBe(99)
+		})
+
+		it('should ignore writes inside regular batch without writable', () => {
+			const s = signal(42, {readonly: true})
+			batch(() => {
+				s(99)
+			})
+			expect(s()).toBe(42)
+		})
+
+		it('should restore writableScope after nested batches', () => {
+			const s = signal(42, {readonly: true})
+			batch(() => {
+				batch(
+					() => {
+						s(99)
+					},
+					{writable: true}
+				)
+				s(100)
+			})
+			expect(s()).toBe(99)
+		})
+
+		it('should work with equals: false and readonly', () => {
+			const s = signal(42, {equals: false, readonly: true})
+			s(99)
+			expect(s()).toBe(42)
+			batch(
+				() => {
+					s(99)
+				},
+				{writable: true}
+			)
+			expect(s()).toBe(99)
+		})
+
+		it('should work with custom equals and readonly', () => {
+			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id, readonly: true})
+			s({id: 2, name: 'b'})
+			expect(s()).toEqual({id: 1, name: 'a'})
+			batch(
+				() => {
+					s({id: 2, name: 'b'})
+				},
+				{writable: true}
+			)
+			expect(s()).toEqual({id: 2, name: 'b'})
+		})
+
+		it('should not affect non-readonly signals', () => {
+			const s = signal(42)
+			s(99)
+			expect(s()).toBe(99)
+		})
+
+		it('should allow reads from readonly signals normally', () => {
+			const s = signal(42, {readonly: true})
+			expect(s()).toBe(42)
+		})
+
+		it('should track readonly signals in effects', () => {
+			const s = signal(0, {readonly: true})
+			let captured = -1
+			trackedEffect(() => {
+				captured = s()
+			})
+			expect(captured).toBe(0)
+			batch(
+				() => {
+					s(42)
+				},
+				{writable: true}
+			)
+			expect(captured).toBe(42)
 		})
 	})
 })

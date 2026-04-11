@@ -10,8 +10,8 @@ import styles from '@markput/core/styles.module.css'
 const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
-const readOnly = store.state.readOnly.use()
-const drag = store.state.drag.use()
+const readOnly = store.props.readOnly.use()
+const drag = store.props.drag.use()
 const blockStore = store.blocks.get(props.token)
 const isDragging = blockStore.state.isDragging.use()
 const isHovered = blockStore.state.isHovered.use()

@@ -37,7 +37,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	store.state.recovery({anchor: caretAnchor.prev, caret})
 
-	store.state.onChange()?.(toString(store.state.tokens()))
+	store.props.onChange()?.(toString(store.state.tokens()))
 
 	queueMicrotask(() => {
 		const target = childAt(store.refs.container, targetIndex)

@@ -20,7 +20,7 @@ export class InputFeature {
 		if (!container) return
 
 		this.#keydownHandler = e => {
-			if (!this.store.state.drag()) {
+			if (!this.store.props.drag()) {
 				this.#handleDelete(e)
 			}
 		}
@@ -119,7 +119,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.state.selecting(undefined)
 
-	if (store.state.drag()) return
+	if (store.props.drag()) return
 
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
@@ -147,7 +147,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const tokens = store.state.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
-	const currentValue = store.state.previousValue() ?? store.state.value() ?? ''
+	const currentValue = store.state.previousValue() ?? store.props.value() ?? ''
 
 	const ranges = event.getTargetRanges()
 	const childElement = container.children[focus.index]
@@ -262,9 +262,9 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.state.selecting(undefined)
 
-	store.state.onChange()?.(newContent)
+	store.props.onChange()?.(newContent)
 
-	if (store.state.value() === undefined) {
+	if (store.props.value() === undefined) {
 		store.state.tokens(
 			store.computed.parser()?.parse(newContent) ?? [
 				{

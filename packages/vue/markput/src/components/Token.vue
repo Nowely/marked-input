@@ -18,15 +18,8 @@ const Token = defineComponent({
 
 		const store = useStore()
 		const key = store.key
-		const MarkRef = store.state.Mark.use()
-		const SpanRef = store.state.Span.use()
-
-		const resolved = computed(() => {
-			// Access .value to register reactive dependencies
-			MarkRef.value
-			SpanRef.value
-			return store.slot.mark.get(props.mark)
-		})
+		const resolveMarkSlot = store.computed.mark.use()
+		const resolved = computed(() => resolveMarkSlot.value(props.mark))
 
 		return () => {
 			const [Comp, compProps] = resolved.value

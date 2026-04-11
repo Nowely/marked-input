@@ -1,12 +1,14 @@
 import fs from 'fs'
 import {createRequire} from 'module'
 import path from 'path'
-import {fileURLToPath} from 'url'
+import {fileURLToPath, pathToFileURL} from 'url'
 
 import {dts} from 'rolldown-plugin-dts'
 
 // Resolve rolldown through its peer: rolldown-plugin-dts
-const {rolldown} = await import(createRequire(import.meta.resolve('rolldown-plugin-dts')).resolve('rolldown'))
+const {rolldown} = await import(
+	pathToFileURL(createRequire(import.meta.resolve('rolldown-plugin-dts')).resolve('rolldown')).href
+)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

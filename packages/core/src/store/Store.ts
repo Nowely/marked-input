@@ -11,7 +11,8 @@ import {Parser} from '../features/parsing'
 import type {Token} from '../features/parsing'
 import {ParseFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
-import {createSlots} from '../features/slots'
+import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
+import type {MarkSlot, OverlaySlot, Slot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
@@ -44,77 +45,96 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
+	readonly props = {
+		value: signal<string | undefined>(undefined, {readonly: true}),
+		defaultValue: signal<string | undefined>(undefined, {readonly: true}),
+
+		onChange: signal<((value: string) => void) | undefined>(undefined, {readonly: true}),
+
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true}),
+		readOnly: signal<boolean>(false, {readonly: true}),
+
+		drag: signal<boolean | {alwaysShowHandle: boolean}>(false, {readonly: true}),
+
+		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
+
+		Span: signal<unknown>(undefined, {readonly: true}),
+		Mark: signal<unknown>(undefined, {readonly: true}),
+		Overlay: signal<unknown>(undefined, {readonly: true}),
+
+		className: signal<string | undefined>(undefined, {readonly: true}),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow, readonly: true}),
+
+		slots: signal<CoreSlots | undefined>(undefined, {readonly: true}),
+		slotProps: signal<CoreSlotProps | undefined>(undefined, {readonly: true}),
+	}
+
 	readonly state = {
 		// Data
 		tokens: signal<Token[]>([]),
-		value: signal<string | undefined>(undefined),
-		defaultValue: signal<string | undefined>(undefined),
 		previousValue: signal<string | undefined>(undefined),
 		innerValue: signal<string | undefined>(undefined),
 		recovery: signal<Recovery | undefined>(undefined),
 
 		// Selection
 		selecting: signal<'drag' | 'all' | undefined>(undefined),
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
 
-		// Overlay
+		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
 		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
-		showOverlayOn: signal<OverlayTrigger>('change'),
-
-		// Callbacks
-		onChange: signal<((value: string) => void) | undefined>(undefined),
-
-		// Config
-		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
-		readOnly: signal<boolean>(false),
-
-		// Component overrides
-		Span: signal<unknown>(undefined),
-		Mark: signal<unknown>(undefined),
-		Overlay: signal<unknown>(undefined),
-
-		// Styling
-		className: signal<string | undefined>(undefined),
-		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
-
-		// Slot system
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
 	readonly computed = {
 		hasMark: computed(() => {
-			const Mark = this.state.Mark()
+			const Mark = this.props.Mark()
 			if (Mark) return true
-			return this.state.options().some(opt => 'Mark' in opt && opt.Mark != null)
+			return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
 		parser: computed(() => {
 			if (!this.computed.hasMark()) return
 
-			const markups = this.state.options().map(opt => opt.markup)
+			const markups = this.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.state.drag()
+			const isDrag = !!this.props.drag()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerClass: computed(() =>
-			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
+			cx(styles.Container, this.props.className(), this.props.slotProps()?.container?.className)
 		),
 		containerStyle: computed(prev => {
-			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
+			const next = merge(this.props.style(), this.props.slotProps()?.container?.style)
 			return prev && shallow(prev, next) ? prev : next
 		}),
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		container: computed(() => [
+			resolveSlot('container', this.props.slots()),
+			resolveSlotProps('container', this.props.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		block: computed(() => [
+			resolveSlot('block', this.props.slots()),
+			resolveSlotProps('block', this.props.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		span: computed(() => [
+			resolveSlot('span', this.props.slots()),
+			resolveSlotProps('span', this.props.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
+		overlay: computed(() => {
+			const Overlay = this.props.Overlay()
+			return (option?: CoreOption, defaultComponent?: unknown) =>
+				resolveOverlaySlot(Overlay, option, defaultComponent)
+		}) as unknown as OverlaySlot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
+		mark: computed(() => {
+			const options = this.props.options()
+			const Mark = this.props.Mark()
+			const Span = this.props.Span()
+			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+		}) as unknown as MarkSlot,
 	}
-
-	readonly slot = createSlots({
-		slots: this.state.slots,
-		slotProps: this.state.slotProps,
-		Overlay: this.state.Overlay,
-		options: this.state.options,
-		Mark: this.state.Mark,
-		Span: this.state.Span,
-	})
 
 	readonly event = {
 		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
@@ -171,15 +191,18 @@ export class Store {
 		watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
 	}
 
-	setState(values: Partial<SignalValues<typeof this.state>>): void {
-		batch(() => {
-			const state = this.state
-			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
-				if (!(key in state)) continue
+	setProps(values: Partial<SignalValues<typeof this.props>>): void {
+		batch(
+			() => {
+				const props = this.props
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				state[key](values[key] as never)
-			}
-		})
+				for (const key of Object.keys(values) as (keyof typeof this.props)[]) {
+					if (!(key in props)) continue
+					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+					props[key](values[key] as never)
+				}
+			},
+			{writable: true}
+		)
 	}
 }

@@ -77,7 +77,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 ### Do NOT
 
 - Do not add direct imports between features — all communication goes through `store.state`, `store.event`, or `store.nodes`
-- Do not manually create Signals for new state — add new state keys to the `state` object in `Store.ts`
+- Do not manually create Signals for new state — add new state keys to either `state` (internal, feature-managed) or `props` (external, framework-provided) in `Store.ts`. Features write to `state`; framework adapters write to `props` via `setProps()`.
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
 - Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.

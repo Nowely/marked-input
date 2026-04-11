@@ -54,7 +54,7 @@ export class CopyFeature {
 			const rawStart = first.type === 'text' ? first.position.start + result.startOffset : first.position.start
 			const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
 
-			const value = this.store.state.previousValue() ?? this.store.state.value() ?? ''
+			const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
 			if (rawStart === rawEnd) return
 
 			const newValue = value.slice(0, rawStart) + value.slice(rawEnd)

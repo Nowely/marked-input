@@ -347,17 +347,26 @@ class Store {
 }
 ```
 
-### State Access
+### State and props access
+
+Internal feature state lives on `store.state`. Values and options passed from React/Vue live on `store.props` and are updated via `setProps()`.
 
 ```typescript
-// Read state
-store.state.tokens.get()
+// Read internal state
+store.state.tokens()
 
-// Write state
-store.state.tokens.set(newTokens)
+// Write internal state
+store.state.tokens(newTokens)
 
-// Batch update
-store.state.set({ tokens: newTokens, readOnly: true })
+// Batch multiple internal writes so dependents run once (same pattern features use)
+import {batch} from '@markput/core'
+batch(() => {
+	store.state.tokens(newTokens)
+	store.state.previousValue(serialized)
+})
+
+// Framework-provided props (MarkedInput calls setProps on each render)
+store.setProps({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
 const tokens = store.state.tokens.use()
@@ -365,7 +374,7 @@ const tokens = store.state.tokens.use()
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (signals), `store.event` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (internal signals), `store.props` (framework-provided signals), `store.event` (emitters), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |

@@ -7,23 +7,16 @@ import Block from './Block.vue'
 import Token from './Token.vue'
 
 const store = useStore()
-const drag = store.state.drag.use()
-const readOnly = store.state.readOnly.use()
+const drag = store.props.drag.use()
+const readOnly = store.props.readOnly.use()
 const tokens = store.state.tokens.use()
 watch(tokens, () => store.event.afterTokensRendered(), {flush: 'post', immediate: true})
 
-const slotsRef = store.state.slots.use()
-const slotPropsRef = store.state.slotProps.use()
 const className = store.computed.containerClass.use()
 const style = store.computed.containerStyle.use() as unknown as Ref<CSSProperties | undefined>
 const key = store.key
 
-const containerSlot = computed(() => {
-	// Access .value to register reactive dependencies
-	slotsRef.value
-	slotPropsRef.value
-	return store.slot.container.get()
-})
+const containerSlot = store.computed.container.use()
 const containerStyle = computed(() => {
 	const s = style.value
 	if (drag.value && !readOnly.value) {

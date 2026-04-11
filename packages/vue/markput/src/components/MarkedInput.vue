@@ -20,7 +20,7 @@ const store = shallowRef(new Store())
 provide(STORE_KEY, store.value)
 
 function syncProps() {
-	store.value.setState({
+	store.value.setProps({
 		value: props.value,
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),

@@ -30,7 +30,10 @@ export type SignalValues<T> = {
 
 interface SignalOptions<T> {
 	equals?: false | ((a: T, b: T) => boolean)
+	readonly?: boolean
 }
+
+let writableScope = false
 
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const hasCustomEquals = opts?.equals !== undefined
@@ -54,9 +57,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			return box.v
 		}
 
+		const isReadonly = !!opts.readonly
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
+				if (isReadonly && !writableScope) return
 				if (args[0] === undefined) {
 					if (hasDefault && inner() === undefined) return
 					inner(undefined)
@@ -68,8 +73,17 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
+		// _hook is memoized per signal instance. The factory call creates stable
+		// subscribe/getSnapshot closures; recreating them on every .use() call would
+		// cause useSyncExternalStore (and similar framework APIs) to see new references
+		// each render, triggering unsubscribe→resubscribe cycles that mark computed
+		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
+		let _hook: (() => unknown) | undefined
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+		callable.use = (() => {
+			_hook ??= getUseHookFactory()(callable)
+			return _hook()
+		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -86,9 +100,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			return v as T
 		}
 
+		const isReadonly = !!opts.readonly
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
+				if (isReadonly && !writableScope) return
 				if (args[0] === undefined) {
 					if (hasDefault && inner() === undefined) return
 					inner(undefined)
@@ -102,8 +118,17 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
+		// _hook is memoized per signal instance. The factory call creates stable
+		// subscribe/getSnapshot closures; recreating them on every .use() call would
+		// cause useSyncExternalStore (and similar framework APIs) to see new references
+		// each render, triggering unsubscribe→resubscribe cycles that mark computed
+		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
+		let _hook: (() => unknown) | undefined
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+		callable.use = (() => {
+			_hook ??= getUseHookFactory()(callable)
+			return _hook()
+		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -118,9 +143,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		return v as T
 	}
 
+	const isReadonly = !!opts?.readonly
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 	const callable = function signalCallable(...args: [T | undefined] | []) {
 		if (args.length) {
+			if (isReadonly && !writableScope) return
 			const v = args[0]
 			if (v === undefined && hasDefault) {
 				if (inner() === undefined) return
@@ -137,8 +164,12 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		}
 	} as unknown as Signal<T>
 
+	let _hook: (() => unknown) | undefined
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+	callable.use = (() => {
+		_hook ??= getUseHookFactory()(callable)
+		return _hook()
+	}) as Signal<T>['use']
 	return callable
 }
 
@@ -159,8 +190,12 @@ export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
 		return inner()
 	} as unknown as Computed<T>
 
+	let _hook: (() => unknown) | undefined
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => getUseHookFactory()(callable)()) as Computed<T>['use']
+	callable.use = (() => {
+		_hook ??= getUseHookFactory()(callable)
+		return _hook()
+	}) as Computed<T>['use']
 
 	return callable
 }
@@ -247,11 +282,18 @@ export function watch<T>(
 // batch() — defer effect flush until callback completes
 // ---------------------------------------------------------------------------
 
-export function batch(fn: () => void): void {
+interface BatchOptions {
+	writable?: boolean
+}
+
+export function batch(fn: () => void, opts?: BatchOptions): void {
+	const prevWritable = writableScope
+	if (opts?.writable) writableScope = true
 	startBatch()
 	try {
 		fn()
 	} finally {
 		endBatch()
+		writableScope = prevWritable
 	}
 }

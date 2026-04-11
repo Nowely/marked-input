@@ -15,7 +15,7 @@ export class ArrowNavFeature {
 		if (!container) return
 
 		this.#keydownHandler = e => {
-			if (this.store.state.drag()) return
+			if (this.store.props.drag()) return
 			if (!this.store.nodes.focus.target) return
 
 			if (e.key === KEYBOARD.LEFT) {

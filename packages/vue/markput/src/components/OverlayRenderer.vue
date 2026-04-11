@@ -8,16 +8,13 @@ import Suggestions from './Suggestions/Suggestions.vue'
 
 const store = useStore()
 const overlayMatchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option> | undefined>
-const OverlayRef = store.state.Overlay.use()
-
 const overlayKey = computed(() => (overlayMatchRef.value ? store.key.get(overlayMatchRef.value.option) : undefined))
+const resolveOverlay = store.computed.overlay.use()
 
 const resolved = computed(() => {
 	const match = overlayMatchRef.value
 	if (!match) return null
-	// Access .value to register Overlay as a reactive dependency
-	OverlayRef.value
-	return store.slot.overlay.get(match.option, Suggestions)
+	return resolveOverlay.value(match.option, Suggestions)
 })
 </script>
 
