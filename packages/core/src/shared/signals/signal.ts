@@ -68,8 +68,17 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
+		// _hook is memoized per signal instance. The factory call creates stable
+		// subscribe/getSnapshot closures; recreating them on every .use() call would
+		// cause useSyncExternalStore (and similar framework APIs) to see new references
+		// each render, triggering unsubscribe→resubscribe cycles that mark computed
+		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
+		let _hook: (() => unknown) | undefined
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+		callable.use = (() => {
+			_hook ??= getUseHookFactory()(callable)
+			return _hook()
+		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -102,8 +111,17 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
+		// _hook is memoized per signal instance. The factory call creates stable
+		// subscribe/getSnapshot closures; recreating them on every .use() call would
+		// cause useSyncExternalStore (and similar framework APIs) to see new references
+		// each render, triggering unsubscribe→resubscribe cycles that mark computed
+		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
+		let _hook: (() => unknown) | undefined
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+		callable.use = (() => {
+			_hook ??= getUseHookFactory()(callable)
+			return _hook()
+		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -137,8 +155,12 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		}
 	} as unknown as Signal<T>
 
+	let _hook: (() => unknown) | undefined
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
+	callable.use = (() => {
+		_hook ??= getUseHookFactory()(callable)
+		return _hook()
+	}) as Signal<T>['use']
 	return callable
 }
 
@@ -159,8 +181,12 @@ export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
 		return inner()
 	} as unknown as Computed<T>
 
+	let _hook: (() => unknown) | undefined
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => getUseHookFactory()(callable)()) as Computed<T>['use']
+	callable.use = (() => {
+		_hook ??= getUseHookFactory()(callable)
+		return _hook()
+	}) as Computed<T>['use']
 
 	return callable
 }
