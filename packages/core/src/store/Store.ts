@@ -45,6 +45,30 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
+	readonly props = {
+		value: signal<string | undefined>(undefined),
+		defaultValue: signal<string | undefined>(undefined),
+
+		onChange: signal<((value: string) => void) | undefined>(undefined),
+
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
+		readOnly: signal<boolean>(false),
+
+		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
+
+		showOverlayOn: signal<OverlayTrigger>('change'),
+
+		Span: signal<unknown>(undefined),
+		Mark: signal<unknown>(undefined),
+		Overlay: signal<unknown>(undefined),
+
+		className: signal<string | undefined>(undefined),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
+
+		slots: signal<CoreSlots | undefined>(undefined),
+		slotProps: signal<CoreSlotProps | undefined>(undefined),
+	}
+
 	readonly state = {
 		// Data
 		tokens: signal<Token[]>([]),
@@ -58,38 +82,6 @@ export class Store {
 		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
 		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
-	}
-
-	readonly props = {
-		// Data
-		value: signal<string | undefined>(undefined),
-		defaultValue: signal<string | undefined>(undefined),
-
-		// Callbacks
-		onChange: signal<((value: string) => void) | undefined>(undefined),
-
-		// Config
-		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
-		readOnly: signal<boolean>(false),
-
-		// Selection / drag
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
-
-		// Overlay
-		showOverlayOn: signal<OverlayTrigger>('change'),
-
-		// Component overrides
-		Span: signal<unknown>(undefined),
-		Mark: signal<unknown>(undefined),
-		Overlay: signal<unknown>(undefined),
-
-		// Styling
-		className: signal<string | undefined>(undefined),
-		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
-
-		// Slot system
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
 	readonly computed = {
