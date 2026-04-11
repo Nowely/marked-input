@@ -16,7 +16,7 @@ interface BlockProps {
 
 export const Block = memo(({token, blockIndex}: BlockProps) => {
 	const store = useStore()
-	const [ContainerComponent, containerProps] = store.slot.block.use()
+	const [ContainerComponent, containerProps] = store.computed.block.use()
 
 	const blockStore = store.blocks.get(token)
 	const isDragging = blockStore.state.isDragging.use()

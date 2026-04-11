@@ -19,7 +19,7 @@ export const Container = memo(() => {
 	const key = store.key
 	const refs = store.refs
 
-	const [ContainerComponent, containerProps] = store.slot.container.use()
+	const [ContainerComponent, containerProps] = store.computed.container.use()
 
 	const containerStyle = drag && !readOnly ? (style ? {paddingLeft: 24, ...style} : {paddingLeft: 24}) : style
 

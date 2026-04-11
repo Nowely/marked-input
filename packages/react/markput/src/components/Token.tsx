@@ -6,7 +6,8 @@ import {TokenContext} from '../lib/providers/TokenContext'
 
 export const Token = memo(({mark}: {mark: TokenType}) => {
 	const store = useStore()
-	const [Component, props] = store.slot.mark.use(mark)
+	const resolveMarkSlot = store.computed.mark.use()
+	const [Component, props] = resolveMarkSlot(mark)
 
 	const children =
 		mark.type === 'mark' && mark.children.length > 0

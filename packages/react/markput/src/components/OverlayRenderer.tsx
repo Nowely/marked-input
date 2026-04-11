@@ -8,7 +8,8 @@ export const OverlayRenderer = memo(() => {
 	const overlayMatch = store.state.overlayMatch.use()
 	const key = useMemo(() => (overlayMatch ? store.key.get(overlayMatch.option) : undefined), [overlayMatch])
 
-	const [Overlay, props] = store.slot.overlay.use(overlayMatch?.option, Suggestions)
+	const resolveOverlay = store.computed.overlay.use()
+	const [Overlay, props] = resolveOverlay(overlayMatch?.option, Suggestions)
 
 	if (!key) return
 
