@@ -1,17 +1,14 @@
+import type {Computed} from '../../shared/signals'
 import type {CoreOption} from '../../shared/types'
 import type {Token} from '../parsing'
 
-export interface Slot {
-	use(): readonly unknown[]
-	get(): readonly unknown[]
-}
+// These interfaces exist as module-augmentation targets for framework packages (React, Vue).
+// Core implements them via computed() and casts with `as unknown as Slot` etc.
 
-export interface MarkSlot {
-	use(token: Token): readonly unknown[]
-	get(token: Token): readonly unknown[]
-}
+export interface Slot extends Computed<readonly [unknown, Record<string, unknown> | undefined]> {}
 
-export interface OverlaySlot {
-	use(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
-	get(option?: CoreOption, defaultComponent?: unknown): readonly unknown[]
-}
+export interface MarkSlot extends Computed<(token: Token) => readonly [unknown, unknown]> {}
+
+export interface OverlaySlot extends Computed<
+	(option?: CoreOption, defaultComponent?: unknown) => readonly [unknown, unknown]
+> {}
