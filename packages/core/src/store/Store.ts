@@ -117,18 +117,31 @@ export class Store {
 	})
 
 	readonly event = {
+		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
 		change: event(),
+		/** Triggers a re-parse of tokens from the current content */
 		parse: event(),
+		/** Removes a mark token from editor content */
 		delete: event<{token: Token}>(),
+		/** Fires when the user selects an overlay option — annotates markup into the current input span */
 		select: event<{mark: Token; match: OverlayMatch}>(),
+		/** Dismisses the overlay by clearing the current `overlayMatch` */
 		clearOverlay: event(),
+		/** Probes the caret/text position for overlay trigger patterns and shows overlay if matched */
 		checkOverlay: event(),
+		/** Syncs `contentEditable` attributes and `textContent` of child elements to match token state */
 		sync: event(),
+		/** Restores the caret position after a DOM re-render using the saved recovery state */
 		recoverFocus: event(),
+		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
 		dragAction: event<DragAction>(),
+		/** Signals the framework component has received new props — triggers conditional re-parse if value/options changed */
 		updated: event(),
+		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
 		afterTokensRendered: event(),
+		/** Lifecycle: editor component added to the DOM — enables all features */
 		mounted: event(),
+		/** Lifecycle: editor component removed from the DOM — disables all features and cleans up subscriptions */
 		unmounted: event(),
 	}
 
