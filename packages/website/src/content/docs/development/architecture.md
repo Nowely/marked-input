@@ -353,13 +353,17 @@ Internal feature state lives on `store.state`. Values and options passed from Re
 
 ```typescript
 // Read internal state
-store.state.tokens.get()
+store.state.tokens()
 
 // Write internal state
-store.state.tokens.set(newTokens)
+store.state.tokens(newTokens)
 
-// Batch internal state updates
-store.setState({tokens: newTokens})
+// Batch multiple internal writes so dependents run once (same pattern features use)
+import {batch} from '@markput/core'
+batch(() => {
+	store.state.tokens(newTokens)
+	store.state.previousValue(serialized)
+})
 
 // Framework-provided props (MarkedInput calls setProps on each render)
 store.setProps({readOnly: true})

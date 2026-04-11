@@ -199,18 +199,6 @@ export class Store {
 		watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
 	}
 
-	setState(values: Partial<SignalValues<typeof this.state>>): void {
-		batch(() => {
-			const state = this.state
-			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
-				if (!(key in state)) continue
-				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				state[key](values[key] as never)
-			}
-		})
-	}
-
 	setProps(values: Partial<SignalValues<typeof this.props>>): void {
 		batch(() => {
 			const props = this.props

@@ -69,26 +69,21 @@ describe('Store', () => {
 		})
 	})
 
-	describe('setState', () => {
-		it('should update provided internal state values', () => {
+	describe('internal state signals', () => {
+		it('should update when written directly', () => {
 			const store = new Store()
-			store.setState({previousValue: 'hello'})
+			store.state.previousValue('hello')
 			expect(store.state.previousValue()).toBe('hello')
 		})
 
-		it('should leave unprovided keys unchanged', () => {
+		it('should leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.setState({selecting: 'drag'})
+			store.state.selecting('drag')
 			expect(store.state.selecting()).toBe('drag')
 			expect(store.state.tokens()).toEqual([])
 		})
 
-		it('should not throw when called with an empty object', () => {
-			const store = new Store()
-			expect(() => store.setState({})).not.toThrow()
-		})
-
-		it('should batch updates so effects fire once', () => {
+		it('should batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
@@ -97,7 +92,11 @@ describe('Store', () => {
 				effectSpy()
 			})
 			effectSpy.mockClear()
-			store.setState({selecting: 'all'})
+			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
+			batch(() => {
+				store.state.tokens([token])
+				store.state.selecting('all')
+			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
 	})
