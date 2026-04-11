@@ -1,29 +1,15 @@
 # Events Feature
 
-The Events feature provides a type-safe event system for communication between components.
+Central event wiring that connects store events to data flow. Handles change detection, token deletion, overlay selection, inner value updates, and re-parsing.
 
 ## Components
 
-- **EventBus**: Pub-sub event system with typed event keys and listeners
-
-## Features
-
-- Type-safe event handling with Symbol-based event keys
-- Multiple listeners per event
-- Automatic cleanup with unsubscribe functions
-- Support for complex event payloads
+- **SystemListenerFeature**: Feature class that subscribes to store events and orchestrates data flow:
+    - **change event** — syncs DOM content back to token state, calls `onChange`, and triggers re-parse
+    - **delete event** — removes a token by position from the raw value
+    - **innerValue signal** — re-parses the new value into tokens and calls `onChange`
+    - **select event** — handles overlay selection by creating annotated markup and replacing trigger text
 
 ## Usage
 
-```typescript
-import {EventBus} from '@core/features/events'
-import {EventKey} from '@core/shared/types'
-
-const EVENT_UPDATE = Symbol('update') as EventKey<string>
-
-const bus = new EventBus()
-const unsubscribe = bus.on(EVENT_UPDATE, data => console.log(data))
-
-bus.send(EVENT_UPDATE, 'new data')
-unsubscribe()
-```
+The feature is registered by the Store and runs automatically. It acts as the bridge between raw DOM events and the reactive store state.
