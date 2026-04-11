@@ -30,7 +30,10 @@ export type SignalValues<T> = {
 
 interface SignalOptions<T> {
 	equals?: false | ((a: T, b: T) => boolean)
+	readonly?: boolean
 }
+
+let writableScope = false
 
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const hasCustomEquals = opts?.equals !== undefined
@@ -54,9 +57,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			return box.v
 		}
 
+		const isReadonly = !!opts.readonly
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
+				if (isReadonly && !writableScope) return
 				if (args[0] === undefined) {
 					if (hasDefault && inner() === undefined) return
 					inner(undefined)
@@ -95,9 +100,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			return v as T
 		}
 
+		const isReadonly = !!opts.readonly
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
+				if (isReadonly && !writableScope) return
 				if (args[0] === undefined) {
 					if (hasDefault && inner() === undefined) return
 					inner(undefined)
@@ -136,9 +143,11 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		return v as T
 	}
 
+	const isReadonly = !!opts?.readonly
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 	const callable = function signalCallable(...args: [T | undefined] | []) {
 		if (args.length) {
+			if (isReadonly && !writableScope) return
 			const v = args[0]
 			if (v === undefined && hasDefault) {
 				if (inner() === undefined) return
@@ -273,11 +282,18 @@ export function watch<T>(
 // batch() — defer effect flush until callback completes
 // ---------------------------------------------------------------------------
 
-export function batch(fn: () => void): void {
+interface BatchOptions {
+	writable?: boolean
+}
+
+export function batch(fn: () => void, opts?: BatchOptions): void {
+	const prevWritable = writableScope
+	if (opts?.writable) writableScope = true
 	startBatch()
 	try {
 		fn()
 	} finally {
 		endBatch()
+		writableScope = prevWritable
 	}
 }
