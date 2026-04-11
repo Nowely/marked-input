@@ -118,52 +118,52 @@ export class Store {
 
 	readonly computed = {
 		hasMark: computed(() => {
-			const Mark = this.state.Mark()
+			const Mark = this.props.Mark()
 			if (Mark) return true
-			return this.state.options().some(opt => 'Mark' in opt && opt.Mark != null)
+			return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
 		parser: computed(() => {
 			if (!this.computed.hasMark()) return
 
-			const markups = this.state.options().map(opt => opt.markup)
+			const markups = this.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.state.drag()
+			const isDrag = !!this.props.drag()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerClass: computed(() =>
-			cx(styles.Container, this.state.className(), this.state.slotProps()?.container?.className)
+			cx(styles.Container, this.props.className(), this.props.slotProps()?.container?.className)
 		),
 		containerStyle: computed(prev => {
-			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
+			const next = merge(this.props.style(), this.props.slotProps()?.container?.style)
 			return prev && shallow(prev, next) ? prev : next
 		}),
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
 		container: computed(() => [
-			resolveSlot('container', this.state.slots()),
-			resolveSlotProps('container', this.state.slotProps()),
+			resolveSlot('container', this.props.slots()),
+			resolveSlotProps('container', this.props.slotProps()),
 		]) as unknown as Slot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
 		block: computed(() => [
-			resolveSlot('block', this.state.slots()),
-			resolveSlotProps('block', this.state.slotProps()),
+			resolveSlot('block', this.props.slots()),
+			resolveSlotProps('block', this.props.slotProps()),
 		]) as unknown as Slot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
 		span: computed(() => [
-			resolveSlot('span', this.state.slots()),
-			resolveSlotProps('span', this.state.slotProps()),
+			resolveSlot('span', this.props.slots()),
+			resolveSlotProps('span', this.props.slotProps()),
 		]) as unknown as Slot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
 		overlay: computed(() => {
-			const Overlay = this.state.Overlay()
+			const Overlay = this.props.Overlay()
 			return (option?: CoreOption, defaultComponent?: unknown) =>
 				resolveOverlaySlot(Overlay, option, defaultComponent)
 		}) as unknown as OverlaySlot,
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
 		mark: computed(() => {
-			const options = this.state.options()
-			const Mark = this.state.Mark()
-			const Span = this.state.Span()
+			const options = this.props.options()
+			const Mark = this.props.Mark()
+			const Span = this.props.Span()
 			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
 		}) as unknown as MarkSlot,
 	}
