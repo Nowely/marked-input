@@ -167,12 +167,8 @@ export class Store {
 	}
 
 	constructor() {
-		watch(this.event.mounted, () => {
-			for (const f of Object.values(this.features)) f.enable()
-		})
-		watch(this.event.unmounted, () => {
-			for (const f of Object.values(this.features)) f.disable()
-		})
+		watch(this.event.mounted, () => Object.values(this.features).forEach(f => f.enable()))
+		watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
 	}
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
