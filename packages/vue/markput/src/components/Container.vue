@@ -28,13 +28,13 @@ const containerStyle = computed(() => {
 
 <template>
 	<component
-		:is="containerSlot.value[0]"
+		:is="containerSlot[0]"
 		:ref="
 			(el: any) => {
 				store.refs.container = el?.$el ?? el
 			}
 		"
-		v-bind="containerSlot.value[1]"
+		v-bind="containerSlot[1]"
 		:class="className"
 		:style="containerStyle"
 	>

@@ -9,17 +9,17 @@ declare module '@markput/core' {
 	interface Signal<T> {
 		use(): Ref<T>
 	}
-	interface MarkSlot {
-		use(token: Token): readonly [Component, MarkProps]
-		get(token: Token): readonly [Component, MarkProps]
-	}
-	interface OverlaySlot {
-		use(option?: Option, defaultComponent?: Component): readonly [Component, OverlayProps]
-		get(option?: Option, defaultComponent?: Component): readonly [Component, OverlayProps]
+	interface Computed<T> {
+		use(): Ref<T>
 	}
 	interface Slot {
-		use(): readonly [Component | string, Record<string, unknown> | undefined]
-		get(): readonly [Component | string, Record<string, unknown> | undefined]
+		use(): Ref<readonly [Component | string, Record<string, unknown> | undefined]>
+	}
+	interface MarkSlot {
+		use(): Ref<(token: Token) => readonly [Component, MarkProps]>
+	}
+	interface OverlaySlot {
+		use(): Ref<(option?: Option, defaultComponent?: Component) => readonly [Component, OverlayProps]>
 	}
 }
 
