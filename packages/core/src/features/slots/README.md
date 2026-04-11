@@ -15,15 +15,17 @@ Resolver utilities that implement the component slot/customization system — al
 Slot derivations live on `store.computed` as `Computed<T>` values:
 
 ```typescript
-// Named slots (parameterless) — return [Component, props] tuples
+// Named slots (parameterless) — return [Component, props] tuples directly
 const [Container, containerProps] = store.computed.container.use()
 const [Block, blockProps] = store.computed.block.use()
 const [Span, spanProps] = store.computed.span.use()
-const [Overlay, overlayProps] = store.computed.overlay.use()
 
-// Parameterized slots — return resolver functions
+// Parameterized slots — .use() returns a resolver function, call it with the argument
 const resolveMarkSlot = store.computed.mark.use()
 const [Component, props] = resolveMarkSlot(token)
+
+const resolveOverlay = store.computed.overlay.use()
+const [Overlay, overlayProps] = resolveOverlay(option, defaultComponent)
 ```
 
 Consumed by framework wrappers (React/Vue) to render customizable components.
