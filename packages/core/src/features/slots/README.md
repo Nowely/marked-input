@@ -1,10 +1,9 @@
 # Slots Feature
 
-Implements the component slot/customization system that allows framework wrappers to override default HTML elements (container, block, span, overlay, mark) with custom components.
+Resolver utilities that implement the component slot/customization system — allowing framework wrappers to override default HTML elements (`container`, `block`, `span`, `overlay`, `mark`) with custom components.
 
-## Components
+## Resolver Functions
 
-- **createSlots**: Factory function that creates slot objects for `container`, `block`, `span`, `overlay`, and `mark`. Each slot has `use()` (reactive) and `get()` (non-reactive) methods returning `[Component, props]` tuples
 - **resolveSlot**: Resolves a named slot to its component (defaulting to `'div'` or `'span'`)
 - **resolveSlotProps**: Resolves named slot props with data-attribute conversion
 - **resolveMarkSlot**: Resolves the mark component for a given token (text → Span, mark → option's Mark or global Mark)
@@ -13,11 +12,18 @@ Implements the component slot/customization system that allows framework wrapper
 
 ## Usage
 
-```typescript
-import {createSlots} from '@markput/core'
+Slot derivations live on `store.computed` as `Computed<T>` values:
 
-const slots = createSlots(options, store)
-const [Container, containerProps] = slots.container.use()
+```typescript
+// Named slots (parameterless) — return [Component, props] tuples
+const [Container, containerProps] = store.computed.container.use()
+const [Block, blockProps] = store.computed.block.use()
+const [Span, spanProps] = store.computed.span.use()
+const [Overlay, overlayProps] = store.computed.overlay.use()
+
+// Parameterized slots — return resolver functions
+const resolveMarkSlot = store.computed.mark.use()
+const [Component, props] = resolveMarkSlot(token)
 ```
 
-Slots are created by the Store and consumed by framework wrappers (React/Vue) to render customizable components.
+Consumed by framework wrappers (React/Vue) to render customizable components.
