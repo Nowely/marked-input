@@ -1,7 +1,7 @@
 import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
-import {useEffect, useImperativeHandle, useLayoutEffect, useState} from 'react'
+import {useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 // oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the React useHook factory via setUseHookFactory
 import '../lib/hooks/createUseHook'
@@ -82,9 +82,11 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 	const [store] = useState(() => new Store())
 	store.setState(props)
 
-	useLayoutEffect(() => store.event.mounted())
+	useLayoutEffect(() => {
+		store.event.mounted()
+		return () => store.event.unmounted()
+	}, [])
 	useLayoutEffect(() => store.event.updated())
-	useEffect(() => () => store.event.unmounted(), [store])
 
 	useImperativeHandle(props.ref, () => store.handler, [store])
 
