@@ -11,7 +11,8 @@ import {Parser} from '../features/parsing'
 import type {Token} from '../features/parsing'
 import {ParseFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
-import {createSlots} from '../features/slots'
+import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
+import type {MarkSlot, OverlaySlot, Slot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
@@ -105,16 +106,31 @@ export class Store {
 			const next = merge(this.state.style(), this.state.slotProps()?.container?.style)
 			return prev && shallow(prev, next) ? prev : next
 		}),
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		container: computed(() => [
+			resolveSlot('container', this.state.slots()),
+			resolveSlotProps('container', this.state.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		block: computed(() => [
+			resolveSlot('block', this.state.slots()),
+			resolveSlotProps('block', this.state.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
+		span: computed(() => [
+			resolveSlot('span', this.state.slots()),
+			resolveSlotProps('span', this.state.slotProps()),
+		]) as unknown as Slot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
+		overlay: computed(
+			() => (option?: CoreOption, defaultComponent?: unknown) =>
+				resolveOverlaySlot(this.state.Overlay(), option, defaultComponent)
+		) as unknown as OverlaySlot,
+		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
+		mark: computed(
+			() => (token: Token) => resolveMarkSlot(token, this.state.options(), this.state.Mark(), this.state.Span())
+		) as unknown as MarkSlot,
 	}
-
-	readonly slot = createSlots({
-		slots: this.state.slots,
-		slotProps: this.state.slotProps,
-		Overlay: this.state.Overlay,
-		options: this.state.options,
-		Mark: this.state.Mark,
-		Span: this.state.Span,
-	})
 
 	readonly event = {
 		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
