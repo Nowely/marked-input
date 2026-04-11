@@ -28,15 +28,13 @@
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit",
-    "build": "vite build && vue-tsc --declaration --emitDeclarationOnly && node prepack.js",
+    "build": "vite build && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
-  "dependencies": {
-    "@markput/core": "workspace:*"
-  },
   "devDependencies": {
-    "@microsoft/api-extractor": "catalog:",
+    "@markput/core": "workspace:*",
     "@vitejs/plugin-vue": "catalog:",
+    "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vue": "catalog:",
