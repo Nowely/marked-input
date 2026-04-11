@@ -17,8 +17,6 @@ export {alienEffect as effect}
 export interface Signal<T> {
 	(): T
 	(value: T | undefined): void
-	get(): T
-	set(value: T | undefined): void
 	use(): T
 }
 
@@ -70,15 +68,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => read()
-		callable.set = (v: T | undefined) => {
-			if (v === undefined) {
-				if (hasDefault && inner() === undefined) return
-				inner(undefined)
-			} else {
-				inner({v, seq: seq++})
-			}
-		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 		return callable
@@ -113,17 +102,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
-		callable.get = () => read()
-		callable.set = (v: T | undefined) => {
-			if (v === undefined) {
-				if (hasDefault && inner() === undefined) return
-				inner(undefined)
-			} else {
-				if (!equalsFn(read(), v)) {
-					inner(v)
-				}
-			}
-		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 		callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 		return callable
@@ -159,19 +137,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		}
 	} as unknown as Signal<T>
 
-	callable.get = () => read()
-	callable.set = (v: T | undefined) => {
-		if (v === undefined && hasDefault) {
-			if (inner() === undefined) return
-			inner(undefined)
-		} else {
-			const current = inner()
-			const effectiveCurrent = current === undefined && hasDefault ? _default : current
-			if (effectiveCurrent !== v) {
-				inner(v)
-			}
-		}
-	}
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Signal<T>['use']
 	return callable
@@ -183,7 +148,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 
 export interface Computed<T> {
 	(): T
-	get(): T
 	use(): T
 }
 
@@ -195,7 +159,6 @@ export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
 		return inner()
 	} as unknown as Computed<T>
 
-	callable.get = () => inner()
 	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
 	callable.use = (() => getUseHookFactory()(callable)()) as Computed<T>['use']
 

@@ -1,7 +1,7 @@
-import {signal} from '../signals'
-import type {DragAction, DragActions} from '../types'
-import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../utils/dragUtils'
-import {isClickOutside, isEscapeKey} from '../utils/menuUtils'
+import {signal} from '../shared/signals'
+import type {DragAction, DragActions} from '../shared/types'
+import {getDragDropPosition, getDragTargetIndex, parseDragSourceIndex} from '../shared/utils/dragUtils'
+import {isClickOutside, isEscapeKey} from '../shared/utils/menuUtils'
 
 export type DropPosition = 'before' | 'after' | null
 
@@ -32,26 +32,26 @@ export class BlockStore {
 		this.refs.container = el
 		if (!el) return
 
-		const onMouseEnter = () => this.state.isHovered.set(true)
-		const onMouseLeave = () => this.state.isHovered.set(false)
+		const onMouseEnter = () => this.state.isHovered(true)
+		const onMouseLeave = () => this.state.isHovered(false)
 		const onDragOver = (e: DragEvent) => {
 			if (!e.dataTransfer) return
 			e.preventDefault()
 			e.dataTransfer.dropEffect = 'move'
-			this.state.dropPosition.set(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
+			this.state.dropPosition(getDragDropPosition(e.clientY, el.getBoundingClientRect()))
 		}
 		const onDragLeave = (e: DragEvent) => {
 			const ct = e.currentTarget
 			if (ct instanceof Node && ct.contains(e.relatedTarget instanceof Node ? e.relatedTarget : null)) return
-			this.state.dropPosition.set(null)
+			this.state.dropPosition(null)
 		}
 		const onDrop = (e: DragEvent) => {
 			if (!e.dataTransfer) return
 			e.preventDefault()
 			const sourceIndex = parseDragSourceIndex(e.dataTransfer)
 			if (sourceIndex === null) return
-			const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition.get() ?? 'after')
-			this.state.dropPosition.set(null)
+			const targetIndex = getDragTargetIndex(this.#blockIndex, this.state.dropPosition() ?? 'after')
+			this.state.dropPosition(null)
 			this.#emit({type: 'reorder', source: sourceIndex, target: targetIndex})
 		}
 
@@ -79,18 +79,18 @@ export class BlockStore {
 			if (!e.dataTransfer) return
 			e.dataTransfer.effectAllowed = 'move'
 			e.dataTransfer.setData('text/plain', String(this.#blockIndex))
-			this.state.isDragging.set(true)
+			this.state.isDragging(true)
 			if (this.refs.container) e.dataTransfer.setDragImage(this.refs.container, 0, 0)
 		}
 		const onDragEnd = () => {
-			this.state.isDragging.set(false)
-			this.state.dropPosition.set(null)
+			this.state.isDragging(false)
+			this.state.dropPosition(null)
 		}
 		const onClick = (e: MouseEvent) => {
 			e.preventDefault()
 			const rect = el.getBoundingClientRect()
-			this.state.menuPosition.set({top: rect.bottom + 4, left: rect.left})
-			this.state.menuOpen.set(true)
+			this.state.menuPosition({top: rect.bottom + 4, left: rect.left})
+			this.state.menuOpen(true)
 		}
 
 		el.addEventListener('dragstart', onDragStart)
@@ -121,7 +121,7 @@ export class BlockStore {
 		}
 	}
 
-	closeMenu = () => this.state.menuOpen.set(false)
+	closeMenu = () => this.state.menuOpen(false)
 	addBlock = () => {
 		this.#emit({type: 'add', afterIndex: this.#blockIndex})
 		this.closeMenu()

@@ -1,6 +1,6 @@
 import {nodeTarget} from '../../shared/checkers'
 import {effectScope, effect} from '../../shared/signals/index.js'
-import type {Store} from '../store/Store'
+import type {Store} from '../../store/Store'
 
 export class TextSelectionFeature {
 	#mousedownHandler?: (e: MouseEvent) => void
@@ -29,8 +29,8 @@ export class TextSelectionFeature {
 			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (isPressed && isNotInnerSome && isInside) {
-				if (this.store.state.selecting.get() !== 'drag') {
-					this.store.state.selecting.set('drag')
+				if (this.store.state.selecting() !== 'drag') {
+					this.store.state.selecting('drag')
 				}
 			}
 		}
@@ -38,19 +38,19 @@ export class TextSelectionFeature {
 		this.#mouseupHandler = () => {
 			this.#isPressed = false
 			this.#pressedNode = null
-			if (this.store.state.selecting.get() === 'drag') {
+			if (this.store.state.selecting() === 'drag') {
 				const sel = window.getSelection()
 				if (!sel || sel.isCollapsed) {
-					this.store.state.selecting.set(undefined)
+					this.store.state.selecting(undefined)
 				}
 			}
 		}
 
 		this.#selectionchangeHandler = () => {
-			if (this.store.state.selecting.get() !== 'drag') return
+			if (this.store.state.selecting() !== 'drag') return
 			const sel = window.getSelection()
 			if (!sel || sel.isCollapsed) {
-				this.store.state.selecting.set(undefined)
+				this.store.state.selecting(undefined)
 			}
 		}
 
@@ -73,9 +73,9 @@ export class TextSelectionFeature {
 	}
 
 	disable() {
-		if (this.store.state.selecting.get() === 'drag') {
+		if (this.store.state.selecting() === 'drag') {
 			// Set state before unsubscribing so ContentEditableFeature.sync() still fires
-			this.store.state.selecting.set(undefined)
+			this.store.state.selecting(undefined)
 		}
 
 		this.#scope?.()

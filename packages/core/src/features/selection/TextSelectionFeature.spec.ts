@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {setUseHookFactory} from '../../shared/signals'
-import {Store} from '../store/Store'
+import {Store} from '../../store/Store'
 
 // Stub global `document` for TextSelectionFeature which calls document.addEventListener/removeEventListener
 const listeners: Record<string, Function[]> = {}
@@ -52,15 +52,15 @@ describe('TextSelectionFeature', () => {
 		controller.enable()
 		controller.disable()
 		// After disable, setting selecting to "drag" should not cause errors
-		expect(() => store.state.selecting.set('drag')).not.toThrow()
+		expect(() => store.state.selecting('drag')).not.toThrow()
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
 		const controller = store.features.textSelection
 		controller.enable()
-		store.state.selecting.set('drag')
+		store.state.selecting('drag')
 		controller.disable()
-		expect(store.state.selecting.get()).toBe(undefined)
+		expect(store.state.selecting()).toBe(undefined)
 	})
 
 	it('selecting set to "drag" disables contenteditable on container elements', () => {
@@ -74,7 +74,7 @@ describe('TextSelectionFeature', () => {
 
 		const controller = store.features.textSelection
 		controller.enable()
-		store.state.selecting.set('drag')
+		store.state.selecting('drag')
 
 		expect(container.querySelectorAll).toHaveBeenCalledWith('[contenteditable="true"]')
 		expect(span.contentEditable).toBe('false')

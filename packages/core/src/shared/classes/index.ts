@@ -1,7 +1,4 @@
-export {BlockRegistry} from './BlockRegistry'
 export {MarkputHandler} from './MarkputHandler'
-export {BlockStore} from './BlockStore'
-export type {DropPosition} from './BlockStore'
 export {KeyGenerator} from './KeyGenerator'
 export {NodeProxy} from './NodeProxy'
 export {setUseHookFactory, getUseHookFactory, effect, event, signal, watch, batch} from '../signals'

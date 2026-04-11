@@ -1,4 +1,4 @@
-import type {CoreOption, CoreSlotProps, CoreSlots, GenericElement} from '../../shared/types'
+import type {CoreOption, CoreSlotProps, CoreSlots} from '../../shared/types'
 import {convertDataAttrs} from '../../shared/utils/dataAttributes'
 import type {Token} from '../parsing'
 import {resolveOptionSlot} from './resolveOptionSlot'
@@ -11,7 +11,7 @@ const defaultSlots: Record<SlotName, string> = {
 	span: 'span',
 }
 
-export function resolveSlot(slotName: SlotName, slots: unknown): GenericElement {
+export function resolveSlot(slotName: SlotName, slots: unknown): unknown {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- `slots` is `CoreSlots | undefined` at runtime; typed as unknown for Vue Ref<T> cross-framework compat
 	return (slots as CoreSlots | undefined)?.[slotName] ?? defaultSlots[slotName]
 }

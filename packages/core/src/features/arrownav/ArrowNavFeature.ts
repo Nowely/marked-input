@@ -1,7 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
+import type {Store} from '../../store/Store'
 import {shiftFocusPrev, shiftFocusNext} from '../navigation'
 import {selectAllText} from '../selection'
-import type {Store} from '../store/Store'
 
 export class ArrowNavFeature {
 	#keydownHandler?: (e: KeyboardEvent) => void
@@ -15,7 +15,7 @@ export class ArrowNavFeature {
 		if (!container) return
 
 		this.#keydownHandler = e => {
-			if (this.store.state.drag.get()) return
+			if (this.store.state.drag()) return
 			if (!this.store.nodes.focus.target) return
 
 			if (e.key === KEYBOARD.LEFT) {

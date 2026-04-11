@@ -1,7 +1,7 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 
 import {setUseHookFactory, signal} from '../../shared/signals'
-import type {CoreOption, CoreSlotProps, CoreSlots, GenericComponent} from '../../shared/types'
+import type {CoreOption, CoreSlotProps, CoreSlots} from '../../shared/types'
 import {createSlots} from './createSlots'
 import type {SlotSignals} from './createSlots'
 
@@ -14,10 +14,10 @@ describe('createSlots', () => {
 		return createSlots({
 			slots: signal<CoreSlots | undefined>(undefined),
 			slotProps: signal<CoreSlotProps | undefined>(undefined),
-			Overlay: signal<GenericComponent | undefined>(undefined),
+			Overlay: signal<unknown>(undefined),
 			options: signal<CoreOption[]>([]),
-			Mark: signal<GenericComponent | undefined>(undefined),
-			Span: signal<GenericComponent | undefined>(undefined),
+			Mark: signal<unknown>(undefined),
+			Span: signal<unknown>(undefined),
 		})
 	}
 
@@ -42,12 +42,12 @@ describe('createSlots', () => {
 		const sut = createSlots({
 			slots,
 			slotProps,
-			Overlay: signal<GenericComponent | undefined>(undefined),
+			Overlay: signal<unknown>(undefined),
 			options: signal<CoreOption[]>([]),
-			Mark: signal<GenericComponent | undefined>(undefined),
-			Span: signal<GenericComponent | undefined>(undefined),
+			Mark: signal<unknown>(undefined),
+			Span: signal<unknown>(undefined),
 		} satisfies SlotSignals)
-		slots.set({container: 'section'})
+		slots({container: 'section'})
 		expect(sut.container.get()).toEqual(['section', undefined])
 	})
 
@@ -57,13 +57,13 @@ describe('createSlots', () => {
 		const sut = createSlots({
 			slots,
 			slotProps,
-			Overlay: signal<GenericComponent | undefined>(undefined),
+			Overlay: signal<unknown>(undefined),
 			options: signal<CoreOption[]>([]),
-			Mark: signal<GenericComponent | undefined>(undefined),
-			Span: signal<GenericComponent | undefined>(undefined),
+			Mark: signal<unknown>(undefined),
+			Span: signal<unknown>(undefined),
 		} satisfies SlotSignals)
-		slots.set({span: 'strong'})
-		slotProps.set({span: {className: 'bold'}})
+		slots({span: 'strong'})
+		slotProps({span: {className: 'bold'}})
 		const [, props] = sut.span.get()
 		expect(props).toEqual({className: 'bold'})
 	})
@@ -81,10 +81,10 @@ describe('createSlots', () => {
 		const slot = createSlots({
 			slots: signal<CoreSlots | undefined>(undefined),
 			slotProps: signal<CoreSlotProps | undefined>(undefined),
-			Overlay: signal<GenericComponent | undefined>(undefined),
+			Overlay: signal<unknown>(undefined),
 			options: signal<CoreOption[]>([]),
-			Mark: signal<GenericComponent | undefined>(undefined),
-			Span: signal<GenericComponent | undefined>(CustomSpan),
+			Mark: signal<unknown>(undefined),
+			Span: signal<unknown>(CustomSpan),
 		})
 		const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
 		const [component, props] = slot.mark.get(token)

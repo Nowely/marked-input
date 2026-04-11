@@ -1,6 +1,6 @@
 import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
 import {watch} from '../../shared/signals/index.js'
-import type {Store} from '../store/Store'
+import type {Store} from '../../store/Store'
 
 export class FocusFeature {
 	#focusinHandler?: (e: FocusEvent) => void
@@ -25,7 +25,7 @@ export class FocusFeature {
 		}
 
 		this.#clickHandler = () => {
-			const tokens = this.store.state.tokens.get()
+			const tokens = this.store.state.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				const container = this.store.refs.container
 				const element = container ? firstHtmlChild(container) : null
@@ -39,6 +39,12 @@ export class FocusFeature {
 
 		watch(this.store.event.recoverFocus, () => {
 			this.#recover()
+		})
+
+		watch(this.store.event.afterTokensRendered, () => {
+			this.store.event.sync()
+			if (!this.store.state.Mark()) return
+			this.store.event.recoverFocus()
 		})
 	}
 
@@ -56,7 +62,7 @@ export class FocusFeature {
 	}
 
 	#recover() {
-		const recovery = this.store.state.recovery.get()
+		const recovery = this.store.state.recovery()
 		if (!recovery) return
 
 		const {anchor, caret, isNext} = recovery
@@ -91,6 +97,6 @@ export class FocusFeature {
 			this.store.nodes.focus.target = target
 			this.store.nodes.focus.caret = caret
 		})
-		this.store.state.recovery.set(undefined)
+		this.store.state.recovery(undefined)
 	}
 }

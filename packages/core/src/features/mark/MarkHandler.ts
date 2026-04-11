@@ -1,6 +1,6 @@
+import type {Store} from '../../store'
 import type {MarkToken, Token} from '../parsing'
 import {findToken} from '../parsing'
-import type {Store} from '../store'
 
 export interface RefAccessor<T> {
 	current: T | null
@@ -58,7 +58,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	}
 
 	get depth(): number {
-		return findToken(this.#store.state.tokens.get(), this.#token)?.depth ?? 0
+		return findToken(this.#store.state.tokens(), this.#token)?.depth ?? 0
 	}
 
 	get hasChildren(): boolean {
@@ -66,7 +66,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	}
 
 	get parent(): MarkToken | undefined {
-		return findToken(this.#store.state.tokens.get(), this.#token)?.parent
+		return findToken(this.#store.state.tokens(), this.#token)?.parent
 	}
 
 	get tokens(): Token[] {

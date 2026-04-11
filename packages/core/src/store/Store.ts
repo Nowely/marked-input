@@ -1,39 +1,39 @@
-import {BlockRegistry, KeyGenerator, MarkputHandler, NodeProxy} from '../../shared/classes'
-import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {signal, computed, event, batch} from '../../shared/signals'
-import type {SignalValues} from '../../shared/signals'
+import {ArrowNavFeature} from '../features/arrownav'
+import {BlockEditFeature} from '../features/block-editing'
+import {CopyFeature} from '../features/clipboard'
+import {DragFeature} from '../features/drag'
+import {ContentEditableFeature} from '../features/editable'
+import {SystemListenerFeature} from '../features/events'
+import {FocusFeature} from '../features/focus'
+import {InputFeature} from '../features/input'
+import {OverlayFeature} from '../features/overlay'
+import {Parser} from '../features/parsing'
+import type {Token} from '../features/parsing'
+import {ParseFeature} from '../features/parsing/ParseFeature'
+import {TextSelectionFeature} from '../features/selection'
+import {createSlots} from '../features/slots'
+import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
+import {DEFAULT_OPTIONS} from '../shared/constants'
+import {signal, computed, event, batch, watch} from '../shared/signals'
+import type {SignalValues} from '../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
 	OverlayTrigger,
 	Recovery,
-	GenericComponent,
 	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
 	DragAction,
-} from '../../shared/types'
-import {cx} from '../../shared/utils/cx'
-import {merge} from '../../shared/utils/merge'
-import {shallow} from '../../shared/utils/shallow'
-import {ArrowNavFeature} from '../arrownav'
-import {BlockEditFeature} from '../block-editing'
-import {CopyFeature} from '../clipboard'
-import {DragFeature} from '../drag'
-import {ContentEditableFeature} from '../editable'
-import {SystemListenerFeature} from '../events'
-import {FocusFeature} from '../focus'
-import {InputFeature} from '../input'
-import {Lifecycle} from '../lifecycle'
-import {OverlayFeature} from '../overlay'
-import {Parser} from '../parsing'
-import type {Token} from '../parsing'
-import {TextSelectionFeature} from '../selection'
-import {createSlots} from '../slots'
+} from '../shared/types'
+import {cx} from '../shared/utils/cx'
+import {merge} from '../shared/utils/merge'
+import {shallow} from '../shared/utils/shallow'
+import {BlockRegistry} from './BlockRegistry'
 
-import styles from '../../../styles.module.css'
+import styles from '../../styles.module.css'
 
-export type {DragAction} from '../../shared/types'
+export type {DragAction} from '../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()
@@ -70,9 +70,9 @@ export class Store {
 		readOnly: signal<boolean>(false),
 
 		// Component overrides
-		Span: signal<GenericComponent | undefined>(undefined),
-		Mark: signal<GenericComponent | undefined>(undefined),
-		Overlay: signal<GenericComponent | undefined>(undefined),
+		Span: signal<unknown>(undefined),
+		Mark: signal<unknown>(undefined),
+		Overlay: signal<unknown>(undefined),
 
 		// Styling
 		className: signal<string | undefined>(undefined),
@@ -85,17 +85,17 @@ export class Store {
 
 	readonly computed = {
 		hasMark: computed(() => {
-			const Mark = this.state.Mark.get()
+			const Mark = this.state.Mark()
 			if (Mark) return true
-			return this.state.options.get().some(opt => 'Mark' in opt && opt.Mark != null)
+			return this.state.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
 		parser: computed(() => {
-			if (!this.computed.hasMark.get()) return
+			if (!this.computed.hasMark()) return
 
-			const markups = this.state.options.get().map(opt => opt.markup)
+			const markups = this.state.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.state.drag.get()
+			const isDrag = !!this.state.drag()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerClass: computed(() =>
@@ -117,17 +117,31 @@ export class Store {
 	})
 
 	readonly event = {
+		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
 		change: event(),
+		/** Triggers a re-parse of tokens from the current content */
 		parse: event(),
+		/** Removes a mark token from editor content */
 		delete: event<{token: Token}>(),
+		/** Fires when the user selects an overlay option — annotates markup into the current input span */
 		select: event<{mark: Token; match: OverlayMatch}>(),
+		/** Dismisses the overlay by clearing the current `overlayMatch` */
 		clearOverlay: event(),
+		/** Probes the caret/text position for overlay trigger patterns and shows overlay if matched */
 		checkOverlay: event(),
+		/** Syncs `contentEditable` attributes and `textContent` of child elements to match token state */
 		sync: event(),
+		/** Restores the caret position after a DOM re-render using the saved recovery state */
 		recoverFocus: event(),
+		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
 		dragAction: event<DragAction>(),
+		/** Signals the framework component has received new props — triggers conditional re-parse if value/options changed */
 		updated: event(),
+		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
 		afterTokensRendered: event(),
+		/** Lifecycle: editor component added to the DOM — enables all features */
+		mounted: event(),
+		/** Lifecycle: editor component removed from the DOM — disables all features and cleans up subscriptions */
 		unmounted: event(),
 	}
 
@@ -149,9 +163,13 @@ export class Store {
 		contentEditable: new ContentEditableFeature(this),
 		drag: new DragFeature(this),
 		copy: new CopyFeature(this),
+		parse: new ParseFeature(this),
 	}
 
-	readonly lifecycle = new Lifecycle(this)
+	constructor() {
+		watch(this.event.mounted, () => Object.values(this.features).forEach(f => f.enable()))
+		watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
+	}
 
 	setState(values: Partial<SignalValues<typeof this.state>>): void {
 		batch(() => {
@@ -160,7 +178,7 @@ export class Store {
 			for (const key of Object.keys(values) as (keyof typeof this.state)[]) {
 				if (!(key in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				state[key].set(values[key] as never)
+				state[key](values[key] as never)
 			}
 		})
 	}

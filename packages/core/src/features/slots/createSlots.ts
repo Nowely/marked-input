@@ -1,5 +1,5 @@
 import type {Signal} from '../../shared/signals'
-import type {CoreOption, CoreSlotProps, CoreSlots, GenericComponent} from '../../shared/types'
+import type {CoreOption, CoreSlotProps, CoreSlots} from '../../shared/types'
 import type {Token} from '../parsing'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from './resolveSlot'
 import type {SlotName} from './resolveSlot'
@@ -13,39 +13,35 @@ function createNamedSlot(
 	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
 	return {
 		use: () => [resolveSlot(name, slots.use()), resolveSlotProps(name, slotProps.use())] as const,
-		get: () => [resolveSlot(name, slots.get()), resolveSlotProps(name, slotProps.get())] as const,
+		get: () => [resolveSlot(name, slots()), resolveSlotProps(name, slotProps())] as const,
 	} as unknown as Slot
 }
 
-function createOverlaySlot(overlay: Signal<GenericComponent | undefined>): OverlaySlot {
+function createOverlaySlot(overlay: Signal<unknown>): OverlaySlot {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
 	return {
 		use: (option?: CoreOption, defaultComponent?: unknown) =>
 			resolveOverlaySlot(overlay.use(), option, defaultComponent),
 		get: (option?: CoreOption, defaultComponent?: unknown) =>
-			resolveOverlaySlot(overlay.get(), option, defaultComponent),
+			resolveOverlaySlot(overlay(), option, defaultComponent),
 	} as unknown as OverlaySlot
 }
 
-function createMarkSlot(
-	options: Signal<CoreOption[]>,
-	mark: Signal<GenericComponent | undefined>,
-	span: Signal<GenericComponent | undefined>
-): MarkSlot {
+function createMarkSlot(options: Signal<CoreOption[]>, mark: Signal<unknown>, span: Signal<unknown>): MarkSlot {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
 	return {
-		use: (token: Token) => resolveMarkSlot(token, options.get(), mark.use(), span.use()),
-		get: (token: Token) => resolveMarkSlot(token, options.get(), mark.get(), span.get()),
+		use: (token: Token) => resolveMarkSlot(token, options(), mark.use(), span.use()),
+		get: (token: Token) => resolveMarkSlot(token, options(), mark(), span()),
 	} as unknown as MarkSlot
 }
 
 export interface SlotSignals {
 	slots: Signal<CoreSlots | undefined>
 	slotProps: Signal<CoreSlotProps | undefined>
-	Overlay: Signal<GenericComponent | undefined>
+	Overlay: Signal<unknown>
 	options: Signal<CoreOption[]>
-	Mark: Signal<GenericComponent | undefined>
-	Span: Signal<GenericComponent | undefined>
+	Mark: Signal<unknown>
+	Span: Signal<unknown>
 }
 
 export function createSlots(signals: SlotSignals) {

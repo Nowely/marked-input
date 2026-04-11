@@ -1,8 +1,8 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {DEFAULT_OPTIONS} from '../../shared/constants'
-import {setUseHookFactory, effect, effectScope, watch, batch} from '../../shared/signals'
-import {parseWithParser} from '../parsing'
+import {parseWithParser} from '../features/parsing'
+import {DEFAULT_OPTIONS} from '../shared/constants'
+import {setUseHookFactory, effect, effectScope, watch, batch} from '../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {
@@ -18,12 +18,12 @@ describe('Store', () => {
 
 	it('should return default for showOverlayOn when not set', () => {
 		const store = new Store()
-		expect(store.state.showOverlayOn.get()).toBe('change')
+		expect(store.state.showOverlayOn()).toBe('change')
 	})
 
 	it('should return default for options when not set', () => {
 		const store = new Store()
-		expect(store.state.options.get()).toEqual(DEFAULT_OPTIONS)
+		expect(store.state.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
 	it('should have events', () => {
@@ -73,15 +73,15 @@ describe('Store', () => {
 		it('should update provided state values', () => {
 			const store = new Store()
 			store.setState({value: 'hello', readOnly: true})
-			expect(store.state.value.get()).toBe('hello')
-			expect(store.state.readOnly.get()).toBe(true)
+			expect(store.state.value()).toBe('hello')
+			expect(store.state.readOnly()).toBe(true)
 		})
 
 		it('should leave unprovided keys unchanged', () => {
 			const store = new Store()
 			store.setState({readOnly: true})
-			expect(store.state.value.get()).toBeUndefined()
-			expect(store.state.readOnly.get()).toBe(true)
+			expect(store.state.value()).toBeUndefined()
+			expect(store.state.readOnly()).toBe(true)
 		})
 
 		it('should not throw when called with an empty object', () => {
@@ -93,8 +93,8 @@ describe('Store', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.state.value.get()
-				store.state.readOnly.get()
+				store.state.value()
+				store.state.readOnly()
 				effectSpy()
 			})
 			effectSpy.mockClear()
@@ -111,34 +111,34 @@ describe('Store', () => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.state.tokens.set(newTokens)
-						store.state.previousValue.set(newValue)
+						store.state.tokens(newTokens)
+						store.state.previousValue(newValue)
 					})
-					store.state.onChange.get()?.(newValue)
+					store.state.onChange()?.(newValue)
 				})
 			})
-			store.state.innerValue.set('hello')
-			expect(store.state.tokens.get()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			expect(store.state.previousValue.get()).toBe('hello')
+			store.state.innerValue('hello')
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.state.previousValue()).toBe('hello')
 			dispose()
 		})
 
 		it('should call onChange when set', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.state.onChange.set(onChange)
+			store.state.onChange(onChange)
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.state.tokens.set(newTokens)
-						store.state.previousValue.set(newValue)
+						store.state.tokens(newTokens)
+						store.state.previousValue(newValue)
 					})
-					store.state.onChange.get()?.(newValue)
+					store.state.onChange()?.(newValue)
 				})
 			})
-			store.state.innerValue.set('world')
+			store.state.innerValue('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 			dispose()
@@ -151,13 +151,13 @@ describe('Store', () => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.state.tokens.set(newTokens)
-						store.state.previousValue.set(newValue)
+						store.state.tokens(newTokens)
+						store.state.previousValue(newValue)
 					})
-					store.state.onChange.get()?.(newValue)
+					store.state.onChange()?.(newValue)
 				})
 			})
-			expect(() => store.state.innerValue.set('test')).not.toThrow()
+			expect(() => store.state.innerValue('test')).not.toThrow()
 			dispose()
 		})
 	})
@@ -169,75 +169,75 @@ describe('Store', () => {
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle()).toEqual({color: 'red', fontSize: 14})
 		})
 
 		it('should return style only when no slotProps.container.style', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle()).toEqual({color: 'red'})
 		})
 
 		it('should return undefined when nothing is set', () => {
 			const store = new Store()
-			expect(store.computed.containerStyle.get()).toBeUndefined()
+			expect(store.computed.containerStyle()).toBeUndefined()
 		})
 
 		it('should react to style changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle()).toEqual({color: 'red'})
 			store.setState({style: {color: 'blue'}})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'blue'})
+			expect(store.computed.containerStyle()).toEqual({color: 'blue'})
 		})
 
 		it('should react to slotProps changes', () => {
 			const store = new Store()
 			store.setState({style: {color: 'red'}})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'red'})
+			expect(store.computed.containerStyle()).toEqual({color: 'red'})
 			store.setState({slotProps: {container: {style: {fontSize: 14}}}})
-			expect(store.computed.containerStyle.get()).toEqual({color: 'red', fontSize: 14})
+			expect(store.computed.containerStyle()).toEqual({color: 'red', fontSize: 14})
 		})
 	})
 
 	describe('hasMark (computed)', () => {
 		it('should return false when no Mark override and no per-option Mark', () => {
 			const store = new Store()
-			expect(store.computed.hasMark.get()).toBe(false)
+			expect(store.computed.hasMark()).toBe(false)
 		})
 
 		it('should return true when Mark override is set', () => {
 			const store = new Store()
-			store.state.Mark.set(() => null)
-			expect(store.computed.hasMark.get()).toBe(true)
+			store.state.Mark(() => null)
+			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when option has per-option Mark', () => {
 			const store = new Store()
-			store.state.options.set([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
-			expect(store.computed.hasMark.get()).toBe(true)
+			store.state.options([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when Mark override is set even without per-option Mark', () => {
 			const store = new Store()
-			store.state.Mark.set(() => null)
-			store.state.options.set([{markup: '@[__value__]'}])
-			expect(store.computed.hasMark.get()).toBe(true)
+			store.state.Mark(() => null)
+			store.state.options([{markup: '@[__value__]'}])
+			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return false when option has Mark set to null', () => {
 			const store = new Store()
-			store.state.options.set([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
-			expect(store.computed.hasMark.get()).toBe(false)
+			store.state.options([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
+			expect(store.computed.hasMark()).toBe(false)
 		})
 
 		it('should react to Mark override changes', () => {
 			const store = new Store()
-			expect(store.computed.hasMark.get()).toBe(false)
-			store.state.Mark.set(() => null)
-			expect(store.computed.hasMark.get()).toBe(true)
-			store.state.Mark.set(undefined)
-			expect(store.computed.hasMark.get()).toBe(false)
+			expect(store.computed.hasMark()).toBe(false)
+			store.state.Mark(() => null)
+			expect(store.computed.hasMark()).toBe(true)
+			store.state.Mark(undefined)
+			expect(store.computed.hasMark()).toBe(false)
 		})
 	})
 })

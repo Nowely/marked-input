@@ -1,5 +1,5 @@
 import {Caret} from '../../features/caret'
-import type {Store} from '../../features/store'
+import type {Store} from '../../store'
 import {isHtmlElement, firstHtmlChild, lastHtmlChild} from '../checkers'
 
 export class NodeProxy {

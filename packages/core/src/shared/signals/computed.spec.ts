@@ -18,7 +18,7 @@ describe('computed', () => {
 	it('should have .get() method', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
-		expect(doubled.get()).toBe(2)
+		expect(doubled()).toBe(2)
 	})
 
 	it('should have .use() method', () => {
@@ -31,7 +31,7 @@ describe('computed', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
 		expect(doubled()).toBe(2)
-		count.set(5)
+		count(5)
 		expect(doubled()).toBe(10)
 	})
 
@@ -57,7 +57,7 @@ describe('computed', () => {
 		doubled()
 		doubled()
 		expect(calls).toBe(1)
-		count.set(2)
+		count(2)
 		doubled()
 		doubled()
 		expect(calls).toBe(2)
@@ -71,7 +71,7 @@ describe('computed', () => {
 			results.push(doubled())
 		})
 		expect(results).toEqual([2])
-		count.set(3)
+		count(3)
 		expect(results).toEqual([2, 6])
 	})
 
@@ -80,7 +80,7 @@ describe('computed', () => {
 		const doubled = computed(() => count() * 2)
 		const quadrupled = computed(() => doubled() * 2)
 		expect(quadrupled()).toBe(4)
-		count.set(5)
+		count(5)
 		expect(quadrupled()).toBe(20)
 	})
 
@@ -103,8 +103,8 @@ describe('computed', () => {
 		})
 		expect(results).toEqual([3])
 		batch(() => {
-			a.set(10)
-			b.set(20)
+			a(10)
+			b(20)
 		})
 		expect(results).toEqual([3, 30])
 	})

@@ -1,5 +1,5 @@
+import type {Store} from '../../store'
 import {Caret} from '../caret'
-import type {Store} from '../store'
 
 export function shiftFocusPrev(store: Store, event: KeyboardEvent): boolean {
 	const {focus} = store.nodes

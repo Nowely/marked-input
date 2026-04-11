@@ -1,6 +1,6 @@
+import type {Store} from '../../store'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
-import type {Store} from '../store'
 import {MARKPUT_MIME} from './pasteMarkup'
 import {type SelectionTokenRange, selectionToTokens} from './selectionToTokens'
 
@@ -54,20 +54,20 @@ export class CopyFeature {
 			const rawStart = first.type === 'text' ? first.position.start + result.startOffset : first.position.start
 			const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
 
-			const value = this.store.state.previousValue.get() ?? this.store.state.value.get() ?? ''
+			const value = this.store.state.previousValue() ?? this.store.state.value() ?? ''
 			if (rawStart === rawEnd) return
 
 			const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-			this.store.state.innerValue.set(newValue)
+			this.store.state.innerValue(newValue)
 
-			const newTokens = this.store.state.tokens.get()
+			const newTokens = this.store.state.tokens()
 			let targetIdx = newTokens.findIndex(
 				t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
 			)
 			if (targetIdx === -1) targetIdx = newTokens.length - 1
 			const caretWithinToken = rawStart - newTokens[targetIdx].position.start
 
-			this.store.state.recovery.set({
+			this.store.state.recovery({
 				anchor: this.store.nodes.focus,
 				caret: caretWithinToken,
 				isNext: true,
