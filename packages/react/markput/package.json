@@ -28,17 +28,15 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "vite build && tsc && node prepack.js",
+    "build": "vite build && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
-  "dependencies": {
-    "@markput/core": "workspace:*"
-  },
   "devDependencies": {
-    "@microsoft/api-extractor": "catalog:",
+    "@markput/core": "workspace:*",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "react": "catalog:",
+    "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
   },

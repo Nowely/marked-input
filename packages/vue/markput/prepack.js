@@ -1,17 +1,47 @@
 import fs from 'fs'
+import {createRequire} from 'module'
 import path from 'path'
 import {fileURLToPath} from 'url'
 
-import {Extractor, ExtractorConfig} from '@microsoft/api-extractor'
+import vue from '@vitejs/plugin-vue'
+import {dts} from 'rolldown-plugin-dts'
+
+// Resolve rolldown through its peer: rolldown-plugin-dts
+const {rolldown} = await import(createRequire(import.meta.resolve('rolldown-plugin-dts')).resolve('rolldown'))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const __root = path.join(__dirname, '..', '..', '..')
 
+await buildDts()
 copyReadme()
 prepareAndCopyPackage()
-rollupTypes()
-removeExtraTypeDeclarations()
+
+async function buildDts() {
+	const bundle = await rolldown({
+		input: path.resolve(__dirname, './index.ts'),
+		plugins: [
+			vue(),
+			dts({
+				vue: true,
+				compilerOptions: {
+					paths: {
+						'@markput/core': ['../../core/index.ts'],
+					},
+				},
+			}),
+		],
+		external: ['vue', /\.css$/],
+	})
+
+	await bundle.write({
+		dir: path.resolve(__dirname, 'dist'),
+		format: 'es',
+		codeSplitting: false,
+	})
+
+	console.log('DTS built')
+}
 
 function copyReadme() {
 	fs.copyFile(path.resolve(__root, 'README.md'), path.resolve(__dirname, 'dist/README.md'), err => {
@@ -53,69 +83,4 @@ function prepareAndCopyPackage() {
 			callback(err)
 		}
 	}
-}
-
-function rollupTypes() {
-	console.log('Start rollup types:')
-
-	const config = ExtractorConfig.prepare(getOptions())
-	const result = Extractor.invoke(config, {showVerboseMessages: true})
-	// oxlint-disable-next-line typescript/switch-exhaustiveness-check
-	switch (true) {
-		case result.succeeded: {
-			console.log(`Types rollup completed successfully`)
-			process.exitCode = 0
-			break
-		}
-		case result.errorCount === 0: {
-			console.log(`Types rollup completed successfully with ${result.warningCount} warnings`)
-			process.exitCode = 0
-			break
-		}
-		default: {
-			console.error(`Types rollup completed with ${result.errorCount} errors and ${result.warningCount} warnings`)
-			process.exitCode = 1
-		}
-	}
-
-	function getOptions() {
-		const configObjectFullPath = __filename
-		const packageJsonFullPath = path.resolve(__dirname, `package.json`)
-
-		/** @type api.IConfigFile */
-		const configObject = {
-			projectFolder: path.resolve(__dirname),
-			mainEntryPointFilePath: '<projectFolder>/dist/types/index.d.ts',
-			compiler: {tsconfigFilePath: '<projectFolder>/tsconfig.json'},
-			dtsRollup: {
-				enabled: true,
-				untrimmedFilePath: '<projectFolder>/dist/index.d.ts',
-			},
-			messages: {
-				compilerMessageReporting: {
-					default: {logLevel: 'warning'},
-				},
-				extractorMessageReporting: {
-					default: {logLevel: 'warning'},
-					'ae-missing-release-tag': {logLevel: 'none'},
-				},
-				tsdocMessageReporting: {
-					default: {logLevel: 'warning'},
-					'tsdoc-undefined-tag': {logLevel: 'none'},
-					'tsdoc-characters-after-block-tag': {logLevel: 'none'},
-					'tsdoc-at-sign-in-word': {logLevel: 'none'},
-					'tsdoc-escape-right-brace': {logLevel: 'none'},
-					'tsdoc-malformed-inline-tag': {logLevel: 'none'},
-				},
-			},
-		}
-		return {configObject, configObjectFullPath, packageJsonFullPath}
-	}
-}
-
-function removeExtraTypeDeclarations() {
-	fs.rm(path.resolve(__dirname, 'dist/types'), {recursive: true}, err => {
-		if (err) throw err
-		console.log('Extra declarations deleted')
-	})
 }
