@@ -38,7 +38,7 @@ describe('FocusFeature', () => {
 		})
 
 		it('emits recoverFocus when Mark is set', () => {
-			store.props.Mark(() => null)
+			store.setProps({Mark: () => null})
 			store.features.focus.enable()
 
 			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')

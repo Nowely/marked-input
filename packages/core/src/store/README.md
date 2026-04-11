@@ -6,7 +6,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 
 - **Store**: Main state container that manages:
     - **Internal state** (`store.state`) — signals owned by features: tokens, previous value, inner value, recovery, selection mode, overlay match/trigger
-    - **Props** (`store.props`) — signals written by framework adapters (value, options, readOnly, drag, slots, etc.)
+    - **Props** (`store.props`) — readonly signals written only via `setProps()` (value, options, readOnly, drag, slots, etc.)
     - **Computed** (`store.computed`) — derived values: `hasMark`, `parser`, `containerClass`, `containerStyle`, slot resolvers
     - **Events** (`store.event`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
     - **DOM refs** (`store.refs`) — container and overlay HTMLElement references
@@ -31,3 +31,9 @@ batch(() => {
 ```
 
 The Store is created by framework wrappers and passed to all features. Features communicate through `store.state`, `store.props`, `store.event`, and `store.nodes`.
+
+## Readonly Props
+
+All `store.props` signals are created with `{readonly: true}`. Direct writes like `store.props.value('x')` are silently ignored at runtime. Only `setProps()` can mutate props — it uses `batch(fn, {writable: true})` to temporarily open the write gate.
+
+This enforces the architectural rule: framework adapters (React/Vue `MarkedInput`) write props via `setProps()`; features and other consumers only read.

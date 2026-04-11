@@ -46,27 +46,27 @@ export class Store {
 	}
 
 	readonly props = {
-		value: signal<string | undefined>(undefined),
-		defaultValue: signal<string | undefined>(undefined),
+		value: signal<string | undefined>(undefined, {readonly: true}),
+		defaultValue: signal<string | undefined>(undefined, {readonly: true}),
 
-		onChange: signal<((value: string) => void) | undefined>(undefined),
+		onChange: signal<((value: string) => void) | undefined>(undefined, {readonly: true}),
 
-		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
-		readOnly: signal<boolean>(false),
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true}),
+		readOnly: signal<boolean>(false, {readonly: true}),
 
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
+		drag: signal<boolean | {alwaysShowHandle: boolean}>(false, {readonly: true}),
 
-		showOverlayOn: signal<OverlayTrigger>('change'),
+		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
 
-		Span: signal<unknown>(undefined),
-		Mark: signal<unknown>(undefined),
-		Overlay: signal<unknown>(undefined),
+		Span: signal<unknown>(undefined, {readonly: true}),
+		Mark: signal<unknown>(undefined, {readonly: true}),
+		Overlay: signal<unknown>(undefined, {readonly: true}),
 
-		className: signal<string | undefined>(undefined),
-		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
+		className: signal<string | undefined>(undefined, {readonly: true}),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow, readonly: true}),
 
-		slots: signal<CoreSlots | undefined>(undefined),
-		slotProps: signal<CoreSlotProps | undefined>(undefined),
+		slots: signal<CoreSlots | undefined>(undefined, {readonly: true}),
+		slotProps: signal<CoreSlotProps | undefined>(undefined, {readonly: true}),
 	}
 
 	readonly state = {
@@ -192,14 +192,17 @@ export class Store {
 	}
 
 	setProps(values: Partial<SignalValues<typeof this.props>>): void {
-		batch(() => {
-			const props = this.props
-			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-			for (const key of Object.keys(values) as (keyof typeof this.props)[]) {
-				if (!(key in props)) continue
+		batch(
+			() => {
+				const props = this.props
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				props[key](values[key] as never)
-			}
-		})
+				for (const key of Object.keys(values) as (keyof typeof this.props)[]) {
+					if (!(key in props)) continue
+					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+					props[key](values[key] as never)
+				}
+			},
+			{writable: true}
+		)
 	}
 }

@@ -130,6 +130,13 @@ describe('Store', () => {
 			store.setProps({value: 'test'})
 			expect(store.state.tokens()).toBe(tokensBefore)
 		})
+
+		it('ignores direct signal writes on props (readonly guard)', () => {
+			const store = new Store()
+			store.setProps({value: 'initial'})
+			store.props.value('hacked')
+			expect(store.props.value()).toBe('initial')
+		})
 	})
 
 	describe('innerValue', () => {
@@ -155,7 +162,7 @@ describe('Store', () => {
 		it('should call onChange when set', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.onChange(onChange)
+			store.setProps({onChange})
 			const dispose = effectScope(() => {
 				watch(store.state.innerValue, newValue => {
 					if (newValue === undefined) return
@@ -237,35 +244,34 @@ describe('Store', () => {
 
 		it('should return true when Mark override is set', () => {
 			const store = new Store()
-			store.props.Mark(() => null)
+			store.setProps({Mark: () => null})
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when option has per-option Mark', () => {
 			const store = new Store()
-			store.props.options([{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>])
+			store.setProps({options: [{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>]})
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return true when Mark override is set even without per-option Mark', () => {
 			const store = new Store()
-			store.props.Mark(() => null)
-			store.props.options([{markup: '@[__value__]'}])
+			store.setProps({Mark: () => null, options: [{markup: '@[__value__]'}]})
 			expect(store.computed.hasMark()).toBe(true)
 		})
 
 		it('should return false when option has Mark set to null', () => {
 			const store = new Store()
-			store.props.options([{markup: '@[__value__]', Mark: null} as Record<string, unknown>])
+			store.setProps({options: [{markup: '@[__value__]', Mark: null} as Record<string, unknown>]})
 			expect(store.computed.hasMark()).toBe(false)
 		})
 
 		it('should react to Mark override changes', () => {
 			const store = new Store()
 			expect(store.computed.hasMark()).toBe(false)
-			store.props.Mark(() => null)
+			store.setProps({Mark: () => null})
 			expect(store.computed.hasMark()).toBe(true)
-			store.props.Mark(undefined)
+			store.setProps({Mark: undefined})
 			expect(store.computed.hasMark()).toBe(false)
 		})
 	})

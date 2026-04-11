@@ -33,7 +33,7 @@ describe('ContentEditableFeature', () => {
 	it('changing readOnly after enable() triggers sync() again', () => {
 		controller.enable()
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.props.readOnly(true)
+		store.setProps({readOnly: true})
 		expect(syncSpy).toHaveBeenCalled()
 	})
 
@@ -41,7 +41,7 @@ describe('ContentEditableFeature', () => {
 		controller.enable()
 		controller.disable()
 		const syncSpy = vi.spyOn(controller, 'sync')
-		store.props.readOnly(true)
+		store.setProps({readOnly: true})
 		expect(syncSpy).not.toHaveBeenCalled()
 	})
 
