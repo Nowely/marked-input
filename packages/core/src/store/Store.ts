@@ -84,6 +84,38 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined),
 	}
 
+	readonly props = {
+		// Data
+		value: signal<string | undefined>(undefined),
+		defaultValue: signal<string | undefined>(undefined),
+
+		// Callbacks
+		onChange: signal<((value: string) => void) | undefined>(undefined),
+
+		// Config
+		options: signal<CoreOption[]>(DEFAULT_OPTIONS),
+		readOnly: signal<boolean>(false),
+
+		// Selection / drag
+		drag: signal<boolean | {alwaysShowHandle: boolean}>(false),
+
+		// Overlay
+		showOverlayOn: signal<OverlayTrigger>('change'),
+
+		// Component overrides
+		Span: signal<unknown>(undefined),
+		Mark: signal<unknown>(undefined),
+		Overlay: signal<unknown>(undefined),
+
+		// Styling
+		className: signal<string | undefined>(undefined),
+		style: signal<CSSProperties | undefined>(undefined, {equals: shallow}),
+
+		// Slot system
+		slots: signal<CoreSlots | undefined>(undefined),
+		slotProps: signal<CoreSlotProps | undefined>(undefined),
+	}
+
 	readonly computed = {
 		hasMark: computed(() => {
 			const Mark = this.state.Mark()
@@ -199,6 +231,18 @@ export class Store {
 				if (!(key in state)) continue
 				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
 				state[key](values[key] as never)
+			}
+		})
+	}
+
+	setProps(values: Partial<SignalValues<typeof this.props>>): void {
+		batch(() => {
+			const props = this.props
+			// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+			for (const key of Object.keys(values) as (keyof typeof this.props)[]) {
+				if (!(key in props)) continue
+				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
+				props[key](values[key] as never)
 			}
 		})
 	}
