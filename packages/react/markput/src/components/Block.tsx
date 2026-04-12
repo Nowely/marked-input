@@ -1,4 +1,5 @@
 import type {Token as TokenType} from '@markput/core'
+import {cx} from '@markput/core'
 import type {CSSProperties, ElementType} from 'react'
 import {memo} from 'react'
 
@@ -30,7 +31,8 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, store.event)}
 			data-testid="block"
 			{...slotProps}
-			className={styles.Block}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string
+			className={cx(styles.Block, slotProps?.className as string | undefined)}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(slotProps?.style as CSSProperties | undefined)}}
 		>

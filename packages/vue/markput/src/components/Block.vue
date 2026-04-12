@@ -39,7 +39,7 @@ const otherSlotProps = computed(() => {
 		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, store.event)"
 		data-testid="block"
 		v-bind="otherSlotProps"
-		:class="styles.Block"
+		:class="[styles.Block, slotProps?.className as string | undefined]"
 		:style="blockStyle"
 	>
 		<DropIndicator :token="token" position="before" />
