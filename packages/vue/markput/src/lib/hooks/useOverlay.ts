@@ -3,6 +3,7 @@ import {Caret, createMarkFromOverlay} from '@markput/core'
 import {computed, type Ref, type ComputedRef} from 'vue'
 
 import type {Option} from '../../types'
+import {useMarkput} from './useMarkput'
 import {useStore} from './useStore'
 
 export interface OverlayHandler {
@@ -21,7 +22,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const matchRef = store.state.overlayMatch.use() as Ref<OverlayMatch<Option> | undefined>
+	const matchRef = useMarkput(s => s.state.overlayMatch) as Ref<OverlayMatch<Option> | undefined>
 
 	const style = computed(() => {
 		// Depend on matchRef so position recalculates as user types/moves caret

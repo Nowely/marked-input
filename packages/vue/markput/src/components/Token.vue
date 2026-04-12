@@ -1,7 +1,8 @@
 <script lang="ts">
 import type {Token as TokenType} from '@markput/core'
-import {computed, defineComponent, h, markRaw, provide, toRef, type Component, type PropType, type VNode} from 'vue'
+import {defineComponent, h, markRaw, provide, toRef, type Component, type PropType, type VNode} from 'vue'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
 
@@ -18,11 +19,10 @@ const Token = defineComponent({
 
 		const store = useStore()
 		const key = store.key
-		const resolveMarkSlot = store.computed.mark.use()
-		const resolved = computed(() => resolveMarkSlot.value(props.mark))
+		const resolveMarkSlot = useMarkput(s => s.computed.mark)
 
 		return () => {
-			const [Comp, compProps] = resolved.value
+			const [Comp, compProps] = resolveMarkSlot.value(props.mark)
 
 			const mark = props.mark
 			const children =

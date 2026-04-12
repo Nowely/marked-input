@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import BlockMenu from './BlockMenu.vue'
 import DragHandle from './DragHandle.vue'
@@ -13,7 +14,8 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
-const isDragging = blockStore.state.isDragging.use()
+
+const isDragging = useMarkput(() => blockStore.state.isDragging)
 </script>
 
 <template>

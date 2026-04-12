@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type {Token as TokenType} from '@markput/core'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import List from './Popup/List.vue'
 import ListItem from './Popup/ListItem.vue'
@@ -12,8 +13,8 @@ const props = defineProps<{token: TokenType}>()
 
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
-const menuOpen = blockStore.state.menuOpen.use()
-const menuPosition = blockStore.state.menuPosition.use()
+const menuOpen = useMarkput(() => blockStore.state.menuOpen)
+const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 </script>
 
 <template>
