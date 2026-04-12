@@ -293,6 +293,12 @@ describe('Store', () => {
 			expect(store.computed.blockComponent()).toBe('div')
 		})
 
+		it('should return user-provided slot component', () => {
+			const store = new Store()
+			store.setProps({slots: {block: 'article'}})
+			expect(store.computed.blockComponent()).toBe('article')
+		})
+
 		it('should return undefined for blockProps by default', () => {
 			const store = new Store()
 			expect(store.computed.blockProps()).toBeUndefined()
