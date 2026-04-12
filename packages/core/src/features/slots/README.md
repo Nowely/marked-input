@@ -21,10 +21,10 @@ const props = store.computed.containerProps()
 // props includes className, style (with drag paddingLeft), and data-* slotProps
 
 const BlockComponent = store.computed.blockComponent()
-const blockProps = store.computed.blockProps()  // raw slotProps only
+const blockProps = store.computed.blockProps() // raw slotProps only
 
 const SpanComponent = store.computed.spanComponent()
-const spanProps = store.computed.spanProps()    // raw slotProps only
+const spanProps = store.computed.spanProps() // raw slotProps only
 
 // Parameterized slots — call() returns a resolver function, call it with the argument
 const resolveMarkSlot = store.computed.mark()
