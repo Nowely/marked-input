@@ -64,21 +64,6 @@ describe('signal<T>', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 	})
 
-	it('should re-notify when equals: false even if same reference', () => {
-		const ref = {x: 1}
-		const s = signal(ref, {equals: false})
-		const runs = vi.fn()
-
-		trackedEffect(() => {
-			s()
-			runs()
-		})
-
-		expect(runs).toHaveBeenCalledTimes(1)
-		s(ref) // same reference
-		expect(runs).toHaveBeenCalledTimes(2)
-	})
-
 	it('should skip notification when custom equals returns true', () => {
 		const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
 		const runs = vi.fn()
@@ -148,15 +133,6 @@ describe('signal<T>', () => {
 			expect(s()).toBe('hello')
 			s(undefined)
 			expect(s()).toBeUndefined()
-		})
-
-		it('should work with equals: false and default fallback', () => {
-			const s = signal<boolean>(false, {equals: false})
-			expect(s()).toBe(false)
-			s(undefined)
-			expect(s()).toBe(false)
-			s(true)
-			expect(s()).toBe(true)
 		})
 
 		it('should work with custom equals and default fallback', () => {
@@ -237,19 +213,6 @@ describe('signal<T>', () => {
 				)
 				s(100)
 			})
-			expect(s()).toBe(99)
-		})
-
-		it('should work with equals: false and readonly', () => {
-			const s = signal(42, {equals: false, readonly: true})
-			s(99)
-			expect(s()).toBe(42)
-			batch(
-				() => {
-					s(99)
-				},
-				{writable: true}
-			)
 			expect(s()).toBe(99)
 		})
 

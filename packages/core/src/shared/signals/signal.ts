@@ -27,53 +27,15 @@ export type SignalValues<T> = {
 }
 
 interface SignalOptions<T> {
-	equals?: false | ((a: T, b: T) => boolean)
+	equals?: (a: T, b: T) => boolean
 	readonly?: boolean
 }
 
 let writableScope = false
 
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
-	const hasCustomEquals = opts?.equals !== undefined
-
-	// oxlint-disable-next-line no-non-null-assertion, no-unnecessary-type-assertion -- opts is defined when hasCustomEquals is true; TS does not narrow opts from the boolean variable
-	const equalsOpt = hasCustomEquals ? opts!.equals : undefined
-	if (hasCustomEquals && equalsOpt === false) {
-		const _default = initial
-		const hasDefault = initial !== undefined
-		let seq = 0
-		const inner = alienSignal<{v: T; seq: number} | undefined>(undefined)
-
-		const read = (): T => {
-			const box = inner()
-			if (box === undefined) {
-				// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so returning undefined is safe
-				return hasDefault ? _default : (undefined as T)
-			}
-			return box.v
-		}
-
-		const isReadonly = !!opts.readonly
-		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T | undefined] | []) {
-			if (args.length) {
-				if (isReadonly && !writableScope) return
-				if (args[0] === undefined) {
-					if (hasDefault && inner() === undefined) return
-					inner(undefined)
-				} else {
-					inner({v: args[0], seq: seq++})
-				}
-			} else {
-				return read()
-			}
-		} as unknown as Signal<T>
-
-		return callable
-	}
-
-	if (hasCustomEquals && typeof equalsOpt === 'function') {
-		const equalsFn = equalsOpt
+	if (opts?.equals !== undefined) {
+		const equalsFn = opts.equals
 		const _default = initial
 		const hasDefault = initial !== undefined
 		const inner = alienSignal<T | undefined>(undefined)
