@@ -123,17 +123,16 @@ export class Store {
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
-		containerProps: computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>(
-			prev => {
-				const next = buildContainerProps(
+		containerProps: computed(
+			() =>
+				buildContainerProps(
 					!!this.props.drag(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),
 					this.props.slotProps()
-				)
-				return prev && shallow(prev, next) ? prev : next
-			}
+				),
+			{equals: shallow}
 		),
 		blockComponent: computed(() => resolveSlot('block', this.props.slots())),
 		blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
