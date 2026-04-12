@@ -35,14 +35,14 @@ export class NodeProxy {
 	}
 
 	get isCaretAtBeginning() {
-		if (!this.target) return
+		if (!this.target) return false
 
 		const caretIndex = Caret.getCaretIndex(this.target)
 		return caretIndex === 0
 	}
 
 	get isCaretAtEnd() {
-		if (!this.target) return
+		if (!this.target) return false
 
 		const caretIndex = Caret.getCaretIndex(this.target)
 		return caretIndex === this.target.textContent.length

@@ -1,11 +1,12 @@
 import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
-import {watch} from '../../shared/signals/index.js'
+import {effectScope, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export class FocusFeature {
 	#focusinHandler?: (e: FocusEvent) => void
 	#focusoutHandler?: () => void
 	#clickHandler?: () => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
@@ -37,14 +38,16 @@ export class FocusFeature {
 		container.addEventListener('focusout', this.#focusoutHandler)
 		container.addEventListener('click', this.#clickHandler)
 
-		watch(this.store.event.recoverFocus, () => {
-			this.#recover()
-		})
+		this.#scope = effectScope(() => {
+			watch(this.store.event.recoverFocus, () => {
+				this.#recover()
+			})
 
-		watch(this.store.event.afterTokensRendered, () => {
-			this.store.event.sync()
-			if (!this.store.props.Mark()) return
-			this.store.event.recoverFocus()
+			watch(this.store.event.afterTokensRendered, () => {
+				this.store.event.sync()
+				if (!this.store.props.Mark()) return
+				this.store.event.recoverFocus()
+			})
 		})
 	}
 
@@ -56,9 +59,14 @@ export class FocusFeature {
 		if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
 		if (this.#clickHandler) container.removeEventListener('click', this.#clickHandler)
 
+		this.#scope?.()
+		this.#scope = undefined
+
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined
 		this.#clickHandler = undefined
+
+		this.store.nodes.focus.clear()
 	}
 
 	#recover() {

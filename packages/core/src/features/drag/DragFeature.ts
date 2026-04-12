@@ -11,6 +11,8 @@ export class DragFeature {
 	#unsub?: () => void
 
 	enable() {
+		if (this.#unsub) return
+
 		this.#unsub = watch(this.store.event.dragAction, action => {
 			switch (action.type) {
 				case 'reorder':

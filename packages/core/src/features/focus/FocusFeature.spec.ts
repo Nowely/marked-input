@@ -8,6 +8,27 @@ const stubContainer = {
 	removeEventListener: vi.fn(),
 } as unknown as HTMLDivElement
 
+// Mock document.createElement if not available (for Node test environment)
+// oxlint-disable-next-line no-unnecessary-condition -- document may not be defined in Node env
+if (!globalThis.document) {
+	// oxlint-disable-next-line no-unsafe-type-assertion
+	const FakeHTMLElement = function () {} as any
+	Object.defineProperty(globalThis, 'document', {
+		value: {
+			createElement: () => {
+				const obj = new FakeHTMLElement()
+				Object.setPrototypeOf(obj, FakeHTMLElement.prototype)
+				return obj
+			},
+		},
+		configurable: true,
+	})
+	Object.defineProperty(globalThis, 'HTMLElement', {
+		value: FakeHTMLElement,
+		configurable: true,
+	})
+}
+
 describe('FocusFeature', () => {
 	let store: Store
 
@@ -56,6 +77,31 @@ describe('FocusFeature', () => {
 			expect(recoverFocusSpy).not.toHaveBeenCalled()
 
 			store.features.focus.disable()
+		})
+	})
+
+	describe('subscription lifecycle', () => {
+		it('does not fire afterTokensRendered watcher after disable', () => {
+			store.features.focus.enable()
+			store.features.focus.disable()
+
+			const syncSpy = vi.spyOn(store.event, 'sync')
+			store.event.afterTokensRendered()
+
+			expect(syncSpy).not.toHaveBeenCalled()
+		})
+	})
+
+	describe('disable()', () => {
+		it('clears nodes.focus.target', () => {
+			store.features.focus.enable()
+
+			store.nodes.focus.target = document.createElement('div')
+			expect(store.nodes.focus.target).toBeDefined()
+
+			store.features.focus.disable()
+
+			expect(store.nodes.focus.target).toBeUndefined()
 		})
 	})
 })

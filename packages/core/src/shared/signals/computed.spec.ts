@@ -1,5 +1,6 @@
-import {describe, it, expect} from 'vitest'
+import {describe, it, expect, vi} from 'vitest'
 
+import {shallow} from '../utils/shallow'
 import {signal, computed, effect, batch} from './signal'
 
 describe('computed', () => {
@@ -101,5 +102,70 @@ describe('computed', () => {
 			b(20)
 		})
 		expect(results).toEqual([3, 30])
+	})
+})
+
+describe('computed with equals option', () => {
+	it('should suppress propagation when signal changes but computed output is structurally unchanged', () => {
+		// count changes 0→2, but parity stays 'even' — equals should suppress effect rerun
+		const count = signal(0)
+		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
+			equals: (a, b) => a.parity === b.parity,
+		})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			obj()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		count(2) // signal changes → computed reruns → {parity: 'even'} again → equals suppresses
+		expect(runs).toHaveBeenCalledTimes(1)
+		dispose()
+	})
+
+	it('should allow propagation when computed output changes', () => {
+		// count changes 0→1, parity flips 'even'→'odd' — equals returns false, effect reruns
+		const count = signal(0)
+		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
+			equals: (a, b) => a.parity === b.parity,
+		})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			obj()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		count(1) // signal changes → computed reruns → {parity: 'odd'} → equals returns false → propagates
+		expect(runs).toHaveBeenCalledTimes(2)
+		dispose()
+	})
+
+	it('should always produce a value on first read regardless of equals', () => {
+		const count = signal(1)
+		const alwaysEqual = computed(() => ({value: count()}), {equals: () => true})
+		expect(alwaysEqual()).toEqual({value: 1})
+	})
+
+	it('should work with shallow equals — suppress when shape unchanged', () => {
+		// trigger changes but computed always returns same {x,y} shape
+		const trigger = signal(0)
+		const obj = computed(
+			() => {
+				trigger()
+				return {x: 1, y: 2}
+			},
+			{equals: shallow}
+		)
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			obj()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		trigger(1) // signal changes → computed reruns → new {x:1,y:2} ref → shallow equal → suppressed
+		expect(runs).toHaveBeenCalledTimes(1)
+		trigger(2)
+		expect(runs).toHaveBeenCalledTimes(1)
+		dispose()
 	})
 })

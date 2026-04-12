@@ -261,6 +261,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.state.selecting(undefined)
+	store.state.previousValue(newContent)
 
 	store.props.onChange()?.(newContent)
 

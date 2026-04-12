@@ -1,6 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {applySpanInput} from './InputFeature'
+import {Store} from '../../store/Store'
+import {applySpanInput, replaceAllContentWith} from './InputFeature'
 
 describe('applySpanInput()', () => {
 	it('should delete the next character when deleteContentForward has no target ranges', () => {
@@ -19,5 +20,18 @@ describe('applySpanInput()', () => {
 		expect(event.preventDefault).toHaveBeenCalledOnce()
 		expect(focus.content).toBe('')
 		expect(focus.caret).toBe(0)
+	})
+})
+
+describe('replaceAllContentWith()', () => {
+	it('sets previousValue to the new content', () => {
+		const store = new Store()
+		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal container stub
+		store.refs.container = {firstChild: null} as unknown as HTMLDivElement
+		store.state.previousValue('old value')
+
+		replaceAllContentWith(store, 'new content')
+
+		expect(store.state.previousValue()).toBe('new content')
 	})
 })
