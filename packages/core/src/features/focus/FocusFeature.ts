@@ -65,6 +65,8 @@ export class FocusFeature {
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined
 		this.#clickHandler = undefined
+
+		this.store.nodes.focus.clear()
 	}
 
 	#recover() {
