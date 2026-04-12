@@ -100,22 +100,24 @@ export class Store {
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
-		containerProps: computed(prev => {
-			const drag = !!this.props.drag()
-			const readOnly = this.props.readOnly()
-			const slotProps = this.props.slotProps()
-			const containerSlotProps = slotProps?.container
-			const baseStyle = merge(this.props.style(), containerSlotProps?.style)
-			const style =
-				drag && !readOnly ? (baseStyle ? {paddingLeft: 24, ...baseStyle} : {paddingLeft: 24}) : baseStyle
-			const {className: _cls, style: _sty, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
-			const next = {
-				className: cx(styles.Container, this.props.className(), containerSlotProps?.className),
-				style,
-				...otherSlotProps,
+		containerProps: computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>(
+			prev => {
+				const drag = !!this.props.drag()
+				const readOnly = this.props.readOnly()
+				const slotProps = this.props.slotProps()
+				const containerSlotProps = slotProps?.container
+				const baseStyle = merge(this.props.style(), containerSlotProps?.style)
+				const style =
+					drag && !readOnly ? (baseStyle ? {paddingLeft: 24, ...baseStyle} : {paddingLeft: 24}) : baseStyle
+				const {className: _cls, style: _sty, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
+				const next = {
+					className: cx(styles.Container, this.props.className(), containerSlotProps?.className),
+					style,
+					...otherSlotProps,
+				}
+				return prev && shallow(prev, next) ? prev : next
 			}
-			return prev && shallow(prev, next) ? prev : next
-		}),
+		),
 		blockComponent: computed(() => resolveSlot('block', this.props.slots())),
 		blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
 		spanComponent: computed(() => resolveSlot('span', this.props.slots())),
