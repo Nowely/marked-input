@@ -34,6 +34,6 @@ The Store is created by framework wrappers and passed to all features. Features 
 
 ## Readonly Props
 
-All `store.props` signals are created with `{readonly: true}`. Direct writes like `store.props.value('x')` are silently ignored at runtime. Only `setProps()` can mutate props — it uses `batch(fn, {writable: true})` to temporarily open the write gate.
+All `store.props` signals are created with `{readonly: true}`. Direct writes like `store.props.value('x')` are silently ignored at runtime. Only `setProps()` can mutate props — it uses `batch(fn, {mutable: true})` to temporarily open the write gate.
 
 This enforces the architectural rule: framework adapters (React/Vue `MarkedInput`) write props via `setProps()`; features and other consumers only read.

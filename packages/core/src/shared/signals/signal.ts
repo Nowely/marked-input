@@ -31,7 +31,7 @@ interface SignalOptions<T> {
 	readonly?: boolean
 }
 
-let writableScope = false
+let mutableScope = false
 
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	if (opts?.equals !== undefined) {
@@ -51,7 +51,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 		const callable = function signalCallable(...args: [T | undefined] | []) {
 			if (args.length) {
-				if (isReadonly && !writableScope) return
+				if (isReadonly && !mutableScope) return
 				if (args[0] === undefined) {
 					if (hasDefault && inner() === undefined) return
 					inner(undefined)
@@ -83,7 +83,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 	const callable = function signalCallable(...args: [T | undefined] | []) {
 		if (args.length) {
-			if (isReadonly && !writableScope) return
+			if (isReadonly && !mutableScope) return
 			const v = args[0]
 			if (v === undefined && hasDefault) {
 				if (inner() === undefined) return
@@ -214,17 +214,17 @@ export function watch<T>(
 // ---------------------------------------------------------------------------
 
 interface BatchOptions {
-	writable?: boolean
+	mutable?: boolean
 }
 
 export function batch(fn: () => void, opts?: BatchOptions): void {
-	const prevWritable = writableScope
-	if (opts?.writable) writableScope = true
+	const prevMutable = mutableScope
+	if (opts?.mutable) mutableScope = true
 	startBatch()
 	try {
 		fn()
 	} finally {
 		endBatch()
-		writableScope = prevWritable
+		mutableScope = prevMutable
 	}
 }

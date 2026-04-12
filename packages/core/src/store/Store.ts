@@ -219,7 +219,7 @@ export class Store {
 					props[key](values[key] as never)
 				}
 			},
-			{writable: true}
+			{mutable: true}
 		)
 	}
 }
