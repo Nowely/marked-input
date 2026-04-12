@@ -301,14 +301,12 @@ class Store {
     readonly computed: {
         hasMark: Computed<boolean>
         parser: Computed<Parser | undefined>
-        containerClass: Computed<string | undefined>
-        containerStyle: Computed<CSSProperties | undefined>
-    }
-
-    readonly slot: {
-        container: { use(): readonly [Component, SlotProps] }
-        block: { use(): readonly [Component, SlotProps] }
-        span: { use(): readonly [Component, SlotProps] }
+        containerComponent: Computed<Component>
+        containerProps: Computed<SlotProps | undefined>
+        blockComponent: Computed<Component>
+        blockProps: Computed<SlotProps | undefined>
+        spanComponent: Computed<Component>
+        spanProps: Computed<SlotProps | undefined>
     }
 
     readonly event: {

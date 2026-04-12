@@ -12,7 +12,7 @@ import type {Token} from '../features/parsing'
 import {ParseFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
-import type {MarkSlot, OverlaySlot, Slot} from '../features/slots'
+import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
@@ -99,28 +99,29 @@ export class Store {
 			const isDrag = !!this.props.drag()
 			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
 		}),
-		containerClass: computed(() =>
-			cx(styles.Container, this.props.className(), this.props.slotProps()?.container?.className)
+		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
+		containerProps: computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>(
+			prev => {
+				const drag = !!this.props.drag()
+				const readOnly = this.props.readOnly()
+				const slotProps = this.props.slotProps()
+				const containerSlotProps = slotProps?.container
+				const baseStyle = merge(this.props.style(), containerSlotProps?.style)
+				const style =
+					drag && !readOnly ? (baseStyle ? {paddingLeft: 24, ...baseStyle} : {paddingLeft: 24}) : baseStyle
+				const {className: _cls, style: _sty, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
+				const next = {
+					className: cx(styles.Container, this.props.className(), containerSlotProps?.className),
+					style,
+					...otherSlotProps,
+				}
+				return prev && shallow(prev, next) ? prev : next
+			}
 		),
-		containerStyle: computed(prev => {
-			const next = merge(this.props.style(), this.props.slotProps()?.container?.style)
-			return prev && shallow(prev, next) ? prev : next
-		}),
-		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
-		container: computed(() => [
-			resolveSlot('container', this.props.slots()),
-			resolveSlotProps('container', this.props.slotProps()),
-		]) as unknown as Slot,
-		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
-		block: computed(() => [
-			resolveSlot('block', this.props.slots()),
-			resolveSlotProps('block', this.props.slotProps()),
-		]) as unknown as Slot,
-		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment Slot with typed overloads; core satisfies the base interface
-		span: computed(() => [
-			resolveSlot('span', this.props.slots()),
-			resolveSlotProps('span', this.props.slotProps()),
-		]) as unknown as Slot,
+		blockComponent: computed(() => resolveSlot('block', this.props.slots())),
+		blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
+		spanComponent: computed(() => resolveSlot('span', this.props.slots())),
+		spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
 		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
 		overlay: computed(() => {
 			const Overlay = this.props.Overlay()
