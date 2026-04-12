@@ -6,10 +6,6 @@ import type {Token} from '../parsing'
 // Call signatures use unknown for the component type because the actual type
 // (ElementType in React, Component in Vue) is framework-specific.
 
-export interface Slot {
-	(): readonly [unknown, Record<string, unknown> | undefined]
-}
-
 export interface MarkSlot {
 	(): (token: Token) => readonly [unknown, unknown]
 }

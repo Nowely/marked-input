@@ -24,7 +24,7 @@ export {effect, event, signal, computed, watch, batch} from './src/shared/signal
 
 // Store
 export {Store} from './src/store'
-export type {Slot, MarkSlot, OverlaySlot} from './src/features/slots'
+export type {MarkSlot, OverlaySlot} from './src/features/slots'
 
 // Overlay
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
