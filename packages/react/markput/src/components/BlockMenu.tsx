@@ -13,8 +13,10 @@ import styles from '@markput/core/styles.module.css'
 export const BlockMenu = memo(({token}: {token: Token}) => {
 	const store = useStore()
 	const blockStore = store.blocks.get(token)
-	const menuOpen = useMarkput(() => blockStore.state.menuOpen)
-	const menuPosition = useMarkput(() => blockStore.state.menuPosition)
+	const {menuOpen, menuPosition} = useMarkput(() => ({
+		menuOpen: blockStore.state.menuOpen,
+		menuPosition: blockStore.state.menuPosition,
+	}))
 
 	if (!menuOpen) return null
 
