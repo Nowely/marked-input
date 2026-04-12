@@ -20,14 +20,16 @@ const blockComponent = useMarkput(s => s.computed.blockComponent)
 const slotProps = useMarkput(s => s.computed.blockProps)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 
-const blockStyle = computed(() => {
-	const style: CSSProperties = {
-		opacity: isDragging.value ? 0.4 : 1,
-	}
-	if (slotProps.value?.style) {
-		Object.assign(style, slotProps.value.style)
-	}
-	return style
+const blockStyle = computed(() => ({
+	opacity: isDragging.value ? 0.4 : 1,
+	...(slotProps.value?.style as CSSProperties | undefined),
+}))
+
+// Strip style and className before v-bind to avoid double-application
+const otherSlotProps = computed(() => {
+	if (!slotProps.value) return undefined
+	const {style: _s, className: _c, ...rest} = slotProps.value
+	return Object.keys(rest).length > 0 ? rest : undefined
 })
 </script>
 
@@ -36,7 +38,7 @@ const blockStyle = computed(() => {
 		:is="blockComponent"
 		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, store.event)"
 		data-testid="block"
-		v-bind="slotProps"
+		v-bind="otherSlotProps"
 		:class="styles.Block"
 		:style="blockStyle"
 	>
