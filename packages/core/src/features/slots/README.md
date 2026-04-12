@@ -12,19 +12,25 @@ Resolver utilities that implement the component slot/customization system — al
 
 ## Usage
 
-Slot derivations live on `store.computed` as `Computed<T>` values:
+Named slot computeds live on `store.computed` as separate `component` and `props` values:
 
 ```typescript
-// Named slots (parameterless) — return [Component, props] tuples directly
-const [Container, containerProps] = store.computed.container.use()
-const [Block, blockProps] = store.computed.block.use()
-const [Span, spanProps] = store.computed.span.use()
+// Named slots — component and fully-resolved props are separate computeds
+const Component = store.computed.containerComponent()
+const props = store.computed.containerProps()
+// props includes className, style (with drag paddingLeft), and data-* slotProps
 
-// Parameterized slots — .use() returns a resolver function, call it with the argument
-const resolveMarkSlot = store.computed.mark.use()
-const [Component, props] = resolveMarkSlot(token)
+const BlockComponent = store.computed.blockComponent()
+const blockProps = store.computed.blockProps()  // raw slotProps only
 
-const resolveOverlay = store.computed.overlay.use()
+const SpanComponent = store.computed.spanComponent()
+const spanProps = store.computed.spanProps()    // raw slotProps only
+
+// Parameterized slots — call() returns a resolver function, call it with the argument
+const resolveMarkSlot = store.computed.mark()
+const [MarkComponent, markProps] = resolveMarkSlot(token)
+
+const resolveOverlay = store.computed.overlay()
 const [Overlay, overlayProps] = resolveOverlay(option, defaultComponent)
 ```
 
