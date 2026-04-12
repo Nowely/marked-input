@@ -4,6 +4,7 @@ import {useEffect, useMemo, useRef} from 'react'
 
 import {useStore} from '../providers/StoreContext'
 import {useToken} from '../providers/TokenContext'
+import {useMarkput} from './useMarkput'
 
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
 	const store = useStore()
@@ -15,7 +16,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 
 	useUncontrolledInit(ref, options, token)
 
-	const readOnly = store.props.readOnly.use()
+	const readOnly = useMarkput(s => s.props.readOnly)
 	useEffect(() => {
 		mark.readOnly = readOnly
 	}, [mark, readOnly])

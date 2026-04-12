@@ -1,25 +1,30 @@
 import {memo, useLayoutEffect} from 'react'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/providers/StoreContext'
 import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
 	const store = useStore()
-	const drag = store.props.drag.use()
-	const tokens = store.state.tokens.use()
+
+	const {drag, tokens, className, style, readOnly, container} = useMarkput(s => ({
+		drag: s.props.drag,
+		tokens: s.state.tokens,
+		className: s.computed.containerClass,
+		style: s.computed.containerStyle,
+		readOnly: s.props.readOnly,
+		container: s.computed.container,
+	}))
 
 	useLayoutEffect(() => {
 		store.event.afterTokensRendered()
 	}, [tokens])
 
-	const className = store.computed.containerClass.use()
-	const style = store.computed.containerStyle.use()
-	const readOnly = store.props.readOnly.use()
 	const key = store.key
 	const refs = store.refs
 
-	const [ContainerComponent, containerProps] = store.computed.container.use()
+	const [ContainerComponent, containerProps] = container
 
 	const containerStyle = drag && !readOnly ? (style ? {paddingLeft: 24, ...style} : {paddingLeft: 24}) : style
 

@@ -5,6 +5,7 @@ import {useCallback, useMemo} from 'react'
 
 import type {Option} from '../../types'
 import {useStore} from '../providers/StoreContext'
+import {useMarkput} from './useMarkput'
 
 export interface OverlayHandler {
 	style: {
@@ -19,7 +20,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const match = store.state.overlayMatch.use()
+	const match = useMarkput(s => s.state.overlayMatch)
 	if (!match) throw new Error('useOverlay requires an active overlay match')
 	const style = useMemo(() => Caret.getAbsolutePosition(), [match])
 
