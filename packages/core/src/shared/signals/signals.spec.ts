@@ -1,8 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {effect} from './alien-signals'
-import {setUseHookFactory, getUseHookFactory} from './registry'
-import type {UseHookFactory} from './registry'
 import {signal, watch, event, batch} from './signal'
 
 // Helper to track and dispose effects created during tests
@@ -122,32 +120,10 @@ describe('signal<T>', () => {
 		expect(captured).toBe(42)
 	})
 
-	it('.use() should throw if setUseHookFactory was not called', () => {
-		// getUseHookFactory throws when no factory is registered.
-		// Since the factory is module-level state and may be set by other tests,
-		// we verify the error message format by temporarily clearing it.
-		// We do this by setting a known factory, then verifying the throw path
-		// exists in the source. Instead, we just call .use() on a signal before
-		// any factory is set — this test must run first in the describe block.
-		//
-		// Since test ordering within a describe is sequential and no prior test
-		// in this block calls setUseHookFactory, getUseHookFactory should throw.
-		expect(() => getUseHookFactory()).toThrowError(
-			'[markput] setUseHookFactory() must be called before using signal.use()'
-		)
-	})
-
-	it('.use() should call the registered factory and return its result', () => {
-		const mockHook = vi.fn(() => 'hook-result')
-		const factory: UseHookFactory = vi.fn(() => mockHook)
-		setUseHookFactory(factory)
-
-		const s = signal(99)
-		const result = s.use()
-
-		expect(factory).toHaveBeenCalledWith(s)
-		expect(mockHook).toHaveBeenCalled()
-		expect(result).toBe('hook-result')
+	it('should not have a .use() method', () => {
+		const s = signal(1)
+		// @ts-expect-error -- .use() must not exist on Signal after this refactor
+		expect(typeof s.use).toBe('undefined')
 	})
 
 	describe('default fallback', () => {
@@ -172,22 +148,6 @@ describe('signal<T>', () => {
 			expect(s()).toBe('hello')
 			s(undefined)
 			expect(s()).toBeUndefined()
-		})
-
-		it('should work with .use() returning default', () => {
-			let readSignal: (() => boolean) | undefined
-			const mockHook = vi.fn(() => readSignal?.())
-			const factory: UseHookFactory = s => {
-				// oxlint-disable-next-line no-unsafe-type-assertion -- test mocks the signal as a callable
-				readSignal = s as () => boolean
-				return mockHook
-			}
-			setUseHookFactory(factory)
-
-			const s = signal<boolean>(false)
-			s(undefined)
-			const result = s.use()
-			expect(result).toBe(false)
 		})
 
 		it('should work with equals: false and default fallback', () => {
@@ -444,17 +404,10 @@ describe('event<T>()', () => {
 		expect(count).toBe(1)
 	})
 
-	it('.use() should call the registered factory', () => {
-		const mockHook = vi.fn(() => 'event-hook')
-		const factory: UseHookFactory = vi.fn(() => mockHook)
-		setUseHookFactory(factory)
-
+	it('should not have a .use() method', () => {
 		const ev = event<number>()
-		const result = ev.use()
-
-		expect(factory).toHaveBeenCalledWith(ev.read)
-		expect(mockHook).toHaveBeenCalled()
-		expect(result).toBe('event-hook')
+		// @ts-expect-error -- .use() must not exist on Event after this refactor
+		expect(typeof ev.use).toBe('undefined')
 	})
 })
 
@@ -617,17 +570,5 @@ describe('watch()', () => {
 		s('c')
 
 		expect(seen).toEqual(['b', 'c'])
-	})
-})
-
-// ---------------------------------------------------------------------------
-// registry — setUseHookFactory / getUseHookFactory
-// ---------------------------------------------------------------------------
-
-describe('registry', () => {
-	it('getUseHookFactory should not throw once a factory has been set', async () => {
-		// setUseHookFactory was called in earlier tests in this suite.
-		// Verify it does not throw when a factory is already registered.
-		expect(() => getUseHookFactory()).not.toThrow()
 	})
 })
