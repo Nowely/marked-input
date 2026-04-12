@@ -1,4 +1,5 @@
 import type {Token as TokenType} from '@markput/core'
+import type {ElementType} from 'react'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -19,10 +20,12 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 	const store = useStore()
 	const blockStore = store.blocks.get(token)
 
-	const container = useMarkput(s => s.computed.block)
+	// oxlint-disable-next-line no-unsafe-type-assertion -- Slot returns [unknown, ...] in core; React-specific type asserted here
+	const [ContainerComponent, containerProps] = useMarkput(s => s.computed.block) as readonly [
+		ElementType,
+		Record<string, unknown> | undefined,
+	]
 	const isDragging = useMarkput(() => blockStore.state.isDragging)
-
-	const [ContainerComponent, containerProps] = container
 
 	return (
 		<ContainerComponent
