@@ -499,6 +499,37 @@ export function batch(fn: () => void, opts?: BatchOptions): void {
 }
 
 // ---------------------------------------------------------------------------
+// trigger() — re-run code that reads signals and propagate the result
+// ---------------------------------------------------------------------------
+
+export function trigger(fn: () => void) {
+	const sub: ReactiveNode = {
+		deps: undefined,
+		depsTail: undefined,
+		flags: ReactiveFlags.Watching,
+	}
+	const prevSub = setActiveSub(sub)
+	try {
+		fn()
+	} finally {
+		activeSub = prevSub
+		let dep = sub.deps
+		while (dep !== undefined) {
+			const subs = dep.dep.subs
+			dep = unlink(dep, sub)
+			if (subs !== undefined) {
+				sub.flags = ReactiveFlags.None
+				propagate(subs)
+				shallowPropagate(subs)
+			}
+		}
+		if (!batchDepth) {
+			flush()
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // untracked() — run a function without tracking reactive dependencies
 // ---------------------------------------------------------------------------
 
