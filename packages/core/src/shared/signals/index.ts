@@ -1,3 +1,2 @@
-export {signal, computed, effect, event, watch, batch} from './signal'
+export {signal, computed, effect, effectScope, event, watch, batch, untracked} from './signal'
 export type {Signal, Computed, Event, SignalValues} from './signal'
-export {effectScope, setActiveSub} from './alien-signals'
