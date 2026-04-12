@@ -47,3 +47,4 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 	const {subscribe, getSnapshot} = stableRef.current
 	return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
+
