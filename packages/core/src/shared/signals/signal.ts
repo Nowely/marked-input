@@ -111,8 +111,21 @@ export interface Computed<T> {
 	(): T
 }
 
-export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
-	const inner = alienComputed(getter)
+interface ComputedOptions<T> {
+	equals?: (a: T, b: T) => boolean
+}
+
+export function computed<T>(getter: (previousValue?: T) => T, opts?: ComputedOptions<T>): Computed<T> {
+	const equalsFn = opts?.equals
+	const resolvedGetter =
+		equalsFn !== undefined
+			? (prev?: T): T => {
+					const next = getter(prev)
+					return prev !== undefined && equalsFn(prev, next) ? prev : next
+				}
+			: getter
+
+	const inner = alienComputed(resolvedGetter)
 
 	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
 	const callable = function computedCallable(): T {
