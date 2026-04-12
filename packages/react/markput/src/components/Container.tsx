@@ -9,19 +9,14 @@ import {Token} from './Token'
 export const Container = memo(() => {
 	const store = useStore()
 
-	const {drag, tokens, className, style, readOnly} = useMarkput(s => ({
+	const {drag, tokens} = useMarkput(s => ({
 		drag: s.props.drag,
 		tokens: s.state.tokens,
-		className: s.computed.containerClass,
-		style: s.computed.containerStyle,
-		readOnly: s.props.readOnly,
 	}))
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- Slot returns [unknown, ...] in core; React-specific type asserted here
-	const [ContainerComponent, containerProps] = useMarkput(s => s.computed.container) as readonly [
-		ElementType,
-		Record<string, unknown> | undefined,
-	]
+	// oxlint-disable-next-line no-unsafe-type-assertion -- containerComponent returns unknown in core; React ElementType asserted here
+	const Component = useMarkput(s => s.computed.containerComponent) as ElementType
+	const props = useMarkput(s => s.computed.containerProps)
 
 	useLayoutEffect(() => {
 		store.event.afterTokensRendered()
@@ -30,19 +25,12 @@ export const Container = memo(() => {
 	const key = store.key
 	const refs = store.refs
 
-	const containerStyle = drag && !readOnly ? (style ? {paddingLeft: 24, ...style} : {paddingLeft: 24}) : style
-
 	return (
-		<ContainerComponent
-			ref={(el: HTMLDivElement | null) => (refs.container = el)}
-			{...containerProps}
-			className={className}
-			style={containerStyle}
-		>
+		<Component ref={(el: HTMLDivElement | null) => (refs.container = el)} {...props}>
 			{drag
 				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}
-		</ContainerComponent>
+		</Component>
 	)
 })
 
