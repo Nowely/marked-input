@@ -6,34 +6,34 @@ Review of `@markput/core` store and related code — reactive signals, features,
 
 ### P0 — Bugs (must fix)
 
-| # | Issue | File(s) | Approach |
-|---|-------|---------|----------|
-| 1 | FocusFeature leaks 2 watch subscriptions per enable/disable cycle | `FocusFeature.ts:40-48` | Wrap both `watch()` calls in `effectScope`, store and dispose in `disable()` |
-| 2 | DragFeature double-enable leaks watcher | `DragFeature.ts:13-14` | Add `if (this.#unsub) return` guard at top of `enable()` |
-| 3 | `isCaretAtBeginning`/`isCaretAtEnd` return `undefined` as falsy boolean | `NodeProxy.ts:37-48` | Change early returns to `return false` |
-| 4 | `replaceAllContentWith` bypasses change pipeline, never sets `previousValue` | `InputFeature.ts:261-290` | Route through `store.state.innerValue()` or explicitly set `previousValue` |
-| 5 | `FocusFeature.disable()` leaves stale DOM ref in `nodes.focus` | `FocusFeature.ts:51-62` | Add `this.store.nodes.focus.clear()` in `disable()` |
+| #   | Issue                                                                        | File(s)                   | Approach                                                                     |
+| --- | ---------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------------- |
+| 1   | FocusFeature leaks 2 watch subscriptions per enable/disable cycle            | `FocusFeature.ts:40-48`   | Wrap both `watch()` calls in `effectScope`, store and dispose in `disable()` |
+| 2   | DragFeature double-enable leaks watcher                                      | `DragFeature.ts:13-14`    | Add `if (this.#unsub) return` guard at top of `enable()`                     |
+| 3   | `isCaretAtBeginning`/`isCaretAtEnd` return `undefined` as falsy boolean      | `NodeProxy.ts:37-48`      | Change early returns to `return false`                                       |
+| 4   | `replaceAllContentWith` bypasses change pipeline, never sets `previousValue` | `InputFeature.ts:261-290` | Route through `store.state.innerValue()` or explicitly set `previousValue`   |
+| 5   | `FocusFeature.disable()` leaves stale DOM ref in `nodes.focus`               | `FocusFeature.ts:51-62`   | Add `this.store.nodes.focus.clear()` in `disable()`                          |
 
 ### P1 — Inconsistencies (should fix)
 
-| # | Issue | File(s) | Approach |
-|---|-------|---------|----------|
-| 6 | No standard enable-guard convention | All features | Adopt `effectScope`-based `if (this.#scope) return` as canonical pattern; for DOM-only features use handler check |
-| 7 | Inconsistent disable() cleanup ordering | All features | Standardize order: reset state -> remove DOM listeners -> dispose scope -> null refs |
-| 8 | NodeProxy `length` returns `-1` vs `content` returns `''` | `NodeProxy.ts:67` | Change `length` to return `0` when no target |
-| 9 | `seq` vs `id` for same uniqueness-counter concept | `signal.ts:45,177` | Unify to one name (recommend `seq`) |
-| 10 | `attachContainer`/`attachGrip` duplicate preamble | `BlockStore.ts:28-29,72-73` | Extract shared setup to private method |
+| #   | Issue                                                     | File(s)                     | Approach                                                                                                          |
+| --- | --------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 6   | No standard enable-guard convention                       | All features                | Adopt `effectScope`-based `if (this.#scope) return` as canonical pattern; for DOM-only features use handler check |
+| 7   | Inconsistent disable() cleanup ordering                   | All features                | Standardize order: reset state -> remove DOM listeners -> dispose scope -> null refs                              |
+| 8   | NodeProxy `length` returns `-1` vs `content` returns `''` | `NodeProxy.ts:67`           | Change `length` to return `0` when no target                                                                      |
+| 9   | `seq` vs `id` for same uniqueness-counter concept         | `signal.ts:45,177`          | Unify to one name (recommend `seq`)                                                                               |
+| 10  | `attachContainer`/`attachGrip` duplicate preamble         | `BlockStore.ts:28-29,72-73` | Extract shared setup to private method                                                                            |
 
 ### P2 — Readability (nice to fix)
 
-| # | Issue | File(s) | Approach |
-|---|-------|---------|----------|
-| 11 | `signal()` 106 lines, 3 near-identical branches | `signal.ts:36-142` | Refactor to single path parameterized by equality function |
-| 12 | `BlockRegistry.get` has silent create semantics | `BlockRegistry.ts:6` | Rename to `getOrCreate` |
-| 13 | `_cls`/`_sty` destructuring unexplained | `Store.ts:112` | Add comment: "Strip className/style to avoid duplicate keys in spread" |
-| 14 | Bare `return` statements | `NodeProxy.ts:97,103` | Remove dead trailing `return` |
-| 15 | `#blockIndex` defaults to `0` (valid index) | `BlockStore.ts:21` | Change to `-1` or add comment |
-| 16 | `Span`/`Mark`/`Overlay` typed as `Signal<unknown>` | `Store.ts:60-62` | Create `type FrameworkComponent = unknown` alias to document intent |
+| #   | Issue                                              | File(s)               | Approach                                                               |
+| --- | -------------------------------------------------- | --------------------- | ---------------------------------------------------------------------- |
+| 11  | `signal()` 106 lines, 3 near-identical branches    | `signal.ts:36-142`    | Refactor to single path parameterized by equality function             |
+| 12  | `BlockRegistry.get` has silent create semantics    | `BlockRegistry.ts:6`  | Rename to `getOrCreate`                                                |
+| 13  | `_cls`/`_sty` destructuring unexplained            | `Store.ts:112`        | Add comment: "Strip className/style to avoid duplicate keys in spread" |
+| 14  | Bare `return` statements                           | `NodeProxy.ts:97,103` | Remove dead trailing `return`                                          |
+| 15  | `#blockIndex` defaults to `0` (valid index)        | `BlockStore.ts:21`    | Change to `-1` or add comment                                          |
+| 16  | `Span`/`Mark`/`Overlay` typed as `Signal<unknown>` | `Store.ts:60-62`      | Create `type FrameworkComponent = unknown` alias to document intent    |
 
 ## Detailed Findings
 
@@ -76,15 +76,15 @@ On disable, DOM listeners are removed but `store.nodes.focus.target` is not clea
 
 Features use three different patterns to prevent double-enable:
 
-| Pattern | Features |
-|---|---|
-| `if (this.#scope) return` | SystemListenerFeature, OverlayFeature, ContentEditableFeature, ParseFeature |
+| Pattern                     | Features                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `if (this.#scope) return`   | SystemListenerFeature, OverlayFeature, ContentEditableFeature, ParseFeature    |
 | `if (this.#handler) return` | FocusFeature, ArrowNavFeature, InputFeature, CopyFeature, TextSelectionFeature |
-| No guard | DragFeature |
+| No guard                    | DragFeature                                                                    |
 
 ### P1-7: Inconsistent disable() cleanup ordering
 
-- TextSelectionFeature resets `selecting` state *before* disposing scope (intentional but undocumented — so ContentEditableFeature.sync() still fires)
+- TextSelectionFeature resets `selecting` state _before_ disposing scope (intentional but undocumented — so ContentEditableFeature.sync() still fires)
 - SystemListenerFeature disposes scope first, then nulls it
 - OverlayFeature removes DOM listeners, then calls `#disableClose()`, then disposes scope
 - Some guard with `if (!container || !this.#handler)` and skip cleanup entirely; others use `?.`
@@ -107,6 +107,7 @@ Both serve the identical purpose (uniqueness counter to force reactivity), diffe
 ### P1-10: `attachContainer`/`attachGrip` duplicate preamble
 
 `BlockStore.ts:28-29` and `72-73` both start with:
+
 ```typescript
 this.#blockIndex = blockIndex
 this.#dragAction = actions.dragAction
@@ -138,10 +139,10 @@ this.#dragAction = actions.dragAction
 
 ## Rejected Issues (verified invalid)
 
-| Issue | Reason |
-|---|---|
-| CopyFeature missing enable guard | Has `if (this.#copyHandler) return` at line 39 |
+| Issue                                    | Reason                                                    |
+| ---------------------------------------- | --------------------------------------------------------- |
+| CopyFeature missing enable guard         | Has `if (this.#copyHandler) return` at line 39            |
 | BlockRegistry WeakMap losing BlockStores | Framework ref callbacks handle cleanup via `attach(null)` |
-| BlockStore document-level listener leaks | Cleaned via `attachMenu(null)` from framework lifecycle |
-| NodeProxy.textContent null | Never null for HTMLElement at runtime |
-| signal() can't store undefined | Intentional default-fallback design for props |
+| BlockStore document-level listener leaks | Cleaned via `attachMenu(null)` from framework lifecycle   |
+| NodeProxy.textContent null               | Never null for HTMLElement at runtime                     |
+| signal() can't store undefined           | Intentional default-fallback design for props             |

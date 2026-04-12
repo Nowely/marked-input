@@ -36,6 +36,29 @@ import styles from '../../styles.module.css'
 
 export type {DragAction} from '../shared/types'
 
+const DRAG_HANDLE_WIDTH = 24
+
+function buildContainerProps(
+	drag: boolean,
+	readOnly: boolean,
+	className: string | undefined,
+	style: CSSProperties | undefined,
+	slotProps: CoreSlotProps | undefined
+): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
+	const containerSlotProps = slotProps?.container
+	const baseStyle = merge(style, containerSlotProps?.style)
+	const mergedStyle = drag && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+
+	// Strip className/style from resolved slotProps — merged explicitly above to avoid duplicate keys
+	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
+
+	return {
+		className: cx(styles.Container, className, containerSlotProps?.className),
+		style: mergedStyle,
+		...otherSlotProps,
+	}
+}
+
 export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
@@ -102,19 +125,13 @@ export class Store {
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>(
 			prev => {
-				const drag = !!this.props.drag()
-				const readOnly = this.props.readOnly()
-				const slotProps = this.props.slotProps()
-				const containerSlotProps = slotProps?.container
-				const baseStyle = merge(this.props.style(), containerSlotProps?.style)
-				const style =
-					drag && !readOnly ? (baseStyle ? {paddingLeft: 24, ...baseStyle} : {paddingLeft: 24}) : baseStyle
-				const {className: _cls, style: _sty, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
-				const next = {
-					className: cx(styles.Container, this.props.className(), containerSlotProps?.className),
-					style,
-					...otherSlotProps,
-				}
+				const next = buildContainerProps(
+					!!this.props.drag(),
+					this.props.readOnly(),
+					this.props.className(),
+					this.props.style(),
+					this.props.slotProps()
+				)
 				return prev && shallow(prev, next) ? prev : next
 			}
 		),
