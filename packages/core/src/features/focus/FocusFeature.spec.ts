@@ -58,4 +58,16 @@ describe('FocusFeature', () => {
 			store.features.focus.disable()
 		})
 	})
+
+	describe('subscription lifecycle', () => {
+		it('does not fire afterTokensRendered watcher after disable', () => {
+			store.features.focus.enable()
+			store.features.focus.disable()
+
+			const syncSpy = vi.spyOn(store.event, 'sync')
+			store.event.afterTokensRendered()
+
+			expect(syncSpy).not.toHaveBeenCalled()
+		})
+	})
 })
