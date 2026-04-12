@@ -11,12 +11,12 @@ Design principles:
 
 ## Conceptual Model
 
-| Primitive | Models | Equality check | Re-propagates on same value? |
-|---|---|---|---|
-| `signal<T>` | State | `===` (or custom `equals`) | No |
-| `computed<T>` | Derived state | `===` (or custom `equals`) | No |
-| `event<T>` | Occurrences | None | Always |
-| `effect()` | Side-effects | — | — |
+| Primitive     | Models        | Equality check             | Re-propagates on same value? |
+| ------------- | ------------- | -------------------------- | ---------------------------- |
+| `signal<T>`   | State         | `===` (or custom `equals`) | No                           |
+| `computed<T>` | Derived state | `===` (or custom `equals`) | No                           |
+| `event<T>`    | Occurrences   | None                       | Always                       |
+| `effect()`    | Side-effects  | —                          | —                            |
 
 ## API
 
@@ -29,9 +29,9 @@ import {signal} from './signals'
 
 const count = signal(0)
 
-count()    // 0 — read
-count(1)   // write
-count()    // 1
+count() // 0 — read
+count(1) // write
+count() // 1
 ```
 
 **Default fallback.** If the signal was created with a non-`undefined` initial value, setting it to `undefined` reverts to that initial value:
@@ -47,16 +47,19 @@ Signals created with `undefined` as initial have no default fallback — `undefi
 **Options:**
 
 ```ts
-signal({id: 1, name: 'alice'}, {
-  equals: (a, b) => a.id === b.id, // custom equality — skips propagation when true
-  readonly: true,                   // ignores direct writes (see batch with mutable)
-})
+signal(
+    {id: 1, name: 'alice'},
+    {
+        equals: (a, b) => a.id === b.id, // custom equality — skips propagation when true
+        readonly: true, // ignores direct writes (see batch with mutable)
+    }
+)
 ```
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `equals` | `(a: T, b: T) => boolean` | `===` | Return `true` to suppress propagation |
-| `readonly` | `boolean` | `false` | Block writes except inside `batch(fn, {mutable: true})` |
+| Option     | Type                      | Default | Description                                             |
+| ---------- | ------------------------- | ------- | ------------------------------------------------------- |
+| `equals`   | `(a: T, b: T) => boolean` | `===`   | Return `true` to suppress propagation                   |
+| `readonly` | `boolean`                 | `false` | Block writes except inside `batch(fn, {mutable: true})` |
 
 ### `computed<T>(getter, options?)`
 
@@ -66,16 +69,19 @@ Creates a lazily-evaluated derived value. The getter receives the previous value
 const count = signal(1)
 const doubled = computed(() => count() * 2)
 
-doubled()  // 2 — computed on first read
+doubled() // 2 — computed on first read
 count(5)
-doubled()  // 10 — recomputed because `count` changed
+doubled() // 10 — recomputed because `count` changed
 ```
 
 Computeds are **cached** — the getter only re-runs when a dependency changes and the result is read again:
 
 ```ts
 let calls = 0
-const expensive = computed(() => { calls++; return count() * 2 })
+const expensive = computed(() => {
+    calls++
+    return count() * 2
+})
 
 expensive()
 expensive()
@@ -105,15 +111,12 @@ const count = computed((prev = 0) => items().length)
 **Options:**
 
 ```ts
-const obj = computed(
-  () => ({parity: count() % 2 === 0 ? 'even' : 'odd'}),
-  {equals: (a, b) => a.parity === b.parity}
-)
+const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {equals: (a, b) => a.parity === b.parity})
 ```
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `equals` | `(a: T, b: T) => boolean` | `===` | Return `true` to suppress downstream propagation |
+| Option   | Type                      | Default | Description                                      |
+| -------- | ------------------------- | ------- | ------------------------------------------------ |
+| `equals` | `(a: T, b: T) => boolean` | `===`   | Return `true` to suppress downstream propagation |
 
 ### `event<T>()`
 
@@ -125,8 +128,8 @@ const onReset = event() // void event
 
 // Subscribe
 effect(() => {
-  const payload = onClick.read()
-  // payload is undefined before first emit
+    const payload = onClick.read()
+    // payload is undefined before first emit
 })
 
 // Emit
@@ -149,7 +152,7 @@ Runs `fn` immediately, auto-tracks any signal/computed/event reads inside it, an
 const count = signal(0)
 
 const dispose = effect(() => {
-  console.log(count())
+    console.log(count())
 })
 // Console: 0 — runs immediately
 
@@ -168,11 +171,11 @@ const show = signal(true)
 const count = signal(0)
 
 effect(() => {
-  if (show()) {
-    effect(() => {
-      console.log(count())
-    }) // inner effect created
-  }
+    if (show()) {
+        effect(() => {
+            console.log(count())
+        }) // inner effect created
+    }
 })
 // Console: 0
 
@@ -180,7 +183,7 @@ count(1)
 // Console: 1
 
 show(false) // inner effect is cleaned up
-count(2)    // no output — inner effect no longer exists
+count(2) // no output — inner effect no longer exists
 ```
 
 ### `effectScope(fn)`
@@ -191,8 +194,8 @@ Creates a scope that collects all effects created inside `fn`. Calling the retur
 const count = signal(0)
 
 const stop = effectScope(() => {
-  effect(() => console.log(`A: ${count()}`))
-  effect(() => console.log(`B: ${count()}`))
+    effect(() => console.log(`A: ${count()}`))
+    effect(() => console.log(`B: ${count()}`))
 })
 // Console: A: 0, B: 0
 
@@ -211,7 +214,7 @@ Watches a reactive source for changes. Skips the first run (unlike `effect`), an
 const count = signal(0)
 
 const dispose = watch(count, (newVal, oldVal) => {
-  console.log(`${oldVal} -> ${newVal}`)
+    console.log(`${oldVal} -> ${newVal}`)
 })
 
 count(1) // Console: 0 -> 1
@@ -221,9 +224,18 @@ count(5) // Console: 1 -> 5
 Accepts three source types:
 
 ```ts
-watch(mySignal, (val, prev) => { /* ... */ })
-watch(myEvent, (val, prev) => { /* ... */ })
-watch(() => myComputed(), (val, prev) => { /* ... */ })
+watch(mySignal, (val, prev) => {
+    /* ... */
+})
+watch(myEvent, (val, prev) => {
+    /* ... */
+})
+watch(
+    () => myComputed(),
+    (val, prev) => {
+        /* ... */
+    }
+)
 ```
 
 The callback runs inside `untracked()` — reads inside the callback do not create subscriptions.
@@ -241,9 +253,9 @@ effect(() => console.log(sum()))
 // Console: 3
 
 batch(() => {
-  a(10)
-  b(20)
-  // sum not yet recomputed
+    a(10)
+    b(20)
+    // sum not yet recomputed
 })
 // Console: 30 — single update
 ```
@@ -254,22 +266,28 @@ batch(() => {
 const config = signal('default', {readonly: true})
 
 batch(() => {
-  config('override')        // ignored — not mutable
+    config('override') // ignored — not mutable
 })
 
-batch(() => {
-  config('override')
-}, {mutable: true})         // allowed
+batch(
+    () => {
+        config('override')
+    },
+    {mutable: true}
+) // allowed
 ```
 
 Nested batches restore the mutable scope correctly:
 
 ```ts
 batch(() => {
-  batch(() => {
-    config('a') // allowed — inner mutable
-  }, {mutable: true})
-  config('b') // ignored — outer is not mutable
+    batch(
+        () => {
+            config('a') // allowed — inner mutable
+        },
+        {mutable: true}
+    )
+    config('b') // ignored — outer is not mutable
 })
 ```
 
@@ -283,11 +301,11 @@ const length = computed(() => arr().length)
 
 length() // 0
 
-arr().push(1)   // direct mutation — signal doesn't know it changed
-length()         // still 0 — cached
+arr().push(1) // direct mutation — signal doesn't know it changed
+length() // still 0 — cached
 
 trigger(() => {
-  arr() // read `arr` so trigger knows what to propagate
+    arr() // read `arr` so trigger knows what to propagate
 })
 length() // 1 — propagated
 ```
@@ -301,8 +319,8 @@ const a = signal(1)
 const b = signal(2)
 
 effect(() => {
-  a()                   // tracked
-  untracked(() => b())  // not tracked
+    a() // tracked
+    untracked(() => b()) // not tracked
 })
 
 b(10) // no effect re-run — b was read inside untracked
@@ -314,8 +332,8 @@ b(10) // no effect re-run — b was read inside untracked
 
 ```ts
 interface Signal<T> {
-  (): T                  // read
-  (value: T | undefined): void // write
+    (): T // read
+    (value: T | undefined): void // write
 }
 ```
 
@@ -323,7 +341,7 @@ interface Signal<T> {
 
 ```ts
 interface Computed<T> {
-  (): T // read
+    (): T // read
 }
 ```
 
@@ -331,8 +349,8 @@ interface Computed<T> {
 
 ```ts
 interface Event<T = void> {
-  (payload: T): void      // emit
-  read(): T | undefined   // read (auto-tracks)
+    (payload: T): void // emit
+    read(): T | undefined // read (auto-tracks)
 }
 ```
 
@@ -342,9 +360,9 @@ Extracts the raw value types from a record of signals/computeds:
 
 ```ts
 type State = {
-  count: Signal<number>
-  name: Signal<string>
-  total: Computed<number>
+    count: Signal<number>
+    name: Signal<string>
+    total: Computed<number>
 }
 
 type Values = SignalValues<State>
@@ -362,13 +380,13 @@ Event  ──link──> Effect
 
 The core algorithm lives in [`alien-signals/system.ts`](./alien-signals/system.ts) and provides:
 
-| Function | Purpose |
-|---|---|
-| `link(dep, sub, version)` | Create or confirm a dependency edge |
-| `unlink(link)` | Remove a dependency edge; calls `unwatched` if dep loses all subs |
-| `propagate(link)` | Walk the subscriber graph, marking nodes Pending/Dirty |
-| `checkDirty(link, sub)` | Recursively verify whether deps actually changed |
-| `shallowPropagate(link)` | Upgrade Pending subs to Dirty without recursing |
+| Function                  | Purpose                                                           |
+| ------------------------- | ----------------------------------------------------------------- |
+| `link(dep, sub, version)` | Create or confirm a dependency edge                               |
+| `unlink(link)`            | Remove a dependency edge; calls `unwatched` if dep loses all subs |
+| `propagate(link)`         | Walk the subscriber graph, marking nodes Pending/Dirty            |
+| `checkDirty(link, sub)`   | Recursively verify whether deps actually changed                  |
+| `shallowPropagate(link)`  | Upgrade Pending subs to Dirty without recursing                   |
 
 This module wires those primitives through `createReactiveSystem()`, providing the `update`, `notify`, and `unwatched` callbacks that implement the signal/computed/event-specific behavior.
 
@@ -376,15 +394,15 @@ This module wires those primitives through `createReactiveSystem()`, providing t
 
 This module extends the [alien-signals](./alien-signals/) reference API with:
 
-| Feature | alien-signals | This module |
-|---|---|---|
-| Custom `equals` on signal | No | Yes |
-| Custom `equals` on computed | No | Yes |
-| `readonly` signals | No | Yes |
-| Default fallback on `undefined` | No | Yes |
-| `event<T>()` primitive | No | Yes |
-| `watch()` with old/new values | No | Yes |
-| `batch()` with `{mutable}` scope | No | Yes |
-| Effect scopes | Yes | Yes |
-| `trigger()` | Yes | Yes |
-| `untracked()` | No | Yes |
+| Feature                          | alien-signals | This module |
+| -------------------------------- | ------------- | ----------- |
+| Custom `equals` on signal        | No            | Yes         |
+| Custom `equals` on computed      | No            | Yes         |
+| `readonly` signals               | No            | Yes         |
+| Default fallback on `undefined`  | No            | Yes         |
+| `event<T>()` primitive           | No            | Yes         |
+| `watch()` with old/new values    | No            | Yes         |
+| `batch()` with `{mutable}` scope | No            | Yes         |
+| Effect scopes                    | Yes           | Yes         |
+| `trigger()`                      | Yes           | Yes         |
+| `untracked()`                    | No            | Yes         |
