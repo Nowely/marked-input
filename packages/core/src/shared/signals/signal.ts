@@ -1,13 +1,305 @@
-import {
-	signal as alienSignal,
-	effect as alienEffect,
-	computed as alienComputed,
-	setActiveSub,
-	startBatch,
-	endBatch,
-} from './alien-signals'
+// oxlint-disable typescript/no-explicit-any -- reactive node interfaces need flexible generic defaults
+import {createReactiveSystem, ReactiveFlags, type ReactiveNode} from './alien-signals/system'
 
-export {alienEffect as effect}
+// ---------------------------------------------------------------------------
+// Node types
+// ---------------------------------------------------------------------------
+
+interface SignalNode<T = any> extends ReactiveNode {
+	currentValue: T
+	pendingValue: T
+	defaultValue: T | undefined
+	hasDefault: boolean
+	equalsFn: ((a: T, b: T) => boolean) | undefined
+	isReadonly: boolean
+}
+
+interface ComputedNode<T = any> extends ReactiveNode {
+	value: T | undefined
+	getter: (previousValue?: T) => T
+	equalsFn: ((a: T, b: T) => boolean) | undefined
+}
+
+interface EffectNode extends ReactiveNode {
+	fn(): void
+}
+
+interface EventNode<T = any> extends ReactiveNode {
+	payload: T | undefined
+	seq: number
+}
+
+// ---------------------------------------------------------------------------
+// Module state
+// ---------------------------------------------------------------------------
+
+let cycle = 0
+let batchDepth = 0
+let notifyIndex = 0
+let queuedLength = 0
+let activeSub: ReactiveNode | undefined
+let mutableScope = false
+
+const queued: (EffectNode | undefined)[] = []
+
+// ---------------------------------------------------------------------------
+// Reactive system
+// ---------------------------------------------------------------------------
+
+const {link, unlink, propagate, checkDirty, shallowPropagate} = createReactiveSystem({
+	update(node: SignalNode | ComputedNode | EventNode): boolean {
+		if ('getter' in node) {
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
+			return updateComputed(node)
+		}
+		if ('seq' in node) {
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
+			return updateEvent(node)
+		}
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime property check
+		return updateSignal(node)
+	},
+	notify(effect: EffectNode) {
+		let insertIndex = queuedLength
+		let firstInsertedIndex = insertIndex
+
+		do {
+			queued[insertIndex++] = effect
+			effect.flags &= ~ReactiveFlags.Watching
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- subs chain is always an EffectNode here
+			effect = effect.subs?.sub as EffectNode
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- cast from sub?: ReactiveNode can be undefined
+			if (effect === undefined || !(effect.flags & ReactiveFlags.Watching)) {
+				break
+			}
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional infinite loop with break
+		} while (true)
+
+		queuedLength = insertIndex
+
+		while (firstInsertedIndex < --insertIndex) {
+			const left = queued[firstInsertedIndex]
+			queued[firstInsertedIndex++] = queued[insertIndex]
+			queued[insertIndex] = left
+		}
+	},
+	unwatched(node) {
+		if (!(node.flags & ReactiveFlags.Mutable)) {
+			effectScopeOper.call(node)
+		} else if (node.depsTail !== undefined) {
+			node.depsTail = undefined
+			node.flags = ReactiveFlags.Mutable | ReactiveFlags.Dirty
+			purgeDeps(node)
+		}
+	},
+})
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function setActiveSub(sub?: ReactiveNode) {
+	const prevSub = activeSub
+	activeSub = sub
+	return prevSub
+}
+
+function updateSignal(s: SignalNode): boolean {
+	s.flags = ReactiveFlags.Mutable
+	return s.currentValue !== (s.currentValue = s.pendingValue)
+}
+
+function updateComputed(c: ComputedNode): boolean {
+	++cycle
+	c.depsTail = undefined
+	c.flags = ReactiveFlags.Mutable | ReactiveFlags.RecursedCheck
+	const prevSub = setActiveSub(c)
+	try {
+		const oldValue = c.value
+		const newValue = c.getter(oldValue)
+		if (c.equalsFn !== undefined && oldValue !== undefined && c.equalsFn(oldValue, newValue)) {
+			return false
+		}
+		return oldValue !== (c.value = newValue)
+	} finally {
+		activeSub = prevSub
+		c.flags &= ~ReactiveFlags.RecursedCheck
+		purgeDeps(c)
+	}
+}
+
+function updateEvent(e: EventNode): boolean {
+	e.flags = ReactiveFlags.Mutable
+	return true
+}
+
+function run(e: EffectNode): void {
+	const flags = e.flags
+	// oxlint-disable-next-line typescript/no-non-null-assertion -- deps is guaranteed present when Pending
+	if (flags & ReactiveFlags.Dirty || (flags & ReactiveFlags.Pending && checkDirty(e.deps!, e))) {
+		++cycle
+		e.depsTail = undefined
+		e.flags = ReactiveFlags.Watching | ReactiveFlags.RecursedCheck
+		const prevSub = setActiveSub(e)
+		try {
+			e.fn()
+		} finally {
+			activeSub = prevSub
+			e.flags &= ~ReactiveFlags.RecursedCheck
+			purgeDeps(e)
+		}
+	} else {
+		e.flags = ReactiveFlags.Watching
+	}
+}
+
+function flush(): void {
+	try {
+		while (notifyIndex < queuedLength) {
+			// oxlint-disable-next-line typescript/no-non-null-assertion -- index < queuedLength guarantees non-undefined
+			const effect = queued[notifyIndex]!
+			queued[notifyIndex++] = undefined
+			run(effect)
+		}
+	} finally {
+		while (notifyIndex < queuedLength) {
+			// oxlint-disable-next-line typescript/no-non-null-assertion -- index < queuedLength guarantees non-undefined
+			const effect = queued[notifyIndex]!
+			queued[notifyIndex++] = undefined
+			effect.flags |= ReactiveFlags.Watching | ReactiveFlags.Recursed
+		}
+		notifyIndex = 0
+		queuedLength = 0
+	}
+}
+
+function purgeDeps(sub: ReactiveNode) {
+	const depsTail = sub.depsTail
+	let dep = depsTail !== undefined ? depsTail.nextDep : sub.deps
+	while (dep !== undefined) {
+		dep = unlink(dep, sub)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Oper functions (bound to nodes)
+// ---------------------------------------------------------------------------
+
+function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T | void {
+	if (value.length) {
+		if (this.isReadonly && !mutableScope) return
+		const v = value[0]
+		if (v === undefined) {
+			if (this.hasDefault) {
+				if (this.pendingValue === undefined || this.pendingValue === this.defaultValue) return
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
+				this.pendingValue = undefined as T
+			} else {
+				if (this.pendingValue === undefined) return
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when clearing value
+				this.pendingValue = undefined as T
+			}
+		} else {
+			const current = this.pendingValue
+			const effectiveCurrent = current === undefined && this.hasDefault ? this.defaultValue : current
+			if (this.equalsFn !== undefined) {
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- effectiveCurrent is T when equalsFn is defined and either current !== undefined or hasDefault
+				if (this.equalsFn(effectiveCurrent as T, v)) return
+			} else {
+				if (effectiveCurrent === v) return
+			}
+			this.pendingValue = v
+		}
+		this.flags = ReactiveFlags.Mutable | ReactiveFlags.Dirty
+		const subs = this.subs
+		if (subs !== undefined) {
+			propagate(subs)
+			if (!batchDepth) {
+				flush()
+			}
+		}
+	} else {
+		if (this.flags & ReactiveFlags.Dirty) {
+			if (updateSignal(this)) {
+				const subs = this.subs
+				if (subs !== undefined) {
+					shallowPropagate(subs)
+				}
+			}
+		}
+		let sub = activeSub
+		while (sub !== undefined) {
+			if (sub.flags & (ReactiveFlags.Mutable | ReactiveFlags.Watching)) {
+				link(this, sub, cycle)
+				break
+			}
+			sub = sub.subs?.sub
+		}
+		const v = this.currentValue
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- defaultValue is T when hasDefault is true
+		if (v === undefined && this.hasDefault) return this.defaultValue as T
+		return v
+	}
+}
+
+function computedOper<T>(this: ComputedNode<T>): T {
+	const flags = this.flags
+	// oxlint-disable-next-line typescript/no-non-null-assertion -- deps is guaranteed present when Pending
+	const deps = this.deps!
+	if (
+		flags & ReactiveFlags.Dirty ||
+		(flags & ReactiveFlags.Pending &&
+			// oxlint-disable-next-line typescript/no-unnecessary-condition -- comma expr with false is intentional for side effect
+			(checkDirty(deps, this) || ((this.flags = flags & ~ReactiveFlags.Pending), false)))
+	) {
+		if (updateComputed(this)) {
+			const subs = this.subs
+			if (subs !== undefined) {
+				shallowPropagate(subs)
+			}
+		}
+	} else if (!flags) {
+		this.flags = ReactiveFlags.Mutable | ReactiveFlags.RecursedCheck
+		const prevSub = setActiveSub(this)
+		try {
+			this.value = this.getter()
+		} finally {
+			activeSub = prevSub
+			this.flags &= ~ReactiveFlags.RecursedCheck
+		}
+	}
+	const sub = activeSub
+	if (sub !== undefined) {
+		link(this, sub, cycle)
+	}
+	// oxlint-disable-next-line typescript/no-non-null-assertion -- value is always set before read
+	return this.value!
+}
+
+function eventReadOper<T>(this: EventNode<T>): T | undefined {
+	if (this.flags & ReactiveFlags.Dirty) {
+		updateEvent(this)
+	}
+	const sub = activeSub
+	if (sub !== undefined) {
+		link(this, sub, cycle)
+	}
+	return this.payload
+}
+
+function effectOper(this: EffectNode): void {
+	effectScopeOper.call(this)
+}
+
+function effectScopeOper(this: ReactiveNode): void {
+	this.depsTail = undefined
+	this.flags = ReactiveFlags.None
+	purgeDeps(this)
+	const sub = this.subs
+	if (sub !== undefined) {
+		unlink(sub)
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Signal<T> — reactive state value
@@ -18,10 +310,6 @@ export interface Signal<T> {
 	(value: T | undefined): void
 }
 
-/**
- * Derives a plain-value object type from an object of signals.
- * `{ foo: Signal<string>, bar: Signal<number> }` → `{ foo: string, bar: number }`
- */
 export type SignalValues<T> = {
 	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : never
 }
@@ -31,76 +319,22 @@ interface SignalOptions<T> {
 	readonly?: boolean
 }
 
-let mutableScope = false
-
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
-	if (opts?.equals !== undefined) {
-		const equalsFn = opts.equals
-		const _default = initial
-		const hasDefault = initial !== undefined
-		const inner = alienSignal<T | undefined>(undefined)
-
-		const read = (): T => {
-			const v = inner()
-			if (v === undefined && hasDefault) return _default
-			// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
-			return v as T
-		}
-
-		const isReadonly = !!opts.readonly
-		// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-		const callable = function signalCallable(...args: [T | undefined] | []) {
-			if (args.length) {
-				if (isReadonly && !mutableScope) return
-				if (args[0] === undefined) {
-					if (hasDefault && inner() === undefined) return
-					inner(undefined)
-				} else {
-					if (!equalsFn(read(), args[0])) {
-						inner(args[0])
-					}
-				}
-			} else {
-				return read()
-			}
-		} as unknown as Signal<T>
-
-		return callable
+	const node: SignalNode<T> = {
+		currentValue: initial,
+		pendingValue: initial,
+		defaultValue: initial ?? undefined,
+		hasDefault: initial !== undefined,
+		equalsFn: opts?.equals ?? undefined,
+		isReadonly: !!opts?.readonly,
+		subs: undefined,
+		subsTail: undefined,
+		flags: ReactiveFlags.Mutable,
 	}
-
-	const _default = initial
-	const hasDefault = initial !== undefined
-	const inner = alienSignal<T | undefined>(undefined)
-
-	const read = (): T => {
-		const v = inner()
-		if (v === undefined && hasDefault) return _default
-		// oxlint-disable-next-line no-unsafe-type-assertion -- when hasDefault is false, T includes undefined so the cast is safe
-		return v as T
-	}
-
-	const isReadonly = !!opts?.readonly
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	const callable = function signalCallable(...args: [T | undefined] | []) {
-		if (args.length) {
-			if (isReadonly && !mutableScope) return
-			const v = args[0]
-			if (v === undefined && hasDefault) {
-				if (inner() === undefined) return
-				inner(undefined)
-			} else {
-				const current = inner()
-				const effectiveCurrent = current === undefined && hasDefault ? _default : current
-				if (effectiveCurrent !== v) {
-					inner(v)
-				}
-			}
-		} else {
-			return read()
-		}
-	} as unknown as Signal<T>
-
-	return callable
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
+	return (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | void).bind(
+		node
+	) as unknown as Signal<T>
 }
 
 // ---------------------------------------------------------------------------
@@ -116,23 +350,18 @@ interface ComputedOptions<T> {
 }
 
 export function computed<T>(getter: (previousValue?: T) => T, opts?: ComputedOptions<T>): Computed<T> {
-	const equalsFn = opts?.equals
-	const resolvedGetter =
-		equalsFn !== undefined
-			? (prev?: T): T => {
-					const next = getter(prev)
-					return prev !== undefined && equalsFn(prev, next) ? prev : next
-				}
-			: getter
-
-	const inner = alienComputed(resolvedGetter)
-
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
-	const callable = function computedCallable(): T {
-		return inner()
-	} as unknown as Computed<T>
-
-	return callable
+	const node: ComputedNode<T> = {
+		value: undefined,
+		subs: undefined,
+		subsTail: undefined,
+		deps: undefined,
+		depsTail: undefined,
+		flags: ReactiveFlags.None,
+		getter: getter as (previousValue?: T) => T,
+		equalsFn: opts?.equals ?? undefined,
+	}
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
+	return (computedOper as (this: ComputedNode<T>) => T).bind(node) as unknown as Computed<T>
 }
 
 // ---------------------------------------------------------------------------
@@ -140,47 +369,90 @@ export function computed<T>(getter: (previousValue?: T) => T, opts?: ComputedOpt
 // ---------------------------------------------------------------------------
 
 export interface Event<T = void> {
-	/** Emit — always fires even when payload reference is unchanged. */
 	(payload: T): void
-	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
 	read(): T | undefined
 }
 
 export function event<T = void>(): Event<T> {
-	let seq = 0
-	const inner = alienSignal<{v: T; id: number} | undefined>(undefined)
-
-	// oxlint-disable-next-line no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
-	const callable = function eventCallable(payload: T) {
-		inner({v: payload, id: ++seq})
-	} as unknown as Event<T>
-
-	callable.read = () => {
-		const box = inner()
-		return box !== undefined ? box.v : undefined
+	const node: EventNode<T> = {
+		payload: undefined,
+		seq: 0,
+		subs: undefined,
+		subsTail: undefined,
+		flags: ReactiveFlags.Mutable,
 	}
 
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
+	const callable = function eventCallable(payload: T) {
+		node.payload = payload
+		node.seq++
+		node.flags = ReactiveFlags.Mutable | ReactiveFlags.Dirty
+		const subs = node.subs
+		if (subs !== undefined) {
+			propagate(subs)
+			if (!batchDepth) {
+				flush()
+			}
+		}
+	} as unknown as Event<T>
+
+	callable.read = (eventReadOper as (this: EventNode<T>) => T | undefined).bind(node)
+
 	return callable
+}
+
+// ---------------------------------------------------------------------------
+// effect() / effectScope()
+// ---------------------------------------------------------------------------
+
+export {alienEffect as effect}
+
+function alienEffect(fn: () => void): () => void {
+	const e: EffectNode = {
+		fn,
+		subs: undefined,
+		subsTail: undefined,
+		deps: undefined,
+		depsTail: undefined,
+		flags: ReactiveFlags.Watching | ReactiveFlags.RecursedCheck,
+	}
+	const prevSub = setActiveSub(e)
+	if (prevSub !== undefined) {
+		link(e, prevSub, 0)
+	}
+	try {
+		e.fn()
+	} finally {
+		activeSub = prevSub
+		e.flags &= ~ReactiveFlags.RecursedCheck
+	}
+	return effectOper.bind(e)
+}
+
+export function effectScope(fn: () => void): () => void {
+	const e: ReactiveNode = {
+		deps: undefined,
+		depsTail: undefined,
+		subs: undefined,
+		subsTail: undefined,
+		flags: ReactiveFlags.None,
+	}
+	const prevSub = setActiveSub(e)
+	if (prevSub !== undefined) {
+		link(e, prevSub, 0)
+	}
+	try {
+		fn()
+	} finally {
+		activeSub = prevSub
+	}
+	return effectScopeOper.bind(e)
 }
 
 // ---------------------------------------------------------------------------
 // watch() — skip-first-run helper for event subscriptions
 // ---------------------------------------------------------------------------
 
-/**
- * Creates an effect that skips its first execution.
- * Useful for subscribing to signals/events without firing on initial creation.
- * The callback receives `(newValue, oldValue)` on each subsequent run.
- *
- * Accepts a signal, event, or getter function as the dependency source:
- *   watch(store.event.delete, (payload) => { ... })
- *   watch(store.state.name,    (next, prev) => { ... })
- *   watch(() => computed(),    (next, prev) => { ... })  // getter form still valid
- *
- * @param dep - dependency source (signal, event, or getter function)
- * @param fn  - callback invoked on subsequent runs with (newValue, oldValue)
- * @returns dispose function
- */
 export function watch<T>(dep: Signal<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
 export function watch<T>(dep: Event<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
 export function watch<T>(dep: () => T, fn: (newValue: T, oldValue: T | undefined) => void): () => void
@@ -191,7 +463,7 @@ export function watch<T>(
 	let initialized = false
 	let oldValue: T | undefined
 	return alienEffect(() => {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
 		const newValue = ('read' in dep ? dep.read() : dep()) as T
 		if (!initialized) {
 			initialized = true
@@ -200,12 +472,7 @@ export function watch<T>(
 		}
 		const prev = oldValue
 		oldValue = newValue
-		const prevSub = setActiveSub(undefined)
-		try {
-			fn(newValue, prev)
-		} finally {
-			setActiveSub(prevSub)
-		}
+		untracked(() => fn(newValue, prev))
 	})
 }
 
@@ -220,11 +487,26 @@ interface BatchOptions {
 export function batch(fn: () => void, opts?: BatchOptions): void {
 	const prevMutable = mutableScope
 	if (opts?.mutable) mutableScope = true
-	startBatch()
+	++batchDepth
 	try {
 		fn()
 	} finally {
-		endBatch()
+		if (!--batchDepth) {
+			flush()
+		}
 		mutableScope = prevMutable
+	}
+}
+
+// ---------------------------------------------------------------------------
+// untracked() — run a function without tracking reactive dependencies
+// ---------------------------------------------------------------------------
+
+export function untracked<T>(fn: () => T): T {
+	const prev = setActiveSub(undefined)
+	try {
+		return fn()
+	} finally {
+		setActiveSub(prev)
 	}
 }
