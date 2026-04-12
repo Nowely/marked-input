@@ -103,16 +103,14 @@ export class Store {
 		containerProps: computed(prev => {
 			const drag = !!this.props.drag()
 			const readOnly = this.props.readOnly()
-			const baseStyle = merge(this.props.style(), this.props.slotProps()?.container?.style)
+			const slotProps = this.props.slotProps()
+			const containerSlotProps = slotProps?.container
+			const baseStyle = merge(this.props.style(), containerSlotProps?.style)
 			const style =
 				drag && !readOnly ? (baseStyle ? {paddingLeft: 24, ...baseStyle} : {paddingLeft: 24}) : baseStyle
-			const {
-				className: _cls,
-				style: _sty,
-				...otherSlotProps
-			} = resolveSlotProps('container', this.props.slotProps()) ?? {}
+			const {className: _cls, style: _sty, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 			const next = {
-				className: cx(styles.Container, this.props.className(), this.props.slotProps()?.container?.className),
+				className: cx(styles.Container, this.props.className(), containerSlotProps?.className),
 				style,
 				...otherSlotProps,
 			}
