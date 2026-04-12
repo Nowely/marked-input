@@ -76,23 +76,25 @@ export class OverlayFeature {
 	}
 
 	disable() {
-		const container = this.store.refs.container
+		// 1. Reset state
+		this.store.state.overlayTrigger(undefined)
 
+		// 2. Remove DOM listeners
+		const container = this.store.refs.container
 		if (container && this.#focusinHandler) {
 			container.removeEventListener('focusin', this.#focusinHandler)
 			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
 		}
-
 		if (this.#selectionChangeHandler) {
 			document.removeEventListener('selectionchange', this.#selectionChangeHandler)
 		}
-
 		this.#disableClose()
 
-		this.store.state.overlayTrigger(undefined)
-
+		// 3. Dispose scope
 		this.#scope?.()
 		this.#scope = undefined
+
+		// 4. Null refs
 		this.#selectionChangeHandler = undefined
 		this.#focusinHandler = undefined
 		this.#focusoutHandler = undefined

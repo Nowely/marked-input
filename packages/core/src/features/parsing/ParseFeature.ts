@@ -22,9 +22,9 @@ export class ParseFeature {
 	}
 
 	disable() {
+		this.#initialized = false
 		this.#scope?.()
 		this.#scope = undefined
-		this.#initialized = false
 	}
 
 	sync() {
