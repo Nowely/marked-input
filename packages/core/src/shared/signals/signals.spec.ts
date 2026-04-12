@@ -1,7 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {effect} from './alien-signals'
-import {signal, watch, event, batch} from './signal'
+import {signal, watch, event, batch, effect} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -183,18 +182,18 @@ describe('signal<T>', () => {
 			expect(s()).toBe(42)
 		})
 
-		it('should allow writes inside batch with writable: true', () => {
+		it('should allow writes inside batch with mutable: true', () => {
 			const s = signal(42, {readonly: true})
 			batch(
 				() => {
 					s(99)
 				},
-				{writable: true}
+				{mutable: true}
 			)
 			expect(s()).toBe(99)
 		})
 
-		it('should ignore writes inside regular batch without writable', () => {
+		it('should ignore writes inside regular batch without mutable', () => {
 			const s = signal(42, {readonly: true})
 			batch(() => {
 				s(99)
@@ -202,14 +201,14 @@ describe('signal<T>', () => {
 			expect(s()).toBe(42)
 		})
 
-		it('should restore writableScope after nested batches', () => {
+		it('should restore mutableScope after nested batches', () => {
 			const s = signal(42, {readonly: true})
 			batch(() => {
 				batch(
 					() => {
 						s(99)
 					},
-					{writable: true}
+					{mutable: true}
 				)
 				s(100)
 			})
@@ -224,7 +223,7 @@ describe('signal<T>', () => {
 				() => {
 					s({id: 2, name: 'b'})
 				},
-				{writable: true}
+				{mutable: true}
 			)
 			expect(s()).toEqual({id: 2, name: 'b'})
 		})
@@ -251,7 +250,7 @@ describe('signal<T>', () => {
 				() => {
 					s(42)
 				},
-				{writable: true}
+				{mutable: true}
 			)
 			expect(captured).toBe(42)
 		})

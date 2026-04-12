@@ -1,5 +1,5 @@
 export {MarkputHandler} from './MarkputHandler'
 export {KeyGenerator} from './KeyGenerator'
 export {NodeProxy} from './NodeProxy'
-export {effect, event, signal, watch, batch} from '../signals'
+export {effect, event, signal, watch, batch, untracked} from '../signals'
 export type {Signal, Event} from '../signals'
