@@ -1,6 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 // Stub global `document` for TextSelectionFeature which calls document.addEventListener/removeEventListener
@@ -22,7 +21,6 @@ describe('TextSelectionFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		for (const key of Object.keys(listeners)) listeners[key] = []
-		setUseHookFactory(() => () => undefined)
 		// Provide a global document stub
 		vi.stubGlobal('document', mockDocument)
 		store = new Store()

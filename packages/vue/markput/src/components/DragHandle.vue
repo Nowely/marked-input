@@ -3,6 +3,7 @@ import {getAlwaysShowHandleDrag} from '@markput/core'
 import type {Token as TokenType} from '@markput/core'
 import {computed} from 'vue'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 
 import styles from '@markput/core/styles.module.css'
@@ -10,11 +11,11 @@ import styles from '@markput/core/styles.module.css'
 const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
-const readOnly = store.props.readOnly.use()
-const drag = store.props.drag.use()
+const readOnly = useMarkput(s => s.props.readOnly)
+const drag = useMarkput(s => s.props.drag)
 const blockStore = store.blocks.get(props.token)
-const isDragging = blockStore.state.isDragging.use()
-const isHovered = blockStore.state.isHovered.use()
+const isDragging = useMarkput(() => blockStore.state.isDragging)
+const isHovered = useMarkput(() => blockStore.state.isHovered)
 const alwaysShowHandle = computed(() => getAlwaysShowHandleDrag(drag.value))
 </script>
 

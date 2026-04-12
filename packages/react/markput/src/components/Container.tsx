@@ -1,25 +1,34 @@
+import type {ElementType} from 'react'
 import {memo, useLayoutEffect} from 'react'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/providers/StoreContext'
 import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
 	const store = useStore()
-	const drag = store.props.drag.use()
-	const tokens = store.state.tokens.use()
+
+	const {drag, tokens, className, style, readOnly} = useMarkput(s => ({
+		drag: s.props.drag,
+		tokens: s.state.tokens,
+		className: s.computed.containerClass,
+		style: s.computed.containerStyle,
+		readOnly: s.props.readOnly,
+	}))
+
+	// oxlint-disable-next-line no-unsafe-type-assertion -- Slot returns [unknown, ...] in core; React-specific type asserted here
+	const [ContainerComponent, containerProps] = useMarkput(s => s.computed.container) as readonly [
+		ElementType,
+		Record<string, unknown> | undefined,
+	]
 
 	useLayoutEffect(() => {
 		store.event.afterTokensRendered()
 	}, [tokens])
 
-	const className = store.computed.containerClass.use()
-	const style = store.computed.containerStyle.use()
-	const readOnly = store.props.readOnly.use()
 	const key = store.key
 	const refs = store.refs
-
-	const [ContainerComponent, containerProps] = store.computed.container.use()
 
 	const containerStyle = drag && !readOnly ? (style ? {paddingLeft: 24, ...style} : {paddingLeft: 24}) : style
 

@@ -1,24 +1,27 @@
 <script setup lang="ts">
 import type {CSSProperties} from '@markput/core'
-import {computed, watch, type Ref} from 'vue'
+import {computed, watch} from 'vue'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import Block from './Block.vue'
 import Token from './Token.vue'
 
 const store = useStore()
-const drag = store.props.drag.use()
-const readOnly = store.props.readOnly.use()
-const tokens = store.state.tokens.use()
+
+const drag = useMarkput(s => s.props.drag)
+const readOnly = useMarkput(s => s.props.readOnly)
+const tokens = useMarkput(s => s.state.tokens)
+const className = useMarkput(s => s.computed.containerClass)
+const style = useMarkput(s => s.computed.containerStyle)
+const containerSlot = useMarkput(s => s.computed.container)
+
 watch(tokens, () => store.event.afterTokensRendered(), {flush: 'post', immediate: true})
 
-const className = store.computed.containerClass.use()
-const style = store.computed.containerStyle.use() as unknown as Ref<CSSProperties | undefined>
 const key = store.key
 
-const containerSlot = store.computed.container.use()
 const containerStyle = computed(() => {
-	const s = style.value
+	const s = style.value as CSSProperties | undefined
 	if (drag.value && !readOnly.value) {
 		return s ? {paddingLeft: 24, ...s} : {paddingLeft: 24}
 	}

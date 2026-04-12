@@ -1,6 +1,5 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
 import type {OverlayFeature} from './OverlayFeature'
@@ -35,7 +34,6 @@ describe('OverlayFeature', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		setUseHookFactory(() => () => undefined)
 		store = new Store()
 		controller = store.features.overlay
 	})

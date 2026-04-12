@@ -1,14 +1,8 @@
-import {describe, it, expect, beforeEach} from 'vitest'
+import {describe, it, expect} from 'vitest'
 
-import {setUseHookFactory} from './registry'
 import {signal, computed, effect, batch} from './signal'
 
 describe('computed', () => {
-	beforeEach(() => {
-		// oxlint-disable-next-line no-unsafe-type-assertion -- test mock returns the signal's callable directly
-		setUseHookFactory((sig: unknown) => sig as () => unknown)
-	})
-
 	it('should derive value from signal', () => {
 		const name = signal<string | undefined>('hello')
 		const upper = computed(() => name()!.toUpperCase())
@@ -21,10 +15,10 @@ describe('computed', () => {
 		expect(doubled()).toBe(2)
 	})
 
-	it('should have .use() method', () => {
-		const count = signal(1)
-		const doubled = computed(() => count() * 2)
-		expect(doubled.use()).toBe(2)
+	it('Signal should not have a .use() method', () => {
+		const s = signal(1)
+		// @ts-expect-error -- .use() must not exist on Signal after this refactor
+		expect(typeof s.use).toBe('undefined')
 	})
 
 	it('should re-derive when dependency changes', () => {

@@ -6,7 +6,6 @@ import {
 	startBatch,
 	endBatch,
 } from './alien-signals'
-import {getUseHookFactory} from './registry'
 
 export {alienEffect as effect}
 
@@ -17,7 +16,6 @@ export {alienEffect as effect}
 export interface Signal<T> {
 	(): T
 	(value: T | undefined): void
-	use(): T
 }
 
 /**
@@ -38,8 +36,6 @@ let writableScope = false
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const hasCustomEquals = opts?.equals !== undefined
 
-	// When equals is `false` we box the value so every write creates a new reference.
-	// When equals is a custom function we wrap the setter to compare manually.
 	// oxlint-disable-next-line no-non-null-assertion, no-unnecessary-type-assertion -- opts is defined when hasCustomEquals is true; TS does not narrow opts from the boolean variable
 	const equalsOpt = hasCustomEquals ? opts!.equals : undefined
 	if (hasCustomEquals && equalsOpt === false) {
@@ -73,17 +69,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
-		// _hook is memoized per signal instance. The factory call creates stable
-		// subscribe/getSnapshot closures; recreating them on every .use() call would
-		// cause useSyncExternalStore (and similar framework APIs) to see new references
-		// each render, triggering unsubscribe→resubscribe cycles that mark computed
-		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
-		let _hook: (() => unknown) | undefined
-		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => {
-			_hook ??= getUseHookFactory()(callable)
-			return _hook()
-		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -118,17 +103,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 			}
 		} as unknown as Signal<T>
 
-		// _hook is memoized per signal instance. The factory call creates stable
-		// subscribe/getSnapshot closures; recreating them on every .use() call would
-		// cause useSyncExternalStore (and similar framework APIs) to see new references
-		// each render, triggering unsubscribe→resubscribe cycles that mark computed
-		// nodes Dirty, which produces a new snapshot, which causes an infinite re-render.
-		let _hook: (() => unknown) | undefined
-		// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-		callable.use = (() => {
-			_hook ??= getUseHookFactory()(callable)
-			return _hook()
-		}) as Signal<T>['use']
 		return callable
 	}
 
@@ -164,12 +138,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		}
 	} as unknown as Signal<T>
 
-	let _hook: (() => unknown) | undefined
-	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => {
-		_hook ??= getUseHookFactory()(callable)
-		return _hook()
-	}) as Signal<T>['use']
 	return callable
 }
 
@@ -179,7 +147,6 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 
 export interface Computed<T> {
 	(): T
-	use(): T
 }
 
 export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
@@ -189,13 +156,6 @@ export function computed<T>(getter: (previousValue?: T) => T): Computed<T> {
 	const callable = function computedCallable(): T {
 		return inner()
 	} as unknown as Computed<T>
-
-	let _hook: (() => unknown) | undefined
-	// oxlint-disable-next-line no-unsafe-type-assertion -- UseHookFactory returns () => unknown; framework packages augment use() return type via module augmentation
-	callable.use = (() => {
-		_hook ??= getUseHookFactory()(callable)
-		return _hook()
-	}) as Computed<T>['use']
 
 	return callable
 }
@@ -209,8 +169,6 @@ export interface Event<T = void> {
 	(payload: T): void
 	/** Read/subscribe — auto-tracks inside effects. Returns latest payload or undefined. */
 	read(): T | undefined
-	/** Framework hook bridge. */
-	use(): T | undefined
 }
 
 export function event<T = void>(): Event<T> {
@@ -226,8 +184,6 @@ export function event<T = void>(): Event<T> {
 		const box = inner()
 		return box !== undefined ? box.v : undefined
 	}
-	// oxlint-disable-next-line no-unsafe-type-assertion, typescript-eslint/unbound-method -- callable.read is an arrow function (no this); getUseHookFactory returns () => unknown; cast to T | undefined is safe by Event<T> contract
-	callable.use = () => getUseHookFactory()(callable.read)() as T | undefined
 
 	return callable
 }

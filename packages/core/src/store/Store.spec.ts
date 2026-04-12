@@ -1,15 +1,11 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {describe, it, expect, vi} from 'vitest'
 
 import {parseWithParser} from '../features/parsing'
 import {DEFAULT_OPTIONS} from '../shared/constants'
-import {setUseHookFactory, effect, effectScope, watch, batch} from '../shared/signals'
+import {effect, effectScope, watch, batch} from '../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {
-	beforeEach(() => {
-		setUseHookFactory(() => () => undefined)
-	})
-
 	it('should construct with no arguments', () => {
 		const store = new Store()
 		expect(store.state.tokens()).toEqual([])

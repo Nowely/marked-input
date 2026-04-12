@@ -1,6 +1,5 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 // oxlint-disable-next-line no-unsafe-type-assertion -- test stub for container ref
@@ -14,7 +13,6 @@ describe('FocusFeature', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks()
-		setUseHookFactory(() => () => undefined)
 		store = new Store()
 		store.refs.container = stubContainer
 		const features = store.features as Record<string, {enable(): void; disable(): void}>

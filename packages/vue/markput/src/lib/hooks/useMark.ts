@@ -3,6 +3,7 @@ import {MarkHandler} from '@markput/core'
 import {inject, ref, watch, onMounted} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
+import {useMarkput} from './useMarkput'
 import {useStore} from './useStore'
 
 export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
@@ -36,7 +37,7 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 		}
 	})
 
-	const readOnly = store.props.readOnly.use()
+	const readOnly = useMarkput(s => s.props.readOnly)
 	watch(readOnly, val => {
 		mark.readOnly = val
 	})

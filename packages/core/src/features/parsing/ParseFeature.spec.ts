@@ -1,13 +1,11 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
-import {setUseHookFactory} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('ParseFeature', () => {
 	let store: Store
 
 	beforeEach(() => {
-		setUseHookFactory(() => () => undefined)
 		store = new Store()
 		const features = store.features as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(features)) {

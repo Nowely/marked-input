@@ -2,6 +2,7 @@ import {cx, getAlwaysShowHandleDrag} from '@markput/core'
 import type {Token as TokenType} from '@markput/core'
 import {memo, useMemo} from 'react'
 
+import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/providers/StoreContext'
 
 import styles from '@markput/core/styles.module.css'
@@ -10,11 +11,14 @@ const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
 	const store = useStore()
-	const readOnly = store.props.readOnly.use()
-	const drag = store.props.drag.use()
 	const blockStore = store.blocks.get(token)
-	const isDragging = blockStore.state.isDragging.use()
-	const isHovered = blockStore.state.isHovered.use()
+
+	const {readOnly, drag} = useMarkput(s => ({
+		readOnly: s.props.readOnly,
+		drag: s.props.drag,
+	}))
+	const isDragging = useMarkput(() => blockStore.state.isDragging)
+	const isHovered = useMarkput(() => blockStore.state.isHovered)
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandleDrag(drag), [drag])
 
 	if (readOnly) return null

@@ -2,8 +2,6 @@
 import {Store} from '@markput/core'
 import {onMounted, onUnmounted, onUpdated, provide, shallowRef, watch} from 'vue'
 
-// oxlint-disable-next-line no-unassigned-import -- side-effect import: registers the Vue useHook factory via setUseHookFactory
-import '../lib/hooks/createUseHook'
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
 import Container from './Container.vue'
