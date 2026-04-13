@@ -14,7 +14,7 @@ afterEach(() => {
 	disposers = []
 })
 
-function trackedEffect(fn: () => void): () => void {
+function trackedEffect(fn: () => void | (() => void)): () => void {
 	const dispose = effect(fn)
 	disposers.push(dispose)
 	return dispose
