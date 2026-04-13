@@ -1,3 +1,4 @@
+import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
@@ -30,66 +31,60 @@ function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRang
 }
 
 export class CopyFeature {
-	#copyHandler?: (e: ClipboardEvent) => void
-	#cutHandler?: (e: ClipboardEvent) => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#copyHandler) return
-
-		this.#copyHandler = (e: ClipboardEvent) => {
-			this.#handleCopy(e)
-		}
-
-		this.#cutHandler = (e: ClipboardEvent) => {
-			if (!this.#handleCopy(e)) return
-
-			const result = selectionToTokens(this.store)
-			if (!result || result.tokens.length === 0) return
-
-			const first = result.tokens[0]
-			const last = result.tokens[result.tokens.length - 1]
-
-			const rawStart = first.type === 'text' ? first.position.start + result.startOffset : first.position.start
-			const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
-
-			const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
-			if (rawStart === rawEnd) return
-
-			const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-			this.store.state.innerValue(newValue)
-
-			const newTokens = this.store.state.tokens()
-			let targetIdx = newTokens.findIndex(
-				t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
-			)
-			if (targetIdx === -1) targetIdx = newTokens.length - 1
-			const caretWithinToken = rawStart - newTokens[targetIdx].position.start
-
-			this.store.state.recovery({
-				anchor: this.store.nodes.focus,
-				caret: caretWithinToken,
-				isNext: true,
-				childIndex: targetIdx - 2,
-			})
-		}
+		if (this.#scope) return
 
 		const container = this.store.refs.container
-		container?.addEventListener('copy', this.#copyHandler)
-		container?.addEventListener('cut', this.#cutHandler)
+		if (!container) return
+
+		this.#scope = effectScope(() => {
+			listen(container, 'copy', e => {
+				this.#handleCopy(e)
+			})
+
+			listen(container, 'cut', e => {
+				if (!this.#handleCopy(e)) return
+
+				const result = selectionToTokens(this.store)
+				if (!result || result.tokens.length === 0) return
+
+				const first = result.tokens[0]
+				const last = result.tokens[result.tokens.length - 1]
+
+				const rawStart =
+					first.type === 'text' ? first.position.start + result.startOffset : first.position.start
+				const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
+
+				const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
+				if (rawStart === rawEnd) return
+
+				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
+				this.store.state.innerValue(newValue)
+
+				const newTokens = this.store.state.tokens()
+				let targetIdx = newTokens.findIndex(
+					t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
+				)
+				if (targetIdx === -1) targetIdx = newTokens.length - 1
+				const caretWithinToken = rawStart - newTokens[targetIdx].position.start
+
+				this.store.state.recovery({
+					anchor: this.store.nodes.focus,
+					caret: caretWithinToken,
+					isNext: true,
+					childIndex: targetIdx - 2,
+				})
+			})
+		})
 	}
 
 	disable() {
-		const container = this.store.refs.container
-		if (this.#copyHandler) {
-			container?.removeEventListener('copy', this.#copyHandler)
-			this.#copyHandler = undefined
-		}
-		if (this.#cutHandler) {
-			container?.removeEventListener('cut', this.#cutHandler)
-			this.#cutHandler = undefined
-		}
+		this.#scope?.()
+		this.#scope = undefined
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {

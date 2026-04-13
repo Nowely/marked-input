@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {signal, watch, event, batch, effect} from './signal'
+import {signal, watch, event, batch, effect, effectScope, listen} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -14,7 +14,7 @@ afterEach(() => {
 	disposers = []
 })
 
-function trackedEffect(fn: () => void): () => void {
+function trackedEffect(fn: () => void | (() => void)): () => void {
 	const dispose = effect(fn)
 	disposers.push(dispose)
 	return dispose
@@ -532,5 +532,160 @@ describe('watch()', () => {
 		s('c')
 
 		expect(seen).toEqual(['b', 'c'])
+	})
+})
+
+// ---------------------------------------------------------------------------
+// effect cleanup
+// ---------------------------------------------------------------------------
+
+describe('effect cleanup', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('should call returned cleanup on re-run', () => {
+		const s = signal(0)
+		const cleanup = vi.fn()
+
+		trackedEffect(() => {
+			s()
+			return cleanup
+		})
+
+		expect(cleanup).not.toHaveBeenCalled()
+		s(1)
+		expect(cleanup).toHaveBeenCalledTimes(1)
+		s(2)
+		expect(cleanup).toHaveBeenCalledTimes(2)
+	})
+
+	it('should call returned cleanup on explicit disposal', () => {
+		const cleanup = vi.fn()
+
+		const dispose = effect(() => cleanup)
+		disposers.push(dispose)
+
+		expect(cleanup).not.toHaveBeenCalled()
+		dispose()
+		expect(cleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should call inner effect cleanup when outer re-runs', () => {
+		const show = signal(true)
+		const innerCleanup = vi.fn()
+
+		trackedEffect(() => {
+			if (show()) {
+				effect(() => innerCleanup)
+			}
+		})
+
+		expect(innerCleanup).not.toHaveBeenCalled()
+		show(false)
+		expect(innerCleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should call cleanup when scope is disposed', () => {
+		const cleanup = vi.fn()
+
+		const scope = effectScope(() => {
+			effect(() => cleanup)
+		})
+
+		expect(cleanup).not.toHaveBeenCalled()
+		scope()
+		expect(cleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should replace cleanup on each re-run', () => {
+		const s = signal(0)
+		const cleanups: number[] = []
+
+		trackedEffect(() => {
+			const v = s()
+			return () => cleanups.push(v)
+		})
+
+		s(1)
+		expect(cleanups).toEqual([0])
+		s(2)
+		expect(cleanups).toEqual([0, 1])
+	})
+
+	it('should work with effects returning void (no cleanup)', () => {
+		const s = signal(0)
+		const runs = vi.fn()
+
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+
+		expect(runs).toHaveBeenCalledTimes(1)
+		s(1)
+		expect(runs).toHaveBeenCalledTimes(2)
+	})
+})
+
+describe('listen()', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('should add listener and auto-remove on scope disposal', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const addSpy = vi.spyOn(target, 'addEventListener')
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		const scope = effectScope(() => {
+			listen(target, 'click', handler)
+		})
+
+		expect(addSpy).toHaveBeenCalledWith('click', handler, undefined)
+		expect(removeSpy).not.toHaveBeenCalled()
+
+		scope()
+
+		expect(removeSpy).toHaveBeenCalledWith('click', handler, undefined)
+	})
+
+	it('should remove listener when nested effect re-runs', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const show = signal(true)
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		trackedEffect(() => {
+			if (show()) {
+				listen(target, 'input', handler)
+			}
+		})
+
+		expect(removeSpy).not.toHaveBeenCalled()
+		show(false)
+		expect(removeSpy).toHaveBeenCalledWith('input', handler, undefined)
+	})
+
+	it('should return a dispose function for manual cleanup', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		const dispose = listen(target, 'keydown', handler)
+		disposers.push(dispose)
+
+		expect(removeSpy).not.toHaveBeenCalled()
+		dispose()
+		expect(removeSpy).toHaveBeenCalledWith('keydown', handler, undefined)
+	})
+
+	it('should pass options through to addEventListener', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const addSpy = vi.spyOn(target, 'addEventListener')
+
+		effectScope(() => {
+			listen(target, 'click', handler, {capture: true})
+		})()
+
+		expect(addSpy).toHaveBeenCalledWith('click', handler, {capture: true})
 	})
 })

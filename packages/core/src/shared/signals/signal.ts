@@ -21,7 +21,8 @@ interface ComputedNode<T = any> extends ReactiveNode {
 }
 
 interface EffectNode extends ReactiveNode {
-	fn(): void
+	fn(): void | (() => void)
+	cleanup?: () => void
 }
 
 interface EventNode<T = any> extends ReactiveNode {
@@ -85,6 +86,14 @@ const {link, unlink, propagate, checkDirty, shallowPropagate} = createReactiveSy
 	},
 	unwatched(node) {
 		if (!(node.flags & ReactiveFlags.Mutable)) {
+			if ('fn' in node) {
+				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- discriminated by runtime 'fn' in node check
+				const e = node as EffectNode
+				if (e.cleanup !== undefined) {
+					e.cleanup()
+					e.cleanup = undefined
+				}
+			}
 			effectScopeOper.call(node)
 		} else if (node.depsTail !== undefined) {
 			node.depsTail = undefined
@@ -137,12 +146,19 @@ function run(e: EffectNode): void {
 	const flags = e.flags
 	// oxlint-disable-next-line typescript/no-non-null-assertion -- deps is guaranteed present when Pending
 	if (flags & ReactiveFlags.Dirty || (flags & ReactiveFlags.Pending && checkDirty(e.deps!, e))) {
+		if (e.cleanup !== undefined) {
+			e.cleanup()
+			e.cleanup = undefined
+		}
 		++cycle
 		e.depsTail = undefined
 		e.flags = ReactiveFlags.Watching | ReactiveFlags.RecursedCheck
 		const prevSub = setActiveSub(e)
 		try {
-			e.fn()
+			const result = e.fn()
+			if (typeof result === 'function') {
+				e.cleanup = result as () => void
+			}
 		} finally {
 			activeSub = prevSub
 			e.flags &= ~ReactiveFlags.RecursedCheck
@@ -288,6 +304,10 @@ function eventReadOper<T>(this: EventNode<T>): T | undefined {
 }
 
 function effectOper(this: EffectNode): void {
+	if (this.cleanup !== undefined) {
+		this.cleanup()
+		this.cleanup = undefined
+	}
 	effectScopeOper.call(this)
 }
 
@@ -407,9 +427,10 @@ export function event<T = void>(): Event<T> {
 
 export {alienEffect as effect}
 
-function alienEffect(fn: () => void): () => void {
+function alienEffect(fn: () => void | (() => void)): () => void {
 	const e: EffectNode = {
 		fn,
+		cleanup: undefined,
 		subs: undefined,
 		subsTail: undefined,
 		deps: undefined,
@@ -421,7 +442,10 @@ function alienEffect(fn: () => void): () => void {
 		link(e, prevSub, 0)
 	}
 	try {
-		e.fn()
+		const result = e.fn()
+		if (typeof result === 'function') {
+			e.cleanup = result as () => void
+		}
 	} finally {
 		activeSub = prevSub
 		e.flags &= ~ReactiveFlags.RecursedCheck
@@ -540,4 +564,44 @@ export function untracked<T>(fn: () => T): T {
 	} finally {
 		setActiveSub(prev)
 	}
+}
+
+// ---------------------------------------------------------------------------
+// listen() — scope-aware DOM event listener
+// ---------------------------------------------------------------------------
+
+export function listen<K extends keyof WindowEventMap>(
+	target: Window,
+	event: K,
+	handler: (e: WindowEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen<K extends keyof DocumentEventMap>(
+	target: Document,
+	event: K,
+	handler: (e: DocumentEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen<K extends keyof HTMLElementEventMap>(
+	target: HTMLElement,
+	event: K,
+	handler: (e: HTMLElementEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen(
+	target: EventTarget,
+	event: string,
+	handler: EventListenerOrEventListenerObject,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen(
+	target: EventTarget,
+	event: string,
+	handler: EventListenerOrEventListenerObject,
+	options?: boolean | AddEventListenerOptions
+): () => void {
+	return alienEffect(() => {
+		target.addEventListener(event, handler, options)
+		return () => target.removeEventListener(event, handler, options)
+	})
 }

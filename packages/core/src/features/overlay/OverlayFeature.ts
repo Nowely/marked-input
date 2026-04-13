@@ -1,16 +1,11 @@
 import {KEYBOARD} from '../../shared/constants'
-import {effectScope, watch} from '../../shared/signals/index.js'
+import {effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {OverlayTrigger} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
 
 export class OverlayFeature {
 	#scope?: () => void
-	#selectionChangeHandler?: () => void
-	#focusinHandler?: (e: FocusEvent) => void
-	#focusoutHandler?: (e: FocusEvent) => void
-	#escHandler?: (e: KeyboardEvent) => void
-	#clickHandler?: (e: MouseEvent) => void
 
 	constructor(private store: Store) {}
 
@@ -40,90 +35,52 @@ export class OverlayFeature {
 				}
 			})
 
-			watch(this.store.state.overlayMatch, match => {
+			// Overlay match tracking + conditional close handlers
+			effect(() => {
+				const match = this.store.state.overlayMatch()
 				if (match) {
 					this.store.nodes.input.target = this.store.nodes.focus.target
-					this.#enableClose()
-				} else {
-					this.#disableClose()
+
+					listen(window, 'keydown', e => {
+						if (e.key === KEYBOARD.ESC) {
+							this.store.event.clearOverlay()
+						}
+					})
+
+					listen(
+						document,
+						'click',
+						e => {
+							const target = e.target instanceof HTMLElement ? e.target : null
+							if (this.store.refs.overlay?.contains(target)) return
+							if (this.store.refs.container?.contains(target)) return
+							this.store.event.clearOverlay()
+						},
+						true
+					)
 				}
 			})
-		})
 
-		const selectionChangeHandler = () => {
-			const showOverlayOn = this.store.props.showOverlayOn()
-			const type: OverlayTrigger = 'selectionChange'
+			// Focus-based selection change tracking
+			const selectionChangeHandler = () => {
+				const container = this.store.refs.container
+				if (!container?.contains(document.activeElement)) return
 
-			if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-				this.store.event.checkOverlay()
+				const showOverlayOn = this.store.props.showOverlayOn()
+				const type: OverlayTrigger = 'selectionChange'
+
+				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+					this.store.event.checkOverlay()
+				}
 			}
-		}
-		this.#selectionChangeHandler = selectionChangeHandler
 
-		this.#focusinHandler = () => {
-			document.addEventListener('selectionchange', selectionChangeHandler)
-		}
-
-		this.#focusoutHandler = () => {
-			document.removeEventListener('selectionchange', selectionChangeHandler)
-		}
-
-		const container = this.store.refs.container
-		if (container) {
-			container.addEventListener('focusin', this.#focusinHandler)
-			container.addEventListener('focusout', this.#focusoutHandler)
-		}
+			listen(document, 'selectionchange', selectionChangeHandler)
+		})
 	}
 
 	disable() {
-		const container = this.store.refs.container
-
-		if (container && this.#focusinHandler) {
-			container.removeEventListener('focusin', this.#focusinHandler)
-			if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
-		}
-
-		if (this.#selectionChangeHandler) {
-			document.removeEventListener('selectionchange', this.#selectionChangeHandler)
-		}
-
-		this.#disableClose()
-
 		this.store.state.overlayTrigger(undefined)
-
 		this.#scope?.()
 		this.#scope = undefined
-		this.#selectionChangeHandler = undefined
-		this.#focusinHandler = undefined
-		this.#focusoutHandler = undefined
-	}
-
-	#enableClose() {
-		if (this.#escHandler) return
-
-		this.#escHandler = e => {
-			if (e.key === KEYBOARD.ESC) {
-				this.store.event.clearOverlay()
-			}
-		}
-
-		this.#clickHandler = e => {
-			const target = e.target instanceof HTMLElement ? e.target : null
-			if (this.store.refs.overlay?.contains(target)) return
-			if (this.store.refs.container?.contains(target)) return
-			this.store.event.clearOverlay()
-		}
-
-		window.addEventListener('keydown', this.#escHandler)
-		document.addEventListener('click', this.#clickHandler, true)
-	}
-
-	#disableClose() {
-		if (this.#escHandler) {
-			window.removeEventListener('keydown', this.#escHandler)
-			if (this.#clickHandler) document.removeEventListener('click', this.#clickHandler, true)
-			this.#escHandler = undefined
-			this.#clickHandler = undefined
-		}
 	}
 }
