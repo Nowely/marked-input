@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {signal, watch, event, batch, effect} from './signal'
+import {signal, watch, event, batch, effect, effectScope} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -532,5 +532,96 @@ describe('watch()', () => {
 		s('c')
 
 		expect(seen).toEqual(['b', 'c'])
+	})
+})
+
+// ---------------------------------------------------------------------------
+// effect cleanup
+// ---------------------------------------------------------------------------
+
+describe('effect cleanup', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('should call returned cleanup on re-run', () => {
+		const s = signal(0)
+		const cleanup = vi.fn()
+
+		trackedEffect(() => {
+			s()
+			return cleanup
+		})
+
+		expect(cleanup).not.toHaveBeenCalled()
+		s(1)
+		expect(cleanup).toHaveBeenCalledTimes(1)
+		s(2)
+		expect(cleanup).toHaveBeenCalledTimes(2)
+	})
+
+	it('should call returned cleanup on explicit disposal', () => {
+		const cleanup = vi.fn()
+
+		const dispose = effect(() => cleanup)
+		disposers.push(dispose)
+
+		expect(cleanup).not.toHaveBeenCalled()
+		dispose()
+		expect(cleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should call inner effect cleanup when outer re-runs', () => {
+		const show = signal(true)
+		const innerCleanup = vi.fn()
+
+		trackedEffect(() => {
+			if (show()) {
+				effect(() => innerCleanup)
+			}
+		})
+
+		expect(innerCleanup).not.toHaveBeenCalled()
+		show(false)
+		expect(innerCleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should call cleanup when scope is disposed', () => {
+		const cleanup = vi.fn()
+
+		const scope = effectScope(() => {
+			effect(() => cleanup)
+		})
+
+		expect(cleanup).not.toHaveBeenCalled()
+		scope()
+		expect(cleanup).toHaveBeenCalledTimes(1)
+	})
+
+	it('should replace cleanup on each re-run', () => {
+		const s = signal(0)
+		const cleanups: number[] = []
+
+		trackedEffect(() => {
+			const v = s()
+			return () => cleanups.push(v)
+		})
+
+		s(1)
+		expect(cleanups).toEqual([0])
+		s(2)
+		expect(cleanups).toEqual([0, 1])
+	})
+
+	it('should work with effects returning void (no cleanup)', () => {
+		const s = signal(0)
+		const runs = vi.fn()
+
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+
+		expect(runs).toHaveBeenCalledTimes(1)
+		s(1)
+		expect(runs).toHaveBeenCalledTimes(2)
 	})
 })
