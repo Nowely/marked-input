@@ -1,56 +1,50 @@
 import {isHtmlElement} from '../../shared/checkers'
 import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
+import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {deleteMark} from '../editing/utils/deleteMark'
 import {isFullSelection} from '../selection'
 
 export class InputFeature {
-	#keydownHandler?: (e: KeyboardEvent) => void
-	#pasteHandler?: (e: ClipboardEvent) => void
-	#beforeInputHandler?: (e: InputEvent) => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#keydownHandler) return
+		if (this.#scope) return
 
 		const container = this.store.refs.container
 		if (!container) return
 
-		this.#keydownHandler = e => {
-			if (!this.store.props.drag()) {
-				this.#handleDelete(e)
-			}
-		}
+		this.#scope = effectScope(() => {
+			listen(container, 'keydown', e => {
+				if (!this.store.props.drag()) {
+					this.#handleDelete(e)
+				}
+			})
 
-		this.#pasteHandler = e => {
-			const c = this.store.refs.container
-			if (c) captureMarkupPaste(e, c)
-			handlePaste(this.store, e)
-		}
+			listen(container, 'paste', e => {
+				const c = this.store.refs.container
+				if (c) captureMarkupPaste(e, c)
+				handlePaste(this.store, e)
+			})
 
-		this.#beforeInputHandler = e => {
-			handleBeforeInput(this.store, e)
-		}
-
-		container.addEventListener('keydown', this.#keydownHandler)
-		container.addEventListener('paste', this.#pasteHandler)
-		container.addEventListener('beforeinput', this.#beforeInputHandler, true)
+			listen(
+				container,
+				'beforeinput',
+				e => {
+					handleBeforeInput(this.store, e)
+				},
+				true
+			)
+		})
 	}
 
 	disable() {
-		const container = this.store.refs.container
-		if (!container || !this.#keydownHandler) return
-
-		container.removeEventListener('keydown', this.#keydownHandler)
-		if (this.#pasteHandler) container.removeEventListener('paste', this.#pasteHandler)
-		if (this.#beforeInputHandler) container.removeEventListener('beforeinput', this.#beforeInputHandler, true)
-
-		this.#keydownHandler = undefined
-		this.#pasteHandler = undefined
-		this.#beforeInputHandler = undefined
+		this.#scope?.()
+		this.#scope = undefined
 	}
 
 	#handleDelete(event: KeyboardEvent) {
