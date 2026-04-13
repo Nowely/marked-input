@@ -1,44 +1,37 @@
 import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
-import {effectScope, watch} from '../../shared/signals/index.js'
+import {effectScope, watch, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export class FocusFeature {
-	#focusinHandler?: (e: FocusEvent) => void
-	#focusoutHandler?: () => void
-	#clickHandler?: () => void
 	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#focusinHandler) return
+		if (this.#scope) return
 
 		const container = this.store.refs.container
 		if (!container) return
 
-		this.#focusinHandler = e => {
-			const target = isHtmlElement(e.target) ? e.target : undefined
-			this.store.nodes.focus.target = target
-		}
-
-		this.#focusoutHandler = () => {
-			this.store.nodes.focus.target = undefined
-		}
-
-		this.#clickHandler = () => {
-			const tokens = this.store.state.tokens()
-			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const container = this.store.refs.container
-				const element = container ? firstHtmlChild(container) : null
-				element?.focus()
-			}
-		}
-
-		container.addEventListener('focusin', this.#focusinHandler)
-		container.addEventListener('focusout', this.#focusoutHandler)
-		container.addEventListener('click', this.#clickHandler)
-
 		this.#scope = effectScope(() => {
+			listen(container, 'focusin', e => {
+				const target = isHtmlElement(e.target) ? e.target : undefined
+				this.store.nodes.focus.target = target
+			})
+
+			listen(container, 'focusout', () => {
+				this.store.nodes.focus.target = undefined
+			})
+
+			listen(container, 'click', () => {
+				const tokens = this.store.state.tokens()
+				if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+					const container = this.store.refs.container
+					const element = container ? firstHtmlChild(container) : null
+					element?.focus()
+				}
+			})
+
 			watch(this.store.event.recoverFocus, () => {
 				this.#recover()
 			})
@@ -52,20 +45,8 @@ export class FocusFeature {
 	}
 
 	disable() {
-		const container = this.store.refs.container
-		if (!container || !this.#focusinHandler) return
-
-		container.removeEventListener('focusin', this.#focusinHandler)
-		if (this.#focusoutHandler) container.removeEventListener('focusout', this.#focusoutHandler)
-		if (this.#clickHandler) container.removeEventListener('click', this.#clickHandler)
-
 		this.#scope?.()
 		this.#scope = undefined
-
-		this.#focusinHandler = undefined
-		this.#focusoutHandler = undefined
-		this.#clickHandler = undefined
-
 		this.store.nodes.focus.clear()
 	}
 
