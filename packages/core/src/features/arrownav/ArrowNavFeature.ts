@@ -1,40 +1,38 @@
 import {KEYBOARD} from '../../shared/constants'
+import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {shiftFocusPrev, shiftFocusNext} from '../navigation'
 import {selectAllText} from '../selection'
 
 export class ArrowNavFeature {
-	#keydownHandler?: (e: KeyboardEvent) => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#keydownHandler) return
+		if (this.#scope) return
 
 		const container = this.store.refs.container
 		if (!container) return
 
-		this.#keydownHandler = e => {
-			if (this.store.props.drag()) return
-			if (!this.store.nodes.focus.target) return
+		this.#scope = effectScope(() => {
+			listen(container, 'keydown', e => {
+				if (this.store.props.drag()) return
+				if (!this.store.nodes.focus.target) return
 
-			if (e.key === KEYBOARD.LEFT) {
-				shiftFocusPrev(this.store, e)
-			} else if (e.key === KEYBOARD.RIGHT) {
-				shiftFocusNext(this.store, e)
-			}
+				if (e.key === KEYBOARD.LEFT) {
+					shiftFocusPrev(this.store, e)
+				} else if (e.key === KEYBOARD.RIGHT) {
+					shiftFocusNext(this.store, e)
+				}
 
-			selectAllText(this.store, e)
-		}
-
-		container.addEventListener('keydown', this.#keydownHandler)
+				selectAllText(this.store, e)
+			})
+		})
 	}
 
 	disable() {
-		const container = this.store.refs.container
-		if (!container || !this.#keydownHandler) return
-
-		container.removeEventListener('keydown', this.#keydownHandler)
-		this.#keydownHandler = undefined
+		this.#scope?.()
+		this.#scope = undefined
 	}
 }
