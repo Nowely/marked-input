@@ -1,5 +1,6 @@
 import {childAt, htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
+import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {Caret} from '../caret'
 import {consumeMarkupPaste} from '../clipboard'
@@ -14,49 +15,46 @@ function isTextLikeRow(token: Token): boolean {
 }
 
 export class BlockEditFeature {
-	#keydownHandler?: (e: KeyboardEvent) => void
-	#beforeInputHandler?: (e: InputEvent) => void
+	#scope?: () => void
 
 	constructor(private store: Store) {}
 
 	enable() {
-		if (this.#keydownHandler) return
+		if (this.#scope) return
 
 		const container = this.store.refs.container
 		if (!container) return
 
-		this.#keydownHandler = e => {
-			if (!this.store.props.drag()) return
+		this.#scope = effectScope(() => {
+			listen(container, 'keydown', e => {
+				if (!this.store.props.drag()) return
 
-			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-				this.#handleBlockArrowLeftRight(e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
-			} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-				this.#handleArrowUpDown(e)
-			}
+				if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
+					this.#handleBlockArrowLeftRight(e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
+				} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
+					this.#handleArrowUpDown(e)
+				}
 
-			this.#handleDelete(e)
-			this.#handleEnter(e)
-		}
+				this.#handleDelete(e)
+				this.#handleEnter(e)
+			})
 
-		this.#beforeInputHandler = e => {
-			if (!this.store.props.drag()) return
-			if (e.defaultPrevented) return
-			this.#handleBlockBeforeInput(e)
-		}
-
-		container.addEventListener('keydown', this.#keydownHandler)
-		container.addEventListener('beforeinput', this.#beforeInputHandler, true)
+			listen(
+				container,
+				'beforeinput',
+				e => {
+					if (!this.store.props.drag()) return
+					if (e.defaultPrevented) return
+					this.#handleBlockBeforeInput(e)
+				},
+				true
+			)
+		})
 	}
 
 	disable() {
-		const container = this.store.refs.container
-		if (!container || !this.#keydownHandler) return
-
-		container.removeEventListener('keydown', this.#keydownHandler)
-		if (this.#beforeInputHandler) container.removeEventListener('beforeinput', this.#beforeInputHandler, true)
-
-		this.#keydownHandler = undefined
-		this.#beforeInputHandler = undefined
+		this.#scope?.()
+		this.#scope = undefined
 	}
 
 	#handleDelete(event: KeyboardEvent) {
