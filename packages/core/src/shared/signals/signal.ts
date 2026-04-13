@@ -565,3 +565,43 @@ export function untracked<T>(fn: () => T): T {
 		setActiveSub(prev)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// listen() — scope-aware DOM event listener
+// ---------------------------------------------------------------------------
+
+export function listen<K extends keyof WindowEventMap>(
+	target: Window,
+	event: K,
+	handler: (e: WindowEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen<K extends keyof DocumentEventMap>(
+	target: Document,
+	event: K,
+	handler: (e: DocumentEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen<K extends keyof HTMLElementEventMap>(
+	target: HTMLElement,
+	event: K,
+	handler: (e: HTMLElementEventMap[K]) => void,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen(
+	target: EventTarget,
+	event: string,
+	handler: EventListenerOrEventListenerObject,
+	options?: boolean | AddEventListenerOptions
+): () => void
+export function listen(
+	target: EventTarget,
+	event: string,
+	handler: EventListenerOrEventListenerObject,
+	options?: boolean | AddEventListenerOptions
+): () => void {
+	return alienEffect(() => {
+		target.addEventListener(event, handler, options)
+		return () => target.removeEventListener(event, handler, options)
+	})
+}

@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {signal, watch, event, batch, effect, effectScope} from './signal'
+import {signal, watch, event, batch, effect, effectScope, listen} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -623,5 +623,69 @@ describe('effect cleanup', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 		s(1)
 		expect(runs).toHaveBeenCalledTimes(2)
+	})
+})
+
+describe('listen()', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('should add listener and auto-remove on scope disposal', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const addSpy = vi.spyOn(target, 'addEventListener')
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		const scope = effectScope(() => {
+			listen(target, 'click', handler)
+		})
+
+		expect(addSpy).toHaveBeenCalledWith('click', handler, undefined)
+		expect(removeSpy).not.toHaveBeenCalled()
+
+		scope()
+
+		expect(removeSpy).toHaveBeenCalledWith('click', handler, undefined)
+	})
+
+	it('should remove listener when nested effect re-runs', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const show = signal(true)
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		trackedEffect(() => {
+			if (show()) {
+				listen(target, 'input', handler)
+			}
+		})
+
+		expect(removeSpy).not.toHaveBeenCalled()
+		show(false)
+		expect(removeSpy).toHaveBeenCalledWith('input', handler, undefined)
+	})
+
+	it('should return a dispose function for manual cleanup', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const removeSpy = vi.spyOn(target, 'removeEventListener')
+
+		const dispose = listen(target, 'keydown', handler)
+		disposers.push(dispose)
+
+		expect(removeSpy).not.toHaveBeenCalled()
+		dispose()
+		expect(removeSpy).toHaveBeenCalledWith('keydown', handler, undefined)
+	})
+
+	it('should pass options through to addEventListener', () => {
+		const target = new EventTarget()
+		const handler = vi.fn()
+		const addSpy = vi.spyOn(target, 'addEventListener')
+
+		effectScope(() => {
+			listen(target, 'click', handler, {capture: true})
+		})()
+
+		expect(addSpy).toHaveBeenCalledWith('click', handler, {capture: true})
 	})
 })
