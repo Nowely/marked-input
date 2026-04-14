@@ -1,6 +1,7 @@
 import {composeStories} from '@storybook/react-vite'
 import {beforeEach, describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
+import {page} from 'vitest/browser'
 
 import * as Stories from './Clipboard.react.stories'
 
@@ -192,10 +193,8 @@ describe('Clipboard: copy', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: clipboardData})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise(r => setTimeout(r, 100))
-
-		// Result: "hello [world] foo" + "lo [world] f" appended
-		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
+		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
+		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
 		expect(root.textContent).toBe('hello world foolo world f')
 	})
 
@@ -299,13 +298,8 @@ describe('Clipboard: copy', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
 		targetRoot.dispatchEvent(inputEvent)
 
-		// Wait for React re-render
-		await new Promise(r => setTimeout(r, 50))
-
-		// Verify mark was reconstructed in target
-		const markAfter = targetRoot.querySelector<HTMLElement>('[data-testid="mark"]')
-		expect(markAfter).not.toBeNull()
-		expect(markAfter?.textContent).toBe('world')
+		const markAfter = await page.elementLocator(targetRoot).getByTestId('mark').findElement()
+		expect(markAfter.textContent).toBe('world')
 	})
 })
 
@@ -359,13 +353,8 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
 		root.dispatchEvent(inputEvent)
 
-		// Wait for React to re-render with the new value
-		await new Promise(r => setTimeout(r, 50))
-
-		// Verify the mark was reconstructed
-		const markAfter = root.querySelector<HTMLElement>('[data-testid="mark"]')
-		expect(markAfter).not.toBeNull()
-		expect(markAfter?.textContent).toBe('world')
+		const markAfter = await page.elementLocator(root).getByTestId('mark').findElement()
+		expect(markAfter.textContent).toBe('world')
 	})
 
 	it('pasting markput data into uncontrolled editor should reconstruct the mark', async () => {
@@ -408,14 +397,11 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
 		root.dispatchEvent(inputEvent)
 
-		// Wait for React to re-render
-		await new Promise(r => setTimeout(r, 50))
-
-		// Should now have two marks: the original "world" + the pasted "test"
-		const marksAfter = root.querySelectorAll<HTMLElement>('[data-testid="mark"]')
-		expect(marksAfter.length).toBe(2)
-		expect(marksAfter[0]?.textContent).toBe('world')
-		expect(marksAfter[1]?.textContent).toBe('test')
+		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
+		const marksLocator = page.elementLocator(root).getByTestId('mark')
+		expect(marksLocator.length).toBe(2)
+		expect(marksLocator.nth(0).element().textContent).toBe('world')
+		expect(marksLocator.nth(1).element().textContent).toBe('test')
 	})
 
 	it('pasting markup over a selection within a span should replace the selection', async () => {
@@ -448,12 +434,8 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise(r => setTimeout(r, 50))
-
-		// "abc" with "b" replaced by "@[world](1)" → "a[world]c"
-		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')
-		expect(mark).not.toBeNull()
-		expect(mark?.textContent).toBe('world')
+		const mark = await page.elementLocator(root).getByTestId('mark').findElement()
+		expect(mark.textContent).toBe('world')
 		expect(root.textContent).toBe('aworldc')
 	})
 
@@ -492,13 +474,8 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		// Wait for React re-render
-		await new Promise(r => setTimeout(r, 100))
-
-		// DOM should be: hello [world] [world]foo
-		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
-
-		// Caret must be in "foo" at offset 0 — right after the pasted mark
+		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
+		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
 		expect(sel.anchorNode?.textContent).toBe('foo')
@@ -545,14 +522,10 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise(r => setTimeout(r, 100))
-
-		// Should now have two marks: pasted "test" (block 0) + original "world" (block 1)
-		// In drag mode, the pasted mark is inserted into the first block, which precedes
-		// the original "world" mark block in DOM order — so marks[0] is "test".
-		const marks = root.querySelectorAll('[data-testid="mark"]')
-		expect(marks.length).toBe(2)
-		expect(marks[0]?.textContent).toBe('test')
+		await expect.element(page.getByTestId('mark').first()).toBeInTheDocument()
+		const marksLocator = page.getByTestId('mark')
+		expect(marksLocator.length).toBe(2)
+		expect(marksLocator.nth(0).element().textContent).toBe('test')
 	})
 })
 
@@ -625,11 +598,8 @@ describe('Clipboard: nested marks', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise(r => setTimeout(r, 100))
-
-		// Result: "hello [world] [world]foo" — two marks, original + pasted
-		const marksAfter = root.querySelectorAll('[data-testid="mark"]')
-		expect(marksAfter.length).toBe(2)
+		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
+		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
 		expect(root.textContent).toBe('hello world worldfoo')
 	})
 })
@@ -662,12 +632,8 @@ describe('Clipboard: cut', () => {
 		expect(clipboardData.getData('application/x-markput')).toBe('ll')
 		expect(clipboardData.getData('text/plain')).toBe('ll')
 
-		await new Promise(r => setTimeout(r, 50))
-
-		// "hello " with "ll" removed → "he" + "o " + mark + " foo"
+		await expect.element(page.getByTestId('mark')).toBeInTheDocument()
 		expect(root.textContent).toBe('heo world foo')
-		const mark = root.querySelector('[data-testid="mark"]')
-		expect(mark).not.toBeNull()
 	})
 
 	it('cut across tokens should write trimmed markup and remove selection', async () => {
@@ -686,10 +652,7 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('lo @[world](1) fo')
 
-		await new Promise(r => setTimeout(r, 50))
-
-		// "hello [world] foo" with "lo [world] fo" removed → "hel" + "o" = "helo"
-		expect(root.textContent).toBe('helo')
+		await expect.element(page.getByText('helo')).toBeInTheDocument()
 	})
 
 	it('cut full mark should remove the mark', async () => {
@@ -707,11 +670,8 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('@[world](1)')
 
-		await new Promise(r => setTimeout(r, 50))
-
-		// Mark removed, text spans merge: "hello " + " foo" = "hello  foo"
+		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
 		expect(root.textContent).toBe('hello  foo')
-		expect(root.querySelector('[data-testid="mark"]')).toBeNull()
 	})
 
 	it('cut all content should clear the editor', async () => {
@@ -730,8 +690,6 @@ describe('Clipboard: cut', () => {
 
 		expect(clipboardData.getData('application/x-markput')).toBe('hello @[world](1) foo')
 
-		await new Promise(r => setTimeout(r, 50))
-
-		expect(root.querySelector('[data-testid="mark"]')).toBeNull()
+		await expect.element(page.getByTestId('mark')).not.toBeInTheDocument()
 	})
 })
