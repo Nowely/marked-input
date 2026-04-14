@@ -41,7 +41,7 @@ export class ContentEditableFeature {
 		const isBlock = this.store.computed.isBlock()
 
 		if (isBlock) {
-			// In drag mode, only set contentEditable on text rows (DragMark divs).
+			// In block mode, only set contentEditable on text rows (DragMark divs).
 			// Mark rows get tabIndex for focusability but are not contentEditable.
 			const tokens = this.store.state.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
@@ -54,7 +54,7 @@ export class ContentEditableFeature {
 				}
 			}
 		} else {
-			// In non-drag mode, even-indexed children are text spans (odd are marks).
+			// In inline mode, even-indexed children are text spans (odd are marks).
 			for (let i = 0; i < children.length; i += 2) {
 				const el = childAt(container, i)
 				if (el) el.contentEditable = value

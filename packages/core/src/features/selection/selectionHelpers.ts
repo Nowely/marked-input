@@ -19,7 +19,7 @@ export function isFullSelection(store: Store): boolean {
 
 export function selectAllText(store: Store, event: KeyboardEvent): void {
 	if ((event.ctrlKey || event.metaKey) && event.code === 'KeyA') {
-		// In block/drag mode, let the browser handle Ctrl+A natively so it selects
+		// In block mode, let the browser handle Ctrl+A natively so it selects
 		// text within the focused block only, not across all blocks.
 		if (store.computed.isBlock()) return
 
