@@ -10,8 +10,6 @@ import * as DragStories from './Drag.vue.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
 
-const GRIP_SELECTOR = 'button[aria-label="Drag to reorder or click for options"]'
-
 /**
  * Resolve the editor element whose direct children are drag rows.
  * Prefer the outermost `[class*="Container"]` that has DragMark children so we do not pick a
@@ -53,9 +51,10 @@ function getEditableInRow(row: HTMLElement) {
 async function openMenuForRow(container: Element, rowIndex: number) {
 	const row = getAllRows(container)[rowIndex]
 	await userEvent.hover(row)
-	await new Promise(r => setTimeout(r, 50))
-	const grip = row.querySelector<HTMLButtonElement>(GRIP_SELECTOR)
-	if (!grip) throw new Error(`No grip found after hovering row ${rowIndex}`)
+	const grip = await page
+		.elementLocator(row)
+		.getByRole('button', {name: 'Drag to reorder or click for options'})
+		.findElement()
 	await userEvent.click(grip)
 }
 
@@ -73,9 +72,10 @@ async function simulateDragRow(
 	const targetRow = rows[targetIndex]
 
 	await userEvent.hover(sourceRow)
-	await new Promise(r => setTimeout(r, 50))
-	const grip = sourceRow.querySelector<HTMLButtonElement>(GRIP_SELECTOR)
-	if (!grip) throw new Error(`No grip found for source row ${sourceIndex}`)
+	const grip = await page
+		.elementLocator(sourceRow)
+		.getByRole('button', {name: 'Drag to reorder or click for options'})
+		.findElement()
 
 	const dt = new DataTransfer()
 
@@ -91,12 +91,10 @@ async function simulateDragRow(
 		})
 	)
 
-	await new Promise(r => setTimeout(r, 50))
+	await new Promise<void>(r => queueMicrotask(r))
 
 	targetRow.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}))
 	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
-
-	await new Promise(r => setTimeout(r, 50))
 }
 
 /** Dispatch a synthetic beforeinput paste event using the current selection as the target range. */
@@ -160,8 +158,9 @@ describe('Feature: drag rows', () => {
 		const {container} = await render(ReadOnlyDrag)
 		const rows = getAllRows(container)
 		await userEvent.hover(rows[0])
-		await new Promise(r => setTimeout(r, 50))
-		expect(document.querySelectorAll(GRIP_SELECTOR)).toHaveLength(0)
+		await expect
+			.element(page.getByRole('button', {name: 'Drag to reorder or click for options'}))
+			.not.toBeInTheDocument()
 	})
 
 	it('should render content in read-only mode', async () => {
@@ -802,7 +801,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const editable = getEditableInRow(rows[0])
 			await focusAtEnd(editable)
 			dispatchPaste(editable, ' pasted')
-			await new Promise(r => setTimeout(r, 50))
+			await expect.element(page.getByText(/First block of plain text pasted/).first()).toBeInTheDocument()
 
 			expect(getRawValue(container)).toContain('First block of plain text pasted')
 		})
@@ -813,7 +812,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const editable = getEditableInRow(rows[0])
 			await focusAtEnd(editable)
 			dispatchPaste(editable, '!')
-			await new Promise(r => setTimeout(r, 50))
+			await expect.element(page.getByText(/First block of plain text!/).first()).toBeInTheDocument()
 
 			const raw = getRawValue(container)
 			expect(raw).toContain('Second block of plain text')
@@ -827,7 +826,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			const editable = getEditableInRow(blocks[0])
 			await focusAtEnd(editable)
 			dispatchPaste(editable, '!')
-			await new Promise(r => setTimeout(r, 50))
+			await expect.element(page.getByText('# Welcome to Draggable Blocks!').first()).toBeInTheDocument()
 
 			const block0Raw = getRawValue(container).split('\n\n')[0]
 			expect(block0Raw).toBe('# Welcome to Draggable Blocks!')
