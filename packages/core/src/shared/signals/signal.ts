@@ -243,10 +243,11 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 				}
 			}
 		}
-		// Walk past intermediate computed nodes to find the actual effect/watcher subscriber.
-		// Unlike computedOper/eventReadOper, signals can be read inside a computed getter where
-		// activeSub is a ComputedNode (no Mutable|Watching flags). The walk skips these
-		// intermediaries to link directly to the EffectNode/WatcherNode that needs notification.
+		// Walk to the nearest subscriber with Mutable or Watching flags.
+		// Needed when activeSub is a non-tracking scope node (e.g. effectScope with flags: None)
+		// rather than a computed/effect. computedOper/eventReadOper can link directly because they
+		// are only called inside reactive contexts that guarantee a valid subscriber, but signals
+		// may be read in broader scopes.
 		let sub = activeSub
 		while (sub !== undefined) {
 			if (sub.flags & (ReactiveFlags.Mutable | ReactiveFlags.Watching)) {
