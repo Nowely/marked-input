@@ -73,7 +73,7 @@ const {link, unlink, propagate, checkDirty, shallowPropagate} = createReactiveSy
 			if (effect === undefined || !(effect.flags & ReactiveFlags.Watching)) {
 				break
 			}
-			// oxlint-disable-next-line typescript/no-unnecessary-condition -- intentional infinite loop with break
+			// oxlint-disable-next-line typescript/no-unnecessary-condition, no-constant-condition -- intentional infinite loop with break
 		} while (true)
 
 		queuedLength = insertIndex
