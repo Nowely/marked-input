@@ -86,7 +86,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:33](https://github.com/Nowely
 get depth(): number;
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:60](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L60)
+Defined in: [core/src/features/mark/MarkHandler.ts:64](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L64)
 
 ##### Returns
 
@@ -102,7 +102,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:60](https://github.com/Nowely
 get hasChildren(): boolean;
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:64](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L64)
+Defined in: [core/src/features/mark/MarkHandler.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L68)
 
 ##### Returns
 
@@ -152,7 +152,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:51](https://github.com/Nowely
 get parent(): MarkToken | undefined;
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:68](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L68)
+Defined in: [core/src/features/mark/MarkHandler.ts:72](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L72)
 
 ##### Returns
 
@@ -218,7 +218,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:56](https://github.com/Nowely
 get tokens(): Token[];
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:72](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L72)
+Defined in: [core/src/features/mark/MarkHandler.ts:76](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L76)
 
 ##### Returns
 
@@ -266,7 +266,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:42](https://github.com/Nowely
 change(props): void;
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:76](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L76)
+Defined in: [core/src/features/mark/MarkHandler.ts:80](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L80)
 
 #### Parameters
 
@@ -289,7 +289,7 @@ Defined in: [core/src/features/mark/MarkHandler.ts:76](https://github.com/Nowely
 remove(): void;
 ```
 
-Defined in: [core/src/features/mark/MarkHandler.ts:85](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L85)
+Defined in: [core/src/features/mark/MarkHandler.ts:89](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkHandler.ts#L89)
 
 #### Returns
 
