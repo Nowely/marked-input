@@ -238,4 +238,8 @@ export class Store {
 			{mutable: true}
 		)
 	}
+
+	bumpTokens(): void {
+		this.state.tokens([...this.state.tokens()])
+	}
 }
