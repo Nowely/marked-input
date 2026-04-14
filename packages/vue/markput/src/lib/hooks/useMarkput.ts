@@ -1,11 +1,11 @@
-import {effect as alienEffect} from '@markput/core'
+import {effect as alienEffect, isReactive} from '@markput/core'
 import type {Signal, Computed, SignalValues, Store} from '@markput/core'
 import {shallowRef, onUnmounted, type Ref} from 'vue'
 
 import {useStore} from './useStore'
 
 type Selectable<T> = Signal<T> | Computed<T>
-type ObjectSelector = Record<string, Selectable<unknown>>
+type ObjectSelector = Record<string, Selectable<unknown> | unknown>
 
 export function useMarkput<T>(selector: (store: Store) => Selectable<T>): Ref<T>
 export function useMarkput<R extends ObjectSelector>(selector: (store: Store) => R): Ref<SignalValues<R>>
@@ -21,8 +21,9 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 			return target()
 		}
 		const out: Record<string, unknown> = {}
-		for (const key in target) {
-			out[key] = target[key]()
+		for (const k in target) {
+			const val = target[k]
+			out[k] = isReactive(val) ? (val as () => unknown)() : val
 		}
 		return out
 	}
