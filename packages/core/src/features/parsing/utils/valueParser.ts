@@ -18,7 +18,7 @@ export function getTokensByUI(store: Store): Token[] {
 	return tokens.toSpliced(focus.index, 1, ...parsed)
 }
 
-export function getTokensByValue(store: Store): Token[] {
+export function computeTokensFromValue(store: Store): Token[] {
 	const value = store.props.value()
 	const ranges = getRangeMap(store)
 	const gap = findGap(store.state.previousValue(), value)

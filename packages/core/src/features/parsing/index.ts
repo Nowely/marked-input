@@ -8,5 +8,11 @@ export {denote} from './parser/utils/denote'
 export {toString} from './parser/utils/toString'
 export {findToken} from './utils/findToken'
 export type {TokenContext} from './utils/findToken'
-export {getTokensByUI, getTokensByValue, parseUnionLabels, getRangeMap, parseWithParser} from './utils/valueParser'
+export {
+	getTokensByUI,
+	computeTokensFromValue,
+	parseUnionLabels,
+	getRangeMap,
+	parseWithParser,
+} from './utils/valueParser'
 export {ParseFeature} from './ParseFeature'

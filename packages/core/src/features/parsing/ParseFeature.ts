@@ -1,7 +1,7 @@
 import {computed, effectScope, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {toString} from './parser/utils/toString'
-import {getTokensByUI, getTokensByValue, parseWithParser} from './utils/valueParser'
+import {getTokensByUI, computeTokensFromValue, parseWithParser} from './utils/valueParser'
 
 export class ParseFeature {
 	#scope?: () => void
@@ -39,7 +39,7 @@ export class ParseFeature {
 				store.state.previousValue(text)
 				return
 			}
-			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : getTokensByValue(store))
+			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : computeTokensFromValue(store))
 		})
 	}
 
