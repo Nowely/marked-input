@@ -23,7 +23,8 @@ function syncProps() {
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),
 		readOnly: props.readOnly,
-		drag: props.drag,
+		layout: props.layout,
+		draggable: props.draggable,
 		options: props.options,
 		showOverlayOn: props.showOverlayOn,
 		Span: props.Span,
@@ -52,7 +53,8 @@ watch(
 		props.style,
 		props.slots,
 		props.slotProps,
-		props.drag,
+		props.layout,
+		props.draggable,
 	],
 	syncProps
 )

@@ -5,7 +5,7 @@ Manages the drag-and-drop block editing mode where each row/token is rendered as
 ## Components
 
 - **DragFeature**: Feature class that subscribes to `store.event.dragAction` and dispatches drag operations
-- **getAlwaysShowHandleDrag**: Extracts `alwaysShowHandle` from drag configuration
+- **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
 - **EMPTY_TEXT_TOKEN**: Constant used as placeholder when no rows exist
 
 ## Operations (internal)

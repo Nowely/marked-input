@@ -69,7 +69,8 @@ export interface MarkputState {
 	style: CSSProperties | undefined
 	slots: CoreSlots | undefined
 	slotProps: CoreSlotProps | undefined
-	drag: boolean | {alwaysShowHandle: boolean}
+	layout: 'inline' | 'block'
+	draggable: boolean | DraggableConfig
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
@@ -126,6 +127,10 @@ export interface CoreSlotProps {
 	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 	span?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+}
+
+export interface DraggableConfig {
+	alwaysShowHandle?: boolean
 }
 
 export type DragAction =

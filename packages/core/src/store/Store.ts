@@ -26,6 +26,7 @@ import type {
 	CoreSlots,
 	CoreSlotProps,
 	DragAction,
+	DraggableConfig,
 } from '../shared/types'
 import {cx} from '../shared/utils/cx'
 import {merge} from '../shared/utils/merge'
@@ -39,7 +40,8 @@ export type {DragAction} from '../shared/types'
 const DRAG_HANDLE_WIDTH = 24
 
 function buildContainerProps(
-	drag: boolean,
+	isDraggable: boolean,
+	isBlock: boolean,
 	readOnly: boolean,
 	className: string | undefined,
 	style: CSSProperties | undefined,
@@ -47,9 +49,8 @@ function buildContainerProps(
 ): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
 	const containerSlotProps = slotProps?.container
 	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = drag && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+	const mergedStyle = isDraggable && isBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
 
-	// Strip className/style from resolved slotProps — merged explicitly above to avoid duplicate keys
 	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 
 	return {
@@ -77,7 +78,8 @@ export class Store {
 		options: signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true}),
 		readOnly: signal<boolean>(false, {readonly: true}),
 
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false, {readonly: true}),
+		layout: signal<'inline' | 'block'>('inline', {readonly: true}),
+		draggable: signal<boolean | DraggableConfig>(false, {readonly: true}),
 
 		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
 
@@ -119,14 +121,15 @@ export class Store {
 			const markups = this.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.props.drag()
-			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
+			const isBlock = this.props.layout() === 'block'
+			return new Parser(markups, isBlock ? {skipEmptyText: true} : undefined)
 		}),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed(
 			() =>
 				buildContainerProps(
-					!!this.props.drag(),
+					!!this.props.draggable(),
+					this.props.layout() === 'block',
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),

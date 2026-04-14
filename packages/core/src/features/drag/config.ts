@@ -1,3 +1,5 @@
-export function getAlwaysShowHandleDrag(drag: boolean | {alwaysShowHandle: boolean}): boolean {
-	return typeof drag === 'object' && !!drag.alwaysShowHandle
+import type {DraggableConfig} from '../../shared/types'
+
+export function getAlwaysShowHandle(draggable: boolean | DraggableConfig): boolean {
+	return typeof draggable === 'object' && !!draggable.alwaysShowHandle
 }

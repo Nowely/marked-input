@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {getAlwaysShowHandleDrag} from '@markput/core'
+import {getAlwaysShowHandle} from '@markput/core'
 import type {Token as TokenType} from '@markput/core'
 import {computed} from 'vue'
 
@@ -12,11 +12,11 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 
 const store = useStore()
 const readOnly = useMarkput(s => s.props.readOnly)
-const drag = useMarkput(s => s.props.drag)
+const draggable = useMarkput(s => s.props.draggable)
 const blockStore = store.blocks.get(props.token)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
-const alwaysShowHandle = computed(() => getAlwaysShowHandleDrag(drag.value))
+const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 </script>
 
 <template>

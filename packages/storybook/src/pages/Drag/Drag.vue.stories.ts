@@ -147,7 +147,8 @@ export const Markdown: Story = {
 		Mark: MarkdownMark,
 		options: markdownOptions,
 		value: DRAG_MARKDOWN,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 		style: {...mdEditorStyle, ...mdContainerStyle},
 	},
 }
@@ -282,7 +283,8 @@ export const PlainTextDrag: Story = {
 							Mark: ParagraphMark,
 							options: paragraphOptions,
 							value: value.value,
-							drag: true,
+							layout: 'block',
+							draggable: true,
 							style: testStyle,
 							onChange: (v: string) => {
 								value.value = v
@@ -308,7 +310,8 @@ export const MarkdownDrag: Story = {
 							Mark: MarkdownMark,
 							options: markdownOptions,
 							value: value.value,
-							drag: true,
+							layout: 'block',
+							draggable: true,
 							style: testStyle,
 							onChange: (v: string) => {
 								value.value = v
@@ -327,7 +330,8 @@ export const ReadOnlyDrag: Story = {
 		options: paragraphOptions,
 		value: 'Read-Only Content\n\nSection A\n\nSection B\n\n',
 		readOnly: true,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 		style: testStyle,
 	},
 }
@@ -338,7 +342,8 @@ export const TodoListDrag: Story = {
 		Mark: TodoMark,
 		options: todoOptions,
 		value: TODO_VALUE,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 		style: {...mdEditorStyle, ...mdContainerStyle, minHeight: '300px'},
 	},
 }

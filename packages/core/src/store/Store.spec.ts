@@ -223,21 +223,21 @@ describe('Store', () => {
 			expect(store.computed.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
-		it('should add paddingLeft: 24 to style when drag is active', () => {
+		it('should add paddingLeft: 24 to style when layout is block and draggable is true', () => {
 			const store = new Store()
-			store.setProps({drag: true, style: {color: 'red'}})
+			store.setProps({layout: 'block', draggable: true, style: {color: 'red'}})
 			expect(store.computed.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
 		})
 
-		it('should add paddingLeft: 24 with no base style when drag is active', () => {
+		it('should add paddingLeft: 24 with no base style when layout is block and draggable is true', () => {
 			const store = new Store()
-			store.setProps({drag: true})
+			store.setProps({layout: 'block', draggable: true})
 			expect(store.computed.containerProps().style).toEqual({paddingLeft: 24})
 		})
 
-		it('should NOT add paddingLeft when drag is active but readOnly is true', () => {
+		it('should NOT add paddingLeft when draggable is true but readOnly is true', () => {
 			const store = new Store()
-			store.setProps({drag: true, readOnly: true, style: {color: 'red'}})
+			store.setProps({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
 			expect(store.computed.containerProps().style).toEqual({color: 'red'})
 		})
 

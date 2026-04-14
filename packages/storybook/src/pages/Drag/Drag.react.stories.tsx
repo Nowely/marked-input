@@ -39,7 +39,8 @@ export const Markdown: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 		Mark: MarkdownMark,
 		options: markdownOptions,
 		value: DRAG_MARKDOWN,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 	},
 }
 
@@ -54,7 +55,8 @@ export const PlainTextDrag: Story = {
 		Mark: ParagraphMark,
 		options: paragraphOptions,
 		value: 'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n',
-		drag: true,
+		layout: 'block',
+		draggable: true,
 	},
 }
 
@@ -64,7 +66,8 @@ export const MarkdownDrag: StoryObj<MarkedInputProps<MarkdownMarkProps>> = {
 		Mark: MarkdownMark,
 		options: markdownOptions,
 		value: '# Welcome to Draggable Blocks\n\nThis is the first paragraph.\n\nThis is the second paragraph.\n\n## Features\n\n- Drag handles appear on hover\n\n',
-		drag: true,
+		layout: 'block',
+		draggable: true,
 	},
 }
 
@@ -75,7 +78,8 @@ export const ReadOnlyDrag: Story = {
 		options: paragraphOptions,
 		value: 'Read-Only Content\n\nSection A\n\nSection B\n\n',
 		readOnly: true,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 	},
 }
 
@@ -85,7 +89,8 @@ export const TodoList: Story = {
 	args: {
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
-		drag: true,
+		layout: 'block',
+		draggable: true,
 	},
 	parameters: {
 		plainValue: 'right',

@@ -18,7 +18,8 @@ export const Inline: Story = {
 
 export const Drag: Story = {
 	args: {
-		drag: true,
+		layout: 'block',
+		draggable: true,
 		Mark: ({value}: MarkProps) => <mark data-testid="mark">{value}</mark>,
 		defaultValue: 'hello\n@[world](1)\nfoo',
 	},

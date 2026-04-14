@@ -20,7 +20,7 @@ export class InputFeature {
 
 		this.#scope = effectScope(() => {
 			listen(container, 'keydown', e => {
-				if (!this.store.props.drag()) {
+				if (this.store.props.layout() !== 'block') {
 					this.#handleDelete(e)
 				}
 			})
@@ -113,7 +113,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.state.selecting(undefined)
 
-	if (store.props.drag()) return
+	if (store.props.layout() === 'block') return
 
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return

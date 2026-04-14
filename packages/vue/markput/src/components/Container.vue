@@ -6,7 +6,7 @@ import Block from './Block.vue'
 import Token from './Token.vue'
 
 const result = useMarkput(s => ({
-	drag: s.props.drag,
+	layout: s.props.layout,
 	tokens: s.state.tokens,
 	key: s.key,
 	refs: s.refs,
@@ -33,7 +33,7 @@ watch(
 		"
 		v-bind="containerProps"
 	>
-		<template v-if="result.drag">
+		<template v-if="result.layout === 'block'">
 			<Block
 				v-for="(token, index) in result.tokens"
 				:key="result.key.get(token)"
