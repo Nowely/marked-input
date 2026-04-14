@@ -10,7 +10,7 @@ import {isFullSelection} from '../selection'
 export class InputFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

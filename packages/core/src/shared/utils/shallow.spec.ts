@@ -194,7 +194,7 @@ describe(`Utility: ${shallow.name}`, () => {
 				number: 42,
 				boolean: true,
 				null: null,
-				undefined: undefined,
+				undefined,
 				array: sharedArray,
 				object: sharedObject,
 			}
@@ -204,7 +204,7 @@ describe(`Utility: ${shallow.name}`, () => {
 				number: 42,
 				boolean: true,
 				null: null,
-				undefined: undefined,
+				undefined,
 				array: sharedArray,
 				object: sharedObject,
 			}

@@ -17,7 +17,7 @@ function isTextLikeRow(token: Token): boolean {
 export class BlockEditFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

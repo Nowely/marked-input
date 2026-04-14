@@ -7,7 +7,7 @@ export class TextSelectionFeature {
 	#pressedNode: Node | null = null
 	#isPressed = false
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

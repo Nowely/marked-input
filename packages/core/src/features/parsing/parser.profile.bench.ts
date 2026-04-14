@@ -246,7 +246,7 @@ function discoverClassMethods(
 		if (typeof method === 'function') {
 			methods.push({
 				name: fullMethodName,
-				method: method,
+				method,
 				original: method.bind(obj),
 			})
 		}

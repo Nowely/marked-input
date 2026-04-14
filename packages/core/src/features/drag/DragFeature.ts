@@ -6,7 +6,7 @@ import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './op
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragFeature {
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	#unsub?: () => void
 

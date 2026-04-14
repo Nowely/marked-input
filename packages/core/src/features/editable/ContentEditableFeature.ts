@@ -7,7 +7,7 @@ import {isTextTokenSpan} from './isTextTokenSpan'
 export class ContentEditableFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return
