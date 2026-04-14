@@ -12,17 +12,13 @@ export class OverlayFeature {
 	enable() {
 		if (this.#scope) return
 
-		this.store.state.overlayTrigger(option => option.overlay?.trigger)
-
 		this.#scope = effectScope(() => {
 			watch(this.store.event.clearOverlay, () => {
 				this.store.state.overlayMatch(undefined)
 			})
 
 			watch(this.store.event.checkOverlay, () => {
-				const getTrigger = this.store.state.overlayTrigger()
-				if (!getTrigger) return
-				const match = TriggerFinder.find(this.store.props.options(), getTrigger)
+				const match = TriggerFinder.find(this.store.props.options(), option => option.overlay?.trigger)
 				this.store.state.overlayMatch(match)
 			})
 
@@ -79,7 +75,6 @@ export class OverlayFeature {
 	}
 
 	disable() {
-		this.store.state.overlayTrigger(undefined)
 		this.#scope?.()
 		this.#scope = undefined
 	}

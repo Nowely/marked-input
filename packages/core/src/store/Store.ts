@@ -105,7 +105,6 @@ export class Store {
 
 		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
-		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 	}
 
 	readonly computed: {
