@@ -6,15 +6,9 @@ export function getTokensByUI(store: Store): Token[] {
 	const {focus} = store.nodes
 	const parser = store.computed.parser()
 	const tokens = store.state.tokens()
-
-	if (!parser) {
-		return tokens
-	}
-
+	if (!parser) return tokens
 	const parsed = parser.parse(focus.content)
-
-	if (parsed.length === 1) return tokens
-
+	if (parsed.length <= 1) return tokens
 	return tokens.toSpliced(focus.index, 1, ...parsed)
 }
 
