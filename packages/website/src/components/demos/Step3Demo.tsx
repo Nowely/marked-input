@@ -13,11 +13,11 @@ const CustomOverlay = () => {
 	const [users, setUsers] = useState<{login: string; avatar_url: string}[]>([])
 
 	useEffect(() => {
-		if (!match.value) return
+		if (!match?.value) return
 		fetch(`https://api.github.com/search/users?q=${match.value}`)
 			.then(res => res.json())
 			.then(data => setUsers(data.items?.slice(0, 10) || []))
-	}, [match.value])
+	}, [match?.value])
 
 	return (
 		<div

@@ -8,8 +8,8 @@ import {useStore} from './useStore'
 
 export interface OverlayHandler {
 	style: ComputedRef<{
-		left: string
-		top: string
+		left: number
+		top: number
 	}>
 	close: () => void
 	select: (value: {value: string; meta?: string}) => void
@@ -28,11 +28,8 @@ export function useOverlay(): OverlayHandler {
 		// Depend on matchRef so position recalculates as user types/moves caret
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const _ = matchRef.value
-		const pos = Caret.getAbsolutePosition()
-		return {
-			left: `${pos.left}px`,
-			top: `${pos.top}px`,
-		}
+		if (!matchRef.value) return {left: 0, top: 0}
+		return Caret.getAbsolutePosition()
 	})
 
 	const close = () => store.event.clearOverlay()

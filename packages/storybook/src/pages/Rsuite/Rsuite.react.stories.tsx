@@ -21,6 +21,7 @@ const Overlay = () => {
 		const handleEnter = (ev: KeyboardEvent) => {
 			if (ev.key === 'Enter') {
 				ev.preventDefault()
+				if (!match) return
 				select({value: match.value})
 				close()
 			}
@@ -34,7 +35,7 @@ const Overlay = () => {
 		<Popover style={style} visible>
 			<i>
 				{' '}
-				Press the <b>'Enter'</b> to create: <b>{match.value}</b>{' '}
+				Press the <b>'Enter'</b> to create: <b>{match?.value}</b>{' '}
 			</i>
 		</Popover>
 	)
