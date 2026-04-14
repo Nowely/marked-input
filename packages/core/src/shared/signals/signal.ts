@@ -206,15 +206,12 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 		if (this.isReadonly && !mutableScope) return
 		const v = value[0]
 		if (v === undefined) {
-			if (this.hasDefault) {
-				if (this.pendingValue === undefined || this.pendingValue === this.defaultValue) return
-				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
-				this.pendingValue = undefined as T
-			} else {
-				if (this.pendingValue === undefined) return
-				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when clearing value
-				this.pendingValue = undefined as T
-			}
+			const isAtDefault = this.hasDefault
+				? this.pendingValue === undefined || this.pendingValue === this.defaultValue
+				: this.pendingValue === undefined
+			if (isAtDefault) return
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
+			this.pendingValue = undefined as T
 		} else {
 			const current = this.pendingValue
 			const effectiveCurrent = current === undefined && this.hasDefault ? this.defaultValue : current
