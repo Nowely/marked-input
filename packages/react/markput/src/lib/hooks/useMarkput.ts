@@ -1,11 +1,11 @@
-import {computed, watch} from '@markput/core'
+import {computed, watch, isReactive} from '@markput/core'
 import type {Signal, Computed, SignalValues, Store} from '@markput/core'
 import {useSyncExternalStore, useRef} from 'react'
 
 import {useStore} from '../providers/StoreContext'
 
 type Selectable<T> = Signal<T> | Computed<T>
-type ObjectSelector = Record<string, Selectable<unknown>>
+type ObjectSelector = Record<string, Selectable<unknown> | unknown>
 
 type StableRef = {
 	derived: Computed<unknown>
@@ -26,13 +26,12 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 
 		const derived = computed((): unknown => {
 			if (typeof target === 'function') {
-				// Single Signal<T> or Computed<T>
 				return target()
 			}
-			// Object of signals — unwrap each entry
 			const out: Record<string, unknown> = {}
-			for (const key in target) {
-				out[key] = target[key]()
+			for (const k in target) {
+				const val = target[k]
+				out[k] = isReactive(val) ? (val as () => unknown)() : val
 			}
 			return out
 		})
