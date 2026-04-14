@@ -1,6 +1,7 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
 import {signal, computed, watch, event, batch, effect, effectScope, listen, isReactive} from './signal'
+import type {SignalValues, Signal} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -724,5 +725,20 @@ describe('isReactive', () => {
 	it('returns false for event.read', () => {
 		const e = event()
 		expect(isReactive(e.read)).toBe(false)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// SignalValues
+// ---------------------------------------------------------------------------
+
+describe('SignalValues passthrough', () => {
+	it('preserves non-signal value types', () => {
+		type Input = {count: Signal<number>; label: string}
+		type Result = SignalValues<Input>
+		// At runtime: just verify the type resolves — no assertion needed
+		// The test exists to document and protect the T[K] fallback behaviour
+		const _: Result = {count: 0, label: 'hello'}
+		expect(true).toBe(true)
 	})
 })
