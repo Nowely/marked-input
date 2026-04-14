@@ -5,9 +5,9 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 ## Components
 
 - **Store**: Main state container that manages:
-    - **Internal state** (`store.state`) — signals owned by features: tokens, previous value, inner value, recovery, selection mode, overlay match/trigger
+    - **Internal state** (`store.state`) — signals owned by features: tokens, previous value, inner value, recovery, selection mode, overlay match
     - **Props** (`store.props`) — readonly signals written only via `setProps()` (value, options, readOnly, drag, slots, etc.)
-    - **Computed** (`store.computed`) — derived values: `hasMark`, `parser`, `containerClass`, `containerStyle`, slot resolvers
+    - **Computed** (`store.computed`) — derived values: `hasMark`, `parser`, `currentValue`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.event`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
     - **DOM refs** (`store.refs`) — container and overlay HTMLElement references
     - **Node proxies** (`store.nodes`) — `focus` and `input` NodeProxy instances

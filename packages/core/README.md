@@ -21,7 +21,7 @@ pnpm add @markput/core
 ## Usage
 
 ```typescript
-import {annotate, denote, Parser, getTokensByValue, Store, Caret, TriggerFinder, EventBus} from '@markput/core'
+import {annotate, denote, Parser, computeTokensFromValue, Store, Caret, TriggerFinder, EventBus} from '@markput/core'
 
 // Annotate text with markup
 const annotated = annotate('@[__label__](__value__)', 'Hello', 'world')
@@ -57,7 +57,7 @@ const store = new Store()
 ### Parsing & Tokenization
 
 - `Parser` - Main parsing class for markup processing
-- `getTokensByValue(value)` - Extract tokens from annotated text
+- `computeTokensFromValue(value)` - Extract tokens from annotated text
 - `getTokensByUI(pieces)` - Convert UI pieces to tokens
 
 ### Preprocessing

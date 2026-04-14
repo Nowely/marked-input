@@ -141,7 +141,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const tokens = store.state.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
-	const currentValue = store.state.previousValue() ?? store.props.value() ?? ''
+	const currentValue = store.computed.currentValue()
 
 	const ranges = event.getTargetRanges()
 	const childElement = container.children[focus.index]

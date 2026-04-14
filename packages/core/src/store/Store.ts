@@ -105,7 +105,6 @@ export class Store {
 
 		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
-		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 	}
 
 	readonly computed: {
@@ -113,6 +112,7 @@ export class Store {
 		isBlock: Computed<boolean>
 		isDraggable: Computed<boolean>
 		parser: Computed<Parser | undefined>
+		currentValue: Computed<string>
 		containerComponent: Computed<unknown>
 		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
 		blockComponent: Computed<unknown>
@@ -137,6 +137,7 @@ export class Store {
 
 			return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
 		}),
+		currentValue: computed(() => this.state.previousValue() ?? this.props.value() ?? ''),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed(
 			() =>
@@ -236,5 +237,9 @@ export class Store {
 			},
 			{mutable: true}
 		)
+	}
+
+	bumpTokens(): void {
+		this.state.tokens([...this.state.tokens()])
 	}
 }

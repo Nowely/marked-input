@@ -39,20 +39,12 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('enable()', () => {
-		it('sets default overlayTrigger extractor', () => {
+		it('sets overlay trigger behavior for checkOverlay', () => {
 			controller.enable()
 
-			const getTrigger = store.state.overlayTrigger()
-			expect(getTrigger).toBeDefined()
+			store.event.checkOverlay()
 
-			const option = {overlay: {trigger: '@'}}
-			expect(getTrigger!(option)).toBe('@')
-
-			const optionWithoutTrigger = {overlay: {}}
-			expect(getTrigger!(optionWithoutTrigger)).toBeUndefined()
-
-			const optionWithoutOverlay = {}
-			expect(getTrigger!(optionWithoutOverlay)).toBeUndefined()
+			expect(store.state.overlayMatch()).toBeUndefined()
 
 			controller.disable()
 		})
@@ -110,14 +102,6 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('disable()', () => {
-		it('clears overlayTrigger on disable', () => {
-			controller.enable()
-			expect(store.state.overlayTrigger()).toBeDefined()
-
-			controller.disable()
-			expect(store.state.overlayTrigger()).toBeUndefined()
-		})
-
 		it('should stop reacting to events after disable', () => {
 			controller.enable()
 			controller.disable()

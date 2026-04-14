@@ -71,7 +71,7 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
+		const value = this.store.computed.currentValue()
 		if (!this.store.props.onChange()) return
 
 		if (event.key === KEYBOARD.BACKSPACE) {
@@ -222,7 +222,7 @@ export class BlockEditFeature {
 		const rows = this.store.state.tokens()
 		const token = rows[blockIndex]
 		const blockDiv = blockDivs[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
+		const value = this.store.computed.currentValue()
 
 		if (!this.store.props.onChange()) return
 
@@ -348,7 +348,7 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.state.previousValue() ?? this.store.props.value() ?? ''
+		const value = this.store.computed.currentValue()
 
 		const focusAndSetCaret = (newRawPos: number) => {
 			queueMicrotask(() => {

@@ -24,12 +24,13 @@ export class SystemListenerFeature {
 					const serialized = toString(tokens)
 					onChange?.(serialized)
 					this.store.state.previousValue(serialized)
-					this.store.state.tokens([...tokens])
+					this.store.bumpTokens()
 					return
 				}
 
 				// User typed in a contentEditable element: sync DOM content → token state.
 				const tokens = this.store.state.tokens()
+				if (focus.index >= tokens.length) return
 				const token = tokens[focus.index]
 				if (token.type === 'text') {
 					token.content = focus.content

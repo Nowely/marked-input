@@ -77,59 +77,6 @@ describe('ParseFeature', () => {
 		})
 	})
 
-	describe('hasChanged()', () => {
-		it('returns true before sync() is called', () => {
-			expect(store.features.parse.hasChanged()).toBe(true)
-		})
-
-		it('returns false after sync() with no value/parser change', () => {
-			store.features.parse.enable()
-			store.setProps({value: 'hello'})
-			store.features.parse.sync()
-
-			expect(store.features.parse.hasChanged()).toBe(false)
-
-			store.features.parse.disable()
-		})
-
-		it('returns true when value changes after sync()', () => {
-			store.features.parse.enable()
-			store.setProps({value: 'hello'})
-			store.features.parse.sync()
-
-			store.setProps({value: 'world'})
-
-			expect(store.features.parse.hasChanged()).toBe(true)
-
-			store.features.parse.disable()
-		})
-
-		it('returns true when parser changes after sync()', () => {
-			store.features.parse.enable()
-			store.setProps({Mark: () => null, options: [{markup: '@[__value__]'}], value: 'hello'})
-			store.features.parse.sync()
-
-			store.setProps({options: [{markup: '#[__value__]'}]})
-
-			expect(store.features.parse.hasChanged()).toBe(true)
-
-			store.features.parse.disable()
-		})
-
-		it('updates internal cache as side effect', () => {
-			store.features.parse.enable()
-			store.setProps({value: 'hello'})
-			store.features.parse.sync()
-
-			store.setProps({value: 'world'})
-			store.features.parse.hasChanged()
-
-			expect(store.features.parse.hasChanged()).toBe(false)
-
-			store.features.parse.disable()
-		})
-	})
-
 	describe('enable() / disable()', () => {
 		it('is idempotent — calling enable twice does not double-subscribe', () => {
 			store.features.parse.enable()
@@ -175,6 +122,34 @@ describe('ParseFeature', () => {
 			store.features.parse.sync()
 
 			expect(store.state.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+
+			store.features.parse.disable()
+		})
+	})
+
+	describe('reactive parse', () => {
+		it('reactively re-parses when props.value changes', () => {
+			store.features.parse.enable()
+			store.setProps({value: 'hello'})
+			store.features.parse.sync()
+
+			store.setProps({value: 'world'})
+
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+			expect(store.state.previousValue()).toBe('world')
+
+			store.features.parse.disable()
+		})
+
+		it('does not re-parse in recovery mode when props.value changes', () => {
+			store.features.parse.enable()
+			store.setProps({value: 'hello'})
+			store.features.parse.sync()
+
+			store.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.setProps({value: 'world'})
+
+			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.features.parse.disable()
 		})

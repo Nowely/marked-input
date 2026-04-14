@@ -460,4 +460,45 @@ describe('Store', () => {
 			expect(props).toEqual({})
 		})
 	})
+
+	describe('currentValue (computed)', () => {
+		it('should return empty string when both previousValue and value are undefined', () => {
+			const store = new Store()
+			expect(store.computed.currentValue()).toBe('')
+		})
+
+		it('should return previousValue when set', () => {
+			const store = new Store()
+			store.state.previousValue('cached')
+			expect(store.computed.currentValue()).toBe('cached')
+		})
+
+		it('should fall back to props.value when previousValue is undefined', () => {
+			const store = new Store()
+			store.setProps({value: 'prop-value'})
+			expect(store.computed.currentValue()).toBe('prop-value')
+		})
+
+		it('should prefer previousValue over props.value', () => {
+			const store = new Store()
+			store.state.previousValue('cached')
+			store.setProps({value: 'prop-value'})
+			expect(store.computed.currentValue()).toBe('cached')
+		})
+
+		it('should react to previousValue changes', () => {
+			const store = new Store()
+			expect(store.computed.currentValue()).toBe('')
+			store.state.previousValue('updated')
+			expect(store.computed.currentValue()).toBe('updated')
+		})
+
+		it('should react to props.value changes when previousValue is undefined', () => {
+			const store = new Store()
+			store.setProps({value: 'initial'})
+			expect(store.computed.currentValue()).toBe('initial')
+			store.setProps({value: 'changed'})
+			expect(store.computed.currentValue()).toBe('changed')
+		})
+	})
 })

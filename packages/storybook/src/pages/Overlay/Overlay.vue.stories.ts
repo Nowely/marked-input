@@ -67,8 +67,8 @@ const Tooltip = defineComponent({
 				{
 					style: {
 						position: 'absolute',
-						left: style.value.left,
-						top: style.value.top,
+						left: `${style.value.left}px`,
+						top: `${style.value.top}px`,
 					},
 				},
 				'I am the overlay'

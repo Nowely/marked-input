@@ -1,6 +1,5 @@
 import {childAt} from '../../../shared/checkers'
 import type {Store} from '../../../store'
-import {toString} from '../../parsing'
 
 export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const placeMap = {
@@ -37,7 +36,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	store.state.recovery({anchor: caretAnchor.prev, caret})
 
-	store.props.onChange()?.(toString(store.state.tokens()))
+	store.event.change()
 
 	queueMicrotask(() => {
 		const target = childAt(store.refs.container, targetIndex)

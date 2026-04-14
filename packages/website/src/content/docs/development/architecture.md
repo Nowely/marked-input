@@ -98,7 +98,7 @@ Both framework adapters share the same component structure:
 9. FocusFeature restores caret position via store.event.recoverFocus
 ```
 
-There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `getTokensByValue` (prop change — diffs old vs new value, re-parses changed range).
+There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `computeTokensFromValue` (prop change — diffs old vs new value, re-parses changed range).
 
 ### Trigger Flow (Overlay Opens)
 

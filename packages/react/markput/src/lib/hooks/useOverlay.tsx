@@ -14,19 +14,23 @@ export interface OverlayHandler {
 	}
 	close: () => void
 	select: (value: {value: string; meta?: string}) => void
-	match: OverlayMatch<Option>
+	match: OverlayMatch<Option> | undefined
 	ref: RefObject<HTMLElement | null>
 }
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
 	const match = useMarkput(s => s.state.overlayMatch)
-	if (!match) throw new Error('useOverlay requires an active overlay match')
-	const style = useMemo(() => Caret.getAbsolutePosition(), [match])
+
+	const style = useMemo(() => {
+		if (!match) return {left: 0, top: 0}
+		return Caret.getAbsolutePosition()
+	}, [match])
 
 	const close = useCallback(() => store.event.clearOverlay(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
+			if (!match) return
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
 			store.event.select({mark, match})
 			store.event.clearOverlay()
