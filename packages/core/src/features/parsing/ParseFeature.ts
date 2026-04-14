@@ -50,9 +50,7 @@ export class ParseFeature {
 
 		watch(deps, () => {
 			if (!store.state.recovery()) {
-				const value = store.props.value() ?? ''
-				store.state.tokens(parseWithParser(store, value))
-				store.state.previousValue(value)
+				store.event.parse()
 			}
 		})
 	}

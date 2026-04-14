@@ -20,15 +20,21 @@ export function getTokensByUI(store: Store): Token[] {
 
 export function computeTokensFromValue(store: Store): Token[] {
 	const value = store.props.value()
-	const ranges = getRangeMap(store)
-	const gap = findGap(store.state.previousValue(), value)
+	const previousValue = store.state.previousValue()
+	const gap = findGap(previousValue, value)
 
 	if (!gap.left && !gap.right) {
 		store.state.previousValue(value)
 		return store.state.tokens()
 	}
 
+	if (gap.left === 0 && previousValue !== undefined && gap.right !== undefined && gap.right >= previousValue.length) {
+		store.state.previousValue(value)
+		return parseWithParser(store, value ?? '')
+	}
+
 	store.state.previousValue(value)
+	const ranges = getRangeMap(store)
 	const tokens = store.state.tokens()
 
 	if (
@@ -38,8 +44,10 @@ export function computeTokensFromValue(store: Store): Token[] {
 		Math.abs(gap.left - gap.right) > 1
 	) {
 		const updatedIndex = ranges.indexOf(gap.left)
-		const parsed = parseUnionLabels(store, updatedIndex - 1, updatedIndex)
-		return tokens.toSpliced(updatedIndex - 1, 2, ...parsed)
+		if (updatedIndex > 0) {
+			const parsed = parseUnionLabels(store, updatedIndex - 1, updatedIndex)
+			return tokens.toSpliced(updatedIndex - 1, 2, ...parsed)
+		}
 	}
 	if (gap.left !== undefined) {
 		const [updatedIndex] = getClosestIndexes(ranges, gap.left)
