@@ -335,6 +335,50 @@ describe('Store', () => {
 		})
 	})
 
+	describe('isBlock', () => {
+		it('should return false when layout is inline', () => {
+			const store = new Store()
+			store.setProps({layout: 'inline'})
+			expect(store.computed.isBlock()).toBe(false)
+		})
+
+		it('should return true when layout is block', () => {
+			const store = new Store()
+			store.setProps({layout: 'block'})
+			expect(store.computed.isBlock()).toBe(true)
+		})
+
+		it('should default to false', () => {
+			const store = new Store()
+			expect(store.computed.isBlock()).toBe(false)
+		})
+	})
+
+	describe('isDraggable', () => {
+		it('should return false when draggable is false', () => {
+			const store = new Store()
+			store.setProps({draggable: false})
+			expect(store.computed.isDraggable()).toBe(false)
+		})
+
+		it('should return true when draggable is true', () => {
+			const store = new Store()
+			store.setProps({draggable: true})
+			expect(store.computed.isDraggable()).toBe(true)
+		})
+
+		it('should return true when draggable is a DraggableConfig', () => {
+			const store = new Store()
+			store.setProps({draggable: {alwaysShowHandle: true}})
+			expect(store.computed.isDraggable()).toBe(true)
+		})
+
+		it('should default to false', () => {
+			const store = new Store()
+			expect(store.computed.isDraggable()).toBe(false)
+		})
+	})
+
 	describe('hasMark (computed)', () => {
 		it('should return false when no Mark override and no per-option Mark', () => {
 			const store = new Store()

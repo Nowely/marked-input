@@ -115,6 +115,8 @@ export class Store {
 			if (Mark) return true
 			return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
+		isBlock: computed(() => this.props.layout() === 'block'),
+		isDraggable: computed(() => !!this.props.draggable()),
 		parser: computed(() => {
 			if (!this.computed.hasMark()) return
 
