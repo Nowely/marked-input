@@ -30,6 +30,7 @@ export class SystemListenerFeature {
 
 				// User typed in a contentEditable element: sync DOM content → token state.
 				const tokens = this.store.state.tokens()
+				if (focus.index >= tokens.length) return
 				const token = tokens[focus.index]
 				if (token.type === 'text') {
 					token.content = focus.content
