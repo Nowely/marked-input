@@ -1,4 +1,4 @@
-import type {CoreOption, MarkputHandler, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DraggableConfig, MarkputHandler, OverlayTrigger} from '@markput/core'
 import {Store} from '@markput/core'
 import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useImperativeHandle, useLayoutEffect, useState} from 'react'
@@ -67,11 +67,14 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	onChange?: (value: string) => void
 	/** Read-only mode */
 	readOnly?: boolean
-	/** Enable drag mode: each individual token (mark or text) becomes its own draggable row.
-	 * One mark per row, one text fragment per row.
-	 * Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
+	/** Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
+	 * @default 'inline'
 	 */
-	drag?: boolean | {alwaysShowHandle: boolean}
+	layout?: 'inline' | 'block'
+	/** Enable drag interaction on block rows. Only effective when layout='block'.
+	 * @default false
+	 */
+	draggable?: boolean | DraggableConfig
 }
 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps>(

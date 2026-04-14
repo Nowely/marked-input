@@ -1,4 +1,4 @@
-import type {CoreOption, DataAttributes, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger} from '@markput/core'
 import type {Component, CSSProperties, VNodeChild} from 'vue'
 
 export interface MarkProps {
@@ -35,11 +35,8 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	value?: string
 	defaultValue?: string
 	readOnly?: boolean
-	/** Enable drag mode: each individual token (mark or text) becomes its own draggable row.
-	 * One mark per row, one text fragment per row.
-	 * Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
-	 */
-	drag?: boolean | {alwaysShowHandle: boolean}
+	layout?: 'inline' | 'block'
+	draggable?: boolean | DraggableConfig
 }
 
 export interface Slots {

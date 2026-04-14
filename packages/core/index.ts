@@ -11,6 +11,7 @@ export type {
 	DataAttributes,
 	DragAction,
 	DragActions,
+	DraggableConfig,
 } from './src/shared/types'
 export {MarkputHandler} from './src/shared/classes'
 
@@ -30,7 +31,7 @@ export type {MarkSlot, OverlaySlot} from './src/features/slots'
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag
-export {getAlwaysShowHandleDrag} from './src/features/drag'
+export {getAlwaysShowHandle} from './src/features/drag'
 
 // Caret
 export {Caret} from './src/features/caret'

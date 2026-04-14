@@ -54,21 +54,39 @@ Initial value for uncontrolled mode
 
 ***
 
-### drag?
+### draggable?
 
 ```ts
-optional drag: 
-  | boolean
-  | {
-  alwaysShowHandle: boolean;
-};
+optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:74](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L74)
+Defined in: [react/markput/src/components/MarkedInput.tsx:77](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L77)
 
-Enable drag mode: each individual token (mark or text) becomes its own draggable row.
-One mark per row, one text fragment per row.
-Adjacent marks need no separator; adjacent text rows are separated by `\n\n`.
+Enable drag interaction on block rows. Only effective when layout='block'.
+
+#### Default
+
+```ts
+false
+```
+
+***
+
+### layout?
+
+```ts
+optional layout: "inline" | "block";
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)
+
+Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
+
+#### Default
+
+```ts
+'inline'
+```
 
 ***
 

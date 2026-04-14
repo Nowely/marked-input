@@ -16,7 +16,7 @@ import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
-import type {SignalValues} from '../shared/signals'
+import type {SignalValues, Computed} from '../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -26,6 +26,7 @@ import type {
 	CoreSlots,
 	CoreSlotProps,
 	DragAction,
+	DraggableConfig,
 } from '../shared/types'
 import {cx} from '../shared/utils/cx'
 import {merge} from '../shared/utils/merge'
@@ -39,7 +40,7 @@ export type {DragAction} from '../shared/types'
 const DRAG_HANDLE_WIDTH = 24
 
 function buildContainerProps(
-	drag: boolean,
+	isDraggableBlock: boolean,
 	readOnly: boolean,
 	className: string | undefined,
 	style: CSSProperties | undefined,
@@ -47,9 +48,8 @@ function buildContainerProps(
 ): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
 	const containerSlotProps = slotProps?.container
 	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = drag && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+	const mergedStyle = isDraggableBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
 
-	// Strip className/style from resolved slotProps — merged explicitly above to avoid duplicate keys
 	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 
 	return {
@@ -77,7 +77,8 @@ export class Store {
 		options: signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true}),
 		readOnly: signal<boolean>(false, {readonly: true}),
 
-		drag: signal<boolean | {alwaysShowHandle: boolean}>(false, {readonly: true}),
+		layout: signal<'inline' | 'block'>('inline', {readonly: true}),
+		draggable: signal<boolean | DraggableConfig>(false, {readonly: true}),
 
 		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
 
@@ -107,26 +108,40 @@ export class Store {
 		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 	}
 
-	readonly computed = {
+	readonly computed: {
+		hasMark: Computed<boolean>
+		isBlock: Computed<boolean>
+		isDraggable: Computed<boolean>
+		parser: Computed<Parser | undefined>
+		containerComponent: Computed<unknown>
+		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
+		blockComponent: Computed<unknown>
+		blockProps: Computed<Record<string, unknown> | undefined>
+		spanComponent: Computed<unknown>
+		spanProps: Computed<Record<string, unknown> | undefined>
+		overlay: OverlaySlot
+		mark: MarkSlot
+	} = {
 		hasMark: computed(() => {
 			const Mark = this.props.Mark()
 			if (Mark) return true
 			return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 		}),
+		isBlock: computed(() => this.props.layout() === 'block'),
+		isDraggable: computed(() => !!this.props.draggable()),
 		parser: computed(() => {
 			if (!this.computed.hasMark()) return
 
 			const markups = this.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isDrag = !!this.props.drag()
-			return new Parser(markups, isDrag ? {skipEmptyText: true} : undefined)
+			return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
 		}),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed(
 			() =>
 				buildContainerProps(
-					!!this.props.drag(),
+					this.computed.isDraggable() && this.computed.isBlock(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),

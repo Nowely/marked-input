@@ -1,4 +1,4 @@
-import {cx, getAlwaysShowHandleDrag} from '@markput/core'
+import {cx, getAlwaysShowHandle} from '@markput/core'
 import type {Token as TokenType} from '@markput/core'
 import {memo, useMemo} from 'react'
 
@@ -13,13 +13,13 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 	const store = useStore()
 	const blockStore = store.blocks.get(token)
 
-	const {readOnly, drag} = useMarkput(s => ({
+	const {readOnly, draggable} = useMarkput(s => ({
 		readOnly: s.props.readOnly,
-		drag: s.props.drag,
+		draggable: s.props.draggable,
 	}))
 	const isDragging = useMarkput(() => blockStore.state.isDragging)
 	const isHovered = useMarkput(() => blockStore.state.isHovered)
-	const alwaysShowHandle = useMemo(() => getAlwaysShowHandleDrag(drag), [drag])
+	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
 
 	if (readOnly) return null
 

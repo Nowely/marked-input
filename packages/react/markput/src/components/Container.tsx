@@ -6,8 +6,8 @@ import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {drag, tokens, key, refs, event} = useMarkput(s => ({
-		drag: s.props.drag,
+	const {layout, tokens, key, refs, event} = useMarkput(s => ({
+		layout: s.props.layout,
 		tokens: s.state.tokens,
 		key: s.key,
 		refs: s.refs,
@@ -24,7 +24,7 @@ export const Container = memo(() => {
 
 	return (
 		<Component ref={(el: HTMLDivElement | null) => (refs.container = el)} {...props}>
-			{drag
+			{layout === 'block'
 				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}
 		</Component>

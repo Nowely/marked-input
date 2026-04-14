@@ -223,21 +223,21 @@ describe('Store', () => {
 			expect(store.computed.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
-		it('should add paddingLeft: 24 to style when drag is active', () => {
+		it('should add paddingLeft: 24 to style when layout is block and draggable is true', () => {
 			const store = new Store()
-			store.setProps({drag: true, style: {color: 'red'}})
+			store.setProps({layout: 'block', draggable: true, style: {color: 'red'}})
 			expect(store.computed.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
 		})
 
-		it('should add paddingLeft: 24 with no base style when drag is active', () => {
+		it('should add paddingLeft: 24 with no base style when layout is block and draggable is true', () => {
 			const store = new Store()
-			store.setProps({drag: true})
+			store.setProps({layout: 'block', draggable: true})
 			expect(store.computed.containerProps().style).toEqual({paddingLeft: 24})
 		})
 
-		it('should NOT add paddingLeft when drag is active but readOnly is true', () => {
+		it('should NOT add paddingLeft when draggable and block but readOnly is true', () => {
 			const store = new Store()
-			store.setProps({drag: true, readOnly: true, style: {color: 'red'}})
+			store.setProps({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
 			expect(store.computed.containerProps().style).toEqual({color: 'red'})
 		})
 
@@ -332,6 +332,50 @@ describe('Store', () => {
 			const store = new Store()
 			store.setProps({slotProps: {span: {className: 'bold'}}})
 			expect(store.computed.spanProps()).toMatchObject({className: 'bold'})
+		})
+	})
+
+	describe('isBlock', () => {
+		it('should return false when layout is inline', () => {
+			const store = new Store()
+			store.setProps({layout: 'inline'})
+			expect(store.computed.isBlock()).toBe(false)
+		})
+
+		it('should return true when layout is block', () => {
+			const store = new Store()
+			store.setProps({layout: 'block'})
+			expect(store.computed.isBlock()).toBe(true)
+		})
+
+		it('should default to false', () => {
+			const store = new Store()
+			expect(store.computed.isBlock()).toBe(false)
+		})
+	})
+
+	describe('isDraggable', () => {
+		it('should return false when draggable is false', () => {
+			const store = new Store()
+			store.setProps({draggable: false})
+			expect(store.computed.isDraggable()).toBe(false)
+		})
+
+		it('should return true when draggable is true', () => {
+			const store = new Store()
+			store.setProps({draggable: true})
+			expect(store.computed.isDraggable()).toBe(true)
+		})
+
+		it('should return true when draggable is a DraggableConfig', () => {
+			const store = new Store()
+			store.setProps({draggable: {alwaysShowHandle: true}})
+			expect(store.computed.isDraggable()).toBe(true)
+		})
+
+		it('should default to false', () => {
+			const store = new Store()
+			expect(store.computed.isDraggable()).toBe(false)
 		})
 	})
 
