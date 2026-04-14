@@ -21,7 +21,7 @@ import type {SegmentMatch} from './SegmentMatcher'
 export class Match {
 	public readonly gaps: Partial<Record<GapType, PositionRange>> = {}
 	/** Captured value from first dynamic segment (for hasTwoValues patterns) */
-	private captured?: string
+	private readonly captured?: string
 
 	/**
 	 * Index of expected next segment:

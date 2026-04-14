@@ -7,7 +7,7 @@ import {TriggerFinder} from '../caret'
 export class OverlayFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

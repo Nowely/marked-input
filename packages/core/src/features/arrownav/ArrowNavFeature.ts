@@ -7,7 +7,7 @@ import {selectAllText} from '../selection'
 export class ArrowNavFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

@@ -23,6 +23,7 @@ Object.defineProperty(global, 'document', {
 
 // Mock Text constructor
 Object.defineProperty(global, 'Text', {
+	// eslint-disable-next-line object-shorthand
 	value: function (text: string) {
 		return {
 			nodeType: 3,

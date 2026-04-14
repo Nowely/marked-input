@@ -33,7 +33,7 @@ function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRang
 export class CopyFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

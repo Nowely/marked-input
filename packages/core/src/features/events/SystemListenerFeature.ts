@@ -6,7 +6,7 @@ import {annotate, findToken, parseWithParser, toString} from '../parsing'
 export class SystemListenerFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return

@@ -4,7 +4,7 @@ import {isHtmlElement, firstHtmlChild, lastHtmlChild} from '../checkers'
 
 export class NodeProxy {
 	#target?: HTMLElement
-	#store: Store
+	readonly #store: Store
 
 	get target(): HTMLElement | undefined {
 		return this.#target

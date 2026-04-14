@@ -1,7 +1,7 @@
 import type {Store} from '../../store'
 
 export class MarkputHandler {
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	get container() {
 		return this.store.refs.container

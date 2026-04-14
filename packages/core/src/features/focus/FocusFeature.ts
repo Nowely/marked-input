@@ -5,7 +5,7 @@ import type {Store} from '../../store/Store'
 export class FocusFeature {
 	#scope?: () => void
 
-	constructor(private store: Store) {}
+	constructor(private readonly store: Store) {}
 
 	enable() {
 		if (this.#scope) return
