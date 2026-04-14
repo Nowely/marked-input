@@ -113,6 +113,7 @@ export class Store {
 		isBlock: Computed<boolean>
 		isDraggable: Computed<boolean>
 		parser: Computed<Parser | undefined>
+		currentValue: Computed<string>
 		containerComponent: Computed<unknown>
 		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
 		blockComponent: Computed<unknown>
@@ -137,6 +138,7 @@ export class Store {
 
 			return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
 		}),
+		currentValue: computed(() => this.state.previousValue() ?? this.props.value() ?? ''),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed(
 			() =>
