@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.11.0](https://github.com/Nowely/marked-input/compare/0.10.1...0.11.0) (2026-04-14)
+
+
+### Features
+
+* **core:** add effect cleanup, listen() helper, and refactor features to use them ([#194](https://github.com/Nowely/marked-input/issues/194)) ([c68ba9b](https://github.com/Nowely/marked-input/commit/c68ba9b0e8b75ecc07145d5c1b2c005006abd179))
+* reactive props via store.props/setProps and store.computed slots ([#188](https://github.com/Nowely/marked-input/issues/188)) ([6146513](https://github.com/Nowely/marked-input/commit/6146513fe1be38d2dbbefb26e543dea6e06ab5d1))
+* replace signal.use() with useMarkput hook ([#190](https://github.com/Nowely/marked-input/issues/190)) ([b05e90d](https://github.com/Nowely/marked-input/commit/b05e90dbef91172157849f448303a94d5e3ea456))
+* replace Slot tuple API with named component/props computeds ([#191](https://github.com/Nowely/marked-input/issues/191)) ([9fc4a5f](https://github.com/Nowely/marked-input/commit/9fc4a5f8360686ab9492d93e15775027feae3c7d))
+
+
+### Bug Fixes
+
+* **core:** improve signal handling and reactive type guards ([#195](https://github.com/Nowely/marked-input/issues/195)) ([a2704a8](https://github.com/Nowely/marked-input/commit/a2704a82506457da4bdc542927e85809ebb7eb0d))
+
+
+### Refactoring
+
+* **core:** collapse signal layer to use createReactiveSystem directly ([#193](https://github.com/Nowely/marked-input/issues/193)) ([f735a23](https://github.com/Nowely/marked-input/commit/f735a233c7113b90fb52ed85201d4594d8b687bf))
+* **core:** decouple drag prop into layout + draggable API with computed accessors ([#196](https://github.com/Nowely/marked-input/issues/196)) ([05ad6c5](https://github.com/Nowely/marked-input/commit/05ad6c54258780e9362f39087c3469457c6c9b74))
+* **core:** reactive parse pipeline, overlay & MarkHandler cleanup ([#199](https://github.com/Nowely/marked-input/issues/199)) ([bd6640b](https://github.com/Nowely/marked-input/commit/bd6640b1d53780fd18c0b09b3b016d72b9c39cc2))
+* **core:** store layer improvements — computed equals, container props, bug fixes ([#192](https://github.com/Nowely/marked-input/issues/192)) ([f89bd60](https://github.com/Nowely/marked-input/commit/f89bd60fec12427edd2f195678e32f4278e51cec))
+* **storybook:** replace fragile setTimeout with vitest-browser locator assertions ([#197](https://github.com/Nowely/marked-input/issues/197)) ([f638f63](https://github.com/Nowely/marked-input/commit/f638f637fe4c306162eaace4a727fbb1c7e4a53c))
+
+
+### Miscellaneous
+
+* update lint config, deps, and readonly constructors ([#198](https://github.com/Nowely/marked-input/issues/198)) ([b819325](https://github.com/Nowely/marked-input/commit/b819325e4a1d09bc7be7d10a5a8141a16e2bdbe0))
+
 ## [0.10.1](https://github.com/Nowely/marked-input/compare/0.10.0...0.10.1) (2026-04-11)
 
 
