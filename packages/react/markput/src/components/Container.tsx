@@ -2,16 +2,16 @@ import type {ElementType} from 'react'
 import {memo, useLayoutEffect} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/providers/StoreContext'
 import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const store = useStore()
-
-	const {drag, tokens} = useMarkput(s => ({
+	const {drag, tokens, key, refs, event} = useMarkput(s => ({
 		drag: s.props.drag,
 		tokens: s.state.tokens,
+		key: s.key,
+		refs: s.refs,
+		event: s.event,
 	}))
 
 	// oxlint-disable-next-line no-unsafe-type-assertion -- containerComponent returns unknown in core; React ElementType asserted here
@@ -19,11 +19,8 @@ export const Container = memo(() => {
 	const props = useMarkput(s => s.computed.containerProps)
 
 	useLayoutEffect(() => {
-		store.event.afterTokensRendered()
-	}, [tokens])
-
-	const key = store.key
-	const refs = store.refs
+		event.afterTokensRendered()
+	}, [tokens, event])
 
 	return (
 		<Component ref={(el: HTMLDivElement | null) => (refs.container = el)} {...props}>

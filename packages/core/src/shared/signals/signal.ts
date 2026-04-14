@@ -206,15 +206,12 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 		if (this.isReadonly && !mutableScope) return
 		const v = value[0]
 		if (v === undefined) {
-			if (this.hasDefault) {
-				if (this.pendingValue === undefined || this.pendingValue === this.defaultValue) return
-				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
-				this.pendingValue = undefined as T
-			} else {
-				if (this.pendingValue === undefined) return
-				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when clearing value
-				this.pendingValue = undefined as T
-			}
+			const isAtDefault = this.hasDefault
+				? this.pendingValue === undefined || this.pendingValue === this.defaultValue
+				: this.pendingValue === undefined
+			if (isAtDefault) return
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
+			this.pendingValue = undefined as T
 		} else {
 			const current = this.pendingValue
 			const effectiveCurrent = current === undefined && this.hasDefault ? this.defaultValue : current
@@ -243,6 +240,11 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 				}
 			}
 		}
+		// Walk to the nearest subscriber with Mutable or Watching flags.
+		// Needed when activeSub is a non-tracking scope node (e.g. effectScope with flags: None)
+		// rather than a computed/effect. computedOper/eventReadOper can link directly because they
+		// are only called inside reactive contexts that guarantee a valid subscriber, but signals
+		// may be read in broader scopes.
 		let sub = activeSub
 		while (sub !== undefined) {
 			if (sub.flags & (ReactiveFlags.Mutable | ReactiveFlags.Watching)) {
@@ -331,7 +333,13 @@ export interface Signal<T> {
 }
 
 export type SignalValues<T> = {
-	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : never
+	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : T[K]
+}
+
+export function isReactive(fn: unknown): fn is Signal<unknown> | Computed<unknown> {
+	if (typeof fn !== 'function') return false
+	const name = (fn as {name: string}).name
+	return name === 'bound ' + signalOper.name || name === 'bound ' + computedOper.name
 }
 
 interface SignalOptions<T> {
@@ -343,7 +351,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const node: SignalNode<T> = {
 		currentValue: initial,
 		pendingValue: initial,
-		defaultValue: initial ?? undefined,
+		defaultValue: initial,
 		hasDefault: initial !== undefined,
 		equalsFn: opts?.equals ?? undefined,
 		isReadonly: !!opts?.readonly,

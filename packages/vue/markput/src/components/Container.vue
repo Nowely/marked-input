@@ -2,20 +2,25 @@
 import {watch} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/hooks/useStore'
 import Block from './Block.vue'
 import Token from './Token.vue'
 
-const store = useStore()
+const result = useMarkput(s => ({
+	drag: s.props.drag,
+	tokens: s.state.tokens,
+	key: s.key,
+	refs: s.refs,
+	event: s.event,
+}))
 
-const drag = useMarkput(s => s.props.drag)
-const tokens = useMarkput(s => s.state.tokens)
 const containerComponent = useMarkput(s => s.computed.containerComponent)
 const containerProps = useMarkput(s => s.computed.containerProps)
 
-watch(tokens, () => store.event.afterTokensRendered(), {flush: 'post', immediate: true})
-
-const key = store.key
+watch(
+	() => result.value.tokens,
+	() => result.value.event.afterTokensRendered(),
+	{flush: 'post', immediate: true}
+)
 </script>
 
 <template>
@@ -23,16 +28,21 @@ const key = store.key
 		:is="containerComponent"
 		:ref="
 			(el: any) => {
-				store.refs.container = el?.$el ?? el
+				result.refs.container = el?.$el ?? el
 			}
 		"
 		v-bind="containerProps"
 	>
-		<template v-if="drag">
-			<Block v-for="(token, index) in tokens" :key="key.get(token)" :token="token" :block-index="index" />
+		<template v-if="result.drag">
+			<Block
+				v-for="(token, index) in result.tokens"
+				:key="result.key.get(token)"
+				:token="token"
+				:block-index="index"
+			/>
 		</template>
 		<template v-else>
-			<Token v-for="token in tokens" :key="key.get(token)" :mark="token" />
+			<Token v-for="token in result.tokens" :key="result.key.get(token)" :mark="token" />
 		</template>
 	</component>
 </template>
