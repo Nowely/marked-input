@@ -354,7 +354,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const node: SignalNode<T> = {
 		currentValue: initial,
 		pendingValue: initial,
-		defaultValue: initial ?? undefined,
+		defaultValue: initial,
 		hasDefault: initial !== undefined,
 		equalsFn: opts?.equals ?? undefined,
 		isReadonly: !!opts?.readonly,

@@ -256,6 +256,24 @@ describe('signal<T>', () => {
 			expect(captured).toBe(42)
 		})
 	})
+
+	describe('null initial value', () => {
+		it('should treat null as a valid default', () => {
+			const s = signal<string | null>(null)
+			expect(s()).toBeNull()
+			s('hello')
+			expect(s()).toBe('hello')
+			s(undefined)
+			expect(s()).toBeNull()
+		})
+
+		it('should not conflate null with undefined for hasDefault', () => {
+			const s = signal<string | null>(null)
+			s('world')
+			s(undefined)
+			expect(s()).toBeNull()
+		})
+	})
 })
 
 // ---------------------------------------------------------------------------
