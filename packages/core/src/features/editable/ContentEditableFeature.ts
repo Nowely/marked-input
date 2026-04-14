@@ -38,7 +38,7 @@ export class ContentEditableFeature {
 		const readOnly = this.store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = this.store.props.layout() === 'block'
+		const isBlock = this.store.computed.isBlock()
 
 		if (isBlock) {
 			// In drag mode, only set contentEditable on text rows (DragMark divs).

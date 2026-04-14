@@ -16,7 +16,7 @@ import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
-import type {SignalValues} from '../shared/signals'
+import type {SignalValues, Computed} from '../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -40,8 +40,7 @@ export type {DragAction} from '../shared/types'
 const DRAG_HANDLE_WIDTH = 24
 
 function buildContainerProps(
-	isDraggable: boolean,
-	isBlock: boolean,
+	isDraggableBlock: boolean,
 	readOnly: boolean,
 	className: string | undefined,
 	style: CSSProperties | undefined,
@@ -49,7 +48,7 @@ function buildContainerProps(
 ): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
 	const containerSlotProps = slotProps?.container
 	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = isDraggable && isBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+	const mergedStyle = isDraggableBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
 
 	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 
@@ -109,7 +108,20 @@ export class Store {
 		overlayTrigger: signal<((option: CoreOption) => string | undefined) | undefined>(undefined),
 	}
 
-	readonly computed = {
+	readonly computed: {
+		hasMark: Computed<boolean>
+		isBlock: Computed<boolean>
+		isDraggable: Computed<boolean>
+		parser: Computed<Parser | undefined>
+		containerComponent: Computed<unknown>
+		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
+		blockComponent: Computed<unknown>
+		blockProps: Computed<Record<string, unknown> | undefined>
+		spanComponent: Computed<unknown>
+		spanProps: Computed<Record<string, unknown> | undefined>
+		overlay: OverlaySlot
+		mark: MarkSlot
+	} = {
 		hasMark: computed(() => {
 			const Mark = this.props.Mark()
 			if (Mark) return true
@@ -123,15 +135,13 @@ export class Store {
 			const markups = this.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			const isBlock = this.props.layout() === 'block'
-			return new Parser(markups, isBlock ? {skipEmptyText: true} : undefined)
+			return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
 		}),
 		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 		containerProps: computed(
 			() =>
 				buildContainerProps(
-					!!this.props.draggable(),
-					this.props.layout() === 'block',
+					this.computed.isDraggable() && this.computed.isBlock(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),

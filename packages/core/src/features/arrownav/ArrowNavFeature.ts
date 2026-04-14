@@ -17,7 +17,7 @@ export class ArrowNavFeature {
 
 		this.#scope = effectScope(() => {
 			listen(container, 'keydown', e => {
-				if (this.store.props.layout() === 'block') return
+				if (this.store.computed.isBlock()) return
 				if (!this.store.nodes.focus.target) return
 
 				if (e.key === KEYBOARD.LEFT) {

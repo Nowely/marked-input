@@ -27,7 +27,7 @@ export class BlockEditFeature {
 
 		this.#scope = effectScope(() => {
 			listen(container, 'keydown', e => {
-				if (this.store.props.layout() !== 'block') return
+				if (!this.store.computed.isBlock()) return
 
 				if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
 					this.#handleBlockArrowLeftRight(e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
@@ -43,7 +43,7 @@ export class BlockEditFeature {
 				container,
 				'beforeinput',
 				e => {
-					if (this.store.props.layout() !== 'block') return
+					if (!this.store.computed.isBlock()) return
 					if (e.defaultPrevented) return
 					this.#handleBlockBeforeInput(e)
 				},
