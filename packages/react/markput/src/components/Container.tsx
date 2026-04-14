@@ -20,7 +20,7 @@ export const Container = memo(() => {
 
 	useLayoutEffect(() => {
 		event.afterTokensRendered()
-	}, [tokens])
+	}, [tokens, event])
 
 	return (
 		<Component ref={(el: HTMLDivElement | null) => (refs.container = el)} {...props}>
