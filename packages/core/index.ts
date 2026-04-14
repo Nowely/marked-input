@@ -20,7 +20,7 @@ export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'
-export {effect, event, signal, computed, watch, batch} from './src/shared/signals'
+export {effect, event, signal, computed, watch, batch, isReactive} from './src/shared/signals'
 
 // Store
 export {Store} from './src/store'

@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
-import {signal, watch, event, batch, effect, effectScope, listen} from './signal'
+import {signal, computed, watch, event, batch, effect, effectScope, listen, isReactive} from './signal'
 
 // Helper to track and dispose effects created during tests
 let disposers: (() => void)[]
@@ -687,5 +687,42 @@ describe('listen()', () => {
 		})()
 
 		expect(addSpy).toHaveBeenCalledWith('click', handler, {capture: true})
+	})
+})
+
+// ---------------------------------------------------------------------------
+// isReactive
+// ---------------------------------------------------------------------------
+
+describe('isReactive', () => {
+	it('returns true for a signal', () => {
+		expect(isReactive(signal(0))).toBe(true)
+	})
+
+	it('returns true for a computed', () => {
+		const c = computed(() => 1)
+		expect(isReactive(c)).toBe(true)
+	})
+
+	it('returns false for a plain function', () => {
+		expect(isReactive(() => 0)).toBe(false)
+	})
+
+	it('returns false for a plain object', () => {
+		expect(isReactive({foo: 'bar'})).toBe(false)
+	})
+
+	it('returns false for null', () => {
+		expect(isReactive(null)).toBe(false)
+	})
+
+	it('returns false for an event callable', () => {
+		const e = event()
+		expect(isReactive(e)).toBe(false)
+	})
+
+	it('returns false for event.read', () => {
+		const e = event()
+		expect(isReactive(e.read)).toBe(false)
 	})
 })

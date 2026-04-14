@@ -331,7 +331,13 @@ export interface Signal<T> {
 }
 
 export type SignalValues<T> = {
-	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : never
+	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : T[K]
+}
+
+export function isReactive(fn: unknown): fn is Signal<unknown> | Computed<unknown> {
+	if (typeof fn !== 'function') return false
+	const name = (fn as {name: string}).name
+	return name === 'bound ' + signalOper.name || name === 'bound ' + computedOper.name
 }
 
 interface SignalOptions<T> {
