@@ -235,7 +235,7 @@ describe('Store', () => {
 			expect(store.computed.containerProps().style).toEqual({paddingLeft: 24})
 		})
 
-		it('should NOT add paddingLeft when draggable is true but readOnly is true', () => {
+		it('should NOT add paddingLeft when draggable and block but readOnly is true', () => {
 			const store = new Store()
 			store.setProps({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
 			expect(store.computed.containerProps().style).toEqual({color: 'red'})
