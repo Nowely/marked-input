@@ -28,6 +28,7 @@ export function computeTokensFromValue(store: Store): Token[] {
 		return store.state.tokens()
 	}
 
+	// Full value replacement — incremental diff won't work, re-parse from scratch
 	if (gap.left === 0 && previousValue !== undefined && gap.right !== undefined && gap.right >= previousValue.length) {
 		store.state.previousValue(value)
 		return parseWithParser(store, value ?? '')
