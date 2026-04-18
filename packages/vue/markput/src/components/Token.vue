@@ -1,6 +1,6 @@
 <script lang="ts">
 import type {Token as TokenType} from '@markput/core'
-import {defineComponent, h, markRaw, provide, toRef, type Component, type PropType, type VNode} from 'vue'
+import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -30,7 +30,7 @@ const Token = defineComponent({
 					? () => mark.children.map(child => h(markRaw(Token), {key: key.get(child), mark: child}))
 					: undefined
 
-			return h(Comp as Component, compProps, children)
+			return h(Comp, compProps, children)
 		}
 	},
 })
