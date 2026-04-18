@@ -1,4 +1,3 @@
-import type {ElementType} from 'react'
 import {memo, useLayoutEffect} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -16,19 +15,16 @@ export const Container = memo(() => {
 		props: s.computed.containerProps,
 	}))
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- containerComponent returns unknown in core; React ElementType asserted here
-	const ContainerComponent = Component as ElementType
-
 	useLayoutEffect(() => {
 		event.afterTokensRendered()
 	}, [tokens, event])
 
 	return (
-		<ContainerComponent ref={state.container} {...props}>
+		<Component ref={state.container} {...props}>
 			{layout === 'block'
 				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}
-		</ContainerComponent>
+		</Component>
 	)
 })
 
