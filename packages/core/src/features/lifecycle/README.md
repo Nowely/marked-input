@@ -3,8 +3,8 @@
 The Store does not use a dedicated `Lifecycle` class. Feature enable/disable is driven directly by Store in its constructor:
 
 ```ts
-watch(this.event.mounted, () => Object.values(this.features).forEach(f => f.enable()))
-watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
+watch(this.event.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+watch(this.event.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 ```
 
 Framework adapters emit:

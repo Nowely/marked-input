@@ -35,7 +35,7 @@ describe('OverlayFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		controller = store.features.overlay
+		controller = store.feature.overlay
 	})
 
 	describe('enable()', () => {

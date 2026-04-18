@@ -10,7 +10,7 @@ describe('ContentEditableFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		controller = store.features.contentEditable
+		controller = store.feature.contentEditable
 	})
 
 	it('enable() calls sync() immediately (effect fires on creation)', () => {

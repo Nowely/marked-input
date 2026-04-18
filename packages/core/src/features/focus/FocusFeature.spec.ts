@@ -36,29 +36,29 @@ describe('FocusFeature', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		store.state.container(stubContainer)
-		const features = store.features as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(features)) {
+		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
+		for (const key of Object.keys(feature)) {
 			if (key === 'focus') continue
-			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
 		}
 	})
 
 	describe('rendered handler', () => {
 		it('always emits sync', () => {
-			store.features.focus.enable()
+			store.feature.focus.enable()
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
 			store.event.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
-			store.features.focus.disable()
+			store.feature.focus.disable()
 		})
 
 		it('runs caret recovery and clears recovery state when Mark is set', () => {
 			store.setProps({Mark: () => null})
-			store.features.focus.enable()
+			store.feature.focus.enable()
 
 			// Set up a recovery state so #recover has work to do.
 			// #recover() clears the recovery state on the happy path.
@@ -76,11 +76,11 @@ describe('FocusFeature', () => {
 			// #recover clears recovery after running.
 			expect(store.state.recovery()).toBeUndefined()
 
-			store.features.focus.disable()
+			store.feature.focus.disable()
 		})
 
 		it('does not run recovery when Mark is not set', () => {
-			store.features.focus.enable()
+			store.feature.focus.enable()
 
 			store.state.recovery({
 				anchor: store.nodes.focus,
@@ -92,14 +92,14 @@ describe('FocusFeature', () => {
 			// #recover was NOT called, so recovery state is preserved.
 			expect(store.state.recovery()).toBeDefined()
 
-			store.features.focus.disable()
+			store.feature.focus.disable()
 		})
 	})
 
 	describe('subscription lifecycle', () => {
 		it('does not fire rendered watcher after disable', () => {
-			store.features.focus.enable()
-			store.features.focus.disable()
+			store.feature.focus.enable()
+			store.feature.focus.disable()
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
 			store.event.rendered()
@@ -110,12 +110,12 @@ describe('FocusFeature', () => {
 
 	describe('disable()', () => {
 		it('clears nodes.focus.target', () => {
-			store.features.focus.enable()
+			store.feature.focus.enable()
 
 			store.nodes.focus.target = document.createElement('div')
 			expect(store.nodes.focus.target).toBeDefined()
 
-			store.features.focus.disable()
+			store.feature.focus.disable()
 
 			expect(store.nodes.focus.target).toBeUndefined()
 		})

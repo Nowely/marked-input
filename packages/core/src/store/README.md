@@ -11,7 +11,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Events** (`store.event`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
     - **DOM refs** (`store.state.container`, `store.state.overlay`) — reactive signals holding container and overlay HTMLElement references
     - **Node proxies** (`store.nodes`) — `focus` and `input` NodeProxy instances
-    - **Features** (`store.features`) — all feature instances
+    - **Features** (`store.feature`) — all feature instances
     - **`setProps()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 
 Features update internal state by calling each signal, e.g. `store.state.tokens(next)`. For multiple internal updates in one tick, wrap in `batch()` from `@markput/core` (same module as `Store`).

@@ -8,12 +8,12 @@ describe('DragFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		// Disable all features except drag so their enable() side-effects don't interfere
-		const features = store.features as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(features)) {
+		// Disable all feature except drag so their enable() side-effects don't interfere
+		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
+		for (const key of Object.keys(feature)) {
 			if (key === 'drag') continue
-			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
 		}
 	})
 
@@ -25,12 +25,12 @@ describe('DragFeature', () => {
 				onChange: () => {}, // onChange is required for operations to proceed
 			})
 
-			store.features.drag.enable()
-			store.features.drag.enable() // second call — must not overwrite #unsub
+			store.feature.drag.enable()
+			store.feature.drag.enable() // second call — must not overwrite #unsub
 
 			// After a single disable, the watcher must be gone.
 			// If double-enable leaked, the first watcher would still fire.
-			store.features.drag.disable()
+			store.feature.drag.disable()
 
 			const reorderSpy = vi.spyOn(store.state, 'innerValue')
 			store.event.drag({type: 'delete', index: 0})

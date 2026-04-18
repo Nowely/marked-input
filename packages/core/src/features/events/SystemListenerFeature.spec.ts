@@ -10,7 +10,7 @@ describe('SystemListenerFeature', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		controller = store.features.system
+		controller = store.feature.system
 	})
 
 	describe('enable()', () => {
