@@ -39,10 +39,10 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('enable()', () => {
-		it('sets overlay trigger behavior for checkOverlay', () => {
+		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			controller.enable()
 
-			store.event.checkOverlay()
+			store.event.change()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 
@@ -55,14 +55,6 @@ describe('OverlayFeature', () => {
 			store.state.overlayMatch(stubMatch)
 
 			store.event.clearOverlay()
-
-			expect(store.state.overlayMatch()).toBeUndefined()
-		})
-
-		it('should set overlayMatch when checkOverlay is emitted', () => {
-			controller.enable()
-
-			store.event.checkOverlay()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
@@ -109,7 +101,7 @@ describe('OverlayFeature', () => {
 			store.state.overlayMatch(stubMatch)
 
 			store.event.clearOverlay()
-			store.event.checkOverlay()
+			store.event.change()
 
 			expect(store.state.overlayMatch()).toBe(stubMatch)
 		})

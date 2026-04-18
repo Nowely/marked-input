@@ -105,25 +105,23 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. store.event.checkOverlay() emitted
+2. OverlayFeature runs a trigger probe (on `store.event.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
-3. OverlayFeature checks for trigger match
-        ↓
-4. If found:
+3. If found:
    - store.state.overlayMatch set
         ↓
-5. Overlay component receives match via useOverlay()
+4. Overlay component receives match via useOverlay()
         ↓
-6. Overlay renders at cursor position
+5. Overlay renders at cursor position
         ↓
-7. User selects item:
+6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-8. store.event.select() emitted
+7. store.event.select() emitted
         ↓
-9. Markup inserted, onChange called with new text
+8. Markup inserted, onChange called with new text
         ↓
-10. store.event.clearOverlay() closes overlay
+9. store.event.clearOverlay() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -221,7 +219,6 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | --------------- | --------------------------- | -------------------------------- |
 | `change`        | Text content changes        | `void`                           |
 | `parse`         | Parsing triggered           | `void`                           |
-| `checkOverlay`  | Check for overlay trigger   | `void`                           |
 | `clearOverlay`  | Close overlay               | `void`                           |
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `delete`        | Mark deleted                | `{ token: Token }`               |
@@ -313,7 +310,6 @@ class Store {
         delete: Event<{ token: Token }>
         select: Event<{ mark: Token; match: OverlayMatch }>
         clearOverlay: Event<void>
-        checkOverlay: Event<void>
         sync: Event<void>
         dragAction: Event<{ type: string; token: Token }>
         afterTokensRendered: Event<void>

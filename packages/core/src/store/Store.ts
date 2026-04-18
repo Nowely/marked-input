@@ -179,8 +179,6 @@ export class Store {
 		select: event<{mark: Token; match: OverlayMatch}>(),
 		/** Dismisses the overlay by clearing the current `overlayMatch` */
 		clearOverlay: event(),
-		/** Probes the caret/text position for overlay trigger patterns and shows overlay if matched */
-		checkOverlay: event(),
 		/** Syncs `contentEditable` attributes and `textContent` of child elements to match token state */
 		sync: event(),
 		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */

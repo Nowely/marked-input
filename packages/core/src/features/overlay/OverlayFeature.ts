@@ -9,6 +9,11 @@ export class OverlayFeature {
 
 	constructor(private readonly store: Store) {}
 
+	#probeTrigger() {
+		const match = TriggerFinder.find(this.store.props.options(), option => option.overlay?.trigger)
+		this.store.state.overlayMatch(match)
+	}
+
 	enable() {
 		if (this.#scope) return
 
@@ -17,17 +22,12 @@ export class OverlayFeature {
 				this.store.state.overlayMatch(undefined)
 			})
 
-			watch(this.store.event.checkOverlay, () => {
-				const match = TriggerFinder.find(this.store.props.options(), option => option.overlay?.trigger)
-				this.store.state.overlayMatch(match)
-			})
-
 			watch(this.store.event.change, () => {
 				const showOverlayOn = this.store.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.store.event.checkOverlay()
+					this.#probeTrigger()
 				}
 			})
 
@@ -66,7 +66,7 @@ export class OverlayFeature {
 				const type: OverlayTrigger = 'selectionChange'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.store.event.checkOverlay()
+					this.#probeTrigger()
 				}
 			}
 
