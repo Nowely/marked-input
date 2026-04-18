@@ -1,4 +1,4 @@
-import {batch, effectScope, watch} from '../../shared/signals/index.js'
+import {batch, effectScope, trigger, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {createNewSpan} from '../editing'
 import {annotate, findToken, parseWithParser, toString} from '../parsing'
@@ -24,7 +24,7 @@ export class SystemListenerFeature {
 					const serialized = toString(tokens)
 					onChange?.(serialized)
 					this.store.state.previousValue(serialized)
-					this.store.bumpTokens()
+					trigger(() => this.store.state.tokens())
 					return
 				}
 
