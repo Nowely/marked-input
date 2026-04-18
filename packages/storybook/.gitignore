@@ -1,3 +1,7 @@
 node_modules
 dist-react
 dist-vue
+
+# Vitest browser attachments: reference/actual/diff PNGs written on screenshot failures.
+# Baselines in __screenshots__/ ARE tracked; only transient failure artifacts are ignored.
+.vitest-attachments
