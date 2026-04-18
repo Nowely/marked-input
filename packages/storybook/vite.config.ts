@@ -10,6 +10,7 @@ const browser = {
 	instances: [{browser: 'chromium' as const}],
 	viewport: {width: 1280, height: 720},
 	headless: true,
+	screenshotFailures: false,
 }
 
 export default defineConfig({

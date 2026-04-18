@@ -32,14 +32,10 @@ export class FocusFeature {
 				}
 			})
 
-			watch(this.store.event.recoverFocus, () => {
-				this.#recover()
-			})
-
-			watch(this.store.event.afterTokensRendered, () => {
+			watch(this.store.event.rendered, () => {
 				this.store.event.sync()
 				if (!this.store.props.Mark()) return
-				this.store.event.recoverFocus()
+				this.#recover()
 			})
 		})
 	}

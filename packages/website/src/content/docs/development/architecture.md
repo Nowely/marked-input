@@ -87,7 +87,7 @@ Both framework adapters share the same component structure:
         ↓
 4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
-5. store.event.parse() emitted
+5. store.event.reparse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusFeature restores caret position via store.event.recoverFocus
+9. FocusFeature restores caret position internally after render
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `computeTokensFromValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -105,25 +105,23 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. store.event.checkOverlay() emitted
+2. OverlayFeature runs a trigger probe (on `store.event.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
-3. OverlayFeature checks for trigger match
-        ↓
-4. If found:
+3. If found:
    - store.state.overlayMatch set
         ↓
-5. Overlay component receives match via useOverlay()
+4. Overlay component receives match via useOverlay()
         ↓
-6. Overlay renders at cursor position
+5. Overlay renders at cursor position
         ↓
-7. User selects item:
+6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-8. store.event.select() emitted
+7. store.event.overlaySelect() emitted
         ↓
-9. Markup inserted, onChange called with new text
+8. Markup inserted, onChange called with new text
         ↓
-10. store.event.clearOverlay() closes overlay
+9. store.event.overlayClose() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -220,18 +218,15 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | Event           | When Fired                  | Payload                          |
 | --------------- | --------------------------- | -------------------------------- |
 | `change`        | Text content changes        | `void`                           |
-| `parse`         | Parsing triggered           | `void`                           |
-| `checkOverlay`  | Check for overlay trigger   | `void`                           |
-| `clearOverlay`  | Close overlay               | `void`                           |
-| `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `delete`        | Mark deleted                | `{ token: Token }`               |
-| `sync`          | Value/options sync needed   | `void`                           |
-| `recoverFocus`  | Focus recovery after render | `void`                           |
-| `updated`       | Framework mount/update      | `void`                           |
-| `afterTokensRendered` | After tokens render  | `void`                           |
+| `reparse`       | Re-parse triggered          | `void`                           |
+| `overlayClose`  | Close overlay               | `void`                           |
+| `overlaySelect` | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `markRemove`    | Mark removed                | `{ token: Token }`               |
+| `sync`          | Post-render DOM alignment   | `void`                           |
+| `rendered`      | After tokens render         | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
-| `dragAction`    | Drag-and-drop action        | `{ type: string, token: Token }` |
+| `drag`          | Drag-and-drop action        | `DragAction`                     |
 
 ### Event Usage
 
@@ -240,7 +235,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 store.event.change()
 
 // Emit a payload event
-store.event.delete({ token })
+store.event.markRemove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -311,16 +306,13 @@ class Store {
 
     readonly event: {
         change: Event<void>
-        parse: Event<void>
-        delete: Event<{ token: Token }>
-        select: Event<{ mark: Token; match: OverlayMatch }>
-        clearOverlay: Event<void>
-        checkOverlay: Event<void>
+        reparse: Event<void>
+        markRemove: Event<{ token: Token }>
+        overlaySelect: Event<{ mark: Token; match: OverlayMatch }>
+        overlayClose: Event<void>
         sync: Event<void>
-        recoverFocus: Event<void>
-        dragAction: Event<{ type: string; token: Token }>
-        updated: Event<void>
-        afterTokensRendered: Event<void>
+        drag: Event<DragAction>
+        rendered: Event<void>
         mounted: Event<void>
         unmounted: Event<void>
     }
@@ -392,13 +384,13 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Framework emits store.event.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. Framework emits store.event.updated() on mount/update
-//    → ParseFeature syncs value/options, triggers parse if changed
+// 2. After mount, ParseFeature reactively watches [props.value, computed.parser]
+//    → emits store.event.reparse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → ContentEditableFeature.sync()
 
-// 4. Framework emits store.event.afterTokensRendered() after tokens render
+// 4. Framework emits store.event.rendered() after tokens render
 
 // 5. Framework emits store.event.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)

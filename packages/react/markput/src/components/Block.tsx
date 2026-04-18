@@ -14,16 +14,17 @@ import styles from '@markput/core/styles.module.css'
 
 interface BlockProps {
 	token: TokenType
-	blockIndex: number
 }
 
-export const Block = memo(({token, blockIndex}: BlockProps) => {
+export const Block = memo(({token}: BlockProps) => {
 	const store = useStore()
 	const blockStore = store.blocks.get(token)
 
 	const Component = useMarkput(s => s.computed.blockComponent)
 	const slotProps = useMarkput(s => s.computed.blockProps)
 	const isDragging = useMarkput(() => blockStore.state.isDragging)
+	const tokens = useMarkput(s => s.state.tokens)
+	const blockIndex = tokens.indexOf(token)
 
 	return (
 		<Component

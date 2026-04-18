@@ -6,10 +6,10 @@ Manages focus tracking and recovery within the editor. Tracks the currently focu
 
 - **FocusFeature**: Feature class that:
     - Listens for `focusin`/`focusout`/`click` events on the container
-    - Subscribes to `recoverFocus` events and restores focus/caret from recovery descriptors (handles stale DOM nodes, next/prev navigation, child index offset)
-    - Subscribes to `afterTokensRendered` to trigger sync and focus recovery when a Mark is active
+    - After each token render (when a `Mark` component is provided), reads `store.state.recovery`, restores focus/caret from recovery descriptors (handles stale DOM nodes, next/prev navigation, child index offset), and clears the recovery state
+    - Subscribes to `rendered` to trigger sync and automatic caret recovery
     - Auto-focuses the first child on click when the editor is empty
 
 ## Usage
 
-The feature is registered by the Store automatically. Focus recovery is triggered by other features through `store.event.recoverFocus`.
+The feature is registered by the Store automatically. Caret recovery runs after each token render when a `Mark` component is provided — it reads `store.state.recovery`, restores the caret, and clears the recovery state.

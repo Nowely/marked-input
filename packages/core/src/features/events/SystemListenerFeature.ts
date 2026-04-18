@@ -1,4 +1,4 @@
-import {batch, effectScope, watch} from '../../shared/signals/index.js'
+import {batch, effectScope, trigger, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {createNewSpan} from '../editing'
 import {annotate, findToken, parseWithParser, toString} from '../parsing'
@@ -24,7 +24,7 @@ export class SystemListenerFeature {
 					const serialized = toString(tokens)
 					onChange?.(serialized)
 					this.store.state.previousValue(serialized)
-					this.store.bumpTokens()
+					trigger(this.store.state.tokens)
 					return
 				}
 
@@ -39,10 +39,10 @@ export class SystemListenerFeature {
 				}
 
 				onChange?.(toString(tokens))
-				this.store.event.parse()
+				this.store.event.reparse()
 			})
 
-			watch(this.store.event.delete, payload => {
+			watch(this.store.event.markRemove, payload => {
 				const {token} = payload
 				const tokens = this.store.state.tokens()
 				if (!findToken(tokens, token)) return
@@ -62,7 +62,7 @@ export class SystemListenerFeature {
 				this.store.props.onChange()?.(newValue)
 			})
 
-			watch(this.store.event.select, event => {
+			watch(this.store.event.overlaySelect, event => {
 				const Mark = this.store.props.Mark()
 				const onChange = this.store.props.onChange()
 				const {
@@ -107,7 +107,7 @@ export class SystemListenerFeature {
 					this.store.nodes.focus.target = this.store.nodes.input.target
 					this.store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this.store.event.parse()
+					this.store.event.reparse()
 				}
 			})
 		})

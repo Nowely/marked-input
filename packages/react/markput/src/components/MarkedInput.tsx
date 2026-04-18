@@ -87,7 +87,6 @@ export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOp
 		store.event.mounted()
 		return () => store.event.unmounted()
 	}, [])
-	useLayoutEffect(() => store.event.updated())
 
 	useImperativeHandle(props.ref, () => store.handler, [store])
 

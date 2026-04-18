@@ -159,5 +159,5 @@ export type DragAction =
 	| {type: 'duplicate'; index: number}
 
 export interface DragActions {
-	dragAction: {(action: DragAction): void}
+	drag: {(action: DragAction): void}
 }

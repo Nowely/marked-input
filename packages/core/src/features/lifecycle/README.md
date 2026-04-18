@@ -1,16 +1,15 @@
-# Lifecycle Feature
+# Lifecycle (handled by Store)
 
-Orchestrates the enable/disable lifecycle of all features. Watches store events to enable features on first update and disable all features on unmount, with guards against double-enable/disable.
+The Store does not use a dedicated `Lifecycle` class. Feature enable/disable is driven directly by Store in its constructor:
 
-## Components
+```ts
+watch(this.event.mounted, () => Object.values(this.features).forEach(f => f.enable()))
+watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
+```
 
-- **Lifecycle**: Class that manages feature lifecycle:
-    - Watches `store.event.updated` to enable all registered features on first update
-    - Watches `store.event.unmounted` to disable all features on unmount
-    - `enable()` — enables all features in `store.features`
-    - `disable()` — disables all features
-    - Internal flags guard against double-enable/disable
+Framework adapters emit:
 
-## Usage
+- `store.event.mounted()` on initial mount (enables features)
+- `store.event.unmounted()` on unmount (disables features and disposes subscriptions)
 
-The Lifecycle instance is created by the Store and manages all feature lifecycles automatically. No direct interaction is needed from other features or framework wrappers.
+Reactive re-parse on prop changes is handled inside `ParseFeature` by watching a computed over `props.value` and `computed.parser`; there is no separate "updated" event.

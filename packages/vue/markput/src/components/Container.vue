@@ -6,7 +6,7 @@ import Block from './Block.vue'
 import Token from './Token.vue'
 
 const result = useMarkput(s => ({
-	layout: s.props.layout,
+	isBlock: s.computed.isBlock,
 	tokens: s.state.tokens,
 	key: s.key,
 	state: s.state,
@@ -23,14 +23,14 @@ const containerProps = useMarkput(s => s.computed.containerProps)
 
 watch(
 	() => result.value.tokens,
-	() => result.value.event.afterTokensRendered(),
+	() => result.value.event.rendered(),
 	{flush: 'post', immediate: true}
 )
 </script>
 
 <template>
 	<component :is="containerComponent" :ref="setContainerRef" v-bind="containerProps">
-		<template v-if="result.layout === 'block'">
+		<template v-if="result.isBlock">
 			<Block
 				v-for="(token, index) in result.tokens"
 				:key="result.key.get(token)"

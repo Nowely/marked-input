@@ -9,17 +9,17 @@ export class OverlayFeature {
 
 	constructor(private readonly store: Store) {}
 
+	#probeTrigger() {
+		const match = TriggerFinder.find(this.store.props.options(), option => option.overlay?.trigger)
+		this.store.state.overlayMatch(match)
+	}
+
 	enable() {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.event.clearOverlay, () => {
+			watch(this.store.event.overlayClose, () => {
 				this.store.state.overlayMatch(undefined)
-			})
-
-			watch(this.store.event.checkOverlay, () => {
-				const match = TriggerFinder.find(this.store.props.options(), option => option.overlay?.trigger)
-				this.store.state.overlayMatch(match)
 			})
 
 			watch(this.store.event.change, () => {
@@ -27,7 +27,7 @@ export class OverlayFeature {
 				const type: OverlayTrigger = 'change'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.store.event.checkOverlay()
+					this.#probeTrigger()
 				}
 			})
 
@@ -39,7 +39,7 @@ export class OverlayFeature {
 
 					listen(window, 'keydown', e => {
 						if (e.key === KEYBOARD.ESC) {
-							this.store.event.clearOverlay()
+							this.store.event.overlayClose()
 						}
 					})
 
@@ -50,7 +50,7 @@ export class OverlayFeature {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.store.state.overlay()?.contains(target)) return
 							if (this.store.state.container()?.contains(target)) return
-							this.store.event.clearOverlay()
+							this.store.event.overlayClose()
 						},
 						true
 					)
@@ -66,7 +66,7 @@ export class OverlayFeature {
 				const type: OverlayTrigger = 'selectionChange'
 
 				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.store.event.checkOverlay()
+					this.#probeTrigger()
 				}
 			}
 
