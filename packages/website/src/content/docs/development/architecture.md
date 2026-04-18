@@ -222,7 +222,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `clearOverlay`  | Close overlay               | `void`                           |
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `delete`        | Mark deleted                | `{ token: Token }`               |
-| `sync`          | Value/options sync needed   | `void`                           |
+| `sync`          | Post-render DOM alignment   | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
