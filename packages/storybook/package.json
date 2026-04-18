@@ -12,6 +12,7 @@
     "test:react": "vitest run --project react",
     "test:vue": "vitest run --project vue",
     "test": "pnpm run test:react && pnpm run test:vue",
+    "test:update": "vitest run --update",
     "test:watch:react": "vitest --project react",
     "test:watch:vue": "vitest --project vue",
     "test:watch": "concurrently \"pnpm run test:watch:react\" \"pnpm run test:watch:vue\"",
