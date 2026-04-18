@@ -50,7 +50,7 @@ describe('deleteMark', () => {
 		span2.parentElement = container
 
 		// oxlint-disable-next-line no-unsafe-type-assertion
-		store.refs.container = container as unknown as HTMLDivElement
+		store.state.container(container as unknown as HTMLDivElement)
 		// oxlint-disable-next-line no-unsafe-type-assertion
 		store.nodes.focus.target = mark as unknown as HTMLElement
 	}

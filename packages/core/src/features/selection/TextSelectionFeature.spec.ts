@@ -68,7 +68,7 @@ describe('TextSelectionFeature', () => {
 			querySelectorAll: vi.fn(() => [span]),
 		}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionFeature in tests
-		store.refs.container = container as unknown as HTMLDivElement
+		store.state.container(container as unknown as HTMLDivElement)
 
 		const controller = store.features.textSelection
 		controller.enable()
