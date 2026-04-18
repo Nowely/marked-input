@@ -1,44 +1,46 @@
+// oxlint-disable typescript-eslint/no-explicit-any typescript-eslint/no-non-null-assertion typescript-eslint/no-unsafe-type-assertion
 import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
+import {page} from 'vitest/browser'
 
-// Automatically import all stories files
-const storiesModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
+const storyModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
 
-// Group stories by category
 const storiesByCategory = new Map<string, Record<string, any>>()
 
-for (const [path, module] of Object.entries(storiesModules)) {
-	// Extract category from the path: ./Ant/Ant.stories.tsx -> Ant
+for (const [path, mod] of Object.entries(storyModules)) {
 	const match = path.match(/\.\/([^/]+)\//)
 	if (!match) continue
 
 	const category = match[1]
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	const stories = composeStories(module as Parameters<typeof composeStories>[0])
+	const stories = composeStories(mod as Parameters<typeof composeStories>[0])
 
 	if (!storiesByCategory.has(category)) {
 		storiesByCategory.set(category, {})
 	}
 
-	// Merge stories from the same category file
-	const categoryStories = storiesByCategory.get(category)!
-	Object.assign(categoryStories, stories)
+	Object.assign(storiesByCategory.get(category)!, stories)
 }
 
-//TODO correct type
-const getTests =
-	() =>
-	([name, Story]: [string, any]) =>
-		it(`Story ${name}`, async () => {
-			const {container} = await render(<Story />)
-			expect(container.textContent.length).toBeTruthy()
-		})
-
-describe('Component: stories', () => {
+describe('Storybook visual regression (React)', () => {
 	for (const [category, stories] of storiesByCategory.entries()) {
-		describe(`${category} stories`, () => {
-			Object.entries(stories).map(getTests())
+		describe(category, () => {
+			for (const [name, Story] of Object.entries(stories)) {
+				it(name, async () => {
+					const {container} = await render(<Story />)
+					await document.fonts.ready
+					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+
+					if (Story.parameters?.screenshot === false) {
+						expect(container.textContent.length).toBeTruthy()
+						return
+					}
+
+					// Explicit short name so the baseline file is `<Category>-<Story>-<browser>-<platform>.png`
+					// instead of the verbose nested-describe-path Vitest would auto-derive.
+					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}-${name}`)
+				})
+			}
 		})
 	}
 })
