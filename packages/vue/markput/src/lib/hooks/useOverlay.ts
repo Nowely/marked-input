@@ -32,13 +32,13 @@ export function useOverlay(): OverlayHandler {
 		return Caret.getAbsolutePosition()
 	})
 
-	const close = () => store.event.clearOverlay()
+	const close = () => store.event.overlayClose()
 	const select = (value: {value: string; meta?: string}) => {
 		const match = matchRef.value
 		if (!match) return
 		const mark = createMarkFromOverlay(match, value.value, value.meta)
 		store.event.overlaySelect({mark, match})
-		store.event.clearOverlay()
+		store.event.overlayClose()
 	}
 
 	const ref = {

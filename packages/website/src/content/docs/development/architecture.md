@@ -121,7 +121,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.event.clearOverlay() closes overlay
+9. store.event.overlayClose() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -219,7 +219,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | --------------- | --------------------------- | -------------------------------- |
 | `change`        | Text content changes        | `void`                           |
 | `reparse`       | Re-parse triggered          | `void`                           |
-| `clearOverlay`  | Close overlay               | `void`                           |
+| `overlayClose`  | Close overlay               | `void`                           |
 | `overlaySelect` | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `markRemove`    | Mark removed                | `{ token: Token }`               |
 | `sync`          | Post-render DOM alignment   | `void`                           |
@@ -309,7 +309,7 @@ class Store {
         reparse: Event<void>
         markRemove: Event<{ token: Token }>
         overlaySelect: Event<{ mark: Token; match: OverlayMatch }>
-        clearOverlay: Event<void>
+        overlayClose: Event<void>
         sync: Event<void>
         dragAction: Event<{ type: string; token: Token }>
         afterTokensRendered: Event<void>
