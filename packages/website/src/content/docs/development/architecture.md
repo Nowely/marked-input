@@ -223,7 +223,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `overlaySelect` | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `markRemove`    | Mark removed                | `{ token: Token }`               |
 | `sync`          | Post-render DOM alignment   | `void`                           |
-| `afterTokensRendered` | After tokens render  | `void`                           |
+| `rendered`      | After tokens render         | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
 | `drag`          | Drag-and-drop action        | `DragAction`                     |
@@ -312,7 +312,7 @@ class Store {
         overlayClose: Event<void>
         sync: Event<void>
         drag: Event<DragAction>
-        afterTokensRendered: Event<void>
+        rendered: Event<void>
         mounted: Event<void>
         unmounted: Event<void>
     }
@@ -390,7 +390,7 @@ React/Vue render asynchronously, so initialization order matters:
 // 3. Sync contenteditable attributes (layout effect)
 //    → ContentEditableFeature.sync()
 
-// 4. Framework emits store.event.afterTokensRendered() after tokens render
+// 4. Framework emits store.event.rendered() after tokens render
 
 // 5. Framework emits store.event.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)

@@ -179,12 +179,12 @@ export class Store {
 		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
 		/** Dismisses the overlay by clearing the current `overlayMatch` */
 		overlayClose: event(),
-		/** Post-render DOM alignment: aligns `contentEditable` attributes and `textContent` of child elements to token state. Emitted synchronously by `FocusFeature` inside the `afterTokensRendered` handler (framework layout-effect phase). Load-bearing for post-commit DOM consistency — do not delete without reproducing this timing. */
+		/** Post-render DOM alignment: aligns `contentEditable` attributes and `textContent` of child elements to token state. Emitted synchronously by `FocusFeature` inside the `rendered` handler (framework layout-effect phase). Load-bearing for post-commit DOM consistency — do not delete without reproducing this timing. */
 		sync: event(),
 		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
 		drag: event<DragAction>(),
 		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
-		afterTokensRendered: event(),
+		rendered: event(),
 		/** Lifecycle: editor component added to the DOM — enables all features */
 		mounted: event(),
 		/** Lifecycle: editor component removed from the DOM — disables all features and cleans up subscriptions */

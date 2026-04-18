@@ -16,7 +16,7 @@ export const Container = memo(() => {
 	}))
 
 	useLayoutEffect(() => {
-		event.afterTokensRendered()
+		event.rendered()
 	}, [tokens, event])
 
 	return (

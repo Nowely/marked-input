@@ -23,7 +23,7 @@ const containerProps = useMarkput(s => s.computed.containerProps)
 
 watch(
 	() => result.value.tokens,
-	() => result.value.event.afterTokensRendered(),
+	() => result.value.event.rendered(),
 	{flush: 'post', immediate: true}
 )
 </script>

@@ -44,12 +44,12 @@ describe('FocusFeature', () => {
 		}
 	})
 
-	describe('afterTokensRendered handler', () => {
+	describe('rendered handler', () => {
 		it('always emits sync', () => {
 			store.features.focus.enable()
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
-			store.event.afterTokensRendered()
+			store.event.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
@@ -71,7 +71,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.event.afterTokensRendered()
+			store.event.rendered()
 
 			// #recover clears recovery after running.
 			expect(store.state.recovery()).toBeUndefined()
@@ -87,7 +87,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.event.afterTokensRendered()
+			store.event.rendered()
 
 			// #recover was NOT called, so recovery state is preserved.
 			expect(store.state.recovery()).toBeDefined()
@@ -97,12 +97,12 @@ describe('FocusFeature', () => {
 	})
 
 	describe('subscription lifecycle', () => {
-		it('does not fire afterTokensRendered watcher after disable', () => {
+		it('does not fire rendered watcher after disable', () => {
 			store.features.focus.enable()
 			store.features.focus.disable()
 
 			const syncSpy = vi.spyOn(store.event, 'sync')
-			store.event.afterTokensRendered()
+			store.event.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 		})

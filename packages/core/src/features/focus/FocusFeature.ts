@@ -32,7 +32,7 @@ export class FocusFeature {
 				}
 			})
 
-			watch(this.store.event.afterTokensRendered, () => {
+			watch(this.store.event.rendered, () => {
 				this.store.event.sync()
 				if (!this.store.props.Mark()) return
 				this.#recover()
