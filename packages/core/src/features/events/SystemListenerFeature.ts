@@ -24,7 +24,7 @@ export class SystemListenerFeature {
 					const serialized = toString(tokens)
 					onChange?.(serialized)
 					this.store.state.previousValue(serialized)
-					trigger(() => this.store.state.tokens())
+					trigger(this.store.state.tokens)
 					return
 				}
 
