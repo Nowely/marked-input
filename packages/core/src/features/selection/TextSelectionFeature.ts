@@ -19,7 +19,7 @@ export class TextSelectionFeature {
 			})
 
 			listen(document, 'mousemove', e => {
-				const container = this.store.refs.container
+				const container = this.store.state.container()
 				if (!container) return
 				const isPressed = this.#isPressed
 				const isNotInnerSome = !container.contains(this.#pressedNode) || this.#pressedNode !== e.target
@@ -54,7 +54,7 @@ export class TextSelectionFeature {
 			effect(() => {
 				const value = this.store.state.selecting()
 				if (value !== 'drag') return
-				const container = this.store.refs.container
+				const container = this.store.state.container()
 				if (!container) return
 				container
 					.querySelectorAll<HTMLElement>('[contenteditable="true"]')

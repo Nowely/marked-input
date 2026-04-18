@@ -48,8 +48,8 @@ export class OverlayFeature {
 						'click',
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
-							if (this.store.refs.overlay?.contains(target)) return
-							if (this.store.refs.container?.contains(target)) return
+							if (this.store.state.overlay()?.contains(target)) return
+							if (this.store.state.container()?.contains(target)) return
 							this.store.event.clearOverlay()
 						},
 						true
@@ -59,7 +59,7 @@ export class OverlayFeature {
 
 			// Focus-based selection change tracking
 			const selectionChangeHandler = () => {
-				const container = this.store.refs.container
+				const container = this.store.state.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this.store.props.showOverlayOn()

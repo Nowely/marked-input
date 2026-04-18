@@ -9,9 +9,14 @@ const result = useMarkput(s => ({
 	layout: s.props.layout,
 	tokens: s.state.tokens,
 	key: s.key,
-	refs: s.refs,
+	state: s.state,
 	event: s.event,
 }))
+
+const setContainerRef = (el: unknown) => {
+	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
+	result.value.state.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
+}
 
 const containerComponent = useMarkput(s => s.computed.containerComponent)
 const containerProps = useMarkput(s => s.computed.containerProps)
@@ -24,15 +29,7 @@ watch(
 </script>
 
 <template>
-	<component
-		:is="containerComponent"
-		:ref="
-			(el: any) => {
-				result.refs.container = el?.$el ?? el
-			}
-		"
-		v-bind="containerProps"
-	>
+	<component :is="containerComponent" :ref="setContainerRef" v-bind="containerProps">
 		<template v-if="result.layout === 'block'">
 			<Block
 				v-for="(token, index) in result.tokens"

@@ -1,6 +1,6 @@
 import type {Token as TokenType} from '@markput/core'
 import {cx} from '@markput/core'
-import type {CSSProperties, ElementType} from 'react'
+import type {CSSProperties} from 'react'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -21,8 +21,7 @@ export const Block = memo(({token, blockIndex}: BlockProps) => {
 	const store = useStore()
 	const blockStore = store.blocks.get(token)
 
-	// oxlint-disable-next-line no-unsafe-type-assertion -- blockComponent returns unknown in core; React ElementType asserted here
-	const Component = useMarkput(s => s.computed.blockComponent) as ElementType
+	const Component = useMarkput(s => s.computed.blockComponent)
 	const slotProps = useMarkput(s => s.computed.blockProps)
 	const isDragging = useMarkput(() => blockStore.state.isDragging)
 

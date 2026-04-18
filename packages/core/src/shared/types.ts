@@ -5,6 +5,25 @@ import type {Markup} from '../features/parsing/parser/types'
 import type {NodeProxy} from './classes/NodeProxy'
 
 /**
+ * Registry interface used as a module-augmentation target. Framework packages
+ * add a `default` property whose type is the framework's component type.
+ *
+ * @example React augmentation
+ * declare module '@markput/core' {
+ *   interface SlotRegistry {
+ *     default: import('react').ElementType
+ *   }
+ * }
+ *
+ * Without augmentation, `Slot` falls back to `unknown`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface SlotRegistry {}
+
+/** Framework-provided component type. Resolves to `unknown` unless `SlotRegistry` is augmented. */
+export type Slot = keyof SlotRegistry extends never ? unknown : SlotRegistry[keyof SlotRegistry]
+
+/**
  * Core option for markups - Framework-agnostic configuration.
  * Extended by framework-specific Option types (e.g., React Option).
  *
@@ -62,9 +81,9 @@ export interface MarkputState {
 	options: CoreOption[] | undefined
 	/** Events that trigger overlay display */
 	showOverlayOn: OverlayTrigger | undefined
-	Span: unknown
-	Mark: unknown
-	Overlay: unknown
+	Span: Slot
+	Mark: Slot
+	Overlay: Slot
 	className: string | undefined
 	style: CSSProperties | undefined
 	slots: CoreSlots | undefined
@@ -118,9 +137,9 @@ export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
 export interface CoreSlots {
-	container?: unknown
-	block?: unknown
-	span?: unknown
+	container?: Slot
+	block?: Slot
+	span?: Slot
 }
 
 export interface CoreSlotProps {

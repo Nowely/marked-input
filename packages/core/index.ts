@@ -12,6 +12,8 @@ export type {
 	DragAction,
 	DragActions,
 	DraggableConfig,
+	Slot,
+	SlotRegistry,
 } from './src/shared/types'
 export {MarkputHandler} from './src/shared/classes'
 

@@ -38,7 +38,7 @@ export class CopyFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -88,7 +88,7 @@ export class CopyFeature {
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return false
 
 		const sel = window.getSelection()

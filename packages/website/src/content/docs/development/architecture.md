@@ -296,7 +296,7 @@ class Store {
     // Properties: tokens, previousValue, recovery, selecting,
     // overlayMatch, value, defaultValue, onChange, readOnly, options,
     // showOverlayOn, Span, Mark, Overlay, className, style, slots,
-    // slotProps, drag
+    // slotProps, drag, container, overlay
 
     readonly computed: {
         hasMark: Computed<boolean>
@@ -323,11 +323,6 @@ class Store {
         afterTokensRendered: Event<void>
         mounted: Event<void>
         unmounted: Event<void>
-    }
-
-    readonly refs: {
-        container: HTMLDivElement | null
-        overlay: HTMLElement | null
     }
 
     readonly features: {

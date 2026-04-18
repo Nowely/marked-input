@@ -2,7 +2,7 @@ import type {Store} from '../../store'
 
 export function isFullSelection(store: Store): boolean {
 	const sel = window.getSelection()
-	const container = store.refs.container
+	const container = store.state.container()
 	if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
 
 	try {
@@ -26,8 +26,8 @@ export function selectAllText(store: Store, event: KeyboardEvent): void {
 		event.preventDefault()
 
 		const selection = window.getSelection()
-		const anchorNode = store.refs.container?.firstChild
-		const focusNode = store.refs.container?.lastChild
+		const anchorNode = store.state.container()?.firstChild
+		const focusNode = store.state.container()?.lastChild
 
 		if (!selection || !anchorNode || !focusNode) return
 		selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)

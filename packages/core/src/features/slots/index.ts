@@ -1,4 +1,4 @@
-export type {MarkSlot, OverlaySlot} from './types'
+export type {Slot, MarkSlot, OverlaySlot} from './types'
 export {
 	resolveSlot,
 	resolveSlotProps,

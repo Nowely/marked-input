@@ -35,7 +35,7 @@ describe('FocusFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		store.refs.container = stubContainer
+		store.state.container(stubContainer)
 		const features = store.features as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(features)) {
 			if (key === 'focus') continue

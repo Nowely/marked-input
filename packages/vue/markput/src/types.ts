@@ -1,4 +1,4 @@
-import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger} from '@markput/core'
+import type {CoreOption, DataAttributes, DraggableConfig, OverlayTrigger, Slot} from '@markput/core'
 import type {Component, CSSProperties, VNodeChild} from 'vue'
 
 export interface MarkProps {
@@ -40,7 +40,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 }
 
 export interface Slots {
-	container?: string | Component
+	container?: string | Slot
 }
 
 export interface SlotProps {

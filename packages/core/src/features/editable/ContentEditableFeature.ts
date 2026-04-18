@@ -32,7 +32,7 @@ export class ContentEditableFeature {
 	}
 
 	sync() {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		const readOnly = this.store.props.readOnly()

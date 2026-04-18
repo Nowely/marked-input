@@ -62,7 +62,7 @@ Per-option component for rendering this mark
 optional markup: Markup;
 ```
 
-Defined in: [core/src/shared/types.ts:38](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L38)
+Defined in: [core/src/shared/types.ts:57](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L57)
 
 Template string in which the mark is rendered.
 Must contain placeholders: `__value__`, `__meta__`, and/or `__slot__`

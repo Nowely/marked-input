@@ -15,7 +15,7 @@ export class InputFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -26,7 +26,7 @@ export class InputFeature {
 			})
 
 			listen(container, 'paste', e => {
-				const c = this.store.refs.container
+				const c = this.store.state.container()
 				if (c) captureMarkupPaste(e, c)
 				handlePaste(this.store, e)
 			})
@@ -131,7 +131,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 }
 
 function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
-	const container = store.refs.container
+	const container = store.state.container()
 	if (!container) return false
 	const markup = consumeMarkupPaste(container)
 	if (!markup) return false
@@ -247,7 +247,8 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const markup = store.refs.container ? consumeMarkupPaste(store.refs.container) : undefined
+	const c = store.state.container()
+	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
 }
@@ -272,7 +273,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	}
 
 	queueMicrotask(() => {
-		const rawFirstChild = store.refs.container?.firstChild
+		const rawFirstChild = store.state.container()?.firstChild
 		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
 		if (firstChild) {
 			store.state.recovery({

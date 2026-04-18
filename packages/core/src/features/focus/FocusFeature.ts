@@ -10,7 +10,7 @@ export class FocusFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -26,7 +26,7 @@ export class FocusFeature {
 			listen(container, 'click', () => {
 				const tokens = this.store.state.tokens()
 				if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-					const container = this.store.refs.container
+					const container = this.store.state.container()
 					const element = container ? firstHtmlChild(container) : null
 					element?.focus()
 				}
@@ -61,7 +61,7 @@ export class FocusFeature {
 		// eslint-disable-next-line switch-exhaustiveness-check
 		switch (true) {
 			case isNext && isStale: {
-				const container = this.store.refs.container
+				const container = this.store.state.container()
 				// After re-parse, text at childIndex splits into [text, mark, text]
 				// Focus the text span after the mark (childIndex + 2)
 				const targetChild =

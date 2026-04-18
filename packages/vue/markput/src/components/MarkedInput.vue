@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Store} from '@markput/core'
+import {type CoreSlots, Store} from '@markput/core'
 import {onMounted, onUnmounted, onUpdated, provide, shallowRef, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
@@ -32,7 +32,7 @@ function syncProps() {
 		Overlay: props.Overlay,
 		className: props.class,
 		style: props.style,
-		slots: props.slots,
+		slots: props.slots as CoreSlots | undefined,
 		slotProps: props.slotProps,
 	})
 }

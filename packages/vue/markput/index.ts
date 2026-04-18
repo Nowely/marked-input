@@ -1,3 +1,5 @@
+import './src/augment'
+
 export {default as MarkedInput} from './src/components/MarkedInput.vue'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'

@@ -1,3 +1,5 @@
+import './src/augment'
+
 export {MarkedInput} from './src/components/MarkedInput'
 export {useMark} from './src/lib/hooks/useMark'
 export {useOverlay} from './src/lib/hooks/useOverlay'
