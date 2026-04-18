@@ -37,7 +37,7 @@ export function useOverlay(): OverlayHandler {
 		const match = matchRef.value
 		if (!match) return
 		const mark = createMarkFromOverlay(match, value.value, value.meta)
-		store.event.select({mark, match})
+		store.event.overlaySelect({mark, match})
 		store.event.clearOverlay()
 	}
 

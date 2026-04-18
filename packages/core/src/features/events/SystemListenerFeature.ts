@@ -62,7 +62,7 @@ export class SystemListenerFeature {
 				this.store.props.onChange()?.(newValue)
 			})
 
-			watch(this.store.event.select, event => {
+			watch(this.store.event.overlaySelect, event => {
 				const Mark = this.store.props.Mark()
 				const onChange = this.store.props.onChange()
 				const {

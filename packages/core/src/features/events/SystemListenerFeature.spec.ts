@@ -100,7 +100,7 @@ describe('SystemListenerFeature', () => {
 				node: {} as unknown as Node,
 			} as unknown as OverlayMatch
 
-			store.event.select({mark, match})
+			store.event.overlaySelect({mark, match})
 		})
 	})
 

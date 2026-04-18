@@ -176,7 +176,7 @@ export class Store {
 		/** Removes a mark token from editor content */
 		markRemove: event<{token: Token}>(),
 		/** Fires when the user selects an overlay option — annotates markup into the current input span */
-		select: event<{mark: Token; match: OverlayMatch}>(),
+		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
 		/** Dismisses the overlay by clearing the current `overlayMatch` */
 		clearOverlay: event(),
 		/** Post-render DOM alignment: aligns `contentEditable` attributes and `textContent` of child elements to token state. Emitted synchronously by `FocusFeature` inside the `afterTokensRendered` handler (framework layout-effect phase). Load-bearing for post-commit DOM consistency — do not delete without reproducing this timing. */

@@ -117,7 +117,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.event.select() emitted
+7. store.event.overlaySelect() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
@@ -220,7 +220,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `change`        | Text content changes        | `void`                           |
 | `reparse`       | Re-parse triggered          | `void`                           |
 | `clearOverlay`  | Close overlay               | `void`                           |
-| `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `overlaySelect` | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `markRemove`    | Mark removed                | `{ token: Token }`               |
 | `sync`          | Post-render DOM alignment   | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
@@ -308,7 +308,7 @@ class Store {
         change: Event<void>
         reparse: Event<void>
         markRemove: Event<{ token: Token }>
-        select: Event<{ mark: Token; match: OverlayMatch }>
+        overlaySelect: Event<{ mark: Token; match: OverlayMatch }>
         clearOverlay: Event<void>
         sync: Event<void>
         dragAction: Event<{ type: string; token: Token }>
