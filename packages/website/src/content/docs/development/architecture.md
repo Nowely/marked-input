@@ -227,7 +227,6 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `delete`        | Mark deleted                | `{ token: Token }`               |
 | `sync`          | Value/options sync needed   | `void`                           |
 | `recoverFocus`  | Focus recovery after render | `void`                           |
-| `updated`       | Framework mount/update      | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
@@ -319,7 +318,6 @@ class Store {
         sync: Event<void>
         recoverFocus: Event<void>
         dragAction: Event<{ type: string; token: Token }>
-        updated: Event<void>
         afterTokensRendered: Event<void>
         mounted: Event<void>
         unmounted: Event<void>
@@ -392,8 +390,8 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Framework emits store.event.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. Framework emits store.event.updated() on mount/update
-//    → ParseFeature syncs value/options, triggers parse if changed
+// 2. After mount, ParseFeature reactively watches [props.value, computed.parser]
+//    → emits store.event.parse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → ContentEditableFeature.sync()

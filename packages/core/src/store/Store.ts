@@ -187,8 +187,6 @@ export class Store {
 		recoverFocus: event(),
 		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
 		dragAction: event<DragAction>(),
-		/** Signals the framework component has received new props — triggers conditional re-parse if value/options changed */
-		updated: event(),
 		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
 		afterTokensRendered: event(),
 		/** Lifecycle: editor component added to the DOM — enables all features */

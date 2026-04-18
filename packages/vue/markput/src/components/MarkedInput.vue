@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {type CoreSlots, Store} from '@markput/core'
-import {onMounted, onUnmounted, onUpdated, provide, shallowRef, watch} from 'vue'
+import {onMounted, onUnmounted, provide, shallowRef, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
@@ -61,9 +61,7 @@ watch(
 
 onMounted(() => {
 	store.value.event.mounted()
-	store.value.event.updated()
 })
-onUpdated(() => store.value.event.updated())
 onUnmounted(() => store.value.event.unmounted())
 
 defineExpose(store.value.handler)
