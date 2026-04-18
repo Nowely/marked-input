@@ -22,7 +22,7 @@ export const Container = memo(() => {
 	return (
 		<Component ref={state.container} {...props}>
 			{isBlock
-				? tokens.map((t, i) => <Block key={key.get(t)} token={t} blockIndex={i} />)
+				? tokens.map(t => <Block key={key.get(t)} token={t} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}
 		</Component>
 	)
