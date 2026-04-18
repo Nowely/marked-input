@@ -95,7 +95,7 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusFeature restores caret position via store.event.recoverFocus
+9. FocusFeature restores caret position internally after render
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `computeTokensFromValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -226,7 +226,6 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `delete`        | Mark deleted                | `{ token: Token }`               |
 | `sync`          | Value/options sync needed   | `void`                           |
-| `recoverFocus`  | Focus recovery after render | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
@@ -316,7 +315,6 @@ class Store {
         clearOverlay: Event<void>
         checkOverlay: Event<void>
         sync: Event<void>
-        recoverFocus: Event<void>
         dragAction: Event<{ type: string; token: Token }>
         afterTokensRendered: Event<void>
         mounted: Event<void>

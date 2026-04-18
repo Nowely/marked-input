@@ -56,25 +56,41 @@ describe('FocusFeature', () => {
 			store.features.focus.disable()
 		})
 
-		it('emits recoverFocus when Mark is set', () => {
+		it('runs caret recovery and clears recovery state when Mark is set', () => {
 			store.setProps({Mark: () => null})
 			store.features.focus.enable()
 
-			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
+			// Set up a recovery state so #recover has work to do.
+			// #recover() clears the recovery state on the happy path.
+			const target = document.createElement('div')
+			// Ensure target reports as connected for the happy path.
+			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
+			store.nodes.focus.target = target
+			store.state.recovery({
+				anchor: store.nodes.focus,
+				caret: 0,
+			})
+
 			store.event.afterTokensRendered()
 
-			expect(recoverFocusSpy).toHaveBeenCalledOnce()
+			// #recover clears recovery after running.
+			expect(store.state.recovery()).toBeUndefined()
 
 			store.features.focus.disable()
 		})
 
-		it('does not emit recoverFocus when Mark is not set', () => {
+		it('does not run recovery when Mark is not set', () => {
 			store.features.focus.enable()
 
-			const recoverFocusSpy = vi.spyOn(store.event, 'recoverFocus')
+			store.state.recovery({
+				anchor: store.nodes.focus,
+				caret: 0,
+			})
+
 			store.event.afterTokensRendered()
 
-			expect(recoverFocusSpy).not.toHaveBeenCalled()
+			// #recover was NOT called, so recovery state is preserved.
+			expect(store.state.recovery()).toBeDefined()
 
 			store.features.focus.disable()
 		})

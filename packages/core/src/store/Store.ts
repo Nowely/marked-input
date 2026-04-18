@@ -183,8 +183,6 @@ export class Store {
 		checkOverlay: event(),
 		/** Syncs `contentEditable` attributes and `textContent` of child elements to match token state */
 		sync: event(),
-		/** Restores the caret position after a DOM re-render using the saved recovery state */
-		recoverFocus: event(),
 		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
 		dragAction: event<DragAction>(),
 		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
