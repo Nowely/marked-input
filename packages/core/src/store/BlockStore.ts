@@ -19,14 +19,14 @@ export class BlockStore {
 	}
 
 	#blockIndex = 0
-	#dragAction: DragActions['dragAction'] | null = null
+	#dragAction: DragActions['drag'] | null = null
 	#cleanupContainer?: () => void
 	#cleanupGrip?: () => void
 	#cleanupMenu?: () => void
 
 	attachContainer(el: HTMLElement | null, blockIndex: number, actions: DragActions) {
 		this.#blockIndex = blockIndex
-		this.#dragAction = actions.dragAction
+		this.#dragAction = actions.drag
 		if (el === this.refs.container) return
 		this.#cleanupContainer?.()
 		this.refs.container = el
@@ -71,7 +71,7 @@ export class BlockStore {
 
 	attachGrip(el: HTMLButtonElement | null, blockIndex: number, actions: DragActions) {
 		this.#blockIndex = blockIndex
-		this.#dragAction = actions.dragAction
+		this.#dragAction = actions.drag
 		this.#cleanupGrip?.()
 		if (!el) return
 

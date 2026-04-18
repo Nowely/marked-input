@@ -226,7 +226,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `afterTokensRendered` | After tokens render  | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
 | `unmounted`     | Framework unmount           | `void`                           |
-| `dragAction`    | Drag-and-drop action        | `{ type: string, token: Token }` |
+| `drag`          | Drag-and-drop action        | `DragAction`                     |
 
 ### Event Usage
 
@@ -311,7 +311,7 @@ class Store {
         overlaySelect: Event<{ mark: Token; match: OverlayMatch }>
         overlayClose: Event<void>
         sync: Event<void>
-        dragAction: Event<{ type: string; token: Token }>
+        drag: Event<DragAction>
         afterTokensRendered: Event<void>
         mounted: Event<void>
         unmounted: Event<void>

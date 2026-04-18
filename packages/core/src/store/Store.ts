@@ -182,7 +182,7 @@ export class Store {
 		/** Post-render DOM alignment: aligns `contentEditable` attributes and `textContent` of child elements to token state. Emitted synchronously by `FocusFeature` inside the `afterTokensRendered` handler (framework layout-effect phase). Load-bearing for post-commit DOM consistency — do not delete without reproducing this timing. */
 		sync: event(),
 		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
-		dragAction: event<DragAction>(),
+		drag: event<DragAction>(),
 		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
 		afterTokensRendered: event(),
 		/** Lifecycle: editor component added to the DOM — enables all features */
