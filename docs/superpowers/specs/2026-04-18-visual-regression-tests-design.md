@@ -1,14 +1,16 @@
 # Visual Regression Tests for Every Storybook Story
 
+> Revised 2026-04-18 after DX-focused subagent review (see Appendix A at the bottom of this file).
+
 ## Problem
 
 The monorepo has 18 Storybook story files split across React and Vue, covering every public configuration of `MarkedInput`. Today the automated coverage for these stories is a shallow smoke check (`stories.react.spec.tsx`, `stories.vue.spec.ts`) that only asserts `container.textContent.length > 0`. Purely visual regressions — broken layout, overlay positioning bugs, CSS drift from dependency bumps, rendering differences between React and Vue adapters — cannot be caught by the current suite.
 
-A partial stub (`createVisualTests.react.ts`) already hints at `expect(container).toMatchScreenshot()`, but it is not wired into any spec and has no Vue counterpart.
+A partial stub (`createVisualTests.react.ts`) already hints at `toMatchScreenshot()`, but it is not wired into any spec and has no Vue counterpart.
 
 ## Goal
 
-Automatically produce a screenshot-based regression test for **every Storybook story** in both framework projects, with zero manual maintenance as stories are added, renamed, or deleted. The tests run as part of the existing `pnpm test` invocation — no new runner, no extra CI service.
+Automatically produce a screenshot-based regression test for **every Storybook story** in both framework projects, with zero manual maintenance as stories are added, renamed, or deleted. The tests run as part of the existing `pnpm test` invocation — no new runner, no extra CI service, no new dependencies.
 
 ## Non-goals
 
@@ -28,9 +30,7 @@ Use **Vitest 4's built-in `toMatchScreenshot()`** matcher inside the existing Br
 | Storybook Test Runner | Requires a running Storybook server, introduces a second runner, duplicates story composition. |
 | Playwright Test directly | Duplicates the runner + config and the story-mounting layer we already built on Vitest Browser Mode. |
 | Chromatic / Percy | Out of scope — the user wants local, committed baselines; no SaaS. |
-| Loki / reg-suit | Older, less active, would still need to be layered onto Playwright. |
-
-Vitest 4's matcher natively understands Playwright's screenshot options, embeds environment metadata (OS, browser, viewport) in the PNG header, and refuses to compare across mismatched environments — exactly the behavior required to make "commit baselines locally" safe.
+| Third-party helpers (`storybook-addon-vis`, `@storycap-testrun/browser`) | Add dependencies and opinions for marginal benefit over the ~40 lines of glob+compose already in the repo. AGENTS.md forbids new deps without explicit approval. |
 
 ## Architecture
 
@@ -42,47 +42,52 @@ pnpm test
        ├─ vitest run --project react
        │    └─ stories.react.spec.tsx
        │         └─ import.meta.glob('./**/*.react.stories.tsx')
-       │              └─ for each story → composeStories → render → toMatchScreenshot()
+       │              └─ for each story → composeStories → render
+       │                   → await expect.element(container).toMatchScreenshot()
        └─ vitest run --project vue
-            └─ stories.vue.spec.ts  (mirror, via createVisualTests.vue.ts)
+            └─ stories.vue.spec.ts  (same pattern, framework-swapped)
 ```
 
 ### Files that change or are created
 
 | File | Change |
 |---|---|
-| `packages/storybook/src/shared/lib/createVisualTests.ts` | **New.** Framework-agnostic test factory: takes `{ stories, render, kind }` and emits a `describe` containing one `it` per story that renders and calls `toMatchScreenshot()`. |
-| `packages/storybook/src/shared/lib/createVisualTests.react.ts` | **Rewritten.** Thin adapter; provides the React render function from `vitest-browser-react`. |
-| `packages/storybook/src/shared/lib/createVisualTests.vue.ts` | **New.** Vue counterpart; provides the Vue render function from `vitest-browser-vue`. |
-| `packages/storybook/src/pages/stories.react.spec.tsx` | **Rewritten.** Auto-discover every `*.react.stories.tsx`, call the helper per file, iterate composed stories, emit one visual test per story. |
-| `packages/storybook/src/pages/stories.vue.spec.ts` | **Rewritten.** Same pattern for Vue. |
-| `packages/storybook/vitest.setup.ts` | **Extended.** Add anti-flake global setup (see below). |
-| `packages/storybook/package.json` | **Extended.** Add `test:update` scripts. |
-| Root `package.json` | **Extended.** Add `update-screenshots` alias: `pnpm -F @markput/storybook run test:update`. |
-| `packages/storybook/.gitignore` | **Extended.** Ignore diff artifacts (`failure-*.png`) but keep baselines tracked. |
-| `packages/storybook/README.md` | **New.** Document the visual-test workflow: how to update, where baselines live, known OS constraints. |
+| `packages/storybook/src/pages/stories.react.spec.tsx` | **Rewritten.** Existing auto-discovery stays; each generated `it` now calls `await expect.element(container).toMatchScreenshot()` with a story-aware test title. |
+| `packages/storybook/src/pages/stories.vue.spec.ts` | **Rewritten.** Same change for Vue. |
+| `packages/storybook/src/shared/lib/createVisualTests.react.ts` | **Deleted.** The stub helper is redundant once the two spec files are the single source of truth. Removing it reduces file count and indirection. |
+| `packages/storybook/vitest.setup.ts` | **Extended.** Seed faker and freeze system time so random/clock-driven stories stabilise. |
+| `packages/storybook/vite.config.ts` | **Extended.** Set global `test.browser.expect.toMatchScreenshot` defaults (screenshot options + comparator tolerance) so every call site inherits them. |
+| `packages/storybook/package.json` | **Extended.** Add a `test:update` script that runs `vitest run --update` across both projects. |
+| `packages/storybook/.gitignore` | **Extended.** Ignore Vitest's attachment artifacts (`.vitest-attachments/`) so only canonical baselines are tracked. |
+| `packages/storybook/README.md` | **New.** Document the visual-test workflow: how to update baselines, where they live, how to interpret diffs, known OS constraints. |
+
+Notably, **no new helper files are added**. The helper split that an earlier draft proposed (`createVisualTests.ts` + `.react.ts` + `.vue.ts`) added three files of indirection for ~5 lines of shared code. Inlining `toMatchScreenshot` into the existing two auto-discovery specs is simpler, discoverable, and easier to debug.
 
 ### Baseline layout
 
-Baselines live co-located next to the spec, using Vitest 4's default directory naming. Each framework project writes into its own subtree because the spec files differ:
+Vitest 4's default screenshot path resolution is:
+
+```
+<testFileDirectory>/__screenshots__/<testFileName>/<testName>-<browser>-<platform>.png
+```
+
+Concretely in this repo:
 
 ```
 packages/storybook/src/pages/
   __screenshots__/
     stories.react.spec.tsx/
-      chromium/
-        BaseDefault.png
-        BaseConfigured.png
-        BaseAutocomplete.png
-        AntDefault.png
-        ...
+      Base-Default-chromium-darwin.png
+      Base-Configured-chromium-darwin.png
+      Ant-Default-chromium-darwin.png
+      ...
     stories.vue.spec.ts/
-      chromium/
-        BaseDefault.png
-        ...
+      Base-Default-chromium-darwin.png
+      ...
 ```
 
-Story names follow the pattern `<CategoryFolder><StoryExport>` (derived during discovery — see "Naming" below).
+- Browser and platform are encoded in the **filename**, not in a subdirectory. Two different OSes can commit their baselines side-by-side if we ever need to.
+- Each call site passes an explicit short name `\`${category}-${storyExport}\`` to `toMatchScreenshot()`. Without it, Vitest would derive the filename from the full nested `currentTestName` (`"Storybook visual regression (React) > Base > Default"`) which produces ugly, noisy filenames and makes `git diff` on baselines painful. The short explicit name gives clean diffs while still matching the test hierarchy 1:1.
 
 ### Auto-discovery
 
@@ -90,35 +95,46 @@ The two spec files each use `import.meta.glob` eagerly to pull in every story mo
 
 1. Derive `category` from the file path (`./Base/Base.react.stories.tsx` → `Base`).
 2. `composeStories(module)` to get a map of `{ exportName: StoryComponent }`.
-3. For each `(exportName, Story)`, emit `it(\`Story \${category}/\${exportName}\`, ...)` that renders the story and calls `toMatchScreenshot(\`\${category}\${exportName}\`)`.
+3. For each `(exportName, Story)`, emit `it(\`\${category} > \${exportName}\`, …)` that renders the story and calls `await expect.element(container).toMatchScreenshot()`.
 
-Opt-out: if `Story.parameters?.screenshot === false`, skip the visual assertion but still keep a trivial render assertion (so the smoke coverage is preserved for excluded stories).
+Opt-out: if `Story.parameters?.screenshot === false`, swap the visual assertion for a trivial `expect(container.textContent.length).toBeTruthy()` smoke check.
 
-### Anti-flake setup (`vitest.setup.ts`)
+### Anti-flake setup
 
-The component under test is a contenteditable input, and several stories (`Material`, `Overlay`, `Dynamic`) render animated overlays, random faker-driven data, or time-sensitive content. To make snapshots reproducible we install four global guards before any test runs:
+Three layers, in order of priority:
 
-1. **Determinism**
+1. **Determinism** (`vitest.setup.ts`)
    - `faker.seed(123)` — fixes every faker-sourced story.
    - `vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))` — freezes clock-based stories.
-2. **Style normalisation**
-   Inject a stylesheet into the browser page with:
-   ```css
-   *, *::before, *::after {
-     animation: none !important;
-     transition: none !important;
-     caret-color: transparent !important;
-     scroll-behavior: auto !important;
+   - No CSS injection. Playwright already handles the noisy pieces via defaults (see next layer).
+2. **Playwright-native stabilisation** (global config in `vite.config.ts`)
+   ```ts
+   test: {
+     browser: {
+       expect: {
+         toMatchScreenshot: {
+           // timeout is a top-level matcher option, NOT a screenshotOptions key
+           timeout: 5_000,
+           screenshotOptions: {
+             animations: 'disabled',   // default for Playwright provider but set explicitly for clarity
+             caret: 'hide',            // kills blinking contenteditable caret
+           },
+           comparatorName: 'pixelmatch',
+           comparatorOptions: {
+             allowedMismatchedPixelRatio: 0.002,  // 0.2% — tolerates sub-pixel antialiasing drift
+           },
+         },
+       },
+     },
    }
    ```
-   This kills the blinking caret (the single biggest source of contenteditable flake) and any CSS animations on Ant/Material/Rsuite wrappers.
-3. **Font readiness**
-   In the helper, before each screenshot: `await document.fonts.ready` and one `requestAnimationFrame` tick to flush layout.
-4. **Matcher defaults**
-   Pass a shared `{ screenshotOptions, comparatorOptions }` object to `toMatchScreenshot`:
-   - `screenshotOptions.timeout: 5_000`
-   - `screenshotOptions.animations: 'disabled'`
-   - `comparatorOptions.allowedMismatchedPixelRatio: 0.002` (0.2% — tolerates sub-pixel antialiasing drift but catches real regressions)
+   Every `toMatchScreenshot()` call inherits these defaults; individual tests can override if needed.
+3. **Layout flush** (inline in each auto-generated test, just before the assertion)
+   ```ts
+   await document.fonts.ready
+   await new Promise(r => requestAnimationFrame(r))
+   ```
+   Ensures fonts are loaded and one paint has flushed.
 
 ### Integration with `pnpm test`
 
@@ -126,73 +142,112 @@ Nothing changes at the root. `pnpm test` already calls `pnpm -r run test`, which
 
 ### Update workflow
 
-Contributor changes a story or a style, runs `pnpm test`, sees a failure with a diff PNG written alongside the baseline. Two resolutions:
+Two invocation styles, both documented in the README:
 
-- If the diff is intentional: `pnpm update-screenshots` regenerates baselines; contributor reviews the resulting PNGs and commits them.
-- If the diff is an unintended regression: fix the code, rerun `pnpm test`.
+- **Batch update:** `pnpm --filter @markput/storybook run test:update` (or from inside that package, `pnpm run test:update`). Script definition: `"test:update": "vitest run --project react --update && vitest run --project vue --update"`.
+- **Interactive update:** contributors already using `pnpm test:watch` can press `u` to update baselines (Vitest's built-in watch-mode shortcut).
 
-Diff artifacts (`failure-*.png`, `diff-*.png`) are gitignored so only canonical baselines are tracked.
+We deliberately do **not** add a root-level `pnpm update-screenshots` alias — it adds a naming-convention burden and discoverability is already handled by the README.
+
+### How diffs are surfaced
+
+The current `packages/storybook/vite.config.ts` sets `screenshotFailures: false`, which suppresses Vitest Browser's automatic "capture on failure" for interaction tests. This is **fine** for VRT — on a `toMatchScreenshot` mismatch Vitest 4 writes three attachments (`reference`, `actual`, `diff`) to `.vitest-attachments/<testId>/` and lists their paths in the terminal error output. Contributors click / open those files to inspect diffs. The README documents this path.
 
 ## Data / interfaces
 
-### `createVisualTests` (framework-agnostic core)
+### Test shape (reference implementation)
 
 ```ts
-interface CreateVisualTestsArgs<M, C> {
-  category: string                          // e.g. "Base"
-  stories: Record<string, C>                // from composeStories(module)
-  render: (Story: C) => Promise<{ container: HTMLElement }>
-  shouldSkip?: (Story: C) => boolean        // parameters.screenshot === false
-}
+// packages/storybook/src/pages/stories.react.spec.tsx (illustrative — see plan for final code)
+import {composeStories} from '@storybook/react-vite'
+import {describe, expect, it} from 'vitest'
+import {page} from 'vitest/browser'
+import {render} from 'vitest-browser-react'
 
-export function createVisualTests<M, C>(args: CreateVisualTestsArgs<M, C>): void
+const storyModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
+
+// ... group by category path (see plan) ...
+
+describe('Storybook visual regression (React)', () => {
+  for (const [category, stories] of /* discovered */ []) {
+    describe(category, () => {
+      for (const [name, Story] of Object.entries(stories)) {
+        it(name, async () => {
+          const {container} = await render(<Story />)
+          await document.fonts.ready
+          await new Promise(r => requestAnimationFrame(() => r(null)))
+
+          if (Story.parameters?.screenshot === false) {
+            expect(container.textContent?.length).toBeTruthy()
+            return
+          }
+
+          await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}-${name}`)
+        })
+      }
+    })
+  }
+})
 ```
 
-The React and Vue adapters are one-line bindings that pre-fill `render`.
-
-### Naming convention
-
-Test IDs and screenshot filenames use `<Category><StoryName>` (PascalCase, no separator) so baselines are filesystem-friendly and collisions between two categories with the same story export name are impossible. The visible `it` description uses the human-readable form: `Story Base / Default`.
+The Vue variant is structurally identical, importing from `@storybook/vue3-vite` and `vitest-browser-vue`.
 
 ### Story opt-out
 
 ```ts
 export const FlakyStory: Story = {
   args: { /* ... */ },
-  parameters: { screenshot: false },
+  parameters: { screenshot: false },  // VRT skipped; smoke assertion still runs
 }
 ```
 
 ## Error handling
 
-- **No baseline yet** — first run in a fresh checkout. Vitest creates the baseline and reports it as created, not failed, provided the runner is invoked with `--update` (documented in README for bootstrapping). On normal runs, a missing baseline is a failure with a clear message telling the contributor to run `pnpm update-screenshots`.
-- **Environment mismatch** — Vitest 4 refuses to compare PNGs whose embedded metadata (OS, browser, DPR) does not match the current run. The matcher reports an explicit "env mismatch" error; contributor regenerates baselines on the correct OS.
-- **Story throws during render** — already handled by Vitest; test fails before the screenshot assertion.
-- **Over-tight tolerance catching real antialiasing drift** — `allowedMismatchedPixelRatio: 0.002` starts conservative; if a specific story is legitimately flakier (e.g. emoji rendering) we raise it per-story via story-level parameters passed to the helper.
+- **No baseline yet (first run in a fresh checkout or after a new story is added).** Vitest 4 writes the reference automatically, then marks the test as failed with a message instructing the contributor to review the new PNG and re-run. Second invocation passes (assuming the reference was sound). This matches Vitest's documented behaviour: there is no `--update` flag needed for *initial* baseline creation. The README explains this so the first-run failure isn't confusing.
+- **Story throws during render.** Already handled by Vitest; test fails before the screenshot assertion.
+- **Over-tight tolerance catching real antialiasing drift.** `allowedMismatchedPixelRatio: 0.002` starts conservative; raise per-test via a second argument to `toMatchScreenshot` if a specific story is legitimately flakier (e.g. emoji rendering).
+- **Overlay / portal clipping.** `MarkedInput`'s suggestion overlays can render outside the `container` element. In v1 we assert on `container` only, which means overlay positioning regressions are not caught for the initial-render-only stories. If a future story needs overlay coverage, it should use `page` as the locator (full-viewport screenshot) plus `screenshotOptions.mask` to hide any dynamic regions. Documented in the README for future reference.
+- **React 19 strict-mode double rendering.** Our setup doesn't wrap stories in `<StrictMode>`, so this isn't active today. If a future change adds it, animations would run twice during mount — Playwright's `animations: 'disabled'` already handles this, so no extra mitigation is needed.
 
 ## Testing
 
-The visual tests **are** the test coverage. To verify the setup itself works:
+The visual tests **are** the test coverage. To verify the setup itself works, a human verifies these four scenarios manually during the rollout PR:
 
-1. Manual: run `pnpm update-screenshots`, inspect a few generated PNGs, commit.
-2. Manual: temporarily change a CSS rule in `packages/react/markput/src/components/Container.tsx`, run `pnpm test`, confirm the affected stories fail with diffs.
-3. Manual: run `pnpm test` a second time with no changes, confirm all pass.
-4. Manual: add `parameters: { screenshot: false }` to one story, run `pnpm test`, confirm it is skipped (but the smoke assertion still runs).
+1. Run `pnpm --filter @markput/storybook run test:update` on a fresh checkout, inspect a representative sample of generated PNGs, commit.
+2. Temporarily change a CSS rule in `packages/react/markput/src/components/Container.tsx`, run `pnpm test`, confirm the affected stories fail with diffs written to `.vitest-attachments/`.
+3. Run `pnpm test` a second time with no changes, confirm all pass.
+4. Add `parameters: { screenshot: false }` to one story, run `pnpm test`, confirm it is skipped but still runs the smoke assertion.
 
 No new unit tests are added — the helper is exercised directly by the integration suite.
 
 ## Risks & follow-ups
 
-- **OS baseline divergence**: contributors on different operating systems may produce different baselines. Documented in the README. If it becomes painful, fallback plan is a Dockerised baseline-generation target (`pnpm update-screenshots:docker`).
-- **CI not yet defined**: there is no GitHub Actions workflow in the repo that runs `pnpm test` in a reproducible OS. This spec doesn't introduce one — that's a separate concern. When CI is added, baselines will need to match its OS.
-- **Snapshot bloat**: ~50-80 PNGs at ~50 KB each → ~3-4 MB total. Acceptable in git; revisit if it grows past 20 MB.
+- **OS baseline divergence.** Contributors on different operating systems may produce different baselines; Vitest's filename suffix (`-chromium-darwin`, `-chromium-linux`) keeps them from overwriting each other. Documented in the README. Fallback plan if it becomes painful: a Dockerised baseline-generation target.
+- **CI not yet defined.** No GitHub Actions workflow runs `pnpm test` in a reproducible OS today. This spec doesn't introduce one — that's a separate concern. When CI is added, baselines for that OS will need to be committed.
+- **Snapshot size.** ~50–80 PNGs at ~50 KB each → ~3–4 MB in git. Acceptable; revisit if it grows past 20 MB.
 - **Future work** (explicitly out of scope): multi-viewport snapshots, focus-state snapshots, overlay-open snapshots, Storybook `play` function integration for interactive states.
 
 ## Rollout
 
 Single PR:
 
-1. Land the helper refactor, spec rewrites, anti-flake setup, gitignore, scripts, and README.
-2. Run `pnpm update-screenshots` locally to generate all baselines.
+1. Land the spec rewrites (inline `toMatchScreenshot` in both spec files, delete the stale stub), the global `toMatchScreenshot` config in `vite.config.ts`, the determinism setup in `vitest.setup.ts`, the `test:update` script, the gitignore update, and the README.
+2. Run `pnpm --filter @markput/storybook run test:update` locally to generate all baselines.
 3. Commit baselines in the same PR.
-4. CI (when it exists) or reviewers verify the baselines look correct.
+4. Reviewers scan the generated PNGs for sanity (no obviously wrong-looking story).
+
+---
+
+## Appendix A — Review log
+
+**Round 1 review (DX / simplicity lens, 2026-04-18):**
+- Corrected baseline path format (Vitest encodes browser+platform in filename, not in a subdirectory).
+- Corrected first-run semantics (Vitest writes + fails on missing baseline; no `--update` bootstrap).
+- Switched matcher API to `await expect.element(locator).toMatchScreenshot()` — the documented form with retry semantics.
+- Dropped global CSS injection — Playwright's `animations: 'disabled'` + `caret: 'hide'` already cover it.
+- Dropped the `createVisualTests` helper split entirely — the two auto-discovery spec files are simpler inlined.
+- Dropped custom `<Category><Export>` PascalCase screenshot naming. Now passes a simple hyphenated `${category}-${storyExport}` arg to keep filenames clean without relying on Vitest's verbose auto-derived name.
+- Dropped the root-level `pnpm update-screenshots` alias — a package-scoped `test:update` is more conventional.
+- Added note on `screenshotFailures: false` interaction with VRT and where diffs are written (`.vitest-attachments/`).
+- Added portal/overlay clipping caveat.
+- Reframed Storybook references to v10 (the actual version in the pnpm catalog).
