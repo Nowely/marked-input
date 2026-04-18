@@ -25,13 +25,13 @@ describe('deleteMark', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		const features = store.features as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(features)) {
+		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
+		for (const key of Object.keys(feature)) {
 			if (key === 'system') continue
-			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
 		}
-		store.features.system.enable()
+		store.feature.system.enable()
 	})
 
 	function setupDOM() {

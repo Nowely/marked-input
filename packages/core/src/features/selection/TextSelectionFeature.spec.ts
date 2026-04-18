@@ -31,14 +31,14 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('enable() sets up the selecting subscription via effect', () => {
-		const controller = store.features.textSelection
+		const controller = store.feature.textSelection
 		controller.enable()
 		// The effect runs immediately; no error means subscription is established.
 		expect(mockDocument.addEventListener).toHaveBeenCalledTimes(4)
 	})
 
 	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.features.textSelection
+		const controller = store.feature.textSelection
 		controller.enable()
 		const callCount = mockDocument.addEventListener.mock.calls.length
 		controller.enable()
@@ -46,7 +46,7 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('disable() removes the reactive subscription', () => {
-		const controller = store.features.textSelection
+		const controller = store.feature.textSelection
 		controller.enable()
 		controller.disable()
 		// After disable, setting selecting to "drag" should not cause errors
@@ -54,7 +54,7 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
-		const controller = store.features.textSelection
+		const controller = store.feature.textSelection
 		controller.enable()
 		store.state.selecting('drag')
 		controller.disable()
@@ -70,7 +70,7 @@ describe('TextSelectionFeature', () => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub object satisfies the API surface used by TextSelectionFeature in tests
 		store.state.container(container as unknown as HTMLDivElement)
 
-		const controller = store.features.textSelection
+		const controller = store.feature.textSelection
 		controller.enable()
 		store.state.selecting('drag')
 

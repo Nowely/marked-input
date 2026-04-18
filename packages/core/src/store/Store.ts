@@ -193,7 +193,7 @@ export class Store {
 
 	readonly handler = new MarkputHandler(this)
 
-	readonly features = {
+	readonly feature = {
 		overlay: new OverlayFeature(this),
 		focus: new FocusFeature(this),
 		input: new InputFeature(this),
@@ -208,8 +208,8 @@ export class Store {
 	}
 
 	constructor() {
-		watch(this.event.mounted, () => Object.values(this.features).forEach(f => f.enable()))
-		watch(this.event.unmounted, () => Object.values(this.features).forEach(f => f.disable()))
+		watch(this.event.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+		watch(this.event.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
 
 	setProps(values: Partial<SignalValues<typeof this.props>>): void {
