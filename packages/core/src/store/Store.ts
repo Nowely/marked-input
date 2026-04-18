@@ -94,16 +94,16 @@ export class Store {
 	}
 
 	readonly state = {
-		// Data
 		tokens: signal<Token[]>([]),
 		previousValue: signal<string | undefined>(undefined),
 		innerValue: signal<string | undefined>(undefined),
 		recovery: signal<Recovery | undefined>(undefined),
 
-		// Selection
+		container: signal<HTMLDivElement | null>(null),
+		overlay: signal<HTMLElement | null>(null),
+
 		selecting: signal<'drag' | 'all' | undefined>(undefined),
 
-		// Overlay (internally managed by OverlayFeature)
 		overlayMatch: signal<OverlayMatch | undefined>(undefined),
 	}
 
@@ -196,11 +196,6 @@ export class Store {
 		mounted: event(),
 		/** Lifecycle: editor component removed from the DOM — disables all features and cleans up subscriptions */
 		unmounted: event(),
-	}
-
-	readonly refs = {
-		container: null as HTMLDivElement | null,
-		overlay: null as HTMLElement | null,
 	}
 
 	readonly handler = new MarkputHandler(this)

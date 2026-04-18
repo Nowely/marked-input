@@ -38,23 +38,23 @@ describe('Store', () => {
 			expect('focus' in handler).toBe(true)
 		})
 
-		it('should reflect refs.container via handler.container', () => {
+		it('should reflect state.container via handler.container', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.refs.container = stub
+			store.state.container(stub)
 			expect(handler.container).toBe(stub)
 		})
 
-		it('should reflect refs.overlay via handler.overlay', () => {
+		it('should reflect state.overlay via handler.overlay', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.overlay).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLElement
-			store.refs.overlay = stub
+			store.state.overlay(stub)
 			expect(handler.overlay).toBe(stub)
 		})
 

@@ -9,7 +9,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Props** (`store.props`) — readonly signals written only via `setProps()` (value, options, readOnly, drag, slots, etc.)
     - **Computed** (`store.computed`) — derived values: `hasMark`, `parser`, `currentValue`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.event`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
-    - **DOM refs** (`store.refs`) — container and overlay HTMLElement references
+    - **DOM refs** (`store.state.container`, `store.state.overlay`) — reactive signals holding container and overlay HTMLElement references
     - **Node proxies** (`store.nodes`) — `focus` and `input` NodeProxy instances
     - **Features** (`store.features`) — all feature instances
     - **`setProps()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
