@@ -27,6 +27,7 @@ import type {
 	CoreSlotProps,
 	DragAction,
 	DraggableConfig,
+	Slot,
 } from '../shared/types'
 import {cx} from '../shared/utils/cx'
 import {merge} from '../shared/utils/merge'
@@ -82,9 +83,9 @@ export class Store {
 
 		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
 
-		Span: signal<unknown>(undefined, {readonly: true}),
-		Mark: signal<unknown>(undefined, {readonly: true}),
-		Overlay: signal<unknown>(undefined, {readonly: true}),
+		Span: signal<Slot | undefined>(undefined, {readonly: true}),
+		Mark: signal<Slot | undefined>(undefined, {readonly: true}),
+		Overlay: signal<Slot | undefined>(undefined, {readonly: true}),
 
 		className: signal<string | undefined>(undefined, {readonly: true}),
 		style: signal<CSSProperties | undefined>(undefined, {equals: shallow, readonly: true}),
@@ -113,11 +114,11 @@ export class Store {
 		isDraggable: Computed<boolean>
 		parser: Computed<Parser | undefined>
 		currentValue: Computed<string>
-		containerComponent: Computed<unknown>
+		containerComponent: Computed<Slot>
 		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
-		blockComponent: Computed<unknown>
+		blockComponent: Computed<Slot>
 		blockProps: Computed<Record<string, unknown> | undefined>
-		spanComponent: Computed<unknown>
+		spanComponent: Computed<Slot>
 		spanProps: Computed<Record<string, unknown> | undefined>
 		overlay: OverlaySlot
 		mark: MarkSlot
@@ -154,19 +155,17 @@ export class Store {
 		blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
 		spanComponent: computed(() => resolveSlot('span', this.props.slots())),
 		spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
-		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment OverlaySlot with typed overloads; core satisfies the base interface
 		overlay: computed(() => {
 			const Overlay = this.props.Overlay()
-			return (option?: CoreOption, defaultComponent?: unknown) =>
+			return (option?: CoreOption, defaultComponent?: Slot) =>
 				resolveOverlaySlot(Overlay, option, defaultComponent)
-		}) as unknown as OverlaySlot,
-		// oxlint-disable-next-line no-unsafe-type-assertion -- framework packages augment MarkSlot with typed overloads; core satisfies the base interface
+		}),
 		mark: computed(() => {
 			const options = this.props.options()
 			const Mark = this.props.Mark()
 			const Span = this.props.Span()
 			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
-		}) as unknown as MarkSlot,
+		}),
 	}
 
 	readonly event = {
