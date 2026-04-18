@@ -11,6 +11,19 @@ const browser = {
 	viewport: {width: 1280, height: 720},
 	headless: true,
 	screenshotFailures: false,
+	expect: {
+		toMatchScreenshot: {
+			timeout: 5_000,
+			screenshotOptions: {
+				animations: 'disabled' as const,
+				caret: 'hide' as const,
+			},
+			comparatorName: 'pixelmatch' as const,
+			comparatorOptions: {
+				allowedMismatchedPixelRatio: 0.002,
+			},
+		},
+	},
 }
 
 export default defineConfig({
