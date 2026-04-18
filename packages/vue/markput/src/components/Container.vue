@@ -15,7 +15,7 @@ const result = useMarkput(s => ({
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	result.value.state.container(resolved?.$el ?? resolved)
+	result.value.state.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
 }
 
 const containerComponent = useMarkput(s => s.computed.containerComponent)
