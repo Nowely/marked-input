@@ -43,10 +43,10 @@ export function useOverlay(): OverlayHandler {
 
 	const ref = {
 		get current() {
-			return store.refs.overlay
+			return store.state.overlay()
 		},
 		set current(v: HTMLElement | null) {
-			store.refs.overlay = v
+			store.state.overlay(v)
 		},
 	}
 

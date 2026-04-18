@@ -37,12 +37,12 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
-	const container = store.refs.container
+	const container = store.state.container()
 	if (container) container.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
-	const container = store.refs.container
+	const container = store.state.container()
 	if (container) container.removeEventListener('keydown', handleKeyDown)
 })
 
