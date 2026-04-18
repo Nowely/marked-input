@@ -23,7 +23,7 @@ export const Suggestions = () => {
 	filteredRef.current = filtered
 
 	useEffect(() => {
-		const container = store.refs.container
+		const container = store.state.container()
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {
