@@ -52,7 +52,7 @@ export class DragFeature {
 		const newRowContent = createRowContent(this.store.props.options())
 		this.store.state.innerValue(addDragRow(value, rows, afterIndex, newRowContent))
 		queueMicrotask(() => {
-			const container = this.store.refs.container
+			const container = this.store.state.container()
 			if (!container) return
 			const target = childAt(container, afterIndex + 1)
 			target?.focus()

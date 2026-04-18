@@ -12,7 +12,7 @@ export class ArrowNavFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {

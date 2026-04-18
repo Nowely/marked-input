@@ -72,7 +72,7 @@ export interface SelectionTokenRange {
  * Returns null if selection is collapsed, empty, or outside the container.
  */
 export function selectionToTokens(store: Store): SelectionTokenRange | null {
-	const container = store.refs.container
+	const container = store.state.container()
 	if (!container) return null
 
 	const sel = window.getSelection()

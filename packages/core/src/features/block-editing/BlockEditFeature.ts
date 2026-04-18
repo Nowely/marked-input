@@ -22,7 +22,7 @@ export class BlockEditFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -58,7 +58,7 @@ export class BlockEditFeature {
 	}
 
 	#handleDelete(event: KeyboardEvent) {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		const blockDivs = htmlChildren(container)
@@ -201,7 +201,7 @@ export class BlockEditFeature {
 		if (event.key !== KEYBOARD.ENTER) return
 		if (event.shiftKey) return
 
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		const activeElement = document.activeElement
@@ -261,7 +261,7 @@ export class BlockEditFeature {
 	}
 
 	#handleBlockArrowLeftRight(event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return false
 
 		const activeElement = document.activeElement
@@ -295,7 +295,7 @@ export class BlockEditFeature {
 	}
 
 	#handleArrowUpDown(event: KeyboardEvent) {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		const activeElement = document.activeElement
@@ -333,7 +333,7 @@ export class BlockEditFeature {
 	}
 
 	#handleBlockBeforeInput(event: InputEvent) {
-		const container = this.store.refs.container
+		const container = this.store.state.container()
 		if (!container) return
 
 		const activeElement = document.activeElement
@@ -382,7 +382,8 @@ export class BlockEditFeature {
 			case 'insertFromPaste':
 			case 'insertReplacementText': {
 				event.preventDefault()
-				const markup = this.store.refs.container ? consumeMarkupPaste(this.store.refs.container) : undefined
+				const c = this.store.state.container()
+				const markup = c ? consumeMarkupPaste(c) : undefined
 				const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 				const ranges = event.getTargetRanges()
 				let rawFrom: number
