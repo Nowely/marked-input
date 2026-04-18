@@ -87,7 +87,7 @@ Both framework adapters share the same component structure:
         ↓
 4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
-5. store.event.parse() emitted
+5. store.event.reparse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
@@ -218,7 +218,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | Event           | When Fired                  | Payload                          |
 | --------------- | --------------------------- | -------------------------------- |
 | `change`        | Text content changes        | `void`                           |
-| `parse`         | Parsing triggered           | `void`                           |
+| `reparse`       | Re-parse triggered          | `void`                           |
 | `clearOverlay`  | Close overlay               | `void`                           |
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `delete`        | Mark deleted                | `{ token: Token }`               |
@@ -306,7 +306,7 @@ class Store {
 
     readonly event: {
         change: Event<void>
-        parse: Event<void>
+        reparse: Event<void>
         delete: Event<{ token: Token }>
         select: Event<{ mark: Token; match: OverlayMatch }>
         clearOverlay: Event<void>
@@ -385,7 +385,7 @@ React/Vue render asynchronously, so initialization order matters:
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
 // 2. After mount, ParseFeature reactively watches [props.value, computed.parser]
-//    → emits store.event.parse() when either changes
+//    → emits store.event.reparse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → ContentEditableFeature.sync()

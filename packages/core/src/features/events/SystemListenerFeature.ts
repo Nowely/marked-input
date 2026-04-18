@@ -39,7 +39,7 @@ export class SystemListenerFeature {
 				}
 
 				onChange?.(toString(tokens))
-				this.store.event.parse()
+				this.store.event.reparse()
 			})
 
 			watch(this.store.event.delete, payload => {
@@ -107,7 +107,7 @@ export class SystemListenerFeature {
 					this.store.nodes.focus.target = this.store.nodes.input.target
 					this.store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this.store.event.parse()
+					this.store.event.reparse()
 				}
 			})
 		})

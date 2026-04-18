@@ -172,7 +172,7 @@ export class Store {
 		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
 		change: event(),
 		/** Triggers a re-parse of tokens from the current content */
-		parse: event(),
+		reparse: event(),
 		/** Removes a mark token from editor content */
 		delete: event<{token: Token}>(),
 		/** Fires when the user selects an overlay option — annotates markup into the current input span */

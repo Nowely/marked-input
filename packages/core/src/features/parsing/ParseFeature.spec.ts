@@ -92,7 +92,7 @@ describe('ParseFeature', () => {
 			}
 			;(store.state as Record<string, unknown>).tokens = tokensWrapper
 
-			store.event.parse()
+			store.event.reparse()
 			expect(callCount).toBe(1)
 
 			;(store.state as Record<string, unknown>).tokens = original
@@ -107,7 +107,7 @@ describe('ParseFeature', () => {
 			store.features.parse.disable()
 
 			const tokensBefore = store.state.tokens()
-			store.event.parse()
+			store.event.reparse()
 			expect(store.state.tokens()).toBe(tokensBefore)
 		})
 
@@ -162,7 +162,7 @@ describe('ParseFeature', () => {
 			store.features.parse.sync()
 
 			store.state.recovery({caret: 0, anchor: store.nodes.focus})
-			store.event.parse()
+			store.event.reparse()
 
 			expect(store.state.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
 			expect(store.state.previousValue()).toBe('test')
@@ -184,7 +184,7 @@ describe('ParseFeature', () => {
 			}
 			;(store.state as Record<string, unknown>).tokens = tokensWrapper
 
-			store.event.parse()
+			store.event.reparse()
 			expect(callCount).toBe(1)
 
 			callCount = 0
