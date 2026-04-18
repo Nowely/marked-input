@@ -42,7 +42,7 @@ export class SystemListenerFeature {
 				this.store.event.reparse()
 			})
 
-			watch(this.store.event.delete, payload => {
+			watch(this.store.event.markRemove, payload => {
 				const {token} = payload
 				const tokens = this.store.state.tokens()
 				if (!findToken(tokens, token)) return

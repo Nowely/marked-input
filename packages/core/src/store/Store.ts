@@ -174,7 +174,7 @@ export class Store {
 		/** Triggers a re-parse of tokens from the current content */
 		reparse: event(),
 		/** Removes a mark token from editor content */
-		delete: event<{token: Token}>(),
+		markRemove: event<{token: Token}>(),
 		/** Fires when the user selects an overlay option — annotates markup into the current input span */
 		select: event<{mark: Token; match: OverlayMatch}>(),
 		/** Dismisses the overlay by clearing the current `overlayMatch` */

@@ -221,7 +221,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `reparse`       | Re-parse triggered          | `void`                           |
 | `clearOverlay`  | Close overlay               | `void`                           |
 | `select`        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `delete`        | Mark deleted                | `{ token: Token }`               |
+| `markRemove`    | Mark removed                | `{ token: Token }`               |
 | `sync`          | Post-render DOM alignment   | `void`                           |
 | `afterTokensRendered` | After tokens render  | `void`                           |
 | `mounted`       | Framework initial mount      | `void`                           |
@@ -235,7 +235,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 store.event.change()
 
 // Emit a payload event
-store.event.delete({ token })
+store.event.markRemove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -307,7 +307,7 @@ class Store {
     readonly event: {
         change: Event<void>
         reparse: Event<void>
-        delete: Event<{ token: Token }>
+        markRemove: Event<{ token: Token }>
         select: Event<{ mark: Token; match: OverlayMatch }>
         clearOverlay: Event<void>
         sync: Event<void>

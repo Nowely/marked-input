@@ -49,9 +49,9 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.event.delete({token})
+			store.event.markRemove({token})
 
-			// After delete, the token should be removed from the tokens array
+			// After markRemove, the token should be removed from the tokens array
 			expect(store.state.tokens()).toEqual([
 				{
 					type: 'text',
@@ -62,7 +62,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).toHaveBeenCalled()
 		})
 
-		it('should ignore delete events for tokens that are not in state', () => {
+		it('should ignore markRemove events for tokens that are not in state', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -72,7 +72,7 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.event.delete({token: missingToken})
+			store.event.markRemove({token: missingToken})
 
 			expect(store.state.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -118,7 +118,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).not.toHaveBeenCalled()
 		})
 
-		it('should stop reacting to delete events after disable', () => {
+		it('should stop reacting to markRemove events after disable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -127,7 +127,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.event.delete({token})
+			store.event.markRemove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
