@@ -53,7 +53,7 @@ describe('Storybook visual regression (React)', () => {
 					}
 
 					// `${category}/${name}` is parsed by resolveScreenshotPath() in vite.config.ts
-					// and routed to `<Category>/__screenshots__/<Story>-react-<browser>-<platform>.png`.
+					// and routed to `<Category>/__screenshots__/<Story>-react-<browser>.png`.
 					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}/${name}`)
 				})
 			}

@@ -22,7 +22,7 @@ One screenshot assertion is generated **per story, per framework**. Discovery is
 
 - `src/pages/screenshots.react.spec.tsx` and `src/pages/screenshots.vue.spec.ts` use `import.meta.glob` + Storybook's `composeStories()` to enumerate every story at test time.
 - Each story renders inside Vitest's browser mode (Playwright Chromium, viewport `1280×720`, headless).
-- The rendered container is compared with `toMatchScreenshot()` against a PNG at `src/pages/<Category>/__screenshots__/<Story>-<framework>-chromium-<platform>.png` — co-located with the story source. Routing is done via a per-call `resolveScreenshotPath` option inside each VRT spec (not in `vite.config.ts`, so other browser-mode tests are unaffected). The `<framework>` segment is **not optional**: without it, same-named stories (e.g. `Base-Default`) collide between React and Vue at one shared path.
+- The rendered container is compared with `toMatchScreenshot()` against a PNG at `src/pages/<Category>/__screenshots__/<Story>-<framework>-chromium.png` — co-located with the story source. Routing is done via a global `resolveScreenshotPath` in `vite.config.ts` that applies only to `screenshots.*.spec.*` files (other browser-mode tests fall through to Vitest's default path). The `<framework>` segment is **not optional**: without it, same-named stories (e.g. `Base-Default`) collide between React and Vue at one shared path. The `-<platform>` suffix that Vitest normally appends is intentionally dropped — one baseline is expected to serve macOS, Linux, and Windows (see "Cross-OS rendering" below).
 
 ### Determinism
 
@@ -74,8 +74,23 @@ When a screenshot assertion fails, Vitest writes three PNGs to `.vitest-attachme
 
 Open all three to decide: did the UI genuinely change (→ regenerate baselines and commit) or did an intentional change leak visual noise (→ fix the source)? The `.vitest-attachments/` directory is `.gitignore`d — never commit these.
 
+### Cross-OS rendering
+
+Baselines do **not** include the OS in their filename — the committed `…-chromium.png` is meant to be the single source of truth on every machine (macOS dev, Linux CI, Windows). Chromium's own font rendering is largely deterministic across OSes when using the same font stack, but small sub-pixel drift is still possible.
+
+If CI on Linux reports mismatches that reviewers agree are not real UI regressions (e.g. 1–2 px of antialiasing drift), the mitigation is to relax pixel strictness in `vite.config.ts`:
+
+```ts
+expect: {
+    toMatchScreenshot: {
+        comparatorOptions: {allowedMismatchedPixelRatio: 0.01},
+        resolveScreenshotPath: /* … */,
+    },
+},
+```
+
+Start with the smallest ratio that passes CI and bump only when genuinely needed — the higher it goes, the more real regressions slip through. Do not regenerate Linux-specific baselines; the goal is one baseline per story+framework, period.
+
 ### Known limitations
 
-- **Platform-locked baselines.** Baselines are committed as `…-chromium-darwin.png`. Regenerating on Linux or Windows produces `…-chromium-linux.png` / `…-chromium-win32.png`. If you regenerate on a different OS than the one baselines were originally committed on, **do not commit** the OS-specific PNGs — either switch machines or coordinate a platform migration with the team.
 - **Chromium only.** Firefox/WebKit are not currently configured. If added, each story will produce an additional baseline per browser.
-- **First run on a new OS fails.** Because the baseline filename embeds the platform, the very first run on a never-seen OS has no PNG to compare against. Vitest writes the new PNG and fails. Re-run with `--update` intentionally if this is expected, or stick to the committed baseline platform.

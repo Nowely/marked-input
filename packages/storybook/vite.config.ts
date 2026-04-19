@@ -13,7 +13,11 @@ const browser = {
 	screenshotFailures: false,
 	expect: {
 		toMatchScreenshot: {
-			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>-<platform>.png`.
+			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>.png`.
+			// The `-<platform>` suffix from Vitest's default path is intentionally dropped so
+			// a single baseline serves every OS (macOS/Linux/Windows). Start simple: if CI on
+			// Linux drifts too far, add `comparatorOptions.allowedMismatchedPixelRatio` below.
+			//
 			// For any other screenshot test (functional specs like Selection.react.spec.tsx) we
 			// fall through to the Vitest default path — this resolver is the only place where
 			// `resolveScreenshotPath` is definable, so the branch keeps other tests untouched.
@@ -38,7 +42,7 @@ const browser = {
 
 				const [category, story] = data.arg.split('/')
 				const framework = data.testFileName.includes('.react.') ? 'react' : 'vue'
-				return `${data.root}/${data.testFileDirectory}/${category}/__screenshots__/${story}-${framework}-${data.browserName}-${data.platform}${data.ext}`
+				return `${data.root}/${data.testFileDirectory}/${category}/__screenshots__/${story}-${framework}-${data.browserName}${data.ext}`
 			},
 		},
 	},
