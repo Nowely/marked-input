@@ -22,7 +22,7 @@ One screenshot assertion is generated **per story, per framework**. Discovery is
 
 - `src/pages/stories.react.spec.tsx` and `src/pages/stories.vue.spec.ts` use `import.meta.glob` + Storybook's `composeStories()` to enumerate every story at test time.
 - Each story renders inside Vitest's browser mode (Playwright Chromium, viewport `1280×720`, headless).
-- The rendered container is compared with `toMatchScreenshot()` against a PNG in `src/pages/__screenshots__/stories.<framework>.spec.<ext>/<Category>-<Story>-chromium-<platform>.png`.
+- The rendered container is compared with `toMatchScreenshot()` against a PNG at `src/pages/<Category>/__screenshots__/<Story>-<framework>-chromium-<platform>.png` — co-located with the story source. Routing is done via `resolveScreenshotPath()` in `vite.config.ts`. The `<framework>` segment is **not optional**: without it, same-named stories (e.g. `Base-Default`) collide between React and Vue at one shared path.
 
 ### Determinism
 

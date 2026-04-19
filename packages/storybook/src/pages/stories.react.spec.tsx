@@ -28,6 +28,11 @@ describe('Storybook visual regression (React)', () => {
 			for (const [name, Story] of Object.entries(stories)) {
 				it(name, async () => {
 					const {container} = await render(<Story />)
+
+					// `document.fonts.ready` settles font-metric-driven heights; one RAF gives
+					// React a frame to flush post-commit effects before Vitest's stable-screenshot
+					// loop starts. Without these, a handful of stories capture an intermediate
+					// layout frame.
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 

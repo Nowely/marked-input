@@ -28,6 +28,11 @@ describe('Storybook visual regression (Vue)', () => {
 			for (const [name, Story] of Object.entries(stories)) {
 				it(name, async () => {
 					const {container} = await render(Story)
+
+					// `document.fonts.ready` settles font-metric-driven heights; one RAF gives
+					// Vue a frame to flush post-mount effects before Vitest's stable-screenshot
+					// loop starts. Without these, a handful of stories capture an intermediate
+					// layout frame.
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 

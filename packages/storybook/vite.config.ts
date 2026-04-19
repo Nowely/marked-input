@@ -13,14 +13,28 @@ const browser = {
 	screenshotFailures: false,
 	expect: {
 		toMatchScreenshot: {
-			timeout: 5_000,
-			screenshotOptions: {
-				animations: 'disabled' as const,
-				caret: 'hide' as const,
-			},
-			comparatorName: 'pixelmatch' as const,
 			comparatorOptions: {
 				allowedMismatchedPixelRatio: 0.002,
+			},
+			// Route baselines to `<Category>/__screenshots__/<Story>-<framework>-<browser>-<platform>.png`
+			// so each story's screenshot lives next to its source file. The framework segment
+			// is critical — without it React's `Base-Default` baseline collides with Vue's
+			// same-named baseline at the same path and they silently overwrite each other
+			// during `test:update`, producing dimension-mismatch failures on the next compare run.
+			// `arg` is the first argument passed to `toMatchScreenshot()` — shape `Category-Story`.
+			resolveScreenshotPath: (data: {
+				arg: string
+				browserName: string
+				ext: string
+				platform: string
+				root: string
+				testFileDirectory: string
+				testFileName: string
+			}) => {
+				const [category, ...rest] = data.arg.split('-')
+				const story = rest.join('-')
+				const framework = data.testFileName.includes('.react.') ? 'react' : 'vue'
+				return `${data.root}/${data.testFileDirectory}/${category}/__screenshots__/${story}-${framework}-${data.browserName}-${data.platform}${data.ext}`
 			},
 		},
 	},
