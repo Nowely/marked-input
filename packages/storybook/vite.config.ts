@@ -13,26 +13,30 @@ const browser = {
 	screenshotFailures: false,
 	expect: {
 		toMatchScreenshot: {
-			comparatorOptions: {
-				allowedMismatchedPixelRatio: 0.002,
-			},
-			// Route baselines to `<Category>/__screenshots__/<Story>-<framework>-<browser>-<platform>.png`
-			// so each story's screenshot lives next to its source file. The framework segment
-			// is critical — without it React's `Base-Default` baseline collides with Vue's
-			// same-named baseline at the same path and they silently overwrite each other
-			// during `test:update`, producing dimension-mismatch failures on the next compare run.
-			// `arg` is the first argument passed to `toMatchScreenshot()` — shape `Category-Story`.
+			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>-<platform>.png`.
+			// For any other screenshot test (functional specs like Selection.react.spec.tsx) we
+			// fall through to the Vitest default path — this resolver is the only place where
+			// `resolveScreenshotPath` is definable, so the branch keeps other tests untouched.
+			// The `<framework>` segment is load-bearing: without it, React and Vue same-named
+			// stories collide at one shared path during `test:update`.
 			resolveScreenshotPath: (data: {
 				arg: string
 				browserName: string
 				ext: string
 				platform: string
 				root: string
+				screenshotDirectory: string
 				testFileDirectory: string
 				testFileName: string
 			}) => {
-				const [category, ...rest] = data.arg.split('-')
-				const story = rest.join('-')
+				const isVisualRegressionSpec = data.testFileName.startsWith('screenshots.')
+
+				if (!isVisualRegressionSpec) {
+					// Mirror Vitest's default path for any non-VRT screenshot test.
+					return `${data.root}/${data.testFileDirectory}/${data.screenshotDirectory}/${data.testFileName}/${data.arg}-${data.browserName}-${data.platform}${data.ext}`
+				}
+
+				const [category, story] = data.arg.split('/')
 				const framework = data.testFileName.includes('.react.') ? 'react' : 'vue'
 				return `${data.root}/${data.testFileDirectory}/${category}/__screenshots__/${story}-${framework}-${data.browserName}-${data.platform}${data.ext}`
 			},

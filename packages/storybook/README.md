@@ -20,17 +20,17 @@ One screenshot assertion is generated **per story, per framework**. Discovery is
 
 ### How it works
 
-- `src/pages/stories.react.spec.tsx` and `src/pages/stories.vue.spec.ts` use `import.meta.glob` + Storybook's `composeStories()` to enumerate every story at test time.
+- `src/pages/screenshots.react.spec.tsx` and `src/pages/screenshots.vue.spec.ts` use `import.meta.glob` + Storybook's `composeStories()` to enumerate every story at test time.
 - Each story renders inside Vitest's browser mode (Playwright Chromium, viewport `1280×720`, headless).
-- The rendered container is compared with `toMatchScreenshot()` against a PNG at `src/pages/<Category>/__screenshots__/<Story>-<framework>-chromium-<platform>.png` — co-located with the story source. Routing is done via `resolveScreenshotPath()` in `vite.config.ts`. The `<framework>` segment is **not optional**: without it, same-named stories (e.g. `Base-Default`) collide between React and Vue at one shared path.
+- The rendered container is compared with `toMatchScreenshot()` against a PNG at `src/pages/<Category>/__screenshots__/<Story>-<framework>-chromium-<platform>.png` — co-located with the story source. Routing is done via a per-call `resolveScreenshotPath` option inside each VRT spec (not in `vite.config.ts`, so other browser-mode tests are unaffected). The `<framework>` segment is **not optional**: without it, same-named stories (e.g. `Base-Default`) collide between React and Vue at one shared path.
 
 ### Determinism
 
-To keep screenshots stable across runs, `vitest.setup.ts` applies global test-time controls:
+To keep screenshots stable across runs, the two VRT specs (and only them — functional specs keep real timers + unseeded faker) apply:
 
 - `faker.seed(123)` — any `@faker-js/faker` call produces the same output.
 - `vi.useFakeTimers({ toFake: ['Date'] })` + `vi.setSystemTime('2026-01-01T00:00:00Z')` — `Date.now()` / `new Date()` are frozen, but `setTimeout`/`setInterval`/`performance` are left real so `MarkedInput` internals (debouncing, overlay animations) still work.
-- Playwright's native `animations: 'disabled'` and `caret: 'hide'` options (set globally in `vite.config.ts`) remove CSS animation and caret-blink noise.
+- Playwright's native `animations: 'disabled'` and `caret: 'hide'` options remove CSS animation and caret-blink noise (provider defaults, nothing to configure).
 
 ### Updating baselines
 

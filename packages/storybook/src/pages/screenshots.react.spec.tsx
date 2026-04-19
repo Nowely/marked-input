@@ -1,6 +1,7 @@
 // oxlint-disable typescript-eslint/no-explicit-any typescript-eslint/no-non-null-assertion typescript-eslint/no-unsafe-type-assertion
+import {faker} from '@faker-js/faker'
 import {composeStories} from '@storybook/react-vite'
-import {describe, expect, it} from 'vitest'
+import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page} from 'vitest/browser'
 
@@ -22,6 +23,17 @@ for (const [path, mod] of Object.entries(storyModules)) {
 	Object.assign(storiesByCategory.get(category)!, stories)
 }
 
+// Determinism scoped to this file so functional specs keep real timers + unseeded faker.
+beforeAll(() => {
+	faker.seed(123)
+	vi.useFakeTimers({toFake: ['Date']})
+	vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+})
+
+afterAll(() => {
+	vi.useRealTimers()
+})
+
 describe('Storybook visual regression (React)', () => {
 	for (const [category, stories] of storiesByCategory.entries()) {
 		describe(category, () => {
@@ -31,8 +43,7 @@ describe('Storybook visual regression (React)', () => {
 
 					// `document.fonts.ready` settles font-metric-driven heights; one RAF gives
 					// React a frame to flush post-commit effects before Vitest's stable-screenshot
-					// loop starts. Without these, a handful of stories capture an intermediate
-					// layout frame.
+					// loop starts. Without these, some stories capture an intermediate layout frame.
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
@@ -41,9 +52,9 @@ describe('Storybook visual regression (React)', () => {
 						return
 					}
 
-					// Explicit short name so the baseline file is `<Category>-<Story>-<browser>-<platform>.png`
-					// instead of the verbose nested-describe-path Vitest would auto-derive.
-					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}-${name}`)
+					// `${category}/${name}` is parsed by resolveScreenshotPath() in vite.config.ts
+					// and routed to `<Category>/__screenshots__/<Story>-react-<browser>-<platform>.png`.
+					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}/${name}`)
 				})
 			}
 		})
