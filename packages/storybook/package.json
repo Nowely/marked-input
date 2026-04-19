@@ -18,6 +18,8 @@
     "test:watch:react": "vitest --project react",
     "test:watch:vue": "vitest --project vue",
     "test:watch": "concurrently \"pnpm run test:watch:react\" \"pnpm run test:watch:vue\"",
+    "test:ui:react": "vitest --ui --project react",
+    "test:ui:vue": "vitest --ui --project vue",
     "coverage": "pnpm run test:react --coverage && pnpm run test:vue --coverage"
   },
   "dependencies": {
