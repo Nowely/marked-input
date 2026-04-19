@@ -55,8 +55,10 @@ Some stories are inherently unstable (random animation seeds, live network data,
 
 ```ts
 export const MyStory = {
-  args: {/* … */},
-  parameters: { screenshot: false },
+    args: {
+        /* … */
+    },
+    parameters: {screenshot: false},
 }
 ```
 
