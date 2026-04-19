@@ -4,7 +4,6 @@ import type {RefObject} from 'react'
 import {useCallback, useMemo} from 'react'
 
 import type {Option} from '../../types'
-import {useStore} from '../providers/StoreContext'
 import {useMarkput} from './useMarkput'
 
 export interface OverlayHandler {
@@ -19,21 +18,24 @@ export interface OverlayHandler {
 }
 
 export function useOverlay(): OverlayHandler {
-	const store = useStore()
-	const match = useMarkput(s => s.state.overlayMatch)
+	const {match, event, state} = useMarkput(s => ({
+		match: s.state.overlayMatch,
+		event: s.event,
+		state: s.state,
+	}))
 
 	const style = useMemo(() => {
 		if (!match) return {left: 0, top: 0}
 		return Caret.getAbsolutePosition()
 	}, [match])
 
-	const close = useCallback(() => store.event.overlayClose(), [])
+	const close = useCallback(() => event.overlayClose(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			if (!match) return
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			store.event.overlaySelect({mark, match})
-			store.event.overlayClose()
+			event.overlaySelect({mark, match})
+			event.overlayClose()
 		},
 		[match]
 	)
@@ -41,10 +43,10 @@ export function useOverlay(): OverlayHandler {
 	const ref = useMemo(
 		(): RefObject<HTMLElement | null> => ({
 			get current() {
-				return store.state.overlay()
+				return state.overlay()
 			},
 			set current(v: HTMLElement | null) {
-				store.state.overlay(v)
+				state.overlay(v)
 			},
 		}),
 		[]

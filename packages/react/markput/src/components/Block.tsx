@@ -4,7 +4,6 @@ import type {CSSProperties} from 'react'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/providers/StoreContext'
 import {BlockMenu} from './BlockMenu'
 import {DragHandle} from './DragHandle'
 import {DropIndicator} from './DropIndicator'
@@ -17,18 +16,19 @@ interface BlockProps {
 }
 
 export const Block = memo(({token}: BlockProps) => {
-	const store = useStore()
-	const blockStore = store.blocks.get(token)
-
-	const Component = useMarkput(s => s.computed.blockComponent)
-	const slotProps = useMarkput(s => s.computed.blockProps)
-	const isDragging = useMarkput(() => blockStore.state.isDragging)
-	const tokens = useMarkput(s => s.state.tokens)
+	const {blockStore, event, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
+		blockStore: s.blocks.get(token),
+		event: s.event,
+		Component: s.computed.blockComponent,
+		slotProps: s.computed.blockProps,
+		isDragging: s.blocks.get(token).state.isDragging,
+		tokens: s.state.tokens,
+	}))
 	const blockIndex = tokens.indexOf(token)
 
 	return (
 		<Component
-			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, store.event)}
+			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, event)}
 			data-testid="block"
 			{...slotProps}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string

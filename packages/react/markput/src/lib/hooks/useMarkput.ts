@@ -1,8 +1,8 @@
 import {computed, watch, isReactive} from '@markput/core'
 import type {Signal, Computed, SignalValues, Store} from '@markput/core'
-import {useSyncExternalStore, useRef} from 'react'
+import {useSyncExternalStore, useContext, useRef} from 'react'
 
-import {useStore} from '../providers/StoreContext'
+import {StoreContext} from '../providers/StoreContext'
 
 type Selectable<T> = Signal<T> | Computed<T>
 type ObjectSelector = Record<string, Selectable<unknown> | unknown>
@@ -16,7 +16,8 @@ type StableRef = {
 export function useMarkput<T>(selector: (store: Store) => Selectable<T>): T
 export function useMarkput<R extends ObjectSelector>(selector: (store: Store) => R): SignalValues<R>
 export function useMarkput(selector: (store: Store) => Selectable<unknown> | ObjectSelector): unknown {
-	const store = useStore()
+	const store = useContext(StoreContext)
+	if (store === undefined) throw new Error('Store not found. Make sure to wrap component in StoreContext.')
 
 	// Holds stable computed + subscribe + snapshot — created once, never recreated.
 	const stableRef = useRef<StableRef | null>(null)

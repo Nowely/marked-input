@@ -1,29 +1,27 @@
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
 import {useEffect, useMemo, useRef, useState} from 'react'
 
+import {useMarkput} from '../../lib/hooks/useMarkput'
 import {useOverlay} from '../../lib/hooks/useOverlay'
-import {useStore} from '../../lib/providers/StoreContext'
 import {List} from '../Popup/List'
 import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const store = useStore()
+	const {state} = useMarkput(s => ({state: s.state}))
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match?.option.overlay?.data ?? []
 	const filtered = useMemo(() => (match ? filterSuggestions(data, match.value) : []), [match, data])
 	const length = filtered.length
 
-	// Refs let the handler always read the latest values without re-registering
-	// the listener on every keypress (which happened when `active` was a dep).
 	const activeRef = useRef(active)
 	activeRef.current = active
 	const filteredRef = useRef(filtered)
 	filteredRef.current = filtered
 
 	useEffect(() => {
-		const container = store.state.container()
+		const container = state.container()
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {
