@@ -3,7 +3,6 @@ import type {Token} from '@markput/core'
 import {memo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {useStore} from '../lib/providers/StoreContext'
 import {List} from './Popup/List'
 import {ListItem} from './Popup/ListItem'
 import {Popup} from './Popup/Popup'
@@ -11,11 +10,10 @@ import {Popup} from './Popup/Popup'
 import styles from '@markput/core/styles.module.css'
 
 export const BlockMenu = memo(({token}: {token: Token}) => {
-	const store = useStore()
-	const blockStore = store.blocks.get(token)
-	const {menuOpen, menuPosition} = useMarkput(() => ({
-		menuOpen: blockStore.state.menuOpen,
-		menuPosition: blockStore.state.menuPosition,
+	const {blockStore, menuOpen, menuPosition} = useMarkput(s => ({
+		blockStore: s.blocks.get(token),
+		menuOpen: s.blocks.get(token).state.menuOpen,
+		menuPosition: s.blocks.get(token).state.menuPosition,
 	}))
 
 	if (!menuOpen) return null
