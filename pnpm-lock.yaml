@@ -229,7 +229,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.31(typescript@5.9.3)
     devDependencies:
-      '@fontsource/inter':
+      '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
       '@storybook/addon-docs':
@@ -1027,8 +1027,8 @@ packages:
     resolution: {integrity: sha512-sDBWI3yLy8EcDzgobvJTWq1MJYzAkQdpjXuPukga9wXonhpMRvd1Izuo2Qgwey2OiEoRIBr35RMU9HJRoOHzpw==}
     engines: {node: ^20.19.0 || ^22.13.0 || ^23.5.0 || >=24.0.0, npm: '>=10'}
 
-  '@fontsource/inter@5.2.8':
-    resolution: {integrity: sha512-P6r5WnJoKiNVV+zvW2xM13gNdFhAEpQ9dQJHt3naLvfg+LkF2ldgSLiF4T41lf1SQCM9QmkqPTn4TH568IRagg==}
+  '@fontsource-variable/inter@5.2.8':
+    resolution: {integrity: sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ==}
 
   '@gerrit0/mini-shiki@3.23.0':
     resolution: {integrity: sha512-bEMORlG0cqdjVyCEuU0cDQbORWX+kYCeo0kV1lbxF5bt4r7SID2l9bqsxJEM0zndaxpOUT7riCyIVEuqq/Ynxg==}
@@ -6531,7 +6531,7 @@ snapshots:
 
   '@faker-js/faker@10.4.0': {}
 
-  '@fontsource/inter@5.2.8': {}
+  '@fontsource-variable/inter@5.2.8': {}
 
   '@gerrit0/mini-shiki@3.23.0':
     dependencies:

@@ -36,7 +36,7 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@fontsource/inter": "^5.2.8",
+    "@fontsource-variable/inter": "^5.2.8",
     "@storybook/addon-docs": "catalog:",
     "@storybook/addon-links": "catalog:",
     "@storybook/cli": "catalog:",
