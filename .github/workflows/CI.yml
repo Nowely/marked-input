@@ -34,20 +34,16 @@ jobs:
             - name: Run Tests
               run: pnpm test
 
-            - name: List VRT attachments (debug)
-              if: failure()
-              run: |
-                  echo "--- tree of .vitest-attachments ---"
-                  ls -laR packages/storybook/.vitest-attachments/ 2>&1 || echo "directory missing"
-                  echo "--- any -actual/-diff pngs anywhere ---"
-                  find packages/storybook -name '*-actual-*.png' -o -name '*-diff-*.png' 2>&1 | head -50 || true
-
             - name: Upload VRT diff artefacts
               if: failure()
               uses: actions/upload-artifact@v4
               with:
                   name: vrt-diffs
-                  path: packages/storybook/.vitest-attachments/**/*
+                  path: packages/storybook/.vitest-attachments/
+                  # `.vitest-attachments` starts with a dot so upload-artifact
+                  # treats its entire subtree as hidden and skips it unless
+                  # this flag is flipped. Took one CI iteration to discover.
+                  include-hidden-files: true
                   if-no-files-found: warn
                   retention-days: 14
 
