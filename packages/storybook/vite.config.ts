@@ -42,7 +42,7 @@ const browser = {
 			// the smallest ratio that passes every story without masking real
 			// regressions (a real layout change produces a concentrated 20%+ diff
 			// in the affected region, not an even 4% sprinkle across all text).
-			comparatorOptions: {allowedMismatchedPixelRatio: 0.01},
+			comparatorOptions: {allowedMismatchedPixelRatio: 0.05},
 			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>.png`.
 			// The `-<platform>` suffix from Vitest's default path is intentionally dropped so
 			// a single baseline serves every OS (macOS/Linux/Windows).

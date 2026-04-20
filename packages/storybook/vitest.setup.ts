@@ -1,11 +1,24 @@
-// `@fontsource-variable/inter` — one variable woff2 covering every weight 100-900.
-// A single-weight import would let Chromium synthesise "faux bold" for weights it
-// doesn't have (Ant uses 600, Rsuite 500), and faux-bold differs per platform →
-// drift. Variable font = zero synthesis = deterministic glyphs.
+// Two bundled variable fonts for cross-OS determinism:
 //
-// This file runs ONLY inside Vitest (not in `storybook dev` / `storybook build`),
-// so live Storybook keeps the real system-font rendering a user would see.
-import '@fontsource-variable/inter'
+// 1. `@fontsource-variable/inter` — one variable woff2 covering weight axis
+//    100-900. A single-weight import would let Chromium synthesise "faux
+//    bold" for weights it doesn't have (Ant uses 600, Rsuite 500), and
+//    faux-bold is rasterised differently per platform → drift. Variable
+//    font = zero synthesis = deterministic glyphs.
+// 2. `@fontsource-variable/noto-sans` — fallback for glyphs Inter doesn't
+//    cover. Inter ships Latin / Latin-ext / Cyrillic / Greek / Vietnamese
+//    only, so anything outside that range (arrows → ← ⇒, check-marks ✓ ☐,
+//    box-drawing, symbols used in `TodoList` / `ComplexMarkdown` / `Nested`
+//    stories) falls back. Without a bundled fallback, macOS Chromium picks
+//    `Apple Symbols` and Linux Chromium picks `DejaVu Sans` / `Symbola`,
+//    which have different metrics → ±1-5 px dimension drift per story.
+//    Bundling the fallback eliminates that divergence.
+//
+// Both packages are imported ONLY inside Vitest (not in `storybook dev` /
+// `storybook build`), so live Storybook keeps the real system-font
+// rendering a user would see.
+import '@fontsource-variable/inter/index.css'
+import '@fontsource-variable/noto-sans/index.css'
 import {setProjectAnnotations as setReactAnnotations} from '@storybook/react-vite'
 import {setProjectAnnotations as setVueAnnotations} from '@storybook/vue3-vite'
 
@@ -17,43 +30,50 @@ if (process.env.FRAMEWORK === 'react') {
 	setVueAnnotations(preview)
 }
 
-// Pin Inter Variable + fixed layout metrics on EVERY element.
+// Pin font stack + fixed layout metrics on EVERY element during VRT only.
 //
-// Why `*` (not a hand-picked whitelist): any new UI library (AntD chip, MUI
-// Chip, future Rsuite component, …) introduces its own `font-family` /
-// `line-height` via component CSS, and a whitelist would silently miss them
-// → drift creeps back on every new story. Universal `!important` covers them
-// all — this is acceptable because this file only runs in the VRT runner,
-// not in live Storybook.
+// Selector `:root *` has specificity (0,1,1) — this is deliberately higher
+// than bare `*` (0,0,0) so we beat any `.MuiTypography-root !important` or
+// similar high-importance rules that UI libraries ship in their component
+// CSS. Among !important rules the cascade is resolved by specificity first;
+// if we used `*` we'd lose to `.someClass !important` (0,1,0). With `:root *`
+// we stay one notch higher (the `:root` pseudo-class adds a class-level bump).
 //
-// Why no fallback (`, sans-serif`): if Inter fails to load, the test SHOULD
-// fail visibly rather than quietly fall back to `-apple-system` on macOS /
-// `DejaVu Sans` on Linux (the exact drift we're trying to eliminate). The
-// `await document.fonts.ready` in the VRT specs makes this a hard sync point.
+// Why universal `*` inside (and not a hand-picked whitelist `html, body,
+// .ant-tag, .rs-tag, …`): a whitelist silently misses any new component
+// introduced later (new AntD/MUI/Rsuite chip, custom wrapper). The VRT runner
+// is isolated, so it's safe to blast everything and guarantee full coverage.
 //
-// Why `line-height: 1.5` (and not `normal`): `normal` is resolved by Chromium
-// from the font's OS/2 metrics, and Linux + macOS Chromium disagree on whether
+// Font stack `'Inter Variable', 'Noto Sans Variable'` — no generic fallback:
+// if both packages somehow fail to load, tests should mismatch visibly
+// instead of silently falling back to `-apple-system` / `DejaVu Sans`.
+// `await document.fonts.ready` in the specs is the hard sync point that
+// guarantees both are loaded before any screenshot is captured.
+//
+// `line-height: 1.5` (not `normal`): `normal` is resolved by Chromium from
+// the font's OS/2 metrics, and Linux vs macOS Chromium disagree on whether
 // to use `sTypoAscender/Descender` or `sWinAscent/Descent`. The choice flips
-// line-box height by 1–2 px, and nested inline-block buttons (see
-// `Nested/InteractiveNested`) accumulate that into a hard dimension mismatch
-// that pixel tolerance cannot mask. Explicit `1.5` forces identical line boxes.
+// line-box height by 1–2 px and accumulates in nested inline-block buttons
+// (`Nested/InteractiveNested` is the canonical offender). Explicit `1.5`
+// produces identical line boxes on both platforms.
 //
-// Why `vertical-align: top` on inline-block: eliminates the font-descender
-// whitespace below inline-block baselines (classic "extra 4 px below img"
-// quirk), which would otherwise reintroduce drift on nested inline buttons.
+// `vertical-align: top` on replaced inline elements: eliminates the font-
+// descender whitespace below inline-block baselines (classic "extra 4 px
+// below img" quirk) that would otherwise reintroduce drift on nested
+// inline buttons.
 //
-// `text-rendering: geometricPrecision` asks Skia for the ideal glyph-metrics
-// path (no hint-driven pixel snapping) so glyph advance widths match across
-// platforms — this is what keeps text-wrap points identical.
+// `text-rendering: geometricPrecision`: asks Skia for the ideal
+// glyph-metrics path (no hint-driven pixel snapping) so glyph advance
+// widths match across platforms — keeps text wrap points identical.
 if (typeof document !== 'undefined') {
 	const style = document.createElement('style')
 	style.textContent = `
-		* {
-			font-family: 'Inter Variable' !important;
+		:root, :root * {
+			font-family: 'Inter Variable', 'Noto Sans Variable' !important;
 			line-height: 1.5 !important;
 			text-rendering: geometricPrecision !important;
 		}
-		button, img, input, select, textarea, svg {
+		:root button, :root img, :root input, :root select, :root textarea, :root svg {
 			vertical-align: top !important;
 		}
 	`
