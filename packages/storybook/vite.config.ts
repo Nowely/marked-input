@@ -3,30 +3,30 @@ import vue from '@vitejs/plugin-vue'
 import {playwright} from '@vitest/browser-playwright'
 import {defineConfig, defineProject} from 'vitest/config'
 
+// Chromium flags that normalise Skia font-rendering across macOS / Linux CI.
+// Without them, even with `@fontsource/inter` pinned, Skia picks different
+// hinting + subpixel-AA paths on each OS → ~2–7% pixel drift on every
+// antialiased text edge and occasional ±1 px line-height rounding (that's
+// how `InteractiveNested` gets +2 px taller on Linux). The flags collapse
+// both paths to the simpler, OS-agnostic grayscale + integer-positioning
+// rasteriser. Drop any flag and you'll see drift return for that axis.
+//
+// API: these go into `playwright({ launchOptions })`, NOT `instances[n].launch`
+// — the latter is silently ignored by @vitest/browser-playwright.
+const chromiumLaunchOptions = {
+	args: [
+		'--font-render-hinting=none',
+		'--disable-font-subpixel-positioning',
+		'--disable-lcd-text',
+		'--force-color-profile=srgb',
+	],
+}
+
 const browser = {
 	enabled: true,
 	// oxlint-disable-next-line typescript-eslint/no-unsafe-call
-	provider: playwright(),
-	instances: [
-		{
-			browser: 'chromium' as const,
-			// Chromium flags that normalise Skia font-rendering across macOS / Linux CI.
-			// Without them, even with `@fontsource/inter` pinned, Skia picks different
-			// hinting + subpixel-AA paths on each OS → ~2–7% pixel drift on every
-			// antialiased text edge and occasional ±1 px line-height rounding (that's
-			// how `InteractiveNested` gets +2 px taller on Linux). The flags collapse
-			// both paths to the simpler, OS-agnostic grayscale + integer-positioning
-			// rasteriser. Drop any flag and you'll see drift return for that axis.
-			launch: {
-				args: [
-					'--font-render-hinting=none',
-					'--disable-font-subpixel-positioning',
-					'--disable-lcd-text',
-					'--force-color-profile=srgb',
-				],
-			},
-		},
-	],
+	provider: playwright({launchOptions: chromiumLaunchOptions}),
+	instances: [{browser: 'chromium' as const}],
 	viewport: {width: 1280, height: 720},
 	headless: true,
 	screenshotFailures: false,
