@@ -13,7 +13,7 @@ const browser = {
 	screenshotFailures: false,
 	expect: {
 		toMatchScreenshot: {
-			comparatorOptions: {allowedMismatchedPixelRatio: 0.05},
+			comparatorOptions: {allowedMismatchedPixelRatio: 0.01},
 			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>.png`.
 			// The `-<platform>` suffix from Vitest's default path is intentionally dropped so
 			// a single baseline serves every OS (macOS/Linux/Windows). Start simple: if CI on

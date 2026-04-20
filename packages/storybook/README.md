@@ -76,9 +76,13 @@ Open all three to decide: did the UI genuinely change (→ regenerate baselines 
 
 ### Cross-OS rendering
 
-Baselines do **not** include the OS in their filename — the committed `…-chromium.png` is meant to be the single source of truth on every machine (macOS dev, Linux CI, Windows). Chromium's own font rendering is largely deterministic across OSes when using the same font stack, but small sub-pixel drift is still possible.
+Baselines do **not** include the OS in their filename — the committed `…-chromium.png` is the single source of truth on every machine (macOS dev, Linux CI, Windows).
 
-If CI on Linux reports mismatches that reviewers agree are not real UI regressions (e.g. 1–2 px of antialiasing drift), the mitigation is to relax pixel strictness in `vite.config.ts`:
+The enabling piece is **`@fontsource/inter` pinned in `.storybook/preview.ts`**: a `@font-face` injects Inter from a bundled `.woff2`, and a `<style>` tag forces `font-family: 'Inter' !important` on `html/body/#storybook-root/.ant-tag/.rs-tag/input/button`. Without this the OS fallback chain (`-apple-system` on macOS vs `DejaVu Sans` on Linux) produces different font metrics → 1–2 px height drift on multi-line stories (dimension mismatch, cannot be masked by tolerance) and 6–12% pixel drift on Tag-heavy `Ant`/`Rsuite` stories (text re-wraps differently).
+
+The `!important` is load-bearing: AntD and Rsuite push their own `font-family` via component-level CSS that would otherwise win on their own nodes and reintroduce the drift we just eliminated.
+
+If CI on Linux still reports small mismatches that reviewers agree are not real UI regressions (residual Skia AA noise <1%), relax pixel strictness in `vite.config.ts`:
 
 ```ts
 expect: {
