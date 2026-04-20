@@ -24,14 +24,19 @@ for (const [path, mod] of Object.entries(storyModules)) {
 }
 
 // Determinism scoped to this file so functional specs keep real timers + unseeded faker.
+// `data-vrt` activates the pointer-events / transition / font rules in `vitest.setup.ts`
+// — without this flag, functional specs (Drag.react.spec.tsx, Selection.react.spec.tsx)
+// would inherit `pointer-events: none` and their click/drag simulations would no-op.
 beforeAll(() => {
 	faker.seed(123)
 	vi.useFakeTimers({toFake: ['Date']})
 	vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
+	document.documentElement.setAttribute('data-vrt', '')
 })
 
 afterAll(() => {
 	vi.useRealTimers()
+	document.documentElement.removeAttribute('data-vrt')
 })
 
 describe('Storybook visual regression (React)', () => {
