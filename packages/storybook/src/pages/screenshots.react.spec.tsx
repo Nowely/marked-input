@@ -47,6 +47,18 @@ describe('Storybook visual regression (React)', () => {
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
+					// Blur whatever element vitest-browser-react auto-focused after mount.
+					// Chromium's `:focus-visible` heuristic differs between macOS and Linux
+					// (Linux often shows the focus ring after programmatic focus, macOS
+					// doesn't), which adds 2 px of cyan outline around focused buttons in
+					// `Nested/InteractiveNested` — a pure dimension mismatch no pixel
+					// tolerance can mask. Moving focus to `<body>` produces identical,
+					// ring-free baselines on every platform.
+					if (document.activeElement instanceof HTMLElement) {
+						document.activeElement.blur()
+					}
+					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+
 					if (Story.parameters?.screenshot === false) {
 						expect(container.textContent.length).toBeTruthy()
 						return

@@ -76,6 +76,17 @@ if (typeof document !== 'undefined') {
 		:root button, :root img, :root input, :root select, :root textarea, :root svg {
 			vertical-align: top !important;
 		}
+		/* Kill focus-ring decorations during VRT. Chromium's \`:focus-visible\`
+		   heuristic differs between macOS (no ring after programmatic focus)
+		   and Linux (ring shown), which was producing +2 px cyan outlines in
+		   \`Nested/InteractiveNested\` that no pixel tolerance could mask.
+		   The specs also explicitly \`.blur()\` the active element before
+		   screenshot; this rule is belt-and-suspenders for any element that
+		   re-focuses itself (inputs that auto-focus during animation, etc.). */
+		:root *:focus, :root *:focus-visible, :root *:focus-within {
+			outline: 0 none transparent !important;
+			box-shadow: none !important;
+		}
 	`
 	document.head.appendChild(style)
 }
