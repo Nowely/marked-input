@@ -29,7 +29,12 @@ const browser = {
 	instances: [{browser: 'chromium' as const}],
 	viewport: {width: 1280, height: 720},
 	headless: true,
-	screenshotFailures: false,
+	// `true` so `toMatchScreenshot` always writes `-actual.png` / `-diff.png` into
+	// `.vitest-attachments/` on mismatch — these are our primary debugging tool
+	// for cross-OS baseline failures in CI (see the `Upload VRT diff artefacts`
+	// step in `.github/workflows/CI.yml`). With `false` the attachments directory
+	// stays empty on failure and GitHub's upload-artifact finds nothing.
+	screenshotFailures: true,
 	expect: {
 		toMatchScreenshot: {
 			// ≤5% residual pixel drift is tolerated. With Inter pinned, pinned
