@@ -76,24 +76,18 @@ Open all three to decide: did the UI genuinely change (→ regenerate baselines 
 
 ### Cross-OS rendering
 
-Baselines do **not** include the OS in their filename — the committed `…-chromium.png` is the single source of truth on every machine (macOS dev, Linux CI, Windows).
+Baselines do **not** include the OS in their filename — the committed `…-chromium.png` is the single source of truth on every machine (macOS dev, Linux CI, Windows). Three independent pieces have to line up to make this work, and removing any one of them reintroduces drift:
 
-The enabling piece is **`@fontsource/inter` pinned in `.storybook/preview.ts`**: a `@font-face` injects Inter from a bundled `.woff2`, and a `<style>` tag forces `font-family: 'Inter' !important` on `html/body/#storybook-root/.ant-tag/.rs-tag/input/button`. Without this the OS fallback chain (`-apple-system` on macOS vs `DejaVu Sans` on Linux) produces different font metrics → 1–2 px height drift on multi-line stories (dimension mismatch, cannot be masked by tolerance) and 6–12% pixel drift on Tag-heavy `Ant`/`Rsuite` stories (text re-wraps differently).
+1. **Pinned web font** (`@fontsource/inter` imported in `.storybook/preview.ts`). A `<style>` tag forces `font-family: 'Inter' !important` on `html / body / #storybook-root / .ant-tag / .rs-tag / input / button`. Without this, the OS fallback chain (`-apple-system` macOS vs `DejaVu Sans` Linux) has different font metrics → 1–2 px height drift on multi-line stories (dimension mismatch, **cannot** be masked by pixel tolerance) and ~10% pixel drift on Tag-heavy `Ant` / `Rsuite` stories (text re-wraps differently). The `!important` is load-bearing: AntD and Rsuite push their own `font-family` via component-level CSS that would otherwise win on their own nodes.
+2. **Chromium launch flags** (`browser.instances[0].launch.args` in `vite.config.ts`):
+    - `--font-render-hinting=none` — disables hint-based pixel snapping (different default per OS)
+    - `--disable-font-subpixel-positioning` — forces integer glyph positioning, no ±0.5 px sub-pixel shifts
+    - `--disable-lcd-text` — uses grayscale AA instead of RGB sub-pixel AA (sub-pixel AA differs by OS, grayscale is identical)
+    - `--force-color-profile=srgb` — pins to sRGB instead of macOS's default display-P3
+    Without these, Skia picks different rendering paths on macOS vs Linux and text edges drift 2–7% per story even with the same font.
+3. **`comparatorOptions.allowedMismatchedPixelRatio: 0.02`** — soaks up residual <1% AA noise between runs. This is a cushion, not a hiding place: if the ratio starts creeping upward, treat it as a bug in layers 1–2 before bumping the tolerance.
 
-The `!important` is load-bearing: AntD and Rsuite push their own `font-family` via component-level CSS that would otherwise win on their own nodes and reintroduce the drift we just eliminated.
-
-If CI on Linux still reports small mismatches that reviewers agree are not real UI regressions (residual Skia AA noise <1%), relax pixel strictness in `vite.config.ts`:
-
-```ts
-expect: {
-    toMatchScreenshot: {
-        comparatorOptions: {allowedMismatchedPixelRatio: 0.01},
-        resolveScreenshotPath: /* … */,
-    },
-},
-```
-
-Start with the smallest ratio that passes CI and bump only when genuinely needed — the higher it goes, the more real regressions slip through. Do not regenerate Linux-specific baselines; the goal is one baseline per story+framework, period.
+If CI still flakes after all three layers, gather evidence before changing numbers: download the `-diff.png` artefact from `.vitest-attachments/`. If it's a uniform sprinkle of isolated pixels → Skia noise, bump tolerance to `0.025`. If it's a concentrated block → real layout shift, fix the source.
 
 ### Known limitations
 

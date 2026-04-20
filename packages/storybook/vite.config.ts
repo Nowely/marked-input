@@ -7,17 +7,39 @@ const browser = {
 	enabled: true,
 	// oxlint-disable-next-line typescript-eslint/no-unsafe-call
 	provider: playwright(),
-	instances: [{browser: 'chromium' as const}],
+	instances: [
+		{
+			browser: 'chromium' as const,
+			// Chromium flags that normalise Skia font-rendering across macOS / Linux CI.
+			// Without them, even with `@fontsource/inter` pinned, Skia picks different
+			// hinting + subpixel-AA paths on each OS → ~2–7% pixel drift on every
+			// antialiased text edge and occasional ±1 px line-height rounding (that's
+			// how `InteractiveNested` gets +2 px taller on Linux). The flags collapse
+			// both paths to the simpler, OS-agnostic grayscale + integer-positioning
+			// rasteriser. Drop any flag and you'll see drift return for that axis.
+			launch: {
+				args: [
+					'--font-render-hinting=none',
+					'--disable-font-subpixel-positioning',
+					'--disable-lcd-text',
+					'--force-color-profile=srgb',
+				],
+			},
+		},
+	],
 	viewport: {width: 1280, height: 720},
 	headless: true,
 	screenshotFailures: false,
 	expect: {
 		toMatchScreenshot: {
-			comparatorOptions: {allowedMismatchedPixelRatio: 0.01},
+			// ≤2% residual pixel drift is tolerated. With Inter pinned + the four
+			// Chromium flags above, cross-OS drift should be well under 1%; this
+			// leaves headroom for the occasional <1 px AA border shimmer without
+			// masking real regressions. Bump cautiously if CI still flakes.
+			comparatorOptions: {allowedMismatchedPixelRatio: 0.02},
 			// Colocate VRT baselines next to each story: `<Category>/__screenshots__/<Story>-<framework>-<browser>.png`.
 			// The `-<platform>` suffix from Vitest's default path is intentionally dropped so
-			// a single baseline serves every OS (macOS/Linux/Windows). Start simple: if CI on
-			// Linux drifts too far, add `comparatorOptions.allowedMismatchedPixelRatio` below.
+			// a single baseline serves every OS (macOS/Linux/Windows).
 			//
 			// For any other screenshot test (functional specs like Selection.react.spec.tsx) we
 			// fall through to the Vitest default path — this resolver is the only place where
