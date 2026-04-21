@@ -8,10 +8,10 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Internal state** (`store.state`) — signals owned by features: tokens, previous value, inner value, recovery, selection mode, overlay match
     - **Props** (`store.props`) — readonly signals written only via `setProps()` (value, options, readOnly, drag, slots, etc.)
     - **Computed** (`store.computed`) — derived values: `hasMark`, `parser`, `currentValue`, `containerComponent`, `containerProps`, slot resolvers
-    - **Events** (`store.event`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
+    - **Events** (`store.emit`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
     - **DOM refs** (`store.state.container`, `store.state.overlay`) — reactive signals holding container and overlay HTMLElement references
     - **Node proxies** (`store.nodes`) — `focus` and `input` NodeProxy instances
-    - **Features** (`store.features`) — all feature instances
+    - **Features** (`store.feature`) — all feature instances
     - **`setProps()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 
 Features update internal state by calling each signal, e.g. `store.state.tokens(next)`. For multiple internal updates in one tick, wrap in `batch()` from `@markput/core` (same module as `Store`).
@@ -30,7 +30,7 @@ batch(() => {
 })
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through `store.state`, `store.props`, `store.event`, and `store.nodes`.
+The Store is created by framework wrappers and passed to all features. Features communicate through `store.state`, `store.props`, `store.emit`, and `store.nodes`.
 
 ## Readonly Props
 

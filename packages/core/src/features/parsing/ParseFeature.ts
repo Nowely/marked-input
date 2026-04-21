@@ -32,7 +32,7 @@ export class ParseFeature {
 	#subscribeParse() {
 		const {store} = this
 
-		watch(store.event.reparse, () => {
+		watch(store.emit.reparse, () => {
 			if (store.state.recovery()) {
 				const text = toString(store.state.tokens())
 				store.state.tokens(parseWithParser(store, text))
@@ -50,7 +50,7 @@ export class ParseFeature {
 
 		watch(deps, () => {
 			if (!store.state.recovery()) {
-				store.event.reparse()
+				store.emit.reparse()
 			}
 		})
 	}

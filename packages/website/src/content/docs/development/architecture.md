@@ -83,11 +83,11 @@ Both framework adapters share the same component structure:
         ↓
 2. ContentEditableFeature detects input
         ↓
-3. store.event.change() emitted
+3. store.emit.change() emitted
         ↓
 4. SystemListenerFeature reads DOM, mutates focused token in-place
         ↓
-5. store.event.reparse() emitted
+5. store.emit.reparse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
@@ -105,7 +105,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. OverlayFeature runs a trigger probe (on `store.event.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
+2. OverlayFeature runs a trigger probe (on `store.emit.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
 3. If found:
    - store.state.overlayMatch set
@@ -117,11 +117,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.event.overlaySelect() emitted
+7. store.emit.overlaySelect() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.event.overlayClose() closes overlay
+9. store.emit.overlayClose() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -232,17 +232,17 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ```typescript
 // Emit a void event
-store.event.change()
+store.emit.change()
 
 // Emit a payload event
-store.event.markRemove({ token })
+store.emit.markRemove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.event.change,
+        store.emit.change,
         () => {
             console.log('Text changed')
         }
@@ -359,7 +359,7 @@ const tokens = store.state.tokens.use()
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (internal signals), `store.props` (framework-provided signals), `store.event` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (internal signals), `store.props` (framework-provided signals), `store.emit` (emitters), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -381,18 +381,18 @@ The original `KeyDownController` was decomposed into three focused features: `In
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.event.mounted() on initial mount
+// 1. Framework emits store.emit.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
 // 2. After mount, ParseFeature reactively watches [props.value, computed.parser]
-//    → emits store.event.reparse() when either changes
+//    → emits store.emit.reparse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → ContentEditableFeature.sync()
 
-// 4. Framework emits store.event.rendered() after tokens render
+// 4. Framework emits store.emit.rendered() after tokens render
 
-// 5. Framework emits store.event.unmounted() on unmount
+// 5. Framework emits store.emit.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
 

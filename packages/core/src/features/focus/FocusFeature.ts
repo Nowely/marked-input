@@ -32,8 +32,8 @@ export class FocusFeature {
 				}
 			})
 
-			watch(this.store.event.rendered, () => {
-				this.store.event.sync()
+			watch(this.store.emit.rendered, () => {
+				this.store.emit.sync()
 				if (!this.store.props.Mark()) return
 				this.#recover()
 			})

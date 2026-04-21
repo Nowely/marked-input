@@ -60,9 +60,9 @@ watch(
 )
 
 onMounted(() => {
-	store.value.event.mounted()
+	store.value.emit.mounted()
 })
-onUnmounted(() => store.value.event.unmounted())
+onUnmounted(() => store.value.emit.unmounted())
 
 defineExpose(store.value.handler)
 </script>

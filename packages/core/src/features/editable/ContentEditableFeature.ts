@@ -20,7 +20,7 @@ export class ContentEditableFeature {
 			effect(() => {
 				if (this.store.state.selecting() === undefined) this.sync()
 			})
-			watch(this.store.event.sync, () => {
+			watch(this.store.emit.sync, () => {
 				this.sync()
 			})
 		})

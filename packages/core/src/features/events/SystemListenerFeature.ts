@@ -12,7 +12,7 @@ export class SystemListenerFeature {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.event.change, () => {
+			watch(this.store.emit.change, () => {
 				const onChange = this.store.props.onChange()
 				const {focus} = this.store.nodes
 
@@ -39,10 +39,10 @@ export class SystemListenerFeature {
 				}
 
 				onChange?.(toString(tokens))
-				this.store.event.reparse()
+				this.store.emit.reparse()
 			})
 
-			watch(this.store.event.markRemove, payload => {
+			watch(this.store.emit.markRemove, payload => {
 				const {token} = payload
 				const tokens = this.store.state.tokens()
 				if (!findToken(tokens, token)) return
@@ -62,7 +62,7 @@ export class SystemListenerFeature {
 				this.store.props.onChange()?.(newValue)
 			})
 
-			watch(this.store.event.overlaySelect, event => {
+			watch(this.store.emit.overlaySelect, event => {
 				const Mark = this.store.props.Mark()
 				const onChange = this.store.props.onChange()
 				const {
@@ -107,7 +107,7 @@ export class SystemListenerFeature {
 					this.store.nodes.focus.target = this.store.nodes.input.target
 					this.store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this.store.event.reparse()
+					this.store.emit.reparse()
 				}
 			})
 		})

@@ -36,7 +36,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 
 	store.state.recovery({anchor: caretAnchor.prev, caret})
 
-	store.event.change()
+	store.emit.change()
 
 	queueMicrotask(() => {
 		const container = store.state.container()

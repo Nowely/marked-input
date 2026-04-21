@@ -18,9 +18,9 @@ export interface OverlayHandler {
 }
 
 export function useOverlay(): OverlayHandler {
-	const {match, event, state} = useMarkput(s => ({
+	const {match, emit, state} = useMarkput(s => ({
 		match: s.state.overlayMatch,
-		event: s.event,
+		emit: s.emit,
 		state: s.state,
 	}))
 
@@ -29,13 +29,13 @@ export function useOverlay(): OverlayHandler {
 		return Caret.getAbsolutePosition()
 	}, [match])
 
-	const close = useCallback(() => event.overlayClose(), [])
+	const close = useCallback(() => emit.overlayClose(), [])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			if (!match) return
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			event.overlaySelect({mark, match})
-			event.overlayClose()
+			emit.overlaySelect({mark, match})
+			emit.overlayClose()
 		},
 		[match]
 	)

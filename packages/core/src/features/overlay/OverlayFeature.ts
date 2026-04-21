@@ -18,11 +18,11 @@ export class OverlayFeature {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.event.overlayClose, () => {
+			watch(this.store.emit.overlayClose, () => {
 				this.store.state.overlayMatch(undefined)
 			})
 
-			watch(this.store.event.change, () => {
+			watch(this.store.emit.change, () => {
 				const showOverlayOn = this.store.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 
@@ -39,7 +39,7 @@ export class OverlayFeature {
 
 					listen(window, 'keydown', e => {
 						if (e.key === KEYBOARD.ESC) {
-							this.store.event.overlayClose()
+							this.store.emit.overlayClose()
 						}
 					})
 
@@ -50,7 +50,7 @@ export class OverlayFeature {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.store.state.overlay()?.contains(target)) return
 							if (this.store.state.container()?.contains(target)) return
-							this.store.event.overlayClose()
+							this.store.emit.overlayClose()
 						},
 						true
 					)

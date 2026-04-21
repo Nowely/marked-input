@@ -10,7 +10,7 @@ describe('SystemListenerFeature', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		controller = store.features.system
+		controller = store.feature.system
 	})
 
 	describe('enable()', () => {
@@ -22,7 +22,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 
 			// Emit change — handler should serialize tokens and call onChange
-			store.event.change()
+			store.emit.change()
 
 			expect(onChange).toHaveBeenCalled()
 		})
@@ -35,7 +35,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.enable()
 
-			store.event.change()
+			store.emit.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
@@ -49,7 +49,7 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.event.markRemove({token})
+			store.emit.markRemove({token})
 
 			// After markRemove, the token should be removed from the tokens array
 			expect(store.state.tokens()).toEqual([
@@ -72,7 +72,7 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			store.event.markRemove({token: missingToken})
+			store.emit.markRemove({token: missingToken})
 
 			expect(store.state.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -100,7 +100,7 @@ describe('SystemListenerFeature', () => {
 				node: {} as unknown as Node,
 			} as unknown as OverlayMatch
 
-			store.event.overlaySelect({mark, match})
+			store.emit.overlaySelect({mark, match})
 		})
 	})
 
@@ -113,7 +113,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.event.change()
+			store.emit.change()
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -127,7 +127,7 @@ describe('SystemListenerFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.event.markRemove({token})
+			store.emit.markRemove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -141,7 +141,7 @@ describe('SystemListenerFeature', () => {
 			controller.disable()
 			controller.enable()
 
-			store.event.change()
+			store.emit.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})

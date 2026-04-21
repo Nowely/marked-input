@@ -10,7 +10,7 @@ const result = useMarkput(s => ({
 	tokens: s.state.tokens,
 	key: s.key,
 	state: s.state,
-	event: s.event,
+	emit: s.emit,
 }))
 
 const setContainerRef = (el: unknown) => {
@@ -23,7 +23,7 @@ const containerProps = useMarkput(s => s.computed.containerProps)
 
 watch(
 	() => result.value.tokens,
-	() => result.value.event.rendered(),
+	() => result.value.emit.rendered(),
 	{flush: 'post', immediate: true}
 )
 </script>
