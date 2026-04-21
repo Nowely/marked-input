@@ -168,7 +168,7 @@ export class Store {
 		}),
 	}
 
-	readonly event = {
+	readonly emit = {
 		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
 		change: event(),
 		/** Triggers a re-parse of tokens from the current content */
@@ -208,8 +208,8 @@ export class Store {
 	}
 
 	constructor() {
-		watch(this.event.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.event.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
+		watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+		watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
 
 	setProps(values: Partial<SignalValues<typeof this.props>>): void {

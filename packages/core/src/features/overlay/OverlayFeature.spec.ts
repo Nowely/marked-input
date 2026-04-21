@@ -42,7 +42,7 @@ describe('OverlayFeature', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			controller.enable()
 
-			store.event.change()
+			store.emit.change()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 
@@ -54,7 +54,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.overlayClose()
+			store.emit.overlayClose()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
@@ -65,7 +65,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.change()
+			store.emit.change()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
@@ -76,7 +76,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.change()
+			store.emit.change()
 
 			expect(store.state.overlayMatch()).toBe(stubMatch)
 		})
@@ -87,7 +87,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.overlayClose()
+			store.emit.overlayClose()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
@@ -100,8 +100,8 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.overlayClose()
-			store.event.change()
+			store.emit.overlayClose()
+			store.emit.change()
 
 			expect(store.state.overlayMatch()).toBe(stubMatch)
 		})
@@ -113,7 +113,7 @@ describe('OverlayFeature', () => {
 
 			store.state.overlayMatch(stubMatch)
 
-			store.event.overlayClose()
+			store.emit.overlayClose()
 
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})

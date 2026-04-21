@@ -33,7 +33,7 @@ describe('DragFeature', () => {
 			store.feature.drag.disable()
 
 			const reorderSpy = vi.spyOn(store.state, 'innerValue')
-			store.event.drag({type: 'delete', index: 0})
+			store.emit.drag({type: 'delete', index: 0})
 			expect(reorderSpy).not.toHaveBeenCalled()
 		})
 	})

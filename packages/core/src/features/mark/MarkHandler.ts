@@ -86,9 +86,9 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 		this.#emitChange()
 	}
 
-	remove = () => this.#store.event.markRemove({token: this.#token})
+	remove = () => this.#store.emit.markRemove({token: this.#token})
 
 	#emitChange(): void {
-		this.#store.event.change()
+		this.#store.emit.change()
 	}
 }

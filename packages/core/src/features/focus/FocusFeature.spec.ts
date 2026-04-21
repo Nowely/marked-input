@@ -48,8 +48,8 @@ describe('FocusFeature', () => {
 		it('always emits sync', () => {
 			store.feature.focus.enable()
 
-			const syncSpy = vi.spyOn(store.event, 'sync')
-			store.event.rendered()
+			const syncSpy = vi.spyOn(store.emit, 'sync')
+			store.emit.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
@@ -71,7 +71,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.event.rendered()
+			store.emit.rendered()
 
 			// #recover clears recovery after running.
 			expect(store.state.recovery()).toBeUndefined()
@@ -87,7 +87,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.event.rendered()
+			store.emit.rendered()
 
 			// #recover was NOT called, so recovery state is preserved.
 			expect(store.state.recovery()).toBeDefined()
@@ -101,8 +101,8 @@ describe('FocusFeature', () => {
 			store.feature.focus.enable()
 			store.feature.focus.disable()
 
-			const syncSpy = vi.spyOn(store.event, 'sync')
-			store.event.rendered()
+			const syncSpy = vi.spyOn(store.emit, 'sync')
+			store.emit.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 		})
