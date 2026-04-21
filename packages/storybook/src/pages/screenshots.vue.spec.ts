@@ -3,7 +3,8 @@ import {faker} from '@faker-js/faker'
 import {composeStories} from '@storybook/vue3-vite'
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
-import {page} from 'vitest/browser'
+
+import {normalizeHtml} from './_vrt/normalize-html'
 
 const storyModules = import.meta.glob('./**/*.vue.stories.ts', {eager: true})
 
@@ -23,10 +24,9 @@ for (const [path, mod] of Object.entries(storyModules)) {
 	Object.assign(storiesByCategory.get(category)!, stories)
 }
 
-// Determinism scoped to this file so functional specs keep real timers + unseeded faker.
-// `data-vrt` activates the pointer-events / transition / font rules in `vitest.setup.ts`
-// — without this flag, functional specs (Drag.vue.spec.ts, Selection.vue.spec.ts)
-// would inherit `pointer-events: none` and their click/drag simulations would no-op.
+// Determinism scoped to this file. `data-vrt` activates the kill-switches in
+// `vitest.setup.ts` (pointer-events, transitions, animations) so that hover
+// and in-flight CSS state don't leak into the serialized innerHTML.
 beforeAll(() => {
 	faker.seed(123)
 	vi.useFakeTimers({toFake: ['Date']})
@@ -46,32 +46,16 @@ describe('Storybook visual regression (Vue)', () => {
 				it(name, async () => {
 					const {container} = await render(Story)
 
-					// `document.fonts.ready` settles font-metric-driven heights; one RAF gives
-					// Vue a frame to flush post-mount effects before Vitest's stable-screenshot
-					// loop starts. Without these, some stories capture an intermediate layout frame.
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
-					// Blur whatever element vitest-browser-vue auto-focused after mount.
-					// Chromium's `:focus-visible` heuristic differs between macOS and Linux
-					// (Linux often shows the focus ring after programmatic focus, macOS
-					// doesn't), which adds 2 px of cyan outline around focused buttons in
-					// `Nested/InteractiveNested` — a pure dimension mismatch no pixel
-					// tolerance can mask. Moving focus to `<body>` produces identical,
-					// ring-free baselines on every platform.
 					if (document.activeElement instanceof HTMLElement) {
 						document.activeElement.blur()
 					}
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
-					if (Story.parameters?.screenshot === false) {
-						expect(container.textContent.length).toBeTruthy()
-						return
-					}
-
-					// `${category}/${name}` is parsed by resolveScreenshotPath() in vite.config.ts
-					// and routed to `<Category>/__screenshots__/<Story>-vue-<browser>.png`.
-					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}/${name}`)
+					const htmlPath = `./${category}/__screenshots__/${name}-vue.html`
+					await expect(normalizeHtml(container.innerHTML)).toMatchFileSnapshot(htmlPath)
 				})
 			}
 		})

@@ -3,7 +3,8 @@ import {faker} from '@faker-js/faker'
 import {composeStories} from '@storybook/react-vite'
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
-import {page} from 'vitest/browser'
+
+import {normalizeHtml} from './_vrt/normalize-html'
 
 const storyModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
 
@@ -23,10 +24,9 @@ for (const [path, mod] of Object.entries(storyModules)) {
 	Object.assign(storiesByCategory.get(category)!, stories)
 }
 
-// Determinism scoped to this file so functional specs keep real timers + unseeded faker.
-// `data-vrt` activates the pointer-events / transition / font rules in `vitest.setup.ts`
-// — without this flag, functional specs (Drag.react.spec.tsx, Selection.react.spec.tsx)
-// would inherit `pointer-events: none` and their click/drag simulations would no-op.
+// Determinism scoped to this file. `data-vrt` activates the kill-switches in
+// `vitest.setup.ts` (pointer-events, transitions, animations) so that hover
+// and in-flight CSS state don't leak into the serialized innerHTML.
 beforeAll(() => {
 	faker.seed(123)
 	vi.useFakeTimers({toFake: ['Date']})
@@ -46,32 +46,23 @@ describe('Storybook visual regression (React)', () => {
 				it(name, async () => {
 					const {container} = await render(<Story />)
 
-					// `document.fonts.ready` settles font-metric-driven heights; one RAF gives
-					// React a frame to flush post-commit effects before Vitest's stable-screenshot
-					// loop starts. Without these, some stories capture an intermediate layout frame.
+					// `document.fonts.ready` settles any late font load that may
+					// still mutate inline styles (some components write em-based
+					// dimensions into `style=""` after font metrics resolve).
+					// One RAF flushes React's post-commit effects.
 					await document.fonts.ready
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
-					// Blur whatever element vitest-browser-react auto-focused after mount.
-					// Chromium's `:focus-visible` heuristic differs between macOS and Linux
-					// (Linux often shows the focus ring after programmatic focus, macOS
-					// doesn't), which adds 2 px of cyan outline around focused buttons in
-					// `Nested/InteractiveNested` — a pure dimension mismatch no pixel
-					// tolerance can mask. Moving focus to `<body>` produces identical,
-					// ring-free baselines on every platform.
+					// Blur any auto-focused element. Chromium on some platforms
+					// sets `aria-activedescendant` / `[data-focus-visible]` on
+					// programmatic focus; blurring to `<body>` produces stable DOM.
 					if (document.activeElement instanceof HTMLElement) {
 						document.activeElement.blur()
 					}
 					await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
 
-					if (Story.parameters?.screenshot === false) {
-						expect(container.textContent.length).toBeTruthy()
-						return
-					}
-
-					// `${category}/${name}` is parsed by resolveScreenshotPath() in vite.config.ts
-					// and routed to `<Category>/__screenshots__/<Story>-react-<browser>.png`.
-					await expect.element(page.elementLocator(container)).toMatchScreenshot(`${category}/${name}`)
+					const htmlPath = `./${category}/__screenshots__/${name}-react.html`
+					await expect(normalizeHtml(container.innerHTML)).toMatchFileSnapshot(htmlPath)
 				})
 			}
 		})
