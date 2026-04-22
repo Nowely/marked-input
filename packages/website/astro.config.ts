@@ -1,7 +1,6 @@
 import react from '@astrojs/react'
 import starlight from '@astrojs/starlight'
 import vercel from '@astrojs/vercel'
-import tailwindcss from '@tailwindcss/vite'
 import {defineConfig} from 'astro/config'
 import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
 
@@ -107,8 +106,4 @@ export default defineConfig({
 		}),
 		react(),
 	],
-	vite: {
-		// Astro currently types Vite plugin options against Vite 6.
-		plugins: [tailwindcss() as any],
-	},
 })
