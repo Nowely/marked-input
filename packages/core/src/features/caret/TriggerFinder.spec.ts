@@ -33,7 +33,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('constructor', () => {
-		it('should initialize with caret position data', () => {
+		it('initialize with caret position data', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
@@ -48,7 +48,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(Caret.getFocusedSpan).toHaveBeenCalled()
 		})
 
-		it('should handle empty span', () => {
+		it('handle empty span', () => {
 			mockGetCurrentPosition.mockReturnValue(0)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode(''))
 			mockGetFocusedSpan.mockReturnValue('')
@@ -59,7 +59,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(finder.dividedText).toEqual({left: '', right: ''})
 		})
 
-		it('should handle position at end of span', () => {
+		it('handle position at end of span', () => {
 			const span = 'Hello @world'
 			mockGetCurrentPosition.mockReturnValue(span.length)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode(span))
@@ -72,7 +72,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('static find', () => {
-		it('should return TriggerFinder instance when position is selected', () => {
+		it('return TriggerFinder instance when position is selected', () => {
 			setIsSelectedPosition(true)
 			mockGetCurrentPosition.mockReturnValue(7)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
@@ -86,7 +86,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result?.source).toBe('@world')
 		})
 
-		it('should return undefined when position is not selected', () => {
+		it('return undefined when position is not selected', () => {
 			setIsSelectedPosition(false)
 
 			const options = [{trigger: '@', markup: '@[__label__](__value__)'}]
@@ -97,7 +97,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('getDividedTextBy', () => {
-		it('should correctly divide text by position', () => {
+		it('correctly divide text by position', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
@@ -108,7 +108,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({left: 'Hello @', right: 'world'})
 		})
 
-		it('should handle position 0', () => {
+		it('handle position 0', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
@@ -119,7 +119,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({left: '', right: 'Hello @world'})
 		})
 
-		it('should handle position at end', () => {
+		it('handle position at end', () => {
 			const span = 'Hello @world'
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode(span))
@@ -133,7 +133,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('find', () => {
-		it('should find trigger match and return OverlayMatch', () => {
+		it('find trigger match and return OverlayMatch', () => {
 			mockGetCurrentPosition.mockReturnValue(7)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
@@ -152,7 +152,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			})
 		})
 
-		it('should return undefined when no trigger found', () => {
+		it('return undefined when no trigger found', () => {
 			mockGetCurrentPosition.mockReturnValue(3)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello world'))
 			mockGetFocusedSpan.mockReturnValue('Hello world')
@@ -164,7 +164,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toBeUndefined()
 		})
 
-		it('should prioritize first matching option', () => {
+		it('prioritize first matching option', () => {
 			mockGetCurrentPosition.mockReturnValue(7)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
@@ -181,7 +181,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('matchInTextVia', () => {
-		it('should return match object when trigger found', () => {
+		it('return match object when trigger found', () => {
 			mockGetCurrentPosition.mockReturnValue(7)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
@@ -192,7 +192,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({word: 'world', annotation: '@world', index: 6})
 		})
 
-		it('should return undefined when no left match', () => {
+		it('return undefined when no left match', () => {
 			mockGetCurrentPosition.mockReturnValue(3)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello world'))
 			mockGetFocusedSpan.mockReturnValue('Hello world')
@@ -203,7 +203,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toBeUndefined()
 		})
 
-		it('should handle custom trigger', () => {
+		it('handle custom trigger', () => {
 			mockGetCurrentPosition.mockReturnValue(12)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello #world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello #world test')
@@ -216,7 +216,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('matchRightPart', () => {
-		it('should extract word from right part', () => {
+		it('extract word from right part', () => {
 			mockGetCurrentPosition.mockReturnValue(7)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
@@ -227,7 +227,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({word: 'world'})
 		})
 
-		it('should handle no word match', () => {
+		it('handle no word match', () => {
 			mockGetCurrentPosition.mockReturnValue(6)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world!'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world!')
@@ -238,7 +238,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({word: ''})
 		})
 
-		it('should extract only word characters', () => {
+		it('extract only word characters', () => {
 			mockGetCurrentPosition.mockReturnValue(6)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello world! test'))
 			mockGetFocusedSpan.mockReturnValue('Hello world! test')
@@ -251,7 +251,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('matchLeftPart', () => {
-		it('should find trigger and word before cursor', () => {
+		it('find trigger and word before cursor', () => {
 			mockGetCurrentPosition.mockReturnValue(12)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world test'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world test')
@@ -266,7 +266,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			})
 		})
 
-		it('should return undefined when no match', () => {
+		it('return undefined when no match', () => {
 			mockGetCurrentPosition.mockReturnValue(3)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello world'))
 			mockGetFocusedSpan.mockReturnValue('Hello world')
@@ -277,7 +277,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toBeUndefined()
 		})
 
-		it('should handle trigger at start of text', () => {
+		it('handle trigger at start of text', () => {
 			mockGetCurrentPosition.mockReturnValue(3)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('@hi test'))
 			mockGetFocusedSpan.mockReturnValue('@hi test')
@@ -288,7 +288,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({word: 'hi', annotation: '@hi', index: 0})
 		})
 
-		it('should handle empty word after trigger', () => {
+		it('handle empty word after trigger', () => {
 			mockGetCurrentPosition.mockReturnValue(1)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('@ test'))
 			mockGetFocusedSpan.mockReturnValue('@ test')
@@ -301,7 +301,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 	})
 
 	describe('makeTriggerRegex', () => {
-		it('should create regex for trigger', () => {
+		it('create regex for trigger', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
@@ -315,7 +315,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(regex.test('#world')).toBe(false)
 		})
 
-		it('should escape special regex characters', () => {
+		it('escape special regex characters', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')
@@ -327,7 +327,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(regex.test('.*test')).toBe(true)
 		})
 
-		it('should handle multi-character triggers', () => {
+		it('handle multi-character triggers', () => {
 			mockGetCurrentPosition.mockReturnValue(5)
 			mockGetSelectedNode.mockReturnValue(document.createTextNode('Hello @world'))
 			mockGetFocusedSpan.mockReturnValue('Hello @world')

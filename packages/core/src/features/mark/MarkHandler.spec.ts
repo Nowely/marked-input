@@ -25,7 +25,7 @@ function createMarkToken(overrides: Partial<MarkToken> = {}): MarkToken {
 }
 
 describe('MarkHandler', () => {
-	it('should return depth 0 for top-level mark', () => {
+	it('return depth 0 for top-level mark', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
 		store.state.tokens([{type: 'text', content: 'hi ', position: {start: 0, end: 3}}, markToken])
@@ -35,7 +35,7 @@ describe('MarkHandler', () => {
 		expect(handler.depth).toBe(0)
 	})
 
-	it('should return parent as undefined for top-level mark', () => {
+	it('return parent as undefined for top-level mark', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
 		store.state.tokens([markToken])
@@ -45,7 +45,7 @@ describe('MarkHandler', () => {
 		expect(handler.parent).toBeUndefined()
 	})
 
-	it('should return depth 1 for nested mark', () => {
+	it('return depth 1 for nested mark', () => {
 		const store = new Store()
 		const innerMark = createMarkToken({content: '#tag', value: 'tag', position: {start: 0, end: 4}})
 		const outerMark = createMarkToken({
@@ -61,7 +61,7 @@ describe('MarkHandler', () => {
 		expect(handler.depth).toBe(1)
 	})
 
-	it('should return parent for nested mark', () => {
+	it('return parent for nested mark', () => {
 		const store = new Store()
 		const innerMark = createMarkToken({content: '#tag', value: 'tag', position: {start: 0, end: 4}})
 		const outerMark = createMarkToken({
@@ -77,7 +77,7 @@ describe('MarkHandler', () => {
 		expect(handler.parent).toBe(outerMark)
 	})
 
-	it('should return depth 0 when token not found in state', () => {
+	it('return depth 0 when token not found in state', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
 		store.state.tokens([{type: 'text', content: 'other', position: {start: 0, end: 5}}])

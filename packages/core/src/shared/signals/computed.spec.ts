@@ -4,13 +4,13 @@ import {shallow} from '../utils/shallow'
 import {signal, computed, effect, batch} from './signal'
 
 describe('computed', () => {
-	it('should derive value from signal', () => {
+	it('derive value from signal', () => {
 		const name = signal<string | undefined>('hello')
 		const upper = computed(() => name()!.toUpperCase())
 		expect(upper()).toBe('HELLO')
 	})
 
-	it('should have .get() method', () => {
+	it('have .get() method', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
 		expect(doubled()).toBe(2)
@@ -22,7 +22,7 @@ describe('computed', () => {
 		expect(typeof s.use).toBe('undefined')
 	})
 
-	it('should re-derive when dependency changes', () => {
+	it('re-derive when dependency changes', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
 		expect(doubled()).toBe(2)
@@ -30,7 +30,7 @@ describe('computed', () => {
 		expect(doubled()).toBe(10)
 	})
 
-	it('should be lazy — not computed until read', () => {
+	it('be lazy — not computed until read', () => {
 		const count = signal(1)
 		let calls = 0
 		const doubled = computed(() => {
@@ -42,7 +42,7 @@ describe('computed', () => {
 		expect(calls).toBe(1)
 	})
 
-	it('should cache until dependencies change', () => {
+	it('cache until dependencies change', () => {
 		const count = signal(1)
 		let calls = 0
 		const doubled = computed(() => {
@@ -58,7 +58,7 @@ describe('computed', () => {
 		expect(calls).toBe(2)
 	})
 
-	it('should auto-track inside effect', () => {
+	it('auto-track inside effect', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
 		const results: number[] = []
@@ -70,7 +70,7 @@ describe('computed', () => {
 		expect(results).toEqual([2, 6])
 	})
 
-	it('should support chained computed', () => {
+	it('support chained computed', () => {
 		const count = signal(1)
 		const doubled = computed(() => count() * 2)
 		const quadrupled = computed(() => doubled() * 2)
@@ -79,7 +79,7 @@ describe('computed', () => {
 		expect(quadrupled()).toBe(20)
 	})
 
-	it('should receive previous value in getter', () => {
+	it('receive previous value in getter', () => {
 		const count = signal(1)
 		const withPrev = computed((prev?: number) => {
 			void prev
@@ -88,7 +88,7 @@ describe('computed', () => {
 		expect(withPrev()).toBe(2)
 	})
 
-	it('should work inside batch', () => {
+	it('work inside batch', () => {
 		const a = signal(1)
 		const b = signal(2)
 		const sum = computed(() => a() + b())
@@ -106,7 +106,7 @@ describe('computed', () => {
 })
 
 describe('computed with equals option', () => {
-	it('should suppress propagation when signal changes but computed output is structurally unchanged', () => {
+	it('suppress propagation when signal changes but computed output is structurally unchanged', () => {
 		// count changes 0→2, but parity stays 'even' — equals should suppress effect rerun
 		const count = signal(0)
 		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
@@ -123,7 +123,7 @@ describe('computed with equals option', () => {
 		dispose()
 	})
 
-	it('should allow propagation when computed output changes', () => {
+	it('allow propagation when computed output changes', () => {
 		// count changes 0→1, parity flips 'even'→'odd' — equals returns false, effect reruns
 		const count = signal(0)
 		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
@@ -140,13 +140,13 @@ describe('computed with equals option', () => {
 		dispose()
 	})
 
-	it('should always produce a value on first read regardless of equals', () => {
+	it('always produce a value on first read regardless of equals', () => {
 		const count = signal(1)
 		const alwaysEqual = computed(() => ({value: count()}), {equals: () => true})
 		expect(alwaysEqual()).toEqual({value: 1})
 	})
 
-	it('should work with shallow equals — suppress when shape unchanged', () => {
+	it('work with shallow equals — suppress when shape unchanged', () => {
 		// trigger changes but computed always returns same {x,y} shape
 		const trigger = signal(0)
 		const obj = computed(

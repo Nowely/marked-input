@@ -4,7 +4,7 @@ import {Store} from '../../store/Store'
 import {applySpanInput, replaceAllContentWith} from './InputFeature'
 
 describe('applySpanInput()', () => {
-	it('should delete the next character when deleteContentForward has no target ranges', () => {
+	it('delete the next character when deleteContentForward has no target ranges', () => {
 		const focus = {
 			content: '!',
 			caret: 0,

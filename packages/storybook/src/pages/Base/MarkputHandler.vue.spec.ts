@@ -9,7 +9,7 @@ import * as BaseStories from './Base.vue.stories'
 const {Default} = composeStories(BaseStories)
 
 describe('API: MarkputHandler', () => {
-	it('should support the ref prop for accessing component handler', async () => {
+	it('support the ref prop for accessing component handler', async () => {
 		const handler = ref<MarkputHandler | null>(null)
 
 		await render(Default, {ref: handler})

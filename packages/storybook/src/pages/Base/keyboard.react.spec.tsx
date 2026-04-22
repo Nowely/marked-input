@@ -6,12 +6,13 @@ import {page, userEvent} from 'vitest/browser'
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as BaseStories from './Base.react.stories'
+import {KEYBOARD_DEFAULT_VALUE} from './keyboard.fixtures'
 
 const {Default} = composeStories(BaseStories)
 
-describe('Api: keyboard', () => {
-	it('should support the "Backspace" button', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+describe('API: keyboard', () => {
+	it('support the "Backspace" button', async () => {
+		await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
 
 		const tailSpan = getElement(page.getByText('!'))
 		await focusAtEnd(tailSpan)
@@ -36,8 +37,8 @@ describe('Api: keyboard', () => {
 		expect(headSpan.textContent).toBe('')
 	})
 
-	it('should support the "Delete" button', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+	it('support the "Delete" button', async () => {
+		await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -58,8 +59,8 @@ describe('Api: keyboard', () => {
 		await expect.element(secondSpan).toHaveTextContent('')
 	})
 
-	it('should support focus navigation between spans', async () => {
-		await render(<Default defaultValue="Hello @[mark](1)!" />)
+	it('support focus navigation between spans', async () => {
+		await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -74,8 +75,8 @@ describe('Api: keyboard', () => {
 	})
 
 	// It's not working in browser mode, but works in real
-	it.skip('should select all text with keyboard shortcut "Ctrl+A"', async () => {
-		const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+	it.skip('select all text with keyboard shortcut "Ctrl+A"', async () => {
+		const {container} = await render(<Default defaultValue={KEYBOARD_DEFAULT_VALUE} />)
 
 		expect(window.getSelection()?.toString()).toBe('')
 
@@ -90,7 +91,7 @@ describe('Api: keyboard', () => {
 	// because beforeinput events are not properly captured on contentEditable elements.
 	// The fix is implemented and works in production, but automated testing is limited
 	// by Vitest browser environment. Manual verification via Storybook is recommended.
-	it.todo('should replace all content when Ctrl+A then type')
-	it.todo('should replace all content when Ctrl+A then paste')
-	it.todo('should clear all content when Ctrl+A then delete')
+	it.todo('replace all content when Ctrl+A then type')
+	it.todo('replace all content when Ctrl+A then paste')
+	it.todo('clear all content when Ctrl+A then delete')
 })

@@ -4,7 +4,7 @@ import {shallow} from './shallow'
 
 describe(`Utility: ${shallow.name}`, () => {
 	describe('primitive values', () => {
-		it('should return true for identical primitives', () => {
+		it('return true for identical primitives', () => {
 			expect(shallow(5, 5)).toBe(true)
 			expect(shallow('hello', 'hello')).toBe(true)
 			expect(shallow(true, true)).toBe(true)
@@ -12,14 +12,14 @@ describe(`Utility: ${shallow.name}`, () => {
 			expect(shallow(undefined, undefined)).toBe(true)
 		})
 
-		it('should return false for different primitives', () => {
+		it('return false for different primitives', () => {
 			expect(shallow(5, 6)).toBe(false)
 			expect(shallow('hello', 'world')).toBe(false)
 			expect(shallow(true, false)).toBe(false)
 			expect(shallow(null, undefined)).toBe(false)
 		})
 
-		it('should handle special values', () => {
+		it('handle special values', () => {
 			expect(shallow(NaN, NaN)).toBe(true)
 			expect(shallow(0, -0)).toBe(false)
 			expect(shallow(-0, -0)).toBe(true)
@@ -27,55 +27,55 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('same object reference', () => {
-		it('should return true for the same object', () => {
+		it('return true for the same object', () => {
 			const obj = {a: 1}
 			expect(shallow(obj, obj)).toBe(true)
 		})
 
-		it('should return true for the same array', () => {
+		it('return true for the same array', () => {
 			const arr = [1, 2, 3]
 			expect(shallow(arr, arr)).toBe(true)
 		})
 	})
 
 	describe('object comparison', () => {
-		it('should return true for objects with same properties and values', () => {
+		it('return true for objects with same properties and values', () => {
 			const obj1 = {a: 1, b: 2}
 			const obj2 = {a: 1, b: 2}
 			expect(shallow(obj1, obj2)).toBe(true)
 		})
 
-		it('should return false for objects with different property values', () => {
+		it('return false for objects with different property values', () => {
 			const obj1 = {a: 1, b: 2}
 			const obj2 = {a: 1, b: 3}
 			expect(shallow(obj1, obj2)).toBe(false)
 		})
 
-		it('should return false for objects with different properties', () => {
+		it('return false for objects with different properties', () => {
 			const obj1 = {a: 1, b: 2}
 			const obj2 = {a: 1, c: 2} as Record<string, number>
 			expect(shallow(obj1, obj2)).toBe(false)
 		})
 
-		it('should return false for objects with different number of properties', () => {
+		it('return false for objects with different number of properties', () => {
 			const obj1 = {a: 1, b: 2}
 			const obj2 = {a: 1, b: 2, c: 3}
 			expect(shallow(obj1, obj2)).toBe(false)
 		})
 
-		it('should handle empty objects', () => {
+		it('handle empty objects', () => {
 			expect(shallow({}, {})).toBe(true)
 			expect(shallow({}, {a: 1})).toBe(false)
 		})
 
-		it('should handle nested objects (shallow comparison)', () => {
+		it('handle nested objects (shallow comparison)', () => {
 			const nested = {deep: 'value'}
 			const obj1 = {a: nested}
 			const obj2 = {a: nested}
 			expect(shallow(obj1, obj2)).toBe(true)
 		})
 
-		it('should return false when nested objects are different references', () => {
+		it('return false when nested objects are different references', () => {
 			const obj1 = {a: {deep: 'value'}}
 			const obj2 = {a: {deep: 'value'}}
 			expect(shallow(obj1, obj2)).toBe(false)
@@ -83,32 +83,32 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('array comparison', () => {
-		it('should return true for arrays with same elements', () => {
+		it('return true for arrays with same elements', () => {
 			expect(shallow([1, 2, 3], [1, 2, 3])).toBe(true)
 		})
 
-		it('should return false for arrays with different elements', () => {
+		it('return false for arrays with different elements', () => {
 			expect(shallow([1, 2, 3], [1, 2, 4])).toBe(false)
 		})
 
-		it('should return false for arrays with different lengths', () => {
+		it('return false for arrays with different lengths', () => {
 			expect(shallow([1, 2], [1, 2, 3])).toBe(false)
 		})
 
-		it('should handle empty arrays', () => {
+		it('handle empty arrays', () => {
 			expect(shallow([], [])).toBe(true)
 		})
 	})
 
 	describe('mixed types', () => {
-		it('should return false when comparing object to non-object', () => {
+		it('return false when comparing object to non-object', () => {
 			expect(shallow({}, null)).toBe(false)
 			expect(shallow({}, undefined)).toBe(false)
 			expect(shallow({}, 5)).toBe(false)
 			expect(shallow({}, 'string')).toBe(false)
 		})
 
-		it('should return true when comparing empty array and empty object', () => {
+		it('return true when comparing empty array and empty object', () => {
 			// Both have no enumerable keys, so they're considered shallow equal
 			expect(shallow([], {})).toBe(true)
 			expect(shallow({}, [])).toBe(true)
@@ -116,7 +116,7 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('property order', () => {
-		it('should return true regardless of property order', () => {
+		it('return true regardless of property order', () => {
 			const obj1 = {a: 1, b: 2}
 			const obj2 = {b: 2, a: 1}
 			expect(shallow(obj1, obj2)).toBe(true)
@@ -124,7 +124,7 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('prototype and inheritance', () => {
-		it('should only compare own properties', () => {
+		it('only compare own properties', () => {
 			function Constructor(this: any) {
 				this.ownProp = 'value'
 			}
@@ -137,7 +137,7 @@ describe(`Utility: ${shallow.name}`, () => {
 			expect(shallow(obj1, obj2)).toBe(true)
 		})
 
-		it('should handle null prototype objects', () => {
+		it('handle null prototype objects', () => {
 			const obj1 = Object.create(null)
 			obj1.a = 1
 			const obj2 = Object.create(null)
@@ -148,23 +148,23 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('special values', () => {
-		it('should handle objects with undefined values', () => {
+		it('handle objects with undefined values', () => {
 			expect(shallow({a: undefined}, {a: undefined})).toBe(true)
 			expect(shallow({a: undefined}, {})).toBe(false)
 		})
 
-		it('should handle objects with NaN values', () => {
+		it('handle objects with NaN values', () => {
 			expect(shallow({a: NaN}, {a: NaN})).toBe(true)
 		})
 
-		it('should handle objects with zero values', () => {
+		it('handle objects with zero values', () => {
 			expect(shallow({a: 0}, {a: -0})).toBe(false)
 			expect(shallow({a: -0}, {a: -0})).toBe(true)
 		})
 	})
 
 	describe('complex scenarios', () => {
-		it('should handle large objects', () => {
+		it('handle large objects', () => {
 			const obj1: Record<string, number> = {}
 			const obj2: Record<string, number> = {}
 
@@ -176,7 +176,7 @@ describe(`Utility: ${shallow.name}`, () => {
 			expect(shallow(obj1, obj2)).toBe(true)
 		})
 
-		it('should handle objects with symbol keys', () => {
+		it('handle objects with symbol keys', () => {
 			const sym = Symbol('test')
 			const obj1 = {[sym]: 'value'}
 			const obj2 = {[sym]: 'value'}
@@ -185,7 +185,7 @@ describe(`Utility: ${shallow.name}`, () => {
 			expect(shallow(obj1, obj2)).toBe(true)
 		})
 
-		it('should handle objects with mixed property types', () => {
+		it('handle objects with mixed property types', () => {
 			const sharedArray = [1, 2, 3]
 			const sharedObject = {nested: 'value'}
 
@@ -214,19 +214,19 @@ describe(`Utility: ${shallow.name}`, () => {
 	})
 
 	describe('edge cases', () => {
-		it('should handle functions (as objects)', () => {
+		it('handle functions (as objects)', () => {
 			const func1 = () => {}
 			const func2 = () => {}
 			expect(shallow(func1, func2)).toBe(false)
 		})
 
-		it('should handle dates', () => {
+		it('handle dates', () => {
 			const date1 = new Date('2023-01-01')
 			const date2 = new Date('2023-01-01')
 			expect(shallow(date1, date2)).toBe(true) // Both have no enumerable keys
 		})
 
-		it('should handle regexes', () => {
+		it('handle regexes', () => {
 			const regex1 = /test/g
 			const regex2 = /test/g
 			expect(shallow(regex1, regex2)).toBe(true) // Both have no enumerable keys

@@ -28,29 +28,29 @@ function trackedEffect(fn: () => void | (() => void)): () => void {
 describe('signal<T>', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should return current value when called with no args', () => {
+	it('return current value when called with no args', () => {
 		const s = signal(42)
 		expect(s()).toBe(42)
 	})
 
-	it('should update the value when called with an arg', () => {
+	it('update the value when called with an arg', () => {
 		const s = signal(0)
 		s(10)
 		expect(s()).toBe(10)
 	})
 
-	it('should support .get() as a read alias', () => {
+	it('support .get() as a read alias', () => {
 		const s = signal('hello')
 		expect(s()).toBe('hello')
 	})
 
-	it('should support .set() as a write alias', () => {
+	it('support .set() as a write alias', () => {
 		const s = signal('hello')
 		s('world')
 		expect(s()).toBe('world')
 	})
 
-	it('should NOT re-notify when the same value is set', () => {
+	it('NOT re-notify when the same value is set', () => {
 		const s = signal(5)
 		const runs = vi.fn()
 
@@ -64,7 +64,7 @@ describe('signal<T>', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 	})
 
-	it('should skip notification when custom equals returns true', () => {
+	it('skip notification when custom equals returns true', () => {
 		const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
 		const runs = vi.fn()
 
@@ -78,7 +78,7 @@ describe('signal<T>', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 	})
 
-	it('should notify when custom equals returns false', () => {
+	it('notify when custom equals returns false', () => {
 		const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
 		const runs = vi.fn()
 
@@ -92,7 +92,7 @@ describe('signal<T>', () => {
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('should auto-track inside alien-signals effect', () => {
+	it('auto-track inside alien-signals effect', () => {
 		const s = signal(0)
 		let captured = -1
 
@@ -105,14 +105,14 @@ describe('signal<T>', () => {
 		expect(captured).toBe(42)
 	})
 
-	it('should not have a .use() method', () => {
+	it('not have a .use() method', () => {
 		const s = signal(1)
 		// @ts-expect-error -- .use() must not exist on Signal after this refactor
 		expect(typeof s.use).toBe('undefined')
 	})
 
 	describe('default fallback', () => {
-		it('should return initial value as default when set to undefined', () => {
+		it('return initial value as default when set to undefined', () => {
 			const s = signal<string>('change')
 			expect(s()).toBe('change')
 			s(undefined)
@@ -120,13 +120,13 @@ describe('signal<T>', () => {
 			expect(s()).toBe('change')
 		})
 
-		it('should return the actual value when set to a non-undefined value', () => {
+		it('return the actual value when set to a non-undefined value', () => {
 			const s = signal<string>('change')
 			s('focus')
 			expect(s()).toBe('focus')
 		})
 
-		it('should NOT apply fallback when initial value is undefined', () => {
+		it('NOT apply fallback when initial value is undefined', () => {
 			const s = signal<string | undefined>(undefined)
 			expect(s()).toBeUndefined()
 			s('hello')
@@ -135,13 +135,13 @@ describe('signal<T>', () => {
 			expect(s()).toBeUndefined()
 		})
 
-		it('should work with custom equals and default fallback', () => {
+		it('work with custom equals and default fallback', () => {
 			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
 			s(undefined)
 			expect(s()).toEqual({id: 1, name: 'a'})
 		})
 
-		it('should notify subscribers when reverting from value to default', () => {
+		it('notify subscribers when reverting from value to default', () => {
 			const s = signal<boolean>(false)
 			s(true)
 			const runs = vi.fn()
@@ -155,7 +155,7 @@ describe('signal<T>', () => {
 			expect(s()).toBe(false)
 		})
 
-		it('should not notify when setting undefined and already at default', () => {
+		it('not notify when setting undefined and already at default', () => {
 			const s = signal<boolean>(false)
 			const runs = vi.fn()
 			trackedEffect(() => {
@@ -167,7 +167,7 @@ describe('signal<T>', () => {
 			expect(runs).toHaveBeenCalledTimes(0)
 		})
 
-		it('should work with array defaults', () => {
+		it('work with array defaults', () => {
 			const s = signal<number[]>([1, 2, 3])
 			s(undefined)
 			expect(s()).toEqual([1, 2, 3])
@@ -177,13 +177,13 @@ describe('signal<T>', () => {
 	})
 
 	describe('readonly option', () => {
-		it('should ignore direct writes when readonly is true', () => {
+		it('ignore direct writes when readonly is true', () => {
 			const s = signal(42, {readonly: true})
 			s(99)
 			expect(s()).toBe(42)
 		})
 
-		it('should allow writes inside batch with mutable: true', () => {
+		it('allow writes inside batch with mutable: true', () => {
 			const s = signal(42, {readonly: true})
 			batch(
 				() => {
@@ -194,7 +194,7 @@ describe('signal<T>', () => {
 			expect(s()).toBe(99)
 		})
 
-		it('should ignore writes inside regular batch without mutable', () => {
+		it('ignore writes inside regular batch without mutable', () => {
 			const s = signal(42, {readonly: true})
 			batch(() => {
 				s(99)
@@ -202,7 +202,7 @@ describe('signal<T>', () => {
 			expect(s()).toBe(42)
 		})
 
-		it('should restore mutableScope after nested batches', () => {
+		it('restore mutableScope after nested batches', () => {
 			const s = signal(42, {readonly: true})
 			batch(() => {
 				batch(
@@ -216,7 +216,7 @@ describe('signal<T>', () => {
 			expect(s()).toBe(99)
 		})
 
-		it('should work with custom equals and readonly', () => {
+		it('work with custom equals and readonly', () => {
 			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id, readonly: true})
 			s({id: 2, name: 'b'})
 			expect(s()).toEqual({id: 1, name: 'a'})
@@ -229,18 +229,18 @@ describe('signal<T>', () => {
 			expect(s()).toEqual({id: 2, name: 'b'})
 		})
 
-		it('should not affect non-readonly signals', () => {
+		it('not affect non-readonly signals', () => {
 			const s = signal(42)
 			s(99)
 			expect(s()).toBe(99)
 		})
 
-		it('should allow reads from readonly signals normally', () => {
+		it('allow reads from readonly signals normally', () => {
 			const s = signal(42, {readonly: true})
 			expect(s()).toBe(42)
 		})
 
-		it('should track readonly signals in effects', () => {
+		it('track readonly signals in effects', () => {
 			const s = signal(0, {readonly: true})
 			let captured = -1
 			trackedEffect(() => {
@@ -258,7 +258,7 @@ describe('signal<T>', () => {
 	})
 
 	describe('null initial value', () => {
-		it('should treat null as a valid default', () => {
+		it('treat null as a valid default', () => {
 			const s = signal<string | null>(null)
 			expect(s()).toBeNull()
 			s('hello')
@@ -267,7 +267,7 @@ describe('signal<T>', () => {
 			expect(s()).toBeNull()
 		})
 
-		it('should not conflate null with undefined for hasDefault', () => {
+		it('not conflate null with undefined for hasDefault', () => {
 			const s = signal<string | null>(null)
 			s('world')
 			s(undefined)
@@ -283,17 +283,17 @@ describe('signal<T>', () => {
 describe('event<T>()', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should return undefined before first emit', () => {
+	it('return undefined before first emit', () => {
 		const ev = event<string>()
 		expect(ev.read()).toBeUndefined()
 	})
 
-	it('should return void event undefined before first emit', () => {
+	it('return void event undefined before first emit', () => {
 		const ev = event()
 		expect(ev.read()).toBeUndefined()
 	})
 
-	it('should auto-track inside effect and re-run when emitted', () => {
+	it('auto-track inside effect and re-run when emitted', () => {
 		const ev = event<number>()
 		const runs = vi.fn()
 
@@ -307,7 +307,7 @@ describe('event<T>()', () => {
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('should re-run effect when void event is emitted', () => {
+	it('re-run effect when void event is emitted', () => {
 		const ev = event()
 		const runs = vi.fn()
 
@@ -321,7 +321,7 @@ describe('event<T>()', () => {
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('should return latest payload from read', () => {
+	it('return latest payload from read', () => {
 		const ev = event<number>()
 		let captured: number | undefined
 
@@ -334,7 +334,7 @@ describe('event<T>()', () => {
 		expect(captured).toBe(42)
 	})
 
-	it('should fire subscribers even when emitting same payload reference', () => {
+	it('fire subscribers even when emitting same payload reference', () => {
 		const ev = event<{id: number}>()
 		const payload = {id: 1}
 		const runs = vi.fn()
@@ -351,7 +351,7 @@ describe('event<T>()', () => {
 		expect(runs).toHaveBeenCalledTimes(3)
 	})
 
-	it('should allow multiple effects to subscribe independently', () => {
+	it('allow multiple effects to subscribe independently', () => {
 		const ev = event()
 		const runsA = vi.fn()
 		const runsB = vi.fn()
@@ -373,7 +373,7 @@ describe('event<T>()', () => {
 		expect(runsB).toHaveBeenCalledTimes(2)
 	})
 
-	it('should not cause infinite loop when e.read() called inside effect', () => {
+	it('not cause infinite loop when e.read() called inside effect', () => {
 		const ev = event()
 		let count = 0
 
@@ -385,7 +385,7 @@ describe('event<T>()', () => {
 		expect(count).toBe(1)
 	})
 
-	it('should not have a .use() method', () => {
+	it('not have a .use() method', () => {
 		const ev = event<number>()
 		// @ts-expect-error -- .use() must not exist on Event after this refactor
 		expect(typeof ev.use).toBe('undefined')
@@ -399,7 +399,7 @@ describe('event<T>()', () => {
 describe('watch()', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should call fn when dependency changes', () => {
+	it('call fn when dependency changes', () => {
 		const s = signal(0)
 		const fn = vi.fn()
 
@@ -410,7 +410,7 @@ describe('watch()', () => {
 		expect(fn).toHaveBeenCalledTimes(1)
 	})
 
-	it('should NOT call fn on first run (skip-first-run)', () => {
+	it('NOT call fn on first run (skip-first-run)', () => {
 		const s = signal(0)
 		const fn = vi.fn()
 
@@ -420,7 +420,7 @@ describe('watch()', () => {
 		expect(fn).not.toHaveBeenCalled()
 	})
 
-	it('should return a disposer that stops future calls', () => {
+	it('return a disposer that stops future calls', () => {
 		const s = signal(0)
 		const fn = vi.fn()
 
@@ -435,7 +435,7 @@ describe('watch()', () => {
 		expect(fn).toHaveBeenCalledTimes(1) // no additional call
 	})
 
-	it('should not track reactive reads inside the callback', () => {
+	it('not track reactive reads inside the callback', () => {
 		const source = signal(0)
 		const extra = signal(0)
 		const fn = vi.fn(() => {
@@ -452,7 +452,7 @@ describe('watch()', () => {
 		expect(fn).toHaveBeenCalledTimes(1)
 	})
 
-	it('should allow callbacks to emit void events', () => {
+	it('allow callbacks to emit void events', () => {
 		const source = event()
 		const emitted = event()
 		const runs = vi.fn()
@@ -475,7 +475,7 @@ describe('watch()', () => {
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('should not replay stale payloads on unrelated reactive changes', () => {
+	it('not replay stale payloads on unrelated reactive changes', () => {
 		const source = event<number>()
 		const extra = signal(0)
 		const seen: number[] = []
@@ -502,7 +502,7 @@ describe('watch()', () => {
 		expect(seen).toEqual([1, 2])
 	})
 
-	it('should pass newValue and oldValue to callback', () => {
+	it('pass newValue and oldValue to callback', () => {
 		const s = signal(0)
 		const calls: Array<[number, number | undefined]> = []
 
@@ -522,7 +522,7 @@ describe('watch()', () => {
 		])
 	})
 
-	it('should pass newValue and oldValue for events', () => {
+	it('pass newValue and oldValue for events', () => {
 		const ev = event<number>()
 		const calls: Array<[number | undefined, number | undefined]> = []
 
@@ -540,7 +540,7 @@ describe('watch()', () => {
 		])
 	})
 
-	it('should accept signal directly (not wrapped in getter)', () => {
+	it('accept signal directly (not wrapped in getter)', () => {
 		const s = signal('a')
 		const seen: string[] = []
 
@@ -561,7 +561,7 @@ describe('watch()', () => {
 describe('effect cleanup', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should call returned cleanup on re-run', () => {
+	it('call returned cleanup on re-run', () => {
 		const s = signal(0)
 		const cleanup = vi.fn()
 
@@ -577,7 +577,7 @@ describe('effect cleanup', () => {
 		expect(cleanup).toHaveBeenCalledTimes(2)
 	})
 
-	it('should call returned cleanup on explicit disposal', () => {
+	it('call returned cleanup on explicit disposal', () => {
 		const cleanup = vi.fn()
 
 		const dispose = effect(() => cleanup)
@@ -588,7 +588,7 @@ describe('effect cleanup', () => {
 		expect(cleanup).toHaveBeenCalledTimes(1)
 	})
 
-	it('should call inner effect cleanup when outer re-runs', () => {
+	it('call inner effect cleanup when outer re-runs', () => {
 		const show = signal(true)
 		const innerCleanup = vi.fn()
 
@@ -603,7 +603,7 @@ describe('effect cleanup', () => {
 		expect(innerCleanup).toHaveBeenCalledTimes(1)
 	})
 
-	it('should call cleanup when scope is disposed', () => {
+	it('call cleanup when scope is disposed', () => {
 		const cleanup = vi.fn()
 
 		const scope = effectScope(() => {
@@ -615,7 +615,7 @@ describe('effect cleanup', () => {
 		expect(cleanup).toHaveBeenCalledTimes(1)
 	})
 
-	it('should replace cleanup on each re-run', () => {
+	it('replace cleanup on each re-run', () => {
 		const s = signal(0)
 		const cleanups: number[] = []
 
@@ -630,7 +630,7 @@ describe('effect cleanup', () => {
 		expect(cleanups).toEqual([0, 1])
 	})
 
-	it('should work with effects returning void (no cleanup)', () => {
+	it('work with effects returning void (no cleanup)', () => {
 		const s = signal(0)
 		const runs = vi.fn()
 
@@ -648,7 +648,7 @@ describe('effect cleanup', () => {
 describe('listen()', () => {
 	beforeEach(() => vi.clearAllMocks())
 
-	it('should add listener and auto-remove on scope disposal', () => {
+	it('add listener and auto-remove on scope disposal', () => {
 		const target = new EventTarget()
 		const handler = vi.fn()
 		const addSpy = vi.spyOn(target, 'addEventListener')
@@ -666,7 +666,7 @@ describe('listen()', () => {
 		expect(removeSpy).toHaveBeenCalledWith('click', handler, undefined)
 	})
 
-	it('should remove listener when nested effect re-runs', () => {
+	it('remove listener when nested effect re-runs', () => {
 		const target = new EventTarget()
 		const handler = vi.fn()
 		const show = signal(true)
@@ -683,7 +683,7 @@ describe('listen()', () => {
 		expect(removeSpy).toHaveBeenCalledWith('input', handler, undefined)
 	})
 
-	it('should return a dispose function for manual cleanup', () => {
+	it('return a dispose function for manual cleanup', () => {
 		const target = new EventTarget()
 		const handler = vi.fn()
 		const removeSpy = vi.spyOn(target, 'removeEventListener')
@@ -696,7 +696,7 @@ describe('listen()', () => {
 		expect(removeSpy).toHaveBeenCalledWith('keydown', handler, undefined)
 	})
 
-	it('should pass options through to addEventListener', () => {
+	it('pass options through to addEventListener', () => {
 		const target = new EventTarget()
 		const handler = vi.fn()
 		const addSpy = vi.spyOn(target, 'addEventListener')
@@ -746,17 +746,8 @@ describe('isReactive', () => {
 	})
 })
 
-// ---------------------------------------------------------------------------
-// SignalValues
-// ---------------------------------------------------------------------------
-
-describe('SignalValues passthrough', () => {
-	it('preserves non-signal value types', () => {
-		type Input = {count: Signal<number>; label: string}
-		type Result = SignalValues<Input>
-		// At runtime: just verify the type resolves — no assertion needed
-		// The test exists to document and protect the T[K] fallback behaviour
-		const _: Result = {count: 0, label: 'hello'}
-		expect(true).toBe(true)
-	})
-})
+function _typeTest_SignalValues_passthrough() {
+	type Input = {count: Signal<number>; label: string}
+	const _: SignalValues<Input> = {count: 0, label: 'hello'}
+	return _
+}

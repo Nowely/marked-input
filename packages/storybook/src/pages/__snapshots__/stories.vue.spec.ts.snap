@@ -12,6 +12,18 @@ For found mark used @[annotations](default:123).</pre></div></div>"
 
 exports[`Component: stories > Base stories > Story Default 1`] = `"<div><span contenteditable="true">Hello, clickable marked </span><mark>world</mark><span contenteditable="true">!</span></div><!--v-if-->"`;
 
+exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
+"<div><div data-testid="block" contenteditable="true"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span>hello
+</span><!--v-if--><!--v-if--></div><div data-testid="block" tabindex="0"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><mark data-testid="mark">world</mark><!--v-if--><!--v-if--></div><div data-testid="block" contenteditable="true"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span>
+foo</span><!--v-if--><!--v-if--></div></div><!--v-if-->"
+`;
+
+exports[`Component: stories > Clipboard stories > Story Inline 1`] = `"<div><span contenteditable="true">hello </span><mark data-testid="mark">world</mark><span contenteditable="true"> foo</span></div><!--v-if-->"`;
+
+exports[`Component: stories > Clipboard stories > Story NestedMarkStory 1`] = `"<div><span contenteditable="true">hello </span><mark data-testid="mark"><strong>wor</strong><em>ld</em></mark><span contenteditable="true"> foo</span></div><!--v-if-->"`;
+
+exports[`Component: stories > Clipboard stories > Story PlainText 1`] = `"<div><span contenteditable="true">abc</span></div><!--v-if-->"`;
+
 exports[`Component: stories > Drag stories > Story Markdown 1`] = `
 "<div><div><div><div data-testid="block" tabindex="0"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span><span contenteditable="true">Welcome to </span><span><span contenteditable="true">Marked Input</span></span><span contenteditable="true"></span></span><!--v-if--><!--v-if--></div><div data-testid="block" contenteditable="true"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span>A powerful library for parsing rich text with markdown formatting.
 
@@ -124,6 +136,14 @@ exports[`Component: stories > Overlay stories > Story DefaultOverlay 1`] = `"<di
 exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `"<div><span contenteditable="true">Hello, positioned overlay by trigger @!</span></div><!--v-if-->"`;
 
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `"<div><span contenteditable="true">Hello, suggest overlay by trigger @!</span></div><!--v-if-->"`;
+
+exports[`Component: stories > Selection stories > Story Drag 1`] = `
+"<div><div data-testid="block" contenteditable="true"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span>hello
+</span><!--v-if--><!--v-if--></div><div data-testid="block" tabindex="0"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><mark data-testid="mark">world</mark><!--v-if--><!--v-if--></div><div data-testid="block" contenteditable="true"><!--v-if--><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span>
+foo</span><!--v-if--><!--v-if--></div></div><!--v-if-->"
+`;
+
+exports[`Component: stories > Selection stories > Story Inline 1`] = `"<div><span contenteditable="true">hello </span><mark data-testid="mark">world</mark><span contenteditable="true"> foo</span></div><!--v-if-->"`;
 
 exports[`Component: stories > Slots stories > Story DataAttributes 1`] = `"<div><div><div data-test-id="marked-input-demo" data-module="slots-api" data-user-id="user-123"><span contenteditable="true">Use @[data] attributes for testing and tracking</span></div><!--v-if--></div><div><div>Plain Value</div><pre>Use @[data] attributes for testing and tracking</pre></div></div>"`;
 

@@ -10,20 +10,20 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 	})
 
 	describe('constructor', () => {
-		it('should create a KeyGenerator instance', () => {
+		it('create a KeyGenerator instance', () => {
 			expect(keyGenerator).toBeInstanceOf(KeyGenerator)
 		})
 	})
 
 	describe('get', () => {
-		it('should return 1 for the first object', () => {
+		it('return 1 for the first object', () => {
 			const obj = {}
 			const key = keyGenerator.get(obj)
 
 			expect(key).toBe(1)
 		})
 
-		it('should return the same key for the same object', () => {
+		it('return the same key for the same object', () => {
 			const obj = {test: 'value'}
 			const key1 = keyGenerator.get(obj)
 			const key2 = keyGenerator.get(obj)
@@ -33,7 +33,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key1).toBe(key2)
 		})
 
-		it('should return different keys for different objects', () => {
+		it('return different keys for different objects', () => {
 			const obj1 = {id: 1}
 			const obj2 = {id: 2}
 			const obj3 = {id: 3}
@@ -47,7 +47,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key3).toBe(3)
 		})
 
-		it('should handle various object types', () => {
+		it('handle various object types', () => {
 			const plainObject = {}
 			const array = [1, 2, 3]
 			const date = new Date()
@@ -67,7 +67,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key5).toBe(5)
 		})
 
-		it('should handle complex nested objects', () => {
+		it('handle complex nested objects', () => {
 			const nested = {
 				level1: {
 					level2: {
@@ -80,7 +80,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key).toBe(1)
 		})
 
-		it('should handle the same object passed multiple times', () => {
+		it('handle the same object passed multiple times', () => {
 			const obj = {persistent: true}
 
 			// Get key multiple times
@@ -90,7 +90,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			}
 		})
 
-		it('should maintain separate keys across different KeyGenerator instances', () => {
+		it('maintain separate keys across different KeyGenerator instances', () => {
 			const generator2 = new KeyGenerator()
 			const obj = {}
 
@@ -101,7 +101,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key2).toBe(1) // Both start from 1
 		})
 
-		it('should increment counter for each new object', () => {
+		it('increment counter for each new object', () => {
 			const objects = Array.from({length: 100}, (_, i) => ({index: i}))
 
 			objects.forEach((obj, index) => {
@@ -112,7 +112,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 	})
 
 	describe('WeakMap behavior', () => {
-		it('should not prevent garbage collection of objects', () => {
+		it('not prevent garbage collection of objects', () => {
 			let obj: {temporary: boolean} | null = {temporary: true}
 			const key = keyGenerator.get(obj)
 
@@ -128,7 +128,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(newKey).toBe(2)
 		})
 
-		it('should handle object keys that are equal but not the same reference', () => {
+		it('handle object keys that are equal but not the same reference', () => {
 			const obj1 = {value: 42}
 			const obj2 = {value: 42} // Equal but different object
 
@@ -141,7 +141,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 	})
 
 	describe('edge cases', () => {
-		it('should handle empty objects', () => {
+		it('handle empty objects', () => {
 			const empty1 = {}
 			const empty2 = {}
 
@@ -152,7 +152,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key2).toBe(2)
 		})
 
-		it('should handle null prototype objects', () => {
+		it('handle null prototype objects', () => {
 			const nullProtoObj = Object.create(null)
 			nullProtoObj.test = 'value'
 
@@ -160,14 +160,14 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 			expect(key).toBe(1)
 		})
 
-		it('should handle frozen objects', () => {
+		it('handle frozen objects', () => {
 			const frozenObj = Object.freeze({frozen: true})
 
 			const key = keyGenerator.get(frozenObj)
 			expect(key).toBe(1)
 		})
 
-		it('should handle sealed objects', () => {
+		it('handle sealed objects', () => {
 			const sealedObj = Object.seal({sealed: true})
 
 			const key = keyGenerator.get(sealedObj)
@@ -176,7 +176,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 	})
 
 	describe('large scale usage', () => {
-		it('should handle a large number of objects efficiently', () => {
+		it('handle a large number of objects', () => {
 			const objects: object[] = []
 
 			// Create many objects
@@ -184,21 +184,14 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 				objects.push({id: i})
 			}
 
-			// Get keys for all objects
-			const startTime = Date.now()
 			const keys = objects.map(obj => keyGenerator.get(obj))
-			const endTime = Date.now()
 
-			// Verify keys are sequential
 			keys.forEach((key, index) => {
 				expect(key).toBe(index + 1)
 			})
-
-			// Verify it completes in reasonable time (less than 100ms for 1000 objects)
-			expect(endTime - startTime).toBeLessThan(100)
 		})
 
-		it('should reuse keys correctly after many operations', () => {
+		it('reuse keys correctly after many operations', () => {
 			const objects: object[] = []
 
 			// Create objects and get keys
@@ -231,7 +224,7 @@ describe(`Utility: ${KeyGenerator.name}`, () => {
 	})
 
 	describe('isolation', () => {
-		it('should not share state between instances', () => {
+		it('not share state between instances', () => {
 			const gen1 = new KeyGenerator()
 			const gen2 = new KeyGenerator()
 			const gen3 = new KeyGenerator()

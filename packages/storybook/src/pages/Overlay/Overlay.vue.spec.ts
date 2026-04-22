@@ -15,27 +15,27 @@ const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
 
 describe('API: Overlay and Triggers', () => {
-	it('should work with empty options array', async () => {
+	it('work with empty options array', async () => {
 		await render(withProps(DefaultOverlay, {options: []}))
 
 		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
-		await expect.element(page.getByText(/abc$/)).toBeInTheDocument()
+		await expect.element(page.getByText(DefaultOverlay.args.defaultValue! + 'abc')).toBeInTheDocument()
 	})
 
-	it('should typed with default values of options', async () => {
+	it('typed with default values of options', async () => {
 		await render(DefaultOverlay)
 
 		const element = document.querySelector<HTMLElement>('span[contenteditable]')!
 		await focusAtEnd(element)
 		await userEvent.keyboard('abc')
 
-		await expect.element(page.getByText(/abc$/)).toBeInTheDocument()
+		await expect.element(page.getByText(DefaultOverlay.args.defaultValue! + 'abc')).toBeInTheDocument()
 	})
 
-	it('should appear a overlay component by trigger', async () => {
+	it('appear a overlay component by trigger', async () => {
 		const Mark = defineComponent({
 			props: {value: String},
 			setup(props) {
@@ -66,7 +66,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 
-	it('should reopen overlay after closing', async () => {
+	it('reopen overlay after closing', async () => {
 		const Mark = defineComponent({
 			props: {value: String},
 			setup(props) {
@@ -103,7 +103,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 
-	it('should convert selection to mark token, not raw annotation', async () => {
+	it('convert selection to mark token, not raw annotation', async () => {
 		const Mark = defineComponent({
 			props: {value: String},
 			setup(props) {
@@ -137,7 +137,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByRole('mark')).toBeInTheDocument()
 	})
 
-	it('should restore focus after selection from overlay', async () => {
+	it('restore focus after selection from overlay', async () => {
 		const Mark = defineComponent({
 			props: {value: String},
 			setup(props) {

@@ -7,7 +7,7 @@ import {SegmentMatcher} from './SegmentMatcher'
 
 describe('SegmentMatcher', () => {
 	describe('static segments', () => {
-		it('should find static segments in text', () => {
+		it('find static segments in text', () => {
 			const segments: SegmentDefinition[] = ['<', '>', '</']
 			const matcher = new SegmentMatcher(segments)
 			const result = matcher.search('<div>content</div>')
@@ -21,7 +21,7 @@ describe('SegmentMatcher', () => {
 	})
 
 	describe('dynamic segments', () => {
-		it('should find dynamic segments in text', () => {
+		it('find dynamic segments in text', () => {
 			const segments: SegmentDefinition[] = [
 				['<', '>', '</'],
 				['</', '>', ''],
@@ -46,7 +46,7 @@ describe('SegmentMatcher', () => {
 			})
 		})
 
-		it('should find multiple matches of same dynamic pattern', () => {
+		it('find multiple matches of same dynamic pattern', () => {
 			const segments: SegmentDefinition[] = [
 				['<', '>', '</'],
 				['</', '>', ''],
@@ -73,7 +73,7 @@ describe('SegmentMatcher', () => {
 	})
 
 	describe('mixed segments', () => {
-		it('should find both static and dynamic segments', () => {
+		it('find both static and dynamic segments', () => {
 			const segments: SegmentDefinition[] = [
 				['<', ' ', '>'], // Dynamic: matches "<div " (with space at end, tag name validation)
 				['</', '>', ''], // Dynamic: matches "</div>"
@@ -100,7 +100,7 @@ describe('SegmentMatcher', () => {
 			})
 		})
 
-		it('should correctly segment complex HTML-like structure', () => {
+		it('correctly segment complex HTML-like structure', () => {
 			// Use MarkupRegistry to generate segments from the actual markup patterns
 			const markups: Markup[] = [
 				'<__value__ __meta__>__slot__</__value__>',

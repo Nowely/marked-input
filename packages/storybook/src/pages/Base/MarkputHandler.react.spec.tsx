@@ -7,27 +7,19 @@ import * as BaseStories from './Base.react.stories'
 
 const {Default} = composeStories(BaseStories)
 
-type UseMarkputHandler = {
-	value: MarkputHandler | null
-	set: (el: MarkputHandler | null) => void
-}
-
-function useMarkputHandler(): UseMarkputHandler {
-	let value: MarkputHandler | null = null
-
-	function set(el: MarkputHandler | null) {
-		value = el
-	}
-
-	return {value, set}
-}
-
 describe('API: MarkputHandler', () => {
-	it('should support the ref prop for accessing component handler', async () => {
-		const handler = useMarkputHandler()
+	it('support the ref prop for accessing component handler', async () => {
+		const handler: {current: MarkputHandler | null} = {current: null}
 
-		await render(<Default ref={handler.set} />)
+		await render(
+			<Default
+				ref={el => {
+					handler.current = el
+				}}
+			/>
+		)
 
-		expect(handler.value?.container).not.toBeNull()
+		expect(handler.current).not.toBeNull()
+		expect(handler.current?.container).toBeInstanceOf(HTMLElement)
 	})
 })

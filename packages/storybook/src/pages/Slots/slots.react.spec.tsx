@@ -10,7 +10,7 @@ describe('Slots API', () => {
 	const TestMark = ({children}: {children?: React.ReactNode}) => <mark>{children}</mark>
 
 	describe('Container slot', () => {
-		it('should use default div component when no slot is provided', async () => {
+		it('use default div component when no slot is provided', async () => {
 			const {container} = await render(
 				<MarkedInput Mark={TestMark} value="Hello world" data-testid="container" />
 			)
@@ -19,7 +19,7 @@ describe('Slots API', () => {
 			await expect.element(containerDiv).toBeInTheDocument()
 		})
 
-		it('should use custom component from slots.container', async () => {
+		it('use custom component from slots.container', async () => {
 			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
 			)
@@ -37,7 +37,7 @@ describe('Slots API', () => {
 			await expect.element(page.getByTestId('custom-container')).toBeInTheDocument()
 		})
 
-		it('should pass slotProps.container to the container component', async () => {
+		it('pass slotProps.container to the container component', async () => {
 			const handleKeyDown = vi.fn()
 
 			const {container} = await render(
@@ -57,7 +57,7 @@ describe('Slots API', () => {
 			await expect.element(containerDiv).toHaveAttribute('data-custom', 'test-value')
 		})
 
-		it('should merge className from slotProps with default className', async () => {
+		it('merge className from slotProps with default className', async () => {
 			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
@@ -75,7 +75,7 @@ describe('Slots API', () => {
 			await expect.element(containerDiv).toHaveClass('default-class')
 		})
 
-		it('should merge style from slotProps with default style', async () => {
+		it('merge style from slotProps with default style', async () => {
 			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
@@ -95,7 +95,7 @@ describe('Slots API', () => {
 	})
 
 	describe('Span slot', () => {
-		it('should use default span component when no slot is provided', async () => {
+		it('use default span component when no slot is provided', async () => {
 			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
 			const textSpan = page.getByText('Hello world')
@@ -103,7 +103,7 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toHaveAttribute('contenteditable')
 		})
 
-		it('should use custom component from Span prop', async () => {
+		it('use custom component from Span prop', async () => {
 			const CustomSpan = ({value}: MarkProps) => <span data-testid="custom-span">{value}</span>
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" Span={CustomSpan} />)
@@ -111,7 +111,7 @@ describe('Slots API', () => {
 			await expect.element(page.getByTestId('custom-span')).toBeInTheDocument()
 		})
 
-		it('should pass custom className via custom Span component', async () => {
+		it('pass custom className via custom Span component', async () => {
 			const CustomSpan = ({value}: MarkProps) => <span className="custom-span-class">{value}</span>
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" Span={CustomSpan} />)
@@ -120,7 +120,7 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toHaveClass('custom-span-class')
 		})
 
-		it('should apply custom style via custom Span component', async () => {
+		it('apply custom style via custom Span component', async () => {
 			const CustomSpan = ({value}: MarkProps) => (
 				<span style={{fontWeight: 'bold', fontSize: '16px'}}>{value}</span>
 			)
@@ -133,7 +133,7 @@ describe('Slots API', () => {
 	})
 
 	describe('Both slots', () => {
-		it('should allow overriding both container and Span simultaneously', async () => {
+		it('allow overriding both container and Span simultaneously', async () => {
 			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
 			)
@@ -166,7 +166,7 @@ describe('Slots API', () => {
 	})
 
 	describe('TypeScript integration', () => {
-		it('should work with valid slot types', async () => {
+		it('work with valid slot types', async () => {
 			// This is a compile-time test - if it compiles, the types are correct
 			const CustomDiv = ({ref, ...props}: DivProps) => <div {...props} ref={ref} />
 
@@ -187,7 +187,7 @@ describe('Slots API', () => {
 			await expect.element(container).toBeInTheDocument()
 		})
 
-		it('should support camelCase data attributes in slotProps', async () => {
+		it('support camelCase data attributes in slotProps', async () => {
 			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
@@ -210,7 +210,7 @@ describe('Slots API', () => {
 	})
 
 	describe('Span contentEditable attribute', () => {
-		it('should have contentEditable="true" by default on editable span', async () => {
+		it('have contentEditable="true" by default on editable span', async () => {
 			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
 			const textSpan = page.getByText('Hello world')
@@ -218,7 +218,7 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toHaveAttribute('contenteditable')
 		})
 
-		it('should have contentEditable="false" when readOnly is true', async () => {
+		it('have contentEditable="false" when readOnly is true', async () => {
 			await render(<MarkedInput Mark={TestMark} value="Hello world" readOnly={true} />)
 
 			const textSpan = page.getByText('Hello world')
@@ -226,7 +226,7 @@ describe('Slots API', () => {
 			await expect.element(textSpan).toHaveAttribute('contenteditable', 'false')
 		})
 
-		it('should maintain contentEditable on span with custom Span', async () => {
+		it('maintain contentEditable on span with custom Span', async () => {
 			const CustomSpan = ({value}: MarkProps) => <span data-testid="custom-span">{value}</span>
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" Span={CustomSpan} />)
@@ -236,7 +236,7 @@ describe('Slots API', () => {
 			await expect.element(span).toHaveAttribute('contenteditable')
 		})
 
-		it('should set contentEditable imperatively via core controller', async () => {
+		it('set contentEditable imperatively via core controller', async () => {
 			await render(<MarkedInput Mark={TestMark} value="Hello world" />)
 
 			const textSpan = page.getByText('Hello world')
@@ -245,7 +245,7 @@ describe('Slots API', () => {
 	})
 
 	describe('Event handlers in slotProps', () => {
-		it('should call onKeyDown handler from slotProps.container', async () => {
+		it('call onKeyDown handler from slotProps.container', async () => {
 			const handleKeyDown = vi.fn()
 
 			const {container} = await render(
@@ -267,7 +267,7 @@ describe('Slots API', () => {
 			expect(handleKeyDown).toHaveBeenCalled()
 		})
 
-		it('should call onClick handler from slotProps.container', async () => {
+		it('call onClick handler from slotProps.container', async () => {
 			const handleClick = vi.fn()
 
 			const {container} = await render(
@@ -288,7 +288,7 @@ describe('Slots API', () => {
 			expect(handleClick).toHaveBeenCalled()
 		})
 
-		it('should call onFocus and onBlur handlers from slotProps.container', async () => {
+		it('call onFocus and onBlur handlers from slotProps.container', async () => {
 			const handleFocus = vi.fn()
 			const handleBlur = vi.fn()
 
@@ -315,7 +315,7 @@ describe('Slots API', () => {
 	})
 
 	describe('Custom slot components', () => {
-		it('should pass all required props to custom container slot', async () => {
+		it('pass all required props to custom container slot', async () => {
 			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
 			)
@@ -342,7 +342,7 @@ describe('Slots API', () => {
 			await expect.element(container).toHaveStyle({color: 'rgb(255, 0, 0)', backgroundColor: 'rgb(0, 0, 255)'})
 		})
 
-		it('should allow native HTML elements as container slot', async () => {
+		it('allow native HTML elements as container slot', async () => {
 			const {container} = await render(
 				<MarkedInput Mark={TestMark} value="Hello world" slots={{container: 'article'}} />
 			)
@@ -356,21 +356,21 @@ describe('Slots API', () => {
 	})
 
 	describe('Edge cases', () => {
-		it('should handle empty value', async () => {
+		it('handle empty value', async () => {
 			const {container} = await render(<MarkedInput Mark={TestMark} value="" />)
 
 			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
-		it('should handle undefined slotProps gracefully', async () => {
+		it('handle undefined slotProps gracefully', async () => {
 			const {container} = await render(<MarkedInput Mark={TestMark} value="Hello world" slotProps={undefined} />)
 
 			const div = container.querySelector<HTMLElement>('div')!
 			await expect.element(div).toBeInTheDocument()
 		})
 
-		it('should handle empty className in slotProps', async () => {
+		it('handle empty className in slotProps', async () => {
 			const {container} = await render(
 				<MarkedInput
 					Mark={TestMark}
@@ -387,7 +387,7 @@ describe('Slots API', () => {
 			await expect.element(div).toBeInTheDocument()
 		})
 
-		it('should handle multiple marked values with custom Span', async () => {
+		it('handle multiple marked values with custom Span', async () => {
 			const CustomSpan = ({value}: MarkProps) => <span data-testid="text-span">{value}</span>
 
 			const {container} = await render(
@@ -398,7 +398,7 @@ describe('Slots API', () => {
 			expect(spans.length).toBeGreaterThan(0)
 		})
 
-		it('should preserve slot functionality when no slotProps provided', async () => {
+		it('preserve slot functionality when no slotProps provided', async () => {
 			const CustomContainer = ({ref, ...props}: DivProps) => (
 				<div {...props} ref={ref} data-testid="custom-container" />
 			)

@@ -23,7 +23,7 @@ describe('Nested Marks Rendering', () => {
 		},
 	})
 
-	it('should render simple nested marks', async () => {
+	it('render simple nested marks', async () => {
 		const markup: Markup = '@[__slot__]'
 		const value = '@[outer @[inner]]'
 
@@ -44,7 +44,7 @@ describe('Nested Marks Rendering', () => {
 		expect(innerMark.element().getAttribute('data-has-children')).toBe('false')
 	})
 
-	it('should render multiple nesting levels', async () => {
+	it('render multiple nesting levels', async () => {
 		const markup: Markup = '@[__slot__]'
 		const value = '@[level0 @[level1 @[level2]]]'
 
@@ -65,7 +65,7 @@ describe('Nested Marks Rendering', () => {
 		await expect.element(level2).toBeInTheDocument()
 	})
 
-	it('should render multiple nested marks at same level', async () => {
+	it('render multiple nested marks at same level', async () => {
 		const markup: Markup = '@[__slot__]'
 		const value = '@[outer @[first] and @[second]]'
 
@@ -84,7 +84,7 @@ describe('Nested Marks Rendering', () => {
 		expect(nestedMarks).toHaveLength(2)
 	})
 
-	it('should render different markup types nested', async () => {
+	it('render different markup types nested', async () => {
 		const TagMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -126,7 +126,7 @@ describe('Nested Marks Rendering', () => {
 		expect(mentionMark.element().getAttribute('data-depth')).toBe('1')
 	})
 
-	it('should handle empty nested marks', async () => {
+	it('handle empty nested marks', async () => {
 		const markup: Markup = '@[__slot__]'
 		const value = '@[@[]]'
 
@@ -142,7 +142,7 @@ describe('Nested Marks Rendering', () => {
 		expect(marks).toHaveLength(2)
 	})
 
-	it('should pass children to Mark component for nested content', async () => {
+	it('pass children to Mark component for nested content', async () => {
 		let hasChildrenAtDepthZero = false
 
 		const CapturingMark = defineComponent({
@@ -180,7 +180,7 @@ describe('Nested Marks Rendering', () => {
 })
 
 describe('Nested Marks Tree Navigation', () => {
-	it('should provide correct depth information', async () => {
+	it('provide correct depth information', async () => {
 		const DepthMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -205,7 +205,7 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(depths).toEqual(['0', '1', '2'])
 	})
 
-	it('should provide hasChildren information', async () => {
+	it('provide hasChildren information', async () => {
 		const ChildrenMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -231,7 +231,7 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(hasChildrenValues).toEqual(['true', 'false'])
 	})
 
-	it('should provide children array', async () => {
+	it('provide children array', async () => {
 		let capturedChildrenCount = 0
 
 		const ChildrenCountMark = defineComponent({
@@ -261,7 +261,7 @@ describe('Nested Marks Tree Navigation', () => {
 })
 
 describe('Backward Compatibility', () => {
-	it('should work with flat marks (no nesting)', async () => {
+	it('work with flat marks (no nesting)', async () => {
 		const FlatMark = defineComponent({
 			props: {value: String, meta: String, children: {type: null}},
 			setup(props) {
@@ -285,7 +285,7 @@ describe('Backward Compatibility', () => {
 		expect(mark.element().textContent).toBe('test')
 	})
 
-	it('should ignore children prop in flat marks', async () => {
+	it('ignore children prop in flat marks', async () => {
 		const FlatMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props) {
@@ -309,7 +309,7 @@ describe('Backward Compatibility', () => {
 		expect(mark.element().textContent).toBe('test')
 	})
 
-	it('should not parse nested content in __value__ placeholders', async () => {
+	it('not parse nested content in __value__ placeholders', async () => {
 		const FlatMark = defineComponent({
 			props: {value: String},
 			setup(props) {
@@ -335,7 +335,7 @@ describe('Backward Compatibility', () => {
 })
 
 describe('Complex Nesting Scenarios', () => {
-	it('should handle adjacent nested marks', async () => {
+	it('handle adjacent nested marks', async () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -358,7 +358,7 @@ describe('Complex Nesting Scenarios', () => {
 		expect(marks).toHaveLength(2)
 	})
 
-	it('should handle deeply nested structure', async () => {
+	it('handle deeply nested structure', async () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -385,7 +385,7 @@ describe('Complex Nesting Scenarios', () => {
 		expect(Math.max(...depths)).toBe(4)
 	})
 
-	it('should handle mixed nested and flat marks', async () => {
+	it('handle mixed nested and flat marks', async () => {
 		const MixedMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -417,7 +417,7 @@ describe('Complex Nesting Scenarios', () => {
 		expect(marks.length).toBeGreaterThanOrEqual(3)
 	})
 
-	it('should render nested structure when Mark component renders children', async () => {
+	it('render nested structure when Mark component renders children', async () => {
 		const RenderingMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -447,7 +447,7 @@ describe('Complex Nesting Scenarios', () => {
 })
 
 describe('Edge Cases', () => {
-	it('should handle empty input', async () => {
+	it('handle empty input', async () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -469,7 +469,7 @@ describe('Edge Cases', () => {
 		expect(container.textContent).toBe('')
 	})
 
-	it('should handle input with no marks', async () => {
+	it('handle input with no marks', async () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
@@ -491,7 +491,7 @@ describe('Edge Cases', () => {
 		expect(container.textContent).toBe('Just plain text')
 	})
 
-	it('should handle malformed nested marks gracefully', async () => {
+	it('handle malformed nested marks gracefully', async () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {

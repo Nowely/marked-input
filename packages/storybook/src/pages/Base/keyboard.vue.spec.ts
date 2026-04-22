@@ -8,12 +8,13 @@ import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
 import * as BaseStories from './Base.vue.stories'
+import {KEYBOARD_DEFAULT_VALUE} from './keyboard.fixtures'
 
 const {Default} = composeStories(BaseStories)
 
-describe('Api: keyboard', () => {
-	it('should support the "Backspace" button', async () => {
-		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
+describe('API: keyboard', () => {
+	it('support the "Backspace" button', async () => {
+		await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
 
 		const tailSpan = getElement(page.getByText('!'))
 		await focusAtEnd(tailSpan)
@@ -21,7 +22,7 @@ describe('Api: keyboard', () => {
 		await userEvent.keyboard('{Backspace}')
 		await expect.element(tailSpan).toHaveTextContent('')
 
-		const mark = page.getByText(/world/)
+		const mark = page.getByText(/mark/)
 		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Backspace}')
 		await expect.element(mark).not.toBeInTheDocument()
@@ -35,8 +36,8 @@ describe('Api: keyboard', () => {
 		expect(headSpan.textContent).toBe('')
 	})
 
-	it('should support the "Delete" button', async () => {
-		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
+	it('support the "Delete" button', async () => {
+		await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -44,7 +45,7 @@ describe('Api: keyboard', () => {
 		await userEvent.keyboard('{Delete>6/}')
 		await expect.element(firstSpan).toHaveTextContent('')
 
-		const mark = page.getByText(/world/)
+		const mark = page.getByText(/mark/)
 		await expect.element(mark).toBeInTheDocument()
 		await userEvent.keyboard('{Delete}')
 		await expect.element(mark).not.toBeInTheDocument()
@@ -57,8 +58,8 @@ describe('Api: keyboard', () => {
 		await expect.element(secondSpan).toHaveTextContent('')
 	})
 
-	it('should support focus navigation between spans', async () => {
-		await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
+	it('support focus navigation between spans', async () => {
+		await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
 
 		const firstSpan = getElement(page.getByText(/Hello/))
 		await focusAtStart(firstSpan)
@@ -72,8 +73,8 @@ describe('Api: keyboard', () => {
 		await expect.element(firstSpan).toHaveFocus()
 	})
 
-	it.skip('should select all text with keyboard shortcut "Ctrl+A"', async () => {
-		const {container} = await render(withProps(Default, {defaultValue: 'Hello @[world](1)!'}))
+	it.skip('select all text with keyboard shortcut "Ctrl+A"', async () => {
+		const {container} = await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
 
 		expect(window.getSelection()?.toString()).toBe('')
 
@@ -83,7 +84,7 @@ describe('Api: keyboard', () => {
 		expect(window.getSelection()?.toString()).toBe(container.textContent)
 	})
 
-	it.todo('should replace all content when Ctrl+A then type')
-	it.todo('should replace all content when Ctrl+A then paste')
-	it.todo('should clear all content when Ctrl+A then delete')
+	it.todo('replace all content when Ctrl+A then type')
+	it.todo('replace all content when Ctrl+A then paste')
+	it.todo('clear all content when Ctrl+A then delete')
 })

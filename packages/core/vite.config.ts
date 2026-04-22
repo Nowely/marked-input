@@ -4,6 +4,8 @@ import {fileURLToPath} from 'url'
 import {playwright} from '@vitest/browser-playwright'
 import {defineConfig} from 'vitest/config'
 
+import {createChromiumBrowserPreset} from '../../config/vitest.browser.preset'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
@@ -17,14 +19,11 @@ export default defineConfig({
 		},
 	},
 	test: {
-		browser: {
-			enabled: true,
-			// oxlint-disable-next-line typescript-eslint/no-unsafe-call
-			provider: playwright(),
-			instances: [{browser: 'chromium' as const}],
-			viewport: {width: 1280, height: 720},
-			headless: true,
-			screenshotFailures: false,
+		browser: createChromiumBrowserPreset(playwright()),
+		coverage: {
+			provider: 'v8',
+			reporter: ['text', 'json', 'html'],
+			exclude: ['**/*.bench.ts', '**/*.spec.ts', '**/dist/**', '**/index.ts', '**/__testing__/**'],
 		},
 	},
 })

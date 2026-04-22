@@ -10,15 +10,13 @@ import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DynamicStories from '../Dynamic/Dynamic.react.stories'
 import * as BaseStories from './Base.react.stories'
 
-//createVisualTests(BaseStories)
-
 const {Default} = composeStories(BaseStories)
 const {Focusable, Removable} = composeStories(DynamicStories)
 
 describe(`Component: MarkedInput`, () => {
-	it.todo('should set readOnly on selection')
+	it.todo('set readOnly on selection')
 
-	it('should correct process an annotation type', async () => {
+	it('correctly process an annotation type', async () => {
 		const {container} = await render(<Default defaultValue="" />)
 		const [span] = container.querySelectorAll('span')
 
@@ -30,7 +28,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('mark')).toBeInTheDocument()
 	})
 
-	it('should support ref focusing target', async () => {
+	it('support ref focusing target', async () => {
 		const {container} = await render(<Focusable />)
 		const [firstSpan, secondSpan] = container.querySelectorAll('span')
 		const [firstAbbr] = container.querySelectorAll('abbr')
@@ -55,7 +53,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(secondSpan).toHaveFocus()
 	})
 
-	it('should support remove itself', async () => {
+	it('support remove itself', async () => {
 		await render(<Removable />)
 
 		let mark = page.getByText('contain')
@@ -67,7 +65,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('marks')).not.toBeInTheDocument()
 	})
 
-	it('should support editable marks', async () => {
+	it('support editable marks', async () => {
 		await render(<Focusable />)
 
 		const worldElement = getElement(page.getByText('world').first())
@@ -78,7 +76,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
-	it('should support to pass a forward overlay', async () => {
+	it('support to pass a forward overlay', async () => {
 		const Overlay = () => <span>I'm here!</span>
 
 		await render(
@@ -92,7 +90,7 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText("I'm here!")).toBeInTheDocument()
 	})
 
-	it('should not create empty mark when pressing Enter in overlay without selection', async () => {
+	it('not create empty mark when pressing Enter in overlay without selection', async () => {
 		await render(
 			<MarkedInput
 				Mark={({value}) => <mark>{value}</mark>}
@@ -116,49 +114,6 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('three')).not.toBeInTheDocument()
 	})
 
-	// TODO: user.pointer with offset is not available in vitest/browser.
-	// Need to rewrite using native Selection API for text selection testing.
-	it.todo('should be selectable', async () => {
-		//const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
-		//const selection = window.getSelection()!
-		//expect(selection).not.toBeNull()
-		// await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
-		// expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
-		//const MarkedText = container.firstElementChild!
-		//const [span1, mark, span2] = MarkedText.children
-		// await user.pointer([
-		// 	{target: span1, offset: 0, keys: '[MouseLeft>]'},
-		// 	{target: mark, offset: 2},
-		// ])
-		// expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
-		// await user.pointer([
-		// 	{target: span2, keys: '[MouseLeft>]'},
-		// 	{target: mark, offset: 2},
-		// ])
-		// expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
-		// await user.pointer([
-		// 	{target: span1, keys: '[MouseLeft>]'},
-		// 	{target: mark, offset: 2},
-		// ])
-		// expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
-		// await user.pointer([
-		// 	{target: span2, offset: 0, keys: '[MouseLeft>]'},
-		// 	{target: mark, offset: 2},
-		// ])
-		// expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
-		// await user.pointer([
-		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
-		// 	{target: span1, offset: 2},
-		// ])
-		// expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
-		// await user.pointer([
-		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
-		// 	{target: span2, offset: 1},
-		// ])
-		// expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
-		// await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
-		// expect(selection.isCollapsed).toBeTruthy()
-		//await userEvent.keyboard('abc')
-		//await expect.element(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
-	})
+	// Blocked: vitest browser user.pointer offset-based text selection not reliable across marks
+	it.todo('be selectable')
 })
