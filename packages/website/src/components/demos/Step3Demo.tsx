@@ -1,9 +1,20 @@
 import {MarkedInput, useOverlay} from '@markput/react'
 import {type RefObject, useEffect, useState} from 'react'
 
+const userStyle: React.CSSProperties = {display: 'inline-flex', gap: '0.5rem'}
+const userClickableStyle: React.CSSProperties = {display: 'flex', padding: '0.5rem', cursor: 'pointer'}
+const avatarStyle: React.CSSProperties = {height: '1.5rem', width: '1.5rem', borderRadius: '9999px'}
+const overlayStyle: React.CSSProperties = {
+	position: 'fixed',
+	zIndex: 10,
+	border: '1px solid #e5e7eb',
+	background: 'white',
+	boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+}
+
 const User = ({avatar, login, onClick}: {avatar?: string; login?: string; onClick?: () => void}) => (
-	<span className={`inline-flex gap-2 ${onClick ? '!flex p-2 hover:bg-gray-100' : ''}`} onClick={onClick}>
-		<img src={avatar} alt="" className="h-6 w-6 rounded-full" />
+	<span style={onClick ? userClickableStyle : userStyle} onClick={onClick}>
+		<img src={avatar} alt="" style={avatarStyle} />
 		{login}
 	</span>
 )
@@ -20,11 +31,7 @@ const CustomOverlay = () => {
 	}, [match?.value])
 
 	return (
-		<div
-			ref={ref as RefObject<HTMLDivElement>}
-			style={{top: style.top, left: style.left}}
-			className="fixed z-10 border border-gray-200 bg-white shadow-md"
-		>
+		<div ref={ref as RefObject<HTMLDivElement>} style={{...overlayStyle, top: style.top, left: style.left}}>
 			{users?.map(user => (
 				<User
 					key={user.login}
