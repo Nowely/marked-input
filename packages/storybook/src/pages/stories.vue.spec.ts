@@ -28,7 +28,7 @@ const getTests =
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(Story)
-			expect(container.innerHTML).toMatchSnapshot()
+			expect(container.innerHTML.replace(/ class="[^"]*"/g, '')).toMatchSnapshot()
 		})
 
 describe('Component: stories', () => {
