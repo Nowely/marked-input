@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.12.0](https://github.com/Nowely/marked-input/compare/0.11.0...0.12.0) (2026-04-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** clean up event bus, simplify trigger, and remove dead props ([#202](https://github.com/Nowely/marked-input/issues/202))
+
+### Features
+
+* **storybook:** add HTML snapshot tests for all stories ([#207](https://github.com/Nowely/marked-input/issues/207)) ([6d2f987](https://github.com/Nowely/marked-input/commit/6d2f987cfb2771a8fe1d7d307a0547b3f2a9174a))
+
+
+### Refactoring
+
+* **core:** clean up event bus, simplify trigger, and remove dead props ([#202](https://github.com/Nowely/marked-input/issues/202)) ([2032d6c](https://github.com/Nowely/marked-input/commit/2032d6cf2883ee7c7a25dde93e1cdd0ebc941c4c))
+* **core:** migrate refs to state signals, add typed SlotRegistry, and CI autofix ([#200](https://github.com/Nowely/marked-input/issues/200)) ([5a09ef4](https://github.com/Nowely/marked-input/commit/5a09ef411ccdc8083203d03365fdf9d101759f99))
+* **react:** remove useStore hook, consolidate into useMarkput ([#204](https://github.com/Nowely/marked-input/issues/204)) ([8501dd6](https://github.com/Nowely/marked-input/commit/8501dd65bfbf17203bb69796616f615bb228fa06))
+* rename Store.features to feature, store.event to emit ([#205](https://github.com/Nowely/marked-input/issues/205)) ([3af9c45](https://github.com/Nowely/marked-input/commit/3af9c451ba8d2660841d2ea431e15eda079556c3))
+* **website:** remove Tailwind CSS ([#209](https://github.com/Nowely/marked-input/issues/209)) ([557b89a](https://github.com/Nowely/marked-input/commit/557b89acc6e4b6e07f8826045ba46e0af5e35629))
+
+
+### Miscellaneous
+
+* migrate lint/format configs to TypeScript and update script conventions ([#208](https://github.com/Nowely/marked-input/issues/208)) ([b0850b5](https://github.com/Nowely/marked-input/commit/b0850b573dbee47959dc4f047ddaa65761e0e7af))
+
+
+### Tests
+
+* **core:** migrate all specs to vitest browser mode with playwright ([#206](https://github.com/Nowely/marked-input/issues/206)) ([5b3f80a](https://github.com/Nowely/marked-input/commit/5b3f80af0a8861ede4a6cb06f4bc3ca5328e9c19))
+
 ## [0.11.0](https://github.com/Nowely/marked-input/compare/0.10.1...0.11.0) (2026-04-14)
 
 
