@@ -12,8 +12,8 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 - `pnpm test` — run all tests (core unit + storybook browser)
 - `pnpm run build` — build all packages
 - `pnpm run typecheck` — tsc + vue-tsc
-- `pnpm run lint` / `pnpm run lint:fix` — oxlint
-- `pnpm run format` / `pnpm run format:fix` — oxfmt
+- `pnpm run lint` / `pnpm run lint:check` — oxlint (applies fix by default; `lint:check` for dry-run)
+- `pnpm run format` / `pnpm run format:check` — oxfmt (writes in place by default; `format:check` for dry-run)
 - `pnpm run dev:sb` — Start both Storybook dev servers (React 6006 + Vue 6007)
 - `pnpm run dev:sb:react` / `pnpm run dev:sb:vue` — Individual Storybook dev servers
 - `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
@@ -27,8 +27,8 @@ Always run these commands and ensure they all pass before considering any task c
 1. `pnpm test`
 2. `pnpm run build`
 3. `pnpm run typecheck`
-4. `pnpm run lint`
-5. `pnpm run format`
+4. `pnpm run lint:check`
+5. `pnpm run format:check`
 
 ## Monorepo Layout
 
@@ -148,9 +148,9 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 1. Lint PR title (conventional commit format)
 2. `pnpm test`
 3. `pnpm run typecheck`
-4. `pnpm run lint`
+4. `pnpm run lint:check`
 5. `pnpm run build`
-6. `pnpm run format`
+6. `pnpm run format:check`
 
 ## Common Pitfalls
 
