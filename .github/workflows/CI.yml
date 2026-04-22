@@ -52,7 +52,7 @@ jobs:
               uses: nowely/action-setup-node@v1
 
             - name: Run Lint
-              run: pnpm run lint
+              run: pnpm run lint:check
 
     build:
         name: Build Package
@@ -71,4 +71,4 @@ jobs:
               uses: nowely/action-setup-node@v1
 
             - name: Check Code Formatting
-              run: pnpm run format
+              run: pnpm run format:check

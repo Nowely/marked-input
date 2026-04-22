@@ -20,12 +20,12 @@
     "test:watch": "pnpm -r run test:watch",
     "test:coverage": "pnpm -r run coverage",
     "bench": "pnpm -r run bench",
-    "lint": "oxlint .",
-    "lint:fix": "oxlint . --fix",
+    "lint": "oxlint . --fix",
+    "lint:check": "oxlint .",
     "lint:fix:suggest": "oxlint . --fix-suggestions",
     "lint:fix:danger": "oxlint . --fix-dangerously",
-    "format": "oxfmt --check",
-    "format:fix": "oxfmt",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
     "typecheck": "pnpm -r run typecheck",
     "clean": "git clean -xdf",
     "clean:dry": "git clean -xdn",
@@ -45,11 +45,11 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,vue}": [
-      "oxlint --fix",
-      "oxfmt"
+      "pnpm run lint",
+      "pnpm run format"
     ],
     "*.{json,css,html}": [
-      "oxfmt"
+      "pnpm run format"
     ]
   },
   "engines": {
