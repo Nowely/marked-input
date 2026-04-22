@@ -8,27 +8,6 @@ const stubContainer = {
 	removeEventListener: vi.fn(),
 } as unknown as HTMLDivElement
 
-// Mock document.createElement if not available (for Node test environment)
-// oxlint-disable-next-line no-unnecessary-condition -- document may not be defined in Node env
-if (!globalThis.document) {
-	// oxlint-disable-next-line no-unsafe-type-assertion
-	const FakeHTMLElement = function () {} as any
-	Object.defineProperty(globalThis, 'document', {
-		value: {
-			createElement: () => {
-				const obj = new FakeHTMLElement()
-				Object.setPrototypeOf(obj, FakeHTMLElement.prototype)
-				return obj
-			},
-		},
-		configurable: true,
-	})
-	Object.defineProperty(globalThis, 'HTMLElement', {
-		value: FakeHTMLElement,
-		configurable: true,
-	})
-}
-
 describe('FocusFeature', () => {
 	let store: Store
 
@@ -60,10 +39,7 @@ describe('FocusFeature', () => {
 			store.setProps({Mark: () => null})
 			store.feature.focus.enable()
 
-			// Set up a recovery state so #recover has work to do.
-			// #recover() clears the recovery state on the happy path.
 			const target = document.createElement('div')
-			// Ensure target reports as connected for the happy path.
 			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
 			store.nodes.focus.target = target
 			store.state.recovery({
@@ -73,7 +49,6 @@ describe('FocusFeature', () => {
 
 			store.emit.rendered()
 
-			// #recover clears recovery after running.
 			expect(store.state.recovery()).toBeUndefined()
 
 			store.feature.focus.disable()
@@ -89,7 +64,6 @@ describe('FocusFeature', () => {
 
 			store.emit.rendered()
 
-			// #recover was NOT called, so recovery state is preserved.
 			expect(store.state.recovery()).toBeDefined()
 
 			store.feature.focus.disable()

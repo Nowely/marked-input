@@ -1,24 +1,9 @@
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
+import {afterEach, describe, it, expect, vi, beforeEach} from 'vitest'
 
 import {Store} from '../../../store/Store'
+import {cleanup, createEditableDiv} from '../../../test-utils/dom'
 import type {Token} from '../../parsing'
 import {deleteMark} from './deleteMark'
-
-class MockHTMLElement {
-	textContent = ''
-	isContentEditable = true
-	parentElement: MockHTMLElement | null = null
-	children: MockHTMLElement[] = []
-	focus = vi.fn()
-}
-
-beforeEach(() => {
-	vi.stubGlobal('HTMLElement', MockHTMLElement)
-})
-
-afterEach(() => {
-	vi.unstubAllGlobals()
-})
 
 describe('deleteMark', () => {
 	let store: Store
@@ -34,25 +19,27 @@ describe('deleteMark', () => {
 		store.feature.system.enable()
 	})
 
-	function setupDOM() {
-		const span1 = new MockHTMLElement()
+	afterEach(cleanup)
+
+	function setupDOM(): void {
+		const container = createEditableDiv()
+
+		const span1 = document.createElement('span')
 		span1.textContent = 'hi '
-		const mark = new MockHTMLElement()
+		span1.contentEditable = 'true'
+
+		const mark = document.createElement('span')
 		mark.textContent = '@user'
-		mark.isContentEditable = false
-		const span2 = new MockHTMLElement()
+		mark.contentEditable = 'false'
+
+		const span2 = document.createElement('span')
 		span2.textContent = ' there'
+		span2.contentEditable = 'true'
 
-		const container = new MockHTMLElement()
-		container.children = [span1, mark, span2]
-		span1.parentElement = container
-		mark.parentElement = container
-		span2.parentElement = container
+		container.append(span1, mark, span2)
 
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		store.state.container(container as unknown as HTMLDivElement)
-		// oxlint-disable-next-line no-unsafe-type-assertion
-		store.nodes.focus.target = mark as unknown as HTMLElement
+		store.state.container(container)
+		store.nodes.focus.target = mark
 	}
 
 	function makeTokens(): Token[] {
