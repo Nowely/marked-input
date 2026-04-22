@@ -3,9 +3,14 @@ import vue from '@vitejs/plugin-vue'
 import {playwright} from '@vitest/browser-playwright'
 import {defineConfig, defineProject} from 'vitest/config'
 
-import {createChromiumBrowserPreset} from '../../config/vitest.browser.preset'
-
-const chromiumBrowserPreset = createChromiumBrowserPreset(playwright())
+const browser = {
+	enabled: true,
+	provider: playwright(),
+	instances: [{browser: 'chromium' as const}],
+	viewport: {width: 1280, height: 720},
+	headless: true,
+	screenshotFailures: false,
+}
 
 export default defineConfig({
 	plugins: process.env.FRAMEWORK === 'react' ? [react()] : [vue()],
@@ -33,7 +38,7 @@ export default defineConfig({
 					globals: true,
 					setupFiles: ['./vitest.setup.ts'],
 					include: ['src/pages/**/*.react.spec.tsx'],
-					browser: chromiumBrowserPreset,
+					browser,
 				},
 			}),
 			defineProject({
@@ -45,7 +50,7 @@ export default defineConfig({
 					globals: true,
 					setupFiles: ['./vitest.setup.ts'],
 					include: ['src/pages/**/*.vue.spec.ts'],
-					browser: chromiumBrowserPreset,
+					browser,
 				},
 			}),
 		],

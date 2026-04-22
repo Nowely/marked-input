@@ -111,7 +111,7 @@ export default defineConfig({
 			},
 		},
 		{
-			files: ['**/vite.config.ts', 'config/vitest.browser.preset.ts'],
+			files: ['**/vite.config.ts'],
 			rules: {
 				'typescript/no-unsafe-call': 'off',
 			},
