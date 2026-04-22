@@ -22,11 +22,6 @@ Documentation site for Markput, built with [Astro](https://astro.build) and [Sta
 - **Dark mode**: Automatic light/dark theme switching
 - **Markdown/MDX**: Supports `.md` and `.mdx` with component integration
 
-### Tailwind CSS
-
-- Utility-first CSS framework for custom styling
-- Configured in `src/styles/global.css`
-
 ## 🗂️ Project Structure
 
 ```
@@ -37,7 +32,7 @@ packages/website/
 │   ├── content/
 │   │   └── docs/       # Documentation pages (.md/.mdx)
 │   ├── styles/
-│   │   └── global.css  # Tailwind configuration and global styles
+│   │   └── global.css  # Custom global styles
 │   └── content.config.ts  # Content Collections schema
 ├── astro.config.mjs    # Astro and Starlight configuration
 ├── package.json
@@ -124,28 +119,18 @@ import MyComponent from '../../components/MyComponent.astro'
 
 ## 🎨 Styling Guidelines
 
-### Tailwind CSS
-
-- Global styles: `src/styles/global.css`
-- Use Tailwind utility classes in MDX:
-    ```mdx
-    <div class="bg-blue-500 text-white p-4 rounded">Styled content</div>
-    ```
-
 ### Custom CSS
 
 Add custom styles in `global.css`:
 
 ```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Custom styles */
 .custom-class {
     /* ... */
 }
 ```
+
+Starlight provides its own default theme styles. Use `src/styles/global.css` for custom overrides.
 
 ## ⚙️ Configuration
 
@@ -224,7 +209,6 @@ Starlight can be extended with:
 - [Starlight Documentation](https://starlight.astro.build/)
 - [Astro Documentation](https://docs.astro.build/)
 - [Astro Discord](https://astro.build/chat)
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
 
 ## 🎯 Quick Reference for AI Assistant
 
@@ -253,4 +237,3 @@ When working on this project:
     - Leverage content collections for type safety
     - Optimize images through `src/assets/`
     - Follow Starlight conventions for consistency
-    - Use Tailwind utilities for styling
