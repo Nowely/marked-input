@@ -206,28 +206,28 @@ lifecycle.rendered → caret.recovers → dom.reconcile → dom.align()
 
 ## Migration Strategy
 
-The work proceeds in bottom-up order, **one feature slice per commit**, so each commit leaves the repo building and tests passing. Shape:
+The work proceeds in bottom-up order, **one feature slice per commit**, so each commit leaves the repo building and tests passing. `store.feature` already exists today as `{overlay, focus, input, …}` — the existing keys stay during migration and each step replaces one entry with its slice-shaped successor. Legacy `store.state` / `store.computed` / `store.emit` maps keep forwarding (via getters that read from the new feature slices) until the final cleanup commit.
 
-1. **Set up scaffolding.** Introduce `store.feature` as an empty record alongside the existing `store.feature`. Existing features keep reading from `store.state` / `store.computed` / `store.emit` during migration.
-2. **Introduce `LifecycleFeature`** (simplest — pure events). Move `mounted`, `unmounted`, `rendered` into it. Update references across features (one sweep).
-3. **Introduce `ValueFeature`.** Move `previousValue`, `innerValue`, `currentValue`, `change`. Move `SystemListenerFeature`'s `change` + `innerValue` watchers into `ValueFeature.enable()`.
-4. **Introduce `ParsingFeature`.** Replace the existing `ParseFeature` class-and-directory. Move `tokens`, `parser`, `reparse`.
-5. **Introduce `MarkFeature`.** Move `hasMark`, `mark` computed, `markRemove`. Move SystemListener's `markRemove` watcher.
-6. **Introduce `OverlayFeature` v2.** Move `overlayMatch`, overlay DOM ref, `overlay` computed, `overlaySelect`, `overlayClose`. Move SystemListener's `overlaySelect` watcher.
-7. **Introduce `SlotsFeature`.** Move `container` DOM ref, `isBlock`, `isDraggable`, all slot computeds/props.
-8. **Introduce `DragFeature` v2.** Move `drag` event.
-9. **Introduce `ClipboardFeature`.** Rename + relocate `CopyFeature`.
-10. **Introduce `KeyboardFeature`.** Merge `InputFeature` + `BlockEditFeature` + `ArrowNavFeature` into internal modules.
-11. **Introduce `CaretFeature`.** Merge `FocusFeature` + `TextSelectionFeature`.
-12. **Introduce `DomFeature`.** Rename `ContentEditableFeature`. Rename `sync` → `reconcile`.
-13. **Delete `SystemListenerFeature`.** All watchers have been redistributed.
-14. **Remove legacy `store.state` / `store.computed` / `store.emit` maps** from `Store.ts`.
+1. **Scaffolding.** Add a `Feature` shape type (`{state?, computed?, emit?, enable, disable}`) for the new slice contract. Add temporary forwarding getters on `store.state` / `store.computed` / `store.emit` that will be repointed as slices land. No behavioral change.
+2. **`LifecycleFeature`** (new key in `store.feature.lifecycle`). Owns `mounted`, `unmounted`, `rendered`. Remove these three events from `store.emit` (forwarded via getter).
+3. **`ValueFeature`.** Add `store.feature.value` owning `previousValue`, `innerValue`, `currentValue`, `change`. Move `SystemListenerFeature`'s `change` + `innerValue` watchers into `ValueFeature.enable()`.
+4. **`ParsingFeature`.** Rename existing `ParseFeature` class + directory to `ParsingFeature` + `features/parsing/ParsingFeature.ts`. Move `tokens`, `parser`, `reparse` onto the class.
+5. **`MarkFeature`.** New `store.feature.mark` owning `hasMark`, `mark` computed, `markRemove`. Moves `MarkHandler` hosting into the feature. Move SystemListener's `markRemove` watcher.
+6. **`OverlayFeature` v2.** Existing feature gains `state.overlayMatch`, `state.overlay` (DOM ref), `computed.overlay`, `emit.overlaySelect`, `emit.overlayClose`. Moves SystemListener's `overlaySelect` watcher into it.
+7. **`SlotsFeature`.** New `store.feature.slots` owning `container` DOM ref, `isBlock`, `isDraggable`, all slot computeds/props.
+8. **`DragFeature` v2.** Existing feature gains `emit.drag`.
+9. **`ClipboardFeature`.** Rename `CopyFeature` → `ClipboardFeature`; `store.feature.copy` → `store.feature.clipboard`.
+10. **`KeyboardFeature`.** Merge `InputFeature` + `BlockEditFeature` + `ArrowNavFeature` into `features/keyboard/{KeyboardFeature.ts, input.ts, blockEdit.ts, arrowNav.ts}`. Replaces three keys (`input`, `blockEditing`, `arrowNav`) with one (`keyboard`).
+11. **`CaretFeature`.** Merge `FocusFeature` + `TextSelectionFeature` into `features/caret/CaretFeature.ts`. Owns `recovery`, `selecting`. Replaces two keys (`focus`, `textSelection`) with one (`caret`).
+12. **`DomFeature`.** Rename `ContentEditableFeature` → `DomFeature`; directory `features/editable/` → `features/dom/`. Rename event `sync` → `reconcile`. Move to `store.feature.dom`.
+13. **Delete `SystemListenerFeature`.** All watchers have been redistributed across value, mark, overlay. Remove key `store.feature.system`.
+14. **Remove legacy forwarders.** Delete `store.state`, `store.computed`, `store.emit` from `Store.ts`. All call sites already point at `store.feature.*` from previous steps.
 
 Each step:
-- Adds the new feature class under its own directory (`features/<name>/`).
+- Adds / renames the feature class under its own directory (`features/<name>/`).
 - Adds / updates the feature's README.
-- Updates all call sites (features, framework adapters, hooks, tests) to read from the new location.
-- Keeps `store.state.X` aliases temporarily during the step (as getters forwarding to the new location) if the step can't convert every call site in one commit. Aliases are removed in the final cleanup commit.
+- Updates all call sites (features, framework adapters, hooks, tests) to read from `store.feature.<name>.<category>.<field>` in the same commit.
+- Keeps legacy `store.state.X` getters forwarding to the new location so any missed call site still compiles until step 14.
 
 Pure mechanical changes (rename + move + update imports) should dominate; any behavioral change flagged in review blocks the step.
 
