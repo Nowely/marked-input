@@ -1,22 +1,8 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {describe, it, expect, beforeEach} from 'vitest'
 
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
 import type {OverlayFeature} from './OverlayFeature'
-
-const stubDocument = {
-	addEventListener: vi.fn(),
-	removeEventListener: vi.fn(),
-}
-
-const stubWindow = {
-	getSelection: vi.fn(),
-	addEventListener: vi.fn(),
-	removeEventListener: vi.fn(),
-}
-
-vi.stubGlobal('document', stubDocument)
-vi.stubGlobal('window', stubWindow)
 
 const stubMatch: OverlayMatch = {
 	value: 'test',
@@ -33,7 +19,6 @@ describe('OverlayFeature', () => {
 	let controller: OverlayFeature
 
 	beforeEach(() => {
-		vi.clearAllMocks()
 		store = new Store()
 		controller = store.feature.overlay
 	})
