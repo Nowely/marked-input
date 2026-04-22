@@ -1,1 +1,0 @@
-export const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!' as const

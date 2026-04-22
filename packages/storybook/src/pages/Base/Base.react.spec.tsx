@@ -114,6 +114,49 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('three')).not.toBeInTheDocument()
 	})
 
-	// Blocked: vitest browser user.pointer offset-based text selection not reliable across marks
-	it.todo('be selectable')
+	// TODO: user.pointer with offset is not available in vitest/browser.
+	// Need to rewrite using native Selection API for text selection testing.
+	it.todo('be selectable', async () => {
+		//const {container} = await render(<Default defaultValue="Hello @[mark](1)!" />)
+		//const selection = window.getSelection()!
+		//expect(selection).not.toBeNull()
+		// await user.pointer([{target: container, offset: 0, keys: '[MouseLeft>]'}, {offset: 8}])
+		// expect(selection.toString(), 'Outer div to cross inner mark').toBe(container.textContent?.slice(0, 8))
+		//const MarkedText = container.firstElementChild!
+		//const [span1, mark, span2] = MarkedText.children
+		// await user.pointer([
+		// 	{target: span1, offset: 0, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from the start').toBe(container.textContent?.slice(0, 8))
+		// await user.pointer([
+		// 	{target: span2, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from the end').toBe(container.textContent?.slice(8))
+		// await user.pointer([
+		// 	{target: span1, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from before it').toBe(container.textContent?.slice(6, 8))
+		// await user.pointer([
+		// 	{target: span2, offset: 0, keys: '[MouseLeft>]'},
+		// 	{target: mark, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To mark from after it').toBe(container.textContent?.slice(8, 10))
+		// await user.pointer([
+		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
+		// 	{target: span1, offset: 2},
+		// ])
+		// expect(selection.toString(), 'To span 1 from mark').toBe(container.textContent?.slice(2, 8))
+		// await user.pointer([
+		// 	{target: mark, offset: 2, keys: '[MouseLeft>]'},
+		// 	{target: span2, offset: 1},
+		// ])
+		// expect(selection.toString(), 'To span 2 from mark').toBe(container.textContent?.slice(8))
+		// await user.pointer([{target: span1, offset: 2, keys: '[MouseLeft>]'}, {offset: 4}, {offset: 2}])
+		// expect(selection.isCollapsed).toBeTruthy()
+		//await userEvent.keyboard('abc')
+		//await expect.element(span1, 'Span stay editable after collapse inner selection').toHaveTextContent(/abc/)
+	})
 })

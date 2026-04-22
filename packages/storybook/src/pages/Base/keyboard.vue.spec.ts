@@ -8,7 +8,8 @@ import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
 import * as BaseStories from './Base.vue.stories'
-import {KEYBOARD_DEFAULT_VALUE} from './keyboard.fixtures'
+
+const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
 
 const {Default} = composeStories(BaseStories)
 
