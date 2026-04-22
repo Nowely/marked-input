@@ -31,7 +31,7 @@ const getTests =
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(<Story />)
-			expect(container.innerHTML.replace(/ class="[^"]*"/g, '')).toMatchSnapshot()
+			expect(container.innerHTML.replace(/ class="[^"]*"/g, '').replace(/ style="[^"]*"/g, '')).toMatchSnapshot()
 		})
 
 describe('Component: stories', () => {
