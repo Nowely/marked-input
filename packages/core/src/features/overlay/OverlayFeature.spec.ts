@@ -23,6 +23,16 @@ describe('OverlayFeature', () => {
 		controller = store.feature.overlay
 	})
 
+	describe('ownership', () => {
+		it('owns overlayMatch, overlay (DOM ref), overlay (computed), overlaySelect, overlayClose', () => {
+			expect(store.feature.overlay.state.overlayMatch).toBe(store.state.overlayMatch)
+			expect(store.feature.overlay.state.overlay).toBe(store.state.overlay)
+			expect(store.feature.overlay.computed.overlay).toBe(store.computed.overlay)
+			expect(store.feature.overlay.emit.overlaySelect).toBe(store.emit.overlaySelect)
+			expect(store.feature.overlay.emit.overlayClose).toBe(store.emit.overlayClose)
+		})
+	})
+
 	describe('enable()', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			controller.enable()

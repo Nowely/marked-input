@@ -12,7 +12,7 @@ import {OverlayFeature} from '../features/overlay'
 import type {Parser, Token} from '../features/parsing'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
-import {resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
+import {resolveSlot, resolveSlotProps} from '../features/slots'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
@@ -160,6 +160,7 @@ export class Store {
 		const value = new ValueFeature(this)
 		const parsing = new ParsingFeature(this)
 		const mark = new MarkFeature(this)
+		const overlay = new OverlayFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
@@ -167,9 +168,9 @@ export class Store {
 			innerValue: value.state.innerValue,
 			recovery: signal<Recovery | undefined>(undefined),
 			container: signal<HTMLDivElement | null>(null),
-			overlay: signal<HTMLElement | null>(null),
+			overlay: overlay.state.overlay,
 			selecting: signal<'drag' | 'all' | undefined>(undefined),
-			overlayMatch: signal<OverlayMatch | undefined>(undefined),
+			overlayMatch: overlay.state.overlayMatch,
 		}
 
 		this.computed = {
@@ -194,11 +195,7 @@ export class Store {
 			blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
 			spanComponent: computed(() => resolveSlot('span', this.props.slots())),
 			spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
-			overlay: computed(() => {
-				const Overlay = this.props.Overlay()
-				return (option?: CoreOption, defaultComponent?: Slot) =>
-					resolveOverlaySlot(Overlay, option, defaultComponent)
-			}),
+			overlay: overlay.computed.overlay,
 			mark: mark.computed.mark,
 		}
 
@@ -206,8 +203,8 @@ export class Store {
 			change: value.emit.change,
 			reparse: parsing.emit.reparse,
 			markRemove: mark.emit.markRemove,
-			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
-			overlayClose: event(),
+			overlaySelect: overlay.emit.overlaySelect,
+			overlayClose: overlay.emit.overlayClose,
 			sync: event(),
 			drag: event<DragAction>(),
 			rendered: lifecycle.emit.rendered,
@@ -219,7 +216,7 @@ export class Store {
 			lifecycle,
 			value,
 			mark,
-			overlay: new OverlayFeature(this),
+			overlay,
 			focus: new FocusFeature(this),
 			input: new InputFeature(this),
 			blockEditing: new BlockEditFeature(this),
