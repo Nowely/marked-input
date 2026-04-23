@@ -19,7 +19,7 @@ const Token = defineComponent({
 
 		const store = useStore()
 		const key = store.key
-		const resolveMarkSlot = useMarkput(s => s.mark.mark)
+		const resolveMarkSlot = useMarkput(s => s.mark.slot)
 
 		return () => {
 			const [Comp, compProps] = resolveMarkSlot.value(props.mark)

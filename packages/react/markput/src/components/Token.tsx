@@ -6,7 +6,7 @@ import {TokenContext} from '../lib/providers/TokenContext'
 
 export const Token = memo(({mark}: {mark: TokenType}) => {
 	const {resolveMarkSlot, key} = useMarkput(s => ({
-		resolveMarkSlot: s.mark.mark,
+		resolveMarkSlot: s.mark.slot,
 		key: s.key,
 	}))
 	const [Component, props] = resolveMarkSlot(mark)

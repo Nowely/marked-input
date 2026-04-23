@@ -11,7 +11,7 @@ export class ParsingFeature implements Feature {
 	readonly tokens = signal<Token[]>([])
 
 	readonly parser: Computed<Parser | undefined> = computed(() => {
-		if (!this._store.mark.hasMark()) return
+		if (!this._store.mark.enabled()) return
 
 		const markups = this._store.props.options().map(opt => opt.markup)
 		if (!markups.some(Boolean)) return

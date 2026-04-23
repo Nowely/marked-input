@@ -26,7 +26,7 @@ describe('Store', () => {
 		const store = new Store()
 		expect(typeof store.parsing.reparse).toBe('function')
 		expect(typeof store.value.change).toBe('function')
-		expect(typeof store.mark.markRemove).toBe('function')
+		expect(typeof store.mark.remove).toBe('function')
 	})
 
 	describe('handler', () => {
@@ -379,43 +379,43 @@ describe('Store', () => {
 		})
 	})
 
-	describe('hasMark (computed)', () => {
+	describe('enabled (computed)', () => {
 		it('return false when no Mark override and no per-option Mark', () => {
 			const store = new Store()
-			expect(store.mark.hasMark()).toBe(false)
+			expect(store.mark.enabled()).toBe(false)
 		})
 
 		it('return true when Mark override is set', () => {
 			const store = new Store()
 			store.props.set({Mark: () => null})
-			expect(store.mark.hasMark()).toBe(true)
+			expect(store.mark.enabled()).toBe(true)
 		})
 
 		it('return true when option has per-option Mark', () => {
 			const store = new Store()
 			store.props.set({options: [{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>]})
-			expect(store.mark.hasMark()).toBe(true)
+			expect(store.mark.enabled()).toBe(true)
 		})
 
 		it('return true when Mark override is set even without per-option Mark', () => {
 			const store = new Store()
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			expect(store.mark.hasMark()).toBe(true)
+			expect(store.mark.enabled()).toBe(true)
 		})
 
 		it('return false when option has Mark set to null', () => {
 			const store = new Store()
 			store.props.set({options: [{markup: '@[__value__]', Mark: null} as Record<string, unknown>]})
-			expect(store.mark.hasMark()).toBe(false)
+			expect(store.mark.enabled()).toBe(false)
 		})
 
 		it('react to Mark override changes', () => {
 			const store = new Store()
-			expect(store.mark.hasMark()).toBe(false)
+			expect(store.mark.enabled()).toBe(false)
 			store.props.set({Mark: () => null})
-			expect(store.mark.hasMark()).toBe(true)
+			expect(store.mark.enabled()).toBe(true)
 			store.props.set({Mark: undefined})
-			expect(store.mark.hasMark()).toBe(false)
+			expect(store.mark.enabled()).toBe(false)
 		})
 	})
 
@@ -423,7 +423,7 @@ describe('Store', () => {
 		it('resolve mark slot for text token using span fallback', () => {
 			const store = new Store()
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.mark.mark()(token)
+			const [component, props] = store.mark.slot()(token)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
@@ -433,7 +433,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.mark.mark()(token)
+			const [component, props] = store.mark.slot()(token)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
@@ -448,7 +448,7 @@ describe('Store', () => {
 				descriptor: {index: 0},
 				position: {start: 0, end: 5},
 			} as any
-			expect(() => store.mark.mark()(token)).toThrow('No mark component found')
+			expect(() => store.mark.slot()(token)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {
