@@ -16,9 +16,9 @@ interface BlockProps {
 }
 
 export const Block = memo(({token}: BlockProps) => {
-	const {blockStore, dragEmit, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
+	const {blockStore, drag, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
 		blockStore: s.blocks.get(token),
-		dragEmit: s.feature.drag.emit,
+		drag: s.feature.drag.drag,
 		Component: s.feature.slots.blockComponent,
 		slotProps: s.feature.slots.blockProps,
 		isDragging: s.blocks.get(token).state.isDragging,
@@ -28,7 +28,7 @@ export const Block = memo(({token}: BlockProps) => {
 
 	return (
 		<Component
-			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, dragEmit)}
+			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, {drag})}
 			data-testid="block"
 			{...slotProps}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string

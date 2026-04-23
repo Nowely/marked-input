@@ -7,11 +7,7 @@ import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './op
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragFeature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {
-		drag: event<DragAction>(),
-	}
+	readonly drag = event<DragAction>()
 
 	constructor(private readonly store: Store) {}
 
@@ -20,7 +16,7 @@ export class DragFeature {
 	enable() {
 		if (this.#unsub) return
 
-		this.#unsub = watch(this.emit.drag, action => {
+		this.#unsub = watch(this.drag, action => {
 			switch (action.type) {
 				case 'reorder':
 					this.#reorder(action.source, action.target)
