@@ -1,5 +1,5 @@
 import {childAt} from '../../shared/checkers'
-import {effectScope, effect, event, watch} from '../../shared/signals/index.js'
+import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
 import {isTextTokenSpan} from './isTextTokenSpan'
@@ -7,10 +7,6 @@ import {isTextTokenSpan} from './isTextTokenSpan'
 export class DomFeature {
 	readonly state = {} as const
 	readonly computed = {} as const
-	readonly emit = {
-		reconcile: event(),
-	}
-
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {}
@@ -25,9 +21,6 @@ export class DomFeature {
 			})
 			effect(() => {
 				if (this._store.feature.caret.state.selecting() === undefined) this.reconcile()
-			})
-			watch(this.emit.reconcile, () => {
-				this.reconcile()
 			})
 		})
 	}

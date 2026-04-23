@@ -25,9 +25,9 @@ describe('FocusFeature', () => {
 
 	describe('rendered handler', () => {
 		it('always emits sync', () => {
+			const syncSpy = vi.spyOn(store.feature.dom, 'reconcile').mockImplementation(() => {})
 			store.feature.caret.enable()
 
-			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
 			store.feature.lifecycle.emit.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
@@ -36,6 +36,7 @@ describe('FocusFeature', () => {
 		})
 
 		it('runs caret recovery and clears recovery state when Mark is set', () => {
+			vi.spyOn(store.feature.dom, 'reconcile').mockImplementation(() => {})
 			store.props.set({Mark: () => null})
 			store.feature.caret.enable()
 
@@ -55,6 +56,7 @@ describe('FocusFeature', () => {
 		})
 
 		it('does not run recovery when Mark is not set', () => {
+			vi.spyOn(store.feature.dom, 'reconcile').mockImplementation(() => {})
 			store.feature.caret.enable()
 
 			store.feature.caret.state.recovery({
@@ -72,10 +74,10 @@ describe('FocusFeature', () => {
 
 	describe('subscription lifecycle', () => {
 		it('does not fire rendered watcher after disable', () => {
+			const syncSpy = vi.spyOn(store.feature.dom, 'reconcile').mockImplementation(() => {})
 			store.feature.caret.enable()
 			store.feature.caret.disable()
 
-			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
 			store.feature.lifecycle.emit.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()
