@@ -83,15 +83,15 @@ Both framework adapters share the same component structure:
         ↓
 2. KeyboardFeature detects input
         ↓
-3. store.feature.value.emit.change() emitted
+3. store.value.change() emitted
         ↓
 4. KeyboardFeature reads DOM, mutates focused token in-place
         ↓
-5. store.feature.parsing.emit.reparse() emitted
+5. store.parsing.reparse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
-7. store.feature.parsing.state.tokens updated (Signal)
+7. store.parsing.tokens updated (Signal)
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
@@ -105,10 +105,10 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. OverlayFeature runs a trigger probe (on `store.feature.value.emit.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
+2. OverlayFeature runs a trigger probe (on `store.value.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
 3. If found:
-   - store.feature.overlay.state.overlayMatch set
+   - store.overlay.overlayMatch set
         ↓
 4. Overlay component receives match via useOverlay()
         ↓
@@ -117,11 +117,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.feature.overlay.emit.overlaySelect() emitted
+7. store.overlay.overlaySelect() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.feature.overlay.emit.overlayClose() closes overlay
+9. store.overlay.overlayClose() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -232,17 +232,17 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ```typescript
 // Emit a void event
-store.feature.value.emit.change()
+store.value.change()
 
 // Emit a payload event
-store.feature.mark.emit.markRemove({ token })
+store.mark.markRemove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.feature.value.emit.change,
+        store.value.change,
         () => {
             console.log('Text changed')
         }
@@ -323,32 +323,32 @@ class Store {
 
 ### State and props access
 
-Internal feature state lives on `store.feature.<name>.state`, computeds on `store.feature.<name>.computed`, and events on `store.feature.<name>.emit`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
+Internal feature state, computeds, and events live directly on `store.<name>.*`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
 
 ```typescript
 // Read internal state
-store.feature.parsing.state.tokens()
+store.parsing.tokens()
 
 // Write internal state
-store.feature.parsing.state.tokens(newTokens)
+store.parsing.tokens(newTokens)
 
 // Batch multiple internal writes so dependents run once (same pattern features use)
 import {batch} from '@markput/core'
 batch(() => {
-	store.feature.parsing.state.tokens(newTokens)
-	store.feature.value.state.previousValue(serialized)
+	store.parsing.tokens(newTokens)
+	store.value.previousValue(serialized)
 })
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
-const tokens = store.feature.parsing.state.tokens.use()
+const tokens = store.parsing.tokens.use()
 ```
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.feature.<name>.state`/`.computed`/`.emit` (internal signals), `store.props` (framework-provided signals), and `store.nodes` (DOM refs):
+11 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.<name>.*` (internal signals), `store.props` (framework-provided signals), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -371,18 +371,18 @@ const tokens = store.feature.parsing.state.tokens.use()
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.feature.lifecycle.emit.mounted() on initial mount
+// 1. Framework emits store.lifecycle.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
 // 2. After mount, ParsingFeature reactively watches [props.value, computed.parser]
-//    → emits store.feature.parsing.emit.reparse() when either changes
+//    → emits store.parsing.reparse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → DomFeature reconciles DOM state
 
-// 4. Framework emits store.feature.lifecycle.emit.rendered() after tokens render
+// 4. Framework emits store.lifecycle.rendered() after tokens render
 
-// 5. Framework emits store.feature.lifecycle.emit.unmounted() on unmount
+// 5. Framework emits store.lifecycle.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
 
