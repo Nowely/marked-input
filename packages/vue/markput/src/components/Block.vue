@@ -36,7 +36,7 @@ const otherSlotProps = computed(() => {
 <template>
 	<component
 		:is="blockComponent"
-		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, {drag: store.drag.drag})"
+		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, {action: store.drag.action})"
 		data-testid="block"
 		v-bind="otherSlotProps"
 		:class="[styles.Block, slotProps?.className as string | undefined]"
