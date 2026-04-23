@@ -3,159 +3,37 @@ import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
-import {childrenOf, firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
+import {firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
+import {
+	dispatchInsertText,
+	dispatchPaste,
+	getAllRows,
+	getBlocks,
+	getEditableInRow,
+	openMenuForRow,
+	simulateDragRow,
+} from '../../shared/lib/dragTestHelpers'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.react.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
 
-/**
- * Resolve the editor element whose direct children are drag rows.
- * Prefer the outermost `[class*="Container"]` that has DragMark children so we do not pick a
- * nested match or merge two editors when multiple roots exist in the tree.
- */
-function findMarkputRowHost(container: Element): HTMLElement | null {
-	const candidates = Array.from(container.querySelectorAll<HTMLElement>('[class*="Container"]'))
-	for (const el of candidates) {
-		const hasBlockChild = childrenOf(el).some(c => c instanceof HTMLElement && c.dataset.testid === 'block')
-		if (hasBlockChild) return el
-	}
-	return container.querySelector<HTMLElement>('[class*="Container"]')
-}
-
-/** Get all rows (both mark blocks and DragMarks) as direct children of the markput container */
-function getAllRows(container: Element) {
-	const host = findMarkputRowHost(container)
-	return host ? childrenOf(host) : []
-}
-
-/** Get only DragMark text blocks (have data-testid="block") within the resolved editor */
-function getBlocks(container: Element) {
-	const host = findMarkputRowHost(container)
-	if (!host) return []
-	return Array.from(host.querySelectorAll<HTMLElement>('[data-testid="block"]'))
-}
-
-/** Read the raw value from the PlainValuePanel's data-value attribute */
 function getRawValue(container: Element) {
 	return container.querySelector<HTMLElement>('pre[data-value]')!.dataset.value!
 }
 
-function getEditableInRow(row: HTMLElement) {
-	return row.querySelector('[contenteditable="true"]') ?? row
-}
-
-/**
- * Hover a row to reveal its overlay grip, then click the grip to open the menu.
- * Works for both mark blocks (overlay grip) and text blocks (inline grip).
- */
-async function openMenuForRow(container: Element, rowIndex: number) {
-	const row = getAllRows(container)[rowIndex]
-	await userEvent.hover(row)
-	const grip = await page
-		.elementLocator(row)
-		.getByRole('button', {name: 'Drag to reorder or click for options'})
-		.findElement()
-	await userEvent.click(grip)
-}
-
-/**
- * Simulate an HTML5 drag-and-drop between two rows.
- */
-async function simulateDragRow(
-	container: Element,
-	sourceIndex: number,
-	targetIndex: number,
-	position: 'before' | 'after' = 'after'
-) {
-	const rows = getAllRows(container)
-	const sourceRow = rows[sourceIndex]
-	const targetRow = rows[targetIndex]
-
-	await userEvent.hover(sourceRow)
-	const grip = await page
-		.elementLocator(sourceRow)
-		.getByRole('button', {name: 'Drag to reorder or click for options'})
-		.findElement()
-
-	const dt = new DataTransfer()
-
-	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
-
-	const rect = targetRow.getBoundingClientRect()
-	targetRow.dispatchEvent(
-		new DragEvent('dragover', {
-			bubbles: true,
-			cancelable: true,
-			dataTransfer: dt,
-			clientY: position === 'before' ? rect.top + 1 : rect.bottom - 1,
-		})
-	)
-
-	await new Promise<void>(r => queueMicrotask(r))
-
-	targetRow.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}))
-	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
-}
-
-/** Dispatch a synthetic beforeinput paste event using the current selection as the target range. */
-function dispatchPaste(target: HTMLElement, text: string) {
-	const sel = window.getSelection()
-	if (!sel?.rangeCount) return
-	const r = sel.getRangeAt(0)
-	const staticRange = new StaticRange({
-		startContainer: r.startContainer,
-		startOffset: r.startOffset,
-		endContainer: r.endContainer,
-		endOffset: r.endOffset,
-	})
-	const dt = new DataTransfer()
-	dt.setData('text/plain', text)
-	target.dispatchEvent(
-		new InputEvent('beforeinput', {
-			bubbles: true,
-			cancelable: true,
-			inputType: 'insertFromPaste',
-			dataTransfer: dt,
-			targetRanges: [staticRange],
-		})
-	)
-}
-
-/** Dispatch a synthetic beforeinput insertText event using the current selection as the target range. */
-function dispatchInsertText(target: HTMLElement, text: string) {
-	const sel = window.getSelection()
-	if (!sel?.rangeCount) return
-	const r = sel.getRangeAt(0)
-	const staticRange = new StaticRange({
-		startContainer: r.startContainer,
-		startOffset: r.startOffset,
-		endContainer: r.endContainer,
-		endOffset: r.endOffset,
-	})
-	target.dispatchEvent(
-		new InputEvent('beforeinput', {
-			bubbles: true,
-			cancelable: true,
-			inputType: 'insertText',
-			data: text,
-			targetRanges: [staticRange],
-		})
-	)
-}
-
 describe('Feature: drag rows', () => {
-	it('should render 5 rows for PlainTextDrag', async () => {
+	it('render 5 rows for PlainTextDrag', async () => {
 		const {container} = await render(<PlainTextDrag />)
 		expect(getAllRows(container)).toHaveLength(5)
 	})
 
-	it('should render 4 rows for MarkdownDrag', async () => {
+	it('render 4 rows for MarkdownDrag', async () => {
 		const {container} = await render(<MarkdownDrag />)
 		expect(getAllRows(container)).toHaveLength(4)
 	})
 
-	it('should render no grip buttons in read-only mode', async () => {
+	it('render no grip buttons in read-only mode', async () => {
 		const {container} = await render(<ReadOnlyDrag />)
 		const rows = getAllRows(container)
 		await userEvent.hover(rows[0])
@@ -164,7 +42,7 @@ describe('Feature: drag rows', () => {
 			.not.toBeInTheDocument()
 	})
 
-	it('should render content in read-only mode', async () => {
+	it('render content in read-only mode', async () => {
 		await render(<ReadOnlyDrag />)
 		await expect.element(page.getByText(/Read-Only/).first()).toBeInTheDocument()
 		await expect.element(page.getByText(/Section A/).first()).toBeInTheDocument()
@@ -172,7 +50,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('menu', () => {
-		it('should open with Add below, Duplicate, Delete options', async () => {
+		it('open with Add below, Duplicate, Delete options', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 
@@ -181,7 +59,7 @@ describe('Feature: drag rows', () => {
 			await expect.element(page.getByText('Delete')).toBeInTheDocument()
 		})
 
-		it('should close on Escape', async () => {
+		it('close on Escape', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
@@ -190,7 +68,7 @@ describe('Feature: drag rows', () => {
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
 		})
 
-		it('should close when clicking outside', async () => {
+		it('close when clicking outside', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
@@ -201,7 +79,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('add row', () => {
-		it('should increase row count by 1 when adding below first row', async () => {
+		it('increase row count by 1 when adding below first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await userEvent.click(getElement(page.getByText('Add below')))
@@ -209,7 +87,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should increase row count by 1 when adding below middle row', async () => {
+		it('increase row count by 1 when adding below middle row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 2)
 			await userEvent.click(getElement(page.getByText('Add below')))
@@ -217,7 +95,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should increase row count by 1 when adding below last row', async () => {
+		it('increase row count by 1 when adding below last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 4)
 			await userEvent.click(getElement(page.getByText('Add below')))
@@ -225,7 +103,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should insert an empty row between the target and next row', async () => {
+		it('insert an empty row between the target and next row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await userEvent.click(getElement(page.getByText('Add below')))
@@ -234,7 +112,7 @@ describe('Feature: drag rows', () => {
 			expect(raw).toContain('First block of plain text\n\n\n\nSecond block of plain text')
 		})
 
-		it('should not create a trailing separator when adding below last row', async () => {
+		it('not create a trailing separator when adding below last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 4)
 			await userEvent.click(getElement(page.getByText('Add below')))
@@ -243,7 +121,7 @@ describe('Feature: drag rows', () => {
 			expect(raw.endsWith('\n\n\n\n\n\n')).toBe(false)
 		})
 
-		it('should work when value is empty', async () => {
+		it('work when value is empty', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			// Delete all rows until value is ''
@@ -260,7 +138,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('delete row', () => {
-		it('should decrease count by 1 when deleting middle row', async () => {
+		it('decrease count by 1 when deleting middle row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 2)
 			await userEvent.click(getElement(page.getByText('Delete')))
@@ -268,7 +146,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(4)
 		})
 
-		it('should preserve remaining content when deleting first row', async () => {
+		it('preserve remaining content when deleting first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await userEvent.click(getElement(page.getByText('Delete')))
@@ -277,7 +155,7 @@ describe('Feature: drag rows', () => {
 			expect(getRawValue(container)).toContain('Second block of plain text')
 		})
 
-		it('should decrease count by 1 when deleting last row', async () => {
+		it('decrease count by 1 when deleting last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 4)
 			await userEvent.click(getElement(page.getByText('Delete')))
@@ -287,7 +165,7 @@ describe('Feature: drag rows', () => {
 			expect(getRawValue(container)).not.toContain('Fifth block of plain text')
 		})
 
-		it('should result in empty value when deleting the last remaining row', async () => {
+		it('result in empty value when deleting the last remaining row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			// eslint-disable-next-line no-await-in-loop
@@ -306,7 +184,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('duplicate row', () => {
-		it('should increase count by 1 when duplicating first row', async () => {
+		it('increase count by 1 when duplicating first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
@@ -314,7 +192,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should create a copy with the same text content', async () => {
+		it('create a copy with the same text content', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
@@ -323,7 +201,7 @@ describe('Feature: drag rows', () => {
 			expect(matches).toHaveLength(2)
 		})
 
-		it('should increase count by 1 when duplicating last row', async () => {
+		it('increase count by 1 when duplicating last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 4)
 			await userEvent.click(getElement(page.getByText('Duplicate')))
@@ -333,7 +211,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('enter key', () => {
-		it('should create a new row when pressing Enter at end of row', async () => {
+		it('create a new row when pressing Enter at end of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			expect(getAllRows(container)).toHaveLength(5)
 
@@ -344,7 +222,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should preserve all row content after pressing Enter', async () => {
+		it('preserve all row content after pressing Enter', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const originalValue = getRawValue(container)
 
@@ -358,7 +236,7 @@ describe('Feature: drag rows', () => {
 			expect(newValue).toContain('Fifth block of plain text')
 		})
 
-		it('should not create a new row when pressing Shift+Enter', async () => {
+		it('not create a new row when pressing Shift+Enter', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInRow(getAllRows(container)[0])
@@ -368,7 +246,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(5)
 		})
 
-		it('should create a new empty row after a mark row when pressing Enter', async () => {
+		it('create a new empty row after a mark row when pressing Enter', async () => {
 			const {container} = await render(<MarkdownDrag />)
 			const before = getAllRows(container).length
 			const markBlock = getAllRows(container)[0]
@@ -380,7 +258,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('drag & drop', () => {
-		it('should keep grip visible when pointer moves from block content to grip button', async () => {
+		it('keep grip visible when pointer moves from block content to grip button', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const firstRow = getAllRows(container)[0]
 
@@ -394,7 +272,7 @@ describe('Feature: drag rows', () => {
 			expect(grip.parentElement!.matches('[class*="SidePanelVisible"]')).toBe(true)
 		})
 
-		it('should reorder rows when dragging row 0 after row 2', async () => {
+		it('reorder rows when dragging row 0 after row 2', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			await simulateDragRow(container, 0, 2)
@@ -403,7 +281,7 @@ describe('Feature: drag rows', () => {
 			expect(raw.indexOf('First block of plain text')).toBeGreaterThan(raw.indexOf('Third block of plain text'))
 		})
 
-		it('should not change order when dragging row onto itself', async () => {
+		it('not change order when dragging row onto itself', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const original = getRawValue(container)
 
@@ -414,7 +292,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('backspace on empty row', () => {
-		it('should delete the row and reduce count by 1', async () => {
+		it('delete the row and reduce count by 1', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			// Insert an empty row after row 0
@@ -430,7 +308,7 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(5)
 		})
 
-		it('should not delete a non-empty row on Backspace', async () => {
+		it('not delete a non-empty row on Backspace', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const editable = getEditableInRow(getAllRows(container)[0])
 			await focusAtEnd(editable)
@@ -440,7 +318,7 @@ describe('Feature: drag rows', () => {
 		})
 	})
 
-	it('should focus the new empty row after Add below', async () => {
+	it('focus the new empty row after Add below', async () => {
 		const {container} = await render(<PlainTextDrag />)
 		await openMenuForRow(container, 0)
 		await userEvent.click(getElement(page.getByText('Add below')))
@@ -449,7 +327,7 @@ describe('Feature: drag rows', () => {
 		expect(activeEl.closest('[class*="Container"]')).toBeTruthy()
 	})
 
-	it('should split row at caret when pressing Enter at the beginning', async () => {
+	it('split row at caret when pressing Enter at the beginning', async () => {
 		const {container} = await render(<PlainTextDrag />)
 		const editable = getEditableInRow(getAllRows(container)[0])
 		await focusAtStart(editable)
@@ -459,7 +337,7 @@ describe('Feature: drag rows', () => {
 		expect(getRawValue(container)).toContain('First block of plain text')
 	})
 
-	it('should restore original value after add then delete', async () => {
+	it('restore original value after add then delete', async () => {
 		const {container} = await render(<PlainTextDrag />)
 		const original = getRawValue(container)
 
@@ -474,7 +352,7 @@ describe('Feature: drag rows', () => {
 		expect(getRawValue(container)).toBe(original)
 	})
 
-	it('should restore original value after duplicate then delete', async () => {
+	it('restore original value after duplicate then delete', async () => {
 		const {container} = await render(<PlainTextDrag />)
 		const original = getRawValue(container)
 
@@ -492,7 +370,7 @@ describe('Feature: drag rows', () => {
 
 describe('Feature: drag row keyboard navigation', () => {
 	describe('ArrowLeft cross-row', () => {
-		it('should move focus to previous row when at start of row', async () => {
+		it('move focus to previous row when at start of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -502,7 +380,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[0].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross to previous row when caret is mid-row', async () => {
+		it('not cross to previous row when caret is mid-row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -512,7 +390,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[1].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross row boundary from the first row', async () => {
+		it('not cross row boundary from the first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -524,7 +402,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	})
 
 	describe('ArrowRight cross-row', () => {
-		it('should move focus to next row when at end of row', async () => {
+		it('move focus to next row when at end of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -534,7 +412,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[1].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross to next row when caret is mid-row', async () => {
+		it('not cross to next row when caret is mid-row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -544,7 +422,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[0].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross row boundary from the last row', async () => {
+		it('not cross row boundary from the last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 			const last = rows[rows.length - 1]
@@ -557,7 +435,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	})
 
 	describe('ArrowDown cross-row', () => {
-		it('should move focus to next row when on last line of row', async () => {
+		it('move focus to next row when on last line of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -567,7 +445,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[1].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross row boundary from the last row', async () => {
+		it('not cross row boundary from the last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 			const last = rows[rows.length - 1]
@@ -580,7 +458,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	})
 
 	describe('ArrowUp cross-row', () => {
-		it('should move focus to previous row when on first line of row', async () => {
+		it('move focus to previous row when on first line of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -590,7 +468,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rows[0].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not cross row boundary from the first row', async () => {
+		it('not cross row boundary from the first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -602,7 +480,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	})
 
 	describe('Backspace merge rows (text+text)', () => {
-		it('should merge with previous text row when Backspace pressed at start of non-empty row', async () => {
+		it('merge with previous text row when Backspace pressed at start of non-empty row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const before = getAllRows(container).length
 
@@ -612,7 +490,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getAllRows(container)).toHaveLength(before - 1)
 		})
 
-		it('should preserve content of both merged rows', async () => {
+		it('preserve content of both merged rows', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
@@ -623,7 +501,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(raw).toContain('Second block of plain text')
 		})
 
-		it('should keep focus in the previous row after merge', async () => {
+		it('keep focus in the previous row after merge', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
@@ -633,7 +511,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(currentRows[0].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should only delete one row at a time on Backspace', async () => {
+		it('only delete one row at a time on Backspace', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			expect(getAllRows(container)).toHaveLength(5)
 
@@ -644,30 +522,30 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		describe('Backspace at start of text row after a mark row (navigate-only in drag mode)', () => {
-			it('should NOT reduce row count when Backspace at start of text row after mark row', async () => {
+			it('NOT reduce row count when Backspace at start of text row after mark row', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const before = getAllRows(container).length
+				const before = getBlocks(container).length
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[0]))
+				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(getAllRows(container)).toHaveLength(before)
+				expect(getBlocks(container)).toHaveLength(before)
 			})
 
-			it('should move focus to the mark row on Backspace at mark boundary', async () => {
+			it('move focus to the mark row on Backspace at mark boundary', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const markRow = getAllRows(container)[0]
+				const markBlock = getBlocks(container)[0]
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[0]))
+				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(markRow.contains(document.activeElement)).toBe(true)
+				expect(markBlock.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
 
 	describe('Delete merge rows', () => {
-		it('should merge with next text row when Delete pressed at end of non-last row', async () => {
+		it('merge with next text row when Delete pressed at end of non-last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const before = getAllRows(container).length
 
@@ -677,7 +555,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getAllRows(container)).toHaveLength(before - 1)
 		})
 
-		it('should preserve content of both merged rows', async () => {
+		it('preserve content of both merged rows', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
@@ -688,7 +566,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(raw).toContain('Second block of plain text')
 		})
 
-		it('should keep focus in the current row after Delete merge', async () => {
+		it('keep focus in the current row after Delete merge', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
@@ -698,7 +576,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(currentRows[0].contains(document.activeElement)).toBe(true)
 		})
 
-		it('should not merge when Delete pressed at end of last row', async () => {
+		it('not merge when Delete pressed at end of last row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 			const last = rows[rows.length - 1]
@@ -710,7 +588,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		describe('Delete at start of row', () => {
-			it('should merge with previous row when Delete pressed at start of non-first row', async () => {
+			it('merge with previous row when Delete pressed at start of non-first row', async () => {
 				const {container} = await render(<PlainTextDrag />)
 				const before = getAllRows(container).length
 
@@ -720,7 +598,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				expect(getAllRows(container)).toHaveLength(before - 1)
 			})
 
-			it('should preserve content of both merged rows', async () => {
+			it('preserve content of both merged rows', async () => {
 				const {container} = await render(<PlainTextDrag />)
 
 				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
@@ -731,7 +609,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				expect(raw).toContain('Second block of plain text')
 			})
 
-			it('should keep focus in the previous row after Delete merge', async () => {
+			it('keep focus in the previous row after Delete merge', async () => {
 				const {container} = await render(<PlainTextDrag />)
 
 				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
@@ -741,7 +619,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				expect(currentRows[0].contains(document.activeElement)).toBe(true)
 			})
 
-			it('should not merge when Delete pressed at start of first row', async () => {
+			it('not merge when Delete pressed at start of first row', async () => {
 				const {container} = await render(<PlainTextDrag />)
 				const before = getAllRows(container).length
 
@@ -753,30 +631,30 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		describe('Delete at mark→text boundary (navigate-only in drag mode)', () => {
-			it('should NOT reduce row count when Delete at start of text row after mark row', async () => {
+			it('NOT reduce row count when Delete at start of text row after mark row', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const before = getAllRows(container).length
+				const before = getBlocks(container).length
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[0]))
+				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(getAllRows(container)).toHaveLength(before)
+				expect(getBlocks(container)).toHaveLength(before)
 			})
 
-			it('should move focus to mark row on Delete at mark boundary', async () => {
+			it('move focus to mark row on Delete at mark boundary', async () => {
 				const {container} = await render(<MarkdownDrag />)
-				const markRow = getAllRows(container)[0]
+				const markBlock = getBlocks(container)[0]
 
-				await focusAtStart(getEditableInRow(getBlocks(container)[0]))
+				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(markRow.contains(document.activeElement)).toBe(true)
+				expect(markBlock.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
 
 	describe('typing in rows', () => {
-		it('should update raw value when typing a character at end of row', async () => {
+		it('update raw value when typing a character at end of row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
 			await userEvent.keyboard('!')
@@ -784,7 +662,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getRawValue(container)).toContain('First block of plain text!')
 		})
 
-		it('should update raw value when deleting a character with Backspace mid-row', async () => {
+		it('update raw value when deleting a character with Backspace mid-row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
 			await userEvent.keyboard('{Backspace}')
@@ -793,7 +671,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getRawValue(container)).not.toContain('First block of plain text\n\n')
 		})
 
-		it('should not wipe all rows when Ctrl+A in focused row then typing', async () => {
+		it('not wipe all rows when Ctrl+A in focused row then typing', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 
@@ -805,7 +683,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getRawValue(container)).toContain('First block of plain text')
 		})
 
-		it('should append character after last mark when typing at end of mark row', async () => {
+		it('append character after last mark when typing at end of mark row', async () => {
 			const {container} = await render(<MarkdownDrag />)
 			const markRow = getAllRows(container)[0]
 			const editable = getEditableInRow(markRow)
@@ -817,11 +695,11 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(block0Raw).toBe('# Welcome to Draggable Blocks!')
 		})
 
-		it.todo('should insert character at correct position mid-text within a mark row')
+		it.todo('insert character at correct position mid-text within a mark row')
 	})
 
 	describe('paste in rows', () => {
-		it('should update raw value when pasting text at end of a plain text row', async () => {
+		it('update raw value when pasting text at end of a plain text row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 			const editable = getEditableInRow(rows[0])
@@ -832,7 +710,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getRawValue(container)).toContain('First block of plain text pasted')
 		})
 
-		it('should not affect other rows when pasting in one row', async () => {
+		it('not affect other rows when pasting in one row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			const rows = getAllRows(container)
 			const editable = getEditableInRow(rows[0])
@@ -846,7 +724,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getAllRows(container)).toHaveLength(5)
 		})
 
-		it('should update raw value when pasting text at end of a mark row', async () => {
+		it('update raw value when pasting text at end of a mark row', async () => {
 			const {container} = await render(<MarkdownDrag />)
 			const markRow = getAllRows(container)[0]
 			const editable = getEditableInRow(markRow)
@@ -860,7 +738,7 @@ describe('Feature: drag row keyboard navigation', () => {
 	})
 
 	describe('Enter mid-row split', () => {
-		it('should increase row count by 1', async () => {
+		it('increase row count by 1', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInRow(getAllRows(container)[0])
@@ -872,7 +750,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
-		it('should put text before caret in current row', async () => {
+		it('put text before caret in current row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInRow(getAllRows(container)[0])
@@ -886,7 +764,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rowTexts[0]).toBe('First')
 		})
 
-		it('should put text after caret in new row', async () => {
+		it('put text after caret in new row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 
 			const editable = getEditableInRow(getAllRows(container)[0])
@@ -900,7 +778,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(rowTexts[1]).toBe(' block of plain text')
 		})
 
-		it('should insert new empty row after mark row when pressing Enter on mark', async () => {
+		it('insert new empty row after mark row when pressing Enter on mark', async () => {
 			const {container} = await render(<MarkdownDrag />)
 			const blocks = getBlocks(container)
 			const editable = getEditableInRow(blocks[0])

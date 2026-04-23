@@ -3,14 +3,14 @@ import {describe, expect, it} from 'vitest'
 import {escape} from './escape'
 
 describe(`Utility: ${escape.name}`, () => {
-	it('should escape all regex special characters', () => {
+	it('escape all regex special characters', () => {
 		const specialChars = '.*+?^${}()|[]\\'
 		const escaped = escape(specialChars)
 
 		expect(escaped).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\')
 	})
 
-	it('should NOT escape normal characters', () => {
+	it('NOT escape normal characters', () => {
 		expect(escape('hello world')).toBe('hello world')
 		expect(escape('#tag')).toBe('#tag')
 		expect(escape('a-b')).toBe('a-b')
@@ -18,7 +18,7 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escape('tab\there')).toBe('tab\there')
 	})
 
-	it('should escape individual special characters', () => {
+	it('escape individual special characters', () => {
 		expect(escape('.')).toBe('\\.')
 		expect(escape('*')).toBe('\\*')
 		expect(escape('+')).toBe('\\+')
@@ -35,24 +35,24 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(escape('\\')).toBe('\\\\')
 	})
 
-	it('should not escape normal characters', () => {
+	it('not escape normal characters', () => {
 		expect(escape('abc')).toBe('abc')
 		expect(escape('123')).toBe('123')
 		expect(escape('ABC')).toBe('ABC')
 		expect(escape('normal_string')).toBe('normal_string')
 	})
 
-	it('should handle empty string', () => {
+	it('handle empty string', () => {
 		expect(escape('')).toBe('')
 	})
 
-	it('should handle strings with mixed special and normal characters', () => {
+	it('handle strings with mixed special and normal characters', () => {
 		expect(escape('test.*+')).toBe('test\\.\\*\\+')
 		expect(escape('^start$')).toBe('\\^start\\$') // $ is now escaped
 		expect(escape('(group)|[set]')).toBe('\\(group\\)\\|\\[set\\]')
 	})
 
-	it('should be usable in regex construction', () => {
+	it('be usable in regex construction', () => {
 		const pattern = escape('test.*')
 		const regex = new RegExp(pattern)
 
@@ -60,19 +60,19 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(regex.test('testX*')).toBe(false)
 	})
 
-	it('should handle unicode characters', () => {
+	it('handle unicode characters', () => {
 		expect(escape('🚀')).toBe('🚀')
 		expect(escape('测试')).toBe('测试')
 		expect(escape('🚀.*')).toBe('🚀\\.\\*')
 	})
 
-	it('should handle repeated special characters', () => {
+	it('handle repeated special characters', () => {
 		expect(escape('..')).toBe('\\.\\.')
 		expect(escape('**')).toBe('\\*\\*')
 		expect(escape('++')).toBe('\\+\\+')
 	})
 
-	it('should handle complex regex patterns as input', () => {
+	it('handle complex regex patterns as input', () => {
 		const complexPattern = '^test.*(group1|group2)[0-9]+$'
 		const escaped = escape(complexPattern)
 
@@ -84,7 +84,7 @@ describe(`Utility: ${escape.name}`, () => {
 		expect(regex.test(complexPattern)).toBe(true)
 	})
 
-	it('should handle edge cases', () => {
+	it('handle edge cases', () => {
 		// Single character strings
 		expect(escape('a')).toBe('a')
 		expect(escape('.')).toBe('\\.')

@@ -57,7 +57,7 @@ describe('deleteMark', () => {
 		return [textToken1, markToken, textToken2]
 	}
 
-	it('should fire event.change after deleting a mark', () => {
+	it('fire event.change after deleting a mark', () => {
 		const onChange = vi.fn()
 		store.setProps({onChange})
 		setupDOM()
@@ -68,7 +68,7 @@ describe('deleteMark', () => {
 		expect(onChange).toHaveBeenCalled()
 	})
 
-	it('should merge adjacent text spans after deletion', () => {
+	it('merge adjacent text spans after deletion', () => {
 		const onChange = vi.fn()
 		store.setProps({onChange})
 		setupDOM()

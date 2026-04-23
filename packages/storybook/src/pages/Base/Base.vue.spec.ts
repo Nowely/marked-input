@@ -15,9 +15,9 @@ import * as BaseStories from './Base.vue.stories'
 const {Default} = composeStories(BaseStories)
 
 describe('Component: MarkedInput', () => {
-	it.todo('should set readOnly on selection')
+	it.todo('set readOnly on selection')
 
-	it('should correct process an annotation type', async () => {
+	it('correctly process an annotation type', async () => {
 		const Mark = defineComponent({
 			props: {value: String, meta: String},
 			setup(props) {
@@ -69,7 +69,7 @@ describe('Component: MarkedInput', () => {
 		},
 	})
 
-	it('should support ref focusing target', async () => {
+	it('support ref focusing target', async () => {
 		await render(
 			withProps(Default, {
 				Mark: FocusableMark,
@@ -100,7 +100,7 @@ describe('Component: MarkedInput', () => {
 		await expect.element(secondSpan).toHaveFocus()
 	})
 
-	it('should support remove itself', async () => {
+	it('support remove itself', async () => {
 		await render(
 			withProps(Default, {
 				Mark: RemovableMark,
@@ -117,7 +117,7 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText('marks')).not.toBeInTheDocument()
 	})
 
-	it('should support editable marks', async () => {
+	it('support editable marks', async () => {
 		await render(
 			withProps(Default, {
 				Mark: FocusableMark,
@@ -130,9 +130,10 @@ describe('Component: MarkedInput', () => {
 		await userEvent.keyboard('123')
 
 		await expect.element(page.getByText('world123').first()).toBeInTheDocument()
+		await expect.element(page.getByTitle('Hello! Hello!')).toHaveTextContent('world123')
 	})
 
-	it('should support to pass a forward overlay', async () => {
+	it('support to pass a forward overlay', async () => {
 		const Overlay = defineComponent({
 			setup() {
 				return () => h('span', null, "I'm here!")
@@ -156,7 +157,7 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText("I'm here!")).toBeInTheDocument()
 	})
 
-	it('should not create empty mark when pressing Enter in overlay without selection', async () => {
+	it('not create empty mark when pressing Enter in overlay without selection', async () => {
 		const Mark = defineComponent({
 			props: {value: String},
 			setup(props) {
@@ -188,5 +189,5 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText('three')).not.toBeInTheDocument()
 	})
 
-	it.todo('should be selectable')
+	it.todo('be selectable')
 })

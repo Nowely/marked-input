@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 import {assertNonNullable} from './assertNonNullable'
 
 describe(`Utility: ${assertNonNullable.name}`, () => {
-	it('should not throw for truthy values', () => {
+	it('not throw for truthy values', () => {
 		expect(() => assertNonNullable('string')).not.toThrow()
 		expect(() => assertNonNullable(42)).not.toThrow()
 		expect(() => assertNonNullable(true)).not.toThrow()
@@ -12,27 +12,27 @@ describe(`Utility: ${assertNonNullable.name}`, () => {
 		expect(() => assertNonNullable(() => {})).not.toThrow()
 	})
 
-	it('should not throw for zero', () => {
+	it('not throw for zero', () => {
 		expect(() => assertNonNullable(0)).not.toThrow()
 	})
 
-	it('should not throw for empty string', () => {
+	it('not throw for empty string', () => {
 		expect(() => assertNonNullable('')).not.toThrow()
 	})
 
-	it('should not throw for false', () => {
+	it('not throw for false', () => {
 		expect(() => assertNonNullable(false)).not.toThrow()
 	})
 
-	it('should throw for null', () => {
+	it('throw for null', () => {
 		expect(() => assertNonNullable(null)).toThrow('Value must be a non nullable!')
 	})
 
-	it('should throw for undefined', () => {
+	it('throw for undefined', () => {
 		expect(() => assertNonNullable(undefined)).toThrow('Value must be a non nullable!')
 	})
 
-	it('should work with generic types', () => {
+	it('work with generic types', () => {
 		const value: string | null = 'test'
 		assertNonNullable(value)
 		// TypeScript should infer that value is now string
@@ -42,7 +42,7 @@ describe(`Utility: ${assertNonNullable.name}`, () => {
 		expect(() => assertNonNullable(nullableValue)).toThrow('Value must be a non nullable!')
 	})
 
-	it('should handle complex objects', () => {
+	it('handle complex objects', () => {
 		const validObject = {nested: {value: 'test'}}
 		expect(() => assertNonNullable(validObject)).not.toThrow()
 

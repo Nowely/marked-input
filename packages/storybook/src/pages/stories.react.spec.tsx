@@ -37,7 +37,7 @@ const getTests =
 describe('Component: stories', () => {
 	for (const [category, stories] of storiesByCategory.entries()) {
 		describe(`${category} stories`, () => {
-			Object.entries(stories).map(getTests())
+			Object.entries(stories).forEach(getTests())
 		})
 	}
 })

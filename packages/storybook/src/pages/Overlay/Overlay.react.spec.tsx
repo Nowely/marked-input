@@ -12,7 +12,7 @@ const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
 
 describe('API: Overlay and Triggers', () => {
-	it('should work with empty options array', async () => {
+	it('work with empty options array', async () => {
 		const {container} = await render(<DefaultOverlay options={[]} />)
 
 		const element = firstChild(firstChild(container)!)!
@@ -22,7 +22,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
-	it('should typed with default values of options', async () => {
+	it('typed with default values of options', async () => {
 		const {container} = await render(<DefaultOverlay />)
 
 		const element = firstChild(firstChild(container)!)!
@@ -32,7 +32,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText(DefaultOverlay.args.defaultValue + 'abc')).toBeInTheDocument()
 	})
 
-	it('should appear a overlay component by trigger', async () => {
+	it('appear a overlay component by trigger', async () => {
 		const {container} = await render(
 			<Default
 				defaultValue="Hello "
@@ -57,7 +57,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 
-	it('should reopen overlay after closing', async () => {
+	it('reopen overlay after closing', async () => {
 		const {container} = await render(
 			<Default
 				defaultValue="Hello "
@@ -89,7 +89,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByText('Item')).toBeInTheDocument()
 	})
 
-	it('should convert selection to mark token, not raw annotation', async () => {
+	it('convert selection to mark token, not raw annotation', async () => {
 		const {container} = await render(
 			<Default
 				defaultValue="Hello "
@@ -117,7 +117,7 @@ describe('API: Overlay and Triggers', () => {
 		await expect.element(page.getByRole('mark')).toBeInTheDocument()
 	})
 
-	it('should restore focus after selection from overlay', async () => {
+	it('restore focus after selection from overlay', async () => {
 		// Use a value with existing marks so the new mark is inserted in the MIDDLE.
 		// This distinguishes "focus after mark" (childIndex + 2) from "focus at tail".
 		// After parse: [span("Start "), mark("A"), span(" mid "), mark("B"), span(" end")]

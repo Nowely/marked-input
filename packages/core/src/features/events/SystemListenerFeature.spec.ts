@@ -14,7 +14,7 @@ describe('SystemListenerFeature', () => {
 	})
 
 	describe('enable()', () => {
-		it('should react to change event after enable', () => {
+		it('react to change event after enable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -27,7 +27,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).toHaveBeenCalled()
 		})
 
-		it('should be idempotent — calling enable twice does not double-subscribe', () => {
+		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			store.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
@@ -40,7 +40,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
 
-		it('should react to delete event with correct token', () => {
+		it('react to delete event with correct token', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -62,7 +62,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).toHaveBeenCalled()
 		})
 
-		it('should ignore markRemove events for tokens that are not in state', () => {
+		it('ignore markRemove events for tokens that are not in state', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -78,7 +78,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).not.toHaveBeenCalled()
 		})
 
-		it('should react to select event with mark and match', () => {
+		it('react to select event with mark and match', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 
@@ -101,11 +101,15 @@ describe('SystemListenerFeature', () => {
 			} as unknown as OverlayMatch
 
 			store.emit.overlaySelect({mark, match})
+
+			expect(store.state.recovery()).toBeDefined()
+			expect(store.state.recovery()?.caret).toBe('[$1](user:$1)'.length)
+			expect(onChange).not.toHaveBeenCalled()
 		})
 	})
 
 	describe('disable()', () => {
-		it('should stop reacting to events after disable', () => {
+		it('stop reacting to events after disable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -118,7 +122,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).not.toHaveBeenCalled()
 		})
 
-		it('should stop reacting to markRemove events after disable', () => {
+		it('stop reacting to markRemove events after disable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -132,7 +136,7 @@ describe('SystemListenerFeature', () => {
 			expect(onChange).not.toHaveBeenCalled()
 		})
 
-		it('should allow re-enabling after disable', () => {
+		it('allow re-enabling after disable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])

@@ -18,7 +18,7 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 - `pnpm run dev:sb:react` / `pnpm run dev:sb:vue` — Individual Storybook dev servers
 - `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
 
-Run a single test file: `pnpm --filter @markput/core exec vitest run path/to/file.spec.ts`
+Run a single test file: `pnpm -w vitest run path/to/file.spec.ts`
 
 ### Before submitting — run all checks
 
@@ -89,6 +89,11 @@ Detailed docs live in `packages/website/src/content/docs/`:
 - **Component tests**: Vitest Browser Mode + Playwright (Chromium) in storybook packages
 - `pnpm test` (all), `pnpm test:watch`, `pnpm test:coverage`
 - All new public functions in core must have a co-located `.spec.ts` file
+- Test names use imperative present without "should":
+    - Good: `it('returns undefined when token missing')`
+    - Good: `it('emits change on mark remove')`
+    - Bad: `it('should return undefined ...')`
+    - Bad: `it('when token is missing, returns undefined')`
 
 ### Writing core unit tests
 
@@ -97,7 +102,7 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 describe('Feature', () => {
     beforeEach(() => vi.clearAllMocks())
-    it('should ...', () => {
+    it('does something', () => {
         /* ... */
     })
 })
@@ -119,7 +124,7 @@ import * as Stories from './Component.react.stories'
 
 const {Default} = composeStories(Stories)
 
-it('should handle input', async () => {
+it('handles input', async () => {
   await render(<Default />)
   await userEvent.type(page.getByRole('textbox'), 'hello')
   await expect.element(page.getByText('hello')).toBeVisible()

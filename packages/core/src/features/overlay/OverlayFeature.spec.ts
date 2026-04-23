@@ -34,7 +34,7 @@ describe('OverlayFeature', () => {
 			controller.disable()
 		})
 
-		it('should clear overlayMatch when overlayClose is emitted', () => {
+		it('clear overlayMatch when overlayClose is emitted', () => {
 			controller.enable()
 
 			store.state.overlayMatch(stubMatch)
@@ -44,7 +44,7 @@ describe('OverlayFeature', () => {
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
 
-		it('should react to change event when showOverlayOn includes change', () => {
+		it('react to change event when showOverlayOn includes change', () => {
 			store.setProps({showOverlayOn: 'change'})
 			controller.enable()
 
@@ -55,7 +55,7 @@ describe('OverlayFeature', () => {
 			expect(store.state.overlayMatch()).toBeUndefined()
 		})
 
-		it('should not react to change event when showOverlayOn does not include change', () => {
+		it('not react to change event when showOverlayOn does not include change', () => {
 			store.setProps({showOverlayOn: 'selectionChange'})
 			controller.enable()
 
@@ -66,7 +66,7 @@ describe('OverlayFeature', () => {
 			expect(store.state.overlayMatch()).toBe(stubMatch)
 		})
 
-		it('should be idempotent — calling enable twice does not double-subscribe', () => {
+		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			controller.enable()
 			controller.enable()
 
@@ -79,7 +79,7 @@ describe('OverlayFeature', () => {
 	})
 
 	describe('disable()', () => {
-		it('should stop reacting to events after disable', () => {
+		it('stop reacting to events after disable', () => {
 			controller.enable()
 			controller.disable()
 
@@ -91,7 +91,7 @@ describe('OverlayFeature', () => {
 			expect(store.state.overlayMatch()).toBe(stubMatch)
 		})
 
-		it('should allow re-enabling after disable', () => {
+		it('allow re-enabling after disable', () => {
 			controller.enable()
 			controller.disable()
 			controller.enable()

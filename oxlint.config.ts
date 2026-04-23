@@ -110,6 +110,12 @@ export default defineConfig({
 				'typescript/no-unsafe-call': 'off',
 			},
 		},
+		{
+			files: ['**/vite.config.ts'],
+			rules: {
+				'typescript/no-unsafe-call': 'off',
+			},
+		},
 	],
 	ignorePatterns: ['packages/website/**', 'packages/core/src/shared/signals/alien-signals/**'],
 	settings: {

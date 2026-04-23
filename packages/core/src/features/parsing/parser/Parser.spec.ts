@@ -1,9 +1,16 @@
 import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
+import {countMarks, dedent, findMaxDepth, tokensToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'
 import type {MarkToken, Markup, Token} from './types'
 import {isMarkToken} from './types'
+
+const FAKER_SEED = 12345
+
+beforeEach(() => {
+	faker.seed(FAKER_SEED)
+})
 
 function getMarkToken(tokens: Token[]): MarkToken {
 	const mark = tokens.find(isMarkToken)
@@ -12,7 +19,7 @@ function getMarkToken(tokens: Token[]): MarkToken {
 	return mark
 }
 
-describe('ParserV2', () => {
+describe('Parser', () => {
 	let parser: Parser
 	let markups: Markup[]
 
@@ -22,7 +29,7 @@ describe('ParserV2', () => {
 	})
 
 	describe('static split', () => {
-		it('should parse text with provided options and return Token[]', () => {
+		it('parse text with provided options and return Token[]', () => {
 			const value = 'Hello @[world](test) and #[tag]'
 			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
 
@@ -37,7 +44,7 @@ describe('ParserV2', () => {
 			`)
 		})
 
-		it('should handle text without options', () => {
+		it('handle text without options', () => {
 			const value = 'Hello world'
 			const result = Parser.parse(value)
 
@@ -46,7 +53,7 @@ describe('ParserV2', () => {
 	})
 
 	describe('static join', () => {
-		it('should convert tokens back to string with provided options', () => {
+		it('convert tokens back to string with provided options', () => {
 			const value = 'Hello @[world](test) and #[tag]'
 			const options: {markup: Markup[]} = {markup: ['@[__value__](__meta__)', '#[__value__]']}
 
@@ -56,7 +63,7 @@ describe('ParserV2', () => {
 			expect(result).toBe(value)
 		})
 
-		it('should handle tokens without options', () => {
+		it('handle tokens without options', () => {
 			const value = 'Hello world'
 			const tokens = Parser.parse(value)
 			const result = Parser.stringify(tokens)
@@ -464,7 +471,7 @@ describe('ParserV2', () => {
 			})
 
 			describe('validation', () => {
-				it('should count marks correctly', () => {
+				it('count marks correctly', () => {
 					const input = 'Hello @[world](test) and #[tag1] #[tag2]'
 					const result = parser.parse(input)
 					const markCount = countMarks(result)
@@ -472,7 +479,7 @@ describe('ParserV2', () => {
 					expect(markCount).toMatchInlineSnapshot(`3`)
 				})
 
-				it('should calculate max depth correctly', () => {
+				it('calculate max depth correctly', () => {
 					const input = 'Hello @[world](test)'
 					const result = parser.parse(input)
 					const maxDepth = findMaxDepth(result)
@@ -673,7 +680,7 @@ describe('ParserV2', () => {
 		})
 
 		describe('escape and unescape', () => {
-			it('should escape complete patterns using backslash', () => {
+			it('escape complete patterns using backslash', () => {
 				const parser = new Parser(['**__slot__**', '@[__value__]'])
 
 				const testInput = 'Hello **world** and @[user]'
@@ -682,7 +689,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('Hello \\*\\*world\\*\\* and \\@\\[user\\]')
 			})
 
-			it('should escape patterns with nested content', () => {
+			it('escape patterns with nested content', () => {
 				const parser = new Parser(['@[__slot__]'])
 
 				const testInput = '@[user **bold** text]'
@@ -691,7 +698,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('\\@\\[user **bold** text\\]')
 			})
 
-			it('should handle empty text', () => {
+			it('handle empty text', () => {
 				const parser = new Parser(['**__slot__**'])
 
 				const result = parser.escape('')
@@ -699,7 +706,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('')
 			})
 
-			it('should handle text without patterns', () => {
+			it('handle text without patterns', () => {
 				const parser = new Parser(['**__slot__**'])
 
 				const testInput = 'Hello world'
@@ -708,7 +715,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('Hello world')
 			})
 
-			it('should unescape patterns', () => {
+			it('unescape patterns', () => {
 				const parser = new Parser(['**__slot__**', '@[__value__]'])
 
 				const escapedInput = 'Hello \\*\\*world\\*\\* and \\@[user]'
@@ -717,7 +724,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('Hello **world** and @[user]')
 			})
 
-			it('should unescape nested patterns', () => {
+			it('unescape nested patterns', () => {
 				const parser = new Parser(['**__slot__**', '@[__slot__]'])
 
 				const escapedInput = '\\@[user \\*\\*bold\\*\\* text]'
@@ -726,7 +733,7 @@ describe('ParserV2', () => {
 				expect(result).toBe('@[user **bold** text]')
 			})
 
-			it('should round-trip correctly', () => {
+			it('round-trip correctly', () => {
 				const parser = new Parser(['**__slot__**', '@[__value__](__meta__)'])
 
 				const original = 'Hello **world** and @[user](admin)'
@@ -736,7 +743,7 @@ describe('ParserV2', () => {
 				expect(unescaped).toBe(original)
 			})
 
-			it('should handle multiple patterns correctly', () => {
+			it('handle multiple patterns correctly', () => {
 				const parser = new Parser(['**__slot__**', '@[__value__]', '#[__value__]'])
 
 				const testInput = '**bold** @[user] #[tag]'
@@ -763,7 +770,7 @@ describe('ParserV2', () => {
 				`)
 			})
 
-			it('should handle complex nested structures', () => {
+			it('handle complex nested structures', () => {
 				const input = 'User @[john](John Doe) mentioned #[urgent] task'
 				const result = parser.parse(input)
 
@@ -776,7 +783,7 @@ describe('ParserV2', () => {
 				`)
 			})
 
-			it('should handle incomplete markup gracefully', () => {
+			it('handle incomplete markup gracefully', () => {
 				const inputs = ['@[incomplete', '#[', '**[']
 
 				inputs.forEach(input => {
@@ -1256,7 +1263,7 @@ describe('ParserV2', () => {
 	})
 
 	describe('Integration tests with diverse data', () => {
-		it('should handle diverse user names and content', () => {
+		it('handle diverse user names and content', () => {
 			const testCases = Array.from({length: 20}, () => {
 				const userName = faker.person.firstName()
 				const userValue = faker.person.lastName()
@@ -1278,7 +1285,7 @@ describe('ParserV2', () => {
 			})
 		})
 
-		it('should handle diverse hashtags and topics', () => {
+		it('handle diverse hashtags and topics', () => {
 			const testCases = Array.from({length: 15}, () => {
 				const hashtag1 = faker.word.words(1)
 				const hashtag2 = faker.word.words(1)
@@ -1299,7 +1306,7 @@ describe('ParserV2', () => {
 			})
 		})
 
-		it('should handle mixed content with various formats', () => {
+		it('handle mixed content with various formats', () => {
 			const testCases = Array.from({length: 25}, () => {
 				const userName = faker.internet.username()
 				const project = faker.commerce.productName()
@@ -1324,8 +1331,7 @@ describe('ParserV2', () => {
 			})
 		})
 
-		it('should handle complex nested structures with diverse content', () => {
-			//const parser = new ParserV2(['@[__slot__]($__value__)', '#[__slot__]'])
+		it('handle complex nested structures with diverse content', () => {
 			const testCases = Array.from({length: 15}, () => {
 				const outerName = parser.escape(faker.company.name())
 				const innerTag = parser.escape(faker.word.noun())
@@ -1350,7 +1356,7 @@ describe('ParserV2', () => {
 			})
 		})
 
-		it('should handle various text lengths and complexity', () => {
+		it('handle various text lengths and complexity', () => {
 			const testCases = [
 				// Very short
 				{text: 'Hi @[user](name)!', expectedMarks: 1},
@@ -1380,7 +1386,7 @@ describe('ParserV2', () => {
 		})
 
 		describe('join', () => {
-			it('should convert tokens back to original string', () => {
+			it('convert tokens back to original string', () => {
 				const parser = new Parser(['@[__value__](__meta__)', '#[__value__]'])
 				const input = 'Hello @[world](test) and #[tag]'
 
@@ -1390,7 +1396,7 @@ describe('ParserV2', () => {
 				expect(result).toBe(input)
 			})
 
-			it('should handle nested tokens', () => {
+			it('handle nested tokens', () => {
 				const parser = new Parser(['@[__slot__](__meta__)', '#[__value__]'])
 				const input = 'Check @[#[urgent] task](priority)'
 
@@ -1400,7 +1406,7 @@ describe('ParserV2', () => {
 				expect(result).toBe(input)
 			})
 
-			it('should handle plain text tokens', () => {
+			it('handle plain text tokens', () => {
 				const parser = new Parser(['@[__value__]'])
 				const input = 'Hello world'
 
@@ -1618,173 +1624,3 @@ describe('ParserV2', () => {
 		})
 	})
 })
-
-function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {
-	const lines: string[] = []
-
-	tokens.forEach((token, index) => {
-		const currentPrefix = prefix + (prefix ? '.' : '') + index
-		const indent = level > 0 ? '\t'.repeat(level) : ''
-		const paddedPrefix = level === 0 && index > 0 ? ` ${currentPrefix}` : currentPrefix
-
-		if (token.type === 'text') {
-			const content = `"${escapeString(token.content)}"`
-			lines.push(`${indent}${paddedPrefix}: TEXT ${content} [${token.position.start}-${token.position.end}]`)
-		} else {
-			let infoParts = [`value="${escapeString(token.value)}"`]
-
-			if (token.meta !== undefined) {
-				infoParts.push(`meta="${escapeString(token.meta)}"`)
-			}
-
-			if (token.slot) {
-				infoParts.push(`slot="${escapeString(token.slot.content)}"`)
-			}
-
-			const labelValueInfo = `[${infoParts.join(', ')}]`
-
-			lines.push(
-				`${indent}${paddedPrefix}: MARK "${escapeString(token.content)}" [${token.position.start}-${token.position.end}] ${labelValueInfo}`
-			)
-
-			if (token.children.length > 0) {
-				const childLines = tokensToDebugTree(token.children, level + 1, currentPrefix)
-				if (childLines.trim()) {
-					lines.push(childLines)
-				}
-			}
-		}
-	})
-
-	return lines.join('\n')
-
-	function escapeString(str: string): string {
-		return str
-			.replace(/\n/g, '↲') // Newline (down-left arrow)
-			.replace(/\r/g, '⏎') // Carriage return (left arrow)
-			.replace(/\t/g, '⇥') // Tab (right-up arrow)
-	}
-}
-
-/**
- * Counts total number of marks in the tree
- */
-function countMarks(tokens: Token[]): number {
-	// Recursively count only mark types
-	const countInNode = (node: Token): number => {
-		let nodeCount = node.type === 'mark' ? 1 : 0
-
-		if (node.type === 'mark') {
-			nodeCount += node.children.reduce((sum, child) => sum + countInNode(child), 0)
-		}
-
-		return nodeCount
-	}
-
-	return tokens.reduce((sum, token) => sum + countInNode(token), 0)
-}
-
-/**
- * Finds maximum nesting depth
- */
-function findMaxDepth(tokens: Token[]): number {
-	// Find maximum depth among all tokens
-	const findDepth = (node: Token): number => {
-		if (node.type === 'text') {
-			return 0
-		}
-
-		if (node.children.length === 0) {
-			return 1 // mark without children has depth 1
-		}
-
-		const childrenDepths = node.children.map(child => findDepth(child))
-		const maxChildDepth = childrenDepths.length > 0 ? Math.max(...childrenDepths) : 0
-
-		return maxChildDepth + 1
-	}
-
-	if (tokens.length === 0) {
-		return 0
-	}
-
-	const depths = tokens.map(token => findDepth(token))
-	return Math.max(...depths)
-}
-
-/**
- * Tagged template function that removes common leading whitespace from each line
- * and trims empty lines from the beginning and end.
- *
- * @param strings - Template strings array
- * @param values - Interpolation values
- * @returns The dedented string
- *
- * @example
- * ```typescript
- * const text = dedent`
- *   Hello world
- *   This is indented
- *   And this too
- * `;
- * // Result: "Hello world\nThis is indented\nAnd this too"
- * ```
- */
-function dedent(strings: TemplateStringsArray, ...values: unknown[]): string {
-	// Combine template strings with interpolated values
-	let result = strings[0]
-	for (let i = 0; i < values.length; i++) {
-		result += String(values[i]) + strings[i + 1]
-	}
-
-	// Split into lines
-	const lines = result.split('\n')
-
-	// Remove empty lines from start and end
-	let startIndex = 0
-	let endIndex = lines.length - 1
-
-	// Find first non-empty line
-	while (startIndex < lines.length && lines[startIndex].trim() === '') {
-		startIndex++
-	}
-
-	// Find last non-empty line
-	while (endIndex >= 0 && lines[endIndex].trim() === '') {
-		endIndex--
-	}
-
-	// If all lines are empty, return empty string
-	if (startIndex > endIndex) {
-		return ''
-	}
-
-	// Extract the content lines
-	const contentLines = lines.slice(startIndex, endIndex + 1)
-
-	// Find the minimum indentation (excluding empty lines)
-	let minIndent = Infinity
-	for (const line of contentLines) {
-		if (line.trim() === '') continue
-
-		const indent = line.length - line.trimStart().length
-		if (indent < minIndent) {
-			minIndent = indent
-		}
-	}
-
-	// If no indentation found, return as is
-	if (minIndent === Infinity || minIndent === 0) {
-		return contentLines.join('\n')
-	}
-
-	// Remove common indentation from each line
-	const dedentedLines = contentLines.map(line => {
-		if (line.trim() === '') {
-			return ''
-		}
-		return line.slice(minIndent)
-	})
-
-	return dedentedLines.join('\n')
-}

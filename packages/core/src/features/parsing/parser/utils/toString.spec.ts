@@ -5,7 +5,7 @@ import type {Markup} from '../types'
 import {toString} from './toString'
 
 describe('Utility: toString', () => {
-	it('should reconstruct simple annotated text', () => {
+	it('reconstruct simple annotated text', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[Hello](world)'
 		const tokens = new Parser([markup]).parse(text)
@@ -13,7 +13,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should reconstruct text with multiple annotations', () => {
+	it('reconstruct text with multiple annotations', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[First](1) and @[Second](2)'
 		const tokens = new Parser([markup]).parse(text)
@@ -21,7 +21,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should reconstruct nested annotations', () => {
+	it('reconstruct nested annotations', () => {
 		const markup1: Markup = '@[__slot__]'
 		const markup2: Markup = '#[__slot__]'
 		const text = '@[Hello #[world]]'
@@ -30,7 +30,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should handle plain text', () => {
+	it('handle plain text', () => {
 		const markup: Markup = '@[__value__]'
 		const text = 'Plain text without markup'
 		const tokens = new Parser([markup]).parse(text)
@@ -38,7 +38,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should handle empty text', () => {
+	it('handle empty text', () => {
 		const markup: Markup = '@[__value__]'
 		const text = ''
 		const tokens = new Parser([markup]).parse(text)
@@ -46,7 +46,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should reconstruct complex nested structure', () => {
+	it('reconstruct complex nested structure', () => {
 		const markup1: Markup = '@[__value__](__slot__)'
 		const markup2: Markup = '#[__slot__]'
 		const text = '@[user](Hello #[world])'
@@ -55,7 +55,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should handle mixed value and nested', () => {
+	it('handle mixed value and nested', () => {
 		const markups: Markup[] = ['@[__value__](__meta__)', '#[__value__]']
 		const text = '@[Hello](world) and #[tag]'
 		const tokens = new Parser(markups).parse(text)
@@ -63,7 +63,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should reconstruct HTML-like patterns', () => {
+	it('reconstruct HTML-like patterns', () => {
 		const markup: Markup = '<__value__>__slot__</__value__>'
 		const text = '<div>Content here</div>'
 		const tokens = new Parser([markup]).parse(text)
@@ -71,7 +71,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should handle adjacent annotations', () => {
+	it('handle adjacent annotations', () => {
 		const markup: Markup = '@[__value__]'
 		const text = '@[First]@[Second]'
 		const tokens = new Parser([markup]).parse(text)
@@ -79,7 +79,7 @@ describe('Utility: toString', () => {
 		expect(result).toBe(text)
 	})
 
-	it('should handle empty values', () => {
+	it('handle empty values', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const text = '@[]() @[label]()'
 		const tokens = new Parser([markup]).parse(text)
