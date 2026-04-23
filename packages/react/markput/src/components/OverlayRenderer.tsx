@@ -5,17 +5,17 @@ import {Suggestions} from './Suggestions'
 
 export const OverlayRenderer = memo(() => {
 	const {
-		overlayMatch,
+		match,
 		key: keyGen,
 		resolveOverlay,
 	} = useMarkput(s => ({
-		overlayMatch: s.overlay.overlayMatch,
+		match: s.overlay.match,
 		key: s.key,
-		resolveOverlay: s.overlay.overlaySlot,
+		resolveOverlay: s.overlay.slot,
 	}))
-	const key = useMemo(() => (overlayMatch ? keyGen.get(overlayMatch.option) : undefined), [overlayMatch])
+	const key = useMemo(() => (match ? keyGen.get(match.option) : undefined), [match])
 
-	const [Overlay, props] = resolveOverlay(overlayMatch?.option, Suggestions)
+	const [Overlay, props] = resolveOverlay(match?.option, Suggestions)
 
 	if (!key) return
 

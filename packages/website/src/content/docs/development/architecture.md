@@ -108,7 +108,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 2. OverlayFeature runs a trigger probe (on `store.value.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
 3. If found:
-   - store.overlay.overlayMatch set
+   - store.overlay.match set
         ↓
 4. Overlay component receives match via useOverlay()
         ↓
@@ -117,11 +117,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.overlay.overlaySelect() emitted
+7. store.overlay.select() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.overlay.overlayClose() closes overlay
+9. store.overlay.close() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -219,8 +219,8 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | --------------- | -------------- | --------------------------- | -------------------------------- |
 | `change`        | value          | Text content changes        | `void`                           |
 | `reparse`       | parsing        | Re-parse triggered          | `void`                           |
-| `overlayClose`  | overlay        | Close overlay               | `void`                           |
-| `overlaySelect` | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `close`         | overlay        | Close overlay               | `void`                           |
+| `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `remove`        | mark           | Mark removed                | `{ token: Token }`               |
 | `reconcile`     | dom            | Post-render DOM alignment   | `void`                           |
 | `rendered`      | lifecycle      | After tokens render         | `void`                           |
@@ -310,7 +310,7 @@ class Store {
         value: ValueFeature            // last, next, current, change event
         parsing: ParsingFeature        // tokens, parser, reparse event
         mark: MarkFeature              // enabled, slot, remove event
-        overlay: OverlayFeature        // overlayMatch, overlay, overlaySelect, overlayClose
+        overlay: OverlayFeature        // match, element, slot, select, close
         slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
         caret: CaretFeature            // recovery, selecting (merged Focus + TextSelection)
         keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)

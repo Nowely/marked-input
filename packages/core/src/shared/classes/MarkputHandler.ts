@@ -8,7 +8,7 @@ export class MarkputHandler {
 	}
 
 	get overlay() {
-		return this.store.overlay.overlay()
+		return this.store.overlay.element()
 	}
 
 	focus() {

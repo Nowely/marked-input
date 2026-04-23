@@ -68,7 +68,7 @@ export interface MarkputState {
 	last: string | undefined
 	recovery: Recovery | undefined
 	selecting: 'drag' | 'all' | undefined
-	overlayMatch: OverlayMatch | undefined
+	match: OverlayMatch | undefined
 	/** Annotated text with markups for mark */
 	value: string | undefined
 	/** Default value */
