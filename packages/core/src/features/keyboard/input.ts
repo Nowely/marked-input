@@ -7,94 +7,83 @@ import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clip
 import {deleteMark} from '../editing/utils/deleteMark'
 import {isFullSelection} from '../selection'
 
-export class InputFeature {
-	#scope?: () => void
+export function enableInput(store: Store): () => void {
+	const container = store.state.container()
+	if (!container) return () => {}
 
-	constructor(private readonly store: Store) {}
-
-	enable() {
-		if (this.#scope) return
-
-		const container = this.store.state.container()
-		if (!container) return
-
-		this.#scope = effectScope(() => {
-			listen(container, 'keydown', e => {
-				if (!this.store.computed.isBlock()) {
-					this.#handleDelete(e)
-				}
-			})
-
-			listen(container, 'paste', e => {
-				const c = this.store.state.container()
-				if (c) captureMarkupPaste(e, c)
-				handlePaste(this.store, e)
-			})
-
-			listen(
-				container,
-				'beforeinput',
-				e => {
-					handleBeforeInput(this.store, e)
-				},
-				true
-			)
-		})
-	}
-
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
-	}
-
-	#handleDelete(event: KeyboardEvent) {
-		const {focus} = this.store.nodes
-
-		if (event.key !== KEYBOARD.DELETE && event.key !== KEYBOARD.BACKSPACE) return
-
-		if (focus.isMark) {
-			if (focus.isEditable) {
-				if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
-				if (event.key === KEYBOARD.DELETE && !focus.isCaretAtEnd) return
+	const scope = effectScope(() => {
+		listen(container, 'keydown', e => {
+			if (!store.computed.isBlock()) {
+				handleDelete(store, e)
 			}
+		})
+
+		listen(container, 'paste', e => {
+			const c = store.state.container()
+			if (c) captureMarkupPaste(e, c)
+			handlePaste(store, e)
+		})
+
+		listen(
+			container,
+			'beforeinput',
+			e => {
+				handleBeforeInput(store, e)
+			},
+			true
+		)
+	})
+
+	return () => scope()
+}
+
+function handleDelete(store: Store, event: KeyboardEvent) {
+	const {focus} = store.nodes
+
+	if (event.key !== KEYBOARD.DELETE && event.key !== KEYBOARD.BACKSPACE) return
+
+	if (focus.isMark) {
+		if (focus.isEditable) {
+			if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
+			if (event.key === KEYBOARD.DELETE && !focus.isCaretAtEnd) return
+		}
+		event.preventDefault()
+		deleteMark('self', store)
+		return
+	}
+
+	if (event.key === KEYBOARD.BACKSPACE) {
+		if (focus.isSpan && focus.isCaretAtBeginning && focus.prev.target) {
 			event.preventDefault()
-			deleteMark('self', this.store)
+			deleteMark('prev', store)
 			return
 		}
+	}
 
-		if (event.key === KEYBOARD.BACKSPACE) {
-			if (focus.isSpan && focus.isCaretAtBeginning && focus.prev.target) {
-				event.preventDefault()
-				deleteMark('prev', this.store)
-				return
-			}
+	if (event.key === KEYBOARD.DELETE) {
+		if (focus.isSpan && focus.isCaretAtEnd && focus.next.target) {
+			event.preventDefault()
+			deleteMark('next', store)
+			return
 		}
+	}
 
-		if (event.key === KEYBOARD.DELETE) {
-			if (focus.isSpan && focus.isCaretAtEnd && focus.next.target) {
-				event.preventDefault()
-				deleteMark('next', this.store)
-				return
-			}
+	if (focus.isSpan && focus.isEditable && window.getSelection()?.isCollapsed) {
+		const content = focus.content
+		const caret = focus.caret
+		if (event.key === KEYBOARD.BACKSPACE && caret > 0) {
+			event.preventDefault()
+			focus.content = content.slice(0, caret - 1) + content.slice(caret)
+			focus.caret = caret - 1
+			store.feature.value.emit.change()
+			return
 		}
-
-		if (focus.isSpan && focus.isEditable && window.getSelection()?.isCollapsed) {
-			const content = focus.content
-			const caret = focus.caret
-			if (event.key === KEYBOARD.BACKSPACE && caret > 0) {
-				event.preventDefault()
-				focus.content = content.slice(0, caret - 1) + content.slice(caret)
-				focus.caret = caret - 1
-				this.store.feature.value.emit.change()
-				return
-			}
-			if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
-				event.preventDefault()
-				focus.content = content.slice(0, caret) + content.slice(caret + 1)
-				focus.caret = caret
-				this.store.feature.value.emit.change()
-				return
-			}
+		if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
+			event.preventDefault()
+			focus.content = content.slice(0, caret) + content.slice(caret + 1)
+			focus.caret = caret
+			store.feature.value.emit.change()
+			return
 		}
 	}
 }

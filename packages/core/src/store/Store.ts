@@ -1,11 +1,9 @@
-import {ArrowNavFeature} from '../features/arrownav'
-import {BlockEditFeature} from '../features/block-editing'
 import {ClipboardFeature} from '../features/clipboard'
 import {DragFeature} from '../features/drag'
 import {ContentEditableFeature} from '../features/editable'
 import {SystemListenerFeature} from '../features/events'
 import {FocusFeature} from '../features/focus'
-import {InputFeature} from '../features/input'
+import {KeyboardFeature} from '../features/keyboard'
 import {LifecycleFeature} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
 import {OverlayFeature} from '../features/overlay'
@@ -119,9 +117,7 @@ export class Store {
 		mark: MarkFeature
 		slots: SlotsFeature
 		focus: FocusFeature
-		input: InputFeature
-		blockEditing: BlockEditFeature
-		arrowNav: ArrowNavFeature
+		keyboard: KeyboardFeature
 		system: SystemListenerFeature
 		textSelection: TextSelectionFeature
 		contentEditable: ContentEditableFeature
@@ -186,9 +182,7 @@ export class Store {
 			overlay,
 			slots,
 			focus: new FocusFeature(this),
-			input: new InputFeature(this),
-			blockEditing: new BlockEditFeature(this),
-			arrowNav: new ArrowNavFeature(this),
+			keyboard: new KeyboardFeature(this),
 			system: new SystemListenerFeature(this),
 			textSelection: new TextSelectionFeature(this),
 			contentEditable: new ContentEditableFeature(this),

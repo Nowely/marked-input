@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {applySpanInput, replaceAllContentWith} from './InputFeature'
+import {applySpanInput, replaceAllContentWith} from './input'
 
 describe('applySpanInput()', () => {
 	it('delete the next character when deleteContentForward has no target ranges', () => {
