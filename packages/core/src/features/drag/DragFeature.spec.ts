@@ -32,7 +32,7 @@ describe('DragFeature', () => {
 			// If double-enable leaked, the first watcher would still fire.
 			store.feature.drag.disable()
 
-			const reorderSpy = vi.spyOn(store.state, 'innerValue')
+			const reorderSpy = vi.spyOn(store.feature.value.state, 'innerValue')
 			store.emit.drag({type: 'delete', index: 0})
 			expect(reorderSpy).not.toHaveBeenCalled()
 		})

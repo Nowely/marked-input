@@ -38,16 +38,16 @@ export class DomFeature {
 	}
 
 	reconcile() {
-		const container = this._store.state.container()
+		const container = this._store.feature.slots.state.container()
 		if (!container) return
 
 		const readOnly = this._store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = this._store.computed.isBlock()
+		const isBlock = this._store.feature.slots.computed.isBlock()
 
 		if (isBlock) {
-			const tokens = this._store.state.tokens()
+			const tokens = this._store.feature.parsing.state.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = childAt(container, i)
 				if (!el) continue
@@ -64,7 +64,7 @@ export class DomFeature {
 			}
 		}
 
-		const tokens = this._store.state.tokens()
+		const tokens = this._store.feature.parsing.state.tokens()
 		if (isBlock) {
 			this.#reconcileDragTextContent(tokens, container, readOnly)
 		} else {

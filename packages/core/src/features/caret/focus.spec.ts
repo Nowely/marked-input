@@ -14,7 +14,7 @@ describe('FocusFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		store.state.container(stubContainer)
+		store.feature.slots.state.container(stubContainer)
 		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(feature)) {
 			if (key === 'caret') continue
@@ -42,14 +42,14 @@ describe('FocusFeature', () => {
 			const target = document.createElement('div')
 			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
 			store.nodes.focus.target = target
-			store.state.recovery({
+			store.feature.caret.state.recovery({
 				anchor: store.nodes.focus,
 				caret: 0,
 			})
 
 			store.emit.rendered()
 
-			expect(store.state.recovery()).toBeUndefined()
+			expect(store.feature.caret.state.recovery()).toBeUndefined()
 
 			store.feature.caret.disable()
 		})
@@ -57,14 +57,14 @@ describe('FocusFeature', () => {
 		it('does not run recovery when Mark is not set', () => {
 			store.feature.caret.enable()
 
-			store.state.recovery({
+			store.feature.caret.state.recovery({
 				anchor: store.nodes.focus,
 				caret: 0,
 			})
 
 			store.emit.rendered()
 
-			expect(store.state.recovery()).toBeDefined()
+			expect(store.feature.caret.state.recovery()).toBeDefined()
 
 			store.feature.caret.disable()
 		})
@@ -75,7 +75,7 @@ describe('FocusFeature', () => {
 			store.feature.caret.enable()
 			store.feature.caret.disable()
 
-			const syncSpy = vi.spyOn(store.emit, 'sync')
+			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
 			store.emit.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()

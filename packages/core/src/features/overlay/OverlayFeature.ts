@@ -73,7 +73,7 @@ export class OverlayFeature implements Feature {
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.state.overlay()?.contains(target)) return
-							if (this._store.state.container()?.contains(target)) return
+							if (this._store.feature.slots.state.container()?.contains(target)) return
 							this.emit.overlayClose()
 						},
 						true
@@ -82,7 +82,7 @@ export class OverlayFeature implements Feature {
 			})
 
 			const selectionChangeHandler = () => {
-				const container = this._store.state.container()
+				const container = this._store.feature.slots.state.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this._store.props.showOverlayOn()
@@ -118,7 +118,7 @@ export class OverlayFeature implements Feature {
 
 				const newSpan = createNewSpan(span, annotation, index, source)
 
-				this._store.state.recovery(
+				this._store.feature.caret.state.recovery(
 					Mark
 						? {
 								caret: 0,

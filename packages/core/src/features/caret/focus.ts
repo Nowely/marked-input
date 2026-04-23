@@ -3,7 +3,7 @@ import {effectScope, watch, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export function enableFocus(store: Store): () => void {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
@@ -17,9 +17,9 @@ export function enableFocus(store: Store): () => void {
 		})
 
 		listen(container, 'click', () => {
-			const tokens = store.state.tokens()
+			const tokens = store.feature.parsing.state.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const container = store.state.container()
+				const container = store.feature.slots.state.container()
 				const element = container ? firstHtmlChild(container) : null
 				element?.focus()
 			}
@@ -39,7 +39,7 @@ export function enableFocus(store: Store): () => void {
 }
 
 function recover(store: Store) {
-	const recovery = store.state.recovery()
+	const recovery = store.feature.caret.state.recovery()
 	if (!recovery) return
 
 	const {anchor, caret, isNext} = recovery
@@ -49,7 +49,7 @@ function recover(store: Store) {
 	// eslint-disable-next-line switch-exhaustiveness-check
 	switch (true) {
 		case isNext && isStale: {
-			const container = store.state.container()
+			const container = store.feature.slots.state.container()
 			const targetChild = recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
 			target = targetChild ?? store.nodes.focus.tail ?? undefined
 			break
@@ -71,5 +71,5 @@ function recover(store: Store) {
 		store.nodes.focus.target = target
 		store.nodes.focus.caret = caret
 	})
-	store.state.recovery(undefined)
+	store.feature.caret.state.recovery(undefined)
 }

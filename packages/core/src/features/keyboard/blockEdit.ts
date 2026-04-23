@@ -15,12 +15,12 @@ function isTextLikeRow(token: Token): boolean {
 }
 
 export function enableBlockEdit(store: Store): () => void {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
 		listen(container, 'keydown', e => {
-			if (!store.computed.isBlock()) return
+			if (!store.feature.slots.computed.isBlock()) return
 
 			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
 				handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
@@ -36,7 +36,7 @@ export function enableBlockEdit(store: Store): () => void {
 			container,
 			'beforeinput',
 			e => {
-				if (!store.computed.isBlock()) return
+				if (!store.feature.slots.computed.isBlock()) return
 				if (e.defaultPrevented) return
 				handleBlockBeforeInput(store, e)
 			},
@@ -48,7 +48,7 @@ export function enableBlockEdit(store: Store): () => void {
 }
 
 function handleDelete(store: Store, event: KeyboardEvent) {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return
 
 	const blockDivs = htmlChildren(container)
@@ -57,7 +57,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 	)
 	if (blockIndex === -1) return
 
-	const rows = store.state.tokens()
+	const rows = store.feature.parsing.state.tokens()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -105,7 +105,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
 						target.focus()
-						const updatedRows = store.state.tokens()
+						const updatedRows = store.feature.parsing.state.tokens()
 						const updatedToken = updatedRows[blockIndex - 1]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -140,7 +140,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
 						target.focus()
-						const updatedRows = store.state.tokens()
+						const updatedRows = store.feature.parsing.state.tokens()
 						const updatedToken = updatedRows[blockIndex - 1]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -168,7 +168,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex)
 					if (target) {
 						target.focus()
-						const updatedRows = store.state.tokens()
+						const updatedRows = store.feature.parsing.state.tokens()
 						const updatedToken = updatedRows[blockIndex]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -190,7 +190,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -208,7 +208,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	}
 	if (blockIndex === -1) return
 
-	const rows = store.state.tokens()
+	const rows = store.feature.parsing.state.tokens()
 	const token = rows[blockIndex]
 	const blockDiv = blockDivs[blockIndex]
 	const value = store.feature.value.computed.currentValue()
@@ -250,7 +250,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 }
 
 function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return false
 
 	const activeElement = document.activeElement
@@ -284,7 +284,7 @@ function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction
 }
 
 function handleArrowUpDown(store: Store, event: KeyboardEvent) {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -322,7 +322,7 @@ function handleArrowUpDown(store: Store, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: Store, event: InputEvent) {
-	const container = store.state.container()
+	const container = store.feature.slots.state.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -333,7 +333,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 	if (blockIndex === -1) return
 
 	const blockDiv = blockDivs[blockIndex]
-	const rows = store.state.tokens()
+	const rows = store.feature.parsing.state.tokens()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -344,7 +344,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			const target = childAt(container, blockIndex)
 			if (!target) return
 			target.focus()
-			const updatedRows = store.state.tokens()
+			const updatedRows = store.feature.parsing.state.tokens()
 			const updatedToken = updatedRows[blockIndex]
 			setCaretAtRawPos(target, updatedToken, newRawPos)
 		})
@@ -371,7 +371,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			event.preventDefault()
-			const c = store.state.container()
+			const c = store.feature.slots.state.container()
 			const markup = c ? consumeMarkupPaste(c) : undefined
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()

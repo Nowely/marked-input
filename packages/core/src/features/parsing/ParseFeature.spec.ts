@@ -21,7 +21,9 @@ describe('ParsingFeature', () => {
 			store.setProps({value: 'hello'})
 			store.feature.parsing.sync()
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -31,7 +33,9 @@ describe('ParsingFeature', () => {
 			store.setProps({defaultValue: 'default'})
 			store.feature.parsing.sync()
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'default', position: {start: 0, end: 7}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -40,7 +44,9 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.enable()
 			store.feature.parsing.sync()
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: '', position: {start: 0, end: 0}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -50,7 +56,7 @@ describe('ParsingFeature', () => {
 			store.setProps({value: 'test'})
 			store.feature.parsing.sync()
 
-			expect(store.state.previousValue()).toBe('test')
+			expect(store.feature.value.state.previousValue()).toBe('test')
 
 			store.feature.parsing.disable()
 		})
@@ -60,8 +66,10 @@ describe('ParsingFeature', () => {
 			store.setProps({options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
-			expect(store.computed.parser()).toBeUndefined()
-			expect(store.state.tokens()).toEqual([{type: 'text', content: '@hello', position: {start: 0, end: 6}}])
+			expect(store.feature.parsing.computed.parser()).toBeUndefined()
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: '@hello', position: {start: 0, end: 6}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -71,7 +79,7 @@ describe('ParsingFeature', () => {
 			store.setProps({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
-			expect(store.computed.parser()).toBeDefined()
+			expect(store.feature.parsing.computed.parser()).toBeDefined()
 
 			store.feature.parsing.disable()
 		})
@@ -92,7 +100,7 @@ describe('ParsingFeature', () => {
 			}
 			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
 
-			store.emit.reparse()
+			store.feature.parsing.emit.reparse()
 			expect(callCount).toBe(1)
 
 			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
@@ -106,9 +114,9 @@ describe('ParsingFeature', () => {
 
 			store.feature.parsing.disable()
 
-			const tokensBefore = store.state.tokens()
-			store.emit.reparse()
-			expect(store.state.tokens()).toBe(tokensBefore)
+			const tokensBefore = store.feature.parsing.state.tokens()
+			store.feature.parsing.emit.reparse()
+			expect(store.feature.parsing.state.tokens()).toBe(tokensBefore)
 		})
 
 		it('resets initialized state — re-enable and sync works fresh', () => {
@@ -121,7 +129,9 @@ describe('ParsingFeature', () => {
 			store.setProps({value: 'second'})
 			store.feature.parsing.sync()
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'second', position: {start: 0, end: 6}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -135,8 +145,10 @@ describe('ParsingFeature', () => {
 
 			store.setProps({value: 'world'})
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-			expect(store.state.previousValue()).toBe('world')
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'world', position: {start: 0, end: 5}},
+			])
+			expect(store.feature.value.state.previousValue()).toBe('world')
 
 			store.feature.parsing.disable()
 		})
@@ -146,10 +158,12 @@ describe('ParsingFeature', () => {
 			store.setProps({value: 'hello'})
 			store.feature.parsing.sync()
 
-			store.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
 			store.setProps({value: 'world'})
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
+			])
 
 			store.feature.parsing.disable()
 		})
@@ -161,11 +175,13 @@ describe('ParsingFeature', () => {
 			store.setProps({value: 'test'})
 			store.feature.parsing.sync()
 
-			store.state.recovery({caret: 0, anchor: store.nodes.focus})
-			store.emit.reparse()
+			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.parsing.emit.reparse()
 
-			expect(store.state.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
-			expect(store.state.previousValue()).toBe('test')
+			expect(store.feature.parsing.state.tokens()).toEqual([
+				{type: 'text', content: 'test', position: {start: 0, end: 4}},
+			])
+			expect(store.feature.value.state.previousValue()).toBe('test')
 
 			store.feature.parsing.disable()
 		})
@@ -174,7 +190,7 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.enable()
 			store.setProps({value: 'hello'})
 			store.feature.parsing.sync()
-			store.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
 
 			let callCount = 0
 			const original = store.feature.parsing.state.tokens
@@ -184,14 +200,14 @@ describe('ParsingFeature', () => {
 			}
 			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
 
-			store.emit.reparse()
+			store.feature.parsing.emit.reparse()
 			expect(callCount).toBe(1)
 
 			callCount = 0
-			store.state.recovery({caret: 1, anchor: store.nodes.focus})
+			store.feature.caret.state.recovery({caret: 1, anchor: store.nodes.focus})
 			expect(callCount).toBe(0)
 
-			;(store.state as Record<string, unknown>).tokens = original
+			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
 			store.feature.parsing.disable()
 		})
 	})

@@ -43,16 +43,16 @@ describe('DomFeature', () => {
 
 	it('selecting becoming undefined after enable() triggers reconcile()', () => {
 		store.feature.dom.enable()
-		store.state.selecting('drag')
+		store.feature.caret.state.selecting('drag')
 		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.state.selecting(undefined)
+		store.feature.caret.state.selecting(undefined)
 		expect(reconcileSpy).toHaveBeenCalled()
 	})
 
 	it('selecting changing to non-undefined does not trigger reconcile()', () => {
 		store.feature.dom.enable()
 		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.state.selecting('drag')
+		store.feature.caret.state.selecting('drag')
 		expect(reconcileSpy).not.toHaveBeenCalled()
 	})
 })

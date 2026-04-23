@@ -25,11 +25,11 @@ describe('OverlayFeature', () => {
 
 	describe('ownership', () => {
 		it('owns overlayMatch, overlay (DOM ref), overlay (computed), overlaySelect, overlayClose', () => {
-			expect(store.feature.overlay.state.overlayMatch).toBe(store.state.overlayMatch)
+			expect(store.feature.overlay.state.overlayMatch).toBe(store.feature.overlay.state.overlayMatch)
 			expect(store.feature.overlay.state.overlay).toBe(store.state.overlay)
 			expect(store.feature.overlay.computed.overlay).toBe(store.computed.overlay)
 			expect(store.feature.overlay.emit.overlaySelect).toBe(store.emit.overlaySelect)
-			expect(store.feature.overlay.emit.overlayClose).toBe(store.emit.overlayClose)
+			expect(store.feature.overlay.emit.overlayClose).toBe(store.feature.overlay.emit.overlayClose)
 		})
 	})
 
@@ -37,9 +37,9 @@ describe('OverlayFeature', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			controller.enable()
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
-			expect(store.state.overlayMatch()).toBeUndefined()
+			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 
 			controller.disable()
 		})
@@ -47,44 +47,44 @@ describe('OverlayFeature', () => {
 		it('clear overlayMatch when overlayClose is emitted', () => {
 			controller.enable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.overlayClose()
+			store.feature.overlay.emit.overlayClose()
 
-			expect(store.state.overlayMatch()).toBeUndefined()
+			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 		})
 
 		it('react to change event when showOverlayOn includes change', () => {
 			store.setProps({showOverlayOn: 'change'})
 			controller.enable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
-			expect(store.state.overlayMatch()).toBeUndefined()
+			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 		})
 
 		it('not react to change event when showOverlayOn does not include change', () => {
 			store.setProps({showOverlayOn: 'selectionChange'})
 			controller.enable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
-			expect(store.state.overlayMatch()).toBe(stubMatch)
+			expect(store.feature.overlay.state.overlayMatch()).toBe(stubMatch)
 		})
 
 		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			controller.enable()
 			controller.enable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.overlayClose()
+			store.feature.overlay.emit.overlayClose()
 
-			expect(store.state.overlayMatch()).toBeUndefined()
+			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 		})
 	})
 
@@ -93,12 +93,12 @@ describe('OverlayFeature', () => {
 			controller.enable()
 			controller.disable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.overlayClose()
-			store.emit.change()
+			store.feature.overlay.emit.overlayClose()
+			store.feature.value.emit.change()
 
-			expect(store.state.overlayMatch()).toBe(stubMatch)
+			expect(store.feature.overlay.state.overlayMatch()).toBe(stubMatch)
 		})
 
 		it('allow re-enabling after disable', () => {
@@ -106,11 +106,11 @@ describe('OverlayFeature', () => {
 			controller.disable()
 			controller.enable()
 
-			store.state.overlayMatch(stubMatch)
+			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.emit.overlayClose()
+			store.feature.overlay.emit.overlayClose()
 
-			expect(store.state.overlayMatch()).toBeUndefined()
+			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 		})
 	})
 })

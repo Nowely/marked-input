@@ -34,13 +34,13 @@ describe('MarkFeature', () => {
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
-			store.state.tokens([token, token2])
+			store.feature.parsing.state.tokens([token, token2])
 
 			store.feature.mark.enable()
 
-			store.emit.markRemove({token})
+			store.feature.mark.emit.markRemove({token})
 
-			expect(store.state.tokens()).toEqual([
+			expect(store.feature.parsing.state.tokens()).toEqual([
 				{
 					type: 'text',
 					content: 'b',
@@ -56,13 +56,13 @@ describe('MarkFeature', () => {
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
 			const missingToken = {type: 'text' as const, content: 'c', position: {start: 2, end: 3}}
-			store.state.tokens([token, token2])
+			store.feature.parsing.state.tokens([token, token2])
 
 			store.feature.mark.enable()
 
-			store.emit.markRemove({token: missingToken})
+			store.feature.mark.emit.markRemove({token: missingToken})
 
-			expect(store.state.tokens()).toEqual([token, token2])
+			expect(store.feature.parsing.state.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
 		})
 	})
@@ -73,13 +73,13 @@ describe('MarkFeature', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
-			store.state.tokens([token])
+			store.feature.parsing.state.tokens([token])
 
 			store.feature.value.enable()
 			store.feature.mark.enable()
 			store.feature.mark.disable()
 
-			store.emit.markRemove({token})
+			store.feature.mark.emit.markRemove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})

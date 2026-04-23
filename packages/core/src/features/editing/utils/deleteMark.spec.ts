@@ -38,7 +38,7 @@ describe('deleteMark', () => {
 
 		container.append(span1, mark, span2)
 
-		store.state.container(container)
+		store.feature.slots.state.container(container)
 		store.nodes.focus.target = mark
 	}
 
@@ -61,7 +61,7 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.setProps({onChange})
 		setupDOM()
-		store.state.tokens(makeTokens())
+		store.feature.parsing.state.tokens(makeTokens())
 
 		deleteMark('self', store)
 
@@ -72,11 +72,11 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.setProps({onChange})
 		setupDOM()
-		store.state.tokens(makeTokens())
+		store.feature.parsing.state.tokens(makeTokens())
 
 		deleteMark('self', store)
 
-		expect(store.state.tokens()).toHaveLength(1)
-		expect(store.state.tokens()[0].content).toBe('hi  there')
+		expect(store.feature.parsing.state.tokens()).toHaveLength(1)
+		expect(store.feature.parsing.state.tokens()[0].content).toBe('hi  there')
 	})
 })

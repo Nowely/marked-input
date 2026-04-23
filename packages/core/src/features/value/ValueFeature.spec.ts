@@ -45,11 +45,11 @@ describe('ValueFeature', () => {
 		it('react to change event after enable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
 			expect(onChange).toHaveBeenCalled()
 		})
@@ -57,12 +57,12 @@ describe('ValueFeature', () => {
 		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
+			store.feature.parsing.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
 
 			store.feature.value.enable()
 			store.feature.value.enable()
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
@@ -83,8 +83,8 @@ describe('ValueFeature', () => {
 
 			store.feature.value.state.innerValue('hello @[world]')
 
-			expect(store.state.tokens().length).toBeGreaterThan(0)
-			expect(store.state.previousValue()).toBe('hello @[world]')
+			expect(store.feature.parsing.state.tokens().length).toBeGreaterThan(0)
+			expect(store.feature.value.state.previousValue()).toBe('hello @[world]')
 			expect(onChange).toHaveBeenCalledWith('hello @[world]')
 		})
 	})
@@ -94,12 +94,12 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 			store.feature.value.disable()
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -108,13 +108,13 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 			store.feature.value.disable()
 			store.feature.value.enable()
 
-			store.emit.change()
+			store.feature.value.emit.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
