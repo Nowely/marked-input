@@ -12,11 +12,10 @@ describe('deleteMark', () => {
 		store = new Store()
 		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(feature)) {
-			if (key === 'system' || key === 'value') continue
+			if (key === 'value') continue
 			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
 			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
 		}
-		store.feature.system.enable()
 		store.feature.value.enable()
 	})
 

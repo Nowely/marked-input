@@ -2,7 +2,6 @@ import {CaretFeature} from '../features/caret'
 import {ClipboardFeature} from '../features/clipboard'
 import {DomFeature} from '../features/dom'
 import {DragFeature} from '../features/drag'
-import {SystemListenerFeature} from '../features/events'
 import {KeyboardFeature} from '../features/keyboard'
 import {LifecycleFeature} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
@@ -117,7 +116,6 @@ export class Store {
 		slots: SlotsFeature
 		caret: CaretFeature
 		keyboard: KeyboardFeature
-		system: SystemListenerFeature
 		dom: DomFeature
 		drag: DragFeature
 		clipboard: ClipboardFeature
@@ -183,7 +181,6 @@ export class Store {
 			slots,
 			caret,
 			keyboard: new KeyboardFeature(this),
-			system: new SystemListenerFeature(this),
 			dom,
 			drag,
 			clipboard: new ClipboardFeature(this),
