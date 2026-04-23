@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.12.1](https://github.com/Nowely/marked-input/compare/0.12.0...0.12.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **vue:** suppress Component made reactive warnings ([#213](https://github.com/Nowely/marked-input/issues/213)) ([d41cce1](https://github.com/Nowely/marked-input/commit/d41cce1022f7997aa0f7dc96c73d1351937a7eb3))
+
+
+### Refactoring
+
+* **core:** extract feature modules from Store ([#214](https://github.com/Nowely/marked-input/issues/214)) ([a6e4704](https://github.com/Nowely/marked-input/commit/a6e470475790301b52d867e1cd90583d34827a6e))
+* **core:** flatten feature API — drop state/computed/emit containers, promote to store.* ([#215](https://github.com/Nowely/marked-input/issues/215)) ([71133bf](https://github.com/Nowely/marked-input/commit/71133bfe8584274f43a1035f4f001c1f6167bc20))
+* **core:** rename reactive symbols for clarity across 4 features ([#216](https://github.com/Nowely/marked-input/issues/216)) ([5442075](https://github.com/Nowely/marked-input/commit/54420750ccd7079f147d2b88b51b7d5f03c83df4))
+
+
+### Miscellaneous
+
+* migrate to TypeScript 6.0 ([#210](https://github.com/Nowely/marked-input/issues/210)) ([a68a186](https://github.com/Nowely/marked-input/commit/a68a186f7a62a6a8c583cebddfab30b8ce857d08))
+
+
+### Tests
+
+* fix broken tests, close react/vue parity, unify vitest workspace config ([#212](https://github.com/Nowely/marked-input/issues/212)) ([b4bd339](https://github.com/Nowely/marked-input/commit/b4bd3393fe64f05523c5628ee56f0b0af6108927))
+
 ## [0.12.0](https://github.com/Nowely/marked-input/compare/0.11.0...0.12.0) (2026-04-22)
 
 
