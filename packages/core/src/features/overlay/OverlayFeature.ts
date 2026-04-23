@@ -47,7 +47,7 @@ export class OverlayFeature implements Feature {
 				this.state.overlayMatch(undefined)
 			})
 
-			watch(this._store.feature.value.emit.change, () => {
+			watch(this._store.feature.value.change, () => {
 				const showOverlayOn = this._store.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 

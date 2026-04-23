@@ -75,14 +75,14 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 			event.preventDefault()
 			focus.content = content.slice(0, caret - 1) + content.slice(caret)
 			focus.caret = caret - 1
-			store.feature.value.emit.change()
+			store.feature.value.change()
 			return
 		}
 		if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
 			event.preventDefault()
 			focus.content = content.slice(0, caret) + content.slice(caret + 1)
 			focus.caret = caret
-			store.feature.value.emit.change()
+			store.feature.value.change()
 			return
 		}
 	}
@@ -115,7 +115,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 
 	if (applySpanInput(focus, event)) {
-		store.feature.value.emit.change()
+		store.feature.value.change()
 	}
 }
 
@@ -130,7 +130,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const tokens = store.feature.parsing.state.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
-	const currentValue = store.feature.value.computed.currentValue()
+	const currentValue = store.feature.value.currentValue()
 
 	const ranges = event.getTargetRanges()
 	const childElement = container.children[focus.index]
@@ -148,7 +148,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
-	store.feature.value.state.innerValue(newValue)
+	store.feature.value.innerValue(newValue)
 
 	const newTokens = store.feature.parsing.state.tokens()
 	let targetIdx = newTokens.findIndex(
@@ -245,7 +245,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.feature.caret.state.selecting(undefined)
-	store.feature.value.state.previousValue(newContent)
+	store.feature.value.previousValue(newContent)
 
 	store.props.onChange()?.(newContent)
 

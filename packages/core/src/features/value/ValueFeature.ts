@@ -4,18 +4,12 @@ import type {Store} from '../../store/Store'
 import {parseWithParser, toString} from '../parsing'
 
 export class ValueFeature implements Feature {
-	readonly state = {
-		previousValue: signal<string | undefined>(undefined),
-		innerValue: signal<string | undefined>(undefined),
-	}
+	readonly previousValue = signal<string | undefined>(undefined)
+	readonly innerValue = signal<string | undefined>(undefined)
 
-	readonly computed = {
-		currentValue: computed(() => this.state.previousValue() ?? this._store.props.value() ?? ''),
-	}
+	readonly currentValue = computed(() => this.previousValue() ?? this._store.props.value() ?? '')
 
-	readonly emit = {
-		change: event(),
-	}
+	readonly change = event()
 
 	#scope?: () => void
 
@@ -24,7 +18,7 @@ export class ValueFeature implements Feature {
 	enable() {
 		if (this.#scope) return
 		this.#scope = effectScope(() => {
-			watch(this.emit.change, () => {
+			watch(this.change, () => {
 				const onChange = this._store.props.onChange()
 				const {focus} = this._store.nodes
 
@@ -32,7 +26,7 @@ export class ValueFeature implements Feature {
 					const tokens = this._store.feature.parsing.state.tokens()
 					const serialized = toString(tokens)
 					onChange?.(serialized)
-					this.state.previousValue(serialized)
+					this.previousValue(serialized)
 					trigger(this._store.feature.parsing.state.tokens)
 					return
 				}
@@ -50,12 +44,12 @@ export class ValueFeature implements Feature {
 				this._store.feature.parsing.emit.reparse()
 			})
 
-			watch(this.state.innerValue, newValue => {
+			watch(this.innerValue, newValue => {
 				if (newValue === undefined) return
 				const newTokens = parseWithParser(this._store, newValue)
 				batch(() => {
 					this._store.feature.parsing.state.tokens(newTokens)
-					this.state.previousValue(newValue)
+					this.previousValue(newValue)
 				})
 				this._store.props.onChange()?.(newValue)
 			})

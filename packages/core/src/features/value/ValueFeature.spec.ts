@@ -5,34 +5,34 @@ import {Store} from '../../store/Store'
 describe('ValueFeature', () => {
 	it('exposes previousValue, innerValue signals', () => {
 		const store = new Store()
-		expect(typeof store.feature.value.state.previousValue).toBe('function')
-		expect(typeof store.feature.value.state.innerValue).toBe('function')
+		expect(typeof store.feature.value.previousValue).toBe('function')
+		expect(typeof store.feature.value.innerValue).toBe('function')
 	})
 
 	it('exposes currentValue computed defaulting to empty string', () => {
 		const store = new Store()
-		expect(store.feature.value.computed.currentValue()).toBe('')
+		expect(store.feature.value.currentValue()).toBe('')
 	})
 
 	it('currentValue falls back to props.value when previousValue is unset', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		expect(store.feature.value.computed.currentValue()).toBe('hello')
+		expect(store.feature.value.currentValue()).toBe('hello')
 	})
 
 	it('currentValue returns previousValue when set', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		store.feature.value.state.previousValue('world')
-		expect(store.feature.value.computed.currentValue()).toBe('world')
+		store.feature.value.previousValue('world')
+		expect(store.feature.value.currentValue()).toBe('world')
 	})
 
 	it('exposes signal and computed instances directly', () => {
 		const store = new Store()
-		expect(typeof store.feature.value.state.previousValue).toBe('function')
-		expect(typeof store.feature.value.state.innerValue).toBe('function')
-		expect(typeof store.feature.value.computed.currentValue).toBe('function')
-		expect(typeof store.feature.value.emit.change).toBe('function')
+		expect(typeof store.feature.value.previousValue).toBe('function')
+		expect(typeof store.feature.value.innerValue).toBe('function')
+		expect(typeof store.feature.value.currentValue).toBe('function')
+		expect(typeof store.feature.value.change).toBe('function')
 	})
 
 	describe('change handler', () => {
@@ -49,7 +49,7 @@ describe('ValueFeature', () => {
 
 			store.feature.value.enable()
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(onChange).toHaveBeenCalled()
 		})
@@ -62,7 +62,7 @@ describe('ValueFeature', () => {
 			store.feature.value.enable()
 			store.feature.value.enable()
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
@@ -81,10 +81,10 @@ describe('ValueFeature', () => {
 
 			store.feature.value.enable()
 
-			store.feature.value.state.innerValue('hello @[world]')
+			store.feature.value.innerValue('hello @[world]')
 
 			expect(store.feature.parsing.state.tokens().length).toBeGreaterThan(0)
-			expect(store.feature.value.state.previousValue()).toBe('hello @[world]')
+			expect(store.feature.value.previousValue()).toBe('hello @[world]')
 			expect(onChange).toHaveBeenCalledWith('hello @[world]')
 		})
 	})
@@ -99,7 +99,7 @@ describe('ValueFeature', () => {
 			store.feature.value.enable()
 			store.feature.value.disable()
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
@@ -114,7 +114,7 @@ describe('ValueFeature', () => {
 			store.feature.value.disable()
 			store.feature.value.enable()
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})

@@ -37,7 +37,7 @@ describe('OverlayFeature', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
 			controller.enable()
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 
@@ -60,7 +60,7 @@ describe('OverlayFeature', () => {
 
 			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(store.feature.overlay.state.overlayMatch()).toBeUndefined()
 		})
@@ -71,7 +71,7 @@ describe('OverlayFeature', () => {
 
 			store.feature.overlay.state.overlayMatch(stubMatch)
 
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(store.feature.overlay.state.overlayMatch()).toBe(stubMatch)
 		})
@@ -96,7 +96,7 @@ describe('OverlayFeature', () => {
 			store.feature.overlay.state.overlayMatch(stubMatch)
 
 			store.feature.overlay.emit.overlayClose()
-			store.feature.value.emit.change()
+			store.feature.value.change()
 
 			expect(store.feature.overlay.state.overlayMatch()).toBe(stubMatch)
 		})

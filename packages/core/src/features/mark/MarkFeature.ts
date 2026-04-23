@@ -45,7 +45,7 @@ export class MarkFeature implements Feature {
 				if (!findToken(tokens, token)) return
 				const value = toString(tokens)
 				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
-				this._store.feature.value.state.innerValue(nextValue)
+				this._store.feature.value.innerValue(nextValue)
 			})
 		})
 	}
