@@ -1,8 +1,7 @@
 import path from 'path'
 import {fileURLToPath} from 'url'
 
-import {playwright} from '@vitest/browser-playwright'
-import {defineConfig} from 'vitest/config'
+import {defineConfig} from 'vite'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -14,21 +13,6 @@ export default defineConfig({
 			name: 'MarkputCore',
 			formats: ['es'],
 			fileName: 'index',
-		},
-	},
-	test: {
-		browser: {
-			enabled: true,
-			provider: playwright(),
-			instances: [{browser: 'chromium' as const}],
-			viewport: {width: 1280, height: 720},
-			headless: true,
-			screenshotFailures: false,
-		},
-		coverage: {
-			provider: 'v8',
-			reporter: ['text', 'json', 'html'],
-			exclude: ['**/*.bench.ts', '**/*.spec.ts', '**/dist/**', '**/index.ts', '**/__testing__/**'],
 		},
 	},
 })
