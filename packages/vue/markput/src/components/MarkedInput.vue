@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {type CoreSlots, Store} from '@markput/core'
-import {onMounted, onUnmounted, provide, shallowRef, watch} from 'vue'
+import {markRaw, onMounted, onUnmounted, provide, shallowRef, toRaw, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps} from '../types'
@@ -17,7 +17,21 @@ const store = shallowRef(new Store())
 
 provide(STORE_KEY, store.value)
 
+function markSlotComponents(slots: CoreSlots | undefined): CoreSlots | undefined {
+	if (!slots) return undefined
+	const result: Record<string, unknown> = {}
+	for (const [key, value] of Object.entries(slots)) {
+		const raw = toRaw(value as object)
+		result[key] = raw && typeof raw === 'object' && 'setup' in raw ? markRaw(raw) : value
+	}
+	return result as CoreSlots
+}
+
 function syncProps() {
+	const rawMark = props.Mark ? markRaw(toRaw(props.Mark)) : undefined
+	const rawSpan = props.Span ? markRaw(toRaw(props.Span)) : undefined
+	const rawOverlay = props.Overlay ? markRaw(toRaw(props.Overlay)) : undefined
+
 	store.value.setProps({
 		value: props.value,
 		defaultValue: props.defaultValue,
@@ -25,14 +39,18 @@ function syncProps() {
 		readOnly: props.readOnly,
 		layout: props.layout,
 		draggable: props.draggable,
-		options: props.options,
+		options: props.options?.map(opt => ({
+			...opt,
+			Mark: opt.Mark ? markRaw(toRaw(opt.Mark)) : undefined,
+			Overlay: opt.Overlay ? markRaw(toRaw(opt.Overlay)) : undefined,
+		})),
 		showOverlayOn: props.showOverlayOn,
-		Span: props.Span,
-		Mark: props.Mark,
-		Overlay: props.Overlay,
+		Span: rawSpan,
+		Mark: rawMark,
+		Overlay: rawOverlay,
 		className: props.class,
 		style: props.style,
-		slots: props.slots as CoreSlots | undefined,
+		slots: markSlotComponents(props.slots as CoreSlots | undefined),
 		slotProps: props.slotProps,
 	})
 }
