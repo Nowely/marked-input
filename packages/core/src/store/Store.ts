@@ -6,6 +6,7 @@ import {ContentEditableFeature} from '../features/editable'
 import {SystemListenerFeature} from '../features/events'
 import {FocusFeature} from '../features/focus'
 import {InputFeature} from '../features/input'
+import {LifecycleFeature} from '../features/lifecycle'
 import {OverlayFeature} from '../features/overlay'
 import {Parser} from '../features/parsing'
 import type {Token} from '../features/parsing'
@@ -137,6 +138,7 @@ export class Store {
 	readonly handler = new MarkputHandler(this)
 
 	readonly feature: {
+		lifecycle: LifecycleFeature
 		overlay: OverlayFeature
 		focus: FocusFeature
 		input: InputFeature
@@ -151,6 +153,8 @@ export class Store {
 	}
 
 	constructor() {
+		const lifecycle = new LifecycleFeature(this)
+
 		this.state = {
 			tokens: signal<Token[]>([]),
 			previousValue: signal<string | undefined>(undefined),
@@ -216,12 +220,13 @@ export class Store {
 			overlayClose: event(),
 			sync: event(),
 			drag: event<DragAction>(),
-			rendered: event(),
-			mounted: event(),
-			unmounted: event(),
+			rendered: lifecycle.emit.rendered,
+			mounted: lifecycle.emit.mounted,
+			unmounted: lifecycle.emit.unmounted,
 		}
 
 		this.feature = {
+			lifecycle,
 			overlay: new OverlayFeature(this),
 			focus: new FocusFeature(this),
 			input: new InputFeature(this),
@@ -235,8 +240,8 @@ export class Store {
 			parse: new ParseFeature(this),
 		}
 
-		watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
+		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+		watch(this.feature.lifecycle.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
 
 	setProps(values: Partial<SignalValues<typeof this.props>>): void {

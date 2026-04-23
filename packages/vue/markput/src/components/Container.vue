@@ -11,6 +11,7 @@ const result = useMarkput(s => ({
 	key: s.key,
 	state: s.state,
 	emit: s.emit,
+	lifecycleEmit: s.feature.lifecycle.emit,
 }))
 
 const setContainerRef = (el: unknown) => {
@@ -23,7 +24,7 @@ const containerProps = useMarkput(s => s.computed.containerProps)
 
 watch(
 	() => result.value.tokens,
-	() => result.value.emit.rendered(),
+	() => result.value.lifecycleEmit.rendered(),
 	{flush: 'post', immediate: true}
 )
 </script>

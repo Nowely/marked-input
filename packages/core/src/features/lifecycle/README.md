@@ -1,15 +1,13 @@
-# Lifecycle (handled by Store)
+# Lifecycle Feature
 
-The Store does not use a dedicated `Lifecycle` class. Feature enable/disable is driven directly by Store in its constructor:
+Owns the three framework→core lifecycle events:
 
-```ts
-watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
-```
+| Event | Fired by | Listened by |
+|---|---|---|
+| `mounted` | Framework adapter on initial mount | `Store` constructor (calls `enable()` on every feature) |
+| `unmounted` | Framework adapter on unmount | `Store` constructor (calls `disable()` on every feature) |
+| `rendered` | Framework `Container` component via `useLayoutEffect` | `FocusFeature` (post-render caret work), `DomFeature` (via `reconcile`) |
 
-Framework adapters emit:
+Access: `store.feature.lifecycle.emit.{mounted,unmounted,rendered}`.
 
-- `store.emit.mounted()` on initial mount (enables features)
-- `store.emit.unmounted()` on unmount (disables features and disposes subscriptions)
-
-Reactive re-parse on prop changes is handled inside `ParseFeature` by watching a computed over `props.value` and `computed.parser`; there is no separate "updated" event.
+The feature has no reactive state or computed values — it is a pure event carrier.

@@ -5,19 +5,19 @@ import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {isBlock, tokens, key, state, emit, Component, props} = useMarkput(s => ({
+	const {isBlock, tokens, key, state, lifecycleEmit, Component, props} = useMarkput(s => ({
 		isBlock: s.computed.isBlock,
 		tokens: s.state.tokens,
 		key: s.key,
 		state: s.state,
-		emit: s.emit,
+		lifecycleEmit: s.feature.lifecycle.emit,
 		Component: s.computed.containerComponent,
 		props: s.computed.containerProps,
 	}))
 
 	useLayoutEffect(() => {
-		emit.rendered()
-	}, [tokens, emit])
+		lifecycleEmit.rendered()
+	}, [tokens, lifecycleEmit])
 
 	return (
 		<Component ref={state.container} {...props}>

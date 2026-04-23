@@ -78,9 +78,9 @@ watch(
 )
 
 onMounted(() => {
-	store.value.emit.mounted()
+	store.value.feature.lifecycle.emit.mounted()
 })
-onUnmounted(() => store.value.emit.unmounted())
+onUnmounted(() => store.value.feature.lifecycle.emit.unmounted())
 
 defineExpose(store.value.handler)
 </script>

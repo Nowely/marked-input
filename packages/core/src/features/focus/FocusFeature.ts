@@ -32,7 +32,7 @@ export class FocusFeature {
 				}
 			})
 
-			watch(this.store.emit.rendered, () => {
+			watch(this.store.feature.lifecycle.emit.rendered, () => {
 				this.store.emit.sync()
 				if (!this.store.props.Mark()) return
 				this.#recover()
