@@ -64,45 +64,21 @@ export class Store {
 
 	readonly handler = new MarkputHandler(this)
 
-	readonly feature: {
-		lifecycle: LifecycleFeature
-		value: ValueFeature
-		overlay: OverlayFeature
-		mark: MarkFeature
-		slots: SlotsFeature
-		caret: CaretFeature
-		keyboard: KeyboardFeature
-		dom: DomFeature
-		drag: DragFeature
-		clipboard: ClipboardFeature
-		parsing: ParsingFeature
+	readonly feature = {
+		lifecycle: new LifecycleFeature(this),
+		value: new ValueFeature(this),
+		mark: new MarkFeature(this),
+		overlay: new OverlayFeature(this),
+		slots: new SlotsFeature(this),
+		caret: new CaretFeature(this),
+		keyboard: new KeyboardFeature(this),
+		dom: new DomFeature(this),
+		drag: new DragFeature(this),
+		clipboard: new ClipboardFeature(this),
+		parsing: new ParsingFeature(this),
 	}
 
 	constructor() {
-		const lifecycle = new LifecycleFeature(this)
-		const value = new ValueFeature(this)
-		const parsing = new ParsingFeature(this)
-		const mark = new MarkFeature(this)
-		const overlay = new OverlayFeature(this)
-		const slots = new SlotsFeature(this)
-		const drag = new DragFeature(this)
-		const caret = new CaretFeature(this)
-		const dom = new DomFeature(this)
-
-		this.feature = {
-			lifecycle,
-			value,
-			mark,
-			overlay,
-			slots,
-			caret,
-			keyboard: new KeyboardFeature(this),
-			dom,
-			drag,
-			clipboard: new ClipboardFeature(this),
-			parsing,
-		}
-
 		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
 		watch(this.feature.lifecycle.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
