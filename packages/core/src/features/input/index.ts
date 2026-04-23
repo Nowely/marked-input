@@ -1,1 +1,0 @@
-export {InputFeature, handleBeforeInput, handlePaste, replaceAllContentWith, applySpanInput} from './InputFeature'

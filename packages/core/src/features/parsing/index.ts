@@ -15,4 +15,4 @@ export {
 	getRangeMap,
 	parseWithParser,
 } from './utils/valueParser'
-export {ParseFeature} from './ParseFeature'
+export {ParsingFeature, ParsingFeature as ParseFeature} from './ParseFeature'

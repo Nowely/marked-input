@@ -81,21 +81,21 @@ Both framework adapters share the same component structure:
 ```
 1. User types in contenteditable
         ↓
-2. ContentEditableFeature detects input
+2. KeyboardFeature detects input
         ↓
-3. store.emit.change() emitted
+3. store.feature.value.emit.change() emitted
         ↓
-4. SystemListenerFeature reads DOM, mutates focused token in-place
+4. KeyboardFeature reads DOM, mutates focused token in-place
         ↓
-5. store.emit.reparse() emitted
+5. store.feature.parsing.emit.reparse() emitted
         ↓
 6. getTokensByUI() re-parses that token's content
         ↓
-7. store.state.tokens updated (Signal)
+7. store.feature.parsing.state.tokens updated (Signal)
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. FocusFeature restores caret position internally after render
+9. CaretFeature restores caret position internally after render
 ```
 
 There are **two parse paths**: `getTokensByUI` (user editing — re-parses only the focused element) and `computeTokensFromValue` (prop change — diffs old vs new value, re-parses changed range).
@@ -105,10 +105,10 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. OverlayFeature runs a trigger probe (on `store.emit.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
+2. OverlayFeature runs a trigger probe (on `store.feature.value.emit.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
 3. If found:
-   - store.state.overlayMatch set
+   - store.feature.overlay.state.overlayMatch set
         ↓
 4. Overlay component receives match via useOverlay()
         ↓
@@ -117,11 +117,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.emit.overlaySelect() emitted
+7. store.feature.overlay.emit.overlaySelect() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.emit.overlayClose() closes overlay
+9. store.feature.overlay.emit.overlayClose() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -215,34 +215,34 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ### Store Events
 
-| Event           | When Fired                  | Payload                          |
-| --------------- | --------------------------- | -------------------------------- |
-| `change`        | Text content changes        | `void`                           |
-| `reparse`       | Re-parse triggered          | `void`                           |
-| `overlayClose`  | Close overlay               | `void`                           |
-| `overlaySelect` | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `markRemove`    | Mark removed                | `{ token: Token }`               |
-| `sync`          | Post-render DOM alignment   | `void`                           |
-| `rendered`      | After tokens render         | `void`                           |
-| `mounted`       | Framework initial mount      | `void`                           |
-| `unmounted`     | Framework unmount           | `void`                           |
-| `drag`          | Drag-and-drop action        | `DragAction`                     |
+| Event           | Feature        | When Fired                  | Payload                          |
+| --------------- | -------------- | --------------------------- | -------------------------------- |
+| `change`        | value          | Text content changes        | `void`                           |
+| `reparse`       | parsing        | Re-parse triggered          | `void`                           |
+| `overlayClose`  | overlay        | Close overlay               | `void`                           |
+| `overlaySelect` | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `markRemove`    | mark           | Mark removed                | `{ token: Token }`               |
+| `reconcile`     | dom            | Post-render DOM alignment   | `void`                           |
+| `rendered`      | lifecycle      | After tokens render         | `void`                           |
+| `mounted`       | lifecycle      | Framework initial mount      | `void`                           |
+| `unmounted`     | lifecycle      | Framework unmount           | `void`                           |
+| `drag`          | drag           | Drag-and-drop action        | `DragAction`                     |
 
 ### Event Usage
 
 ```typescript
 // Emit a void event
-store.emit.change()
+store.feature.value.emit.change()
 
 // Emit a payload event
-store.emit.markRemove({ token })
+store.feature.mark.emit.markRemove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.emit.change,
+        store.feature.value.emit.change,
         () => {
             console.log('Text changed')
         }
@@ -287,112 +287,102 @@ class Store {
         input: NodeProxy
     }
 
-    readonly state: StateObject<MarkputState>
-    // Properties: tokens, previousValue, recovery, selecting,
-    // overlayMatch, value, defaultValue, onChange, readOnly, options,
-    // showOverlayOn, Span, Mark, Overlay, className, style, slots,
-    // slotProps, drag, container, overlay
-
-    readonly computed: {
-        hasMark: Computed<boolean>
-        parser: Computed<Parser | undefined>
-        containerComponent: Computed<Component>
-        containerProps: Computed<SlotProps | undefined>
-        blockComponent: Computed<Component>
-        blockProps: Computed<SlotProps | undefined>
-        spanComponent: Computed<Component>
-        spanProps: Computed<SlotProps | undefined>
+    readonly props: {
+        value: Signal<string | undefined>
+        defaultValue: Signal<string | undefined>
+        onChange: Signal<((value: string) => void) | undefined>
+        options: Signal<CoreOption[]>
+        readOnly: Signal<boolean>
+        layout: Signal<'inline' | 'block'>
+        draggable: Signal<boolean | DraggableConfig>
+        showOverlayOn: Signal<OverlayTrigger>
+        Span: Signal<Slot | undefined>
+        Mark: Signal<Slot | undefined>
+        Overlay: Signal<Slot | undefined>
+        className: Signal<string | undefined>
+        style: Signal<CSSProperties | undefined>
+        slots: Signal<CoreSlots | undefined>
+        slotProps: Signal<CoreSlotProps | undefined>
     }
 
-    readonly event: {
-        change: Event<void>
-        reparse: Event<void>
-        markRemove: Event<{ token: Token }>
-        overlaySelect: Event<{ mark: Token; match: OverlayMatch }>
-        overlayClose: Event<void>
-        sync: Event<void>
-        drag: Event<DragAction>
-        rendered: Event<void>
-        mounted: Event<void>
-        unmounted: Event<void>
-    }
-
-    readonly features: {
-        input: InputFeature
-        blockEdit: BlockEditFeature
-        arrowNav: ArrowNavFeature
-        overlay: OverlayFeature
-        focus: FocusFeature
-        system: SystemListenerFeature
-        textSelection: TextSelectionFeature
-        contentEditable: ContentEditableFeature
-        drag: DragFeature
-        copy: CopyFeature
+    readonly feature: {
+        lifecycle: LifecycleFeature    // mounted, unmounted, rendered events
+        value: ValueFeature            // previousValue, innerValue, currentValue, change event
+        parsing: ParsingFeature        // tokens, parser, reparse event
+        mark: MarkFeature              // hasMark, mark, markRemove event
+        overlay: OverlayFeature        // overlayMatch, overlay, overlaySelect, overlayClose
+        slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
+        caret: CaretFeature            // recovery, selecting (merged Focus + TextSelection)
+        keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
+        dom: DomFeature                // contenteditable management, reconcile event
+        drag: DragFeature              // drag event
+        clipboard: ClipboardFeature    // copy/cut handling
     }
 }
 ```
 
 ### State and props access
 
-Internal feature state lives on `store.state`. Values and options passed from React/Vue live on `store.props` and are updated via `setProps()`.
+Internal feature state lives on `store.feature.<name>.state`, computeds on `store.feature.<name>.computed`, and events on `store.feature.<name>.emit`. Values and options passed from React/Vue live on `store.props` and are updated via `setProps()`.
 
 ```typescript
 // Read internal state
-store.state.tokens()
+store.feature.parsing.state.tokens()
 
 // Write internal state
-store.state.tokens(newTokens)
+store.feature.parsing.state.tokens(newTokens)
 
 // Batch multiple internal writes so dependents run once (same pattern features use)
 import {batch} from '@markput/core'
 batch(() => {
-	store.state.tokens(newTokens)
-	store.state.previousValue(serialized)
+	store.feature.parsing.state.tokens(newTokens)
+	store.feature.value.state.previousValue(serialized)
 })
 
 // Framework-provided props (MarkedInput calls setProps on each render)
 store.setProps({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
-const tokens = store.state.tokens.use()
+const tokens = store.feature.parsing.state.tokens.use()
 ```
 
 ## Features
 
-10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.state` (internal signals), `store.props` (framework-provided signals), `store.emit` (emitters), and `store.nodes` (DOM refs):
+10 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.feature.<name>.state`/`.computed`/`.emit` (internal signals), `store.props` (framework-provided signals), and `store.nodes` (DOM refs):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
-| **InputFeature**              | Handles text input events, character insertion           |
-| **BlockEditFeature**          | Block-level editing operations (delete, split, merge)    |
-| **ArrowNavFeature**           | Keyboard navigation between tokens                       |
-| **FocusFeature**              | Caret tracking, focus recovery after re-renders          |
-| **OverlayFeature**            | Overlay trigger detection, position, open/close          |
-| **TextSelectionFeature**      | Text selection state tracking                            |
-| **SystemListenerFeature**     | DOM mutation detection, token content synchronization    |
-| **ContentEditableFeature**    | contenteditable attribute management                     |
+| **LifecycleFeature**          | Mount/unmount/render lifecycle events                     |
+| **ValueFeature**              | Previous/inner/current value tracking, change event       |
+| **ParsingFeature**            | Token parsing, parser selection, reparse event            |
+| **MarkFeature**               | Mark detection, mark slot resolution, markRemove event    |
+| **OverlayFeature**            | Overlay trigger detection, position, open/close           |
+| **SlotsFeature**              | Container ref, slot component/props resolution            |
+| **CaretFeature**              | Caret tracking, focus recovery, text selection state      |
+| **KeyboardFeature**           | Text input, block editing, arrow navigation               |
+| **DomFeature**                | contenteditable attribute management, DOM reconciliation  |
 | **DragFeature**               | Drag-and-drop reordering of blocks                       |
-| **CopyFeature**               | Clipboard copy/cut handling                              |
+| **ClipboardFeature**          | Clipboard copy/cut handling                              |
 
-The original `KeyDownController` was decomposed into three focused features: `InputFeature` (text input handling), `BlockEditFeature` (block editing operations), and `ArrowNavFeature` (keyboard navigation).
+`KeyboardFeature` internally composes three modules: input handling, block editing, and arrow navigation. `CaretFeature` composes focus recovery and text selection tracking.
 
 ## Lifecycle Timing
 
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.emit.mounted() on initial mount
+// 1. Framework emits store.feature.lifecycle.emit.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. After mount, ParseFeature reactively watches [props.value, computed.parser]
-//    → emits store.emit.reparse() when either changes
+// 2. After mount, ParsingFeature reactively watches [props.value, computed.parser]
+//    → emits store.feature.parsing.emit.reparse() when either changes
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → ContentEditableFeature.sync()
+//    → DomFeature reconciles DOM state
 
-// 4. Framework emits store.emit.rendered() after tokens render
+// 4. Framework emits store.feature.lifecycle.emit.rendered() after tokens render
 
-// 5. Framework emits store.emit.unmounted() on unmount
+// 5. Framework emits store.feature.lifecycle.emit.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
 

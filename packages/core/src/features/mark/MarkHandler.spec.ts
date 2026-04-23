@@ -28,7 +28,7 @@ describe('MarkHandler', () => {
 	it('return depth 0 for top-level mark', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
-		store.state.tokens([{type: 'text', content: 'hi ', position: {start: 0, end: 3}}, markToken])
+		store.feature.parsing.state.tokens([{type: 'text', content: 'hi ', position: {start: 0, end: 3}}, markToken])
 
 		const handler = new MarkHandler({ref: {current: null}, store, token: markToken})
 
@@ -38,7 +38,7 @@ describe('MarkHandler', () => {
 	it('return parent as undefined for top-level mark', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
-		store.state.tokens([markToken])
+		store.feature.parsing.state.tokens([markToken])
 
 		const handler = new MarkHandler({ref: {current: null}, store, token: markToken})
 
@@ -54,7 +54,7 @@ describe('MarkHandler', () => {
 			children: [innerMark],
 			position: {start: 0, end: 9},
 		})
-		store.state.tokens([outerMark])
+		store.feature.parsing.state.tokens([outerMark])
 
 		const handler = new MarkHandler({ref: {current: null}, store, token: innerMark})
 
@@ -70,7 +70,7 @@ describe('MarkHandler', () => {
 			children: [innerMark],
 			position: {start: 0, end: 9},
 		})
-		store.state.tokens([outerMark])
+		store.feature.parsing.state.tokens([outerMark])
 
 		const handler = new MarkHandler({ref: {current: null}, store, token: innerMark})
 
@@ -80,7 +80,7 @@ describe('MarkHandler', () => {
 	it('return depth 0 when token not found in state', () => {
 		const store = new Store()
 		const markToken = createMarkToken()
-		store.state.tokens([{type: 'text', content: 'other', position: {start: 0, end: 5}}])
+		store.feature.parsing.state.tokens([{type: 'text', content: 'other', position: {start: 0, end: 5}}])
 
 		const handler = new MarkHandler({ref: {current: null}, store, token: markToken})
 

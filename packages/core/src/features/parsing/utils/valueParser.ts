@@ -4,8 +4,8 @@ import {findGap, getClosestIndexes} from '../preparsing'
 
 export function getTokensByUI(store: Store): Token[] {
 	const {focus} = store.nodes
-	const parser = store.computed.parser()
-	const tokens = store.state.tokens()
+	const parser = store.feature.parsing.computed.parser()
+	const tokens = store.feature.parsing.state.tokens()
 	if (!parser) return tokens
 	const parsed = parser.parse(focus.content)
 	if (parsed.length <= 1) return tokens
@@ -14,23 +14,22 @@ export function getTokensByUI(store: Store): Token[] {
 
 export function computeTokensFromValue(store: Store): Token[] {
 	const value = store.props.value()
-	const previousValue = store.state.previousValue()
+	const previousValue = store.feature.value.state.previousValue()
 	const gap = findGap(previousValue, value)
 
 	if (!gap.left && !gap.right) {
-		store.state.previousValue(value)
-		return store.state.tokens()
+		store.feature.value.state.previousValue(value)
+		return store.feature.parsing.state.tokens()
 	}
 
-	// Full value replacement — incremental diff won't work, re-parse from scratch
 	if (gap.left === 0 && previousValue !== undefined && gap.right !== undefined && gap.right >= previousValue.length) {
-		store.state.previousValue(value)
+		store.feature.value.state.previousValue(value)
 		return parseWithParser(store, value ?? '')
 	}
 
-	store.state.previousValue(value)
+	store.feature.value.state.previousValue(value)
 	const ranges = getRangeMap(store)
-	const tokens = store.state.tokens()
+	const tokens = store.feature.parsing.state.tokens()
 
 	if (
 		gap.left !== undefined &&
@@ -61,7 +60,7 @@ export function computeTokensFromValue(store: Store): Token[] {
 
 export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
 	let span = ''
-	const tokens = store.state.tokens()
+	const tokens = store.feature.parsing.state.tokens()
 	for (const index of indexes) {
 		const token = tokens[index]
 		span += token.content
@@ -72,7 +71,7 @@ export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
 
 export function getRangeMap(store: Store): number[] {
 	let position = 0
-	const tokens = store.state.tokens()
+	const tokens = store.feature.parsing.state.tokens()
 	return tokens.map(token => {
 		const length = token.content.length
 		position += length
@@ -81,7 +80,7 @@ export function getRangeMap(store: Store): number[] {
 }
 
 export function parseWithParser(store: Store, value: string): Token[] {
-	const parser = store.computed.parser()
+	const parser = store.feature.parsing.computed.parser()
 	if (!parser) {
 		return [
 			{

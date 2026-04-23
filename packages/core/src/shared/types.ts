@@ -161,3 +161,11 @@ export type DragAction =
 export interface DragActions {
 	drag: {(action: DragAction): void}
 }
+
+export interface Feature {
+	readonly state: Readonly<Record<string, unknown>>
+	readonly computed: Readonly<Record<string, unknown>>
+	readonly emit: Readonly<Record<string, unknown>>
+	enable(): void
+	disable(): void
+}

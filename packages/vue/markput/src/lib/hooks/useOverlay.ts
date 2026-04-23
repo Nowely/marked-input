@@ -22,7 +22,7 @@ export interface OverlayHandler {
 
 export function useOverlay(): OverlayHandler {
 	const store = useStore()
-	const matchRef = useMarkput(s => s.state.overlayMatch) as Ref<OverlayMatch<Option> | undefined>
+	const matchRef = useMarkput(s => s.feature.overlay.state.overlayMatch) as Ref<OverlayMatch<Option> | undefined>
 
 	const style = computed(() => {
 		// Depend on matchRef so position recalculates as user types/moves caret
@@ -32,21 +32,21 @@ export function useOverlay(): OverlayHandler {
 		return Caret.getAbsolutePosition()
 	})
 
-	const close = () => store.emit.overlayClose()
+	const close = () => store.feature.overlay.emit.overlayClose()
 	const select = (value: {value: string; meta?: string}) => {
 		const match = matchRef.value
 		if (!match) return
 		const mark = createMarkFromOverlay(match, value.value, value.meta)
-		store.emit.overlaySelect({mark, match})
-		store.emit.overlayClose()
+		store.feature.overlay.emit.overlaySelect({mark, match})
+		store.feature.overlay.emit.overlayClose()
 	}
 
 	const ref = {
 		get current() {
-			return store.state.overlay()
+			return store.feature.overlay.state.overlay()
 		},
 		set current(v: HTMLElement | null) {
-			store.state.overlay(v)
+			store.feature.overlay.state.overlay(v)
 		},
 	}
 
