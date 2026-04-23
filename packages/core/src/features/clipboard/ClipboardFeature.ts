@@ -31,10 +31,6 @@ function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRang
 }
 
 export class ClipboardFeature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {} as const
-
 	#scope?: () => void
 
 	constructor(private readonly store: Store) {}
