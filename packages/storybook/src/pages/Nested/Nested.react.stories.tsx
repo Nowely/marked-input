@@ -159,8 +159,9 @@ const InteractiveMark = ({children}: MarkProps) => {
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
 	return (
-		<button
-			type="button"
+		<span
+			role="button"
+			tabIndex={0}
 			onClick={e => {
 				e.stopPropagation()
 				console.log('Mark clicked:', {
@@ -185,7 +186,7 @@ const InteractiveMark = ({children}: MarkProps) => {
 			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
 		>
 			{children}
-		</button>
+		</span>
 	)
 }
 
