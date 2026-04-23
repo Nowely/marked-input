@@ -158,7 +158,7 @@ describe('ParsingFeature', () => {
 			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
 			store.props.set({value: 'world'})
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
@@ -175,7 +175,7 @@ describe('ParsingFeature', () => {
 			store.props.set({value: 'test'})
 			store.feature.parsing.sync()
 
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
 			store.feature.parsing.emit.reparse()
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
@@ -190,7 +190,7 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.enable()
 			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
 
 			let callCount = 0
 			const original = store.feature.parsing.state.tokens
@@ -204,7 +204,7 @@ describe('ParsingFeature', () => {
 			expect(callCount).toBe(1)
 
 			callCount = 0
-			store.feature.caret.state.recovery({caret: 1, anchor: store.nodes.focus})
+			store.feature.caret.recovery({caret: 1, anchor: store.nodes.focus})
 			expect(callCount).toBe(0)
 
 			;(store.feature.parsing.state as Record<string, unknown>).tokens = original

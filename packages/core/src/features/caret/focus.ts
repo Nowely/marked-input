@@ -39,7 +39,7 @@ export function enableFocus(store: Store): () => void {
 }
 
 function recover(store: Store) {
-	const recovery = store.feature.caret.state.recovery()
+	const recovery = store.feature.caret.recovery()
 	if (!recovery) return
 
 	const {anchor, caret, isNext} = recovery
@@ -71,5 +71,5 @@ function recover(store: Store) {
 		store.nodes.focus.target = target
 		store.nodes.focus.caret = caret
 	})
-	store.feature.caret.state.recovery(undefined)
+	store.feature.caret.recovery(undefined)
 }

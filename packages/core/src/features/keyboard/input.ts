@@ -89,7 +89,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
-	const selecting = store.feature.caret.state.selecting()
+	const selecting = store.feature.caret.selecting()
 	if (selecting === 'all' && isFullSelection(store)) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
@@ -100,7 +100,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 		replaceAllContentWith(store, newContent)
 		return
 	}
-	if (selecting === 'all') store.feature.caret.state.selecting(undefined)
+	if (selecting === 'all') store.feature.caret.selecting(undefined)
 
 	if (store.feature.slots.isBlock()) return
 
@@ -157,7 +157,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	if (targetIdx === -1) targetIdx = newTokens.length - 1
 	const caretWithinToken = caretPos - newTokens[targetIdx].position.start
 
-	store.feature.caret.state.recovery({
+	store.feature.caret.recovery({
 		anchor: store.nodes.focus,
 		caret: caretWithinToken,
 		isNext: true,
@@ -229,9 +229,9 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 }
 
 export function handlePaste(store: Store, event: ClipboardEvent): void {
-	const selecting = store.feature.caret.state.selecting()
+	const selecting = store.feature.caret.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.feature.caret.state.selecting(undefined)
+		if (selecting === 'all') store.feature.caret.selecting(undefined)
 		return
 	}
 
@@ -244,7 +244,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
-	store.feature.caret.state.selecting(undefined)
+	store.feature.caret.selecting(undefined)
 	store.feature.value.previousValue(newContent)
 
 	store.props.onChange()?.(newContent)
@@ -265,7 +265,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 		const rawFirstChild = store.feature.slots.container()?.firstChild
 		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
 		if (firstChild) {
-			store.feature.caret.state.recovery({
+			store.feature.caret.recovery({
 				anchor: store.nodes.focus,
 				caret: newContent.length,
 			})

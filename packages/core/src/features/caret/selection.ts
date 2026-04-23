@@ -20,8 +20,8 @@ export function enableSelection(store: Store): () => void {
 			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (currentIsPressed && isNotInnerSome && isInside) {
-				if (store.feature.caret.state.selecting() !== 'drag') {
-					store.feature.caret.state.selecting('drag')
+				if (store.feature.caret.selecting() !== 'drag') {
+					store.feature.caret.selecting('drag')
 				}
 			}
 		})
@@ -29,24 +29,24 @@ export function enableSelection(store: Store): () => void {
 		listen(document, 'mouseup', () => {
 			isPressed = false
 			pressedNode = null
-			if (store.feature.caret.state.selecting() === 'drag') {
+			if (store.feature.caret.selecting() === 'drag') {
 				const sel = window.getSelection()
 				if (!sel || sel.isCollapsed) {
-					store.feature.caret.state.selecting(undefined)
+					store.feature.caret.selecting(undefined)
 				}
 			}
 		})
 
 		listen(document, 'selectionchange', () => {
-			if (store.feature.caret.state.selecting() !== 'drag') return
+			if (store.feature.caret.selecting() !== 'drag') return
 			const sel = window.getSelection()
 			if (!sel || sel.isCollapsed) {
-				store.feature.caret.state.selecting(undefined)
+				store.feature.caret.selecting(undefined)
 			}
 		})
 
 		effect(() => {
-			const value = store.feature.caret.state.selecting()
+			const value = store.feature.caret.selecting()
 			if (value !== 'drag') return
 			const container = store.feature.slots.container()
 			if (!container) return
@@ -57,8 +57,8 @@ export function enableSelection(store: Store): () => void {
 	})
 
 	return () => {
-		if (store.feature.caret.state.selecting() === 'drag') {
-			store.feature.caret.state.selecting(undefined)
+		if (store.feature.caret.selecting() === 'drag') {
+			store.feature.caret.selecting(undefined)
 		}
 
 		scope()

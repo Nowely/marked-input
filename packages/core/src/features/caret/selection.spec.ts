@@ -36,15 +36,15 @@ describe('TextSelectionFeature', () => {
 		const controller = store.feature.caret
 		controller.enable()
 		controller.disable()
-		expect(() => store.feature.caret.state.selecting('drag')).not.toThrow()
+		expect(() => store.feature.caret.selecting('drag')).not.toThrow()
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
 		const controller = store.feature.caret
 		controller.enable()
-		store.feature.caret.state.selecting('drag')
+		store.feature.caret.selecting('drag')
 		controller.disable()
-		expect(store.feature.caret.state.selecting()).toBe(undefined)
+		expect(store.feature.caret.selecting()).toBe(undefined)
 	})
 
 	it('selecting set to "drag" disables contenteditable on container elements', () => {
@@ -58,7 +58,7 @@ describe('TextSelectionFeature', () => {
 
 		const controller = store.feature.caret
 		controller.enable()
-		store.feature.caret.state.selecting('drag')
+		store.feature.caret.selecting('drag')
 
 		expect(span.contentEditable).toBe('false')
 

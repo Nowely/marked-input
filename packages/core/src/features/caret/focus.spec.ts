@@ -43,14 +43,14 @@ describe('FocusFeature', () => {
 			const target = document.createElement('div')
 			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
 			store.nodes.focus.target = target
-			store.feature.caret.state.recovery({
+			store.feature.caret.recovery({
 				anchor: store.nodes.focus,
 				caret: 0,
 			})
 
 			store.feature.lifecycle.rendered()
 
-			expect(store.feature.caret.state.recovery()).toBeUndefined()
+			expect(store.feature.caret.recovery()).toBeUndefined()
 
 			store.feature.caret.disable()
 		})
@@ -59,14 +59,14 @@ describe('FocusFeature', () => {
 			vi.spyOn(store.feature.dom, 'reconcile').mockImplementation(() => {})
 			store.feature.caret.enable()
 
-			store.feature.caret.state.recovery({
+			store.feature.caret.recovery({
 				anchor: store.nodes.focus,
 				caret: 0,
 			})
 
 			store.feature.lifecycle.rendered()
 
-			expect(store.feature.caret.state.recovery()).toBeDefined()
+			expect(store.feature.caret.recovery()).toBeDefined()
 
 			store.feature.caret.disable()
 		})

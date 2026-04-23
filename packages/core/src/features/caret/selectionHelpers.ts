@@ -32,6 +32,6 @@ export function selectAllText(store: Store, event: KeyboardEvent): void {
 		if (!selection || !anchorNode || !focusNode) return
 		selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
 
-		store.feature.caret.state.selecting('all')
+		store.feature.caret.selecting('all')
 	}
 }

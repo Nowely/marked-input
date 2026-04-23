@@ -34,7 +34,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	}
 	const caret = caretAnchor.length
 
-	store.feature.caret.state.recovery({anchor: caretAnchor.prev, caret})
+	store.feature.caret.recovery({anchor: caretAnchor.prev, caret})
 
 	store.feature.value.change()
 

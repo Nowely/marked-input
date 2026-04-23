@@ -74,8 +74,8 @@ describe('Store', () => {
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.feature.caret.state.selecting('drag')
-			expect(store.feature.caret.state.selecting()).toBe('drag')
+			store.feature.caret.selecting('drag')
+			expect(store.feature.caret.selecting()).toBe('drag')
 			expect(store.feature.parsing.state.tokens()).toEqual([])
 		})
 
@@ -84,14 +84,14 @@ describe('Store', () => {
 			const effectSpy = vi.fn()
 			effect(() => {
 				store.feature.parsing.state.tokens()
-				store.feature.caret.state.selecting()
+				store.feature.caret.selecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
 				store.feature.parsing.state.tokens([token])
-				store.feature.caret.state.selecting('all')
+				store.feature.caret.selecting('all')
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})

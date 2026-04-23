@@ -55,7 +55,7 @@ export class ParsingFeature implements Feature {
 
 	#subscribeParse() {
 		watch(this.emit.reparse, () => {
-			if (this._store.feature.caret.state.recovery()) {
+			if (this._store.feature.caret.recovery()) {
 				const text = toString(this.state.tokens())
 				this.state.tokens(parseWithParser(this._store, text))
 				this._store.feature.value.previousValue(text)
@@ -71,7 +71,7 @@ export class ParsingFeature implements Feature {
 		const deps = computed(() => [this._store.props.value(), this.computed.parser()] as const)
 
 		watch(deps, () => {
-			if (!this._store.feature.caret.state.recovery()) {
+			if (!this._store.feature.caret.recovery()) {
 				this.emit.reparse()
 			}
 		})

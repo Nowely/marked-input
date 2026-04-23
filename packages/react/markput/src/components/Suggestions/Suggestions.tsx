@@ -1,5 +1,4 @@
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import type {Store} from '@markput/core'
 import {useEffect, useMemo, useRef, useState, useContext} from 'react'
 
 import {useOverlay} from '../../lib/hooks/useOverlay'

@@ -20,7 +20,7 @@ export class DomFeature {
 				this.reconcile()
 			})
 			effect(() => {
-				if (this._store.feature.caret.state.selecting() === undefined) this.reconcile()
+				if (this._store.feature.caret.selecting() === undefined) this.reconcile()
 			})
 		})
 	}

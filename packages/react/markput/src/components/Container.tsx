@@ -1,4 +1,3 @@
-import type {Store} from '@markput/core'
 import {memo, useLayoutEffect, useContext} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'

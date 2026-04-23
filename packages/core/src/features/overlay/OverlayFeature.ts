@@ -109,7 +109,7 @@ export class OverlayFeature implements Feature {
 
 				const newSpan = createNewSpan(span, annotation, index, source)
 
-				this._store.feature.caret.state.recovery(
+				this._store.feature.caret.recovery(
 					Mark
 						? {
 								caret: 0,

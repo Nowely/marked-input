@@ -76,7 +76,7 @@ export class ClipboardFeature {
 				if (targetIdx === -1) targetIdx = newTokens.length - 1
 				const caretWithinToken = rawStart - newTokens[targetIdx].position.start
 
-				this.store.feature.caret.state.recovery({
+				this.store.feature.caret.recovery({
 					anchor: this.store.nodes.focus,
 					caret: caretWithinToken,
 					isNext: true,
