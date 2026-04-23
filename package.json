@@ -20,7 +20,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:related": "vitest run --changed",
-    "bench": "vitest bench --run --project core",
+    "bench": "vitest bench --run",
     "lint": "oxlint . --fix",
     "lint:check": "oxlint .",
     "lint:fix:suggest": "oxlint . --fix-suggestions",
