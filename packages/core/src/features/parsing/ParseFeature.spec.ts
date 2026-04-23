@@ -21,7 +21,7 @@ describe('ParsingFeature', () => {
 			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 
@@ -33,7 +33,7 @@ describe('ParsingFeature', () => {
 			store.props.set({defaultValue: 'default'})
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'default', position: {start: 0, end: 7}},
 			])
 
@@ -44,9 +44,7 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.enable()
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: '', position: {start: 0, end: 0}},
-			])
+			expect(store.feature.parsing.tokens()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
 
 			store.feature.parsing.disable()
 		})
@@ -66,8 +64,8 @@ describe('ParsingFeature', () => {
 			store.props.set({options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.computed.parser()).toBeUndefined()
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.parser()).toBeUndefined()
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: '@hello', position: {start: 0, end: 6}},
 			])
 
@@ -79,7 +77,7 @@ describe('ParsingFeature', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.computed.parser()).toBeDefined()
+			expect(store.feature.parsing.parser()).toBeDefined()
 
 			store.feature.parsing.disable()
 		})
@@ -93,17 +91,19 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.sync()
 
 			let callCount = 0
-			const original = store.feature.parsing.state.tokens
+			const original = store.feature.parsing.tokens
 			const tokensWrapper = (...args: unknown[]) => {
 				if (args.length) callCount++
 				return (original as (...args: unknown[]) => unknown)(...args)
 			}
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
+			;(store.feature.parsing as unknown as Record<string, unknown>).tokens = tokensWrapper
 
-			store.feature.parsing.emit.reparse()
+			store.feature.parsing.reparse()
 			expect(callCount).toBe(1)
 
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
+			;(store.feature.parsing as unknown as Record<string, unknown>).tokens = original
 			store.feature.parsing.disable()
 		})
 
@@ -114,9 +114,9 @@ describe('ParsingFeature', () => {
 
 			store.feature.parsing.disable()
 
-			const tokensBefore = store.feature.parsing.state.tokens()
-			store.feature.parsing.emit.reparse()
-			expect(store.feature.parsing.state.tokens()).toBe(tokensBefore)
+			const tokensBefore = store.feature.parsing.tokens()
+			store.feature.parsing.reparse()
+			expect(store.feature.parsing.tokens()).toBe(tokensBefore)
 		})
 
 		it('resets initialized state — re-enable and sync works fresh', () => {
@@ -129,7 +129,7 @@ describe('ParsingFeature', () => {
 			store.props.set({value: 'second'})
 			store.feature.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'second', position: {start: 0, end: 6}},
 			])
 
@@ -145,7 +145,7 @@ describe('ParsingFeature', () => {
 
 			store.props.set({value: 'world'})
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'world', position: {start: 0, end: 5}},
 			])
 			expect(store.feature.value.previousValue()).toBe('world')
@@ -161,7 +161,7 @@ describe('ParsingFeature', () => {
 			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
 			store.props.set({value: 'world'})
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 
@@ -176,9 +176,9 @@ describe('ParsingFeature', () => {
 			store.feature.parsing.sync()
 
 			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
-			store.feature.parsing.emit.reparse()
+			store.feature.parsing.reparse()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'test', position: {start: 0, end: 4}},
 			])
 			expect(store.feature.value.previousValue()).toBe('test')
@@ -193,21 +193,23 @@ describe('ParsingFeature', () => {
 			store.feature.caret.recovery({caret: 0, anchor: store.nodes.focus})
 
 			let callCount = 0
-			const original = store.feature.parsing.state.tokens
+			const original = store.feature.parsing.tokens
 			const tokensWrapper = (...args: unknown[]) => {
 				if (args.length) callCount++
 				return (original as (...args: unknown[]) => unknown)(...args)
 			}
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
+			;(store.feature.parsing as unknown as Record<string, unknown>).tokens = tokensWrapper
 
-			store.feature.parsing.emit.reparse()
+			store.feature.parsing.reparse()
 			expect(callCount).toBe(1)
 
 			callCount = 0
 			store.feature.caret.recovery({caret: 1, anchor: store.nodes.focus})
 			expect(callCount).toBe(0)
 
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
+			;(store.feature.parsing as unknown as Record<string, unknown>).tokens = original
 			store.feature.parsing.disable()
 		})
 	})

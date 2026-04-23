@@ -127,7 +127,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	event.preventDefault()
 
-	const tokens = store.feature.parsing.state.tokens()
+	const tokens = store.feature.parsing.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
 	const currentValue = store.feature.value.currentValue()
@@ -150,7 +150,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
 	store.feature.value.innerValue(newValue)
 
-	const newTokens = store.feature.parsing.state.tokens()
+	const newTokens = store.feature.parsing.tokens()
 	let targetIdx = newTokens.findIndex(
 		t => t.type === 'text' && caretPos >= t.position.start && caretPos <= t.position.end
 	)
@@ -250,8 +250,8 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.props.onChange()?.(newContent)
 
 	if (store.props.value() === undefined) {
-		store.feature.parsing.state.tokens(
-			store.feature.parsing.computed.parser()?.parse(newContent) ?? [
+		store.feature.parsing.tokens(
+			store.feature.parsing.parser()?.parse(newContent) ?? [
 				{
 					type: 'text' as const,
 					content: newContent,

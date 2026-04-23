@@ -22,7 +22,7 @@ export const Block = memo(({token}: BlockProps) => {
 		Component: s.feature.slots.blockComponent,
 		slotProps: s.feature.slots.blockProps,
 		isDragging: s.blocks.get(token).state.isDragging,
-		tokens: s.feature.parsing.state.tokens,
+		tokens: s.feature.parsing.tokens,
 	}))
 	const blockIndex = tokens.indexOf(token)
 

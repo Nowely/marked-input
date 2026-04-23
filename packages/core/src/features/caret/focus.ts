@@ -17,7 +17,7 @@ export function enableFocus(store: Store): () => void {
 		})
 
 		listen(container, 'click', () => {
-			const tokens = store.feature.parsing.state.tokens()
+			const tokens = store.feature.parsing.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				const container = store.feature.slots.container()
 				const element = container ? firstHtmlChild(container) : null

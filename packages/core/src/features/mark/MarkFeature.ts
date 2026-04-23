@@ -33,7 +33,7 @@ export class MarkFeature implements Feature {
 		this.#scope = effectScope(() => {
 			watch(this.markRemove, payload => {
 				const {token} = payload
-				const tokens = this._store.feature.parsing.state.tokens()
+				const tokens = this._store.feature.parsing.tokens()
 				if (!findToken(tokens, token)) return
 				const value = toString(tokens)
 				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)

@@ -61,7 +61,7 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.props.set({onChange})
 		setupDOM()
-		store.feature.parsing.state.tokens(makeTokens())
+		store.feature.parsing.tokens(makeTokens())
 
 		deleteMark('self', store)
 
@@ -72,11 +72,11 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.props.set({onChange})
 		setupDOM()
-		store.feature.parsing.state.tokens(makeTokens())
+		store.feature.parsing.tokens(makeTokens())
 
 		deleteMark('self', store)
 
-		expect(store.feature.parsing.state.tokens()).toHaveLength(1)
-		expect(store.feature.parsing.state.tokens()[0].content).toBe('hi  there')
+		expect(store.feature.parsing.tokens()).toHaveLength(1)
+		expect(store.feature.parsing.tokens()[0].content).toBe('hi  there')
 	})
 })

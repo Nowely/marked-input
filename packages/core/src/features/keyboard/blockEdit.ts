@@ -57,7 +57,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 	)
 	if (blockIndex === -1) return
 
-	const rows = store.feature.parsing.state.tokens()
+	const rows = store.feature.parsing.tokens()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -105,7 +105,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
 						target.focus()
-						const updatedRows = store.feature.parsing.state.tokens()
+						const updatedRows = store.feature.parsing.tokens()
 						const updatedToken = updatedRows[blockIndex - 1]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -140,7 +140,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
 						target.focus()
-						const updatedRows = store.feature.parsing.state.tokens()
+						const updatedRows = store.feature.parsing.tokens()
 						const updatedToken = updatedRows[blockIndex - 1]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -168,7 +168,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 					const target = childAt(container, blockIndex)
 					if (target) {
 						target.focus()
-						const updatedRows = store.feature.parsing.state.tokens()
+						const updatedRows = store.feature.parsing.tokens()
 						const updatedToken = updatedRows[blockIndex]
 						setCaretAtRawPos(target, updatedToken, joinPos)
 					}
@@ -208,7 +208,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	}
 	if (blockIndex === -1) return
 
-	const rows = store.feature.parsing.state.tokens()
+	const rows = store.feature.parsing.tokens()
 	const token = rows[blockIndex]
 	const blockDiv = blockDivs[blockIndex]
 	const value = store.feature.value.currentValue()
@@ -333,7 +333,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 	if (blockIndex === -1) return
 
 	const blockDiv = blockDivs[blockIndex]
-	const rows = store.feature.parsing.state.tokens()
+	const rows = store.feature.parsing.tokens()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -344,7 +344,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			const target = childAt(container, blockIndex)
 			if (!target) return
 			target.focus()
-			const updatedRows = store.feature.parsing.state.tokens()
+			const updatedRows = store.feature.parsing.tokens()
 			const updatedToken = updatedRows[blockIndex]
 			setCaretAtRawPos(target, updatedToken, newRawPos)
 		})

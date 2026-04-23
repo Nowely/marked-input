@@ -65,7 +65,7 @@ export class ClipboardFeature {
 				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
 				this.store.feature.value.innerValue(newValue)
 
-				const newTokens = this.store.feature.parsing.state.tokens()
+				const newTokens = this.store.feature.parsing.tokens()
 				let targetIdx = newTokens.findIndex(
 					t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
 				)

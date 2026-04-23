@@ -8,7 +8,7 @@ import {Store} from './Store'
 describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
-		expect(store.feature.parsing.state.tokens()).toEqual([])
+		expect(store.feature.parsing.tokens()).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -24,7 +24,7 @@ describe('Store', () => {
 
 	it('have events', () => {
 		const store = new Store()
-		expect(typeof store.feature.parsing.emit.reparse).toBe('function')
+		expect(typeof store.feature.parsing.reparse).toBe('function')
 		expect(typeof store.feature.value.change).toBe('function')
 		expect(typeof store.feature.mark.markRemove).toBe('function')
 	})
@@ -76,21 +76,21 @@ describe('Store', () => {
 			const store = new Store()
 			store.feature.caret.selecting('drag')
 			expect(store.feature.caret.selecting()).toBe('drag')
-			expect(store.feature.parsing.state.tokens()).toEqual([])
+			expect(store.feature.parsing.tokens()).toEqual([])
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.feature.parsing.state.tokens()
+				store.feature.parsing.tokens()
 				store.feature.caret.selecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
-				store.feature.parsing.state.tokens([token])
+				store.feature.parsing.tokens([token])
 				store.feature.caret.selecting('all')
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
@@ -122,9 +122,9 @@ describe('Store', () => {
 
 		it('does not modify state when props.set is called', () => {
 			const store = new Store()
-			const tokensBefore = store.feature.parsing.state.tokens()
+			const tokensBefore = store.feature.parsing.tokens()
 			store.props.set({value: 'test'})
-			expect(store.feature.parsing.state.tokens()).toBe(tokensBefore)
+			expect(store.feature.parsing.tokens()).toBe(tokensBefore)
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {
@@ -143,14 +143,14 @@ describe('Store', () => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.state.tokens(newTokens)
+						store.feature.parsing.tokens(newTokens)
 						store.feature.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
 			store.feature.value.innerValue('hello')
-			expect(store.feature.parsing.state.tokens()).toEqual([
+			expect(store.feature.parsing.tokens()).toEqual([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
 			])
 			expect(store.feature.value.previousValue()).toBe('hello')
@@ -166,7 +166,7 @@ describe('Store', () => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.state.tokens(newTokens)
+						store.feature.parsing.tokens(newTokens)
 						store.feature.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)
@@ -185,7 +185,7 @@ describe('Store', () => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.state.tokens(newTokens)
+						store.feature.parsing.tokens(newTokens)
 						store.feature.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)

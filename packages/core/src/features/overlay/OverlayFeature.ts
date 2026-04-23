@@ -122,7 +122,7 @@ export class OverlayFeature implements Feature {
 
 				if (this._store.nodes.input.target) {
 					this._store.nodes.input.content = newSpan
-					const tokens = this._store.feature.parsing.state.tokens()
+					const tokens = this._store.feature.parsing.tokens()
 					const inputToken = tokens[this._store.nodes.input.index]
 					if (inputToken.type === 'text') {
 						inputToken.content = newSpan
@@ -131,7 +131,7 @@ export class OverlayFeature implements Feature {
 					this._store.nodes.focus.target = this._store.nodes.input.target
 					this._store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this._store.feature.parsing.emit.reparse()
+					this._store.feature.parsing.reparse()
 				}
 			})
 		})

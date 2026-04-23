@@ -38,7 +38,7 @@ export class DomFeature {
 		const isBlock = this._store.feature.slots.isBlock()
 
 		if (isBlock) {
-			const tokens = this._store.feature.parsing.state.tokens()
+			const tokens = this._store.feature.parsing.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = childAt(container, i)
 				if (!el) continue
@@ -55,7 +55,7 @@ export class DomFeature {
 			}
 		}
 
-		const tokens = this._store.feature.parsing.state.tokens()
+		const tokens = this._store.feature.parsing.tokens()
 		if (isBlock) {
 			this.#reconcileDragTextContent(tokens, container, readOnly)
 		} else {

@@ -45,7 +45,7 @@ describe('ValueFeature', () => {
 		it('react to change event after enable', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 
@@ -57,7 +57,7 @@ describe('ValueFeature', () => {
 		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.feature.parsing.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
+			store.feature.parsing.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
 
 			store.feature.value.enable()
 			store.feature.value.enable()
@@ -83,7 +83,7 @@ describe('ValueFeature', () => {
 
 			store.feature.value.innerValue('hello @[world]')
 
-			expect(store.feature.parsing.state.tokens().length).toBeGreaterThan(0)
+			expect(store.feature.parsing.tokens().length).toBeGreaterThan(0)
 			expect(store.feature.value.previousValue()).toBe('hello @[world]')
 			expect(onChange).toHaveBeenCalledWith('hello @[world]')
 		})
@@ -94,7 +94,7 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 			store.feature.value.disable()
@@ -108,7 +108,7 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.feature.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
 			store.feature.value.disable()

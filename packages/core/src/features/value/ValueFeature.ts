@@ -23,15 +23,15 @@ export class ValueFeature implements Feature {
 				const {focus} = this._store.nodes
 
 				if (!focus.target || !focus.target.isContentEditable) {
-					const tokens = this._store.feature.parsing.state.tokens()
+					const tokens = this._store.feature.parsing.tokens()
 					const serialized = toString(tokens)
 					onChange?.(serialized)
 					this.previousValue(serialized)
-					trigger(this._store.feature.parsing.state.tokens)
+					trigger(this._store.feature.parsing.tokens)
 					return
 				}
 
-				const tokens = this._store.feature.parsing.state.tokens()
+				const tokens = this._store.feature.parsing.tokens()
 				if (focus.index >= tokens.length) return
 				const token = tokens[focus.index]
 				if (token.type === 'text') {
@@ -41,14 +41,14 @@ export class ValueFeature implements Feature {
 				}
 
 				onChange?.(toString(tokens))
-				this._store.feature.parsing.emit.reparse()
+				this._store.feature.parsing.reparse()
 			})
 
 			watch(this.innerValue, newValue => {
 				if (newValue === undefined) return
 				const newTokens = parseWithParser(this._store, newValue)
 				batch(() => {
-					this._store.feature.parsing.state.tokens(newTokens)
+					this._store.feature.parsing.tokens(newTokens)
 					this.previousValue(newValue)
 				})
 				this._store.props.onChange()?.(newValue)

@@ -11,13 +11,13 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const {focus} = store.nodes
 	const targetIndex = Math.max(0, focus.index - placeIndex)
 
-	const tokens = store.feature.parsing.state.tokens()
+	const tokens = store.feature.parsing.tokens()
 	const spliced = tokens.splice(focus.index - placeIndex, 3)
 	const span1 = spliced.at(0)
 	const span2 = spliced.at(2)
 	const content1 = span1?.content ?? ''
 	const content2 = span2?.content ?? ''
-	store.feature.parsing.state.tokens(
+	store.feature.parsing.tokens(
 		tokens.toSpliced(focus.index - placeIndex, 0, {
 			type: 'text',
 			content: content1 + content2,

@@ -12,7 +12,7 @@ export const Container = memo(() => {
 
 	const {isBlock, tokens, key, lifecycleEmit, Component, props} = useMarkput(s => ({
 		isBlock: s.feature.slots.isBlock,
-		tokens: s.feature.parsing.state.tokens,
+		tokens: s.feature.parsing.tokens,
 		key: s.key,
 		lifecycleEmit: s.feature.lifecycle,
 		Component: s.feature.slots.containerComponent,

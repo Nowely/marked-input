@@ -217,7 +217,7 @@ function createTestStore(tokens: Token[]): {store: Store; container: HTMLDivElem
 	document.body.appendChild(container)
 
 	store.feature.slots.container(container)
-	store.feature.parsing.state.tokens(tokens)
+	store.feature.parsing.tokens(tokens)
 
 	return {store, container}
 }
