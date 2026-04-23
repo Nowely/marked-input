@@ -1,6 +1,6 @@
 import {ArrowNavFeature} from '../features/arrownav'
 import {BlockEditFeature} from '../features/block-editing'
-import {CopyFeature} from '../features/clipboard'
+import {ClipboardFeature} from '../features/clipboard'
 import {DragFeature} from '../features/drag'
 import {ContentEditableFeature} from '../features/editable'
 import {SystemListenerFeature} from '../features/events'
@@ -126,7 +126,7 @@ export class Store {
 		textSelection: TextSelectionFeature
 		contentEditable: ContentEditableFeature
 		drag: DragFeature
-		copy: CopyFeature
+		clipboard: ClipboardFeature
 		parsing: ParsingFeature
 	}
 
@@ -193,7 +193,7 @@ export class Store {
 			textSelection: new TextSelectionFeature(this),
 			contentEditable: new ContentEditableFeature(this),
 			drag,
-			copy: new CopyFeature(this),
+			clipboard: new ClipboardFeature(this),
 			parsing,
 		}
 
