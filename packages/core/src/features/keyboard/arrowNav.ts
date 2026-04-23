@@ -1,8 +1,8 @@
 import {KEYBOARD} from '../../shared/constants'
 import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
+import {selectAllText} from '../caret'
 import {shiftFocusPrev, shiftFocusNext} from '../navigation'
-import {selectAllText} from '../selection'
 
 export function enableArrowNav(store: Store): () => void {
 	const container = store.state.container()

@@ -3,9 +3,9 @@ import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
 import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
+import {isFullSelection} from '../caret'
 import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
 import {deleteMark} from '../editing/utils/deleteMark'
-import {isFullSelection} from '../selection'
 
 export function enableInput(store: Store): () => void {
 	const container = store.state.container()

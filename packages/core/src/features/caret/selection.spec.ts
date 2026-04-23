@@ -19,13 +19,13 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('enable() sets up the selecting subscription via effect', () => {
-		const controller = store.feature.textSelection
+		const controller = store.feature.caret
 		controller.enable()
 		expect(addSpy).toHaveBeenCalledTimes(4)
 	})
 
 	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.feature.textSelection
+		const controller = store.feature.caret
 		controller.enable()
 		const callCount = addSpy.mock.calls.length
 		controller.enable()
@@ -33,14 +33,14 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('disable() removes the reactive subscription', () => {
-		const controller = store.feature.textSelection
+		const controller = store.feature.caret
 		controller.enable()
 		controller.disable()
 		expect(() => store.state.selecting('drag')).not.toThrow()
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
-		const controller = store.feature.textSelection
+		const controller = store.feature.caret
 		controller.enable()
 		store.state.selecting('drag')
 		controller.disable()
@@ -56,7 +56,7 @@ describe('TextSelectionFeature', () => {
 
 		store.state.container(container)
 
-		const controller = store.feature.textSelection
+		const controller = store.feature.caret
 		controller.enable()
 		store.state.selecting('drag')
 

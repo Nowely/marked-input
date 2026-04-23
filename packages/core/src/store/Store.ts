@@ -1,15 +1,14 @@
+import {CaretFeature} from '../features/caret'
 import {ClipboardFeature} from '../features/clipboard'
 import {DragFeature} from '../features/drag'
 import {ContentEditableFeature} from '../features/editable'
 import {SystemListenerFeature} from '../features/events'
-import {FocusFeature} from '../features/focus'
 import {KeyboardFeature} from '../features/keyboard'
 import {LifecycleFeature} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
 import {OverlayFeature} from '../features/overlay'
 import type {Parser, Token} from '../features/parsing'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
-import {TextSelectionFeature} from '../features/selection'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
@@ -116,10 +115,9 @@ export class Store {
 		overlay: OverlayFeature
 		mark: MarkFeature
 		slots: SlotsFeature
-		focus: FocusFeature
+		caret: CaretFeature
 		keyboard: KeyboardFeature
 		system: SystemListenerFeature
-		textSelection: TextSelectionFeature
 		contentEditable: ContentEditableFeature
 		drag: DragFeature
 		clipboard: ClipboardFeature
@@ -134,15 +132,16 @@ export class Store {
 		const overlay = new OverlayFeature(this)
 		const slots = new SlotsFeature(this)
 		const drag = new DragFeature(this)
+		const caret = new CaretFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
 			previousValue: value.state.previousValue,
 			innerValue: value.state.innerValue,
-			recovery: signal<Recovery | undefined>(undefined),
+			recovery: caret.state.recovery,
 			container: slots.state.container,
 			overlay: overlay.state.overlay,
-			selecting: signal<'drag' | 'all' | undefined>(undefined),
+			selecting: caret.state.selecting,
 			overlayMatch: overlay.state.overlayMatch,
 		}
 
@@ -181,10 +180,9 @@ export class Store {
 			mark,
 			overlay,
 			slots,
-			focus: new FocusFeature(this),
+			caret,
 			keyboard: new KeyboardFeature(this),
 			system: new SystemListenerFeature(this),
-			textSelection: new TextSelectionFeature(this),
 			contentEditable: new ContentEditableFeature(this),
 			drag,
 			clipboard: new ClipboardFeature(this),

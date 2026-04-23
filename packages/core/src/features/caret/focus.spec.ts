@@ -17,7 +17,7 @@ describe('FocusFeature', () => {
 		store.state.container(stubContainer)
 		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(feature)) {
-			if (key === 'focus') continue
+			if (key === 'caret') continue
 			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
 			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
 		}
@@ -25,19 +25,19 @@ describe('FocusFeature', () => {
 
 	describe('rendered handler', () => {
 		it('always emits sync', () => {
-			store.feature.focus.enable()
+			store.feature.caret.enable()
 
 			const syncSpy = vi.spyOn(store.emit, 'sync')
 			store.emit.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
-			store.feature.focus.disable()
+			store.feature.caret.disable()
 		})
 
 		it('runs caret recovery and clears recovery state when Mark is set', () => {
 			store.setProps({Mark: () => null})
-			store.feature.focus.enable()
+			store.feature.caret.enable()
 
 			const target = document.createElement('div')
 			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
@@ -51,11 +51,11 @@ describe('FocusFeature', () => {
 
 			expect(store.state.recovery()).toBeUndefined()
 
-			store.feature.focus.disable()
+			store.feature.caret.disable()
 		})
 
 		it('does not run recovery when Mark is not set', () => {
-			store.feature.focus.enable()
+			store.feature.caret.enable()
 
 			store.state.recovery({
 				anchor: store.nodes.focus,
@@ -66,14 +66,14 @@ describe('FocusFeature', () => {
 
 			expect(store.state.recovery()).toBeDefined()
 
-			store.feature.focus.disable()
+			store.feature.caret.disable()
 		})
 	})
 
 	describe('subscription lifecycle', () => {
 		it('does not fire rendered watcher after disable', () => {
-			store.feature.focus.enable()
-			store.feature.focus.disable()
+			store.feature.caret.enable()
+			store.feature.caret.disable()
 
 			const syncSpy = vi.spyOn(store.emit, 'sync')
 			store.emit.rendered()
@@ -84,12 +84,12 @@ describe('FocusFeature', () => {
 
 	describe('disable()', () => {
 		it('clears nodes.focus.target', () => {
-			store.feature.focus.enable()
+			store.feature.caret.enable()
 
 			store.nodes.focus.target = document.createElement('div')
 			expect(store.nodes.focus.target).toBeDefined()
 
-			store.feature.focus.disable()
+			store.feature.caret.disable()
 
 			expect(store.nodes.focus.target).toBeUndefined()
 		})
