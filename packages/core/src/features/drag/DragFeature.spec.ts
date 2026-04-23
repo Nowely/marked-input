@@ -37,4 +37,9 @@ describe('DragFeature', () => {
 			expect(reorderSpy).not.toHaveBeenCalled()
 		})
 	})
+
+	it('owns the drag event (aliased with legacy store.emit.drag)', () => {
+		const store = new Store()
+		expect(store.feature.drag.emit.drag).toBe(store.emit.drag)
+	})
 })

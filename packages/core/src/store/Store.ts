@@ -137,6 +137,7 @@ export class Store {
 		const mark = new MarkFeature(this)
 		const overlay = new OverlayFeature(this)
 		const slots = new SlotsFeature(this)
+		const drag = new DragFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
@@ -172,7 +173,7 @@ export class Store {
 			overlaySelect: overlay.emit.overlaySelect,
 			overlayClose: overlay.emit.overlayClose,
 			sync: event(),
-			drag: event<DragAction>(),
+			drag: drag.emit.drag,
 			rendered: lifecycle.emit.rendered,
 			mounted: lifecycle.emit.mounted,
 			unmounted: lifecycle.emit.unmounted,
@@ -191,7 +192,7 @@ export class Store {
 			system: new SystemListenerFeature(this),
 			textSelection: new TextSelectionFeature(this),
 			contentEditable: new ContentEditableFeature(this),
-			drag: new DragFeature(this),
+			drag,
 			copy: new CopyFeature(this),
 			parsing,
 		}

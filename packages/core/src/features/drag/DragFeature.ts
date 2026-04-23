@@ -1,11 +1,18 @@
 import {childAt} from '../../shared/checkers'
-import {watch} from '../../shared/signals'
+import {event, watch} from '../../shared/signals'
+import type {DragAction} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {createRowContent} from '../editing'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragFeature {
+	readonly state = {} as const
+	readonly computed = {} as const
+	readonly emit = {
+		drag: event<DragAction>(),
+	}
+
 	constructor(private readonly store: Store) {}
 
 	#unsub?: () => void
@@ -13,7 +20,7 @@ export class DragFeature {
 	enable() {
 		if (this.#unsub) return
 
-		this.#unsub = watch(this.store.emit.drag, action => {
+		this.#unsub = watch(this.emit.drag, action => {
 			switch (action.type) {
 				case 'reorder':
 					this.#reorder(action.source, action.target)
