@@ -61,7 +61,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
-	const value = store.value.currentValue()
+	const value = store.value.current()
 	if (!store.props.onChange()) return
 
 	if (event.key === KEYBOARD.BACKSPACE) {
@@ -81,7 +81,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 								value.slice(rows[blockIndex + 1].position.start)
 							)
 						})()
-			store.value.innerValue(newValue)
+			store.value.next(newValue)
 			queueMicrotask(() => {
 				const targetIndex = Math.max(0, blockIndex - 1)
 				const target = childAt(container, targetIndex)
@@ -100,7 +100,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.value.innerValue(newValue)
+				store.value.next(newValue)
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
@@ -135,7 +135,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.value.innerValue(newValue)
+				store.value.next(newValue)
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
@@ -163,7 +163,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.value.innerValue(newValue)
+				store.value.next(newValue)
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex)
 					if (target) {
@@ -211,7 +211,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	const rows = store.parsing.tokens()
 	const token = rows[blockIndex]
 	const blockDiv = blockDivs[blockIndex]
-	const value = store.value.currentValue()
+	const value = store.value.current()
 
 	if (!store.props.onChange()) return
 
@@ -219,7 +219,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-		store.value.innerValue(newValue)
+		store.value.next(newValue)
 		queueMicrotask(() => {
 			const newBlockIndex = blockIndex + 1
 			if (newBlockIndex < container.children.length) {
@@ -235,7 +235,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 
 	const absolutePos = getCaretRawPosInBlock(blockDiv, token)
 	const newValue = value.slice(0, absolutePos) + newRowContent + value.slice(absolutePos)
-	store.value.innerValue(newValue)
+	store.value.next(newValue)
 
 	queueMicrotask(() => {
 		const newBlockIndex = blockIndex + 1
@@ -337,7 +337,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
-	const value = store.value.currentValue()
+	const value = store.value.current()
 
 	const focusAndSetCaret = (newRawPos: number) => {
 		queueMicrotask(() => {
@@ -364,7 +364,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			} else {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
-			store.value.innerValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
+			store.value.next(value.slice(0, rawFrom) + data + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + data.length)
 			break
 		}
@@ -384,7 +384,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			} else {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
-			store.value.innerValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
+			store.value.next(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
 			focusAndSetCaret(rawFrom + pasteData.length)
 			break
 		}
@@ -401,7 +401,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 			if (rawFrom === rawTo) return
 			event.preventDefault()
-			store.value.innerValue(value.slice(0, rawFrom) + value.slice(rawTo))
+			store.value.next(value.slice(0, rawFrom) + value.slice(rawTo))
 			focusAndSetCaret(rawFrom)
 			break
 		}

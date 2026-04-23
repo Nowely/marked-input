@@ -3,25 +3,25 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {Store} from '../../store/Store'
 
 describe('MarkFeature', () => {
-	it('hasMark is false when no Mark is configured', () => {
+	it('enabled is false when no Mark is configured', () => {
 		const store = new Store()
-		expect(store.mark.hasMark()).toBe(false)
+		expect(store.mark.enabled()).toBe(false)
 	})
 
-	it('hasMark is true when Mark prop is set', () => {
+	it('enabled is true when Mark prop is set', () => {
 		const store = new Store()
 		store.props.set({Mark: () => null})
-		expect(store.mark.hasMark()).toBe(true)
+		expect(store.mark.enabled()).toBe(true)
 	})
 
-	it('exposes hasMark, mark, markRemove', () => {
+	it('exposes enabled, slot, remove', () => {
 		const store = new Store()
-		expect(typeof store.mark.hasMark).toBe('function')
-		expect(typeof store.mark.mark).toBe('function')
-		expect(typeof store.mark.markRemove).toBe('function')
+		expect(typeof store.mark.enabled).toBe('function')
+		expect(typeof store.mark.slot).toBe('function')
+		expect(typeof store.mark.remove).toBe('function')
 	})
 
-	describe('markRemove handler', () => {
+	describe('remove handler', () => {
 		let store: Store
 
 		beforeEach(() => {
@@ -38,7 +38,7 @@ describe('MarkFeature', () => {
 
 			store.mark.enable()
 
-			store.mark.markRemove({token})
+			store.mark.remove({token})
 
 			expect(store.parsing.tokens()).toEqual([
 				{
@@ -50,7 +50,7 @@ describe('MarkFeature', () => {
 			expect(onChange).toHaveBeenCalled()
 		})
 
-		it('ignore markRemove events for tokens that are not in state', () => {
+		it('ignore remove events for tokens that are not in state', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
@@ -60,7 +60,7 @@ describe('MarkFeature', () => {
 
 			store.mark.enable()
 
-			store.mark.markRemove({token: missingToken})
+			store.mark.remove({token: missingToken})
 
 			expect(store.parsing.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -68,7 +68,7 @@ describe('MarkFeature', () => {
 	})
 
 	describe('disable()', () => {
-		it('stop reacting to markRemove events after disable', () => {
+		it('stop reacting to remove events after disable', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
@@ -79,7 +79,7 @@ describe('MarkFeature', () => {
 			store.mark.enable()
 			store.mark.disable()
 
-			store.mark.markRemove({token})
+			store.mark.remove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})

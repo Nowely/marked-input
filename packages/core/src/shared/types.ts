@@ -65,10 +65,10 @@ export interface CoreOption {
 export interface MarkputState {
 	tokens: Token[]
 	parser: Parser | undefined
-	previousValue: string | undefined
+	last: string | undefined
 	recovery: Recovery | undefined
 	selecting: 'drag' | 'all' | undefined
-	overlayMatch: OverlayMatch | undefined
+	match: OverlayMatch | undefined
 	/** Annotated text with markups for mark */
 	value: string | undefined
 	/** Default value */
@@ -159,7 +159,7 @@ export type DragAction =
 	| {type: 'duplicate'; index: number}
 
 export interface DragActions {
-	drag: {(action: DragAction): void}
+	action: {(action: DragAction): void}
 }
 
 export interface Feature {

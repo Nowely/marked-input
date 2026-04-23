@@ -130,7 +130,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const tokens = store.parsing.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
-	const currentValue = store.value.currentValue()
+	const currentValue = store.value.current()
 
 	const ranges = event.getTargetRanges()
 	const childElement = container.children[focus.index]
@@ -148,7 +148,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
-	store.value.innerValue(newValue)
+	store.value.next(newValue)
 
 	const newTokens = store.parsing.tokens()
 	let targetIdx = newTokens.findIndex(
@@ -245,7 +245,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.caret.selecting(undefined)
-	store.value.previousValue(newContent)
+	store.value.last(newContent)
 
 	store.props.onChange()?.(newContent)
 

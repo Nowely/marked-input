@@ -7,7 +7,7 @@ import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './op
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragFeature {
-	readonly drag = event<DragAction>()
+	readonly action = event<DragAction>()
 
 	constructor(private readonly store: Store) {}
 
@@ -16,7 +16,7 @@ export class DragFeature {
 	enable() {
 		if (this.#unsub) return
 
-		this.#unsub = watch(this.drag, action => {
+		this.#unsub = watch(this.action, action => {
 			switch (action.type) {
 				case 'reorder':
 					this.#reorder(action.source, action.target)
@@ -44,7 +44,7 @@ export class DragFeature {
 		if (value == null || !this.store.props.onChange()) return
 		const rows = this.store.parsing.tokens()
 		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
-		if (newValue !== value) this.store.value.innerValue(newValue)
+		if (newValue !== value) this.store.value.next(newValue)
 	}
 
 	#add(afterIndex: number) {
@@ -53,7 +53,7 @@ export class DragFeature {
 		const rawRows = this.store.parsing.tokens()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.store.props.options())
-		this.store.value.innerValue(addDragRow(value, rows, afterIndex, newRowContent))
+		this.store.value.next(addDragRow(value, rows, afterIndex, newRowContent))
 		queueMicrotask(() => {
 			const container = this.store.slots.container()
 			if (!container) return
@@ -66,13 +66,13 @@ export class DragFeature {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
 		const rows = this.store.parsing.tokens()
-		this.store.value.innerValue(deleteDragRow(value, rows, index))
+		this.store.value.next(deleteDragRow(value, rows, index))
 	}
 
 	#duplicate(index: number) {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
 		const rows = this.store.parsing.tokens()
-		this.store.value.innerValue(duplicateDragRow(value, rows, index))
+		this.store.value.next(duplicateDragRow(value, rows, index))
 	}
 }

@@ -19,7 +19,7 @@ export interface OverlayHandler {
 }
 
 export function useOverlay(): OverlayHandler {
-	const match = useMarkput(s => s.overlay.overlayMatch)
+	const match = useMarkput(s => s.overlay.match)
 	const storeRef = useRef<Store | null>(null)
 	if (storeRef.current === null) {
 		const ctx = useContext(StoreContext)
@@ -33,13 +33,13 @@ export function useOverlay(): OverlayHandler {
 		return Caret.getAbsolutePosition()
 	}, [match])
 
-	const close = useCallback(() => store.overlay.overlayClose(), [store])
+	const close = useCallback(() => store.overlay.close(), [store])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			if (!match) return
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			store.overlay.overlaySelect({mark, match})
-			store.overlay.overlayClose()
+			store.overlay.select({mark, match})
+			store.overlay.close()
 		},
 		[match, store]
 	)
@@ -47,10 +47,10 @@ export function useOverlay(): OverlayHandler {
 	const ref = useMemo(
 		(): RefObject<HTMLElement | null> => ({
 			get current() {
-				return store.overlay.overlay()
+				return store.overlay.element()
 			},
 			set current(v: HTMLElement | null) {
-				store.overlay.overlay(v)
+				store.overlay.element(v)
 			},
 		}),
 		[store]

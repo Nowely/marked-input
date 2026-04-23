@@ -3,35 +3,35 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {Store} from '../../store/Store'
 
 describe('ValueFeature', () => {
-	it('exposes previousValue, innerValue signals', () => {
+	it('exposes last, next signals', () => {
 		const store = new Store()
-		expect(typeof store.value.previousValue).toBe('function')
-		expect(typeof store.value.innerValue).toBe('function')
+		expect(typeof store.value.last).toBe('function')
+		expect(typeof store.value.next).toBe('function')
 	})
 
-	it('exposes currentValue computed defaulting to empty string', () => {
+	it('exposes current computed defaulting to empty string', () => {
 		const store = new Store()
-		expect(store.value.currentValue()).toBe('')
+		expect(store.value.current()).toBe('')
 	})
 
-	it('currentValue falls back to props.value when previousValue is unset', () => {
+	it('current falls back to props.value when last is unset', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		expect(store.value.currentValue()).toBe('hello')
+		expect(store.value.current()).toBe('hello')
 	})
 
-	it('currentValue returns previousValue when set', () => {
+	it('current returns last when set', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
-		store.value.previousValue('world')
-		expect(store.value.currentValue()).toBe('world')
+		store.value.last('world')
+		expect(store.value.current()).toBe('world')
 	})
 
 	it('exposes signal and computed instances directly', () => {
 		const store = new Store()
-		expect(typeof store.value.previousValue).toBe('function')
-		expect(typeof store.value.innerValue).toBe('function')
-		expect(typeof store.value.currentValue).toBe('function')
+		expect(typeof store.value.last).toBe('function')
+		expect(typeof store.value.next).toBe('function')
+		expect(typeof store.value.current).toBe('function')
 		expect(typeof store.value.change).toBe('function')
 	})
 
@@ -68,23 +68,23 @@ describe('ValueFeature', () => {
 		})
 	})
 
-	describe('innerValue handler', () => {
+	describe('next handler', () => {
 		let store: Store
 
 		beforeEach(() => {
 			store = new Store()
 		})
 
-		it('parses innerValue and writes tokens + previousValue', () => {
+		it('parses next and writes tokens + last', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange, Mark: () => null, options: [{markup: '@[__value__]'}]})
 
 			store.value.enable()
 
-			store.value.innerValue('hello @[world]')
+			store.value.next('hello @[world]')
 
 			expect(store.parsing.tokens().length).toBeGreaterThan(0)
-			expect(store.value.previousValue()).toBe('hello @[world]')
+			expect(store.value.last()).toBe('hello @[world]')
 			expect(onChange).toHaveBeenCalledWith('hello @[world]')
 		})
 	})

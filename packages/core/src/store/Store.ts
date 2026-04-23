@@ -41,10 +41,8 @@ export class Store {
 	readonly clipboard = new ClipboardFeature(this)
 	readonly parsing = new ParsingFeature(this)
 
-	readonly #features: Feature[] = []
-
 	constructor() {
-		this.#features = [
+		const features: Feature[] = [
 			this.lifecycle,
 			this.value,
 			this.mark,
@@ -57,7 +55,7 @@ export class Store {
 			this.clipboard,
 			this.parsing,
 		]
-		watch(this.lifecycle.mounted, () => this.#features.forEach(f => f.enable()))
-		watch(this.lifecycle.unmounted, () => this.#features.forEach(f => f.disable()))
+		watch(this.lifecycle.mounted, () => features.forEach(f => f.enable()))
+		watch(this.lifecycle.unmounted, () => features.forEach(f => f.disable()))
 	}
 }

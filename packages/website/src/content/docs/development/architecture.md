@@ -108,7 +108,7 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 2. OverlayFeature runs a trigger probe (on `store.value.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
         ↓
 3. If found:
-   - store.overlay.overlayMatch set
+   - store.overlay.match set
         ↓
 4. Overlay component receives match via useOverlay()
         ↓
@@ -117,11 +117,11 @@ There are **two parse paths**: `getTokensByUI` (user editing — re-parses only 
 6. User selects item:
    - Overlay calls select({ value, meta })
         ↓
-7. store.overlay.overlaySelect() emitted
+7. store.overlay.select() emitted
         ↓
 8. Markup inserted, onChange called with new text
         ↓
-9. store.overlay.overlayClose() closes overlay
+9. store.overlay.close() closes overlay
 ```
 
 ## Parsing Pipeline
@@ -219,9 +219,9 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | --------------- | -------------- | --------------------------- | -------------------------------- |
 | `change`        | value          | Text content changes        | `void`                           |
 | `reparse`       | parsing        | Re-parse triggered          | `void`                           |
-| `overlayClose`  | overlay        | Close overlay               | `void`                           |
-| `overlaySelect` | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `markRemove`    | mark           | Mark removed                | `{ token: Token }`               |
+| `close`         | overlay        | Close overlay               | `void`                           |
+| `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
+| `remove`        | mark           | Mark removed                | `{ token: Token }`               |
 | `reconcile`     | dom            | Post-render DOM alignment   | `void`                           |
 | `rendered`      | lifecycle      | After tokens render         | `void`                           |
 | `mounted`       | lifecycle      | Framework initial mount      | `void`                           |
@@ -235,7 +235,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 store.value.change()
 
 // Emit a payload event
-store.mark.markRemove({ token })
+store.mark.remove({ token })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -307,10 +307,10 @@ class Store {
 
     readonly feature: {
         lifecycle: LifecycleFeature    // mounted, unmounted, rendered events
-        value: ValueFeature            // previousValue, innerValue, currentValue, change event
+        value: ValueFeature            // last, next, current, change event
         parsing: ParsingFeature        // tokens, parser, reparse event
-        mark: MarkFeature              // hasMark, mark, markRemove event
-        overlay: OverlayFeature        // overlayMatch, overlay, overlaySelect, overlayClose
+        mark: MarkFeature              // enabled, slot, remove event
+        overlay: OverlayFeature        // match, element, slot, select, close
         slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
         caret: CaretFeature            // recovery, selecting (merged Focus + TextSelection)
         keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
@@ -336,7 +336,7 @@ store.parsing.tokens(newTokens)
 import {batch} from '@markput/core'
 batch(() => {
 	store.parsing.tokens(newTokens)
-	store.value.previousValue(serialized)
+	store.value.last(serialized)
 })
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
@@ -355,7 +355,7 @@ const tokens = store.parsing.tokens.use()
 | **LifecycleFeature**          | Mount/unmount/render lifecycle events                     |
 | **ValueFeature**              | Previous/inner/current value tracking, change event       |
 | **ParsingFeature**            | Token parsing, parser selection, reparse event            |
-| **MarkFeature**               | Mark detection, mark slot resolution, markRemove event    |
+| **MarkFeature**               | Mark detection, mark slot resolution, remove event        |
 | **OverlayFeature**            | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution            |
 | **CaretFeature**              | Caret tracking, focus recovery, text selection state      |

@@ -9,20 +9,20 @@ import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 
 export class MarkFeature implements Feature {
-	readonly hasMark: Computed<boolean> = computed(() => {
+	readonly enabled: Computed<boolean> = computed(() => {
 		const Mark = this._store.props.Mark()
 		if (Mark) return true
 		return this._store.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
 	})
 
-	readonly mark: MarkSlot = computed(() => {
+	readonly slot: MarkSlot = computed(() => {
 		const options = this._store.props.options()
 		const Mark = this._store.props.Mark()
 		const Span = this._store.props.Span()
 		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
 	})
 
-	readonly markRemove = event<{token: Token}>()
+	readonly remove = event<{token: Token}>()
 
 	#scope?: () => void
 
@@ -31,13 +31,13 @@ export class MarkFeature implements Feature {
 	enable() {
 		if (this.#scope) return
 		this.#scope = effectScope(() => {
-			watch(this.markRemove, payload => {
+			watch(this.remove, payload => {
 				const {token} = payload
 				const tokens = this._store.parsing.tokens()
 				if (!findToken(tokens, token)) return
 				const value = toString(tokens)
 				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
-				this._store.value.innerValue(nextValue)
+				this._store.value.next(nextValue)
 			})
 		})
 	}

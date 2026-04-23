@@ -59,11 +59,11 @@ export class ClipboardFeature {
 					first.type === 'text' ? first.position.start + result.startOffset : first.position.start
 				const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
 
-				const value = this.store.value.currentValue()
+				const value = this.store.value.current()
 				if (rawStart === rawEnd) return
 
 				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-				this.store.value.innerValue(newValue)
+				this.store.value.next(newValue)
 
 				const newTokens = this.store.parsing.tokens()
 				let targetIdx = newTokens.findIndex(
