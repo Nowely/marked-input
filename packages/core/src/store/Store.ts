@@ -12,12 +12,12 @@ import {OverlayFeature} from '../features/overlay'
 import type {Parser, Token} from '../features/parsing'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
-import {resolveSlot, resolveSlotProps} from '../features/slots'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
+import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
-import {signal, computed, event, batch, watch} from '../shared/signals'
+import {signal, event, batch, watch} from '../shared/signals'
 import type {SignalValues, Computed, Signal, Event} from '../shared/signals'
 import type {
 	CoreOption,
@@ -31,36 +31,10 @@ import type {
 	DraggableConfig,
 	Slot,
 } from '../shared/types'
-import {cx} from '../shared/utils/cx'
-import {merge} from '../shared/utils/merge'
 import {shallow} from '../shared/utils/shallow'
 import {BlockRegistry} from './BlockRegistry'
 
-import styles from '../../styles.module.css'
-
 export type {DragAction} from '../shared/types'
-
-const DRAG_HANDLE_WIDTH = 24
-
-function buildContainerProps(
-	isDraggableBlock: boolean,
-	readOnly: boolean,
-	className: string | undefined,
-	style: CSSProperties | undefined,
-	slotProps: CoreSlotProps | undefined
-): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
-	const containerSlotProps = slotProps?.container
-	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = isDraggableBlock && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
-
-	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
-
-	return {
-		className: cx(styles.Container, className, containerSlotProps?.className),
-		style: mergedStyle,
-		...otherSlotProps,
-	}
-}
 
 export class Store {
 	readonly key = new KeyGenerator()
@@ -143,6 +117,7 @@ export class Store {
 		value: ValueFeature
 		overlay: OverlayFeature
 		mark: MarkFeature
+		slots: SlotsFeature
 		focus: FocusFeature
 		input: InputFeature
 		blockEditing: BlockEditFeature
@@ -161,13 +136,14 @@ export class Store {
 		const parsing = new ParsingFeature(this)
 		const mark = new MarkFeature(this)
 		const overlay = new OverlayFeature(this)
+		const slots = new SlotsFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
 			previousValue: value.state.previousValue,
 			innerValue: value.state.innerValue,
 			recovery: signal<Recovery | undefined>(undefined),
-			container: signal<HTMLDivElement | null>(null),
+			container: slots.state.container,
 			overlay: overlay.state.overlay,
 			selecting: signal<'drag' | 'all' | undefined>(undefined),
 			overlayMatch: overlay.state.overlayMatch,
@@ -175,26 +151,16 @@ export class Store {
 
 		this.computed = {
 			hasMark: mark.computed.hasMark,
-			isBlock: computed(() => this.props.layout() === 'block'),
-			isDraggable: computed(() => !!this.props.draggable()),
+			isBlock: slots.computed.isBlock,
+			isDraggable: slots.computed.isDraggable,
 			parser: parsing.computed.parser,
 			currentValue: value.computed.currentValue,
-			containerComponent: computed(() => resolveSlot('container', this.props.slots())),
-			containerProps: computed(
-				() =>
-					buildContainerProps(
-						this.computed.isDraggable() && this.computed.isBlock(),
-						this.props.readOnly(),
-						this.props.className(),
-						this.props.style(),
-						this.props.slotProps()
-					),
-				{equals: shallow}
-			),
-			blockComponent: computed(() => resolveSlot('block', this.props.slots())),
-			blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
-			spanComponent: computed(() => resolveSlot('span', this.props.slots())),
-			spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
+			containerComponent: slots.computed.containerComponent,
+			containerProps: slots.computed.containerProps,
+			blockComponent: slots.computed.blockComponent,
+			blockProps: slots.computed.blockProps,
+			spanComponent: slots.computed.spanComponent,
+			spanProps: slots.computed.spanProps,
 			overlay: overlay.computed.overlay,
 			mark: mark.computed.mark,
 		}
@@ -217,6 +183,7 @@ export class Store {
 			value,
 			mark,
 			overlay,
+			slots,
 			focus: new FocusFeature(this),
 			input: new InputFeature(this),
 			blockEditing: new BlockEditFeature(this),

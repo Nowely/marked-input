@@ -8,3 +8,4 @@ export {
 	type SlotOption,
 } from './resolveSlot'
 export {resolveOptionSlot} from './resolveOptionSlot'
+export {SlotsFeature} from './SlotsFeature'
