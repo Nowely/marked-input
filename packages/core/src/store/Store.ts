@@ -6,20 +6,16 @@ import {KeyboardFeature} from '../features/keyboard'
 import {LifecycleFeature} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
 import {OverlayFeature} from '../features/overlay'
-import type {Parser, Token} from '../features/parsing'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
-import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, batch, watch} from '../shared/signals'
-import type {SignalValues, Computed, Signal, Event} from '../shared/signals'
+import type {SignalValues} from '../shared/signals'
 import type {
 	CoreOption,
-	OverlayMatch,
 	OverlayTrigger,
-	Recovery,
 	CSSProperties,
 	CoreSlots,
 	CoreSlotProps,
@@ -66,46 +62,6 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined, {readonly: true}),
 	}
 
-	readonly state: {
-		tokens: Signal<Token[]>
-		previousValue: Signal<string | undefined>
-		innerValue: Signal<string | undefined>
-		recovery: Signal<Recovery | undefined>
-		container: Signal<HTMLDivElement | null>
-		overlay: Signal<HTMLElement | null>
-		selecting: Signal<'drag' | 'all' | undefined>
-		overlayMatch: Signal<OverlayMatch | undefined>
-	}
-
-	readonly computed: {
-		hasMark: Computed<boolean>
-		isBlock: Computed<boolean>
-		isDraggable: Computed<boolean>
-		parser: Computed<Parser | undefined>
-		currentValue: Computed<string>
-		containerComponent: Computed<Slot>
-		containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}>
-		blockComponent: Computed<Slot>
-		blockProps: Computed<Record<string, unknown> | undefined>
-		spanComponent: Computed<Slot>
-		spanProps: Computed<Record<string, unknown> | undefined>
-		overlay: OverlaySlot
-		mark: MarkSlot
-	}
-
-	readonly emit: {
-		change: Event<void>
-		reparse: Event<void>
-		markRemove: Event<{token: Token}>
-		overlaySelect: Event<{mark: Token; match: OverlayMatch}>
-		overlayClose: Event<void>
-		sync: Event<void>
-		drag: Event<DragAction>
-		rendered: Event<void>
-		mounted: Event<void>
-		unmounted: Event<void>
-	}
-
 	readonly handler = new MarkputHandler(this)
 
 	readonly feature: {
@@ -132,46 +88,6 @@ export class Store {
 		const drag = new DragFeature(this)
 		const caret = new CaretFeature(this)
 		const dom = new DomFeature(this)
-
-		this.state = {
-			tokens: parsing.state.tokens,
-			previousValue: value.state.previousValue,
-			innerValue: value.state.innerValue,
-			recovery: caret.state.recovery,
-			container: slots.state.container,
-			overlay: overlay.state.overlay,
-			selecting: caret.state.selecting,
-			overlayMatch: overlay.state.overlayMatch,
-		}
-
-		this.computed = {
-			hasMark: mark.computed.hasMark,
-			isBlock: slots.computed.isBlock,
-			isDraggable: slots.computed.isDraggable,
-			parser: parsing.computed.parser,
-			currentValue: value.computed.currentValue,
-			containerComponent: slots.computed.containerComponent,
-			containerProps: slots.computed.containerProps,
-			blockComponent: slots.computed.blockComponent,
-			blockProps: slots.computed.blockProps,
-			spanComponent: slots.computed.spanComponent,
-			spanProps: slots.computed.spanProps,
-			overlay: overlay.computed.overlay,
-			mark: mark.computed.mark,
-		}
-
-		this.emit = {
-			change: value.emit.change,
-			reparse: parsing.emit.reparse,
-			markRemove: mark.emit.markRemove,
-			overlaySelect: overlay.emit.overlaySelect,
-			overlayClose: overlay.emit.overlayClose,
-			sync: dom.emit.reconcile,
-			drag: drag.emit.drag,
-			rendered: lifecycle.emit.rendered,
-			mounted: lifecycle.emit.mounted,
-			unmounted: lifecycle.emit.unmounted,
-		}
 
 		this.feature = {
 			lifecycle,

@@ -28,7 +28,7 @@ describe('FocusFeature', () => {
 			store.feature.caret.enable()
 
 			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
-			store.emit.rendered()
+			store.feature.lifecycle.emit.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
@@ -47,7 +47,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.emit.rendered()
+			store.feature.lifecycle.emit.rendered()
 
 			expect(store.feature.caret.state.recovery()).toBeUndefined()
 
@@ -62,7 +62,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.emit.rendered()
+			store.feature.lifecycle.emit.rendered()
 
 			expect(store.feature.caret.state.recovery()).toBeDefined()
 
@@ -76,7 +76,7 @@ describe('FocusFeature', () => {
 			store.feature.caret.disable()
 
 			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
-			store.emit.rendered()
+			store.feature.lifecycle.emit.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 		})

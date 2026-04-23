@@ -27,12 +27,12 @@ describe('ValueFeature', () => {
 		expect(store.feature.value.computed.currentValue()).toBe('world')
 	})
 
-	it('aliases the same signal instances as the legacy store.state maps during migration', () => {
+	it('exposes signal and computed instances directly', () => {
 		const store = new Store()
-		expect(store.feature.value.state.previousValue).toBe(store.state.previousValue)
-		expect(store.feature.value.state.innerValue).toBe(store.state.innerValue)
-		expect(store.feature.value.computed.currentValue).toBe(store.computed.currentValue)
-		expect(store.feature.value.emit.change).toBe(store.emit.change)
+		expect(typeof store.feature.value.state.previousValue).toBe('function')
+		expect(typeof store.feature.value.state.innerValue).toBe('function')
+		expect(typeof store.feature.value.computed.currentValue).toBe('function')
+		expect(typeof store.feature.value.emit.change).toBe('function')
 	})
 
 	describe('change handler', () => {

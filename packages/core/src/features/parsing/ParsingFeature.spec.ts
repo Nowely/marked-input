@@ -8,10 +8,10 @@ describe('ParsingFeature', () => {
 		expect(Array.isArray(store.feature.parsing.state.tokens())).toBe(true)
 	})
 
-	it('aliases tokens, parser, reparse with legacy store maps', () => {
+	it('exposes tokens, parser, reparse', () => {
 		const store = new Store()
-		expect(store.feature.parsing.state.tokens).toBe(store.state.tokens)
-		expect(store.feature.parsing.computed.parser).toBe(store.computed.parser)
-		expect(store.feature.parsing.emit.reparse).toBe(store.emit.reparse)
+		expect(Array.isArray(store.feature.parsing.state.tokens())).toBe(true)
+		expect(typeof store.feature.parsing.computed.parser).toBe('function')
+		expect(typeof store.feature.parsing.emit.reparse).toBe('function')
 	})
 })

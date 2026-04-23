@@ -14,11 +14,11 @@ describe('MarkFeature', () => {
 		expect(store.feature.mark.computed.hasMark()).toBe(true)
 	})
 
-	it('aliases hasMark, mark, markRemove with legacy maps', () => {
+	it('exposes hasMark, mark, markRemove', () => {
 		const store = new Store()
-		expect(store.feature.mark.computed.hasMark).toBe(store.computed.hasMark)
-		expect(store.feature.mark.computed.mark).toBe(store.computed.mark)
-		expect(store.feature.mark.emit.markRemove).toBe(store.emit.markRemove)
+		expect(typeof store.feature.mark.computed.hasMark).toBe('function')
+		expect(typeof store.feature.mark.computed.mark).toBe('function')
+		expect(typeof store.feature.mark.emit.markRemove).toBe('function')
 	})
 
 	describe('markRemove handler', () => {
