@@ -9,28 +9,20 @@ import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 
 export class MarkFeature implements Feature {
-	readonly state = {} as const
+	readonly hasMark: Computed<boolean> = computed(() => {
+		const Mark = this._store.props.Mark()
+		if (Mark) return true
+		return this._store.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
+	})
 
-	readonly computed: {
-		hasMark: Computed<boolean>
-		mark: MarkSlot
-	} = {
-		hasMark: computed(() => {
-			const Mark = this._store.props.Mark()
-			if (Mark) return true
-			return this._store.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
-		}),
-		mark: computed(() => {
-			const options = this._store.props.options()
-			const Mark = this._store.props.Mark()
-			const Span = this._store.props.Span()
-			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
-		}),
-	}
+	readonly mark: MarkSlot = computed(() => {
+		const options = this._store.props.options()
+		const Mark = this._store.props.Mark()
+		const Span = this._store.props.Span()
+		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+	})
 
-	readonly emit = {
-		markRemove: event<{token: Token}>(),
-	}
+	readonly markRemove = event<{token: Token}>()
 
 	#scope?: () => void
 
@@ -39,7 +31,7 @@ export class MarkFeature implements Feature {
 	enable() {
 		if (this.#scope) return
 		this.#scope = effectScope(() => {
-			watch(this.emit.markRemove, payload => {
+			watch(this.markRemove, payload => {
 				const {token} = payload
 				const tokens = this._store.feature.parsing.state.tokens()
 				if (!findToken(tokens, token)) return

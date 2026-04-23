@@ -5,20 +5,20 @@ import {Store} from '../../store/Store'
 describe('MarkFeature', () => {
 	it('hasMark is false when no Mark is configured', () => {
 		const store = new Store()
-		expect(store.feature.mark.computed.hasMark()).toBe(false)
+		expect(store.feature.mark.hasMark()).toBe(false)
 	})
 
 	it('hasMark is true when Mark prop is set', () => {
 		const store = new Store()
 		store.props.set({Mark: () => null})
-		expect(store.feature.mark.computed.hasMark()).toBe(true)
+		expect(store.feature.mark.hasMark()).toBe(true)
 	})
 
 	it('exposes hasMark, mark, markRemove', () => {
 		const store = new Store()
-		expect(typeof store.feature.mark.computed.hasMark).toBe('function')
-		expect(typeof store.feature.mark.computed.mark).toBe('function')
-		expect(typeof store.feature.mark.emit.markRemove).toBe('function')
+		expect(typeof store.feature.mark.hasMark).toBe('function')
+		expect(typeof store.feature.mark.mark).toBe('function')
+		expect(typeof store.feature.mark.markRemove).toBe('function')
 	})
 
 	describe('markRemove handler', () => {
@@ -38,7 +38,7 @@ describe('MarkFeature', () => {
 
 			store.feature.mark.enable()
 
-			store.feature.mark.emit.markRemove({token})
+			store.feature.mark.markRemove({token})
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
 				{
@@ -60,7 +60,7 @@ describe('MarkFeature', () => {
 
 			store.feature.mark.enable()
 
-			store.feature.mark.emit.markRemove({token: missingToken})
+			store.feature.mark.markRemove({token: missingToken})
 
 			expect(store.feature.parsing.state.tokens()).toEqual([token, token2])
 			expect(onChange).not.toHaveBeenCalled()
@@ -79,7 +79,7 @@ describe('MarkFeature', () => {
 			store.feature.mark.enable()
 			store.feature.mark.disable()
 
-			store.feature.mark.emit.markRemove({token})
+			store.feature.mark.markRemove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
 		})
