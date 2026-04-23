@@ -18,7 +18,7 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 - `pnpm run dev:sb:react` / `pnpm run dev:sb:vue` — Individual Storybook dev servers
 - `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
 
-Run a single test file: `pnpm -w exec vitest run path/to/file.spec.ts`
+Run a single test file: `pnpm -w vitest run path/to/file.spec.ts`
 
 ### Before submitting — run all checks
 
