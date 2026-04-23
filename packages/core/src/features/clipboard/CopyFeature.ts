@@ -59,11 +59,11 @@ export class CopyFeature {
 					first.type === 'text' ? first.position.start + result.startOffset : first.position.start
 				const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
 
-				const value = this.store.computed.currentValue()
+				const value = this.store.feature.value.computed.currentValue()
 				if (rawStart === rawEnd) return
 
 				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-				this.store.state.innerValue(newValue)
+				this.store.feature.value.state.innerValue(newValue)
 
 				const newTokens = this.store.state.tokens()
 				let targetIdx = newTokens.findIndex(

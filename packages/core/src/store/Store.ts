@@ -14,6 +14,7 @@ import {ParseFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
+import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
@@ -139,6 +140,7 @@ export class Store {
 
 	readonly feature: {
 		lifecycle: LifecycleFeature
+		value: ValueFeature
 		overlay: OverlayFeature
 		focus: FocusFeature
 		input: InputFeature
@@ -154,11 +156,12 @@ export class Store {
 
 	constructor() {
 		const lifecycle = new LifecycleFeature(this)
+		const value = new ValueFeature(this)
 
 		this.state = {
 			tokens: signal<Token[]>([]),
-			previousValue: signal<string | undefined>(undefined),
-			innerValue: signal<string | undefined>(undefined),
+			previousValue: value.state.previousValue,
+			innerValue: value.state.innerValue,
 			recovery: signal<Recovery | undefined>(undefined),
 			container: signal<HTMLDivElement | null>(null),
 			overlay: signal<HTMLElement | null>(null),
@@ -182,7 +185,7 @@ export class Store {
 
 				return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
 			}),
-			currentValue: computed(() => this.state.previousValue() ?? this.props.value() ?? ''),
+			currentValue: value.computed.currentValue,
 			containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 			containerProps: computed(
 				() =>
@@ -213,7 +216,7 @@ export class Store {
 		}
 
 		this.emit = {
-			change: event(),
+			change: value.emit.change,
 			reparse: event(),
 			markRemove: event<{token: Token}>(),
 			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
@@ -227,6 +230,7 @@ export class Store {
 
 		this.feature = {
 			lifecycle,
+			value,
 			overlay: new OverlayFeature(this),
 			focus: new FocusFeature(this),
 			input: new InputFeature(this),

@@ -26,7 +26,7 @@ export class ParseFeature {
 		const {store} = this
 		const inputValue = store.props.value() ?? store.props.defaultValue() ?? ''
 		store.state.tokens(parseWithParser(store, inputValue))
-		store.state.previousValue(inputValue)
+		store.feature.value.state.previousValue(inputValue)
 	}
 
 	#subscribeParse() {
@@ -36,7 +36,7 @@ export class ParseFeature {
 			if (store.state.recovery()) {
 				const text = toString(store.state.tokens())
 				store.state.tokens(parseWithParser(store, text))
-				store.state.previousValue(text)
+				store.feature.value.state.previousValue(text)
 				return
 			}
 			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : computeTokensFromValue(store))

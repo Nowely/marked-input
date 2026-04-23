@@ -34,6 +34,17 @@
 
 **Refactor convention in this plan:** Several tasks instruct the engineer to "COPY the body of `<existing method>`" into a new class with listed path substitutions. This is intentional, not a placeholder — the logic is being relocated verbatim and re-running the thinking risks behavioral drift. The referenced file + method + substitution list is the canonical source; the plan quotes structure but does not re-paste long bodies to avoid stale duplication. When a step says "COPY from X", open X, copy the body, apply the listed substitutions, and commit only after tests pass.
 
+**Critical: path substitutions are task-scoped, not final-state.** A substitution that says `this.store.state.tokens → this._store.feature.parsing.state.tokens` is only valid *after* the feature owning `parsing.state.tokens` has been introduced (Task 3). If a prior task (e.g. Task 2's `ValueFeature`) references `tokens`, it must use the *current* shape at that task's commit — here `this._store.state.tokens` (the legacy alias). Each migration task below carries a dedicated "path substitutions (at this task's commit)" mini-table. Follow that table; do not fast-forward substitutions from later tasks.
+
+**COPY verification step:** after every COPY step, run `git diff` against the source file and confirm the only deltas are the listed path substitutions — no control-flow changes, no new guards, no reordered statements. If the diff contains anything unlisted, stop and re-examine before committing. Drift introduced during COPY is the single highest source of subtle regressions in this plan.
+
+**Preserving `disable()` side effects when relocating classes.** Several current feature classes do work in `disable()` beyond scope disposal:
+
+- `FocusFeature.disable()` — calls `this.store.nodes.focus.clear()`
+- `TextSelectionFeature.disable()` — resets `selecting` if still `'drag'`, plus local closure state
+
+When such a class is folded into a free-function module (Tasks 9, 10), the module MUST return a compound disposer that re-runs the pre-disposal work. Tasks 9 and 10 show the pattern. Never simplify it to `return effectScope(...)` if the source had extra disable() work.
+
 ---
 
 ## Pre-migration File Map
@@ -91,14 +102,119 @@ Expected: clean (no uncommitted changes).
 
 - [ ] **Step 0.2: Confirm baseline green**
 
-Run: `pnpm test && pnpm run typecheck && pnpm run lint:check && pnpm run format:check`
-Expected: all pass. If anything fails on `next`, resolve first — the migration relies on a green baseline as regression anchor.
+Run: `pnpm test && pnpm run typecheck && pnpm run lint:check && pnpm run format:check && pnpm run build`
+Expected: all pass. If anything fails on `next`, resolve first — the migration relies on a green baseline as regression anchor. `pnpm run build` is included because downstream commits exercise declaration emission that a plain `typecheck` does not.
 
 - [ ] **Step 0.3: Create feature branch**
 
 ```bash
 git checkout -b refactor/store-feature-modules
 ```
+
+- [ ] **Step 0.4: Define the `Feature` shape type and lift `Store.ts` field declarations**
+
+Two preparatory moves made in one commit so every downstream task can assume them.
+
+**Part A.** Add the structural contract to `packages/core/src/shared/types.ts`:
+
+```ts
+export interface Feature {
+	readonly state: Readonly<Record<string, unknown>>
+	readonly computed: Readonly<Record<string, unknown>>
+	readonly emit: Readonly<Record<string, unknown>>
+	enable(): void
+	disable(): void
+}
+```
+
+Every class created in Tasks 1–11 will implement this interface. Because the spec says `state` / `computed` / `emit` may be empty (`{} as const`), the `Record<string, unknown>` constraint is permissive.
+
+**Part B.** In `packages/core/src/store/Store.ts`, convert the inline-initialized `state`, `computed`, `emit`, and `feature` fields to **typed declarations** and move their initialization into the constructor body. Before Task 1 can begin aliasing, the Store must accept reassignable (though still `readonly`) maps that are populated in a single constructor pass. This avoids two hazards later:
+
+1. `readonly X = {...}` field initializers run *before* the constructor body. Downstream tasks alias fields like `this.computed.hasMark = mark.computed.hasMark`, which is illegal on a `readonly` property — but legal at the moment of constructor assignment.
+2. Any inline-initialized `computed` body that reads `this.feature.X` would see `undefined` until Task 1 moves `feature` construction into the constructor body.
+
+Diff to apply (structure only — values unchanged):
+
+```ts
+// Before (field init):
+readonly state = { tokens: signal<Token[]>([]), previousValue: ..., ... }
+readonly computed: {...} = { hasMark: ..., isBlock: ..., ... }
+readonly emit = { change: event(), ... }
+readonly feature = { overlay: new OverlayFeature(this), ... }
+
+// After (typed declarations + constructor assignment):
+readonly state: {
+	tokens: Signal<Token[]>
+	previousValue: Signal<string | undefined>
+	innerValue: Signal<string | undefined>
+	recovery: Signal<Recovery | undefined>
+	container: Signal<HTMLDivElement | null>
+	overlay: Signal<HTMLElement | null>
+	selecting: Signal<'drag' | 'all' | undefined>
+	overlayMatch: Signal<OverlayMatch | undefined>
+}
+readonly computed: {
+	hasMark: Computed<boolean>
+	// ... unchanged type block ...
+}
+readonly emit: {
+	change: Event<void>
+	reparse: Event<void>
+	markRemove: Event<{token: Token}>
+	overlaySelect: Event<{mark: Token; match: OverlayMatch}>
+	overlayClose: Event<void>
+	sync: Event<void>
+	drag: Event<DragAction>
+	rendered: Event<void>
+	mounted: Event<void>
+	unmounted: Event<void>
+}
+readonly feature: {
+	overlay: OverlayFeature
+	focus: FocusFeature
+	input: InputFeature
+	blockEditing: BlockEditFeature
+	arrowNav: ArrowNavFeature
+	system: SystemListenerFeature
+	textSelection: TextSelectionFeature
+	contentEditable: ContentEditableFeature
+	drag: DragFeature
+	copy: CopyFeature
+	parse: ParseFeature
+}
+
+constructor() {
+	this.state = { tokens: signal<Token[]>([]), previousValue: signal(...), /* ...unchanged... */ }
+	this.computed = { hasMark: computed(() => ...), /* ...unchanged... */ }
+	this.emit = { change: event(), /* ...unchanged... */ }
+	this.feature = {
+		overlay: new OverlayFeature(this),
+		focus: new FocusFeature(this),
+		input: new InputFeature(this),
+		blockEditing: new BlockEditFeature(this),
+		arrowNav: new ArrowNavFeature(this),
+		system: new SystemListenerFeature(this),
+		textSelection: new TextSelectionFeature(this),
+		contentEditable: new ContentEditableFeature(this),
+		drag: new DragFeature(this),
+		copy: new CopyFeature(this),
+		parse: new ParseFeature(this),
+	}
+
+	watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+	watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
+}
+```
+
+Key invariant: the `state`/`computed`/`emit`/`feature` literals are UNCHANGED byte-for-byte from the current inline versions — only their declaration form changes. Run `pnpm test && pnpm run typecheck && pnpm run lint:check && pnpm run format:check && pnpm run build` after applying. Commit:
+
+```bash
+git add -A
+git commit -m "refactor(core): lift Store.ts field declarations into constructor (prep for feature modules)"
+```
+
+No behavior change. Downstream tasks (1–13) can now freely reassign individual map fields inside the constructor as the migration proceeds.
 
 ---
 
@@ -118,9 +234,10 @@ git checkout -b refactor/store-feature-modules
 
 ```ts
 import {event} from '../../shared/signals'
+import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 
-export class LifecycleFeature {
+export class LifecycleFeature implements Feature {
 	readonly state = {} as const
 	readonly computed = {} as const
 	readonly emit = {
@@ -135,6 +252,8 @@ export class LifecycleFeature {
 	disable() {}
 }
 ```
+
+Every feature class added in Tasks 1–11 declares `implements Feature` so the structural contract is TypeScript-enforced rather than convention-only.
 
 `packages/core/src/features/lifecycle/index.ts`:
 
@@ -169,118 +288,102 @@ describe('LifecycleFeature', () => {
 
 - [ ] **Step 1.3: Update `Store.ts`**
 
+Task 0.4 already moved `state` / `computed` / `emit` / `feature` to typed declarations assigned in the constructor, so this step is just surgical alias wiring.
+
 Modify `packages/core/src/store/Store.ts`:
 
-1. Import the feature: add `import {LifecycleFeature} from '../features/lifecycle'`
-2. Remove `mounted`, `unmounted`, `rendered` from the `emit` object literal.
-3. Reshape the constructor so features are instantiated BEFORE the legacy `emit` map, and the legacy map reads events from the feature:
+1. Add `import {LifecycleFeature} from '../features/lifecycle'`.
+2. Add `lifecycle: LifecycleFeature` to the `readonly feature: {...}` type (declared at the top of the class in Task 0.4).
+3. In the constructor, reorder so `lifecycle` is constructed **before** the `this.feature = {...}` assignment so it can be referenced in both `this.feature` and `this.emit`:
 
 ```ts
-export class Store {
-	readonly key = new KeyGenerator()
-	readonly blocks = new BlockRegistry()
-	readonly nodes = {
-		focus: new NodeProxy(undefined, this),
-		input: new NodeProxy(undefined, this),
-	}
-	readonly props = { /* ... unchanged ... */ }
-	readonly state = { /* ... unchanged ... */ }
-	readonly computed: { /* ... unchanged ... */ } = { /* ... unchanged ... */ }
+constructor() {
+	const lifecycle = new LifecycleFeature(this)
 
-	// Features must be constructed before `emit` so legacy map can alias from them.
-	readonly feature: {
-		lifecycle: LifecycleFeature
-		overlay: OverlayFeature
-		focus: FocusFeature
-		input: InputFeature
-		blockEditing: BlockEditFeature
-		arrowNav: ArrowNavFeature
-		system: SystemListenerFeature
-		textSelection: TextSelectionFeature
-		contentEditable: ContentEditableFeature
-		drag: DragFeature
-		copy: CopyFeature
-		parse: ParseFeature
+	this.state = { /* ... unchanged ... */ }
+	this.computed = { /* ... unchanged ... */ }
+
+	this.emit = {
+		change: event(),
+		reparse: event(),
+		markRemove: event<{token: Token}>(),
+		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
+		overlayClose: event(),
+		sync: event(),
+		drag: event<DragAction>(),
+		// Aliases from the lifecycle feature — same instance on both access paths:
+		rendered: lifecycle.emit.rendered,
+		mounted: lifecycle.emit.mounted,
+		unmounted: lifecycle.emit.unmounted,
 	}
 
-	readonly emit: {
-		change: Event<void>
-		reparse: Event<void>
-		markRemove: Event<{token: Token}>
-		overlaySelect: Event<{mark: Token; match: OverlayMatch}>
-		overlayClose: Event<void>
-		sync: Event<void>
-		drag: Event<DragAction>
-		rendered: Event<void>
-		mounted: Event<void>
-		unmounted: Event<void>
+	this.feature = {
+		lifecycle,
+		overlay: new OverlayFeature(this),
+		focus: new FocusFeature(this),
+		input: new InputFeature(this),
+		blockEditing: new BlockEditFeature(this),
+		arrowNav: new ArrowNavFeature(this),
+		system: new SystemListenerFeature(this),
+		textSelection: new TextSelectionFeature(this),
+		contentEditable: new ContentEditableFeature(this),
+		drag: new DragFeature(this),
+		copy: new CopyFeature(this),
+		parse: new ParseFeature(this),
 	}
 
-	readonly handler = new MarkputHandler(this)
-
-	constructor() {
-		const lifecycle = new LifecycleFeature(this)
-
-		this.feature = {
-			lifecycle,
-			overlay: new OverlayFeature(this),
-			focus: new FocusFeature(this),
-			input: new InputFeature(this),
-			blockEditing: new BlockEditFeature(this),
-			arrowNav: new ArrowNavFeature(this),
-			system: new SystemListenerFeature(this),
-			textSelection: new TextSelectionFeature(this),
-			contentEditable: new ContentEditableFeature(this),
-			drag: new DragFeature(this),
-			copy: new CopyFeature(this),
-			parse: new ParseFeature(this),
-		}
-
-		this.emit = {
-			change: event(),
-			reparse: event(),
-			markRemove: event<{token: Token}>(),
-			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
-			overlayClose: event(),
-			sync: event(),
-			drag: event<DragAction>(),
-			// Aliases from lifecycle feature:
-			rendered: lifecycle.emit.rendered,
-			mounted: lifecycle.emit.mounted,
-			unmounted: lifecycle.emit.unmounted,
-		}
-
-		watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
-	}
-
-	setProps(values: Partial<SignalValues<typeof this.props>>): void { /* ... unchanged ... */ }
+	watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+	watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 }
 ```
 
-Key changes:
-- `feature` and `emit` become non-initialized fields; the constructor populates them in the correct order.
-- `lifecycle` is constructed first; its three events are aliased into `this.emit`.
-- The rest of `this.emit` still creates its own instances (they move into their features in later tasks).
+Key semantics:
+- `lifecycle` is constructed first so its three events are available when building `this.emit`.
+- Three `event()` allocations are removed from `this.emit` (they now live in `lifecycle.emit`) and replaced with aliases — same function identity.
+- Every call site that reads `store.emit.mounted`/`unmounted`/`rendered` continues to work because the aliases resolve to the same event instance.
 
 - [ ] **Step 1.4: Migrate call sites to `store.feature.lifecycle.emit.*`**
 
-Update these files to replace `store.emit.mounted` → `store.feature.lifecycle.emit.mounted`, same for `unmounted` and `rendered`:
+Because `store.emit.mounted` is aliased to the same event instance, behavior is preserved whether this step is partial or complete — but finish before the commit.
 
-- `packages/core/src/features/focus/FocusFeature.ts` — line reading `this.store.emit.rendered` inside `enable()` effectScope
-- `packages/react/markput/src/components/MarkedInput.tsx` — `mounted`/`unmounted` calls
-- `packages/react/markput/src/components/Container.tsx` — `emit.rendered()` in `useLayoutEffect`
-- `packages/vue/markput/src/components/MarkedInput/MarkedInput.vue` — `mounted`/`unmounted`
-- `packages/vue/markput/src/components/Container/Container.vue` — `rendered()`
-- Any `*.spec.ts` that references `store.emit.mounted|unmounted|rendered` (use `rg 'store\.emit\.(mounted|unmounted|rendered)' packages -l` to list)
-
-Use ripgrep to enumerate exactly:
+**Direct references (caught by `rg`):**
 
 ```bash
 rg -l 'store\.emit\.(mounted|unmounted|rendered)' packages
 ```
 
-Rewrite each occurrence. Because the legacy `store.emit.mounted` is aliased to the same event instance, tests pass whether you finish this step in one file or stretch across several — but DO finish before the commit.
+- `packages/core/src/features/focus/FocusFeature.ts` — `this.store.emit.rendered` inside `enable()` scope
+- `packages/react/markput/src/components/MarkedInput.tsx` — `store.emit.mounted()` / `store.emit.unmounted()`
+- `packages/vue/markput/src/components/MarkedInput.vue` — `store.value.emit.mounted()` / `.unmounted()`
+
+Rewrite: `store.emit.mounted` → `store.feature.lifecycle.emit.mounted`, same for `unmounted` and `rendered`.
+
+**Indirect references (captured via destructuring — `rg` above will NOT catch these):**
+
+The React and Vue `<Container>` components use `useMarkput` to extract the whole `emit` object and then call `emit.rendered()`. Update the selector closure, not just the downstream call:
+
+`packages/react/markput/src/components/Container.tsx`:
+
+```tsx
+// Before
+const {isBlock, tokens, key, state, emit, Component, props} = useMarkput(s => ({
+	emit: s.emit,
+	// ...
+}))
+emit.rendered()
+
+// After (rendered moves to lifecycle; other `emit.*` stay on `s.emit` for now and migrate in their tasks)
+const {isBlock, tokens, key, state, lifecycleEmit, emit, Component, props} = useMarkput(s => ({
+	lifecycleEmit: s.feature.lifecycle.emit,
+	emit: s.emit,
+	// ...
+}))
+lifecycleEmit.rendered()
+```
+
+Equivalent edit in `packages/vue/markput/src/components/Container.vue` (lines 8–14, 26).
+
+Any `*.spec.ts` that touches these events also needs updating; the rg above will list them.
 
 - [ ] **Step 1.5: Run tests + typecheck + lint**
 
@@ -330,7 +433,24 @@ Run `pnpm test` again post-hook to verify the lint-staged auto-fix didn't break 
 - Create: `packages/core/src/features/value/README.md`
 - Modify: `packages/core/src/store/Store.ts`
 - Modify: `packages/core/src/features/events/SystemListenerFeature.ts` (remove `change` + `innerValue` watchers — they move to ValueFeature)
+- Modify: `packages/core/src/features/events/SystemListenerFeature.spec.ts` (move `change` + `innerValue` describe blocks into `ValueFeature.spec.ts`)
+- Modify: `packages/core/src/features/mark/MarkHandler.ts` (`#emitChange` currently calls `this.#store.emit.change()` — route via the new path)
 - Modify: call sites reading `store.state.previousValue`, `store.state.innerValue`, `store.computed.currentValue`, `store.emit.change`
+
+**Path substitutions at this task's commit (Task 2):**
+
+| Source path (SystemListenerFeature) | Target path (inside `ValueFeature.enable()`) |
+|---|---|
+| `this.store.emit.change` | `this.emit.change` |
+| `this.store.state.previousValue` | `this.state.previousValue` |
+| `this.store.state.innerValue` | `this.state.innerValue` |
+| `this.store.state.tokens` | `this._store.state.tokens` *(still legacy; Task 3 moves to `feature.parsing.state.tokens`)* |
+| `this.store.emit.reparse` | `this._store.emit.reparse` *(still legacy; Task 3 moves to `feature.parsing.emit.reparse`)* |
+| `this.store.props.*` | `this._store.props.*` |
+| `this.store.nodes.*` | `this._store.nodes.*` |
+| `parseWithParser(this.store, …)` | `parseWithParser(this._store, …)` *(utility stays on legacy paths; Task 3 migrates its internals)* |
+
+Do NOT pre-reach into `feature.parsing.*` here — that feature isn't constructed at this task's commit.
 
 - [ ] **Step 2.1: Create `ValueFeature`**
 
@@ -338,13 +458,10 @@ Run `pnpm test` again post-hook to verify the lint-staged auto-fix didn't break 
 
 ```ts
 import {signal, computed, event, effectScope, watch} from '../../shared/signals'
-import type {Token} from '../parsing'
-import {computeTokensFromValue} from '../parsing/utils/valueParser'
-import {findToken} from '../parsing/utils/findToken'
-import {toString} from '../parsing/parser/utils/toString'
+import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 
-export class ValueFeature {
+export class ValueFeature implements Feature {
 	readonly state = {
 		previousValue: signal<string | undefined>(undefined),
 		innerValue: signal<string | undefined>(undefined),
@@ -368,24 +485,15 @@ export class ValueFeature {
 		if (this.#scope) return
 		this.#scope = effectScope(() => {
 			watch(this.emit.change, () => {
-				const target = this._store.nodes.focus.target
-				if (!target) return
-				const tokens = this._store.feature.parsing.state.tokens()
-				const focused = tokens.find(t => t.position.start <= target.caret && t.position.end >= target.caret)
-				// NOTE: re-parse and previousValue update logic previously in SystemListenerFeature.
-				// (Full reimplementation copied verbatim from SystemListenerFeature.spec-covered behavior — see original file.)
-				// IMPORTANT: the implementer MUST copy the exact handler body from
-				// packages/core/src/features/events/SystemListenerFeature.ts `watch(this.store.emit.change, ...)`
-				// block, adjusted for: `this.store.state.tokens` → `this._store.feature.parsing.state.tokens`,
-				//                       `this.store.state.previousValue` → `this.state.previousValue`,
-				//                       `this.store.state.innerValue` → `this.state.innerValue`,
-				//                       `this.store.emit.reparse` → `this._store.feature.parsing.emit.reparse` (after Task 3; for now use `this._store.emit.reparse`).
+				// COPY the body of `watch(this.store.emit.change, ...)` from
+				// packages/core/src/features/events/SystemListenerFeature.ts verbatim,
+				// then apply the Task-2 path substitution table (see above).
 			})
 
-			watch(this.state.innerValue, nextValue => {
-				if (nextValue === undefined) return
-				// COPY BODY FROM SystemListenerFeature `watch(this.store.state.innerValue, ...)` block,
-				// same path substitutions as above.
+			watch(this.state.innerValue, () => {
+				// COPY the body of `watch(this.store.state.innerValue, ...)` from
+				// packages/core/src/features/events/SystemListenerFeature.ts verbatim,
+				// then apply the Task-2 path substitution table.
 			})
 		})
 	}
@@ -397,7 +505,9 @@ export class ValueFeature {
 }
 ```
 
-**Implementation note for the engineer:** The two `watch` bodies above are placeholders showing WHERE the logic goes. The actual bodies come from `packages/core/src/features/events/SystemListenerFeature.ts`. Open that file and copy the `change` watcher body (reads DOM from `this.store.nodes.focus.target`, tokenizes, writes `previousValue`, fires `reparse`) and the `innerValue` watcher body (calls `computeTokensFromValue`, writes `tokens` + `previousValue`). Only the store-path references change.
+**Implementation note for the engineer:** The two `watch` bodies above are placeholders showing WHERE the logic goes. The actual bodies come from `packages/core/src/features/events/SystemListenerFeature.ts` lines 15–43 (the `change` handler: reads `nodes.focus.target`, tokenizes, writes `previousValue`, fires `reparse`) and lines 55–63 (the `innerValue` handler: calls `parseWithParser`, writes `tokens` + `previousValue`, calls `onChange`). Use the Task-2 substitution table above — do NOT fast-forward to Task 3's parsing-feature paths.
+
+Run `git diff packages/core/src/features/events/SystemListenerFeature.ts` against your new `ValueFeature.ts` handler bodies and confirm the only deltas are the listed path substitutions. Any unlisted control-flow delta = stop and re-examine.
 
 - [ ] **Step 2.2: Create `value/index.ts`**
 
@@ -450,24 +560,23 @@ describe('ValueFeature', () => {
 
 - [ ] **Step 2.4: Update `Store.ts` to alias from `ValueFeature`**
 
+Only alias wiring — the declaration shape was lifted in Task 0.4 and the constructor body already assigns `this.state` / `this.computed` / `this.emit` / `this.feature`.
+
 In `packages/core/src/store/Store.ts`:
 
 1. Add `import {ValueFeature} from '../features/value'`.
-2. Remove `previousValue` and `innerValue` from the inline `state` object literal — they become aliases.
-3. Remove `currentValue` from the inline `computed` object.
-4. Remove `change` from the inline `emit` object.
-5. Reshape the constructor:
+2. Add `value: ValueFeature` to the `feature: {...}` typed declaration.
+3. In the constructor, construct `value` *before* the map assignments and then alias three fields into the legacy maps. The `previousValue`, `innerValue`, `currentValue`, `change` slots that currently allocate fresh signals/computeds/events now reference `value.*`:
 
 ```ts
 constructor() {
 	const lifecycle = new LifecycleFeature(this)
 	const value = new ValueFeature(this)
 
-	// Temporarily keep the non-value state/computed/emit inline:
 	this.state = {
 		tokens: signal<Token[]>([]),
-		previousValue: value.state.previousValue,    // alias
-		innerValue: value.state.innerValue,          // alias
+		previousValue: value.state.previousValue,    // alias — was `signal(...)`
+		innerValue: value.state.innerValue,          // alias — was `signal(...)`
 		recovery: signal<Recovery | undefined>(undefined),
 		container: signal<HTMLDivElement | null>(null),
 		overlay: signal<HTMLElement | null>(null),
@@ -476,23 +585,23 @@ constructor() {
 	}
 
 	this.computed = {
-		hasMark: computed(/* ... as before ... */),
-		isBlock: computed(/* ... */),
-		isDraggable: computed(/* ... */),
-		parser: computed(/* ... */),
-		currentValue: value.computed.currentValue,    // alias
-		containerComponent: computed(/* ... */),
-		containerProps: computed(/* ... */, {equals: shallow}),
-		blockComponent: computed(/* ... */),
-		blockProps: computed(/* ... */),
-		spanComponent: computed(/* ... */),
-		spanProps: computed(/* ... */),
-		overlay: computed(/* ... */),
-		mark: computed(/* ... */),
+		hasMark: computed(/* unchanged */),
+		isBlock: computed(/* unchanged */),
+		isDraggable: computed(/* unchanged */),
+		parser: computed(/* unchanged */),
+		currentValue: value.computed.currentValue,   // alias — was an inline computed
+		containerComponent: computed(/* unchanged */),
+		containerProps: computed(/* unchanged */, {equals: shallow}),
+		blockComponent: computed(/* unchanged */),
+		blockProps: computed(/* unchanged */),
+		spanComponent: computed(/* unchanged */),
+		spanProps: computed(/* unchanged */),
+		overlay: computed(/* unchanged */),
+		mark: computed(/* unchanged */),
 	}
 
 	this.emit = {
-		change: value.emit.change,                   // alias
+		change: value.emit.change,                   // alias — was `event()`
 		reparse: event(),
 		markRemove: event<{token: Token}>(),
 		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
@@ -529,6 +638,24 @@ constructor() {
 
 Open `packages/core/src/features/events/SystemListenerFeature.ts`. Remove the two `watch` blocks: `watch(this.store.emit.change, ...)` and `watch(this.store.state.innerValue, ...)`. Leave the `markRemove` and `overlaySelect` watchers intact — they migrate in later tasks.
 
+- [ ] **Step 2.5a: Migrate covered tests from `SystemListenerFeature.spec.ts`**
+
+`packages/core/src/features/events/SystemListenerFeature.spec.ts` exercises change-handler and innerValue-handler behavior. Those describe blocks must move to `ValueFeature.spec.ts` now — otherwise Task 12 (which deletes the events folder) will silently drop the coverage.
+
+Cut the `describe('change handler', ...)`, `describe('innerValue handler', ...)`, and the relevant `describe('disable()', ...)` tests from the SystemListener spec. Paste them into `ValueFeature.spec.ts` with these rewrites:
+
+- `store.feature.system` → `store.feature.value` (the handle under test)
+- `controller.enable()` / `controller.disable()` → `store.feature.value.enable()` / `.disable()`
+- Assertions against `store.state.previousValue` / `store.state.innerValue` / `store.state.tokens` / `store.emit.change` stay as-is — they are all aliased to the new feature during Task 2.
+
+Leave the `markRemove` and `overlaySelect` tests in `SystemListenerFeature.spec.ts` — Tasks 4 and 5 move them.
+
+- [ ] **Step 2.5b: Route `MarkHandler.#emitChange` through the new path**
+
+`packages/core/src/features/mark/MarkHandler.ts` calls `this.#store.emit.change()` from its `#emitChange` helper (line 92). Replace with `this.#store.feature.value.emit.change()`. Same instance — just the canonical path.
+
+Note: `MarkHandler.remove` also calls `this.#store.emit.markRemove({token: this.#token})` — leave that for Task 4 (markRemove's owner feature).
+
 - [ ] **Step 2.6: Run the test suite**
 
 ```bash
@@ -539,7 +666,7 @@ Expected: PASS. `SystemListenerFeature.spec.ts` tests for change/innerValue beha
 
 - [ ] **Step 2.7: Migrate call sites**
 
-Use `rg` to enumerate:
+Direct references:
 
 ```bash
 rg -l 'store\.state\.(previousValue|innerValue)|store\.computed\.currentValue|store\.emit\.change' packages
@@ -553,6 +680,8 @@ Rewrite each:
 - `store.emit.change` → `store.feature.value.emit.change`
 
 Both paths resolve to the same instance, so tests pass throughout.
+
+**Indirect references (whole-map captures — not caught by the rg above):** these pass `store.emit` or `store.state` wholesale and dereference later. Leave them untouched in Task 2 — they'll be migrated in Task 12.5 ("Adapter migration sweep") once every event/signal they touch has landed in a feature. Adding them incrementally creates a mixed-import mess (e.g. "match comes from feature.overlay but emit comes from root"); a single sweep is cleaner.
 
 - [ ] **Step 2.8: Write README**
 
@@ -606,23 +735,44 @@ Run `pnpm test` post-commit to catch lint-staged damage.
 **Files:**
 - Rename: `packages/core/src/features/parsing/ParseFeature.ts` → keep filename, rename class inside to `ParsingFeature`
 - Modify: `packages/core/src/features/parsing/index.ts` (export both old and new name during migration — see below)
+- Modify: `packages/core/src/features/parsing/utils/valueParser.ts` (reads `store.computed.parser()` and `store.state.tokens()`; update to feature-owned paths)
 - Create: `packages/core/src/features/parsing/ParsingFeature.spec.ts` (shape tests)
-- Modify: `packages/core/src/features/parsing/ParseFeature.spec.ts` (rename describe, update references)
+- Modify: `packages/core/src/features/parsing/ParseFeature.spec.ts` (rename describe, update references to `store.feature.parsing`; update the `key === 'parse'` iteration guard to `key === 'parsing'`; this file has ~28 `store.feature.parse` references)
 - Modify: `packages/core/src/store/Store.ts`
+
+**Path substitutions at this task's commit (Task 3):**
+
+| Source path | Target path |
+|---|---|
+| `this.store.state.tokens` (inside `ParseFeature`) | `this.state.tokens` |
+| `this.store.computed.parser` (inside `ParseFeature`) | `this.computed.parser` |
+| `this.store.emit.reparse` (inside `ParseFeature`) | `this.emit.reparse` |
+| `this.store.state.previousValue` (inside `ParseFeature`) | `this._store.feature.value.state.previousValue` *(feature.value exists since Task 2)* |
+| `this.store.state.recovery` (inside `ParseFeature`) | `this._store.state.recovery` *(legacy; moves to caret in Task 10)* |
+| `this.store.props.*`, `this.store.nodes.*` | `this._store.props.*`, `this._store.nodes.*` |
+| `store.computed.parser()` (inside `valueParser.ts`) | `store.feature.parsing.computed.parser()` |
+| `store.state.tokens` (inside `valueParser.ts`) | `store.feature.parsing.state.tokens` |
+| `store.state.previousValue` (inside `valueParser.ts`) | `store.feature.value.state.previousValue` |
+
+Notes:
+- `valueParser.ts` is imported by many features — updating its internals is a single-site change that propagates cleanly (the utility is always called as `parseWithParser(store, ...)` etc., so its callers don't change).
+- `ParseFeature.sync()` (the public method at the top of the class body) also reads `store.state.tokens` and `store.state.previousValue` — apply the same subs.
 
 - [ ] **Step 3.1: Rename class and hoist ownership**
 
 Rewrite `packages/core/src/features/parsing/ParseFeature.ts` (keep file name — rename comes only if Storybook/tests import by path; they don't today). New contents:
 
 ```ts
-import {signal, computed, event, effectScope, effect, watch, batch} from '../../shared/signals'
+import {signal, computed, event, effectScope, watch} from '../../shared/signals'
 import type {Computed} from '../../shared/signals'
+import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
-import type {Token} from './types'
+import type {Token} from './parser/types'
 import {Parser} from './parser/Parser'
-import {computeTokensFromValue} from './utils/valueParser'
+import {toString} from './parser/utils/toString'
+import {getTokensByUI, computeTokensFromValue, parseWithParser} from './utils/valueParser'
 
-export class ParsingFeature {
+export class ParsingFeature implements Feature {
 	readonly state = {
 		tokens: signal<Token[]>([]),
 	}
@@ -631,11 +781,11 @@ export class ParsingFeature {
 		parser: Computed<Parser | undefined>
 	} = {
 		parser: computed(() => {
-			// NOTE: `store.computed.hasMark` / `isBlock` are still the working paths at this
-			// point in the migration. Task 4 rewrites hasMark → feature.mark.computed.hasMark;
-			// Task 6 rewrites isBlock → feature.slots.computed.isBlock. Do NOT front-run those
-			// references here — leave them as `this._store.computed.hasMark()` etc. so the
-			// current shape aliases keep working during this task's commit.
+			// IMPORTANT: `hasMark` and `isBlock` still live on `store.computed` at Task 3's
+			// commit. Task 4 moves hasMark → feature.mark.computed.hasMark; Task 6 moves
+			// isBlock → feature.slots.computed.isBlock. Do NOT front-run those references
+			// here — leave the legacy paths so this task commits green against the current
+			// alias state.
 			if (!this._store.computed.hasMark()) return
 			const markups = this._store.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
@@ -653,14 +803,11 @@ export class ParsingFeature {
 
 	enable() {
 		if (this.#scope) return
+		this.sync()
 		this.#scope = effectScope(() => {
-			// COPY the existing `ParseFeature.enable()` body verbatim.
-			// Path substitutions (apply once across the copied block):
-			//   this.store.state.tokens        → this.state.tokens
-			//   this.store.computed.parser     → this.computed.parser
-			//   this.store.emit.reparse        → this.emit.reparse
-			//   this.store.state.previousValue → this._store.feature.value.state.previousValue
-			//   All other `this.store.*`       → `this._store.*` (unchanged semantics).
+			// COPY the bodies of `#subscribeParse()` and `#subscribeReactiveParse()` from
+			// the current ParseFeature.ts into two inline `watch(...)` calls here.
+			// Apply the Task-3 path substitution table above.
 		})
 	}
 
@@ -668,10 +815,22 @@ export class ParsingFeature {
 		this.#scope?.()
 		this.#scope = undefined
 	}
+
+	sync() {
+		// COPY the current `ParseFeature.sync()` body verbatim:
+		//   const inputValue = store.props.value() ?? store.props.defaultValue() ?? ''
+		//   store.state.tokens(parseWithParser(store, inputValue))
+		//   store.state.previousValue(inputValue)
+		// Then apply Task-3 subs:
+		//   store.state.tokens        → this.state.tokens
+		//   store.state.previousValue → this._store.feature.value.state.previousValue
+	}
 }
 ```
 
-**Implementer note:** Open the current `packages/core/src/features/parsing/ParseFeature.ts` and copy its `enable()` body into the placeholder above. Perform the substitutions listed in the comment. Everything else (the `sync()` calls, the `watch(emit.reparse, ...)` wiring, the `watch(computed.parser, props.value, emit.reparse)` reactive bundle) stays structurally identical.
+**Implementer note:** Open the current `packages/core/src/features/parsing/ParseFeature.ts` and relocate three method bodies into `ParsingFeature`: `sync()`, `#subscribeParse()`, and `#subscribeReactiveParse()`. The outer `enable()` reorganizes them into a single `effectScope`. Apply the Task-3 substitution table uniformly. Run `git diff packages/core/src/features/parsing/ParseFeature.ts` against the new file and confirm only the listed path substitutions changed — no control-flow deltas.
+
+The `Feature` interface requires `sync()` to stay internal to parsing, not part of the public shape; it remains a public method on the class (used by existing tests) but is NOT exposed through `state` / `computed` / `emit`.
 
 - [ ] **Step 3.2: Replace class alias in `parsing/index.ts`**
 
@@ -690,8 +849,9 @@ The `as ParseFeature` alias keeps any unmigrated import working; it's removed in
 In `packages/core/src/store/Store.ts`:
 
 1. Replace `import {ParseFeature} from '../features/parsing/ParseFeature'` with `import {ParsingFeature} from '../features/parsing'`.
-2. Replace `parse: new ParseFeature(this)` with `parsing: new ParsingFeature(this)` in the feature record. **Important:** the key renames from `parse` to `parsing` — update any call site using `store.feature.parse` (there shouldn't be any at this point, but `rg 'store\.feature\.parse\b' packages` to confirm).
-3. Reshape `state.tokens` / `computed.parser` / `emit.reparse` as aliases:
+2. Update the `feature: {...}` typed declaration: rename the `parse: ParseFeature` slot to `parsing: ParsingFeature`.
+3. Replace `parse: new ParseFeature(this)` with `parsing: new ParsingFeature(this)` in the constructor's `this.feature = {...}` assignment. **Important:** the key renames from `parse` to `parsing`. `rg 'store\.feature\.parse\b' packages` must be re-run and every hit rewritten — `packages/core/src/features/parsing/ParseFeature.spec.ts` alone has ~28 references (including one `if (key === 'parse') continue` iteration guard that must become `key === 'parsing'`).
+4. Reshape `state.tokens` / `computed.parser` / `emit.reparse` as aliases:
 
 ```ts
 const parsing = new ParsingFeature(this)
@@ -778,9 +938,19 @@ git commit -m "refactor(core): rename ParseFeature to ParsingFeature and hoist t
 - Create: `packages/core/src/features/mark/MarkFeature.ts`
 - Create: `packages/core/src/features/mark/MarkFeature.spec.ts`
 - Modify: `packages/core/src/features/mark/index.ts` (add export)
+- Modify: `packages/core/src/features/mark/MarkHandler.ts` (`remove()` currently calls `this.#store.emit.markRemove(...)` — route to the feature path)
 - Modify: `packages/core/src/features/mark/README.md`
 - Modify: `packages/core/src/store/Store.ts`
 - Modify: `packages/core/src/features/events/SystemListenerFeature.ts` (remove `markRemove` watcher)
+- Modify: `packages/core/src/features/events/SystemListenerFeature.spec.ts` (move `markRemove` describe block into `MarkFeature.spec.ts`)
+
+**Path substitutions at this task's commit (Task 4):**
+
+| Source path | Target path |
+|---|---|
+| `this.store.emit.markRemove` (inside MarkFeature `enable()`) | `this.emit.markRemove` |
+| `this.store.state.tokens` (inside MarkFeature `enable()`) | `this._store.feature.parsing.state.tokens` *(feature.parsing exists since Task 3)* |
+| `this.store.state.innerValue` (inside MarkFeature `enable()`) | `this._store.feature.value.state.innerValue` |
 
 - [ ] **Step 4.1: Create `MarkFeature`**
 
@@ -789,7 +959,7 @@ git commit -m "refactor(core): rename ParseFeature to ParsingFeature and hoist t
 ```ts
 import {computed, event, effectScope, watch} from '../../shared/signals'
 import type {Computed} from '../../shared/signals'
-import type {CoreOption} from '../../shared/types'
+import type {Feature} from '../../shared/types'
 import {toString} from '../parsing/parser/utils/toString'
 import {findToken} from '../parsing/utils/findToken'
 import type {Token} from '../parsing'
@@ -797,7 +967,7 @@ import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 import type {Store} from '../../store/Store'
 
-export class MarkFeature {
+export class MarkFeature implements Feature {
 	readonly state = {} as const
 
 	readonly computed: {
@@ -900,6 +1070,24 @@ In `packages/core/src/store/Store.ts`:
 
 Delete the `watch(this.store.emit.markRemove, ...)` block from `packages/core/src/features/events/SystemListenerFeature.ts`.
 
+- [ ] **Step 4.5a: Migrate `markRemove` test coverage**
+
+Cut the `describe('markRemove handler', ...)` describe block from `SystemListenerFeature.spec.ts` and paste it into `MarkFeature.spec.ts`. Rewrite:
+
+- `store.feature.system` / `controller` → `store.feature.mark`
+- `store.emit.markRemove` assertions stay (still aliased)
+- `store.state.innerValue` assertions stay (still aliased via Task 2's ValueFeature)
+
+- [ ] **Step 4.5b: Route `MarkHandler.remove` through the new path**
+
+`packages/core/src/features/mark/MarkHandler.ts` line 89:
+
+```ts
+remove = () => this.#store.emit.markRemove({token: this.#token})
+```
+
+Replace with `this.#store.feature.mark.emit.markRemove({token: this.#token})`. Same instance.
+
 - [ ] **Step 4.6: Migrate call sites**
 
 ```bash
@@ -930,40 +1118,79 @@ git commit -m "refactor(core): extract MarkFeature owning hasMark/mark/markRemov
 - Modify: `packages/core/src/features/overlay/OverlayFeature.spec.ts`
 - Modify: `packages/core/src/store/Store.ts`
 - Modify: `packages/core/src/features/events/SystemListenerFeature.ts` (remove `overlaySelect` watcher)
+- Modify: `packages/core/src/features/events/SystemListenerFeature.spec.ts` (move `overlaySelect` describe block into `OverlayFeature.spec.ts`)
 
-- [ ] **Step 5.1: Add state/computed/emit to `OverlayFeature`**
+**Path substitutions at this task's commit (Task 5):**
 
-Open `packages/core/src/features/overlay/OverlayFeature.ts`. Add public members before the existing `#scope` field:
+| Source path | Target path |
+|---|---|
+| `this.store.state.overlayMatch` (inside OverlayFeature) | `this.state.overlayMatch` |
+| `this.store.state.overlay` (inside OverlayFeature) | `this.state.overlay` |
+| `this.store.emit.overlayClose` (inside OverlayFeature) | `this.emit.overlayClose` |
+| `this.store.emit.overlaySelect` (inside OverlayFeature, new watcher) | `this.emit.overlaySelect` |
+| `this.store.state.tokens` (inside new overlaySelect watcher body) | `this._store.feature.parsing.state.tokens` |
+| `this.store.state.innerValue` (inside new overlaySelect watcher body) | `this._store.feature.value.state.innerValue` |
+| `this.store.state.recovery` (inside new overlaySelect watcher body) | `this._store.state.recovery` *(legacy; moves to caret in Task 10)* |
+| `this.store.state.container` (inside existing body) | `this._store.state.container` *(legacy; moves to slots in Task 6)* |
+
+- [ ] **Step 5.1a: Add owned `state` / `computed` / `emit` to `OverlayFeature`**
+
+Open `packages/core/src/features/overlay/OverlayFeature.ts`. Apply these structural edits ONLY — no behavioral changes yet:
 
 ```ts
-readonly state = {
-	overlayMatch: signal<OverlayMatch | undefined>(undefined),
-	overlay: signal<HTMLElement | null>(null),
-}
+import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
+import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
+import type {Feature} from '../../shared/types'
+import type {Store} from '../../store/Store'
+import {TriggerFinder} from '../caret'
+import type {Token} from '../parsing'
+import {resolveOverlaySlot} from '../slots'
+import type {OverlaySlot} from '../slots'
 
-readonly computed: {
-	overlay: OverlaySlot
-} = {
-	overlay: computed(() => {
-		const Overlay = this._store.props.Overlay()
-		return (option?: CoreOption, defaultComponent?: Slot) =>
-			resolveOverlaySlot(Overlay, option, defaultComponent)
-	}),
-}
+export class OverlayFeature implements Feature {
+	readonly state = {
+		overlayMatch: signal<OverlayMatch | undefined>(undefined),
+		overlay: signal<HTMLElement | null>(null),
+	}
 
-readonly emit = {
-	overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
-	overlayClose: event(),
+	readonly computed: {
+		overlay: OverlaySlot
+	} = {
+		overlay: computed(() => {
+			const Overlay = this._store.props.Overlay()
+			return (option?: CoreOption, defaultComponent?: Slot) =>
+				resolveOverlaySlot(Overlay, option, defaultComponent)
+		}),
+	}
+
+	readonly emit = {
+		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
+		overlayClose: event(),
+	}
+
+	// ... existing #scope, #probeTrigger, enable, disable (unchanged in 5.1a) ...
 }
 ```
 
-Update imports at the top of the file (`signal`, `computed`, `event`, `resolveOverlaySlot`, `CoreOption`, `OverlayMatch`, `Slot`, `OverlaySlot`, `Token`).
+Commit this sub-step separately if helpful — it's pure declaration addition, no call-site impact because nothing reads the new fields yet.
 
-Inside existing `enable()`:
-- Replace `this.store.state.overlayMatch(match)` → `this.state.overlayMatch(match)`.
-- Replace `this.store.state.overlay()` → `this.state.overlay()`.
-- Replace `this.store.emit.overlayClose` → `this.emit.overlayClose`.
-- Add a new `watch(this.emit.overlaySelect, ...)` block — copy the body from `SystemListenerFeature.ts` (`watch(this.store.emit.overlaySelect, ...)`). Path substitutions: `this.store.state.tokens` → `this._store.feature.parsing.state.tokens`, `this.store.state.innerValue` → `this._store.feature.value.state.innerValue`, `this.store.state.recovery` → `this._store.state.recovery` (still on root — moves in Task 10).
+- [ ] **Step 5.1b: Route the existing `enable()` body through the new owned fields**
+
+In the same file, apply the path substitution table above to every line of the existing `enable()` body. This replaces ~5 references in the existing `watch(this.store.emit.overlayClose, ...)`, `watch(this.store.emit.change, ...)` (was already migrated to `feature.value.emit.change` in Task 2's call-site sweep but the OverlayFeature still imports via the root path — update here), `effect(() => this.store.state.overlayMatch())`, and the `listen` handlers that read `this.store.state.overlay()` / `this.store.state.container()`.
+
+- [ ] **Step 5.1c: Add the `overlaySelect` watcher (absorbed from SystemListener)**
+
+Inside the same `effectScope(...)` block in `OverlayFeature.enable()`, append:
+
+```ts
+watch(this.emit.overlaySelect, event => {
+	// COPY the body of watch(this.store.emit.overlaySelect, ...) from
+	// packages/core/src/features/events/SystemListenerFeature.ts verbatim,
+	// then apply the Task-5 substitution table above.
+})
+```
+
+Run `git diff packages/core/src/features/events/SystemListenerFeature.ts` against the new watcher body to confirm only the listed path substitutions changed — no control-flow drift. The body mutates `state.recovery`, writes to `nodes.input` / `nodes.focus`, calls `onChange`, fires `reparse` — all preserved verbatim.
 
 - [ ] **Step 5.2: Update Store wiring**
 
@@ -978,7 +1205,16 @@ In `Store.ts`:
 
 - [ ] **Step 5.3: Remove `overlaySelect` watcher from SystemListener**
 
-Delete the `watch(this.store.emit.overlaySelect, ...)` block from `packages/core/src/features/events/SystemListenerFeature.ts`.
+Delete the `watch(this.store.emit.overlaySelect, ...)` block from `packages/core/src/features/events/SystemListenerFeature.ts`. After this deletion `SystemListenerFeature` has no remaining watchers — Task 12 deletes the empty class.
+
+- [ ] **Step 5.3a: Migrate `overlaySelect` test coverage**
+
+Cut the `describe('overlaySelect handler', ...)` describe block from `SystemListenerFeature.spec.ts` and paste it into `OverlayFeature.spec.ts`. Rewrite:
+
+- `store.feature.system` / `controller` → `store.feature.overlay`
+- Assertions against `store.emit.overlaySelect`, `store.state.tokens`, `store.state.recovery`, `store.state.innerValue`, `store.emit.reparse` stay as-is — all aliased through Task 5's commit.
+
+After this paste, `SystemListenerFeature.spec.ts` should be empty of behavioral tests; Task 12 deletes the file.
 
 - [ ] **Step 5.4: Update OverlayFeature shape spec**
 
@@ -1000,10 +1236,12 @@ describe('OverlayFeature ownership', () => {
 - [ ] **Step 5.5: Migrate call sites**
 
 ```bash
-rg -l 'store\.state\.(overlayMatch|overlay\()|store\.computed\.overlay\b|store\.emit\.(overlaySelect|overlayClose)' packages
+rg -l 'store\.state\.(overlayMatch|overlay\b)|store\.computed\.overlay\b|store\.emit\.(overlaySelect|overlayClose)' packages
 ```
 
-Rewrite with `store.feature.overlay.<category>.<field>`. Careful: `store.state.overlay()` (the DOM ref signal call) is distinct from `store.computed.overlay()` (the slot resolver) — grep both.
+Rewrite with `store.feature.overlay.<category>.<field>`. Careful: `store.state.overlay` (the DOM ref signal) is distinct from `store.computed.overlay` (the slot resolver) — both share the key `overlay` but live on different categories, and both survive into `feature.overlay` as `state.overlay` + `computed.overlay`. Accessor forms: `store.state.overlay()` / `store.computed.overlay()` read, `store.state.overlay(node)` writes.
+
+Whole-map captures (`s => s.emit`, `s => s.state`) in React/Vue adapters are handled by Task 12.5 — do not touch them here.
 
 Framework adapter updates:
 - `packages/react/markput/src/lib/hooks/useOverlay.tsx` — update `store.state.overlay(el)` etc.
@@ -1329,20 +1567,28 @@ git commit -m "refactor(core): rename CopyFeature to ClipboardFeature"
 
 - [ ] **Step 9.1: Create internal modules**
 
-Each internal module is the existing feature's logic repackaged as a free function taking the store:
+Each internal module is the existing feature's logic repackaged as a free function taking the store. The return type is a **compound disposer** that combines the `effectScope` cleanup with any additional `disable()` work from the source class. None of `InputFeature`, `BlockEditFeature`, `ArrowNavFeature` currently do extra work in `disable()` beyond scope disposal — verify this before copying, and if any are found, include them in the returned disposer per the pattern below.
+
+**Contract:** `enableX(store): () => void` where the returned function MUST, when called:
+1. Dispose the `effectScope` registered during enable
+2. Perform any additional cleanup that the source class's `disable()` performed outside the scope
+3. Be idempotent (safe to call twice)
 
 `packages/core/src/features/keyboard/input.ts`:
 
 ```ts
 import {effectScope, listen} from '../../shared/signals'
 import type {Store} from '../../store/Store'
-// ... copy everything else from packages/core/src/features/input/InputFeature.ts ...
 
 export function enableInput(store: Store): () => void {
-	return effectScope(() => {
+	const disposeScope = effectScope(() => {
 		// COPY the body of `InputFeature.enable()` here verbatim.
 		// `this.store` → `store` throughout.
 	})
+
+	// Verify: InputFeature.disable() currently only calls `this.#scope?.()`.
+	// If that changes before this task runs, add the additional cleanup here.
+	return disposeScope
 }
 ```
 
@@ -1353,9 +1599,10 @@ import {effectScope, listen} from '../../shared/signals'
 import type {Store} from '../../store/Store'
 
 export function enableBlockEdit(store: Store): () => void {
-	return effectScope(() => {
+	const disposeScope = effectScope(() => {
 		// COPY the body of `BlockEditFeature.enable()` verbatim; `this.store` → `store`.
 	})
+	return disposeScope
 }
 ```
 
@@ -1366,25 +1613,40 @@ import {effectScope, listen} from '../../shared/signals'
 import type {Store} from '../../store/Store'
 
 export function enableArrowNav(store: Store): () => void {
-	return effectScope(() => {
+	const disposeScope = effectScope(() => {
 		// COPY the body of `ArrowNavFeature.enable()` verbatim; `this.store` → `store`.
 	})
+	return disposeScope
 }
 ```
 
-**Implementer note:** `effectScope` returns a disposer. Each `enableX` function returns that disposer so `KeyboardFeature` can collect them.
+**Implementer verification:** before committing, open each of the three source feature files and confirm their `disable()` methods contain only `this.#scope?.(); this.#scope = undefined`. If any contains extra statements (e.g. `this.store.X.clear()`, `this.state.X(undefined)`, private field resets), the `enableX` function above must return a compound disposer:
+
+```ts
+return () => {
+	// Pre-scope-dispose cleanup (if the source called things BEFORE this.#scope?.())
+	store.foo.clear()
+	disposeScope()
+	// Post-scope-dispose cleanup (if the source called things AFTER this.#scope?.())
+	// Private-state resets that were instance-level in the source become closure-level here:
+	// wrap them with `let` bindings at the top of `enableX` and reset them here.
+}
+```
+
+This is the protection against Blocking Issue #1 from the deep review. Tasks 10's TextSelection case uses this pattern for real.
 
 - [ ] **Step 9.2: Create `KeyboardFeature` facade**
 
 `packages/core/src/features/keyboard/KeyboardFeature.ts`:
 
 ```ts
+import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {enableInput} from './input'
 import {enableBlockEdit} from './blockEdit'
 import {enableArrowNav} from './arrowNav'
 
-export class KeyboardFeature {
+export class KeyboardFeature implements Feature {
 	readonly state = {} as const
 	readonly computed = {} as const
 	readonly emit = {} as const
@@ -1408,6 +1670,8 @@ export class KeyboardFeature {
 	}
 }
 ```
+
+The compound-disposer contract from Step 9.1 is what makes this facade safe: `KeyboardFeature.disable()` invokes each returned disposer, which internally re-runs any source-class `disable()` work beyond scope cleanup.
 
 - [ ] **Step 9.3: Create `keyboard/index.ts`**
 
@@ -1460,9 +1724,87 @@ git commit -m "refactor(core): merge InputFeature + BlockEditFeature + ArrowNavF
 - Modify: `packages/core/src/store/Store.ts`
 - Delete: `packages/core/src/features/focus/`, `packages/core/src/features/selection/`
 
-- [ ] **Step 10.1: Create `focus.ts` and `selection.ts` internal modules**
+- [ ] **Step 10.1: Create `focus.ts` and `selection.ts` internal modules (compound disposer pattern)**
 
-Same pattern as Task 9: wrap each current `enable()` body in a free function `enableFocus(store)` / `enableSelection(store)` returning a disposer. Paths inside stay as-is for now (still reference `store.state.recovery` etc.) — they'll shift to feature-local in Step 10.2.
+**CRITICAL:** unlike Task 9, both source classes here have custom `disable()` logic beyond scope disposal. Ignoring this loses real behavior. Before writing the modules, run:
+
+```bash
+rg -n 'disable\(\)' packages/core/src/features/focus/FocusFeature.ts packages/core/src/features/selection/TextSelectionFeature.ts
+```
+
+and confirm the patterns below match the current source.
+
+**`FocusFeature.disable()` currently calls `this.store.nodes.focus.clear()` after `this.#scope?.()`.** The clear() purges DOM node refs held by the focus proxy — losing it causes stale-node leaks across enable/disable cycles. Encode it in the returned disposer:
+
+`packages/core/src/features/caret/focus.ts`:
+
+```ts
+import {effectScope, /* whatever else FocusFeature imports */} from '../../shared/signals'
+import type {Store} from '../../store/Store'
+
+export function enableFocus(store: Store): () => void {
+	const disposeScope = effectScope(() => {
+		// COPY the body of `FocusFeature.enable()` verbatim.
+		// Path subs inside the body:
+		//   this.store.*             → store.*
+		//   store.emit.rendered      → store.feature.lifecycle.emit.rendered (from Task 1)
+		//   store.emit.sync          → store.feature.dom.emit.reconcile (from Task 11; at this task's
+		//                              commit `sync` is still legacy-aliased — use store.emit.sync)
+	})
+
+	return () => {
+		disposeScope()
+		store.nodes.focus.clear() // carried over from FocusFeature.disable()
+	}
+}
+```
+
+**`TextSelectionFeature.disable()` has THREE extras:** (a) `if (this.store.state.selecting() === 'drag') this.store.state.selecting(undefined)` BEFORE scope disposal, (b) resets `#pressedNode`, (c) resets `#isPressed`. The last two are instance-scoped private fields in the source class — when folding to a free function they become closure-scoped `let` bindings accessed by both enable's body and disable:
+
+`packages/core/src/features/caret/selection.ts`:
+
+```ts
+import {effectScope, /* whatever else TextSelectionFeature imports */} from '../../shared/signals'
+import type {Store} from '../../store/Store'
+
+export function enableSelection(store: Store): () => void {
+	let pressedNode: Node | undefined
+	let isPressed = false
+
+	const disposeScope = effectScope(() => {
+		// COPY the body of `TextSelectionFeature.enable()` verbatim,
+		// then substitute references to `this.#pressedNode` and `this.#isPressed`
+		// with the `pressedNode` and `isPressed` closure variables above.
+		// Both reads AND writes must be rewritten.
+		//
+		// Path subs:
+		//   this.store.*              → store.*
+		//   this.#pressedNode         → pressedNode
+		//   this.#isPressed           → isPressed
+		//   store.state.selecting     → store.feature.caret.state.selecting   (Task 10 owned path)
+		//   store.state.recovery      → store.feature.caret.state.recovery    (Task 10 owned path)
+		//
+		// (Since selecting/recovery are feature-owned by CaretFeature, and this function
+		// runs AFTER CaretFeature has constructed them, feature.caret is populated.)
+	})
+
+	return () => {
+		// Pre-dispose: carried from TextSelectionFeature.disable() — must run BEFORE scope dispose
+		// because it may trigger reactive updates the scope is still listening for.
+		if (store.feature.caret.state.selecting() === 'drag') {
+			store.feature.caret.state.selecting(undefined)
+		}
+		disposeScope()
+		// Post-dispose: reset closure state so a subsequent enableSelection() starts clean.
+		pressedNode = undefined
+		isPressed = false
+	}
+}
+```
+
+**Why closure vars, not a small helper class:** keeping closure state mirrors exactly how the source class owned `#pressedNode` / `#isPressed` — same scoping, same lifetime (one instance-lifetime per enable/disable cycle). A helper class would add ceremony with no functional win.
+
+**Verification after copy:** run `git diff` comparing `TextSelectionFeature.enable()` vs `enableSelection`'s scope body — only path substitutions should change. Private field accesses (`this.#pressedNode`, `this.#isPressed`) become bare identifiers (`pressedNode`, `isPressed`). Nothing else.
 
 - [ ] **Step 10.2: Create `CaretFeature` with owned state**
 
@@ -1470,12 +1812,13 @@ Same pattern as Task 9: wrap each current `enable()` body in a free function `en
 
 ```ts
 import {signal} from '../../shared/signals'
+import type {Feature} from '../../shared/types'
 import type {Recovery} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {enableFocus} from './focus'
 import {enableSelection} from './selection'
 
-export class CaretFeature {
+export class CaretFeature implements Feature {
 	readonly state = {
 		recovery: signal<Recovery | undefined>(undefined),
 		selecting: signal<'drag' | 'all' | undefined>(undefined),
@@ -1692,9 +2035,23 @@ Remove:
 - `import {SystemListenerFeature} from '../features/events'`
 - `system: new SystemListenerFeature(this)` from the feature record
 
-- [ ] **Step 12.4: Remove associated tests**
+- [ ] **Step 12.4: Remove associated tests and feature-key guards**
 
 Any `rg SystemListenerFeature packages` hits should be zero. If any remain, delete them.
+
+**Feature-key guard updates:** several spec files introspect `Object.keys(store.feature)` and skip specific keys. The keys have mutated across the migration — update them now:
+
+```bash
+rg -n "key === 'system'|key === 'focus'|key === 'parse'|key === 'contentEditable'|key === 'input'|key === 'blockEditing'|key === 'arrowNav'|key === 'textSelection'" packages/core
+```
+
+Known call sites to fix (based on the current baseline):
+
+- `packages/core/src/features/mark/deleteMark.spec.ts` — remove the `if (key === 'system') continue` line (the `system` feature no longer exists after Step 12.3)
+- `packages/core/src/features/parsing/ParseFeature.spec.ts` — `key === 'parse'` → already updated in Task 3 Step 3.3 rename; verify
+- `packages/core/src/features/focus/FocusFeature.spec.ts` (now `caret/focus.spec.ts` after Task 10) — `key === 'focus'` → `key === 'caret'`
+
+Re-run the rg above — it must come back empty except for intentional new guards.
 
 - [ ] **Step 12.5: Test + commit**
 
@@ -1703,6 +2060,97 @@ pnpm test && pnpm run typecheck && pnpm run lint:check
 git add -A
 git commit -m "refactor(core): delete SystemListenerFeature (watchers redistributed)"
 ```
+
+---
+
+## Task 12.5: Adapter migration sweep (prep for Task 13)
+
+**Rationale:** Tasks 1–12 kept the legacy `store.state`, `store.computed`, `store.emit` maps alive as aliases, so call sites migrate in their own time. But several React and Vue adapters extract those objects *wholesale* through `useMarkput(s => ({emit: s.emit, state: s.state}))` patterns and then dereference fields later. `rg 'store\.state\.X'` does not find those sites. Task 13 deletes the legacy maps, which would break every such capture at runtime — so this task migrates them explicitly FIRST.
+
+Feature ownership at this point is fully stabilized (no more renames pending), so every field on the legacy maps has a canonical `feature.<name>.<category>.<field>` path.
+
+**Files to inspect and rewrite:**
+
+- `packages/react/markput/src/lib/hooks/useMarkput.ts` — note: the hook accepts `ObjectSelector` shapes; that contract is fine, the question is what callers pass
+- `packages/react/markput/src/components/Container.tsx` — selector currently captures `emit` and `state`
+- `packages/react/markput/src/components/Block.tsx` — captures `emit`
+- `packages/react/markput/src/components/DragHandle.tsx` — captures `emit`
+- `packages/react/markput/src/components/OverlayRenderer.tsx` — captures `state` and `computed`
+- `packages/react/markput/src/components/Suggestions/Suggestions.tsx`
+- `packages/react/markput/src/components/Token.tsx`
+- `packages/react/markput/src/components/DropIndicator.tsx`
+- `packages/react/markput/src/lib/hooks/useOverlay.tsx`
+- `packages/vue/markput/src/components/Container.vue`
+- `packages/vue/markput/src/components/Block.vue`
+- `packages/vue/markput/src/components/DragHandle.vue`
+- `packages/vue/markput/src/components/Suggestions/Suggestions.vue`
+- `packages/vue/markput/src/lib/hooks/useOverlay.ts`
+
+**Enumeration commands** (catches both direct access and whole-map captures):
+
+```bash
+rg -n 's\s*=>\s*s\.(state|computed|emit)\b' packages/react packages/vue packages/storybook
+rg -n 'store\.value\.(state|computed|emit)\b' packages/vue
+rg -n '\bstore\.(state|computed|emit)\b' packages/react packages/vue packages/storybook
+```
+
+Union the results. Each match needs an explicit rewrite.
+
+- [ ] **Step 12.5.1: Rewrite whole-map captures**
+
+For every `useMarkput(s => ({ emit: s.emit, ... }))` selector, expand to capture the feature paths explicitly. Example:
+
+```tsx
+// Before
+const {emit, state} = useMarkput(s => ({
+	emit: s.emit,
+	state: s.state,
+}))
+emit.change()
+state.tokens
+
+// After
+const {valueEmit, parsingState} = useMarkput(s => ({
+	valueEmit: s.feature.value.emit,
+	parsingState: s.feature.parsing.state,
+}))
+valueEmit.change()
+parsingState.tokens
+```
+
+Group aliases by feature — don't flatten individual signals through the selector. Each feature's `state`/`computed`/`emit` is a stable object, so capturing `s.feature.value.emit` gives the same ergonomic handle as the old `s.emit` pattern.
+
+If a consumer reaches across features (e.g. calls both `emit.change` on value and `emit.drag` on drag), return both groups:
+
+```ts
+const {valueEmit, dragEmit} = useMarkput(s => ({
+	valueEmit: s.feature.value.emit,
+	dragEmit: s.feature.drag.emit,
+}))
+```
+
+- [ ] **Step 12.5.2: Rewrite direct top-level accesses**
+
+Any remaining `store.state.X` / `store.computed.X` / `store.emit.X` → `store.feature.<name>.<category>.X`. These should be uncommon at this point (Tasks 1–11 migrated the common ones) but re-grep to catch stragglers including test files, storybook examples, and documentation snippets.
+
+- [ ] **Step 12.5.3: Verify `BlockStore` interactions**
+
+`packages/vue/markput/src/lib/models/blockStore.ts` accepts `emit` and passes it through `attachContainer` / `attachGrip`. Review the public contract there — prefer keeping the parameter name intact but ensure the caller passes `store.feature.value.emit` (or whatever is appropriate for the attach site, typically `store.feature.drag.emit`).
+
+- [ ] **Step 12.5.4: Run the full suite and commit**
+
+```bash
+pnpm test && pnpm run typecheck && pnpm run lint:check
+```
+
+Storybook browser tests are part of `pnpm test` (via `workspaceProjects` in the root vitest config) — these exercise the adapter paths end-to-end and are the real safety net for this step. Investigate any failure before committing.
+
+```bash
+git add -A
+git commit -m "refactor(adapters): migrate React/Vue components off legacy store maps"
+```
+
+After this commit, the final audit in Task 13 should come back empty.
 
 ---
 
@@ -1716,13 +2164,28 @@ Every call site now points at `store.feature.<name>.<category>.<field>`. The leg
 
 - [ ] **Step 13.1: Final call-site audit**
 
+Run the expanded sweep (these patterns cover both direct field access AND whole-map captures — the Task 12.5 predecessor should have cleared the latter, this is the verification):
+
 ```bash
-rg 'store\.state\.|store\.computed\.|store\.emit\.' packages
+# Direct access on a bound store variable
+rg -n '\bstore\.(state|computed|emit)\.' packages
+
+# Destructuring from a store
+rg -n '(const|let|var)\s*\{[^}]*(state|computed|emit)[^}]*\}\s*=\s*[a-zA-Z]+\.?store' packages
+
+# Selector-style whole-map captures
+rg -n '=>\s*(store|s|store\.value)\.(state|computed|emit)\b' packages
+
+# Property access via `this.store` inside classes
+rg -n 'this\.store\.(state|computed|emit)\.' packages
+
+# Vue ref-style access
+rg -n 'store\.value\.(state|computed|emit)\.' packages/vue
 ```
 
-Expected: ZERO matches (only `this.state.X`, `this.computed.X`, `this.emit.X` inside feature classes themselves).
+Expected: ZERO matches outside a feature class's own private `this.state.X` / `this.computed.X` / `this.emit.X` references (those are fine — they're inside the feature). Every remaining `store.*` access must go through `store.feature.<name>.<category>.<field>`.
 
-If any hits remain, fix them now (each should become `store.feature.<name>.<category>.<field>`).
+If any hit remains, STOP, fix it, and re-run the full sweep before deleting the legacy maps. Deleting first and patching reactively is what breaks runtime behavior.
 
 - [ ] **Step 13.2: Delete legacy maps from `Store.ts`**
 
@@ -1787,7 +2250,7 @@ export class Store {
 }
 ```
 
-Target size: ≤ 80 lines (not counting `props` definition and comments).
+Target size: ≤ 80 lines excluding the `props` literal and comments. Counting the full file including the 15 `signal()` lines in `props` and the `setProps` body, expect ~110–140 lines. If the total hit ~80 including `props` that would be an unrealistic goal given the irreducible prop surface — the ≤ 80 number is about the Store's orchestration logic, not the props map. Sanity-check via `wc -l packages/core/src/store/Store.ts` after the edit.
 
 - [ ] **Step 13.3: Update `Store.spec.ts`**
 
@@ -1806,6 +2269,13 @@ pnpm test && pnpm run typecheck && pnpm run lint:check && pnpm run format:check 
 git add -A
 git commit -m "refactor(core): remove legacy store.state/computed/emit maps; migration complete"
 ```
+
+**Rollback discipline:** this is the only task in the plan with no alias safety net. Every commit through Task 12.5 can be reverted as a single `git revert <sha>` without behavioral impact (the legacy maps pass calls through to the same instances). Task 13 is irreversible in the same cheap way — once `store.state.X` is gone, any downstream consumer still using it fails. If CI or end-to-end flaps after this commit:
+
+1. First preference: fix forward — the breakage is a missed call site that Task 13.1's audit should have caught. Find it and rewrite to `store.feature.<name>.<category>.<field>`.
+2. Last resort: `git revert HEAD` restores the legacy maps as aliases. Every other commit from Tasks 1–12.5 remains landed; only the deletion reverts. A re-audit pass can then find the missed site and the deletion can re-land as a new commit.
+
+Do not squash Task 13 with earlier tasks — keep it as its own revertable commit.
 
 ---
 

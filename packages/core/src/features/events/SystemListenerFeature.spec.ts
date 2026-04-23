@@ -11,35 +11,10 @@ describe('SystemListenerFeature', () => {
 	beforeEach(() => {
 		store = new Store()
 		controller = store.feature.system
+		store.feature.value.enable()
 	})
 
 	describe('enable()', () => {
-		it('react to change event after enable', () => {
-			const onChange = vi.fn()
-			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
-			controller.enable()
-
-			// Emit change — handler should serialize tokens and call onChange
-			store.emit.change()
-
-			expect(onChange).toHaveBeenCalled()
-		})
-
-		it('be idempotent — calling enable twice does not double-subscribe', () => {
-			const onChange = vi.fn()
-			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
-
-			controller.enable()
-			controller.enable()
-
-			store.emit.change()
-
-			expect(onChange).toHaveBeenCalledTimes(1)
-		})
-
 		it('react to delete event with correct token', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
@@ -51,7 +26,6 @@ describe('SystemListenerFeature', () => {
 
 			store.emit.markRemove({token})
 
-			// After markRemove, the token should be removed from the tokens array
 			expect(store.state.tokens()).toEqual([
 				{
 					type: 'text',
@@ -84,8 +58,6 @@ describe('SystemListenerFeature', () => {
 
 			controller.enable()
 
-			// For select, we just verify the handler runs without error
-			// The full behavior requires DOM setup, so we verify the effect subscribes
 			const mark = {type: 'text' as const, content: '@user', position: {start: 0, end: 5}}
 			store.state.tokens([mark])
 
@@ -109,19 +81,6 @@ describe('SystemListenerFeature', () => {
 	})
 
 	describe('disable()', () => {
-		it('stop reacting to events after disable', () => {
-			const onChange = vi.fn()
-			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
-			controller.enable()
-			controller.disable()
-
-			store.emit.change()
-
-			expect(onChange).not.toHaveBeenCalled()
-		})
-
 		it('stop reacting to markRemove events after disable', () => {
 			const onChange = vi.fn()
 			store.setProps({onChange})
@@ -134,20 +93,6 @@ describe('SystemListenerFeature', () => {
 			store.emit.markRemove({token})
 
 			expect(onChange).not.toHaveBeenCalled()
-		})
-
-		it('allow re-enabling after disable', () => {
-			const onChange = vi.fn()
-			store.setProps({onChange})
-			store.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
-			controller.enable()
-			controller.disable()
-			controller.enable()
-
-			store.emit.change()
-
-			expect(onChange).toHaveBeenCalledTimes(1)
 		})
 	})
 })

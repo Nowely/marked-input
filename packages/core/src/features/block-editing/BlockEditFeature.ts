@@ -71,7 +71,7 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.computed.currentValue()
+		const value = this.store.feature.value.computed.currentValue()
 		if (!this.store.props.onChange()) return
 
 		if (event.key === KEYBOARD.BACKSPACE) {
@@ -92,7 +92,7 @@ export class BlockEditFeature {
 									value.slice(rows[blockIndex + 1].position.start)
 								)
 							})()
-				this.store.state.innerValue(newValue)
+				this.store.feature.value.state.innerValue(newValue)
 				queueMicrotask(() => {
 					const targetIndex = Math.max(0, blockIndex - 1)
 					const target = childAt(container, targetIndex)
@@ -111,7 +111,7 @@ export class BlockEditFeature {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
-					this.store.state.innerValue(newValue)
+					this.store.feature.value.state.innerValue(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex - 1)
 						if (target) {
@@ -146,7 +146,7 @@ export class BlockEditFeature {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 					const newValue = mergeDragRows(value, rows, blockIndex)
-					this.store.state.innerValue(newValue)
+					this.store.feature.value.state.innerValue(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex - 1)
 						if (target) {
@@ -174,7 +174,7 @@ export class BlockEditFeature {
 					event.preventDefault()
 					const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 					const newValue = mergeDragRows(value, rows, blockIndex + 1)
-					this.store.state.innerValue(newValue)
+					this.store.feature.value.state.innerValue(newValue)
 					queueMicrotask(() => {
 						const target = childAt(container, blockIndex)
 						if (target) {
@@ -222,7 +222,7 @@ export class BlockEditFeature {
 		const rows = this.store.state.tokens()
 		const token = rows[blockIndex]
 		const blockDiv = blockDivs[blockIndex]
-		const value = this.store.computed.currentValue()
+		const value = this.store.feature.value.computed.currentValue()
 
 		if (!this.store.props.onChange()) return
 
@@ -230,7 +230,7 @@ export class BlockEditFeature {
 
 		if (!isTextLikeRow(token)) {
 			const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-			this.store.state.innerValue(newValue)
+			this.store.feature.value.state.innerValue(newValue)
 			queueMicrotask(() => {
 				const newBlockIndex = blockIndex + 1
 				if (newBlockIndex < container.children.length) {
@@ -246,7 +246,7 @@ export class BlockEditFeature {
 
 		const absolutePos = getCaretRawPosInBlock(blockDiv, token)
 		const newValue = value.slice(0, absolutePos) + newRowContent + value.slice(absolutePos)
-		this.store.state.innerValue(newValue)
+		this.store.feature.value.state.innerValue(newValue)
 
 		queueMicrotask(() => {
 			const newBlockIndex = blockIndex + 1
@@ -348,7 +348,7 @@ export class BlockEditFeature {
 		if (blockIndex >= rows.length) return
 
 		const token = rows[blockIndex]
-		const value = this.store.computed.currentValue()
+		const value = this.store.feature.value.computed.currentValue()
 
 		const focusAndSetCaret = (newRawPos: number) => {
 			queueMicrotask(() => {
@@ -375,7 +375,7 @@ export class BlockEditFeature {
 				} else {
 					rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 				}
-				this.store.state.innerValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
+				this.store.feature.value.state.innerValue(value.slice(0, rawFrom) + data + value.slice(rawTo))
 				focusAndSetCaret(rawFrom + data.length)
 				break
 			}
@@ -395,7 +395,7 @@ export class BlockEditFeature {
 				} else {
 					rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 				}
-				this.store.state.innerValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
+				this.store.feature.value.state.innerValue(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
 				focusAndSetCaret(rawFrom + pasteData.length)
 				break
 			}
@@ -412,7 +412,7 @@ export class BlockEditFeature {
 				const [rawFrom, rawTo] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
 				if (rawFrom === rawTo) return
 				event.preventDefault()
-				this.store.state.innerValue(value.slice(0, rawFrom) + value.slice(rawTo))
+				this.store.feature.value.state.innerValue(value.slice(0, rawFrom) + value.slice(rawTo))
 				focusAndSetCaret(rawFrom)
 				break
 			}

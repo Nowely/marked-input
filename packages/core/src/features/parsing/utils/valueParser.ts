@@ -14,21 +14,20 @@ export function getTokensByUI(store: Store): Token[] {
 
 export function computeTokensFromValue(store: Store): Token[] {
 	const value = store.props.value()
-	const previousValue = store.state.previousValue()
+	const previousValue = store.feature.value.state.previousValue()
 	const gap = findGap(previousValue, value)
 
 	if (!gap.left && !gap.right) {
-		store.state.previousValue(value)
+		store.feature.value.state.previousValue(value)
 		return store.state.tokens()
 	}
 
-	// Full value replacement — incremental diff won't work, re-parse from scratch
 	if (gap.left === 0 && previousValue !== undefined && gap.right !== undefined && gap.right >= previousValue.length) {
-		store.state.previousValue(value)
+		store.feature.value.state.previousValue(value)
 		return parseWithParser(store, value ?? '')
 	}
 
-	store.state.previousValue(value)
+	store.feature.value.state.previousValue(value)
 	const ranges = getRangeMap(store)
 	const tokens = store.state.tokens()
 
