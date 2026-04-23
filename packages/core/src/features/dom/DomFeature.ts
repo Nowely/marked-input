@@ -1,16 +1,10 @@
 import {childAt} from '../../shared/checkers'
-import {effectScope, effect, event, watch} from '../../shared/signals/index.js'
+import {effectScope, effect} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
 import {isTextTokenSpan} from './isTextTokenSpan'
 
 export class DomFeature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {
-		reconcile: event(),
-	}
-
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {}
@@ -24,10 +18,7 @@ export class DomFeature {
 				this.reconcile()
 			})
 			effect(() => {
-				if (this._store.feature.caret.state.selecting() === undefined) this.reconcile()
-			})
-			watch(this.emit.reconcile, () => {
-				this.reconcile()
+				if (this._store.caret.selecting() === undefined) this.reconcile()
 			})
 		})
 	}
@@ -38,16 +29,16 @@ export class DomFeature {
 	}
 
 	reconcile() {
-		const container = this._store.feature.slots.state.container()
+		const container = this._store.slots.container()
 		if (!container) return
 
 		const readOnly = this._store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = this._store.feature.slots.computed.isBlock()
+		const isBlock = this._store.slots.isBlock()
 
 		if (isBlock) {
-			const tokens = this._store.feature.parsing.state.tokens()
+			const tokens = this._store.parsing.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = childAt(container, i)
 				if (!el) continue
@@ -64,7 +55,7 @@ export class DomFeature {
 			}
 		}
 
-		const tokens = this._store.feature.parsing.state.tokens()
+		const tokens = this._store.parsing.tokens()
 		if (isBlock) {
 			this.#reconcileDragTextContent(tokens, container, readOnly)
 		} else {

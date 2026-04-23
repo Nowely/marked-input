@@ -5,10 +5,6 @@ import {enableBlockEdit} from './blockEdit'
 import {enableInput} from './input'
 
 export class KeyboardFeature implements Feature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {} as const
-
 	#disposers: Array<() => void> = []
 
 	constructor(private readonly _store: Store) {}

@@ -9,9 +9,9 @@ export const OverlayRenderer = memo(() => {
 		key: keyGen,
 		resolveOverlay,
 	} = useMarkput(s => ({
-		overlayMatch: s.feature.overlay.state.overlayMatch,
+		overlayMatch: s.overlay.overlayMatch,
 		key: s.key,
-		resolveOverlay: s.feature.overlay.computed.overlay,
+		resolveOverlay: s.overlay.overlaySlot,
 	}))
 	const key = useMemo(() => (overlayMatch ? keyGen.get(overlayMatch.option) : undefined), [overlayMatch])
 

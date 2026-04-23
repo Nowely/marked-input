@@ -5,13 +5,8 @@ import {enableFocus} from './focus'
 import {enableSelection} from './selection'
 
 export class CaretFeature implements Feature {
-	readonly state = {
-		recovery: signal<Recovery | undefined>(undefined),
-		selecting: signal<'drag' | 'all' | undefined>(undefined),
-	}
-
-	readonly computed = {} as const
-	readonly emit = {} as const
+	readonly recovery = signal<Recovery | undefined>(undefined)
+	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
 	#disposers: Array<() => void> = []
 

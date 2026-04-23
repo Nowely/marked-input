@@ -11,13 +11,13 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	const {focus} = store.nodes
 	const targetIndex = Math.max(0, focus.index - placeIndex)
 
-	const tokens = store.feature.parsing.state.tokens()
+	const tokens = store.parsing.tokens()
 	const spliced = tokens.splice(focus.index - placeIndex, 3)
 	const span1 = spliced.at(0)
 	const span2 = spliced.at(2)
 	const content1 = span1?.content ?? ''
 	const content2 = span2?.content ?? ''
-	store.feature.parsing.state.tokens(
+	store.parsing.tokens(
 		tokens.toSpliced(focus.index - placeIndex, 0, {
 			type: 'text',
 			content: content1 + content2,
@@ -34,12 +34,12 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	}
 	const caret = caretAnchor.length
 
-	store.feature.caret.state.recovery({anchor: caretAnchor.prev, caret})
+	store.caret.recovery({anchor: caretAnchor.prev, caret})
 
-	store.feature.value.emit.change()
+	store.value.change()
 
 	queueMicrotask(() => {
-		const container = store.feature.slots.state.container()
+		const container = store.slots.container()
 		const target = container ? childAt(container, targetIndex) : null
 		if (!target) return
 		store.nodes.focus.target = target

@@ -19,13 +19,13 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('enable() sets up the selecting subscription via effect', () => {
-		const controller = store.feature.caret
+		const controller = store.caret
 		controller.enable()
 		expect(addSpy).toHaveBeenCalledTimes(4)
 	})
 
 	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.feature.caret
+		const controller = store.caret
 		controller.enable()
 		const callCount = addSpy.mock.calls.length
 		controller.enable()
@@ -33,18 +33,18 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('disable() removes the reactive subscription', () => {
-		const controller = store.feature.caret
+		const controller = store.caret
 		controller.enable()
 		controller.disable()
-		expect(() => store.feature.caret.state.selecting('drag')).not.toThrow()
+		expect(() => store.caret.selecting('drag')).not.toThrow()
 	})
 
 	it('disable() resets selecting from drag to undefined', () => {
-		const controller = store.feature.caret
+		const controller = store.caret
 		controller.enable()
-		store.feature.caret.state.selecting('drag')
+		store.caret.selecting('drag')
 		controller.disable()
-		expect(store.feature.caret.state.selecting()).toBe(undefined)
+		expect(store.caret.selecting()).toBe(undefined)
 	})
 
 	it('selecting set to "drag" disables contenteditable on container elements', () => {
@@ -54,11 +54,11 @@ describe('TextSelectionFeature', () => {
 		container.appendChild(span)
 		document.body.appendChild(container)
 
-		store.feature.slots.state.container(container)
+		store.slots.container(container)
 
-		const controller = store.feature.caret
+		const controller = store.caret
 		controller.enable()
-		store.feature.caret.state.selecting('drag')
+		store.caret.selecting('drag')
 
 		expect(span.contentEditable).toBe('false')
 

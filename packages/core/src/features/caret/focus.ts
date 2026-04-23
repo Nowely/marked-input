@@ -3,7 +3,7 @@ import {effectScope, watch, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export function enableFocus(store: Store): () => void {
-	const container = store.feature.slots.state.container()
+	const container = store.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
@@ -17,16 +17,16 @@ export function enableFocus(store: Store): () => void {
 		})
 
 		listen(container, 'click', () => {
-			const tokens = store.feature.parsing.state.tokens()
+			const tokens = store.parsing.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const container = store.feature.slots.state.container()
+				const container = store.slots.container()
 				const element = container ? firstHtmlChild(container) : null
 				element?.focus()
 			}
 		})
 
-		watch(store.feature.lifecycle.emit.rendered, () => {
-			store.feature.dom.emit.reconcile()
+		watch(store.lifecycle.rendered, () => {
+			store.dom.reconcile()
 			if (!store.props.Mark()) return
 			recover(store)
 		})
@@ -39,7 +39,7 @@ export function enableFocus(store: Store): () => void {
 }
 
 function recover(store: Store) {
-	const recovery = store.feature.caret.state.recovery()
+	const recovery = store.caret.recovery()
 	if (!recovery) return
 
 	const {anchor, caret, isNext} = recovery
@@ -49,7 +49,7 @@ function recover(store: Store) {
 	// eslint-disable-next-line switch-exhaustiveness-check
 	switch (true) {
 		case isNext && isStale: {
-			const container = store.feature.slots.state.container()
+			const container = store.slots.container()
 			const targetChild = recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
 			target = targetChild ?? store.nodes.focus.tail ?? undefined
 			break
@@ -71,5 +71,5 @@ function recover(store: Store) {
 		store.nodes.focus.target = target
 		store.nodes.focus.caret = caret
 	})
-	store.feature.caret.state.recovery(undefined)
+	store.caret.recovery(undefined)
 }

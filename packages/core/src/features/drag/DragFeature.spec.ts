@@ -9,37 +9,47 @@ describe('DragFeature', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		// Disable all feature except drag so their enable() side-effects don't interfere
-		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(feature)) {
-			if (key === 'drag') continue
-			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
+		const features: Record<string, {enable(): void; disable(): void}> = {
+			lifecycle: store.lifecycle,
+			value: store.value,
+			mark: store.mark,
+			overlay: store.overlay,
+			slots: store.slots,
+			caret: store.caret,
+			keyboard: store.keyboard,
+			dom: store.dom,
+			clipboard: store.clipboard,
+			parsing: store.parsing,
+		}
+		for (const key of Object.keys(features)) {
+			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
 		}
 	})
 
 	describe('enable()', () => {
 		it('is a no-op when already enabled (does not leak a watcher)', () => {
 			// Set up minimal props so the delete handler will actually call innerValue
-			store.setProps({
+			store.props.set({
 				value: 'test',
 				onChange: () => {}, // onChange is required for operations to proceed
 			})
 
-			store.feature.drag.enable()
-			store.feature.drag.enable() // second call — must not overwrite #unsub
+			store.drag.enable()
+			store.drag.enable() // second call — must not overwrite #unsub
 
 			// After a single disable, the watcher must be gone.
 			// If double-enable leaked, the first watcher would still fire.
-			store.feature.drag.disable()
+			store.drag.disable()
 
-			const reorderSpy = vi.spyOn(store.feature.value.state, 'innerValue')
-			store.feature.drag.emit.drag({type: 'delete', index: 0})
+			const reorderSpy = vi.spyOn(store.value, 'innerValue')
+			store.drag.drag({type: 'delete', index: 0})
 			expect(reorderSpy).not.toHaveBeenCalled()
 		})
 	})
 
 	it('owns the drag event', () => {
 		const store = new Store()
-		expect(typeof store.feature.drag.emit.drag).toBe('function')
+		expect(typeof store.drag.drag).toBe('function')
 	})
 })

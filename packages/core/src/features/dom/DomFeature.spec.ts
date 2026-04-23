@@ -11,14 +11,14 @@ describe('DomFeature', () => {
 	})
 
 	it('enable() calls reconcile() immediately (effect fires on creation)', () => {
-		const controller = store.feature.dom
+		const controller = store.dom
 		const reconcileSpy = vi.spyOn(controller, 'reconcile')
 		controller.enable()
 		expect(reconcileSpy).toHaveBeenCalled()
 	})
 
 	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.feature.dom
+		const controller = store.dom
 		const reconcileSpy = vi.spyOn(controller, 'reconcile')
 		controller.enable()
 		const callCount = reconcileSpy.mock.calls.length
@@ -27,32 +27,32 @@ describe('DomFeature', () => {
 	})
 
 	it('changing readOnly after enable() triggers reconcile() again', () => {
-		store.feature.dom.enable()
-		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.setProps({readOnly: true})
+		store.dom.enable()
+		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+		store.props.set({readOnly: true})
 		expect(reconcileSpy).toHaveBeenCalled()
 	})
 
 	it('disable() stops reactive subscriptions — readOnly change no longer triggers reconcile()', () => {
-		store.feature.dom.enable()
-		store.feature.dom.disable()
-		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.setProps({readOnly: true})
+		store.dom.enable()
+		store.dom.disable()
+		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+		store.props.set({readOnly: true})
 		expect(reconcileSpy).not.toHaveBeenCalled()
 	})
 
 	it('selecting becoming undefined after enable() triggers reconcile()', () => {
-		store.feature.dom.enable()
-		store.feature.caret.state.selecting('drag')
-		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.feature.caret.state.selecting(undefined)
+		store.dom.enable()
+		store.caret.selecting('drag')
+		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+		store.caret.selecting(undefined)
 		expect(reconcileSpy).toHaveBeenCalled()
 	})
 
 	it('selecting changing to non-undefined does not trigger reconcile()', () => {
-		store.feature.dom.enable()
-		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.feature.caret.state.selecting('drag')
+		store.dom.enable()
+		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+		store.caret.selecting('drag')
 		expect(reconcileSpy).not.toHaveBeenCalled()
 	})
 })

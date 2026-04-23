@@ -4,11 +4,11 @@ export class MarkputHandler {
 	constructor(private readonly store: Store) {}
 
 	get container() {
-		return this.store.feature.slots.state.container()
+		return this.store.slots.container()
 	}
 
 	get overlay() {
-		return this.store.feature.overlay.state.overlay()
+		return this.store.overlay.overlay()
 	}
 
 	focus() {

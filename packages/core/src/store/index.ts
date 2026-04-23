@@ -1,4 +1,5 @@
 export {Store} from './Store'
+export {PropsFeature} from '../features/props/PropsFeature'
 export {BlockStore} from './BlockStore'
 export type {DropPosition} from './BlockStore'
 export {BlockRegistry} from './BlockRegistry'

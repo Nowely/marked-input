@@ -2,26 +2,25 @@
 import {watch} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
+import {useStore} from '../lib/hooks/useStore'
 import Block from './Block.vue'
 import Token from './Token.vue'
 
+const store = useStore()
 const result = useMarkput(s => ({
-	isBlock: s.feature.slots.computed.isBlock,
-	tokens: s.feature.parsing.state.tokens,
+	isBlock: s.slots.isBlock,
+	tokens: s.parsing.tokens,
 	key: s.key,
-	slotsState: s.feature.slots.state,
-	lifecycleEmit: s.feature.lifecycle.emit,
+	lifecycleEmit: s.lifecycle,
 }))
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	result.value.slotsState.container(
-		(resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
-	)
+	store.slots.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
 }
 
-const containerComponent = useMarkput(s => s.feature.slots.computed.containerComponent)
-const containerProps = useMarkput(s => s.feature.slots.computed.containerProps)
+const containerComponent = useMarkput(s => s.slots.containerComponent)
+const containerProps = useMarkput(s => s.slots.containerProps)
 
 watch(
 	() => result.value.tokens,

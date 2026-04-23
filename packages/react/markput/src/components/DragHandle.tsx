@@ -9,9 +9,9 @@ import styles from '@markput/core/styles.module.css'
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
-	const {blockStore, dragEmit, readOnly, draggable, isDragging, isHovered} = useMarkput(s => ({
+	const {blockStore, drag, readOnly, draggable, isDragging, isHovered} = useMarkput(s => ({
 		blockStore: s.blocks.get(token),
-		dragEmit: s.feature.drag.emit,
+		drag: s.drag.drag,
 		readOnly: s.props.readOnly,
 		draggable: s.props.draggable,
 		isDragging: s.blocks.get(token).state.isDragging,
@@ -29,7 +29,7 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			)}
 		>
 			<button
-				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, dragEmit)}
+				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, {drag})}
 				type="button"
 				draggable
 				className={cx(styles.GripButton, isDragging && styles.GripButtonDragging)}

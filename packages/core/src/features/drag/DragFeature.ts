@@ -7,11 +7,7 @@ import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './op
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
 export class DragFeature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {
-		drag: event<DragAction>(),
-	}
+	readonly drag = event<DragAction>()
 
 	constructor(private readonly store: Store) {}
 
@@ -20,7 +16,7 @@ export class DragFeature {
 	enable() {
 		if (this.#unsub) return
 
-		this.#unsub = watch(this.emit.drag, action => {
+		this.#unsub = watch(this.drag, action => {
 			switch (action.type) {
 				case 'reorder':
 					this.#reorder(action.source, action.target)
@@ -46,20 +42,20 @@ export class DragFeature {
 	#reorder(sourceIndex: number, targetIndex: number) {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
-		const rows = this.store.feature.parsing.state.tokens()
+		const rows = this.store.parsing.tokens()
 		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
-		if (newValue !== value) this.store.feature.value.state.innerValue(newValue)
+		if (newValue !== value) this.store.value.innerValue(newValue)
 	}
 
 	#add(afterIndex: number) {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
-		const rawRows = this.store.feature.parsing.state.tokens()
+		const rawRows = this.store.parsing.tokens()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.store.props.options())
-		this.store.feature.value.state.innerValue(addDragRow(value, rows, afterIndex, newRowContent))
+		this.store.value.innerValue(addDragRow(value, rows, afterIndex, newRowContent))
 		queueMicrotask(() => {
-			const container = this.store.feature.slots.state.container()
+			const container = this.store.slots.container()
 			if (!container) return
 			const target = childAt(container, afterIndex + 1)
 			target?.focus()
@@ -69,14 +65,14 @@ export class DragFeature {
 	#delete(index: number) {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
-		const rows = this.store.feature.parsing.state.tokens()
-		this.store.feature.value.state.innerValue(deleteDragRow(value, rows, index))
+		const rows = this.store.parsing.tokens()
+		this.store.value.innerValue(deleteDragRow(value, rows, index))
 	}
 
 	#duplicate(index: number) {
 		const value = this.store.props.value()
 		if (value == null || !this.store.props.onChange()) return
-		const rows = this.store.feature.parsing.state.tokens()
-		this.store.feature.value.state.innerValue(duplicateDragRow(value, rows, index))
+		const rows = this.store.parsing.tokens()
+		this.store.value.innerValue(duplicateDragRow(value, rows, index))
 	}
 }

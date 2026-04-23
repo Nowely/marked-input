@@ -3,13 +3,9 @@ import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 
 export class LifecycleFeature implements Feature {
-	readonly state = {} as const
-	readonly computed = {} as const
-	readonly emit = {
-		mounted: event(),
-		unmounted: event(),
-		rendered: event(),
-	}
+	readonly mounted = event()
+	readonly unmounted = event()
+	readonly rendered = event()
 
 	constructor(private readonly _store: Store) {}
 

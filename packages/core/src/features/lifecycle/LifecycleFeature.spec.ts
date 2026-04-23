@@ -5,8 +5,8 @@ import {Store} from '../../store/Store'
 describe('LifecycleFeature', () => {
 	it('exposes mounted, unmounted, rendered events', () => {
 		const store = new Store()
-		expect(typeof store.feature.lifecycle.emit.mounted).toBe('function')
-		expect(typeof store.feature.lifecycle.emit.unmounted).toBe('function')
-		expect(typeof store.feature.lifecycle.emit.rendered).toBe('function')
+		expect(typeof store.lifecycle.mounted).toBe('function')
+		expect(typeof store.lifecycle.unmounted).toBe('function')
+		expect(typeof store.lifecycle.rendered).toBe('function')
 	})
 })

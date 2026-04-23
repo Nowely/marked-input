@@ -7,208 +7,206 @@ describe('ParsingFeature', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(feature)) {
-			if (key === 'parsing') continue
-			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
+		const features: Record<string, {enable(): void; disable(): void}> = {
+			lifecycle: store.lifecycle,
+			value: store.value,
+			mark: store.mark,
+			overlay: store.overlay,
+			slots: store.slots,
+			caret: store.caret,
+			keyboard: store.keyboard,
+			dom: store.dom,
+			drag: store.drag,
+			clipboard: store.clipboard,
+		}
+		for (const key of Object.keys(features)) {
+			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
 		}
 	})
 
 	describe('sync()', () => {
 		it('sets tokens from value signal', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
-			])
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('falls back to defaultValue when value is undefined', () => {
-			store.feature.parsing.enable()
-			store.setProps({defaultValue: 'default'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({defaultValue: 'default'})
+			store.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'default', position: {start: 0, end: 7}},
-			])
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('falls back to empty string when both are undefined', () => {
-			store.feature.parsing.enable()
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: '', position: {start: 0, end: 0}},
-			])
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('sets previousValue to the parsed input', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'test'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'test'})
+			store.parsing.sync()
 
-			expect(store.feature.value.state.previousValue()).toBe('test')
+			expect(store.value.previousValue()).toBe('test')
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('skips markup when no Mark override and no per-option Mark', () => {
-			store.feature.parsing.enable()
-			store.setProps({options: [{markup: '@[__value__]'}], value: '@hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({options: [{markup: '@[__value__]'}], value: '@hello'})
+			store.parsing.sync()
 
-			expect(store.feature.parsing.computed.parser()).toBeUndefined()
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: '@hello', position: {start: 0, end: 6}},
-			])
+			expect(store.parsing.parser()).toBeUndefined()
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: '@hello', position: {start: 0, end: 6}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('uses markup when Mark override is set', () => {
-			store.feature.parsing.enable()
-			store.setProps({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
+			store.parsing.sync()
 
-			expect(store.feature.parsing.computed.parser()).toBeDefined()
+			expect(store.parsing.parser()).toBeDefined()
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 	})
 
 	describe('enable() / disable()', () => {
 		it('is idempotent — calling enable twice does not double-subscribe', () => {
-			store.feature.parsing.enable()
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
 
 			let callCount = 0
-			const original = store.feature.parsing.state.tokens
+			const original = store.parsing.tokens
 			const tokensWrapper = (...args: unknown[]) => {
 				if (args.length) callCount++
 				return (original as (...args: unknown[]) => unknown)(...args)
 			}
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
+			;(store.parsing as unknown as Record<string, unknown>).tokens = tokensWrapper
 
-			store.feature.parsing.emit.reparse()
+			store.parsing.reparse()
 			expect(callCount).toBe(1)
 
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
-			store.feature.parsing.disable()
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
+			;(store.parsing as unknown as Record<string, unknown>).tokens = original
+			store.parsing.disable()
 		})
 
 		it('stops parse subscription after disable', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 
-			const tokensBefore = store.feature.parsing.state.tokens()
-			store.feature.parsing.emit.reparse()
-			expect(store.feature.parsing.state.tokens()).toBe(tokensBefore)
+			const tokensBefore = store.parsing.tokens()
+			store.parsing.reparse()
+			expect(store.parsing.tokens()).toBe(tokensBefore)
 		})
 
 		it('resets initialized state — re-enable and sync works fresh', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'first'})
-			store.feature.parsing.sync()
-			store.feature.parsing.disable()
+			store.parsing.enable()
+			store.props.set({value: 'first'})
+			store.parsing.sync()
+			store.parsing.disable()
 
-			store.feature.parsing.enable()
-			store.setProps({value: 'second'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'second'})
+			store.parsing.sync()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'second', position: {start: 0, end: 6}},
-			])
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 	})
 
 	describe('reactive parse', () => {
 		it('reactively re-parses when props.value changes', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
 
-			store.setProps({value: 'world'})
+			store.props.set({value: 'world'})
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'world', position: {start: 0, end: 5}},
-			])
-			expect(store.feature.value.state.previousValue()).toBe('world')
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+			expect(store.value.previousValue()).toBe('world')
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('does not re-parse in recovery mode when props.value changes', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
 
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
-			store.setProps({value: 'world'})
+			store.caret.recovery({caret: 0, anchor: store.nodes.focus})
+			store.props.set({value: 'world'})
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
-			])
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 	})
 
 	describe('parse handler', () => {
 		it('in recovery mode — re-parses from token text', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'test'})
-			store.feature.parsing.sync()
+			store.parsing.enable()
+			store.props.set({value: 'test'})
+			store.parsing.sync()
 
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
-			store.feature.parsing.emit.reparse()
+			store.caret.recovery({caret: 0, anchor: store.nodes.focus})
+			store.parsing.reparse()
 
-			expect(store.feature.parsing.state.tokens()).toEqual([
-				{type: 'text', content: 'test', position: {start: 0, end: 4}},
-			])
-			expect(store.feature.value.state.previousValue()).toBe('test')
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
+			expect(store.value.previousValue()).toBe('test')
 
-			store.feature.parsing.disable()
+			store.parsing.disable()
 		})
 
 		it('does not re-run parse subscription when recovery changes after parse event', () => {
-			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
-			store.feature.parsing.sync()
-			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
+			store.parsing.enable()
+			store.props.set({value: 'hello'})
+			store.parsing.sync()
+			store.caret.recovery({caret: 0, anchor: store.nodes.focus})
 
 			let callCount = 0
-			const original = store.feature.parsing.state.tokens
+			const original = store.parsing.tokens
 			const tokensWrapper = (...args: unknown[]) => {
 				if (args.length) callCount++
 				return (original as (...args: unknown[]) => unknown)(...args)
 			}
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = tokensWrapper
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
+			;(store.parsing as unknown as Record<string, unknown>).tokens = tokensWrapper
 
-			store.feature.parsing.emit.reparse()
+			store.parsing.reparse()
 			expect(callCount).toBe(1)
 
 			callCount = 0
-			store.feature.caret.state.recovery({caret: 1, anchor: store.nodes.focus})
+			store.caret.recovery({caret: 1, anchor: store.nodes.focus})
 			expect(callCount).toBe(0)
 
-			;(store.feature.parsing.state as Record<string, unknown>).tokens = original
-			store.feature.parsing.disable()
+			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
+			;(store.parsing as unknown as Record<string, unknown>).tokens = original
+			store.parsing.disable()
 		})
 	})
 })

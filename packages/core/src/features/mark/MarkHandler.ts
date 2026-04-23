@@ -58,7 +58,7 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 	}
 
 	get #tokenInfo() {
-		return findToken(this.#store.feature.parsing.state.tokens(), this.#token)
+		return findToken(this.#store.parsing.tokens(), this.#token)
 	}
 
 	get depth(): number {
@@ -86,9 +86,9 @@ export class MarkHandler<T extends HTMLElement = HTMLElement> {
 		this.#emitChange()
 	}
 
-	remove = () => this.#store.feature.mark.emit.markRemove({token: this.#token})
+	remove = () => this.#store.mark.markRemove({token: this.#token})
 
 	#emitChange(): void {
-		this.#store.feature.value.emit.change()
+		this.#store.value.change()
 	}
 }

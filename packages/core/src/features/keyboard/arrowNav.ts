@@ -5,12 +5,12 @@ import {selectAllText} from '../caret'
 import {shiftFocusPrev, shiftFocusNext} from '../navigation'
 
 export function enableArrowNav(store: Store): () => void {
-	const container = store.feature.slots.state.container()
+	const container = store.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
 		listen(container, 'keydown', e => {
-			if (store.feature.slots.computed.isBlock()) return
+			if (store.slots.isBlock()) return
 			if (!store.nodes.focus.target) return
 
 			if (e.key === KEYBOARD.LEFT) {

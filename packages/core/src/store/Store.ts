@@ -7,23 +7,12 @@ import {LifecycleFeature} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
 import {OverlayFeature} from '../features/overlay'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
+import {PropsFeature} from '../features/props/PropsFeature'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
-import {DEFAULT_OPTIONS} from '../shared/constants'
-import {signal, batch, watch} from '../shared/signals'
-import type {SignalValues} from '../shared/signals'
-import type {
-	CoreOption,
-	OverlayTrigger,
-	CSSProperties,
-	CoreSlots,
-	CoreSlotProps,
-	DragAction,
-	DraggableConfig,
-	Slot,
-} from '../shared/types'
-import {shallow} from '../shared/utils/shallow'
+import {watch} from '../shared/signals'
+import type {DragAction, Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
 
 export type {DragAction} from '../shared/types'
@@ -37,64 +26,38 @@ export class Store {
 		input: new NodeProxy(undefined, this),
 	}
 
-	readonly props = {
-		value: signal<string | undefined>(undefined, {readonly: true}),
-		defaultValue: signal<string | undefined>(undefined, {readonly: true}),
-
-		onChange: signal<((value: string) => void) | undefined>(undefined, {readonly: true}),
-
-		options: signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true}),
-		readOnly: signal<boolean>(false, {readonly: true}),
-
-		layout: signal<'inline' | 'block'>('inline', {readonly: true}),
-		draggable: signal<boolean | DraggableConfig>(false, {readonly: true}),
-
-		showOverlayOn: signal<OverlayTrigger>('change', {readonly: true}),
-
-		Span: signal<Slot | undefined>(undefined, {readonly: true}),
-		Mark: signal<Slot | undefined>(undefined, {readonly: true}),
-		Overlay: signal<Slot | undefined>(undefined, {readonly: true}),
-
-		className: signal<string | undefined>(undefined, {readonly: true}),
-		style: signal<CSSProperties | undefined>(undefined, {equals: shallow, readonly: true}),
-
-		slots: signal<CoreSlots | undefined>(undefined, {readonly: true}),
-		slotProps: signal<CoreSlotProps | undefined>(undefined, {readonly: true}),
-	}
-
+	readonly props = new PropsFeature(this)
 	readonly handler = new MarkputHandler(this)
 
-	readonly feature = {
-		lifecycle: new LifecycleFeature(this),
-		value: new ValueFeature(this),
-		mark: new MarkFeature(this),
-		overlay: new OverlayFeature(this),
-		slots: new SlotsFeature(this),
-		caret: new CaretFeature(this),
-		keyboard: new KeyboardFeature(this),
-		dom: new DomFeature(this),
-		drag: new DragFeature(this),
-		clipboard: new ClipboardFeature(this),
-		parsing: new ParsingFeature(this),
-	}
+	readonly lifecycle = new LifecycleFeature(this)
+	readonly value = new ValueFeature(this)
+	readonly mark = new MarkFeature(this)
+	readonly overlay = new OverlayFeature(this)
+	readonly slots = new SlotsFeature(this)
+	readonly caret = new CaretFeature(this)
+	readonly keyboard = new KeyboardFeature(this)
+	readonly dom = new DomFeature(this)
+	readonly drag = new DragFeature(this)
+	readonly clipboard = new ClipboardFeature(this)
+	readonly parsing = new ParsingFeature(this)
+
+	readonly #features: Feature[] = []
 
 	constructor() {
-		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.feature.lifecycle.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
-	}
-
-	setProps(values: Partial<SignalValues<typeof this.props>>): void {
-		batch(
-			() => {
-				const props = this.props
-				// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-				for (const key of Object.keys(values) as (keyof typeof this.props)[]) {
-					if (!(key in props)) continue
-					// oxlint-disable-next-line no-unsafe-type-assertion -- heterogeneous signal map: per-key types verified by SignalValues<T> at the call site
-					props[key](values[key] as never)
-				}
-			},
-			{mutable: true}
-		)
+		this.#features = [
+			this.lifecycle,
+			this.value,
+			this.mark,
+			this.overlay,
+			this.slots,
+			this.caret,
+			this.keyboard,
+			this.dom,
+			this.drag,
+			this.clipboard,
+			this.parsing,
+		]
+		watch(this.lifecycle.mounted, () => this.#features.forEach(f => f.enable()))
+		watch(this.lifecycle.unmounted, () => this.#features.forEach(f => f.disable()))
 	}
 }
