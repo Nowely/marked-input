@@ -8,7 +8,7 @@ import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const {state} = useMarkput(s => ({state: s.state}))
+	const {slotsState} = useMarkput(s => ({slotsState: s.feature.slots.state}))
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match?.option.overlay?.data ?? []
@@ -21,7 +21,7 @@ export const Suggestions = () => {
 	filteredRef.current = filtered
 
 	useEffect(() => {
-		const container = state.container()
+		const container = slotsState.container()
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {

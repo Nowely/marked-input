@@ -16,19 +16,19 @@ interface BlockProps {
 }
 
 export const Block = memo(({token}: BlockProps) => {
-	const {blockStore, emit, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
+	const {blockStore, dragEmit, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
 		blockStore: s.blocks.get(token),
-		emit: s.emit,
-		Component: s.computed.blockComponent,
-		slotProps: s.computed.blockProps,
+		dragEmit: s.feature.drag.emit,
+		Component: s.feature.slots.computed.blockComponent,
+		slotProps: s.feature.slots.computed.blockProps,
 		isDragging: s.blocks.get(token).state.isDragging,
-		tokens: s.state.tokens,
+		tokens: s.feature.parsing.state.tokens,
 	}))
 	const blockIndex = tokens.indexOf(token)
 
 	return (
 		<Component
-			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, emit)}
+			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, dragEmit)}
 			data-testid="block"
 			{...slotProps}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string
