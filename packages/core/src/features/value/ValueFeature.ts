@@ -4,10 +4,10 @@ import type {Store} from '../../store/Store'
 import {parseWithParser, toString} from '../parsing'
 
 export class ValueFeature implements Feature {
-	readonly previousValue = signal<string | undefined>(undefined)
-	readonly innerValue = signal<string | undefined>(undefined)
+	readonly last = signal<string | undefined>(undefined)
+	readonly next = signal<string | undefined>(undefined)
 
-	readonly currentValue = computed(() => this.previousValue() ?? this._store.props.value() ?? '')
+	readonly current = computed(() => this.last() ?? this._store.props.value() ?? '')
 
 	readonly change = event()
 
@@ -26,7 +26,7 @@ export class ValueFeature implements Feature {
 					const tokens = this._store.parsing.tokens()
 					const serialized = toString(tokens)
 					onChange?.(serialized)
-					this.previousValue(serialized)
+					this.last(serialized)
 					trigger(this._store.parsing.tokens)
 					return
 				}
@@ -44,12 +44,12 @@ export class ValueFeature implements Feature {
 				this._store.parsing.reparse()
 			})
 
-			watch(this.innerValue, newValue => {
+			watch(this.next, newValue => {
 				if (newValue === undefined) return
 				const newTokens = parseWithParser(this._store, newValue)
 				batch(() => {
 					this._store.parsing.tokens(newTokens)
-					this.previousValue(newValue)
+					this.last(newValue)
 				})
 				this._store.props.onChange()?.(newValue)
 			})

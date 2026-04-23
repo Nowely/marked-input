@@ -29,7 +29,7 @@ describe('DragFeature', () => {
 
 	describe('enable()', () => {
 		it('is a no-op when already enabled (does not leak a watcher)', () => {
-			// Set up minimal props so the delete handler will actually call innerValue
+			// Set up minimal props so the delete handler will actually call next
 			store.props.set({
 				value: 'test',
 				onChange: () => {}, // onChange is required for operations to proceed
@@ -42,7 +42,7 @@ describe('DragFeature', () => {
 			// If double-enable leaked, the first watcher would still fire.
 			store.drag.disable()
 
-			const reorderSpy = vi.spyOn(store.value, 'innerValue')
+			const reorderSpy = vi.spyOn(store.value, 'next')
 			store.drag.drag({type: 'delete', index: 0})
 			expect(reorderSpy).not.toHaveBeenCalled()
 		})

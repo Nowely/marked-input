@@ -24,14 +24,14 @@ describe('applySpanInput()', () => {
 })
 
 describe('replaceAllContentWith()', () => {
-	it('sets previousValue to the new content', () => {
+	it('sets last to the new content', () => {
 		const store = new Store()
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal container stub
 		store.slots.container({firstChild: null} as unknown as HTMLDivElement)
-		store.value.previousValue('old value')
+		store.value.last('old value')
 
 		replaceAllContentWith(store, 'new content')
 
-		expect(store.value.previousValue()).toBe('new content')
+		expect(store.value.last()).toBe('new content')
 	})
 })

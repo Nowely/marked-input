@@ -307,7 +307,7 @@ class Store {
 
     readonly feature: {
         lifecycle: LifecycleFeature    // mounted, unmounted, rendered events
-        value: ValueFeature            // previousValue, innerValue, currentValue, change event
+        value: ValueFeature            // last, next, current, change event
         parsing: ParsingFeature        // tokens, parser, reparse event
         mark: MarkFeature              // hasMark, mark, markRemove event
         overlay: OverlayFeature        // overlayMatch, overlay, overlaySelect, overlayClose
@@ -336,7 +336,7 @@ store.parsing.tokens(newTokens)
 import {batch} from '@markput/core'
 batch(() => {
 	store.parsing.tokens(newTokens)
-	store.value.previousValue(serialized)
+	store.value.last(serialized)
 })
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)

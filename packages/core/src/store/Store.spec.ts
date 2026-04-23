@@ -68,8 +68,8 @@ describe('Store', () => {
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
-			store.value.previousValue('hello')
-			expect(store.value.previousValue()).toBe('hello')
+			store.value.last('hello')
+			expect(store.value.last()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
@@ -135,23 +135,23 @@ describe('Store', () => {
 		})
 	})
 
-	describe('innerValue', () => {
-		it('update tokens and previousValue when innerValue is set', () => {
+	describe('next', () => {
+		it('update tokens and last when next is set', () => {
 			const store = new Store()
 			const dispose = effectScope(() => {
-				watch(store.value.innerValue, newValue => {
+				watch(store.value.next, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
 						store.parsing.tokens(newTokens)
-						store.value.previousValue(newValue)
+						store.value.last(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			store.value.innerValue('hello')
+			store.value.next('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			expect(store.value.previousValue()).toBe('hello')
+			expect(store.value.last()).toBe('hello')
 			dispose()
 		})
 
@@ -160,17 +160,17 @@ describe('Store', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			const dispose = effectScope(() => {
-				watch(store.value.innerValue, newValue => {
+				watch(store.value.next, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
 						store.parsing.tokens(newTokens)
-						store.value.previousValue(newValue)
+						store.value.last(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			store.value.innerValue('world')
+			store.value.next('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 			dispose()
@@ -179,17 +179,17 @@ describe('Store', () => {
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
 			const dispose = effectScope(() => {
-				watch(store.value.innerValue, newValue => {
+				watch(store.value.next, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
 						store.parsing.tokens(newTokens)
-						store.value.previousValue(newValue)
+						store.value.last(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			expect(() => store.value.innerValue('test')).not.toThrow()
+			expect(() => store.value.next('test')).not.toThrow()
 			dispose()
 		})
 	})
@@ -461,44 +461,44 @@ describe('Store', () => {
 		})
 	})
 
-	describe('currentValue (computed)', () => {
-		it('return empty string when both previousValue and value are undefined', () => {
+	describe('current (computed)', () => {
+		it('return empty string when both last and value are undefined', () => {
 			const store = new Store()
-			expect(store.value.currentValue()).toBe('')
+			expect(store.value.current()).toBe('')
 		})
 
-		it('return previousValue when set', () => {
+		it('return last when set', () => {
 			const store = new Store()
-			store.value.previousValue('cached')
-			expect(store.value.currentValue()).toBe('cached')
+			store.value.last('cached')
+			expect(store.value.current()).toBe('cached')
 		})
 
-		it('fall back to props.value when previousValue is undefined', () => {
+		it('fall back to props.value when last is undefined', () => {
 			const store = new Store()
 			store.props.set({value: 'prop-value'})
-			expect(store.value.currentValue()).toBe('prop-value')
+			expect(store.value.current()).toBe('prop-value')
 		})
 
-		it('prefer previousValue over props.value', () => {
+		it('prefer last over props.value', () => {
 			const store = new Store()
-			store.value.previousValue('cached')
+			store.value.last('cached')
 			store.props.set({value: 'prop-value'})
-			expect(store.value.currentValue()).toBe('cached')
+			expect(store.value.current()).toBe('cached')
 		})
 
-		it('react to previousValue changes', () => {
+		it('react to last changes', () => {
 			const store = new Store()
-			expect(store.value.currentValue()).toBe('')
-			store.value.previousValue('updated')
-			expect(store.value.currentValue()).toBe('updated')
+			expect(store.value.current()).toBe('')
+			store.value.last('updated')
+			expect(store.value.current()).toBe('updated')
 		})
 
-		it('react to props.value changes when previousValue is undefined', () => {
+		it('react to props.value changes when last is undefined', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			expect(store.value.currentValue()).toBe('initial')
+			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
-			expect(store.value.currentValue()).toBe('changed')
+			expect(store.value.current()).toBe('changed')
 		})
 	})
 })

@@ -55,12 +55,12 @@ describe('ParsingFeature', () => {
 			store.parsing.disable()
 		})
 
-		it('sets previousValue to the parsed input', () => {
+		it('sets last to the parsed input', () => {
 			store.parsing.enable()
 			store.props.set({value: 'test'})
 			store.parsing.sync()
 
-			expect(store.value.previousValue()).toBe('test')
+			expect(store.value.last()).toBe('test')
 
 			store.parsing.disable()
 		})
@@ -148,7 +148,7 @@ describe('ParsingFeature', () => {
 			store.props.set({value: 'world'})
 
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-			expect(store.value.previousValue()).toBe('world')
+			expect(store.value.last()).toBe('world')
 
 			store.parsing.disable()
 		})
@@ -177,7 +177,7 @@ describe('ParsingFeature', () => {
 			store.parsing.reparse()
 
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
-			expect(store.value.previousValue()).toBe('test')
+			expect(store.value.last()).toBe('test')
 
 			store.parsing.disable()
 		})

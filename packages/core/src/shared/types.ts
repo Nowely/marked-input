@@ -65,7 +65,7 @@ export interface CoreOption {
 export interface MarkputState {
 	tokens: Token[]
 	parser: Parser | undefined
-	previousValue: string | undefined
+	last: string | undefined
 	recovery: Recovery | undefined
 	selecting: 'drag' | 'all' | undefined
 	overlayMatch: OverlayMatch | undefined

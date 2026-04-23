@@ -42,7 +42,7 @@ export class ParsingFeature implements Feature {
 	sync() {
 		const inputValue = this._store.props.value() ?? this._store.props.defaultValue() ?? ''
 		this.tokens(parseWithParser(this._store, inputValue))
-		this._store.value.previousValue(inputValue)
+		this._store.value.last(inputValue)
 	}
 
 	#subscribeParse() {
@@ -50,7 +50,7 @@ export class ParsingFeature implements Feature {
 			if (this._store.caret.recovery()) {
 				const text = toString(this.tokens())
 				this.tokens(parseWithParser(this._store, text))
-				this._store.value.previousValue(text)
+				this._store.value.last(text)
 				return
 			}
 			this.tokens(
