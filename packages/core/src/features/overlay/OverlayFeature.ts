@@ -38,7 +38,7 @@ export class OverlayFeature implements Feature {
 				this.overlayMatch(undefined)
 			})
 
-			watch(this._store.feature.value.change, () => {
+			watch(this._store.value.change, () => {
 				const showOverlayOn = this._store.props.showOverlayOn()
 				const type: OverlayTrigger = 'change'
 
@@ -64,7 +64,7 @@ export class OverlayFeature implements Feature {
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.overlay()?.contains(target)) return
-							if (this._store.feature.slots.container()?.contains(target)) return
+							if (this._store.slots.container()?.contains(target)) return
 							this.overlayClose()
 						},
 						true
@@ -73,7 +73,7 @@ export class OverlayFeature implements Feature {
 			})
 
 			const selectionChangeHandler = () => {
-				const container = this._store.feature.slots.container()
+				const container = this._store.slots.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this._store.props.showOverlayOn()
@@ -109,7 +109,7 @@ export class OverlayFeature implements Feature {
 
 				const newSpan = createNewSpan(span, annotation, index, source)
 
-				this._store.feature.caret.recovery(
+				this._store.caret.recovery(
 					Mark
 						? {
 								caret: 0,
@@ -122,7 +122,7 @@ export class OverlayFeature implements Feature {
 
 				if (this._store.nodes.input.target) {
 					this._store.nodes.input.content = newSpan
-					const tokens = this._store.feature.parsing.tokens()
+					const tokens = this._store.parsing.tokens()
 					const inputToken = tokens[this._store.nodes.input.index]
 					if (inputToken.type === 'text') {
 						inputToken.content = newSpan
@@ -131,7 +131,7 @@ export class OverlayFeature implements Feature {
 					this._store.nodes.focus.target = this._store.nodes.input.target
 					this._store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this._store.feature.parsing.reparse()
+					this._store.parsing.reparse()
 				}
 			})
 		})

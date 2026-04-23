@@ -12,7 +12,7 @@ import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {watch} from '../shared/signals'
-import type {DragAction} from '../shared/types'
+import type {DragAction, Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
 
 export type {DragAction} from '../shared/types'
@@ -27,25 +27,37 @@ export class Store {
 	}
 
 	readonly props = new PropsFeature(this)
-
 	readonly handler = new MarkputHandler(this)
 
-	readonly feature = {
-		lifecycle: new LifecycleFeature(this),
-		value: new ValueFeature(this),
-		mark: new MarkFeature(this),
-		overlay: new OverlayFeature(this),
-		slots: new SlotsFeature(this),
-		caret: new CaretFeature(this),
-		keyboard: new KeyboardFeature(this),
-		dom: new DomFeature(this),
-		drag: new DragFeature(this),
-		clipboard: new ClipboardFeature(this),
-		parsing: new ParsingFeature(this),
-	}
+	readonly lifecycle = new LifecycleFeature(this)
+	readonly value = new ValueFeature(this)
+	readonly mark = new MarkFeature(this)
+	readonly overlay = new OverlayFeature(this)
+	readonly slots = new SlotsFeature(this)
+	readonly caret = new CaretFeature(this)
+	readonly keyboard = new KeyboardFeature(this)
+	readonly dom = new DomFeature(this)
+	readonly drag = new DragFeature(this)
+	readonly clipboard = new ClipboardFeature(this)
+	readonly parsing = new ParsingFeature(this)
+
+	readonly #features: Feature[] = []
 
 	constructor() {
-		watch(this.feature.lifecycle.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.feature.lifecycle.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
+		this.#features = [
+			this.lifecycle,
+			this.value,
+			this.mark,
+			this.overlay,
+			this.slots,
+			this.caret,
+			this.keyboard,
+			this.dom,
+			this.drag,
+			this.clipboard,
+			this.parsing,
+		]
+		watch(this.lifecycle.mounted, () => this.#features.forEach(f => f.enable()))
+		watch(this.lifecycle.unmounted, () => this.#features.forEach(f => f.disable()))
 	}
 }

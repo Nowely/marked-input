@@ -72,7 +72,7 @@ export interface SelectionTokenRange {
  * Returns null if selection is collapsed, empty, or outside the container.
  */
 export function selectionToTokens(store: Store): SelectionTokenRange | null {
-	const container = store.feature.slots.container()
+	const container = store.slots.container()
 	if (!container) return null
 
 	const sel = window.getSelection()
@@ -84,7 +84,7 @@ export function selectionToTokens(store: Store): SelectionTokenRange | null {
 		return null
 	}
 
-	const tokens = store.feature.parsing.tokens()
+	const tokens = store.parsing.tokens()
 
 	let startIndex = findContainerChildIndex(range.startContainer, container)
 	let endIndex = findContainerChildIndex(range.endContainer, container)

@@ -31,7 +31,7 @@ const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 			:ref="
 				el =>
 					blockStore.attachGrip(el as HTMLButtonElement | null, props.blockIndex, {
-						drag: store.feature.drag.drag,
+						drag: store.drag.drag,
 					})
 			"
 			type="button"

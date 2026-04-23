@@ -11,12 +11,12 @@ export class ParsingFeature implements Feature {
 	readonly tokens = signal<Token[]>([])
 
 	readonly parser: Computed<Parser | undefined> = computed(() => {
-		if (!this._store.feature.mark.hasMark()) return
+		if (!this._store.mark.hasMark()) return
 
 		const markups = this._store.props.options().map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
 
-		return new Parser(markups, this._store.feature.slots.isBlock() ? {skipEmptyText: true} : undefined)
+		return new Parser(markups, this._store.slots.isBlock() ? {skipEmptyText: true} : undefined)
 	})
 
 	readonly reparse = event()
@@ -42,15 +42,15 @@ export class ParsingFeature implements Feature {
 	sync() {
 		const inputValue = this._store.props.value() ?? this._store.props.defaultValue() ?? ''
 		this.tokens(parseWithParser(this._store, inputValue))
-		this._store.feature.value.previousValue(inputValue)
+		this._store.value.previousValue(inputValue)
 	}
 
 	#subscribeParse() {
 		watch(this.reparse, () => {
-			if (this._store.feature.caret.recovery()) {
+			if (this._store.caret.recovery()) {
 				const text = toString(this.tokens())
 				this.tokens(parseWithParser(this._store, text))
-				this._store.feature.value.previousValue(text)
+				this._store.value.previousValue(text)
 				return
 			}
 			this.tokens(
@@ -63,7 +63,7 @@ export class ParsingFeature implements Feature {
 		const deps = computed(() => [this._store.props.value(), this.parser()] as const)
 
 		watch(deps, () => {
-			if (!this._store.feature.caret.recovery()) {
+			if (!this._store.caret.recovery()) {
 				this.reparse()
 			}
 		})

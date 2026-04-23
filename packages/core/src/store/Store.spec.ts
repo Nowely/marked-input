@@ -8,7 +8,7 @@ import {Store} from './Store'
 describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
-		expect(store.feature.parsing.tokens()).toEqual([])
+		expect(store.parsing.tokens()).toEqual([])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -24,9 +24,9 @@ describe('Store', () => {
 
 	it('have events', () => {
 		const store = new Store()
-		expect(typeof store.feature.parsing.reparse).toBe('function')
-		expect(typeof store.feature.value.change).toBe('function')
-		expect(typeof store.feature.mark.markRemove).toBe('function')
+		expect(typeof store.parsing.reparse).toBe('function')
+		expect(typeof store.value.change).toBe('function')
+		expect(typeof store.mark.markRemove).toBe('function')
 	})
 
 	describe('handler', () => {
@@ -44,7 +44,7 @@ describe('Store', () => {
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.feature.slots.container(stub)
+			store.slots.container(stub)
 			expect(handler.container).toBe(stub)
 		})
 
@@ -54,7 +54,7 @@ describe('Store', () => {
 			expect(handler.overlay).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLElement
-			store.feature.overlay.overlay(stub)
+			store.overlay.overlay(stub)
 			expect(handler.overlay).toBe(stub)
 		})
 
@@ -68,30 +68,30 @@ describe('Store', () => {
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
-			store.feature.value.previousValue('hello')
-			expect(store.feature.value.previousValue()).toBe('hello')
+			store.value.previousValue('hello')
+			expect(store.value.previousValue()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.feature.caret.selecting('drag')
-			expect(store.feature.caret.selecting()).toBe('drag')
-			expect(store.feature.parsing.tokens()).toEqual([])
+			store.caret.selecting('drag')
+			expect(store.caret.selecting()).toBe('drag')
+			expect(store.parsing.tokens()).toEqual([])
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
 			const store = new Store()
 			const effectSpy = vi.fn()
 			effect(() => {
-				store.feature.parsing.tokens()
-				store.feature.caret.selecting()
+				store.parsing.tokens()
+				store.caret.selecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
-				store.feature.parsing.tokens([token])
-				store.feature.caret.selecting('all')
+				store.parsing.tokens([token])
+				store.caret.selecting('all')
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})
@@ -122,9 +122,9 @@ describe('Store', () => {
 
 		it('does not modify state when props.set is called', () => {
 			const store = new Store()
-			const tokensBefore = store.feature.parsing.tokens()
+			const tokensBefore = store.parsing.tokens()
 			store.props.set({value: 'test'})
-			expect(store.feature.parsing.tokens()).toBe(tokensBefore)
+			expect(store.parsing.tokens()).toBe(tokensBefore)
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {
@@ -139,21 +139,19 @@ describe('Store', () => {
 		it('update tokens and previousValue when innerValue is set', () => {
 			const store = new Store()
 			const dispose = effectScope(() => {
-				watch(store.feature.value.innerValue, newValue => {
+				watch(store.value.innerValue, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.tokens(newTokens)
-						store.feature.value.previousValue(newValue)
+						store.parsing.tokens(newTokens)
+						store.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			store.feature.value.innerValue('hello')
-			expect(store.feature.parsing.tokens()).toEqual([
-				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
-			])
-			expect(store.feature.value.previousValue()).toBe('hello')
+			store.value.innerValue('hello')
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			expect(store.value.previousValue()).toBe('hello')
 			dispose()
 		})
 
@@ -162,17 +160,17 @@ describe('Store', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			const dispose = effectScope(() => {
-				watch(store.feature.value.innerValue, newValue => {
+				watch(store.value.innerValue, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.tokens(newTokens)
-						store.feature.value.previousValue(newValue)
+						store.parsing.tokens(newTokens)
+						store.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			store.feature.value.innerValue('world')
+			store.value.innerValue('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 			dispose()
@@ -181,17 +179,17 @@ describe('Store', () => {
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
 			const dispose = effectScope(() => {
-				watch(store.feature.value.innerValue, newValue => {
+				watch(store.value.innerValue, newValue => {
 					if (newValue === undefined) return
 					const newTokens = parseWithParser(store, newValue)
 					batch(() => {
-						store.feature.parsing.tokens(newTokens)
-						store.feature.value.previousValue(newValue)
+						store.parsing.tokens(newTokens)
+						store.value.previousValue(newValue)
 					})
 					store.props.onChange()?.(newValue)
 				})
 			})
-			expect(() => store.feature.value.innerValue('test')).not.toThrow()
+			expect(() => store.value.innerValue('test')).not.toThrow()
 			dispose()
 		})
 	})
@@ -199,13 +197,13 @@ describe('Store', () => {
 	describe('containerProps (computed)', () => {
 		it('include base Container class when nothing is set', () => {
 			const store = new Store()
-			expect(store.feature.slots.containerProps().className).toContain('Container')
+			expect(store.slots.containerProps().className).toContain('Container')
 		})
 
 		it('merge user className into containerProps.className', () => {
 			const store = new Store()
 			store.props.set({className: 'my-editor'})
-			const {className} = store.feature.slots.containerProps()
+			const {className} = store.slots.containerProps()
 			expect(className).toContain('my-editor')
 			expect(className).toContain('Container')
 		})
@@ -213,7 +211,7 @@ describe('Store', () => {
 		it('merge slotProps.container.className into containerProps.className', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {className: 'slot-class'}}})
-			expect(store.feature.slots.containerProps().className).toContain('slot-class')
+			expect(store.slots.containerProps().className).toContain('slot-class')
 		})
 
 		it('merge style and slotProps.container.style into containerProps.style', () => {
@@ -222,31 +220,31 @@ describe('Store', () => {
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
-			expect(store.feature.slots.containerProps().style).toEqual({color: 'red', fontSize: 14})
+			expect(store.slots.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
 		it('add paddingLeft: 24 to style when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true, style: {color: 'red'}})
-			expect(store.feature.slots.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
 		})
 
 		it('add paddingLeft: 24 with no base style when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true})
-			expect(store.feature.slots.containerProps().style).toEqual({paddingLeft: 24})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: 24})
 		})
 
 		it('NOT add paddingLeft when draggable and block but readOnly is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
-			expect(store.feature.slots.containerProps().style).toEqual({color: 'red'})
+			expect(store.slots.containerProps().style).toEqual({color: 'red'})
 		})
 
 		it('not include className or style keys from slotProps in otherSlotProps spread', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {className: 'x', style: {color: 'red'}}}})
-			const props = store.feature.slots.containerProps()
+			const props = store.slots.containerProps()
 			// className and style handled explicitly — no duplicate keys at the same level
 			const keys = Object.keys(props)
 			expect(keys.filter(k => k === 'className')).toHaveLength(1)
@@ -256,84 +254,84 @@ describe('Store', () => {
 		it('include data-* slotProps in containerProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {dataTestId: 'root'}}})
-			expect(store.feature.slots.containerProps()).toMatchObject({'data-test-id': 'root'})
+			expect(store.slots.containerProps()).toMatchObject({'data-test-id': 'root'})
 		})
 
 		it('return same reference when values unchanged (shallow stable)', () => {
 			const store = new Store()
 			store.props.set({style: {color: 'red'}})
-			const first = store.feature.slots.containerProps()
-			const second = store.feature.slots.containerProps()
+			const first = store.slots.containerProps()
+			const second = store.slots.containerProps()
 			expect(first).toBe(second)
 		})
 
 		it('react to style changes', () => {
 			const store = new Store()
 			store.props.set({style: {color: 'red'}})
-			expect(store.feature.slots.containerProps().style).toEqual({color: 'red'})
+			expect(store.slots.containerProps().style).toEqual({color: 'red'})
 			store.props.set({style: {color: 'blue'}})
-			expect(store.feature.slots.containerProps().style).toEqual({color: 'blue'})
+			expect(store.slots.containerProps().style).toEqual({color: 'blue'})
 		})
 	})
 
 	describe('containerComponent (computed)', () => {
 		it('return "div" by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.containerComponent()).toBe('div')
+			expect(store.slots.containerComponent()).toBe('div')
 		})
 
 		it('return user-provided slot component', () => {
 			const store = new Store()
 			store.props.set({slots: {container: 'section'}})
-			expect(store.feature.slots.containerComponent()).toBe('section')
+			expect(store.slots.containerComponent()).toBe('section')
 		})
 	})
 
 	describe('blockComponent / blockProps (computed)', () => {
 		it('return "div" for blockComponent by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.blockComponent()).toBe('div')
+			expect(store.slots.blockComponent()).toBe('div')
 		})
 
 		it('return user-provided slot component', () => {
 			const store = new Store()
 			store.props.set({slots: {block: 'article'}})
-			expect(store.feature.slots.blockComponent()).toBe('article')
+			expect(store.slots.blockComponent()).toBe('article')
 		})
 
 		it('return undefined for blockProps by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.blockProps()).toBeUndefined()
+			expect(store.slots.blockProps()).toBeUndefined()
 		})
 
 		it('resolve block slotProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {block: {dataBlock: 'true'}}})
-			expect(store.feature.slots.blockProps()).toMatchObject({'data-block': 'true'})
+			expect(store.slots.blockProps()).toMatchObject({'data-block': 'true'})
 		})
 	})
 
 	describe('spanComponent / spanProps (computed)', () => {
 		it('return "span" for spanComponent by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.spanComponent()).toBe('span')
+			expect(store.slots.spanComponent()).toBe('span')
 		})
 
 		it('return undefined for spanProps by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.spanProps()).toBeUndefined()
+			expect(store.slots.spanProps()).toBeUndefined()
 		})
 
 		it('resolve custom span slot', () => {
 			const store = new Store()
 			store.props.set({slots: {span: 'strong'}})
-			expect(store.feature.slots.spanComponent()).toBe('strong')
+			expect(store.slots.spanComponent()).toBe('strong')
 		})
 
 		it('resolve span slotProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {span: {className: 'bold'}}})
-			expect(store.feature.slots.spanProps()).toMatchObject({className: 'bold'})
+			expect(store.slots.spanProps()).toMatchObject({className: 'bold'})
 		})
 	})
 
@@ -341,18 +339,18 @@ describe('Store', () => {
 		it('return false when layout is inline', () => {
 			const store = new Store()
 			store.props.set({layout: 'inline'})
-			expect(store.feature.slots.isBlock()).toBe(false)
+			expect(store.slots.isBlock()).toBe(false)
 		})
 
 		it('return true when layout is block', () => {
 			const store = new Store()
 			store.props.set({layout: 'block'})
-			expect(store.feature.slots.isBlock()).toBe(true)
+			expect(store.slots.isBlock()).toBe(true)
 		})
 
 		it('default to false', () => {
 			const store = new Store()
-			expect(store.feature.slots.isBlock()).toBe(false)
+			expect(store.slots.isBlock()).toBe(false)
 		})
 	})
 
@@ -360,64 +358,64 @@ describe('Store', () => {
 		it('return false when draggable is false', () => {
 			const store = new Store()
 			store.props.set({draggable: false})
-			expect(store.feature.slots.isDraggable()).toBe(false)
+			expect(store.slots.isDraggable()).toBe(false)
 		})
 
 		it('return true when draggable is true', () => {
 			const store = new Store()
 			store.props.set({draggable: true})
-			expect(store.feature.slots.isDraggable()).toBe(true)
+			expect(store.slots.isDraggable()).toBe(true)
 		})
 
 		it('return true when draggable is a DraggableConfig', () => {
 			const store = new Store()
 			store.props.set({draggable: {alwaysShowHandle: true}})
-			expect(store.feature.slots.isDraggable()).toBe(true)
+			expect(store.slots.isDraggable()).toBe(true)
 		})
 
 		it('default to false', () => {
 			const store = new Store()
-			expect(store.feature.slots.isDraggable()).toBe(false)
+			expect(store.slots.isDraggable()).toBe(false)
 		})
 	})
 
 	describe('hasMark (computed)', () => {
 		it('return false when no Mark override and no per-option Mark', () => {
 			const store = new Store()
-			expect(store.feature.mark.hasMark()).toBe(false)
+			expect(store.mark.hasMark()).toBe(false)
 		})
 
 		it('return true when Mark override is set', () => {
 			const store = new Store()
 			store.props.set({Mark: () => null})
-			expect(store.feature.mark.hasMark()).toBe(true)
+			expect(store.mark.hasMark()).toBe(true)
 		})
 
 		it('return true when option has per-option Mark', () => {
 			const store = new Store()
 			store.props.set({options: [{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>]})
-			expect(store.feature.mark.hasMark()).toBe(true)
+			expect(store.mark.hasMark()).toBe(true)
 		})
 
 		it('return true when Mark override is set even without per-option Mark', () => {
 			const store = new Store()
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			expect(store.feature.mark.hasMark()).toBe(true)
+			expect(store.mark.hasMark()).toBe(true)
 		})
 
 		it('return false when option has Mark set to null', () => {
 			const store = new Store()
 			store.props.set({options: [{markup: '@[__value__]', Mark: null} as Record<string, unknown>]})
-			expect(store.feature.mark.hasMark()).toBe(false)
+			expect(store.mark.hasMark()).toBe(false)
 		})
 
 		it('react to Mark override changes', () => {
 			const store = new Store()
-			expect(store.feature.mark.hasMark()).toBe(false)
+			expect(store.mark.hasMark()).toBe(false)
 			store.props.set({Mark: () => null})
-			expect(store.feature.mark.hasMark()).toBe(true)
+			expect(store.mark.hasMark()).toBe(true)
 			store.props.set({Mark: undefined})
-			expect(store.feature.mark.hasMark()).toBe(false)
+			expect(store.mark.hasMark()).toBe(false)
 		})
 	})
 
@@ -425,7 +423,7 @@ describe('Store', () => {
 		it('resolve mark slot for text token using span fallback', () => {
 			const store = new Store()
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.feature.mark.mark()(token)
+			const [component, props] = store.mark.mark()(token)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
@@ -435,7 +433,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.feature.mark.mark()(token)
+			const [component, props] = store.mark.mark()(token)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
@@ -450,14 +448,14 @@ describe('Store', () => {
 				descriptor: {index: 0},
 				position: {start: 0, end: 5},
 			} as any
-			expect(() => store.feature.mark.mark()(token)).toThrow('No mark component found')
+			expect(() => store.mark.mark()(token)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {
 			const CustomOverlay = () => null
 			const store = new Store()
 			store.props.set({Overlay: CustomOverlay})
-			const [Component, props] = store.feature.overlay.overlaySlot()()
+			const [Component, props] = store.overlay.overlaySlot()()
 			expect(Component).toBe(CustomOverlay)
 			expect(props).toEqual({})
 		})
@@ -466,41 +464,41 @@ describe('Store', () => {
 	describe('currentValue (computed)', () => {
 		it('return empty string when both previousValue and value are undefined', () => {
 			const store = new Store()
-			expect(store.feature.value.currentValue()).toBe('')
+			expect(store.value.currentValue()).toBe('')
 		})
 
 		it('return previousValue when set', () => {
 			const store = new Store()
-			store.feature.value.previousValue('cached')
-			expect(store.feature.value.currentValue()).toBe('cached')
+			store.value.previousValue('cached')
+			expect(store.value.currentValue()).toBe('cached')
 		})
 
 		it('fall back to props.value when previousValue is undefined', () => {
 			const store = new Store()
 			store.props.set({value: 'prop-value'})
-			expect(store.feature.value.currentValue()).toBe('prop-value')
+			expect(store.value.currentValue()).toBe('prop-value')
 		})
 
 		it('prefer previousValue over props.value', () => {
 			const store = new Store()
-			store.feature.value.previousValue('cached')
+			store.value.previousValue('cached')
 			store.props.set({value: 'prop-value'})
-			expect(store.feature.value.currentValue()).toBe('cached')
+			expect(store.value.currentValue()).toBe('cached')
 		})
 
 		it('react to previousValue changes', () => {
 			const store = new Store()
-			expect(store.feature.value.currentValue()).toBe('')
-			store.feature.value.previousValue('updated')
-			expect(store.feature.value.currentValue()).toBe('updated')
+			expect(store.value.currentValue()).toBe('')
+			store.value.previousValue('updated')
+			expect(store.value.currentValue()).toBe('updated')
 		})
 
 		it('react to props.value changes when previousValue is undefined', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			expect(store.feature.value.currentValue()).toBe('initial')
+			expect(store.value.currentValue()).toBe('initial')
 			store.props.set({value: 'changed'})
-			expect(store.feature.value.currentValue()).toBe('changed')
+			expect(store.value.currentValue()).toBe('changed')
 		})
 	})
 })

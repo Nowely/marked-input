@@ -10,13 +10,23 @@ describe('deleteMark', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
-		for (const key of Object.keys(feature)) {
-			if (key === 'value') continue
-			vi.spyOn(feature[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(feature[key], 'disable').mockImplementation(() => {})
+		const features: Record<string, {enable(): void; disable(): void}> = {
+			lifecycle: store.lifecycle,
+			mark: store.mark,
+			overlay: store.overlay,
+			slots: store.slots,
+			caret: store.caret,
+			keyboard: store.keyboard,
+			dom: store.dom,
+			drag: store.drag,
+			clipboard: store.clipboard,
+			parsing: store.parsing,
 		}
-		store.feature.value.enable()
+		for (const key of Object.keys(features)) {
+			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
+			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
+		}
+		store.value.enable()
 	})
 
 	afterEach(cleanup)
@@ -38,7 +48,7 @@ describe('deleteMark', () => {
 
 		container.append(span1, mark, span2)
 
-		store.feature.slots.container(container)
+		store.slots.container(container)
 		store.nodes.focus.target = mark
 	}
 
@@ -61,7 +71,7 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.props.set({onChange})
 		setupDOM()
-		store.feature.parsing.tokens(makeTokens())
+		store.parsing.tokens(makeTokens())
 
 		deleteMark('self', store)
 
@@ -72,11 +82,11 @@ describe('deleteMark', () => {
 		const onChange = vi.fn()
 		store.props.set({onChange})
 		setupDOM()
-		store.feature.parsing.tokens(makeTokens())
+		store.parsing.tokens(makeTokens())
 
 		deleteMark('self', store)
 
-		expect(store.feature.parsing.tokens()).toHaveLength(1)
-		expect(store.feature.parsing.tokens()[0].content).toBe('hi  there')
+		expect(store.parsing.tokens()).toHaveLength(1)
+		expect(store.parsing.tokens()[0].content).toBe('hi  there')
 	})
 })

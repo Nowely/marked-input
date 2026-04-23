@@ -11,12 +11,12 @@ export const Container = memo(() => {
 	const store = storeCtx
 
 	const {isBlock, tokens, key, lifecycleEmit, Component, props} = useMarkput(s => ({
-		isBlock: s.feature.slots.isBlock,
-		tokens: s.feature.parsing.tokens,
+		isBlock: s.slots.isBlock,
+		tokens: s.parsing.tokens,
 		key: s.key,
-		lifecycleEmit: s.feature.lifecycle,
-		Component: s.feature.slots.containerComponent,
-		props: s.feature.slots.containerProps,
+		lifecycleEmit: s.lifecycle,
+		Component: s.slots.containerComponent,
+		props: s.slots.containerProps,
 	}))
 
 	useLayoutEffect(() => {
@@ -24,7 +24,7 @@ export const Container = memo(() => {
 	}, [tokens, lifecycleEmit])
 
 	return (
-		<Component ref={store.feature.slots.container} {...props}>
+		<Component ref={store.slots.container} {...props}>
 			{isBlock
 				? tokens.map(t => <Block key={key.get(t)} token={t} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}

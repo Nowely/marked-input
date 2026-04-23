@@ -16,8 +16,8 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
 
-const blockComponent = useMarkput(s => s.feature.slots.blockComponent)
-const slotProps = useMarkput(s => s.feature.slots.blockProps)
+const blockComponent = useMarkput(s => s.slots.blockComponent)
+const slotProps = useMarkput(s => s.slots.blockProps)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 
 const blockStyle = computed(() => ({
@@ -36,7 +36,7 @@ const otherSlotProps = computed(() => {
 <template>
 	<component
 		:is="blockComponent"
-		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, {drag: store.feature.drag.drag})"
+		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, {drag: store.drag.drag})"
 		data-testid="block"
 		v-bind="otherSlotProps"
 		:class="[styles.Block, slotProps?.className as string | undefined]"

@@ -8,18 +8,18 @@ import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clip
 import {deleteMark} from '../editing/utils/deleteMark'
 
 export function enableInput(store: Store): () => void {
-	const container = store.feature.slots.container()
+	const container = store.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
 		listen(container, 'keydown', e => {
-			if (!store.feature.slots.isBlock()) {
+			if (!store.slots.isBlock()) {
 				handleDelete(store, e)
 			}
 		})
 
 		listen(container, 'paste', e => {
-			const c = store.feature.slots.container()
+			const c = store.slots.container()
 			if (c) captureMarkupPaste(e, c)
 			handlePaste(store, e)
 		})
@@ -75,21 +75,21 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 			event.preventDefault()
 			focus.content = content.slice(0, caret - 1) + content.slice(caret)
 			focus.caret = caret - 1
-			store.feature.value.change()
+			store.value.change()
 			return
 		}
 		if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
 			event.preventDefault()
 			focus.content = content.slice(0, caret) + content.slice(caret + 1)
 			focus.caret = caret
-			store.feature.value.change()
+			store.value.change()
 			return
 		}
 	}
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
-	const selecting = store.feature.caret.selecting()
+	const selecting = store.caret.selecting()
 	if (selecting === 'all' && isFullSelection(store)) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
@@ -100,9 +100,9 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 		replaceAllContentWith(store, newContent)
 		return
 	}
-	if (selecting === 'all') store.feature.caret.selecting(undefined)
+	if (selecting === 'all') store.caret.selecting(undefined)
 
-	if (store.feature.slots.isBlock()) return
+	if (store.slots.isBlock()) return
 
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
@@ -115,22 +115,22 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 
 	if (applySpanInput(focus, event)) {
-		store.feature.value.change()
+		store.value.change()
 	}
 }
 
 function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
-	const container = store.feature.slots.container()
+	const container = store.slots.container()
 	if (!container) return false
 	const markup = consumeMarkupPaste(container)
 	if (!markup) return false
 
 	event.preventDefault()
 
-	const tokens = store.feature.parsing.tokens()
+	const tokens = store.parsing.tokens()
 	const token = tokens[focus.index]
 	const offset = focus.caret
-	const currentValue = store.feature.value.currentValue()
+	const currentValue = store.value.currentValue()
 
 	const ranges = event.getTargetRanges()
 	const childElement = container.children[focus.index]
@@ -148,16 +148,16 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
-	store.feature.value.innerValue(newValue)
+	store.value.innerValue(newValue)
 
-	const newTokens = store.feature.parsing.tokens()
+	const newTokens = store.parsing.tokens()
 	let targetIdx = newTokens.findIndex(
 		t => t.type === 'text' && caretPos >= t.position.start && caretPos <= t.position.end
 	)
 	if (targetIdx === -1) targetIdx = newTokens.length - 1
 	const caretWithinToken = caretPos - newTokens[targetIdx].position.start
 
-	store.feature.caret.recovery({
+	store.caret.recovery({
 		anchor: store.nodes.focus,
 		caret: caretWithinToken,
 		isNext: true,
@@ -229,14 +229,14 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 }
 
 export function handlePaste(store: Store, event: ClipboardEvent): void {
-	const selecting = store.feature.caret.selecting()
+	const selecting = store.caret.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.feature.caret.selecting(undefined)
+		if (selecting === 'all') store.caret.selecting(undefined)
 		return
 	}
 
 	event.preventDefault()
-	const c = store.feature.slots.container()
+	const c = store.slots.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
@@ -244,14 +244,14 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
-	store.feature.caret.selecting(undefined)
-	store.feature.value.previousValue(newContent)
+	store.caret.selecting(undefined)
+	store.value.previousValue(newContent)
 
 	store.props.onChange()?.(newContent)
 
 	if (store.props.value() === undefined) {
-		store.feature.parsing.tokens(
-			store.feature.parsing.parser()?.parse(newContent) ?? [
+		store.parsing.tokens(
+			store.parsing.parser()?.parse(newContent) ?? [
 				{
 					type: 'text' as const,
 					content: newContent,
@@ -262,10 +262,10 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	}
 
 	queueMicrotask(() => {
-		const rawFirstChild = store.feature.slots.container()?.firstChild
+		const rawFirstChild = store.slots.container()?.firstChild
 		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
 		if (firstChild) {
-			store.feature.caret.recovery({
+			store.caret.recovery({
 				anchor: store.nodes.focus,
 				caret: newContent.length,
 			})

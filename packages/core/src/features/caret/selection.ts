@@ -13,15 +13,15 @@ export function enableSelection(store: Store): () => void {
 		})
 
 		listen(document, 'mousemove', e => {
-			const container = store.feature.slots.container()
+			const container = store.slots.container()
 			if (!container) return
 			const currentIsPressed = isPressed
 			const isNotInnerSome = !container.contains(pressedNode) || pressedNode !== e.target
 			const isInside = window.getSelection()?.containsNode(container, true)
 
 			if (currentIsPressed && isNotInnerSome && isInside) {
-				if (store.feature.caret.selecting() !== 'drag') {
-					store.feature.caret.selecting('drag')
+				if (store.caret.selecting() !== 'drag') {
+					store.caret.selecting('drag')
 				}
 			}
 		})
@@ -29,26 +29,26 @@ export function enableSelection(store: Store): () => void {
 		listen(document, 'mouseup', () => {
 			isPressed = false
 			pressedNode = null
-			if (store.feature.caret.selecting() === 'drag') {
+			if (store.caret.selecting() === 'drag') {
 				const sel = window.getSelection()
 				if (!sel || sel.isCollapsed) {
-					store.feature.caret.selecting(undefined)
+					store.caret.selecting(undefined)
 				}
 			}
 		})
 
 		listen(document, 'selectionchange', () => {
-			if (store.feature.caret.selecting() !== 'drag') return
+			if (store.caret.selecting() !== 'drag') return
 			const sel = window.getSelection()
 			if (!sel || sel.isCollapsed) {
-				store.feature.caret.selecting(undefined)
+				store.caret.selecting(undefined)
 			}
 		})
 
 		effect(() => {
-			const value = store.feature.caret.selecting()
+			const value = store.caret.selecting()
 			if (value !== 'drag') return
-			const container = store.feature.slots.container()
+			const container = store.slots.container()
 			if (!container) return
 			container
 				.querySelectorAll<HTMLElement>('[contenteditable="true"]')
@@ -57,8 +57,8 @@ export function enableSelection(store: Store): () => void {
 	})
 
 	return () => {
-		if (store.feature.caret.selecting() === 'drag') {
-			store.feature.caret.selecting(undefined)
+		if (store.caret.selecting() === 'drag') {
+			store.caret.selecting(undefined)
 		}
 
 		scope()

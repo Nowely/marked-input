@@ -11,7 +11,7 @@ const iconGrip = `${styles.Icon} ${styles.IconGrip}`
 export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockIndex: number}) => {
 	const {blockStore, drag, readOnly, draggable, isDragging, isHovered} = useMarkput(s => ({
 		blockStore: s.blocks.get(token),
-		drag: s.feature.drag.drag,
+		drag: s.drag.drag,
 		readOnly: s.props.readOnly,
 		draggable: s.props.draggable,
 		isDragging: s.blocks.get(token).state.isDragging,

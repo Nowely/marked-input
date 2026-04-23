@@ -8,19 +8,19 @@ import Token from './Token.vue'
 
 const store = useStore()
 const result = useMarkput(s => ({
-	isBlock: s.feature.slots.isBlock,
-	tokens: s.feature.parsing.tokens,
+	isBlock: s.slots.isBlock,
+	tokens: s.parsing.tokens,
 	key: s.key,
-	lifecycleEmit: s.feature.lifecycle,
+	lifecycleEmit: s.lifecycle,
 }))
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	store.feature.slots.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
+	store.slots.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
 }
 
-const containerComponent = useMarkput(s => s.feature.slots.containerComponent)
-const containerProps = useMarkput(s => s.feature.slots.containerProps)
+const containerComponent = useMarkput(s => s.slots.containerComponent)
+const containerProps = useMarkput(s => s.slots.containerProps)
 
 watch(
 	() => result.value.tokens,

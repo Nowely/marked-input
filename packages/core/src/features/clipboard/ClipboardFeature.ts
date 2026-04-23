@@ -38,7 +38,7 @@ export class ClipboardFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.feature.slots.container()
+		const container = this.store.slots.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -59,20 +59,20 @@ export class ClipboardFeature {
 					first.type === 'text' ? first.position.start + result.startOffset : first.position.start
 				const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
 
-				const value = this.store.feature.value.currentValue()
+				const value = this.store.value.currentValue()
 				if (rawStart === rawEnd) return
 
 				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-				this.store.feature.value.innerValue(newValue)
+				this.store.value.innerValue(newValue)
 
-				const newTokens = this.store.feature.parsing.tokens()
+				const newTokens = this.store.parsing.tokens()
 				let targetIdx = newTokens.findIndex(
 					t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
 				)
 				if (targetIdx === -1) targetIdx = newTokens.length - 1
 				const caretWithinToken = rawStart - newTokens[targetIdx].position.start
 
-				this.store.feature.caret.recovery({
+				this.store.caret.recovery({
 					anchor: this.store.nodes.focus,
 					caret: caretWithinToken,
 					isNext: true,
@@ -88,7 +88,7 @@ export class ClipboardFeature {
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
-		const container = this.store.feature.slots.container()
+		const container = this.store.slots.container()
 		if (!container) return false
 
 		const sel = window.getSelection()
