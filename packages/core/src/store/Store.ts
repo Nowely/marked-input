@@ -16,7 +16,7 @@ import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
 import {signal, computed, event, batch, watch} from '../shared/signals'
-import type {SignalValues, Computed} from '../shared/signals'
+import type {SignalValues, Computed, Signal, Event} from '../shared/signals'
 import type {
 	CoreOption,
 	OverlayMatch,
@@ -94,18 +94,15 @@ export class Store {
 		slotProps: signal<CoreSlotProps | undefined>(undefined, {readonly: true}),
 	}
 
-	readonly state = {
-		tokens: signal<Token[]>([]),
-		previousValue: signal<string | undefined>(undefined),
-		innerValue: signal<string | undefined>(undefined),
-		recovery: signal<Recovery | undefined>(undefined),
-
-		container: signal<HTMLDivElement | null>(null),
-		overlay: signal<HTMLElement | null>(null),
-
-		selecting: signal<'drag' | 'all' | undefined>(undefined),
-
-		overlayMatch: signal<OverlayMatch | undefined>(undefined),
+	readonly state: {
+		tokens: Signal<Token[]>
+		previousValue: Signal<string | undefined>
+		innerValue: Signal<string | undefined>
+		recovery: Signal<Recovery | undefined>
+		container: Signal<HTMLDivElement | null>
+		overlay: Signal<HTMLElement | null>
+		selecting: Signal<'drag' | 'all' | undefined>
+		overlayMatch: Signal<OverlayMatch | undefined>
 	}
 
 	readonly computed: {
@@ -122,92 +119,122 @@ export class Store {
 		spanProps: Computed<Record<string, unknown> | undefined>
 		overlay: OverlaySlot
 		mark: MarkSlot
-	} = {
-		hasMark: computed(() => {
-			const Mark = this.props.Mark()
-			if (Mark) return true
-			return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
-		}),
-		isBlock: computed(() => this.props.layout() === 'block'),
-		isDraggable: computed(() => !!this.props.draggable()),
-		parser: computed(() => {
-			if (!this.computed.hasMark()) return
-
-			const markups = this.props.options().map(opt => opt.markup)
-			if (!markups.some(Boolean)) return
-
-			return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
-		}),
-		currentValue: computed(() => this.state.previousValue() ?? this.props.value() ?? ''),
-		containerComponent: computed(() => resolveSlot('container', this.props.slots())),
-		containerProps: computed(
-			() =>
-				buildContainerProps(
-					this.computed.isDraggable() && this.computed.isBlock(),
-					this.props.readOnly(),
-					this.props.className(),
-					this.props.style(),
-					this.props.slotProps()
-				),
-			{equals: shallow}
-		),
-		blockComponent: computed(() => resolveSlot('block', this.props.slots())),
-		blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
-		spanComponent: computed(() => resolveSlot('span', this.props.slots())),
-		spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
-		overlay: computed(() => {
-			const Overlay = this.props.Overlay()
-			return (option?: CoreOption, defaultComponent?: Slot) =>
-				resolveOverlaySlot(Overlay, option, defaultComponent)
-		}),
-		mark: computed(() => {
-			const options = this.props.options()
-			const Mark = this.props.Mark()
-			const Span = this.props.Span()
-			return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
-		}),
 	}
 
-	readonly emit = {
-		/** Fires after user input or programmatic mark change — triggers serialization, `onChange`, and re-parse */
-		change: event(),
-		/** Triggers a re-parse of tokens from the current content */
-		reparse: event(),
-		/** Removes a mark token from editor content */
-		markRemove: event<{token: Token}>(),
-		/** Fires when the user selects an overlay option — annotates markup into the current input span */
-		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
-		/** Dismisses the overlay by clearing the current `overlayMatch` */
-		overlayClose: event(),
-		/** Post-render DOM alignment: aligns `contentEditable` attributes and `textContent` of child elements to token state. Emitted synchronously by `FocusFeature` inside the `rendered` handler (framework layout-effect phase). Load-bearing for post-commit DOM consistency — do not delete without reproducing this timing. */
-		sync: event(),
-		/** Dispatches drag-mode row operations (reorder, add, delete, duplicate) */
-		drag: event<DragAction>(),
-		/** Fires after the framework has committed new token elements to the DOM — kicks off sync and focus recovery */
-		rendered: event(),
-		/** Lifecycle: editor component added to the DOM — enables all features */
-		mounted: event(),
-		/** Lifecycle: editor component removed from the DOM — disables all features and cleans up subscriptions */
-		unmounted: event(),
+	readonly emit: {
+		change: Event<void>
+		reparse: Event<void>
+		markRemove: Event<{token: Token}>
+		overlaySelect: Event<{mark: Token; match: OverlayMatch}>
+		overlayClose: Event<void>
+		sync: Event<void>
+		drag: Event<DragAction>
+		rendered: Event<void>
+		mounted: Event<void>
+		unmounted: Event<void>
 	}
 
 	readonly handler = new MarkputHandler(this)
 
-	readonly feature = {
-		overlay: new OverlayFeature(this),
-		focus: new FocusFeature(this),
-		input: new InputFeature(this),
-		blockEditing: new BlockEditFeature(this),
-		arrowNav: new ArrowNavFeature(this),
-		system: new SystemListenerFeature(this),
-		textSelection: new TextSelectionFeature(this),
-		contentEditable: new ContentEditableFeature(this),
-		drag: new DragFeature(this),
-		copy: new CopyFeature(this),
-		parse: new ParseFeature(this),
+	readonly feature: {
+		overlay: OverlayFeature
+		focus: FocusFeature
+		input: InputFeature
+		blockEditing: BlockEditFeature
+		arrowNav: ArrowNavFeature
+		system: SystemListenerFeature
+		textSelection: TextSelectionFeature
+		contentEditable: ContentEditableFeature
+		drag: DragFeature
+		copy: CopyFeature
+		parse: ParseFeature
 	}
 
 	constructor() {
+		this.state = {
+			tokens: signal<Token[]>([]),
+			previousValue: signal<string | undefined>(undefined),
+			innerValue: signal<string | undefined>(undefined),
+			recovery: signal<Recovery | undefined>(undefined),
+			container: signal<HTMLDivElement | null>(null),
+			overlay: signal<HTMLElement | null>(null),
+			selecting: signal<'drag' | 'all' | undefined>(undefined),
+			overlayMatch: signal<OverlayMatch | undefined>(undefined),
+		}
+
+		this.computed = {
+			hasMark: computed(() => {
+				const Mark = this.props.Mark()
+				if (Mark) return true
+				return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
+			}),
+			isBlock: computed(() => this.props.layout() === 'block'),
+			isDraggable: computed(() => !!this.props.draggable()),
+			parser: computed(() => {
+				if (!this.computed.hasMark()) return
+
+				const markups = this.props.options().map(opt => opt.markup)
+				if (!markups.some(Boolean)) return
+
+				return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
+			}),
+			currentValue: computed(() => this.state.previousValue() ?? this.props.value() ?? ''),
+			containerComponent: computed(() => resolveSlot('container', this.props.slots())),
+			containerProps: computed(
+				() =>
+					buildContainerProps(
+						this.computed.isDraggable() && this.computed.isBlock(),
+						this.props.readOnly(),
+						this.props.className(),
+						this.props.style(),
+						this.props.slotProps()
+					),
+				{equals: shallow}
+			),
+			blockComponent: computed(() => resolveSlot('block', this.props.slots())),
+			blockProps: computed(() => resolveSlotProps('block', this.props.slotProps())),
+			spanComponent: computed(() => resolveSlot('span', this.props.slots())),
+			spanProps: computed(() => resolveSlotProps('span', this.props.slotProps())),
+			overlay: computed(() => {
+				const Overlay = this.props.Overlay()
+				return (option?: CoreOption, defaultComponent?: Slot) =>
+					resolveOverlaySlot(Overlay, option, defaultComponent)
+			}),
+			mark: computed(() => {
+				const options = this.props.options()
+				const Mark = this.props.Mark()
+				const Span = this.props.Span()
+				return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+			}),
+		}
+
+		this.emit = {
+			change: event(),
+			reparse: event(),
+			markRemove: event<{token: Token}>(),
+			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
+			overlayClose: event(),
+			sync: event(),
+			drag: event<DragAction>(),
+			rendered: event(),
+			mounted: event(),
+			unmounted: event(),
+		}
+
+		this.feature = {
+			overlay: new OverlayFeature(this),
+			focus: new FocusFeature(this),
+			input: new InputFeature(this),
+			blockEditing: new BlockEditFeature(this),
+			arrowNav: new ArrowNavFeature(this),
+			system: new SystemListenerFeature(this),
+			textSelection: new TextSelectionFeature(this),
+			contentEditable: new ContentEditableFeature(this),
+			drag: new DragFeature(this),
+			copy: new CopyFeature(this),
+			parse: new ParseFeature(this),
+		}
+
 		watch(this.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
 		watch(this.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
