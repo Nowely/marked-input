@@ -1,6 +1,6 @@
 import {isHtmlElement, isTextNode, nextText} from '../../shared/checkers'
 import {Caret} from '../caret'
-import {isTextTokenSpan} from '../editable'
+import {isTextTokenSpan} from '../dom'
 import type {MarkToken, Token} from '../parsing'
 
 export function getCaretRawPosInBlock(blockDiv: HTMLElement, token: Token): number {

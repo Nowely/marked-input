@@ -1,27 +1,33 @@
 import {childAt} from '../../shared/checkers'
-import {effectScope, effect, watch} from '../../shared/signals/index.js'
+import {effectScope, effect, event, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
 import {isTextTokenSpan} from './isTextTokenSpan'
 
-export class ContentEditableFeature {
+export class DomFeature {
+	readonly state = {} as const
+	readonly computed = {} as const
+	readonly emit = {
+		reconcile: event(),
+	}
+
 	#scope?: () => void
 
-	constructor(private readonly store: Store) {}
+	constructor(private readonly _store: Store) {}
 
 	enable() {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
 			effect(() => {
-				this.store.props.readOnly()
-				this.sync()
+				this._store.props.readOnly()
+				this.reconcile()
 			})
 			effect(() => {
-				if (this.store.state.selecting() === undefined) this.sync()
+				if (this._store.feature.caret.state.selecting() === undefined) this.reconcile()
 			})
-			watch(this.store.emit.sync, () => {
-				this.sync()
+			watch(this.emit.reconcile, () => {
+				this.reconcile()
 			})
 		})
 	}
@@ -31,19 +37,17 @@ export class ContentEditableFeature {
 		this.#scope = undefined
 	}
 
-	sync() {
-		const container = this.store.state.container()
+	reconcile() {
+		const container = this._store.state.container()
 		if (!container) return
 
-		const readOnly = this.store.props.readOnly()
+		const readOnly = this._store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = this.store.computed.isBlock()
+		const isBlock = this._store.computed.isBlock()
 
 		if (isBlock) {
-			// In block mode, only set contentEditable on text rows (DragMark divs).
-			// Mark rows get tabIndex for focusability but are not contentEditable.
-			const tokens = this.store.state.tokens()
+			const tokens = this._store.state.tokens()
 			for (let i = 0; i < tokens.length && i < children.length; i++) {
 				const el = childAt(container, i)
 				if (!el) continue
@@ -54,23 +58,21 @@ export class ContentEditableFeature {
 				}
 			}
 		} else {
-			// In inline mode, even-indexed children are text spans (odd are marks).
 			for (let i = 0; i < children.length; i += 2) {
 				const el = childAt(container, i)
 				if (el) el.contentEditable = value
 			}
 		}
 
-		// Sync textContent for all text spans (including nested)
-		const tokens = this.store.state.tokens()
+		const tokens = this._store.state.tokens()
 		if (isBlock) {
-			this.#syncDragTextContent(tokens, container, readOnly)
+			this.#reconcileDragTextContent(tokens, container, readOnly)
 		} else {
-			this.#syncTextContent(tokens, container)
+			this.#reconcileTextContent(tokens, container)
 		}
 	}
 
-	#syncTextContent(tokens: Token[], parent: HTMLElement) {
+	#reconcileTextContent(tokens: Token[], parent: HTMLElement) {
 		for (let i = 0; i < tokens.length; i++) {
 			const token = tokens[i]
 			const el = childAt(parent, i)
@@ -80,22 +82,17 @@ export class ContentEditableFeature {
 					el.textContent = token.content
 				}
 			} else if (token.children.length > 0) {
-				this.#syncMarkChildren(token.children, el)
+				this.#reconcileMarkChildren(token.children, el)
 			}
 		}
 	}
 
-	#syncMarkChildren(tokens: Token[], parent: HTMLElement, editable?: string) {
-		// Walk direct children and match to tokens sequentially.
-		// Text tokens render as <span> (no attributes, or only contenteditable).
-		// Mark tokens render as elements with attributes (classes, data-*, etc).
-		// Skip any extra mark-component elements (inputs, buttons, etc.)
+	#reconcileMarkChildren(tokens: Token[], parent: HTMLElement, editable?: string) {
 		const children = parent.children
 		let childIdx = 0
 
 		for (const token of tokens) {
 			if (token.type === 'text') {
-				// Find next text-token span (bare or with only contenteditable)
 				while (childIdx < children.length) {
 					const el = childAt(parent, childIdx)
 					if (el && isTextTokenSpan(el)) break
@@ -110,7 +107,6 @@ export class ContentEditableFeature {
 					childIdx++
 				}
 			} else if (token.children.length > 0) {
-				// Find next element with attributes (mark element)
 				while (childIdx < children.length) {
 					const el = childAt(parent, childIdx)
 					if (el && !isTextTokenSpan(el)) break
@@ -118,14 +114,14 @@ export class ContentEditableFeature {
 				}
 				const el = childAt(parent, childIdx)
 				if (el) {
-					this.#syncMarkChildren(token.children, el, editable)
+					this.#reconcileMarkChildren(token.children, el, editable)
 					childIdx++
 				}
 			}
 		}
 	}
 
-	#syncDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
+	#reconcileDragTextContent(tokens: Token[], container: HTMLElement, readOnly: boolean) {
 		const editable = readOnly ? 'false' : 'true'
 		for (let ri = 0; ri < tokens.length; ri++) {
 			const token = tokens[ri]
@@ -134,18 +130,15 @@ export class ContentEditableFeature {
 
 			if (token.type === 'mark') {
 				if (token.children.length > 0) {
-					// In Vue, mark rows are wrapped in DragMark (has data-testid).
-					// In React, mark rows render directly as the mark element.
 					const hasDragWrapper = blockEl.hasAttribute('data-testid')
 					const markEl = hasDragWrapper ? childAt(blockEl, readOnly ? 0 : 1) : blockEl
 					if (markEl) {
-						this.#syncMarkChildren(token.children, markEl, editable)
+						this.#reconcileMarkChildren(token.children, markEl, editable)
 					}
 				}
 				continue
 			}
 
-			// Text row: DragMark div with side panel offset
 			const offset = readOnly ? 0 : 1
 			const el = childAt(blockEl, offset)
 			if (!el) continue

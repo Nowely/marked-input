@@ -27,7 +27,7 @@ describe('FocusFeature', () => {
 		it('always emits sync', () => {
 			store.feature.caret.enable()
 
-			const syncSpy = vi.spyOn(store.emit, 'sync')
+			const syncSpy = vi.spyOn(store.feature.dom.emit, 'reconcile')
 			store.emit.rendered()
 
 			expect(syncSpy).toHaveBeenCalledOnce()

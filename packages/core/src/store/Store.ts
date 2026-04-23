@@ -1,7 +1,7 @@
 import {CaretFeature} from '../features/caret'
 import {ClipboardFeature} from '../features/clipboard'
+import {DomFeature} from '../features/dom'
 import {DragFeature} from '../features/drag'
-import {ContentEditableFeature} from '../features/editable'
 import {SystemListenerFeature} from '../features/events'
 import {KeyboardFeature} from '../features/keyboard'
 import {LifecycleFeature} from '../features/lifecycle'
@@ -14,7 +14,7 @@ import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {DEFAULT_OPTIONS} from '../shared/constants'
-import {signal, event, batch, watch} from '../shared/signals'
+import {signal, batch, watch} from '../shared/signals'
 import type {SignalValues, Computed, Signal, Event} from '../shared/signals'
 import type {
 	CoreOption,
@@ -118,7 +118,7 @@ export class Store {
 		caret: CaretFeature
 		keyboard: KeyboardFeature
 		system: SystemListenerFeature
-		contentEditable: ContentEditableFeature
+		dom: DomFeature
 		drag: DragFeature
 		clipboard: ClipboardFeature
 		parsing: ParsingFeature
@@ -133,6 +133,7 @@ export class Store {
 		const slots = new SlotsFeature(this)
 		const drag = new DragFeature(this)
 		const caret = new CaretFeature(this)
+		const dom = new DomFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
@@ -167,7 +168,7 @@ export class Store {
 			markRemove: mark.emit.markRemove,
 			overlaySelect: overlay.emit.overlaySelect,
 			overlayClose: overlay.emit.overlayClose,
-			sync: event(),
+			sync: dom.emit.reconcile,
 			drag: drag.emit.drag,
 			rendered: lifecycle.emit.rendered,
 			mounted: lifecycle.emit.mounted,
@@ -183,7 +184,7 @@ export class Store {
 			caret,
 			keyboard: new KeyboardFeature(this),
 			system: new SystemListenerFeature(this),
-			contentEditable: new ContentEditableFeature(this),
+			dom,
 			drag,
 			clipboard: new ClipboardFeature(this),
 			parsing,
