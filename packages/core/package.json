@@ -13,23 +13,19 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "build:watch": "vite build -w",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:related": "vitest related",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "coverage": "vitest run --coverage",
-    "bench": "vitest bench --run"
+    "test": "pnpm -w exec vitest run --project core",
+    "test:watch": "pnpm -w exec vitest --project core",
+    "test:related": "pnpm -w exec vitest run --changed --project core",
+    "test:ui": "pnpm -w exec vitest --ui --project core",
+    "test:coverage": "pnpm -w exec vitest run --project core --coverage",
+    "coverage": "pnpm -w exec vitest run --project core --coverage",
+    "bench": "pnpm -w exec vitest bench --run --project core"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",
-    "@vitest/browser-playwright": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
-    "@vitest/ui": "catalog:",
     "csstype": "catalog:",
     "playwright": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite": "catalog:"
   }
 }
