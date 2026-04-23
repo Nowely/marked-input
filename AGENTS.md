@@ -55,7 +55,7 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 10 features, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.state`, `store.computed`, `store.emit`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.feature.<name>.state`/`.computed`/`.emit`, `store.props`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -76,8 +76,8 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 ### Do NOT
 
-- Do not add direct imports between features — all communication goes through `store.state`, `store.emit`, or `store.nodes`
-- Do not manually create Signals for new state — add new state keys to either `state` (internal, feature-managed) or `props` (external, framework-provided) in `Store.ts`. Features write to `state`; framework adapters write to `props` via `setProps()`.
+- Do not add direct imports between features — all communication goes through `store.feature.<name>.state`/`.computed`/`.emit`, `store.props`, or `store.nodes`
+- Do not manually create Signals for new state — add new state to the owning feature class. Framework-provided props go in `store.props` in `Store.ts` and are set via `setProps()`.
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
 - Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.
@@ -165,4 +165,4 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
 - Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
-- `Store.state` properties are Signals defined in the initial `state` object in `Store.ts` — do not access properties that weren't defined there
+- Feature state lives in `store.feature.<name>.state`/`.computed`/`.emit` — do not access properties that weren't defined there
