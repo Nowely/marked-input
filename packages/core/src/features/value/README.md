@@ -11,14 +11,14 @@ Owns the editable-value buffer and its primary mutation event.
 
 ## Computed
 
-| Value     | Formula                                                                               |
-| --------- | ------------------------------------------------------------------------------------- |
+| Value     | Formula                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------- |
 | `current` | `last() ?? props.value() ?? ''` — the editable string view used by paste, block edit, copy/cut. |
 
 ## Events
 
-| Event    | Fired by                                                                                           | Listened by                                                                |
-| -------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Event    | Fired by                                                                                           | Listened by                                                       |
+| -------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `change` | `KeyboardFeature` internals, `MarkHandler`, `deleteMark` (multi-emitter, semantic "value mutated") | `ValueFeature` itself (reads DOM, writes `last`, fires `reparse`) |
 
 ## Effects (`enable()`)
