@@ -15,12 +15,12 @@ function isTextLikeRow(token: Token): boolean {
 }
 
 export function enableBlockEdit(store: Store): () => void {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
 		listen(container, 'keydown', e => {
-			if (!store.feature.slots.computed.isBlock()) return
+			if (!store.feature.slots.isBlock()) return
 
 			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
 				handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
@@ -36,7 +36,7 @@ export function enableBlockEdit(store: Store): () => void {
 			container,
 			'beforeinput',
 			e => {
-				if (!store.feature.slots.computed.isBlock()) return
+				if (!store.feature.slots.isBlock()) return
 				if (e.defaultPrevented) return
 				handleBlockBeforeInput(store, e)
 			},
@@ -48,7 +48,7 @@ export function enableBlockEdit(store: Store): () => void {
 }
 
 function handleDelete(store: Store, event: KeyboardEvent) {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return
 
 	const blockDivs = htmlChildren(container)
@@ -190,7 +190,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -250,7 +250,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 }
 
 function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return false
 
 	const activeElement = document.activeElement
@@ -284,7 +284,7 @@ function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction
 }
 
 function handleArrowUpDown(store: Store, event: KeyboardEvent) {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -322,7 +322,7 @@ function handleArrowUpDown(store: Store, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: Store, event: InputEvent) {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -371,7 +371,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
 			event.preventDefault()
-			const c = store.feature.slots.state.container()
+			const c = store.feature.slots.container()
 			const markup = c ? consumeMarkupPaste(c) : undefined
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			const ranges = event.getTargetRanges()

@@ -21,7 +21,7 @@ export class ParsingFeature implements Feature {
 			const markups = this._store.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
 
-			return new Parser(markups, this._store.feature.slots.computed.isBlock() ? {skipEmptyText: true} : undefined)
+			return new Parser(markups, this._store.feature.slots.isBlock() ? {skipEmptyText: true} : undefined)
 		}),
 	}
 

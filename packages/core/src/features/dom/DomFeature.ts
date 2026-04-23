@@ -31,13 +31,13 @@ export class DomFeature {
 	}
 
 	reconcile() {
-		const container = this._store.feature.slots.state.container()
+		const container = this._store.feature.slots.container()
 		if (!container) return
 
 		const readOnly = this._store.props.readOnly()
 		const value = readOnly ? 'false' : 'true'
 		const children = container.children
-		const isBlock = this._store.feature.slots.computed.isBlock()
+		const isBlock = this._store.feature.slots.isBlock()
 
 		if (isBlock) {
 			const tokens = this._store.feature.parsing.state.tokens()

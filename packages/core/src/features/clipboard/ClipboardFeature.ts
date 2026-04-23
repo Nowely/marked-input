@@ -42,7 +42,7 @@ export class ClipboardFeature {
 	enable() {
 		if (this.#scope) return
 
-		const container = this.store.feature.slots.state.container()
+		const container = this.store.feature.slots.container()
 		if (!container) return
 
 		this.#scope = effectScope(() => {
@@ -92,7 +92,7 @@ export class ClipboardFeature {
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
-		const container = this.store.feature.slots.state.container()
+		const container = this.store.feature.slots.container()
 		if (!container) return false
 
 		const sel = window.getSelection()

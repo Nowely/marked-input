@@ -3,7 +3,7 @@ import {effectScope, watch, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export function enableFocus(store: Store): () => void {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
@@ -19,7 +19,7 @@ export function enableFocus(store: Store): () => void {
 		listen(container, 'click', () => {
 			const tokens = store.feature.parsing.state.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const container = store.feature.slots.state.container()
+				const container = store.feature.slots.container()
 				const element = container ? firstHtmlChild(container) : null
 				element?.focus()
 			}
@@ -49,7 +49,7 @@ function recover(store: Store) {
 	// eslint-disable-next-line switch-exhaustiveness-check
 	switch (true) {
 		case isNext && isStale: {
-			const container = store.feature.slots.state.container()
+			const container = store.feature.slots.container()
 			const targetChild = recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
 			target = targetChild ?? store.nodes.focus.tail ?? undefined
 			break

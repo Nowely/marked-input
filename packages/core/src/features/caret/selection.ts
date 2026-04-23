@@ -13,7 +13,7 @@ export function enableSelection(store: Store): () => void {
 		})
 
 		listen(document, 'mousemove', e => {
-			const container = store.feature.slots.state.container()
+			const container = store.feature.slots.container()
 			if (!container) return
 			const currentIsPressed = isPressed
 			const isNotInnerSome = !container.contains(pressedNode) || pressedNode !== e.target
@@ -48,7 +48,7 @@ export function enableSelection(store: Store): () => void {
 		effect(() => {
 			const value = store.feature.caret.state.selecting()
 			if (value !== 'drag') return
-			const container = store.feature.slots.state.container()
+			const container = store.feature.slots.container()
 			if (!container) return
 			container
 				.querySelectorAll<HTMLElement>('[contenteditable="true"]')

@@ -64,7 +64,7 @@ export class OverlayFeature implements Feature {
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.overlay()?.contains(target)) return
-							if (this._store.feature.slots.state.container()?.contains(target)) return
+							if (this._store.feature.slots.container()?.contains(target)) return
 							this.overlayClose()
 						},
 						true
@@ -73,7 +73,7 @@ export class OverlayFeature implements Feature {
 			})
 
 			const selectionChangeHandler = () => {
-				const container = this._store.feature.slots.state.container()
+				const container = this._store.feature.slots.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this._store.props.showOverlayOn()

@@ -4,7 +4,7 @@ export class MarkputHandler {
 	constructor(private readonly store: Store) {}
 
 	get container() {
-		return this.store.feature.slots.state.container()
+		return this.store.feature.slots.container()
 	}
 
 	get overlay() {

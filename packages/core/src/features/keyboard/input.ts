@@ -8,18 +8,18 @@ import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clip
 import {deleteMark} from '../editing/utils/deleteMark'
 
 export function enableInput(store: Store): () => void {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
 		listen(container, 'keydown', e => {
-			if (!store.feature.slots.computed.isBlock()) {
+			if (!store.feature.slots.isBlock()) {
 				handleDelete(store, e)
 			}
 		})
 
 		listen(container, 'paste', e => {
-			const c = store.feature.slots.state.container()
+			const c = store.feature.slots.container()
 			if (c) captureMarkupPaste(e, c)
 			handlePaste(store, e)
 		})
@@ -102,7 +102,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 	}
 	if (selecting === 'all') store.feature.caret.state.selecting(undefined)
 
-	if (store.feature.slots.computed.isBlock()) return
+	if (store.feature.slots.isBlock()) return
 
 	const {focus} = store.nodes
 	if (!focus.target || !focus.isEditable) return
@@ -120,7 +120,7 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 }
 
 function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
-	const container = store.feature.slots.state.container()
+	const container = store.feature.slots.container()
 	if (!container) return false
 	const markup = consumeMarkupPaste(container)
 	if (!markup) return false
@@ -236,7 +236,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const c = store.feature.slots.state.container()
+	const c = store.feature.slots.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
@@ -262,7 +262,7 @@ export function replaceAllContentWith(store: Store, newContent: string): void {
 	}
 
 	queueMicrotask(() => {
-		const rawFirstChild = store.feature.slots.state.container()?.firstChild
+		const rawFirstChild = store.feature.slots.container()?.firstChild
 		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
 		if (firstChild) {
 			store.feature.caret.state.recovery({

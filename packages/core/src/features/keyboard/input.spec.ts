@@ -27,7 +27,7 @@ describe('replaceAllContentWith()', () => {
 	it('sets previousValue to the new content', () => {
 		const store = new Store()
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal container stub
-		store.feature.slots.state.container({firstChild: null} as unknown as HTMLDivElement)
+		store.feature.slots.container({firstChild: null} as unknown as HTMLDivElement)
 		store.feature.value.previousValue('old value')
 
 		replaceAllContentWith(store, 'new content')

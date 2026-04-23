@@ -39,7 +39,7 @@ export function deleteMark(place: 'prev' | 'self' | 'next', store: Store) {
 	store.feature.value.change()
 
 	queueMicrotask(() => {
-		const container = store.feature.slots.state.container()
+		const container = store.feature.slots.container()
 		const target = container ? childAt(container, targetIndex) : null
 		if (!target) return
 		store.nodes.focus.target = target

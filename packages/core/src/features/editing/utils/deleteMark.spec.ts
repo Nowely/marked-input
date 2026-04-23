@@ -38,7 +38,7 @@ describe('deleteMark', () => {
 
 		container.append(span1, mark, span2)
 
-		store.feature.slots.state.container(container)
+		store.feature.slots.container(container)
 		store.nodes.focus.target = mark
 	}
 

@@ -54,7 +54,7 @@ describe('TextSelectionFeature', () => {
 		container.appendChild(span)
 		document.body.appendChild(container)
 
-		store.feature.slots.state.container(container)
+		store.feature.slots.container(container)
 
 		const controller = store.feature.caret
 		controller.enable()

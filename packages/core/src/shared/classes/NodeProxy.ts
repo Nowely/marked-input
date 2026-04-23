@@ -76,11 +76,11 @@ export class NodeProxy {
 	}
 
 	get head() {
-		return firstHtmlChild(this.#store.feature.slots.state.container() ?? undefined)
+		return firstHtmlChild(this.#store.feature.slots.container() ?? undefined)
 	}
 
 	get tail() {
-		return lastHtmlChild(this.#store.feature.slots.state.container() ?? undefined)
+		return lastHtmlChild(this.#store.feature.slots.container() ?? undefined)
 	}
 
 	get isFocused() {

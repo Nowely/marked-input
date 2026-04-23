@@ -1,14 +1,17 @@
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import type {Store} from '@markput/core'
+import {useEffect, useMemo, useRef, useState, useContext} from 'react'
 
-import {useMarkput} from '../../lib/hooks/useMarkput'
 import {useOverlay} from '../../lib/hooks/useOverlay'
+import {StoreContext} from '../../lib/providers/StoreContext'
 import {List} from '../Popup/List'
 import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const {slotsState} = useMarkput(s => ({slotsState: s.feature.slots.state}))
+	const storeCtx = useContext(StoreContext)
+	if (!storeCtx) throw new Error('Store not found')
+	const store = storeCtx
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match?.option.overlay?.data ?? []
@@ -21,7 +24,7 @@ export const Suggestions = () => {
 	filteredRef.current = filtered
 
 	useEffect(() => {
-		const container = slotsState.container()
+		const container = store.feature.slots.container()
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {

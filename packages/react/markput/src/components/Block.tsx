@@ -19,8 +19,8 @@ export const Block = memo(({token}: BlockProps) => {
 	const {blockStore, dragEmit, Component, slotProps, isDragging, tokens} = useMarkput(s => ({
 		blockStore: s.blocks.get(token),
 		dragEmit: s.feature.drag.emit,
-		Component: s.feature.slots.computed.blockComponent,
-		slotProps: s.feature.slots.computed.blockProps,
+		Component: s.feature.slots.blockComponent,
+		slotProps: s.feature.slots.blockProps,
 		isDragging: s.blocks.get(token).state.isDragging,
 		tokens: s.feature.parsing.state.tokens,
 	}))

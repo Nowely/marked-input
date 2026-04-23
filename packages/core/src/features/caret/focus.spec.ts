@@ -14,7 +14,7 @@ describe('FocusFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		store.feature.slots.state.container(stubContainer)
+		store.feature.slots.container(stubContainer)
 		const feature = store.feature as Record<string, {enable(): void; disable(): void}>
 		for (const key of Object.keys(feature)) {
 			if (key === 'caret') continue

@@ -44,7 +44,7 @@ describe('Store', () => {
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.feature.slots.state.container(stub)
+			store.feature.slots.container(stub)
 			expect(handler.container).toBe(stub)
 		})
 
@@ -199,13 +199,13 @@ describe('Store', () => {
 	describe('containerProps (computed)', () => {
 		it('include base Container class when nothing is set', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.containerProps().className).toContain('Container')
+			expect(store.feature.slots.containerProps().className).toContain('Container')
 		})
 
 		it('merge user className into containerProps.className', () => {
 			const store = new Store()
 			store.props.set({className: 'my-editor'})
-			const {className} = store.feature.slots.computed.containerProps()
+			const {className} = store.feature.slots.containerProps()
 			expect(className).toContain('my-editor')
 			expect(className).toContain('Container')
 		})
@@ -213,7 +213,7 @@ describe('Store', () => {
 		it('merge slotProps.container.className into containerProps.className', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {className: 'slot-class'}}})
-			expect(store.feature.slots.computed.containerProps().className).toContain('slot-class')
+			expect(store.feature.slots.containerProps().className).toContain('slot-class')
 		})
 
 		it('merge style and slotProps.container.style into containerProps.style', () => {
@@ -222,31 +222,31 @@ describe('Store', () => {
 				style: {color: 'red'},
 				slotProps: {container: {style: {fontSize: 14}}},
 			})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({color: 'red', fontSize: 14})
+			expect(store.feature.slots.containerProps().style).toEqual({color: 'red', fontSize: 14})
 		})
 
 		it('add paddingLeft: 24 to style when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true, style: {color: 'red'}})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
+			expect(store.feature.slots.containerProps().style).toEqual({paddingLeft: 24, color: 'red'})
 		})
 
 		it('add paddingLeft: 24 with no base style when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({paddingLeft: 24})
+			expect(store.feature.slots.containerProps().style).toEqual({paddingLeft: 24})
 		})
 
 		it('NOT add paddingLeft when draggable and block but readOnly is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true, readOnly: true, style: {color: 'red'}})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({color: 'red'})
+			expect(store.feature.slots.containerProps().style).toEqual({color: 'red'})
 		})
 
 		it('not include className or style keys from slotProps in otherSlotProps spread', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {className: 'x', style: {color: 'red'}}}})
-			const props = store.feature.slots.computed.containerProps()
+			const props = store.feature.slots.containerProps()
 			// className and style handled explicitly — no duplicate keys at the same level
 			const keys = Object.keys(props)
 			expect(keys.filter(k => k === 'className')).toHaveLength(1)
@@ -256,84 +256,84 @@ describe('Store', () => {
 		it('include data-* slotProps in containerProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {container: {dataTestId: 'root'}}})
-			expect(store.feature.slots.computed.containerProps()).toMatchObject({'data-test-id': 'root'})
+			expect(store.feature.slots.containerProps()).toMatchObject({'data-test-id': 'root'})
 		})
 
 		it('return same reference when values unchanged (shallow stable)', () => {
 			const store = new Store()
 			store.props.set({style: {color: 'red'}})
-			const first = store.feature.slots.computed.containerProps()
-			const second = store.feature.slots.computed.containerProps()
+			const first = store.feature.slots.containerProps()
+			const second = store.feature.slots.containerProps()
 			expect(first).toBe(second)
 		})
 
 		it('react to style changes', () => {
 			const store = new Store()
 			store.props.set({style: {color: 'red'}})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({color: 'red'})
+			expect(store.feature.slots.containerProps().style).toEqual({color: 'red'})
 			store.props.set({style: {color: 'blue'}})
-			expect(store.feature.slots.computed.containerProps().style).toEqual({color: 'blue'})
+			expect(store.feature.slots.containerProps().style).toEqual({color: 'blue'})
 		})
 	})
 
 	describe('containerComponent (computed)', () => {
 		it('return "div" by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.containerComponent()).toBe('div')
+			expect(store.feature.slots.containerComponent()).toBe('div')
 		})
 
 		it('return user-provided slot component', () => {
 			const store = new Store()
 			store.props.set({slots: {container: 'section'}})
-			expect(store.feature.slots.computed.containerComponent()).toBe('section')
+			expect(store.feature.slots.containerComponent()).toBe('section')
 		})
 	})
 
 	describe('blockComponent / blockProps (computed)', () => {
 		it('return "div" for blockComponent by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.blockComponent()).toBe('div')
+			expect(store.feature.slots.blockComponent()).toBe('div')
 		})
 
 		it('return user-provided slot component', () => {
 			const store = new Store()
 			store.props.set({slots: {block: 'article'}})
-			expect(store.feature.slots.computed.blockComponent()).toBe('article')
+			expect(store.feature.slots.blockComponent()).toBe('article')
 		})
 
 		it('return undefined for blockProps by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.blockProps()).toBeUndefined()
+			expect(store.feature.slots.blockProps()).toBeUndefined()
 		})
 
 		it('resolve block slotProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {block: {dataBlock: 'true'}}})
-			expect(store.feature.slots.computed.blockProps()).toMatchObject({'data-block': 'true'})
+			expect(store.feature.slots.blockProps()).toMatchObject({'data-block': 'true'})
 		})
 	})
 
 	describe('spanComponent / spanProps (computed)', () => {
 		it('return "span" for spanComponent by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.spanComponent()).toBe('span')
+			expect(store.feature.slots.spanComponent()).toBe('span')
 		})
 
 		it('return undefined for spanProps by default', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.spanProps()).toBeUndefined()
+			expect(store.feature.slots.spanProps()).toBeUndefined()
 		})
 
 		it('resolve custom span slot', () => {
 			const store = new Store()
 			store.props.set({slots: {span: 'strong'}})
-			expect(store.feature.slots.computed.spanComponent()).toBe('strong')
+			expect(store.feature.slots.spanComponent()).toBe('strong')
 		})
 
 		it('resolve span slotProps', () => {
 			const store = new Store()
 			store.props.set({slotProps: {span: {className: 'bold'}}})
-			expect(store.feature.slots.computed.spanProps()).toMatchObject({className: 'bold'})
+			expect(store.feature.slots.spanProps()).toMatchObject({className: 'bold'})
 		})
 	})
 
@@ -341,18 +341,18 @@ describe('Store', () => {
 		it('return false when layout is inline', () => {
 			const store = new Store()
 			store.props.set({layout: 'inline'})
-			expect(store.feature.slots.computed.isBlock()).toBe(false)
+			expect(store.feature.slots.isBlock()).toBe(false)
 		})
 
 		it('return true when layout is block', () => {
 			const store = new Store()
 			store.props.set({layout: 'block'})
-			expect(store.feature.slots.computed.isBlock()).toBe(true)
+			expect(store.feature.slots.isBlock()).toBe(true)
 		})
 
 		it('default to false', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.isBlock()).toBe(false)
+			expect(store.feature.slots.isBlock()).toBe(false)
 		})
 	})
 
@@ -360,24 +360,24 @@ describe('Store', () => {
 		it('return false when draggable is false', () => {
 			const store = new Store()
 			store.props.set({draggable: false})
-			expect(store.feature.slots.computed.isDraggable()).toBe(false)
+			expect(store.feature.slots.isDraggable()).toBe(false)
 		})
 
 		it('return true when draggable is true', () => {
 			const store = new Store()
 			store.props.set({draggable: true})
-			expect(store.feature.slots.computed.isDraggable()).toBe(true)
+			expect(store.feature.slots.isDraggable()).toBe(true)
 		})
 
 		it('return true when draggable is a DraggableConfig', () => {
 			const store = new Store()
 			store.props.set({draggable: {alwaysShowHandle: true}})
-			expect(store.feature.slots.computed.isDraggable()).toBe(true)
+			expect(store.feature.slots.isDraggable()).toBe(true)
 		})
 
 		it('default to false', () => {
 			const store = new Store()
-			expect(store.feature.slots.computed.isDraggable()).toBe(false)
+			expect(store.feature.slots.isDraggable()).toBe(false)
 		})
 	})
 

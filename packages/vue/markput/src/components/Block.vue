@@ -16,8 +16,8 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
 
-const blockComponent = useMarkput(s => s.feature.slots.computed.blockComponent)
-const slotProps = useMarkput(s => s.feature.slots.computed.blockProps)
+const blockComponent = useMarkput(s => s.feature.slots.blockComponent)
+const slotProps = useMarkput(s => s.feature.slots.blockProps)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 
 const blockStyle = computed(() => ({
