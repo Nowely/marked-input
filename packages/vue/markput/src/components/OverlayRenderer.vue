@@ -11,7 +11,7 @@ const store = useStore()
 // oxlint-disable-next-line no-unsafe-type-assertion -- narrows generic OverlayMatch<CoreOption> → OverlayMatch<Option>; unrelated to Slot typing
 const overlayMatchRef = useMarkput(s => s.feature.overlay.state.overlayMatch) as Ref<OverlayMatch<Option> | undefined>
 const overlayKey = computed(() => (overlayMatchRef.value ? store.key.get(overlayMatchRef.value.option) : undefined))
-const resolveOverlay = useMarkput(s => s.feature.overlay.computed.overlay)
+const resolveOverlay = useMarkput(s => s.feature.overlay.computed.overlaySlot)
 
 const resolved = computed(() => {
 	const match = overlayMatchRef.value

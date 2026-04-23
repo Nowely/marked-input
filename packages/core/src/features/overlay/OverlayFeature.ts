@@ -16,9 +16,9 @@ export class OverlayFeature implements Feature {
 	}
 
 	readonly computed: {
-		overlay: OverlaySlot
+		overlaySlot: OverlaySlot
 	} = {
-		overlay: computed(() => {
+		overlaySlot: computed(() => {
 			const Overlay = this._store.props.Overlay()
 			return (option?: CoreOption, defaultComponent?: Slot) =>
 				resolveOverlaySlot(Overlay, option, defaultComponent)

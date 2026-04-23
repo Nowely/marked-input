@@ -457,7 +457,7 @@ describe('Store', () => {
 			const CustomOverlay = () => null
 			const store = new Store()
 			store.props.set({Overlay: CustomOverlay})
-			const [Component, props] = store.feature.overlay.computed.overlay()()
+			const [Component, props] = store.feature.overlay.computed.overlaySlot()()
 			expect(Component).toBe(CustomOverlay)
 			expect(props).toEqual({})
 		})

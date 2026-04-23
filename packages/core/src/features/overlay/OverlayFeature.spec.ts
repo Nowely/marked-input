@@ -27,7 +27,7 @@ describe('OverlayFeature', () => {
 		it('owns overlayMatch, overlay (DOM ref), overlay (computed), overlaySelect, overlayClose', () => {
 			expect(typeof store.feature.overlay.state.overlayMatch).toBe('function')
 			expect(typeof store.feature.overlay.state.overlay).toBe('function')
-			expect(typeof store.feature.overlay.computed.overlay).toBe('function')
+			expect(typeof store.feature.overlay.computed.overlaySlot).toBe('function')
 			expect(typeof store.feature.overlay.emit.overlaySelect).toBe('function')
 			expect(typeof store.feature.overlay.emit.overlayClose).toBe('function')
 		})
