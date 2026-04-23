@@ -48,8 +48,4 @@ export class Store {
 		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
 		watch(this.feature.lifecycle.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
-
-	setProps(values: Parameters<PropsFeature['set']>[0]): void {
-		this.props.set(values)
-	}
 }

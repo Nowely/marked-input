@@ -32,7 +32,7 @@ function syncProps() {
 	const rawSpan = props.Span ? markRaw(toRaw(props.Span)) : undefined
 	const rawOverlay = props.Overlay ? markRaw(toRaw(props.Overlay)) : undefined
 
-	store.value.setProps({
+	store.value.props.set({
 		value: props.value,
 		defaultValue: props.defaultValue,
 		onChange: (v: string) => emit('change', v),

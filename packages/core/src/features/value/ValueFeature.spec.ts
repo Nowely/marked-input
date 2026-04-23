@@ -16,13 +16,13 @@ describe('ValueFeature', () => {
 
 	it('currentValue falls back to props.value when previousValue is unset', () => {
 		const store = new Store()
-		store.setProps({value: 'hello'})
+		store.props.set({value: 'hello'})
 		expect(store.feature.value.computed.currentValue()).toBe('hello')
 	})
 
 	it('currentValue returns previousValue when set', () => {
 		const store = new Store()
-		store.setProps({value: 'hello'})
+		store.props.set({value: 'hello'})
 		store.feature.value.state.previousValue('world')
 		expect(store.feature.value.computed.currentValue()).toBe('world')
 	})
@@ -44,7 +44,7 @@ describe('ValueFeature', () => {
 
 		it('react to change event after enable', () => {
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
@@ -56,7 +56,7 @@ describe('ValueFeature', () => {
 
 		it('be idempotent — calling enable twice does not double-subscribe', () => {
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			store.feature.parsing.state.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
 
 			store.feature.value.enable()
@@ -77,7 +77,7 @@ describe('ValueFeature', () => {
 
 		it('parses innerValue and writes tokens + previousValue', () => {
 			const onChange = vi.fn()
-			store.setProps({onChange, Mark: () => null, options: [{markup: '@[__value__]'}]})
+			store.props.set({onChange, Mark: () => null, options: [{markup: '@[__value__]'}]})
 
 			store.feature.value.enable()
 
@@ -93,7 +93,7 @@ describe('ValueFeature', () => {
 		it('stop reacting to events after disable', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()
@@ -107,7 +107,7 @@ describe('ValueFeature', () => {
 		it('allow re-enabling after disable', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			store.feature.parsing.state.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			store.feature.value.enable()

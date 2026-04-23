@@ -29,7 +29,7 @@ describe('DomFeature', () => {
 	it('changing readOnly after enable() triggers reconcile() again', () => {
 		store.feature.dom.enable()
 		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.setProps({readOnly: true})
+		store.props.set({readOnly: true})
 		expect(reconcileSpy).toHaveBeenCalled()
 	})
 
@@ -37,7 +37,7 @@ describe('DomFeature', () => {
 		store.feature.dom.enable()
 		store.feature.dom.disable()
 		const reconcileSpy = vi.spyOn(store.feature.dom, 'reconcile')
-		store.setProps({readOnly: true})
+		store.props.set({readOnly: true})
 		expect(reconcileSpy).not.toHaveBeenCalled()
 	})
 

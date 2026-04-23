@@ -36,7 +36,7 @@ describe('FocusFeature', () => {
 		})
 
 		it('runs caret recovery and clears recovery state when Mark is set', () => {
-			store.setProps({Mark: () => null})
+			store.props.set({Mark: () => null})
 			store.feature.caret.enable()
 
 			const target = document.createElement('div')

@@ -59,7 +59,7 @@ describe('deleteMark', () => {
 
 	it('fire event.change after deleting a mark', () => {
 		const onChange = vi.fn()
-		store.setProps({onChange})
+		store.props.set({onChange})
 		setupDOM()
 		store.feature.parsing.state.tokens(makeTokens())
 
@@ -70,7 +70,7 @@ describe('deleteMark', () => {
 
 	it('merge adjacent text spans after deletion', () => {
 		const onChange = vi.fn()
-		store.setProps({onChange})
+		store.props.set({onChange})
 		setupDOM()
 		store.feature.parsing.state.tokens(makeTokens())
 

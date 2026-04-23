@@ -20,7 +20,7 @@ describe('DragFeature', () => {
 	describe('enable()', () => {
 		it('is a no-op when already enabled (does not leak a watcher)', () => {
 			// Set up minimal props so the delete handler will actually call innerValue
-			store.setProps({
+			store.props.set({
 				value: 'test',
 				onChange: () => {}, // onChange is required for operations to proceed
 			})

@@ -18,7 +18,7 @@ describe('ParsingFeature', () => {
 	describe('sync()', () => {
 		it('sets tokens from value signal', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
@@ -30,7 +30,7 @@ describe('ParsingFeature', () => {
 
 		it('falls back to defaultValue when value is undefined', () => {
 			store.feature.parsing.enable()
-			store.setProps({defaultValue: 'default'})
+			store.props.set({defaultValue: 'default'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
@@ -53,7 +53,7 @@ describe('ParsingFeature', () => {
 
 		it('sets previousValue to the parsed input', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'test'})
+			store.props.set({value: 'test'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.value.state.previousValue()).toBe('test')
@@ -63,7 +63,7 @@ describe('ParsingFeature', () => {
 
 		it('skips markup when no Mark override and no per-option Mark', () => {
 			store.feature.parsing.enable()
-			store.setProps({options: [{markup: '@[__value__]'}], value: '@hello'})
+			store.props.set({options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.parsing.computed.parser()).toBeUndefined()
@@ -76,7 +76,7 @@ describe('ParsingFeature', () => {
 
 		it('uses markup when Mark override is set', () => {
 			store.feature.parsing.enable()
-			store.setProps({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
+			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], value: '@hello'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.parsing.computed.parser()).toBeDefined()
@@ -89,7 +89,7 @@ describe('ParsingFeature', () => {
 		it('is idempotent — calling enable twice does not double-subscribe', () => {
 			store.feature.parsing.enable()
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
 			let callCount = 0
@@ -109,7 +109,7 @@ describe('ParsingFeature', () => {
 
 		it('stops parse subscription after disable', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
 			store.feature.parsing.disable()
@@ -121,12 +121,12 @@ describe('ParsingFeature', () => {
 
 		it('resets initialized state — re-enable and sync works fresh', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'first'})
+			store.props.set({value: 'first'})
 			store.feature.parsing.sync()
 			store.feature.parsing.disable()
 
 			store.feature.parsing.enable()
-			store.setProps({value: 'second'})
+			store.props.set({value: 'second'})
 			store.feature.parsing.sync()
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
@@ -140,10 +140,10 @@ describe('ParsingFeature', () => {
 	describe('reactive parse', () => {
 		it('reactively re-parses when props.value changes', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
-			store.setProps({value: 'world'})
+			store.props.set({value: 'world'})
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
 				{type: 'text', content: 'world', position: {start: 0, end: 5}},
@@ -155,11 +155,11 @@ describe('ParsingFeature', () => {
 
 		it('does not re-parse in recovery mode when props.value changes', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 
 			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
-			store.setProps({value: 'world'})
+			store.props.set({value: 'world'})
 
 			expect(store.feature.parsing.state.tokens()).toEqual([
 				{type: 'text', content: 'hello', position: {start: 0, end: 5}},
@@ -172,7 +172,7 @@ describe('ParsingFeature', () => {
 	describe('parse handler', () => {
 		it('in recovery mode — re-parses from token text', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'test'})
+			store.props.set({value: 'test'})
 			store.feature.parsing.sync()
 
 			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
@@ -188,7 +188,7 @@ describe('ParsingFeature', () => {
 
 		it('does not re-run parse subscription when recovery changes after parse event', () => {
 			store.feature.parsing.enable()
-			store.setProps({value: 'hello'})
+			store.props.set({value: 'hello'})
 			store.feature.parsing.sync()
 			store.feature.caret.state.recovery({caret: 0, anchor: store.nodes.focus})
 

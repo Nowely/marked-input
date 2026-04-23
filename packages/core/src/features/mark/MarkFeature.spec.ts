@@ -10,7 +10,7 @@ describe('MarkFeature', () => {
 
 	it('hasMark is true when Mark prop is set', () => {
 		const store = new Store()
-		store.setProps({Mark: () => null})
+		store.props.set({Mark: () => null})
 		expect(store.feature.mark.computed.hasMark()).toBe(true)
 	})
 
@@ -31,7 +31,7 @@ describe('MarkFeature', () => {
 
 		it('react to delete event with correct token', () => {
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
 			store.feature.parsing.state.tokens([token, token2])
@@ -52,7 +52,7 @@ describe('MarkFeature', () => {
 
 		it('ignore markRemove events for tokens that are not in state', () => {
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			const token2 = {type: 'text' as const, content: 'b', position: {start: 1, end: 2}}
 			const missingToken = {type: 'text' as const, content: 'c', position: {start: 2, end: 3}}
@@ -71,7 +71,7 @@ describe('MarkFeature', () => {
 		it('stop reacting to markRemove events after disable', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.setProps({onChange})
+			store.props.set({onChange})
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			store.feature.parsing.state.tokens([token])
 

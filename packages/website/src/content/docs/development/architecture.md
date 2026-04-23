@@ -323,7 +323,7 @@ class Store {
 
 ### State and props access
 
-Internal feature state lives on `store.feature.<name>.state`, computeds on `store.feature.<name>.computed`, and events on `store.feature.<name>.emit`. Values and options passed from React/Vue live on `store.props` and are updated via `setProps()`.
+Internal feature state lives on `store.feature.<name>.state`, computeds on `store.feature.<name>.computed`, and events on `store.feature.<name>.emit`. Values and options passed from React/Vue live on `store.props` and are updated via `store.props.set()`.
 
 ```typescript
 // Read internal state
@@ -339,8 +339,8 @@ batch(() => {
 	store.feature.value.state.previousValue(serialized)
 })
 
-// Framework-provided props (MarkedInput calls setProps on each render)
-store.setProps({readOnly: true})
+// Framework-provided props (MarkedInput calls store.props.set on each render)
+store.props.set({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
 const tokens = store.feature.parsing.state.tokens.use()
