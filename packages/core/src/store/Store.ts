@@ -8,9 +8,9 @@ import {FocusFeature} from '../features/focus'
 import {InputFeature} from '../features/input'
 import {LifecycleFeature} from '../features/lifecycle'
 import {OverlayFeature} from '../features/overlay'
-import {Parser} from '../features/parsing'
+import type {Parser} from '../features/parsing'
 import type {Token} from '../features/parsing'
-import {ParseFeature} from '../features/parsing/ParseFeature'
+import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
 import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
@@ -151,15 +151,16 @@ export class Store {
 		contentEditable: ContentEditableFeature
 		drag: DragFeature
 		copy: CopyFeature
-		parse: ParseFeature
+		parsing: ParsingFeature
 	}
 
 	constructor() {
 		const lifecycle = new LifecycleFeature(this)
 		const value = new ValueFeature(this)
+		const parsing = new ParsingFeature(this)
 
 		this.state = {
-			tokens: signal<Token[]>([]),
+			tokens: parsing.state.tokens,
 			previousValue: value.state.previousValue,
 			innerValue: value.state.innerValue,
 			recovery: signal<Recovery | undefined>(undefined),
@@ -177,14 +178,7 @@ export class Store {
 			}),
 			isBlock: computed(() => this.props.layout() === 'block'),
 			isDraggable: computed(() => !!this.props.draggable()),
-			parser: computed(() => {
-				if (!this.computed.hasMark()) return
-
-				const markups = this.props.options().map(opt => opt.markup)
-				if (!markups.some(Boolean)) return
-
-				return new Parser(markups, this.computed.isBlock() ? {skipEmptyText: true} : undefined)
-			}),
+			parser: parsing.computed.parser,
 			currentValue: value.computed.currentValue,
 			containerComponent: computed(() => resolveSlot('container', this.props.slots())),
 			containerProps: computed(
@@ -217,7 +211,7 @@ export class Store {
 
 		this.emit = {
 			change: value.emit.change,
-			reparse: event(),
+			reparse: parsing.emit.reparse,
 			markRemove: event<{token: Token}>(),
 			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
 			overlayClose: event(),
@@ -241,7 +235,7 @@ export class Store {
 			contentEditable: new ContentEditableFeature(this),
 			drag: new DragFeature(this),
 			copy: new CopyFeature(this),
-			parse: new ParseFeature(this),
+			parsing,
 		}
 
 		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))

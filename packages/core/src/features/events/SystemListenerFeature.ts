@@ -67,7 +67,7 @@ export class SystemListenerFeature {
 					this.store.nodes.focus.target = this.store.nodes.input.target
 					this.store.nodes.input.clear()
 					onChange?.(toString(tokens))
-					this.store.emit.reparse()
+					this.store.feature.parsing.emit.reparse()
 				}
 			})
 		})

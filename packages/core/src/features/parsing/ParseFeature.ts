@@ -1,12 +1,37 @@
-import {computed, effectScope, watch} from '../../shared/signals/index.js'
+import {signal, computed, event, effectScope, watch} from '../../shared/signals/index.js'
+import type {Computed} from '../../shared/signals/index.js'
+import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
+import {Parser} from './parser/Parser'
+import type {Token} from './parser/types'
 import {toString} from './parser/utils/toString'
 import {getTokensByUI, computeTokensFromValue, parseWithParser} from './utils/valueParser'
 
-export class ParseFeature {
+export class ParsingFeature implements Feature {
+	readonly state = {
+		tokens: signal<Token[]>([]),
+	}
+
+	readonly computed: {
+		parser: Computed<Parser | undefined>
+	} = {
+		parser: computed(() => {
+			if (!this._store.computed.hasMark()) return
+
+			const markups = this._store.props.options().map(opt => opt.markup)
+			if (!markups.some(Boolean)) return
+
+			return new Parser(markups, this._store.computed.isBlock() ? {skipEmptyText: true} : undefined)
+		}),
+	}
+
+	readonly emit = {
+		reparse: event(),
+	}
+
 	#scope?: () => void
 
-	constructor(private readonly store: Store) {}
+	constructor(private readonly _store: Store) {}
 
 	enable() {
 		if (this.#scope) return
@@ -23,34 +48,31 @@ export class ParseFeature {
 	}
 
 	sync() {
-		const {store} = this
-		const inputValue = store.props.value() ?? store.props.defaultValue() ?? ''
-		store.state.tokens(parseWithParser(store, inputValue))
-		store.feature.value.state.previousValue(inputValue)
+		const inputValue = this._store.props.value() ?? this._store.props.defaultValue() ?? ''
+		this.state.tokens(parseWithParser(this._store, inputValue))
+		this._store.feature.value.state.previousValue(inputValue)
 	}
 
 	#subscribeParse() {
-		const {store} = this
-
-		watch(store.emit.reparse, () => {
-			if (store.state.recovery()) {
-				const text = toString(store.state.tokens())
-				store.state.tokens(parseWithParser(store, text))
-				store.feature.value.state.previousValue(text)
+		watch(this.emit.reparse, () => {
+			if (this._store.state.recovery()) {
+				const text = toString(this.state.tokens())
+				this.state.tokens(parseWithParser(this._store, text))
+				this._store.feature.value.state.previousValue(text)
 				return
 			}
-			store.state.tokens(store.nodes.focus.target ? getTokensByUI(store) : computeTokensFromValue(store))
+			this.state.tokens(
+				this._store.nodes.focus.target ? getTokensByUI(this._store) : computeTokensFromValue(this._store)
+			)
 		})
 	}
 
 	#subscribeReactiveParse() {
-		const {store} = this
-
-		const deps = computed(() => [store.props.value(), store.computed.parser()] as const)
+		const deps = computed(() => [this._store.props.value(), this.computed.parser()] as const)
 
 		watch(deps, () => {
-			if (!store.state.recovery()) {
-				store.emit.reparse()
+			if (!this._store.state.recovery()) {
+				this.emit.reparse()
 			}
 		})
 	}

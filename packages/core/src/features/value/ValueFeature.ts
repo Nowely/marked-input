@@ -47,7 +47,7 @@ export class ValueFeature implements Feature {
 				}
 
 				onChange?.(toString(tokens))
-				this._store.emit.reparse()
+				this._store.feature.parsing.emit.reparse()
 			})
 
 			watch(this.state.innerValue, newValue => {

@@ -4,7 +4,7 @@ import {findGap, getClosestIndexes} from '../preparsing'
 
 export function getTokensByUI(store: Store): Token[] {
 	const {focus} = store.nodes
-	const parser = store.computed.parser()
+	const parser = store.feature.parsing.computed.parser()
 	const tokens = store.state.tokens()
 	if (!parser) return tokens
 	const parsed = parser.parse(focus.content)
@@ -80,7 +80,7 @@ export function getRangeMap(store: Store): number[] {
 }
 
 export function parseWithParser(store: Store, value: string): Token[] {
-	const parser = store.computed.parser()
+	const parser = store.feature.parsing.computed.parser()
 	if (!parser) {
 		return [
 			{
