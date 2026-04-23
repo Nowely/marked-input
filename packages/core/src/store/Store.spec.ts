@@ -54,7 +54,7 @@ describe('Store', () => {
 			expect(handler.overlay).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLElement
-			store.feature.overlay.state.overlay(stub)
+			store.feature.overlay.overlay(stub)
 			expect(handler.overlay).toBe(stub)
 		})
 
@@ -457,7 +457,7 @@ describe('Store', () => {
 			const CustomOverlay = () => null
 			const store = new Store()
 			store.props.set({Overlay: CustomOverlay})
-			const [Component, props] = store.feature.overlay.computed.overlaySlot()()
+			const [Component, props] = store.feature.overlay.overlaySlot()()
 			expect(Component).toBe(CustomOverlay)
 			expect(props).toEqual({})
 		})

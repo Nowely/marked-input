@@ -10,25 +10,16 @@ import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 
 export class OverlayFeature implements Feature {
-	readonly state = {
-		overlayMatch: signal<OverlayMatch | undefined>(undefined),
-		overlay: signal<HTMLElement | null>(null),
-	}
+	readonly overlayMatch = signal<OverlayMatch | undefined>(undefined)
+	readonly overlay = signal<HTMLElement | null>(null)
 
-	readonly computed: {
-		overlaySlot: OverlaySlot
-	} = {
-		overlaySlot: computed(() => {
-			const Overlay = this._store.props.Overlay()
-			return (option?: CoreOption, defaultComponent?: Slot) =>
-				resolveOverlaySlot(Overlay, option, defaultComponent)
-		}),
-	}
+	readonly overlaySlot: OverlaySlot = computed(() => {
+		const Overlay = this._store.props.Overlay()
+		return (option?: CoreOption, defaultComponent?: Slot) => resolveOverlaySlot(Overlay, option, defaultComponent)
+	})
 
-	readonly emit = {
-		overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
-		overlayClose: event(),
-	}
+	readonly overlaySelect = event<{mark: Token; match: OverlayMatch}>()
+	readonly overlayClose = event()
 
 	#scope?: () => void
 
@@ -36,15 +27,15 @@ export class OverlayFeature implements Feature {
 
 	#probeTrigger() {
 		const match = TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger)
-		this.state.overlayMatch(match)
+		this.overlayMatch(match)
 	}
 
 	enable() {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.emit.overlayClose, () => {
-				this.state.overlayMatch(undefined)
+			watch(this.overlayClose, () => {
+				this.overlayMatch(undefined)
 			})
 
 			watch(this._store.feature.value.change, () => {
@@ -57,13 +48,13 @@ export class OverlayFeature implements Feature {
 			})
 
 			effect(() => {
-				const match = this.state.overlayMatch()
+				const match = this.overlayMatch()
 				if (match) {
 					this._store.nodes.input.target = this._store.nodes.focus.target
 
 					listen(window, 'keydown', e => {
 						if (e.key === KEYBOARD.ESC) {
-							this.emit.overlayClose()
+							this.overlayClose()
 						}
 					})
 
@@ -72,9 +63,9 @@ export class OverlayFeature implements Feature {
 						'click',
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
-							if (this.state.overlay()?.contains(target)) return
+							if (this.overlay()?.contains(target)) return
 							if (this._store.feature.slots.state.container()?.contains(target)) return
-							this.emit.overlayClose()
+							this.overlayClose()
 						},
 						true
 					)
@@ -95,7 +86,7 @@ export class OverlayFeature implements Feature {
 
 			listen(document, 'selectionchange', selectionChangeHandler)
 
-			watch(this.emit.overlaySelect, overlayEvent => {
+			watch(this.overlaySelect, overlayEvent => {
 				const Mark = this._store.props.Mark()
 				const onChange = this._store.props.onChange()
 				const {
