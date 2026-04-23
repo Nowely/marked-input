@@ -1,7 +1,7 @@
 import {effectScope, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {createNewSpan} from '../editing'
-import {annotate, findToken, toString} from '../parsing'
+import {annotate, toString} from '../parsing'
 
 export class SystemListenerFeature {
 	#scope?: () => void
@@ -12,16 +12,6 @@ export class SystemListenerFeature {
 		if (this.#scope) return
 
 		this.#scope = effectScope(() => {
-			watch(this.store.emit.markRemove, payload => {
-				const {token} = payload
-				const tokens = this.store.state.tokens()
-				if (!findToken(tokens, token)) return
-
-				const value = toString(tokens)
-				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
-				this.store.feature.value.state.innerValue(nextValue)
-			})
-
 			watch(this.store.emit.overlaySelect, event => {
 				const Mark = this.store.props.Mark()
 				const onChange = this.store.props.onChange()

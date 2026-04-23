@@ -7,12 +7,12 @@ import {SystemListenerFeature} from '../features/events'
 import {FocusFeature} from '../features/focus'
 import {InputFeature} from '../features/input'
 import {LifecycleFeature} from '../features/lifecycle'
+import {MarkFeature} from '../features/mark'
 import {OverlayFeature} from '../features/overlay'
-import type {Parser} from '../features/parsing'
-import type {Token} from '../features/parsing'
+import type {Parser, Token} from '../features/parsing'
 import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {TextSelectionFeature} from '../features/selection'
-import {resolveMarkSlot, resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
+import {resolveOverlaySlot, resolveSlot, resolveSlotProps} from '../features/slots'
 import type {MarkSlot, OverlaySlot} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
@@ -142,6 +142,7 @@ export class Store {
 		lifecycle: LifecycleFeature
 		value: ValueFeature
 		overlay: OverlayFeature
+		mark: MarkFeature
 		focus: FocusFeature
 		input: InputFeature
 		blockEditing: BlockEditFeature
@@ -158,6 +159,7 @@ export class Store {
 		const lifecycle = new LifecycleFeature(this)
 		const value = new ValueFeature(this)
 		const parsing = new ParsingFeature(this)
+		const mark = new MarkFeature(this)
 
 		this.state = {
 			tokens: parsing.state.tokens,
@@ -171,11 +173,7 @@ export class Store {
 		}
 
 		this.computed = {
-			hasMark: computed(() => {
-				const Mark = this.props.Mark()
-				if (Mark) return true
-				return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
-			}),
+			hasMark: mark.computed.hasMark,
 			isBlock: computed(() => this.props.layout() === 'block'),
 			isDraggable: computed(() => !!this.props.draggable()),
 			parser: parsing.computed.parser,
@@ -201,18 +199,13 @@ export class Store {
 				return (option?: CoreOption, defaultComponent?: Slot) =>
 					resolveOverlaySlot(Overlay, option, defaultComponent)
 			}),
-			mark: computed(() => {
-				const options = this.props.options()
-				const Mark = this.props.Mark()
-				const Span = this.props.Span()
-				return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
-			}),
+			mark: mark.computed.mark,
 		}
 
 		this.emit = {
 			change: value.emit.change,
 			reparse: parsing.emit.reparse,
-			markRemove: event<{token: Token}>(),
+			markRemove: mark.emit.markRemove,
 			overlaySelect: event<{mark: Token; match: OverlayMatch}>(),
 			overlayClose: event(),
 			sync: event(),
@@ -225,6 +218,7 @@ export class Store {
 		this.feature = {
 			lifecycle,
 			value,
+			mark,
 			overlay: new OverlayFeature(this),
 			focus: new FocusFeature(this),
 			input: new InputFeature(this),

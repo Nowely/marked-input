@@ -16,7 +16,7 @@ export class ParsingFeature implements Feature {
 		parser: Computed<Parser | undefined>
 	} = {
 		parser: computed(() => {
-			if (!this._store.computed.hasMark()) return
+			if (!this._store.feature.mark.computed.hasMark()) return
 
 			const markups = this._store.props.options().map(opt => opt.markup)
 			if (!markups.some(Boolean)) return
