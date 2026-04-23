@@ -25,7 +25,7 @@ export function enableFocus(store: Store): () => void {
 			}
 		})
 
-		watch(store.feature.lifecycle.emit.rendered, () => {
+		watch(store.feature.lifecycle.rendered, () => {
 			store.feature.dom.reconcile()
 			if (!store.props.Mark()) return
 			recover(store)

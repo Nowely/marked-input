@@ -45,7 +45,7 @@ export class Store {
 	}
 
 	constructor() {
-		watch(this.feature.lifecycle.emit.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
-		watch(this.feature.lifecycle.emit.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
+		watch(this.feature.lifecycle.mounted, () => Object.values(this.feature).forEach(f => f.enable()))
+		watch(this.feature.lifecycle.unmounted, () => Object.values(this.feature).forEach(f => f.disable()))
 	}
 }

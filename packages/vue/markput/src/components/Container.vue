@@ -10,7 +10,7 @@ const result = useMarkput(s => ({
 	tokens: s.feature.parsing.state.tokens,
 	key: s.key,
 	slotsState: s.feature.slots.state,
-	lifecycleEmit: s.feature.lifecycle.emit,
+	lifecycleEmit: s.feature.lifecycle,
 }))
 
 const setContainerRef = (el: unknown) => {

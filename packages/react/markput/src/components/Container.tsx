@@ -10,7 +10,7 @@ export const Container = memo(() => {
 		tokens: s.feature.parsing.state.tokens,
 		key: s.key,
 		slotsState: s.feature.slots.state,
-		lifecycleEmit: s.feature.lifecycle.emit,
+		lifecycleEmit: s.feature.lifecycle,
 		Component: s.feature.slots.computed.containerComponent,
 		props: s.feature.slots.computed.containerProps,
 	}))
