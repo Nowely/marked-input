@@ -5,8 +5,6 @@ import type {Token} from '../parsing'
 import {isTextTokenSpan} from './isTextTokenSpan'
 
 export class DomFeature {
-	readonly state = {} as const
-	readonly computed = {} as const
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {}
