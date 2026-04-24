@@ -1,33 +1,34 @@
+import type {RawRange} from '../../shared/editorContracts'
 import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
 import {MARKPUT_MIME} from './pasteMarkup'
-import {type SelectionTokenRange, selectionToTokens} from './selectionToTokens'
 
-/**
- * Trim boundary text tokens to the selected portion.
- * Mark tokens are always kept in full — partial mark selection expands to full mark.
- *
- * NOTE: Returned text tokens have stale `position` fields — the start/end positions
- * still reflect the original token, not the trimmed content. Only `content` is
- * authoritative on the returned tokens. `toString` is safe because it reads `content`
- * directly; do not use `position` on the returned tokens for any other purpose.
- */
-function trimBoundaryTokens({tokens, startOffset, endOffset}: SelectionTokenRange): Token[] {
-	if (tokens.length === 0) return tokens
+function htmlFromRange(range: Range): string {
+	const fragment = range.cloneContents()
+	const div = document.createElement('div')
+	div.appendChild(fragment)
+	return div.innerHTML
+}
 
-	return tokens.map((token, i) => {
-		if (token.type !== 'text') return token
+function serializeRawRange(tokens: readonly Token[], range: RawRange): string {
+	return toString(trimTokensForRawRange(tokens, range))
+}
 
-		const isFirst = i === 0
-		const isLast = i === tokens.length - 1
+function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token[] {
+	return tokens
+		.filter(token => token.position.end > range.start && token.position.start < range.end)
+		.map(token => {
+			if (token.type === 'text') {
+				const start = Math.max(0, range.start - token.position.start)
+				const end = Math.min(token.content.length, range.end - token.position.start)
+				return {...token, content: token.content.slice(start, end)}
+			}
 
-		if (isFirst && isLast) return {...token, content: token.content.slice(startOffset, endOffset)}
-		if (isFirst) return {...token, content: token.content.slice(startOffset)}
-		if (isLast) return {...token, content: token.content.slice(0, endOffset)}
-		return token
-	})
+			if (token.children.length === 0) return token
+			return {...token, children: trimTokensForRawRange(token.children, range)}
+		})
 }
 
 export class ClipboardFeature {
@@ -49,35 +50,12 @@ export class ClipboardFeature {
 			listen(container, 'cut', e => {
 				if (!this.#handleCopy(e)) return
 
-				const result = selectionToTokens(this.store)
-				if (!result || result.tokens.length === 0) return
+				const raw = this.store.dom.readRawSelection()
+				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
 
-				const first = result.tokens[0]
-				const last = result.tokens[result.tokens.length - 1]
-
-				const rawStart =
-					first.type === 'text' ? first.position.start + result.startOffset : first.position.start
-				const rawEnd = last.type === 'text' ? last.position.start + result.endOffset : last.position.end
-
-				const value = this.store.value.current()
-				if (rawStart === rawEnd) return
-
-				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
-				this.store.value.next(newValue)
-				if (this.store.value.isControlledMode()) return
-
-				const newTokens = this.store.parsing.tokens()
-				let targetIdx = newTokens.findIndex(
-					t => t.type === 'text' && rawStart >= t.position.start && rawStart <= t.position.end
-				)
-				if (targetIdx === -1) targetIdx = newTokens.length - 1
-				const caretWithinToken = rawStart - newTokens[targetIdx].position.start
-
-				this.store.caret.recovery({
-					anchor: this.store.nodes.focus,
-					caret: caretWithinToken,
-					isNext: true,
-					childIndex: targetIdx - 2,
+				this.store.value.replaceRange(raw.value.range, '', {
+					source: 'cut',
+					recover: {kind: 'caret', rawPosition: raw.value.range.start},
 				})
 			})
 		})
@@ -92,29 +70,20 @@ export class ClipboardFeature {
 		const container = this.store.slots.container()
 		if (!container) return false
 
-		const sel = window.getSelection()
-		if (!sel || sel.isCollapsed || !sel.rangeCount) return false
-
-		const range = sel.getRangeAt(0)
-		if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
-			return false
-		}
-
-		const result = selectionToTokens(this.store)
-		if (!result) return false
+		const raw = this.store.dom.readRawSelection()
+		if (!raw.ok || raw.value.range.start === raw.value.range.end) return false
 
 		// text/plain: visual selected text
+		const sel = window.getSelection()
+		const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
+		if (!range) return false
 		const plainText = range.toString()
 
 		// text/html: rendered DOM HTML from the actual selection
-		const fragment = range.cloneContents()
-		const div = document.createElement('div')
-		div.appendChild(fragment)
-		const html = div.innerHTML
+		const html = htmlFromRange(range)
 
-		// application/x-markput: boundary text tokens trimmed to selected portion,
-		// mark tokens always expanded to full markup syntax
-		const markup = toString(trimBoundaryTokens(result))
+		// application/x-markput: raw-selected text tokens are trimmed; overlapping plain marks keep markup syntax.
+		const markup = serializeRawRange(this.store.parsing.tokens(), raw.value.range)
 
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', plainText)

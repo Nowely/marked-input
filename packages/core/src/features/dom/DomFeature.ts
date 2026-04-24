@@ -257,6 +257,13 @@ export class DomFeature {
 			return {ok: true, value: token.value.position.start + local}
 		}
 
+		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
+			return {
+				ok: true,
+				value: affinity === 'after' ? token.value.position.start : token.value.position.end,
+			}
+		}
+
 		if (node === location.value.tokenElement) {
 			const childCount = location.value.tokenElement.childNodes.length
 			if (offset <= 0) return {ok: true, value: token.value.position.start}
