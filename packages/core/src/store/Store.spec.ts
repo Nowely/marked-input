@@ -29,6 +29,56 @@ describe('Store', () => {
 		expect(typeof store.mark.remove).toBe('function')
 	})
 
+	describe('lifecycle orchestration', () => {
+		it('enables all features on mount', () => {
+			const store = new Store()
+			const features = [
+				store.lifecycle,
+				store.value,
+				store.mark,
+				store.overlay,
+				store.slots,
+				store.caret,
+				store.keyboard,
+				store.dom,
+				store.drag,
+				store.clipboard,
+				store.parsing,
+			]
+			const spies = features.map(feature => vi.spyOn(feature, 'enable').mockImplementation(() => {}))
+
+			store.lifecycle.mounted()
+
+			for (const spy of spies) {
+				expect(spy).toHaveBeenCalledOnce()
+			}
+		})
+
+		it('disables all features on unmount', () => {
+			const store = new Store()
+			const features = [
+				store.lifecycle,
+				store.value,
+				store.mark,
+				store.overlay,
+				store.slots,
+				store.caret,
+				store.keyboard,
+				store.dom,
+				store.drag,
+				store.clipboard,
+				store.parsing,
+			]
+			const spies = features.map(feature => vi.spyOn(feature, 'disable').mockImplementation(() => {}))
+
+			store.lifecycle.unmounted()
+
+			for (const spy of spies) {
+				expect(spy).toHaveBeenCalledOnce()
+			}
+		})
+	})
+
 	describe('handler', () => {
 		it('return an object with container, overlay, and focus properties', () => {
 			const store = new Store()

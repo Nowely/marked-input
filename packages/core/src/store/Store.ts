@@ -12,7 +12,7 @@ import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
 import {watch} from '../shared/signals'
-import type {DragAction, Feature} from '../shared/types'
+import type {Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
 
 export type {DragAction} from '../shared/types'
