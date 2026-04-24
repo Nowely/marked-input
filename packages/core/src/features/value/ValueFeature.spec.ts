@@ -30,7 +30,7 @@ describe('ValueFeature', () => {
 		store.value.disable()
 	})
 
-	it('exposes signal and computed instances directly', () => {
+	it('exposes event, signal, and computed instances directly', () => {
 		const store = new Store()
 		expect(typeof store.value.next).toBe('function')
 		expect(typeof store.value.current).toBe('function')
@@ -45,6 +45,23 @@ describe('ValueFeature', () => {
 		store.value.enable()
 		store.value.next('world')
 		expect(onChange).toHaveBeenCalledWith('world')
+		expect(store.value.current()).toBe('hello')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		store.value.disable()
+	})
+
+	it('controlled next emits repeated identical candidates', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({value: 'hello', onChange})
+		store.value.enable()
+
+		store.value.next('world')
+		store.value.next('world')
+
+		expect(onChange).toHaveBeenCalledTimes(2)
+		expect(onChange).toHaveBeenNthCalledWith(1, 'world')
+		expect(onChange).toHaveBeenNthCalledWith(2, 'world')
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 		store.value.disable()

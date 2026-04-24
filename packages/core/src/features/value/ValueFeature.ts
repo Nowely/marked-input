@@ -6,7 +6,7 @@ import {toString} from '../parsing'
 export class ValueFeature implements Feature {
 	readonly current = signal('')
 	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
-	readonly next = signal<string | undefined>(undefined)
+	readonly next = event<string>()
 	readonly change = event()
 
 	#scope?: () => void
@@ -60,7 +60,6 @@ export class ValueFeature implements Feature {
 			})
 
 			watch(this.next, value => {
-				if (value === undefined) return
 				if (this.isControlledMode()) {
 					this._store.props.onChange()?.(value)
 					return
