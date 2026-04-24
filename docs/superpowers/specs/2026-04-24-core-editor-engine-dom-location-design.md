@@ -20,9 +20,8 @@ The desired direction is not quick hardening. Breaking changes are acceptable if
 
 - Make `@markput/core` the editor engine, not only the parser and event coordinator.
 - Keep React and Vue as presentation adapters over a core-owned view model.
-- Avoid `data-*` attributes for internal token mapping.
 - Avoid making refs the primary way users connect custom marks to tokens.
-- Replace implicit DOM assumptions with one canonical DOM/view structure.
+- Replace ad hoc DOM assumptions with one explicit canonical DOM contract.
 - Centralize raw value edits, caret recovery, and DOM/token location.
 - Improve custom mark DX by exposing token commands through context/hooks, not DOM mutation.
 - Support inline, block, nested marks, custom mark components, and focusable elements inside marks.
@@ -38,7 +37,7 @@ The desired direction is not quick hardening. Breaking changes are acceptable if
 
 ## Design Summary
 
-Core owns the editor model and produces a canonical render tree. React and Vue render that tree with fixed internal shells, then place user presentation components inside those shells.
+Core owns the editor model, token paths, location algorithms, and canonical DOM schema. React and Vue own actual DOM creation, but they must render DOM that conforms to the core schema.
 
 The primary token identity is a `TokenPath`, not a DOM ref:
 
@@ -53,28 +52,40 @@ Examples:
 - `[2, 0]` is the first nested child token inside token `[2]`.
 - `[2, 1, 0]` is a deeper nested token.
 
-Core exposes token views and commands:
+Core exposes a read-only token view tree:
 
 ```ts
 type TokenView = {
 	path: TokenPath
 	token: Token
 	kind: 'text' | 'mark'
-	children: TokenView[]
+	children: readonly TokenView[]
 	editable: boolean
-	commands: TokenCommands
-}
-
-type TokenCommands = {
-	remove(): void
-	replace(content: string): void
-	setValue(value: string): void
-	setMeta(meta: string | undefined): void
-	setSlot(slot: string): void
 }
 ```
 
 React and Vue pass `TokenView` context to custom components. Custom mark components use hooks to access commands and token data; they do not attach editor refs or mutate `textContent`.
+
+Mutation commands are not embedded in `TokenView`. They live in feature/controller APIs and resolve their target by `TokenPath` at execution time.
+
+## Mapping Contract
+
+Production mapping uses:
+
+- the canonical adapter DOM schema
+- one editor container ref
+- the current `TokenView` tree
+- internal indexes or weak maps derived after render
+
+Production mapping does not use:
+
+- public `data-*` attributes
+- `data-testid`
+- user component refs
+- user component DOM shape
+- raw DOM child parity
+
+The order-based DOM walk is acceptable because it is no longer an implicit assumption scattered through features. It is the explicit adapter contract. Core validates the rendered schema while indexing it. A malformed branch fails closed: location for that branch returns `undefined`; development builds should surface a diagnostic so adapter bugs are caught early.
 
 ## Ref Policy
 
@@ -83,14 +94,14 @@ The only required DOM ref is the editor container ref. Token refs are not part o
 After each framework render, core indexes the canonical DOM structure from the container and the current `TokenView` tree:
 
 ```ts
-store.domLocation.index({
+const result = store.domLocation.index({
 	container,
 	mode,
 	views,
 })
 ```
 
-Indexing walks known adapter-owned children in order and records the resolved elements internally. This can populate weak maps for fast reverse lookup, but those maps are derived from structure after render. They are not created by passing refs through user mark components.
+Indexing walks known adapter-owned children in order, validates the rendered schema, and records the resolved elements internally. This can populate weak maps for fast reverse lookup, but those maps are derived from structure after render. They are not created by passing refs through user mark components.
 
 This keeps the connection model simple:
 
@@ -114,35 +125,33 @@ The replacement should preserve the comfortable API, but move token identity int
 
 ## Surface Handle API
 
-Replace `NodeProxy` with a location-aware surface handle returned by `DomLocationFeature`.
+Replace `NodeProxy` as a token-location primitive with a location-aware surface handle returned by `DomLocationFeature`. This keeps the ergonomic DOM API while removing child-index and parity-based token mapping.
 
 ```ts
-type TokenSurface = {
+type LocatedToken = {
 	readonly mode: 'inline' | 'block'
 	readonly path: TokenPath
-	readonly token: Token
+	readonly index: number
 	readonly tokenView: TokenView
 	readonly tokenElement: HTMLElement
 	readonly textSurface?: HTMLElement
 	readonly rowElement?: HTMLElement
+	readonly generation: number
+}
+
+type TokenSurface = {
+	readonly location: LocatedToken
 
 	focus(): void
 	blur(): void
 	isFocused(): boolean
 	getRenderedText(): string
-	setRenderedText(content: string): void
 	getLocalCaret(): number | undefined
 	setLocalCaret(offset: number): void
 	getRawCaret(): number | undefined
 	setRawCaret(rawPosition: number, affinity?: 'before' | 'after'): void
-	previous(): TokenSurface | undefined
-	next(): TokenSurface | undefined
-}
-
-type FocusState = {
-	current(): TokenSurface | undefined
-	set(surface: TokenSurface | undefined): void
-	clear(): void
+	previousToken(): TokenSurface | undefined
+	nextToken(): TokenSurface | undefined
 }
 ```
 
@@ -150,41 +159,42 @@ The handle is created only after a DOM node has been resolved through canonical 
 
 ```ts
 const surface = store.domLocation.surfaceFromNode(event.target)
-store.focus.set(surface)
+store.domLocation.activeSurface(surface)
 ```
 
 This keeps feature code ergonomic:
 
 ```ts
-const surface = store.focus.current()
+const surface = store.domLocation.activeSurface()
 surface?.focus()
 surface?.setLocalCaret(0)
 ```
 
-But token mapping is no longer inferred by `surface.tokenElement.parentElement.children.indexOf(...)` or by mark/text parity. The surface already carries its resolved `TokenPath`, token, and canonical elements.
+But token mapping is no longer inferred by `surface.location.tokenElement.parentElement.children.indexOf(...)` or by mark/text parity. The surface already carries a resolved `LocatedToken`.
 
-`previous()` and `next()` navigate logical token surfaces from the `TokenView` tree. They do not use raw DOM sibling traversal.
+`previousToken()` and `nextToken()` navigate logical token surfaces from the `TokenView` tree. They do not use raw DOM sibling traversal.
 
-Content edits should prefer raw value commands:
+`TokenSurface` is render-index scoped. It is valid only for the `generation` that created it. After a render/index cycle, code should resolve a fresh surface from `DomLocationFeature`. DOM operations on stale or disconnected surfaces fail closed.
+
+Content edits should prefer value commands:
 
 ```ts
 const range = store.domLocation.rawRangeFromSelection()
 if (range) {
 	store.value.apply({
+		type: 'replaceRange',
 		range,
-		insert,
-		recover: {rawPosition: range.start + insert.length},
+		replacement,
+		recover: {rawPosition: range.start + replacement.length},
 	})
 }
 ```
 
-`setRenderedText()` exists for DOM reconciliation and controlled rollback, not as the primary value mutation path.
+Rendered-text writes are deliberately not exposed on `TokenSurface`. DOM reconciliation and controlled rollback can use a narrower internal reconciler helper, but feature code should not mutate rendered text as a value write path.
 
 ## Canonical DOM Structure
 
-The framework adapters render a fixed internal structure. Internal mapping relies on the structural relationship between core-owned elements and the `TokenView` tree.
-
-No `data-*` attributes are required.
+The framework adapters render a fixed internal structure that conforms to the core schema. Internal mapping relies on the structural relationship between adapter-owned structural elements and the `TokenView` tree.
 
 ### Inline Mode
 
@@ -213,7 +223,7 @@ mark-token-shell[path 1]
       mark-presentation
 ```
 
-Nested token shells are rendered inside a core-owned slot root. User mark presentation can wrap visual content, but core still owns the token shell and slot root.
+Nested token shells are rendered inside an adapter-owned slot root that conforms to the core schema. User mark presentation can wrap visual content, but it does not replace the token shell or slot root.
 
 ### Block Mode
 
@@ -232,40 +242,36 @@ container
 
 Each direct child of the block container corresponds to one top-level row. Controls such as drag handles, menus, and drop indicators are not part of token mapping. They are rendered in known adapter-owned control regions.
 
-Text editing happens in core-owned `text-surface` elements. User `Span` and `Mark` components may affect presentation, but they do not replace the structural text surface that selection and caret logic depend on.
+Text editing happens in adapter-owned `text-surface` elements that conform to the core schema. User `Span` and `Mark` components may affect presentation, but they do not replace the structural text surface that selection and caret logic depend on. `Span` remains a presentation customization point for text token rendering and styling; it is not the editable structure owner.
 
 ## DOM Location Feature
 
 Add a core feature responsible for all DOM/token lookup:
 
 ```ts
-type LocatedToken = {
-	mode: 'inline' | 'block'
-	path: TokenPath
-	index: number
-	token: Token
-	tokenView: TokenView
-	tokenElement: HTMLElement
-	textSurface?: HTMLElement
-	rowElement?: HTMLElement
-	surface: TokenSurface
-}
-
 type LocatedSelection = {
 	start: LocatedToken
 	end: LocatedToken
 	rawStart: number
 	rawEnd: number
 }
+
+type IndexResult = {
+	generation: number
+	valid: boolean
+	errors: readonly string[]
+}
 ```
 
 The feature owns these operations:
 
 ```ts
+activeSurface: Signal<TokenSurface | undefined>
+clearActiveSurface(): void
+index(input: {container: HTMLElement; mode: 'inline' | 'block'; views: readonly TokenView[]}): IndexResult
 locateNode(node: Node): LocatedToken | undefined
 locateActive(): LocatedToken | undefined
 surfaceFromNode(node: Node): TokenSurface | undefined
-activeSurface(): TokenSurface | undefined
 locateSelection(): LocatedSelection | undefined
 rawRangeFromSelection(): {start: number; end: number} | undefined
 rawPositionFromBoundary(node: Node, offset: number): number | undefined
@@ -274,21 +280,32 @@ placeCaret(rawPosition: number, affinity?: 'before' | 'after'): void
 
 The implementation may maintain internal weak maps for performance, but those maps are adapter-internal/core-internal details. They are not exposed as the user-facing connection model.
 
-The locator must not read `data-*` attributes, `data-testid`, or user component markup. It walks from the known container through the canonical adapter-owned structure and resolves against the `TokenView` tree.
+The locator follows the mapping contract: it walks from the known container through the canonical adapter-owned structure and resolves against the `TokenView` tree.
 
 ## Value Edit Pipeline
 
-Raw value mutation moves into one command pipeline:
+Value mutation moves into one command pipeline. Simple text edits use raw ranges; higher-level edits lower to serialized value changes inside `ValueFeature.apply()`.
 
 ```ts
-type ValueEdit = {
-	range: {start: number; end: number}
-	insert: string
-	recover?: {
-		rawPosition: number
-		affinity?: 'before' | 'after'
-	}
+type RawRange = {start: number; end: number}
+
+type RecoveryRequest = {
+	rawPosition: number
+	affinity?: 'before' | 'after'
 }
+
+type MarkPatch = {
+	content?: string
+	value?: string
+	meta?: string | undefined
+	slot?: string | undefined
+}
+
+type ValueEdit =
+	| {type: 'replaceRange'; range: RawRange; replacement: string; recover?: RecoveryRequest}
+	| {type: 'updateMark'; path: TokenPath; patch: MarkPatch; recover?: RecoveryRequest}
+	| {type: 'removeToken'; path: TokenPath; recover?: RecoveryRequest}
+	| {type: 'moveBlock'; path: TokenPath; toIndex: number; recover?: RecoveryRequest}
 
 store.value.apply(edit)
 ```
@@ -303,6 +320,8 @@ store.value.apply(edit)
 - scheduling caret recovery
 
 Features should stop constructing full value strings independently. Overlay insert, paste, cut, delete, block editing, drag row operations, and mark commands should all call the same pipeline.
+
+Commands resolve `TokenPath` targets at execution time. If the path no longer resolves to the expected token kind, the command fails closed and leaves value unchanged.
 
 ## Caret Recovery
 
@@ -344,23 +363,51 @@ Vue follows the same model through `useMark()`.
 
 ```ts
 type MarkController = {
-	readonly token: MarkToken
 	readonly path: TokenPath
+	readonly token: MarkToken
 	readonly value: string
 	readonly meta: string | undefined
 	readonly slot: string | undefined
 	readonly depth: number
 	readonly hasChildren: boolean
 	readonly parent: MarkToken | undefined
+	readonly children: readonly Token[]
+
 	remove(): void
+	setContent(content: string): void
 	setValue(value: string): void
 	setMeta(meta: string | undefined): void
-	setSlot(slot: string): void
-	replace(content: string): void
+	setSlot(slot: string | undefined): void
+	update(patch: {
+		content?: string
+		value?: string
+		meta?: string | undefined
+		slot?: string | undefined
+	}): void
 }
 ```
 
+`token` is available for inspection, but mutation commands target `path` and resolve the current token at execution time. This avoids stale-token writes after reparsing.
+
 `useMark().ref` is removed. Uncontrolled mark initialization through `ref.current.textContent` is removed. Marks that need editable text should use explicit commands or a future controlled input helper, not direct DOM mutation.
+
+### Commands vs Signals
+
+Mark writes should not be exposed as writable signals in this design. Writes must pass through `store.value.apply()` so read-only checks, controlled mode, `onChange`, parsing refresh, and caret recovery stay centralized.
+
+Read-side signal/computed APIs can be considered later if framework adapters need them:
+
+```ts
+type ReactiveMarkController = {
+	value: Computed<string>
+	meta: Computed<string | undefined>
+	slot: Computed<string | undefined>
+	setValue(value: string): void
+	update(patch: MarkPatch): void
+}
+```
+
+This keeps the mutation contract command-based while leaving room for reactive reads.
 
 ## Framework Adapter Responsibilities
 
@@ -368,7 +415,7 @@ React and Vue should only:
 
 - render the core `TokenView` tree
 - provide token context to custom components
-- render fixed token shells and block row shells
+- render fixed token shells and block row shells that conform to the core schema
 - render user presentation slots inside those shells
 - forward browser events to core
 - notify core after render
@@ -387,11 +434,11 @@ This design intentionally allows breaking changes:
 
 - `useMark<T>()` no longer returns a `ref`.
 - `MarkHandler` is replaced or reshaped into `MarkController`.
-- Custom `Span` and `Mark` components become presentation slots inside core-owned shells.
+- Custom `Span` and `Mark` components become presentation slots inside adapter-owned shells that follow the core schema.
 - Direct custom `contentEditable` marks are no longer the primary editing path.
-- `NodeProxy` is removed from feature contracts.
+- `NodeProxy` is removed as a token-location primitive after `TokenSurface` replaces its ergonomic DOM role.
 - `Recovery.anchor`, `Recovery.childIndex`, and sibling-based recovery are removed.
-- `store.nodes.focus` / `store.nodes.input` are replaced by a focus/surface state API backed by `TokenSurface`.
+- `store.nodes.focus` / `store.nodes.input` are replaced by signal-style active surface state backed by `TokenSurface`.
 - Internal block wrappers and drag controls may change DOM order.
 - Tests that assert exact DOM shape need updates to the new canonical structure.
 
@@ -405,21 +452,24 @@ This design intentionally allows breaking changes:
 
 ### Phase 2: Canonical Adapter Structure
 
-- Update React and Vue token rendering to use core-owned token shells.
+- Update React and Vue token rendering to use adapter-owned token shells that follow the core schema.
 - Update block rendering to separate row structure, token shell, and controls.
 - Provide `TokenView` context instead of raw token-only context.
+- Add schema indexing/validation after render.
 - Keep visual behavior equivalent where possible.
 
 ### Phase 3: DOM Location Feature
 
 - Add `DomLocationFeature`.
-- Add `TokenSurface` and focus/surface state.
+- Add `TokenSurface` and signal-style active surface state.
+- Define stale-surface behavior by render generation.
 - Move selection-to-token and DOM-boundary-to-raw-position logic into it.
 - Replace local lookup in clipboard, block edit, overlay, and value features.
 
 ### Phase 4: Unified Value Edits
 
 - Add `store.value.apply()`.
+- Add raw range replacement and structured edits for mark update, token removal, and block movement.
 - Migrate inline input, paste, cut, overlay insert, mark remove, drag row edits, and block edits.
 - Remove duplicated raw string mutation logic from feature modules.
 
@@ -449,9 +499,10 @@ Core unit tests:
 - build stable `TokenView` paths for inline tokens
 - build stable paths for nested marks
 - resolve token path to token and parent
-- apply raw value edits in controlled and uncontrolled mode
+- apply raw range edits and structured value edits in controlled and uncontrolled mode
 - recover caret from raw position after parse
 - ignore invalid token paths safely
+- fail closed when a structured edit path is stale or points at the wrong token kind
 
 DOM/browser tests:
 
@@ -463,6 +514,9 @@ DOM/browser tests:
 - clipboard copy/cut uses the shared locator
 - custom mark with nested button does not break token mapping
 - custom mark without refs can remove/update itself
+- locator ignores block controls and maps user-mark descendants to the owning token
+- malformed adapter schema is detected during indexing
+- stale `TokenSurface` DOM operations fail closed after a render generation change
 
 Regression tests:
 
@@ -495,17 +549,34 @@ These should be resolved during implementation planning:
 
 - Exact names for `DomLocationFeature`, `TokenView`, and `MarkController`.
 - Whether `TokenPath` should be serialized as arrays only, or also as a string form for debugging.
-- Whether text token presentation still accepts a `Span` component, or whether `Span` becomes style/props-only.
 - Whether editable nested slots need a first-class controlled input helper for mark authors.
 - Whether block controls render before or after the token shell in the canonical structure.
 
 ## Acceptance Criteria
 
+### DOM Location and Adapter Contract
+
 - There is exactly one production DOM/token locator.
-- React and Vue render the same conceptual core view tree.
-- Custom marks do not need refs for normal mark operations.
-- Feature code has an ergonomic `TokenSurface` API for focus, caret, and rendered text operations.
-- All raw value edits go through one core command path.
+- React and Vue render the same conceptual core view tree and conform to the same adapter DOM schema.
+- The locator ignores controls, maps user-mark descendants to the owning token, and detects malformed adapter structure.
+- Production mapping does not depend on public attributes, test ids, user refs, user component DOM shape, or DOM child parity.
+
+### Surface and Focus
+
+- `NodeProxy` is gone from feature contracts as a token-location primitive.
+- Feature code has an ergonomic `TokenSurface` API for focus, caret, and rendered text reads.
+- Active focus state uses the project signal style.
+- Stale `TokenSurface` instances fail closed after render generation changes.
+
+### Value and Caret
+
+- Raw range edits and structured edits go through one core command path.
+- Mark commands resolve by `TokenPath` at execution time.
 - Caret recovery is based on raw value position, not stale DOM anchors.
+
+### Public API and Docs
+
+- Custom marks do not need refs for normal mark operations.
+- Writable mark signals are not introduced as a second mutation path.
 - Inline, block, and nested mark tests pass in both React and Vue.
 - Public docs show the new command-based custom mark API.
