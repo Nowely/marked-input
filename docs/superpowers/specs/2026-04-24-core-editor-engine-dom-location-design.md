@@ -32,6 +32,7 @@ The desired direction is not quick hardening. Breaking changes are acceptable if
 - Preserve the current `useMark().ref` API.
 - Preserve arbitrary user control over the structural editable DOM node.
 - Preserve `NodeProxy` as the long-term location primitive.
+- Remove ergonomic APIs for focus, caret, and rendered text manipulation.
 - Add public `data-markput-*` attributes as the mapping contract.
 - Implement a fully new parser as part of this change.
 
@@ -96,6 +97,88 @@ This keeps the connection model simple:
 - users connect to a token through `useMark()` / token context
 - adapters connect to core through one container ref and render notifications
 - core connects DOM to tokens by indexing its own canonical structure
+
+## NodeProxy Attitude
+
+The current `NodeProxy` was created for a valid goal: make DOM node manipulation comfortable. That goal should stay.
+
+The problem is not the ergonomic wrapper itself. The problem is that the current `NodeProxy` combines three responsibilities:
+
+- DOM ergonomics: focus, caret, content, adjacent node helpers.
+- Feature state: `store.nodes.focus` and `store.nodes.input`.
+- Token location: `index`, `isSpan`, `isMark`, `prev`, `next`, `head`, `tail`.
+
+The first responsibility is useful. The third responsibility is fragile because it treats DOM child position and child parity as token identity. That works only when the rendered DOM is a flat inline sequence with no block rows, nested marks, controls, custom wrappers, or focusable children.
+
+The replacement should preserve the comfortable API, but move token identity into the DOM location feature.
+
+## Surface Handle API
+
+Replace `NodeProxy` with a location-aware surface handle returned by `DomLocationFeature`.
+
+```ts
+type TokenSurface = {
+	readonly mode: 'inline' | 'block'
+	readonly path: TokenPath
+	readonly token: Token
+	readonly tokenView: TokenView
+	readonly tokenElement: HTMLElement
+	readonly textSurface?: HTMLElement
+	readonly rowElement?: HTMLElement
+
+	focus(): void
+	blur(): void
+	isFocused(): boolean
+	getRenderedText(): string
+	setRenderedText(content: string): void
+	getLocalCaret(): number | undefined
+	setLocalCaret(offset: number): void
+	getRawCaret(): number | undefined
+	setRawCaret(rawPosition: number, affinity?: 'before' | 'after'): void
+	previous(): TokenSurface | undefined
+	next(): TokenSurface | undefined
+}
+
+type FocusState = {
+	current(): TokenSurface | undefined
+	set(surface: TokenSurface | undefined): void
+	clear(): void
+}
+```
+
+The handle is created only after a DOM node has been resolved through canonical structure:
+
+```ts
+const surface = store.domLocation.surfaceFromNode(event.target)
+store.focus.set(surface)
+```
+
+This keeps feature code ergonomic:
+
+```ts
+const surface = store.focus.current()
+surface?.focus()
+surface?.setLocalCaret(0)
+```
+
+But token mapping is no longer inferred by `surface.tokenElement.parentElement.children.indexOf(...)` or by mark/text parity. The surface already carries its resolved `TokenPath`, token, and canonical elements.
+
+`previous()` and `next()` navigate logical token surfaces from the `TokenView` tree. They do not use raw DOM sibling traversal.
+
+Content edits should prefer raw value commands:
+
+```ts
+const range = store.domLocation.rawRangeFromSelection()
+if (range) {
+	store.value.apply({
+		range,
+		insert,
+		recover: {rawPosition: range.start + insert.length},
+	})
+}
+```
+
+`setRenderedText()` exists for DOM reconciliation and controlled rollback, not as the primary value mutation path.
 
 ## Canonical DOM Structure
 
@@ -165,6 +248,7 @@ type LocatedToken = {
 	tokenElement: HTMLElement
 	textSurface?: HTMLElement
 	rowElement?: HTMLElement
+	surface: TokenSurface
 }
 
 type LocatedSelection = {
@@ -180,6 +264,8 @@ The feature owns these operations:
 ```ts
 locateNode(node: Node): LocatedToken | undefined
 locateActive(): LocatedToken | undefined
+surfaceFromNode(node: Node): TokenSurface | undefined
+activeSurface(): TokenSurface | undefined
 locateSelection(): LocatedSelection | undefined
 rawRangeFromSelection(): {start: number; end: number} | undefined
 rawPositionFromBoundary(node: Node, offset: number): number | undefined
@@ -305,6 +391,7 @@ This design intentionally allows breaking changes:
 - Direct custom `contentEditable` marks are no longer the primary editing path.
 - `NodeProxy` is removed from feature contracts.
 - `Recovery.anchor`, `Recovery.childIndex`, and sibling-based recovery are removed.
+- `store.nodes.focus` / `store.nodes.input` are replaced by a focus/surface state API backed by `TokenSurface`.
 - Internal block wrappers and drag controls may change DOM order.
 - Tests that assert exact DOM shape need updates to the new canonical structure.
 
@@ -326,6 +413,7 @@ This design intentionally allows breaking changes:
 ### Phase 3: DOM Location Feature
 
 - Add `DomLocationFeature`.
+- Add `TokenSurface` and focus/surface state.
 - Move selection-to-token and DOM-boundary-to-raw-position logic into it.
 - Replace local lookup in clipboard, block edit, overlay, and value features.
 
@@ -349,7 +437,7 @@ This design intentionally allows breaking changes:
 
 ### Phase 7: Remove Legacy Paths
 
-- Remove `NodeProxy`.
+- Remove `NodeProxy` after feature code uses `TokenSurface`.
 - Remove child-parity checks.
 - Remove `data-testid`-based reconciliation.
 - Remove feature-local DOM/token locator helpers.
@@ -382,6 +470,7 @@ Regression tests:
 - no direct imports between unrelated features for location logic
 - no public `useMark().ref`
 - no `NodeProxy` usage in feature contracts
+- no token mapping through DOM child parity
 
 ## Documentation Updates
 
@@ -415,6 +504,7 @@ These should be resolved during implementation planning:
 - There is exactly one production DOM/token locator.
 - React and Vue render the same conceptual core view tree.
 - Custom marks do not need refs for normal mark operations.
+- Feature code has an ergonomic `TokenSurface` API for focus, caret, and rendered text operations.
 - All raw value edits go through one core command path.
 - Caret recovery is based on raw value position, not stale DOM anchors.
 - Inline, block, and nested mark tests pass in both React and Vue.
