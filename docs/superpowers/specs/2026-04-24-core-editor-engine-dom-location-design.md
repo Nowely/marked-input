@@ -125,7 +125,7 @@ Replacement map:
 | `EditResult` | silent no-op value/mark command failures |
 | `MarkController` | public `MarkHandler`, `useMark().ref`, direct mutable token setters |
 
-The design also removes these earlier over-specifications:
+Keep the implementation deliberately narrow:
 
 - no public `TokenSurface`
 - no persistent `TokenView` tree that duplicates parser tokens
@@ -151,7 +151,7 @@ Cross-feature domain types such as `TokenAddress`, `RawRange`, `RawSelection`, `
 4. For mark commands, require the descriptor identity and `descriptor.index` to match the captured descriptor.
 5. Return a failed `EditResult` instead of mutating when validation fails.
 
-The generation equality check is mandatory for mutation commands. Without it, a stale controller could update a new same-kind token that happens to occupy the same path after an unrelated edit. Resolving the path and checking the captured token shape are still required as defense in depth and for better diagnostics. A stale address must fail closed. Do not re-resolve by descriptor search in the first design; descriptor indexes are not unique enough to safely find "the same" mark after unrelated edits.
+The generation equality check is mandatory for mutation commands. Without it, a stale controller could update a new same-kind token that happens to occupy the same path after an unrelated edit. Resolving the path and checking the captured token shape are still required as defense in depth and for better diagnostics. A stale address must fail closed. Do not re-resolve by descriptor search; descriptor indexes are not unique enough to safely find "the same" mark after unrelated edits.
 
 Parsing provides one computed token index so path logic does not get duplicated across DOM, mark commands, block edit, clipboard, and adapters:
 
@@ -468,7 +468,7 @@ Controlled-mode behavior is strict echo-only:
 5. DOM reconciliation always reflects the accepted value, not an optimistic candidate.
 6. Recovery is stored as pending controlled recovery and is applied only after the echoed token tree renders.
 
-This matches the current controlled rollback model more closely than bounded optimistic editing and avoids vague "next render cycle" timing.
+This keeps the accepted value as the DOM source of truth and avoids vague "next render cycle" timing.
 
 Overlay insertion should lower to the same primitive:
 
@@ -571,11 +571,11 @@ This design intentionally allows breaking changes:
 - Clipboard behavior for mixed control/editable selections may fail or clamp explicitly instead of silently preserving partial marks.
 - Tests that assert exact DOM shape need updates to the adapter-owned structure.
 
-`NodeProxy` removal from feature contracts is a follow-up release after adapter registration and migrated consumers have stabilized. It should not block the first breaking ship.
+`NodeProxy` removal from feature contracts is deferred until adapter registration and migrated consumers have stabilized. It should not block the initial migration slices.
 
 ## Migration Plan
 
-Prefer vertical migration slices over one long DOM-shape rewrite. Keep a short internal dual-path flag so old and new locators can coexist while one consumer is migrated at a time.
+Prefer vertical migration slices over one long DOM-shape rewrite. Keep a short internal dual-path flag while one consumer is migrated at a time.
 
 ### Phase 1: Shared Contracts and Addressing
 
@@ -601,7 +601,7 @@ Prefer vertical migration slices over one long DOM-shape rewrite. Keep a short i
 
 - Add `rawSelectionFromSelection()` / `rawRangeFromSelection()` and migrate clipboard copy/cut first.
 - Cover mixed-boundary clipboard behavior.
-- Keep old keyboard/block paths on the legacy locator during this slice.
+- Keep keyboard/block paths on the temporary locator during this slice.
 
 ### Phase 5: Inline Input and Overlay Slice
 
@@ -620,7 +620,7 @@ Prefer vertical migration slices over one long DOM-shape rewrite. Keep a short i
 - Remove `useMark().ref` and uncontrolled DOM mutation behavior.
 - Update docs, examples, and stories for custom mark authoring.
 
-### Phase 8: Legacy Cleanup Follow-Up Release
+### Phase 8: Locator Cleanup
 
 - Remove `NodeProxy` from feature contracts.
 - Remove child-parity checks.
@@ -699,7 +699,7 @@ New documentation should describe:
 - `dom.renderKey` as the adapter post-render dependency source
 - `BlockRegistry` as UI state, not edit/location identity
 
-## Resolved Design Decisions
+## Implementation Constraints
 
 - Keep `TokenPath` as arrays and use `pathKey()` strings for maps/debugging.
 - Keep `TokenAddress` small: path plus parse generation. Captured token shape is command-internal validation state, not part of the address type.
@@ -708,8 +708,8 @@ New documentation should describe:
 - Use `layout`, not `mode`, in DOM APIs to match existing public prop language.
 - Use `slotRoot`, not `slot`, for the DOM registration role.
 - Register DOM elements by `TokenPath`, not `TokenAddress`, so stable refs cannot retain stale parse generations.
-- Do not re-resolve stale addresses by descriptor search in the first design.
-- Do not expose public `TokenSurface` in the first implementation.
+- Do not re-resolve stale addresses by descriptor search.
+- Do not expose public `TokenSurface`.
 - Do not expose `renderedText()` as a DOM source-of-truth escape hatch.
 - Do not expose live mutable tokens from public mark APIs.
 - Use adapter-owned internal registration instead of production DOM walks based on child order.
@@ -722,7 +722,7 @@ New documentation should describe:
 - Keep the default `MarkController` command-focused; move path/depth/key details to `useMarkInfo()` or debug hooks.
 - Defer `useMarkField()` until a concrete field-editing helper is needed.
 - Treat missing nested `{children}` as a development error and production diagnostic.
-- Ship legacy `NodeProxy` cleanup as a follow-up release.
+- Remove `NodeProxy` from feature contracts only after adapter registration and migrated consumers have stabilized.
 
 ## Acceptance Criteria
 
