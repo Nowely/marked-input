@@ -1,10 +1,12 @@
 import type {
+	BoundaryPositionResult,
 	DomDiagnostic,
 	DomIndex,
 	DomRef,
 	DomRefTarget,
 	NodeLocationResult,
 	RawSelection,
+	RawSelectionResult,
 	Result,
 	TokenAddress,
 	TokenPath,
@@ -13,6 +15,7 @@ import {batch, computed, effectScope, event, signal, watch} from '../../shared/s
 import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {RenderedPayload} from '../lifecycle/LifecycleFeature'
+import type {Token} from '../parsing'
 import {pathKey} from '../parsing/tokenIndex'
 
 type RegisteredRole =
@@ -37,6 +40,63 @@ type PathElements = {
 function nextTextNode(walker: TreeWalker): Text | null {
 	const node = walker.nextNode()
 	return node instanceof Text ? node : null
+}
+
+function splitsSurrogatePair(text: string, offset: number): boolean {
+	if (offset <= 0 || offset >= text.length) return false
+	const prev = text.charCodeAt(offset - 1)
+	const next = text.charCodeAt(offset)
+	return prev >= 0xd800 && prev <= 0xdbff && next >= 0xdc00 && next <= 0xdfff
+}
+
+function textOffsetWithin(surface: HTMLElement, node: Node, offset: number): number | undefined {
+	if (node.nodeType === Node.TEXT_NODE) {
+		const text = node.textContent ?? ''
+		if (splitsSurrogatePair(text, offset)) return undefined
+		return node instanceof Text ? textOffsetFromTreeWalker(surface, node, offset) : undefined
+	}
+
+	if (node === surface) return elementBoundaryOffset(surface, offset)
+	return undefined
+}
+
+function textOffsetFromTreeWalker(surface: HTMLElement, target: Text, targetOffset: number): number | undefined {
+	let total = 0
+	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+	let current = nextTextNode(walker)
+	while (current) {
+		if (current === target) return total + targetOffset
+		total += current.length
+		current = nextTextNode(walker)
+	}
+	return undefined
+}
+
+function textLength(surface: HTMLElement): number {
+	let total = 0
+	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+	let current = nextTextNode(walker)
+	while (current) {
+		total += current.length
+		current = nextTextNode(walker)
+	}
+	return total
+}
+
+function elementBoundaryOffset(surface: HTMLElement, offset: number): number | undefined {
+	if (offset <= 0) return 0
+	if (offset >= surface.childNodes.length) return textLength(surface)
+
+	let total = 0
+	for (let i = 0; i < offset; i++) {
+		const child = surface.childNodes.item(i)
+		if (child.nodeType === Node.TEXT_NODE && child instanceof Text) {
+			total += child.length
+			continue
+		}
+		if (child instanceof HTMLElement) total += textLength(child)
+	}
+	return total
 }
 
 export class DomFeature {
@@ -171,6 +231,82 @@ export class DomFeature {
 		return {ok: true, value: undefined}
 	}
 
+	rawPositionFromBoundary(
+		node: Node,
+		offset: number,
+		affinity: 'before' | 'after' = 'after'
+	): BoundaryPositionResult {
+		if (!this.index()) return {ok: false, reason: 'notIndexed'}
+		if (this.#isComposing) return {ok: false, reason: 'composing'}
+
+		const container = this.#container
+		if (container && node === container) {
+			return this.#rawPositionFromContainerBoundary(offset, affinity)
+		}
+
+		const location = this.locateNode(node)
+		if (!location.ok) return location.reason === 'control' ? {ok: false, reason: 'control'} : location
+
+		const token = this._store.parsing.index().resolveAddress(location.value.address)
+		if (!token.ok) return {ok: false, reason: 'notIndexed'}
+
+		const textElement = location.value.textElement
+		if (textElement?.contains(node)) {
+			const local = textOffsetWithin(textElement, node, offset)
+			if (local === undefined) return {ok: false, reason: 'invalidBoundary'}
+			return {ok: true, value: token.value.position.start + local}
+		}
+
+		if (node === location.value.tokenElement) {
+			const childCount = location.value.tokenElement.childNodes.length
+			if (offset <= 0) return {ok: true, value: token.value.position.start}
+			if (offset >= childCount) return {ok: true, value: token.value.position.end}
+			return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
+		}
+
+		if (location.value.rowElement && node === location.value.rowElement) {
+			return {ok: true, value: offset <= 0 ? token.value.position.start : token.value.position.end}
+		}
+
+		return {ok: false, reason: 'invalidBoundary'}
+	}
+
+	readRawSelection(): RawSelectionResult {
+		if (!this.index()) return {ok: false, reason: 'notIndexed'}
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return {ok: false, reason: 'invalidBoundary'}
+
+		const range = selection.getRangeAt(0)
+		const start = this.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
+		const end = this.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
+
+		if (!start.ok) {
+			const reason = start.reason === 'composing' ? 'invalidBoundary' : start.reason
+			return {
+				ok: false,
+				reason: reason === 'control' || reason === 'outsideEditor' ? 'mixedBoundary' : reason,
+			}
+		}
+		if (!end.ok) {
+			const reason = end.reason === 'composing' ? 'invalidBoundary' : end.reason
+			return {
+				ok: false,
+				reason: reason === 'control' || reason === 'outsideEditor' ? 'mixedBoundary' : reason,
+			}
+		}
+
+		const rangeValue =
+			start.value <= end.value ? {start: start.value, end: end.value} : {start: end.value, end: start.value}
+		const direction =
+			rangeValue.start === rangeValue.end
+				? undefined
+				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
+					? 'backward'
+					: 'forward'
+
+		return {ok: true, value: direction ? {range: rangeValue, direction} : {range: rangeValue}}
+	}
+
 	#targetKey(target: DomRefTarget): string {
 		if (target.role === 'container') return 'container'
 		if (target.role === 'control') return `control:${target.ownerPath ? pathKey(target.ownerPath) : 'global'}`
@@ -278,6 +414,51 @@ export class DomFeature {
 				}
 			}
 		}
+	}
+
+	#rawPositionFromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
+		const tokens = this._store.parsing.tokens()
+		if (tokens.length === 0) return {ok: true, value: 0}
+		if (offset <= 0) return {ok: true, value: tokens[0].position.start}
+		if (offset >= tokens.length) return {ok: true, value: tokens[tokens.length - 1].position.end}
+
+		const before = tokens[offset - 1]
+		const after = tokens[offset]
+		return {ok: true, value: affinity === 'before' ? before.position.end : after.position.start}
+	}
+
+	#rawPositionFromTokenChildBoundary(
+		tokenElement: HTMLElement,
+		offset: number,
+		token: Token,
+		affinity: 'before' | 'after'
+	): BoundaryPositionResult {
+		if (token.type === 'text') {
+			const textElement = this.#pathElements.get(
+				pathKey(this._store.parsing.index().pathFor(token) ?? [])
+			)?.textElement
+			if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
+		}
+
+		const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
+		const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
+		if (before?.ok && after?.ok) {
+			const beforeToken = this._store.parsing.index().resolveAddress(before.value.address)
+			const afterToken = this._store.parsing.index().resolveAddress(after.value.address)
+			if (beforeToken.ok && afterToken.ok) {
+				return {
+					ok: true,
+					value: affinity === 'before' ? beforeToken.value.position.end : afterToken.value.position.start,
+				}
+			}
+		}
+
+		return {ok: true, value: affinity === 'before' ? token.position.start : token.position.end}
+	}
+
+	#locateRegisteredDescendant(node: Node | null): NodeLocationResult | undefined {
+		if (!node) return undefined
+		return this.locateNode(node)
 	}
 
 	#findTextTargetForRawPosition(

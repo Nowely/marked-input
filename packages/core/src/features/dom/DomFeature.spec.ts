@@ -22,6 +22,34 @@ function mountRegisteredInline(value: string) {
 	return {store, container, shell, textSurface, textNode}
 }
 
+function mountRegisteredBlockWithControl(value: string) {
+	const store = new Store()
+	store.props.set({defaultValue: value, layout: 'block'})
+	store.value.enable()
+	const container = document.createElement('div')
+	const row = document.createElement('div')
+	const shell = document.createElement('span')
+	const textSurface = document.createElement('span')
+	const control = document.createElement('button')
+	control.textContent = 'x'
+	container.append(row)
+	row.append(shell, control)
+	shell.append(textSurface)
+	document.body.append(container)
+	store.dom.refFor({role: 'container'})(container)
+	store.dom.refFor({role: 'row', path: [0]})(row)
+	store.dom.refFor({role: 'token', path: [0]})(shell)
+	store.dom.refFor({role: 'text', path: [0]})(textSurface)
+	store.dom.refFor({role: 'control', ownerPath: [0]})(control)
+	store.dom.enable()
+	store.lifecycle.rendered({container, layout: 'block'})
+	const textNode = textSurface.firstChild
+	const controlText = control.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
+	if (!(controlText instanceof Text)) throw new Error('Registered control did not render a text node')
+	return {store, container, row, shell, textSurface, textNode, control, controlText}
+}
+
 describe('DomFeature registration', () => {
 	let store: Store
 
@@ -133,5 +161,42 @@ describe('DomFeature registration', () => {
 		expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
 		expect(document.activeElement).toBe(textSurface)
 		container.remove()
+	})
+
+	describe('raw boundary mapping', () => {
+		it('maps text-surface boundaries to raw UTF-16 positions', () => {
+			const {store, container, textNode} = mountRegisteredInline('hello')
+
+			expect(store.dom.rawPositionFromBoundary(textNode, 2)).toEqual({ok: true, value: 2})
+			container.remove()
+		})
+
+		it('rejects boundaries that split surrogate pairs', () => {
+			const {store, container, textNode} = mountRegisteredInline('a😀b')
+
+			expect(store.dom.rawPositionFromBoundary(textNode, 2)).toEqual({ok: false, reason: 'invalidBoundary'})
+			container.remove()
+		})
+
+		it('maps token shell boundaries by affinity', () => {
+			const {store, container, shell} = mountRegisteredInline('hello')
+
+			expect(store.dom.rawPositionFromBoundary(shell, 0, 'before')).toEqual({ok: true, value: 0})
+			expect(store.dom.rawPositionFromBoundary(shell, 1, 'after')).toEqual({ok: true, value: 5})
+			container.remove()
+		})
+
+		it('returns mixedBoundary for selections crossing controls', () => {
+			const {store, container, textNode, controlText} = mountRegisteredBlockWithControl('hello')
+			const selection = window.getSelection()!
+			const range = document.createRange()
+			range.setStart(textNode, 0)
+			range.setEnd(controlText, 1)
+			selection.removeAllRanges()
+			selection.addRange(range)
+
+			expect(store.dom.readRawSelection()).toEqual({ok: false, reason: 'mixedBoundary'})
+			container.remove()
+		})
 	})
 })
