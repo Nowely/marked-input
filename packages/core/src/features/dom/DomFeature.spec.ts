@@ -2,57 +2,96 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 
-describe('DomFeature', () => {
+describe('DomFeature registration', () => {
 	let store: Store
 
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
+		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
+		store.value.enable()
+		store.value.replaceAll('hello @[world]')
 	})
 
-	it('enable() calls reconcile() immediately (effect fires on creation)', () => {
-		const controller = store.dom
-		const reconcileSpy = vi.spyOn(controller, 'reconcile')
-		controller.enable()
-		expect(reconcileSpy).toHaveBeenCalled()
+	it('returns stable ref callbacks for the same target', () => {
+		const first = store.dom.refFor({role: 'text', path: [0]})
+		const second = store.dom.refFor({role: 'text', path: [0]})
+		const third = store.dom.refFor({role: 'text', path: [2]})
+
+		expect(first).toBe(second)
+		expect(first).not.toBe(third)
 	})
 
-	it('enable() is idempotent — calling twice does not double-subscribe', () => {
-		const controller = store.dom
-		const reconcileSpy = vi.spyOn(controller, 'reconcile')
-		controller.enable()
-		const callCount = reconcileSpy.mock.calls.length
-		controller.enable()
-		expect(reconcileSpy).toHaveBeenCalledTimes(callCount)
-	})
+	it('publishes one dom index per rendered commit', () => {
+		const container = document.createElement('div')
+		const textShell = document.createElement('span')
+		const textSurface = document.createElement('span')
+		container.append(textShell)
+		textShell.append(textSurface)
 
-	it('changing readOnly after enable() triggers reconcile() again', () => {
+		store.dom.refFor({role: 'container'})(container)
+		store.dom.refFor({role: 'token', path: [0]})(textShell)
+		store.dom.refFor({role: 'text', path: [0]})(textSurface)
+
 		store.dom.enable()
-		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
-		store.props.set({readOnly: true})
-		expect(reconcileSpy).toHaveBeenCalled()
+		store.lifecycle.rendered({container, layout: 'inline'})
+
+		expect(store.dom.index()).toEqual({generation: 1})
+		expect(store.dom.locateNode(textSurface)).toMatchObject({ok: true})
 	})
 
-	it('disable() stops reactive subscriptions — readOnly change no longer triggers reconcile()', () => {
+	it('resolves ref paths through the current parse generation during rendered commit', () => {
+		const container = document.createElement('div')
+		const shell = document.createElement('span')
+		container.append(shell)
+		store.dom.refFor({role: 'container'})(container)
+		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.enable()
-		store.dom.disable()
-		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
-		store.props.set({readOnly: true})
-		expect(reconcileSpy).not.toHaveBeenCalled()
+
+		const oldGeneration = store.parsing.index().generation
+		store.value.replaceAll('changed')
+		store.lifecycle.rendered({container, layout: 'inline'})
+
+		const result = store.dom.locateNode(shell)
+		expect(result.ok).toBe(true)
+		if (result.ok) expect(result.value.address.parseGeneration).not.toBe(oldGeneration)
 	})
 
-	it('selecting becoming undefined after enable() triggers reconcile()', () => {
+	it('returns control for registered controls', () => {
+		const container = document.createElement('div')
+		const control = document.createElement('button')
+		container.append(control)
+		store.dom.refFor({role: 'container'})(container)
+		store.dom.refFor({role: 'control', ownerPath: [1]})(control)
 		store.dom.enable()
-		store.caret.selecting('drag')
-		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
-		store.caret.selecting(undefined)
-		expect(reconcileSpy).toHaveBeenCalled()
+		store.lifecycle.rendered({container, layout: 'block'})
+
+		expect(store.dom.locateNode(control)).toEqual({ok: false, reason: 'control'})
 	})
 
-	it('selecting changing to non-undefined does not trigger reconcile()', () => {
+	it('reconciles registered text surfaces from accepted tokens', () => {
+		const container = document.createElement('div')
+		const shell = document.createElement('span')
+		const textSurface = document.createElement('span')
+		textSurface.textContent = 'stale'
+		container.append(shell)
+		shell.append(textSurface)
+
+		store.dom.refFor({role: 'container'})(container)
+		store.dom.refFor({role: 'token', path: [0]})(shell)
+		store.dom.refFor({role: 'text', path: [0]})(textSurface)
 		store.dom.enable()
-		const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
-		store.caret.selecting('drag')
-		expect(reconcileSpy).not.toHaveBeenCalled()
+		store.lifecycle.rendered({container, layout: 'inline'})
+
+		expect(textSurface.textContent).toBe('hello ')
+		expect(textSurface.contentEditable).toBe('true')
+	})
+
+	it('returns a fresh structural key identity when structure-driving props change', () => {
+		const before = store.dom.structuralKey()
+
+		store.props.set({layout: 'block'})
+
+		expect(store.dom.structuralKey()).not.toBe(before)
 	})
 })

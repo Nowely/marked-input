@@ -11,20 +11,26 @@ const result = useMarkput(s => ({
 	isBlock: s.slots.isBlock,
 	tokens: s.parsing.tokens,
 	key: s.key,
-	lifecycleEmit: s.lifecycle,
 }))
+const structuralKey = useMarkput(s => s.dom.structuralKey)
+const layout = useMarkput(s => s.props.layout)
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	store.slots.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
+	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
+	store.slots.container(element)
+	store.dom.refFor({role: 'container'})(element)
 }
 
 const containerComponent = useMarkput(s => s.slots.containerComponent)
 const containerProps = useMarkput(s => s.slots.containerProps)
 
 watch(
-	() => result.value.tokens,
-	() => result.value.lifecycleEmit.rendered(),
+	() => structuralKey.value,
+	() => {
+		const container = store.slots.container()
+		if (container) store.lifecycle.rendered({container, layout: layout.value})
+	},
 	{flush: 'post', immediate: true}
 )
 </script>

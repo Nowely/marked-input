@@ -10,21 +10,28 @@ export const Container = memo(() => {
 	if (!storeCtx) throw new Error('Store not found')
 	const store = storeCtx
 
-	const {isBlock, tokens, key, lifecycleEmit, Component, props} = useMarkput(s => ({
+	const {isBlock, tokens, key, Component, props, layout, structuralKey} = useMarkput(s => ({
 		isBlock: s.slots.isBlock,
 		tokens: s.parsing.tokens,
 		key: s.key,
-		lifecycleEmit: s.lifecycle,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
+		layout: s.props.layout,
+		structuralKey: s.dom.structuralKey,
 	}))
 
+	const setContainerRef = (element: HTMLDivElement | null) => {
+		store.slots.container(element)
+		store.dom.refFor({role: 'container'})(element)
+	}
+
 	useLayoutEffect(() => {
-		lifecycleEmit.rendered()
-	}, [tokens, lifecycleEmit])
+		const container = store.slots.container()
+		if (container) store.lifecycle.rendered({container, layout})
+	}, [store, structuralKey, layout])
 
 	return (
-		<Component ref={store.slots.container} {...props}>
+		<Component ref={setContainerRef} {...props}>
 			{isBlock
 				? tokens.map(t => <Block key={key.get(t)} token={t} />)
 				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}

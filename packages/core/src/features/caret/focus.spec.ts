@@ -2,6 +2,10 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 
+function renderedPayload() {
+	return {container: document.createElement('div'), layout: 'inline' as const}
+}
+
 // oxlint-disable-next-line no-unsafe-type-assertion -- test stub for container ref
 const stubContainer = {
 	addEventListener: vi.fn(),
@@ -38,7 +42,7 @@ describe('FocusFeature', () => {
 			const syncSpy = vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})
 			store.caret.enable()
 
-			store.lifecycle.rendered()
+			store.lifecycle.rendered(renderedPayload())
 
 			expect(syncSpy).toHaveBeenCalledOnce()
 
@@ -58,7 +62,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.lifecycle.rendered()
+			store.lifecycle.rendered(renderedPayload())
 
 			expect(store.caret.recovery()).toBeUndefined()
 
@@ -74,7 +78,7 @@ describe('FocusFeature', () => {
 				caret: 0,
 			})
 
-			store.lifecycle.rendered()
+			store.lifecycle.rendered(renderedPayload())
 
 			expect(store.caret.recovery()).toBeDefined()
 
@@ -88,7 +92,7 @@ describe('FocusFeature', () => {
 			store.caret.enable()
 			store.caret.disable()
 
-			store.lifecycle.rendered()
+			store.lifecycle.rendered(renderedPayload())
 
 			expect(syncSpy).not.toHaveBeenCalled()
 		})
