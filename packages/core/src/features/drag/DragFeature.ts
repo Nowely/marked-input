@@ -40,20 +40,19 @@ export class DragFeature {
 	}
 
 	#reorder(sourceIndex: number, targetIndex: number) {
-		const value = this.store.props.value()
-		if (value == null || !this.store.props.onChange()) return
+		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
 		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
 		if (newValue !== value) this.store.value.next(newValue)
 	}
 
 	#add(afterIndex: number) {
-		const value = this.store.props.value()
-		if (value == null || !this.store.props.onChange()) return
+		const value = this.store.value.current()
 		const rawRows = this.store.parsing.tokens()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.store.props.options())
 		this.store.value.next(addDragRow(value, rows, afterIndex, newRowContent))
+		if (this.store.value.isControlledMode()) return
 		queueMicrotask(() => {
 			const container = this.store.slots.container()
 			if (!container) return
@@ -63,15 +62,13 @@ export class DragFeature {
 	}
 
 	#delete(index: number) {
-		const value = this.store.props.value()
-		if (value == null || !this.store.props.onChange()) return
+		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
 		this.store.value.next(deleteDragRow(value, rows, index))
 	}
 
 	#duplicate(index: number) {
-		const value = this.store.props.value()
-		if (value == null || !this.store.props.onChange()) return
+		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
 		this.store.value.next(duplicateDragRow(value, rows, index))
 	}

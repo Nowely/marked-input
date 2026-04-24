@@ -1,8 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {parseWithParser} from '../features/parsing'
 import {DEFAULT_OPTIONS} from '../shared/constants'
-import {effect, effectScope, watch, batch} from '../shared/signals'
+import {effect, batch} from '../shared/signals'
 import {Store} from './Store'
 
 describe('Store', () => {
@@ -118,8 +117,8 @@ describe('Store', () => {
 	describe('internal state signals', () => {
 		it('update when written directly', () => {
 			const store = new Store()
-			store.value.last('hello')
-			expect(store.value.last()).toBe('hello')
+			store.value.current('hello')
+			expect(store.value.current()).toBe('hello')
 		})
 
 		it('leave other keys unchanged when one signal is updated', () => {
@@ -186,61 +185,43 @@ describe('Store', () => {
 	})
 
 	describe('next', () => {
-		it('update tokens and last when next is set', () => {
+		it('updates tokens and current when uncontrolled next is set', () => {
 			const store = new Store()
-			const dispose = effectScope(() => {
-				watch(store.value.next, newValue => {
-					if (newValue === undefined) return
-					const newTokens = parseWithParser(store, newValue)
-					batch(() => {
-						store.parsing.tokens(newTokens)
-						store.value.last(newValue)
-					})
-					store.props.onChange()?.(newValue)
-				})
-			})
+			store.value.enable()
 			store.value.next('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			expect(store.value.last()).toBe('hello')
-			dispose()
+			expect(store.value.current()).toBe('hello')
+			store.value.disable()
 		})
 
-		it('call onChange when set', () => {
+		it('calls onChange when uncontrolled next is set', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			const dispose = effectScope(() => {
-				watch(store.value.next, newValue => {
-					if (newValue === undefined) return
-					const newTokens = parseWithParser(store, newValue)
-					batch(() => {
-						store.parsing.tokens(newTokens)
-						store.value.last(newValue)
-					})
-					store.props.onChange()?.(newValue)
-				})
-			})
+			store.value.enable()
 			store.value.next('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
-			dispose()
+			store.value.disable()
+		})
+
+		it('emits without committing when controlled next is set', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			store.props.set({value: 'hello', onChange})
+			store.value.enable()
+			store.value.next('world')
+			expect(onChange).toHaveBeenCalledWith('world')
+			expect(store.value.current()).toBe('hello')
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+			store.value.disable()
 		})
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			const dispose = effectScope(() => {
-				watch(store.value.next, newValue => {
-					if (newValue === undefined) return
-					const newTokens = parseWithParser(store, newValue)
-					batch(() => {
-						store.parsing.tokens(newTokens)
-						store.value.last(newValue)
-					})
-					store.props.onChange()?.(newValue)
-				})
-			})
+			store.value.enable()
 			expect(() => store.value.next('test')).not.toThrow()
-			dispose()
+			store.value.disable()
 		})
 	})
 
@@ -511,44 +492,47 @@ describe('Store', () => {
 		})
 	})
 
-	describe('current (computed)', () => {
-		it('return empty string when both last and value are undefined', () => {
+	describe('current', () => {
+		it('returns empty string by default', () => {
 			const store = new Store()
 			expect(store.value.current()).toBe('')
 		})
 
-		it('return last when set', () => {
+		it('returns written current value', () => {
 			const store = new Store()
-			store.value.last('cached')
+			store.value.current('cached')
 			expect(store.value.current()).toBe('cached')
 		})
 
-		it('fall back to props.value when last is undefined', () => {
+		it('does not mirror props.value before ValueFeature is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'prop-value'})
+			expect(store.value.current()).toBe('')
+		})
+
+		it('initializes from props.value when ValueFeature is enabled', () => {
+			const store = new Store()
+			store.props.set({value: 'prop-value'})
+			store.value.enable()
 			expect(store.value.current()).toBe('prop-value')
+			store.value.disable()
 		})
 
-		it('prefer last over props.value', () => {
-			const store = new Store()
-			store.value.last('cached')
-			store.props.set({value: 'prop-value'})
-			expect(store.value.current()).toBe('cached')
-		})
-
-		it('react to last changes', () => {
+		it('reacts to current changes', () => {
 			const store = new Store()
 			expect(store.value.current()).toBe('')
-			store.value.last('updated')
+			store.value.current('updated')
 			expect(store.value.current()).toBe('updated')
 		})
 
-		it('react to props.value changes when last is undefined', () => {
+		it('reacts to props.value changes when ValueFeature is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
+			store.value.enable()
 			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
 			expect(store.value.current()).toBe('changed')
+			store.value.disable()
 		})
 	})
 })

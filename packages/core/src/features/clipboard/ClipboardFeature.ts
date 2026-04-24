@@ -64,6 +64,7 @@ export class ClipboardFeature {
 
 				const newValue = value.slice(0, rawStart) + value.slice(rawEnd)
 				this.store.value.next(newValue)
+				if (this.store.value.isControlledMode()) return
 
 				const newTokens = this.store.parsing.tokens()
 				let targetIdx = newTokens.findIndex(

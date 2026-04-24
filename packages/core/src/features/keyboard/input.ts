@@ -149,6 +149,7 @@ function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEven
 	const caretPos = rawInsertPos + markup.length
 	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
 	store.value.next(newValue)
+	if (store.value.isControlledMode()) return true
 
 	const newTokens = store.parsing.tokens()
 	let targetIdx = newTokens.findIndex(
@@ -245,21 +246,8 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.nodes.focus.target = null
 	store.caret.selecting(undefined)
-	store.value.last(newContent)
-
-	store.props.onChange()?.(newContent)
-
-	if (store.props.value() === undefined) {
-		store.parsing.tokens(
-			store.parsing.parser()?.parse(newContent) ?? [
-				{
-					type: 'text' as const,
-					content: newContent,
-					position: {start: 0, end: newContent.length},
-				},
-			]
-		)
-	}
+	store.value.next(newContent)
+	if (store.value.isControlledMode()) return
 
 	queueMicrotask(() => {
 		const rawFirstChild = store.slots.container()?.firstChild

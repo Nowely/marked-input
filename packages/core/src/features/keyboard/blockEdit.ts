@@ -62,7 +62,6 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 
 	const token = rows[blockIndex]
 	const value = store.value.current()
-	if (!store.props.onChange()) return
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		const blockDiv = blockDivs[blockIndex]
@@ -82,6 +81,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 							)
 						})()
 			store.value.next(newValue)
+			if (store.value.isControlledMode()) return
 			queueMicrotask(() => {
 				const targetIndex = Math.max(0, blockIndex - 1)
 				const target = childAt(container, targetIndex)
@@ -101,6 +101,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.value.next(newValue)
+				if (store.value.isControlledMode()) return
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
@@ -136,6 +137,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.value.next(newValue)
+				if (store.value.isControlledMode()) return
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex - 1)
 					if (target) {
@@ -164,6 +166,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
 				store.value.next(newValue)
+				if (store.value.isControlledMode()) return
 				queueMicrotask(() => {
 					const target = childAt(container, blockIndex)
 					if (target) {
@@ -213,13 +216,12 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	const blockDiv = blockDivs[blockIndex]
 	const value = store.value.current()
 
-	if (!store.props.onChange()) return
-
 	const newRowContent = createRowContent(store.props.options())
 
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		store.value.next(newValue)
+		if (store.value.isControlledMode()) return
 		queueMicrotask(() => {
 			const newBlockIndex = blockIndex + 1
 			if (newBlockIndex < container.children.length) {
@@ -236,6 +238,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	const absolutePos = getCaretRawPosInBlock(blockDiv, token)
 	const newValue = value.slice(0, absolutePos) + newRowContent + value.slice(absolutePos)
 	store.value.next(newValue)
+	if (store.value.isControlledMode()) return
 
 	queueMicrotask(() => {
 		const newBlockIndex = blockIndex + 1
@@ -365,6 +368,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
 			store.value.next(value.slice(0, rawFrom) + data + value.slice(rawTo))
+			if (store.value.isControlledMode()) return
 			focusAndSetCaret(rawFrom + data.length)
 			break
 		}
@@ -385,6 +389,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 				rawFrom = rawTo = getCaretRawPosInBlock(blockDiv, token)
 			}
 			store.value.next(value.slice(0, rawFrom) + pasteData + value.slice(rawTo))
+			if (store.value.isControlledMode()) return
 			focusAndSetCaret(rawFrom + pasteData.length)
 			break
 		}
@@ -402,6 +407,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 			if (rawFrom === rawTo) return
 			event.preventDefault()
 			store.value.next(value.slice(0, rawFrom) + value.slice(rawTo))
+			if (store.value.isControlledMode()) return
 			focusAndSetCaret(rawFrom)
 			break
 		}
