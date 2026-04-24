@@ -2,6 +2,26 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 
+function mountRegisteredInline(value: string) {
+	const store = new Store()
+	store.props.set({defaultValue: value})
+	store.value.enable()
+	const container = document.createElement('div')
+	const shell = document.createElement('span')
+	const textSurface = document.createElement('span')
+	container.append(shell)
+	shell.append(textSurface)
+	document.body.append(container)
+	store.dom.refFor({role: 'container'})(container)
+	store.dom.refFor({role: 'token', path: [0]})(shell)
+	store.dom.refFor({role: 'text', path: [0]})(textSurface)
+	store.dom.enable()
+	store.lifecycle.rendered({container, layout: 'inline'})
+	const textNode = textSurface.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
+	return {store, container, shell, textSurface, textNode}
+}
+
 describe('DomFeature registration', () => {
 	let store: Store
 
@@ -93,5 +113,25 @@ describe('DomFeature registration', () => {
 		store.props.set({layout: 'block'})
 
 		expect(store.dom.structuralKey()).not.toBe(before)
+	})
+
+	it('places the caret at a raw position inside a registered text surface', () => {
+		const {store, container, textSurface} = mountRegisteredInline('hello')
+
+		expect(store.dom.placeCaretAtRawPosition(3, 'after')).toEqual({ok: true, value: undefined})
+
+		const selection = window.getSelection()
+		expect(selection?.focusNode).toBe(textSurface.firstChild)
+		expect(selection?.focusOffset).toBe(3)
+		container.remove()
+	})
+
+	it('focuses the element for an address', () => {
+		const {store, container, textSurface} = mountRegisteredInline('hello')
+		const address = store.parsing.index().addressFor([0])!
+
+		expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
+		expect(document.activeElement).toBe(textSurface)
+		container.remove()
 	})
 })

@@ -86,6 +86,31 @@ describe('FocusFeature', () => {
 		})
 	})
 
+	it('updates caret location from focus inside registered text surface', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		store.value.enable()
+		const container = document.createElement('div')
+		const shell = document.createElement('span')
+		const text = document.createElement('span')
+		container.append(shell)
+		shell.append(text)
+		store.slots.container(container)
+		store.dom.refFor({role: 'container'})(container)
+		store.dom.refFor({role: 'token', path: [0]})(shell)
+		store.dom.refFor({role: 'text', path: [0]})(text)
+		store.dom.enable()
+		store.lifecycle.rendered({container, layout: 'inline'})
+		store.caret.enable()
+
+		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+
+		expect(store.caret.location()).toMatchObject({role: 'text'})
+		store.caret.disable()
+		store.dom.disable()
+		store.value.disable()
+	})
+
 	describe('subscription lifecycle', () => {
 		it('does not fire rendered watcher after disable', () => {
 			const syncSpy = vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})

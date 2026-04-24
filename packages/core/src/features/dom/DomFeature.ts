@@ -4,6 +4,8 @@ import type {
 	DomRef,
 	DomRefTarget,
 	NodeLocationResult,
+	RawSelection,
+	Result,
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
@@ -30,6 +32,11 @@ type PathElements = {
 	tokenElement?: HTMLElement
 	textElement?: HTMLElement
 	slotRootElement?: HTMLElement
+}
+
+function nextTextNode(walker: TreeWalker): Text | null {
+	const node = walker.nextNode()
+	return node instanceof Text ? node : null
 }
 
 export class DomFeature {
@@ -138,6 +145,32 @@ export class DomFeature {
 		return {ok: false, reason: 'outsideEditor'}
 	}
 
+	placeCaretAtRawPosition(
+		rawPosition: number,
+		affinity: 'before' | 'after' = 'after'
+	): Result<void, 'notIndexed' | 'invalidBoundary'> {
+		if (!this.index()) return {ok: false, reason: 'notIndexed'}
+		const target = this.#findTextTargetForRawPosition(rawPosition, affinity)
+		if (!target) return {ok: false, reason: 'invalidBoundary'}
+
+		target.element.focus()
+		this.#placeCaretInTextSurface(target.element, rawPosition - target.start)
+		return {ok: true, value: undefined}
+	}
+
+	focusAddress(address: TokenAddress): Result<void, 'notIndexed' | 'stale'> {
+		if (!this.index()) return {ok: false, reason: 'notIndexed'}
+		const resolved = this._store.parsing.index().resolveAddress(address)
+		if (!resolved.ok) return {ok: false, reason: 'stale'}
+
+		const elements = this.#pathElements.get(pathKey(address.path))
+		const target = elements?.textElement ?? elements?.tokenElement ?? elements?.rowElement
+		if (!target) return {ok: false, reason: 'notIndexed'}
+
+		target.focus()
+		return {ok: true, value: undefined}
+	}
+
 	#targetKey(target: DomRefTarget): string {
 		if (target.role === 'container') return 'container'
 		if (target.role === 'control') return `control:${target.ownerPath ? pathKey(target.ownerPath) : 'global'}`
@@ -202,6 +235,8 @@ export class DomFeature {
 		this.#reconcileRegisteredTextSurfaces()
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
+		this.#clearStaleCaretLocation()
+		this.#applyPendingRecovery()
 	}
 
 	#reconcileRegisteredTextSurfaces(): void {
@@ -242,6 +277,100 @@ export class DomFeature {
 					record.tokenElement.tabIndex = 0
 				}
 			}
+		}
+	}
+
+	#findTextTargetForRawPosition(
+		rawPosition: number,
+		affinity: 'before' | 'after'
+	): {element: HTMLElement; start: number; end: number} | undefined {
+		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
+		const tokenIndex = this._store.parsing.index()
+
+		for (const record of this.#pathElements.values()) {
+			if (!record.textElement) continue
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'text') continue
+			candidates.push({
+				element: record.textElement,
+				start: resolved.value.position.start,
+				end: resolved.value.position.end,
+			})
+		}
+
+		candidates.sort((a, b) => a.start - b.start)
+		const containing = candidates.find(candidate => rawPosition >= candidate.start && rawPosition <= candidate.end)
+		if (containing) return containing
+		if (affinity === 'before') return [...candidates].toReversed().find(candidate => candidate.end <= rawPosition)
+		return candidates.find(candidate => candidate.start >= rawPosition)
+	}
+
+	#placeCaretInTextSurface(surface: HTMLElement, offset: number): void {
+		const selection = window.getSelection()
+		if (!selection) return
+
+		const boundary = this.#boundaryInTextSurface(surface, offset)
+		if (!boundary) return
+		const range = document.createRange()
+		range.setStart(boundary.node, boundary.offset)
+		range.collapse(true)
+		selection.removeAllRanges()
+		selection.addRange(range)
+	}
+
+	#applyPendingRecovery(): void {
+		const recovery = this._store.caret.recovery()
+		if (!recovery || !('kind' in recovery)) return
+
+		if (recovery.kind === 'caret') {
+			const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
+			if (result.ok) this._store.caret.recovery(undefined)
+			return
+		}
+
+		const result = this.#placeSelection(recovery.selection)
+		if (result.ok) this._store.caret.recovery(undefined)
+	}
+
+	#placeSelection(selection: RawSelection): Result<void, 'notIndexed' | 'invalidBoundary'> {
+		const start = this.#findTextTargetForRawPosition(selection.range.start, 'after')
+		const end = this.#findTextTargetForRawPosition(selection.range.end, 'before')
+		const browserSelection = window.getSelection()
+		if (!start || !end || !browserSelection) return {ok: false, reason: 'invalidBoundary'}
+
+		const startBoundary = this.#boundaryInTextSurface(start.element, selection.range.start - start.start)
+		const endBoundary = this.#boundaryInTextSurface(end.element, selection.range.end - end.start)
+		if (!startBoundary || !endBoundary) return {ok: false, reason: 'invalidBoundary'}
+
+		const range = document.createRange()
+		range.setStart(startBoundary.node, startBoundary.offset)
+		range.setEnd(endBoundary.node, endBoundary.offset)
+		browserSelection.removeAllRanges()
+		browserSelection.addRange(range)
+		return {ok: true, value: undefined}
+	}
+
+	#boundaryInTextSurface(surface: HTMLElement, offset: number): {node: Text; offset: number} | undefined {
+		const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+		let remaining = Math.max(0, offset)
+		let node = nextTextNode(walker)
+		while (node) {
+			if (remaining <= node.length) return {node, offset: remaining}
+			remaining -= node.length
+			node = nextTextNode(walker)
+		}
+
+		const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
+		if (!text.parentNode) surface.append(text)
+		return {node: text, offset: text.length}
+	}
+
+	#clearStaleCaretLocation(): void {
+		const location = this._store.caret.location()
+		if (!location) return
+		const resolved = this._store.parsing.index().resolveAddress(location.address)
+		if (!resolved.ok || !this.#pathElements.has(pathKey(location.address.path))) {
+			this._store.caret.location(undefined)
 		}
 	}
 }

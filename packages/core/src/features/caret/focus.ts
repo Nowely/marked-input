@@ -10,10 +10,24 @@ export function enableFocus(store: Store): () => void {
 		listen(container, 'focusin', e => {
 			const target = isHtmlElement(e.target) ? e.target : undefined
 			store.nodes.focus.target = target
+			if (!target) {
+				store.caret.location(undefined)
+				return
+			}
+			const result = store.dom.locateNode(target)
+			if (!result.ok) {
+				if (result.reason === 'control') return
+				store.caret.location(undefined)
+				return
+			}
+
+			const role = result.value.textElement?.contains(target) ? 'text' : 'markDescendant'
+			store.caret.location({address: result.value.address, role})
 		})
 
 		listen(container, 'focusout', () => {
 			store.nodes.focus.target = undefined
+			store.caret.location(undefined)
 		})
 
 		listen(container, 'click', () => {

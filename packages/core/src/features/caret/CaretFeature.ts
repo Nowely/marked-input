@@ -1,4 +1,4 @@
-import type {CaretRecovery} from '../../shared/editorContracts'
+import type {CaretLocation, CaretRecovery, Result, TokenAddress} from '../../shared/editorContracts'
 import {signal} from '../../shared/signals'
 import type {Feature, Recovery} from '../../shared/types'
 import type {Store} from '../../store/Store'
@@ -7,6 +7,7 @@ import {enableSelection} from './selection'
 
 export class CaretFeature implements Feature {
 	readonly recovery = signal<CaretRecovery | Recovery | undefined>(undefined)
+	readonly location = signal<CaretLocation | undefined>(undefined)
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
 	#disposers: Array<() => void> = []
@@ -21,5 +22,16 @@ export class CaretFeature implements Feature {
 	disable() {
 		this.#disposers.forEach(d => d())
 		this.#disposers = []
+	}
+
+	placeAt(
+		rawPosition: number,
+		affinity: 'before' | 'after' = 'after'
+	): Result<void, 'notIndexed' | 'invalidBoundary'> {
+		return this._store.dom.placeCaretAtRawPosition(rawPosition, affinity)
+	}
+
+	focus(address: TokenAddress): Result<void, 'notIndexed' | 'stale'> {
+		return this._store.dom.focusAddress(address)
 	}
 }

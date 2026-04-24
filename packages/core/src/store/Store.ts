@@ -21,6 +21,8 @@ export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
 
+	// Temporary compatibility bridge for unmigrated feature slices.
+	// Do not add new feature-facing NodeProxy usage. Removed in Task 11.
 	readonly nodes = {
 		focus: new NodeProxy(undefined, this),
 		input: new NodeProxy(undefined, this),
