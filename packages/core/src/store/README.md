@@ -29,7 +29,7 @@ batch(() => {
 })
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.nodes`. `store.value.current` is the internal accepted serialized value state owned by `ValueFeature`; feature code should route full-value edits through `store.value.next(value)` instead of writing accepted value state directly.
+The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.nodes`. `store.value.current` is the internal accepted serialized value state owned by `ValueFeature`; feature code should route full-value edits through `store.value.next(value)` instead of writing accepted value state directly. `ValueFeature` enforces `store.props.readOnly()` for editor-originated writes through `store.value.next()` and `store.value.change()`; external controlled `props.value` updates still replace the accepted value.
 
 ## Readonly Props
 
