@@ -1,8 +1,11 @@
 // oxlint-disable typescript-eslint/no-non-null-assertion typescript-eslint/no-unsafe-call
+import {MarkedInput} from '@markput/vue'
+import type {Markup, Option} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
+import {defineComponent, h} from 'vue'
 
 import {firstChild, getActiveElement, getElement} from '../../shared/lib/dom'
 import {
@@ -17,6 +20,56 @@ import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.vue.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
+
+const PLAIN_TEXT_VALUE =
+	'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
+
+const ParagraphMark = defineComponent({
+	props: {value: String, children: {type: null}},
+	setup(props, {slots}) {
+		return () => h('span', {}, slots.default?.() ?? props.value)
+	},
+})
+
+// oxlint-disable-next-line no-unsafe-type-assertion
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+
+const UncontrolledPlainTextDrag = defineComponent({
+	setup() {
+		return () =>
+			h(MarkedInput, {
+				Mark: ParagraphMark,
+				options: paragraphOptions,
+				defaultValue: PLAIN_TEXT_VALUE,
+				layout: 'block',
+				draggable: true,
+				style: {marginLeft: '64px'},
+			})
+	},
+})
+
+const TestMark = defineComponent({
+	props: {value: String},
+	setup(props) {
+		return () => h('mark', {'data-testid': 'mark'}, props.value)
+	},
+})
+
+function ControlledDragNoEcho(onChange: (value: string) => void) {
+	return defineComponent({
+		setup() {
+			return () =>
+				h(MarkedInput, {
+					Mark: TestMark,
+					value: 'hello @[world](1)\n\nfoo',
+					onChange,
+					layout: 'block',
+					draggable: true,
+					style: {marginLeft: '64px'},
+				})
+		},
+	})
+}
 
 function getRawValue(container: Element) {
 	return container.querySelector('pre')!.textContent
@@ -87,6 +140,20 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
+		it('keeps controlled row unchanged after adding below until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(ControlledDragNoEcho(onChange))
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Add below')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
+		})
+
 		it('increase row count by 1 when adding below middle row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 2)
@@ -145,6 +212,20 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(4)
 		})
 
+		it('keeps controlled row unchanged after deleting until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(ControlledDragNoEcho(onChange))
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Delete')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
+		})
+
 		it('preserve remaining content when deleting first row', async () => {
 			const {container} = await render(PlainTextDrag)
 			await openMenuForRow(container, 0)
@@ -189,6 +270,20 @@ describe('Feature: drag rows', () => {
 			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			expect(getAllRows(container)).toHaveLength(6)
+		})
+
+		it('keeps controlled row unchanged after duplicating until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(ControlledDragNoEcho(onChange))
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Duplicate')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
 		})
 
 		it('create a copy with the same text content', async () => {
@@ -292,7 +387,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	it('focus a row after Add below', async () => {
-		const {container} = await render(PlainTextDrag)
+		const {container} = await render(UncontrolledPlainTextDrag)
 		await openMenuForRow(container, 0)
 		await userEvent.click(getElement(page.getByText('Add below')))
 
@@ -497,7 +592,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		it('keep focus in the previous row after merge', async () => {
-			const {container} = await render(PlainTextDrag)
+			const {container} = await render(UncontrolledPlainTextDrag)
 
 			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
 			await userEvent.keyboard('{Backspace}')
@@ -541,7 +636,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			})
 
 			it('keep focus in the current row after Delete merge', async () => {
-				const {container} = await render(PlainTextDrag)
+				const {container} = await render(UncontrolledPlainTextDrag)
 
 				await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
 				await userEvent.keyboard('{Delete}')
@@ -585,7 +680,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			})
 
 			it('move focus to the previous row after merge', async () => {
-				const {container} = await render(PlainTextDrag)
+				const {container} = await render(UncontrolledPlainTextDrag)
 
 				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
 				await userEvent.keyboard('{Delete}')
