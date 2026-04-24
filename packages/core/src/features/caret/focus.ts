@@ -41,6 +41,7 @@ export function enableFocus(store: Store): () => void {
 function recover(store: Store) {
 	const recovery = store.caret.recovery()
 	if (!recovery) return
+	if (!('anchor' in recovery)) return
 
 	const {anchor, caret, isNext} = recovery
 	const isStale = !anchor.target || !anchor.target.isConnected

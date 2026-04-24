@@ -252,4 +252,89 @@ describe('ValueFeature', () => {
 			expect(onChange).toHaveBeenCalledTimes(1)
 		})
 	})
+
+	describe('replaceRange()', () => {
+		it('commits uncontrolled range replacement and schedules recovery', () => {
+			const store = new Store()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({defaultValue: 'hello world'})
+			store.value.enable()
+
+			const result = store.value.replaceRange({start: 6, end: 11}, 'markput', {
+				recover: recovery,
+				source: 'input',
+			})
+
+			expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello markput'})
+			expect(store.value.current()).toBe('hello markput')
+			expect(store.caret.recovery()).toBe(recovery)
+			store.value.disable()
+		})
+
+		it('rejects invalid ranges without emitting change', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			store.props.set({defaultValue: 'hello', onChange})
+			store.value.enable()
+
+			const result = store.value.replaceRange({start: 4, end: 2}, 'x')
+
+			expect(result).toEqual({ok: false, reason: 'invalidRange'})
+			expect(onChange).not.toHaveBeenCalled()
+			expect(store.value.current()).toBe('hello')
+			store.value.disable()
+		})
+
+		it('rejects read-only range replacement', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+			store.value.enable()
+
+			const result = store.value.replaceRange({start: 0, end: 5}, 'world')
+
+			expect(result).toEqual({ok: false, reason: 'readOnly'})
+			expect(onChange).not.toHaveBeenCalled()
+			expect(store.value.current()).toBe('hello')
+			store.value.disable()
+		})
+
+		it('keeps controlled accepted value until matching echo', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({value: 'hello', onChange})
+			store.value.enable()
+
+			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
+			expect(onChange).toHaveBeenCalledWith('world')
+			expect(store.value.current()).toBe('hello')
+			expect(store.caret.recovery()).toBeUndefined()
+
+			store.props.set({value: 'world'})
+
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBe(recovery)
+			store.value.disable()
+		})
+
+		it('keeps recovery when controlled echo is synchronous inside onChange', () => {
+			const store = new Store()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({
+				value: 'hello',
+				onChange: value => store.props.set({value}),
+			})
+			store.value.enable()
+
+			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBe(recovery)
+			store.value.disable()
+		})
+	})
 })

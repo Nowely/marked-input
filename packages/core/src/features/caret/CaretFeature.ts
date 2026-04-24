@@ -1,3 +1,4 @@
+import type {CaretRecovery} from '../../shared/editorContracts'
 import {signal} from '../../shared/signals'
 import type {Feature, Recovery} from '../../shared/types'
 import type {Store} from '../../store/Store'
@@ -5,7 +6,7 @@ import {enableFocus} from './focus'
 import {enableSelection} from './selection'
 
 export class CaretFeature implements Feature {
-	readonly recovery = signal<Recovery | undefined>(undefined)
+	readonly recovery = signal<CaretRecovery | Recovery | undefined>(undefined)
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
 	#disposers: Array<() => void> = []
