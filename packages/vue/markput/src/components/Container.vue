@@ -46,7 +46,7 @@ watch(
 			/>
 		</template>
 		<template v-else>
-			<Token v-for="token in result.tokens" :key="result.key.get(token)" :mark="token" />
+			<Token v-for="token in result.tokens" :key="result.key.get(token)" :token="token" />
 		</template>
 	</component>
 </template>

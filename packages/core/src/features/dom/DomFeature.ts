@@ -67,6 +67,13 @@ export class DomFeature {
 			watch(this._store.lifecycle.rendered, rendered => {
 				this.#handleRendered(rendered)
 			})
+			watch(
+				computed(() => ({
+					readOnly: this._store.props.readOnly(),
+					selecting: this._store.caret.selecting(),
+				})),
+				() => this.reconcile()
+			)
 		})
 	}
 
@@ -199,7 +206,7 @@ export class DomFeature {
 
 	#reconcileRegisteredTextSurfaces(): void {
 		const tokenIndex = this._store.parsing.index()
-		const editable = this._store.props.readOnly() ? 'false' : 'true'
+		const editable = this._store.props.readOnly() || this._store.caret.selecting() ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)

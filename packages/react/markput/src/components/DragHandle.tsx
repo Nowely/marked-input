@@ -17,7 +17,10 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 		isDragging: s.blocks.get(token).state.isDragging,
 		isHovered: s.blocks.get(token).state.isHovered,
 	}))
+	const {store, index} = useMarkput(s => ({store: s, index: s.parsing.index}))
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
+	const path = index.pathFor(token)
+	const controlRef = path ? store.dom.refFor({role: 'control', ownerPath: path}) : undefined
 
 	if (readOnly) return null
 
@@ -29,7 +32,10 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			)}
 		>
 			<button
-				ref={(el: HTMLButtonElement | null) => blockStore.attachGrip(el, blockIndex, {action})}
+				ref={(el: HTMLButtonElement | null) => {
+					blockStore.attachGrip(el, blockIndex, {action})
+					controlRef?.(el)
+				}}
 				type="button"
 				draggable
 				className={cx(styles.GripButton, isDragging && styles.GripButtonDragging)}

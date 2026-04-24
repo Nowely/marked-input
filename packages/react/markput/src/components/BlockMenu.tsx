@@ -15,12 +15,18 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 		menuOpen: s.blocks.get(token).state.menuOpen,
 		menuPosition: s.blocks.get(token).state.menuPosition,
 	}))
+	const {store, index} = useMarkput(s => ({store: s, index: s.parsing.index}))
+	const path = index.pathFor(token)
+	const controlRef = path ? store.dom.refFor({role: 'control', ownerPath: path}) : undefined
 
 	if (!menuOpen) return null
 
 	return (
 		<Popup
-			ref={(el: HTMLDivElement | null) => blockStore.attachMenu(el)}
+			ref={(el: HTMLDivElement | null) => {
+				blockStore.attachMenu(el)
+				controlRef?.(el)
+			}}
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>
 			<List>

@@ -24,11 +24,19 @@ export const Block = memo(({token}: BlockProps) => {
 		isDragging: s.blocks.get(token).state.isDragging,
 		tokens: s.parsing.tokens,
 	}))
+	const {store, index} = useMarkput(s => ({store: s, index: s.parsing.index}))
 	const blockIndex = tokens.indexOf(token)
+	const path = index.pathFor(token)
+	if (!path) return null
+
+	const setBlockRef = (el: HTMLElement | null) => {
+		blockStore.attachContainer(el, blockIndex, {action})
+		store.dom.refFor({role: 'row', path})(el)
+	}
 
 	return (
 		<Component
-			ref={(el: HTMLElement | null) => blockStore.attachContainer(el, blockIndex, {action})}
+			ref={setBlockRef}
 			data-testid="block"
 			{...slotProps}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- slotProps.className is raw and needs casting to string
@@ -40,7 +48,7 @@ export const Block = memo(({token}: BlockProps) => {
 
 			<DragHandle token={token} blockIndex={blockIndex} />
 
-			<Token mark={token} />
+			<Token token={token} />
 
 			<DropIndicator token={token} position="after" />
 

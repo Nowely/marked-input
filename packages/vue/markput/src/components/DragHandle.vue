@@ -13,10 +13,18 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 const store = useStore()
 const readOnly = useMarkput(s => s.props.readOnly)
 const draggable = useMarkput(s => s.props.draggable)
+const index = useMarkput(s => s.parsing.index)
 const blockStore = store.blocks.get(props.token)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
+
+const setGripRef = (el: unknown) => {
+	const element = el as HTMLButtonElement | null
+	blockStore.attachGrip(element, props.blockIndex, {action: store.drag.action})
+	const path = index.value.pathFor(props.token)
+	if (path) store.dom.refFor({role: 'control', ownerPath: path})(element)
+}
 </script>
 
 <template>
@@ -28,12 +36,7 @@ const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 		]"
 	>
 		<button
-			:ref="
-				el =>
-					blockStore.attachGrip(el as HTMLButtonElement | null, props.blockIndex, {
-						action: store.drag.action,
-					})
-			"
+			:ref="setGripRef"
 			type="button"
 			draggable="true"
 			:class="[styles.GripButton, isDragging && styles.GripButtonDragging]"
