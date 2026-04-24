@@ -20,15 +20,21 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 
 Run a single test file: `pnpm -w vitest run path/to/file.spec.ts`
 
-### Before submitting — run all checks
+### Before submitting — choose checks by change type
 
-Always run these commands and ensure they all pass before considering any task complete (no has errors):
+Run the checks that match the files and behavior changed. For mixed changes, use the strictest affected category. If unsure, run the broader checks.
 
-1. `pnpm test`
-2. `pnpm run build`
-3. `pnpm run typecheck`
-4. `pnpm run lint:check`
-5. `pnpm run format:check`
+- **Code, behavior, public API, package config, or build config changes**: run all local checks before considering the task complete:
+    1. `pnpm test`
+    2. `pnpm run build`
+    3. `pnpm run typecheck`
+    4. `pnpm run lint:check`
+    5. `pnpm run format:check`
+- **Targeted code changes during iteration**: focused checks are fine while developing, such as a single Vitest file or package build, but run the full local check list above before calling code work complete.
+- **Docs-only changes in `docs/**`, `AGENTS.md`, or `CLAUDE.md`**: run `pnpm exec oxfmt --check <changed-files>` only.
+- **Website docs changes in `packages/website/src/content/docs/**`**: run `pnpm exec oxfmt --check <changed-files>`. Also run `pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config changes could affect site rendering.
+
+When skipping checks from the full list, mention which commands were skipped and why in the final response.
 
 ## Monorepo Layout
 
@@ -163,6 +169,6 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - PRs target `next`, not `main`
 - Use `import type { Foo }` for type-only imports — linter rejects bare imports for types
 - Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
-- Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
+- Run `pnpm run typecheck` before submitting code or API changes — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
 - Feature state lives in `store.<name>.*` — do not access properties that weren't defined there
