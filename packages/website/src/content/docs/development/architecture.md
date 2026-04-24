@@ -222,11 +222,12 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `close`         | overlay        | Close overlay               | `void`                           |
 | `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
 | `remove`        | mark           | Mark removed                | `{ token: Token }`               |
-| `reconcile`     | dom            | Post-render DOM alignment   | `void`                           |
 | `rendered`      | lifecycle      | After tokens render         | `void`                           |
 | `mounted`       | lifecycle      | Framework initial mount      | `void`                           |
 | `unmounted`     | lifecycle      | Framework unmount           | `void`                           |
-| `drag`          | drag           | Drag-and-drop action        | `DragAction`                     |
+| `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
+
+`DomFeature.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
 
 ### Event Usage
 
@@ -236,6 +237,9 @@ store.value.change()
 
 // Emit a payload event
 store.mark.remove({ token })
+
+// Emit a drag action event
+store.drag.action({ type: 'delete', index: 0 })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -314,8 +318,8 @@ class Store {
         slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
         caret: CaretFeature            // recovery, selecting (merged Focus + TextSelection)
         keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
-        dom: DomFeature                // contenteditable management, reconcile event
-        drag: DragFeature              // drag event
+        dom: DomFeature                // contenteditable management, reconcile() method
+        drag: DragFeature              // action event
         clipboard: ClipboardFeature    // copy/cut handling
     }
 }
