@@ -20,6 +20,18 @@ export {MarkputHandler} from './src/shared/classes'
 // Parsing exports (modern API)
 export {annotate, denote} from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
+export type {
+	TokenPath,
+	TokenAddress,
+	Result,
+	RawRange,
+	RawSelection,
+	EditResult,
+	CaretRecovery,
+	MarkPatch,
+	MarkSnapshot,
+	MarkInfo,
+} from './src/shared/editorContracts'
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'

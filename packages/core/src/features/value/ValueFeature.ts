@@ -84,12 +84,12 @@ export class ValueFeature implements Feature {
 	#commitAccepted(value: string) {
 		const tokens = this._store.parsing.parseValue(value)
 		batch(() => {
-			this._store.parsing.tokens(tokens)
+			this._store.parsing.acceptTokens(tokens)
 			this.current(value)
 		})
 	}
 
 	#restoreCurrent() {
-		this._store.parsing.tokens(this._store.parsing.parseValue(this.current()))
+		this._store.parsing.acceptTokens(this._store.parsing.parseValue(this.current()))
 	}
 }

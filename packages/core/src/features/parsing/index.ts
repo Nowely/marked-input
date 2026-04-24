@@ -16,3 +16,4 @@ export {
 	parseWithParser,
 } from './utils/valueParser'
 export {ParsingFeature, ParsingFeature as ParseFeature} from './ParseFeature'
+export {createTokenIndex, pathEquals, pathKey, resolvePath, snapshotTokenShape, type TokenIndex} from './tokenIndex'
