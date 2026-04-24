@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach} from 'vitest'
+import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
@@ -11,6 +11,7 @@ const stubMatch: OverlayMatch = {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- test stub
 	node: {} as unknown as Node,
 	index: 0,
+	range: {start: 0, end: 1},
 	option: {},
 }
 
@@ -111,6 +112,34 @@ describe('OverlayFeature', () => {
 			store.overlay.close()
 
 			expect(store.overlay.match()).toBeUndefined()
+		})
+	})
+
+	describe('select()', () => {
+		it('replaces the trigger range through the value pipeline', () => {
+			const replaceRange = vi.spyOn(store.value, 'replaceRange')
+			const mark = {
+				type: 'text' as const,
+				content: 'world',
+				position: {start: 0, end: 5},
+			}
+			const match: OverlayMatch = {
+				...stubMatch,
+				source: '@wo',
+				range: {start: 6, end: 9},
+				option: {markup: '@[__value__]'},
+			}
+			controller.enable()
+			store.overlay.match(match)
+
+			store.overlay.select({mark, match})
+
+			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]', {
+				source: 'overlay',
+				recover: {kind: 'caret', rawPosition: 14},
+			})
+			expect(store.overlay.match()).toBeUndefined()
+			controller.disable()
 		})
 	})
 })

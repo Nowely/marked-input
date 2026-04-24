@@ -3,9 +3,8 @@ import {signal, computed, event, effectScope, effect, watch, listen} from '../..
 import type {CoreOption, Feature, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
-import {createNewSpan} from '../editing'
 import type {Token} from '../parsing'
-import {annotate, toString} from '../parsing'
+import {annotate} from '../parsing'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 
@@ -26,7 +25,7 @@ export class OverlayFeature implements Feature {
 	constructor(private readonly _store: Store) {}
 
 	#probeTrigger() {
-		const match = TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger)
+		const match = TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store)
 		this.match(match)
 	}
 
@@ -50,8 +49,6 @@ export class OverlayFeature implements Feature {
 			effect(() => {
 				const match = this.match()
 				if (match) {
-					this._store.nodes.input.target = this._store.nodes.focus.target
-
 					listen(window, 'keydown', e => {
 						if (e.key === KEYBOARD.ESC) {
 							this.close()
@@ -87,10 +84,9 @@ export class OverlayFeature implements Feature {
 			listen(document, 'selectionchange', selectionChangeHandler)
 
 			watch(this.select, overlayEvent => {
-				const Mark = this._store.props.Mark()
 				const {
 					mark,
-					match: {option, span, index, source},
+					match: {option, range},
 				} = overlayEvent
 
 				const markup = option.markup
@@ -106,35 +102,11 @@ export class OverlayFeature implements Feature {
 								value: mark.content,
 							})
 
-				const newSpan = createNewSpan(span, annotation, index, source)
-
-				if (!this._store.nodes.input.target) return
-				const tokens = this._store.parsing.tokens()
-				const inputIndex = this._store.nodes.input.index
-				const inputToken = tokens[inputIndex]
-				if (inputToken.type !== 'text') return
-
-				const candidate = toString(tokens.toSpliced(inputIndex, 1, {...inputToken, content: newSpan}))
-				this._store.value.next(candidate)
-				if (this._store.value.isControlledMode()) {
-					this._store.nodes.input.clear()
-					return
-				}
-
-				this._store.caret.recovery(
-					Mark
-						? {
-								caret: 0,
-								anchor: this._store.nodes.input.next,
-								isNext: true,
-								childIndex: this._store.nodes.input.index,
-							}
-						: {caret: index + annotation.length, anchor: this._store.nodes.input}
-				)
-
-				this._store.nodes.input.content = newSpan
-				this._store.nodes.focus.target = this._store.nodes.input.target
-				this._store.nodes.input.clear()
+				this._store.value.replaceRange(range, annotation, {
+					source: 'overlay',
+					recover: {kind: 'caret', rawPosition: range.start + annotation.length},
+				})
+				this.match(undefined)
 			})
 		})
 	}
