@@ -46,62 +46,44 @@ The central reduction from the earlier design is:
 - no broad `ValueEdit` union as the first abstraction
 - no production dependency on user refs, `data-testid`, public attributes, DOM child parity, or user component DOM shape
 
+Replacement map:
+
+| New contract | Replaces |
+| --- | --- |
+| `TokenPath` / `TokenAddress` | `NodeProxy.index`, token object identity, stale DOM anchors, child-index hints |
+| `DomRegistration` | DOM child parity, wrapper offsets, `data-testid` block detection |
+| `RawRange` | feature-local range shapes in input, clipboard, block edit, and overlay code |
+| `LocationResult` | silent `undefined` or no-op location failures |
+| `EditResult` | silent no-op value/mark command failures |
+| `MarkController` | public `MarkHandler`, `useMark().ref`, direct mutable token setters |
+
 The core primitives are:
 
 ```ts
 type TokenPath = readonly number[]
-type TokenPathKey = string
-
-type ParseGeneration = number
 
 type TokenAddress = {
 	readonly path: TokenPath
-	readonly generation: ParseGeneration
-	readonly fingerprint: TokenFingerprint
-}
-
-type TokenFingerprint = {
-	readonly kind: 'text' | 'mark'
-	readonly start: number
-	readonly end: number
-	readonly descriptorIndex?: number
+	readonly generation: number
+	readonly expected: {
+		readonly kind: 'text' | 'mark'
+		readonly start: number
+		readonly end: number
+		readonly descriptorIndex?: number
+	}
 }
 ```
 
-`TokenPath` is a current-parse address, not durable identity. Any command created from a rendered token must carry an internal `TokenAddress`. Commands fail closed when the address is stale, resolves to the wrong kind, or resolves to a token whose fingerprint no longer matches.
+`TokenPath` is a current-parse address, not durable identity. Any command created from a rendered token must carry an internal `TokenAddress`. Commands fail closed when the address is stale, resolves to the wrong kind, or resolves to a token whose expected range/descriptor no longer matches.
 
-Adapters receive lightweight token render context while rendering:
+Adapters receive lightweight token render context while rendering, but this does not need a named public type. It contains:
 
-```ts
-type TokenRenderContext = {
-	readonly address: TokenAddress
-	readonly token: ReadonlyTokenSnapshot
-	readonly depth: number
-	readonly parent?: ReadonlyMarkSnapshot
-	readonly hasChildren: boolean
-}
-```
+- the token address
+- a readonly snapshot of the token data needed by props/hooks
+- depth and parent snapshot metadata
+- whether nested children exist
 
-`ReadonlyTokenSnapshot` and `ReadonlyMarkSnapshot` are cloned or readonly views. Public hooks must not expose live mutable parser tokens.
-
-```ts
-type ReadonlyTextSnapshot = {
-	readonly type: 'text'
-	readonly content: string
-	readonly position: {readonly start: number; readonly end: number}
-}
-
-type ReadonlyMarkSnapshot = {
-	readonly type: 'mark'
-	readonly value: string
-	readonly meta: string | undefined
-	readonly slot: string | undefined
-	readonly position: {readonly start: number; readonly end: number}
-	readonly children: readonly ReadonlyTokenSnapshot[]
-}
-
-type ReadonlyTokenSnapshot = ReadonlyTextSnapshot | ReadonlyMarkSnapshot
-```
+Snapshots are cloned or readonly views of the existing parser token shape. Public hooks must not expose live mutable parser tokens.
 
 ## Token Address Rules
 
@@ -116,9 +98,8 @@ Core provides internal helpers:
 
 ```ts
 pathEquals(a: TokenPath, b: TokenPath): boolean
-pathKey(path: TokenPath): TokenPathKey
+pathKey(path: TokenPath): string
 resolvePath(tokens: readonly Token[], path: TokenPath): Token | undefined
-snapshotToken(token: Token, address: TokenAddress): ReadonlyTokenSnapshot
 ```
 
 `pathKey()` exists for debugging, maps, and framework keys. Arrays remain the canonical shape.
@@ -126,8 +107,8 @@ snapshotToken(token: Token, address: TokenAddress): ReadonlyTokenSnapshot
 Command validation:
 
 1. Resolve `path` against the current parsed token tree.
-2. Require the resolved token kind to match the stored fingerprint.
-3. Require either the same generation or a compatible fingerprint match.
+2. Require the resolved token kind to match the stored expected data.
+3. Require either the same generation or a compatible expected range/descriptor match.
 4. For mark commands, require the descriptor identity/index to match.
 5. Return a failed result instead of mutating when validation fails.
 
@@ -140,10 +121,8 @@ The mapping contract is adapter-owned registration, not public DOM attributes an
 Adapters render known structural elements and register them with core through internal refs:
 
 ```ts
-type DomRole = 'container' | 'row' | 'token' | 'text' | 'slot' | 'control'
-
 type DomRegistration = {
-	readonly role: DomRole
+	readonly role: 'container' | 'row' | 'token' | 'text' | 'slot' | 'control'
 	readonly address?: TokenAddress
 	readonly element: HTMLElement | null
 }
@@ -227,54 +206,39 @@ Merge DOM reconciliation and DOM/token location under one clear owner, preferabl
 The feature owns:
 
 ```ts
-type LocatedToken = {
-	readonly address: TokenAddress
-	readonly token: ReadonlyTokenSnapshot
-	readonly tokenElement: HTMLElement
-	readonly textElement?: HTMLElement
-	readonly rowElement?: HTMLElement
-}
-
-type LocatedSelection = {
-	readonly anchor: LocatedToken
-	readonly focus: LocatedToken
-	readonly rawStart: number
-	readonly rawEnd: number
-	readonly direction: 'forward' | 'backward' | 'none'
-}
-
 type RawRange = {readonly start: number; readonly end: number}
-
-type CaretAffinity = 'before' | 'after'
 
 type LocationResult<T> =
 	| {ok: true; value: T}
 	| {ok: false; reason: 'notIndexed' | 'outsideEditor' | 'control' | 'staleAddress' | 'invalidBoundary'}
-
-type IndexResult = {
-	readonly generation: number
-	readonly valid: boolean
-	readonly errors: readonly string[]
-}
 ```
 
 Core-facing operations:
 
 ```ts
 register(registration: DomRegistration): void
-afterAdapterRender(input: {container: HTMLElement; layout: 'inline' | 'block'}): IndexResult
-locateNode(node: Node): LocationResult<LocatedToken>
-locateActive(): LocationResult<LocatedToken>
+afterAdapterRender(input: {container: HTMLElement; layout: 'inline' | 'block'}): {
+	generation: number
+	valid: boolean
+	errors: readonly string[]
+}
+locateNode(node: Node): LocationResult<{
+	address: TokenAddress
+	tokenElement: HTMLElement
+	textElement?: HTMLElement
+	rowElement?: HTMLElement
+}>
+locateActive(): LocationResult<TokenAddress>
 rawRangeFromSelection(): LocationResult<RawRange>
-rawPositionFromBoundary(node: Node, offset: number, affinity?: CaretAffinity): LocationResult<number>
-placeCaret(rawPosition: number, affinity?: CaretAffinity): LocationResult<void>
+rawPositionFromBoundary(node: Node, offset: number, affinity?: 'before' | 'after'): LocationResult<number>
+placeCaret(rawPosition: number, affinity?: 'before' | 'after'): LocationResult<void>
 focus(address: TokenAddress): LocationResult<void>
 renderedText(address: TokenAddress): LocationResult<string>
 ```
 
 There is no public `TokenSurface` in the first design. If internal feature code needs a convenience handle, it should be a private `TokenHandle` wrapper over these operations and should return `LocationResult` or `boolean` for operations that can fail.
 
-`store.nodes.focus` and `store.nodes.input` can be replaced by signal state over `LocatedToken` or `TokenAddress`, but that state must not expose DOM child-index helpers.
+`store.nodes.focus` and `store.nodes.input` can be replaced by signal state over `TokenAddress`, but that state must not expose DOM child-index helpers.
 
 ## Post-Render Protocol
 
@@ -314,7 +278,7 @@ Boundary rules:
 - A boundary inside controls returns `{ok: false, reason: 'control'}`.
 - A boundary outside the editor returns `{ok: false, reason: 'outsideEditor'}`.
 - Empty text surfaces are valid and map to the text token start.
-- Exact token-boundary positions use `CaretAffinity` to decide whether caret placement should prefer the previous or next editable surface.
+- Exact token-boundary positions use before/after affinity to decide whether caret placement should prefer the previous or next editable surface.
 - Block row gaps map only through registered token shells or explicit row boundary rules; controls do not become text.
 - Slot boundaries map to the slot raw range when the mark has a `slot`; otherwise they map to the mark value range.
 
@@ -325,16 +289,6 @@ Caret placement should never depend on stale DOM anchors. It resolves raw positi
 Value mutation moves into one small command pipeline. The first abstraction should be simple: commit a candidate string or replace a raw range. Higher-level mark and block commands can be helpers that lower to one of these primitives.
 
 ```ts
-type RecoveryRequest = {
-	readonly rawPosition: number
-	readonly affinity?: CaretAffinity
-}
-
-type ValueCommandOptions = {
-	readonly recover?: RecoveryRequest
-	readonly source?: 'input' | 'paste' | 'cut' | 'overlay' | 'mark' | 'block' | 'drag'
-}
-
 type EditResult =
 	| {ok: true; value: string; accepted: 'immediate' | 'pendingControlledEcho'}
 	| {
@@ -342,8 +296,22 @@ type EditResult =
 			reason: 'readOnly' | 'invalidRange' | 'staleAddress' | 'wrongTokenKind'
 	  }
 
-store.value.commit(candidate: string, options?: ValueCommandOptions): EditResult
-store.value.replaceRange(range: RawRange, replacement: string, options?: ValueCommandOptions): EditResult
+store.value.commit(
+	candidate: string,
+	options?: {
+		recover?: {rawPosition: number; affinity?: 'before' | 'after'}
+		source?: 'input' | 'paste' | 'cut' | 'overlay' | 'mark' | 'block' | 'drag'
+	}
+): EditResult
+
+store.value.replaceRange(
+	range: RawRange,
+	replacement: string,
+	options?: {
+		recover?: {rawPosition: number; affinity?: 'before' | 'after'}
+		source?: 'input' | 'paste' | 'cut' | 'overlay' | 'mark' | 'block' | 'drag'
+	}
+): EditResult
 ```
 
 `ValueFeature` owns:
@@ -401,15 +369,13 @@ type MarkPatch = {
 
 type MarkController = {
 	readonly path: TokenPath
-	readonly key: TokenPathKey
+	readonly key: string
 	readonly value: string
 	readonly meta: string | undefined
 	readonly slot: string | undefined
 	readonly depth: number
 	readonly hasChildren: boolean
 	readonly readOnly: boolean
-	readonly parent: ReadonlyMarkSnapshot | undefined
-	readonly children: readonly ReadonlyTokenSnapshot[]
 
 	remove(): EditResult
 	update(patch: MarkPatch): EditResult
@@ -418,6 +384,8 @@ type MarkController = {
 	setSlot(slot: string | undefined): EditResult
 }
 ```
+
+If mark authors need parent or child token data, expose it as readonly snapshot fields later. Keep the first public controller focused on common mark commands.
 
 `setContent()` is deliberately omitted from the first public API. `content`, `value`, and `slot` are easy to confuse. If editable mark text needs first-class support later, add a focused helper such as:
 
@@ -438,7 +406,7 @@ React and Vue should:
 
 - render adapter-owned token shells, text surfaces, slot roots, rows, and control regions
 - register structural elements with core through private refs
-- provide `TokenRenderContext` to custom components
+- provide token render context to custom components
 - pass an opaque adapter-owned slot element as `children` for nested marks
 - forward browser events to core
 - notify core after DOM-affecting renders
@@ -471,7 +439,7 @@ This design intentionally allows breaking changes:
 
 ### Phase 1: Token Addresses and Snapshots
 
-- Add `TokenPath`, `TokenPathKey`, `TokenAddress`, and fingerprint helpers.
+- Add `TokenPath`, `TokenAddress`, path-key helpers, and expected-token validation.
 - Add path lookup and path-key helpers.
 - Add readonly token snapshot helpers.
 - Keep existing rendering temporarily.
@@ -481,7 +449,7 @@ This design intentionally allows breaking changes:
 - Add private DOM registration APIs to the DOM feature.
 - Update React and Vue to render token shells, text surfaces, slot roots, rows, and controls.
 - Register adapter-owned structural elements through internal refs.
-- Provide `TokenRenderContext` instead of raw token-only context.
+- Provide token render context instead of raw token-only context.
 - Keep visual behavior equivalent where possible.
 
 ### Phase 3: Post-Render Pipeline
@@ -574,7 +542,7 @@ New documentation should describe:
 
 ## Resolved Design Decisions
 
-- Keep `TokenPath` as arrays and add `TokenPathKey` for maps/debugging.
+- Keep `TokenPath` as arrays and use `pathKey()` strings for maps/debugging.
 - Use `layout`, not `mode`, in DOM APIs to match existing public prop language.
 - Do not expose public `TokenSurface` in the first implementation.
 - Do not expose live mutable tokens from public mark APIs.
@@ -584,7 +552,7 @@ New documentation should describe:
 ## Open Design Decisions
 
 - Exact internal name: keep the existing `DomFeature` or split a private `DomLocationFeature` after implementation pressure.
-- Exact fingerprint fields needed for path validation across parser changes.
+- Exact expected-token fields needed for path validation across parser changes.
 - Whether `useMarkField()` is required in the first breaking release or can wait.
 - Whether missing `{children}` for nested marks should be a warning only or a hard development error.
 
