@@ -1,5 +1,7 @@
+import type {MarkProps, Markup, Option} from '@markput/react'
+import {MarkedInput} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
@@ -17,6 +19,40 @@ import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.react.stories'
 
 const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
+
+const PLAIN_TEXT_VALUE =
+	'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
+
+const ParagraphMark = ({children, value}: MarkProps) => <span>{children ?? value}</span>
+
+// oxlint-disable-next-line no-unsafe-type-assertion
+const paragraphOptions: Option[] = [{markup: '__slot__\n\n' as Markup, Mark: ParagraphMark}]
+
+function UncontrolledPlainTextDrag() {
+	return (
+		<MarkedInput
+			Mark={ParagraphMark}
+			options={paragraphOptions}
+			defaultValue={PLAIN_TEXT_VALUE}
+			layout="block"
+			draggable
+			style={{marginLeft: '64px'}}
+		/>
+	)
+}
+
+function ControlledDragNoEcho({onChange}: {onChange: (value: string) => void}) {
+	return (
+		<MarkedInput
+			Mark={({value}: MarkProps) => <mark data-testid="mark">{value}</mark>}
+			value="hello @[world](1)\n\nfoo"
+			onChange={onChange}
+			layout="block"
+			draggable
+			style={{marginLeft: '64px'}}
+		/>
+	)
+}
 
 function getRawValue(container: Element) {
 	return container.querySelector<HTMLElement>('pre[data-value]')!.dataset.value!
@@ -87,6 +123,20 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(6)
 		})
 
+		it('keeps controlled row unchanged after adding below until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(<ControlledDragNoEcho onChange={onChange} />)
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Add below')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
+		})
+
 		it('increase row count by 1 when adding below middle row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 2)
@@ -146,6 +196,20 @@ describe('Feature: drag rows', () => {
 			expect(getAllRows(container)).toHaveLength(4)
 		})
 
+		it('keeps controlled row unchanged after deleting until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(<ControlledDragNoEcho onChange={onChange} />)
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Delete')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
+		})
+
 		it('preserve remaining content when deleting first row', async () => {
 			const {container} = await render(<PlainTextDrag />)
 			await openMenuForRow(container, 0)
@@ -190,6 +254,20 @@ describe('Feature: drag rows', () => {
 			await userEvent.click(getElement(page.getByText('Duplicate')))
 
 			expect(getAllRows(container)).toHaveLength(6)
+		})
+
+		it('keeps controlled row unchanged after duplicating until value is echoed', async () => {
+			const onChange = vi.fn()
+			const {container} = await render(<ControlledDragNoEcho onChange={onChange} />)
+			await openMenuForRow(container, 0)
+			await userEvent.click(getElement(page.getByText('Duplicate')))
+
+			const rows = getAllRows(container)
+			expect(onChange).toHaveBeenCalled()
+			expect(container.textContent).toContain('world')
+			expect(rows[0].textContent).toContain('hello ')
+			expect(rows[1].textContent).toContain('world')
+			expect(rows[2].textContent).toContain('foo')
 		})
 
 		it('create a copy with the same text content', async () => {
@@ -319,7 +397,7 @@ describe('Feature: drag rows', () => {
 	})
 
 	it('focus the new empty row after Add below', async () => {
-		const {container} = await render(<PlainTextDrag />)
+		const {container} = await render(<UncontrolledPlainTextDrag />)
 		await openMenuForRow(container, 0)
 		await userEvent.click(getElement(page.getByText('Add below')))
 
@@ -502,7 +580,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		it('keep focus in the previous row after merge', async () => {
-			const {container} = await render(<PlainTextDrag />)
+			const {container} = await render(<UncontrolledPlainTextDrag />)
 
 			await focusAtStart(getEditableInRow(getAllRows(container)[1]))
 			await userEvent.keyboard('{Backspace}')
@@ -567,7 +645,7 @@ describe('Feature: drag row keyboard navigation', () => {
 		})
 
 		it('keep focus in the current row after Delete merge', async () => {
-			const {container} = await render(<PlainTextDrag />)
+			const {container} = await render(<UncontrolledPlainTextDrag />)
 
 			await focusAtEnd(getEditableInRow(getAllRows(container)[0]))
 			await userEvent.keyboard('{Delete}')
@@ -610,7 +688,7 @@ describe('Feature: drag row keyboard navigation', () => {
 			})
 
 			it('keep focus in the previous row after Delete merge', async () => {
-				const {container} = await render(<PlainTextDrag />)
+				const {container} = await render(<UncontrolledPlainTextDrag />)
 
 				await focusAtStart(getEditableInRow(getAllRows(container)[1]))
 				await userEvent.keyboard('{Delete}')

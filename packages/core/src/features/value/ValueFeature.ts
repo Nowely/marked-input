@@ -1,14 +1,12 @@
 import {signal, computed, event, batch, effectScope, trigger, watch} from '../../shared/signals/index.js'
 import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
-import {parseWithParser, toString} from '../parsing'
+import {toString} from '../parsing'
 
 export class ValueFeature implements Feature {
-	readonly last = signal<string | undefined>(undefined)
-	readonly next = signal<string | undefined>(undefined)
-
-	readonly current = computed(() => this.last() ?? this._store.props.value() ?? '')
-
+	readonly current = signal('')
+	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
+	readonly next = event<string>()
 	readonly change = event()
 
 	#scope?: () => void
@@ -17,7 +15,14 @@ export class ValueFeature implements Feature {
 
 	enable() {
 		if (this.#scope) return
+		this.#commitAccepted(this._store.props.value() ?? this._store.props.defaultValue() ?? '')
 		this.#scope = effectScope(() => {
+			watch(this._store.props.value, value => {
+				if (value === undefined) return
+				if (value === this.current()) return
+				this.#commitAccepted(value)
+			})
+
 			watch(this.change, () => {
 				const onChange = this._store.props.onChange()
 				const {focus} = this._store.nodes
@@ -26,7 +31,11 @@ export class ValueFeature implements Feature {
 					const tokens = this._store.parsing.tokens()
 					const serialized = toString(tokens)
 					onChange?.(serialized)
-					this.last(serialized)
+					if (this.isControlledMode()) {
+						this.#restoreCurrent()
+						return
+					}
+					this.current(serialized)
 					trigger(this._store.parsing.tokens)
 					return
 				}
@@ -40,18 +49,23 @@ export class ValueFeature implements Feature {
 					token.value = focus.content
 				}
 
-				onChange?.(toString(tokens))
+				const candidate = toString(tokens)
+				onChange?.(candidate)
+				if (this.isControlledMode()) {
+					this.#restoreCurrent()
+					return
+				}
+				this.current(candidate)
 				this._store.parsing.reparse()
 			})
 
-			watch(this.next, newValue => {
-				if (newValue === undefined) return
-				const newTokens = parseWithParser(this._store, newValue)
-				batch(() => {
-					this._store.parsing.tokens(newTokens)
-					this.last(newValue)
-				})
-				this._store.props.onChange()?.(newValue)
+			watch(this.next, value => {
+				if (this.isControlledMode()) {
+					this._store.props.onChange()?.(value)
+					return
+				}
+				this.#commitAccepted(value)
+				this._store.props.onChange()?.(value)
 			})
 		})
 	}
@@ -59,5 +73,17 @@ export class ValueFeature implements Feature {
 	disable() {
 		this.#scope?.()
 		this.#scope = undefined
+	}
+
+	#commitAccepted(value: string) {
+		const tokens = this._store.parsing.parseValue(value)
+		batch(() => {
+			this._store.parsing.tokens(tokens)
+			this.current(value)
+		})
+	}
+
+	#restoreCurrent() {
+		this._store.parsing.tokens(this._store.parsing.parseValue(this.current()))
 	}
 }

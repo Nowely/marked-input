@@ -1,11 +1,23 @@
+import type {MarkProps} from '@markput/react'
+import {MarkedInput} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
-import {beforeEach, describe, expect, it} from 'vitest'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page} from 'vitest/browser'
 
 import * as Stories from './Clipboard.react.stories'
 
 const {Inline, PlainText, Drag, NestedMarkStory} = composeStories(Stories)
+
+function ControlledInlineNoEcho({onChange}: {onChange: (value: string) => void}) {
+	return (
+		<MarkedInput
+			Mark={({value}: MarkProps) => <mark data-testid="mark">{value}</mark>}
+			value="hello @[world](1) foo"
+			onChange={onChange}
+		/>
+	)
+}
 
 /**
  * Create a ClipboardEvent with a mock DataTransfer for testing copy/paste handlers.
@@ -439,6 +451,41 @@ describe('Clipboard: paste', () => {
 		expect(root.textContent).toBe('aworldc')
 	})
 
+	it('keeps controlled text unchanged after paste until value is echoed', async () => {
+		const onChange = vi.fn()
+		const {container} = await render(<ControlledInlineNoEcho onChange={onChange} />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span[contenteditable]'))
+		const lastSpan = spans[spans.length - 1]
+		const lastText = firstTextNode(lastSpan)!
+
+		lastSpan.focus()
+		await new Promise<void>(r => queueMicrotask(r))
+		window.getSelection()!.collapse(lastText, lastText.length)
+
+		const pasteClipboard = new DataTransfer()
+		pasteClipboard.setData('text/plain', '!')
+		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: pasteClipboard, bubbles: true}))
+
+		const inputRange = document.createRange()
+		inputRange.setStart(lastText, lastText.length)
+		inputRange.setEnd(lastText, lastText.length)
+		const inputEvent = new InputEvent('beforeinput', {
+			inputType: 'insertFromPaste',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(inputEvent, 'getTargetRanges', {value: () => [inputRange]})
+		Object.defineProperty(inputEvent, 'dataTransfer', {value: pasteClipboard})
+		root.dispatchEvent(inputEvent)
+
+		expect(onChange).toHaveBeenCalled()
+		expect(container.textContent).toContain('world')
+		expect(lastSpan.textContent).toBe(' foo')
+		expect(root.textContent).toBe('hello world foo')
+	})
+
 	it('caret should land immediately after pasted mark', async () => {
 		const {container} = await render(<Inline />)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
@@ -634,6 +681,26 @@ describe('Clipboard: cut', () => {
 
 		await expect.element(page.getByTestId('mark')).toBeInTheDocument()
 		expect(root.textContent).toBe('heo world foo')
+	})
+
+	it('keeps controlled text unchanged after cut until value is echoed', async () => {
+		const onChange = vi.fn()
+		const {container} = await render(<ControlledInlineNoEcho onChange={onChange} />)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('span[contenteditable]'))
+		const firstSpan = spans[0]
+		const textNode = firstTextNode(firstSpan)!
+		setSelection(textNode, 2, textNode, 4)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('ll')
+		expect(onChange).toHaveBeenCalled()
+		expect(container.textContent).toContain('world')
+		expect(firstSpan.textContent).toBe('hello ')
+		expect(root.textContent).toBe('hello world foo')
 	})
 
 	it('cut across tokens should write trimmed markup and remove selection', async () => {

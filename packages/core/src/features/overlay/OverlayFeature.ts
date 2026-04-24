@@ -88,7 +88,6 @@ export class OverlayFeature implements Feature {
 
 			watch(this.select, overlayEvent => {
 				const Mark = this._store.props.Mark()
-				const onChange = this._store.props.onChange()
 				const {
 					mark,
 					match: {option, span, index, source},
@@ -109,6 +108,19 @@ export class OverlayFeature implements Feature {
 
 				const newSpan = createNewSpan(span, annotation, index, source)
 
+				if (!this._store.nodes.input.target) return
+				const tokens = this._store.parsing.tokens()
+				const inputIndex = this._store.nodes.input.index
+				const inputToken = tokens[inputIndex]
+				if (inputToken.type !== 'text') return
+
+				const candidate = toString(tokens.toSpliced(inputIndex, 1, {...inputToken, content: newSpan}))
+				this._store.value.next(candidate)
+				if (this._store.value.isControlledMode()) {
+					this._store.nodes.input.clear()
+					return
+				}
+
 				this._store.caret.recovery(
 					Mark
 						? {
@@ -120,19 +132,9 @@ export class OverlayFeature implements Feature {
 						: {caret: index + annotation.length, anchor: this._store.nodes.input}
 				)
 
-				if (this._store.nodes.input.target) {
-					this._store.nodes.input.content = newSpan
-					const tokens = this._store.parsing.tokens()
-					const inputToken = tokens[this._store.nodes.input.index]
-					if (inputToken.type === 'text') {
-						inputToken.content = newSpan
-					}
-
-					this._store.nodes.focus.target = this._store.nodes.input.target
-					this._store.nodes.input.clear()
-					onChange?.(toString(tokens))
-					this._store.parsing.reparse()
-				}
+				this._store.nodes.input.content = newSpan
+				this._store.nodes.focus.target = this._store.nodes.input.target
+				this._store.nodes.input.clear()
 			})
 		})
 	}

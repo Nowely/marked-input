@@ -5,16 +5,16 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 ## Components
 
 - **Store**: Main state container that manages:
-    - **Internal state** (`store.state`) — signals owned by features: tokens, previous value, inner value, recovery, selection mode, overlay match
+    - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, next value command, recovery, selection mode, overlay match
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
-    - **Computed** (`store.computed`) — derived values: `enabled`, `parser`, `current`, `containerComponent`, `containerProps`, slot resolvers
-    - **Events** (`store.emit`) — typed events: change, parse, delete, select, overlay, sync, focus, drag, lifecycle, and more
-    - **DOM refs** (`store.state.container`, `store.state.overlay`) — reactive signals holding container and overlay HTMLElement references
+    - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `isControlledMode`, `containerComponent`, `containerProps`, slot resolvers
+    - **Events** (`store.<feature>.<event>()`) — typed reactive events: `value.change`, `parsing.reparse`, `mark.remove`, `overlay.select`, `overlay.close`, `drag.action`, and lifecycle events
+    - **DOM refs** (`store.slots.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
     - **Node proxies** (`store.nodes`) — `focus` and `input` NodeProxy instances
-    - **Features** (`store.feature`) — all feature instances
+    - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 
-Features update internal state by calling each signal, e.g. `store.state.tokens(next)`. For multiple internal updates in one tick, wrap in `batch()` from `@markput/core` (same module as `Store`).
+Features update internal state by calling the owning feature signal, e.g. `store.parsing.tokens(next)`. For multiple internal updates in one tick, wrap in `batch()` from `@markput/core` (same module as `Store`).
 
 ## Usage
 
@@ -25,12 +25,11 @@ const store = new Store()
 store.props.set({value: 'Hello @[world](test)', readOnly: false})
 
 batch(() => {
-    store.state.tokens(newTokens)
-    store.state.last(serialized)
+    store.parsing.tokens(newTokens)
 })
 ```
 
-The Store is created by framework wrappers and passed to all features. Features communicate through `store.state`, `store.props`, `store.emit`, and `store.nodes`.
+The Store is created by framework wrappers and passed to all features. Features communicate through feature-owned state/events, `store.props`, and `store.nodes`. `store.value.current` is the internal accepted serialized value state owned by `ValueFeature`; feature code should route full-value edits through `store.value.next(value)` instead of writing accepted value state directly.
 
 ## Readonly Props
 

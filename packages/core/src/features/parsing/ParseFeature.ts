@@ -5,7 +5,7 @@ import type {Store} from '../../store/Store'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {toString} from './parser/utils/toString'
-import {getTokensByUI, computeTokensFromValue, parseWithParser} from './utils/valueParser'
+import {getTokensByUI, parseWithParser} from './utils/valueParser'
 
 export class ParsingFeature implements Feature {
 	readonly tokens = signal<Token[]>([])
@@ -25,6 +25,10 @@ export class ParsingFeature implements Feature {
 
 	constructor(private readonly _store: Store) {}
 
+	parseValue(value: string): Token[] {
+		return parseWithParser(this._store, value)
+	}
+
 	enable() {
 		if (this.#scope) return
 		this.sync()
@@ -39,32 +43,31 @@ export class ParsingFeature implements Feature {
 		this.#scope = undefined
 	}
 
-	sync() {
-		const inputValue = this._store.props.value() ?? this._store.props.defaultValue() ?? ''
-		this.tokens(parseWithParser(this._store, inputValue))
-		this._store.value.last(inputValue)
+	sync(value = this._store.value.current()) {
+		this.tokens(this.parseValue(value))
 	}
 
 	#subscribeParse() {
 		watch(this.reparse, () => {
 			if (this._store.caret.recovery()) {
 				const text = toString(this.tokens())
-				this.tokens(parseWithParser(this._store, text))
-				this._store.value.last(text)
+				this.tokens(this.parseValue(text))
 				return
 			}
-			this.tokens(
-				this._store.nodes.focus.target ? getTokensByUI(this._store) : computeTokensFromValue(this._store)
-			)
+			if (this._store.nodes.focus.target) {
+				this.tokens(getTokensByUI(this._store))
+				return
+			}
+			this.sync()
 		})
 	}
 
 	#subscribeReactiveParse() {
-		const deps = computed(() => [this._store.props.value(), this.parser()] as const)
+		const deps = computed(() => this.parser())
 
 		watch(deps, () => {
 			if (!this._store.caret.recovery()) {
-				this.reparse()
+				this.sync(this._store.value.current())
 			}
 		})
 	}

@@ -1,7 +1,8 @@
 import type {Markup} from '@markput/react'
-import {MarkedInput} from '@markput/react'
+import {MarkedInput, useMark} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
-import {describe, expect, it} from 'vitest'
+import {useState} from 'react'
+import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-react'
 import {page, userEvent} from 'vitest/browser'
 
@@ -12,6 +13,32 @@ import * as BaseStories from './Base.react.stories'
 
 const {Default} = composeStories(BaseStories)
 const {Focusable, Removable} = composeStories(DynamicStories)
+
+const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!'
+const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
+
+function EchoRemovable() {
+	const [value, setValue] = useState(REMOVABLE_MARK_VALUE)
+	return <Removable value={value} onChange={setValue} />
+}
+
+function EchoFocusable() {
+	const [value, setValue] = useState(EDITABLE_MARK_VALUE)
+	return <Focusable value={value} onChange={setValue} />
+}
+
+function ControlledNoEcho({onChange}: {onChange: (value: string) => void}) {
+	return <MarkedInput Mark={({value}) => <mark>{value}</mark>} value="Hello @[world](1)" onChange={onChange} />
+}
+
+function ControlledRemovableNoEcho({onChange}: {onChange: (value: string) => void}) {
+	function RemovableMark() {
+		const {value, remove} = useMark()
+		return <mark onClick={remove}>{value}</mark>
+	}
+
+	return <MarkedInput Mark={RemovableMark} value="Hello @[world](1)" onChange={onChange} />
+}
 
 describe(`Component: MarkedInput`, () => {
 	it.todo('set readOnly on selection')
@@ -54,7 +81,7 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('support remove itself', async () => {
-		await render(<Removable />)
+		await render(<EchoRemovable />)
 
 		let mark = page.getByText('contain')
 		await userEvent.click(mark)
@@ -66,14 +93,64 @@ describe(`Component: MarkedInput`, () => {
 	})
 
 	it('support editable marks', async () => {
-		await render(<Focusable />)
+		await render(<EchoFocusable />)
 
 		const worldElement = getElement(page.getByText('world').first())
 		await focusAtEnd(worldElement)
-		await userEvent.keyboard('123')
+		await userEvent.keyboard('1')
 
-		await expect.element(page.getByText('world123').first()).toBeInTheDocument()
-		await expect.element(page.getByText(/@\[world123]\(Hello! Hello!\)/)).toBeInTheDocument()
+		await expect.element(page.getByText('world1').first()).toBeInTheDocument()
+		await expect.element(page.getByText(/@\[world1]\(Hello! Hello!\)/)).toBeInTheDocument()
+	})
+
+	it('keeps controlled span input unchanged until value is echoed', async () => {
+		const onChange = vi.fn()
+		const {container} = await render(<ControlledNoEcho onChange={onChange} />)
+		const [span] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
+
+		await focusAtEnd(span)
+		await userEvent.keyboard('!')
+
+		expect(onChange).toHaveBeenCalledWith('Hello !@[world](1)')
+		expect(span.textContent).toBe('Hello ')
+	})
+
+	it('keeps controlled mark visible after removal until value is echoed', async () => {
+		const onChange = vi.fn()
+		const {container} = await render(<ControlledRemovableNoEcho onChange={onChange} />)
+		const mark = container.querySelector<HTMLElement>('mark')!
+
+		await userEvent.click(mark)
+
+		expect(onChange).toHaveBeenCalledWith('Hello ')
+		expect(container.querySelector('mark')?.textContent).toBe('world')
+	})
+
+	it('keeps controlled overlay selection text unchanged until value is echoed', async () => {
+		const onChange = vi.fn()
+		const {container} = await render(
+			<MarkedInput
+				Mark={({value}) => <mark>{value}</mark>}
+				options={[
+					{
+						// oxlint-disable-next-line no-unsafe-type-assertion
+						markup: '@[__value__](__meta__)' as Markup,
+						overlay: {trigger: '@', data: ['Alice']},
+					},
+				]}
+				value="Hello @"
+				onChange={onChange}
+				showOverlayOn="selectionChange"
+			/>
+		)
+		const [span] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
+
+		await focusAtEnd(span)
+		await userEvent.keyboard('{ArrowRight}')
+		await page.getByText('Alice').click()
+
+		expect(onChange).toHaveBeenCalledWith('Hello @[Alice](0)')
+		expect(span.textContent).toBe('Hello @')
 	})
 
 	it('support to pass a forward overlay', async () => {

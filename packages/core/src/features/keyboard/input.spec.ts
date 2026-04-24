@@ -24,14 +24,19 @@ describe('applySpanInput()', () => {
 })
 
 describe('replaceAllContentWith()', () => {
-	it('sets last to the new content', () => {
+	it('controlled full-content replace emits without committing current', () => {
 		const store = new Store()
+		const onChange = vi.fn()
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal container stub
 		store.slots.container({firstChild: null} as unknown as HTMLDivElement)
-		store.value.last('old value')
+		store.props.set({value: 'hello', onChange})
+		store.value.enable()
 
-		replaceAllContentWith(store, 'new content')
+		replaceAllContentWith(store, 'world')
 
-		expect(store.value.last()).toBe('new content')
+		expect(onChange).toHaveBeenCalledWith('world')
+		expect(store.value.current()).toBe('hello')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		store.value.disable()
 	})
 })

@@ -59,7 +59,8 @@ describe('deleteMark', () => {
 			type: 'mark' as const,
 			content: '@user',
 			value: 'user',
-			descriptor: {index: 0},
+			descriptor: {index: 0, markup: '@[__value__](__meta__)'},
+			meta: '1',
 			children: [],
 			position: {start: 3, end: 8},
 		} as unknown as Token
@@ -88,5 +89,19 @@ describe('deleteMark', () => {
 
 		expect(store.parsing.tokens()).toHaveLength(1)
 		expect(store.parsing.tokens()[0].content).toBe('hi  there')
+	})
+
+	it('controlled delete emits candidate without committing current or caret recovery', () => {
+		const onChange = vi.fn()
+		store.props.set({value: 'hi @[user](1) there', onChange})
+		setupDOM()
+		store.parsing.tokens(makeTokens())
+
+		deleteMark('self', store)
+
+		expect(onChange).toHaveBeenCalledWith('hi  there')
+		expect(store.value.current()).toBe('hi @[user](1) there')
+		expect(store.parsing.tokens()).toEqual(makeTokens())
+		expect(store.caret.recovery()).toBeUndefined()
 	})
 })
