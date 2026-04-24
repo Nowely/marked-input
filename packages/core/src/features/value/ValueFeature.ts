@@ -24,6 +24,11 @@ export class ValueFeature implements Feature {
 			})
 
 			watch(this.change, () => {
+				if (this._store.props.readOnly()) {
+					this.#restoreCurrent()
+					return
+				}
+
 				const onChange = this._store.props.onChange()
 				const {focus} = this._store.nodes
 
@@ -60,6 +65,7 @@ export class ValueFeature implements Feature {
 			})
 
 			watch(this.next, value => {
+				if (this._store.props.readOnly()) return
 				if (this.isControlledMode()) {
 					this._store.props.onChange()?.(value)
 					return

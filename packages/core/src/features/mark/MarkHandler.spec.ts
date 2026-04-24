@@ -1,4 +1,4 @@
-import {describe, it, expect} from 'vitest'
+import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 import type {MarkToken} from '../parsing'
@@ -85,5 +85,30 @@ describe('MarkHandler', () => {
 		const handler = new MarkHandler({ref: {current: null}, store, token: markToken})
 
 		expect(handler.depth).toBe(0)
+	})
+
+	it('restore accepted store tokens when content setter runs while readOnly', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({
+			defaultValue: '@[user]',
+			readOnly: true,
+			onChange,
+			Mark: () => null,
+			options: [{markup: '@[__value__]'}],
+		})
+		store.value.enable()
+		const token = store.parsing.tokens().find(token => token.type === 'mark')
+		if (!token) throw new Error('expected parsed mark token')
+		const handler = new MarkHandler({ref: {current: null}, store, token})
+
+		handler.content = '@[other]'
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('@[user]')
+		expect(store.parsing.tokens().find(token => token.type === 'mark')).toEqual(
+			expect.objectContaining({type: 'mark', content: '@[user]', value: 'user'})
+		)
+		store.value.disable()
 	})
 })

@@ -125,6 +125,49 @@ describe('ValueFeature', () => {
 		store.value.disable()
 	})
 
+	it('readOnly next ignores editor-originated candidates', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.value.enable()
+
+		store.value.next('world')
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('hello')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		store.value.disable()
+	})
+
+	it('readOnly change restores accepted tokens and skips onChange', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.value.enable()
+		store.parsing.tokens([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+
+		store.value.change()
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('hello')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		store.value.disable()
+	})
+
+	it('readOnly allows controlled prop updates to replace accepted value', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({value: 'hello', readOnly: true, onChange})
+		store.value.enable()
+
+		store.props.set({value: 'world'})
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('world')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		store.value.disable()
+	})
+
 	describe('change handler', () => {
 		let store: Store
 
