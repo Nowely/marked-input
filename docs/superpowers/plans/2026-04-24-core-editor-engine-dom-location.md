@@ -16,6 +16,15 @@ This plan implements the full spec in migration slices. The implementation inten
 
 Run tasks in order. Each task ends with focused verification and a commit. After Task 11, run the full local check list from `AGENTS.md`.
 
+## Migration Invariants
+
+- Every task that changes TypeScript signatures across packages runs `pnpm run typecheck` before its commit. Focused Vitest checks are still required, but they are not enough for adapter/core API changes.
+- `store.lifecycle.rendered` payload typing and React/Vue call-site updates land in the same task, so the workspace is never left with typed callers that cannot compile.
+- `store.nodes` and `NodeProxy` stay only as a temporary compatibility bridge while each feature slice migrates. Do not add new feature-facing `NodeProxy` usage after Task 5. Delete the bridge and run the absence grep in Task 11 after input, overlay, clipboard, block, drag, and mark APIs have moved.
+- `DomFeature` owns registered text reconciliation, composition state, caret placement, focus-by-address, raw-boundary mapping, and recovery application. Other features may schedule `caret.recovery`, but they do not restore selections directly.
+- Controlled-mode edits call the echo state machine before user `onChange`, so synchronous controlled echoes cannot drop recovery.
+- Mark field clearing must not leak literal `__meta__` or `__slot__` placeholders into the serialized value. Tests must cover clear semantics for descriptors that contain those placeholders.
+
 ## File Structure
 
 Create:
@@ -44,6 +53,7 @@ Modify:
 - `packages/core/src/features/lifecycle/LifecycleFeature.ts` - type `rendered` payload as `{container, layout}`.
 - `packages/core/src/features/caret/CaretFeature.ts` - add `location`, raw-position recovery shape, `placeAt()`, and `focus()`.
 - `packages/core/src/features/caret/focus.ts` / `selection.ts` / `selectionHelpers.ts` - update event handlers to use `store.dom` and `store.caret.location`.
+- `packages/core/src/features/caret/TriggerFinder.ts` - produce overlay matches with raw ranges instead of DOM-node local indexes.
 - `packages/core/src/features/keyboard/input.ts` - migrate inline input and paste to raw ranges and value pipeline.
 - `packages/core/src/features/keyboard/blockEdit.ts` - migrate block editing to `store.dom.rawPositionFromBoundary()` and `store.value.replaceRange()`.
 - `packages/core/src/features/keyboard/rawPosition.ts` - remove after block edit uses `store.dom`.
@@ -54,6 +64,8 @@ Modify:
 - `packages/core/src/features/overlay/OverlayFeature.ts` - lower insertion to `store.value.replaceRange()`.
 - `packages/core/src/features/editing/utils/deleteMark.ts` - migrate deletion to address/raw-range logic or remove once keyboard paths inline it.
 - `packages/core/src/features/drag/DragFeature.ts` - call value pipeline with source metadata.
+- `packages/core/src/features/parsing/parser/utils/annotate.ts` - replace missing optional placeholders with empty strings so mark field clearing cannot leak placeholder text.
+- `packages/core/src/features/parsing/parser/utils/annotate.spec.ts` - cover optional placeholder clearing.
 - `packages/core/src/features/mark/MarkFeature.ts` - remove mutation event handling once `MarkController` uses value pipeline.
 - `packages/core/src/features/mark/index.ts` - export `MarkController`, `MarkInfo`, and compatibility alias only if required.
 - `packages/react/markput/src/components/Container.tsx` - drive rendered notifications from `store.dom.structuralKey`.
@@ -591,6 +603,23 @@ describe('replaceRange()', () => {
         expect(store.caret.recovery()).toBe(recovery)
         store.value.disable()
     })
+
+    it('keeps recovery when controlled echo is synchronous inside onChange', () => {
+        const store = new Store()
+        const recovery = {kind: 'caret' as const, rawPosition: 5}
+        store.props.set({
+            value: 'hello',
+            onChange: value => store.props.set({value}),
+        })
+        store.value.enable()
+
+        const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+        expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
+        expect(store.value.current()).toBe('world')
+        expect(store.caret.recovery()).toBe(recovery)
+        store.value.disable()
+    })
 })
 ```
 
@@ -672,17 +701,24 @@ export class ValueFeature implements Feature {
     }
 
     #commitCandidate(candidate: string, recovery?: CaretRecovery): EditResult {
-        this._store.props.onChange()?.(candidate)
         if (this.isControlledMode()) {
             this.#controlledEcho.propose(candidate, recovery)
+            this._store.props.onChange()?.(candidate)
             return {ok: true, accepted: 'pendingControlledEcho', value: candidate}
         }
 
+        this._store.props.onChange()?.(candidate)
         this.#commitAccepted(candidate)
         this._store.caret.recovery(recovery)
         return {ok: true, accepted: 'immediate', value: candidate}
     }
 }
+```
+
+Keep the initial accepted-value seed as the first mutation in `enable()` before registering watchers:
+
+```ts
+this.#commitAccepted(this._store.props.value() ?? this._store.props.defaultValue() ?? '')
 ```
 
 Update the controlled `props.value` watcher:
@@ -730,6 +766,7 @@ Run:
 
 ```bash
 pnpm -w vitest run packages/core/src/features/value/ControlledEcho.spec.ts packages/core/src/features/value/ValueFeature.spec.ts packages/core/src/store/Store.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass.
@@ -751,6 +788,8 @@ git commit -m "feat(core): add raw value edit pipeline"
 - Modify: `packages/core/src/features/dom/DomFeature.spec.ts`
 - Modify: `packages/core/src/features/lifecycle/LifecycleFeature.ts`
 - Modify: `packages/core/src/features/lifecycle/LifecycleFeature.spec.ts`
+- Modify: `packages/react/markput/src/components/Container.tsx`
+- Modify: `packages/vue/markput/src/components/Container.vue`
 
 - [ ] **Step 1: Write failing DOM registration tests**
 
@@ -827,10 +866,36 @@ describe('DomFeature registration', () => {
 
         expect(store.dom.locateNode(control)).toEqual({ok: false, reason: 'control'})
     })
+
+    it('reconciles registered text surfaces from accepted tokens', () => {
+        const container = document.createElement('div')
+        const shell = document.createElement('span')
+        const textSurface = document.createElement('span')
+        textSurface.textContent = 'stale'
+        container.append(shell)
+        shell.append(textSurface)
+
+        store.dom.refFor({role: 'container'})(container)
+        store.dom.refFor({role: 'token', path: [0]})(shell)
+        store.dom.refFor({role: 'text', path: [0]})(textSurface)
+        store.dom.enable()
+        store.lifecycle.rendered({container, layout: 'inline'})
+
+        expect(textSurface.textContent).toBe('hello ')
+        expect(textSurface.contentEditable).toBe('true')
+    })
+
+    it('returns a fresh structural key identity when structure-driving props change', () => {
+        const before = store.dom.structuralKey()
+
+        store.props.set({layout: 'block'})
+
+        expect(store.dom.structuralKey()).not.toBe(before)
+    })
 })
 ```
 
-- [ ] **Step 2: Type lifecycle rendered payload**
+- [ ] **Step 2: Type lifecycle rendered payload and update adapter callers**
 
 Modify `packages/core/src/features/lifecycle/LifecycleFeature.ts`:
 
@@ -853,6 +918,42 @@ Update `packages/core/src/features/lifecycle/LifecycleFeature.spec.ts` to call:
 store.lifecycle.rendered({container: document.createElement('div'), layout: 'inline'})
 ```
 
+In `packages/react/markput/src/components/Container.tsx`, pass the same payload in the same task:
+
+```tsx
+const {isBlock, tokens, key, lifecycleEmit, Component, props, layout, structuralKey} = useMarkput(s => ({
+    isBlock: s.slots.isBlock,
+    tokens: s.parsing.tokens,
+    key: s.key,
+    lifecycleEmit: s.lifecycle,
+    Component: s.slots.containerComponent,
+    props: s.slots.containerProps,
+    layout: s.props.layout,
+    structuralKey: s.dom.structuralKey,
+}))
+
+useLayoutEffect(() => {
+    const container = store.slots.container()
+    if (container) lifecycleEmit.rendered({container, layout})
+}, [lifecycleEmit, layout, store, structuralKey])
+```
+
+In `packages/vue/markput/src/components/Container.vue`, update the post-flush watch in the same task:
+
+```ts
+const structuralKey = useMarkput(s => s.dom.structuralKey)
+const layout = useMarkput(s => s.props.layout)
+
+watch(
+    () => structuralKey.value,
+    () => {
+        const container = store.slots.container()
+        if (container) store.lifecycle.rendered({container, layout: layout.value})
+    },
+    {flush: 'post', immediate: true}
+)
+```
+
 - [ ] **Step 3: Implement DomFeature registration/index façade**
 
 Replace `DomFeature` internals with this shape:
@@ -869,6 +970,8 @@ type RegisteredRole =
       }
 
 type PathElements = {
+    path: TokenPath
+    address: TokenAddress
     rowElement?: HTMLElement
     tokenElement?: HTMLElement
     textElement?: HTMLElement
@@ -898,7 +1001,16 @@ export class DomFeature {
     #container: HTMLElement | undefined
     #generation = 0
     #rendering = false
+    #isComposing = false
     #queuedRender: RenderedPayload | undefined
+
+    compositionStarted(): void {
+        this.#isComposing = true
+    }
+
+    compositionEnded(): void {
+        this.#isComposing = false
+    }
 }
 ```
 
@@ -930,9 +1042,8 @@ Implement rendered watcher in `enable()`:
 enable() {
 	if (this.#scope) return
 	this.#scope = effectScope(() => {
-		watch(this._store.lifecycle.rendered, payload => {
-			const rendered = payload.read()
-			if (rendered) this.#handleRendered(rendered)
+		watch(this._store.lifecycle.rendered, rendered => {
+			this.#handleRendered(rendered)
 		})
 	})
 }
@@ -987,7 +1098,7 @@ In `#commitRendered`, consume pending refs, resolve path refs through `store.par
 		}
 
 		const key = tokenIndex.key(target.path)
-		const record = pathElements.get(key) ?? {}
+		const record = pathElements.get(key) ?? {path: [...target.path], address}
 		if (target.role === 'row') record.rowElement = element
 		if (target.role === 'token') record.tokenElement = element
 		if (target.role === 'text') record.textElement = element
@@ -1004,6 +1115,43 @@ In `#commitRendered`, consume pending refs, resolve path refs through `store.par
 		() => this.#domIndex({generation: ++this.#generation}),
 		{mutable: true}
 	)
+}
+```
+
+Implement registered text-surface reconciliation. This replaces DOM child parity and `data-testid` wrapper detection for production reconciliation:
+
+```ts
+#reconcileRegisteredTextSurfaces(): void {
+    const tokenIndex = this._store.parsing.index()
+    const editable = this._store.props.readOnly() ? 'false' : 'true'
+
+    for (const record of this.#pathElements.values()) {
+        const resolved = tokenIndex.resolveAddress(record.address)
+        if (!resolved.ok) {
+            this.diagnostics({kind: 'stalePath', path: record.path, reason: 'registered path became stale during reconciliation'})
+            continue
+        }
+
+        if (record.textElement) {
+            if (resolved.value.type !== 'text') {
+                this.diagnostics({kind: 'missingRole', path: record.path, reason: 'text role registered for non-text token'})
+                continue
+            }
+            if (record.textElement.textContent !== resolved.value.content) {
+                record.textElement.textContent = resolved.value.content
+            }
+            record.textElement.contentEditable = editable
+            continue
+        }
+
+        if (record.tokenElement && resolved.value.type === 'mark') {
+            if (this._store.props.readOnly()) {
+                record.tokenElement.removeAttribute('tabindex')
+            } else {
+                record.tokenElement.tabIndex = 0
+            }
+        }
+    }
 }
 ```
 
@@ -1048,6 +1196,7 @@ Run:
 
 ```bash
 pnpm -w vitest run packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/lifecycle/LifecycleFeature.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass.
@@ -1055,7 +1204,7 @@ Expected: pass.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add packages/core/src/features/dom/DomFeature.ts packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/lifecycle/LifecycleFeature.ts packages/core/src/features/lifecycle/LifecycleFeature.spec.ts
+git add packages/core/src/features/dom/DomFeature.ts packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/lifecycle/LifecycleFeature.ts packages/core/src/features/lifecycle/LifecycleFeature.spec.ts packages/react/markput/src/components/Container.tsx packages/vue/markput/src/components/Container.vue
 git commit -m "feat(core): add DOM registration foundation"
 ```
 
@@ -1190,7 +1339,7 @@ export const Token = memo(({token}: {token: TokenType}) => {
 })
 ```
 
-Update the token context type to carry both token and address so `useMark()` can create controllers in Task 9.
+Update the token context type to carry both token and address so `useMark()` can create controllers in Task 10.
 
 - [ ] **Step 4: Update React block rows and controls**
 
@@ -1281,6 +1430,7 @@ Run:
 ```bash
 pnpm -w vitest run packages/storybook/src/pages/Selection/Selection.react.spec.tsx packages/storybook/src/pages/Selection/Selection.vue.spec.ts
 pnpm -w vitest run packages/core/src/features/dom/DomFeature.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass after updating snapshots that assert exact DOM shape.
@@ -1294,7 +1444,7 @@ git commit -m "feat(core): register adapter-owned DOM structure"
 
 ---
 
-### Task 5: Caret Location and NodeProxy Cutover
+### Task 5: Caret Location and Recovery Ownership
 
 **Files:**
 
@@ -1303,10 +1453,9 @@ git commit -m "feat(core): register adapter-owned DOM structure"
 - Modify: `packages/core/src/features/caret/selection.ts`
 - Modify: `packages/core/src/features/caret/focus.spec.ts`
 - Modify: `packages/core/src/features/caret/CaretFeature.spec.ts`
-- Modify: `packages/core/src/store/Store.ts`
-- Modify: `packages/core/src/shared/classes/index.ts`
-- Delete: `packages/core/src/shared/classes/NodeProxy.ts`
-- Delete: `packages/core/src/shared/classes/NodeProxy.spec.ts`
+- Modify: `packages/core/src/features/dom/DomFeature.ts`
+- Modify: `packages/core/src/features/dom/DomFeature.spec.ts`
+- Modify: `packages/core/src/features/value/ValueFeature.ts`
 
 - [ ] **Step 1: Write failing caret location tests**
 
@@ -1371,6 +1520,113 @@ export class CaretFeature implements Feature {
 
 `placeCaretAtRawPosition()` and `focusAddress()` are internal methods added to `DomFeature` in this task. They are caret-owned façades over current DOM index, not public feature mutation paths.
 
+Add tests to `packages/core/src/features/dom/DomFeature.spec.ts` before implementation:
+
+```ts
+it('places the caret at a raw position inside a registered text surface', () => {
+    const {store, textSurface} = mountRegisteredInline('hello')
+
+    expect(store.dom.placeCaretAtRawPosition(3, 'after')).toEqual({ok: true, value: undefined})
+
+    const selection = window.getSelection()
+    expect(selection?.focusNode).toBe(textSurface.firstChild)
+    expect(selection?.focusOffset).toBe(3)
+})
+
+it('focuses the element for an address', () => {
+    const {store, textSurface} = mountRegisteredInline('hello')
+    const address = store.parsing.index().addressFor([0])!
+
+    expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
+    expect(document.activeElement).toBe(textSurface)
+})
+```
+
+Implement the inverse raw-position placement in `DomFeature`:
+
+```ts
+placeCaretAtRawPosition(
+    rawPosition: number,
+    affinity: 'before' | 'after' = 'after'
+): Result<void, 'notIndexed' | 'invalidBoundary'> {
+    if (!this.index()) return {ok: false, reason: 'notIndexed'}
+    const target = this.#findTextTargetForRawPosition(rawPosition, affinity)
+    if (!target) return {ok: false, reason: 'invalidBoundary'}
+
+    target.element.focus()
+    this.#placeCaretInTextSurface(target.element, rawPosition - target.start)
+    return {ok: true, value: undefined}
+}
+
+focusAddress(address: TokenAddress): Result<void, 'notIndexed' | 'stale'> {
+    if (!this.index()) return {ok: false, reason: 'notIndexed'}
+    const resolved = this._store.parsing.index().resolveAddress(address)
+    if (!resolved.ok) return {ok: false, reason: 'stale'}
+
+    const elements = this.#pathElements.get(pathKey(address.path))
+    const target = elements?.textElement ?? elements?.tokenElement ?? elements?.rowElement
+    if (!target) return {ok: false, reason: 'notIndexed'}
+
+    target.focus()
+    return {ok: true, value: undefined}
+}
+
+#findTextTargetForRawPosition(
+    rawPosition: number,
+    affinity: 'before' | 'after'
+): {element: HTMLElement; start: number; end: number} | undefined {
+    const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
+    const tokenIndex = this._store.parsing.index()
+
+    for (const record of this.#pathElements.values()) {
+        if (!record.textElement) continue
+        const resolved = tokenIndex.resolveAddress(record.address)
+        if (!resolved.ok || resolved.value.type !== 'text') continue
+        candidates.push({
+            element: record.textElement,
+            start: resolved.value.position.start,
+            end: resolved.value.position.end,
+        })
+    }
+
+    candidates.sort((a, b) => a.start - b.start)
+    const containing = candidates.find(candidate => rawPosition >= candidate.start && rawPosition <= candidate.end)
+    if (containing) return containing
+    if (affinity === 'before') return [...candidates].reverse().find(candidate => candidate.end <= rawPosition)
+    return candidates.find(candidate => candidate.start >= rawPosition)
+}
+
+#placeCaretInTextSurface(surface: HTMLElement, offset: number): void {
+    const selection = window.getSelection()
+    if (!selection) return
+
+    const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+    let remaining = Math.max(0, offset)
+    let node = walker.nextNode() as Text | null
+    while (node) {
+        if (remaining <= node.length) {
+            const range = document.createRange()
+            range.setStart(node, remaining)
+            range.collapse(true)
+            selection.removeAllRanges()
+            selection.addRange(range)
+            return
+        }
+        remaining -= node.length
+        node = walker.nextNode() as Text | null
+    }
+
+    surface.textContent ??= ''
+    const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
+    if (!text.parentNode) surface.append(text)
+    const range = document.createRange()
+    range.setStart(text, text.length)
+    range.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(range)
+}
+```
+
 - [ ] **Step 3: Move recovery application into DomFeature rendered watcher**
 
 At the end of `DomFeature.#commitRendered()`:
@@ -1393,8 +1649,45 @@ Implement:
 		return
 	}
 
-	const result = this.#placeSelection(recovery.selection)
-	if (result.ok) this._store.caret.recovery(undefined)
+const result = this.#placeSelection(recovery.selection)
+if (result.ok) this._store.caret.recovery(undefined)
+}
+```
+
+Add the selection recovery helper in the same file:
+
+```ts
+#placeSelection(selection: RawSelection): Result<void, 'notIndexed' | 'invalidBoundary'> {
+    const start = this.#findTextTargetForRawPosition(selection.range.start, 'after')
+    const end = this.#findTextTargetForRawPosition(selection.range.end, 'before')
+    const browserSelection = window.getSelection()
+    if (!start || !end || !browserSelection) return {ok: false, reason: 'invalidBoundary'}
+
+    const startBoundary = this.#boundaryInTextSurface(start.element, selection.range.start - start.start)
+    const endBoundary = this.#boundaryInTextSurface(end.element, selection.range.end - end.start)
+    if (!startBoundary || !endBoundary) return {ok: false, reason: 'invalidBoundary'}
+
+    const range = document.createRange()
+    range.setStart(startBoundary.node, startBoundary.offset)
+    range.setEnd(endBoundary.node, endBoundary.offset)
+    browserSelection.removeAllRanges()
+    browserSelection.addRange(range)
+    return {ok: true, value: undefined}
+}
+
+#boundaryInTextSurface(surface: HTMLElement, offset: number): {node: Text; offset: number} | undefined {
+    const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+    let remaining = Math.max(0, offset)
+    let node = walker.nextNode() as Text | null
+    while (node) {
+        if (remaining <= node.length) return {node, offset: remaining}
+        remaining -= node.length
+        node = walker.nextNode() as Text | null
+    }
+
+    const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
+    if (!text.parentNode) surface.append(text)
+    return {node: text, offset: text.length}
 }
 ```
 
@@ -1418,59 +1711,37 @@ listen(container, 'focusin', event => {
 
 Modify `selection.ts` so control selections are ignored and editable selections update location through `store.dom.locateNode(selection.focusNode)`.
 
-- [ ] **Step 5: Remove Store.nodes and NodeProxy**
+- [ ] **Step 5: Remove recovery branches from old token-serialization paths**
 
-Modify `packages/core/src/store/Store.ts`:
+In `packages/core/src/features/value/ValueFeature.ts`, make the compatibility `change` branch schedule only raw recovery when callers provide it. Do not inspect `store.nodes.focus` here. Any old `store.nodes` recovery references stay only in features that have not yet migrated and are removed by Tasks 7-9.
+
+Add a guard comment next to `store.nodes` in `Store.ts`:
 
 ```ts
-import {KeyGenerator, MarkputHandler} from '../shared/classes'
-
-export class Store {
-    readonly key = new KeyGenerator()
-    readonly blocks = new BlockRegistry()
-    readonly props = new PropsFeature(this)
-    readonly handler = new MarkputHandler(this)
-    // no readonly nodes
+// Temporary compatibility bridge for unmigrated feature slices.
+// Do not add new feature-facing NodeProxy usage. Removed in Task 11.
+readonly nodes = {
+    focus: new NodeProxy(undefined, this),
+    input: new NodeProxy(undefined, this),
 }
 ```
 
-Modify `packages/core/src/shared/classes/index.ts`:
-
-```ts
-export {MarkputHandler} from './MarkputHandler'
-export {KeyGenerator} from './KeyGenerator'
-export {effect, event, signal, watch, batch, untracked} from '../signals'
-export type {Signal, Event} from '../signals'
-```
-
-Delete `NodeProxy.ts` and `NodeProxy.spec.ts` after all imports are gone.
-
-- [ ] **Step 6: Run NodeProxy absence check**
-
-Run:
-
-```bash
-rg "NodeProxy|store\\.nodes|nodes\\.focus|nodes\\.input" packages/core/src packages/react packages/vue
-```
-
-Expected: no output.
-
-- [ ] **Step 7: Run caret checks**
+- [ ] **Step 6: Run caret checks**
 
 Run:
 
 ```bash
 pnpm -w vitest run packages/core/src/features/caret/CaretFeature.spec.ts packages/core/src/features/caret/focus.spec.ts packages/core/src/features/caret/selection.spec.ts packages/core/src/features/dom/DomFeature.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add packages/core/src/features/caret packages/core/src/features/dom/DomFeature.ts packages/core/src/store/Store.ts packages/core/src/shared/classes/index.ts
-git add -u packages/core/src/shared/classes
-git commit -m "refactor(core): replace NodeProxy with caret location"
+git add packages/core/src/features/caret packages/core/src/features/dom/DomFeature.ts packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/value/ValueFeature.ts packages/core/src/store/Store.ts
+git commit -m "feat(core): move caret recovery to DOM index"
 ```
 
 ---
@@ -1539,14 +1810,51 @@ function textOffsetWithin(surface: HTMLElement, node: Node, offset: number): num
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent ?? ''
         if (splitsSurrogatePair(text, offset)) return undefined
-        const range = document.createRange()
-        range.selectNodeContents(surface)
-        range.setEnd(node, offset)
-        return range.toString().length
+        return textOffsetFromTreeWalker(surface, node as Text, offset)
     }
 
-    if (node === surface) return offset === 0 ? 0 : surface.textContent.length
+    if (node === surface) return elementBoundaryOffset(surface, offset)
     return undefined
+}
+
+function textOffsetFromTreeWalker(surface: HTMLElement, target: Text, targetOffset: number): number | undefined {
+    let total = 0
+    const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+    let current = walker.nextNode() as Text | null
+    while (current) {
+        if (current === target) return total + targetOffset
+        total += current.length
+        current = walker.nextNode() as Text | null
+    }
+    return undefined
+}
+
+function textLength(surface: HTMLElement): number {
+    let total = 0
+    const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+    let current = walker.nextNode() as Text | null
+    while (current) {
+        total += current.length
+        current = walker.nextNode() as Text | null
+    }
+    return total
+}
+
+function elementBoundaryOffset(surface: HTMLElement, offset: number): number | undefined {
+    if (offset <= 0) return 0
+    if (offset >= surface.childNodes.length) return textLength(surface)
+
+    let total = 0
+    for (let i = 0; i < offset; i++) {
+        const child = surface.childNodes.item(i)
+        if (!child) continue
+        if (child.nodeType === Node.TEXT_NODE) {
+            total += (child as Text).length
+            continue
+        }
+        if (child instanceof HTMLElement) total += textLength(child)
+    }
+    return total
 }
 ```
 
@@ -1577,14 +1885,69 @@ rawPositionFromBoundary(
 	}
 
 	if (node === location.value.tokenElement) {
-		return {ok: true, value: affinity === 'before' ? token.value.position.start : token.value.position.end}
+		const childCount = location.value.tokenElement.childNodes.length
+		if (offset <= 0) return {ok: true, value: affinity === 'after' && textElement ? token.value.position.start : token.value.position.start}
+		if (offset >= childCount) return {ok: true, value: affinity === 'before' && textElement ? token.value.position.end : token.value.position.end}
+		return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
+	}
+
+	if (location.value.rowElement && node === location.value.rowElement) {
+		return {ok: true, value: offset <= 0 ? token.value.position.start : token.value.position.end}
+	}
+
+	const container = this.#container
+	if (container && node === container) {
+		return this.#rawPositionFromContainerBoundary(offset, affinity)
 	}
 
 	return {ok: false, reason: 'invalidBoundary'}
 }
 ```
 
-Extend this method in the same task for row start/end, container start/end, slot-root boundaries, empty text surfaces, and adjacent mark gaps using the affinity matrix from the spec.
+Add these boundary helpers in the same task. They make the affinity matrix explicit for container start/end, token child gaps, adjacent token gaps, row boundaries, and empty text surfaces:
+
+```ts
+#rawPositionFromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
+    const tokens = this._store.parsing.tokens()
+    if (tokens.length === 0) return {ok: true, value: 0}
+    if (offset <= 0) return {ok: true, value: tokens[0].position.start}
+    if (offset >= tokens.length) return {ok: true, value: tokens[tokens.length - 1].position.end}
+
+    const before = tokens[offset - 1]
+    const after = tokens[offset]
+    if (!before || !after) return {ok: false, reason: 'invalidBoundary'}
+    return {ok: true, value: affinity === 'before' ? before.position.end : after.position.start}
+}
+
+#rawPositionFromTokenChildBoundary(
+    tokenElement: HTMLElement,
+    offset: number,
+    token: Token,
+    affinity: 'before' | 'after'
+): BoundaryPositionResult {
+    if (token.type === 'text') {
+        const textElement = this.#pathElements.get(pathKey(this._store.parsing.index().pathFor(token) ?? []))?.textElement
+        if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
+    }
+
+    const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
+    const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
+    if (before?.ok && after?.ok) {
+        const beforeToken = this._store.parsing.index().resolveAddress(before.value.address)
+        const afterToken = this._store.parsing.index().resolveAddress(after.value.address)
+        if (beforeToken.ok && afterToken.ok) {
+            return {ok: true, value: affinity === 'before' ? beforeToken.value.position.end : afterToken.value.position.start}
+        }
+    }
+
+    return {ok: true, value: affinity === 'before' ? token.position.start : token.position.end}
+}
+
+#locateRegisteredDescendant(node: Node | null): NodeLocationResult | undefined {
+    if (!node) return undefined
+    return this.locateNode(node)
+}
+```
 
 - [ ] **Step 4: Implement `readRawSelection()`**
 
@@ -1605,13 +1968,15 @@ readRawSelection(): RawSelectionResult {
 		return {ok: false, reason: start.reason}
 	}
 
-	const direction =
-		selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
-			? 'backward'
-			: 'forward'
 	const rangeValue = start.value <= end.value ? {start: start.value, end: end.value} : {start: end.value, end: start.value}
+	const direction =
+		rangeValue.start === rangeValue.end
+			? undefined
+			: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
+				? 'backward'
+				: 'forward'
 
-	return {ok: true, value: {range: rangeValue, direction}}
+	return {ok: true, value: direction ? {range: rangeValue, direction} : {range: rangeValue}}
 }
 ```
 
@@ -1621,6 +1986,7 @@ Run:
 
 ```bash
 pnpm -w vitest run packages/core/src/features/dom/DomFeature.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass.
@@ -1689,17 +2055,27 @@ Implement `serializeRawRange()` in `ClipboardFeature.ts` as a private function:
 
 ```ts
 function serializeRawRange(tokens: readonly Token[], range: RawRange): string {
-    const selected = tokens
+    return toString(trimTokensForRawRange(tokens, range))
+}
+
+function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token[] {
+    return tokens
         .filter(token => token.position.end > range.start && token.position.start < range.end)
         .map(token => {
-            if (token.type !== 'text') return token
-            const start = Math.max(0, range.start - token.position.start)
-            const end = Math.min(token.content.length, range.end - token.position.start)
-            return {...token, content: token.content.slice(start, end)}
+            if (token.type === 'text') {
+                const start = Math.max(0, range.start - token.position.start)
+                const end = Math.min(token.content.length, range.end - token.position.start)
+                return {...token, content: token.content.slice(start, end)}
+            }
+
+            const children = trimTokensForRawRange(token.children, range)
+            if (children.length === token.children.length) return token
+            return {...token, children}
         })
-    return toString(selected)
 }
 ```
+
+Add or update tests for a partial selection inside a nested mark. The expected Markput MIME payload must contain the same outer markup and only the selected nested text, not the full untrimmed nested mark.
 
 - [ ] **Step 3: Migrate cut to value pipeline**
 
@@ -1731,6 +2107,7 @@ Run:
 ```bash
 pnpm -w vitest run packages/storybook/src/pages/Clipboard/Clipboard.react.spec.tsx packages/storybook/src/pages/Clipboard/Clipboard.vue.spec.ts
 pnpm -w vitest run packages/core/src/features/clipboard/pasteMarkup.spec.ts packages/core/src/features/dom/DomFeature.spec.ts
+pnpm run typecheck
 ```
 
 Expected: pass.
@@ -1751,8 +2128,10 @@ git commit -m "refactor(core): route clipboard through DOM raw selection"
 
 - Modify: `packages/core/src/features/keyboard/input.ts`
 - Modify: `packages/core/src/features/keyboard/input.spec.ts`
+- Modify: `packages/core/src/features/caret/TriggerFinder.ts`
 - Modify: `packages/core/src/features/overlay/OverlayFeature.ts`
 - Modify: `packages/core/src/features/overlay/OverlayFeature.spec.ts`
+- Modify: `packages/core/src/shared/types.ts`
 - Modify: `packages/storybook/src/pages/Dynamic/Dynamic.react.stories.tsx`
 - Modify: `packages/storybook/src/pages/Dynamic/Dynamic.vue.stories.ts`
 
@@ -1807,9 +2186,9 @@ store.value.replaceRange(raw.value.range, event.data ?? '', {
 
 Implement deletion and paste branches through the same helper. Markput MIME paste uses `consumeMarkupPaste(container)` for replacement text and still commits through `replaceRange()`.
 
-- [ ] **Step 3: Add composition event tracking to DomFeature**
+- [ ] **Step 3: Wire composition events to DomFeature**
 
-In `enableInput()`, listen to composition events on the container:
+`DomFeature.compositionStarted()` and `compositionEnded()` were added in Task 3. In `enableInput()`, listen to composition events on the container and keep composition state in `store.dom`:
 
 ```ts
 listen(container, 'compositionstart', () => store.dom.compositionStarted())
@@ -1847,6 +2226,24 @@ range: RawRange
 
 Then update trigger finding code so `range.start` and `range.end` are raw positions from the current DOM location rather than DOM node indexes.
 
+Modify `packages/core/src/features/caret/TriggerFinder.ts` so the match includes both the old local `index` during this slice and the new raw range:
+
+```ts
+const boundary = store.dom.rawPositionFromBoundary(node, localIndex, 'after')
+if (!boundary.ok) return undefined
+
+return {
+    ...match,
+    index: localIndex,
+    range: {
+        start: boundary.value - match.source.length,
+        end: boundary.value,
+    },
+}
+```
+
+After `OverlayFeature` uses `match.range`, leave `index` only if a public type consumer still compiles against it. Remove it in Task 11 if no production references remain.
+
 - [ ] **Step 5: Run inline and overlay checks**
 
 Run:
@@ -1854,6 +2251,7 @@ Run:
 ```bash
 pnpm -w vitest run packages/core/src/features/keyboard/input.spec.ts packages/core/src/features/overlay/OverlayFeature.spec.ts packages/core/src/features/dom/DomFeature.spec.ts
 pnpm -w vitest run packages/storybook/src/pages/Dynamic
+pnpm run typecheck
 ```
 
 Expected: pass after updating dynamic stories that used editable mark refs.
@@ -1950,8 +2348,35 @@ store.value.replaceAll(newValue, {
 In `DragFeature.ts`, replace `value.next()` calls:
 
 ```ts
-const result = this.store.value.replaceAll(newValue, {source: 'drag'})
+const result = this.store.value.replaceAll(newValue, {
+    source: 'drag',
+    recover: this.#recoverAfterDrag(action, rows, newValue),
+})
 if (!result.ok) return
+```
+
+Add a small recovery helper so add/duplicate/delete/reorder keep focus at a deterministic row boundary:
+
+```ts
+#recoverAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): CaretRecovery | undefined {
+    if (action.type === 'add') {
+        const after = previousRows[action.afterIndex]
+        const rawPosition = after ? after.position.end : nextValue.length
+        return {kind: 'caret', rawPosition}
+    }
+    if (action.type === 'duplicate') {
+        const row = previousRows[action.index]
+        return row ? {kind: 'caret', rawPosition: row.position.end} : undefined
+    }
+    if (action.type === 'delete') {
+        const next = previousRows[action.index + 1] ?? previousRows[action.index - 1]
+        return next ? {kind: 'caret', rawPosition: Math.min(next.position.start, nextValue.length)} : {kind: 'caret', rawPosition: 0}
+    }
+    if (action.type === 'reorder') {
+        const moved = previousRows[action.source]
+        return moved ? {kind: 'caret', rawPosition: Math.min(moved.position.start, nextValue.length)} : undefined
+    }
+}
 ```
 
 Keep drag preview state in `BlockRegistry`; do not mutate `parsing.tokens()` during preview.
@@ -1967,6 +2392,7 @@ Run:
 ```bash
 pnpm -w vitest run packages/core/src/features/drag/DragFeature.spec.ts packages/core/src/features/dom/DomFeature.spec.ts
 pnpm -w vitest run packages/storybook/src/pages/Drag
+pnpm run typecheck
 ```
 
 Expected: pass.
@@ -1991,6 +2417,8 @@ git commit -m "refactor(core): route block and drag edits through raw ranges"
 - Modify: `packages/core/src/features/mark/index.ts`
 - Delete or deprecate: `packages/core/src/features/mark/MarkHandler.ts`
 - Modify: `packages/core/src/features/mark/MarkHandler.spec.ts`
+- Modify: `packages/core/src/features/parsing/parser/utils/annotate.ts`
+- Modify: `packages/core/src/features/parsing/parser/utils/annotate.spec.ts`
 - Modify: `packages/react/markput/src/lib/hooks/useMark.tsx`
 - Create: `packages/react/markput/src/lib/hooks/useMarkInfo.tsx`
 - Modify: `packages/vue/markput/src/lib/hooks/useMark.ts`
@@ -2047,6 +2475,29 @@ describe('MarkController', () => {
 
         expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello @[markput]'})
         expect(store.value.current()).toBe('hello @[markput]')
+    })
+
+    it('clears metadata without leaking placeholder text', () => {
+        const {store, controller} = setup('hello @[world](meta)')
+
+        const result = controller.update({meta: {kind: 'clear'}})
+
+        expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello @[world]()'})
+        expect(store.value.current()).toBe('hello @[world]()')
+        expect(store.value.current()).not.toContain('__meta__')
+    })
+
+    it('clears slot content without leaking placeholder text', () => {
+        const store = new Store()
+        store.props.set({defaultValue: '#[nested]', Mark: () => null, options: [{markup: '#[__slot__]'}]})
+        store.value.enable()
+        const token = store.parsing.tokens().find(t => t.type === 'mark')!
+        const controller = MarkController.fromToken(store, token)
+
+        const result = controller.update({slot: {kind: 'clear'}})
+
+        expect(result).toEqual({ok: true, accepted: 'immediate', value: '#[]'})
+        expect(store.value.current()).not.toContain('__slot__')
     })
 
     it('fails closed when address is stale', () => {
@@ -2144,9 +2595,17 @@ export class MarkController {
                   : token.children.length > 0
                     ? undefined
                     : token.slot?.content
-        const serialized = annotate(token.descriptor.markup, {value, meta, slot})
+        const serialized = this.#serialize(token, {value, meta, slot})
 
         return this.store.value.replaceRange(token.position, serialized, {source: 'mark'})
+    }
+
+    #serialize(token: MarkToken, fields: {value: string; meta?: string; slot?: string}): string {
+        return annotate(token.descriptor.markup, {
+            value: fields.value,
+            meta: token.descriptor.gapTypes.includes('meta') ? (fields.meta ?? '') : undefined,
+            slot: token.descriptor.hasSlot ? (fields.slot ?? '') : undefined,
+        })
     }
 
     #resolve(): {ok: true; value: MarkToken} | {ok: false; reason: 'stale' | 'readOnly'} {
@@ -2165,9 +2624,30 @@ Modify `packages/react/markput/src/lib/hooks/useMark.tsx`:
 ```tsx
 export const useMark = (): MarkController => {
     const {store, token} = useTokenContext()
+    const readOnly = useMarkput(s => s.props.readOnly)
     if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
-    return useMemo(() => MarkController.fromToken(store, token), [store, token])
+    return useMemo(() => MarkController.fromToken(store, token), [store, token, readOnly])
 }
+```
+
+Update `packages/core/src/features/parsing/parser/utils/annotate.ts` and its spec so optional placeholders are never emitted literally:
+
+```ts
+export function annotate(markup: Markup, params: {value?: string; meta?: string; slot?: string}): string {
+    return (markup as string)
+        .replaceAll(PLACEHOLDER.Value, params.value ?? '')
+        .replaceAll(PLACEHOLDER.Meta, params.meta ?? '')
+        .replaceAll(PLACEHOLDER.Slot, params.slot ?? '')
+}
+```
+
+Add this test to `annotate.spec.ts`:
+
+```ts
+it('replaces missing optional placeholders with empty strings', () => {
+    expect(annotate('@[__value__](__meta__)', {value: 'world'})).toBe('@[world]()')
+    expect(annotate('#[__slot__]', {})).toBe('#[]')
+})
 ```
 
 Create `packages/react/markput/src/lib/hooks/useMarkInfo.tsx`:
@@ -2193,7 +2673,21 @@ export const useMarkInfo = (): MarkInfo => {
 
 - [ ] **Step 4: Update Vue `useMark()` and add `useMarkInfo()`**
 
-Mirror the React hooks in `packages/vue/markput/src/lib/hooks/useMark.ts` and `useMarkInfo.ts`, returning Vue refs only when the existing hook pattern requires them. The public `useMark()` value is the `MarkController`; path/depth/key live in `useMarkInfo()`.
+Mirror the React hooks in `packages/vue/markput/src/lib/hooks/useMark.ts` and `useMarkInfo.ts`. Subscribe to `store.props.readOnly` so the controller snapshot is recreated when read-only changes:
+
+```ts
+export const useMark = (): MarkController => {
+    const store = useStore()
+    const token = inject(TOKEN_KEY)
+    const readOnly = useMarkput(s => s.props.readOnly)
+    if (!token?.value || token.value.type !== 'mark')
+        throw new Error('useMark must be called within a mark token context')
+    readOnly.value
+    return MarkController.fromToken(store, token.value)
+}
+```
+
+The public `useMark()` value is the `MarkController`; path/depth/key live in `useMarkInfo()`.
 
 - [ ] **Step 5: Remove public ref mutation examples**
 
@@ -2244,7 +2738,7 @@ export const MarkHandler = MarkController
 Run:
 
 ```bash
-pnpm -w vitest run packages/core/src/features/mark/MarkController.spec.ts packages/core/src/features/mark/MarkFeature.spec.ts
+pnpm -w vitest run packages/core/src/features/mark/MarkController.spec.ts packages/core/src/features/mark/MarkFeature.spec.ts packages/core/src/features/parsing/parser/utils/annotate.spec.ts
 pnpm -w vitest run packages/storybook/src/pages/Dynamic packages/storybook/src/pages/Nested
 pnpm run typecheck
 ```
@@ -2254,7 +2748,7 @@ Expected: pass.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add packages/core/src/features/mark packages/core/index.ts packages/react/markput/src/lib/hooks packages/vue/markput/src/lib/hooks packages/react/markput/src/types.ts packages/vue/markput/src/types.ts packages/storybook/src/pages/Dynamic packages/storybook/src/pages/Nested
+git add packages/core/src/features/mark packages/core/src/features/parsing/parser/utils/annotate.ts packages/core/src/features/parsing/parser/utils/annotate.spec.ts packages/core/index.ts packages/react/markput/src/lib/hooks packages/vue/markput/src/lib/hooks packages/react/markput/src/types.ts packages/vue/markput/src/types.ts packages/storybook/src/pages/Dynamic packages/storybook/src/pages/Nested
 git commit -m "feat(core): replace mark refs with mark controller"
 ```
 
@@ -2266,9 +2760,14 @@ git commit -m "feat(core): replace mark refs with mark controller"
 
 - Modify: `packages/core/src/features/dom/DomFeature.ts`
 - Modify: `packages/core/src/features/dom/README.md`
+- Modify: `packages/core/src/store/Store.ts`
+- Modify: `packages/core/src/store/Store.spec.ts`
 - Modify: `packages/core/src/store/README.md`
 - Modify: `packages/core/src/features/value/README.md`
 - Modify: `packages/core/src/features/mark/README.md`
+- Modify: `packages/core/src/shared/classes/index.ts`
+- Delete: `packages/core/src/shared/classes/NodeProxy.ts`
+- Delete: `packages/core/src/shared/classes/NodeProxy.spec.ts`
 - Modify: `packages/website/src/content/docs/development/architecture.md`
 - Modify: `packages/website/src/content/docs/development/how-it-works.md`
 - Modify: `packages/website/src/content/docs/guides/dynamic-marks.md`
@@ -2290,18 +2789,71 @@ Remove temporary production paths that serialize mutated tokens:
 - DOM child-parity helpers.
 - `data-testid` checks in production code.
 - Public `MarkHandler` alias if adapters and stories no longer import it.
+- `OverlayMatch.index` if the typecheck confirms no public or adapter consumer still needs the transitional local index.
+
+Remove the compatibility bridge from `packages/core/src/store/Store.ts`:
+
+```ts
+import {KeyGenerator, MarkputHandler} from '../shared/classes'
+
+export class Store {
+    readonly key = new KeyGenerator()
+    readonly blocks = new BlockRegistry()
+    readonly props = new PropsFeature(this)
+    readonly handler = new MarkputHandler(this)
+    // no readonly nodes
+}
+```
+
+Remove `NodeProxy` from `packages/core/src/shared/classes/index.ts`:
+
+```ts
+export {MarkputHandler} from './MarkputHandler'
+export {KeyGenerator} from './KeyGenerator'
+export {effect, event, signal, watch, batch, untracked} from '../signals'
+export type {Signal, Event} from '../signals'
+```
+
+Delete `packages/core/src/shared/classes/NodeProxy.ts` and `packages/core/src/shared/classes/NodeProxy.spec.ts`.
 
 - [ ] **Step 2: Run static absence checks**
 
 Run:
 
 ```bash
-rg "NodeProxy|store\\.nodes|nodes\\.focus|nodes\\.input|selectionToTokens|getDomRawPos|getCaretRawPosInBlock|setCaretAtRawPos|useMark\\(\\).*ref|data-testid.*production|\\.value\\s*=|\\.meta\\s*=|\\.slot\\s*=" packages/core/src packages/react/markput/src packages/vue/markput/src
+rg "NodeProxy|store\\.nodes|nodes\\.focus|nodes\\.input|selectionToTokens|getDomRawPos|getCaretRawPosInBlock|setCaretAtRawPos|useMark\\(\\).*ref|data-testid.*production" packages/core/src packages/react/markput/src packages/vue/markput/src
+rg "\\b(token|markToken|innerMark|currentToken)\\.(value|content|meta|slot)\\s*=" packages/core/src packages/react/markput/src packages/vue/markput/src
 ```
 
-Expected: no production matches. Matches in docs that describe removed APIs should be removed in Step 3.
+Expected: no production matches. The second grep is intentionally scoped to known parser-token variable names so legitimate unrelated `.value` assignments do not fail the check.
 
-- [ ] **Step 3: Update docs**
+- [ ] **Step 3: Verify feature enable order**
+
+Add a store-level regression test in `packages/core/src/store/Store.spec.ts`:
+
+```ts
+it('mounts features in an order that supports initial render indexing', () => {
+    const store = new Store()
+    store.props.set({defaultValue: 'hello'})
+    const container = document.createElement('div')
+    const shell = document.createElement('span')
+    const text = document.createElement('span')
+    container.append(shell)
+    shell.append(text)
+
+    store.dom.refFor({role: 'container'})(container)
+    store.dom.refFor({role: 'token', path: [0]})(shell)
+    store.dom.refFor({role: 'text', path: [0]})(text)
+
+    expect(() => {
+        store.lifecycle.mounted()
+        store.lifecycle.rendered({container, layout: 'inline'})
+    }).not.toThrow()
+    expect(store.dom.index()).toBeDefined()
+})
+```
+
+- [ ] **Step 4: Update docs**
 
 In `architecture.md`, add the core-engine ownership rules:
 
@@ -2331,7 +2883,7 @@ In `AGENTS.md` and `CLAUDE.md`, update the architecture section:
 DOM/token mapping lives in `store.dom` through adapter-owned structural registration. Do not use DOM child parity, public data attributes, user refs, or `NodeProxy` for token location. Value edits go through `store.value.replaceRange()` / `replaceAll()` with raw positions and optional `caret.recovery`.
 ```
 
-- [ ] **Step 4: Run full local verification**
+- [ ] **Step 5: Run full local verification**
 
 Run:
 
@@ -2345,10 +2897,11 @@ pnpm run format:check
 
 Expected: all pass.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add packages/core/src packages/react/markput/src packages/vue/markput/src packages/storybook/src packages/website/src/content/docs AGENTS.md CLAUDE.md
+git add -u packages/core/src/shared/classes
 git commit -m "docs: document core editor engine architecture"
 ```
 
@@ -2361,7 +2914,7 @@ Spec coverage:
 - Shared contracts are introduced in Task 1.
 - TokenPath, TokenAddress, parse generation, stale validation, and descriptor identity checks are introduced in Tasks 1 and 10.
 - Adapter-owned DOM registration, stable refs, `DomIndex`, `structuralKey`, diagnostics, and non-reentrant rendered processing are introduced in Tasks 3 and 4.
-- `store.nodes` and `NodeProxy` are removed in Task 5.
+- `store.nodes` and `NodeProxy` are marked as a no-new-usage bridge in Task 5 and removed after all consumers migrate in Task 11.
 - Raw boundary and selection semantics, including controls, mixed boundaries, surrogate pairs, and affinity, are implemented in Task 6.
 - Clipboard is migrated first among selection consumers in Task 7.
 - Inline input, paste, IME, and overlay are migrated in Task 8.
