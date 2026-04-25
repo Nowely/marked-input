@@ -35,6 +35,7 @@ export type NodeLocationResult = Result<
 		readonly tokenElement: HTMLElement
 		readonly textElement?: HTMLElement
 		readonly rowElement?: HTMLElement
+		readonly slotRootElement?: HTMLElement
 	},
 	'notIndexed' | 'outsideEditor' | 'control'
 >

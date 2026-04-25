@@ -6,7 +6,7 @@ title: "Token"
 ---
 
 ```ts
-type Token = 
+type Token =
   | TextToken
   | MarkToken;
 ```

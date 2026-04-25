@@ -1,7 +1,7 @@
 import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
-import {applySpanInput, handleBeforeInput, replaceAllContentWith} from './input'
+import {applySpanInput, enableInput, handleBeforeInput, replaceAllContentWith} from './input'
 
 function mountRegisteredInline(value = 'hello') {
 	const store = new Store()
@@ -22,6 +22,28 @@ function mountRegisteredInline(value = 'hello') {
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
 	return {store, container, textSurface, textNode}
+}
+
+function mountRegisteredMarkWithDescendant(value = '@[world]') {
+	const store = new Store()
+	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	store.value.enable()
+	const container = document.createElement('div')
+	const shell = document.createElement('span')
+	const descendant = document.createElement('span')
+	descendant.contentEditable = 'true'
+	descendant.textContent = 'inner'
+	container.append(shell)
+	shell.append(descendant)
+	document.body.append(container)
+	store.slots.container(container)
+	store.dom.refFor({role: 'container'})(container)
+	store.dom.refFor({role: 'token', path: [1]})(shell)
+	store.dom.enable()
+	store.lifecycle.rendered({container, layout: 'inline'})
+	const descendantText = descendant.firstChild
+	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
+	return {store, container, descendantText}
 }
 
 function inputEvent(inputType: string, range: Range, init?: InputEventInit): InputEvent {
@@ -105,6 +127,51 @@ describe('handleBeforeInput()', () => {
 
 		expect(replaceRange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
+		container.remove()
+	})
+
+	it('ignores beforeinput from editable mark descendants', () => {
+		const {store, container, descendantText} = mountRegisteredMarkWithDescendant()
+		const replaceRange = vi.spyOn(store.value, 'replaceRange')
+		const range = document.createRange()
+		range.setStart(descendantText, 0)
+		range.setEnd(descendantText, 0)
+		const event = inputEvent('insertText', range, {data: 'x'})
+
+		handleBeforeInput(store, event)
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(replaceRange).not.toHaveBeenCalled()
+		container.remove()
+	})
+})
+
+describe('composition input', () => {
+	it('commits composition text at the original raw selection', () => {
+		const {store, container, textNode} = mountRegisteredInline('ab')
+		const disable = enableInput(store)
+		const selection = window.getSelection()
+		const initialRange = document.createRange()
+		initialRange.setStart(textNode, 1)
+		initialRange.collapse(true)
+		selection?.removeAllRanges()
+		selection?.addRange(initialRange)
+
+		container.dispatchEvent(new Event('compositionstart', {bubbles: true}))
+		textNode.textContent = 'aXb'
+
+		const finalRange = document.createRange()
+		finalRange.setStart(textNode, 2)
+		finalRange.collapse(true)
+		selection?.removeAllRanges()
+		selection?.addRange(finalRange)
+		const compositionEnd = new Event('compositionend', {bubbles: true})
+		Object.defineProperty(compositionEnd, 'data', {value: 'X'})
+
+		container.dispatchEvent(compositionEnd)
+
+		expect(store.value.current()).toBe('aXb')
+		disable()
 		container.remove()
 	})
 })

@@ -26,7 +26,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:15](https://github.com/N
 ### match
 
 ```ts
-match: 
+match:
   | OverlayMatch<Option<MarkProps, OverlayProps>>
   | undefined;
 ```

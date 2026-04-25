@@ -14,9 +14,9 @@ export class ControlledEcho {
 
 	onEcho(value: string): CaretRecovery | undefined {
 		const pending = this.#pending
-		if (!pending || pending.candidate !== value) return undefined
+		if (!pending) return undefined
 		this.#pending = undefined
-		return pending.recovery
+		return pending.candidate === value ? pending.recovery : undefined
 	}
 
 	supersede(): void {

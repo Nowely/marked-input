@@ -23,6 +23,7 @@ type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reaso
 export function enableInput(store: Store): () => void {
 	const container = store.slots.container()
 	if (!container) return () => {}
+	let compositionRange: RawRange | undefined
 
 	const scope = effectScope(() => {
 		listen(container, 'paste', e => {
@@ -32,18 +33,21 @@ export function enableInput(store: Store): () => void {
 		})
 
 		listen(container, 'compositionstart', () => {
+			const selection = store.dom.readRawSelection()
+			compositionRange = selection.ok ? selection.value.range : undefined
 			store.dom.compositionStarted()
 		})
 
 		listen(container, 'compositionend', e => {
+			const range = compositionRange
+			compositionRange = undefined
 			store.dom.compositionEnded()
 			if (store.slots.isBlock()) return
-			const selection = store.dom.readRawSelection()
-			if (!selection.ok) return
+			if (!range) return
 			const data = e.data
-			store.value.replaceRange(selection.value.range, data, {
+			store.value.replaceRange(range, data, {
 				source: 'input',
-				recover: {kind: 'caret', rawPosition: selection.value.range.start + data.length},
+				recover: {kind: 'caret', rawPosition: range.start + data.length},
 			})
 		})
 

@@ -99,6 +99,21 @@ function elementBoundaryOffset(surface: HTMLElement, offset: number): number | u
 	return total
 }
 
+function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
+	let current = node instanceof HTMLElement ? node : node.parentElement
+	while (current && current !== boundary) {
+		if (
+			current.isContentEditable ||
+			current.contentEditable === 'true' ||
+			current.contentEditable === 'plaintext-only'
+		) {
+			return true
+		}
+		current = current.parentElement
+	}
+	return false
+}
+
 export class DomFeature {
 	readonly #domIndex = signal<DomIndex | undefined>(undefined, {readonly: true})
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
@@ -195,6 +210,7 @@ export class DomFeature {
 							tokenElement: elements.tokenElement,
 							textElement: elements.textElement,
 							rowElement: elements.rowElement,
+							slotRootElement: elements.slotRootElement,
 						},
 					}
 				}
@@ -271,7 +287,19 @@ export class DomFeature {
 			return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
 		}
 
+		if (node === location.value.slotRootElement) {
+			return this.#rawPositionFromTokenChildBoundary(
+				location.value.slotRootElement,
+				offset,
+				token.value,
+				affinity
+			)
+		}
+
 		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
+			if (hasEditableAncestorBefore(node, location.value.tokenElement)) {
+				return {ok: false, reason: 'invalidBoundary'}
+			}
 			return {
 				ok: true,
 				value: affinity === 'after' ? token.value.position.start : token.value.position.end,

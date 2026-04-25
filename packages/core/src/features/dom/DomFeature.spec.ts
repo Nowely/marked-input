@@ -23,6 +23,27 @@ function mountRegisteredInline(value: string) {
 	return {store, container, shell, textSurface, textNode}
 }
 
+function mountRegisteredMarkWithDescendant(value = '@[world]') {
+	const store = new Store()
+	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	store.value.enable()
+	const container = document.createElement('div')
+	const shell = document.createElement('span')
+	const descendant = document.createElement('span')
+	descendant.contentEditable = 'true'
+	descendant.textContent = 'inner'
+	container.append(shell)
+	shell.append(descendant)
+	document.body.append(container)
+	store.dom.refFor({role: 'container'})(container)
+	store.dom.refFor({role: 'token', path: [1]})(shell)
+	store.dom.enable()
+	store.lifecycle.rendered({container, layout: 'inline'})
+	const descendantText = descendant.firstChild
+	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
+	return {store, container, descendant, descendantText}
+}
+
 function mountRegisteredBlockWithControl(value: string) {
 	const store = new Store()
 	store.props.set({defaultValue: value, layout: 'block'})
@@ -226,6 +247,16 @@ describe('DomFeature registration', () => {
 
 			expect(store.dom.rawPositionFromBoundary(shell, 0, 'before')).toEqual({ok: true, value: 0})
 			expect(store.dom.rawPositionFromBoundary(shell, 1, 'after')).toEqual({ok: true, value: 5})
+			container.remove()
+		})
+
+		it('rejects editable boundaries inside mark presentation descendants', () => {
+			const {store, container, descendantText} = mountRegisteredMarkWithDescendant()
+
+			expect(store.dom.rawPositionFromBoundary(descendantText, 0, 'after')).toEqual({
+				ok: false,
+				reason: 'invalidBoundary',
+			})
 			container.remove()
 		})
 

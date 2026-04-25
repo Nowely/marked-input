@@ -13,9 +13,9 @@ Defined in: [core/src/features/mark/MarkController.ts:7](https://github.com/Nowe
 
 ```ts
 new MarkController(
-   store, 
-   address, 
-   snapshot, 
+   store,
+   address,
+   snapshot,
    shape): MarkController;
 ```
 

@@ -182,5 +182,21 @@ describe('ValueFeature', () => {
 			expect(store.caret.recovery()).toBe(recovery)
 			store.value.disable()
 		})
+
+		it('clears pending recovery when controlled echo does not match', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({value: 'hello', onChange})
+			store.value.enable()
+
+			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+			store.props.set({value: 'other'})
+			store.props.set({value: 'world'})
+
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBeUndefined()
+			store.value.disable()
+		})
 	})
 })

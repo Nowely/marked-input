@@ -448,7 +448,7 @@ Affinity matrix:
 IME and Unicode rules:
 
 - During `compositionstart` through `compositionend`, `beforeinput` edits should not be committed through raw-range replacement.
-- Commit composition text on `compositionend` using the final browser selection/range.
+- Capture the raw selection/range at `compositionstart`; commit `compositionend.data` at that original model range instead of using the post-browser-mutated DOM selection.
 - Boundaries that split a UTF-16 surrogate pair return `{ok: false, reason: 'invalidBoundary'}` rather than silently corrupting text.
 - Combining marks, flag emoji, and ZWJ sequences are still measured as UTF-16 code units. They do not return `invalidBoundary` unless the boundary splits a surrogate pair.
 
