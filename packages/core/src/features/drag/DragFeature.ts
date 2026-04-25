@@ -1,8 +1,9 @@
-import {childAt} from '../../shared/checkers'
+import type {CaretRecovery} from '../../shared/editorContracts'
 import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {createRowContent} from '../editing'
+import type {Token} from '../parsing'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
@@ -19,16 +20,16 @@ export class DragFeature {
 		this.#unsub = watch(this.action, action => {
 			switch (action.type) {
 				case 'reorder':
-					this.#reorder(action.source, action.target)
+					this.#reorder(action)
 					break
 				case 'add':
-					this.#add(action.afterIndex)
+					this.#add(action)
 					break
 				case 'delete':
-					this.#delete(action.index)
+					this.#delete(action)
 					break
 				case 'duplicate':
-					this.#duplicate(action.index)
+					this.#duplicate(action)
 					break
 			}
 		})
@@ -39,37 +40,72 @@ export class DragFeature {
 		this.#unsub = undefined
 	}
 
-	#reorder(sourceIndex: number, targetIndex: number) {
+	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {
 		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
-		const newValue = reorderDragRows(value, rows, sourceIndex, targetIndex)
-		if (newValue !== value) this.store.value.next(newValue)
+		const newValue = reorderDragRows(value, rows, action.source, action.target)
+		if (newValue !== value) {
+			this.store.value.replaceAll(newValue, {
+				source: 'drag',
+				recover: this.#recoverAfterDrag(action, rows, newValue),
+			})
+		}
 	}
 
-	#add(afterIndex: number) {
+	#add(action: Extract<DragAction, {type: 'add'}>) {
 		const value = this.store.value.current()
 		const rawRows = this.store.parsing.tokens()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.store.props.options())
-		this.store.value.next(addDragRow(value, rows, afterIndex, newRowContent))
-		if (this.store.value.isControlledMode()) return
-		queueMicrotask(() => {
-			const container = this.store.slots.container()
-			if (!container) return
-			const target = childAt(container, afterIndex + 1)
-			target?.focus()
+		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
+		this.store.value.replaceAll(newValue, {
+			source: 'drag',
+			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}
 
-	#delete(index: number) {
+	#delete(action: Extract<DragAction, {type: 'delete'}>) {
 		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
-		this.store.value.next(deleteDragRow(value, rows, index))
+		const newValue = deleteDragRow(value, rows, action.index)
+		this.store.value.replaceAll(newValue, {
+			source: 'drag',
+			recover: this.#recoverAfterDrag(action, rows, newValue),
+		})
 	}
 
-	#duplicate(index: number) {
+	#duplicate(action: Extract<DragAction, {type: 'duplicate'}>) {
 		const value = this.store.value.current()
 		const rows = this.store.parsing.tokens()
-		this.store.value.next(duplicateDragRow(value, rows, index))
+		const newValue = duplicateDragRow(value, rows, action.index)
+		this.store.value.replaceAll(newValue, {
+			source: 'drag',
+			recover: this.#recoverAfterDrag(action, rows, newValue),
+		})
+	}
+
+	#recoverAfterDrag(
+		action: DragAction,
+		previousRows: readonly Token[],
+		nextValue: string
+	): CaretRecovery | undefined {
+		if (action.type === 'add') {
+			const after = previousRows.at(action.afterIndex)
+			const rawPosition = after ? after.position.end : nextValue.length
+			return {kind: 'caret', rawPosition}
+		}
+		if (action.type === 'duplicate') {
+			const row = previousRows.at(action.index)
+			return row ? {kind: 'caret', rawPosition: row.position.end} : undefined
+		}
+		if (action.type === 'delete') {
+			const next =
+				previousRows.at(action.index + 1) ?? (action.index > 0 ? previousRows.at(action.index - 1) : undefined)
+			return next
+				? {kind: 'caret', rawPosition: Math.min(next.position.start, nextValue.length)}
+				: {kind: 'caret', rawPosition: 0}
+		}
+		const moved = previousRows.at(action.source)
+		return moved ? {kind: 'caret', rawPosition: Math.min(moved.position.start, nextValue.length)} : undefined
 	}
 }

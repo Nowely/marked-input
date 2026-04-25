@@ -1,6 +1,11 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest'
 
 import {Store} from '../../store/Store'
+import type {TextToken} from '../parsing'
+
+function text(content: string, start: number): TextToken {
+	return {type: 'text', content, position: {start, end: start + content.length}}
+}
 
 describe('DragFeature', () => {
 	let store: Store
@@ -51,5 +56,16 @@ describe('DragFeature', () => {
 	it('owns the drag event', () => {
 		const store = new Store()
 		expect(typeof store.drag.action).toBe('function')
+	})
+
+	it('commits drag edits through replaceAll with recovery metadata', () => {
+		store.value.current('alpha\n\nbeta\n\n')
+		store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
+		const replaceAll = vi.spyOn(store.value, 'replaceAll')
+		store.drag.enable()
+
+		store.drag.action({type: 'delete', index: 0})
+
+		expect(replaceAll).toHaveBeenCalledWith('beta\n\n', {source: 'drag', recover: {kind: 'caret', rawPosition: 6}})
 	})
 })
