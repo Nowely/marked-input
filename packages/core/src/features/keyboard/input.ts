@@ -4,7 +4,7 @@ import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {isFullSelection} from '../caret'
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
-import {deleteMark} from '../editing/utils/deleteMark'
+import type {Token} from '../parsing'
 
 type InputTargetRange = {
 	readonly startContainer: Node
@@ -25,12 +25,6 @@ export function enableInput(store: Store): () => void {
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
-		listen(container, 'keydown', e => {
-			if (!store.slots.isBlock()) {
-				handleDelete(store, e)
-			}
-		})
-
 		listen(container, 'paste', e => {
 			const c = store.slots.container()
 			if (c) captureMarkupPaste(e, c)
@@ -61,60 +55,38 @@ export function enableInput(store: Store): () => void {
 			},
 			true
 		)
+
+		listen(container, 'keydown', e => {
+			handleDeleteKey(store, e)
+		})
 	})
 
 	return () => scope()
 }
 
-function handleDelete(store: Store, event: KeyboardEvent) {
-	const {focus} = store.nodes
+function handleDeleteKey(store: Store, event: KeyboardEvent): void {
+	if (store.slots.isBlock()) return
+	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
-	if (event.key !== KEYBOARD.DELETE && event.key !== KEYBOARD.BACKSPACE) return
-
-	if (focus.isMark) {
-		if (focus.isEditable) {
-			if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
-			if (event.key === KEYBOARD.DELETE && !focus.isCaretAtEnd) return
-		}
+	if (store.caret.selecting() === 'all' && isFullSelection(store)) {
 		event.preventDefault()
-		deleteMark('self', store)
+		replaceAllContentWith(store, '')
 		return
 	}
+	if (store.caret.selecting() === 'all') store.caret.selecting(undefined)
 
-	if (event.key === KEYBOARD.BACKSPACE) {
-		if (focus.isSpan && focus.isCaretAtBeginning && focus.prev.target) {
-			event.preventDefault()
-			deleteMark('prev', store)
-			return
-		}
-	}
+	const raw = store.dom.readRawSelection()
+	if (!raw.ok) return
 
-	if (event.key === KEYBOARD.DELETE) {
-		if (focus.isSpan && focus.isCaretAtEnd && focus.next.target) {
-			event.preventDefault()
-			deleteMark('next', store)
-			return
-		}
-	}
+	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
+	const range = rangeForDelete(store, inputType, raw.value.range)
+	if (!range) return
 
-	if (focus.isSpan && focus.isEditable && window.getSelection()?.isCollapsed) {
-		const content = focus.content
-		const caret = focus.caret
-		if (event.key === KEYBOARD.BACKSPACE && caret > 0) {
-			event.preventDefault()
-			focus.content = content.slice(0, caret - 1) + content.slice(caret)
-			focus.caret = caret - 1
-			store.value.change()
-			return
-		}
-		if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
-			event.preventDefault()
-			focus.content = content.slice(0, caret) + content.slice(caret + 1)
-			focus.caret = caret
-			store.value.change()
-			return
-		}
-	}
+	event.preventDefault()
+	store.value.replaceRange(range, '', {
+		source: 'input',
+		recover: {kind: 'caret', rawPosition: range.start},
+	})
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
@@ -254,13 +226,31 @@ function replacementForInput(store: Store, event: InputEvent): string | undefine
 
 function rangeForInput(store: Store, event: InputEvent, range: RawRange): RawRange | undefined {
 	if (!event.inputType.startsWith('delete')) return range
+	return rangeForDelete(store, event.inputType, range)
+}
+
+function rangeForDelete(store: Store, inputType: string, range: RawRange): RawRange | undefined {
 	if (range.start !== range.end) return range
 
-	if (event.inputType.endsWith('Backward') && range.start > 0) {
+	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
+	if (adjacentMark) return adjacentMark
+
+	if (inputType.endsWith('Backward') && range.start > 0) {
 		return {start: range.start - 1, end: range.start}
 	}
-	if (event.inputType.endsWith('Forward') && range.end < store.value.current().length) {
+	if (inputType.endsWith('Forward') && range.end < store.value.current().length) {
 		return {start: range.start, end: range.end + 1}
+	}
+	return undefined
+}
+
+function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): RawRange | undefined {
+	for (const token of tokens) {
+		const nested = token.type === 'mark' ? adjacentMarkRange(token.children, position, backward) : undefined
+		if (nested) return nested
+		if (token.type === 'mark' && (backward ? token.position.end === position : token.position.start === position)) {
+			return token.position
+		}
 	}
 	return undefined
 }

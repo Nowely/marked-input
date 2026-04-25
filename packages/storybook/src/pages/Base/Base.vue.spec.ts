@@ -17,6 +17,12 @@ const {Default} = composeStories(BaseStories)
 const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation @[world](Hello! Hello!)!'
 const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
 
+function getMarkFocusTarget(element: Element): HTMLElement {
+	const target = element.closest<HTMLElement>('span[tabindex]')
+	if (!target) throw new Error('Expected mark token focus target')
+	return target
+}
+
 describe('Component: MarkedInput', () => {
 	it.todo('set readOnly on selection')
 
@@ -30,7 +36,7 @@ describe('Component: MarkedInput', () => {
 
 		const {container} = await render(withProps(Default, {Mark, defaultValue: ''}))
 
-		const [span] = container.querySelectorAll('span')
+		const span = container.querySelector<HTMLElement>('span[contenteditable]')!
 		await expect.element(span).toHaveTextContent('')
 
 		await userEvent.type(span, '@[[mark](1)')
@@ -72,26 +78,25 @@ describe('Component: MarkedInput', () => {
 			})
 		)
 
-		const spans = document.querySelectorAll<HTMLElement>('span[contenteditable]')
-		const [firstSpan, secondSpan] = Array.from(spans)
+		const [firstSpan, secondSpan] = Array.from(document.querySelectorAll<HTMLElement>('span[contenteditable]'))
 		const abbrs = document.querySelectorAll('abbr')
 		const [firstAbbr] = Array.from(abbrs)
+		const firstAbbrFocusTarget = getMarkFocusTarget(firstAbbr)
 		const firstSpanLength = firstSpan.textContent.length
-		const firstAbbrLength = firstAbbr.textContent.length
 
 		await focusAtStart(firstSpan)
 		await expect.element(firstSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		await expect.element(firstAbbr).toHaveFocus()
+		await expect.element(firstAbbrFocusTarget).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowLeft>2/}`)
+		await userEvent.keyboard('{ArrowLeft}')
 		await expect.element(firstSpan).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowRight>2/}`)
-		await expect.element(firstAbbr).toHaveFocus()
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.element(firstAbbrFocusTarget).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
+		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(secondSpan).toHaveFocus()
 	})
 
@@ -121,29 +126,37 @@ describe('Component: MarkedInput', () => {
 		await expect.element(page.getByText('marks')).not.toBeInTheDocument()
 	})
 
-	it('support editable marks', async () => {
-		const EchoFocusable = defineComponent({
+	it('support mark controller updates', async () => {
+		const UpdatableMark = defineComponent({
 			setup() {
-				const value = ref(EDITABLE_MARK_VALUE)
-				return () =>
-					h(MarkedInput, {
-						Mark: FocusableMark,
-						value: value.value,
-						onChange: (v: string) => {
-							value.value = v
-						},
-					})
+				const mark = useMark()
+				return () => h('mark', {onClick: () => mark.update({value: `${mark.value}1`})}, mark.value)
 			},
 		})
 
-		await render(EchoFocusable)
+		const EchoUpdatable = defineComponent({
+			setup() {
+				const value = ref(EDITABLE_MARK_VALUE)
+				return () =>
+					h('div', [
+						h(MarkedInput, {
+							Mark: UpdatableMark,
+							value: value.value,
+							onChange: (v: string) => {
+								value.value = v
+							},
+						}),
+						h('pre', value.value),
+					])
+			},
+		})
 
-		const worldElement = getElement(page.getByText('world').first())
-		await focusAtEnd(worldElement)
-		await userEvent.keyboard('1')
+		await render(EchoUpdatable)
+
+		await userEvent.click(page.getByText('world').first())
 
 		await expect.element(page.getByText('world1').first()).toBeInTheDocument()
-		await expect.element(page.getByTitle('Hello! Hello!')).toHaveTextContent('world1')
+		await expect.element(page.getByText(/@\[world1]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})
 
 	it('keeps controlled span input unchanged until value is echoed', async () => {

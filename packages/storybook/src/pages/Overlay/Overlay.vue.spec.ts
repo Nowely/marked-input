@@ -5,7 +5,6 @@ import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
 import {defineComponent, h} from 'vue'
 
-import {firstChild, childAt} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
 import * as BaseStories from '../Base/Base.vue.stories'
@@ -13,6 +12,12 @@ import * as OverlayStories from './Overlay.vue.stories'
 
 const {Default} = composeStories(BaseStories)
 const {DefaultOverlay} = composeStories(OverlayStories)
+
+function editableText(container: ParentNode, index = 0): HTMLElement {
+	const element = Array.from(container.querySelectorAll<HTMLElement>('span[contenteditable]')).at(index)
+	if (!element) throw new Error('Expected editable text surface')
+	return element
+}
 
 describe('API: Overlay and Triggers', () => {
 	it('work with empty options array', async () => {
@@ -161,8 +166,8 @@ describe('API: Overlay and Triggers', () => {
 			})
 		)
 
-		const editableContainer = firstChild(container)!
-		const middleSpan = childAt(editableContainer, 2)!
+		const editableContainer = container.querySelector<HTMLElement>('div')!
+		const middleSpan = editableText(container, 1)
 		await focusAtEnd(middleSpan)
 		await userEvent.keyboard('@')
 		await expect.element(page.getByText('Item')).toBeInTheDocument()

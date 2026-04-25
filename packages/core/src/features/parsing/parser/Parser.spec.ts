@@ -839,11 +839,11 @@ describe('Parser', () => {
 							expect(markToken.content).toBe(`${prefix}[world]`)
 
 							// Check that we have text before mark
-							const textBefore = result.find(token => token.type === 'text' && token.content === 'Hello ')
+							const textBefore = result.find(item => item.type === 'text' && item.content === 'Hello ')
 							expect(textBefore).toBeDefined()
 
 							// Check that we have text after mark
-							const textAfter = result.find(token => token.type === 'text' && token.content === '!')
+							const textAfter = result.find(item => item.type === 'text' && item.content === '!')
 							expect(textAfter).toBeDefined()
 						})
 					})

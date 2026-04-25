@@ -227,13 +227,14 @@ describe('Slots API', () => {
 		})
 
 		it('maintain contentEditable on span with custom Span', async () => {
-			const CustomSpan = ({value}: MarkProps) => <span data-testid="custom-span">{value}</span>
+			const CustomSpan = ({children}: MarkProps) => <span data-testid="custom-span">{children}</span>
 
 			await render(<MarkedInput Mark={TestMark} value="Hello world" Span={CustomSpan} />)
 
 			const span = page.getByTestId('custom-span')
 			await expect.element(span).toBeInTheDocument()
-			await expect.element(span).toHaveAttribute('contenteditable')
+			const editable = span.element().querySelector<HTMLElement>('span[contenteditable]')!
+			await expect.element(editable).toHaveAttribute('contenteditable')
 		})
 
 		it('set contentEditable imperatively via core controller', async () => {

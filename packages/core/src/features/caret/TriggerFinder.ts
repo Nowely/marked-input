@@ -79,7 +79,6 @@ export class TriggerFinder {
 				return {
 					value: match.word,
 					source: match.annotation,
-					index: match.index,
 					range,
 					span: this.span,
 					node: this.node,

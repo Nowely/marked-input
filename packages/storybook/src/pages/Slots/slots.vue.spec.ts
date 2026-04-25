@@ -277,9 +277,8 @@ describe('Slots API', () => {
 
 		it('maintain contentEditable on span with custom Span', async () => {
 			const CustomSpan = defineComponent({
-				props: {value: String},
-				setup(props) {
-					return () => h('span', {'data-testid': 'custom-editable-span'}, props.value)
+				setup(_, {slots}) {
+					return () => h('span', {'data-testid': 'custom-editable-span'}, slots.default?.())
 				},
 			})
 
@@ -288,7 +287,8 @@ describe('Slots API', () => {
 			})
 
 			const span = page.getByTestId('custom-editable-span')
-			await expect.element(span).toHaveAttribute('contenteditable', 'true')
+			const editable = span.element().querySelector<HTMLElement>('span[contenteditable]')!
+			await expect.element(editable).toHaveAttribute('contenteditable', 'true')
 		})
 
 		it('renders without the suppressContentEditableWarning prop set', async () => {

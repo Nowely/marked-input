@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-unassigned-import -- registers React slot module augmentation
 import './src/augment'
 
 export {MarkedInput} from './src/components/MarkedInput'

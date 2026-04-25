@@ -80,8 +80,15 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 export function MarkedInput<TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps>(
 	props: MarkedInputProps<TMarkProps, TOverlayProps>
 ) {
-	const [store] = useState(() => new Store())
-	store.props.set(props)
+	const [store] = useState(() => {
+		const nextStore = new Store()
+		nextStore.props.set(props)
+		return nextStore
+	})
+
+	useLayoutEffect(() => {
+		store.props.set(props)
+	})
 
 	useLayoutEffect(() => {
 		store.lifecycle.mounted()

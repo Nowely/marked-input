@@ -1,5 +1,5 @@
-import {childAt, firstHtmlChild, isHtmlElement} from '../../shared/checkers'
-import {effectScope, watch, listen} from '../../shared/signals/index.js'
+import {firstHtmlChild, isHtmlElement} from '../../shared/checkers'
+import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export function enableFocus(store: Store): () => void {
@@ -9,7 +9,6 @@ export function enableFocus(store: Store): () => void {
 	const scope = effectScope(() => {
 		listen(container, 'focusin', e => {
 			const target = isHtmlElement(e.target) ? e.target : undefined
-			store.nodes.focus.target = target
 			if (!target) {
 				store.caret.location(undefined)
 				return
@@ -26,7 +25,6 @@ export function enableFocus(store: Store): () => void {
 		})
 
 		listen(container, 'focusout', () => {
-			store.nodes.focus.target = undefined
 			store.caret.location(undefined)
 		})
 
@@ -38,53 +36,7 @@ export function enableFocus(store: Store): () => void {
 				element?.focus()
 			}
 		})
-
-		watch(store.lifecycle.rendered, () => {
-			store.dom.reconcile()
-			if (!store.props.Mark()) return
-			recover(store)
-		})
 	})
 
-	return () => {
-		scope()
-		store.nodes.focus.clear()
-	}
-}
-
-function recover(store: Store) {
-	const recovery = store.caret.recovery()
-	if (!recovery) return
-	if (!('anchor' in recovery)) return
-
-	const {anchor, caret, isNext} = recovery
-	const isStale = !anchor.target || !anchor.target.isConnected
-	let target: HTMLElement | undefined
-
-	// eslint-disable-next-line switch-exhaustiveness-check
-	switch (true) {
-		case isNext && isStale: {
-			const container = store.slots.container()
-			const targetChild = recovery.childIndex != null ? childAt(container, recovery.childIndex + 2) : undefined
-			target = targetChild ?? store.nodes.focus.tail ?? undefined
-			break
-		}
-		case isNext:
-			target = anchor.prev.target
-			break
-		case isStale:
-			target = store.nodes.focus.head ?? undefined
-			break
-		default:
-			target = anchor.next.target
-	}
-
-	store.nodes.focus.target = target
-	target?.focus()
-	queueMicrotask(() => {
-		if (!target?.isConnected) return
-		store.nodes.focus.target = target
-		store.nodes.focus.caret = caret
-	})
-	store.caret.recovery(undefined)
+	return () => scope()
 }

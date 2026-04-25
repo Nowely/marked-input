@@ -75,6 +75,26 @@ describe('Store', () => {
 				expect(spy).toHaveBeenCalledOnce()
 			}
 		})
+
+		it('mounts features in an order that supports initial render indexing', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const shell = document.createElement('span')
+			const text = document.createElement('span')
+			container.append(shell)
+			shell.append(text)
+
+			store.dom.refFor({role: 'container'})(container)
+			store.dom.refFor({role: 'token', path: [0]})(shell)
+			store.dom.refFor({role: 'text', path: [0]})(text)
+
+			expect(() => {
+				store.lifecycle.mounted()
+				store.lifecycle.rendered({container, layout: 'inline'})
+			}).not.toThrow()
+			expect(store.dom.index()).toBeDefined()
+		})
 	})
 
 	describe('handler', () => {
@@ -183,33 +203,33 @@ describe('Store', () => {
 		})
 	})
 
-	describe('next', () => {
-		it('updates tokens and current when uncontrolled next is set', () => {
+	describe('value edits', () => {
+		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.value.enable()
-			store.value.next('hello')
+			store.value.replaceAll('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
 			store.value.disable()
 		})
 
-		it('calls onChange when uncontrolled next is set', () => {
+		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			store.value.enable()
-			store.value.next('world')
+			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 			store.value.disable()
 		})
 
-		it('emits without committing when controlled next is set', () => {
+		it('emits without committing until controlled replacement is echoed', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
 			store.value.enable()
-			store.value.next('world')
+			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -219,7 +239,7 @@ describe('Store', () => {
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
 			store.value.enable()
-			expect(() => store.value.next('test')).not.toThrow()
+			expect(() => store.value.replaceAll('test')).not.toThrow()
 			store.value.disable()
 		})
 	})

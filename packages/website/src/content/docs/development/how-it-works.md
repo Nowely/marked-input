@@ -43,6 +43,19 @@ This process happens automatically when you type, and the result is a fully inte
 
 </details>
 
+## Core Editor Engine
+
+Markput's core owns the editor-engine primitives:
+
+- token addresses and token index validation
+- adapter DOM registration through `store.dom`
+- raw DOM selection to serialized value ranges
+- raw value edits through `store.value.replaceRange()` / `replaceAll()`
+- caret and selection recovery after framework renders
+- mark commands through `MarkController`
+
+React and Vue render structural token shells, text surfaces, slot roots, rows, and controls, then register them with core through private refs. Features do not rely on DOM child order, public data attributes, or user-provided refs to locate tokens.
+
 ## Marks vs Tokens
 
 ### Marks

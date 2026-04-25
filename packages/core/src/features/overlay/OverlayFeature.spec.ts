@@ -10,7 +10,6 @@ const stubMatch: OverlayMatch = {
 	span: 'test',
 	// oxlint-disable-next-line no-unsafe-type-assertion -- test stub
 	node: {} as unknown as Node,
-	index: 0,
 	range: {start: 0, end: 1},
 	option: {},
 }

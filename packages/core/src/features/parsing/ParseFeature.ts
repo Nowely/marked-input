@@ -6,7 +6,7 @@ import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {toString} from './parser/utils/toString'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
-import {getTokensByUI, parseWithParser} from './utils/valueParser'
+import {parseWithParser} from './utils/valueParser'
 
 export class ParsingFeature implements Feature {
 	readonly tokens = signal<Token[]>([])
@@ -65,10 +65,6 @@ export class ParsingFeature implements Feature {
 			if (this._store.caret.recovery()) {
 				const text = toString(this.tokens())
 				this.acceptTokens(this.parseValue(text))
-				return
-			}
-			if (this._store.nodes.focus.target) {
-				this.acceptTokens(getTokensByUI(this._store))
 				return
 			}
 			this.sync()

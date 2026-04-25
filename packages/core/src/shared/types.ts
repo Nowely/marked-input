@@ -2,8 +2,7 @@ import type * as CSS from 'csstype'
 
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
-import type {NodeProxy} from './classes/NodeProxy'
-import type {RawRange} from './editorContracts'
+import type {CaretRecovery, RawRange} from './editorContracts'
 
 /**
  * Registry interface used as a module-augmentation target. Framework packages
@@ -67,7 +66,7 @@ export interface MarkputState {
 	tokens: Token[]
 	parser: Parser | undefined
 	current: string
-	recovery: Recovery | undefined
+	recovery: CaretRecovery | undefined
 	selecting: 'drag' | 'all' | undefined
 	match: OverlayMatch | undefined
 	/** Annotated text with markups for mark */
@@ -110,10 +109,6 @@ export type OverlayMatch<TOption = CoreOption> = {
 	 * Html element, in which was a overlayMatch
 	 */
 	node: Node
-	/**
-	 * Start position of a overlayMatch
-	 */
-	index: number
 	range: RawRange
 	/**
 	 * OverlayMatch's option
@@ -125,13 +120,6 @@ export type Listener<T = unknown> = (e: T) => void
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars, oxlint-disable-next-line no-wrapper-object-types
 export interface EventKey<T = unknown> extends Symbol {}
-
-export type Recovery = {
-	anchor: NodeProxy
-	isNext?: boolean
-	caret: number
-	childIndex?: number
-}
 
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 

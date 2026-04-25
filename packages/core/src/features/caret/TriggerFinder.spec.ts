@@ -146,7 +146,6 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				value: 'world',
 				source: '@world',
-				index: 6,
 				range: {start: 6, end: 12},
 				span: 'Hello @world test',
 				node: expect.objectContaining({nodeType: 3}),

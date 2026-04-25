@@ -1,3 +1,4 @@
+// oxlint-disable-next-line import/no-unassigned-import -- registers Vue slot module augmentation
 import './src/augment'
 
 export {default as MarkedInput} from './src/components/MarkedInput.vue'

@@ -68,19 +68,18 @@ export const Focusable: Story = {
 
 /*TODO
 const Tag = () => {
-    const {reg, label, value, change} = useMark()
+    const mark = useMark()
 
-    return createElement(label, {
-        ref: reg,
+    return createElement("mark", {
         contentEditable: true,
         suppressContentEditableWarning: true,
-        children: value,
+        children: mark.value,
         style: {
             outline: 'none',
             whiteSpace: 'pre-wrap'
         },
         onInput: (e: React.FormEvent<HTMLElement>) => {
-            change({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
+            mark.update({value: e.currentTarget.textContent ?? ""})
         }
     })
 }

@@ -83,30 +83,29 @@ Both framework adapters share the same component structure:
         ↓
 2. KeyboardFeature detects input
         ↓
-3. store.value.change() emitted
+3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. ValueFeature reads focused DOM content and serializes candidate tokens
+4. KeyboardFeature calls store.value.replaceRange() or replaceAll()
         ↓
-5. Controlled mode emits onChange and restores tokens from value.current
-   Uncontrolled mode accepts candidate as value.current
+5. ValueFeature updates uncontrolled state or records a pending controlled echo
         ↓
-6. ParsingFeature reparses focused UI content or accepted serialized value
+6. ParsingFeature reparses store.value.current()
         ↓
 7. store.parsing.tokens updated (Signal)
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. CaretFeature restores caret position internally after render
+9. DomFeature applies pending caret recovery after the adapter registers the new DOM
 ```
 
-There are **two parse paths**: `getTokensByUI` for focused DOM edits and `ParsingFeature.parseValue(value)` for accepted serialized values. `ValueFeature` owns `props.value` echoes and full-value edit commands; `ParsingFeature` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, then `ValueFeature` schedules optional `caret.recovery`. `DomFeature` owns DOM-to-raw boundary mapping and recovery application, while `ParsingFeature` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. OverlayFeature runs a trigger probe (on `store.value.change()`, or on `selectionchange` when `showOverlayOn` includes `selectionChange`)
+2. OverlayFeature runs a trigger probe after value edits, or on `selectionchange` when `showOverlayOn` includes `selectionChange`
         ↓
 3. If found:
    - store.overlay.match set
@@ -233,8 +232,8 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 ### Event Usage
 
 ```typescript
-// Emit a void event
-store.value.change()
+// Commit a raw value edit
+store.value.replaceRange({start: 0, end: 5}, 'hello')
 
 // Emit a payload event
 store.mark.remove({ token })
@@ -287,11 +286,6 @@ class Store {
     readonly key: KeyGenerator
     readonly blocks: BlockRegistry
 
-    readonly nodes: {
-        focus: NodeProxy
-        input: NodeProxy
-    }
-
     readonly props: {
         value: Signal<string | undefined>
         defaultValue: Signal<string | undefined>
@@ -312,14 +306,14 @@ class Store {
 
     readonly feature: {
         lifecycle: LifecycleFeature    // mounted, unmounted, rendered events
-        value: ValueFeature            // current, next, isControlledMode, change event
-        parsing: ParsingFeature        // tokens, parser, reparse event
-        mark: MarkFeature              // enabled, slot, remove event
+        value: ValueFeature            // current, replaceRange(), replaceAll(), controlled echo
+        parsing: ParsingFeature        // tokens, parser, token index, parse generation
+        mark: MarkFeature              // mark slot resolution
         overlay: OverlayFeature        // match, element, slot, select, close
         slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
-        caret: CaretFeature            // recovery, selecting (merged Focus + TextSelection)
+        caret: CaretFeature            // location, recovery, selecting
         keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
-        dom: DomFeature                // contenteditable management, reconcile() method
+        dom: DomFeature                // DOM registration, raw mapping, reconciliation, recovery
         drag: DragFeature              // action event
         clipboard: ClipboardFeature    // copy/cut handling
     }
@@ -344,7 +338,9 @@ batch(() => {
 })
 
 // Accepted serialized value state is owned by ValueFeature.
-// Route full-value edits through store.value.next(value).
+// Route edits through raw positions.
+store.value.replaceRange({start: 0, end: 5}, 'Hello')
+store.value.replaceAll('Hello @[World]')
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
@@ -355,19 +351,19 @@ const tokens = store.parsing.tokens.use()
 
 ## Features
 
-11 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.<name>.*` (internal signals), `store.props` (framework-provided signals), and `store.nodes` (DOM refs):
+11 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.<name>.*` (internal signals), `store.props` (framework-provided signals), `store.dom` (registered DOM structure and raw mapping), and `store.caret` (location/recovery):
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **LifecycleFeature**          | Mount/unmount/render lifecycle events                     |
 | **ValueFeature**              | Accepted serialized value state, edit commands, change event |
 | **ParsingFeature**            | Token parsing, parser selection, reparse event            |
-| **MarkFeature**               | Mark detection, mark slot resolution, remove event        |
+| **MarkFeature**               | Mark slot resolution                                      |
 | **OverlayFeature**            | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution            |
 | **CaretFeature**              | Caret tracking, focus recovery, text selection state      |
 | **KeyboardFeature**           | Text input, block editing, arrow navigation               |
-| **DomFeature**                | contenteditable attribute management, DOM reconciliation  |
+| **DomFeature**                | DOM registration, raw selection mapping, recovery         |
 | **DragFeature**               | Drag-and-drop reordering of blocks                       |
 | **ClipboardFeature**          | Clipboard copy/cut handling                              |
 
@@ -416,7 +412,9 @@ interface BlockState {
 
 WeakMap keys mean garbage collection frees state when tokens are deleted.
 
-## Cursor Management
+## Core-Owned DOM And Cursor Management
+
+Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret recovery. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.dom`/`store.caret`; production code must not infer token identity from DOM child order.
 
 ### Caret Class
 
@@ -446,23 +444,32 @@ class Caret {
 }
 ```
 
-### NodeProxy — Stateful DOM Navigation
+### DomFeature
 
-Wraps an HTMLElement with navigation helpers:
-- `.next` / `.prev` — sibling navigation
-- `.isSpan` / `.isMark` — even/odd index check
-- `.caret` — caret position
-- `.head` / `.tail` — container bounds
+`DomFeature` indexes registered structure after each render:
+
+- `container` — editor root
+- `row` — block layout row
+- `token` — token shell
+- `text` — editable text surface for text tokens
+- `slotRoot` — rendered children root for slot marks
+- `control` — adapter controls such as drag handles and menus
+
+It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies pending `caret.recovery` after renders.
 
 ## Framework Hooks
 
 ### useMark
 
-Available in both React and Vue. Provides access to the current mark token:
+Available in both React and Vue. Returns a `MarkController` for the current mark token:
 
 ```typescript
-const { ref } = useMark<HTMLDivElement>({ controlled: false })
+const mark = useMark()
+mark.update({value: 'updated'})
+mark.remove()
 ```
+
+Use `useMarkInfo()` for structural metadata such as `depth`, `hasNestedMarks`, `address`, and `key`.
 
 ### useOverlay
 

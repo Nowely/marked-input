@@ -23,11 +23,11 @@ function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token
 			if (token.type === 'text') {
 				const start = Math.max(0, range.start - token.position.start)
 				const end = Math.min(token.content.length, range.end - token.position.start)
-				return {...token, content: token.content.slice(start, end)}
+				return Object.assign({}, token, {content: token.content.slice(start, end)})
 			}
 
 			if (token.children.length === 0) return token
-			return {...token, children: trimTokensForRawRange(token.children, range)}
+			return Object.assign({}, token, {children: trimTokensForRawRange(token.children, range)})
 		})
 }
 

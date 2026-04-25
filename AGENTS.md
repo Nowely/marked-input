@@ -61,7 +61,9 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.<name>.*`, `store.props`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+Summary: Store orchestrates reactive Signals, core-owned DOM registration (`store.dom`), caret recovery (`store.caret`), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.<name>.*`, `store.props`, `store.dom`, and `store.caret`. The parser owns token addresses and a token index derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+
+DOM/token mapping lives in `store.dom` through adapter-owned structural registration. Do not use DOM child parity, public data attributes, user refs, or `NodeProxy` for token location. Value edits go through `store.value.replaceRange()` / `replaceAll()` with raw positions and optional `caret.recovery`.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -82,7 +84,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 ### Do NOT
 
-- Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, or `store.nodes`
+- Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, `store.dom`, or `store.caret`
 - Do not manually create Signals for new state — add new state to the owning feature class. Framework-provided props go in `store.props` in `Store.ts` and are set via `store.props.set()`.
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first

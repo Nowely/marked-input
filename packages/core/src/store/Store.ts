@@ -10,7 +10,7 @@ import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {PropsFeature} from '../features/props/PropsFeature'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
-import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
+import {KeyGenerator, MarkputHandler} from '../shared/classes'
 import {watch} from '../shared/signals'
 import type {Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
@@ -20,13 +20,6 @@ export type {DragAction} from '../shared/types'
 export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
-
-	// Temporary compatibility bridge for unmigrated feature slices.
-	// Do not add new feature-facing NodeProxy usage. Removed in Task 11.
-	readonly nodes = {
-		focus: new NodeProxy(undefined, this),
-		input: new NodeProxy(undefined, this),
-	}
 
 	readonly props = new PropsFeature(this)
 	readonly handler = new MarkputHandler(this)

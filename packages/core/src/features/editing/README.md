@@ -1,12 +1,11 @@
 # Editing Feature
 
-Provides shared text editing utilities used by other features: creating new block rows, replacing trigger text with annotated markup, and deleting mark tokens.
+Provides shared string-editing utilities used by the core input pipeline.
 
 ## Components
 
 - **createRowContent**: Generates the raw string content for a new block row by annotating the first option's markup with empty values
 - **createNewSpan**: Replaces a matched trigger in a text span with an annotated markup string
-- **deleteMark**: Removes a mark token and its surrounding text spans, merging adjacent text spans, updating token state, and scheduling focus recovery
 
 ## Usage
 
@@ -17,4 +16,4 @@ const content = createRowContent(options)
 // Returns annotated markup string for a new empty row
 ```
 
-These utilities are used internally by InputFeature, BlockEditFeature, and SystemListenerFeature.
+Mark deletion now goes through raw ranges and `store.value.replaceRange()` so the same controlled-mode echo and caret recovery path handles text, mark, clipboard, block, and drag edits.

@@ -1,4 +1,5 @@
 import {KEYBOARD} from '../../shared/constants'
+import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {CoreOption, Feature, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {Store} from '../../store/Store'
@@ -25,8 +26,41 @@ export class OverlayFeature implements Feature {
 	constructor(private readonly _store: Store) {}
 
 	#probeTrigger() {
-		const match = TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store)
+		const match =
+			TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store) ??
+			this.#probeTriggerFromRecovery()
 		this.match(match)
+	}
+
+	#probeTriggerFromRecovery(): OverlayMatch | undefined {
+		const recovery = this._store.caret.recovery()
+		if (recovery?.kind !== 'caret') return
+
+		const value = this._store.value.current()
+		const cursor = recovery.rawPosition
+		const left = value.slice(0, cursor)
+		const right = value.slice(cursor)
+		const rightWord = right.match(/^\w*/)?.[0] ?? ''
+
+		for (const option of this._store.props.options()) {
+			const trigger = option.overlay?.trigger
+			if (!trigger) continue
+
+			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
+			if (!match) continue
+
+			const [sourceLeft, wordLeft] = match
+			const source = sourceLeft + rightWord
+			const start = cursor - sourceLeft.length
+			return {
+				value: wordLeft + rightWord,
+				source,
+				range: {start, end: start + source.length},
+				span: value,
+				node: window.getSelection()?.anchorNode ?? this._store.slots.container() ?? document.body,
+				option,
+			}
+		}
 	}
 
 	enable() {

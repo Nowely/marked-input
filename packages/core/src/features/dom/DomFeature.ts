@@ -211,14 +211,14 @@ export class DomFeature {
 	): Result<void, 'notIndexed' | 'invalidBoundary'> {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
 		const target = this.#findTextTargetForRawPosition(rawPosition, affinity)
-		if (!target) return {ok: false, reason: 'invalidBoundary'}
+		if (!target) return this.#focusMarkBoundaryForRawPosition(rawPosition)
 
 		target.element.focus()
 		this.#placeCaretInTextSurface(target.element, rawPosition - target.start)
 		return {ok: true, value: undefined}
 	}
 
-	focusAddress(address: TokenAddress): Result<void, 'notIndexed' | 'stale'> {
+	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): Result<void, 'notIndexed' | 'stale'> {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
 		const resolved = this._store.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return {ok: false, reason: 'stale'}
@@ -228,6 +228,12 @@ export class DomFeature {
 		if (!target) return {ok: false, reason: 'notIndexed'}
 
 		target.focus()
+		const role =
+			target === elements?.textElement ? 'text' : target === elements?.rowElement ? 'row' : 'markDescendant'
+		if (role === 'markDescendant') {
+			this.#placeCollapsedBoundary(target, boundary === 'end' ? target.childNodes.length : 0)
+		}
+		this._store.caret.location({address, role})
 		return {ok: true, value: undefined}
 	}
 
@@ -257,18 +263,18 @@ export class DomFeature {
 			return {ok: true, value: token.value.position.start + local}
 		}
 
-		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
-			return {
-				ok: true,
-				value: affinity === 'after' ? token.value.position.start : token.value.position.end,
-			}
-		}
-
 		if (node === location.value.tokenElement) {
 			const childCount = location.value.tokenElement.childNodes.length
 			if (offset <= 0) return {ok: true, value: token.value.position.start}
 			if (offset >= childCount) return {ok: true, value: token.value.position.end}
 			return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
+		}
+
+		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
+			return {
+				ok: true,
+				value: affinity === 'after' ? token.value.position.start : token.value.position.end,
+			}
 		}
 
 		if (location.value.rowElement && node === location.value.rowElement) {
@@ -493,6 +499,28 @@ export class DomFeature {
 		return candidates.find(candidate => candidate.start >= rawPosition)
 	}
 
+	#focusMarkBoundaryForRawPosition(rawPosition: number): Result<void, 'notIndexed' | 'invalidBoundary'> {
+		const tokenIndex = this._store.parsing.index()
+
+		for (const record of this.#pathElements.values()) {
+			if (!record.tokenElement) continue
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'mark') continue
+			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
+
+			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
+			record.tokenElement.focus()
+			this.#placeCollapsedBoundary(
+				record.tokenElement,
+				boundary === 'end' ? record.tokenElement.childNodes.length : 0
+			)
+			this._store.caret.location({address: record.address, role: 'markDescendant'})
+			return {ok: true, value: undefined}
+		}
+
+		return {ok: false, reason: 'invalidBoundary'}
+	}
+
 	#placeCaretInTextSurface(surface: HTMLElement, offset: number): void {
 		const selection = window.getSelection()
 		if (!selection) return
@@ -506,9 +534,20 @@ export class DomFeature {
 		selection.addRange(range)
 	}
 
+	#placeCollapsedBoundary(element: HTMLElement, offset: number): void {
+		const selection = window.getSelection()
+		if (!selection) return
+
+		const range = document.createRange()
+		range.setStart(element, Math.min(Math.max(offset, 0), element.childNodes.length))
+		range.collapse(true)
+		selection.removeAllRanges()
+		selection.addRange(range)
+	}
+
 	#applyPendingRecovery(): void {
 		const recovery = this._store.caret.recovery()
-		if (!recovery || !('kind' in recovery)) return
+		if (!recovery) return
 
 		if (recovery.kind === 'caret') {
 			const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)

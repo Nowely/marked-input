@@ -14,7 +14,7 @@ export default {
 } satisfies Meta<typeof MarkedInput>
 
 export const Mentions = () => {
-	const [value, setValue] = useState(`Enter the '@' for calling mention list: \n- Hello @Agustina and @[Ruslan]!`)
+	const [value, setValue] = useState(`Enter the '@' for calling mention list:\n- Hello @Agustina and @[Ruslan]!`)
 
 	return <MaterialMentions value={value} onChange={setValue} />
 }

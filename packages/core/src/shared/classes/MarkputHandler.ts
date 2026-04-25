@@ -12,6 +12,8 @@ export class MarkputHandler {
 	}
 
 	focus() {
-		this.store.nodes.focus.head?.focus()
+		const firstAddress = this.store.parsing.index().addressFor([0])
+		if (firstAddress && this.store.dom.focusAddress(firstAddress).ok) return
+		this.container?.focus()
 	}
 }

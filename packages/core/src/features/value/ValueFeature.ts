@@ -1,14 +1,12 @@
 import type {CaretRecovery, EditResult, EditSource, RawRange} from '../../shared/editorContracts'
-import {signal, computed, event, batch, effectScope, trigger, watch} from '../../shared/signals/index.js'
+import {signal, computed, event, batch, effectScope, watch} from '../../shared/signals/index.js'
 import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
-import {toString} from '../parsing'
 import {ControlledEcho} from './ControlledEcho'
 
 export class ValueFeature implements Feature {
 	readonly current = signal('')
 	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
-	readonly next = event<string>()
 	readonly change = event()
 
 	readonly #controlledEcho = new ControlledEcho()
@@ -26,26 +24,7 @@ export class ValueFeature implements Feature {
 				const recovery = this.#controlledEcho.onEcho(value)
 				this.#commitAccepted(value)
 				if (recovery) this._store.caret.recovery(recovery)
-			})
-
-			watch(this.change, () => {
-				if (this._store.props.readOnly()) {
-					this.#restoreCurrent()
-					return
-				}
-
-				const tokens = this._store.parsing.tokens()
-				const serialized = toString(tokens)
-				const result = this.replaceAll(serialized)
-				if (!result.ok || result.accepted === 'pendingControlledEcho') {
-					this.#restoreCurrent()
-					return
-				}
-				trigger(this._store.parsing.tokens)
-			})
-
-			watch(this.next, value => {
-				this.replaceAll(value)
+				this.change()
 			})
 		})
 	}
@@ -84,6 +63,7 @@ export class ValueFeature implements Feature {
 		this._store.props.onChange()?.(candidate)
 		this.#commitAccepted(candidate)
 		this._store.caret.recovery(recovery)
+		this.change()
 		return {ok: true, accepted: 'immediate', value: candidate}
 	}
 
@@ -93,9 +73,5 @@ export class ValueFeature implements Feature {
 			this._store.parsing.acceptTokens(tokens)
 			this.current(value)
 		})
-	}
-
-	#restoreCurrent() {
-		this._store.parsing.acceptTokens(this._store.parsing.parseValue(this.current()))
 	}
 }
