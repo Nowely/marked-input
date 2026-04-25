@@ -107,6 +107,7 @@ export class DomFeature {
 		this._store.parsing.index()
 		this._store.props.layout()
 		this._store.props.readOnly()
+		this._store.props.options()
 		this._store.props.Mark()
 		this._store.props.Span()
 		this._store.props.slots()
@@ -551,12 +552,24 @@ export class DomFeature {
 
 		if (recovery.kind === 'caret') {
 			const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
-			if (result.ok) this._store.caret.recovery(undefined)
+			this._store.caret.recovery(undefined)
+			if (!result.ok) {
+				this.diagnostics({
+					kind: 'recoveryFailed',
+					reason: `pending caret recovery could not be applied: ${result.reason}`,
+				})
+			}
 			return
 		}
 
 		const result = this.#placeSelection(recovery.selection)
-		if (result.ok) this._store.caret.recovery(undefined)
+		this._store.caret.recovery(undefined)
+		if (!result.ok) {
+			this.diagnostics({
+				kind: 'recoveryFailed',
+				reason: `pending selection recovery could not be applied: ${result.reason}`,
+			})
+		}
 	}
 
 	#placeSelection(selection: RawSelection): Result<void, 'notIndexed' | 'invalidBoundary'> {

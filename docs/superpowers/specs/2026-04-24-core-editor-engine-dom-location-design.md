@@ -317,7 +317,15 @@ type CaretLocation = {
 }
 
 type DomDiagnostic = {
-	readonly kind: 'missingRole' | 'stalePath' | 'outsideEditor' | 'controlBoundary' | 'mixedBoundary' | 'invalidBoundary' | 'renderReentry'
+	readonly kind:
+		| 'missingRole'
+		| 'stalePath'
+		| 'outsideEditor'
+		| 'controlBoundary'
+		| 'mixedBoundary'
+		| 'invalidBoundary'
+		| 'renderReentry'
+		| 'recoveryFailed'
 	readonly path?: TokenPath
 	readonly reason: string
 }
@@ -342,7 +350,7 @@ store.caret.focus(address: TokenAddress): Result<void, 'notIndexed' | 'stale'>
 
 `store.nodes.focus` and `store.nodes.input` are replaced by `store.caret.location` and DOM location APIs, not by another DOM wrapper. That state must not expose DOM child-index helpers.
 
-`structuralKey` is an adapter-facing computed dependency token. It reads the state that can change structural DOM: parsed tokens/generation, `layout`, `readOnly`, `Mark`, `Span`, `Block`, slots, slot props that affect structure, `draggable`, and adapter structural version if present. It returns a fresh opaque object when those dependencies change, so frameworks can use identity comparison directly. React uses it in `useLayoutEffect`; Vue watches it with `flush: 'post'`. This avoids adapter render notifications that only track `tokens`.
+`structuralKey` is an adapter-facing computed dependency token. It reads the state that can change structural DOM: parsed tokens/generation, parser `options`, `layout`, `readOnly`, `Mark`, `Span`, slots, slot props that affect structure, `draggable`, and adapter structural version if present. Block presentation is driven by `layout`, `slots.block`, `slotProps.block`, `readOnly`, and `draggable`; there is no separate core `Block` prop. It returns a fresh opaque object when those dependencies change, so frameworks can use identity comparison directly. React uses it in `useLayoutEffect`; Vue watches it with `flush: 'post'`. This avoids adapter render notifications that only track `tokens`.
 
 Performance invariants:
 
@@ -364,7 +372,7 @@ Adapters call this once after any render that can change structural DOM:
 - parsed token changes
 - `layout` changes
 - `readOnly` changes
-- `Mark`, `Span`, `Block`, or slot component changes
+- `Mark`, `Span`, or slot component changes
 - block controls appearing or disappearing
 - adapter structural version changes
 
@@ -398,7 +406,7 @@ Ownership rules:
 
 - Features schedule recovery by writing `store.caret.recovery`.
 - Features never call `store.caret.placeAt()` or `store.caret.focus()` directly as part of a value edit.
-- The DOM rendered watcher is the only code path that restores selections and clears recovery. It may call `store.caret.placeAt()` / `store.caret.focus()` as the caret-owned façade over the current DOM index.
+- The DOM rendered watcher is the only code path that restores selections and clears recovery. It may call `store.caret.placeAt()` / `store.caret.focus()` as the caret-owned façade over the current DOM index. Failed recovery is dropped after one attempt and emitted as a `recoveryFailed` DOM diagnostic.
 - Focus and selection event handlers update `store.caret.location`; DOM code does not own persistent caret-shaped state.
 - `ParsingFeature` should no longer branch parse behavior on old DOM-anchor recovery.
 

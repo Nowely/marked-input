@@ -455,7 +455,7 @@ class Caret {
 - `slotRoot` — rendered children root for slot marks
 - `control` — adapter controls such as drag handles and menus
 
-It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies pending `caret.recovery` after renders.
+It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies pending `caret.recovery` after renders; failed recovery is cleared after one attempt and reported through DOM diagnostics.
 
 ## Framework Hooks
 

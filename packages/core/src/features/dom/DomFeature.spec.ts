@@ -1,5 +1,6 @@
 import {describe, it, expect, beforeEach, vi} from 'vitest'
 
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 function mountRegisteredInline(value: string) {
@@ -143,6 +144,14 @@ describe('DomFeature registration', () => {
 		expect(store.dom.structuralKey()).not.toBe(before)
 	})
 
+	it('returns a fresh structural key identity when options change', () => {
+		const before = store.dom.structuralKey()
+
+		store.props.set({options: [{markup: '#[__value__]'}]})
+
+		expect(store.dom.structuralKey()).not.toBe(before)
+	})
+
 	it('places the caret at a raw position inside a registered text surface', () => {
 		const {store, container, textSurface} = mountRegisteredInline('hello')
 
@@ -160,6 +169,40 @@ describe('DomFeature registration', () => {
 
 		expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
 		expect(document.activeElement).toBe(textSurface)
+		container.remove()
+	})
+
+	it('clears pending caret recovery and emits diagnostics when placement fails', () => {
+		const {store, container} = mountRegisteredInline('hello')
+		const diagnostics: unknown[] = []
+		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+
+		store.caret.recovery({kind: 'caret', rawPosition: 999})
+		store.lifecycle.rendered({container, layout: 'inline'})
+
+		expect(store.caret.recovery()).toBeUndefined()
+		expect(diagnostics).toContainEqual({
+			kind: 'recoveryFailed',
+			reason: 'pending caret recovery could not be applied: invalidBoundary',
+		})
+		stop()
+		container.remove()
+	})
+
+	it('clears pending selection recovery and emits diagnostics when placement fails', () => {
+		const {store, container} = mountRegisteredInline('hello')
+		const diagnostics: unknown[] = []
+		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+
+		store.caret.recovery({kind: 'selection', selection: {range: {start: 999, end: 1000}}})
+		store.lifecycle.rendered({container, layout: 'inline'})
+
+		expect(store.caret.recovery()).toBeUndefined()
+		expect(diagnostics).toContainEqual({
+			kind: 'recoveryFailed',
+			reason: 'pending selection recovery could not be applied: invalidBoundary',
+		})
+		stop()
 		container.remove()
 	})
 

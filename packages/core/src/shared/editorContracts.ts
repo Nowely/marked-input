@@ -105,6 +105,7 @@ export type DomDiagnostic = {
 		| 'mixedBoundary'
 		| 'invalidBoundary'
 		| 'renderReentry'
+		| 'recoveryFailed'
 	readonly path?: TokenPath
 	readonly reason: string
 }
