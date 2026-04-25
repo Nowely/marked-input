@@ -23,19 +23,8 @@ export function annotate(
 		slot?: string
 	}
 ): string {
-	let annotation = markup as string
-
-	if (params.value !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.Value, params.value)
-	}
-
-	if (params.meta !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.Meta, params.meta)
-	}
-
-	if (params.slot !== undefined) {
-		annotation = annotation.replaceAll(PLACEHOLDER.Slot, params.slot)
-	}
-
-	return annotation
+	return (markup as string)
+		.replaceAll(PLACEHOLDER.Value, params.value ?? '')
+		.replaceAll(PLACEHOLDER.Meta, params.meta ?? '')
+		.replaceAll(PLACEHOLDER.Slot, params.slot ?? '')
 }

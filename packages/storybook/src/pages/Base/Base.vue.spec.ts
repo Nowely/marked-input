@@ -5,7 +5,7 @@ import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h, onMounted, ref, type ComponentPublicInstance} from 'vue'
+import {defineComponent, h, ref} from 'vue'
 
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
@@ -40,28 +40,20 @@ describe('Component: MarkedInput', () => {
 
 	const FocusableMark = defineComponent({
 		setup() {
-			const mark = useMark({controlled: true})
-			const elRef = ref<HTMLElement | null>(null)
-
-			onMounted(() => {
-				if (elRef.value) elRef.value.textContent = mark.value ?? null
-			})
+			const mark = useMark()
 
 			return () =>
-				h('abbr', {
-					ref: (el: Element | ComponentPublicInstance | null) => {
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						elRef.value = el as HTMLElement | null
-						// oxlint-disable-next-line no-unsafe-type-assertion
-						mark.ref.current = el as HTMLElement | null
+				h(
+					'abbr',
+					{
+						title: mark.meta,
+						style: {
+							outline: 'none',
+							whiteSpace: 'pre-wrap',
+						},
 					},
-					title: mark.meta,
-					contentEditable: true,
-					style: {
-						outline: 'none',
-						whiteSpace: 'pre-wrap',
-					},
-				})
+					mark.value
+				)
 		},
 	})
 

@@ -25,7 +25,6 @@ describe('Store', () => {
 		const store = new Store()
 		expect(typeof store.parsing.reparse).toBe('function')
 		expect(typeof store.value.change).toBe('function')
-		expect(typeof store.mark.remove).toBe('function')
 	})
 
 	describe('lifecycle orchestration', () => {

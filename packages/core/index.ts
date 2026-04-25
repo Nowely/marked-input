@@ -18,7 +18,7 @@ export type {
 export {MarkputHandler} from './src/shared/classes'
 
 // Parsing exports (modern API)
-export {annotate, denote} from './src/features/parsing'
+export {annotate, denote, findToken} from './src/features/parsing'
 export type {Markup, Token, TextToken, MarkToken} from './src/features/parsing'
 export type {
 	TokenPath,
@@ -50,5 +50,6 @@ export {getAlwaysShowHandle} from './src/features/drag'
 // Caret
 export {Caret} from './src/features/caret'
 
-// Mark Handler
-export {MarkHandler, type MarkOptions, type RefAccessor} from './src/features/mark'
+// Mark commands
+export {MarkController} from './src/features/mark'
+export type {MarkOptions} from './src/features/mark'

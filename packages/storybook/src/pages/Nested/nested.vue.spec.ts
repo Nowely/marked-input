@@ -1,5 +1,5 @@
 import type {Markup} from '@markput/vue'
-import {MarkedInput, useMark} from '@markput/vue'
+import {MarkedInput, useMark, useMarkInfo} from '@markput/vue'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page} from 'vitest/browser'
@@ -9,14 +9,14 @@ describe('Nested Marks Rendering', () => {
 	const TestMark = defineComponent({
 		props: {value: String, children: {type: null}},
 		setup(props, {slots}) {
-			const mark = useMark()
+			const mark = useMarkInfo()
 			return () =>
 				h(
 					'span',
 					{
 						'data-testid': `mark-depth-${mark.depth}`,
 						'data-depth': mark.depth,
-						'data-has-children': mark.hasChildren,
+						'data-has-children': mark.hasNestedMarks,
 					},
 					slots.default?.() ?? props.value
 				)
@@ -88,8 +88,8 @@ describe('Nested Marks Rendering', () => {
 		const TagMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
-				const isTag = mark.content.startsWith('#')
+				const mark = useMarkInfo()
+				const isTag = mark.depth === 0
 				return () =>
 					h(
 						'span',
@@ -148,15 +148,15 @@ describe('Nested Marks Rendering', () => {
 		const CapturingMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
-				if (mark.depth === 0 && mark.hasChildren) {
+				const mark = useMarkInfo()
+				if (mark.depth === 0 && mark.hasNestedMarks) {
 					hasChildrenAtDepthZero = slots.default != null
 				}
 				return () =>
 					h(
 						'span',
 						{'data-testid': 'mark'},
-						slots.default?.() ?? (!mark.hasChildren ? props.value : undefined)
+						slots.default?.() ?? (!mark.hasNestedMarks ? props.value : undefined)
 					)
 			},
 		})
@@ -184,7 +184,7 @@ describe('Nested Marks Tree Navigation', () => {
 		const DepthMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
+				const mark = useMarkInfo()
 				return () => h('span', {'data-depth': mark.depth}, slots.default?.() ?? props.value)
 			},
 		})
@@ -209,8 +209,8 @@ describe('Nested Marks Tree Navigation', () => {
 		const ChildrenMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
-				return () => h('span', {'data-has-children': mark.hasChildren}, slots.default?.() ?? props.value)
+				const mark = useMarkInfo()
+				return () => h('span', {'data-has-children': mark.hasNestedMarks}, slots.default?.() ?? props.value)
 			},
 		})
 
@@ -231,15 +231,15 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(hasChildrenValues).toEqual(['true', 'false'])
 	})
 
-	it('provide children array', async () => {
-		let capturedChildrenCount = 0
+	it('provide nested mark information', async () => {
+		let hasNestedMarks = false
 
 		const ChildrenCountMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
+				const mark = useMarkInfo()
 				if (mark.depth === 0) {
-					capturedChildrenCount = mark.tokens.length
+					hasNestedMarks = mark.hasNestedMarks
 				}
 				return () => h('span', null, slots.default?.() ?? props.value)
 			},
@@ -256,7 +256,7 @@ describe('Nested Marks Tree Navigation', () => {
 			},
 		})
 
-		expect(capturedChildrenCount).toBeGreaterThan(0)
+		expect(hasNestedMarks).toBe(true)
 	})
 })
 
@@ -362,7 +362,7 @@ describe('Complex Nesting Scenarios', () => {
 		const TestMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
+				const mark = useMarkInfo()
 				return () => h('span', {'data-depth': mark.depth}, slots.default?.() ?? props.value)
 			},
 		})
@@ -389,13 +389,13 @@ describe('Complex Nesting Scenarios', () => {
 		const MixedMark = defineComponent({
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
-				const mark = useMark()
+				const mark = useMarkInfo()
 				return () =>
 					h(
 						'span',
 						{
 							'data-testid': 'mark',
-							'data-has-children': mark.hasChildren,
+							'data-has-children': mark.hasNestedMarks,
 						},
 						slots.default?.() ?? props.value
 					)
@@ -422,8 +422,9 @@ describe('Complex Nesting Scenarios', () => {
 			props: {value: String, children: {type: null}},
 			setup(props, {slots}) {
 				const mark = useMark()
+				const info = useMarkInfo()
 				return () =>
-					h('span', {'data-testid': 'rendering-mark'}, mark.hasChildren ? slots.default?.() : mark.slot)
+					h('span', {'data-testid': 'rendering-mark'}, info.hasNestedMarks ? slots.default?.() : mark.slot)
 			},
 		})
 

@@ -1,5 +1,5 @@
 import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
-import {MarkedInput, useMark} from '@markput/react'
+import {MarkedInput, useMarkInfo} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties} from 'react'
 import {useState} from 'react'
@@ -155,7 +155,7 @@ export const HtmlLikeTags: StoryObj<MarkedInputProps> = {
 // ============================================================================
 
 const InteractiveMark = ({children}: MarkProps) => {
-	const mark = useMark()
+	const mark = useMarkInfo()
 	const [isHighlighted, setIsHighlighted] = useState(false)
 
 	return (
@@ -165,9 +165,8 @@ const InteractiveMark = ({children}: MarkProps) => {
 				e.stopPropagation()
 				console.log('Mark clicked:', {
 					depth: mark.depth,
-					hasChildren: mark.hasChildren,
-					childrenCount: mark.tokens.length,
-					parent: mark.parent ? 'has parent' : 'root level',
+					hasNestedMarks: mark.hasNestedMarks,
+					key: mark.key,
 				})
 			}}
 			onMouseEnter={() => setIsHighlighted(true)}
@@ -182,7 +181,7 @@ const InteractiveMark = ({children}: MarkProps) => {
 				cursor: 'pointer',
 				transition: 'all 0.2s',
 			}}
-			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
+			title={`Depth: ${mark.depth}, Nested: ${mark.hasNestedMarks}`}
 		>
 			{children}
 		</button>
