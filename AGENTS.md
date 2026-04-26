@@ -33,6 +33,8 @@ for agent and contributor instructions.
 ## Commands
 
 - `pnpm install`: install dependencies.
+- `pnpm exec playwright install chromium`: install the Chromium browser required
+  by local Vitest Browser Mode tests.
 - `pnpm test`: run all Vitest projects, including core unit tests and Storybook
   browser tests.
 - `pnpm -w vitest run path/to/file.spec.ts`: run one test file.
@@ -181,11 +183,15 @@ local checks before considering the task complete:
 During iteration, focused checks are fine. Before finalizing mixed or behavioral
 changes, run the full list above.
 
-For docs-only changes in `docs/**`, `AGENTS.md`, or `CLAUDE.md`, run:
+For docs-only changes in `AGENTS.md`, `CLAUDE.md`, or docs files that are not
+excluded by `oxfmt.config.ts`, run:
 
 ```sh
 pnpm exec oxfmt --check <changed-files>
 ```
+
+If every changed docs file is excluded by formatter config, report the skipped
+format check with that reason.
 
 For website docs changes in `packages/website/src/content/docs/**`, also run
 `pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config
@@ -215,6 +221,7 @@ either update the docs or call out the inconsistency explicitly.
 
 - Default branch: `next`.
 - PRs target `next`, not `main`.
+- CI runs on pull requests and pushes to `next`.
 - PR titles must use Conventional Commits.
 - Release is automated through release-please on `next`.
 - Pre-commit runs oxlint and oxfmt through lint-staged.

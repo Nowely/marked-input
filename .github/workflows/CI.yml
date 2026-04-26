@@ -5,7 +5,7 @@ on:
     pull_request:
         branches: ['**']
     push:
-        branches: [main, master]
+        branches: [next]
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
