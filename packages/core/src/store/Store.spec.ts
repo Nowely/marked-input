@@ -80,14 +80,10 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			const container = document.createElement('div')
-			const shell = document.createElement('span')
 			const text = document.createElement('span')
-			container.append(shell)
-			shell.append(text)
+			container.append(text)
 
 			store.dom.container(container)
-			store.dom.refFor({role: 'token', path: [0]})(shell)
-			store.dom.refFor({role: 'text', path: [0]})(text)
 
 			expect(() => {
 				store.lifecycle.mounted()

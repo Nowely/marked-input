@@ -57,12 +57,7 @@ export function enableSelection(store: Store): () => void {
 
 		effect(() => {
 			const value = store.caret.selecting()
-			if (value !== 'drag') return
-			const container = store.dom.container()
-			if (!container) return
-			container
-				.querySelectorAll<HTMLElement>('[contenteditable="true"]')
-				.forEach(el => (el.contentEditable = 'false'))
+			if (value === 'drag') store.dom.reconcile()
 		})
 	})
 

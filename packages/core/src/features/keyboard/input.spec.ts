@@ -3,44 +3,41 @@ import {describe, it, expect, vi} from 'vitest'
 import {Store} from '../../store/Store'
 import {applySpanInput, enableInput, handleBeforeInput, replaceAllContentWith} from './input'
 
-function mountRegisteredInline(value = 'hello') {
+function mountStructuralInline(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})
 	store.value.enable()
 	const container = document.createElement('div')
-	const shell = document.createElement('span')
 	const textSurface = document.createElement('span')
-	container.append(shell)
-	shell.append(textSurface)
+	container.append(textSurface)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.refFor({role: 'token', path: [0]})(shell)
-	store.dom.refFor({role: 'text', path: [0]})(textSurface)
 	store.dom.enable()
 	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
+	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
 	return {store, container, textSurface, textNode}
 }
 
-function mountRegisteredMarkWithDescendant(value = '@[world]') {
+function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
 	store.value.enable()
 	const container = document.createElement('div')
-	const shell = document.createElement('span')
+	const before = document.createElement('span')
+	const mark = document.createElement('mark')
+	const after = document.createElement('span')
 	const descendant = document.createElement('span')
 	descendant.contentEditable = 'true'
 	descendant.textContent = 'inner'
-	container.append(shell)
-	shell.append(descendant)
+	mark.append(descendant)
+	container.append(before, mark, after)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.refFor({role: 'token', path: [1]})(shell)
 	store.dom.enable()
 	store.lifecycle.rendered()
 	const descendantText = descendant.firstChild
-	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
+	if (!(descendantText instanceof Text)) throw new Error('Structural mark descendant did not render a text node')
 	return {store, container, descendantText}
 }
 
@@ -93,7 +90,7 @@ describe('replaceAllContentWith()', () => {
 
 describe('handleBeforeInput()', () => {
 	it('inserts text through replaceRange using target ranges', () => {
-		const {store, container, textNode} = mountRegisteredInline()
+		const {store, container, textNode} = mountStructuralInline()
 		const replaceRange = vi.spyOn(store.value, 'replaceRange')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
@@ -111,7 +108,7 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it('does not commit beforeinput during composition', () => {
-		const {store, container, textNode} = mountRegisteredInline()
+		const {store, container, textNode} = mountStructuralInline()
 		const replaceRange = vi.spyOn(store.value, 'replaceRange')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
@@ -127,7 +124,7 @@ describe('handleBeforeInput()', () => {
 	})
 
 	it('ignores beforeinput from editable mark descendants', () => {
-		const {store, container, descendantText} = mountRegisteredMarkWithDescendant()
+		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
 		const replaceRange = vi.spyOn(store.value, 'replaceRange')
 		const range = document.createRange()
 		range.setStart(descendantText, 0)
@@ -144,7 +141,7 @@ describe('handleBeforeInput()', () => {
 
 describe('composition input', () => {
 	it('commits composition text at the original raw selection', () => {
-		const {store, container, textNode} = mountRegisteredInline('ab')
+		const {store, container, textNode} = mountStructuralInline('ab')
 		const disable = enableInput(store)
 		const selection = window.getSelection()
 		const initialRange = document.createRange()

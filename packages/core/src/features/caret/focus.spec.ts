@@ -33,18 +33,14 @@ describe('FocusFeature', () => {
 		}
 	})
 
-	it('updates caret location from focus inside registered text surface', () => {
+	it('updates caret location from focus inside structural text surface', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		store.value.enable()
 		const container = document.createElement('div')
-		const shell = document.createElement('span')
 		const text = document.createElement('span')
-		container.append(shell)
-		shell.append(text)
+		container.append(text)
 		store.dom.container(container)
-		store.dom.refFor({role: 'token', path: [0]})(shell)
-		store.dom.refFor({role: 'text', path: [0]})(text)
 		store.dom.enable()
 		store.lifecycle.rendered()
 		store.caret.enable()
