@@ -14,7 +14,7 @@ const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
 const {Default} = composeStories(BaseStories)
 
 function getMarkFocusTarget(element: Element): HTMLElement {
-	const target = element.closest<HTMLElement>('span[tabindex]')
+	const target = element.closest<HTMLElement>('[tabindex]')
 	if (!target) throw new Error('Expected mark token focus target')
 	return target
 }

@@ -287,8 +287,8 @@ describe('Slots API', () => {
 			})
 
 			const span = page.getByTestId('custom-editable-span')
-			const editable = span.element().querySelector<HTMLElement>('span[contenteditable]')!
-			await expect.element(editable).toHaveAttribute('contenteditable', 'true')
+			await expect.element(span).toHaveAttribute('contenteditable', 'true')
+			await expect.element(span).toHaveTextContent('Hello world')
 		})
 
 		it('renders without the suppressContentEditableWarning prop set', async () => {
