@@ -3,76 +3,99 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
-function mountRegisteredInline(value: string) {
+function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: value})
+	store.props.set({defaultValue: value, ...props})
 	store.value.enable()
+	store.dom.enable()
+	return store
+}
+
+function mountStructuralInline(value: string) {
+	const store = enableStructuralStore(value)
 	const container = document.createElement('div')
-	const shell = document.createElement('span')
 	const textSurface = document.createElement('span')
-	container.append(shell)
-	shell.append(textSurface)
+	container.append(textSurface)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.refFor({role: 'token', path: [0]})(shell)
-	store.dom.refFor({role: 'text', path: [0]})(textSurface)
-	store.dom.enable()
 	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
-	return {store, container, shell, textSurface, textNode}
+	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
+	return {store, container, textSurface, textNode}
 }
 
-function mountRegisteredMarkWithDescendant(value = '@[world]') {
-	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__slot__]'}]})
-	store.value.enable()
+function mountStructuralInlineMark(value = 'hello @[world]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__value__]'}]})
 	const container = document.createElement('div')
-	const shell = document.createElement('span')
-	const descendant = document.createElement('span')
-	descendant.contentEditable = 'true'
-	descendant.textContent = 'inner'
-	container.append(shell)
-	shell.append(descendant)
+	const before = document.createElement('span')
+	const mark = document.createElement('mark')
+	const after = document.createElement('span')
+	container.append(before, mark, after)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.refFor({role: 'token', path: [1]})(shell)
-	store.dom.enable()
 	store.lifecycle.rendered()
-	const descendantText = descendant.firstChild
-	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
-	return {store, container, descendant, descendantText}
+	return {store, container, before, mark, after}
 }
 
-function mountRegisteredBlockWithControl(value: string) {
-	const store = new Store()
-	store.props.set({defaultValue: value, layout: 'block'})
-	store.value.enable()
+function mountStructuralNested(value = '@[before @[nested] after]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const before = document.createElement('span')
+	const inner = document.createElement('mark')
+	const after = document.createElement('span')
+	const trailing = document.createElement('span')
+	outer.append(before, inner, after)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.dom.container(container)
+	store.lifecycle.rendered()
+	return {store, container, leading, outer, before, inner, after, trailing}
+}
+
+function mountStructuralBlockWithControl(value: string) {
+	const store = enableStructuralStore(value, {layout: 'block'})
 	const container = document.createElement('div')
 	const row = document.createElement('div')
-	const shell = document.createElement('span')
-	const textSurface = document.createElement('span')
 	const control = document.createElement('button')
+	const textSurface = document.createElement('span')
 	control.textContent = 'x'
+	row.append(control, textSurface)
 	container.append(row)
-	row.append(shell, control)
-	shell.append(textSurface)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.refFor({role: 'row', path: [0]})(row)
-	store.dom.refFor({role: 'token', path: [0]})(shell)
-	store.dom.refFor({role: 'text', path: [0]})(textSurface)
-	store.dom.refFor({role: 'control', ownerPath: [0]})(control)
-	store.dom.enable()
+	store.dom.controlFor([0])(control)
 	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
-	if (!(controlText instanceof Text)) throw new Error('Registered control did not render a text node')
-	return {store, container, row, shell, textSurface, textNode, control, controlText}
+	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
+	return {store, container, row, control, controlText, textSurface, textNode}
 }
 
-describe('DomFeature registration', () => {
+function mountStructuralBlockWithControls(value: string) {
+	const store = enableStructuralStore(value, {layout: 'block'})
+	const container = document.createElement('div')
+	const row = document.createElement('div')
+	const beforeControl = document.createElement('button')
+	const afterControl = document.createElement('button')
+	const textSurface = document.createElement('span')
+	beforeControl.textContent = 'before'
+	afterControl.textContent = 'after'
+	row.append(beforeControl, textSurface, afterControl)
+	container.append(row)
+	document.body.append(container)
+	store.dom.container(container)
+	store.dom.controlFor([0])(beforeControl)
+	store.dom.controlFor([0])(afterControl)
+	store.lifecycle.rendered()
+	const textNode = textSurface.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	return {store, container, row, beforeControl, afterControl, textSurface, textNode}
+}
+
+describe('DomFeature structural indexing', () => {
 	let store: Store
 
 	beforeEach(() => {
@@ -81,15 +104,6 @@ describe('DomFeature registration', () => {
 		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
 		store.value.enable()
 		store.value.replaceAll('hello @[world]')
-	})
-
-	it('returns stable ref callbacks for the same target', () => {
-		const first = store.dom.refFor({role: 'text', path: [0]})
-		const second = store.dom.refFor({role: 'text', path: [0]})
-		const third = store.dom.refFor({role: 'text', path: [2]})
-
-		expect(first).toBe(second)
-		expect(first).not.toBe(third)
 	})
 
 	it('owns the container ref signal', () => {
@@ -105,72 +119,91 @@ describe('DomFeature registration', () => {
 	})
 
 	it('publishes one dom index per rendered commit', () => {
-		const container = document.createElement('div')
-		const textShell = document.createElement('span')
-		const textSurface = document.createElement('span')
-		container.append(textShell)
-		textShell.append(textSurface)
-
-		store.dom.container(container)
-		store.dom.refFor({role: 'token', path: [0]})(textShell)
-		store.dom.refFor({role: 'text', path: [0]})(textSurface)
-
-		store.dom.enable()
-		store.lifecycle.rendered()
+		const {store, textSurface, container} = mountStructuralInline('hello')
 
 		expect(store.dom.index()).toEqual({generation: 1})
 		expect(store.dom.locateNode(textSurface)).toMatchObject({ok: true})
+		container.remove()
 	})
 
-	it('resolves ref paths through the current parse generation during rendered commit', () => {
-		const container = document.createElement('div')
-		const shell = document.createElement('span')
-		container.append(shell)
-		store.dom.container(container)
-		store.dom.refFor({role: 'token', path: [0]})(shell)
-		store.dom.enable()
+	it('maps inline token roots by rendered token order', () => {
+		const {store, before, mark, after, container} = mountStructuralInlineMark()
 
-		const oldGeneration = store.parsing.index().generation
-		store.value.replaceAll('changed')
-		store.lifecycle.rendered()
+		expect(store.dom.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
+		expect(store.dom.locateNode(mark)).toMatchObject({ok: true, value: {tokenElement: mark}})
+		expect(store.dom.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+		container.remove()
+	})
 
-		const result = store.dom.locateNode(shell)
-		expect(result.ok).toBe(true)
-		if (result.ok) expect(result.value.address.parseGeneration).not.toBe(oldGeneration)
+	it('treats text token roots as editable text surfaces', () => {
+		const {store, textSurface, container} = mountStructuralInline('hello')
+
+		expect(store.dom.locateNode(textSurface)).toMatchObject({
+			ok: true,
+			value: {tokenElement: textSurface, textElement: textSurface},
+		})
+		expect(textSurface.textContent).toBe('hello')
+		expect(textSurface.contentEditable).toBe('true')
+		container.remove()
+	})
+
+	it('maps nested children without slot-root wrappers', () => {
+		const {store, outer, before, inner, after, container} = mountStructuralNested()
+
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true, value: {tokenElement: outer}})
+		expect(store.dom.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
+		expect(store.dom.locateNode(inner)).toMatchObject({ok: true, value: {tokenElement: inner}})
+		expect(store.dom.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+		container.remove()
 	})
 
 	it('returns control for registered controls', () => {
-		const container = document.createElement('div')
-		const control = document.createElement('button')
-		container.append(control)
-		store.dom.container(container)
-		store.dom.refFor({role: 'control', ownerPath: [1]})(control)
-		store.dom.enable()
-		store.lifecycle.rendered()
+		const {store, control, container} = mountStructuralBlockWithControl('hello')
 
 		expect(store.dom.locateNode(control)).toEqual({ok: false, reason: 'control'})
+		container.remove()
 	})
 
-	it('reconciles registered text surfaces from accepted tokens', () => {
-		const container = document.createElement('div')
-		const shell = document.createElement('span')
-		const textSurface = document.createElement('span')
-		textSurface.textContent = 'stale'
-		container.append(shell)
-		shell.append(textSurface)
+	it('excludes multiple controls owned by the same token path from block token indexing', () => {
+		const {store, beforeControl, afterControl, textSurface, container} = mountStructuralBlockWithControls('hello')
 
+		expect(store.dom.locateNode(beforeControl)).toEqual({ok: false, reason: 'control'})
+		expect(store.dom.locateNode(afterControl)).toEqual({ok: false, reason: 'control'})
+		expect(store.dom.locateNode(textSurface)).toMatchObject({
+			ok: true,
+			value: {tokenElement: textSurface, textElement: textSurface},
+		})
+		container.remove()
+	})
+
+	it('emits diagnostics when a nested mark omits child roots', () => {
+		const diagnostics: unknown[] = []
+		const store = enableStructuralStore('@[before @[nested] after]', {
+			Mark: () => null,
+			options: [{markup: '@[__slot__]'}],
+		})
+		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+		const container = document.createElement('div')
+		const leading = document.createElement('span')
+		const outer = document.createElement('mark')
+		const trailing = document.createElement('span')
+		container.append(leading, outer, trailing)
+		document.body.append(container)
 		store.dom.container(container)
-		store.dom.refFor({role: 'token', path: [0]})(shell)
-		store.dom.refFor({role: 'text', path: [0]})(textSurface)
-		store.dom.enable()
 		store.lifecycle.rendered()
 
-		expect(textSurface.textContent).toBe('hello ')
-		expect(textSurface.contentEditable).toBe('true')
+		expect(diagnostics).toContainEqual({
+			kind: 'ambiguousStructure',
+			path: [1],
+			reason: 'expected 3 child token elements but found 0',
+		})
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
+		stop()
+		container.remove()
 	})
 
-	it('places the caret at a raw position inside a registered text surface', () => {
-		const {store, container, textSurface} = mountRegisteredInline('hello')
+	it('places the caret at a raw position inside a structural text surface', () => {
+		const {store, container, textSurface} = mountStructuralInline('hello')
 
 		expect(store.dom.placeCaretAtRawPosition(3, 'after')).toEqual({ok: true, value: undefined})
 
@@ -181,7 +214,7 @@ describe('DomFeature registration', () => {
 	})
 
 	it('focuses the element for an address', () => {
-		const {store, container, textSurface} = mountRegisteredInline('hello')
+		const {store, container, textSurface} = mountStructuralInline('hello')
 		const address = store.parsing.index().addressFor([0])!
 
 		expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
@@ -190,7 +223,7 @@ describe('DomFeature registration', () => {
 	})
 
 	it('clears pending caret recovery and emits diagnostics when placement fails', () => {
-		const {store, container} = mountRegisteredInline('hello')
+		const {store, container} = mountStructuralInline('hello')
 		const diagnostics: unknown[] = []
 		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
@@ -207,7 +240,7 @@ describe('DomFeature registration', () => {
 	})
 
 	it('clears pending selection recovery and emits diagnostics when placement fails', () => {
-		const {store, container} = mountRegisteredInline('hello')
+		const {store, container} = mountStructuralInline('hello')
 		const diagnostics: unknown[] = []
 		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
@@ -225,29 +258,36 @@ describe('DomFeature registration', () => {
 
 	describe('raw boundary mapping', () => {
 		it('maps text-surface boundaries to raw UTF-16 positions', () => {
-			const {store, container, textNode} = mountRegisteredInline('hello')
+			const {store, container, textNode} = mountStructuralInline('hello')
 
 			expect(store.dom.rawPositionFromBoundary(textNode, 2)).toEqual({ok: true, value: 2})
 			container.remove()
 		})
 
 		it('rejects boundaries that split surrogate pairs', () => {
-			const {store, container, textNode} = mountRegisteredInline('a😀b')
+			const {store, container, textNode} = mountStructuralInline('a😀b')
 
 			expect(store.dom.rawPositionFromBoundary(textNode, 2)).toEqual({ok: false, reason: 'invalidBoundary'})
 			container.remove()
 		})
 
 		it('maps token shell boundaries by affinity', () => {
-			const {store, container, shell} = mountRegisteredInline('hello')
+			const {store, container, textSurface} = mountStructuralInline('hello')
 
-			expect(store.dom.rawPositionFromBoundary(shell, 0, 'before')).toEqual({ok: true, value: 0})
-			expect(store.dom.rawPositionFromBoundary(shell, 1, 'after')).toEqual({ok: true, value: 5})
+			expect(store.dom.rawPositionFromBoundary(textSurface, 0, 'before')).toEqual({ok: true, value: 0})
+			expect(store.dom.rawPositionFromBoundary(textSurface, 1, 'after')).toEqual({ok: true, value: 5})
 			container.remove()
 		})
 
 		it('rejects editable boundaries inside mark presentation descendants', () => {
-			const {store, container, descendantText} = mountRegisteredMarkWithDescendant()
+			const {store, container, mark} = mountStructuralInlineMark('@[world]')
+			const descendant = document.createElement('span')
+			descendant.contentEditable = 'true'
+			descendant.textContent = 'inner'
+			mark.append(descendant)
+			const descendantText = descendant.firstChild
+			if (!(descendantText instanceof Text)) throw new Error('Mark descendant did not render a text node')
+			store.lifecycle.rendered()
 
 			expect(store.dom.rawPositionFromBoundary(descendantText, 0, 'after')).toEqual({
 				ok: false,
@@ -257,7 +297,7 @@ describe('DomFeature registration', () => {
 		})
 
 		it('returns mixedBoundary for selections crossing controls', () => {
-			const {store, container, textNode, controlText} = mountRegisteredBlockWithControl('hello')
+			const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
 			const selection = window.getSelection()!
 			const range = document.createRange()
 			range.setStart(textNode, 0)
