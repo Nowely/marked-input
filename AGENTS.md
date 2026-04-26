@@ -80,6 +80,9 @@ Detailed docs live in `packages/website/src/content/docs/`:
 ## Code Rules
 
 - **Keep docs in sync**: when changing public API, behavior, or architecture, update the relevant documentation in `packages/website/src/content/docs/` and this CLAUDE.md file. Outdated docs are worse than no docs — treat doc updates as part of the implementation, not a follow-up task.
+- **Single source of truth**: each runtime fact has one owning feature. Other features may read it through the owner’s public API, but must not mirror, cache, or re-store the same value in their own signals/classes unless there is an explicit synchronization design and tests for it.
+- **Feature ownership boundaries**: `store.props` owns framework-provided configuration, `store.dom` owns DOM refs and DOM indexing, `store.value` owns the accepted serialized value, `store.caret` owns caret state, and `store.slots` owns slot components/props. Keep new state with the feature that owns the underlying concept.
+- **No compatibility leftovers as architecture**: temporary bridges are allowed only during migration, must be named/documented as temporary, and should be removed once the owning feature exists. Do not build new code on top of legacy bridge state.
 - Use reactive's `use()` conistency by framework reactivity system.
 - Components should depend on the smallest established abstraction that satisfies their role, not on lower-level runtime plumbing.
 
@@ -87,6 +90,9 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 - Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, `store.dom`, or `store.caret`
 - Do not manually create Signals for new state — add new state to the owning feature class. Framework-provided props go in `store.props` in `Store.ts` and are set via `store.props.set()`.
+- Do not duplicate runtime state across store features. If two features need the same value, expose it from the owning feature instead of creating a second signal or cache.
+- Do not mirror DOM refs, parsed tokens, accepted value, caret state, or framework props into another feature “for convenience”.
+- Do not preserve migration-era compatibility state after the replacement owner exists; remove the bridge or mark it as temporary with a removal task.
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
 - Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.
