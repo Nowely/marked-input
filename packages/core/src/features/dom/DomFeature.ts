@@ -14,7 +14,7 @@ import {batch, computed, effectScope, event, signal, watch} from '../../shared/s
 import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
-import {pathKey} from '../parsing/tokenIndex'
+import {pathEquals, pathKey} from '../parsing/tokenIndex'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -34,6 +34,11 @@ type PathElements = {
 
 type ControlRegistration = {
 	readonly ownerPath?: TokenPath
+	readonly element: HTMLElement
+}
+
+type ChildSequenceRegistration = {
+	readonly ownerPath: TokenPath
 	readonly element: HTMLElement
 }
 
@@ -121,7 +126,9 @@ export class DomFeature {
 	readonly diagnostics = event<DomDiagnostic>()
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
+	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
 	#nextControlId = 0
+	#nextChildSequenceId = 0
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
 	#generation = 0
@@ -170,6 +177,19 @@ export class DomFeature {
 				this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
 			} else {
 				this.#pendingControls.delete(key)
+			}
+		}
+		return callback
+	}
+
+	childrenFor(ownerPath: TokenPath): DomRef {
+		const key = `children:${pathKey(ownerPath)}:${++this.#nextChildSequenceId}`
+
+		const callback: DomRef = element => {
+			if (element) {
+				this.#pendingChildSequences.set(key, {ownerPath: [...ownerPath], element})
+			} else {
+				this.#pendingChildSequences.delete(key)
 			}
 		}
 		return callback
@@ -400,6 +420,73 @@ export class DomFeature {
 		return false
 	}
 
+	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
+		const hosts: HTMLElement[] = []
+		for (const registration of this.#pendingChildSequences.values()) {
+			if (pathEquals(registration.ownerPath, ownerPath)) hosts.push(registration.element)
+		}
+		return hosts
+	}
+
+	#indexNestedTokenSequence(
+		token: Token,
+		path: TokenPath,
+		ownerElement: HTMLElement,
+		rowElement: HTMLElement | undefined,
+		tokenIndex: ReturnType<Store['parsing']['index']>,
+		controlElements: Set<HTMLElement>,
+		pathElements: Map<string, PathElements>,
+		elementRoles: WeakMap<HTMLElement, RegisteredRole>
+	): void {
+		if (token.type !== 'mark' || token.children.length === 0) return
+
+		const hosts = this.#childSequenceHostsFor(path)
+		if (hosts.length === 0) {
+			this.#indexTokenSequence(
+				ownerElement,
+				token.children,
+				path,
+				rowElement,
+				tokenIndex,
+				controlElements,
+				pathElements,
+				elementRoles
+			)
+			return
+		}
+
+		const ownerKey = pathKey(path)
+		if (hosts.length !== 1) {
+			this.diagnostics({
+				kind: 'ambiguousStructure',
+				path,
+				reason: `expected exactly 1 child sequence host for owner path ${ownerKey} but found ${hosts.length}`,
+			})
+			return
+		}
+
+		const host = hosts[0]
+		if (!ownerElement.contains(host)) {
+			this.diagnostics({
+				kind: 'ambiguousStructure',
+				path,
+				reason: `child sequence host for owner path ${ownerKey} is not contained by owner token element`,
+			})
+			return
+		}
+
+		this.#indexTokenSequence(
+			host,
+			token.children,
+			path,
+			rowElement,
+			tokenIndex,
+			controlElements,
+			pathElements,
+			elementRoles
+		)
+	}
+
 	#indexBlockTokens(
 		container: HTMLElement,
 		tokens: readonly Token[],
@@ -504,18 +591,16 @@ export class DomFeature {
 		elementRoles.set(element, {role: token.type === 'text' ? 'text' : 'token', path, address})
 		if (rowElement && path.length === 1) elementRoles.set(rowElement, {role: 'row', path, address})
 
-		if (token.type === 'mark' && token.children.length > 0) {
-			this.#indexTokenSequence(
-				element,
-				token.children,
-				path,
-				rowElement,
-				tokenIndex,
-				controlElements,
-				pathElements,
-				elementRoles
-			)
-		}
+		this.#indexNestedTokenSequence(
+			token,
+			path,
+			element,
+			rowElement,
+			tokenIndex,
+			controlElements,
+			pathElements,
+			elementRoles
+		)
 	}
 
 	#reconcileStructuralTextSurfaces(): void {

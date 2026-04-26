@@ -54,6 +54,61 @@ function mountStructuralNested(value = '@[before @[nested] after]') {
 	return {store, container, leading, outer, before, inner, after, trailing}
 }
 
+function mountStructuralNestedWithChildSequence(value = '@[before @[nested] after]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const control = document.createElement('input')
+	const host = document.createElement('span')
+	const before = document.createElement('span')
+	const inner = document.createElement('mark')
+	const after = document.createElement('span')
+	const trailing = document.createElement('span')
+	control.type = 'checkbox'
+	host.style.display = 'contents'
+	host.append(before, inner, after)
+	outer.append(control, host)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.dom.container(container)
+	store.dom.childrenFor([1])(host)
+	store.lifecycle.rendered()
+	return {store, container, leading, outer, control, host, before, inner, after, trailing}
+}
+
+function mountStructuralNestedWithDuplicateChildSequences(value = '@[before @[nested] after]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const hostA = document.createElement('span')
+	const hostB = document.createElement('span')
+	const trailing = document.createElement('span')
+	outer.append(hostA, hostB)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.dom.container(container)
+	store.dom.childrenFor([1])(hostA)
+	store.dom.childrenFor([1])(hostB)
+	return {store, container, outer, hostA, hostB}
+}
+
+function mountStructuralNestedWithOutsideChildSequence(value = '@[before @[nested] after]') {
+	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
+	const container = document.createElement('div')
+	const leading = document.createElement('span')
+	const outer = document.createElement('mark')
+	const outsideHost = document.createElement('span')
+	const trailing = document.createElement('span')
+	leading.append(outsideHost)
+	container.append(leading, outer, trailing)
+	document.body.append(container)
+	store.dom.container(container)
+	store.dom.childrenFor([1])(outsideHost)
+	return {store, container, outer, outsideHost}
+}
+
 function mountStructuralBlockWithControl(value: string) {
 	const store = enableStructuralStore(value, {layout: 'block'})
 	const container = document.createElement('div')
@@ -154,6 +209,52 @@ describe('DomFeature structural indexing', () => {
 		expect(store.dom.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
 		expect(store.dom.locateNode(inner)).toMatchObject({ok: true, value: {tokenElement: inner}})
 		expect(store.dom.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+		container.remove()
+	})
+
+	it('indexes nested children from a registered child sequence host', () => {
+		const {store, container, outer, control, host, before, inner, after} = mountStructuralNestedWithChildSequence()
+
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true, value: {tokenElement: outer}})
+		expect(store.dom.locateNode(host)).toMatchObject({ok: true, value: {tokenElement: outer}})
+		expect(store.dom.locateNode(control)).toMatchObject({ok: true, value: {tokenElement: outer}})
+		expect(store.dom.locateNode(before)).toMatchObject({ok: true, value: {tokenElement: before}})
+		expect(store.dom.locateNode(inner)).toMatchObject({ok: true, value: {tokenElement: inner}})
+		expect(store.dom.locateNode(after)).toMatchObject({ok: true, value: {tokenElement: after}})
+		expect(before.textContent).toBe('before ')
+		expect(after.textContent).toBe(' after')
+		container.remove()
+	})
+
+	it('emits diagnostics for duplicate child sequence hosts', () => {
+		const diagnostics: unknown[] = []
+		const {store, container} = mountStructuralNestedWithDuplicateChildSequences()
+		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+
+		store.lifecycle.rendered()
+
+		expect(diagnostics).toContainEqual({
+			kind: 'ambiguousStructure',
+			path: [1],
+			reason: 'expected exactly 1 child sequence host for owner path 1 but found 2',
+		})
+		stop()
+		container.remove()
+	})
+
+	it('emits diagnostics when child sequence host is outside owner mark root', () => {
+		const diagnostics: unknown[] = []
+		const {store, container} = mountStructuralNestedWithOutsideChildSequence()
+		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+
+		store.lifecycle.rendered()
+
+		expect(diagnostics).toContainEqual({
+			kind: 'ambiguousStructure',
+			path: [1],
+			reason: 'child sequence host for owner path 1 is not contained by owner token element',
+		})
+		stop()
 		container.remove()
 	})
 
