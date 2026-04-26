@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {watch} from 'vue'
+import {onMounted, onUpdated} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -12,7 +12,6 @@ const result = useMarkput(s => ({
 	tokens: s.parsing.tokens,
 	key: s.key,
 }))
-const structuralKey = useMarkput(s => s.dom.structuralKey)
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
@@ -23,13 +22,8 @@ const setContainerRef = (el: unknown) => {
 const containerComponent = useMarkput(s => s.slots.containerComponent)
 const containerProps = useMarkput(s => s.slots.containerProps)
 
-watch(
-	() => structuralKey.value,
-	() => {
-		store.lifecycle.rendered()
-	},
-	{flush: 'post', immediate: true}
-)
+onMounted(() => store.lifecycle.rendered())
+onUpdated(() => store.lifecycle.rendered())
 </script>
 
 <template>

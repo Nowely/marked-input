@@ -116,18 +116,6 @@ export class DomFeature {
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
-	readonly structuralKey = computed(() => {
-		this._store.parsing.index()
-		this._store.props.layout()
-		this._store.props.readOnly()
-		this._store.props.options()
-		this._store.props.Mark()
-		this._store.props.Span()
-		this._store.props.slots()
-		this._store.props.slotProps()
-		this._store.props.draggable()
-		return {}
-	})
 
 	readonly #refCallbacks = new Map<string, DomRef>()
 	readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTMLElement}>()

@@ -169,22 +169,6 @@ describe('DomFeature registration', () => {
 		expect(textSurface.contentEditable).toBe('true')
 	})
 
-	it('returns a fresh structural key identity when structure-driving props change', () => {
-		const before = store.dom.structuralKey()
-
-		store.props.set({layout: 'block'})
-
-		expect(store.dom.structuralKey()).not.toBe(before)
-	})
-
-	it('returns a fresh structural key identity when options change', () => {
-		const before = store.dom.structuralKey()
-
-		store.props.set({options: [{markup: '#[__value__]'}]})
-
-		expect(store.dom.structuralKey()).not.toBe(before)
-	})
-
 	it('places the caret at a raw position inside a registered text surface', () => {
 		const {store, container, textSurface} = mountRegisteredInline('hello')
 
