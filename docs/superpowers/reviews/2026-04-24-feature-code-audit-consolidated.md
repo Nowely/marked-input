@@ -19,22 +19,22 @@ No production source code was changed by these audits.
 
 - serialized value state
 - mutable token objects and token positions
-- DOM child indexes
+- block DOM row lookup
 - caret recovery anchors
 - block-mode wrappers
 - framework render timing
 
 The current feature split has good intent, but many features still compute raw string edits, DOM locations, controlled/uncontrolled behavior, and caret recovery independently. That makes the system harder to reason about than it needs to be.
 
-The main simplification direction is clear: centralize value mutations, centralize DOM/token location, and make row-editing a neutral editing concern instead of a drag concern.
+The main simplification direction is clear: centralize value mutations, route block row lookup through `store.dom`, and make row-editing a neutral editing concern instead of a drag concern.
 
 ## Priority Map
 
 1. High: `MarkHandler` edits can leave token positions stale, then removal can slice the wrong range.
-2. High: DOM/token mapping is fragmented and fragile across `NodeProxy`, DOM reconciliation, block raw-position helpers, and caret recovery.
-3. High: Container-bound listeners bind once and do not follow `slots.container` changes.
-4. High: Overlay caret recovery ignores per-option `Mark` and is gated by global `Mark`.
-5. Medium: Full-value edit logic is scattered across features.
+2. High: Container-bound listeners bind once and do not follow `slots.container` changes.
+3. High: Overlay caret recovery ignores per-option `Mark` and is gated by global `Mark`.
+4. Medium: Full-value edit logic is scattered across features.
+5. Medium: Block keyboard handlers duplicate active-row lookup outside `store.dom`.
 6. Medium: Drag and block row operations expose unchecked raw indexes and are owned by the wrong feature.
 7. Medium: `createRowContent([])` can crash.
 8. Medium: Overlay trigger probing can use global selection outside the editor.
@@ -71,55 +71,6 @@ When focus is not editable, `ValueFeature` serializes tokens but does not repars
 Impact: changing mark value or meta to a different serialized length can make later removal delete the wrong substring.
 
 Recommendation: reparse accepted value after public mark mutations, or make removal identity-based by rebuilding the token tree/string while omitting the target token.
-
-### High: DOM/token mapping is fragile and duplicated
-
-Verification: confirmed.
-
-`NodeProxy` maps inline DOM identity by child-index parity:
-
-- `packages/core/src/shared/classes/NodeProxy.ts:25`
-- `packages/core/src/shared/classes/NodeProxy.ts:29`
-
-Missing or unsupported targets return `-1`, which makes `isMark` true because `-1 % 2 !== 0`:
-
-- `packages/core/src/shared/classes/NodeProxy.ts:51`
-
-Callers then consume the index as if it were valid:
-
-- `packages/core/src/features/value/ValueFeature.ts:43`
-- `packages/core/src/features/overlay/OverlayFeature.ts:112`
-- `packages/core/src/features/editing/utils/deleteMark.ts:16`
-
-Block DOM reconciliation depends on child offsets and `data-testid`:
-
-- `packages/core/src/features/dom/DomFeature.ts:123`
-- `packages/core/src/features/dom/DomFeature.ts:124`
-- `packages/core/src/features/dom/DomFeature.ts:125`
-- `packages/core/src/features/dom/DomFeature.ts:133`
-
-Block raw-position mapping also interprets local DOM offsets as token character offsets:
-
-- `packages/core/src/features/keyboard/rawPosition.ts:58`
-- `packages/core/src/features/keyboard/rawPosition.ts:68`
-- `packages/core/src/features/keyboard/blockEdit.ts:364`
-- `packages/core/src/features/keyboard/blockEdit.ts:385`
-- `packages/core/src/features/keyboard/blockEdit.ts:404`
-
-Impact: custom marks, nested focusable elements, wrappers, or block slot changes can break editing and caret behavior.
-
-Recommendation: add one checked DOM/token locator, for example:
-
-```ts
-type LocatedToken = {
-  mode: 'inline' | 'block'
-  index: number
-  token: Token
-  element: HTMLElement
-}
-```
-
-Features should consume this locator instead of parity checks, unchecked child indexes, or local `findIndex(div => ...)` loops. Use explicit structural attributes such as `data-markput-block`, `data-markput-token`, and `data-markput-text` instead of `data-testid`.
 
 ### High: Container-bound listeners are one-shot
 
@@ -188,6 +139,28 @@ Multiple features compute serialized value edits and caret recovery independentl
 Impact: controlled/uncontrolled handling, `onChange`, parsing refresh, and caret recovery are repeated and can diverge.
 
 Recommendation: introduce a single `ValueFeature.apply()` style command that owns commit policy and recovery scheduling.
+
+### Medium: Block keyboard row lookup bypasses `store.dom`
+
+Verification: confirmed.
+
+Block keyboard handlers derive the active row by scanning direct container children and checking whether the active element is contained by a row:
+
+- `packages/core/src/features/keyboard/blockEdit.ts:63`
+- `packages/core/src/features/keyboard/blockEdit.ts:184`
+- `packages/core/src/features/keyboard/blockEdit.ts:239`
+- `packages/core/src/features/keyboard/blockEdit.ts:273`
+- `packages/core/src/features/keyboard/blockEdit.ts:311`
+
+`DomFeature` already owns structural registration and can associate a DOM node with a token address and row element:
+
+- `packages/core/src/features/dom/DomFeature.ts:202`
+- `packages/core/src/features/dom/DomFeature.ts:502`
+- `packages/core/src/features/dom/DomFeature.ts:579`
+
+Impact: focus inside a block control or custom interactive child can be treated as row text editing. Row edge checks also use `Caret.getCaretIndex(blockDiv)` and `blockDiv.textContent.length`, so drag handles, menus, drop indicators, or custom block chrome can influence "start/end of row" decisions.
+
+Recommendation: add a checked row locator to `store.dom` or expose the needed row data from `locateNode()`, then make block edit use that locator for delete, Enter, arrow navigation, and `beforeinput`. Controls and ambiguous block structures should return a typed failure instead of a row index.
 
 ### Medium: Drag and block row editing have unclear ownership and unsafe indexes
 
@@ -398,15 +371,15 @@ Recommendation: add focused tests before changing architecture, then update or d
 
 1. Add characterization tests for the highest-risk behavior.
 
-Start with mark edit then remove, overlay select with option-local `Mark` and no global `Mark`, invalid focus targets, block raw-position mapping, container replacement, and drag invalid indexes.
+Start with mark edit then remove, overlay select with option-local `Mark` and no global `Mark`, block keyboard focus inside controls, container replacement, and drag invalid indexes.
 
 2. Centralize value mutation.
 
 Add a `ValueFeature.apply()` or equivalent command that handles controlled/uncontrolled mode, `onChange`, parsing refresh, and caret recovery. Keep domain-specific edit computation local, but centralize committing.
 
-3. Introduce a DOM/token locator.
+3. Route block keyboard row lookup through `store.dom`.
 
-Replace `NodeProxy` parity checks, unchecked child indexes, and duplicated block active-row lookup with a checked locator. Unsupported DOM shapes should return `undefined` instead of pretending index `-1` is a mark.
+Replace duplicated block active-row lookup with a checked row locator. Unsupported DOM shapes and controls should return a typed failure instead of a row index.
 
 4. Move row editing out of drag.
 
@@ -435,24 +408,22 @@ After behavior changes land, update feature READMEs and website development docs
 - Overlay select places caret correctly with global `Mark`.
 - Overlay select places caret correctly with only option-local `Mark`.
 - Overlay caret recovery runs when there is no global `Mark` but the selected option has `Mark`.
-- Invalid or nested focus target does not crash value change or delete.
+- Block controls and custom interactive row children do not trigger row text editing.
 - Container ref replacement rebinds keyboard, focus, clipboard, and block edit listeners.
 - `createRowContent([])` and `createRowContent([{}])` return newline.
 - Drag delete/duplicate/reorder/add handle negative, too-large, and empty-row indexes.
 - Block Enter works with `options={[]}`.
-- Block insert/paste/delete map wrapped text nodes to the correct raw positions.
-- DOM reconciliation does not depend on `data-testid`.
+- Block delete, Enter, and arrow navigation use the row/token resolved by `store.dom`.
 - React `MarkedInput` prop sync does not cause render-time update warnings.
 - `PropsFeature.set()` ignores unknown keys, inherited keys, and prototype keys without throwing or invoking non-signal methods.
 
 ## Acceptance Criteria For Cleanup
 
-- No feature reads a token by unchecked DOM child index.
-- No code path treats `focus.index === -1` as a valid mark.
 - All serialized value writes use one mutation command.
 - Token positions are refreshed or avoided after public mark mutations.
 - Overlay insertion behaves the same with global `Mark` and option-local `Mark`.
 - Overlay caret recovery is not gated solely by global `Mark`.
 - Container listener rebinding is covered by tests.
+- Block keyboard handlers use `store.dom` row lookup and reject controls/ambiguous block structure.
 - Row operations are owned outside the drag feature and reject invalid indexes.
 - Feature READMEs no longer reference legacy names or nonexistent APIs.
