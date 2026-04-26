@@ -24,7 +24,7 @@ export class Store {
 	readonly props = new PropsFeature(this)
 	readonly handler = new MarkputHandler(this)
 
-	readonly lifecycle = new LifecycleFeature(this)
+	readonly lifecycle = new LifecycleFeature()
 	readonly value = new ValueFeature(this)
 	readonly mark = new MarkFeature(this)
 	readonly overlay = new OverlayFeature(this)

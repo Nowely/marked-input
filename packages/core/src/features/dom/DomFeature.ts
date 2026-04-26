@@ -18,10 +18,9 @@ import type {Token} from '../parsing'
 import {pathKey} from '../parsing/tokenIndex'
 
 type RegisteredRole =
-	| {readonly role: 'control'; readonly element: HTMLElement; readonly ownerPath?: TokenPath}
+	| {readonly role: 'control'}
 	| {
 			readonly role: 'row' | 'token' | 'text' | 'slotRoot'
-			readonly element: HTMLElement
 			readonly path: TokenPath
 			readonly address: TokenAddress
 	  }
@@ -131,7 +130,7 @@ export class DomFeature {
 	})
 
 	readonly #refCallbacks = new Map<string, DomRef>()
-	readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTMLElement | null}>()
+	readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTMLElement}>()
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
 	#generation = 0
@@ -178,7 +177,8 @@ export class DomFeature {
 		if (existing) return existing
 
 		const callback: DomRef = element => {
-			this.#pendingElements.set(key, {target, element})
+			if (element) this.#pendingElements.set(key, {target, element})
+			else this.#pendingElements.delete(key)
 		}
 		this.#refCallbacks.set(key, callback)
 		return callback
@@ -376,9 +376,8 @@ export class DomFeature {
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 
 		for (const {target, element} of this.#pendingElements.values()) {
-			if (!element) continue
 			if (target.role === 'control') {
-				elementRoles.set(element, {role: 'control', element, ownerPath: target.ownerPath})
+				elementRoles.set(element, {role: 'control'})
 				continue
 			}
 
@@ -395,7 +394,7 @@ export class DomFeature {
 			if (target.role === 'text') record.textElement = element
 			if (target.role === 'slotRoot') record.slotRootElement = element
 			pathElements.set(key, record)
-			elementRoles.set(element, {...target, element, address})
+			elementRoles.set(element, {role: target.role, path: target.path, address})
 		}
 
 		this.#pathElements = pathElements

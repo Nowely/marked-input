@@ -10,8 +10,6 @@ export type TokenAddress = {
 
 export type Result<T, Reason extends string> = {ok: true; value: T} | {ok: false; reason: Reason}
 
-export type DomRole = 'container' | 'control' | 'row' | 'token' | 'text' | 'slotRoot'
-
 export type DomRefTarget =
 	| {readonly role: 'control'; readonly ownerPath?: TokenPath}
 	| {readonly role: 'row' | 'token' | 'text' | 'slotRoot'; readonly path: TokenPath}
