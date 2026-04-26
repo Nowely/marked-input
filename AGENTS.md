@@ -81,6 +81,7 @@ Detailed docs live in `packages/website/src/content/docs/`:
 
 - **Keep docs in sync**: when changing public API, behavior, or architecture, update the relevant documentation in `packages/website/src/content/docs/` and this CLAUDE.md file. Outdated docs are worse than no docs — treat doc updates as part of the implementation, not a follow-up task.
 - Use reactive's `use()` conistency by framework reactivity system.
+- Components should depend on the smallest established abstraction that satisfies their role, not on lower-level runtime plumbing.
 
 ### Do NOT
 
