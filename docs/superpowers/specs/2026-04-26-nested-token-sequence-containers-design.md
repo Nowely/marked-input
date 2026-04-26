@@ -52,7 +52,7 @@ The root cause is not parsing. The renderer owns the nested `children` prop, but
 - Do not support marks that drop `{children}` when their markup has `__slot__` content.
 - Do not support rendering the same `{children}` sequence multiple times.
 - Do not make arbitrary custom Mark descendants editable token surfaces.
-- Do not make user-authored `data-*` attributes part of the public contract.
+- Do not make user-authored DOM attributes part of the public contract.
 - Do not reintroduce per-token wrapper elements around every Mark or Text token.
 - Do not solve every selection behavior for form controls inside marks; controls remain non-token DOM and may need focused handling later.
 
@@ -86,18 +86,16 @@ const TodoItemMark = ({children}: MarkProps) => (
 )
 ```
 
-The rendered DOM has an explicit nested token sequence boundary:
+The rendered DOM has an explicit nested token sequence boundary. The boundary is an adapter-owned `HTMLElement` registered with core by ref:
 
-```html
-<div class="todo" tabindex="0">
-	<input type="checkbox">
-	<span data-internal-markput-children-for="1">
-		<span contenteditable="true">Design Phase</span>
-	</span>
-</div>
+```txt
+div.todo
+  input[type="checkbox"]
+  CHILD_SEQUENCE_HOST(ref = dom.childrenFor([1]))
+    span[contenteditable="true"] "Design Phase"
 ```
 
-The exact marker shape is implementation detail. Prefer private ref registration over production behavior that depends on public attribute queries.
+The host tag is an implementation choice, not part of the public contract. The first implementation may use a neutral `span`, but the core design only requires one registered `HTMLElement` that contains the child token roots. Production behavior must use private adapter registration rather than DOM attribute queries.
 
 ## Rendering Contract
 
@@ -157,7 +155,7 @@ function TokenChildren({
 }) {
 	const dom = useMarkput(s => s.dom)
 	const ref = useMemo(() => dom.childrenFor(ownerPath), [dom, ownerPath])
-	return <span ref={ref}>{children}</span>
+	return <SequenceHost ref={ref}>{children}</SequenceHost>
 }
 ```
 
@@ -241,9 +239,19 @@ For a mark token:
 
 The child sequence host itself is not a token. It is the local container for child token roots, analogous to how the editor container is the local container for top-level token roots.
 
-## Styling And DOM Shape
+## Host Element And DOM Shape
 
-The nested sequence host should be visually neutral.
+The nested sequence host exists because refs need a concrete DOM node. A framework fragment cannot be registered with `DomFeature`, and without a registered host core has to infer token boundaries from arbitrary custom mark children.
+
+The spec does not require a particular tag name.
+
+Acceptable implementations include:
+
+- a neutral inline `span`;
+- a custom internal host component that currently renders `span`;
+- a future context-sensitive host if block-like nested sequences need a different element.
+
+The host should be visually neutral.
 
 Preferred starting point:
 
@@ -251,7 +259,7 @@ Preferred starting point:
 display: contents;
 ```
 
-This keeps mark layout close to the user's markup and avoids introducing extra inline boxes around slot content.
+This keeps mark layout close to the user's markup and avoids introducing extra inline boxes around slot content while still giving core a ref target.
 
 However, `display: contents` can have browser-specific selection and accessibility edge cases. If tests show unreliable text selection, caret placement, or accessibility tree behavior, use a neutral inline element instead:
 
@@ -298,13 +306,11 @@ Before:
 
 After:
 
-```html
-<div class="todo">
-	<input type="checkbox">
-	<span data-internal-sequence-host>
-		<span contenteditable="true">Design Phase</span>
-	</span>
-</div>
+```txt
+div.todo
+  input[type="checkbox"]
+  CHILD_SEQUENCE_HOST(ref = dom.childrenFor([1]))
+    span[contenteditable="true"] "Design Phase"
 ```
 
 `DomFeature` indexes `token.children` from the registered sequence host. The checkbox no longer participates in token child matching.
@@ -362,7 +368,8 @@ User controls inside marks no longer need explicit control registration just to 
 
 ## Open Questions
 
-- Should the nested sequence host use `display: contents` by default, or should the adapters start with an inline `span` for safer browser behavior?
+- Should the nested sequence host use `display: contents` by default, or should adapters start with a normal inline host for safer browser behavior?
+- If the first implementation uses `span`, should that remain a private detail or be factored behind an internal `SequenceHost` component from the start?
 - Should `childrenFor` be exposed to framework adapters only by convention, or placed in a clearly internal namespace?
 - Should missing nested sequence hosts be a hard diagnostic immediately, or should the fallback direct-child indexing remain for one release cycle?
 - Should custom Span components also get a sequence/container model later, or remain root editable surfaces only?
