@@ -102,7 +102,7 @@ describe('Feature: drag rows', () => {
 		await expect.element(page.getByText(/Section B/).first()).toBeInTheDocument()
 	})
 
-	it('render content for TodoListDrag with checkbox controls', async () => {
+	it('render content for TodoListDrag with todo glyph controls', async () => {
 		await render(TodoListDrag)
 
 		await expect.element(page.getByText('Design Phase').first()).toBeInTheDocument()

@@ -1,12 +1,16 @@
 // oxlint-disable typescript-eslint/no-unsafe-argument
+import type {TokenPath} from '@markput/core'
 import type {Markup} from '@markput/vue'
 import {MarkedInput, useMark} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it, vi} from 'vitest'
 import {render} from 'vitest-browser-vue'
 import {page, userEvent} from 'vitest/browser'
-import {defineComponent, h, ref} from 'vue'
+import {defineComponent, h, nextTick, provide, ref} from 'vue'
 
+import {Store} from '../../../../core/src/store/Store'
+import TokenChildren from '../../../../vue/markput/src/components/TokenChildren.vue'
+import {STORE_KEY} from '../../../../vue/markput/src/lib/providers/storeKey'
 import {getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import {withProps} from '../../shared/lib/testUtils.vue'
@@ -101,6 +105,37 @@ describe('Component: MarkedInput', () => {
 		await userEvent.click(getElement(page.getByLabelText('done')))
 
 		expect(textSurface).toHaveTextContent('Design Phase')
+	})
+
+	it('refreshes child sequence registration when owner path changes', async () => {
+		const callbacks = new Map<string, ReturnType<typeof vi.fn>>()
+		const store = new Store()
+		vi.spyOn(store.dom, 'childrenFor').mockImplementation((path: TokenPath) => {
+			const callback = vi.fn()
+			callbacks.set(path.join('.'), callback)
+			return callback
+		})
+		const Harness = defineComponent({
+			setup() {
+				provide(STORE_KEY, store)
+				const ownerPath = ref<TokenPath>([0])
+				return () =>
+					h('div', [
+						h('button', {onClick: () => (ownerPath.value = [1])}, 'move'),
+						h(TokenChildren, {ownerPath: ownerPath.value}, () => h('span', 'child')),
+					])
+			},
+		})
+
+		await render(Harness)
+		const initialCallback = callbacks.get('0')
+		expect(initialCallback).toHaveBeenCalledWith(expect.any(HTMLElement))
+
+		await userEvent.click(getElement(page.getByRole('button', {name: 'move'})))
+		await nextTick()
+
+		expect(initialCallback).toHaveBeenLastCalledWith(null)
+		expect(callbacks.get('1')).toHaveBeenCalledWith(expect.any(HTMLElement))
 	})
 
 	it('correctly process an annotation type', async () => {
