@@ -47,7 +47,7 @@ describe('FocusFeature', () => {
 
 		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
 
-		expect(store.caret.location()).toMatchObject({role: 'text'})
+		expect(store.caret.location()?.role).toBe('text')
 		store.caret.disable()
 		store.dom.disable()
 		store.value.disable()
@@ -69,9 +69,10 @@ describe('FocusFeature', () => {
 		it('clears caret location on focusout before disable', () => {
 			store.caret.enable()
 
+			const textRole = 'text'
 			store.caret.location({
 				address: {path: [0], parseGeneration: 1},
-				role: 'text',
+				role: textRole,
 			})
 
 			store.caret.disable()

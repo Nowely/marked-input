@@ -10,10 +10,6 @@ export type TokenAddress = {
 
 export type Result<T, Reason extends string> = {ok: true; value: T} | {ok: false; reason: Reason}
 
-export type DomRefTarget =
-	| {readonly role: 'control'; readonly ownerPath?: TokenPath}
-	| {readonly role: 'row' | 'token' | 'text' | 'slotRoot'; readonly path: TokenPath}
-
 export type DomRef = (element: HTMLElement | null) => void
 
 export type RawRange = {
@@ -90,7 +86,7 @@ export type DomIndex = {
 
 export type CaretLocation = {
 	readonly address: TokenAddress
-	readonly role: 'row' | 'token' | 'text' | 'slotRoot' | 'markDescendant'
+	readonly role: 'row' | 'token' | 'text' | 'markDescendant'
 }
 
 export type DomDiagnostic = {

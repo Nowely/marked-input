@@ -3,7 +3,6 @@ import type {
 	DomDiagnostic,
 	DomIndex,
 	DomRef,
-	DomRefTarget,
 	NodeLocationResult,
 	RawSelection,
 	RawSelectionResult,
@@ -121,7 +120,6 @@ export class DomFeature {
 	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
 
-	readonly #refCallbacks = new Map<string, DomRef>()
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	#nextControlId = 0
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
@@ -162,16 +160,6 @@ export class DomFeature {
 	compositionEnded(): void {
 		if (!this.#isComposing) return
 		this.#isComposing = false
-	}
-
-	refFor(target: DomRefTarget): DomRef {
-		const key = this.#targetKey(target)
-		const existing = this.#refCallbacks.get(key)
-		if (existing) return existing
-
-		const callback: DomRef = () => {}
-		this.#refCallbacks.set(key, callback)
-		return callback
 	}
 
 	controlFor(ownerPath?: TokenPath): DomRef {
@@ -338,11 +326,6 @@ export class DomFeature {
 					: 'forward'
 
 		return {ok: true, value: direction ? {range: rangeValue, direction} : {range: rangeValue}}
-	}
-
-	#targetKey(target: DomRefTarget): string {
-		if (target.role === 'control') return `control:${target.ownerPath ? pathKey(target.ownerPath) : 'global'}`
-		return `${target.role}:${pathKey(target.path)}`
 	}
 
 	#handleRendered(): void {
