@@ -20,7 +20,7 @@ import {pathKey} from '../parsing/tokenIndex'
 type RegisteredRole =
 	| {readonly role: 'control'}
 	| {
-			readonly role: 'row' | 'token' | 'text' | 'slotRoot'
+			readonly role: 'row' | 'token' | 'text'
 			readonly path: TokenPath
 			readonly address: TokenAddress
 	  }
@@ -29,9 +29,13 @@ type PathElements = {
 	path: TokenPath
 	address: TokenAddress
 	rowElement?: HTMLElement
-	tokenElement?: HTMLElement
+	tokenElement: HTMLElement
 	textElement?: HTMLElement
-	slotRootElement?: HTMLElement
+}
+
+type ControlRegistration = {
+	readonly ownerPath?: TokenPath
+	readonly element: HTMLElement
 }
 
 function nextTextNode(walker: TreeWalker): Text | null {
@@ -118,7 +122,8 @@ export class DomFeature {
 	readonly diagnostics = event<DomDiagnostic>()
 
 	readonly #refCallbacks = new Map<string, DomRef>()
-	readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTMLElement}>()
+	readonly #pendingControls = new Map<string, ControlRegistration>()
+	#nextControlId = 0
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
 	#generation = 0
@@ -164,16 +169,26 @@ export class DomFeature {
 		const existing = this.#refCallbacks.get(key)
 		if (existing) return existing
 
-		const callback: DomRef = element => {
-			if (element) this.#pendingElements.set(key, {target, element})
-			else this.#pendingElements.delete(key)
-		}
+		const callback: DomRef = () => {}
 		this.#refCallbacks.set(key, callback)
 		return callback
 	}
 
+	controlFor(ownerPath?: TokenPath): DomRef {
+		const key = `control:${ownerPath ? pathKey(ownerPath) : 'global'}:${++this.#nextControlId}`
+
+		const callback: DomRef = element => {
+			if (element) {
+				this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
+			} else {
+				this.#pendingControls.delete(key)
+			}
+		}
+		return callback
+	}
+
 	reconcile(): void {
-		this.#reconcileRegisteredTextSurfaces()
+		this.#reconcileStructuralTextSurfaces()
 	}
 
 	locateNode(node: Node): NodeLocationResult {
@@ -196,7 +211,6 @@ export class DomFeature {
 							tokenElement: elements.tokenElement,
 							textElement: elements.textElement,
 							rowElement: elements.rowElement,
-							slotRootElement: elements.slotRootElement,
 						},
 					}
 				}
@@ -271,15 +285,6 @@ export class DomFeature {
 			if (offset <= 0) return {ok: true, value: token.value.position.start}
 			if (offset >= childCount) return {ok: true, value: token.value.position.end}
 			return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
-		}
-
-		if (node === location.value.slotRootElement) {
-			return this.#rawPositionFromTokenChildBoundary(
-				location.value.slotRootElement,
-				offset,
-				token.value,
-				affinity
-			)
 		}
 
 		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
@@ -359,42 +364,178 @@ export class DomFeature {
 	}
 
 	#commitRendered(): void {
+		const container = this.container()
+		if (!container) {
+			this.diagnostics({kind: 'missingContainer', reason: 'container is not registered'})
+			return
+		}
+
 		const tokenIndex = this._store.parsing.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
+		const controlElements = new Set<HTMLElement>()
 
-		for (const {target, element} of this.#pendingElements.values()) {
-			if (target.role === 'control') {
-				elementRoles.set(element, {role: 'control'})
-				continue
-			}
+		for (const {element} of this.#pendingControls.values()) {
+			controlElements.add(element)
+			elementRoles.set(element, {role: 'control'})
+		}
 
-			const address = tokenIndex.addressFor(target.path)
-			if (!address) {
-				this.diagnostics({kind: 'stalePath', path: target.path, reason: 'registered path no longer resolves'})
-				continue
-			}
-
-			const key = tokenIndex.key(target.path)
-			const record = pathElements.get(key) ?? {path: [...target.path], address}
-			if (target.role === 'row') record.rowElement = element
-			if (target.role === 'token') record.tokenElement = element
-			if (target.role === 'text') record.textElement = element
-			if (target.role === 'slotRoot') record.slotRootElement = element
-			pathElements.set(key, record)
-			elementRoles.set(element, {role: target.role, path: target.path, address})
+		const tokens = this._store.parsing.tokens()
+		if (this._store.props.layout() === 'block') {
+			this.#indexBlockTokens(container, tokens, tokenIndex, controlElements, pathElements, elementRoles)
+		} else {
+			this.#indexTokenSequence(
+				container,
+				tokens,
+				[],
+				undefined,
+				tokenIndex,
+				controlElements,
+				pathElements,
+				elementRoles
+			)
 		}
 
 		this.#pathElements = pathElements
 		this.#elementRoles = elementRoles
-		this.#reconcileRegisteredTextSurfaces()
+		this.#reconcileStructuralTextSurfaces()
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
 		this.#clearStaleCaretLocation()
 		this.#applyPendingRecovery()
 	}
 
-	#reconcileRegisteredTextSurfaces(): void {
+	#elementChildren(element: HTMLElement): HTMLElement[] {
+		return Array.from(element.children).filter(child => child instanceof HTMLElement)
+	}
+
+	#isControlRoot(element: HTMLElement, controlElements: Set<HTMLElement>): boolean {
+		if (controlElements.has(element)) return true
+		for (const control of controlElements) {
+			if (element.contains(control)) return true
+		}
+		return false
+	}
+
+	#indexBlockTokens(
+		container: HTMLElement,
+		tokens: readonly Token[],
+		tokenIndex: ReturnType<Store['parsing']['index']>,
+		controlElements: Set<HTMLElement>,
+		pathElements: Map<string, PathElements>,
+		elementRoles: WeakMap<HTMLElement, RegisteredRole>
+	): void {
+		const rows = this.#elementChildren(container)
+		if (rows.length !== tokens.length) {
+			this.diagnostics({
+				kind: 'ambiguousStructure',
+				reason: `expected ${tokens.length} block rows but found ${rows.length}`,
+			})
+		}
+
+		tokens.forEach((token, i) => {
+			const row = rows.at(i)
+			if (!row) return
+			const candidates = this.#elementChildren(row).filter(child => !this.#isControlRoot(child, controlElements))
+			if (candidates.length !== 1) {
+				this.diagnostics({
+					kind: 'ambiguousStructure',
+					path: [i],
+					reason: `expected 1 block token element but found ${candidates.length}`,
+				})
+				return
+			}
+			this.#indexTokenElement(
+				token,
+				[i],
+				candidates[0],
+				row,
+				tokenIndex,
+				controlElements,
+				pathElements,
+				elementRoles
+			)
+		})
+	}
+
+	#indexTokenSequence(
+		parent: HTMLElement,
+		tokens: readonly Token[],
+		basePath: TokenPath,
+		rowElement: HTMLElement | undefined,
+		tokenIndex: ReturnType<Store['parsing']['index']>,
+		controlElements: Set<HTMLElement>,
+		pathElements: Map<string, PathElements>,
+		elementRoles: WeakMap<HTMLElement, RegisteredRole>
+	): void {
+		const elements = this.#elementChildren(parent).filter(child => !this.#isControlRoot(child, controlElements))
+		if (elements.length !== tokens.length) {
+			this.diagnostics({
+				kind: 'ambiguousStructure',
+				path: basePath.length ? basePath : undefined,
+				reason: `expected ${tokens.length} child token elements but found ${elements.length}`,
+			})
+			return
+		}
+
+		tokens.forEach((token, i) => {
+			const element = elements.at(i)
+			if (!element) return
+			this.#indexTokenElement(
+				token,
+				[...basePath, i],
+				element,
+				rowElement,
+				tokenIndex,
+				controlElements,
+				pathElements,
+				elementRoles
+			)
+		})
+	}
+
+	#indexTokenElement(
+		token: Token,
+		path: TokenPath,
+		element: HTMLElement,
+		rowElement: HTMLElement | undefined,
+		tokenIndex: ReturnType<Store['parsing']['index']>,
+		controlElements: Set<HTMLElement>,
+		pathElements: Map<string, PathElements>,
+		elementRoles: WeakMap<HTMLElement, RegisteredRole>
+	): void {
+		const address = tokenIndex.addressFor(path)
+		if (!address) {
+			this.diagnostics({kind: 'stalePath', path, reason: 'structural path no longer resolves'})
+			return
+		}
+
+		const record: PathElements = {
+			path: [...path],
+			address,
+			tokenElement: element,
+			textElement: token.type === 'text' ? element : undefined,
+			rowElement,
+		}
+		pathElements.set(tokenIndex.key(path), record)
+		elementRoles.set(element, {role: token.type === 'text' ? 'text' : 'token', path, address})
+		if (rowElement && path.length === 1) elementRoles.set(rowElement, {role: 'row', path, address})
+
+		if (token.type === 'mark' && token.children.length > 0) {
+			this.#indexTokenSequence(
+				element,
+				token.children,
+				path,
+				rowElement,
+				tokenIndex,
+				controlElements,
+				pathElements,
+				elementRoles
+			)
+		}
+	}
+
+	#reconcileStructuralTextSurfaces(): void {
 		const tokenIndex = this._store.parsing.index()
 		const editable = this._store.props.readOnly() || this._store.caret.selecting() ? 'false' : 'true'
 
@@ -404,7 +545,7 @@ export class DomFeature {
 				this.diagnostics({
 					kind: 'stalePath',
 					path: record.path,
-					reason: 'registered path became stale during reconciliation',
+					reason: 'structural path became stale during reconciliation',
 				})
 				continue
 			}
@@ -425,7 +566,7 @@ export class DomFeature {
 				continue
 			}
 
-			if (record.tokenElement && resolved.value.type === 'mark') {
+			if (resolved.value.type === 'mark') {
 				if (this._store.props.readOnly()) {
 					record.tokenElement.removeAttribute('tabindex')
 				} else {
@@ -509,7 +650,6 @@ export class DomFeature {
 		const tokenIndex = this._store.parsing.index()
 
 		for (const record of this.#pathElements.values()) {
-			if (!record.tokenElement) continue
 			const resolved = tokenIndex.resolveAddress(record.address)
 			if (!resolved.ok || resolved.value.type !== 'mark') continue
 			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
