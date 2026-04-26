@@ -52,6 +52,26 @@ describe('Component: MarkedInput', () => {
 		expect(mark.tabIndex).toBe(0)
 	})
 
+	it('preserves option-provided children for flat mark components', async () => {
+		const markup: Markup = '@(__value__)'
+		const Mark = defineComponent({
+			props: {children: String},
+			setup(props) {
+				return () => h('mark', {'data-testid': 'mark'}, props.children)
+			},
+		})
+		const {container} = await render(
+			withProps(Default, {
+				Mark,
+				options: [{markup, mark: ({value}: {value?: string}) => ({children: value})}],
+				defaultValue: 'hello @(world)',
+			})
+		)
+		const mark = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+
+		expect(mark).toHaveTextContent('world')
+	})
+
 	it('correctly process an annotation type', async () => {
 		const Mark = defineComponent({
 			props: {value: String, meta: String},

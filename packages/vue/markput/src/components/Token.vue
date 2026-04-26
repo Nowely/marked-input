@@ -33,7 +33,7 @@ const Token = defineComponent({
 					? () => token.children.map(child => h(markRaw(Token), {key: key.get(child), token: child}))
 					: undefined
 
-			return h(Comp, compProps, children)
+			return children ? h(Comp, compProps, children) : h(Comp, compProps)
 		}
 	},
 })

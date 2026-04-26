@@ -23,7 +23,7 @@ export const Token = memo(({token}: {token: TokenType}) => {
 
 	return (
 		<TokenContext value={{store, token, address}}>
-			<Component {...props}>{children}</Component>
+			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
 		</TokenContext>
 	)
 })

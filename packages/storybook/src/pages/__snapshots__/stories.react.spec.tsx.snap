@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Component: stories > Ant stories > Story Tagged 1`] = `"<div><span contenteditable="true">We preset five different colors. You can set color property such as </span><span tabindex="0"></span><span contenteditable="true">, </span><span tabindex="0"></span><span contenteditable="true">, </span><span tabindex="0"></span><span contenteditable="true">, </span><span tabindex="0"></span><span contenteditable="true"> and </span><span tabindex="0"></span><span contenteditable="true"> to show specific status.</span></div>"`;
+exports[`Component: stories > Ant stories > Story Tagged 1`] = `"<div><span contenteditable="true">We preset five different colors. You can set color property such as </span><span tabindex="0">success</span><span contenteditable="true">, </span><span tabindex="0">processing</span><span contenteditable="true">, </span><span tabindex="0">error</span><span contenteditable="true">, </span><span tabindex="0">default</span><span contenteditable="true"> and </span><span tabindex="0">warning</span><span contenteditable="true"> to show specific status.</span></div>"`;
 
 exports[`Component: stories > Base stories > Story Autocomplete 1`] = `"<div><span contenteditable="true">Hello, clickable marked @world!</span></div>"`;
 
@@ -252,9 +252,9 @@ exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `"
 
 exports[`Component: stories > Overlay stories > Story SelectableOverlay 1`] = `"<div><span contenteditable="true">Hello, suggest overlay by trigger @!</span></div>"`;
 
-exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `"<div><span contenteditable="true">Type the '@' to begin creating a </span><div data-size="md" tabindex="0"><span></span></div><span contenteditable="true">. Then press the </span><div data-size="md" tabindex="0"><span></span></div><span contenteditable="true"> to finish. For example: @hello</span></div>"`;
+exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `"<div><span contenteditable="true">Type the '@' to begin creating a </span><div data-size="md" tabindex="0"><span>tag</span></div><span contenteditable="true">. Then press the </span><div data-size="md" tabindex="0"><span>Enter</span></div><span contenteditable="true"> to finish. For example: @hello</span></div>"`;
 
-exports[`Component: stories > Rsuite stories > Story TaggedInput 1`] = `"<div><span contenteditable="true">Type the '@' to begin creating a </span><div data-size="md" tabindex="0"><span></span></div><span contenteditable="true">. Then press the </span><div data-size="md" tabindex="0"><span></span></div><span contenteditable="true"> to finish. For example: @hello</span></div>"`;
+exports[`Component: stories > Rsuite stories > Story TaggedInput 1`] = `"<div><span contenteditable="true">Type the '@' to begin creating a </span><div data-size="md" tabindex="0"><span>tag</span></div><span contenteditable="true">. Then press the </span><div data-size="md" tabindex="0"><span>Enter</span></div><span contenteditable="true"> to finish. For example: @hello</span></div>"`;
 
 exports[`Component: stories > Selection stories > Story Drag 1`] = `
 "<div><div data-testid="block"><div><button type="button" draggable="true" aria-label="Drag to reorder or click for options"><span></span></button></div><span contenteditable="true">hello
