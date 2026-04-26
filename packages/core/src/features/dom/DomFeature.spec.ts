@@ -226,6 +226,36 @@ describe('DomFeature structural indexing', () => {
 		container.remove()
 	})
 
+	it('maps registered child sequence host boundaries to nested child positions', () => {
+		const {store, container, host} = mountStructuralNestedWithChildSequence()
+		const tokenIndex = store.parsing.index()
+		const beforeToken = tokenIndex.resolve([1, 0])
+		const innerToken = tokenIndex.resolve([1, 1])
+		const afterToken = tokenIndex.resolve([1, 2])
+
+		expect(beforeToken?.position.end).toBe(9)
+		expect(innerToken?.position.start).toBe(9)
+		expect(innerToken?.position.end).toBe(18)
+		expect(afterToken?.position.start).toBe(18)
+		expect(store.dom.rawPositionFromBoundary(host, 1, 'before')).toEqual({
+			ok: true,
+			value: beforeToken?.position.end,
+		})
+		expect(store.dom.rawPositionFromBoundary(host, 1, 'after')).toEqual({
+			ok: true,
+			value: innerToken?.position.start,
+		})
+		expect(store.dom.rawPositionFromBoundary(host, 2, 'before')).toEqual({
+			ok: true,
+			value: innerToken?.position.end,
+		})
+		expect(store.dom.rawPositionFromBoundary(host, 2, 'after')).toEqual({
+			ok: true,
+			value: afterToken?.position.start,
+		})
+		container.remove()
+	})
+
 	it('emits diagnostics for duplicate child sequence hosts', () => {
 		const diagnostics: unknown[] = []
 		const {store, container} = mountStructuralNestedWithDuplicateChildSequences()

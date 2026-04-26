@@ -19,7 +19,7 @@ import {pathEquals, pathKey} from '../parsing/tokenIndex'
 type RegisteredRole =
 	| {readonly role: 'control'}
 	| {
-			readonly role: 'row' | 'token' | 'text'
+			readonly role: 'childSequence' | 'row' | 'token' | 'text'
 			readonly path: TokenPath
 			readonly address: TokenAddress
 	  }
@@ -281,6 +281,16 @@ export class DomFeature {
 		const token = this._store.parsing.index().resolveAddress(location.value.address)
 		if (!token.ok) return {ok: false, reason: 'notIndexed'}
 
+		if (node instanceof HTMLElement) {
+			const role = this.#elementRoles.get(node)
+			if (role?.role === 'childSequence') {
+				const childCount = node.childNodes.length
+				if (offset <= 0) return {ok: true, value: token.value.position.start}
+				if (offset >= childCount) return {ok: true, value: token.value.position.end}
+				return this.#rawPositionFromTokenChildBoundary(node, offset, token.value, affinity)
+			}
+		}
+
 		const textElement = location.value.textElement
 		if (textElement?.contains(node)) {
 			const local = textOffsetWithin(textElement, node, offset)
@@ -431,6 +441,7 @@ export class DomFeature {
 	#indexNestedTokenSequence(
 		token: Token,
 		path: TokenPath,
+		address: TokenAddress,
 		ownerElement: HTMLElement,
 		rowElement: HTMLElement | undefined,
 		tokenIndex: ReturnType<Store['parsing']['index']>,
@@ -475,6 +486,7 @@ export class DomFeature {
 			return
 		}
 
+		elementRoles.set(host, {role: 'childSequence', path, address})
 		this.#indexTokenSequence(
 			host,
 			token.children,
@@ -594,6 +606,7 @@ export class DomFeature {
 		this.#indexNestedTokenSequence(
 			token,
 			path,
+			address,
 			element,
 			rowElement,
 			tokenIndex,
