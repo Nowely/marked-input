@@ -3,6 +3,8 @@ import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
 
+import {snapshotHtml} from '../shared/lib/htmlSnapshot'
+
 const storiesModules = import.meta.glob('./**/*.vue.stories.ts', {eager: true})
 
 const storiesByCategory = new Map<string, Record<string, any>>()
@@ -28,7 +30,7 @@ const getTests =
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(Story)
-			expect(container.innerHTML.replace(/ class="[^"]*"/g, '').replace(/ style="[^"]*"/g, '')).toMatchSnapshot()
+			expect(snapshotHtml(container.innerHTML)).toMatchSnapshot()
 		})
 
 describe('Component: stories', () => {

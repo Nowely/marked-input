@@ -2,6 +2,8 @@ import {composeStories} from '@storybook/react-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
 
+import {snapshotHtml} from '../shared/lib/htmlSnapshot'
+
 // Automatically import all stories files
 const storiesModules = import.meta.glob('./**/*.react.stories.tsx', {eager: true})
 
@@ -31,7 +33,7 @@ const getTests =
 	([name, Story]: [string, any]) =>
 		it(`Story ${name}`, async () => {
 			const {container} = await render(<Story />)
-			expect(container.innerHTML.replace(/ class="[^"]*"/g, '').replace(/ style="[^"]*"/g, '')).toMatchSnapshot()
+			expect(snapshotHtml(container.innerHTML)).toMatchSnapshot()
 		})
 
 describe('Component: stories', () => {
