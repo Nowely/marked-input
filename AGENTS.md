@@ -32,23 +32,14 @@ for agent and contributor instructions.
 
 ## Commands
 
-- `pnpm install`: install dependencies.
-- `pnpm exec playwright install chromium`: install the Chromium browser required
-  by local Vitest Browser Mode tests.
-- `pnpm test`: run all Vitest projects, including core unit tests and Storybook
-  browser tests.
-- `pnpm -w vitest run path/to/file.spec.ts`: run one test file.
-- `pnpm run build`: build all packages.
-- `pnpm run typecheck`: run package typechecks, including `tsc` and `vue-tsc`.
-- `pnpm run lint`: run oxlint with fixes.
-- `pnpm run lint:check`: run oxlint without writing fixes.
-- `pnpm run format`: run oxfmt and write changes.
-- `pnpm run format:check`: check formatting without writing changes.
-- `pnpm run dev`: start both Storybook dev servers.
-- `pnpm run dev:sb:react`: start React Storybook on port 6006.
-- `pnpm run dev:sb:vue`: start Vue Storybook on port 6007.
-- `pnpm run dev:react:app`: start the React E2E app.
-- `pnpm run dev:vue:app`: start the Vue E2E app.
+- Setup: `pnpm install`, `pnpm exec playwright install chromium`
+- Focused test: `pnpm -w exec vitest run path/to/file.spec.ts`
+- Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
+  `pnpm run lint:check`, `pnpm run format:check`
+- Fixers: `pnpm run lint`, `pnpm run format`
+- Dev servers: `pnpm run dev`, `pnpm run dev:sb:react`,
+  `pnpm run dev:sb:vue`, `pnpm run dev:react:app`,
+  `pnpm run dev:vue:app`
 
 ## Repository Map
 
@@ -131,29 +122,12 @@ and new token state.
 Test files use `*.spec.ts` or framework-specific `*.spec.tsx` / `*.spec.ts`
 names. Do not add `*.test.ts` files.
 
-Core unit tests live next to the source. Use Vitest:
-
-```typescript
-import {beforeEach, describe, expect, it, vi} from 'vitest'
-
-describe('Feature', () => {
-    beforeEach(() => vi.clearAllMocks())
-
-    it('does something', () => {
-        // ...
-    })
-})
-```
-
-Test names use imperative present without "should":
-
-- Good: `it('returns undefined when token missing')`
-- Good: `it('emits change on mark remove')`
-- Bad: `it('should return undefined when token missing')`
-- Bad: `it('when token is missing, returns undefined')`
-
-Parser tests should use `toMatchInlineSnapshot()` with the
-`tokensToDebugTree()` helper. Use `@faker-js/faker` for generated test data.
+- Core unit tests live next to the source and use Vitest.
+- Test names use imperative present without "should", for example
+  `it('returns undefined when token missing')`.
+- Parser tests should use `toMatchInlineSnapshot()` with the
+  `tokensToDebugTree()` helper.
+- Use `@faker-js/faker` for generated test data.
 
 Storybook component tests live in `packages/storybook/src/pages/` and use
 framework-suffixed files:
@@ -199,20 +173,9 @@ changes could affect site rendering.
 
 ## Documentation Policy
 
-Website docs live in `packages/website/src/content/docs/`:
-
-- Introduction: `introduction/getting-started.mdx`,
-  `introduction/why-markput.md`
-- Guides: `guides/configuration.md`, `guides/dynamic-marks.md`,
-  `guides/keyboard-handling.md`, `guides/nested-marks.md`,
-  `guides/overlay-customization.md`, `guides/slots-customization.md`
-- Examples: `examples/autocomplete.md`, `examples/hashtags.md`,
-  `examples/html-like-tags.md`, `examples/markdown-editor.md`,
-  `examples/mention-system.md`, `examples/slash-commands.md`
-- API reference: `api/`
-- Development: `development/architecture.md`, `development/how-it-works.md`,
-  `development/performance.md`, `development/inconsistencies.md`,
-  `development/rfc-nested-marks.md`
+Website docs live in `packages/website/src/content/docs/`. Update the relevant
+guide, example, API, or development page when public API, behavior, or
+architecture changes.
 
 When runtime behavior and docs disagree, treat the mismatch as part of the task:
 either update the docs or call out the inconsistency explicitly.
@@ -225,6 +188,7 @@ either update the docs or call out the inconsistency explicitly.
 - PR titles must use Conventional Commits.
 - Release is automated through release-please on `next`.
 - Pre-commit runs oxlint and oxfmt through lint-staged.
+- CI mirrors the full local checks in the Check Policy.
 
 Common commit scopes:
 
@@ -246,24 +210,3 @@ Examples:
 - `fix(react): preserve caret after mark insert`
 - `refactor(drag): simplify block ordering`
 - `docs: update keyboard handling guide`
-
-CI runs:
-
-1. PR title lint
-2. `pnpm test`
-3. `pnpm run typecheck`
-4. `pnpm run lint:check`
-5. `pnpm run build`
-6. `pnpm run format:check`
-
-## Fast Checklist
-
-Before finishing a change:
-
-1. Confirm the owning package or feature is the right place for the edit.
-2. Keep state in one owner; do not mirror DOM refs, tokens, values, caret, or
-   props.
-3. Add or update focused tests for changed behavior.
-4. Update website docs when public API, behavior, or architecture changes.
-5. Run the required checks for the changed files.
-6. Report skipped broader checks and why.
