@@ -10,13 +10,12 @@ export const Container = memo(() => {
 	if (!storeCtx) throw new Error('Store not found')
 	const store = storeCtx
 
-	const {isBlock, tokens, key, Component, props, layout, structuralKey} = useMarkput(s => ({
+	const {isBlock, tokens, key, Component, props, structuralKey} = useMarkput(s => ({
 		isBlock: s.slots.isBlock,
 		tokens: s.parsing.tokens,
 		key: s.key,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
-		layout: s.props.layout,
 		structuralKey: s.dom.structuralKey,
 	}))
 
@@ -26,9 +25,8 @@ export const Container = memo(() => {
 	}
 
 	useLayoutEffect(() => {
-		const container = store.slots.container()
-		if (container) store.lifecycle.rendered({container, layout})
-	}, [store, structuralKey, layout])
+		store.lifecycle.rendered()
+	}, [store, structuralKey])
 
 	return (
 		<Component ref={setContainerRef} {...props}>

@@ -13,7 +13,6 @@ const result = useMarkput(s => ({
 	key: s.key,
 }))
 const structuralKey = useMarkput(s => s.dom.structuralKey)
-const layout = useMarkput(s => s.props.layout)
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
@@ -28,8 +27,7 @@ const containerProps = useMarkput(s => s.slots.containerProps)
 watch(
 	() => structuralKey.value,
 	() => {
-		const container = store.slots.container()
-		if (container) store.lifecycle.rendered({container, layout: layout.value})
+		store.lifecycle.rendered()
 	},
 	{flush: 'post', immediate: true}
 )

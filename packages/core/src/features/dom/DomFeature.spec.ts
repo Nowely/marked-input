@@ -17,7 +17,7 @@ function mountRegisteredInline(value: string) {
 	store.dom.refFor({role: 'token', path: [0]})(shell)
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
 	store.dom.enable()
-	store.lifecycle.rendered({container, layout: 'inline'})
+	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
 	return {store, container, shell, textSurface, textNode}
@@ -38,7 +38,7 @@ function mountRegisteredMarkWithDescendant(value = '@[world]') {
 	store.dom.refFor({role: 'container'})(container)
 	store.dom.refFor({role: 'token', path: [1]})(shell)
 	store.dom.enable()
-	store.lifecycle.rendered({container, layout: 'inline'})
+	store.lifecycle.rendered()
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
 	return {store, container, descendant, descendantText}
@@ -64,7 +64,7 @@ function mountRegisteredBlockWithControl(value: string) {
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
 	store.dom.refFor({role: 'control', ownerPath: [0]})(control)
 	store.dom.enable()
-	store.lifecycle.rendered({container, layout: 'block'})
+	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
@@ -104,7 +104,7 @@ describe('DomFeature registration', () => {
 		store.dom.refFor({role: 'text', path: [0]})(textSurface)
 
 		store.dom.enable()
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 
 		expect(store.dom.index()).toEqual({generation: 1})
 		expect(store.dom.locateNode(textSurface)).toMatchObject({ok: true})
@@ -120,7 +120,7 @@ describe('DomFeature registration', () => {
 
 		const oldGeneration = store.parsing.index().generation
 		store.value.replaceAll('changed')
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 
 		const result = store.dom.locateNode(shell)
 		expect(result.ok).toBe(true)
@@ -134,7 +134,7 @@ describe('DomFeature registration', () => {
 		store.dom.refFor({role: 'container'})(container)
 		store.dom.refFor({role: 'control', ownerPath: [1]})(control)
 		store.dom.enable()
-		store.lifecycle.rendered({container, layout: 'block'})
+		store.lifecycle.rendered()
 
 		expect(store.dom.locateNode(control)).toEqual({ok: false, reason: 'control'})
 	})
@@ -151,7 +151,7 @@ describe('DomFeature registration', () => {
 		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.refFor({role: 'text', path: [0]})(textSurface)
 		store.dom.enable()
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 
 		expect(textSurface.textContent).toBe('hello ')
 		expect(textSurface.contentEditable).toBe('true')
@@ -199,7 +199,7 @@ describe('DomFeature registration', () => {
 		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
 		store.caret.recovery({kind: 'caret', rawPosition: 999})
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 
 		expect(store.caret.recovery()).toBeUndefined()
 		expect(diagnostics).toContainEqual({
@@ -216,7 +216,7 @@ describe('DomFeature registration', () => {
 		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
 		store.caret.recovery({kind: 'selection', selection: {range: {start: 999, end: 1000}}})
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 
 		expect(store.caret.recovery()).toBeUndefined()
 		expect(diagnostics).toContainEqual({

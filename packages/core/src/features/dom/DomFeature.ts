@@ -14,7 +14,6 @@ import type {
 import {batch, computed, effectScope, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import type {RenderedPayload} from '../lifecycle/LifecycleFeature'
 import type {Token} from '../parsing'
 import {pathKey} from '../parsing/tokenIndex'
 
@@ -139,7 +138,7 @@ export class DomFeature {
 	#generation = 0
 	#rendering = false
 	#isComposing = false
-	#queuedRender: RenderedPayload | undefined
+	#queuedRender = false
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {}
@@ -147,8 +146,8 @@ export class DomFeature {
 	enable() {
 		if (this.#scope) return
 		this.#scope = effectScope(() => {
-			watch(this._store.lifecycle.rendered, rendered => {
-				this.#handleRendered(rendered)
+			watch(this._store.lifecycle.rendered, () => {
+				this.#handleRendered()
 			})
 			watch(
 				computed(() => ({
@@ -355,38 +354,37 @@ export class DomFeature {
 		return `${target.role}:${pathKey(target.path)}`
 	}
 
-	#handleRendered(payload: RenderedPayload): void {
+	#handleRendered(): void {
 		if (this.#rendering) {
-			this.#queuedRender = payload
+			this.#queuedRender = true
 			this.diagnostics({kind: 'renderReentry', reason: 'rendered event queued during DOM indexing'})
 			return
 		}
 
 		this.#rendering = true
 		try {
-			this.#commitRendered(payload)
+			this.#commitRendered()
 		} finally {
 			this.#rendering = false
 			const queued = this.#queuedRender
-			this.#queuedRender = undefined
-			if (queued) this.#handleRendered(queued)
+			this.#queuedRender = false
+			if (queued) this.#handleRendered()
 		}
 	}
 
-	#commitRendered(payload: RenderedPayload): void {
+	#commitRendered(): void {
 		const tokenIndex = this._store.parsing.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
-		this.#container = payload.container
-		elementRoles.set(payload.container, {role: 'container', element: payload.container})
+		let container: HTMLElement | undefined
 
 		for (const {target, element} of this.#pendingElements.values()) {
-			if (!element) continue
 			if (target.role === 'container') {
-				this.#container = element
-				elementRoles.set(element, {role: 'container', element})
+				container = element ?? undefined
+				if (element) elementRoles.set(element, {role: 'container', element})
 				continue
 			}
+			if (!element) continue
 			if (target.role === 'control') {
 				elementRoles.set(element, {role: 'control', element, ownerPath: target.ownerPath})
 				continue
@@ -408,6 +406,7 @@ export class DomFeature {
 			elementRoles.set(element, {...target, element, address})
 		}
 
+		this.#container = container
 		this.#pathElements = pathElements
 		this.#elementRoles = elementRoles
 		this.#reconcileRegisteredTextSurfaces()

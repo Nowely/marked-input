@@ -8,6 +8,6 @@ describe('LifecycleFeature', () => {
 		expect(typeof store.lifecycle.mounted).toBe('function')
 		expect(typeof store.lifecycle.unmounted).toBe('function')
 		expect(typeof store.lifecycle.rendered).toBe('function')
-		store.lifecycle.rendered({container: document.createElement('div'), layout: 'inline'})
+		store.lifecycle.rendered()
 	})
 })

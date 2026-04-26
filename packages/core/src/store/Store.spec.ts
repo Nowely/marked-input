@@ -91,7 +91,7 @@ describe('Store', () => {
 
 			expect(() => {
 				store.lifecycle.mounted()
-				store.lifecycle.rendered({container, layout: 'inline'})
+				store.lifecycle.rendered()
 			}).not.toThrow()
 			expect(store.dom.index()).toBeDefined()
 		})

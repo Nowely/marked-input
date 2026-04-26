@@ -18,7 +18,7 @@ function mountRegisteredInline(value = 'hello') {
 	store.dom.refFor({role: 'token', path: [0]})(shell)
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
 	store.dom.enable()
-	store.lifecycle.rendered({container, layout: 'inline'})
+	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Registered text surface did not render a text node')
 	return {store, container, textSurface, textNode}
@@ -40,7 +40,7 @@ function mountRegisteredMarkWithDescendant(value = '@[world]') {
 	store.dom.refFor({role: 'container'})(container)
 	store.dom.refFor({role: 'token', path: [1]})(shell)
 	store.dom.enable()
-	store.lifecycle.rendered({container, layout: 'inline'})
+	store.lifecycle.rendered()
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Registered mark descendant did not render a text node')
 	return {store, container, descendantText}

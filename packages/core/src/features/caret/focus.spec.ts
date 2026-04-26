@@ -47,7 +47,7 @@ describe('FocusFeature', () => {
 		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.refFor({role: 'text', path: [0]})(text)
 		store.dom.enable()
-		store.lifecycle.rendered({container, layout: 'inline'})
+		store.lifecycle.rendered()
 		store.caret.enable()
 
 		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
@@ -64,7 +64,7 @@ describe('FocusFeature', () => {
 			store.caret.enable()
 			store.caret.disable()
 
-			store.lifecycle.rendered({container: document.createElement('div'), layout: 'inline'})
+			store.lifecycle.rendered()
 
 			expect(syncSpy).not.toHaveBeenCalled()
 		})

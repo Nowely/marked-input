@@ -141,21 +141,21 @@ exports[`Component: stories > Dynamic stories > Story Focusable 1`] = `"<div><di
 
 exports[`Component: stories > Dynamic stories > Story Removable 1`] = `"<div><span><span><span contenteditable="true">I </span></span></span><span tabindex="0"><mark>contain</mark></span><span><span><span contenteditable="true"> </span></span></span><span tabindex="0"><mark>removable</mark></span><span><span><span contenteditable="true"> by click </span></span></span><span tabindex="0"><mark>marks</mark></span><span><span><span contenteditable="true">!</span></span></span></div>"`;
 
-exports[`Component: stories > Experimental stories > Story Controlled 1`] = `"<div contenteditable="true"><span><span><span contenteditable="true">Hello </span></span></span><span><mark data-value="John" data-meta="id:123">John</mark></span><span><span><span contenteditable="true"> and </span></span></span><span><mark data-value="World" data-meta="greeting">World</mark></span><span><span><span contenteditable="true">!</span></span></span></div>"`;
+exports[`Component: stories > Experimental stories > Story Controlled 1`] = `"<div contenteditable="true"><span><span><span contenteditable="true">Hello </span></span></span><span tabindex="0"><mark data-value="John" data-meta="id:123">John</mark></span><span><span><span contenteditable="true"> and </span></span></span><span tabindex="0"><mark data-value="World" data-meta="greeting">World</mark></span><span><span><span contenteditable="true">!</span></span></span></div>"`;
 
 exports[`Component: stories > Experimental stories > Story Markdown 1`] = `
-"<div contenteditable="true"><span><span><span contenteditable="true"></span></span></span><span><strong data-type="heading">Welcome to Markdown Editor</strong></span><span><span><span contenteditable="true">
-Try editing this text with </span></span></span><span><strong data-type="bold"></strong></span><span><span><span contenteditable="true">, </span></span></span><span><em data-type="italic"></em></span><span><span><span contenteditable="true">, </span></span></span><span><code data-type="code"></code></span><span><span><span contenteditable="true">, and </span></span></span><span><a href="links" data-type="link" data-url="links">links</a></span><span><span><span contenteditable="true">.
+"<div contenteditable="true"><span><span><span contenteditable="true"></span></span></span><span tabindex="0"><strong data-type="heading">Welcome to Markdown Editor</strong></span><span><span><span contenteditable="true">
+Try editing this text with </span></span></span><span tabindex="0"><strong data-type="bold"></strong></span><span><span><span contenteditable="true">, </span></span></span><span tabindex="0"><em data-type="italic"></em></span><span><span><span contenteditable="true">, </span></span></span><span tabindex="0"><code data-type="code"></code></span><span><span><span contenteditable="true">, and </span></span></span><span tabindex="0"><a href="links" data-type="link" data-url="links">links</a></span><span><span><span contenteditable="true">.
 
-</span></span></span><span><span data-type="blockquote">&gt; </span></span><span><span><span contenteditable="true">This is a blockquote
-</span></span></span><span><span data-type="blockquote">&gt; </span></span><span><span><span contenteditable="true">You can add multiple lines
+</span></span></span><span tabindex="0"><span data-type="blockquote">&gt; </span></span><span><span><span contenteditable="true">This is a blockquote
+</span></span></span><span tabindex="0"><span data-type="blockquote">&gt; </span></span><span><span><span contenteditable="true">You can add multiple lines
 
 - List item 1
 - List item 2
 - List item 3</span></span></span></div>"
 `;
 
-exports[`Component: stories > Experimental stories > Story Uncontrolled 1`] = `"<div contenteditable="true"><span><span><span contenteditable="true">Hello </span></span></span><span><mark data-value="John" data-meta="id:123">John</mark></span><span><span><span contenteditable="true"> and </span></span></span><span><mark data-value="World" data-meta="greeting">World</mark></span><span><span><span contenteditable="true">! Try editing - cursor stays in place!</span></span></span></div>"`;
+exports[`Component: stories > Experimental stories > Story Uncontrolled 1`] = `"<div contenteditable="true"><span><span><span contenteditable="true">Hello </span></span></span><span tabindex="0"><mark data-value="John" data-meta="id:123">John</mark></span><span><span><span contenteditable="true"> and </span></span></span><span tabindex="0"><mark data-value="World" data-meta="greeting">World</mark></span><span><span><span contenteditable="true">! Try editing - cursor stays in place!</span></span></span></div>"`;
 
 exports[`Component: stories > Material stories > Story Chipped 1`] = `"<div><span><span><span contenteditable="true">Hello beautiful the </span></span></span><span tabindex="0"><div><span>first</span></div></span><span><span><span contenteditable="true"> world from the </span></span></span><span tabindex="0"><div><span>second</span></div></span><span><span><span contenteditable="true"> </span></span></span></div>"`;
 
