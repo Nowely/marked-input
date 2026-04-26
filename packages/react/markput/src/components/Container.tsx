@@ -5,8 +5,7 @@ import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const {slots, dom, lifecycle, isBlock, tokens, key, Component, props, structuralKey} = useMarkput(s => ({
-		slots: s.slots,
+	const {dom, lifecycle, isBlock, tokens, key, Component, props, structuralKey} = useMarkput(s => ({
 		dom: s.dom,
 		lifecycle: s.lifecycle,
 		isBlock: s.slots.isBlock,
@@ -18,7 +17,6 @@ export const Container = memo(() => {
 	}))
 
 	const setContainerRef = (element: HTMLDivElement | null) => {
-		slots.container(element)
 		dom.refFor({role: 'container'})(element)
 	}
 

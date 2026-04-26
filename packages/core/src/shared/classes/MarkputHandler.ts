@@ -4,7 +4,7 @@ export class MarkputHandler {
 	constructor(private readonly store: Store) {}
 
 	get container() {
-		return this.store.slots.container()
+		return this.store.dom.container()
 	}
 
 	get overlay() {

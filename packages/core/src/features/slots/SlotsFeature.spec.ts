@@ -3,9 +3,13 @@ import {describe, it, expect} from 'vitest'
 import {Store} from '../../store/Store'
 
 describe('SlotsFeature', () => {
-	it('exposes container DOM ref and every slot computed', () => {
+	it('does not own DOM refs', () => {
 		const store = new Store()
-		expect(store.slots.container()).toBe(null)
+		expect('container' in store.slots).toBe(false)
+	})
+
+	it('exposes layout slot computed values', () => {
+		const store = new Store()
 		expect(store.slots.isBlock()).toBe(false)
 		expect(store.slots.isDraggable()).toBe(false)
 		expect(typeof store.slots.containerComponent()).toBeTruthy()
@@ -13,7 +17,6 @@ describe('SlotsFeature', () => {
 
 	it('exposes every slot computed', () => {
 		const store = new Store()
-		expect(store.slots.container()).toBe(null)
 		expect(typeof store.slots.isBlock()).toBe('boolean')
 		expect(typeof store.slots.isDraggable()).toBe('boolean')
 		expect(typeof store.slots.containerComponent()).toBeTruthy()

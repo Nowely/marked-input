@@ -24,7 +24,7 @@ function isTextLikeRow(token: Token): boolean {
 }
 
 export function enableBlockEdit(store: Store): () => void {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
@@ -57,7 +57,7 @@ export function enableBlockEdit(store: Store): () => void {
 }
 
 function handleDelete(store: Store, event: KeyboardEvent) {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return
 
 	const blockDivs = htmlChildren(container)
@@ -173,7 +173,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -230,7 +230,7 @@ function focusRow(store: Store, token: Token, row: HTMLElement, caret: 'start' |
 }
 
 function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return false
 
 	const activeElement = document.activeElement
@@ -264,7 +264,7 @@ function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction
 }
 
 function handleArrowUpDown(store: Store, event: KeyboardEvent) {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -302,7 +302,7 @@ function handleArrowUpDown(store: Store, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: Store, event: InputEvent) {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -320,7 +320,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
-			const c = store.slots.container()
+			const c = store.dom.container()
 			const markup = c ? consumeMarkupPaste(c) : undefined
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			replaceBlockRange(store, event, pasteData)

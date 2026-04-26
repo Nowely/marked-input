@@ -92,6 +92,19 @@ describe('DomFeature registration', () => {
 		expect(first).not.toBe(third)
 	})
 
+	it('owns the registered container ref', () => {
+		const container = document.createElement('div')
+		const ref = store.dom.refFor({role: 'container'})
+
+		ref(container)
+
+		expect(store.dom.container()).toBe(container)
+
+		ref(null)
+
+		expect(store.dom.container()).toBe(null)
+	})
+
 	it('publishes one dom index per rendered commit', () => {
 		const container = document.createElement('div')
 		const textShell = document.createElement('span')

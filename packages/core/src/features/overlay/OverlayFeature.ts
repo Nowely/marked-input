@@ -57,7 +57,7 @@ export class OverlayFeature implements Feature {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: window.getSelection()?.anchorNode ?? this._store.slots.container() ?? document.body,
+				node: window.getSelection()?.anchorNode ?? this._store.dom.container() ?? document.body,
 				option,
 			}
 		}
@@ -95,7 +95,7 @@ export class OverlayFeature implements Feature {
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.element()?.contains(target)) return
-							if (this._store.slots.container()?.contains(target)) return
+							if (this._store.dom.container()?.contains(target)) return
 							this.close()
 						},
 						true
@@ -104,7 +104,7 @@ export class OverlayFeature implements Feature {
 			})
 
 			const selectionChangeHandler = () => {
-				const container = this._store.slots.container()
+				const container = this._store.dom.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this._store.props.showOverlayOn()

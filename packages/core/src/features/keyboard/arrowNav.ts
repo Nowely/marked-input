@@ -4,7 +4,7 @@ import type {Store} from '../../store/Store'
 import {selectAllText} from '../caret'
 
 export function enableArrowNav(store: Store): () => void {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {

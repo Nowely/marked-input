@@ -310,10 +310,10 @@ class Store {
         parsing: ParsingFeature        // tokens, parser, token index, parse generation
         mark: MarkFeature              // mark slot resolution
         overlay: OverlayFeature        // match, element, slot, select, close
-        slots: SlotsFeature            // container ref, isBlock, isDraggable, slot computeds
+        slots: SlotsFeature            // isBlock, isDraggable, slot component/prop computeds
         caret: CaretFeature            // location, recovery, selecting
         keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
-        dom: DomFeature                // DOM registration, raw mapping, reconciliation, recovery
+        dom: DomFeature                // DOM refs/registration, raw mapping, reconciliation, recovery
         drag: DragFeature              // action event
         clipboard: ClipboardFeature    // copy/cut handling
     }

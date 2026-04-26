@@ -14,7 +14,7 @@ describe('FocusFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		store.slots.container(stubContainer)
+		store.dom.refFor({role: 'container'})(stubContainer)
 		const features: Record<string, {enable(): void; disable(): void}> = {
 			lifecycle: store.lifecycle,
 			value: store.value,
@@ -42,7 +42,6 @@ describe('FocusFeature', () => {
 		const text = document.createElement('span')
 		container.append(shell)
 		shell.append(text)
-		store.slots.container(container)
 		store.dom.refFor({role: 'container'})(container)
 		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.refFor({role: 'text', path: [0]})(text)

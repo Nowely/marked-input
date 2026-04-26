@@ -9,7 +9,7 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
     - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `isControlledMode`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `value.change`, `parsing.reparse`, `overlay.select`, `overlay.close`, `drag.action`, and lifecycle events
-    - **DOM refs** (`store.slots.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
+    - **DOM refs** (`store.dom.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
     - **DOM registration** (`store.dom`) — adapter-owned structural refs, token location, raw selection mapping, and caret placement
     - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)

@@ -21,13 +21,13 @@ type SpanInputTarget = {
 type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reason']
 
 export function enableInput(store: Store): () => void {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return () => {}
 	let compositionRange: RawRange | undefined
 
 	const scope = effectScope(() => {
 		listen(container, 'paste', e => {
-			const c = store.slots.container()
+			const c = store.dom.container()
 			if (c) captureMarkupPaste(e, c)
 			handlePaste(store, e)
 		})
@@ -220,7 +220,7 @@ function getTargetRanges(event: InputEvent): readonly InputTargetRange[] {
 function replacementForInput(store: Store, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
-		const container = store.slots.container()
+		const container = store.dom.container()
 		const markup = container ? consumeMarkupPaste(container) : undefined
 		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
 	}
@@ -267,7 +267,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const c = store.slots.container()
+	const c = store.dom.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)

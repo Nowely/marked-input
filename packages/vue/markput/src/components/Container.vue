@@ -17,7 +17,6 @@ const structuralKey = useMarkput(s => s.dom.structuralKey)
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
 	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
-	store.slots.container(element)
 	store.dom.refFor({role: 'container'})(element)
 }
 

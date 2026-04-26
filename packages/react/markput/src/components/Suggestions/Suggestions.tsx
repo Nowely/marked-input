@@ -8,7 +8,7 @@ import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const container = useMarkput(s => s.slots.container)
+	const container = useMarkput(s => s.dom.container)
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match?.option.overlay?.data ?? []

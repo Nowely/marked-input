@@ -106,13 +106,13 @@ describe('Store', () => {
 			expect('focus' in handler).toBe(true)
 		})
 
-		it('reflect state.container via handler.container', () => {
+		it('reflect dom container via handler.container', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.slots.container(stub)
+			store.dom.refFor({role: 'container'})(stub)
 			expect(handler.container).toBe(stub)
 		})
 

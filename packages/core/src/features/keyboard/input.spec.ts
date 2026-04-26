@@ -13,7 +13,6 @@ function mountRegisteredInline(value = 'hello') {
 	container.append(shell)
 	shell.append(textSurface)
 	document.body.append(container)
-	store.slots.container(container)
 	store.dom.refFor({role: 'container'})(container)
 	store.dom.refFor({role: 'token', path: [0]})(shell)
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
@@ -36,7 +35,6 @@ function mountRegisteredMarkWithDescendant(value = '@[world]') {
 	container.append(shell)
 	shell.append(descendant)
 	document.body.append(container)
-	store.slots.container(container)
 	store.dom.refFor({role: 'container'})(container)
 	store.dom.refFor({role: 'token', path: [1]})(shell)
 	store.dom.enable()
@@ -81,8 +79,6 @@ describe('replaceAllContentWith()', () => {
 	it('controlled full-content replace emits without committing current', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal container stub
-		store.slots.container({firstChild: null} as unknown as HTMLDivElement)
 		store.props.set({value: 'hello', onChange})
 		store.value.enable()
 

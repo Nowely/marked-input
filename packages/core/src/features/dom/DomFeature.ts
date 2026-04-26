@@ -115,7 +115,9 @@ function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 
 export class DomFeature {
 	readonly #domIndex = signal<DomIndex | undefined>(undefined, {readonly: true})
+	readonly #container = signal<HTMLElement | null>(null)
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
+	readonly container: Computed<HTMLElement | null> = computed(() => this.#container())
 	readonly diagnostics = event<DomDiagnostic>()
 	readonly structuralKey = computed(() => {
 		this._store.parsing.index()
@@ -134,7 +136,6 @@ export class DomFeature {
 	readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTMLElement | null}>()
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
-	#container: HTMLElement | undefined
 	#generation = 0
 	#rendering = false
 	#isComposing = false
@@ -180,6 +181,9 @@ export class DomFeature {
 
 		const callback: DomRef = element => {
 			this.#pendingElements.set(key, {target, element})
+			if (target.role === 'container') {
+				this.#container(element)
+			}
 		}
 		this.#refCallbacks.set(key, callback)
 		return callback
@@ -191,7 +195,7 @@ export class DomFeature {
 
 	locateNode(node: Node): NodeLocationResult {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const container = this.#container
+		const container = this.#container()
 		if (!container || !container.contains(node)) return {ok: false, reason: 'outsideEditor'}
 
 		let current: Node | null = node
@@ -261,7 +265,7 @@ export class DomFeature {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
 		if (this.#isComposing) return {ok: false, reason: 'composing'}
 
-		const container = this.#container
+		const container = this.#container()
 		if (container && node === container) {
 			return this.#rawPositionFromContainerBoundary(offset, affinity)
 		}
@@ -376,11 +380,9 @@ export class DomFeature {
 		const tokenIndex = this._store.parsing.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
-		let container: HTMLElement | undefined
 
 		for (const {target, element} of this.#pendingElements.values()) {
 			if (target.role === 'container') {
-				container = element ?? undefined
 				if (element) elementRoles.set(element, {role: 'container', element})
 				continue
 			}
@@ -406,7 +408,6 @@ export class DomFeature {
 			elementRoles.set(element, {...target, element, address})
 		}
 
-		this.#container = container
 		this.#pathElements = pathElements
 		this.#elementRoles = elementRoles
 		this.#reconcileRegisteredTextSurfaces()

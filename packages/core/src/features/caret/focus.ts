@@ -3,7 +3,7 @@ import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export function enableFocus(store: Store): () => void {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return () => {}
 
 	const scope = effectScope(() => {
@@ -31,7 +31,7 @@ export function enableFocus(store: Store): () => void {
 		listen(container, 'click', () => {
 			const tokens = store.parsing.tokens()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				const container = store.slots.container()
+				const container = store.dom.container()
 				const element = container ? firstHtmlChild(container) : null
 				element?.focus()
 			}

@@ -34,14 +34,14 @@ Defined in: [core/src/shared/classes/MarkputHandler.ts:4](https://github.com/Now
 #### Get Signature
 
 ```ts
-get container(): HTMLDivElement | null;
+get container(): HTMLElement | null;
 ```
 
 Defined in: [core/src/shared/classes/MarkputHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L6)
 
 ##### Returns
 
-`HTMLDivElement` \| `null`
+`HTMLElement` \| `null`
 
 ***
 
