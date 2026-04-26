@@ -72,6 +72,37 @@ describe('Component: MarkedInput', () => {
 		expect(mark).toHaveTextContent('world')
 	})
 
+	it('renders slot text when mark renders an unregistered control before children', async () => {
+		const todoMarkup = '- [__value__] __slot__\n' as Markup
+		const TodoMark = defineComponent({
+			setup(_, {slots}) {
+				return () =>
+					h('span', {'data-testid': 'todo-mark'}, [
+						h('input', {type: 'checkbox', 'aria-label': 'done'}),
+						slots.default?.(),
+					])
+			},
+		})
+
+		const {container} = await render(
+			withProps(Default, {
+				Mark: TodoMark,
+				options: [{markup: todoMarkup}],
+				defaultValue: '- [ ] Design Phase\n',
+			})
+		)
+
+		await expect.element(page.getByText('Design Phase')).toBeInTheDocument()
+		const textSurface = Array.from(container.querySelectorAll<HTMLElement>('span[contenteditable]')).find(
+			el => el.textContent === 'Design Phase'
+		)
+		expect(textSurface?.contentEditable).toBe('true')
+
+		await userEvent.click(getElement(page.getByLabelText('done')))
+
+		expect(textSurface).toHaveTextContent('Design Phase')
+	})
+
 	it('correctly process an annotation type', async () => {
 		const Mark = defineComponent({
 			props: {value: String, meta: String},

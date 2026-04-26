@@ -19,7 +19,7 @@ import {
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
 import * as DragStories from './Drag.vue.stories'
 
-const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag} = composeStories(DragStories)
+const {PlainTextDrag, MarkdownDrag, ReadOnlyDrag, TodoListDrag} = composeStories(DragStories)
 
 const PLAIN_TEXT_VALUE =
 	'First block of plain text\n\nSecond block of plain text\n\nThird block of plain text\n\nFourth block of plain text\n\nFifth block of plain text\n\n'
@@ -100,6 +100,14 @@ describe('Feature: drag rows', () => {
 		await expect.element(page.getByText(/Read-Only/).first()).toBeInTheDocument()
 		await expect.element(page.getByText(/Section A/).first()).toBeInTheDocument()
 		await expect.element(page.getByText(/Section B/).first()).toBeInTheDocument()
+	})
+
+	it('render content for TodoListDrag with checkbox controls', async () => {
+		await render(TodoListDrag)
+
+		await expect.element(page.getByText('Design Phase').first()).toBeInTheDocument()
+		await expect.element(page.getByText('Create wireframes').first()).toBeInTheDocument()
+		await expect.element(page.getByText('Deploy to production').first()).toBeInTheDocument()
 	})
 
 	describe('menu', () => {

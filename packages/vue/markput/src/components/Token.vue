@@ -5,6 +5,7 @@ import {defineComponent, h, markRaw, provide, toRef, type PropType, type VNode} 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
 import {TOKEN_KEY} from '../lib/providers/tokenKey'
+import TokenChildren from './TokenChildren.vue'
 
 const Token = defineComponent({
 	name: 'Token',
@@ -30,7 +31,10 @@ const Token = defineComponent({
 			const [Comp, compProps] = resolveMarkSlot.value(token)
 			const children =
 				token.type === 'mark' && token.children.length > 0
-					? () => token.children.map(child => h(markRaw(Token), {key: key.get(child), token: child}))
+					? () =>
+							h(markRaw(TokenChildren), {ownerPath: path}, () =>
+								token.children.map(child => h(markRaw(Token), {key: key.get(child), token: child}))
+							)
 					: undefined
 
 			return children ? h(Comp, compProps, children) : h(Comp, compProps)
