@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.13.0](https://github.com/Nowely/marked-input/compare/0.12.1...0.13.0) (2026-04-26)
+
+
+### Features
+
+* **core:** add DOM location engine and structural token rendering ([#220](https://github.com/Nowely/marked-input/issues/220)) ([64d5dfa](https://github.com/Nowely/marked-input/commit/64d5dfa9ec617f1956bf96ff69f4b51d83e6fadc))
+
+
+### Bug Fixes
+
+* **core:** enforce readonly value writes ([#219](https://github.com/Nowely/marked-input/issues/219)) ([987fa0c](https://github.com/Nowely/marked-input/commit/987fa0c2fa09377897ed12378a0a91ad78362647))
+
+
+### Refactoring
+
+* **core:** make value current source of truth ([#218](https://github.com/Nowely/marked-input/issues/218)) ([fa18b43](https://github.com/Nowely/marked-input/commit/fa18b43fde06fe770024b6c6cb8fd3b542625a0f))
+
 ## [0.12.1](https://github.com/Nowely/marked-input/compare/0.12.0...0.12.1) (2026-04-23)
 
 
