@@ -1,6 +1,6 @@
 import {cx} from '@markput/core'
 import type {Token} from '@markput/core'
-import {memo} from 'react'
+import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {List} from './Popup/List'
@@ -22,7 +22,7 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 		}
 	})
 	const path = index.pathFor(token)
-	const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undefined
+	const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
 
 	if (!menuOpen) return null
 

@@ -25,12 +25,13 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 	})
 	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
 	const path = index.pathFor(token)
-	const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undefined
+	const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
 
 	if (readOnly) return null
 
 	return (
 		<div
+			ref={controlRef}
 			className={cx(
 				styles.SidePanel,
 				alwaysShowHandle ? styles.SidePanelAlways : isHovered && !isDragging && styles.SidePanelVisible
@@ -39,7 +40,6 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 			<button
 				ref={(el: HTMLButtonElement | null) => {
 					blockStore.attachGrip(el, blockIndex, {action})
-					controlRef?.(el)
 				}}
 				type="button"
 				draggable
