@@ -67,7 +67,7 @@ describe('Clipboard: copy', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select "ll" from "hello " (the first text span)
 		const textNode = firstTextNode(spans[0])!
@@ -87,7 +87,7 @@ describe('Clipboard: copy', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select the entire first text span "hello "
 		const textNode = firstTextNode(spans[0])!
@@ -148,7 +148,7 @@ describe('Clipboard: copy', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select "lo world fo" — partial first span + full mark + partial last span
 		const textNode1 = firstTextNode(spans[0])!
@@ -170,7 +170,7 @@ describe('Clipboard: copy', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select "lo world f" — offset 3 in "hello " to offset 2 in " foo"
 		const textNode1 = firstTextNode(spans[0])!
@@ -202,8 +202,8 @@ describe('Clipboard: copy', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: clipboardData})
 		root.dispatchEvent(inputEvent)
 
-		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
-		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
+		await new Promise<void>(r => queueMicrotask(r))
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world foolo world f')
 	})
 
@@ -211,7 +211,7 @@ describe('Clipboard: copy', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select from start of first span to end of last span
 		const textNode1 = firstTextNode(spans[0])!
@@ -256,7 +256,7 @@ describe('Clipboard: copy', () => {
 		const sourceRoot = sourceContainer.firstElementChild as HTMLElement
 
 		// Select all: from start of first span to end of last span
-		const spans = Array.from(sourceRoot.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(sourceRoot.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const textNode1 = firstTextNode(spans[0])!
 		const textNode2 = firstTextNode(spans[1])!
 		setSelection(textNode1, 0, textNode2, textNode2.length)
@@ -277,7 +277,7 @@ describe('Clipboard: copy', () => {
 		const targetRoot = targetContainer.firstElementChild as HTMLElement
 		expect(targetRoot.querySelector('[data-testid="mark"]')).toBeNull()
 
-		const targetSpan = targetRoot.querySelector<HTMLElement>('span')!
+		const targetSpan = targetRoot.querySelector<HTMLElement>('[contenteditable="true"]')!
 		targetSpan.focus()
 		await new Promise<void>(r => queueMicrotask(r))
 		expect(document.activeElement).toBe(targetSpan)
@@ -322,7 +322,7 @@ describe('Clipboard: paste', () => {
 
 		expect(root.querySelector('[data-testid="mark"]')).toBeNull()
 
-		const span = root.querySelector<HTMLElement>('span')!
+		const span = root.querySelector<HTMLElement>('[contenteditable="true"]')!
 		span.focus()
 		await new Promise<void>(r => queueMicrotask(r))
 
@@ -365,7 +365,7 @@ describe('Clipboard: paste', () => {
 		expect(marksBefore.length).toBe(1)
 
 		// Focus the last span " foo" and place caret at end
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const lastSpan = spans[spans.length - 1]
 		lastSpan.focus()
 		await new Promise<void>(r => queueMicrotask(r))
@@ -406,7 +406,7 @@ describe('Clipboard: paste', () => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
 
-		const span = root.querySelector<HTMLElement>('span')!
+		const span = root.querySelector<HTMLElement>('[contenteditable="true"]')!
 		span.focus()
 		await new Promise<void>(r => queueMicrotask(r))
 
@@ -476,7 +476,7 @@ describe('Clipboard: paste', () => {
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
 		const mark = root.querySelector<HTMLElement>('[data-testid="mark"]')!
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)! // " foo"
 
@@ -506,8 +506,8 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
-		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
+		await new Promise<void>(r => queueMicrotask(r))
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
 		expect(sel.anchorNode?.textContent).toBe('foo')
@@ -607,7 +607,7 @@ describe('Clipboard: nested marks', () => {
 		expect(copyDt.getData('application/x-markput')).toBe('@[world](1)')
 
 		// Focus the last span " foo" and paste at offset 1
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)!
 		lastSpan.focus()
@@ -627,8 +627,8 @@ describe('Clipboard: nested marks', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await expect.element(page.elementLocator(root).getByTestId('mark').first()).toBeInTheDocument()
-		expect(page.elementLocator(root).getByTestId('mark').length).toBe(2)
+		await new Promise<void>(r => queueMicrotask(r))
+		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world worldfoo')
 	})
 })
@@ -645,11 +645,33 @@ describe('Clipboard: cut', () => {
 		return {event, clipboardData}
 	}
 
+	it('does not cut a selection that crosses a registered control', async () => {
+		const {container} = await render(Drag)
+		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
+		const root = container.firstElementChild as HTMLElement
+		const before = root.textContent
+		const button = root.querySelector<HTMLButtonElement>('button')!
+		const textSurface = root.querySelector<HTMLElement>('[contenteditable="true"]')!
+		const textNode = firstTextNode(textSurface)!
+		const selection = window.getSelection()!
+		const range = document.createRange()
+		range.setStart(button, 0)
+		range.setEnd(textNode, textNode.length)
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		const {event, clipboardData} = createCutEvent(root)
+		root.dispatchEvent(event)
+
+		expect(clipboardData.getData('application/x-markput')).toBe('')
+		expect(root.textContent).toBe(before)
+	})
+
 	it('cut partial text should write to clipboard and remove selection', async () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select "ll" from "hello "
 		const textNode = firstTextNode(spans[0])!
@@ -689,7 +711,7 @@ describe('Clipboard: cut', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select "lo world fo" — partial first span + full mark + partial last span
 		const textNode1 = firstTextNode(spans[0])!
@@ -727,7 +749,7 @@ describe('Clipboard: cut', () => {
 		const {container} = await render(Inline)
 		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement
 		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 
 		// Select from start of first span to end of last span
 		const textNode1 = firstTextNode(spans[0])!

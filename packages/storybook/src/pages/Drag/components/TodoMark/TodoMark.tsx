@@ -12,9 +12,9 @@ const useTodo = () => {
 	const toggle = () => {
 		const newDone = !isDone
 		setIsDone(newDone)
-		mark.value = newDone ? 'x' : ' '
+		mark.update({value: newDone ? 'x' : ' '})
 	}
-	return {isDone, toggle, readOnly: mark.readOnly ?? false}
+	return {isDone, toggle, readOnly: mark.readOnly}
 }
 
 // ─── Mark components (one per option) ─────────────────────────────────────────

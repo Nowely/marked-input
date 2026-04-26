@@ -8,15 +8,15 @@ Provides copy, cut, and paste operations with rich markup support. On copy, writ
 - **captureMarkupPaste**: Captures markput MIME data from a ClipboardEvent
 - **consumeMarkupPaste**: Reads and clears captured markput paste data for a container
 - **clearMarkupPaste**: Clears captured markput paste data without reading
-- **selectionToTokens**: Maps a browser Selection to the subset of tokens it covers, returning boundary offsets
+- **DOM raw selection**: Clipboard uses `store.dom.readRawSelection()` to map browser selections to serialized raw ranges.
 
 ## Usage
 
 ```typescript
-import {selectionToTokens} from '@markput/core'
-
-const range = selectionToTokens(tokens, selection)
-// range: { startToken, endToken, startOffset, endOffset }
+const raw = store.dom.readRawSelection()
+if (raw.ok) {
+    const range = raw.value.range
+}
 ```
 
 The `CopyFeature` is registered by the Store automatically. The custom MIME type (`application/x-markput`) preserves full markup syntax on internal copy/paste operations.

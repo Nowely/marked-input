@@ -1,10 +1,8 @@
-import {computed, event, effectScope, watch} from '../../shared/signals/index.js'
+import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
-import {toString} from '../parsing/parser/utils/toString'
-import {findToken} from '../parsing/utils/findToken'
 import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 
@@ -22,28 +20,9 @@ export class MarkFeature implements Feature {
 		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
 	})
 
-	readonly remove = event<{token: Token}>()
-
-	#scope?: () => void
-
 	constructor(private readonly _store: Store) {}
 
-	enable() {
-		if (this.#scope) return
-		this.#scope = effectScope(() => {
-			watch(this.remove, payload => {
-				const {token} = payload
-				const tokens = this._store.parsing.tokens()
-				if (!findToken(tokens, token)) return
-				const value = toString(tokens)
-				const nextValue = value.slice(0, token.position.start) + value.slice(token.position.end)
-				this._store.value.next(nextValue)
-			})
-		})
-	}
+	enable() {}
 
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
-	}
+	disable() {}
 }

@@ -245,8 +245,9 @@ function Editor() {
 
 ```typescript
 const LazyMark: FC<MarkProps> = ({ value, meta }) => {
+  const markerRef = useRef<HTMLSpanElement>(null)
   const [data, setData] = useState(null)
-  const isVisible = useIntersectionObserver(ref)
+  const isVisible = useIntersectionObserver(markerRef)
 
   useEffect(() => {
     if (isVisible && !data) {
@@ -255,7 +256,7 @@ const LazyMark: FC<MarkProps> = ({ value, meta }) => {
   }, [isVisible, meta])
 
   return (
-    <span ref={ref}>
+    <span ref={markerRef}>
       {data ? <DetailedView data={data} /> : value}
     </span>
   )

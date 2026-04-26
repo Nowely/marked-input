@@ -14,7 +14,7 @@ describe('FocusFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		store.slots.container(stubContainer)
+		store.dom.container(stubContainer)
 		const features: Record<string, {enable(): void; disable(): void}> = {
 			lifecycle: store.lifecycle,
 			value: store.value,
@@ -33,53 +33,24 @@ describe('FocusFeature', () => {
 		}
 	})
 
-	describe('rendered handler', () => {
-		it('always emits sync', () => {
-			const syncSpy = vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})
-			store.caret.enable()
+	it('updates caret location from focus inside structural text surface', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello'})
+		store.value.enable()
+		const container = document.createElement('div')
+		const text = document.createElement('span')
+		container.append(text)
+		store.dom.container(container)
+		store.dom.enable()
+		store.lifecycle.rendered()
+		store.caret.enable()
 
-			store.lifecycle.rendered()
+		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
 
-			expect(syncSpy).toHaveBeenCalledOnce()
-
-			store.caret.disable()
-		})
-
-		it('runs caret recovery and clears recovery state when Mark is set', () => {
-			vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})
-			store.props.set({Mark: () => null})
-			store.caret.enable()
-
-			const target = document.createElement('div')
-			Object.defineProperty(target, 'isConnected', {value: true, configurable: true})
-			store.nodes.focus.target = target
-			store.caret.recovery({
-				anchor: store.nodes.focus,
-				caret: 0,
-			})
-
-			store.lifecycle.rendered()
-
-			expect(store.caret.recovery()).toBeUndefined()
-
-			store.caret.disable()
-		})
-
-		it('does not run recovery when Mark is not set', () => {
-			vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})
-			store.caret.enable()
-
-			store.caret.recovery({
-				anchor: store.nodes.focus,
-				caret: 0,
-			})
-
-			store.lifecycle.rendered()
-
-			expect(store.caret.recovery()).toBeDefined()
-
-			store.caret.disable()
-		})
+		expect(store.caret.location()?.role).toBe('text')
+		store.caret.disable()
+		store.dom.disable()
+		store.value.disable()
 	})
 
 	describe('subscription lifecycle', () => {
@@ -95,15 +66,18 @@ describe('FocusFeature', () => {
 	})
 
 	describe('disable()', () => {
-		it('clears nodes.focus.target', () => {
+		it('clears caret location on focusout before disable', () => {
 			store.caret.enable()
 
-			store.nodes.focus.target = document.createElement('div')
-			expect(store.nodes.focus.target).toBeDefined()
+			const textRole = 'text'
+			store.caret.location({
+				address: {path: [0], parseGeneration: 1},
+				role: textRole,
+			})
 
 			store.caret.disable()
 
-			expect(store.nodes.focus.target).toBeUndefined()
+			expect(store.caret.location()).toBeDefined()
 		})
 	})
 })

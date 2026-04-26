@@ -1,22 +1,13 @@
 # Navigation Feature
 
-Provides focus navigation between editor elements. Walks forward or backward from the current element to find the nearest focusable element, skipping non-editable marks.
+Navigation is now owned by keyboard and caret features through `store.dom` and token addresses.
 
-## Components
+The old standalone DOM walkers were removed with the legacy locator compatibility layer. Arrow-key navigation reads the current caret location, resolves neighboring token addresses through the parse index, and asks `store.caret` / `store.dom` to focus the target.
 
-- **shiftFocusPrev**: On left arrow, walks backward from the current element to find the nearest focusable element and focuses it with caret at the end
-- **shiftFocusNext**: On right arrow, walks forward from the current element to find the nearest focusable element and focuses it with caret at the beginning
+## Current Responsibilities
 
-## Usage
+- Keep token navigation address-based instead of DOM-child-order based.
+- Use `store.caret.focus(address, boundary)` for mark focus.
+- Use `store.caret.placeAt(rawPosition)` for raw-position text recovery.
 
-```typescript
-import {shiftFocusNext, shiftFocusPrev} from '@markput/core'
-
-// Move focus to next focusable element
-shiftFocusNext(currentElement, container)
-
-// Move focus to previous focusable element
-shiftFocusPrev(currentElement, container)
-```
-
-Used by `ArrowNavFeature` and `FocusFeature` for keyboard navigation and focus recovery.
+The feature folder is retained for historical documentation only; production navigation code lives with the keyboard/caret pipeline.

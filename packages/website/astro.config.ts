@@ -1,6 +1,11 @@
+import {readdir, readFile, writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
+import {fileURLToPath} from 'node:url'
+
 import react from '@astrojs/react'
 import starlight from '@astrojs/starlight'
 import vercel from '@astrojs/vercel'
+import type {AstroIntegration} from 'astro'
 import {defineConfig} from 'astro/config'
 import starlightTypeDoc, {typeDocSidebarGroup} from 'starlight-typedoc'
 
@@ -51,6 +56,35 @@ const sidebarConfig = [
 	typeDocSidebarGroup,
 	{label: 'Comparisons', slug: 'comparisons', badge: wipBadge},
 ].filter(item => isDev || !('badge' in item && item.badge === wipBadge))
+
+function trimGeneratedApiDocs(): AstroIntegration {
+	return {
+		name: 'trim-generated-api-docs',
+		hooks: {
+			'astro:config:setup': async () => {
+				await trimMarkdownTrailingWhitespace(fileURLToPath(new URL('./src/content/docs/api', import.meta.url)))
+			},
+		},
+	}
+}
+
+async function trimMarkdownTrailingWhitespace(directory: string): Promise<void> {
+	const entries = await readdir(directory, {withFileTypes: true})
+	await Promise.all(
+		entries.map(async entry => {
+			const path = join(directory, entry.name)
+			if (entry.isDirectory()) {
+				await trimMarkdownTrailingWhitespace(path)
+				return
+			}
+			if (!entry.isFile() || !entry.name.endsWith('.md')) return
+
+			const content = await readFile(path, 'utf8')
+			const trimmed = content.replace(/[ \t]+$/gm, '')
+			if (trimmed !== content) await writeFile(path, trimmed)
+		})
+	)
+}
 
 // https://astro.build/config
 export default defineConfig({
@@ -104,6 +138,7 @@ export default defineConfig({
 			sidebar: sidebarConfig,
 			customCss: ['./src/styles/global.css'],
 		}),
+		trimGeneratedApiDocs(),
 		react(),
 	],
 })

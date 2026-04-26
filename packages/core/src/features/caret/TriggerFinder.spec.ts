@@ -84,6 +84,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toBeInstanceOf(Object)
 			expect(result?.value).toBe('world')
 			expect(result?.source).toBe('@world')
+			expect(result?.range).toEqual({start: 6, end: 12})
 		})
 
 		it('return undefined when position is not selected', () => {
@@ -145,7 +146,7 @@ describe(`Utility: ${TriggerFinder.name}`, () => {
 			expect(result).toEqual({
 				value: 'world',
 				source: '@world',
-				index: 6,
+				range: {start: 6, end: 12},
 				span: 'Hello @world test',
 				node: expect.objectContaining({nodeType: 3}),
 				option: options[0],

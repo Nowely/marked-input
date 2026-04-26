@@ -47,14 +47,19 @@ describe('TextSelectionFeature', () => {
 		expect(store.caret.selecting()).toBe(undefined)
 	})
 
-	it('selecting set to "drag" disables contenteditable on container elements', () => {
+	it('selecting set to "drag" reconciles indexed text roots to non-editable', () => {
 		const container = document.createElement('div')
 		const span = document.createElement('span')
-		span.contentEditable = 'true'
 		container.appendChild(span)
 		document.body.appendChild(container)
 
-		store.slots.container(container)
+		store.props.set({defaultValue: 'hello'})
+		store.value.enable()
+		store.dom.enable()
+		store.dom.container(container)
+		store.lifecycle.rendered()
+
+		expect(span.contentEditable).toBe('true')
 
 		const controller = store.caret
 		controller.enable()

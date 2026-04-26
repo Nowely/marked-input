@@ -1,6 +1,6 @@
 import {cx} from '@markput/core'
 import type {Token} from '@markput/core'
-import {memo} from 'react'
+import {memo, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {List} from './Popup/List'
@@ -10,17 +10,28 @@ import {Popup} from './Popup/Popup'
 import styles from '@markput/core/styles.module.css'
 
 export const BlockMenu = memo(({token}: {token: Token}) => {
-	const {blockStore, menuOpen, menuPosition} = useMarkput(s => ({
-		blockStore: s.blocks.get(token),
-		menuOpen: s.blocks.get(token).state.menuOpen,
-		menuPosition: s.blocks.get(token).state.menuPosition,
-	}))
+	const {blockStore, menuOpen, menuPosition, dom, index} = useMarkput(s => {
+		const blockStore = s.blocks.get(token)
+
+		return {
+			blockStore,
+			menuOpen: blockStore.state.menuOpen,
+			menuPosition: blockStore.state.menuPosition,
+			dom: s.dom,
+			index: s.parsing.index,
+		}
+	})
+	const path = index.pathFor(token)
+	const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
 
 	if (!menuOpen) return null
 
 	return (
 		<Popup
-			ref={(el: HTMLDivElement | null) => blockStore.attachMenu(el)}
+			ref={(el: HTMLDivElement | null) => {
+				blockStore.attachMenu(el)
+				controlRef?.(el)
+			}}
 			style={{top: menuPosition.top, left: menuPosition.left}}
 		>
 			<List>

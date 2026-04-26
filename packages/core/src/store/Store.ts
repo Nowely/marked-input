@@ -10,7 +10,7 @@ import {ParsingFeature} from '../features/parsing/ParseFeature'
 import {PropsFeature} from '../features/props/PropsFeature'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
-import {KeyGenerator, MarkputHandler, NodeProxy} from '../shared/classes'
+import {KeyGenerator, MarkputHandler} from '../shared/classes'
 import {watch} from '../shared/signals'
 import type {Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
@@ -21,15 +21,10 @@ export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
 
-	readonly nodes = {
-		focus: new NodeProxy(undefined, this),
-		input: new NodeProxy(undefined, this),
-	}
-
 	readonly props = new PropsFeature(this)
 	readonly handler = new MarkputHandler(this)
 
-	readonly lifecycle = new LifecycleFeature(this)
+	readonly lifecycle = new LifecycleFeature()
 	readonly value = new ValueFeature(this)
 	readonly mark = new MarkFeature(this)
 	readonly overlay = new OverlayFeature(this)

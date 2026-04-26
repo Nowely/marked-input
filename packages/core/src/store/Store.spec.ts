@@ -25,7 +25,6 @@ describe('Store', () => {
 		const store = new Store()
 		expect(typeof store.parsing.reparse).toBe('function')
 		expect(typeof store.value.change).toBe('function')
-		expect(typeof store.mark.remove).toBe('function')
 	})
 
 	describe('lifecycle orchestration', () => {
@@ -76,6 +75,22 @@ describe('Store', () => {
 				expect(spy).toHaveBeenCalledOnce()
 			}
 		})
+
+		it('mounts features in an order that supports initial render indexing', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const text = document.createElement('span')
+			container.append(text)
+
+			store.dom.container(container)
+
+			expect(() => {
+				store.lifecycle.mounted()
+				store.lifecycle.rendered()
+			}).not.toThrow()
+			expect(store.dom.index()).toBeDefined()
+		})
 	})
 
 	describe('handler', () => {
@@ -87,13 +102,13 @@ describe('Store', () => {
 			expect('focus' in handler).toBe(true)
 		})
 
-		it('reflect state.container via handler.container', () => {
+		it('reflect dom container via handler.container', () => {
 			const store = new Store()
 			const handler = store.handler
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.slots.container(stub)
+			store.dom.container(stub)
 			expect(handler.container).toBe(stub)
 		})
 
@@ -184,33 +199,33 @@ describe('Store', () => {
 		})
 	})
 
-	describe('next', () => {
-		it('updates tokens and current when uncontrolled next is set', () => {
+	describe('value edits', () => {
+		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.value.enable()
-			store.value.next('hello')
+			store.value.replaceAll('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
 			store.value.disable()
 		})
 
-		it('calls onChange when uncontrolled next is set', () => {
+		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			store.value.enable()
-			store.value.next('world')
+			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 			store.value.disable()
 		})
 
-		it('emits without committing when controlled next is set', () => {
+		it('emits without committing until controlled replacement is echoed', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
 			store.value.enable()
-			store.value.next('world')
+			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -220,7 +235,7 @@ describe('Store', () => {
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
 			store.value.enable()
-			expect(() => store.value.next('test')).not.toThrow()
+			expect(() => store.value.replaceAll('test')).not.toThrow()
 			store.value.disable()
 		})
 	})

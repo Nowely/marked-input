@@ -1,5 +1,6 @@
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
+import type {Store} from '../../store/Store'
 import {Caret} from './Caret'
 
 /** Regex to match word characters from the start of a string */
@@ -19,7 +20,7 @@ export class TriggerFinder {
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor() {
+	constructor(private readonly store?: Store) {
 		const caretPosition = Caret.getCurrentPosition()
 		this.node = Caret.getSelectedNode()
 		this.span = Caret.getFocusedSpan()
@@ -41,11 +42,15 @@ export class TriggerFinder {
 	 * // Other framework usage
 	 * TriggerFinder.find(vueOptions, (opt) => opt.overlay?.trigger ?? '@')
 	 */
-	static find<T>(options: T[] | undefined, getTrigger: TriggerExtractor<T>): OverlayMatch<T> | undefined {
+	static find<T>(
+		options: T[] | undefined,
+		getTrigger: TriggerExtractor<T>,
+		store?: Store
+	): OverlayMatch<T> | undefined {
 		if (!options) return
 		if (!Caret.isSelectedPosition) return
 		try {
-			return new TriggerFinder().find(options, getTrigger)
+			return new TriggerFinder(store).find(options, getTrigger)
 		} catch {
 			return undefined
 		}
@@ -68,15 +73,28 @@ export class TriggerFinder {
 			if (!trigger) continue
 
 			const match = this.matchInTextVia(trigger)
-			if (match)
+			if (match) {
+				const range = this.#rawRangeForMatch(match.annotation, match.index)
+				if (!range) return undefined
 				return {
 					value: match.word,
 					source: match.annotation,
-					index: match.index,
+					range,
 					span: this.span,
 					node: this.node,
 					option,
 				}
+			}
+		}
+	}
+
+	#rawRangeForMatch(source: string, index: number) {
+		if (!this.store) return {start: index, end: index + source.length}
+		const boundary = this.store.dom.rawPositionFromBoundary(this.node, index + source.length, 'after')
+		if (!boundary.ok) return undefined
+		return {
+			start: boundary.value - source.length,
+			end: boundary.value,
 		}
 	}
 

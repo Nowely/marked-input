@@ -1,23 +1,23 @@
 # Mark Feature
 
-Provides the API for framework-level mark components to interact with their token. `MarkHandler` is instantiated by React/Vue wrappers to expose reactive getters/setters for mark token properties.
+Provides command-oriented mark runtime APIs for framework mark components.
 
 ## Components
 
-- **MarkHandler**: Class instantiated per mark component with reactive access to `content`, `value`, `meta`, `slot`, `readOnly`, plus computed `depth`, `hasChildren`, `parent`, `tokens`. Methods:
-    - `change({content, value?, meta?})` — batch update multiple fields and emit change event
-    - `remove()` — delete the mark from the value
-- **MarkOptions**: Configuration type (`controlled` flag for controlled mode)
-- **RefAccessor**: Generic interface for framework ref objects (`{ current: T | null }`)
+- **MarkController**: Public class returned by React/Vue `useMark()`. It exposes read-only snapshots (`value`, `meta`, `slot`, `readOnly`) plus commands:
+    - `update({value, meta, slot})` — serialize a mark patch through `store.value.replaceRange()`
+    - `remove()` — delete the mark through `store.value.replaceRange()`
+- **MarkInfo**: Structural/debug information returned by React/Vue `useMarkInfo()` (`address`, `depth`, `hasNestedMarks`, `key`).
+- **MarkFeature**: Store feature that resolves mark slots. Mark mutation is handled by `MarkController` and the value pipeline.
 
 ## Usage
 
 ```typescript
-import {MarkHandler} from '@markput/core'
+import {MarkController} from '@markput/core'
 
-// Used internally by framework wrappers:
-const handler = new MarkHandler(refAccessor, store)
-handler.change({content: 'new content', value: 'new value'})
+const controller = MarkController.fromToken(store, markToken)
+controller.update({value: 'new value'})
+controller.remove()
 ```
 
-Framework users interact with marks through React/Vue wrapper components, not directly with `MarkHandler`.
+Framework users usually call `useMark()` / `useMarkInfo()` instead of constructing controllers directly.

@@ -22,9 +22,20 @@ function EchoRemovable() {
 	return <Removable value={value} onChange={setValue} />
 }
 
-function EchoFocusable() {
+function EchoUpdatable() {
 	const [value, setValue] = useState(EDITABLE_MARK_VALUE)
-	return <Focusable value={value} onChange={setValue} />
+
+	function UpdatableMark() {
+		const mark = useMark()
+		return <mark onClick={() => mark.update({value: `${mark.value}1`})}>{mark.value}</mark>
+	}
+
+	return (
+		<>
+			<MarkedInput Mark={UpdatableMark} value={value} onChange={setValue} />
+			<pre>{value}</pre>
+		</>
+	)
 }
 
 function ControlledNoEcho({onChange}: {onChange: (value: string) => void}) {
@@ -33,19 +44,61 @@ function ControlledNoEcho({onChange}: {onChange: (value: string) => void}) {
 
 function ControlledRemovableNoEcho({onChange}: {onChange: (value: string) => void}) {
 	function RemovableMark() {
-		const {value, remove} = useMark()
-		return <mark onClick={remove}>{value}</mark>
+		const mark = useMark()
+		return <mark onClick={() => mark.remove()}>{mark.value}</mark>
 	}
 
 	return <MarkedInput Mark={RemovableMark} value="Hello @[world](1)" onChange={onChange} />
 }
 
+function getMarkFocusTarget(element: Element): HTMLElement {
+	const target = element.closest<HTMLElement>('[tabindex]')
+	if (!target) throw new Error('Expected mark token focus target')
+	return target
+}
+
 describe(`Component: MarkedInput`, () => {
 	it.todo('set readOnly on selection')
 
+	it('renders default text as one editable span', async () => {
+		const {container} = await render(<Default defaultValue="plain" />)
+		const editor = container.firstElementChild!
+		const editable = container.querySelector<HTMLElement>('span[contenteditable]')!
+
+		expect(editor.children).toHaveLength(1)
+		expect(editor.firstElementChild).toBe(editable)
+		expect(editable).toHaveTextContent('plain')
+	})
+
+	it('renders mark roots without adapter wrappers', async () => {
+		const {container} = await render(
+			<MarkedInput Mark={({value}) => <mark data-testid="mark">{value}</mark>} defaultValue="hello @[world](1)" />
+		)
+		const editor = container.firstElementChild!
+		const mark = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+
+		expect(mark.parentElement).toBe(editor)
+		expect(mark).toHaveTextContent('world')
+		expect(mark.tabIndex).toBe(0)
+	})
+
+	it('preserves option-provided children for flat mark components', async () => {
+		const markup: Markup = '@(__value__)'
+		const {container} = await render(
+			<MarkedInput
+				Mark={({children}) => <mark data-testid="mark">{children}</mark>}
+				options={[{markup, mark: ({value}) => ({children: value})}]}
+				defaultValue="hello @(world)"
+			/>
+		)
+		const mark = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+
+		expect(mark).toHaveTextContent('world')
+	})
+
 	it('correctly process an annotation type', async () => {
 		const {container} = await render(<Default defaultValue="" />)
-		const [span] = container.querySelectorAll('span')
+		const span = container.querySelector<HTMLElement>('span[contenteditable]')!
 
 		await expect.element(span).toBeInTheDocument()
 
@@ -57,26 +110,24 @@ describe(`Component: MarkedInput`, () => {
 
 	it('support ref focusing target', async () => {
 		const {container} = await render(<Focusable />)
-		const [firstSpan, secondSpan] = container.querySelectorAll('span')
+		const [firstSpan, secondSpan] = container.querySelectorAll<HTMLElement>('span[contenteditable]')
 		const [firstAbbr] = container.querySelectorAll('abbr')
+		const firstAbbrFocusTarget = getMarkFocusTarget(firstAbbr)
 		const firstSpanLength = firstSpan.textContent.length
-		const firstAbbrLength = firstAbbr.textContent.length
 
 		await focusAtStart(firstSpan)
 		await expect.element(firstSpan).toHaveFocus()
 
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
-		await expect.element(firstAbbr).toHaveFocus()
+		await expect.element(firstAbbrFocusTarget).toHaveFocus()
 
-		// Need two steps to move back to the first span
-		await userEvent.keyboard(`{ArrowLeft>2/}`)
+		await userEvent.keyboard('{ArrowLeft}')
 		await expect.element(firstSpan).toHaveFocus()
 
-		// Need two steps to move forward to the first abbreviation
-		await userEvent.keyboard(`{ArrowRight>2/}`)
-		await expect.element(firstAbbr).toHaveFocus()
+		await userEvent.keyboard('{ArrowRight}')
+		await expect.element(firstAbbrFocusTarget).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowRight>${firstAbbrLength + 1}/}`)
+		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(secondSpan).toHaveFocus()
 	})
 
@@ -92,13 +143,10 @@ describe(`Component: MarkedInput`, () => {
 		await expect.element(page.getByText('marks')).not.toBeInTheDocument()
 	})
 
-	it('support editable marks', async () => {
-		await render(<EchoFocusable />)
+	it('support mark controller updates', async () => {
+		await render(<EchoUpdatable />)
 
-		const worldElement = getElement(page.getByText('world').first())
-		await focusAtEnd(worldElement)
-		await userEvent.keyboard('1')
-
+		await userEvent.click(page.getByText('world').first())
 		await expect.element(page.getByText('world1').first()).toBeInTheDocument()
 		await expect.element(page.getByText(/@\[world1]\(Hello! Hello!\)/)).toBeInTheDocument()
 	})

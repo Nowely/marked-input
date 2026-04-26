@@ -1,16 +1,14 @@
 import {filterSuggestions, navigateSuggestions} from '@markput/core'
-import {useEffect, useMemo, useRef, useState, useContext} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 
+import {useMarkput} from '../../lib/hooks/useMarkput'
 import {useOverlay} from '../../lib/hooks/useOverlay'
-import {StoreContext} from '../../lib/providers/StoreContext'
 import {List} from '../Popup/List'
 import {ListItem} from '../Popup/ListItem'
 import {Popup} from '../Popup/Popup'
 
 export const Suggestions = () => {
-	const storeCtx = useContext(StoreContext)
-	if (!storeCtx) throw new Error('Store not found')
-	const store = storeCtx
+	const container = useMarkput(s => s.dom.container)
 	const {match, select, style, ref} = useOverlay()
 	const [active, setActive] = useState(NaN)
 	const data = match?.option.overlay?.data ?? []
@@ -23,7 +21,6 @@ export const Suggestions = () => {
 	filteredRef.current = filtered
 
 	useEffect(() => {
-		const container = store.slots.container()
 		if (!container) return
 
 		const handler = (event: KeyboardEvent) => {
@@ -47,7 +44,7 @@ export const Suggestions = () => {
 
 		container.addEventListener('keydown', handler)
 		return () => container.removeEventListener('keydown', handler)
-	}, [length, select])
+	}, [container, length, select])
 
 	if (!filtered.length) return null
 

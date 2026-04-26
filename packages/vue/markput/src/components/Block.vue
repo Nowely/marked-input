@@ -31,12 +31,18 @@ const otherSlotProps = computed(() => {
 	const {style: _s, className: _c, ...rest} = slotProps.value
 	return Object.keys(rest).length > 0 ? rest : undefined
 })
+
+const setBlockRef = (el: unknown) => {
+	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
+	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLElement | null
+	blockStore.attachContainer(element, props.blockIndex, {action: store.drag.action})
+}
 </script>
 
 <template>
 	<component
 		:is="blockComponent"
-		:ref="(el: any) => blockStore.attachContainer(el?.$el ?? el, props.blockIndex, {action: store.drag.action})"
+		:ref="setBlockRef"
 		data-testid="block"
 		v-bind="otherSlotProps"
 		:class="[styles.Block, slotProps?.className as string | undefined]"
@@ -44,7 +50,7 @@ const otherSlotProps = computed(() => {
 	>
 		<DropIndicator :token="token" position="before" />
 		<DragHandle :token="token" :block-index="blockIndex" />
-		<Token :mark="token" />
+		<Token :token="token" />
 		<DropIndicator :token="token" position="after" />
 		<BlockMenu :token="token" />
 	</component>

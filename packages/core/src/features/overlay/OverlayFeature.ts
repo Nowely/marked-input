@@ -1,11 +1,11 @@
 import {KEYBOARD} from '../../shared/constants'
+import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {CoreOption, Feature, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
-import {createNewSpan} from '../editing'
 import type {Token} from '../parsing'
-import {annotate, toString} from '../parsing'
+import {annotate} from '../parsing'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 
@@ -26,8 +26,41 @@ export class OverlayFeature implements Feature {
 	constructor(private readonly _store: Store) {}
 
 	#probeTrigger() {
-		const match = TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger)
+		const match =
+			TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store) ??
+			this.#probeTriggerFromRecovery()
 		this.match(match)
+	}
+
+	#probeTriggerFromRecovery(): OverlayMatch | undefined {
+		const recovery = this._store.caret.recovery()
+		if (recovery?.kind !== 'caret') return
+
+		const value = this._store.value.current()
+		const cursor = recovery.rawPosition
+		const left = value.slice(0, cursor)
+		const right = value.slice(cursor)
+		const rightWord = right.match(/^\w*/)?.[0] ?? ''
+
+		for (const option of this._store.props.options()) {
+			const trigger = option.overlay?.trigger
+			if (!trigger) continue
+
+			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
+			if (!match) continue
+
+			const [sourceLeft, wordLeft] = match
+			const source = sourceLeft + rightWord
+			const start = cursor - sourceLeft.length
+			return {
+				value: wordLeft + rightWord,
+				source,
+				range: {start, end: start + source.length},
+				span: value,
+				node: window.getSelection()?.anchorNode ?? this._store.dom.container() ?? document.body,
+				option,
+			}
+		}
 	}
 
 	enable() {
@@ -50,8 +83,6 @@ export class OverlayFeature implements Feature {
 			effect(() => {
 				const match = this.match()
 				if (match) {
-					this._store.nodes.input.target = this._store.nodes.focus.target
-
 					listen(window, 'keydown', e => {
 						if (e.key === KEYBOARD.ESC) {
 							this.close()
@@ -64,7 +95,7 @@ export class OverlayFeature implements Feature {
 						e => {
 							const target = e.target instanceof HTMLElement ? e.target : null
 							if (this.element()?.contains(target)) return
-							if (this._store.slots.container()?.contains(target)) return
+							if (this._store.dom.container()?.contains(target)) return
 							this.close()
 						},
 						true
@@ -73,7 +104,7 @@ export class OverlayFeature implements Feature {
 			})
 
 			const selectionChangeHandler = () => {
-				const container = this._store.slots.container()
+				const container = this._store.dom.container()
 				if (!container?.contains(document.activeElement)) return
 
 				const showOverlayOn = this._store.props.showOverlayOn()
@@ -87,10 +118,9 @@ export class OverlayFeature implements Feature {
 			listen(document, 'selectionchange', selectionChangeHandler)
 
 			watch(this.select, overlayEvent => {
-				const Mark = this._store.props.Mark()
 				const {
 					mark,
-					match: {option, span, index, source},
+					match: {option, range},
 				} = overlayEvent
 
 				const markup = option.markup
@@ -106,35 +136,11 @@ export class OverlayFeature implements Feature {
 								value: mark.content,
 							})
 
-				const newSpan = createNewSpan(span, annotation, index, source)
-
-				if (!this._store.nodes.input.target) return
-				const tokens = this._store.parsing.tokens()
-				const inputIndex = this._store.nodes.input.index
-				const inputToken = tokens[inputIndex]
-				if (inputToken.type !== 'text') return
-
-				const candidate = toString(tokens.toSpliced(inputIndex, 1, {...inputToken, content: newSpan}))
-				this._store.value.next(candidate)
-				if (this._store.value.isControlledMode()) {
-					this._store.nodes.input.clear()
-					return
-				}
-
-				this._store.caret.recovery(
-					Mark
-						? {
-								caret: 0,
-								anchor: this._store.nodes.input.next,
-								isNext: true,
-								childIndex: this._store.nodes.input.index,
-							}
-						: {caret: index + annotation.length, anchor: this._store.nodes.input}
-				)
-
-				this._store.nodes.input.content = newSpan
-				this._store.nodes.focus.target = this._store.nodes.input.target
-				this._store.nodes.input.clear()
+				this._store.value.replaceRange(range, annotation, {
+					source: 'overlay',
+					recover: {kind: 'caret', rawPosition: range.start + annotation.length},
+				})
+				this.match(undefined)
 			})
 		})
 	}

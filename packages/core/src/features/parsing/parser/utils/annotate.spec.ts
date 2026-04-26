@@ -34,10 +34,12 @@ describe(`Utility: ${annotate.name}`, () => {
 		expect(result).toBe('<div class>Content</div>')
 	})
 
-	it('keep unreplaced placeholders when param not provided', () => {
+	it('replace missing optional placeholders with empty strings', () => {
 		const markup: Markup = '@[__value__](__meta__)'
 		const result = annotate(markup, {value: 'Hello'})
-		expect(result).toBe('@[Hello](__meta__)')
+		expect(result).toBe('@[Hello]()')
+
+		expect(annotate('#[__slot__]', {})).toBe('#[]')
 	})
 
 	it('handle empty values', () => {
@@ -49,7 +51,7 @@ describe(`Utility: ${annotate.name}`, () => {
 	it('handle optional parameters', () => {
 		const markup: Markup = '@[__value__]'
 		const result = annotate(markup, {})
-		expect(result).toBe('@[__value__]')
+		expect(result).toBe('@[]')
 	})
 
 	it('handle slot content with special characters', () => {

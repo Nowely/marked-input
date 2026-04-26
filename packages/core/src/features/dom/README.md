@@ -1,12 +1,13 @@
-# Editable Feature
+# DOM Feature
 
-Keeps the DOM in sync with token state by managing `contentEditable` attributes and `textContent` on rendered elements. Reacts to `readOnly` changes, selection state, and sync events.
+Owns rendered DOM structure, token-to-element indexing, raw boundary mapping, text reconciliation, focus-by-address, and caret recovery application.
 
 ## Components
 
-- **ContentEditableFeature**: Reactive feature that sets `contentEditable` on text spans (non-drag) or text/mark rows (drag mode), and syncs `textContent` for all text spans including deeply nested marks
-- **isTextTokenSpan**: Identifies bare `<span>` elements representing text tokens (no attributes or only `contenteditable`)
+- **DOM registration**: React/Vue register the root through `store.dom.container` and block controls through `store.dom.controlFor()`.
+- **DOM index**: Built after `lifecycle.rendered()` from direct rendered token roots.
+- **Raw mapping**: Converts DOM boundaries and selections to serialized raw positions for the value pipeline.
+- **Recovery**: Applies `caret.recovery` after renders by placing text carets, selections, or mark-boundary focus. Failed recovery is cleared after the attempt and reported through `dom.diagnostics`.
+- **Text reconciliation**: Keeps structural text roots in sync with parsed text tokens and `readOnly` state.
 
-## Usage
-
-The feature is registered by the Store and runs automatically on state changes. `isTextTokenSpan` is used internally by other features to identify editable text spans.
+Production code must not infer token identity from public data attributes or user refs.

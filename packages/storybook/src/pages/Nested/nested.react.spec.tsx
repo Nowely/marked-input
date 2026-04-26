@@ -1,5 +1,5 @@
 import type {Markup} from '@markput/react'
-import {MarkedInput, useMark} from '@markput/react'
+import {MarkedInput, useMark, useMarkInfo} from '@markput/react'
 import type {ReactNode} from 'react'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-react'
@@ -8,9 +8,13 @@ import {page} from 'vitest/browser'
 describe('Nested Marks Rendering', () => {
 	// Simple Mark component for testing
 	const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
-		const mark = useMark()
+		const mark = useMarkInfo()
 		return (
-			<span data-testid={`mark-depth-${mark.depth}`} data-depth={mark.depth} data-has-children={mark.hasChildren}>
+			<span
+				data-testid={`mark-depth-${mark.depth}`}
+				data-depth={mark.depth}
+				data-has-children={mark.hasNestedMarks}
+			>
 				{children}
 			</span>
 		)
@@ -61,8 +65,8 @@ describe('Nested Marks Rendering', () => {
 
 	it('render different markup types nested', async () => {
 		const TagMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
-			const isTag = mark.content.startsWith('#')
+			const mark = useMarkInfo()
+			const isTag = mark.depth === 0
 			return (
 				<span data-testid={isTag ? 'tag-mark' : 'mention-mark'} data-depth={mark.depth}>
 					{children}
@@ -109,15 +113,16 @@ describe('Nested Marks Rendering', () => {
 
 		const CapturingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
+			const info = useMarkInfo()
 			// Capture whether root mark has children
-			if (mark.depth === 0 && mark.hasChildren) {
+			if (info.depth === 0 && info.hasNestedMarks) {
 				hasChildrenAtDepthZero = children != null
 			}
 			// Render both children and value to show all content
 			return (
 				<span data-testid="mark">
 					{children}
-					{!mark.hasChildren && mark.value}
+					{!info.hasNestedMarks && mark.value}
 				</span>
 			)
 		}
@@ -134,12 +139,27 @@ describe('Nested Marks Rendering', () => {
 		// Verify that root mark with children received them
 		expect(hasChildrenAtDepthZero).toBe(true)
 	})
+
+	it('renders nested token roots without slot-root wrappers', async () => {
+		const markup: Markup = '@[__slot__]'
+		const value = '@[before @[nested] after]'
+		const Mark = ({children, value}: {children?: ReactNode; value?: string}) => (
+			<mark data-testid="mark">{children ?? value}</mark>
+		)
+		const {container} = await render(<MarkedInput Mark={Mark} options={[{markup}]} defaultValue={value} />)
+		const outer = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+		const inner = container.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')[1]
+
+		expect(inner.parentElement).toBe(outer)
+		expect(Array.from(outer.children)).toContain(inner)
+		expect(outer.querySelector('span > span > span')).toBeNull()
+	})
 })
 
 describe('Nested Marks Tree Navigation', () => {
 	it('provide correct depth information', async () => {
 		const DepthMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
+			const mark = useMarkInfo()
 			return <span data-depth={mark.depth}>{children}</span>
 		}
 
@@ -155,8 +175,8 @@ describe('Nested Marks Tree Navigation', () => {
 
 	it('provide hasChildren information', async () => {
 		const ChildrenMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
-			return <span data-has-children={mark.hasChildren}>{children}</span>
+			const mark = useMarkInfo()
+			return <span data-has-children={mark.hasNestedMarks}>{children}</span>
 		}
 
 		const markup: Markup = '@[__slot__]'
@@ -170,13 +190,13 @@ describe('Nested Marks Tree Navigation', () => {
 		expect(hasChildrenValues).toEqual(['true', 'false'])
 	})
 
-	it('provide children array', async () => {
-		let capturedChildrenCount = 0
+	it('provide nested mark information', async () => {
+		let hasNestedMarks = false
 
 		const ChildrenCountMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
+			const mark = useMarkInfo()
 			if (mark.depth === 0) {
-				capturedChildrenCount = mark.tokens.length
+				hasNestedMarks = mark.hasNestedMarks
 			}
 			return <span>{children}</span>
 		}
@@ -186,8 +206,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 		await render(<MarkedInput Mark={ChildrenCountMark} value={value} options={[{markup}]} />)
 
-		// Should have 5 children: text, mark, text, mark, text
-		expect(capturedChildrenCount).toBeGreaterThan(0)
+		expect(hasNestedMarks).toBe(true)
 	})
 })
 
@@ -258,7 +277,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle deeply nested structure', async () => {
 		const TestMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
+			const mark = useMarkInfo()
 			return <span data-depth={mark.depth}>{children}</span>
 		}
 
@@ -276,9 +295,9 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle mixed nested and flat marks', async () => {
 		const MixedMark = ({children}: {value?: string; children?: ReactNode}) => {
-			const mark = useMark()
+			const mark = useMarkInfo()
 			return (
-				<span data-testid="mark" data-has-children={mark.hasChildren}>
+				<span data-testid="mark" data-has-children={mark.hasNestedMarks}>
 					{children}
 				</span>
 			)
@@ -296,7 +315,8 @@ describe('Complex Nesting Scenarios', () => {
 	it('render nested structure when Mark component renders children', async () => {
 		const RenderingMark = ({children}: {value?: string; children?: ReactNode}) => {
 			const mark = useMark()
-			return <span data-testid="rendering-mark">{mark.hasChildren ? children : mark.slot}</span>
+			const info = useMarkInfo()
+			return <span data-testid="rendering-mark">{info.hasNestedMarks ? children : mark.slot}</span>
 		}
 
 		const markup: Markup = '@[__slot__]'

@@ -1,27 +1,54 @@
-import {isHtmlElement} from '../../shared/checkers'
-import type {NodeProxy} from '../../shared/classes'
 import {KEYBOARD} from '../../shared/constants'
+import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
 import {effectScope, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {isFullSelection} from '../caret'
-import {captureMarkupPaste, consumeMarkupPaste, getBoundaryOffset} from '../clipboard'
-import {deleteMark} from '../editing/utils/deleteMark'
+import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
+import type {Token} from '../parsing'
+
+type InputTargetRange = {
+	readonly startContainer: Node
+	readonly startOffset: number
+	readonly endContainer: Node
+	readonly endOffset: number
+}
+
+type SpanInputTarget = {
+	content: string
+	caret: number
+}
+
+type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reason']
 
 export function enableInput(store: Store): () => void {
-	const container = store.slots.container()
+	const container = store.dom.container()
 	if (!container) return () => {}
+	let compositionRange: RawRange | undefined
 
 	const scope = effectScope(() => {
-		listen(container, 'keydown', e => {
-			if (!store.slots.isBlock()) {
-				handleDelete(store, e)
-			}
-		})
-
 		listen(container, 'paste', e => {
-			const c = store.slots.container()
+			const c = store.dom.container()
 			if (c) captureMarkupPaste(e, c)
 			handlePaste(store, e)
+		})
+
+		listen(container, 'compositionstart', () => {
+			const selection = store.dom.readRawSelection()
+			compositionRange = selection.ok ? selection.value.range : undefined
+			store.dom.compositionStarted()
+		})
+
+		listen(container, 'compositionend', e => {
+			const range = compositionRange
+			compositionRange = undefined
+			store.dom.compositionEnded()
+			if (store.slots.isBlock()) return
+			if (!range) return
+			const data = e.data
+			store.value.replaceRange(range, data, {
+				source: 'input',
+				recover: {kind: 'caret', rawPosition: range.start + data.length},
+			})
 		})
 
 		listen(
@@ -32,60 +59,38 @@ export function enableInput(store: Store): () => void {
 			},
 			true
 		)
+
+		listen(container, 'keydown', e => {
+			handleDeleteKey(store, e)
+		})
 	})
 
 	return () => scope()
 }
 
-function handleDelete(store: Store, event: KeyboardEvent) {
-	const {focus} = store.nodes
+function handleDeleteKey(store: Store, event: KeyboardEvent): void {
+	if (store.slots.isBlock()) return
+	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
-	if (event.key !== KEYBOARD.DELETE && event.key !== KEYBOARD.BACKSPACE) return
-
-	if (focus.isMark) {
-		if (focus.isEditable) {
-			if (event.key === KEYBOARD.BACKSPACE && !focus.isCaretAtBeginning) return
-			if (event.key === KEYBOARD.DELETE && !focus.isCaretAtEnd) return
-		}
+	if (store.caret.selecting() === 'all' && isFullSelection(store)) {
 		event.preventDefault()
-		deleteMark('self', store)
+		replaceAllContentWith(store, '')
 		return
 	}
+	if (store.caret.selecting() === 'all') store.caret.selecting(undefined)
 
-	if (event.key === KEYBOARD.BACKSPACE) {
-		if (focus.isSpan && focus.isCaretAtBeginning && focus.prev.target) {
-			event.preventDefault()
-			deleteMark('prev', store)
-			return
-		}
-	}
+	const raw = store.dom.readRawSelection()
+	if (!raw.ok) return
 
-	if (event.key === KEYBOARD.DELETE) {
-		if (focus.isSpan && focus.isCaretAtEnd && focus.next.target) {
-			event.preventDefault()
-			deleteMark('next', store)
-			return
-		}
-	}
+	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
+	const range = rangeForDelete(store, inputType, raw.value.range)
+	if (!range) return
 
-	if (focus.isSpan && focus.isEditable && window.getSelection()?.isCollapsed) {
-		const content = focus.content
-		const caret = focus.caret
-		if (event.key === KEYBOARD.BACKSPACE && caret > 0) {
-			event.preventDefault()
-			focus.content = content.slice(0, caret - 1) + content.slice(caret)
-			focus.caret = caret - 1
-			store.value.change()
-			return
-		}
-		if (event.key === KEYBOARD.DELETE && caret >= 0 && caret < content.length) {
-			event.preventDefault()
-			focus.content = content.slice(0, caret) + content.slice(caret + 1)
-			focus.caret = caret
-			store.value.change()
-			return
-		}
-	}
+	event.preventDefault()
+	store.value.replaceRange(range, '', {
+		source: 'input',
+		recover: {kind: 'caret', rawPosition: range.start},
+	})
 }
 
 export function handleBeforeInput(store: Store, event: InputEvent): void {
@@ -104,70 +109,23 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 
 	if (store.slots.isBlock()) return
 
-	const {focus} = store.nodes
-	if (!focus.target || !focus.isEditable) return
+	const raw = rawRangeFromInputEvent(store, event)
+	if (!raw.ok) return
 
-	if (
-		(event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') &&
-		handleMarkputSpanPaste(store, focus, event)
-	) {
-		return
-	}
+	const replacement = replacementForInput(store, event)
+	if (replacement === undefined) return
 
-	if (applySpanInput(focus, event)) {
-		store.value.change()
-	}
-}
-
-function handleMarkputSpanPaste(store: Store, focus: NodeProxy, event: InputEvent): boolean {
-	const container = store.slots.container()
-	if (!container) return false
-	const markup = consumeMarkupPaste(container)
-	if (!markup) return false
+	const range = rangeForInput(store, event, raw.value.range)
+	if (!range) return
 
 	event.preventDefault()
-
-	const tokens = store.parsing.tokens()
-	const token = tokens[focus.index]
-	const offset = focus.caret
-	const currentValue = store.value.current()
-
-	const ranges = event.getTargetRanges()
-	const childElement = container.children[focus.index]
-	let rawInsertPos: number
-	let rawEndPos: number
-	if (ranges.length > 0) {
-		const cumStart = getBoundaryOffset(ranges[0], childElement, true)
-		const cumEnd = getBoundaryOffset(ranges[0], childElement, false)
-		rawInsertPos = token.position.start + cumStart
-		rawEndPos = token.position.start + cumEnd
-	} else {
-		rawInsertPos = token.position.start + offset
-		rawEndPos = token.position.start + offset
-	}
-
-	const caretPos = rawInsertPos + markup.length
-	const newValue = currentValue.slice(0, rawInsertPos) + markup + currentValue.slice(rawEndPos)
-	store.value.next(newValue)
-	if (store.value.isControlledMode()) return true
-
-	const newTokens = store.parsing.tokens()
-	let targetIdx = newTokens.findIndex(
-		t => t.type === 'text' && caretPos >= t.position.start && caretPos <= t.position.end
-	)
-	if (targetIdx === -1) targetIdx = newTokens.length - 1
-	const caretWithinToken = caretPos - newTokens[targetIdx].position.start
-
-	store.caret.recovery({
-		anchor: store.nodes.focus,
-		caret: caretWithinToken,
-		isNext: true,
-		childIndex: targetIdx - 2,
+	store.value.replaceRange(range, replacement, {
+		source: 'input',
+		recover: {kind: 'caret', rawPosition: range.start + replacement.length},
 	})
-	return true
 }
 
-export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
+export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boolean {
 	const offset = focus.caret
 	const content = focus.content
 	let newContent: string
@@ -229,6 +187,78 @@ export function applySpanInput(focus: NodeProxy, event: InputEvent): boolean {
 	return true
 }
 
+function rawRangeFromInputEvent(store: Store, event: InputEvent): RawSelectionResult {
+	const ranges = getTargetRanges(event)
+	if (ranges.length === 0) return store.dom.readRawSelection()
+	return rawRangeFromTargetRange(store, ranges[0])
+}
+
+function rawRangeFromTargetRange(store: Store, range: InputTargetRange): RawSelectionResult {
+	const start = store.dom.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
+	const end = store.dom.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
+	if (!start.ok) return {ok: false, reason: rawSelectionReason(start)}
+	if (!end.ok) return {ok: false, reason: rawSelectionReason(end)}
+	return {
+		ok: true,
+		value: {
+			range:
+				start.value <= end.value ? {start: start.value, end: end.value} : {start: end.value, end: start.value},
+		},
+	}
+}
+
+function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailureReason {
+	if (result.ok) return 'invalidBoundary'
+	if (result.reason === 'composing') return 'invalidBoundary'
+	return result.reason
+}
+
+function getTargetRanges(event: InputEvent): readonly InputTargetRange[] {
+	return event.getTargetRanges()
+}
+
+function replacementForInput(store: Store, event: InputEvent): string | undefined {
+	if (event.inputType.startsWith('delete')) return ''
+	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
+		const container = store.dom.container()
+		const markup = container ? consumeMarkupPaste(container) : undefined
+		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
+	}
+	if (event.inputType === 'insertText') return event.data ?? ''
+	return undefined
+}
+
+function rangeForInput(store: Store, event: InputEvent, range: RawRange): RawRange | undefined {
+	if (!event.inputType.startsWith('delete')) return range
+	return rangeForDelete(store, event.inputType, range)
+}
+
+function rangeForDelete(store: Store, inputType: string, range: RawRange): RawRange | undefined {
+	if (range.start !== range.end) return range
+
+	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
+	if (adjacentMark) return adjacentMark
+
+	if (inputType.endsWith('Backward') && range.start > 0) {
+		return {start: range.start - 1, end: range.start}
+	}
+	if (inputType.endsWith('Forward') && range.end < store.value.current().length) {
+		return {start: range.start, end: range.end + 1}
+	}
+	return undefined
+}
+
+function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): RawRange | undefined {
+	for (const token of tokens) {
+		const nested = token.type === 'mark' ? adjacentMarkRange(token.children, position, backward) : undefined
+		if (nested) return nested
+		if (token.type === 'mark' && (backward ? token.position.end === position : token.position.start === position)) {
+			return token.position
+		}
+	}
+	return undefined
+}
+
 export function handlePaste(store: Store, event: ClipboardEvent): void {
 	const selecting = store.caret.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
@@ -237,27 +267,16 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	}
 
 	event.preventDefault()
-	const c = store.slots.container()
+	const c = store.dom.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	replaceAllContentWith(store, newContent)
 }
 
 export function replaceAllContentWith(store: Store, newContent: string): void {
-	store.nodes.focus.target = null
 	store.caret.selecting(undefined)
-	store.value.next(newContent)
-	if (store.value.isControlledMode()) return
-
-	queueMicrotask(() => {
-		const rawFirstChild = store.slots.container()?.firstChild
-		const firstChild = isHtmlElement(rawFirstChild) ? rawFirstChild : null
-		if (firstChild) {
-			store.caret.recovery({
-				anchor: store.nodes.focus,
-				caret: newContent.length,
-			})
-			firstChild.focus()
-		}
+	store.value.replaceAll(newContent, {
+		source: 'input',
+		recover: {kind: 'caret', rawPosition: newContent.length},
 	})
 }

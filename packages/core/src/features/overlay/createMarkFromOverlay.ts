@@ -10,8 +10,8 @@ export function createMarkFromOverlay(match: OverlayMatch, value: string, meta?:
 		meta,
 		content: '',
 		position: {
-			start: match.index,
-			end: match.index + match.span.length,
+			start: match.range.start,
+			end: match.range.end,
 		},
 		descriptor: {
 			markup,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {watch} from 'vue'
+import {onMounted, onUpdated} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {useStore} from '../lib/hooks/useStore'
@@ -11,22 +11,19 @@ const result = useMarkput(s => ({
 	isBlock: s.slots.isBlock,
 	tokens: s.parsing.tokens,
 	key: s.key,
-	lifecycleEmit: s.lifecycle,
 }))
 
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
-	store.slots.container((resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null)
+	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
+	store.dom.container(element)
 }
 
 const containerComponent = useMarkput(s => s.slots.containerComponent)
 const containerProps = useMarkput(s => s.slots.containerProps)
 
-watch(
-	() => result.value.tokens,
-	() => result.value.lifecycleEmit.rendered(),
-	{flush: 'post', immediate: true}
-)
+onMounted(() => store.lifecycle.rendered())
+onUpdated(() => store.lifecycle.rendered())
 </script>
 
 <template>
@@ -40,7 +37,7 @@ watch(
 			/>
 		</template>
 		<template v-else>
-			<Token v-for="token in result.tokens" :key="result.key.get(token)" :mark="token" />
+			<Token v-for="token in result.tokens" :key="result.key.get(token)" :token="token" />
 		</template>
 	</component>
 </template>

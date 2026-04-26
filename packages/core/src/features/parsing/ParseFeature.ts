@@ -1,14 +1,17 @@
-import {signal, computed, event, effectScope, watch} from '../../shared/signals/index.js'
+import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {toString} from './parser/utils/toString'
-import {getTokensByUI, parseWithParser} from './utils/valueParser'
+import {createTokenIndex, type TokenIndex} from './tokenIndex'
+import {parseWithParser} from './utils/valueParser'
 
 export class ParsingFeature implements Feature {
 	readonly tokens = signal<Token[]>([])
+	readonly #generation = signal(0)
+	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
 
 	readonly parser: Computed<Parser | undefined> = computed(() => {
 		if (!this._store.mark.enabled()) return
@@ -29,6 +32,16 @@ export class ParsingFeature implements Feature {
 		return parseWithParser(this._store, value)
 	}
 
+	acceptTokens(tokens: Token[]): void {
+		batch(
+			() => {
+				this.tokens(tokens)
+				this.#generation(this.#generation() + 1)
+			},
+			{mutable: true}
+		)
+	}
+
 	enable() {
 		if (this.#scope) return
 		this.sync()
@@ -44,18 +57,14 @@ export class ParsingFeature implements Feature {
 	}
 
 	sync(value = this._store.value.current()) {
-		this.tokens(this.parseValue(value))
+		this.acceptTokens(this.parseValue(value))
 	}
 
 	#subscribeParse() {
 		watch(this.reparse, () => {
 			if (this._store.caret.recovery()) {
 				const text = toString(this.tokens())
-				this.tokens(this.parseValue(text))
-				return
-			}
-			if (this._store.nodes.focus.target) {
-				this.tokens(getTokensByUI(this._store))
+				this.acceptTokens(this.parseValue(text))
 				return
 			}
 			this.sync()

@@ -4,21 +4,26 @@ import {memo} from 'react'
 import {useMarkput} from '../lib/hooks/useMarkput'
 import {TokenContext} from '../lib/providers/TokenContext'
 
-export const Token = memo(({mark}: {mark: TokenType}) => {
-	const {resolveMarkSlot, key} = useMarkput(s => ({
+export const Token = memo(({token}: {token: TokenType}) => {
+	const {resolveMarkSlot, key, index, store} = useMarkput(s => ({
 		resolveMarkSlot: s.mark.slot,
 		key: s.key,
+		index: s.parsing.index,
+		store: s,
 	}))
-	const [Component, props] = resolveMarkSlot(mark)
+	const path = index.pathFor(token)
+	const address = path ? index.addressFor(path) : undefined
+	if (!address) return null
 
+	const [Component, props] = resolveMarkSlot(token)
 	const children =
-		mark.type === 'mark' && mark.children.length > 0
-			? mark.children.map(child => <Token key={key.get(child)} mark={child} />)
+		token.type === 'mark' && token.children.length > 0
+			? token.children.map(child => <Token key={key.get(child)} token={child} />)
 			: undefined
 
 	return (
-		<TokenContext value={mark}>
-			<Component children={children} {...props} />
+		<TokenContext value={{store, token, address}}>
+			{children ? <Component {...props}>{children}</Component> : <Component {...props} />}
 		</TokenContext>
 	)
 })

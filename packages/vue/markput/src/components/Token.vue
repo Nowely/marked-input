@@ -9,28 +9,31 @@ import {TOKEN_KEY} from '../lib/providers/tokenKey'
 const Token = defineComponent({
 	name: 'Token',
 	props: {
-		mark: {type: Object as PropType<TokenType>, required: true},
+		token: {type: Object as PropType<TokenType>, required: true},
 	},
-	setup(props): () => VNode {
+	setup(props): () => VNode | null {
 		provide(
 			TOKEN_KEY,
-			toRef(() => props.mark)
+			toRef(() => props.token)
 		)
 
 		const store = useStore()
 		const key = store.key
 		const resolveMarkSlot = useMarkput(s => s.mark.slot)
+		const index = useMarkput(s => s.parsing.index)
 
 		return () => {
-			const [Comp, compProps] = resolveMarkSlot.value(props.mark)
+			const token = props.token
+			const path = index.value.pathFor(token)
+			if (!path || !index.value.addressFor(path)) return null
 
-			const mark = props.mark
+			const [Comp, compProps] = resolveMarkSlot.value(token)
 			const children =
-				mark.type === 'mark' && mark.children.length > 0
-					? () => mark.children.map(child => h(markRaw(Token), {key: key.get(child), mark: child}))
+				token.type === 'mark' && token.children.length > 0
+					? () => token.children.map(child => h(markRaw(Token), {key: key.get(child), token: child}))
 					: undefined
 
-			return h(Comp, compProps, children)
+			return children ? h(Comp, compProps, children) : h(Comp, compProps)
 		}
 	},
 })

@@ -13,6 +13,12 @@ const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
 
 const {Default} = composeStories(BaseStories)
 
+function getMarkFocusTarget(element: Element): HTMLElement {
+	const target = element.closest<HTMLElement>('[tabindex]')
+	if (!target) throw new Error('Expected mark token focus target')
+	return target
+}
+
 describe('API: keyboard', () => {
 	it('support the "Backspace" button', async () => {
 		await render(withProps(Default, {defaultValue: KEYBOARD_DEFAULT_VALUE}))
@@ -21,7 +27,7 @@ describe('API: keyboard', () => {
 		await focusAtEnd(tailSpan)
 
 		await userEvent.keyboard('{Backspace}')
-		await expect.element(tailSpan).toHaveTextContent('')
+		await expect.element(page.getByText('!')).not.toBeInTheDocument()
 
 		const mark = page.getByText(/mark/)
 		await expect.element(mark).toBeInTheDocument()
@@ -34,7 +40,7 @@ describe('API: keyboard', () => {
 		await expect.element(headSpan).toHaveTextContent('Hello')
 		await expect.element(headSpan).toHaveFocus()
 		await userEvent.keyboard('{Backspace>7/}')
-		expect(headSpan.textContent).toBe('')
+		await expect.element(page.getByText(/Hello/)).not.toBeInTheDocument()
 	})
 
 	it('support the "Delete" button', async () => {
@@ -44,7 +50,7 @@ describe('API: keyboard', () => {
 		await focusAtStart(firstSpan)
 
 		await userEvent.keyboard('{Delete>6/}')
-		await expect.element(firstSpan).toHaveTextContent('')
+		await expect.element(page.getByText(/Hello/)).not.toBeInTheDocument()
 
 		const mark = page.getByText(/mark/)
 		await expect.element(mark).toBeInTheDocument()
@@ -56,7 +62,7 @@ describe('API: keyboard', () => {
 		await expect.element(secondSpan).toHaveTextContent('!')
 		await focusAtStart(secondSpan)
 		await userEvent.keyboard('{Delete>2/}')
-		await expect.element(secondSpan).toHaveTextContent('')
+		await expect.element(page.getByText('!')).not.toBeInTheDocument()
 	})
 
 	it('support focus navigation between spans', async () => {
@@ -66,11 +72,18 @@ describe('API: keyboard', () => {
 		await focusAtStart(firstSpan)
 
 		const secondSpan = getElement(page.getByText('!'))
+		const markFocusTarget = getMarkFocusTarget(getElement(page.getByText(/mark/)))
 		const firstSpanLength = firstSpan.textContent.length
 		await userEvent.keyboard(`{ArrowRight>${firstSpanLength + 1}/}`)
+		await expect.element(markFocusTarget).toHaveFocus()
+
+		await userEvent.keyboard('{ArrowRight}')
 		await expect.element(secondSpan).toHaveFocus()
 
-		await userEvent.keyboard(`{ArrowLeft>1/}`)
+		await userEvent.keyboard('{ArrowLeft}')
+		await expect.element(markFocusTarget).toHaveFocus()
+
+		await userEvent.keyboard('{ArrowLeft}')
 		await expect.element(firstSpan).toHaveFocus()
 	})
 

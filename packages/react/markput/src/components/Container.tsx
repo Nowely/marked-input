@@ -1,33 +1,29 @@
-import {memo, useLayoutEffect, useContext} from 'react'
+import {memo, useLayoutEffect} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
-import {StoreContext} from '../lib/providers/StoreContext'
 import {Block} from './Block'
 import {Token} from './Token'
 
 export const Container = memo(() => {
-	const storeCtx = useContext(StoreContext)
-	if (!storeCtx) throw new Error('Store not found')
-	const store = storeCtx
-
-	const {isBlock, tokens, key, lifecycleEmit, Component, props} = useMarkput(s => ({
+	const {dom, lifecycle, isBlock, tokens, key, Component, props} = useMarkput(s => ({
+		dom: s.dom,
+		lifecycle: s.lifecycle,
 		isBlock: s.slots.isBlock,
 		tokens: s.parsing.tokens,
 		key: s.key,
-		lifecycleEmit: s.lifecycle,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,
 	}))
 
 	useLayoutEffect(() => {
-		lifecycleEmit.rendered()
-	}, [tokens, lifecycleEmit])
+		lifecycle.rendered()
+	})
 
 	return (
-		<Component ref={store.slots.container} {...props}>
+		<Component ref={dom.container} {...props}>
 			{isBlock
 				? tokens.map(t => <Block key={key.get(t)} token={t} />)
-				: tokens.map(t => <Token key={key.get(t)} mark={t} />)}
+				: tokens.map(t => <Token key={key.get(t)} token={t} />)}
 		</Component>
 	)
 })

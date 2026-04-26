@@ -13,7 +13,7 @@ export function enableSelection(store: Store): () => void {
 		})
 
 		listen(document, 'mousemove', e => {
-			const container = store.slots.container()
+			const container = store.dom.container()
 			if (!container) return
 			const currentIsPressed = isPressed
 			const isNotInnerSome = !container.contains(pressedNode) || pressedNode !== e.target
@@ -38,21 +38,26 @@ export function enableSelection(store: Store): () => void {
 		})
 
 		listen(document, 'selectionchange', () => {
-			if (store.caret.selecting() !== 'drag') return
 			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) {
+			if (store.caret.selecting() === 'drag' && (!sel || sel.isCollapsed)) {
 				store.caret.selecting(undefined)
 			}
+			if (!sel?.focusNode) return
+
+			const result = store.dom.locateNode(sel.focusNode)
+			if (!result.ok) {
+				if (result.reason === 'control') return
+				store.caret.location(undefined)
+				return
+			}
+
+			const role = result.value.textElement?.contains(sel.focusNode) ? 'text' : 'markDescendant'
+			store.caret.location({address: result.value.address, role})
 		})
 
 		effect(() => {
 			const value = store.caret.selecting()
-			if (value !== 'drag') return
-			const container = store.slots.container()
-			if (!container) return
-			container
-				.querySelectorAll<HTMLElement>('[contenteditable="true"]')
-				.forEach(el => (el.contentEditable = 'false'))
+			if (value === 'drag') store.dom.reconcile()
 		})
 	})
 

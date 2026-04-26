@@ -1,4 +1,4 @@
-import {signal, computed} from '../../shared/signals/index.js'
+import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CSSProperties, CoreSlotProps, Feature, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
@@ -32,8 +32,6 @@ function buildContainerProps(
 }
 
 export class SlotsFeature implements Feature {
-	readonly container = signal<HTMLDivElement | null>(null)
-
 	readonly isBlock: Computed<boolean> = computed(() => this._store.props.layout() === 'block')
 	readonly isDraggable: Computed<boolean> = computed(() => !!this._store.props.draggable())
 	readonly containerComponent: Computed<Slot> = computed(() => resolveSlot('container', this._store.props.slots()))

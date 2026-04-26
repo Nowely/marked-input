@@ -152,15 +152,10 @@ describe('ParsingFeature', () => {
 			store.parsing.disable()
 		})
 
-		it('re-parses from current value when parser changes and focus has stale content', () => {
+		it('re-parses from current value when parser changes', () => {
 			store.value.current('hello @[world]')
 			store.parsing.enable()
 			store.parsing.sync()
-			const container = document.createElement('div')
-			const target = document.createElement('span')
-			target.textContent = 'stale @[ui]'
-			container.append(target)
-			store.nodes.focus.target = target
 
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
 
@@ -180,7 +175,7 @@ describe('ParsingFeature', () => {
 			store.parsing.enable()
 			store.parsing.sync()
 
-			store.caret.recovery({caret: 0, anchor: store.nodes.focus})
+			store.caret.recovery({kind: 'caret', rawPosition: 0})
 			store.parsing.reparse()
 
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
@@ -193,7 +188,7 @@ describe('ParsingFeature', () => {
 			store.value.current('hello')
 			store.parsing.enable()
 			store.parsing.sync()
-			store.caret.recovery({caret: 0, anchor: store.nodes.focus})
+			store.caret.recovery({kind: 'caret', rawPosition: 0})
 
 			let callCount = 0
 			const original = store.parsing.tokens
@@ -208,7 +203,7 @@ describe('ParsingFeature', () => {
 			expect(callCount).toBe(1)
 
 			callCount = 0
-			store.caret.recovery({caret: 1, anchor: store.nodes.focus})
+			store.caret.recovery({kind: 'caret', rawPosition: 1})
 			expect(callCount).toBe(0)
 
 			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore

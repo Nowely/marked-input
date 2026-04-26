@@ -1,6 +1,6 @@
 import {MarkedInput, useMark} from '@markput/vue'
 import type {Meta, StoryObj} from '@storybook/vue3-vite'
-import {defineComponent, h, ref, onMounted, watch, type ComponentPublicInstance} from 'vue'
+import {defineComponent, h} from 'vue'
 
 export default {
 	title: 'MarkedInput/Mark',
@@ -13,29 +13,7 @@ type Story = StoryObj<Meta<typeof MarkedInput>>
 const DynamicMark = defineComponent({
 	setup() {
 		const mark = useMark()
-		const elRef = ref<HTMLElement | null>(null)
-
-		onMounted(() => {
-			if (elRef.value) elRef.value.textContent = mark.value ?? null
-		})
-
-		watch(
-			() => mark.value,
-			val => {
-				if (elRef.value) elRef.value.textContent = val ?? null
-			}
-		)
-
-		return () =>
-			h('mark', {
-				ref: (el: Element | ComponentPublicInstance | null) => {
-					// oxlint-disable-next-line no-unsafe-type-assertion
-					elRef.value = el as HTMLElement | null
-					// oxlint-disable-next-line no-unsafe-type-assertion
-					mark.ref.current = el as HTMLElement | null
-				},
-				contentEditable: true,
-			})
+		return () => h('mark', mark.value)
 	},
 })
 
@@ -63,34 +41,19 @@ export const Removable: Story = {
 const Abbr = defineComponent({
 	setup() {
 		const mark = useMark()
-		const elRef = ref<HTMLElement | null>(null)
-
-		onMounted(() => {
-			if (elRef.value) elRef.value.textContent = mark.value ?? null
-		})
-
-		watch(
-			() => mark.value,
-			val => {
-				if (elRef.value) elRef.value.textContent = val ?? null
-			}
-		)
 
 		return () =>
-			h('abbr', {
-				ref: (el: Element | ComponentPublicInstance | null) => {
-					// oxlint-disable-next-line no-unsafe-type-assertion
-					elRef.value = el as HTMLElement | null
-					// oxlint-disable-next-line no-unsafe-type-assertion
-					mark.ref.current = el as HTMLElement | null
+			h(
+				'abbr',
+				{
+					title: mark.meta,
+					style: {
+						outline: 'none',
+						whiteSpace: 'pre-wrap',
+					},
 				},
-				title: mark.meta,
-				contentEditable: true,
-				style: {
-					outline: 'none',
-					whiteSpace: 'pre-wrap',
-				},
-			})
+				mark.value
+			)
 	},
 })
 

@@ -328,7 +328,7 @@ describe('Feature: drag rows', () => {
 			const {container} = await render(<MarkdownDrag />)
 			const before = getAllRows(container).length
 			const markBlock = getAllRows(container)[0]
-			markBlock.focus()
+			await focusAtEnd(getEditableInRow(markBlock))
 			await userEvent.keyboard('{Enter}')
 
 			expect(getAllRows(container)).toHaveLength(before + 1)
@@ -759,6 +759,22 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			expect(getRawValue(container)).not.toBe('X')
 			expect(getRawValue(container)).toContain('First block of plain text')
+		})
+
+		it('ignores beforeinput inside a drag control', async () => {
+			const {container} = await render(<PlainTextDrag />)
+			const before = getRawValue(container)
+			const row = getAllRows(container)[0]
+			await userEvent.hover(row)
+			const handle = await page
+				.elementLocator(row)
+				.getByRole('button', {name: 'Drag to reorder or click for options'})
+				.findElement()
+
+			await userEvent.click(handle)
+			await userEvent.keyboard('x')
+
+			expect(getRawValue(container)).toBe(before)
 		})
 
 		it('append character after last mark when typing at end of mark row', async () => {

@@ -13,14 +13,30 @@ const props = defineProps<{token: TokenType}>()
 
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
+const index = useMarkput(s => s.parsing.index)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
+
+let menuControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getMenuControlRef = () => {
+	if (menuControlRef) return menuControlRef
+	const path = index.value.pathFor(props.token)
+	if (!path) return undefined
+	menuControlRef = store.dom.controlFor(path)
+	return menuControlRef
+}
+
+const setMenuRef = (el: HTMLElement | null) => {
+	blockStore.attachMenu(el)
+	getMenuControlRef()?.(el)
+}
 </script>
 
 <template>
 	<Popup
 		v-if="menuOpen"
-		:attach-ref="el => blockStore.attachMenu(el)"
+		:attach-ref="setMenuRef"
 		:style="{top: menuPosition.top + 'px', left: menuPosition.left + 'px'}"
 	>
 		<List>

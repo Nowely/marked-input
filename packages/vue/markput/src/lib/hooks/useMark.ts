@@ -1,12 +1,12 @@
-import type {MarkOptions, RefAccessor} from '@markput/core'
-import {MarkHandler} from '@markput/core'
-import {inject, ref, watch, onMounted} from 'vue'
+import type {MarkController} from '@markput/core'
+import {MarkController as CoreMarkController} from '@markput/core'
+import {inject} from 'vue'
 
 import {TOKEN_KEY} from '../providers/tokenKey'
 import {useMarkput} from './useMarkput'
 import {useStore} from './useStore'
 
-export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOptions = {}): MarkHandler<T> => {
+export const useMark = (): MarkController => {
 	const store = useStore()
 	const tokenRef = inject(TOKEN_KEY)
 
@@ -17,30 +17,6 @@ export const useMark = <T extends HTMLElement = HTMLElement>(options: MarkOption
 	const token = tokenRef.value
 	if (token.type !== 'mark') throw new Error('useMark must be called within a mark token context')
 
-	const elRef = ref<T | null>(null)
-	const refAccessor: RefAccessor<T> = {
-		get current() {
-			// oxlint-disable-next-line no-unsafe-return
-			return elRef.value
-		},
-		set current(v: T | null) {
-			elRef.value = v
-		},
-	}
-
-	const mark = new MarkHandler<T>({ref: refAccessor, store, token})
-
-	onMounted(() => {
-		const el = elRef.value
-		if (el instanceof HTMLElement && !options.controlled) {
-			el.textContent = token.content
-		}
-	})
-
-	const readOnly = useMarkput(s => s.props.readOnly)
-	watch(readOnly, val => {
-		mark.readOnly = val
-	})
-
-	return mark
+	useMarkput(s => s.props.readOnly)
+	return CoreMarkController.fromToken(store, token)
 }

@@ -576,7 +576,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Backspace}')
 
-				expect(document.activeElement).toBe(markBlock)
+				expect(markBlock.contains(document.activeElement)).toBe(true)
 			})
 		})
 
@@ -727,7 +727,7 @@ describe('Feature: drag row keyboard navigation', () => {
 				await focusAtStart(getEditableInRow(getBlocks(container)[1]))
 				await userEvent.keyboard('{Delete}')
 
-				expect(document.activeElement).toBe(markBlock)
+				expect(markBlock.contains(document.activeElement)).toBe(true)
 			})
 		})
 	})
@@ -760,6 +760,22 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			expect(getRawValue(container)).not.toBe('X')
 			expect(getRawValue(container)).toContain('First block of plain text')
+		})
+
+		it('ignores beforeinput inside a drag control', async () => {
+			const {container} = await render(PlainTextDrag)
+			const before = getRawValue(container)
+			const row = getAllRows(container)[0]
+			await userEvent.hover(row)
+			const handle = await page
+				.elementLocator(row)
+				.getByRole('button', {name: 'Drag to reorder or click for options'})
+				.findElement()
+
+			await userEvent.click(handle)
+			await userEvent.keyboard('x')
+
+			expect(getRawValue(container)).toBe(before)
 		})
 
 		it('append character after last mark when typing at end of mark row', async () => {

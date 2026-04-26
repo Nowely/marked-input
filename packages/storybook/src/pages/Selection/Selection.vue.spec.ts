@@ -1,17 +1,31 @@
+import {MarkedInput} from '@markput/vue'
 import {composeStories} from '@storybook/vue3-vite'
 import {describe, expect, it} from 'vitest'
 import {render} from 'vitest-browser-vue'
+import {defineComponent, h} from 'vue'
 
 import * as Stories from './Selection.vue.stories'
 
 const {Inline, Drag} = composeStories(Stories)
 
 describe('Cross-select', () => {
+	it('keeps an adapter-owned text surface when a custom Span is configured', async () => {
+		const Span = defineComponent({
+			setup(_, {slots}) {
+				return () => h('strong', {}, slots.default?.())
+			},
+		})
+		const {container} = await render(MarkedInput, {props: {defaultValue: 'hello', Span}})
+
+		const editable = container.querySelector('[contenteditable="true"]')
+
+		expect(editable).not.toBeNull()
+		expect(editable?.textContent).toBe('hello')
+	})
+
 	it('inline: should flip spans to non-editable during cross-element drag', async () => {
 		const {container} = await render(Inline)
-		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement here
-		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(container.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const [span1, span2] = spans
 
 		// Set a selection spanning both spans (programmatic — crosses editing hosts)
@@ -30,9 +44,7 @@ describe('Cross-select', () => {
 
 	it('inline: should restore spans after selection collapses', async () => {
 		const {container} = await render(Inline)
-		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement here
-		const root = container.firstElementChild as HTMLElement
-		const spans = Array.from(root.querySelectorAll<HTMLElement>('span'))
+		const spans = Array.from(container.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const [span1, span2] = spans
 
 		// Trigger cross-select (same as above)
@@ -52,10 +64,7 @@ describe('Cross-select', () => {
 
 	it('drag: should flip block rows to non-editable during cross-block drag', async () => {
 		const {container} = await render(Drag)
-		// oxlint-disable-next-line no-unsafe-type-assertion -- firstElementChild is always HTMLElement here
-		const root = container.firstElementChild as HTMLElement
-		// oxlint-disable-next-line no-unsafe-type-assertion -- children of HTMLElement are HTMLElements
-		const blocks = Array.from(root.children) as HTMLElement[]
+		const blocks = Array.from(container.querySelectorAll<HTMLElement>('[data-testid="block"]'))
 		// drag mode renders: [textBlock("hello"), markBlock("world"), textBlock("foo")]
 		const [textBlock1, , textBlock3] = blocks
 
@@ -78,7 +87,7 @@ describe('Cross-select', () => {
 		textBlock3.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
 
 		// Text blocks should be flipped to non-editable
-		expect(textBlock1.contentEditable).toBe('false')
-		expect(textBlock3.contentEditable).toBe('false')
+		expect(textNode1.parentElement?.contentEditable).toBe('false')
+		expect(textNode3.parentElement?.contentEditable).toBe('false')
 	})
 })

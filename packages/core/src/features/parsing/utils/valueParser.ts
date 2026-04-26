@@ -1,16 +1,6 @@
 import type {Store} from '../../../store/Store'
 import type {Token} from '../parser/types'
 
-export function getTokensByUI(store: Store): Token[] {
-	const {focus} = store.nodes
-	const parser = store.parsing.parser()
-	const tokens = store.parsing.tokens()
-	if (!parser) return tokens
-	const parsed = parser.parse(focus.content)
-	if (parsed.length <= 1) return tokens
-	return tokens.toSpliced(focus.index, 1, ...parsed)
-}
-
 export function computeTokensFromValue(store: Store, value: string): Token[] {
 	return parseWithParser(store, value)
 }

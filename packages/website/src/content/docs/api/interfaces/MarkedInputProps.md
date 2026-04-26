@@ -75,7 +75,7 @@ false
 ### layout?
 
 ```ts
-optional layout: "inline" | "block";
+optional layout: "block" | "inline";
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:73](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L73)

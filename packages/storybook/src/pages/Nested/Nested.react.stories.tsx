@@ -1,5 +1,6 @@
+// oxlint-disable jsx_a11y/prefer-tag-over-role -- nested mark shells can contain interactive children
 import type {MarkProps, MarkedInputProps, Markup} from '@markput/react'
-import {MarkedInput, useMark} from '@markput/react'
+import {MarkedInput, useMarkInfo} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
 import type {CSSProperties} from 'react'
 import {useState} from 'react'
@@ -155,20 +156,29 @@ export const HtmlLikeTags: StoryObj<MarkedInputProps> = {
 // ============================================================================
 
 const InteractiveMark = ({children}: MarkProps) => {
-	const mark = useMark()
+	const mark = useMarkInfo()
 	const [isHighlighted, setIsHighlighted] = useState(false)
+	const handleAction = () => {
+		console.log('Mark clicked:', {
+			depth: mark.depth,
+			hasNestedMarks: mark.hasNestedMarks,
+			key: mark.key,
+		})
+	}
 
 	return (
-		<button
-			type="button"
+		<span
+			role="button"
+			tabIndex={0}
 			onClick={e => {
 				e.stopPropagation()
-				console.log('Mark clicked:', {
-					depth: mark.depth,
-					hasChildren: mark.hasChildren,
-					childrenCount: mark.tokens.length,
-					parent: mark.parent ? 'has parent' : 'root level',
-				})
+				handleAction()
+			}}
+			onKeyDown={e => {
+				if (e.key !== 'Enter' && e.key !== ' ') return
+				e.preventDefault()
+				e.stopPropagation()
+				handleAction()
 			}}
 			onMouseEnter={() => setIsHighlighted(true)}
 			onMouseLeave={() => setIsHighlighted(false)}
@@ -182,10 +192,10 @@ const InteractiveMark = ({children}: MarkProps) => {
 				cursor: 'pointer',
 				transition: 'all 0.2s',
 			}}
-			title={`Depth: ${mark.depth}, Children: ${mark.tokens.length}`}
+			title={`Depth: ${mark.depth}, Nested: ${mark.hasNestedMarks}`}
 		>
 			{children}
-		</button>
+		</span>
 	)
 }
 

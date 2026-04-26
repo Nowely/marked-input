@@ -1,13 +1,16 @@
-import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {describe, it, expect, vi} from 'vitest'
 
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('ValueFeature', () => {
-	it('exposes current and isControlledMode without last', () => {
+	it('exposes accepted value state and edit notifications', () => {
 		const store = new Store()
+
 		expect(typeof store.value.current).toBe('function')
 		expect(typeof store.value.isControlledMode).toBe('function')
-		expect('last' in store.value).toBe(false)
+		expect(typeof store.value.change).toBe('function')
+		expect('next' in store.value).toBe(false)
 		expect(store.value.current()).toBe('')
 		expect(store.value.isControlledMode()).toBe(false)
 	})
@@ -16,8 +19,10 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
 		store.value.enable()
+
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+
 		store.value.disable()
 	})
 
@@ -25,57 +30,10 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
 		store.value.enable()
+
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
-	})
 
-	it('exposes event, signal, and computed instances directly', () => {
-		const store = new Store()
-		expect(typeof store.value.next).toBe('function')
-		expect(typeof store.value.current).toBe('function')
-		expect(typeof store.value.isControlledMode).toBe('function')
-		expect(typeof store.value.change).toBe('function')
-	})
-
-	it('controlled next emits without committing current or tokens', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
-		store.value.enable()
-		store.value.next('world')
-		expect(onChange).toHaveBeenCalledWith('world')
-		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
-	})
-
-	it('controlled next emits repeated identical candidates', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
-		store.value.enable()
-
-		store.value.next('world')
-		store.value.next('world')
-
-		expect(onChange).toHaveBeenCalledTimes(2)
-		expect(onChange).toHaveBeenNthCalledWith(1, 'world')
-		expect(onChange).toHaveBeenNthCalledWith(2, 'world')
-		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
-	})
-
-	it('uncontrolled next commits current and tokens', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', onChange})
-		store.value.enable()
-		store.value.next('world')
-		expect(onChange).toHaveBeenCalledWith('world')
-		expect(store.value.current()).toBe('world')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 		store.value.disable()
 	})
 
@@ -83,9 +41,12 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
 		store.value.enable()
+
 		store.props.set({value: 'world'})
+
 		expect(store.value.current()).toBe('world')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+
 		store.value.disable()
 	})
 
@@ -93,64 +54,47 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		store.props.set({value: 'hello', defaultValue: 'default'})
 		store.value.enable()
+
 		store.props.set({value: undefined})
+
 		expect(store.value.isControlledMode()).toBe(false)
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+
 		store.value.disable()
 	})
 
-	it('controlled change emits candidate and restores accepted tokens', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
-		store.value.enable()
-		store.parsing.tokens([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-		store.value.change()
-		expect(onChange).toHaveBeenCalledWith('world')
-		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
-	})
-
-	it('uncontrolled change accepts serialized candidate', () => {
+	it('notifies change subscribers for accepted uncontrolled edits', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})
 		store.value.enable()
-		store.parsing.tokens([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-		store.value.change()
+		const notified = vi.fn()
+		const stop = watch(store.value.change, notified)
+
+		store.value.replaceAll('world')
+
 		expect(onChange).toHaveBeenCalledWith('world')
+		expect(notified).toHaveBeenCalledOnce()
 		expect(store.value.current()).toBe('world')
+
+		stop()
 		store.value.disable()
 	})
 
-	it('readOnly next ignores editor-originated candidates', () => {
+	it('readOnly rejects editor-originated range replacement', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
 		store.value.enable()
 
-		store.value.next('world')
+		const result = store.value.replaceAll('world')
 
+		expect(result).toEqual({ok: false, reason: 'readOnly'})
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
-	})
 
-	it('readOnly change restores accepted tokens and skips onChange', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
-		store.value.enable()
-		store.parsing.tokens([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-
-		store.value.change()
-
-		expect(onChange).not.toHaveBeenCalled()
-		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 		store.value.disable()
 	})
 
@@ -165,91 +109,94 @@ describe('ValueFeature', () => {
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('world')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+
 		store.value.disable()
 	})
 
-	describe('change handler', () => {
-		let store: Store
-
-		beforeEach(() => {
-			store = new Store()
-		})
-
-		it('react to change event after enable', () => {
-			const onChange = vi.fn()
-			store.props.set({onChange})
-			store.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
+	describe('replaceRange()', () => {
+		it('commits uncontrolled range replacement and schedules recovery', () => {
+			const store = new Store()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({defaultValue: 'hello world'})
 			store.value.enable()
 
-			store.value.change()
+			const result = store.value.replaceRange({start: 6, end: 11}, 'markput', {
+				recover: recovery,
+				source: 'input',
+			})
 
-			expect(onChange).toHaveBeenCalled()
+			expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello markput'})
+			expect(store.value.current()).toBe('hello markput')
+			expect(store.caret.recovery()).toBe(recovery)
+			store.value.disable()
 		})
 
-		it('be idempotent — calling enable twice does not double-subscribe', () => {
-			const onChange = vi.fn()
-			store.props.set({onChange})
-			store.parsing.tokens([{type: 'text', content: 'hi', position: {start: 0, end: 2}}])
-
-			store.value.enable()
-			store.value.enable()
-
-			store.value.change()
-
-			expect(onChange).toHaveBeenCalledTimes(1)
-		})
-	})
-
-	describe('next handler', () => {
-		let store: Store
-
-		beforeEach(() => {
-			store = new Store()
-		})
-
-		it('parses next and writes tokens + current', () => {
-			const onChange = vi.fn()
-			store.props.set({onChange, Mark: () => null, options: [{markup: '@[__value__]'}]})
-
-			store.value.enable()
-
-			store.value.next('hello @[world]')
-
-			expect(store.parsing.tokens().length).toBeGreaterThan(0)
-			expect(store.value.current()).toBe('hello @[world]')
-			expect(onChange).toHaveBeenCalledWith('hello @[world]')
-		})
-	})
-
-	describe('disable()', () => {
-		it('stop reacting to events after disable', () => {
+		it('rejects invalid ranges without emitting change', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.set({onChange})
-			store.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
+			store.props.set({defaultValue: 'hello', onChange})
 			store.value.enable()
-			store.value.disable()
 
-			store.value.change()
+			const result = store.value.replaceRange({start: 4, end: 2}, 'x')
 
+			expect(result).toEqual({ok: false, reason: 'invalidRange'})
 			expect(onChange).not.toHaveBeenCalled()
+			expect(store.value.current()).toBe('hello')
+			store.value.disable()
 		})
 
-		it('allow re-enabling after disable', () => {
+		it('keeps controlled accepted value until matching echo', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			store.props.set({onChange})
-			store.parsing.tokens([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({value: 'hello', onChange})
 			store.value.enable()
+
+			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
+			expect(onChange).toHaveBeenCalledWith('world')
+			expect(store.value.current()).toBe('hello')
+			expect(store.caret.recovery()).toBeUndefined()
+
+			store.props.set({value: 'world'})
+
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBe(recovery)
 			store.value.disable()
+		})
+
+		it('keeps recovery when controlled echo is synchronous inside onChange', () => {
+			const store = new Store()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({
+				value: 'hello',
+				onChange: value => store.props.set({value}),
+			})
 			store.value.enable()
 
-			store.value.change()
+			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 
-			expect(onChange).toHaveBeenCalledTimes(1)
+			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBe(recovery)
+			store.value.disable()
+		})
+
+		it('clears pending recovery when controlled echo does not match', () => {
+			const store = new Store()
+			const onChange = vi.fn()
+			const recovery = {kind: 'caret' as const, rawPosition: 5}
+			store.props.set({value: 'hello', onChange})
+			store.value.enable()
+
+			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+			store.props.set({value: 'other'})
+			store.props.set({value: 'world'})
+
+			expect(store.value.current()).toBe('world')
+			expect(store.caret.recovery()).toBeUndefined()
+			store.value.disable()
 		})
 	})
 })

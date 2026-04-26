@@ -20,15 +20,21 @@ Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`
 
 Run a single test file: `pnpm -w vitest run path/to/file.spec.ts`
 
-### Before submitting — run all checks
+### Before submitting — choose checks by change type
 
-Always run these commands and ensure they all pass before considering any task complete (no has errors):
+Run the checks that match the files and behavior changed. For mixed changes, use the strictest affected category. If unsure, run the broader checks.
 
-1. `pnpm test`
-2. `pnpm run build`
-3. `pnpm run typecheck`
-4. `pnpm run lint:check`
-5. `pnpm run format:check`
+- **Code, behavior, public API, package config, or build config changes**: run all local checks before considering the task complete:
+    1. `pnpm test`
+    2. `pnpm run build`
+    3. `pnpm run typecheck`
+    4. `pnpm run lint:check`
+    5. `pnpm run format:check`
+- **Targeted code changes during iteration**: focused checks are fine while developing, such as a single Vitest file or package build, but run the full local check list above before calling code work complete.
+- **Docs-only changes in `docs/**`, `AGENTS.md`, or `CLAUDE.md`**: run `pnpm exec oxfmt --check <changed-files>` only.
+- **Website docs changes in `packages/website/src/content/docs/**`**: run `pnpm exec oxfmt --check <changed-files>`. Also run `pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config changes could affect site rendering.
+
+When skipping checks from the full list, mention which commands were skipped and why in the final response.
 
 ## Monorepo Layout
 
@@ -55,7 +61,9 @@ Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in 
 
 ## Architecture
 
-Summary: Store orchestrates reactive Signals, DOM refs (NodeProxy), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.<name>.*`, `store.props`, and `store.nodes`. The parser is a computed derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+Summary: Store orchestrates reactive Signals, core-owned DOM registration (`store.dom`), caret recovery (`store.caret`), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.<name>.*`, `store.props`, `store.dom`, and `store.caret`. The parser owns token addresses and a token index derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+
+DOM/token mapping lives in `store.dom` through adapter-owned structural registration. Do not use DOM child parity, public data attributes, user refs, or `NodeProxy` for token location. Value edits go through `store.value.replaceRange()` / `replaceAll()` with raw positions and optional `caret.recovery`.
 
 For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
 
@@ -72,12 +80,19 @@ Detailed docs live in `packages/website/src/content/docs/`:
 ## Code Rules
 
 - **Keep docs in sync**: when changing public API, behavior, or architecture, update the relevant documentation in `packages/website/src/content/docs/` and this CLAUDE.md file. Outdated docs are worse than no docs — treat doc updates as part of the implementation, not a follow-up task.
+- **Single source of truth**: each runtime fact has one owning feature. Other features may read it through the owner’s public API, but must not mirror, cache, or re-store the same value in their own signals/classes unless there is an explicit synchronization design and tests for it.
+- **Feature ownership boundaries**: `store.props` owns framework-provided configuration, `store.dom` owns DOM refs and DOM indexing, `store.value` owns the accepted serialized value, `store.caret` owns caret state, and `store.slots` owns slot components/props. Keep new state with the feature that owns the underlying concept.
+- **No compatibility leftovers as architecture**: temporary bridges are allowed only during migration, must be named/documented as temporary, and should be removed once the owning feature exists. Do not build new code on top of legacy bridge state.
 - Use reactive's `use()` conistency by framework reactivity system.
+- Components should depend on the smallest established abstraction that satisfies their role, not on lower-level runtime plumbing.
 
 ### Do NOT
 
-- Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, or `store.nodes`
+- Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, `store.dom`, or `store.caret`
 - Do not manually create Signals for new state — add new state to the owning feature class. Framework-provided props go in `store.props` in `Store.ts` and are set via `store.props.set()`.
+- Do not duplicate runtime state across store features. If two features need the same value, expose it from the owning feature instead of creating a second signal or cache.
+- Do not mirror DOM refs, parsed tokens, accepted value, caret state, or framework props into another feature “for convenience”.
+- Do not preserve migration-era compatibility state after the replacement owner exists; remove the bridge or mark it as temporary with a removal task.
 - Do not install new dependencies without asking first
 - Do not modify `pnpm-workspace.yaml` catalog entries without asking first
 - Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.
@@ -163,6 +178,6 @@ Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs
 - PRs target `next`, not `main`
 - Use `import type { Foo }` for type-only imports — linter rejects bare imports for types
 - Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
-- Run `pnpm run typecheck` before submitting — it checks both tsc and vue-tsc
+- Run `pnpm run typecheck` before submitting code or API changes — it checks both tsc and vue-tsc
 - Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
 - Feature state lives in `store.<name>.*` — do not access properties that weren't defined there

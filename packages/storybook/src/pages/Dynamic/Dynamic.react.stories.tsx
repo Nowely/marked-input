@@ -1,6 +1,5 @@
 import {MarkedInput, useMark} from '@markput/react'
 import type {Meta, StoryObj} from '@storybook/react-vite'
-import {useEffect} from 'react'
 
 import {useCaretInfo} from '../../shared/hooks/useCaretInfo.react'
 
@@ -13,13 +12,8 @@ export default {
 type Story = StoryObj<typeof MarkedInput>
 
 const Mark = () => {
-	const {value, ref} = useMark()
-
-	useEffect(() => {
-		if (ref.current) ref.current.textContent = value ?? null
-	}, [value, ref])
-
-	return <mark ref={ref} contentEditable />
+	const mark = useMark()
+	return <mark>{mark.value}</mark>
 }
 
 export const Dynamic: Story = {
@@ -30,8 +24,8 @@ export const Dynamic: Story = {
 }
 
 const RemovableMark = () => {
-	const {value, remove} = useMark()
-	return <mark onClick={remove} children={value} />
+	const mark = useMark()
+	return <mark onClick={() => mark.remove()}>{mark.value}</mark>
 }
 
 export const Removable: Story = {
@@ -43,22 +37,18 @@ export const Removable: Story = {
 }
 
 const Abbr = () => {
-	const {value, meta, ref} = useMark()
-
-	useEffect(() => {
-		if (ref.current) ref.current.textContent = value ?? null
-	}, [value, ref])
+	const mark = useMark()
 
 	return (
 		<abbr
-			ref={ref}
-			title={meta}
-			contentEditable
+			title={mark.meta}
 			style={{
 				outline: 'none',
 				whiteSpace: 'pre-wrap',
 			}}
-		/>
+		>
+			{mark.value}
+		</abbr>
 	)
 }
 
@@ -78,19 +68,18 @@ export const Focusable: Story = {
 
 /*TODO
 const Tag = () => {
-    const {reg, label, value, change} = useMark()
+    const mark = useMark()
 
-    return createElement(label, {
-        ref: reg,
+    return createElement("mark", {
         contentEditable: true,
         suppressContentEditableWarning: true,
-        children: value,
+        children: mark.value,
         style: {
             outline: 'none',
             whiteSpace: 'pre-wrap'
         },
         onInput: (e: React.FormEvent<HTMLElement>) => {
-            change({label, value: e.currentTarget.textContent ?? ""}, {silent: true})
+            mark.update({value: e.currentTarget.textContent ?? ""})
         }
     })
 }
