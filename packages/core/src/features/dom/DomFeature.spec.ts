@@ -13,7 +13,7 @@ function mountRegisteredInline(value: string) {
 	container.append(shell)
 	shell.append(textSurface)
 	document.body.append(container)
-	store.dom.refFor({role: 'container'})(container)
+	store.dom.container(container)
 	store.dom.refFor({role: 'token', path: [0]})(shell)
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
 	store.dom.enable()
@@ -35,7 +35,7 @@ function mountRegisteredMarkWithDescendant(value = '@[world]') {
 	container.append(shell)
 	shell.append(descendant)
 	document.body.append(container)
-	store.dom.refFor({role: 'container'})(container)
+	store.dom.container(container)
 	store.dom.refFor({role: 'token', path: [1]})(shell)
 	store.dom.enable()
 	store.lifecycle.rendered()
@@ -58,7 +58,7 @@ function mountRegisteredBlockWithControl(value: string) {
 	row.append(shell, control)
 	shell.append(textSurface)
 	document.body.append(container)
-	store.dom.refFor({role: 'container'})(container)
+	store.dom.container(container)
 	store.dom.refFor({role: 'row', path: [0]})(row)
 	store.dom.refFor({role: 'token', path: [0]})(shell)
 	store.dom.refFor({role: 'text', path: [0]})(textSurface)
@@ -92,15 +92,14 @@ describe('DomFeature registration', () => {
 		expect(first).not.toBe(third)
 	})
 
-	it('owns the registered container ref', () => {
+	it('owns the container ref signal', () => {
 		const container = document.createElement('div')
-		const ref = store.dom.refFor({role: 'container'})
 
-		ref(container)
+		store.dom.container(container)
 
 		expect(store.dom.container()).toBe(container)
 
-		ref(null)
+		store.dom.container(null)
 
 		expect(store.dom.container()).toBe(null)
 	})
@@ -112,7 +111,7 @@ describe('DomFeature registration', () => {
 		container.append(textShell)
 		textShell.append(textSurface)
 
-		store.dom.refFor({role: 'container'})(container)
+		store.dom.container(container)
 		store.dom.refFor({role: 'token', path: [0]})(textShell)
 		store.dom.refFor({role: 'text', path: [0]})(textSurface)
 
@@ -127,7 +126,7 @@ describe('DomFeature registration', () => {
 		const container = document.createElement('div')
 		const shell = document.createElement('span')
 		container.append(shell)
-		store.dom.refFor({role: 'container'})(container)
+		store.dom.container(container)
 		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.enable()
 
@@ -144,7 +143,7 @@ describe('DomFeature registration', () => {
 		const container = document.createElement('div')
 		const control = document.createElement('button')
 		container.append(control)
-		store.dom.refFor({role: 'container'})(container)
+		store.dom.container(container)
 		store.dom.refFor({role: 'control', ownerPath: [1]})(control)
 		store.dom.enable()
 		store.lifecycle.rendered()
@@ -160,7 +159,7 @@ describe('DomFeature registration', () => {
 		container.append(shell)
 		shell.append(textSurface)
 
-		store.dom.refFor({role: 'container'})(container)
+		store.dom.container(container)
 		store.dom.refFor({role: 'token', path: [0]})(shell)
 		store.dom.refFor({role: 'text', path: [0]})(textSurface)
 		store.dom.enable()

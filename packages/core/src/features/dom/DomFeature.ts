@@ -18,7 +18,6 @@ import type {Token} from '../parsing'
 import {pathKey} from '../parsing/tokenIndex'
 
 type RegisteredRole =
-	| {readonly role: 'container'; readonly element: HTMLElement}
 	| {readonly role: 'control'; readonly element: HTMLElement; readonly ownerPath?: TokenPath}
 	| {
 			readonly role: 'row' | 'token' | 'text' | 'slotRoot'
@@ -115,9 +114,8 @@ function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 
 export class DomFeature {
 	readonly #domIndex = signal<DomIndex | undefined>(undefined, {readonly: true})
-	readonly #container = signal<HTMLElement | null>(null)
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
-	readonly container: Computed<HTMLElement | null> = computed(() => this.#container())
+	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
 	readonly structuralKey = computed(() => {
 		this._store.parsing.index()
@@ -181,9 +179,6 @@ export class DomFeature {
 
 		const callback: DomRef = element => {
 			this.#pendingElements.set(key, {target, element})
-			if (target.role === 'container') {
-				this.#container(element)
-			}
 		}
 		this.#refCallbacks.set(key, callback)
 		return callback
@@ -195,7 +190,7 @@ export class DomFeature {
 
 	locateNode(node: Node): NodeLocationResult {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const container = this.#container()
+		const container = this.container()
 		if (!container || !container.contains(node)) return {ok: false, reason: 'outsideEditor'}
 
 		let current: Node | null = node
@@ -203,7 +198,7 @@ export class DomFeature {
 			if (current instanceof HTMLElement) {
 				const role = this.#elementRoles.get(current)
 				if (role?.role === 'control') return {ok: false, reason: 'control'}
-				if (role && role.role !== 'container') {
+				if (role) {
 					const elements = this.#pathElements.get(pathKey(role.path))
 					if (!elements?.tokenElement) return {ok: false, reason: 'notIndexed'}
 					return {
@@ -265,7 +260,7 @@ export class DomFeature {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
 		if (this.#isComposing) return {ok: false, reason: 'composing'}
 
-		const container = this.#container()
+		const container = this.container()
 		if (container && node === container) {
 			return this.#rawPositionFromContainerBoundary(offset, affinity)
 		}
@@ -353,7 +348,6 @@ export class DomFeature {
 	}
 
 	#targetKey(target: DomRefTarget): string {
-		if (target.role === 'container') return 'container'
 		if (target.role === 'control') return `control:${target.ownerPath ? pathKey(target.ownerPath) : 'global'}`
 		return `${target.role}:${pathKey(target.path)}`
 	}
@@ -382,10 +376,6 @@ export class DomFeature {
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 
 		for (const {target, element} of this.#pendingElements.values()) {
-			if (target.role === 'container') {
-				if (element) elementRoles.set(element, {role: 'container', element})
-				continue
-			}
 			if (!element) continue
 			if (target.role === 'control') {
 				elementRoles.set(element, {role: 'control', element, ownerPath: target.ownerPath})

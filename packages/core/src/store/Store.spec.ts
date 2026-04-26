@@ -85,7 +85,7 @@ describe('Store', () => {
 			container.append(shell)
 			shell.append(text)
 
-			store.dom.refFor({role: 'container'})(container)
+			store.dom.container(container)
 			store.dom.refFor({role: 'token', path: [0]})(shell)
 			store.dom.refFor({role: 'text', path: [0]})(text)
 
@@ -112,7 +112,7 @@ describe('Store', () => {
 			expect(handler.container).toBe(null)
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub for reference identity check only, no DOM methods used
 			const stub = {} as HTMLDivElement
-			store.dom.refFor({role: 'container'})(stub)
+			store.dom.container(stub)
 			expect(handler.container).toBe(stub)
 		})
 

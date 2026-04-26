@@ -4,7 +4,7 @@ Owns adapter-registered DOM structure, token-to-element indexing, raw boundary m
 
 ## Components
 
-- **DOM registration**: React/Vue register `container`, `row`, `token`, `text`, `slotRoot`, and `control` elements through `store.dom.refFor()`.
+- **DOM registration**: React/Vue register the root through `store.dom.container` and structural child elements through `store.dom.refFor()`.
 - **DOM index**: Built after `lifecycle.rendered()` from adapter-registered structural elements.
 - **Raw mapping**: Converts DOM boundaries and selections to serialized raw positions for the value pipeline.
 - **Recovery**: Applies `caret.recovery` after renders by placing text carets, selections, or mark-boundary focus. Failed recovery is cleared after the attempt and reported through `dom.diagnostics`.

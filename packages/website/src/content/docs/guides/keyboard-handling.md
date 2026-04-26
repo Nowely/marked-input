@@ -9,7 +9,7 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 ## Edit Flow
 
 1. React/Vue render adapter-owned token shells and text surfaces.
-2. The adapter registers DOM structure with `store.dom.refFor()`.
+2. The adapter registers the root with `store.dom.container` and child structure with `store.dom.refFor()`.
 3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom`.
 4. Edits call `store.value.replaceRange()` or `store.value.replaceAll()`.
 5. Core schedules `caret.recovery` and applies it after the next render.

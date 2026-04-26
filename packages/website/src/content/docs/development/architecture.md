@@ -446,9 +446,9 @@ class Caret {
 
 ### DomFeature
 
-`DomFeature` indexes registered structure after each render:
+`DomFeature` owns the root container signal and indexes registered structure after each render:
 
-- `container` — editor root
+- `container` — editor root, registered through `store.dom.container`
 - `row` — block layout row
 - `token` — token shell
 - `text` — editable text surface for text tokens

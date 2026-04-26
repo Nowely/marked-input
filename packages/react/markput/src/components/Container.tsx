@@ -16,16 +16,12 @@ export const Container = memo(() => {
 		structuralKey: s.dom.structuralKey,
 	}))
 
-	const setContainerRef = (element: HTMLDivElement | null) => {
-		dom.refFor({role: 'container'})(element)
-	}
-
 	useLayoutEffect(() => {
 		lifecycle.rendered()
 	}, [lifecycle, structuralKey])
 
 	return (
-		<Component ref={setContainerRef} {...props}>
+		<Component ref={dom.container} {...props}>
 			{isBlock
 				? tokens.map(t => <Block key={key.get(t)} token={t} />)
 				: tokens.map(t => <Token key={key.get(t)} token={t} />)}

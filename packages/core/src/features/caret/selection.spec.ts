@@ -54,7 +54,7 @@ describe('TextSelectionFeature', () => {
 		container.appendChild(span)
 		document.body.appendChild(container)
 
-		store.dom.refFor({role: 'container'})(container)
+		store.dom.container(container)
 
 		const controller = store.caret
 		controller.enable()
