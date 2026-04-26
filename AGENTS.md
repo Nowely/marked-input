@@ -1,183 +1,262 @@
-# [CLAUDE.md](http://CLAUDE.md)
+# AGENTS.md
 
-## Project
+## Project Snapshot
 
-markput — editable text field that combines plain text with inline custom components using annotated markup patterns.
-Monorepo: `@markput/core` (framework-agnostic), `@markput/react`, `@markput/vue`.
+Markput is an editable text field that combines plain text with inline custom
+components through annotated markup patterns.
+
+This is a pnpm monorepo:
+
+- `@markput/core`: framework-agnostic TypeScript runtime. Keep it dependency-free.
+- `@markput/react`: React 19 adapter.
+- `@markput/vue`: Vue 3 adapter.
+- `@markput/storybook`: shared React and Vue browser tests and stories.
+- `@markput/website`: Astro/Starlight documentation.
+
+`CLAUDE.md` intentionally redirects here. Keep `AGENTS.md` as the source of truth
+for agent and contributor instructions.
+
+## Agent Operating Rules
+
+- Use `pnpm` only. The repo enforces `pnpm >= 9`; do not use npm or yarn.
+- Prefer the existing architecture over new abstractions. Read the relevant code
+  and docs before changing behavior.
+- Keep edits scoped to the requested change. Do not refactor unrelated code.
+- Do not install dependencies or edit `pnpm-workspace.yaml` catalog entries
+  without asking first.
+- Do not revert user changes or dirty worktree changes you did not make.
+- When changing public API, behavior, or architecture, update the relevant docs
+  in `packages/website/src/content/docs/` as part of the same change.
+- Before calling work complete, run the checks that match the files changed and
+  report any skipped broader checks with the reason.
 
 ## Commands
 
-- **pnpm >= 9 required** (enforced — no npm/yarn)
-- `pnpm install` — set up all packages
-- `pnpm test` — run all tests (core unit + storybook browser)
-- `pnpm run build` — build all packages
-- `pnpm run typecheck` — tsc + vue-tsc
-- `pnpm run lint` / `pnpm run lint:check` — oxlint (applies fix by default; `lint:check` for dry-run)
-- `pnpm run format` / `pnpm run format:check` — oxfmt (writes in place by default; `format:check` for dry-run)
-- `pnpm run dev:sb` — Start both Storybook dev servers (React 6006 + Vue 6007)
-- `pnpm run dev:sb:react` / `pnpm run dev:sb:vue` — Individual Storybook dev servers
-- `pnpm run dev:react:app` / `pnpm run dev:vue:app` — E2E test apps
+- `pnpm install`: install dependencies.
+- `pnpm test`: run all Vitest projects, including core unit tests and Storybook
+  browser tests.
+- `pnpm -w vitest run path/to/file.spec.ts`: run one test file.
+- `pnpm run build`: build all packages.
+- `pnpm run typecheck`: run package typechecks, including `tsc` and `vue-tsc`.
+- `pnpm run lint`: run oxlint with fixes.
+- `pnpm run lint:check`: run oxlint without writing fixes.
+- `pnpm run format`: run oxfmt and write changes.
+- `pnpm run format:check`: check formatting without writing changes.
+- `pnpm run dev`: start both Storybook dev servers.
+- `pnpm run dev:sb:react`: start React Storybook on port 6006.
+- `pnpm run dev:sb:vue`: start Vue Storybook on port 6007.
+- `pnpm run dev:react:app`: start the React E2E app.
+- `pnpm run dev:vue:app`: start the Vue E2E app.
 
-Run a single test file: `pnpm -w vitest run path/to/file.spec.ts`
+## Repository Map
 
-### Before submitting — choose checks by change type
-
-Run the checks that match the files and behavior changed. For mixed changes, use the strictest affected category. If unsure, run the broader checks.
-
-- **Code, behavior, public API, package config, or build config changes**: run all local checks before considering the task complete:
-    1. `pnpm test`
-    2. `pnpm run build`
-    3. `pnpm run typecheck`
-    4. `pnpm run lint:check`
-    5. `pnpm run format:check`
-- **Targeted code changes during iteration**: focused checks are fine while developing, such as a single Vitest file or package build, but run the full local check list above before calling code work complete.
-- **Docs-only changes in `docs/**`, `AGENTS.md`, or `CLAUDE.md`**: run `pnpm exec oxfmt --check <changed-files>` only.
-- **Website docs changes in `packages/website/src/content/docs/**`**: run `pnpm exec oxfmt --check <changed-files>`. Also run `pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config changes could affect site rendering.
-
-When skipping checks from the full list, mention which commands were skipped and why in the final response.
-
-## Monorepo Layout
-
-```
+```text
 packages/
-  core/               → @markput/core (zero external deps, pure TS)
-  react/markput/      → @markput/react (peer: react 19)
-  storybook/          → Unified React + Vue component tests (Vitest Browser Mode)
-  vue/markput/        → @markput/vue (peer: vue 3)
-  react/app/, vue/app/ → E2E test apps
-  website/            → Astro/Starlight docs
+  core/                @markput/core
+  react/markput/       @markput/react
+  vue/markput/         @markput/vue
+  storybook/           shared stories and browser tests
+  react/app/           React E2E app
+  vue/app/             Vue E2E app
+  website/             Astro/Starlight docs
 ```
 
-Shared dependency versions live in pnpm catalog (`pnpm-workspace.yaml`), not in individual package.json files.
+Put new code in the established owner:
 
-### Where to put new code
+- Core features: `packages/core/src/features/<feature-name>/`
+- Core shared utilities: `packages/core/src/shared/`
+- React components: `packages/react/markput/src/components/`
+- Vue components: `packages/vue/markput/src/components/`
+- Storybook stories and tests: `packages/storybook/src/pages/`
+- Shared Storybook test helpers: `packages/storybook/src/shared/lib/`
+- Website docs: `packages/website/src/content/docs/`
 
-- Core features → `packages/core/src/features/<feature-name>/`
-- Core shared utilities → `packages/core/src/shared/`
-- React components → `packages/react/markput/src/components/`
-- Vue components → `packages/vue/markput/src/components/`
-- Storybook stories and tests → `packages/storybook/src/pages/`
-- Shared storybook helpers → `packages/storybook/src/shared/lib/`
+Shared dependency versions belong in the pnpm catalog in `pnpm-workspace.yaml`,
+not in individual package manifests.
 
-## Architecture
+## Architecture Guardrails
 
-Summary: Store orchestrates reactive Signals, core-owned DOM registration (`store.dom`), caret recovery (`store.caret`), 11 feature modules, BlockRegistry, and event bus. Features are decoupled — they communicate only through `store.<name>.*`, `store.props`, `store.dom`, and `store.caret`. The parser owns token addresses and a token index derived from options/drag/Mark. Features are enabled/disabled by Store watching `mounted`/`unmounted` events directly.
+Read `packages/website/src/content/docs/development/architecture.md` before
+changing core behavior, feature boundaries, token rendering, DOM mapping, or
+caret recovery.
 
-DOM/token mapping lives in `store.dom` through adapter-owned structural registration. Do not use DOM child parity, public data attributes, user refs, or `NodeProxy` for token location. Value edits go through `store.value.replaceRange()` / `replaceAll()` with raw positions and optional `caret.recovery`.
+The Store orchestrates framework-agnostic Signals, feature modules, DOM
+registration, value edits, caret recovery, the parser, BlockRegistry, and the
+event bus. Features stay decoupled: communicate through `store.<feature>.*`,
+`store.props`, `store.dom`, and `store.caret`, not direct feature imports.
 
-For full architecture details, read `packages/website/src/content/docs/development/architecture.md`.
+Ownership rules:
 
-### Secondary documentation (website)
+- `store.props` owns framework-provided configuration.
+- `store.dom` owns DOM refs, structural registration, and DOM-to-token mapping.
+- `store.value` owns the accepted serialized value and value replacement APIs.
+- `store.caret` owns caret state and recovery.
+- `store.slots` owns slot components and slot props.
+- Parser code owns token addresses and the token index derived from options,
+  drag mode, and Mark components.
 
-Detailed docs live in `packages/website/src/content/docs/`:
+Do not duplicate runtime state across features. If two features need the same
+fact, expose it from the owner instead of mirroring it in another signal, cache,
+or helper.
 
-- **Introduction** — `introduction/getting-started.mdx`, `introduction/why-markput.md`
-- **Guides** — `guides/configuration.md`, `guides/dynamic-marks.md`, `guides/keyboard-handling.md`, `guides/nested-marks.md`, `guides/overlay-customization.md`, `guides/slots-customization.md`
-- **Examples** — `examples/autocomplete.md`, `examples/hashtags.md`, `examples/html-like-tags.md`, `examples/markdown-editor.md`, `examples/mention-system.md`, `examples/slash-commands.md`
-- **API reference** — `api/` (auto-generated classes, functions, interfaces, type aliases)
-- **Development** — `development/architecture.md`, `development/how-it-works.md`, `development/performance.md`, `development/inconsistencies.md`, `development/rfc-nested-marks.md`
+DOM/token mapping must go through `store.dom` and adapter-owned structural
+registration. Do not infer token location from DOM child parity, public data
+attributes, user refs, or `NodeProxy`.
 
-## Code Rules
+User value mutations must go through `store.value.replaceRange()` or
+`store.value.replaceAll()` with raw positions and optional caret recovery. Do not
+write around the value feature.
 
-- **Keep docs in sync**: when changing public API, behavior, or architecture, update the relevant documentation in `packages/website/src/content/docs/` and this CLAUDE.md file. Outdated docs are worse than no docs — treat doc updates as part of the implementation, not a follow-up task.
-- **Single source of truth**: each runtime fact has one owning feature. Other features may read it through the owner’s public API, but must not mirror, cache, or re-store the same value in their own signals/classes unless there is an explicit synchronization design and tests for it.
-- **Feature ownership boundaries**: `store.props` owns framework-provided configuration, `store.dom` owns DOM refs and DOM indexing, `store.value` owns the accepted serialized value, `store.caret` owns caret state, and `store.slots` owns slot components/props. Keep new state with the feature that owns the underlying concept.
-- **No compatibility leftovers as architecture**: temporary bridges are allowed only during migration, must be named/documented as temporary, and should be removed once the owning feature exists. Do not build new code on top of legacy bridge state.
-- Use reactive's `use()` conistency by framework reactivity system.
-- Components should depend on the smallest established abstraction that satisfies their role, not on lower-level runtime plumbing.
+Tokens are mutated in place during editing. Clone tokens before comparing old
+and new token state.
 
-### Do NOT
+## Code Change Policy
 
-- Do not add direct imports between features — all communication goes through `store.<name>.*`, `store.props`, `store.dom`, or `store.caret`
-- Do not manually create Signals for new state — add new state to the owning feature class. Framework-provided props go in `store.props` in `Store.ts` and are set via `store.props.set()`.
-- Do not duplicate runtime state across store features. If two features need the same value, expose it from the owning feature instead of creating a second signal or cache.
-- Do not mirror DOM refs, parsed tokens, accepted value, caret state, or framework props into another feature “for convenience”.
-- Do not preserve migration-era compatibility state after the replacement owner exists; remove the bridge or mark it as temporary with a removal task.
-- Do not install new dependencies without asking first
-- Do not modify `pnpm-workspace.yaml` catalog entries without asking first
-- Do not assume token immutability — tokens are mutated in-place during editing. Clone before comparing if needed.
+- Do not manually create Signals for new state. Add state to the feature that
+  owns the underlying concept.
+- Framework props belong in `store.props` and are set through
+  `store.props.set()`.
+- Components should depend on the smallest established abstraction that satisfies
+  their role.
+- Use each framework adapter's established Signal `use()` pattern.
+- Temporary compatibility bridges must be clearly named, documented as
+  temporary, and removed once the owning feature exists.
+- Use `import type {Foo}` for type-only imports.
+- Keep core public functions covered by co-located unit tests.
 
-## Testing
+## Testing Policy
 
-- **Framework**: Vitest
-- **Unit tests**: co-located `*.spec.ts` next to source (not `*.test.ts`)
-- **Component tests**: Vitest Browser Mode + Playwright (Chromium) in storybook packages
-- `pnpm test` (all), `pnpm test:watch`, `pnpm test:coverage`
-- All new public functions in core must have a co-located `.spec.ts` file
-- Test names use imperative present without "should":
-    - Good: `it('returns undefined when token missing')`
-    - Good: `it('emits change on mark remove')`
-    - Bad: `it('should return undefined ...')`
-    - Bad: `it('when token is missing, returns undefined')`
+Test files use `*.spec.ts` or framework-specific `*.spec.tsx` / `*.spec.ts`
+names. Do not add `*.test.ts` files.
 
-### Writing core unit tests
+Core unit tests live next to the source. Use Vitest:
 
 ```typescript
-import {describe, it, expect, beforeEach, vi} from 'vitest'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 describe('Feature', () => {
     beforeEach(() => vi.clearAllMocks())
+
     it('does something', () => {
-        /* ... */
+        // ...
     })
 })
 ```
 
-Parser tests use `toMatchInlineSnapshot()` with `tokensToDebugTree()` helper. Use `@faker-js/faker` for test data.
+Test names use imperative present without "should":
 
-### Writing component tests (storybook)
+- Good: `it('returns undefined when token missing')`
+- Good: `it('emits change on mark remove')`
+- Bad: `it('should return undefined when token missing')`
+- Bad: `it('when token is missing, returns undefined')`
 
-Stories and tests live in `packages/storybook/` with framework-suffixed naming (`*.react.stories.tsx`, `*.vue.stories.ts`, `*.react.spec.tsx`, `*.vue.spec.ts`).
+Parser tests should use `toMatchInlineSnapshot()` with the
+`tokensToDebugTree()` helper. Use `@faker-js/faker` for generated test data.
 
-Tests compose Storybook stories as fixtures and use real browser interactions:
+Storybook component tests live in `packages/storybook/src/pages/` and use
+framework-suffixed files:
 
-```typescript
-import {composeStories} from '@storybook/react-vite'
-import {render} from 'vitest-browser-react'
-import {page, userEvent} from 'vitest/browser'
-import * as Stories from './Component.react.stories'
+- React stories: `*.react.stories.tsx`
+- React tests: `*.react.spec.tsx`
+- Vue stories: `*.vue.stories.ts`
+- Vue tests: `*.vue.spec.ts`
 
-const {Default} = composeStories(Stories)
+Browser tests should compose Storybook stories and use real interactions with
+Vitest Browser Mode and Playwright. Reuse shared focus helpers from
+`packages/storybook/src/shared/lib/focus.ts`: `focusAtStart()`, `focusAtEnd()`,
+`focusAtOffset()`, and `verifyCaretPosition()`. Vue tests can use `withProps()`
+from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
 
-it('handles input', async () => {
-  await render(<Default />)
-  await userEvent.type(page.getByRole('textbox'), 'hello')
-  await expect.element(page.getByText('hello')).toBeVisible()
-})
+## Check Policy
+
+For code, behavior, public API, package config, or build config changes, run all
+local checks before considering the task complete:
+
+1. `pnpm test`
+2. `pnpm run build`
+3. `pnpm run typecheck`
+4. `pnpm run lint:check`
+5. `pnpm run format:check`
+
+During iteration, focused checks are fine. Before finalizing mixed or behavioral
+changes, run the full list above.
+
+For docs-only changes in `docs/**`, `AGENTS.md`, or `CLAUDE.md`, run:
+
+```sh
+pnpm exec oxfmt --check <changed-files>
 ```
 
-Shared helpers: `focusAtStart()`, `focusAtEnd()`, `focusAtOffset()`, `verifyCaretPosition()` in `packages/storybook/src/shared/lib/focus.ts`.
+For website docs changes in `packages/website/src/content/docs/**`, also run
+`pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config
+changes could affect site rendering.
 
-Vue component tests use `withProps(story, props)` helper from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
+## Documentation Policy
 
-## Git & CI
+Website docs live in `packages/website/src/content/docs/`:
 
-- **Default branch**: `next` (not main) — PRs target `next`
-- **Conventional Commits**: required for PR titles (enforced by CI)
-- **Pre-commit hook**: oxlint --fix + oxfmt via lint-staged
-- **Release**: automated via release-please on `next`
+- Introduction: `introduction/getting-started.mdx`,
+  `introduction/why-markput.md`
+- Guides: `guides/configuration.md`, `guides/dynamic-marks.md`,
+  `guides/keyboard-handling.md`, `guides/nested-marks.md`,
+  `guides/overlay-customization.md`, `guides/slots-customization.md`
+- Examples: `examples/autocomplete.md`, `examples/hashtags.md`,
+  `examples/html-like-tags.md`, `examples/markdown-editor.md`,
+  `examples/mention-system.md`, `examples/slash-commands.md`
+- API reference: `api/`
+- Development: `development/architecture.md`, `development/how-it-works.md`,
+  `development/performance.md`, `development/inconsistencies.md`,
+  `development/rfc-nested-marks.md`
 
-### Commit scopes
+When runtime behavior and docs disagree, treat the mismatch as part of the task:
+either update the docs or call out the inconsistency explicitly.
 
-Use these scopes in conventional commits: `core`, `react`, `vue`, `storybook`, `drag`, `docs`, `next` (release). Feature-level scopes (e.g., `InputFeature`, `BlockEditFeature`, `FocusFeature`) are acceptable for targeted fixes. Omit scope for cross-cutting changes.
+## Git, PR, and CI
 
-Examples: `feat(core):`, `fix(react):`, `refactor(drag):`, `chore(next):`, `docs:`
+- Default branch: `next`.
+- PRs target `next`, not `main`.
+- PR titles must use Conventional Commits.
+- Release is automated through release-please on `next`.
+- Pre-commit runs oxlint and oxfmt through lint-staged.
 
-### CI Checks (all must pass)
+Common commit scopes:
 
-1. Lint PR title (conventional commit format)
+- `core`
+- `react`
+- `vue`
+- `storybook`
+- `drag`
+- `docs`
+- `next`
+
+Feature-level scopes such as `InputFeature`, `BlockEditFeature`, or
+`FocusFeature` are acceptable for targeted changes. Omit the scope for
+cross-cutting changes.
+
+Examples:
+
+- `feat(core): add parser option`
+- `fix(react): preserve caret after mark insert`
+- `refactor(drag): simplify block ordering`
+- `docs: update keyboard handling guide`
+
+CI runs:
+
+1. PR title lint
 2. `pnpm test`
 3. `pnpm run typecheck`
 4. `pnpm run lint:check`
 5. `pnpm run build`
 6. `pnpm run format:check`
 
-## Common Pitfalls
+## Fast Checklist
 
-- Always use `pnpm`, never `npm` or `yarn`
-- PRs target `next`, not `main`
-- Use `import type { Foo }` for type-only imports — linter rejects bare imports for types
-- Shared deps must go in pnpm catalog (`pnpm-workspace.yaml`), not directly in package.json
-- Run `pnpm run typecheck` before submitting code or API changes — it checks both tsc and vue-tsc
-- Test files must be `*.spec.ts` (not `*.test.ts`) and co-located next to source
-- Feature state lives in `store.<name>.*` — do not access properties that weren't defined there
+Before finishing a change:
+
+1. Confirm the owning package or feature is the right place for the edit.
+2. Keep state in one owner; do not mirror DOM refs, tokens, values, caret, or
+   props.
+3. Add or update focused tests for changed behavior.
+4. Update website docs when public API, behavior, or architecture changes.
+5. Run the required checks for the changed files.
+6. Report skipped broader checks and why.
