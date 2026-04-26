@@ -178,7 +178,7 @@ describe('Nested Marks Rendering', () => {
 		expect(hasChildrenAtDepthZero).toBe(true)
 	})
 
-	it('renders nested token roots without slot-root wrappers', async () => {
+	it('renders nested token roots inside child sequence hosts', async () => {
 		const markup: Markup = '@[__slot__]'
 		const value = '@[before @[nested] after]'
 		const Mark = defineComponent({
@@ -197,10 +197,13 @@ describe('Nested Marks Rendering', () => {
 		const marks = container.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')
 		const outer = marks[0]
 		const inner = marks[1]
+		const host = inner.parentElement
 
-		expect(inner.parentElement).toBe(outer)
-		expect(Array.from(outer.children)).toContain(inner)
-		expect(outer.querySelector('span > span > span')).toBeNull()
+		expect(host?.tagName).toBe('SPAN')
+		expect(host?.style.display).toBe('contents')
+		expect(host?.parentElement).toBe(outer)
+		expect(Array.from(outer.children)).toContain(host)
+		expect(Array.from(host?.children ?? [])).toContain(inner)
 	})
 })
 

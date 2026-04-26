@@ -46,7 +46,8 @@ Both framework adapters share the same component structure:
   <Container>                        # contenteditable element
   │ ├─ (drag=false)
   │ │   └─ <Token mark={t} />       # Unified renderer for text & mark tokens
-  │ │       └─ <Token mark={child}> # Recursive for __slot__ children
+  │ │       └─ <TokenChildren>      # Internal host for __slot__ child sequence
+  │ │           └─ <Token mark={child}>
   │ │
   │ └─ (drag=true)
   │     └─ <Block token={t}>        # Drag-mode wrapper per token
@@ -67,6 +68,7 @@ Both framework adapters share the same component structure:
 | **MarkedInput**      | Entry point, store initialization, mount/unmount signaling    |
 | **Container**        | contenteditable management, renders tokens or blocks         |
 | **Token**            | Unified renderer for both text and mark tokens (recursive)   |
+| **TokenChildren**    | Internal nested token sequence host for slot children        |
 | **Block**            | Drag-mode wrapper with handle, menu, and drop indicators     |
 | **DragHandle**       | Drag grip UI element                                         |
 | **BlockMenu**        | Context menu for block operations (add, delete, duplicate)   |
@@ -446,14 +448,13 @@ class Caret {
 
 ### DomFeature
 
-`DomFeature` owns the root container signal and indexes registered structure after each render:
+`DomFeature` owns the root container signal and indexes rendered structure after each render:
 
-- `container` — editor root, registered through `store.dom.container`
-- `row` — block layout row
-- `token` — token shell
-- `text` — editable text surface for text tokens
-- `slotRoot` — rendered children root for slot marks
-- `control` — adapter controls such as drag handles and menus
+- top-level token roots are discovered from the editor container or block rows;
+- nested slot children are discovered from adapter-owned `TokenChildren` hosts registered through `childrenFor(path)`;
+- block controls are registered through `controlFor(path)` and ignored during token indexing;
+- text token roots are reconciled as editable text surfaces;
+- mark roots receive focusability state.
 
 It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies pending `caret.recovery` after renders; failed recovery is cleared after one attempt and reported through DOM diagnostics.
 

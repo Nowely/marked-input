@@ -48,11 +48,24 @@ Parent and child traversal is intentionally not exposed through `useMark()`. Cor
 
 ## Opaque Children
 
-React and Vue render adapter-owned structural DOM around every token. Custom Mark components should treat `children` as opaque rendered content.
+React and Vue wrap nested slot content in an internal child-sequence host. Custom Mark components should treat `children` as opaque rendered content and render it exactly once.
 
 ```tsx
 function Highlight({children}: {children?: React.ReactNode}) {
     return <mark>{children}</mark>
+}
+```
+
+Marks can render controls, icons, or layout elements around children:
+
+```tsx
+function TodoItem({children}: {children?: React.ReactNode}) {
+    return (
+        <label>
+            <input type="checkbox" />
+            {children}
+        </label>
+    )
 }
 ```
 
