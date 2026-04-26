@@ -1,4 +1,4 @@
-import type {Markup} from '@markput/react'
+import type {MarkProps, Markup} from '@markput/react'
 import {MarkedInput, useMark} from '@markput/react'
 import {composeStories} from '@storybook/react-vite'
 import {useState} from 'react'
@@ -94,6 +94,30 @@ describe(`Component: MarkedInput`, () => {
 		const mark = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
 
 		expect(mark).toHaveTextContent('world')
+	})
+
+	it('renders slot text when mark renders an unregistered control before children', async () => {
+		const todoMarkup = '- [__value__] __slot__\n' as Markup
+		const TodoMark = ({children}: MarkProps) => (
+			<span data-testid="todo-mark">
+				<input type="checkbox" aria-label="done" />
+				{children}
+			</span>
+		)
+
+		const {container} = await render(
+			<MarkedInput Mark={TodoMark} options={[{markup: todoMarkup}]} defaultValue={'- [ ] Design Phase\n'} />
+		)
+
+		await expect.element(page.getByText('Design Phase')).toBeInTheDocument()
+		const textSurface = Array.from(container.querySelectorAll<HTMLElement>('span[contenteditable]')).find(
+			el => el.textContent === 'Design Phase'
+		)
+		expect(textSurface?.contentEditable).toBe('true')
+
+		await userEvent.click(getElement(page.getByLabelText('done')))
+
+		expect(textSurface).toHaveTextContent('Design Phase')
 	})
 
 	it('correctly process an annotation type', async () => {
