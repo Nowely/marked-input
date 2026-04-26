@@ -24,14 +24,14 @@ export const Block = memo(({token}: BlockProps) => {
 		isDragging: s.blocks.get(token).state.isDragging,
 		tokens: s.parsing.tokens,
 	}))
-	const {store, index} = useMarkput(s => ({store: s, index: s.parsing.index}))
+	const {dom, index} = useMarkput(s => ({dom: s.dom, index: s.parsing.index}))
 	const blockIndex = tokens.indexOf(token)
 	const path = index.pathFor(token)
 	if (!path) return null
 
 	const setBlockRef = (el: HTMLElement | null) => {
 		blockStore.attachContainer(el, blockIndex, {action})
-		store.dom.refFor({role: 'row', path})(el)
+		dom.refFor({role: 'row', path})(el)
 	}
 
 	return (

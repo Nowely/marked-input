@@ -10,14 +10,19 @@ import {Popup} from './Popup/Popup'
 import styles from '@markput/core/styles.module.css'
 
 export const BlockMenu = memo(({token}: {token: Token}) => {
-	const {blockStore, menuOpen, menuPosition} = useMarkput(s => ({
-		blockStore: s.blocks.get(token),
-		menuOpen: s.blocks.get(token).state.menuOpen,
-		menuPosition: s.blocks.get(token).state.menuPosition,
-	}))
-	const {store, index} = useMarkput(s => ({store: s, index: s.parsing.index}))
+	const {blockStore, menuOpen, menuPosition, dom, index} = useMarkput(s => {
+		const blockStore = s.blocks.get(token)
+
+		return {
+			blockStore,
+			menuOpen: blockStore.state.menuOpen,
+			menuPosition: blockStore.state.menuPosition,
+			dom: s.dom,
+			index: s.parsing.index,
+		}
+	})
 	const path = index.pathFor(token)
-	const controlRef = path ? store.dom.refFor({role: 'control', ownerPath: path}) : undefined
+	const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undefined
 
 	if (!menuOpen) return null
 

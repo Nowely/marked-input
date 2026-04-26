@@ -1,10 +1,9 @@
-import type {OverlayMatch, Store} from '@markput/core'
+import type {OverlayMatch} from '@markput/core'
 import {Caret, createMarkFromOverlay} from '@markput/core'
 import type {RefObject} from 'react'
-import {useCallback, useContext, useMemo, useRef} from 'react'
+import {useCallback, useMemo} from 'react'
 
 import type {Option} from '../../types'
-import {StoreContext} from '../providers/StoreContext'
 import {useMarkput} from './useMarkput'
 
 export interface OverlayHandler {
@@ -19,41 +18,34 @@ export interface OverlayHandler {
 }
 
 export function useOverlay(): OverlayHandler {
-	const match = useMarkput(s => s.overlay.match)
-	const storeRef = useRef<Store | null>(null)
-	if (storeRef.current === null) {
-		const ctx = useContext(StoreContext)
-		if (!ctx) throw new Error('Store not found')
-		storeRef.current = ctx
-	}
-	const store = storeRef.current
+	const {match, overlay} = useMarkput(s => ({match: s.overlay.match, overlay: s.overlay}))
 
 	const style = useMemo(() => {
 		if (!match) return {left: 0, top: 0}
 		return Caret.getAbsolutePosition()
 	}, [match])
 
-	const close = useCallback(() => store.overlay.close(), [store])
+	const close = useCallback(() => overlay.close(), [overlay])
 	const select = useCallback(
 		(value: {value: string; meta?: string}) => {
 			if (!match) return
 			const mark = createMarkFromOverlay(match, value.value, value.meta)
-			store.overlay.select({mark, match})
-			store.overlay.close()
+			overlay.select({mark, match})
+			overlay.close()
 		},
-		[match, store]
+		[match, overlay]
 	)
 
 	const ref = useMemo(
 		(): RefObject<HTMLElement | null> => ({
 			get current() {
-				return store.overlay.element()
+				return overlay.element()
 			},
 			set current(v: HTMLElement | null) {
-				store.overlay.element(v)
+				overlay.element(v)
 			},
 		}),
-		[store]
+		[overlay]
 	)
 
 	return {match, style, select, close, ref}
