@@ -149,10 +149,15 @@ describe('Nested Marks Rendering', () => {
 		const {container} = await render(<MarkedInput Mark={Mark} options={[{markup}]} defaultValue={value} />)
 		const outer = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
 		const inner = container.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')[1]
+		const childSequenceHost = outer.firstElementChild
+		if (!(childSequenceHost instanceof HTMLElement)) throw new Error('Expected child sequence host')
 
-		expect(inner.parentElement).toBe(outer)
-		expect(Array.from(outer.children)).toContain(inner)
-		expect(outer.querySelector('span > span > span')).toBeNull()
+		expect(Array.from(outer.children)).toEqual([childSequenceHost])
+		expect(childSequenceHost.tagName).toBe('SPAN')
+		expect(childSequenceHost.style.display).toBe('contents')
+		expect(inner.parentElement).toBe(childSequenceHost)
+		expect(Array.from(childSequenceHost.children)).toContain(inner)
+		expect(childSequenceHost.querySelector('span > span > mark')).toBeNull()
 	})
 })
 
