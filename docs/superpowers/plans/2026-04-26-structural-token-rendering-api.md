@@ -92,16 +92,18 @@ function mountStructuralInlineMark(value = 'hello @[world]') {
 function mountStructuralNested(value = '@[before @[nested] after]') {
 	const store = enableStructuralStore(value, {Mark: () => null, options: [{markup: '@[__slot__]'}]})
 	const container = document.createElement('div')
+	const leading = document.createElement('span')
 	const outer = document.createElement('mark')
 	const before = document.createElement('span')
 	const inner = document.createElement('mark')
 	const after = document.createElement('span')
+	const trailing = document.createElement('span')
 	outer.append(before, inner, after)
-	container.append(outer)
+	container.append(leading, outer, trailing)
 	document.body.append(container)
 	store.dom.container(container)
 	store.lifecycle.rendered()
-	return {store, container, outer, before, inner, after}
+	return {store, container, leading, outer, before, inner, after, trailing}
 }
 
 function mountStructuralBlockWithControl(value: string) {
@@ -122,6 +124,27 @@ function mountStructuralBlockWithControl(value: string) {
 	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
 	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
 	return {store, container, row, control, controlText, textSurface, textNode}
+}
+
+function mountStructuralBlockWithControls(value: string) {
+	const store = enableStructuralStore(value, {layout: 'block'})
+	const container = document.createElement('div')
+	const row = document.createElement('div')
+	const beforeControl = document.createElement('button')
+	const afterControl = document.createElement('button')
+	const textSurface = document.createElement('span')
+	beforeControl.textContent = 'before'
+	afterControl.textContent = 'after'
+	row.append(beforeControl, textSurface, afterControl)
+	container.append(row)
+	document.body.append(container)
+	store.dom.container(container)
+	store.dom.controlFor([0])(beforeControl)
+	store.dom.controlFor([0])(afterControl)
+	store.lifecycle.rendered()
+	const textNode = textSurface.firstChild
+	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	return {store, container, row, beforeControl, afterControl, textSurface, textNode}
 }
 ```
 
@@ -199,6 +222,18 @@ describe('DomFeature structural indexing', () => {
 		container.remove()
 	})
 
+	it('excludes multiple controls owned by the same token path from block token indexing', () => {
+		const {store, beforeControl, afterControl, textSurface, container} = mountStructuralBlockWithControls('hello')
+
+		expect(store.dom.locateNode(beforeControl)).toEqual({ok: false, reason: 'control'})
+		expect(store.dom.locateNode(afterControl)).toEqual({ok: false, reason: 'control'})
+		expect(store.dom.locateNode(textSurface)).toMatchObject({
+			ok: true,
+			value: {tokenElement: textSurface, textElement: textSurface},
+		})
+		container.remove()
+	})
+
 	it('emits diagnostics when a nested mark omits child roots', () => {
 		const diagnostics: unknown[] = []
 		const store = enableStructuralStore('@[before @[nested] after]', {
@@ -207,15 +242,17 @@ describe('DomFeature structural indexing', () => {
 		})
 		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 		const container = document.createElement('div')
+		const leading = document.createElement('span')
 		const outer = document.createElement('mark')
-		container.append(outer)
+		const trailing = document.createElement('span')
+		container.append(leading, outer, trailing)
 		document.body.append(container)
 		store.dom.container(container)
 		store.lifecycle.rendered()
 
 		expect(diagnostics).toContainEqual({
 			kind: 'ambiguousStructure',
-			path: [0],
+			path: [1],
 			reason: 'expected 3 child token elements but found 0',
 		})
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
@@ -299,13 +336,13 @@ git commit -m "test(core): cover structural DOM indexing"
 - Modify: `packages/core/src/features/dom/DomFeature.ts`
 - Modify: `packages/core/src/features/dom/DomFeature.spec.ts`
 
-- [ ] **Step 1: Narrow DOM contracts**
+- [ ] **Step 1: Add structural contracts without breaking adapter red tests**
 
-In `editorContracts.ts`, replace the DOM ref target and location types with:
+In `editorContracts.ts`, keep `DomRef` and `DomRefTarget` temporarily so the current React/Vue adapters can still render during the red DOM-shape tests in Tasks 4 and 5. Task 6 deletes `DomRefTarget` after all adapter call sites are gone.
+
+Replace only `NodeLocationResult` with:
 
 ```ts
-export type DomRef = (element: HTMLElement | null) => void
-
 export type NodeLocationResult = Result<
 	{
 		readonly address: TokenAddress
@@ -317,8 +354,6 @@ export type NodeLocationResult = Result<
 >
 ```
 
-Remove `DomRefTarget`.
-
 Extend `DomDiagnostic['kind']` to include structural indexing failures:
 
 ```ts
@@ -328,7 +363,7 @@ Extend `DomDiagnostic['kind']` to include structural indexing failures:
 
 - [ ] **Step 2: Replace DomFeature private registration state**
 
-In `DomFeature.ts`, remove imports of `DomRefTarget`, then replace `RegisteredRole`, `PathElements`, and ref fields with:
+In `DomFeature.ts`, keep the `DomRefTarget` import until Task 6. Replace `RegisteredRole`, `PathElements`, and ref fields with:
 
 ```ts
 type RegisteredRole =
@@ -363,30 +398,42 @@ readonly #pendingElements = new Map<string, {target: DomRefTarget; element: HTML
 with:
 
 ```ts
-readonly #controlCallbacks = new Map<string, DomRef>()
+readonly #refCallbacks = new Map<string, DomRef>()
 readonly #pendingControls = new Map<string, ControlRegistration>()
+#nextControlId = 0
 ```
 
-- [ ] **Step 3: Replace `refFor()` with `controlFor()`**
+- [ ] **Step 3: Add `controlFor()` and park `refFor()` as temporary compatibility**
 
-Delete `refFor()` and `#targetKey()`.
+Replace `refFor()` with a no-op compatibility method. This keeps pre-migration React/Vue adapter renders from failing with `dom.refFor is not a function`; the structural index ignores these refs. Task 6 deletes this method and `#targetKey()`.
+
+```ts
+refFor(target: DomRefTarget): DomRef {
+	const key = this.#targetKey(target)
+	const existing = this.#refCallbacks.get(key)
+	if (existing) return existing
+
+	const callback: DomRef = () => {}
+	this.#refCallbacks.set(key, callback)
+	return callback
+}
+```
 
 Add this method:
 
 ```ts
 controlFor(ownerPath?: TokenPath): DomRef {
-	const key = ownerPath ? `control:${pathKey(ownerPath)}` : 'control:global'
-	const existing = this.#controlCallbacks.get(key)
-	if (existing) return existing
+	const key = `control:${ownerPath ? pathKey(ownerPath) : 'global'}:${++this.#nextControlId}`
 
 	const callback: DomRef = element => {
-		if (element) this.#pendingControls.set(key, {ownerPath, element})
+		if (element) this.#pendingControls.set(key, {ownerPath: ownerPath ? [...ownerPath] : undefined, element})
 		else this.#pendingControls.delete(key)
 	}
-	this.#controlCallbacks.set(key, callback)
 	return callback
 }
 ```
+
+Each caller must create and reuse its own `controlFor()` callback for one rendered control root. Do not share one callback across drag handle, drop indicator, and block menu for the same token path.
 
 - [ ] **Step 4: Replace rendered commit with structural indexing**
 
@@ -492,6 +539,7 @@ Add these private methods near `#commitRendered()`:
 			path: basePath.length ? basePath : undefined,
 			reason: `expected ${tokens.length} child token elements but found ${elements.length}`,
 		})
+		return
 	}
 
 	tokens.forEach((token, i) => {
@@ -535,7 +583,7 @@ Add these private methods near `#commitRendered()`:
 	}
 	pathElements.set(tokenIndex.key(path), record)
 	elementRoles.set(element, {role: token.type === 'text' ? 'text' : 'token', path, address})
-	if (rowElement) elementRoles.set(rowElement, {role: 'row', path, address})
+	if (rowElement && path.length === 1) elementRoles.set(rowElement, {role: 'row', path, address})
 
 	if (token.type === 'mark' && token.children.length > 0) {
 		this.#indexTokenSequence(element, token.children, path, rowElement, controlElements, pathElements, elementRoles)
@@ -543,17 +591,13 @@ Add these private methods near `#commitRendered()`:
 }
 ```
 
-If TypeScript rejects `ReturnType<Store['parsing']['index']>`, replace that local helper parameter type with:
-
-```ts
-ReturnType<Store['parsing']['index']>
-```
-
-from a local alias:
+If TypeScript rejects `ReturnType<Store['parsing']['index']>` in private method parameters, add a local alias near `PathElements`:
 
 ```ts
 type CurrentTokenIndex = ReturnType<Store['parsing']['index']>
 ```
+
+Then use `CurrentTokenIndex` for the `tokenIndex` helper parameters.
 
 - [ ] **Step 6: Remove slot-root handling from location and boundary mapping**
 
@@ -608,6 +652,7 @@ git commit -m "refactor(core): index token DOM structurally"
 **Files:**
 
 - Modify: `packages/core/src/features/caret/selection.ts`
+- Modify: `packages/core/src/features/caret/selection.spec.ts`
 - Modify: `packages/core/src/features/caret/focus.spec.ts`
 - Modify: `packages/core/src/features/keyboard/input.spec.ts`
 - Modify: `packages/core/src/store/Store.spec.ts`
@@ -686,27 +731,78 @@ effect(() => {
 
 `DomFeature.enable()` already watches `store.caret.selecting()` and reconciles text roots. This effect keeps the feature behavior explicit without querying DOM attributes.
 
-- [ ] **Step 4: Run focused core tests**
+- [ ] **Step 4: Update selection drag test to use an indexed text root**
+
+In `packages/core/src/features/caret/selection.spec.ts`, replace:
+
+```ts
+it('selecting set to "drag" disables contenteditable on container elements', () => {
+	const container = document.createElement('div')
+	const span = document.createElement('span')
+	span.contentEditable = 'true'
+	container.appendChild(span)
+	document.body.appendChild(container)
+
+	store.dom.container(container)
+
+	const controller = store.caret
+	controller.enable()
+	store.caret.selecting('drag')
+
+	expect(span.contentEditable).toBe('false')
+
+	container.remove()
+})
+```
+
+with:
+
+```ts
+it('selecting set to "drag" reconciles indexed text roots to non-editable', () => {
+	const container = document.createElement('div')
+	const span = document.createElement('span')
+	container.appendChild(span)
+	document.body.appendChild(container)
+
+	store.props.set({defaultValue: 'hello'})
+	store.value.enable()
+	store.dom.enable()
+	store.dom.container(container)
+	store.lifecycle.rendered()
+
+	expect(span.contentEditable).toBe('true')
+
+	const controller = store.caret
+	controller.enable()
+	store.caret.selecting('drag')
+
+	expect(span.contentEditable).toBe('false')
+
+	container.remove()
+})
+```
+
+- [ ] **Step 5: Run focused core tests**
 
 Run:
 
 ```bash
-pnpm -w vitest run packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/caret/focus.spec.ts packages/core/src/features/keyboard/input.spec.ts packages/core/src/store/Store.spec.ts
+pnpm -w vitest run packages/core/src/features/dom/DomFeature.spec.ts packages/core/src/features/caret/focus.spec.ts packages/core/src/features/caret/selection.spec.ts packages/core/src/features/keyboard/input.spec.ts packages/core/src/store/Store.spec.ts
 ```
 
 Expected: pass.
 
-- [ ] **Step 5: Verify no core production `refFor()` calls remain**
+- [ ] **Step 6: Verify no core production `refFor()` call sites remain**
 
 Run:
 
 ```bash
-rg -n "refFor\\(" packages/core/src --glob '!**/*.spec.ts'
+rg -n "refFor\\(" packages/core/src --glob '!**/*.spec.ts' --glob '!packages/core/src/features/dom/DomFeature.ts'
 ```
 
-Expected: no matches.
+Expected: no matches. `DomFeature.refFor()` may still exist as the temporary no-op compatibility method until Task 6 removes the generic DOM ref API.
 
-- [ ] **Step 6: Commit core cleanup**
+- [ ] **Step 7: Commit core cleanup**
 
 ```bash
 git add packages/core/src
@@ -855,7 +951,7 @@ const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undef
 with:
 
 ```tsx
-const controlRef = path ? dom.controlFor(path) : undefined
+const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
 ```
 
 Register the outer side-panel `div`, not only the button:
@@ -884,7 +980,29 @@ return (
 )
 ```
 
-In `DropIndicator.tsx` and `BlockMenu.tsx`, replace `dom.refFor({role: 'control', ownerPath: path})` with `dom.controlFor(path)`.
+In `DropIndicator.tsx`, add `useMemo` to the React import and replace:
+
+```tsx
+const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undefined
+```
+
+with:
+
+```tsx
+const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
+```
+
+In `BlockMenu.tsx`, add `useMemo` to the React import and replace:
+
+```tsx
+const controlRef = path ? dom.refFor({role: 'control', ownerPath: path}) : undefined
+```
+
+with:
+
+```tsx
+const controlRef = useMemo(() => (path ? dom.controlFor(path) : undefined), [dom, path])
+```
 
 - [ ] **Step 6: Run React focused tests**
 
@@ -1051,14 +1169,23 @@ const setBlockRef = (el: unknown) => {
 
 - [ ] **Step 5: Register Vue block controls through `controlFor()`**
 
-In `DragHandle.vue`, register the outer `<div>` as the control and keep the button ref for drag:
+In `DragHandle.vue`, register the outer `<div>` as the control and keep the button ref for drag. Create one stable control callback for this component instance; do not call `store.dom.controlFor(path)` fresh for every Vue ref invocation.
 
 Add these functions in the existing `<script setup lang="ts">` block:
 
 ```ts
-const setPanelRef = (el: unknown) => {
+let panelControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getPanelControlRef = () => {
+	if (panelControlRef) return panelControlRef
 	const path = index.value.pathFor(props.token)
-	if (path) store.dom.controlFor(path)(el as HTMLElement | null)
+	if (!path) return undefined
+	panelControlRef = store.dom.controlFor(path)
+	return panelControlRef
+}
+
+const setPanelRef = (el: unknown) => {
+	getPanelControlRef()?.(el as HTMLElement | null)
 }
 
 const setGripRef = (el: unknown) => {
@@ -1092,7 +1219,42 @@ Replace the template with:
 </template>
 ```
 
-In `DropIndicator.vue` and `BlockMenu.vue`, replace `store.dom.refFor({role: 'control', ownerPath: path})` with `store.dom.controlFor(path)`.
+In `DropIndicator.vue`, replace `setDropRef` with:
+
+```ts
+let dropControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getDropControlRef = () => {
+	if (dropControlRef) return dropControlRef
+	const path = index.value.pathFor(props.token)
+	if (!path) return undefined
+	dropControlRef = store.dom.controlFor(path)
+	return dropControlRef
+}
+
+const setDropRef = (el: unknown) => {
+	getDropControlRef()?.(el as HTMLElement | null)
+}
+```
+
+In `BlockMenu.vue`, replace `setMenuRef` with:
+
+```ts
+let menuControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getMenuControlRef = () => {
+	if (menuControlRef) return menuControlRef
+	const path = index.value.pathFor(props.token)
+	if (!path) return undefined
+	menuControlRef = store.dom.controlFor(path)
+	return menuControlRef
+}
+
+const setMenuRef = (el: HTMLElement | null) => {
+	blockStore.attachMenu(el)
+	getMenuControlRef()?.(el)
+}
+```
 
 - [ ] **Step 6: Run Vue focused tests**
 
