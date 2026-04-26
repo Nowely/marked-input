@@ -19,17 +19,30 @@ const isDragging = useMarkput(() => blockStore.state.isDragging)
 const isHovered = useMarkput(() => blockStore.state.isHovered)
 const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
 
+let panelControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getPanelControlRef = () => {
+	if (panelControlRef) return panelControlRef
+	const path = index.value.pathFor(props.token)
+	if (!path) return undefined
+	panelControlRef = store.dom.controlFor(path)
+	return panelControlRef
+}
+
+const setPanelRef = (el: unknown) => {
+	getPanelControlRef()?.(el as HTMLElement | null)
+}
+
 const setGripRef = (el: unknown) => {
 	const element = el as HTMLButtonElement | null
 	blockStore.attachGrip(element, props.blockIndex, {action: store.drag.action})
-	const path = index.value.pathFor(props.token)
-	if (path) store.dom.refFor({role: 'control', ownerPath: path})(element)
 }
 </script>
 
 <template>
 	<div
 		v-if="!readOnly"
+		:ref="setPanelRef"
 		:class="[
 			styles.SidePanel,
 			alwaysShowHandle ? styles.SidePanelAlways : isHovered && !isDragging && styles.SidePanelVisible,

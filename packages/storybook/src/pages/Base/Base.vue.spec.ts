@@ -18,13 +18,39 @@ const EDITABLE_MARK_VALUE = 'Hello, @[focusable](By key operations) abbreviation
 const REMOVABLE_MARK_VALUE = 'I @[contain]( ) @[removable]( ) by click @[marks]( )!'
 
 function getMarkFocusTarget(element: Element): HTMLElement {
-	const target = element.closest<HTMLElement>('span[tabindex]')
+	const target = element.closest<HTMLElement>('[tabindex]')
 	if (!target) throw new Error('Expected mark token focus target')
 	return target
 }
 
 describe('Component: MarkedInput', () => {
 	it.todo('set readOnly on selection')
+
+	it('renders default text as one editable span', async () => {
+		const {container} = await render(withProps(Default, {defaultValue: 'plain'}))
+		const editor = container.firstElementChild!
+		const editable = container.querySelector<HTMLElement>('span[contenteditable]')!
+
+		expect(editor.children).toHaveLength(1)
+		expect(editor.firstElementChild).toBe(editable)
+		expect(editable).toHaveTextContent('plain')
+	})
+
+	it('renders mark roots without adapter wrappers', async () => {
+		const Mark = defineComponent({
+			props: {value: String},
+			setup(props) {
+				return () => h('mark', {'data-testid': 'mark'}, props.value)
+			},
+		})
+		const {container} = await render(withProps(Default, {Mark, defaultValue: 'hello @[world](1)'}))
+		const editor = container.firstElementChild!
+		const mark = container.querySelector<HTMLElement>('mark[data-testid="mark"]')!
+
+		expect(mark.parentElement).toBe(editor)
+		expect(mark).toHaveTextContent('world')
+		expect(mark.tabIndex).toBe(0)
+	})
 
 	it('correctly process an annotation type', async () => {
 		const Mark = defineComponent({

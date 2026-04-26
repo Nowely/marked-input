@@ -16,7 +16,6 @@ const props = defineProps<{token: TokenType; blockIndex: number}>()
 const store = useStore()
 const blockStore = store.blocks.get(props.token)
 
-const index = useMarkput(s => s.parsing.index)
 const blockComponent = useMarkput(s => s.slots.blockComponent)
 const slotProps = useMarkput(s => s.slots.blockProps)
 const isDragging = useMarkput(() => blockStore.state.isDragging)
@@ -37,8 +36,6 @@ const setBlockRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
 	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLElement | null
 	blockStore.attachContainer(element, props.blockIndex, {action: store.drag.action})
-	const path = index.value.pathFor(props.token)
-	if (path) store.dom.refFor({role: 'row', path})(element)
 }
 </script>
 

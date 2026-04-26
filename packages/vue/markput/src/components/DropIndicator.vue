@@ -13,9 +13,18 @@ const blockStore = store.blocks.get(props.token)
 const index = useMarkput(s => s.parsing.index)
 const dropPosition = useMarkput(() => blockStore.state.dropPosition)
 
-const setDropRef = (el: unknown) => {
+let dropControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getDropControlRef = () => {
+	if (dropControlRef) return dropControlRef
 	const path = index.value.pathFor(props.token)
-	if (path) store.dom.refFor({role: 'control', ownerPath: path})(el as HTMLElement | null)
+	if (!path) return undefined
+	dropControlRef = store.dom.controlFor(path)
+	return dropControlRef
+}
+
+const setDropRef = (el: unknown) => {
+	getDropControlRef()?.(el as HTMLElement | null)
 }
 </script>
 

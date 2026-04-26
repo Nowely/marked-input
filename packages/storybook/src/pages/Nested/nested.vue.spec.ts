@@ -177,6 +177,31 @@ describe('Nested Marks Rendering', () => {
 		expect(container.textContent).toContain('nested')
 		expect(hasChildrenAtDepthZero).toBe(true)
 	})
+
+	it('renders nested token roots without slot-root wrappers', async () => {
+		const markup: Markup = '@[__slot__]'
+		const value = '@[before @[nested] after]'
+		const Mark = defineComponent({
+			props: {value: String},
+			setup(props, {slots}) {
+				return () => h('mark', {'data-testid': 'mark'}, slots.default?.() ?? props.value)
+			},
+		})
+		const {container} = await render(MarkedInput, {
+			props: {
+				Mark,
+				options: [{markup}],
+				defaultValue: value,
+			},
+		})
+		const marks = container.querySelectorAll<HTMLElement>('mark[data-testid="mark"]')
+		const outer = marks[0]
+		const inner = marks[1]
+
+		expect(inner.parentElement).toBe(outer)
+		expect(Array.from(outer.children)).toContain(inner)
+		expect(outer.querySelector('span > span > span')).toBeNull()
+	})
 })
 
 describe('Nested Marks Tree Navigation', () => {

@@ -17,10 +17,19 @@ const index = useMarkput(s => s.parsing.index)
 const menuOpen = useMarkput(() => blockStore.state.menuOpen)
 const menuPosition = useMarkput(() => blockStore.state.menuPosition)
 
+let menuControlRef: ((element: HTMLElement | null) => void) | undefined
+
+const getMenuControlRef = () => {
+	if (menuControlRef) return menuControlRef
+	const path = index.value.pathFor(props.token)
+	if (!path) return undefined
+	menuControlRef = store.dom.controlFor(path)
+	return menuControlRef
+}
+
 const setMenuRef = (el: HTMLElement | null) => {
 	blockStore.attachMenu(el)
-	const path = index.value.pathFor(props.token)
-	if (path) store.dom.refFor({role: 'control', ownerPath: path})(el)
+	getMenuControlRef()?.(el)
 }
 </script>
 
