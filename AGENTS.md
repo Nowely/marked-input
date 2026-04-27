@@ -174,11 +174,10 @@ flag the inconsistency.
 
 ## Communication With This User
 
-- The user is not a native English speaker. At the **end of every reply**,
-  add a short "**Language tips**" section: list any unclear or ungrammatical
-  phrasing from their last message, give the corrected version, and briefly
-  say why. Keep it 2–5 lines, friendly, not pedantic. Skip the section only
-  when the user's message is already clean.
+- The user is not a native English speaker. When useful, you may add a short
+  "**Language tips**" section for unclear or ungrammatical phrasing from their
+  last message: give the corrected version and briefly say why. Keep it 2-5
+  lines, friendly, not pedantic. Do not force this section on every reply.
 - Ask before installing dependencies or editing the `pnpm-workspace.yaml`
   catalog.
 - PR titles use Conventional Commits.
