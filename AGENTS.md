@@ -55,18 +55,23 @@ Ownership rules:
 Hard rules:
 
 - Do not mirror runtime state across features. If two features need the same
-  fact, expose it from the owner.
+  fact, expose it from the feature or store object that owns that fact.
 - DOM/token mapping must go through `store.dom`. Do not infer token location
-  from DOM child parity, public data attributes, user refs, or `NodeProxy`.
+  outside `DomFeature` from DOM child order, public data attributes, user refs,
+  or framework-rendered wrapper shape.
 - User value mutations must go through `store.value.replaceRange()` or
   `store.value.replaceAll()` with raw positions and optional caret recovery.
-- Tokens are mutated in place during editing. Clone before comparing old vs
-  new token state.
-- Do not manually create Signals for new state. Add state to the feature that
-  owns the underlying concept.
-- Components depend on the smallest established abstraction that fits.
+  Do not write `store.value.current()` directly for user edits.
+- Token objects are parse results, not durable identities. Do not keep a token
+  object for later mutation or comparison across edits; use token addresses,
+  shape snapshots, or clone the token state before comparing.
+- New reactive state must live in the owner of the underlying concept. Do not
+  add ad-hoc Signals that mirror state already owned by another feature.
+- Components depend on the smallest established abstraction that fits: prefer
+  `store.dom`, `store.value`, `store.caret`, `store.parsing`, and slot APIs
+  over direct cross-feature imports or DOM guesses.
 - Temporary compatibility bridges must be named, documented as temporary, and
-  removed once the owning feature exists.
+  include the condition for removal once the owning feature exists.
 
 ## Reuse Before You Add
 
