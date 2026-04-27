@@ -11,7 +11,7 @@ Packages:
 - `packages/react/markput/` (`@markput/react`): React adapter.
 - `packages/vue/markput/` (`@markput/vue`): Vue adapter.
 - `packages/storybook/` (`@markput/storybook`): shared stories and browser
-tests.
+  tests.
 - `packages/react/app/`: React E2E app.
 - `packages/vue/app/`: Vue E2E app.
 - `packages/website/` (`@markput/website`): Astro/Starlight docs.
@@ -31,28 +31,28 @@ tests.
 
 - Use `pnpm` for package scripts and installs.
 - Read relevant code and docs before changing behavior; prefer existing
-architecture over new abstractions.
+  architecture over new abstractions.
 - Keep edits scoped. Do not refactor unrelated code or revert dirty worktree
-changes you did not make.
+  changes you did not make.
 - Ask before installing dependencies or editing `pnpm-workspace.yaml` catalog
-entries.
+  entries.
 - Update `packages/website/src/content/docs/` when changing public API,
-behavior, or architecture.
+  behavior, or architecture.
 - If runtime behavior and docs disagree, update the docs or call out the
-inconsistency.
+  inconsistency.
 - Run checks that match the files changed, and report skipped broader checks
-with the reason.
+  with the reason.
 
 ## Commands
 
 - Setup: `pnpm install`, `pnpm exec playwright install chromium`
 - Focused test: `pnpm -w exec vitest run path/to/file.spec.ts`
 - Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
-`pnpm run lint:check`, `pnpm run format:check`
+  `pnpm run lint:check`, `pnpm run format:check`
 - Fixers: `pnpm run lint`, `pnpm run format`
 - Dev servers: `pnpm run dev`, `pnpm run dev:sb:react`,
-`pnpm run dev:sb:vue`, `pnpm run dev:react:app`,
-`pnpm run dev:vue:app`
+  `pnpm run dev:sb:vue`, `pnpm run dev:react:app`,
+  `pnpm run dev:vue:app`
 
 ## Architecture Guardrails
 
@@ -73,7 +73,7 @@ Ownership rules:
 - `store.caret`: caret state and recovery.
 - `store.slots`: slot components and slot props.
 - Parser code: token addresses and the token index derived from options, drag
-mode, and Mark components.
+  mode, and Mark components.
 
 Do not mirror runtime state across features. If two features need the same fact,
 expose it from the owner.
@@ -91,33 +91,33 @@ and new token state.
 ## Code Change Policy
 
 - Do not manually create Signals for new state. Add state to the feature that
-owns the underlying concept.
+  owns the underlying concept.
 - Framework props belong in `store.props` and are set through
-`store.props.set()`.
+  `store.props.set()`.
 - Components should depend on the smallest established abstraction that fits
-their role.
+  their role.
 - Use each framework adapter's established Signal `use()` pattern.
 - Temporary compatibility bridges must be named, documented as temporary, and
-removed once the owning feature exists.
+  removed once the owning feature exists.
 - Use `import type {Foo}` for type-only imports.
 - Keep core public functions covered by co-located unit tests.
 
 ## Testing Policy
 
 - Test files use `*.spec.ts`, `*.spec.tsx`, or framework-specific storybook
-names; do not add `*.test.ts` files.
+  names; do not add `*.test.ts` files.
 - Core unit tests live next to the source and use Vitest.
 - Test names use imperative present without "should", for example
-`it('returns undefined when token missing')`.
+  `it('returns undefined when token missing')`.
 - Parser tests use `toMatchInlineSnapshot()` with `tokensToDebugTree()`.
 - Use `@faker-js/faker` for generated test data.
 - Storybook files live in `packages/storybook/src/pages/` as
-`*.react.stories.tsx`, `*.react.spec.tsx`, `*.vue.stories.ts`, or
-`*.vue.spec.ts`.
+  `*.react.stories.tsx`, `*.react.spec.tsx`, `*.vue.stories.ts`, or
+  `*.vue.spec.ts`.
 - Browser tests compose Storybook stories and use real Vitest Browser Mode and
-Playwright interactions. Reuse focus helpers from
-`packages/storybook/src/shared/lib/focus.ts`; Vue tests can use `withProps()`
-from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
+  Playwright interactions. Reuse focus helpers from
+  `packages/storybook/src/shared/lib/focus.ts`; Vue tests can use `withProps()`
+  from `packages/storybook/src/shared/lib/testUtils.vue.ts`.
 
 ## Check Policy
 
@@ -145,13 +145,7 @@ check with that reason. For website docs changes in
 `pnpm -F @markput/website run build` when MDX, frontmatter, navigation, or config
 changes could affect site rendering.
 
-## Git, PR, and CI
+## Git and PR
 
 - Default branch: `next`.
-- PRs target `next`, not `main`.
-- CI runs on pull requests and pushes to `next`.
 - PR titles must use Conventional Commits.
-- Release is automated through release-please on `next`.
-- Pre-commit runs oxlint and oxfmt through lint-staged.
-- CI mirrors the full local checks in the Check Policy.
-
