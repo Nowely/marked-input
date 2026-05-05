@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.13.0](https://github.com/Nowely/marked-input/compare/0.12.1...0.13.0) (2026-05-05)
+
+
+### Features
+
+* **core:** add DOM location engine and structural token rendering ([#220](https://github.com/Nowely/marked-input/issues/220)) ([64d5dfa](https://github.com/Nowely/marked-input/commit/64d5dfa9ec617f1956bf96ff69f4b51d83e6fadc))
+* **docs:** add logo directions for version 18 ([#223](https://github.com/Nowely/marked-input/issues/223)) ([fa1b733](https://github.com/Nowely/marked-input/commit/fa1b733a5064751c2953476c786181487023c96b))
+
+
+### Bug Fixes
+
+* **ci:** use PAT for release-please to trigger CI on release PRs ([#225](https://github.com/Nowely/marked-input/issues/225)) ([57025dc](https://github.com/Nowely/marked-input/commit/57025dc8de34cb936cab779ec2eb407ff274955a))
+* **core:** enforce readonly value writes ([#219](https://github.com/Nowely/marked-input/issues/219)) ([987fa0c](https://github.com/Nowely/marked-input/commit/987fa0c2fa09377897ed12378a0a91ad78362647))
+* support nested token sequence hosts ([#221](https://github.com/Nowely/marked-input/issues/221)) ([3a92a37](https://github.com/Nowely/marked-input/commit/3a92a37d824b145430afe0f1ab99d90cc33f201d))
+
+
+### Refactoring
+
+* **core:** make value current source of truth ([#218](https://github.com/Nowely/marked-input/issues/218)) ([fa18b43](https://github.com/Nowely/marked-input/commit/fa18b43fde06fe770024b6c6cb8fd3b542625a0f))
+
+
+### Documentation
+
+* refresh contributor instructions ([#224](https://github.com/Nowely/marked-input/issues/224)) ([48ed5b8](https://github.com/Nowely/marked-input/commit/48ed5b8e799e5679470a8b86e16bdbb2a8122a4f))
+
+
+### Tests
+
+* **storybook:** format html snapshots ([#222](https://github.com/Nowely/marked-input/issues/222)) ([5cb1771](https://github.com/Nowely/marked-input/commit/5cb17710dbc6bc90f6e184850153146bbcda374c))
+
 ## [0.12.1](https://github.com/Nowely/marked-input/compare/0.12.0...0.12.1) (2026-04-23)
 
 
