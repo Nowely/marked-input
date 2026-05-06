@@ -98,7 +98,6 @@ describe('handleBeforeInput()', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x', {
-			source: 'input',
 			recover: {kind: 'caret', rawPosition: 2},
 		})
 		container.remove()

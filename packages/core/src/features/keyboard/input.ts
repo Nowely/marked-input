@@ -46,7 +46,6 @@ export function enableInput(store: Store): () => void {
 			if (!range) return
 			const data = e.data
 			store.value.replaceRange(range, data, {
-				source: 'input',
 				recover: {kind: 'caret', rawPosition: range.start + data.length},
 			})
 		})
@@ -88,7 +87,6 @@ function handleDeleteKey(store: Store, event: KeyboardEvent): void {
 
 	event.preventDefault()
 	store.value.replaceRange(range, '', {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: range.start},
 	})
 }
@@ -120,7 +118,6 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 
 	event.preventDefault()
 	store.value.replaceRange(range, replacement, {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: range.start + replacement.length},
 	})
 }
@@ -276,7 +273,6 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.caret.selecting(undefined)
 	store.value.replaceAll(newContent, {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: newContent.length},
 	})
 }

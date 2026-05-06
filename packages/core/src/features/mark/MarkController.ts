@@ -1,4 +1,4 @@
-import type {EditResult, MarkPatch, MarkSnapshot, TokenAddress, TokenShapeSnapshot} from '../../shared/editorContracts'
+import type {MarkPatch, MarkSnapshot, TokenAddress, TokenShapeSnapshot} from '../../shared/editorContracts'
 import type {Store} from '../../store'
 import type {MarkToken} from '../parsing'
 import {annotate} from '../parsing/parser/utils/annotate'
@@ -52,17 +52,17 @@ export class MarkController {
 		return this.snapshot.readOnly
 	}
 
-	remove(): EditResult {
+	remove() {
 		const resolved = this.#resolve()
-		if (!resolved.ok) return resolved
-		return this.store.value.replaceRange(resolved.value.position, '', {source: 'mark'})
+		if (!resolved) return
+		this.store.value.replaceRange(resolved.position, '', {recover: undefined})
 	}
 
-	update(patch: MarkPatch): EditResult {
+	update(patch: MarkPatch) {
 		const resolved = this.#resolve()
-		if (!resolved.ok) return resolved
+		if (!resolved) return
 
-		const token = resolved.value
+		const token = resolved
 		const value = patch.value ?? token.value
 		const meta =
 			patch.meta?.kind === 'clear' ? undefined : patch.meta?.kind === 'set' ? patch.meta.value : token.meta
@@ -74,7 +74,7 @@ export class MarkController {
 					: token.slot?.content
 		const serialized = this.#serialize(token, {value, meta, slot})
 
-		return this.store.value.replaceRange(token.position, serialized, {source: 'mark'})
+		this.store.value.replaceRange(token.position, serialized)
 	}
 
 	#serialize(token: MarkToken, fields: {value: string; meta?: string; slot?: string}): string {
@@ -85,10 +85,10 @@ export class MarkController {
 		})
 	}
 
-	#resolve(): {ok: true; value: MarkToken} | {ok: false; reason: 'stale' | 'readOnly'} {
-		if (this.store.props.readOnly()) return {ok: false, reason: 'readOnly'}
+	#resolve(): MarkToken | undefined {
+		if (this.store.props.readOnly()) return undefined
 		const resolved = this.store.parsing.index().resolveAddress(this.address, this.#shape)
-		if (!resolved.ok || resolved.value.type !== 'mark') return {ok: false, reason: 'stale'}
-		return {ok: true, value: resolved.value}
+		if (!resolved.ok || resolved.value.type !== 'mark') return undefined
+		return resolved.value
 	}
 }

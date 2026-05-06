@@ -99,7 +99,6 @@ export class OverlayFeature {
 									})
 
 						this._store.value.replaceRange(range, annotation, {
-							source: 'overlay',
 							recover: {kind: 'caret', rawPosition: range.start + annotation.length},
 						})
 						this.match(undefined)

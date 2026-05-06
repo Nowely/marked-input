@@ -50,7 +50,6 @@ export class DragFeature {
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
 		if (newValue !== value) {
 			this.store.value.replaceAll(newValue, {
-				source: 'drag',
 				recover: this.#recoverAfterDrag(action, rows, newValue),
 			})
 		}
@@ -63,7 +62,6 @@ export class DragFeature {
 		const newRowContent = createRowContent(this.store.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
 		this.store.value.replaceAll(newValue, {
-			source: 'drag',
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}
@@ -73,7 +71,6 @@ export class DragFeature {
 		const rows = this.store.parsing.tokens()
 		const newValue = deleteDragRow(value, rows, action.index)
 		this.store.value.replaceAll(newValue, {
-			source: 'drag',
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}
@@ -83,7 +80,6 @@ export class DragFeature {
 		const rows = this.store.parsing.tokens()
 		const newValue = duplicateDragRow(value, rows, action.index)
 		this.store.value.replaceAll(newValue, {
-			source: 'drag',
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}

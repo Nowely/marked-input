@@ -103,24 +103,44 @@ Defined in: [core/src/features/mark/MarkController.ts:39](https://github.com/Now
 ### remove()
 
 ```ts
-remove(): EditResult;
+remove():
+  | {
+  ok: true;
+}
+  | {
+  ok: false;
+  reason: "stale" | "readOnly";
+};
 ```
 
 Defined in: [core/src/features/mark/MarkController.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L55)
 
 #### Returns
 
-`EditResult`
+  \| \{
+  `ok`: `true`;
+\}
+  \| \{
+  `ok`: `false`;
+  `reason`: `"stale"` \| `"readOnly"`;
+\}
 
 ***
 
 ### update()
 
 ```ts
-update(patch): EditResult;
+update(patch):
+  | {
+  ok: true;
+}
+  | {
+  ok: false;
+  reason: "stale" | "readOnly";
+};
 ```
 
-Defined in: [core/src/features/mark/MarkController.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L61)
+Defined in: [core/src/features/mark/MarkController.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L62)
 
 #### Parameters
 
@@ -130,7 +150,13 @@ Defined in: [core/src/features/mark/MarkController.ts:61](https://github.com/Now
 
 #### Returns
 
-`EditResult`
+  \| \{
+  `ok`: `true`;
+\}
+  \| \{
+  `ok`: `false`;
+  `reason`: `"stale"` \| `"readOnly"`;
+\}
 
 ***
 

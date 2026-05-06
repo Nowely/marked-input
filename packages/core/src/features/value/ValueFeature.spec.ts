@@ -79,9 +79,8 @@ describe('ValueFeature', () => {
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
 		store.lifecycle.mounted()
 
-		const result = store.value.replaceAll('world')
+		store.value.replaceAll('world')
 
-		expect(result).toEqual({ok: false, reason: 'readOnly'})
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -107,12 +106,10 @@ describe('ValueFeature', () => {
 			store.props.set({defaultValue: 'hello world'})
 			store.lifecycle.mounted()
 
-			const result = store.value.replaceRange({start: 6, end: 11}, 'markput', {
+			store.value.replaceRange({start: 6, end: 11}, 'markput', {
 				recover: recovery,
-				source: 'input',
 			})
 
-			expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello markput'})
 			expect(store.value.current()).toBe('hello markput')
 			expect(store.caret.recovery()).toBe(recovery)
 		})
@@ -123,10 +120,11 @@ describe('ValueFeature', () => {
 			store.props.set({defaultValue: 'hello', onChange})
 			store.lifecycle.mounted()
 
-			const result = store.value.replaceRange({start: 4, end: 2}, 'x')
+			store.value.replaceRange({start: 4, end: 2}, 'x')
 
-			expect(result).toEqual({ok: false, reason: 'invalidRange'})
 			expect(onChange).not.toHaveBeenCalled()
+			expect(store.value.current()).toBe('hello')
+			expect(store.value.current()).toBe('hello')
 			expect(store.value.current()).toBe('hello')
 		})
 
@@ -137,9 +135,8 @@ describe('ValueFeature', () => {
 			store.props.set({value: 'hello', onChange})
 			store.lifecycle.mounted()
 
-			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 
-			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
 			expect(store.caret.recovery()).toBeUndefined()
@@ -159,9 +156,8 @@ describe('ValueFeature', () => {
 			})
 			store.lifecycle.mounted()
 
-			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 
-			expect(result).toEqual({ok: true, accepted: 'pendingControlledEcho', value: 'world'})
 			expect(store.value.current()).toBe('world')
 			expect(store.caret.recovery()).toBe(recovery)
 		})

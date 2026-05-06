@@ -50,7 +50,6 @@ export class ClipboardFeature {
 					const raw = this.store.dom.readRawSelection()
 					if (!raw.ok || raw.value.range.start === raw.value.range.end) return
 					this.store.value.replaceRange(raw.value.range, '', {
-						source: 'cut',
 						recover: {kind: 'caret', rawPosition: raw.value.range.start},
 					})
 				})
