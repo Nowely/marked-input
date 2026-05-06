@@ -2,7 +2,6 @@ import {describe, it, expect, beforeEach, vi} from 'vitest'
 
 import type {OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
-import type {OverlayFeature} from './OverlayFeature'
 
 const stubMatch: OverlayMatch = {
 	value: 'test',
@@ -16,11 +15,9 @@ const stubMatch: OverlayMatch = {
 
 describe('OverlayFeature', () => {
 	let store: Store
-	let controller: OverlayFeature
 
 	beforeEach(() => {
 		store = new Store()
-		controller = store.overlay
 	})
 
 	describe('ownership', () => {
@@ -33,19 +30,22 @@ describe('OverlayFeature', () => {
 		})
 	})
 
-	describe('enable()', () => {
+	describe('activation via overlay trigger', () => {
 		it('probes overlay trigger on change when showOverlayOn includes change', () => {
-			controller.enable()
+			// Reset to empty first so watch sees a false->true transition
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.value.change()
 
 			expect(store.overlay.match()).toBeUndefined()
 
-			controller.disable()
+			store.props.set({options: []})
 		})
 
 		it('clear match when close is emitted', () => {
-			controller.enable()
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -55,8 +55,8 @@ describe('OverlayFeature', () => {
 		})
 
 		it('react to change event when showOverlayOn includes change', () => {
-			store.props.set({showOverlayOn: 'change'})
-			controller.enable()
+			store.props.set({options: [], showOverlayOn: 'change'})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -66,8 +66,8 @@ describe('OverlayFeature', () => {
 		})
 
 		it('not react to change event when showOverlayOn does not include change', () => {
-			store.props.set({showOverlayOn: 'selectionChange'})
-			controller.enable()
+			store.props.set({options: [], showOverlayOn: 'selectionChange'})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -76,9 +76,11 @@ describe('OverlayFeature', () => {
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
 
-		it('be idempotent — calling enable twice does not double-subscribe', () => {
-			controller.enable()
-			controller.enable()
+		it('be idempotent — setting options twice does not double-subscribe', () => {
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			// second set is a no-op (already has overlay trigger)
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -88,10 +90,11 @@ describe('OverlayFeature', () => {
 		})
 	})
 
-	describe('disable()', () => {
-		it('stop reacting to events after disable', () => {
-			controller.enable()
-			controller.disable()
+	describe('deactivation', () => {
+		it('stop reacting to events after removing overlay trigger', () => {
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.set({options: []})
 
 			store.overlay.match(stubMatch)
 
@@ -101,10 +104,11 @@ describe('OverlayFeature', () => {
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
 
-		it('allow re-enabling after disable', () => {
-			controller.enable()
-			controller.disable()
-			controller.enable()
+		it('allow re-enabling after removing overlay trigger', () => {
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
 			store.overlay.match(stubMatch)
 
@@ -128,7 +132,8 @@ describe('OverlayFeature', () => {
 				range: {start: 6, end: 9},
 				option: {markup: '@[__value__]'},
 			}
-			controller.enable()
+			store.props.set({options: []})
+			store.props.set({options: [{overlay: {trigger: '@'}}]})
 			store.overlay.match(match)
 
 			store.overlay.select({mark, match})
@@ -138,7 +143,7 @@ describe('OverlayFeature', () => {
 				recover: {kind: 'caret', rawPosition: 14},
 			})
 			expect(store.overlay.match()).toBeUndefined()
-			controller.disable()
+			store.props.set({options: []})
 		})
 	})
 })

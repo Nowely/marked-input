@@ -137,27 +137,26 @@ export class DomFeature {
 	#queuedRender = false
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {}
-
-	enable() {
-		if (this.#scope) return
-		this.#scope = effectScope(() => {
-			watch(this._store.lifecycle.rendered, () => {
-				this.#handleRendered()
+	constructor(private readonly _store: Store) {
+		watch(this._store.lifecycle.mounted, () => {
+			if (this.#scope) return
+			this.#scope = effectScope(() => {
+				watch(this._store.lifecycle.rendered, () => {
+					this.#handleRendered()
+				})
+				watch(
+					computed(() => ({
+						readOnly: this._store.props.readOnly(),
+						selecting: this._store.caret.selecting(),
+					})),
+					() => this.reconcile()
+				)
 			})
-			watch(
-				computed(() => ({
-					readOnly: this._store.props.readOnly(),
-					selecting: this._store.caret.selecting(),
-				})),
-				() => this.reconcile()
-			)
 		})
-	}
-
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
+		watch(this._store.lifecycle.unmounted, () => {
+			this.#scope?.()
+			this.#scope = undefined
+		})
 	}
 
 	compositionStarted(): void {

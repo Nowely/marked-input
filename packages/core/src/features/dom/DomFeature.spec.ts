@@ -6,8 +6,7 @@ import {Store} from '../../store/Store'
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({defaultValue: value, ...props})
-	store.value.enable()
-	store.dom.enable()
+	store.lifecycle.mounted()
 	return store
 }
 
@@ -157,7 +156,6 @@ describe('DomFeature structural indexing', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-		store.value.enable()
 		store.value.replaceAll('hello @[world]')
 	})
 

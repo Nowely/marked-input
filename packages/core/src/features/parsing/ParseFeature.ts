@@ -1,6 +1,5 @@
 import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
@@ -8,7 +7,7 @@ import {toString} from './parser/utils/toString'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 import {parseWithParser} from './utils/valueParser'
 
-export class ParsingFeature implements Feature {
+export class ParsingFeature {
 	readonly tokens = signal<Token[]>([])
 	readonly #generation = signal(0)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
@@ -26,7 +25,24 @@ export class ParsingFeature implements Feature {
 
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {}
+	constructor(private readonly _store: Store) {
+		const toggle = (enabled: boolean) => {
+			if (enabled && !this.#scope) {
+				this.sync()
+				this.#scope = effectScope(() => {
+					this.#subscribeParse()
+					this.#subscribeReactiveParse()
+				})
+			}
+			if (!enabled && this.#scope) {
+				this.#scope()
+				this.#scope = undefined
+			}
+		}
+
+		watch(this._store.mark.enabled, toggle)
+		toggle(this._store.mark.enabled())
+	}
 
 	parseValue(value: string): Token[] {
 		return parseWithParser(this._store, value)
@@ -40,20 +56,6 @@ export class ParsingFeature implements Feature {
 			},
 			{mutable: true}
 		)
-	}
-
-	enable() {
-		if (this.#scope) return
-		this.sync()
-		this.#scope = effectScope(() => {
-			this.#subscribeParse()
-			this.#subscribeReactiveParse()
-		})
-	}
-
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
 	}
 
 	sync(value = this._store.value.current()) {

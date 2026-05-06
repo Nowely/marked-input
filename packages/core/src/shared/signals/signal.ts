@@ -433,9 +433,7 @@ export function event<T = void>(): Event<T> {
 // effect() / effectScope()
 // ---------------------------------------------------------------------------
 
-export {alienEffect as effect}
-
-function alienEffect(fn: () => void | (() => void)): () => void {
+export function effect(fn: () => void | (() => void)): () => void {
 	const e: EffectNode = {
 		fn,
 		cleanup: undefined,
@@ -494,7 +492,7 @@ export function watch<T>(
 ): () => void {
 	let initialized = false
 	let oldValue: T | undefined
-	return alienEffect(() => {
+	return effect(() => {
 		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
 		const newValue = ('read' in dep ? dep.read() : dep()) as T
 		if (!initialized) {
@@ -608,7 +606,7 @@ export function listen(
 	handler: EventListenerOrEventListenerObject,
 	options?: boolean | AddEventListenerOptions
 ): () => void {
-	return alienEffect(() => {
+	return effect(() => {
 		target.addEventListener(event, handler, options)
 		return () => target.removeEventListener(event, handler, options)
 	})

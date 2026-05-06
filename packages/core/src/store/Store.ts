@@ -11,8 +11,6 @@ import {PropsFeature} from '../features/props/PropsFeature'
 import {SlotsFeature} from '../features/slots'
 import {ValueFeature} from '../features/value'
 import {KeyGenerator, MarkputHandler} from '../shared/classes'
-import {watch} from '../shared/signals'
-import type {Feature} from '../shared/types'
 import {BlockRegistry} from './BlockRegistry'
 
 export type {DragAction} from '../shared/types'
@@ -35,22 +33,4 @@ export class Store {
 	readonly drag = new DragFeature(this)
 	readonly clipboard = new ClipboardFeature(this)
 	readonly parsing = new ParsingFeature(this)
-
-	constructor() {
-		const features: Feature[] = [
-			this.lifecycle,
-			this.value,
-			this.mark,
-			this.overlay,
-			this.slots,
-			this.caret,
-			this.keyboard,
-			this.dom,
-			this.drag,
-			this.clipboard,
-			this.parsing,
-		]
-		watch(this.lifecycle.mounted, () => features.forEach(f => f.enable()))
-		watch(this.lifecycle.unmounted, () => features.forEach(f => f.disable()))
-	}
 }

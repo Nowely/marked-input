@@ -6,13 +6,12 @@ import {applySpanInput, enableInput, handleBeforeInput, replaceAllContentWith} f
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})
-	store.value.enable()
+	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.enable()
 	store.lifecycle.rendered()
 	const textNode = textSurface.firstChild
 	if (!(textNode instanceof Text)) throw new Error('Structural text surface did not render a text node')
@@ -22,7 +21,7 @@ function mountStructuralInline(value = 'hello') {
 function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
-	store.value.enable()
+	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const before = document.createElement('span')
 	const mark = document.createElement('mark')
@@ -34,7 +33,6 @@ function mountStructuralMarkWithDescendant(value = '@[world]') {
 	container.append(before, mark, after)
 	document.body.append(container)
 	store.dom.container(container)
-	store.dom.enable()
 	store.lifecycle.rendered()
 	const descendantText = descendant.firstChild
 	if (!(descendantText instanceof Text)) throw new Error('Structural mark descendant did not render a text node')
@@ -77,14 +75,13 @@ describe('replaceAllContentWith()', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', onChange})
-		store.value.enable()
+		store.lifecycle.mounted()
 
 		replaceAllContentWith(store, 'world')
 
 		expect(onChange).toHaveBeenCalledWith('world')
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-		store.value.disable()
 	})
 })
 

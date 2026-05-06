@@ -1,27 +1,25 @@
 import type {CaretLocation, CaretRecovery, Result, TokenAddress} from '../../shared/editorContracts'
-import {signal} from '../../shared/signals'
-import type {Feature} from '../../shared/types'
+import {signal, watch} from '../../shared/signals'
 import type {Store} from '../../store/Store'
 import {enableFocus} from './focus'
 import {enableSelection} from './selection'
 
-export class CaretFeature implements Feature {
+export class CaretFeature {
 	readonly recovery = signal<CaretRecovery | undefined>(undefined)
 	readonly location = signal<CaretLocation | undefined>(undefined)
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
 	#disposers: Array<() => void> = []
 
-	constructor(private readonly _store: Store) {}
-
-	enable() {
-		if (this.#disposers.length) return
-		this.#disposers = [enableFocus(this._store), enableSelection(this._store)]
-	}
-
-	disable() {
-		this.#disposers.forEach(d => d())
-		this.#disposers = []
+	constructor(private readonly _store: Store) {
+		watch(this._store.lifecycle.mounted, () => {
+			if (this.#disposers.length) return
+			this.#disposers = [enableFocus(this._store), enableSelection(this._store)]
+		})
+		watch(this._store.lifecycle.unmounted, () => {
+			this.#disposers.forEach(d => d())
+			this.#disposers = []
+		})
 	}
 
 	placeAt(

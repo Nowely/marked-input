@@ -1,4 +1,4 @@
-import {effect as alienEffect, isReactive} from '@markput/core'
+import {effect, isReactive} from '@markput/core'
 import type {Signal, Computed, SignalValues, Store} from '@markput/core'
 import {shallowRef, onUnmounted, type Ref} from 'vue'
 
@@ -28,10 +28,10 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 		return out
 	}
 
-	// shallowRef + alien-signals effect bridges the two reactive systems.
+	// shallowRef + effect bridges the two reactive systems.
 	// The effect re-runs whenever tracked signals change, updating the ref.
 	const r = shallowRef<unknown>(undefined)
-	const stop = alienEffect(() => {
+	const stop = effect(() => {
 		r.value = getValue()
 	})
 	onUnmounted(stop)

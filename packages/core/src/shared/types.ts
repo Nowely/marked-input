@@ -151,8 +151,3 @@ export type DragAction =
 export interface DragActions {
 	action: {(action: DragAction): void}
 }
-
-export interface Feature {
-	enable(): void
-	disable(): void
-}
