@@ -151,6 +151,3 @@ export type DragAction =
 export interface DragActions {
 	action: {(action: DragAction): void}
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface Feature {}
