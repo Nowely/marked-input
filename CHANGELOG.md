@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/Nowely/marked-input/compare/0.13.0...0.13.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* publish 0.13.0 packages ([#226](https://github.com/Nowely/marked-input/issues/226)) ([3387dc2](https://github.com/Nowely/marked-input/commit/3387dc278d8eb5ee37d89b999c19ae08b9eee946))
+
 ## [0.13.0](https://github.com/Nowely/marked-input/compare/0.12.1...0.13.0) (2026-05-05)
 
 
