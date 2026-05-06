@@ -51,6 +51,14 @@ describe('LifecycleFeature', () => {
 			expect(observed).toHaveBeenCalledTimes(1)
 		})
 
+		it('does nothing if registered after mount', () => {
+			const store = new Store()
+			const setup = vi.fn()
+			store.lifecycle.mounted()
+			store.lifecycle.onMounted(setup)
+			expect(setup).not.toHaveBeenCalled()
+		})
+
 		it('re-runs setup with a fresh scope on remount', () => {
 			const store = new Store()
 			const source = signal(0)
