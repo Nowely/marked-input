@@ -19,7 +19,7 @@ export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
 
-	readonly props = new PropsFeature(this)
+	readonly props = new PropsFeature()
 	readonly handler = new MarkputHandler(this)
 
 	readonly lifecycle = new LifecycleFeature()

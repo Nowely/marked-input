@@ -11,7 +11,6 @@ import type {
 	Slot,
 } from '../../shared/types'
 import {shallow} from '../../shared/utils/shallow'
-import type {Store} from '../../store/Store'
 
 export class PropsFeature {
 	readonly value = signal<string | undefined>(undefined, {readonly: true})
@@ -37,7 +36,7 @@ export class PropsFeature {
 	readonly slots = signal<CoreSlots | undefined>(undefined, {readonly: true})
 	readonly slotProps = signal<CoreSlotProps | undefined>(undefined, {readonly: true})
 
-	constructor(private readonly _store: Store) {}
+	constructor() {}
 
 	set(values: Partial<SignalValues<typeof this>>): void {
 		batch(
