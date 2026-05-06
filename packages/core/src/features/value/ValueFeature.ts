@@ -8,8 +8,7 @@ export class ValueFeature {
 
 	readonly current = computed<string>({
 		initial: () => this._store.props.value() ?? this._store.props.defaultValue() ?? '',
-		// oxlint-disable-next-line typescript-eslint/no-non-null-assertion -- guarded by isControlledMode()
-		get: field => (this.isControlledMode() ? this._store.props.value()! : field()),
+		get: field => (this.isControlledMode() ? (this._store.props.value() ?? '') : field()),
 		set: (next, field) => {
 			if (next === undefined) return
 			if (this.isControlledMode()) {
