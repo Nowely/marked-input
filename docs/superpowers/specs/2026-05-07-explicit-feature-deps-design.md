@@ -129,11 +129,16 @@ Value is no longer an imperative driver of tokens.
 
 Public surface on `ParsingFeature` after Step 1:
 
-- `parseValue(value)`, `acceptTokens(tokens)`, and `sync(value?)` become
-  internal implementation details. Existing tests that call them
-  migrate to drive parsing through `store.value.replaceAll(text)`,
-  which is the canonical entry point for "set the editor content and
-  observe the parsed tokens".
+- `parseValue(value)` and `sync(value?)` become internal — they are
+  pure implementation details with no callers outside `ParsingFeature`
+  itself after the inversion. Tests that called `sync()` migrate to
+  `store.value.replaceAll(text)` + `store.lifecycle.mounted()`.
+- `acceptTokens(tokens)` **stays public** as a test affordance. It is
+  the only way to inject a specific token arrangement (e.g. two
+  explicit block-row text tokens) without wiring a full markup pattern.
+  `DragFeature.spec.ts` depends on it. Making it private would force
+  drag tests to rely on parser output that cannot reproduce arbitrary
+  token structures from plain text.
 - `reparse` remains public as an event-based affordance for forcing a
   re-parse without a value change (e.g., after config/options mutate
   outside the signal graph). No public callers in the runtime, but
@@ -197,9 +202,21 @@ helpers that currently take a `store` argument keep that shape. They
 are not features. Narrowing their parameter types is a separate,
 optional cleanup.
 
+### D7 — TriggerFinder stops taking Store
+
+`TriggerFinder` in `features/caret/TriggerFinder.ts` currently accepts
+`store?: Store` and only uses `store.dom.rawPositionFromBoundary` in its
+`#rawRangeForMatch` method. Change the parameter type from
+`store?: Store` to `dom?: DomFeature`. Update `OverlayFeature` to pass
+`this.dom` (or `this._store.dom` during the narrowing phase) instead of
+`this._store`.
+
+This removes the last hidden Store dependency from `OverlayFeature`'s
+dep chain through a helper.
+
 ## Target Dependency Graph
 
-After Steps 1 and 2 the graph is acyclic:
+After all steps the graph is acyclic:
 
 ```
 lifecycle → ∅
@@ -211,9 +228,9 @@ value     → lifecycle, props, caret
 parsing   → lifecycle, value, mark, props, slots
 dom       → lifecycle, props, caret, parsing
 overlay   → lifecycle, props, value, dom, caret, parsing
-keyboard  → caret, dom, props, value, parsing
-drag      → caret, dom, props, value, parsing
-clipboard → caret, dom, props, value, parsing
+keyboard  → Store (behavior modules only; see D6)
+drag      → props, value, parsing
+clipboard → lifecycle, value, dom, parsing
 ```
 
 Construction order in `Store` (top-to-bottom field initializers):
@@ -303,14 +320,29 @@ Commit: `docs: describe explicit feature deps and acyclic store`.
 
 Breaking changes visible to consumers of `@markput/core`:
 
+**Removed methods:**
 - `store.caret.placeAt(rawPosition, affinity)` → removed.
   Replacement: `store.dom.placeCaretAtRawPosition(rawPosition, affinity)`.
 - `store.caret.focus(address, boundary)` → removed.
   Replacement: `store.dom.focusAddress(address, boundary)`.
+- `store.parsing.sync(value?)` → removed. No replacement; drive value
+  changes through `store.value.replaceAll(text)`.
+- `store.parsing.parseValue(value)` → removed. No replacement; use
+  `store.parsing.tokens()` to read the derived token state.
 
-No other public surface changes. `store.value.replaceRange/replaceAll`,
-`store.parsing.sync/reparse`, all signal shapes, and adapter props
-stay the same.
+**Signature changes (breaking):**
+- `computeTokensFromValue(store, value)` in `@markput/core` →
+  `computeTokensFromValue(parser, value)` where `parser` is
+  `Parser | undefined` (obtainable from `store.parsing.parser()`).
+- `parseUnionLabels(store, ...indexes)` →
+  `parseUnionLabels(parser, tokens, ...indexes)` where `tokens` is
+  `readonly Token[]` (obtainable from `store.parsing.tokens()`).
+- `getRangeMap(store)` → `getRangeMap(tokens)` where `tokens` is
+  `readonly Token[]`.
+
+`store.value.replaceRange/replaceAll`, `store.parsing.acceptTokens`,
+`store.parsing.reparse`, all signal shapes, and adapter props stay the
+same.
 
 Release note: this is a minor-version-breaking change on the `next`
 branch. Pre-1.0 semantics apply.
@@ -320,16 +352,17 @@ branch. Pre-1.0 semantics apply.
 - **Regression guard for Step 1:** the new controlled-rejection spec
   described above.
 - **Existing ValueFeature specs:** continue to pass unchanged.
-- **Existing ParsingFeature specs:** the 16 tests that currently call
-  `store.parsing.sync(...)` or `store.parsing.acceptTokens(...)`
-  migrate to driving the feature through `store.value.replaceAll(...)`.
-  Assertions on resulting `store.parsing.tokens()` shape stay the
-  same. Specs that exercise the removed `caret.recovery` guard path
-  (lines 157, 170, 185) either delete or rewrite to verify the new
-  derivation behavior (reparse happens on value change; recovery is
-  observed by DOM, not Parsing).
-- **DragFeature spec** (`store.parsing.acceptTokens` call at line 46)
-  migrates to `store.value.replaceAll(...)`.
+- **Existing ParsingFeature specs:** rewritten to drive via
+  `store.value.replaceAll(...)` + `store.lifecycle.mounted()`.
+  Tests that exercise the `caret.recovery` guard path (which no longer
+  exists) are deleted. `DragFeature.spec.ts` keeps its `acceptTokens`
+  call (see D1 note on why `acceptTokens` stays public).
+- **Signal ordering guarantee spec:** verify that `store.parsing.tokens()`
+  is already updated when a `store.value.change` handler fires. This
+  depends on `ParsingFeature` subscribing to `value.current` at
+  construction time (before `lifecycle.mounted()`), while
+  `ValueFeature` registers its `change()` emission inside `onMounted`.
+  Subscription order: Parsing first, Value second.
 - **Existing DomFeature specs:** unchanged. The `#applyPendingRecovery`
   path now calls an internal method instead of bouncing through Caret;
   observable behavior is identical.
@@ -341,11 +374,12 @@ branch. Pre-1.0 semantics apply.
 
 ## Risks
 
-- **Signal ordering in Step 1.** Today `#accept` does parse, accept,
-  set recovery synchronously in one batch. After inversion, Parsing
-  subscribes to `value.current` and fires its own batched effect.
-  Verification: the controlled-rejection spec plus the existing
-  "edit with recovery" specs catch ordering regressions.
+- **Signal ordering (Step 1).** After inversion, `change()` firing
+  after `parsing.tokens` updates depends on `ParsingFeature` subscribing
+  before `ValueFeature` does. This ordering is guaranteed as long as
+  `mark.enabled` becomes true before `lifecycle.mounted()` fires (the
+  normal usage path). Document this contract in `architecture.md` and
+  pin it with a regression spec.
 - **Hidden cycle reintroduction.** Once converted to explicit
   instance-typed deps, reintroducing a cycle is a compile error
   ("used before declaration"). Harder to regress than today.
@@ -354,9 +388,12 @@ branch. Pre-1.0 semantics apply.
   it would not be caught by the explicit-deps design. Acceptable
   because those modules are attached at construction of the owning
   feature and do not introduce long-lived cross-feature references.
-- **PropsFeature used-parameter assumption.** Verified by reading
-  the file. If a future patch adds a `_store` read in `PropsFeature`,
-  Step 3 regresses it to "no parameter".
+- **`valueParser.ts` utilities are public API.** `computeTokensFromValue`,
+  `parseUnionLabels`, `getRangeMap` are exported from `@markput/core`
+  and documented in `packages/core/README.md`. Their signatures change
+  in Step 3 (no longer receive `Store`). This is a breaking change;
+  verify no adapter package imports them before finalizing the
+  signature change.
 
 ## Verification
 
@@ -376,14 +413,8 @@ Focused iteration during a step may use
 
 ## Out-of-Scope Follow-ups
 
-Explicitly not part of this plan; surface them as separate issues if
-they start to hurt:
-
 - Narrowing `store` parameters in behavior modules
   (`features/caret/focus.ts` etc.).
-- Refactoring `TriggerFinder.find(options, predicate, store)` and
-  similar shared utils that currently take the whole Store to take
-  explicit, narrower deps.
 - Extracting interfaces per feature for mock-heavy test ergonomics.
 - Breaking `OverlayFeature` or `KeyboardFeature` into smaller features
   if their deps object grows unwieldy in Step 3.

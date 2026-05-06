@@ -4,7 +4,7 @@
 
 **Goal:** Replace the Store service-locator pattern with explicit positional constructor dependencies in every feature, after first removing all cycles from the feature dependency graph.
 
-**Architecture:** Three cycles are broken in order — value↔parsing (invert: Parsing subscribes to Value), caret↔dom (delete `CaretFeature.placeAt/focus`, move wiring to Store), parsing→caret (guard deleted as a side-effect of cycle 1). Then every feature constructor is converted from `_store: Store` to positional parameter properties with concrete feature types, and Store is rewritten to construct features top-to-bottom in dependency order.
+**Architecture:** Three cycles are broken in order — value↔parsing (invert: Parsing subscribes to Value), caret↔dom (delete `CaretFeature.placeAt/focus`, move wiring to Store), parsing→caret (guard deleted as side-effect of cycle 1). Then every feature constructor is converted from `_store: Store` to positional parameter properties with concrete feature types, and Store is rewritten to construct features top-to-bottom in dependency order.
 
 **Tech Stack:** TypeScript, Vitest, pnpm workspaces. All commands run from the repo root unless noted. Core source lives in `packages/core/src/`.
 
@@ -12,71 +12,69 @@
 
 ## File Map
 
-Files touched by each phase:
-
 **Phase 0 — dep narrowing (no behavior change)**
-- Modify: all feature files listed in Phase 0 tasks
+- Modify: `features/props/PropsFeature.ts`, `features/mark/MarkFeature.ts`, `features/slots/SlotsFeature.ts`, `features/value/ValueFeature.ts`, `features/caret/CaretFeature.ts`, `features/dom/DomFeature.ts`, `features/parsing/ParseFeature.ts`
+- Modify: `store/Store.ts`
 
-**Phase 1 — invert value↔parsing**
-- Modify: `features/value/ValueFeature.ts`
+**Phase 1 — invert value↔parsing (TDD order: specs first, impl second)**
+- Modify: `features/parsing/ParseFeature.spec.ts` (rewrite)
+- Modify: `features/value/ValueFeature.spec.ts` (add two specs)
 - Modify: `features/parsing/ParseFeature.ts`
-- Modify: `features/value/ValueFeature.spec.ts` (add spec)
-- Modify: `features/parsing/ParseFeature.spec.ts` (rewrite tests)
-- Modify: `features/drag/DragFeature.spec.ts` (migrate one call)
+- Modify: `features/value/ValueFeature.ts`
 
-**Phase 2 — remove caret.placeAt/focus**
+**Phase 2 — remove caret.placeAt/focus + TriggerFinder**
 - Modify: `features/caret/CaretFeature.ts`
-- Modify: `features/caret/CaretFeature.spec.ts`
+- Modify: `features/caret/TriggerFinder.ts`
 - Modify: `features/keyboard/arrowNav.ts`
 - Modify: `features/keyboard/blockEdit.ts`
 - Modify: `features/dom/DomFeature.ts`
+- Modify: `features/overlay/OverlayFeature.ts`
 - Modify: `features/navigation/README.md`
 - Modify: `store/Store.ts`
 
-**Phase 3 — explicit positional deps**
+**Phase 3 — parseWithParser + positional deps**
+- Modify: `features/parsing/utils/valueParser.ts`
+- Modify: `features/parsing/ParseFeature.ts`
+- Modify: all 10 feature files
 - Modify: `store/Store.ts`
-- Modify: every feature file (10 files)
 
-**Phase 4 — docs**
+**Phase 4 — docs + verification**
 - Modify: `packages/website/src/content/docs/development/architecture.md`
-- Modify: `features/navigation/README.md`
 
 ---
 
-## Task 1: Narrow `PropsFeature` — drop unused Store parameter
+## Phase 0 — Dep Narrowing
+
+### Task 1 (Phase 0): Drop unused Store parameter from `PropsFeature`
 
 **Files:**
 - Modify: `packages/core/src/features/props/PropsFeature.ts`
 - Modify: `packages/core/src/store/Store.ts`
 
-`PropsFeature` currently accepts `_store: Store` but never reads it.
+`PropsFeature` accepts `_store: Store` but never reads it.
 
 - [ ] **Step 1: Remove the parameter from `PropsFeature`**
 
-In `packages/core/src/features/props/PropsFeature.ts`, delete line 40:
+In `packages/core/src/features/props/PropsFeature.ts`, delete the import and constructor body:
 
 ```ts
-// before
-constructor(private readonly _store: Store) {}
+// delete this line:
+import type {Store} from '../../store/Store'
 
-// after
+// change from:
+constructor(private readonly _store: Store) {}
+// to:
 constructor() {}
 ```
 
-Also delete the unused import at line 14:
-```ts
-import type {Store} from '../../store/Store'  // delete this line
-```
+- [ ] **Step 2: Update Store**
 
-- [ ] **Step 2: Update the Store construction call**
-
-In `packages/core/src/store/Store.ts`, change:
+In `packages/core/src/store/Store.ts`:
 
 ```ts
-// before
+// before:
 readonly props = new PropsFeature(this)
-
-// after
+// after:
 readonly props = new PropsFeature()
 ```
 
@@ -87,7 +85,7 @@ pnpm -w exec vitest run packages/core/src
 pnpm run typecheck
 ```
 
-Expected: all pass, no errors.
+Expected: all pass.
 
 - [ ] **Step 4: Commit**
 
@@ -98,28 +96,26 @@ git commit -m "refactor(core): remove unused Store parameter from PropsFeature"
 
 ---
 
-## Task 2: Narrow Store parameter in leaf features (MarkFeature, SlotsFeature)
+### Task 2 (Phase 0): Narrow `MarkFeature` and `SlotsFeature` to `Pick<Store, 'props'>`
 
 **Files:**
 - Modify: `packages/core/src/features/mark/MarkFeature.ts`
 - Modify: `packages/core/src/features/slots/SlotsFeature.ts`
-
-Both features only use `props`. Narrow their `_store` type so TypeScript enforces it.
 
 - [ ] **Step 1: Narrow `MarkFeature`**
 
 In `packages/core/src/features/mark/MarkFeature.ts`, change:
 
 ```ts
-// before
+// before:
 import type {Store} from '../../store/Store'
 // ...
 constructor(private readonly _store: Store) {}
 
-// after
-import type {PropsFeature} from '../props/PropsFeature'
+// after:
+import type {Store} from '../../store/Store'
 // ...
-constructor(private readonly _store: Pick<{props: PropsFeature}, 'props'>) {}
+constructor(private readonly _store: Pick<Store, 'props'>) {}
 ```
 
 - [ ] **Step 2: Narrow `SlotsFeature`**
@@ -127,15 +123,10 @@ constructor(private readonly _store: Pick<{props: PropsFeature}, 'props'>) {}
 In `packages/core/src/features/slots/SlotsFeature.ts`, change:
 
 ```ts
-// before
-import type {Store} from '../../store/Store'
-// ...
+// before:
 constructor(private readonly _store: Store) {}
-
-// after
-import type {PropsFeature} from '../props/PropsFeature'
-// ...
-constructor(private readonly _store: Pick<{props: PropsFeature}, 'props'>) {}
+// after:
+constructor(private readonly _store: Pick<Store, 'props'>) {}
 ```
 
 - [ ] **Step 3: Verify**
@@ -151,12 +142,12 @@ Expected: all pass.
 
 ```
 git add packages/core/src/features/mark/MarkFeature.ts packages/core/src/features/slots/SlotsFeature.ts
-git commit -m "refactor(core): narrow Store dep to props in MarkFeature and SlotsFeature"
+git commit -m "refactor(core): narrow Store dep to Pick<Store, 'props'> in MarkFeature and SlotsFeature"
 ```
 
 ---
 
-## Task 3: Narrow Store parameter in ValueFeature, CaretFeature, DomFeature, ParsingFeature
+### Task 3 (Phase 0): Narrow `ValueFeature`, `CaretFeature`, `DomFeature`, `ParsingFeature`
 
 **Files:**
 - Modify: `packages/core/src/features/value/ValueFeature.ts`
@@ -164,130 +155,50 @@ git commit -m "refactor(core): narrow Store dep to props in MarkFeature and Slot
 - Modify: `packages/core/src/features/dom/DomFeature.ts`
 - Modify: `packages/core/src/features/parsing/ParseFeature.ts`
 
-Narrow `_store: Store` to a `Pick` listing only actually-used members. This is a pure type change — no logic moves.
+Narrow `_store: Store` to `Pick<Store, ...>` listing only actually-used store members. This is a pure type change — no logic moves. Use `Pick<Store, '...'>` to pick from the Store type itself (not from a redeclared object literal, which would be redundant).
 
 - [ ] **Step 1: Narrow `ValueFeature`**
 
-In `packages/core/src/features/value/ValueFeature.ts`, replace:
+In `packages/core/src/features/value/ValueFeature.ts`:
 
 ```ts
-import type {Store} from '../../store/Store'
-```
-
-with:
-
-```ts
-import type {CaretFeature} from '../caret/CaretFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
-import type {PropsFeature} from '../props/PropsFeature'
-import type {ParsingFeature} from '../parsing/ParseFeature'
-```
-
-And change the constructor signature:
-
-```ts
-// before
+// change constructor signature from:
 constructor(private readonly _store: Store) {
-
-// after
-constructor(
-  private readonly _store: Pick<{
-    lifecycle: LifecycleFeature
-    props: PropsFeature
-    parsing: ParsingFeature
-    caret: CaretFeature
-  }, 'lifecycle' | 'props' | 'parsing' | 'caret'>
-) {
+// to:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'parsing' | 'caret'>) {
 ```
 
 - [ ] **Step 2: Narrow `CaretFeature`**
 
-In `packages/core/src/features/caret/CaretFeature.ts`, replace:
+In `packages/core/src/features/caret/CaretFeature.ts`:
 
 ```ts
-import type {Store} from '../../store/Store'
-```
-
-with:
-
-```ts
-import type {DomFeature} from '../dom/DomFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
-```
-
-And change the constructor:
-
-```ts
-// before
+// change constructor signature from:
 constructor(private readonly _store: Store) {
-
-// after
-constructor(
-  private readonly _store: Pick<{
-    lifecycle: LifecycleFeature
-    dom: DomFeature
-  }, 'lifecycle' | 'dom'>
-) {
+// to:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'dom'>) {
 ```
 
 - [ ] **Step 3: Narrow `DomFeature`**
 
-In `packages/core/src/features/dom/DomFeature.ts`, replace the Store import with:
+In `packages/core/src/features/dom/DomFeature.ts`:
 
 ```ts
-import type {CaretFeature} from '../caret/CaretFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
-import type {ParsingFeature} from '../parsing/ParseFeature'
-import type {PropsFeature} from '../props/PropsFeature'
-```
-
-And change the constructor:
-
-```ts
-// before
+// change constructor signature from:
 constructor(private readonly _store: Store) {
-
-// after
-constructor(
-  private readonly _store: Pick<{
-    lifecycle: LifecycleFeature
-    props: PropsFeature
-    caret: CaretFeature
-    parsing: ParsingFeature
-  }, 'lifecycle' | 'props' | 'caret' | 'parsing'>
-) {
+// to:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'caret' | 'parsing'>) {
 ```
 
 - [ ] **Step 4: Narrow `ParsingFeature`**
 
-In `packages/core/src/features/parsing/ParseFeature.ts`, replace the Store import with:
+In `packages/core/src/features/parsing/ParseFeature.ts`:
 
 ```ts
-import type {CaretFeature} from '../caret/CaretFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
-import type {MarkFeature} from '../mark/MarkFeature'
-import type {PropsFeature} from '../props/PropsFeature'
-import type {SlotsFeature} from '../slots/SlotsFeature'
-import type {ValueFeature} from '../value/ValueFeature'
-```
-
-And change the constructor:
-
-```ts
-// before
+// change constructor signature from:
 constructor(private readonly _store: Store) {
-
-// after
-constructor(
-  private readonly _store: Pick<{
-    lifecycle: LifecycleFeature
-    mark: MarkFeature
-    props: PropsFeature
-    slots: SlotsFeature
-    value: ValueFeature
-    caret: CaretFeature
-  }, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value' | 'caret'>
-) {
+// to:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value' | 'caret'>) {
 ```
 
 - [ ] **Step 5: Verify**
@@ -297,225 +208,40 @@ pnpm -w exec vitest run packages/core/src
 pnpm run typecheck
 ```
 
-Expected: all pass. Any type error here means a feature is accessing something outside its declared dep list — fix the dep list to match reality.
+Expected: all pass. Any type error means a feature is accessing a store member outside its declared list — fix the `Pick` to match reality.
 
 - [ ] **Step 6: Commit**
 
 ```
 git add packages/core/src/features/value/ValueFeature.ts packages/core/src/features/caret/CaretFeature.ts packages/core/src/features/dom/DomFeature.ts packages/core/src/features/parsing/ParseFeature.ts
-git commit -m "refactor(core): narrow Store parameter types to actual feature deps"
+git commit -m "refactor(core): narrow Store parameter types to Pick<Store, ...> in each feature"
 ```
 
 ---
 
-## Task 4: Add regression spec — controlled rejection must not leak recovery
+## Phase 1 — Invert value↔parsing
 
-**Files:**
-- Modify: `packages/core/src/features/value/ValueFeature.spec.ts`
+Phase 1 follows TDD order: **write the specs against the new contract first (they will fail), then implement the inversion (they turn green), then commit.** Never commit a failing test.
 
-Before inverting the parsing subscription, add a test that pins the correct behavior: when a controlled parent receives `onChange` but does not echo the value back, `caret.recovery` must remain `undefined`.
-
-- [ ] **Step 1: Add the spec**
-
-In `packages/core/src/features/value/ValueFeature.spec.ts`, append inside the `describe('replaceRange()', ...)` block (after line 178, before the closing `}`):
-
-```ts
-it('does not set recovery when controlled parent ignores the change', () => {
-  const store = new Store()
-  const recovery = {kind: 'caret' as const, rawPosition: 3}
-  // onChange receives the new value but deliberately does not update props.value
-  store.props.set({value: 'hello', onChange: () => {}})
-  store.lifecycle.mounted()
-
-  store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
-
-  expect(store.caret.recovery()).toBeUndefined()
-  expect(store.value.current()).toBe('hello')
-})
-```
-
-- [ ] **Step 2: Run the new spec to confirm it passes with current code**
-
-```
-pnpm -w exec vitest run packages/core/src/features/value/ValueFeature.spec.ts
-```
-
-Expected: all pass (this behavior already works; the spec is a regression guard).
-
-- [ ] **Step 3: Commit**
-
-```
-git add packages/core/src/features/value/ValueFeature.spec.ts
-git commit -m "test(core): guard controlled-rejection does not leak caret recovery"
-```
-
----
-
-## Task 5: Invert value→parsing — make Parsing subscribe to Value
-
-**Files:**
-- Modify: `packages/core/src/features/parsing/ParseFeature.ts`
-- Modify: `packages/core/src/features/value/ValueFeature.ts`
-
-This is the core inversion. Parsing will watch `value.current` and re-parse automatically. Value stops calling `parsing.parseValue / acceptTokens`.
-
-- [ ] **Step 1: Rewrite `ParsingFeature` constructor**
-
-Replace the entire constructor in `packages/core/src/features/parsing/ParseFeature.ts` with:
-
-```ts
-constructor(
-  private readonly _store: Pick<{
-    lifecycle: LifecycleFeature
-    mark: MarkFeature
-    props: PropsFeature
-    slots: SlotsFeature
-    value: ValueFeature
-  }, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value'>
-) {
-  const toggle = (enabled: boolean) => {
-    if (enabled && !this.#scope) {
-      this.acceptTokens(this.parseValue(_store.value.current()))
-      this.#scope = effectScope(() => {
-        this.#subscribeValue()
-        this.#subscribeReactiveParse()
-        this.#subscribeReparse()
-      })
-    }
-    if (!enabled && this.#scope) {
-      this.#scope()
-      this.#scope = undefined
-    }
-  }
-
-  watch(_store.mark.enabled, toggle)
-  toggle(_store.mark.enabled())
-}
-```
-
-Also remove `caret` from the `Pick` dep list (it is no longer used). Update the import list at the top of the file — delete the `CaretFeature` import.
-
-- [ ] **Step 2: Replace the three private subscribe methods**
-
-Delete `#subscribeParse`, `#subscribeReactiveParse`. Add these three in their place:
-
-```ts
-#subscribeValue(): void {
-  watch(
-    computed(() => this._store.value.current()),
-    value => {
-      this.acceptTokens(this.parseValue(value))
-    }
-  )
-}
-
-#subscribeReactiveParse(): void {
-  watch(
-    computed(() => this.parser()),
-    () => {
-      this.acceptTokens(this.parseValue(this._store.value.current()))
-    }
-  )
-}
-
-#subscribeReparse(): void {
-  watch(this.reparse, () => {
-    this.acceptTokens(this.parseValue(this._store.value.current()))
-  })
-}
-```
-
-Also remove the `sync` public method — it is now internal behavior and no longer needed as a public entry point. `parseValue` and `acceptTokens` become private:
-
-```ts
-// change from:
-parseValue(value: string): Token[] {
-// to:
-#parseValue(value: string): Token[] {
-
-// change from:
-acceptTokens(tokens: Token[]): void {
-// to:
-#acceptTokens(tokens: Token[]): void {
-```
-
-Update every internal call site within `ParseFeature` (`this.acceptTokens` → `this.#acceptTokens`, `this.parseValue` → `this.#parseValue`).
-
-The `parseWithParser` import is still used by `#parseValue`. Keep it.
-
-- [ ] **Step 3: Simplify `ValueFeature.#accept`**
-
-In `packages/core/src/features/value/ValueFeature.ts`, replace `#accept`:
-
-```ts
-// before
-#accept(value: string): void {
-  const pending = this.#pending
-  this.#pending = undefined
-  const tokens = this._store.parsing.parseValue(value)
-  batch(() => this._store.parsing.acceptTokens(tokens))
-  if (pending?.value === value) {
-    this._store.caret.recovery(pending.recovery)
-  }
-}
-
-// after
-#accept(value: string): void {
-  const pending = this.#pending
-  this.#pending = undefined
-  if (pending?.value === value) {
-    this._store.caret.recovery(pending.recovery)
-  }
-}
-```
-
-Remove `parsing` from `ValueFeature`'s `Pick` dep list (it is no longer used). Update the import block — delete the `ParsingFeature` import. The constructor in `Store.ts` still passes `parsing` to `ValueFeature` until Task 9; the narrowed type will now reject it there. Fix `Store.ts` at the same time by removing `parsing: this.parsing` from the `ValueFeature` constructor call:
-
-```ts
-// before
-readonly value = new ValueFeature(this)
-
-// after — still passes `this` for now, narrowed type accepts it
-readonly value = new ValueFeature(this)
-```
-
-(The `Pick` narrowing means TypeScript accepts `this` because Store still has all the other required fields — `parsing` is just no longer in the `Pick`, so it is silently ignored. No store-side change needed yet.)
-
-- [ ] **Step 4: Verify**
-
-```
-pnpm -w exec vitest run packages/core/src/features/value/ValueFeature.spec.ts
-pnpm -w exec vitest run packages/core/src/features/parsing/ParseFeature.spec.ts
-pnpm run typecheck
-```
-
-Expected: ValueFeature specs all pass. ParsingFeature specs will have failures — that is expected and is fixed in Task 6.
-
-- [ ] **Step 5: Commit**
-
-```
-git add packages/core/src/features/parsing/ParseFeature.ts packages/core/src/features/value/ValueFeature.ts
-git commit -m "refactor(core): make Parsing subscribe to Value instead of being driven by it"
-```
-
----
-
-## Task 6: Migrate ParsingFeature and DragFeature specs
+### Task 4 (Phase 1): Migrate `ParseFeature.spec.ts` to post-inversion contract
 
 **Files:**
 - Modify: `packages/core/src/features/parsing/ParseFeature.spec.ts`
-- Modify: `packages/core/src/features/drag/DragFeature.spec.ts`
+- Modify: `packages/core/src/features/value/ValueFeature.spec.ts`
 
-`sync()`, `acceptTokens()`, and `parseValue()` are now private. Tests must go through `store.value.replaceAll()` + `store.lifecycle.mounted()` to drive parsing. The `caret.recovery` guard tests are deleted because the guard no longer exists.
+Rewrite the spec so it drives parsing through `store.value.replaceAll / store.lifecycle.mounted()` instead of `store.parsing.sync()`. Add the two guard specs required by the inversion.
+
+After this task those new tests **must fail** (they call APIs that current code doesn't provide). Do not implement anything yet.
 
 - [ ] **Step 1: Rewrite `ParseFeature.spec.ts`**
 
-Replace the entire file content with:
+Replace the entire content of `packages/core/src/features/parsing/ParseFeature.spec.ts`:
 
 ```ts
 import {describe, it, expect, beforeEach} from 'vitest'
-
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import type {Token} from './parser/types'
 
 describe('ParsingFeature', () => {
   let store: Store
@@ -525,64 +251,52 @@ describe('ParsingFeature', () => {
   })
 
   function mountWith(value: string, withMark = true) {
-    if (withMark) store.props.set({Mark: () => null, defaultValue: value})
-    else store.props.set({defaultValue: value})
+    store.props.set({Mark: () => null, defaultValue: value})
+    if (!withMark) store.props.set({Mark: undefined})
     store.lifecycle.mounted()
   }
 
   describe('auto-parse on value change', () => {
     it('sets tokens from initial value on mount', () => {
       mountWith('hello')
-
       expect(store.parsing.tokens()).toEqual([
         {type: 'text', content: 'hello', position: {start: 0, end: 5}},
       ])
-
       store.props.set({Mark: undefined})
     })
 
-    it('sets tokens from explicit replaceAll', () => {
-      mountWith('')
-      store.value.replaceAll('default')
-
+    it('updates tokens when value changes via replaceAll', () => {
+      mountWith('hello')
+      store.value.replaceAll('world')
       expect(store.parsing.tokens()).toEqual([
-        {type: 'text', content: 'default', position: {start: 0, end: 7}},
+        {type: 'text', content: 'world', position: {start: 0, end: 5}},
       ])
-
       store.props.set({Mark: undefined})
     })
 
-    it('falls back to empty string when value is empty', () => {
+    it('falls back to empty string when defaultValue is empty', () => {
       mountWith('')
-
       expect(store.parsing.tokens()).toEqual([
         {type: 'text', content: '', position: {start: 0, end: 0}},
       ])
-
       store.props.set({Mark: undefined})
     })
 
-    it('does not write value state when parsing', () => {
+    it('parsing does not write value state', () => {
       mountWith('test')
-
       expect(store.value.current()).toBe('test')
       store.props.set({Mark: undefined})
     })
 
-    it('skips markup when no Mark override and no per-option Mark', () => {
-      store.props.set({options: [{markup: '@[__value__]'}], defaultValue: '@hello'})
+    it('parser is undefined when no Mark and no per-option Mark', () => {
+      store.props.set({options: [{markup: '@[__value__]'}]})
       store.lifecycle.mounted()
-
       expect(store.parsing.parser()).toBeUndefined()
-      expect(store.parsing.tokens()).toEqual([
-        {type: 'text', content: '@hello', position: {start: 0, end: 6}},
-      ])
     })
 
-    it('uses markup when Mark override is set', () => {
-      store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: '@hello'})
+    it('parser is defined when Mark override is set', () => {
+      store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
       store.lifecycle.mounted()
-
       expect(store.parsing.parser()).toBeDefined()
     })
   })
@@ -612,244 +326,231 @@ describe('ParsingFeature', () => {
     it('stops parse subscription after removing Mark', () => {
       mountWith('hello')
       const tokensBefore = store.parsing.tokens()
-
       store.props.set({Mark: undefined})
       store.parsing.reparse()
-
       expect(store.parsing.tokens()).toBe(tokensBefore)
     })
 
     it('re-enables and parses fresh after Mark removed and re-added', () => {
       mountWith('first')
       store.props.set({Mark: undefined})
-
       store.value.replaceAll('second')
       store.props.set({Mark: () => null})
-
       expect(store.parsing.tokens()).toEqual([
         {type: 'text', content: 'second', position: {start: 0, end: 6}},
       ])
-
       store.props.set({Mark: undefined})
     })
   })
 
   describe('reactive parse', () => {
-    it('does not react to props.value change without going through ValueFeature', () => {
-      mountWith('hello')
-      const tokensBefore = store.parsing.tokens()
-
-      // Directly setting props.value without lifecycle does not re-parse
-      store.props.set({value: 'world'})
-
-      expect(store.parsing.tokens()).toBe(tokensBefore)
-
-      store.props.set({Mark: undefined})
-    })
-
     it('re-parses when parser changes', () => {
       mountWith('hello @[world]')
       store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-
       expect(store.parsing.tokens()).toEqual([
         expect.objectContaining({type: 'text', content: 'hello '}),
         expect.objectContaining({type: 'mark', content: '@[world]', value: 'world'}),
         expect.objectContaining({type: 'text', content: ''}),
       ])
-
       store.props.set({Mark: undefined})
     })
   })
 
   describe('reparse event', () => {
-    it('re-parses from current value on reparse event', () => {
+    it('re-parses from current value on reparse', () => {
       mountWith('test')
       store.parsing.reparse()
-
       expect(store.parsing.tokens()).toEqual([
         {type: 'text', content: 'test', position: {start: 0, end: 4}},
       ])
-      expect(store.value.current()).toBe('test')
+      store.props.set({Mark: undefined})
+    })
+  })
 
+  describe('signal ordering guarantee', () => {
+    it('parsing.tokens is updated when value.change fires', () => {
+      // Guarantee: ParsingFeature subscribes to value.current at construction
+      // time (before lifecycle.mounted). ValueFeature emits change() inside
+      // onMounted. So the parsing subscription fires before change().
+      // This test pins that contract.
+      store.props.set({Mark: () => null, defaultValue: ''})
+      store.lifecycle.mounted()
+
+      let tokensAtChangeTime: Token[] | undefined
+      const stop = watch(store.value.change, () => {
+        tokensAtChangeTime = store.parsing.tokens()
+      })
+
+      store.value.replaceAll('hello')
+
+      expect(tokensAtChangeTime).toEqual([
+        {type: 'text', content: 'hello', position: {start: 0, end: 5}},
+      ])
+
+      stop()
       store.props.set({Mark: undefined})
     })
   })
 })
 ```
 
-- [ ] **Step 2: Fix the DragFeature spec**
+- [ ] **Step 2: Add two guard specs to `ValueFeature.spec.ts`**
 
-In `packages/core/src/features/drag/DragFeature.spec.ts`, replace lines 43–46:
+Append inside the `describe('replaceRange()', ...)` block in `packages/core/src/features/value/ValueFeature.spec.ts`, after the existing last test (line 178, before the closing `}`):
 
 ```ts
-// before
-it('commits drag edits through replaceAll with recovery metadata', () => {
-  store.props.set({layout: 'block', draggable: true})
+it('does not set recovery when controlled parent ignores the change', () => {
+  const store = new Store()
+  const recovery = {kind: 'caret' as const, rawPosition: 3}
+  // onChange deliberately does not echo the value back
+  store.props.set({value: 'hello', onChange: () => {}})
   store.lifecycle.mounted()
-  store.value.current('alpha\n\nbeta\n\n')
-  store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
 
-// after
-it('commits drag edits through replaceAll with recovery metadata', () => {
-  store.props.set({layout: 'block', draggable: true, Mark: () => null, defaultValue: 'alpha\n\nbeta\n\n'})
-  store.lifecycle.mounted()
+  store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+  expect(store.caret.recovery()).toBeUndefined()
+  expect(store.value.current()).toBe('hello')
+})
 ```
 
-Also delete the now-unused `text` helper function (lines 6–8) and its import `import type {TextToken} from '../parsing'` if `TextToken` is no longer referenced.
-
-- [ ] **Step 3: Run all affected specs**
+- [ ] **Step 3: Run specs to confirm they FAIL**
 
 ```
 pnpm -w exec vitest run packages/core/src/features/parsing/ParseFeature.spec.ts
-pnpm -w exec vitest run packages/core/src/features/drag/DragFeature.spec.ts
-pnpm -w exec vitest run packages/core/src/features/value/ValueFeature.spec.ts
 ```
 
-Expected: all pass.
+Expected: failures in tests that call APIs removed in Task 5 (e.g., `sync` no longer exists). **Failures here are correct.** If all tests pass, the spec is not testing the right contract.
 
-- [ ] **Step 4: Run full test suite**
+Note: The `DragFeature.spec.ts` test that uses `acceptTokens` is **not changed** — `acceptTokens` stays public (see spec D1).
 
-```
-pnpm test
-```
-
-Expected: all pass.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit the red specs**
 
 ```
-git add packages/core/src/features/parsing/ParseFeature.spec.ts packages/core/src/features/drag/DragFeature.spec.ts
-git commit -m "test(core): migrate parsing and drag specs from sync/acceptTokens to value.replaceAll"
+git add packages/core/src/features/parsing/ParseFeature.spec.ts packages/core/src/features/value/ValueFeature.spec.ts
+git commit -m "test(core): rewrite ParseFeature specs against post-inversion contract (red)"
 ```
 
 ---
 
-## Task 7: Remove `CaretFeature.placeAt` and `CaretFeature.focus`
+### Task 5 (Phase 1): Implement the value↔parsing inversion
 
 **Files:**
-- Modify: `packages/core/src/features/caret/CaretFeature.ts`
-- Modify: `packages/core/src/features/caret/CaretFeature.spec.ts`
-- Modify: `packages/core/src/features/keyboard/arrowNav.ts`
-- Modify: `packages/core/src/features/keyboard/blockEdit.ts`
-- Modify: `packages/core/src/features/dom/DomFeature.ts`
-- Modify: `packages/core/src/features/navigation/README.md`
+- Modify: `packages/core/src/features/parsing/ParseFeature.ts`
+- Modify: `packages/core/src/features/value/ValueFeature.ts`
 
-- [ ] **Step 1: Update `arrowNav.ts` call sites**
+This task turns the red specs from Task 4 green. Implement the inversion: Parsing subscribes to Value; Value stops calling parsing methods.
 
-In `packages/core/src/features/keyboard/arrowNav.ts`, replace the two `caret.focus` / `caret.placeAt` calls (lines 48, 54, 57):
+- [ ] **Step 1: Rewrite `ParsingFeature` constructor and private methods**
+
+In `packages/core/src/features/parsing/ParseFeature.ts`, replace the constructor and the three private methods `#subscribeParse`, `#subscribeReactiveParse`, and the `parseWithParser` call with:
 
 ```ts
-// before (line 48)
-const result = store.caret.focus(siblingAddress, direction === 'prev' ? 'end' : 'start')
-if (!result.ok) return false
-const sibling = store.parsing.index().resolve(siblingPath)
-if (sibling?.type === 'mark') return true
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value'>) {
+  // Note: 'caret' is removed from Pick — no longer needed.
+  const toggle = (enabled: boolean) => {
+    if (enabled && !this.#scope) {
+      // Parse current value immediately so tokens are ready before mounted
+      // subscribers (like OverlayFeature) read them.
+      this.acceptTokens(this.#parseValue(_store.value.current()))
+      this.#scope = effectScope(() => {
+        this.#subscribeValue()
+        this.#subscribeReactiveParse()
+        this.#subscribeReparse()
+      })
+    }
+    if (!enabled && this.#scope) {
+      this.#scope()
+      this.#scope = undefined
+    }
+  }
 
-if (direction === 'prev') {
-  store.caret.placeAt(sibling?.position.end ?? 0, 'before')
-  return true
+  watch(_store.mark.enabled, toggle)
+  toggle(_store.mark.enabled())
 }
-store.caret.placeAt(sibling?.position.start ?? 0, 'after')
-return true
 
-// after
-const result = store.dom.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
-if (!result.ok) return false
-const sibling = store.parsing.index().resolve(siblingPath)
-if (sibling?.type === 'mark') return true
-
-if (direction === 'prev') {
-  store.dom.placeCaretAtRawPosition(sibling?.position.end ?? 0, 'before')
-  return true
+#parseValue(value: string): Token[] {
+  const parser = this.parser()
+  if (!parser) {
+    return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
+  }
+  return parser.parse(value)
 }
-store.dom.placeCaretAtRawPosition(sibling?.position.start ?? 0, 'after')
-return true
+
+#subscribeValue(): void {
+  watch(
+    computed(() => this._store.value.current()),
+    v => {
+      this.acceptTokens(this.#parseValue(v))
+    }
+  )
+}
+
+#subscribeReactiveParse(): void {
+  watch(
+    computed(() => this.parser()),
+    () => {
+      this.acceptTokens(this.#parseValue(this._store.value.current()))
+    }
+  )
+}
+
+#subscribeReparse(): void {
+  watch(this.reparse, () => {
+    this.acceptTokens(this.#parseValue(this._store.value.current()))
+  })
+}
 ```
 
-- [ ] **Step 2: Update `blockEdit.ts` call site**
+Remove the `import {parseWithParser} from './utils/valueParser'` line — it is no longer used inside `ParseFeature`.
 
-In `packages/core/src/features/keyboard/blockEdit.ts`, in the `focusRow` function (line 202), change:
+Remove `caret` from the `Pick<Store, ...>` (updated in Step 1 above). The `parseValue` public method is also now deleted (replaced by private `#parseValue`). The `sync` public method is also deleted. `acceptTokens` **stays public** — it is used by tests in `DragFeature.spec.ts` and its removal would break test ergonomics with no way to inject specific token states.
 
-```ts
-// before
-if (address && store.caret.focus(address).ok) return
+- [ ] **Step 2: Simplify `ValueFeature.#accept`**
 
-// after
-if (address && store.dom.focusAddress(address).ok) return
-```
-
-- [ ] **Step 3: Fix the `DomFeature` self-call in `#applyPendingRecovery`**
-
-In `packages/core/src/features/dom/DomFeature.ts`, inside `#applyPendingRecovery` (around line 771), change:
+In `packages/core/src/features/value/ValueFeature.ts`, replace the `#accept` method:
 
 ```ts
-// before
-const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
+// before:
+#accept(value: string): void {
+  const pending = this.#pending
+  this.#pending = undefined
+  const tokens = this._store.parsing.parseValue(value)
+  batch(() => this._store.parsing.acceptTokens(tokens))
+  if (pending?.value === value) {
+    this._store.caret.recovery(pending.recovery)
+  }
+}
 
-// after
-const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
-```
-
-- [ ] **Step 4: Remove `placeAt` and `focus` from `CaretFeature`**
-
-In `packages/core/src/features/caret/CaretFeature.ts`, delete the `placeAt` and `focus` methods (lines 19–28). The file becomes:
-
-```ts
-import type {CaretLocation, CaretRecovery} from '../../shared/editorContracts'
-import {signal} from '../../shared/signals'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
-import type {DomFeature} from '../dom/DomFeature'
-import {enableFocus} from './focus'
-import {enableSelection} from './selection'
-
-export class CaretFeature {
-  readonly recovery = signal<CaretRecovery | undefined>(undefined)
-  readonly location = signal<CaretLocation | undefined>(undefined)
-  readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
-
-  constructor(
-    private readonly _store: Pick<{
-      lifecycle: LifecycleFeature
-      dom: DomFeature
-    }, 'lifecycle' | 'dom'>
-  ) {
-    _store.lifecycle.onMounted(() => {
-      enableFocus(_store)
-      enableSelection(_store)
-    })
+// after:
+#accept(value: string): void {
+  const pending = this.#pending
+  this.#pending = undefined
+  if (pending?.value === value) {
+    this._store.caret.recovery(pending.recovery)
   }
 }
 ```
 
-Note: `Result` and `TokenAddress` imports are only needed for the deleted methods — remove them if nothing else in the file uses them.
+Remove `parsing` from the `Pick<Store, ...>` in the constructor signature (it is no longer used):
 
-- [ ] **Step 5: Update `CaretFeature.spec.ts`**
-
-The spec currently tests `placeAt` / `focus` indirectly through type checks that are now removed. The two existing tests in `CaretFeature.spec.ts` do not reference those methods directly, so no change is needed there. Run to confirm:
-
-```
-pnpm -w exec vitest run packages/core/src/features/caret/CaretFeature.spec.ts
-```
-
-Expected: both tests pass.
-
-- [ ] **Step 6: Update navigation README**
-
-In `packages/core/src/features/navigation/README.md`, replace lines 10–11:
-
-```md
-- Use `store.caret.focus(address, boundary)` for mark focus.
-- Use `store.caret.placeAt(rawPosition)` for raw-position text recovery.
+```ts
+// before:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'parsing' | 'caret'>) {
+// after:
+constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'caret'>) {
 ```
 
-with:
+- [ ] **Step 3: Run specs to confirm they pass**
 
-```md
-- Use `store.dom.focusAddress(address, boundary)` for mark focus.
-- Use `store.dom.placeCaretAtRawPosition(rawPosition, affinity)` for raw-position text recovery.
+```
+pnpm -w exec vitest run packages/core/src/features/parsing/ParseFeature.spec.ts
+pnpm -w exec vitest run packages/core/src/features/value/ValueFeature.spec.ts
+pnpm -w exec vitest run packages/core/src
 ```
 
-- [ ] **Step 7: Verify**
+Expected: all pass.
+
+- [ ] **Step 4: Run the full suite**
 
 ```
 pnpm test
@@ -858,24 +559,153 @@ pnpm run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 5: Commit**
 
 ```
-git add packages/core/src/features/caret/CaretFeature.ts packages/core/src/features/caret/CaretFeature.spec.ts packages/core/src/features/keyboard/arrowNav.ts packages/core/src/features/keyboard/blockEdit.ts packages/core/src/features/dom/DomFeature.ts packages/core/src/features/navigation/README.md
-git commit -m "refactor(core): remove CaretFeature.placeAt/focus, use store.dom directly"
+git add packages/core/src/features/parsing/ParseFeature.ts packages/core/src/features/value/ValueFeature.ts
+git commit -m "refactor(core): make Parsing subscribe to Value — remove value↔parsing cycle"
 ```
 
 ---
 
-## Task 8: Move `enableFocus/enableSelection` wiring to Store
+## Phase 2 — Remove caret↔dom cycle
+
+### Task 6 (Phase 2): Delete `placeAt/focus`, move wiring to Store, fix TriggerFinder
+
+Tasks 7 and 8 from the original plan are merged here. Splitting them would leave `CaretFeature` calling `enableFocus/enableSelection` with a `Pick<Store, 'lifecycle' | 'dom'>` type that won't satisfy the `Store` parameter those helpers expect — a type error in an intermediate commit.
 
 **Files:**
 - Modify: `packages/core/src/features/caret/CaretFeature.ts`
+- Modify: `packages/core/src/features/caret/TriggerFinder.ts`
+- Modify: `packages/core/src/features/keyboard/arrowNav.ts`
+- Modify: `packages/core/src/features/keyboard/blockEdit.ts`
+- Modify: `packages/core/src/features/dom/DomFeature.ts`
+- Modify: `packages/core/src/features/overlay/OverlayFeature.ts`
+- Modify: `packages/core/src/features/navigation/README.md`
 - Modify: `packages/core/src/store/Store.ts`
 
-`CaretFeature` currently calls `enableFocus(_store)` / `enableSelection(_store)` in its constructor via `lifecycle.onMounted`. These helpers need `dom`, which is constructed after `caret` — so `caret` must not hold a dep on `dom`. Move the wiring up to `Store`.
+- [ ] **Step 1: Update `arrowNav.ts` — replace `caret.focus/placeAt` with `dom.*`**
 
-- [ ] **Step 1: Strip `CaretFeature` to pure state**
+In `packages/core/src/features/keyboard/arrowNav.ts`, replace lines 48–58:
+
+```ts
+// before:
+const result = store.caret.focus(siblingAddress, direction === 'prev' ? 'end' : 'start')
+if (!result.ok) return false
+const sibling = store.parsing.index().resolve(siblingPath)
+if (sibling?.type === 'mark') return true
+if (direction === 'prev') {
+  store.caret.placeAt(sibling?.position.end ?? 0, 'before')
+  return true
+}
+store.caret.placeAt(sibling?.position.start ?? 0, 'after')
+return true
+
+// after:
+const result = store.dom.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
+if (!result.ok) return false
+const sibling = store.parsing.index().resolve(siblingPath)
+if (sibling?.type === 'mark') return true
+if (direction === 'prev') {
+  store.dom.placeCaretAtRawPosition(sibling?.position.end ?? 0, 'before')
+  return true
+}
+store.dom.placeCaretAtRawPosition(sibling?.position.start ?? 0, 'after')
+return true
+```
+
+- [ ] **Step 2: Update `blockEdit.ts` — replace `caret.focus` with `dom.focusAddress`**
+
+In `packages/core/src/features/keyboard/blockEdit.ts`, in the `focusRow` function (around line 202):
+
+```ts
+// before:
+if (address && store.caret.focus(address).ok) return
+// after:
+if (address && store.dom.focusAddress(address).ok) return
+```
+
+- [ ] **Step 3: Fix `DomFeature.#applyPendingRecovery` self-call**
+
+In `packages/core/src/features/dom/DomFeature.ts`, inside `#applyPendingRecovery` (around line 771):
+
+```ts
+// before:
+const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
+// after:
+const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
+```
+
+- [ ] **Step 4: Fix `TriggerFinder` — replace `Store` dep with `DomFeature`**
+
+`TriggerFinder` accepts `store?: Store` but only uses `store.dom.rawPositionFromBoundary`. Change the parameter to `dom?: DomFeature`:
+
+In `packages/core/src/features/caret/TriggerFinder.ts`, at the top and in constructor + `#rawRangeForMatch`:
+
+```ts
+// replace:
+import type {Store} from '../../store/Store'
+// with:
+import type {DomFeature} from '../dom/DomFeature'
+
+// replace constructor:
+constructor(private readonly store?: Store) {
+// with:
+constructor(private readonly dom?: DomFeature) {
+
+// replace static find signature:
+static find<T>(
+  options: T[] | undefined,
+  getTrigger: TriggerExtractor<T>,
+  store?: Store
+): OverlayMatch<T> | undefined {
+  if (!options) return
+  if (!Caret.isSelectedPosition) return
+  try {
+    return new TriggerFinder(store).find(options, getTrigger)
+  } catch {
+    return undefined
+  }
+}
+// with:
+static find<T>(
+  options: T[] | undefined,
+  getTrigger: TriggerExtractor<T>,
+  dom?: DomFeature
+): OverlayMatch<T> | undefined {
+  if (!options) return
+  if (!Caret.isSelectedPosition) return
+  try {
+    return new TriggerFinder(dom).find(options, getTrigger)
+  } catch {
+    return undefined
+  }
+}
+
+// replace #rawRangeForMatch:
+#rawRangeForMatch(source: string, index: number) {
+  if (!this.dom) return {start: index, end: index + source.length}
+  const boundary = this.dom.rawPositionFromBoundary(this.node, index + source.length, 'after')
+  if (!boundary.ok) return undefined
+  return {
+    start: boundary.value - source.length,
+    end: boundary.value,
+  }
+}
+```
+
+- [ ] **Step 5: Update `OverlayFeature` to pass `dom` instead of `store`**
+
+In `packages/core/src/features/overlay/OverlayFeature.ts`, in `#probeTrigger`:
+
+```ts
+// before:
+TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store)
+// after:
+TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store.dom)
+```
+
+- [ ] **Step 6: Make `CaretFeature` pure state — delete `placeAt/focus` and constructor**
 
 Replace `packages/core/src/features/caret/CaretFeature.ts` entirely:
 
@@ -890,13 +720,18 @@ export class CaretFeature {
 }
 ```
 
-No constructor, no deps, no imports beyond signals and types.
+No imports from Store. No constructor. No `placeAt`. No `focus`.
 
-- [ ] **Step 2: Wire `enableFocus` and `enableSelection` in `Store`**
+- [ ] **Step 7: Move `enableFocus/enableSelection` wiring to `Store`**
 
-In `packages/core/src/store/Store.ts`, add an `init` block at the bottom of the class:
+In `packages/core/src/store/Store.ts`, add a constructor and imports:
 
 ```ts
+import {enableFocus} from '../features/caret/focus'
+import {enableSelection} from '../features/caret/selection'
+
+// ... (existing fields) ...
+
 constructor() {
   this.lifecycle.onMounted(() => {
     enableFocus(this)
@@ -905,14 +740,21 @@ constructor() {
 }
 ```
 
-Add imports at the top of `Store.ts`:
+- [ ] **Step 8: Update navigation README**
 
-```ts
-import {enableFocus} from '../features/caret/focus'
-import {enableSelection} from '../features/caret/selection'
+In `packages/core/src/features/navigation/README.md`, replace lines 10–11:
+
+```md
+// before:
+- Use `store.caret.focus(address, boundary)` for mark focus.
+- Use `store.caret.placeAt(rawPosition)` for raw-position text recovery.
+
+// after:
+- Use `store.dom.focusAddress(address, boundary)` for mark focus.
+- Use `store.dom.placeCaretAtRawPosition(rawPosition, affinity)` for raw-position text recovery.
 ```
 
-- [ ] **Step 3: Verify**
+- [ ] **Step 9: Verify**
 
 ```
 pnpm test
@@ -921,40 +763,116 @@ pnpm run typecheck
 
 Expected: all pass.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 10: Commit**
 
 ```
-git add packages/core/src/features/caret/CaretFeature.ts packages/core/src/store/Store.ts
-git commit -m "refactor(core): move caret focus/selection wiring to Store, CaretFeature becomes pure state"
+git add packages/core/src/features/caret/CaretFeature.ts packages/core/src/features/caret/TriggerFinder.ts packages/core/src/features/keyboard/arrowNav.ts packages/core/src/features/keyboard/blockEdit.ts packages/core/src/features/dom/DomFeature.ts packages/core/src/features/overlay/OverlayFeature.ts packages/core/src/features/navigation/README.md packages/core/src/store/Store.ts
+git commit -m "refactor(core): remove CaretFeature.placeAt/focus, narrow TriggerFinder off Store"
 ```
 
 ---
 
-## Task 9: Convert all features to positional parameter properties
+## Phase 3 — Explicit Positional Deps
+
+### Task 7 (Phase 3): Refactor `parseWithParser` utilities off Store
+
+**Files:**
+- Modify: `packages/core/src/features/parsing/utils/valueParser.ts`
+
+`computeTokensFromValue`, `parseUnionLabels`, and `getRangeMap` are public exports from `@markput/core` (verified in `packages/core/README.md`). Their signatures currently take `store: Store`. Change them to take explicit parser/tokens instead.
+
+- [ ] **Step 1: Find all in-repo callers**
+
+```
+grep -rn "computeTokensFromValue\|parseUnionLabels\|getRangeMap\|parseWithParser" packages/
+```
+
+Record every call site found. Confirmed in-repo: only `ParseFeature.ts` (already removed by Task 5) and `valueParser.ts` itself. Check adapter packages for any external calls.
+
+- [ ] **Step 2: Rewrite `valueParser.ts`**
+
+Replace the entire file content:
+
+```ts
+import type {Parser} from '../parser/Parser'
+import type {Token} from '../parser/types'
+
+export function parseWithParser(parser: Parser | undefined, value: string): Token[] {
+  if (!parser) {
+    return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
+  }
+  return parser.parse(value)
+}
+
+export function computeTokensFromValue(parser: Parser | undefined, value: string): Token[] {
+  return parseWithParser(parser, value)
+}
+
+export function parseUnionLabels(
+  parser: Parser | undefined,
+  tokens: readonly Token[],
+  ...indexes: number[]
+): Token[] {
+  let span = ''
+  for (const index of indexes) {
+    span += tokens[index]?.content ?? ''
+  }
+  return parseWithParser(parser, span)
+}
+
+export function getRangeMap(tokens: readonly Token[]): number[] {
+  let position = 0
+  return tokens.map(token => {
+    const length = token.content.length
+    position += length
+    return position - length
+  })
+}
+```
+
+- [ ] **Step 3: Update every caller found in Step 1**
+
+For each call site, pass `store.parsing.parser()` as first arg where `parser` is needed, and `store.parsing.tokens()` where `tokens` is needed. If a caller was in the adapter packages (`packages/react/` or `packages/vue/`), update it there too.
+
+- [ ] **Step 4: Verify**
+
+```
+pnpm test
+pnpm run typecheck
+pnpm run build
+```
+
+Expected: all pass.
+
+- [ ] **Step 5: Commit**
+
+```
+git add packages/core/src/features/parsing/utils/valueParser.ts
+git commit -m "refactor(core): remove Store dependency from parseWithParser utilities"
+```
+
+---
+
+### Task 8 (Phase 3): Convert all features to positional parameter properties
 
 **Files:**
 - Modify: `packages/core/src/store/Store.ts`
-- Modify: `packages/core/src/features/value/ValueFeature.ts`
-- Modify: `packages/core/src/features/parsing/ParseFeature.ts`
-- Modify: `packages/core/src/features/dom/DomFeature.ts`
-- Modify: `packages/core/src/features/mark/MarkFeature.ts`
-- Modify: `packages/core/src/features/slots/SlotsFeature.ts`
-- Modify: `packages/core/src/features/overlay/OverlayFeature.ts`
-- Modify: `packages/core/src/features/keyboard/KeyboardFeature.ts`
-- Modify: `packages/core/src/features/drag/DragFeature.ts`
-- Modify: `packages/core/src/features/clipboard/ClipboardFeature.ts`
+- Modify: all 10 feature files
 
-Replace each `_store: Pick<...>` constructor with positional `private readonly` parameter properties typed as concrete feature classes. Replace `this._store.X` with `this.X` throughout each file. Rewrite `Store` to construct features with explicit instances in topological order.
+Replace `_store: Pick<Store, ...>` constructors with positional `private readonly` parameter properties typed as concrete feature classes. Replace every `this._store.X` with `this.X` in each file. Rewrite `Store` to construct features with explicit instances in topological order.
 
-This task is one commit because splitting it would leave the Store in a broken state mid-way.
+This is one commit because splitting it mid-way would leave Store in a broken state.
 
-- [ ] **Step 1: Convert `MarkFeature`**
+- [ ] **Step 1: Convert `PropsFeature`**
+
+Already done (no constructor, no params).
+
+- [ ] **Step 2: Convert `MarkFeature`**
 
 ```ts
 // packages/core/src/features/mark/MarkFeature.ts
-
 import type {PropsFeature} from '../props/PropsFeature'
-// ... other imports unchanged ...
+// remove Store import
 
 export class MarkFeature {
   readonly enabled: Computed<boolean> = computed(() => {
@@ -974,13 +892,12 @@ export class MarkFeature {
 }
 ```
 
-- [ ] **Step 2: Convert `SlotsFeature`**
+- [ ] **Step 3: Convert `SlotsFeature`**
 
 ```ts
 // packages/core/src/features/slots/SlotsFeature.ts
-
 import type {PropsFeature} from '../props/PropsFeature'
-// ... other imports unchanged ...
+// remove Store import
 
 export class SlotsFeature {
   readonly isBlock: Computed<boolean> = computed(() => this.props.layout() === 'block')
@@ -1011,15 +928,13 @@ export class SlotsFeature {
 }
 ```
 
-- [ ] **Step 3: Convert `ValueFeature`**
+- [ ] **Step 4: Convert `ValueFeature`**
 
 ```ts
-// packages/core/src/features/value/ValueFeature.ts
-
 import type {CaretFeature} from '../caret/CaretFeature'
 import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {PropsFeature} from '../props/PropsFeature'
-// ... other imports unchanged ...
+// remove Store import
 
 export class ValueFeature {
   readonly isControlledMode = computed(() => this.props.value() !== undefined)
@@ -1055,7 +970,6 @@ export class ValueFeature {
     const cur = this.current()
     if (this.props.readOnly()) return
     if (range.start < 0 || range.end < range.start || range.end > cur.length) return
-
     const next = cur.slice(0, range.start) + replacement + cur.slice(range.end)
     if (next === cur) return
     this.#pending = {value: next, recovery: options?.recover}
@@ -1076,27 +990,25 @@ export class ValueFeature {
 }
 ```
 
-- [ ] **Step 4: Convert `ParsingFeature`**
+- [ ] **Step 5: Convert `ParsingFeature`**
 
 ```ts
-// packages/core/src/features/parsing/ParseFeature.ts
-
 import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {MarkFeature} from '../mark/MarkFeature'
 import type {PropsFeature} from '../props/PropsFeature'
 import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {ValueFeature} from '../value/ValueFeature'
-// ... other imports unchanged ...
+// remove Store import
 
 export class ParsingFeature {
-  // ... signals unchanged ...
+  readonly tokens = signal<Token[]>([])
+  readonly #generation = signal(0)
+  readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
 
   readonly parser: Computed<Parser | undefined> = computed(() => {
     if (!this.mark.enabled()) return
-
     const markups = this.props.options().map(opt => opt.markup)
     if (!markups.some(Boolean)) return
-
     return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
   })
 
@@ -1112,7 +1024,7 @@ export class ParsingFeature {
   ) {
     const toggle = (enabled: boolean) => {
       if (enabled && !this.#scope) {
-        this.#acceptTokens(this.#parseValue(value.current()))
+        this.acceptTokens(this.#parseValue(value.current()))
         this.#scope = effectScope(() => {
           this.#subscribeValue()
           this.#subscribeReactiveParse()
@@ -1124,77 +1036,57 @@ export class ParsingFeature {
         this.#scope = undefined
       }
     }
-
     watch(mark.enabled, toggle)
     toggle(mark.enabled())
   }
 
-  #parseValue(value: string): Token[] {
-    return parseWithParser(this.parser(), value)
+  acceptTokens(tokens: Token[]): void {
+    batch(() => {
+      this.tokens(tokens)
+      this.#generation(this.#generation() + 1)
+    }, {mutable: true})
   }
 
-  #acceptTokens(tokens: Token[]): void {
-    batch(
-      () => {
-        this.tokens(tokens)
-        this.#generation(this.#generation() + 1)
-      },
-      {mutable: true}
-    )
+  #parseValue(value: string): Token[] {
+    const parser = this.parser()
+    if (!parser) {
+      return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
+    }
+    return parser.parse(value)
   }
 
   #subscribeValue(): void {
     watch(
       computed(() => this.value.current()),
-      v => { this.#acceptTokens(this.#parseValue(v)) }
+      v => { this.acceptTokens(this.#parseValue(v)) }
     )
   }
 
   #subscribeReactiveParse(): void {
     watch(
       computed(() => this.parser()),
-      () => { this.#acceptTokens(this.#parseValue(this.value.current())) }
+      () => { this.acceptTokens(this.#parseValue(this.value.current())) }
     )
   }
 
   #subscribeReparse(): void {
     watch(this.reparse, () => {
-      this.#acceptTokens(this.#parseValue(this.value.current()))
+      this.acceptTokens(this.#parseValue(this.value.current()))
     })
   }
 }
 ```
 
-Note: `parseWithParser` in the original file has the signature
-`parseWithParser(store: Store, value: string)` reading `store.parsing.parser()` internally.
-Task 10 refactors it to `parseWithParser(parser: Parser | undefined, value: string)`.
-Do Task 10 **before** committing Task 9 Step 4, or inline the fix here: replace
-the `#parseValue` body with:
+- [ ] **Step 6: Convert `DomFeature`**
 
-```ts
-#parseValue(value: string): Token[] {
-  const parser = this.parser()
-  if (!parser) {
-    return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
-  }
-  return parser.parse(value)
-}
-```
-
-This makes `parseWithParser` / `computeTokensFromValue` from `valueParser.ts`
-unused inside `ParseFeature` — they are still used by other callers
-(`parseUnionLabels`, etc.), so do not delete the file, just stop importing
-`parseWithParser` in `ParseFeature`.
-
-- [ ] **Step 5: Convert `DomFeature`**
-
-Change the constructor signature. Replace every `this._store.X` → `this.X` throughout the file (there are ~25 occurrences). The key change:
+Change the constructor signature and replace every `this._store.X` → `this.X` throughout the file (~25 occurrences):
 
 ```ts
 import type {CaretFeature} from '../caret/CaretFeature'
 import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {ParsingFeature} from '../parsing/ParseFeature'
 import type {PropsFeature} from '../props/PropsFeature'
+// remove Store import
 
 // constructor:
 constructor(
@@ -1206,19 +1098,25 @@ constructor(
   lifecycle.onMounted(() => {
     watch(lifecycle.rendered, () => { this.#handleRendered() })
     watch(
-      computed(() => ({
-        readOnly: props.readOnly(),
-        selecting: caret.selecting(),
-      })),
+      computed(() => ({readOnly: props.readOnly(), selecting: caret.selecting()})),
       () => this.reconcile()
     )
   })
 }
 ```
 
-- [ ] **Step 6: Convert `OverlayFeature`**
+Then do a global replace of `this._store.` → `this.` in this file and verify no `_store` references remain.
+
+- [ ] **Step 7: Convert `OverlayFeature`**
 
 ```ts
+import type {CaretFeature} from '../caret/CaretFeature'
+import type {DomFeature} from '../dom/DomFeature'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {PropsFeature} from '../props/PropsFeature'
+import type {ValueFeature} from '../value/ValueFeature'
+
 constructor(
   private readonly lifecycle: LifecycleFeature,
   private readonly props: PropsFeature,
@@ -1229,32 +1127,19 @@ constructor(
 ) { ... }
 ```
 
-Replace `this._store.X` → `this.X` throughout. `TriggerFinder.find(this._store.props.options(), ..., this._store)` — check what the third argument is used for inside `TriggerFinder`. If it uses `store.dom` or `store.caret`, pass `{dom: this.dom, caret: this.caret}` or restructure the call. Keep the same observable behavior.
+Replace every `this._store.X` → `this.X`. The `TriggerFinder.find` call already passes `this._store.dom` (from Task 6 Step 5) — after this step it becomes `this.dom`.
 
-- [ ] **Step 7: Convert `KeyboardFeature`**
+- [ ] **Step 8: Convert `KeyboardFeature`**
 
-```ts
-import type {Store} from '../../store/Store'
+`KeyboardFeature` only wires up helpers that take `store: Store` (behavior modules, out of scope per spec). It keeps `store: Store` — no change. Skip this file.
 
-export class KeyboardFeature {
-  constructor(store: Store) {
-    store.lifecycle.onMounted(() => {
-      enableInput(store)
-      enableBlockEdit(store)
-      enableArrowNav(store)
-    })
-  }
-}
-```
-
-This feature only calls helpers that each take `store`. Keep `store: Store` here for now — the helpers are behavior modules (out of scope per spec). The improvement is that `KeyboardFeature` itself stops importing anything from `Store` members beyond what the helpers need. No change required to this file in Task 9.
-
-- [ ] **Step 8: Convert `DragFeature`**
+- [ ] **Step 9: Convert `DragFeature`**
 
 ```ts
 import type {ParsingFeature} from '../parsing/ParseFeature'
 import type {PropsFeature} from '../props/PropsFeature'
 import type {ValueFeature} from '../value/ValueFeature'
+// remove Store import
 
 export class DragFeature {
   readonly action = event<DragAction>()
@@ -1268,21 +1153,27 @@ export class DragFeature {
     const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
     const toggle = (enabled: boolean) => {
       if (enabled && !this.#unsub) {
-        this.#unsub = watch(this.action, action => { ... })
+        this.#unsub = watch(this.action, action => {
+          switch (action.type) {
+            case 'reorder': this.#reorder(action); break
+            case 'add': this.#add(action); break
+            case 'delete': this.#delete(action); break
+            case 'duplicate': this.#duplicate(action); break
+          }
+        })
       }
       if (!enabled && this.#unsub) { this.#unsub(); this.#unsub = undefined }
     }
     watch(isDragEnabled, toggle)
     toggle(isDragEnabled())
   }
-
   // replace this.store.X → this.X in all private methods
 }
 ```
 
-`DragFeature` does not use `caret` or `dom` directly — only `props`, `value`, and `parsing`.
+Note: `DragFeature` does not use `caret` or `dom` directly — only `props`, `value`, `parsing`.
 
-- [ ] **Step 9: Convert `ClipboardFeature`**
+- [ ] **Step 10: Convert `ClipboardFeature`**
 
 ```ts
 import type {DomFeature} from '../dom/DomFeature'
@@ -1290,49 +1181,31 @@ import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {ParsingFeature} from '../parsing/ParseFeature'
 import type {ValueFeature} from '../value/ValueFeature'
 
-export class ClipboardFeature {
-  constructor(
-    private readonly lifecycle: LifecycleFeature,
-    private readonly value: ValueFeature,
-    private readonly dom: DomFeature,
-    private readonly parsing: ParsingFeature,
-  ) {
-    lifecycle.onMounted(() => {
-      const container = dom.container()
-      if (!container) return
-      listen(container, 'copy', e => { this.#handleCopy(e) })
-      listen(container, 'cut', e => {
-        if (!this.#handleCopy(e)) return
-        const raw = dom.readRawSelection()
-        if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-        value.replaceRange(raw.value.range, '', {
-          recover: {kind: 'caret', rawPosition: raw.value.range.start},
-        })
+constructor(
+  private readonly lifecycle: LifecycleFeature,
+  private readonly value: ValueFeature,
+  private readonly dom: DomFeature,
+  private readonly parsing: ParsingFeature,
+) {
+  lifecycle.onMounted(() => {
+    const container = dom.container()
+    if (!container) return
+    listen(container, 'copy', e => { this.#handleCopy(e) })
+    listen(container, 'cut', e => {
+      if (!this.#handleCopy(e)) return
+      const raw = dom.readRawSelection()
+      if (!raw.ok || raw.value.range.start === raw.value.range.end) return
+      value.replaceRange(raw.value.range, '', {
+        recover: {kind: 'caret', rawPosition: raw.value.range.start},
       })
     })
-  }
-
-  #handleCopy(e: ClipboardEvent): boolean {
-    const container = this.dom.container()
-    if (!container) return false
-    const raw = this.dom.readRawSelection()
-    if (!raw.ok || raw.value.range.start === raw.value.range.end) return false
-    const sel = window.getSelection()
-    const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
-    if (!range) return false
-    const plainText = range.toString()
-    const html = htmlFromRange(range)
-    const markup = serializeRawRange(this.parsing.tokens(), raw.value.range)
-    e.preventDefault()
-    e.clipboardData?.setData('text/plain', plainText)
-    e.clipboardData?.setData('text/html', html)
-    e.clipboardData?.setData(MARKPUT_MIME, markup)
-    return true
-  }
+  })
 }
 ```
 
-- [ ] **Step 10: Rewrite `Store.ts`**
+Replace `this.store.X` → `this.X` in `#handleCopy`.
+
+- [ ] **Step 11: Rewrite `Store.ts`**
 
 ```ts
 import {enableFocus} from '../features/caret/focus'
@@ -1358,33 +1231,34 @@ export class Store {
   readonly key = new KeyGenerator()
   readonly blocks = new BlockRegistry()
 
-  // Layer 0 — no deps
+  // Layer 0 — no feature deps
   readonly lifecycle = new LifecycleFeature()
-  readonly props = new PropsFeature()
-  readonly caret = new CaretFeature()
+  readonly props    = new PropsFeature()
+  readonly caret    = new CaretFeature()
 
   // Layer 1 — props only
-  readonly mark = new MarkFeature(this.props)
+  readonly mark  = new MarkFeature(this.props)
   readonly slots = new SlotsFeature(this.props)
 
   // Layer 2 — lifecycle + props + caret
   readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
 
-  // Layer 3 — value + mark + slots
+  // Layer 3 — value + mark + slots (+ lifecycle + props)
   readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-  // Layer 4 — caret + parsing
+  // Layer 4 — caret + parsing (+ lifecycle + props)
   readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
 
   // Layer 5 — everything below
-  readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
-  readonly keyboard = new KeyboardFeature(this)
-  readonly drag = new DragFeature(this.props, this.value, this.parsing)
+  readonly overlay   = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
+  readonly keyboard  = new KeyboardFeature(this)   // behavior modules; keeps Store
+  readonly drag      = new DragFeature(this.props, this.value, this.parsing)
   readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
 
   readonly handler = new MarkputHandler(this)
 
   constructor() {
+    // Attach caret behavior modules that need dom (constructed after caret).
     this.lifecycle.onMounted(() => {
       enableFocus(this)
       enableSelection(this)
@@ -1393,146 +1267,92 @@ export class Store {
 }
 ```
 
-- [ ] **Step 11: Run the full suite**
+Verify: every constructor argument refers only to a field declared **above** it. If any argument references a field declared below, it is a cycle — fix it before proceeding.
+
+- [ ] **Step 12: Run full checks**
 
 ```
 pnpm test
-pnpm run typecheck
 pnpm run build
+pnpm run typecheck
 pnpm run lint:check
 pnpm run format:check
 ```
 
-Expected: all pass. Fix any type errors before committing — they are real bugs, not noise.
+All must pass. Fix any type error — they are real bugs.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 13: Commit**
 
 ```
 git add packages/core/src/
-git commit -m "refactor(core): pass explicit feature dependencies via positional constructor parameters"
+git commit -m "refactor(core): convert features to positional constructor params, rewrite Store"
 ```
 
 ---
 
-## Task 10: Refactor `parseWithParser` to not take Store
+## Phase 4 — Docs and Final Verification
 
-**Files:**
-- Modify: `packages/core/src/features/parsing/utils/valueParser.ts`
-- Modify: any callers of `parseWithParser(store, value)` outside `ParseFeature`
-
-`parseWithParser` currently takes `(store: Store, value: string)` and reads
-`store.parsing.parser()` internally. Now that `ParseFeature` inlines the logic
-(Task 9 Step 4), this utility should also stop taking Store so other callers can
-use it without the full Store.
-
-- [ ] **Step 1: Find all callers**
-
-```
-pnpm -w exec grep -rn "parseWithParser\|computeTokensFromValue" packages/core/src
-```
-
-Note each call site and what it passes as the first argument.
-
-- [ ] **Step 2: Refactor `parseWithParser` signature**
-
-In `packages/core/src/features/parsing/utils/valueParser.ts`:
-
-```ts
-// before
-export function parseWithParser(store: Store, value: string): Token[] {
-  const parser = store.parsing.parser()
-  if (!parser) {
-    return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
-  }
-  return parser.parse(value)
-}
-
-// after
-export function parseWithParser(parser: Parser | undefined, value: string): Token[] {
-  if (!parser) {
-    return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
-  }
-  return parser.parse(value)
-}
-```
-
-Add the `Parser` import at the top:
-```ts
-import type {Parser} from '../parser/Parser'
-```
-
-Remove the `Store` import if it is no longer used in the file.
-
-- [ ] **Step 3: Update `parseUnionLabels` and `computeTokensFromValue`**
-
-These also take `store`. Update them to accept explicit deps:
-
-```ts
-export function computeTokensFromValue(parser: Parser | undefined, value: string): Token[] {
-  return parseWithParser(parser, value)
-}
-
-export function parseUnionLabels(
-  parser: Parser | undefined,
-  tokens: readonly Token[],
-  ...indexes: number[]
-): Token[] {
-  let span = ''
-  for (const index of indexes) {
-    const token = tokens[index]
-    span += token.content
-  }
-  return parseWithParser(parser, span)
-}
-
-export function getRangeMap(tokens: readonly Token[]): number[] {
-  let position = 0
-  return tokens.map(token => {
-    const length = token.content.length
-    position += length
-    return position - length
-  })
-}
-```
-
-- [ ] **Step 4: Update all callers found in Step 1**
-
-For each call site, pass `store.parsing.parser()` and `store.parsing.tokens()` explicitly instead of `store`.
-
-- [ ] **Step 5: Verify**
-
-```
-pnpm -w exec vitest run packages/core/src
-pnpm run typecheck
-```
-
-Expected: all pass.
-
-- [ ] **Step 6: Commit**
-
-```
-git add packages/core/src/features/parsing/utils/valueParser.ts
-git commit -m "refactor(core): remove Store dependency from parseWithParser utilities"
-```
-
----
-
-## Task 11: Update architecture docs
+### Task 9 (Phase 4): Update architecture documentation
 
 **Files:**
 - Modify: `packages/website/src/content/docs/development/architecture.md`
 
-- [ ] **Step 1: Update the Store section**
+- [ ] **Step 1: Replace the Features section paragraph**
 
-Find the section describing how features access shared state. Replace any description of "the Store passes `this` to features" with:
+Find and replace (lines ~356–358):
 
-> Features declare their dependencies as positional constructor parameters with concrete feature types. `Store` constructs features in topological dependency order, passing already-built instances. The dependency graph is acyclic; a feature can only depend on features constructed before it. `MarkputHandler` retains the full `Store` reference as the adapter boundary.
+```md
+// before:
+11 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.<name>.*` (internal signals), `store.props` (framework-provided signals), `store.dom` (registered DOM structure and raw mapping), and `store.caret` (location/recovery):
 
-- [ ] **Step 2: Update caret navigation references**
+// after:
+Each feature declares its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardFeature` behavior modules retain the full `Store` as an adapter boundary (see architecture guardrails).
 
-Search the file for `store.caret.placeAt` or `store.caret.focus`. Replace each with `store.dom.placeCaretAtRawPosition` and `store.dom.focusAddress` respectively.
+Signal subscription order is significant: `ParsingFeature` subscribes to `value.current` at Store construction time, before `lifecycle.mounted()` fires. `ValueFeature` registers its `change()` emission inside `onMounted`. This guarantees that when `value.change` fires, `parsing.tokens()` is already updated.
+```
 
-- [ ] **Step 3: Build docs to verify no broken references**
+- [ ] **Step 2: Remove stale `store.feature.*` wrapper from Store Structure section**
+
+Find the `readonly feature: { ... }` block in the `Store Structure` section (lines ~309–322). It describes a nested `store.feature.*` namespace that does not exist in the codebase. Replace it with the actual flat structure:
+
+```ts
+// The actual store shape — features live directly on store, not nested under .feature
+readonly lifecycle: LifecycleFeature
+readonly props:     PropsFeature
+readonly caret:     CaretFeature
+readonly mark:      MarkFeature
+readonly slots:     SlotsFeature
+readonly value:     ValueFeature
+readonly parsing:   ParsingFeature
+readonly dom:       DomFeature
+readonly overlay:   OverlayFeature
+readonly keyboard:  KeyboardFeature
+readonly drag:      DragFeature
+readonly clipboard: ClipboardFeature
+```
+
+- [ ] **Step 3: Update the Lifecycle Timing section**
+
+Find lines ~385–392 (step 2 in Lifecycle Timing). Replace:
+
+```
+// 2. After mount, ValueFeature accepts props.value/defaultValue and parses tokens.
+//    ParsingFeature watches parser shape changes and reparses from value.current.
+```
+
+with:
+
+```
+// 2. After mount, ValueFeature accepts props.value/defaultValue and emits change.
+//    ParsingFeature has already subscribed to value.current at construction time
+//    and updates tokens before the change event fires.
+```
+
+- [ ] **Step 4: Update Public API table**
+
+In the Store Events table, add a note that `store.parsing.sync()` and `store.parsing.parseValue()` were removed. Also update the `caret` row to note `placeAt`/`focus` were removed; use `store.dom.*` directly.
+
+- [ ] **Step 5: Build docs to confirm no broken links**
 
 ```
 pnpm -F @markput/website run build
@@ -1540,26 +1360,24 @@ pnpm -F @markput/website run build
 
 Expected: exits 0.
 
-- [ ] **Step 4: Format check**
-
-```
-pnpm exec oxfmt --check packages/website/src/content/docs/development/architecture.md
-```
-
-If the file is excluded by `oxfmt.config.ts`, skip this step.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```
 git add packages/website/src/content/docs/development/architecture.md
-git commit -m "docs: update architecture doc to describe explicit feature deps and acyclic graph"
+git commit -m "docs: update architecture for explicit feature deps and acyclic graph"
 ```
 
 ---
 
-## Task 12: Final verification
+### Task 10 (Phase 4): Final verification
 
-- [ ] **Run full checks**
+- [ ] **Step 1: Install Playwright (if not already done)**
+
+```
+pnpm exec playwright install chromium
+```
+
+- [ ] **Step 2: Full check suite**
 
 ```
 pnpm test
@@ -1569,16 +1387,24 @@ pnpm run lint:check
 pnpm run format:check
 ```
 
-All must pass. Do not skip any check.
+All must pass with zero suppressions.
 
-- [ ] **Run Storybook browser tests**
+- [ ] **Step 3: Storybook browser tests**
 
 ```
 pnpm -F @markput/storybook test
 ```
 
-These are the strongest integration signal — any caret navigation, clipboard, or overlay story exercises the entire refactored pipeline.
+These run against real Chromium. Any failure in caret navigation, keyboard, clipboard or overlay stories is a regression.
 
-- [ ] **Confirm dependency graph is acyclic**
+- [ ] **Step 4: Verify acyclic construction order**
 
-For each feature in `packages/core/src/store/Store.ts`, verify that each constructor argument refers only to a field declared earlier in the file. If anything refers to a later field, it is a cycle — fix it before declaring done.
+Open `packages/core/src/store/Store.ts`. For each `new FeatureX(this.A, this.B, ...)` call, confirm that `A` and `B` are declared as `readonly` fields **above** `FeatureX` in the class body. If any argument points to a field declared later, it is a cycle — the refactor is incomplete.
+
+- [ ] **Step 5: Verify no `_store` escapes**
+
+```
+grep -rn '\._store\.' packages/core/src/features/
+```
+
+Expected: zero results. Any match is a feature that was missed in Task 8.
