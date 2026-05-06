@@ -113,7 +113,9 @@ export class OverlayFeature {
 		}
 
 		watch(hasOverlayTrigger, toggle)
-		toggle(hasOverlayTrigger())
+		if (typeof document !== 'undefined') {
+			toggle(hasOverlayTrigger())
+		}
 	}
 
 	#probeTrigger() {
