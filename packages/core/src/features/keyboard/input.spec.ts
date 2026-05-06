@@ -138,7 +138,7 @@ describe('handleBeforeInput()', () => {
 describe('composition input', () => {
 	it('commits composition text at the original raw selection', () => {
 		const {store, container, textNode} = mountStructuralInline('ab')
-		const disable = enableInput(store)
+		enableInput(store)
 		const selection = window.getSelection()
 		const initialRange = document.createRange()
 		initialRange.setStart(textNode, 1)
@@ -160,7 +160,6 @@ describe('composition input', () => {
 		container.dispatchEvent(compositionEnd)
 
 		expect(store.value.current()).toBe('aXb')
-		disable()
 		container.remove()
 	})
 })

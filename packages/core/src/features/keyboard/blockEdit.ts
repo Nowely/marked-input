@@ -1,7 +1,7 @@
 import {htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
-import {effectScope, listen} from '../../shared/signals/index.js'
+import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {Caret} from '../caret'
 import {consumeMarkupPaste} from '../clipboard'
@@ -23,37 +23,33 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
-export function enableBlockEdit(store: Store): () => void {
+export function enableBlockEdit(store: Store): void {
 	const container = store.dom.container()
-	if (!container) return () => {}
+	if (!container) return
 
-	const scope = effectScope(() => {
-		listen(container, 'keydown', e => {
-			if (!store.slots.isBlock()) return
+	listen(container, 'keydown', e => {
+		if (!store.slots.isBlock()) return
 
-			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-				handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
-			} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-				handleArrowUpDown(store, e)
-			}
+		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
+			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
+		} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
+			handleArrowUpDown(store, e)
+		}
 
-			handleDelete(store, e)
-			handleEnter(store, e)
-		})
-
-		listen(
-			container,
-			'beforeinput',
-			e => {
-				if (!store.slots.isBlock()) return
-				if (e.defaultPrevented) return
-				handleBlockBeforeInput(store, e)
-			},
-			true
-		)
+		handleDelete(store, e)
+		handleEnter(store, e)
 	})
 
-	return () => scope()
+	listen(
+		container,
+		'beforeinput',
+		e => {
+			if (!store.slots.isBlock()) return
+			if (e.defaultPrevented) return
+			handleBlockBeforeInput(store, e)
+		},
+		true
+	)
 }
 
 function handleDelete(store: Store, event: KeyboardEvent) {
