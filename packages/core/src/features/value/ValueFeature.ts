@@ -1,38 +1,26 @@
 import type {CaretRecovery, RawRange} from '../../shared/editorContracts'
-import {signal, computed, event, batch, effectScope, watch} from '../../shared/signals/index.js'
+import {signal, computed, event, batch, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-
-type PendingEcho = {
-	candidate: string
-	recovery: CaretRecovery | undefined
-}
+import {ControlledEcho} from './ControlledEcho'
 
 export class ValueFeature {
 	readonly current = signal('')
 	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
 	readonly change = event()
 
-	#pendingEcho: PendingEcho | undefined
-	#scope?: () => void
+	readonly #controlledEcho = new ControlledEcho()
 
 	constructor(private readonly _store: Store) {
-		watch(this._store.lifecycle.mounted, () => {
-			if (this.#scope) return
-			this.#commitAccepted(this._store.props.value() ?? this._store.props.defaultValue() ?? '')
-			this.#scope = effectScope(() => {
-				watch(this._store.props.value, value => {
-					if (value === undefined) return
-					if (value === this.current()) return
-					const recovery = this.#echoResult(value)
-					this.#commitAccepted(value)
-					if (recovery) this._store.caret.recovery(recovery)
-					this.change()
-				})
+		_store.lifecycle.onMounted(() => {
+			this.#commitAccepted(_store.props.value() ?? _store.props.defaultValue() ?? '')
+			watch(_store.props.value, value => {
+				if (value === undefined) return
+				if (value === this.current()) return
+				const recovery = this.#controlledEcho.onEcho(value)
+				this.#commitAccepted(value)
+				if (recovery) _store.caret.recovery(recovery)
+				this.change()
 			})
-		})
-		watch(this._store.lifecycle.unmounted, () => {
-			this.#scope?.()
-			this.#scope = undefined
 		})
 	}
 
@@ -53,7 +41,7 @@ export class ValueFeature {
 
 	#commitCandidate(candidate: string, recovery?: CaretRecovery): void {
 		if (this.isControlledMode()) {
-			this.#pendingEcho = {candidate, recovery}
+			this.#controlledEcho.setPending(candidate, recovery)
 			this._store.props.onChange()?.(candidate)
 			return
 		}
@@ -62,13 +50,6 @@ export class ValueFeature {
 		this.#commitAccepted(candidate)
 		this._store.caret.recovery(recovery)
 		this.change()
-	}
-
-	#echoResult(value: string): CaretRecovery | undefined {
-		const pending = this.#pendingEcho
-		if (!pending) return undefined
-		this.#pendingEcho = undefined
-		return pending.candidate === value ? pending.recovery : undefined
 	}
 
 	#commitAccepted(value: string) {
