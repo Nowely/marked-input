@@ -1,7 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
-import type {CoreOption, Feature, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
+import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
 import type {Token} from '../parsing'
@@ -9,7 +9,7 @@ import {annotate} from '../parsing'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 
-export class OverlayFeature implements Feature {
+export class OverlayFeature {
 	readonly match = signal<OverlayMatch | undefined>(undefined)
 	readonly element = signal<HTMLElement | null>(null)
 
@@ -23,7 +23,95 @@ export class OverlayFeature implements Feature {
 
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {}
+	constructor(private readonly _store: Store) {
+		const hasOverlayTrigger = computed(() => this._store.props.options().some(opt => opt.overlay?.trigger != null))
+
+		watch(hasOverlayTrigger, enabled => {
+			if (enabled && !this.#scope) {
+				this.#scope = effectScope(() => {
+					watch(this.close, () => {
+						this.match(undefined)
+					})
+
+					watch(this._store.value.change, () => {
+						const showOverlayOn = this._store.props.showOverlayOn()
+						const type: OverlayTrigger = 'change'
+
+						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+							this.#probeTrigger()
+						}
+					})
+
+					effect(() => {
+						const match = this.match()
+						if (match) {
+							listen(window, 'keydown', e => {
+								if (e.key === KEYBOARD.ESC) {
+									this.close()
+								}
+							})
+
+							listen(
+								document,
+								'click',
+								e => {
+									const target = e.target instanceof HTMLElement ? e.target : null
+									if (this.element()?.contains(target)) return
+									if (this._store.dom.container()?.contains(target)) return
+									this.close()
+								},
+								true
+							)
+						}
+					})
+
+					const selectionChangeHandler = () => {
+						const container = this._store.dom.container()
+						if (!container?.contains(document.activeElement)) return
+
+						const showOverlayOn = this._store.props.showOverlayOn()
+						const type: OverlayTrigger = 'selectionChange'
+
+						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+							this.#probeTrigger()
+						}
+					}
+
+					listen(document, 'selectionchange', selectionChangeHandler)
+
+					watch(this.select, overlayEvent => {
+						const {
+							mark,
+							match: {option, range},
+						} = overlayEvent
+
+						const markup = option.markup
+						if (!markup) return
+
+						const annotation =
+							mark.type === 'mark'
+								? annotate(markup, {
+										value: mark.value,
+										meta: mark.meta,
+									})
+								: annotate(markup, {
+										value: mark.content,
+									})
+
+						this._store.value.replaceRange(range, annotation, {
+							source: 'overlay',
+							recover: {kind: 'caret', rawPosition: range.start + annotation.length},
+						})
+						this.match(undefined)
+					})
+				})
+			}
+			if (!enabled && this.#scope) {
+				this.#scope()
+				this.#scope = undefined
+			}
+		})
+	}
 
 	#probeTrigger() {
 		const match =
@@ -61,92 +149,5 @@ export class OverlayFeature implements Feature {
 				option,
 			}
 		}
-	}
-
-	enable() {
-		if (this.#scope) return
-
-		this.#scope = effectScope(() => {
-			watch(this.close, () => {
-				this.match(undefined)
-			})
-
-			watch(this._store.value.change, () => {
-				const showOverlayOn = this._store.props.showOverlayOn()
-				const type: OverlayTrigger = 'change'
-
-				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.#probeTrigger()
-				}
-			})
-
-			effect(() => {
-				const match = this.match()
-				if (match) {
-					listen(window, 'keydown', e => {
-						if (e.key === KEYBOARD.ESC) {
-							this.close()
-						}
-					})
-
-					listen(
-						document,
-						'click',
-						e => {
-							const target = e.target instanceof HTMLElement ? e.target : null
-							if (this.element()?.contains(target)) return
-							if (this._store.dom.container()?.contains(target)) return
-							this.close()
-						},
-						true
-					)
-				}
-			})
-
-			const selectionChangeHandler = () => {
-				const container = this._store.dom.container()
-				if (!container?.contains(document.activeElement)) return
-
-				const showOverlayOn = this._store.props.showOverlayOn()
-				const type: OverlayTrigger = 'selectionChange'
-
-				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-					this.#probeTrigger()
-				}
-			}
-
-			listen(document, 'selectionchange', selectionChangeHandler)
-
-			watch(this.select, overlayEvent => {
-				const {
-					mark,
-					match: {option, range},
-				} = overlayEvent
-
-				const markup = option.markup
-				if (!markup) return
-
-				const annotation =
-					mark.type === 'mark'
-						? annotate(markup, {
-								value: mark.value,
-								meta: mark.meta,
-							})
-						: annotate(markup, {
-								value: mark.content,
-							})
-
-				this._store.value.replaceRange(range, annotation, {
-					source: 'overlay',
-					recover: {kind: 'caret', rawPosition: range.start + annotation.length},
-				})
-				this.match(undefined)
-			})
-		})
-	}
-
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
 	}
 }

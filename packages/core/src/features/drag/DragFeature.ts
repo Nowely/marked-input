@@ -1,5 +1,5 @@
 import type {CaretRecovery} from '../../shared/editorContracts'
-import {event, watch} from '../../shared/signals'
+import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {createRowContent} from '../editing'
@@ -10,34 +10,36 @@ import {EMPTY_TEXT_TOKEN} from './tokens'
 export class DragFeature {
 	readonly action = event<DragAction>()
 
-	constructor(private readonly store: Store) {}
-
 	#unsub?: () => void
 
-	enable() {
-		if (this.#unsub) return
-
-		this.#unsub = watch(this.action, action => {
-			switch (action.type) {
-				case 'reorder':
-					this.#reorder(action)
-					break
-				case 'add':
-					this.#add(action)
-					break
-				case 'delete':
-					this.#delete(action)
-					break
-				case 'duplicate':
-					this.#duplicate(action)
-					break
+	constructor(private readonly store: Store) {
+		watch(
+			computed(() => this.store.props.layout() === 'block' && !!this.store.props.draggable()),
+			enabled => {
+				if (enabled && !this.#unsub) {
+					this.#unsub = watch(this.action, action => {
+						switch (action.type) {
+							case 'reorder':
+								this.#reorder(action)
+								break
+							case 'add':
+								this.#add(action)
+								break
+							case 'delete':
+								this.#delete(action)
+								break
+							case 'duplicate':
+								this.#duplicate(action)
+								break
+						}
+					})
+				}
+				if (!enabled && this.#unsub) {
+					this.#unsub()
+					this.#unsub = undefined
+				}
 			}
-		})
-	}
-
-	disable() {
-		this.#unsub?.()
-		this.#unsub = undefined
+		)
 	}
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {

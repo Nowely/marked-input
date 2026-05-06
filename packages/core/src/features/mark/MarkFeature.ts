@@ -1,12 +1,11 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
 import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 
-export class MarkFeature implements Feature {
+export class MarkFeature {
 	readonly enabled: Computed<boolean> = computed(() => {
 		const Mark = this._store.props.Mark()
 		if (Mark) return true
@@ -21,8 +20,4 @@ export class MarkFeature implements Feature {
 	})
 
 	constructor(private readonly _store: Store) {}
-
-	enable() {}
-
-	disable() {}
 }
