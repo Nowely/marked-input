@@ -1,14 +1,14 @@
 import type {CaretRecovery} from '../../shared/editorContracts'
 
-type Pending = {
-	readonly candidate: string
-	readonly recovery: CaretRecovery | undefined
+type PendingEcho = {
+	candidate: string
+	recovery: CaretRecovery | undefined
 }
 
 export class ControlledEcho {
-	#pending: Pending | undefined
+	#pending: PendingEcho | undefined
 
-	propose(candidate: string, recovery?: CaretRecovery): void {
+	setPending(candidate: string, recovery: CaretRecovery | undefined): void {
 		this.#pending = {candidate, recovery}
 	}
 
@@ -17,9 +17,5 @@ export class ControlledEcho {
 		if (!pending) return undefined
 		this.#pending = undefined
 		return pending.candidate === value ? pending.recovery : undefined
-	}
-
-	supersede(): void {
-		this.#pending = undefined
 	}
 }

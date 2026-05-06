@@ -1,5 +1,5 @@
 import type {RawRange} from '../../shared/editorContracts'
-import {effectScope, listen, watch} from '../../shared/signals/index.js'
+import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
@@ -32,33 +32,24 @@ function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token
 }
 
 export class ClipboardFeature {
-	#scope?: () => void
-
 	constructor(private readonly store: Store) {
-		watch(this.store.lifecycle.mounted, () => {
-			if (this.#scope) return
+		store.lifecycle.onMounted(() => {
 			// The container must be registered before mounted() fires (adapter
 			// calls dom.container() in its ref/onMounted, then lifecycle.mounted).
-			const container = this.store.dom.container()
+			const container = store.dom.container()
 			if (!container) return
-			this.#scope = effectScope(() => {
-				listen(container, 'copy', e => {
-					this.#handleCopy(e)
-				})
-				listen(container, 'cut', e => {
-					if (!this.#handleCopy(e)) return
-					const raw = this.store.dom.readRawSelection()
-					if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-					this.store.value.replaceRange(raw.value.range, '', {
-						source: 'cut',
-						recover: {kind: 'caret', rawPosition: raw.value.range.start},
-					})
+
+			listen(container, 'copy', e => {
+				this.#handleCopy(e)
+			})
+			listen(container, 'cut', e => {
+				if (!this.#handleCopy(e)) return
+				const raw = store.dom.readRawSelection()
+				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
+				store.value.replaceRange(raw.value.range, '', {
+					recover: {kind: 'caret', rawPosition: raw.value.range.start},
 				})
 			})
-		})
-		watch(this.store.lifecycle.unmounted, () => {
-			this.#scope?.()
-			this.#scope = undefined
 		})
 	}
 

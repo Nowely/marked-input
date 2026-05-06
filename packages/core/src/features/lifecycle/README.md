@@ -10,4 +10,8 @@ Owns the three framework→core lifecycle events:
 
 Access: `store.lifecycle.{mounted,unmounted,rendered}`.
 
-The feature has no reactive state or computed values — it is a pure event carrier.
+The feature is an event carrier for framework→core lifecycle events.
+`onMounted(setup)` registers a reactive subscription using `watch()`
+that runs `setup` in an `effectScope` when the editor is mounted.
+Inner watchers are automatically disposed on unmount and re-created
+on remount.

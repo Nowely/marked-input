@@ -48,6 +48,6 @@ describe('DragFeature', () => {
 
 		store.drag.action({type: 'delete', index: 0})
 
-		expect(replaceAll).toHaveBeenCalledWith('beta\n\n', {source: 'drag', recover: {kind: 'caret', rawPosition: 6}})
+		expect(replaceAll).toHaveBeenCalledWith('beta\n\n', {recover: {kind: 'caret', rawPosition: 6}})
 	})
 })

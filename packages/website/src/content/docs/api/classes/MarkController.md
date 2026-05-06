@@ -103,21 +103,21 @@ Defined in: [core/src/features/mark/MarkController.ts:39](https://github.com/Now
 ### remove()
 
 ```ts
-remove(): EditResult;
+remove(): void;
 ```
 
 Defined in: [core/src/features/mark/MarkController.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L55)
 
 #### Returns
 
-`EditResult`
+`void`
 
 ***
 
 ### update()
 
 ```ts
-update(patch): EditResult;
+update(patch): void;
 ```
 
 Defined in: [core/src/features/mark/MarkController.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L61)
@@ -130,7 +130,7 @@ Defined in: [core/src/features/mark/MarkController.ts:61](https://github.com/Now
 
 #### Returns
 
-`EditResult`
+`void`
 
 ***
 

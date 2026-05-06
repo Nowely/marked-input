@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
-import {effectScope, listen} from '../../shared/signals/index.js'
+import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {isFullSelection} from '../caret'
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
@@ -20,52 +20,47 @@ type SpanInputTarget = {
 
 type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reason']
 
-export function enableInput(store: Store): () => void {
+export function enableInput(store: Store): void {
 	const container = store.dom.container()
-	if (!container) return () => {}
+	if (!container) return
 	let compositionRange: RawRange | undefined
 
-	const scope = effectScope(() => {
-		listen(container, 'paste', e => {
-			const c = store.dom.container()
-			if (c) captureMarkupPaste(e, c)
-			handlePaste(store, e)
-		})
+	listen(container, 'paste', e => {
+		const c = store.dom.container()
+		if (c) captureMarkupPaste(e, c)
+		handlePaste(store, e)
+	})
 
-		listen(container, 'compositionstart', () => {
-			const selection = store.dom.readRawSelection()
-			compositionRange = selection.ok ? selection.value.range : undefined
-			store.dom.compositionStarted()
-		})
+	listen(container, 'compositionstart', () => {
+		const selection = store.dom.readRawSelection()
+		compositionRange = selection.ok ? selection.value.range : undefined
+		store.dom.compositionStarted()
+	})
 
-		listen(container, 'compositionend', e => {
-			const range = compositionRange
-			compositionRange = undefined
-			store.dom.compositionEnded()
-			if (store.slots.isBlock()) return
-			if (!range) return
-			const data = e.data
-			store.value.replaceRange(range, data, {
-				source: 'input',
-				recover: {kind: 'caret', rawPosition: range.start + data.length},
-			})
-		})
-
-		listen(
-			container,
-			'beforeinput',
-			e => {
-				handleBeforeInput(store, e)
-			},
-			true
-		)
-
-		listen(container, 'keydown', e => {
-			handleDeleteKey(store, e)
+	listen(container, 'compositionend', e => {
+		const range = compositionRange
+		compositionRange = undefined
+		store.dom.compositionEnded()
+		if (store.slots.isBlock()) return
+		if (!range) return
+		const data = e.data
+		store.value.replaceRange(range, data, {
+			recover: {kind: 'caret', rawPosition: range.start + data.length},
 		})
 	})
 
-	return () => scope()
+	listen(
+		container,
+		'beforeinput',
+		e => {
+			handleBeforeInput(store, e)
+		},
+		true
+	)
+
+	listen(container, 'keydown', e => {
+		handleDeleteKey(store, e)
+	})
 }
 
 function handleDeleteKey(store: Store, event: KeyboardEvent): void {
@@ -88,7 +83,6 @@ function handleDeleteKey(store: Store, event: KeyboardEvent): void {
 
 	event.preventDefault()
 	store.value.replaceRange(range, '', {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: range.start},
 	})
 }
@@ -120,7 +114,6 @@ export function handleBeforeInput(store: Store, event: InputEvent): void {
 
 	event.preventDefault()
 	store.value.replaceRange(range, replacement, {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: range.start + replacement.length},
 	})
 }
@@ -276,7 +269,6 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: Store, newContent: string): void {
 	store.caret.selecting(undefined)
 	store.value.replaceAll(newContent, {
-		source: 'input',
 		recover: {kind: 'caret', rawPosition: newContent.length},
 	})
 }

@@ -1,7 +1,7 @@
 import {htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
 import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
-import {effectScope, listen} from '../../shared/signals/index.js'
+import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {Caret} from '../caret'
 import {consumeMarkupPaste} from '../clipboard'
@@ -23,37 +23,33 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
-export function enableBlockEdit(store: Store): () => void {
+export function enableBlockEdit(store: Store): void {
 	const container = store.dom.container()
-	if (!container) return () => {}
+	if (!container) return
 
-	const scope = effectScope(() => {
-		listen(container, 'keydown', e => {
-			if (!store.slots.isBlock()) return
+	listen(container, 'keydown', e => {
+		if (!store.slots.isBlock()) return
 
-			if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
-				handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
-			} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
-				handleArrowUpDown(store, e)
-			}
+		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
+			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
+		} else if (e.key === KEYBOARD.UP || e.key === KEYBOARD.DOWN) {
+			handleArrowUpDown(store, e)
+		}
 
-			handleDelete(store, e)
-			handleEnter(store, e)
-		})
-
-		listen(
-			container,
-			'beforeinput',
-			e => {
-				if (!store.slots.isBlock()) return
-				if (e.defaultPrevented) return
-				handleBlockBeforeInput(store, e)
-			},
-			true
-		)
+		handleDelete(store, e)
+		handleEnter(store, e)
 	})
 
-	return () => scope()
+	listen(
+		container,
+		'beforeinput',
+		e => {
+			if (!store.slots.isBlock()) return
+			if (e.defaultPrevented) return
+			handleBlockBeforeInput(store, e)
+		},
+		true
+	)
 }
 
 function handleDelete(store: Store, event: KeyboardEvent) {
@@ -91,7 +87,6 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			store.value.replaceAll(newValue, {
-				source: 'block',
 				recover: {kind: 'caret', rawPosition: previous ? previous.position.end : 0},
 			})
 			return
@@ -105,7 +100,6 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.value.replaceAll(newValue, {
-					source: 'block',
 					recover: {kind: 'caret', rawPosition: joinPos},
 				})
 				return
@@ -130,7 +124,6 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.value.replaceAll(newValue, {
-					source: 'block',
 					recover: {kind: 'caret', rawPosition: joinPos},
 				})
 				return
@@ -148,7 +141,6 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
 				store.value.replaceAll(newValue, {
-					source: 'block',
 					recover: {kind: 'caret', rawPosition: joinPos},
 				})
 				return
@@ -191,7 +183,6 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		store.value.replaceAll(newValue, {
-			source: 'block',
 			recover: {kind: 'caret', rawPosition: token.position.end + newRowContent.length},
 		})
 		return
@@ -200,7 +191,6 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	const raw = store.dom.readRawSelection()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
 	store.value.replaceRange({start: absolutePos, end: absolutePos}, newRowContent, {
-		source: 'block',
 		recover: {kind: 'caret', rawPosition: absolutePos + newRowContent.length},
 	})
 }
@@ -337,7 +327,6 @@ function replaceBlockRange(store: Store, event: InputEvent, replacement: string)
 
 	event.preventDefault()
 	store.value.replaceRange(range, replacement, {
-		source: 'block',
 		recover: {kind: 'caret', rawPosition: range.start + replacement.length},
 	})
 }
