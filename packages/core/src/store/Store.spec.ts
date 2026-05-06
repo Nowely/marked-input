@@ -154,6 +154,7 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
+			store.lifecycle.mounted()
 			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
@@ -455,6 +456,7 @@ describe('Store', () => {
 		it('reacts to props.value changes when ValueFeature is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
+			store.lifecycle.mounted()
 			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
 			expect(store.value.current()).toBe('changed')

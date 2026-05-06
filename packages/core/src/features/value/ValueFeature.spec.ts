@@ -18,6 +18,7 @@ describe('ValueFeature', () => {
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
+		store.lifecycle.mounted()
 
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -26,6 +27,7 @@ describe('ValueFeature', () => {
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
+		store.lifecycle.mounted()
 
 		expect(store.value.current()).toBe('hello')
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -34,6 +36,7 @@ describe('ValueFeature', () => {
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
 		store.props.set({value: 'hello'})
+		store.lifecycle.mounted()
 
 		store.props.set({value: 'world'})
 
@@ -44,6 +47,7 @@ describe('ValueFeature', () => {
 	it('preserves current when controlled value becomes undefined', () => {
 		const store = new Store()
 		store.props.set({value: 'hello', defaultValue: 'default'})
+		store.lifecycle.mounted()
 
 		store.props.set({value: undefined})
 
@@ -56,6 +60,7 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})
+		store.lifecycle.mounted()
 		const notified = vi.fn()
 		const stop = watch(store.value.change, notified)
 
@@ -72,6 +77,7 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.lifecycle.mounted()
 
 		const result = store.value.replaceAll('world')
 
@@ -85,6 +91,7 @@ describe('ValueFeature', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', readOnly: true, onChange})
+		store.lifecycle.mounted()
 
 		store.props.set({value: 'world'})
 
@@ -98,6 +105,7 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const recovery = {kind: 'caret' as const, rawPosition: 5}
 			store.props.set({defaultValue: 'hello world'})
+			store.lifecycle.mounted()
 
 			const result = store.value.replaceRange({start: 6, end: 11}, 'markput', {
 				recover: recovery,
@@ -113,6 +121,7 @@ describe('ValueFeature', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({defaultValue: 'hello', onChange})
+			store.lifecycle.mounted()
 
 			const result = store.value.replaceRange({start: 4, end: 2}, 'x')
 
@@ -126,6 +135,7 @@ describe('ValueFeature', () => {
 			const onChange = vi.fn()
 			const recovery = {kind: 'caret' as const, rawPosition: 5}
 			store.props.set({value: 'hello', onChange})
+			store.lifecycle.mounted()
 
 			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 
@@ -147,6 +157,7 @@ describe('ValueFeature', () => {
 				value: 'hello',
 				onChange: value => store.props.set({value}),
 			})
+			store.lifecycle.mounted()
 
 			const result = store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 
@@ -160,6 +171,7 @@ describe('ValueFeature', () => {
 			const onChange = vi.fn()
 			const recovery = {kind: 'caret' as const, rawPosition: 5}
 			store.props.set({value: 'hello', onChange})
+			store.lifecycle.mounted()
 
 			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
 			store.props.set({value: 'other'})

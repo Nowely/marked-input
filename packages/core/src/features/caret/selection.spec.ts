@@ -19,17 +19,21 @@ describe('TextSelectionFeature', () => {
 	})
 
 	it('enable() sets up the selecting subscription via effect', () => {
+		store.lifecycle.mounted()
 		expect(addSpy).toHaveBeenCalled()
 	})
 
 	it('set up is idempotent across multiple construction events', () => {
+		store.lifecycle.mounted()
 		const callCount = addSpy.mock.calls.length
 		addSpy.mockClear()
 		store = new Store()
+		store.lifecycle.mounted()
 		expect(addSpy).toHaveBeenCalledTimes(callCount)
 	})
 
 	it('disabling resets selecting from drag to undefined', () => {
+		store.lifecycle.mounted()
 		store.caret.selecting('drag')
 		store.lifecycle.unmounted()
 		expect(store.caret.selecting()).toBe(undefined)
@@ -42,6 +46,7 @@ describe('TextSelectionFeature', () => {
 		document.body.appendChild(container)
 
 		store.props.set({defaultValue: 'hello'})
+		store.lifecycle.mounted()
 		store.dom.container(container)
 		store.lifecycle.rendered()
 

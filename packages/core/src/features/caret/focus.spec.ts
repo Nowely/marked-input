@@ -24,6 +24,7 @@ describe('FocusFeature', () => {
 		const text = document.createElement('span')
 		container.append(text)
 		store.dom.container(container)
+		store.lifecycle.mounted()
 		store.lifecycle.rendered()
 
 		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))

@@ -6,6 +6,7 @@ import {applySpanInput, enableInput, handleBeforeInput, replaceAllContentWith} f
 function mountStructuralInline(value = 'hello') {
 	const store = new Store()
 	store.props.set({defaultValue: value})
+	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	container.append(textSurface)
@@ -20,6 +21,7 @@ function mountStructuralInline(value = 'hello') {
 function mountStructuralMarkWithDescendant(value = '@[world]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup: '@[__value__]'}]})
+	store.lifecycle.mounted()
 	const container = document.createElement('div')
 	const before = document.createElement('span')
 	const mark = document.createElement('mark')
@@ -73,6 +75,7 @@ describe('replaceAllContentWith()', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', onChange})
+		store.lifecycle.mounted()
 
 		replaceAllContentWith(store, 'world')
 

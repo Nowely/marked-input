@@ -6,6 +6,7 @@ import {Store} from '../../store/Store'
 function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({defaultValue: value, ...props})
+	store.lifecycle.mounted()
 	return store
 }
 

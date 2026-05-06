@@ -13,40 +13,20 @@ describe('DragFeature', () => {
 	beforeEach(() => {
 		vi.clearAllMocks()
 		store = new Store()
-		// Disable all feature except drag so their enable() side-effects don't interfere
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const features: Record<string, any> = {
-			lifecycle: store.lifecycle,
-			value: store.value,
-			mark: store.mark,
-			overlay: store.overlay,
-			slots: store.slots,
-			caret: store.caret,
-			keyboard: store.keyboard,
-			dom: store.dom,
-			clipboard: store.clipboard,
-			parsing: store.parsing,
-		}
-		for (const key of Object.keys(features)) {
-			vi.spyOn(features[key], 'enable').mockImplementation(() => {})
-			vi.spyOn(features[key], 'disable').mockImplementation(() => {})
-		}
 	})
 
-	describe('enable()', () => {
-		it('is a no-op when already enabled (does not leak a watcher)', () => {
-			// Set up minimal props so the delete handler has valid edit state.
+	describe('activation via props', () => {
+		it('does not leak a watcher when props toggle', () => {
 			store.props.set({
+				layout: 'block',
+				draggable: true,
 				value: 'test',
-				onChange: () => {}, // onChange is required for operations to proceed
+				onChange: () => {},
 			})
+			store.lifecycle.mounted()
 
-			store.drag.enable()
-			store.drag.enable() // second call — must not overwrite #unsub
-
-			// After a single disable, the watcher must be gone.
-			// If double-enable leaked, the first watcher would still fire.
-			store.drag.disable()
+			// disable drag
+			store.props.set({layout: 'inline', draggable: false})
 
 			const replaceAll = vi.spyOn(store.value, 'replaceAll')
 			store.drag.action({type: 'delete', index: 0})
@@ -60,10 +40,11 @@ describe('DragFeature', () => {
 	})
 
 	it('commits drag edits through replaceAll with recovery metadata', () => {
+		store.props.set({layout: 'block', draggable: true})
+		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 		store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
 		const replaceAll = vi.spyOn(store.value, 'replaceAll')
-		store.drag.enable()
 
 		store.drag.action({type: 'delete', index: 0})
 
