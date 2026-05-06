@@ -44,7 +44,7 @@ describe('ValueFeature', () => {
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
-	it('preserves current when controlled value becomes undefined', () => {
+	it('falls back to defaultValue when controlled value becomes undefined', () => {
 		const store = new Store()
 		store.props.set({value: 'hello', defaultValue: 'default'})
 		store.lifecycle.mounted()
@@ -52,8 +52,8 @@ describe('ValueFeature', () => {
 		store.props.set({value: undefined})
 
 		expect(store.value.isControlledMode()).toBe(false)
-		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.value.current()).toBe('default')
+		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
 	it('notifies change subscribers for accepted uncontrolled edits', () => {
