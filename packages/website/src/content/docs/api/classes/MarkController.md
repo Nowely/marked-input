@@ -103,44 +103,24 @@ Defined in: [core/src/features/mark/MarkController.ts:39](https://github.com/Now
 ### remove()
 
 ```ts
-remove():
-  | {
-  ok: true;
-}
-  | {
-  ok: false;
-  reason: "stale" | "readOnly";
-};
+remove(): void;
 ```
 
 Defined in: [core/src/features/mark/MarkController.ts:55](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L55)
 
 #### Returns
 
-  \| \{
-  `ok`: `true`;
-\}
-  \| \{
-  `ok`: `false`;
-  `reason`: `"stale"` \| `"readOnly"`;
-\}
+`void`
 
 ***
 
 ### update()
 
 ```ts
-update(patch):
-  | {
-  ok: true;
-}
-  | {
-  ok: false;
-  reason: "stale" | "readOnly";
-};
+update(patch): void;
 ```
 
-Defined in: [core/src/features/mark/MarkController.ts:62](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L62)
+Defined in: [core/src/features/mark/MarkController.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/mark/MarkController.ts#L61)
 
 #### Parameters
 
@@ -150,13 +130,7 @@ Defined in: [core/src/features/mark/MarkController.ts:62](https://github.com/Now
 
 #### Returns
 
-  \| \{
-  `ok`: `true`;
-\}
-  \| \{
-  `ok`: `false`;
-  `reason`: `"stale"` \| `"readOnly"`;
-\}
+`void`
 
 ***
 

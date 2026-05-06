@@ -1,14 +1,18 @@
 import type {CaretRecovery, RawRange} from '../../shared/editorContracts'
 import {signal, computed, event, batch, effectScope, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import {ControlledEcho} from './ControlledEcho'
+
+type PendingEcho = {
+	candidate: string
+	recovery: CaretRecovery | undefined
+}
 
 export class ValueFeature {
 	readonly current = signal('')
 	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
 	readonly change = event()
 
-	readonly #controlledEcho = new ControlledEcho()
+	#pendingEcho: PendingEcho | undefined
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {
@@ -19,7 +23,7 @@ export class ValueFeature {
 				watch(this._store.props.value, value => {
 					if (value === undefined) return
 					if (value === this.current()) return
-					const recovery = this.#controlledEcho.onEcho(value)
+					const recovery = this.#echoResult(value)
 					this.#commitAccepted(value)
 					if (recovery) this._store.caret.recovery(recovery)
 					this.change()
@@ -49,7 +53,7 @@ export class ValueFeature {
 
 	#commitCandidate(candidate: string, recovery?: CaretRecovery): void {
 		if (this.isControlledMode()) {
-			this.#controlledEcho.propose(candidate, recovery)
+			this.#pendingEcho = {candidate, recovery}
 			this._store.props.onChange()?.(candidate)
 			return
 		}
@@ -58,6 +62,13 @@ export class ValueFeature {
 		this.#commitAccepted(candidate)
 		this._store.caret.recovery(recovery)
 		this.change()
+	}
+
+	#echoResult(value: string): CaretRecovery | undefined {
+		const pending = this.#pendingEcho
+		if (!pending) return undefined
+		this.#pendingEcho = undefined
+		return pending.candidate === value ? pending.recovery : undefined
 	}
 
 	#commitAccepted(value: string) {
