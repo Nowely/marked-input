@@ -105,10 +105,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				return
 			}
 			event.preventDefault()
-			queueMicrotask(() => {
-				const target = blockDivs[blockIndex - 1]
-				focusRow(store, prevToken, target, 'end')
-			})
+			focusRow(store, prevToken, blockDivs[blockIndex - 1], 'end')
 			return
 		}
 	}
@@ -132,10 +129,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				return
 			}
 			event.preventDefault()
-			queueMicrotask(() => {
-				const target = blockDivs[blockIndex - 1]
-				focusRow(store, prevToken, target, 'end')
-			})
+			focusRow(store, prevToken, blockDivs[blockIndex - 1], 'end')
 			return
 		}
 
@@ -152,10 +146,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 				return
 			}
 			event.preventDefault()
-			queueMicrotask(() => {
-				const target = blockDivs[blockIndex + 1]
-				focusRow(store, nextToken, target, 'start')
-			})
+			focusRow(store, nextToken, blockDivs[blockIndex + 1], 'start')
 			return
 		}
 	}
