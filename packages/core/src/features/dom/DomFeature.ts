@@ -10,7 +10,7 @@ import type {
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
-import {batch, computed, effectScope, event, signal, watch} from '../../shared/signals/index.js'
+import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
@@ -135,27 +135,19 @@ export class DomFeature {
 	#rendering = false
 	#isComposing = false
 	#queuedRender = false
-	#scope?: () => void
 
 	constructor(private readonly _store: Store) {
-		watch(this._store.lifecycle.mounted, () => {
-			if (this.#scope) return
-			this.#scope = effectScope(() => {
-				watch(this._store.lifecycle.rendered, () => {
-					this.#handleRendered()
-				})
-				watch(
-					computed(() => ({
-						readOnly: this._store.props.readOnly(),
-						selecting: this._store.caret.selecting(),
-					})),
-					() => this.reconcile()
-				)
+		_store.lifecycle.onMounted(() => {
+			watch(_store.lifecycle.rendered, () => {
+				this.#handleRendered()
 			})
-		})
-		watch(this._store.lifecycle.unmounted, () => {
-			this.#scope?.()
-			this.#scope = undefined
+			watch(
+				computed(() => ({
+					readOnly: _store.props.readOnly(),
+					selecting: _store.caret.selecting(),
+				})),
+				() => this.reconcile()
+			)
 		})
 	}
 

@@ -186,7 +186,6 @@ describe('Clipboard: copy', () => {
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)!
 		lastSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		window.getSelection()!.collapse(lastText, lastText.length)
 
 		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData, bubbles: true}))
@@ -202,7 +201,7 @@ describe('Clipboard: copy', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: clipboardData})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world foolo world f')
 	})
@@ -279,7 +278,6 @@ describe('Clipboard: copy', () => {
 
 		const targetSpan = targetRoot.querySelector<HTMLElement>('[contenteditable="true"]')!
 		targetSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		expect(document.activeElement).toBe(targetSpan)
 
 		const targetTextNode = firstTextNode(targetSpan)!
@@ -324,7 +322,6 @@ describe('Clipboard: paste', () => {
 
 		const span = root.querySelector<HTMLElement>('[contenteditable="true"]')!
 		span.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 
 		expect(document.activeElement).toBe(span)
 
@@ -368,7 +365,6 @@ describe('Clipboard: paste', () => {
 		const spans = Array.from(root.querySelectorAll<HTMLElement>('[contenteditable="true"]'))
 		const lastSpan = spans[spans.length - 1]
 		lastSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		expect(document.activeElement).toBe(lastSpan)
 
 		const textNode = firstTextNode(lastSpan)!
@@ -408,7 +404,6 @@ describe('Clipboard: paste', () => {
 
 		const span = root.querySelector<HTMLElement>('[contenteditable="true"]')!
 		span.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 
 		const textNode = firstTextNode(span)!
 		// PlainText story starts with value "abc". Select "b" (offset 1..2).
@@ -446,7 +441,6 @@ describe('Clipboard: paste', () => {
 		const lastText = firstTextNode(lastSpan)!
 
 		lastSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		window.getSelection()!.collapse(lastText, lastText.length)
 
 		const pasteClipboard = new DataTransfer()
@@ -489,7 +483,6 @@ describe('Clipboard: paste', () => {
 
 		// Place caret at " |foo" (offset 1 — after the space)
 		lastSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		window.getSelection()!.collapse(lastText, 1)
 
 		// Paste
@@ -506,7 +499,7 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
@@ -526,7 +519,6 @@ describe('Clipboard: paste', () => {
 		expect(blocks.length).toBeGreaterThan(0)
 		const firstBlock = blocks[0]
 		firstBlock.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 
 		const firstBlockText = firstTextNode(firstBlock)
 		if (!firstBlockText) throw new Error('no text node in first block')
@@ -611,7 +603,6 @@ describe('Clipboard: nested marks', () => {
 		const lastSpan = spans[spans.length - 1]
 		const lastText = firstTextNode(lastSpan)!
 		lastSpan.focus()
-		await new Promise<void>(r => queueMicrotask(r))
 		window.getSelection()!.collapse(lastText, 1)
 
 		root.dispatchEvent(new ClipboardEvent('paste', {clipboardData: copyDt, bubbles: true}))
@@ -627,7 +618,7 @@ describe('Clipboard: nested marks', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world worldfoo')
 	})

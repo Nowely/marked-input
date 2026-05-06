@@ -139,7 +139,6 @@ describe('OverlayFeature', () => {
 			store.overlay.select({mark, match})
 
 			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]', {
-				source: 'overlay',
 				recover: {kind: 'caret', rawPosition: 14},
 			})
 			expect(store.overlay.match()).toBeUndefined()

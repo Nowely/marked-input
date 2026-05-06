@@ -1,27 +1,23 @@
 import {KEYBOARD} from '../../shared/constants'
-import {effectScope, listen} from '../../shared/signals/index.js'
+import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {selectAllText} from '../caret'
 
-export function enableArrowNav(store: Store): () => void {
+export function enableArrowNav(store: Store): void {
 	const container = store.dom.container()
-	if (!container) return () => {}
+	if (!container) return
 
-	const scope = effectScope(() => {
-		listen(container, 'keydown', e => {
-			if (store.slots.isBlock()) return
+	listen(container, 'keydown', e => {
+		if (store.slots.isBlock()) return
 
-			if (e.key === KEYBOARD.LEFT) {
-				shiftFocus(store, e, 'prev')
-			} else if (e.key === KEYBOARD.RIGHT) {
-				shiftFocus(store, e, 'next')
-			}
+		if (e.key === KEYBOARD.LEFT) {
+			shiftFocus(store, e, 'prev')
+		} else if (e.key === KEYBOARD.RIGHT) {
+			shiftFocus(store, e, 'next')
+		}
 
-			selectAllText(store, e)
-		})
+		selectAllText(store, e)
 	})
-
-	return () => scope()
 }
 
 function shiftFocus(store: Store, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {

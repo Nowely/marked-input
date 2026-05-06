@@ -98,7 +98,6 @@ describe('handleBeforeInput()', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x', {
-			source: 'input',
 			recover: {kind: 'caret', rawPosition: 2},
 		})
 		container.remove()
@@ -139,7 +138,7 @@ describe('handleBeforeInput()', () => {
 describe('composition input', () => {
 	it('commits composition text at the original raw selection', () => {
 		const {store, container, textNode} = mountStructuralInline('ab')
-		const disable = enableInput(store)
+		enableInput(store)
 		const selection = window.getSelection()
 		const initialRange = document.createRange()
 		initialRange.setStart(textNode, 1)
@@ -161,7 +160,6 @@ describe('composition input', () => {
 		container.dispatchEvent(compositionEnd)
 
 		expect(store.value.current()).toBe('aXb')
-		disable()
 		container.remove()
 	})
 })

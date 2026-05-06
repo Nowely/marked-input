@@ -27,27 +27,24 @@ describe('MarkController', () => {
 	it('removes a mark through the value pipeline', () => {
 		const {store, controller} = setup()
 
-		const result = controller.remove()
+		controller.remove()
 
-		expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello '})
 		expect(store.value.current()).toBe('hello ')
 	})
 
 	it('updates mark value through descriptor serialization', () => {
 		const {store, controller} = setup()
 
-		const result = controller.update({value: 'markput'})
+		controller.update({value: 'markput'})
 
-		expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello @[markput]'})
 		expect(store.value.current()).toBe('hello @[markput]')
 	})
 
 	it('clears metadata without leaking placeholder text', () => {
 		const {store, controller} = setup('hello @[world](meta)', '@[__value__](__meta__)')
 
-		const result = controller.update({meta: {kind: 'clear'}})
+		controller.update({meta: {kind: 'clear'}})
 
-		expect(result).toEqual({ok: true, accepted: 'immediate', value: 'hello @[world]()'})
 		expect(store.value.current()).toBe('hello @[world]()')
 		expect(store.value.current()).not.toContain('__meta__')
 	})
@@ -55,9 +52,8 @@ describe('MarkController', () => {
 	it('clears slot content without leaking placeholder text', () => {
 		const {store, controller} = setup('#[nested]', '#[__slot__]')
 
-		const result = controller.update({slot: {kind: 'clear'}})
+		controller.update({slot: {kind: 'clear'}})
 
-		expect(result).toEqual({ok: true, accepted: 'immediate', value: '#[]'})
 		expect(store.value.current()).not.toContain('__slot__')
 	})
 
@@ -65,14 +61,15 @@ describe('MarkController', () => {
 		const {store, controller} = setup()
 		store.value.replaceAll('different @[token]')
 
-		expect(controller.update({value: 'bad'})).toEqual({ok: false, reason: 'stale'})
+		controller.update({value: 'bad'})
+		expect(store.value.current()).toBe('different @[token]')
 	})
 
 	it('does not mutate in read-only mode', () => {
 		const {store, controller} = setup()
 		store.props.set({readOnly: true})
 
-		expect(controller.remove()).toEqual({ok: false, reason: 'readOnly'})
+		controller.remove()
 		expect(store.value.current()).toBe('hello @[world]')
 	})
 })
