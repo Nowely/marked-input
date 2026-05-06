@@ -13,33 +13,35 @@ export class DragFeature {
 	#unsub?: () => void
 
 	constructor(private readonly store: Store) {
-		watch(
-			computed(() => this.store.props.layout() === 'block' && !!this.store.props.draggable()),
-			enabled => {
-				if (enabled && !this.#unsub) {
-					this.#unsub = watch(this.action, action => {
-						switch (action.type) {
-							case 'reorder':
-								this.#reorder(action)
-								break
-							case 'add':
-								this.#add(action)
-								break
-							case 'delete':
-								this.#delete(action)
-								break
-							case 'duplicate':
-								this.#duplicate(action)
-								break
-						}
-					})
-				}
-				if (!enabled && this.#unsub) {
-					this.#unsub()
-					this.#unsub = undefined
-				}
+		const isDragEnabled = computed(() => this.store.props.layout() === 'block' && !!this.store.props.draggable())
+
+		const toggle = (enabled: boolean) => {
+			if (enabled && !this.#unsub) {
+				this.#unsub = watch(this.action, action => {
+					switch (action.type) {
+						case 'reorder':
+							this.#reorder(action)
+							break
+						case 'add':
+							this.#add(action)
+							break
+						case 'delete':
+							this.#delete(action)
+							break
+						case 'duplicate':
+							this.#duplicate(action)
+							break
+					}
+				})
 			}
-		)
+			if (!enabled && this.#unsub) {
+				this.#unsub()
+				this.#unsub = undefined
+			}
+		}
+
+		watch(isDragEnabled, toggle)
+		toggle(isDragEnabled())
 	}
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {

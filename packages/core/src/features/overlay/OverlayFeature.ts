@@ -26,7 +26,7 @@ export class OverlayFeature {
 	constructor(private readonly _store: Store) {
 		const hasOverlayTrigger = computed(() => this._store.props.options().some(opt => opt.overlay?.trigger != null))
 
-		watch(hasOverlayTrigger, enabled => {
+		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
 				this.#scope = effectScope(() => {
 					watch(this.close, () => {
@@ -110,7 +110,10 @@ export class OverlayFeature {
 				this.#scope()
 				this.#scope = undefined
 			}
-		})
+		}
+
+		watch(hasOverlayTrigger, toggle)
+		toggle(hasOverlayTrigger())
 	}
 
 	#probeTrigger() {

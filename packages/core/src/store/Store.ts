@@ -33,6 +33,4 @@ export class Store {
 	readonly drag = new DragFeature(this)
 	readonly clipboard = new ClipboardFeature(this)
 	readonly parsing = new ParsingFeature(this)
-
-	constructor() {}
 }

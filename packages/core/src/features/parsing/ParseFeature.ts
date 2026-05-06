@@ -26,7 +26,7 @@ export class ParsingFeature {
 	#scope?: () => void
 
 	constructor(private readonly _store: Store) {
-		watch(this._store.mark.enabled, enabled => {
+		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
 				this.sync()
 				this.#scope = effectScope(() => {
@@ -38,7 +38,10 @@ export class ParsingFeature {
 				this.#scope()
 				this.#scope = undefined
 			}
-		})
+		}
+
+		watch(this._store.mark.enabled, toggle)
+		toggle(this._store.mark.enabled())
 	}
 
 	parseValue(value: string): Token[] {
