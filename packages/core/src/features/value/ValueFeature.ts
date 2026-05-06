@@ -11,12 +11,8 @@ export class ValueFeature {
 		get: field => (this.isControlledMode() ? (this._store.props.value() ?? '') : field()),
 		set: (next, field) => {
 			if (next === undefined) return
-			if (this.isControlledMode()) {
-				this._store.props.onChange()?.(next)
-			} else {
-				field(next)
-				this._store.props.onChange()?.(next)
-			}
+			if (!this.isControlledMode()) field(next)
+			this._store.props.onChange()?.(next)
 		},
 	})
 
