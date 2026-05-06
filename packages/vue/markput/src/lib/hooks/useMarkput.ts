@@ -28,7 +28,7 @@ export function useMarkput(selector: (store: Store) => Selectable<unknown> | Obj
 		return out
 	}
 
-	// shallowRef + alien-signals effect bridges the two reactive systems.
+	// shallowRef + effect bridges the two reactive systems.
 	// The effect re-runs whenever tracked signals change, updating the ref.
 	const r = shallowRef<unknown>(undefined)
 	const stop = effect(() => {

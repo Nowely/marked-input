@@ -37,6 +37,8 @@ export class ClipboardFeature {
 	constructor(private readonly store: Store) {
 		watch(this.store.lifecycle.mounted, () => {
 			if (this.#scope) return
+			// The container must be registered before mounted() fires (adapter
+			// calls dom.container() in its ref/onMounted, then lifecycle.mounted).
 			const container = this.store.dom.container()
 			if (!container) return
 			this.#scope = effectScope(() => {
