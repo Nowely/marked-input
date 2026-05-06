@@ -7,7 +7,8 @@ describe('ParsingFeature', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		const features: Record<string, {enable(): void; disable(): void}> = {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const features: Record<string, any> = {
 			lifecycle: store.lifecycle,
 			value: store.value,
 			mark: store.mark,

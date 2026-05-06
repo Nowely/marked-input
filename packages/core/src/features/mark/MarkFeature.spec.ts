@@ -19,14 +19,4 @@ describe('MarkFeature', () => {
 		expect(typeof store.mark.enabled).toBe('function')
 		expect(typeof store.mark.slot).toBe('function')
 	})
-
-	describe('disable()', () => {
-		it('is safe to call after enable', () => {
-			const store = new Store()
-
-			store.mark.enable()
-
-			expect(() => store.mark.disable()).not.toThrow()
-		})
-	})
 })

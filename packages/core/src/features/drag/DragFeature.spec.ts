@@ -14,7 +14,8 @@ describe('DragFeature', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		// Disable all feature except drag so their enable() side-effects don't interfere
-		const features: Record<string, {enable(): void; disable(): void}> = {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const features: Record<string, any> = {
 			lifecycle: store.lifecycle,
 			value: store.value,
 			mark: store.mark,

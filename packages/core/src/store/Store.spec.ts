@@ -27,72 +27,6 @@ describe('Store', () => {
 		expect(typeof store.value.change).toBe('function')
 	})
 
-	describe('lifecycle orchestration', () => {
-		it('enables all features on mount', () => {
-			const store = new Store()
-			const features = [
-				store.lifecycle,
-				store.value,
-				store.mark,
-				store.overlay,
-				store.slots,
-				store.caret,
-				store.keyboard,
-				store.dom,
-				store.drag,
-				store.clipboard,
-				store.parsing,
-			]
-			const spies = features.map(feature => vi.spyOn(feature, 'enable').mockImplementation(() => {}))
-
-			store.lifecycle.mounted()
-
-			for (const spy of spies) {
-				expect(spy).toHaveBeenCalledOnce()
-			}
-		})
-
-		it('disables all features on unmount', () => {
-			const store = new Store()
-			const features = [
-				store.lifecycle,
-				store.value,
-				store.mark,
-				store.overlay,
-				store.slots,
-				store.caret,
-				store.keyboard,
-				store.dom,
-				store.drag,
-				store.clipboard,
-				store.parsing,
-			]
-			const spies = features.map(feature => vi.spyOn(feature, 'disable').mockImplementation(() => {}))
-
-			store.lifecycle.unmounted()
-
-			for (const spy of spies) {
-				expect(spy).toHaveBeenCalledOnce()
-			}
-		})
-
-		it('mounts features in an order that supports initial render indexing', () => {
-			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
-			const container = document.createElement('div')
-			const text = document.createElement('span')
-			container.append(text)
-
-			store.dom.container(container)
-
-			expect(() => {
-				store.lifecycle.mounted()
-				store.lifecycle.rendered()
-			}).not.toThrow()
-			expect(store.dom.index()).toBeDefined()
-		})
-	})
-
 	describe('handler', () => {
 		it('return an object with container, overlay, and focus properties', () => {
 			const store = new Store()
@@ -202,41 +136,33 @@ describe('Store', () => {
 	describe('value edits', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
-			store.value.enable()
 			store.value.replaceAll('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
-			store.value.disable()
 		})
 
 		it('calls onChange when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
-			store.value.enable()
 			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
-			store.value.disable()
 		})
 
 		it('emits without committing until controlled replacement is echoed', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
-			store.value.enable()
 			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			store.value.disable()
 		})
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
-			store.value.enable()
 			expect(() => store.value.replaceAll('test')).not.toThrow()
-			store.value.disable()
 		})
 	})
 
@@ -519,20 +445,6 @@ describe('Store', () => {
 			expect(store.value.current()).toBe('cached')
 		})
 
-		it('does not mirror props.value before ValueFeature is enabled', () => {
-			const store = new Store()
-			store.props.set({value: 'prop-value'})
-			expect(store.value.current()).toBe('')
-		})
-
-		it('initializes from props.value when ValueFeature is enabled', () => {
-			const store = new Store()
-			store.props.set({value: 'prop-value'})
-			store.value.enable()
-			expect(store.value.current()).toBe('prop-value')
-			store.value.disable()
-		})
-
 		it('reacts to current changes', () => {
 			const store = new Store()
 			expect(store.value.current()).toBe('')
@@ -543,11 +455,9 @@ describe('Store', () => {
 		it('reacts to props.value changes when ValueFeature is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
-			store.value.enable()
 			expect(store.value.current()).toBe('initial')
 			store.props.set({value: 'changed'})
 			expect(store.value.current()).toBe('changed')
-			store.value.disable()
 		})
 	})
 })

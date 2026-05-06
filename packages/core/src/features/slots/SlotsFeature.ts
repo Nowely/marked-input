@@ -1,6 +1,6 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CSSProperties, CoreSlotProps, Feature, Slot} from '../../shared/types'
+import type {CSSProperties, CoreSlotProps, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
@@ -31,7 +31,7 @@ function buildContainerProps(
 	}
 }
 
-export class SlotsFeature implements Feature {
+export class SlotsFeature {
 	readonly isBlock: Computed<boolean> = computed(() => this._store.props.layout() === 'block')
 	readonly isDraggable: Computed<boolean> = computed(() => !!this._store.props.draggable())
 	readonly containerComponent: Computed<Slot> = computed(() => resolveSlot('container', this._store.props.slots()))
@@ -57,6 +57,4 @@ export class SlotsFeature implements Feature {
 	)
 
 	constructor(private readonly _store: Store) {}
-	enable() {}
-	disable() {}
 }

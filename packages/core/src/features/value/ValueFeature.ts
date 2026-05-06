@@ -1,10 +1,9 @@
 import type {CaretRecovery, EditResult, EditSource, RawRange} from '../../shared/editorContracts'
 import {signal, computed, event, batch, effectScope, watch} from '../../shared/signals/index.js'
-import type {Feature} from '../../shared/types'
 import type {Store} from '../../store/Store'
 import {ControlledEcho} from './ControlledEcho'
 
-export class ValueFeature implements Feature {
+export class ValueFeature {
 	readonly current = signal('')
 	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
 	readonly change = event()
@@ -12,26 +11,25 @@ export class ValueFeature implements Feature {
 	readonly #controlledEcho = new ControlledEcho()
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {}
-
-	enable() {
-		if (this.#scope) return
-		this.#commitAccepted(this._store.props.value() ?? this._store.props.defaultValue() ?? '')
-		this.#scope = effectScope(() => {
-			watch(this._store.props.value, value => {
-				if (value === undefined) return
-				if (value === this.current()) return
-				const recovery = this.#controlledEcho.onEcho(value)
-				this.#commitAccepted(value)
-				if (recovery) this._store.caret.recovery(recovery)
-				this.change()
+	constructor(private readonly _store: Store) {
+		watch(this._store.lifecycle.mounted, () => {
+			if (this.#scope) return
+			this.#commitAccepted(this._store.props.value() ?? this._store.props.defaultValue() ?? '')
+			this.#scope = effectScope(() => {
+				watch(this._store.props.value, value => {
+					if (value === undefined) return
+					if (value === this.current()) return
+					const recovery = this.#controlledEcho.onEcho(value)
+					this.#commitAccepted(value)
+					if (recovery) this._store.caret.recovery(recovery)
+					this.change()
+				})
 			})
 		})
-	}
-
-	disable() {
-		this.#scope?.()
-		this.#scope = undefined
+		watch(this._store.lifecycle.unmounted, () => {
+			this.#scope?.()
+			this.#scope = undefined
+		})
 	}
 
 	replaceRange(
