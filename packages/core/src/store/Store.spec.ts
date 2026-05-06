@@ -136,6 +136,7 @@ describe('Store', () => {
 	describe('value edits', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
+			store.lifecycle.mounted()
 			store.value.replaceAll('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
@@ -145,6 +146,7 @@ describe('Store', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({onChange})
+			store.lifecycle.mounted()
 			store.value.replaceAll('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
@@ -163,6 +165,7 @@ describe('Store', () => {
 
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
+			store.lifecycle.mounted()
 			expect(() => store.value.replaceAll('test')).not.toThrow()
 		})
 	})
