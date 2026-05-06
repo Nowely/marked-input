@@ -201,7 +201,7 @@ describe('Clipboard: copy', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: clipboardData})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world foolo world f')
 	})
@@ -499,7 +499,7 @@ describe('Clipboard: paste', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		const sel = window.getSelection()!
 		expect(sel.isCollapsed).toBe(true)
@@ -618,7 +618,7 @@ describe('Clipboard: nested marks', () => {
 		Object.defineProperty(inputEvent, 'dataTransfer', {value: copyDt})
 		root.dispatchEvent(inputEvent)
 
-		await new Promise<void>(r => queueMicrotask(r))
+		await expect.element(page.getByTestId('mark').nth(1)).toBeInTheDocument()
 		expect(root.querySelectorAll('[data-testid="mark"]').length).toBe(2)
 		expect(root.textContent).toBe('hello world worldfoo')
 	})
