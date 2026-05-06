@@ -433,9 +433,7 @@ export function event<T = void>(): Event<T> {
 // effect() / effectScope()
 // ---------------------------------------------------------------------------
 
-export {effect}
-
-function effect(fn: () => void | (() => void)): () => void {
+export function effect(fn: () => void | (() => void)): () => void {
 	const e: EffectNode = {
 		fn,
 		cleanup: undefined,
