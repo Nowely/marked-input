@@ -891,8 +891,9 @@ store.props.set({options: [{markup: 'foo', overlay: {trigger: '@'}}]})
 store.props.set({options: []})
 ```
 
-For DomFeature.spec.ts — update `enableStructuralStore()`:
+For DomFeature.spec.ts — update `enableStructuralStore()` and the line 160 `beforeEach`:
 ```ts
+// enableStructuralStore helper:
 // BEFORE:
 function enableStructuralStore(store: Store) {
     store.value.enable()
@@ -902,8 +903,16 @@ function enableStructuralStore(store: Store) {
 // AFTER:
 function enableStructuralStore(store: Store) {
     store.lifecycle.mounted()
-    store.lifecycle.rendered()
 }
+// Note: do NOT call rendered() here — no container is set yet.
+// Individual mount helpers (mountStructuralInline, etc.) call rendered() after setting container.
+
+// Line ~160 in DomFeature.spec.ts structural indexing describe block:
+// BEFORE (inside beforeEach):
+store.value.enable()
+
+// AFTER:
+store.lifecycle.mounted()
 ```
 
 For DragFeature.spec.ts — update tests that call `store.drag.enable()`:
@@ -926,12 +935,18 @@ it('is safe to call after enable', () => {
 })
 ```
 
-For selection.spec.ts — replace `controller.enable()` / `controller.disable()`:
+For selection.spec.ts — CaretFeature now wires via `lifecycle.mounted()`, which also triggers other features:
 ```ts
 store.lifecycle.mounted()
 // ...test...
 store.lifecycle.unmounted()
 ```
+
+WARNING: The test at ~line 23-24 (`enable() sets up the selecting subscription via effect`) asserts
+`expect(addSpy).toHaveBeenCalledTimes(4)` against `document.addEventListener`. After the change,
+`lifecycle.mounted()` triggers ALL features' setup, adding more listeners. Update expected count
+or restructure the test to verify selection behavior specifically (e.g., assert `store.caret.selecting`
+changes rather than counting document-level listeners).
 
 For focus.spec.ts — replace `store.caret.enable()` / `store.caret.disable()`:
 ```ts
@@ -1021,20 +1036,23 @@ git commit -m "refactor: remove Feature interface"
 
 ---
 
-### Task 11: Remove Feature export from public API if exported
+### Task 11: Remove Feature from public API if exported
 
 **Files:**
-- Check: `packages/core/src/index.ts` or similar barrel exports
+- Check: `packages/core/package.json` (exports/typesVersions), `packages/core/tsconfig.json`
 
-- [ ] **Step 1: Check if Feature is exported**
+- [ ] **Step 1: Check if Feature is publicly exposed**
 
-Run: `rg "Feature" packages/core/src/index.ts`
-If `Feature` is exported from the public API, evaluate whether to remove it or keep it as an empty marker for extensibility. Per YAGNI, remove it.
+Run: `rg "Feature" packages/core/src/index.ts 2>/dev/null || echo "no index.ts"`
 
-- [ ] **Step 2: Commit**
+Run: `rg "Feature" packages/core/package.json`
+
+If `Feature` is not exported anywhere, this task is a no-op. If it is exported (e.g., via `typesVersions` or barrel re-export), check and remove it. Per YAGNI, remove if unused.
+
+- [ ] **Step 2: Commit (if needed)**
 
 ```bash
-git add packages/core/src/index.ts
+git add packages/core/package.json  # if changed
 git commit -m "refactor: remove Feature from public API exports"
 ```
 
