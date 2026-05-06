@@ -10,9 +10,9 @@ Owns accepted serialized editor value state and the raw-position edit pipeline.
 
 ## Computed
 
-| Computed           | Purpose                                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------------------------------- |
-| `isControlledMode` | `props.value() !== undefined`; controlled edits emit `onChange` and wait for prop echo before committing. |
+| Computed           | Purpose                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `isControlledMode` | `props.value() !== undefined`; controlled edits propose to `onChange` and wait for prop echo before committing. |
 
 ## Commands
 
@@ -29,9 +29,22 @@ Drag, clipboard, overlay selection, block editing, inline input, and mark comman
 | -------- | ---------------------------------------------------- | ------------------------------------------------ |
 | `change` | Accepted immediate edits and controlled prop echoes. | Overlay trigger probing and framework observers. |
 
-## Effects (`enable()`)
+## Internal flow
 
-- On enable, initialize `current` from `props.value`, `props.defaultValue`, or `''`, then parse tokens from that value.
-- Watch `props.value` and accept controlled prop echoes through `ControlledEcho`.
-- Controlled edits emit `onChange` and wait for the matching prop echo before accepting recovery.
-- Uncontrolled edits parse and commit immediately, then schedule `caret.recovery`.
+**Uncontrolled edit** (`props.value` is `undefined`):
+
+1. `replaceRange` calls `#applyLocally`
+2. `#applyLocally` calls `onChange`, `#accept`, schedules `caret.recovery`, fires `change`
+
+**Controlled edit** (`props.value` is defined):
+
+1. `replaceRange` calls `#proposeToParent`
+2. `#proposeToParent` stashes `{value, recovery}` in `#pendingEcho` and calls `onChange`
+3. Parent echoes updated `props.value` → `#onParentEcho` runs
+4. If echo matches the proposed value, recovery is applied; otherwise discarded
+5. `#accept` commits the echoed value; `change` fires
+
+**Setup** (`onMounted`):
+
+- `#initializeFromProps` accepts `props.value ?? props.defaultValue ?? ''` once
+- `#subscribeToControlledValue` watches `props.value` for subsequent controlled echoes
