@@ -66,8 +66,6 @@ export async function simulateDragRow(
 		})
 	)
 
-	await new Promise<void>(r => queueMicrotask(r))
-
 	targetRow.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}))
 	grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))
 }
