@@ -628,6 +628,7 @@ function makeWritableComputed<T>(opts: {
 			}
 			return backing()
 		}
+		initialized = true
 		return backing(args[0])
 		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- overloaded call signature
 	} as unknown as Signal<T | undefined>
