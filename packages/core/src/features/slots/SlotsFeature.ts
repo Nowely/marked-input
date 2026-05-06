@@ -56,5 +56,5 @@ export class SlotsFeature {
 		resolveSlotProps('span', this._store.props.slotProps())
 	)
 
-	constructor(private readonly _store: Store) {}
+	constructor(private readonly _store: Pick<Store, 'props'>) {}
 }

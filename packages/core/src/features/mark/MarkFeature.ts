@@ -19,5 +19,5 @@ export class MarkFeature {
 		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
 	})
 
-	constructor(private readonly _store: Store) {}
+	constructor(private readonly _store: Pick<Store, 'props'>) {}
 }
