@@ -3,7 +3,9 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {selectAllText} from '../caret'
 
-export function enableArrowNav(store: Store): void {
+type KbCtx = Pick<Store, 'dom' | 'caret' | 'slots' | 'parsing'>
+
+export function enableArrowNav(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -20,7 +22,7 @@ export function enableArrowNav(store: Store): void {
 	})
 }
 
-function shiftFocus(store: Store, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
+function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
 	const location = store.caret.location()
 	if (!location) return false
 

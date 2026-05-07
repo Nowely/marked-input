@@ -1,6 +1,4 @@
 import {CaretFeature} from '../features/caret'
-import {enableFocus} from '../features/caret/focus'
-import {enableSelection} from '../features/caret/selection'
 import {ClipboardFeature} from '../features/clipboard'
 import {DomFeature} from '../features/dom'
 import {DragFeature} from '../features/drag'
@@ -41,18 +39,17 @@ export class Store {
 
 	// Layer 5 — everything below
 	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
-	readonly keyboard = new KeyboardFeature(this) // behavior modules; keeps full Store
+	readonly keyboard = new KeyboardFeature(
+		this.lifecycle,
+		this.dom,
+		this.value,
+		this.caret,
+		this.slots,
+		this.parsing,
+		this.props
+	)
 	readonly drag = new DragFeature(this.props, this.value, this.parsing)
 	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
 
-	readonly handler = new MarkputHandler(this)
-
-	constructor() {
-		// Wire caret behavior modules here rather than in CaretFeature: they need
-		// dom, which is declared after caret in topological order.
-		this.lifecycle.onMounted(() => {
-			enableFocus(this)
-			enableSelection(this)
-		})
-	}
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
 }

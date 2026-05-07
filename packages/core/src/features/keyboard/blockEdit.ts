@@ -3,6 +3,8 @@ import {KEYBOARD} from '../../shared/constants'
 import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
+
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing' | 'props'>
 import {Caret} from '../caret'
 import {consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
@@ -23,7 +25,7 @@ function isTextLikeRow(token: Token): boolean {
 	return token.descriptor.hasSlot && token.descriptor.segments.length === 1
 }
 
-export function enableBlockEdit(store: Store): void {
+export function enableBlockEdit(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -52,7 +54,7 @@ export function enableBlockEdit(store: Store): void {
 	)
 }
 
-function handleDelete(store: Store, event: KeyboardEvent) {
+function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -152,7 +154,7 @@ function handleDelete(store: Store, event: KeyboardEvent) {
 	}
 }
 
-function handleEnter(store: Store, event: KeyboardEvent) {
+function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
@@ -195,7 +197,7 @@ function handleEnter(store: Store, event: KeyboardEvent) {
 	})
 }
 
-function focusRow(store: Store, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
+function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
 		const path = store.parsing.index().pathFor(token)
 		const address = path ? store.parsing.index().addressFor(path) : undefined
@@ -210,7 +212,7 @@ function focusRow(store: Store, token: Token, row: HTMLElement, caret: 'start' |
 	Caret.setCaretToEnd(row)
 }
 
-function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
+function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
 	const container = store.dom.container()
 	if (!container) return false
 
@@ -244,7 +246,7 @@ function handleBlockArrowLeftRight(store: Store, event: KeyboardEvent, direction
 	return true
 }
 
-function handleArrowUpDown(store: Store, event: KeyboardEvent) {
+function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -282,7 +284,7 @@ function handleArrowUpDown(store: Store, event: KeyboardEvent) {
 	}
 }
 
-function handleBlockBeforeInput(store: Store, event: InputEvent) {
+function handleBlockBeforeInput(store: KbCtx, event: InputEvent) {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -319,7 +321,7 @@ function handleBlockBeforeInput(store: Store, event: InputEvent) {
 	}
 }
 
-function replaceBlockRange(store: Store, event: InputEvent, replacement: string): void {
+function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string): void {
 	const raw = rawRangeFromInputEvent(store, event)
 	if (!raw.ok) return
 	const range = rangeForBlockInput(store, event, raw.value.range)
@@ -331,13 +333,13 @@ function replaceBlockRange(store: Store, event: InputEvent, replacement: string)
 	})
 }
 
-function rawRangeFromInputEvent(store: Store, event: InputEvent): RawSelectionResult {
+function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {
 	const ranges = event.getTargetRanges()
 	if (ranges.length === 0) return store.dom.readRawSelection()
 	return rawRangeFromTargetRange(store, ranges[0])
 }
 
-function rawRangeFromTargetRange(store: Store, range: InputTargetRange): RawSelectionResult {
+function rawRangeFromTargetRange(store: KbCtx, range: InputTargetRange): RawSelectionResult {
 	const start = store.dom.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
 	const end = store.dom.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
 	if (!start.ok) return {ok: false, reason: rawSelectionReason(start)}
@@ -357,7 +359,7 @@ function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailure
 	return result.reason
 }
 
-function rangeForBlockInput(store: Store, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForBlockInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	if (range.start !== range.end) return range
 

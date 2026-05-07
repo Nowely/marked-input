@@ -13,6 +13,8 @@ import type {
 import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CaretFeature} from '../caret/CaretFeature'
+import {enableFocus} from '../caret/focus'
+import {enableSelection} from '../caret/selection'
 import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {Token} from '../parsing'
 import type {ParsingFeature} from '../parsing/ParseFeature'
@@ -147,6 +149,8 @@ export class DomFeature {
 		private readonly parsing: ParsingFeature
 	) {
 		lifecycle.onMounted(() => {
+			enableFocus({dom: this, caret, parsing})
+			enableSelection({dom: this, caret})
 			watch(lifecycle.rendered, () => {
 				this.#handleRendered()
 			})
