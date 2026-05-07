@@ -3,7 +3,7 @@ import {describe, it, expect, vi} from 'vitest'
 import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
-describe('CaretFeature', () => {
+describe('CaretModel', () => {
 	it('exposes range, selecting, and location', () => {
 		const store = new Store()
 		expect(typeof store.caret.range).toBe('function')

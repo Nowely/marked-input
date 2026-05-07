@@ -1,12 +1,12 @@
 import type {RawRange} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
-import type {CaretFeature} from '../caret/CaretFeature'
-import type {DomFeature} from '../dom/DomFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {CaretModel} from '../caret/CaretModel'
+import type {DomController} from '../dom/DomController'
+import type {Lifecycle} from '../lifecycle/Lifecycle'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
-import type {ParsingFeature} from '../parsing/ParseFeature'
-import type {ValueFeature} from '../value/ValueFeature'
+import type {ParseController} from '../parsing/ParseController'
+import type {ValueModel} from '../value/ValueModel'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 function htmlFromRange(range: Range): string {
@@ -35,13 +35,13 @@ function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token
 		})
 }
 
-export class ClipboardFeature {
+export class ClipboardController {
 	constructor(
-		private readonly lifecycle: LifecycleFeature,
-		private readonly value: ValueFeature,
-		private readonly dom: DomFeature,
-		private readonly parsing: ParsingFeature,
-		private readonly caret: CaretFeature
+		private readonly lifecycle: Lifecycle,
+		private readonly value: ValueModel,
+		private readonly dom: DomController,
+		private readonly parsing: ParseController,
+		private readonly caret: CaretModel
 	) {
 		lifecycle.onMounted(() => {
 			// The container must be registered before mounted() fires (adapter

@@ -12,7 +12,7 @@ import type {
 } from '../../shared/types'
 import {shallow} from '../../shared/utils/shallow'
 
-export class PropsFeature {
+export class PropsModel {
 	readonly value = signal<string | undefined>(undefined, {readonly: true})
 	readonly defaultValue = signal<string | undefined>(undefined, {readonly: true})
 

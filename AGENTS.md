@@ -57,7 +57,7 @@ Hard rules:
 - Do not mirror runtime state across features. If two features need the same
   fact, expose it from the feature or store object that owns that fact.
 - DOM/token mapping must go through `store.dom`. Do not infer token location
-  outside `DomFeature` from DOM child order, public data attributes, user refs,
+  outside `DomController` from DOM child order, public data attributes, user refs,
   or framework-rendered wrapper shape.
 - User value mutations must go through `store.value.replace()` or
   `store.value.current()` with raw positions. Callers that want a specific

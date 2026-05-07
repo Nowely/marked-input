@@ -1,10 +1,10 @@
 import type {CaretLocation, RawRange} from '../../shared/editorContracts'
 import {computed, signal} from '../../shared/signals'
 import type {Computed} from '../../shared/signals'
-import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {ParseController} from '../parsing/ParseController'
 import {deriveLocation} from './deriveLocation'
 
-export class CaretFeature {
+export class CaretModel {
 	readonly range = signal<RawRange | undefined>(undefined, {
 		equals: (a, b) => a === b || (a !== undefined && a.start === b?.start && a.end === b.end),
 	})
@@ -28,7 +28,7 @@ export class CaretFeature {
 		this.selecting(undefined)
 	}
 
-	#parsing: ParsingFeature | undefined
+	#parsing: ParseController | undefined
 
 	constructor() {
 		this.location = computed(() => {
@@ -38,7 +38,7 @@ export class CaretFeature {
 		})
 	}
 
-	wire(parsing: ParsingFeature): void {
+	wire(parsing: ParseController): void {
 		this.#parsing = parsing
 	}
 }

@@ -1,15 +1,15 @@
-import {CaretFeature} from '../features/caret'
-import {ClipboardFeature} from '../features/clipboard'
-import {DomFeature} from '../features/dom'
-import {DragFeature} from '../features/drag'
-import {KeyboardFeature} from '../features/keyboard'
-import {LifecycleFeature} from '../features/lifecycle'
+import {CaretModel} from '../features/caret'
+import {ClipboardController} from '../features/clipboard'
+import {DomController} from '../features/dom'
+import {DragController} from '../features/drag'
+import {KeyboardController} from '../features/keyboard'
+import {Lifecycle} from '../features/lifecycle'
 import {MarkFeature} from '../features/mark'
-import {OverlayFeature} from '../features/overlay'
-import {ParsingFeature} from '../features/parsing/ParseFeature'
-import {PropsFeature} from '../features/props/PropsFeature'
+import {OverlayController} from '../features/overlay'
+import {ParseController} from '../features/parsing/ParseController'
+import {PropsModel} from '../features/props/PropsModel'
 import {SlotsFeature} from '../features/slots'
-import {ValueFeature} from '../features/value'
+import {ValueModel} from '../features/value'
 import {KeyGenerator, MarkputHandler} from '../shared/classes'
 import {BlockRegistry} from './BlockRegistry'
 
@@ -20,26 +20,24 @@ export class Store {
 	// 0 from 10
 	readonly blocks = new BlockRegistry()
 
-	// Providers?
-	readonly lifecycle = new LifecycleFeature()
-	readonly props = new PropsFeature()
-	readonly value = new ValueFeature(this.props)
+	readonly lifecycle = new Lifecycle()
+	readonly props = new PropsModel()
+	readonly value = new ValueModel(this.props)
 
 	// in current state it rudementary?
-	readonly caret = new CaretFeature()
+	readonly caret = new CaretModel()
 
 	// rudementary?
 	readonly mark = new MarkFeature(this.props)
 	// rudementary?
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
+	readonly parsing = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing, this.value)
+	readonly dom = new DomController(this.lifecycle, this.props, this.caret, this.parsing, this.value)
 
-	// Controllers?
-	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
-	readonly keyboard = new KeyboardFeature(
+	readonly overlay = new OverlayController(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
+	readonly keyboard = new KeyboardController(
 		this.lifecycle,
 		this.dom,
 		this.value,
@@ -48,8 +46,8 @@ export class Store {
 		this.parsing,
 		this.props
 	)
-	readonly drag = new DragFeature(this.props, this.value, this.parsing, this.caret)
-	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
+	readonly drag = new DragController(this.props, this.value, this.parsing, this.caret)
+	readonly clipboard = new ClipboardController(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
 

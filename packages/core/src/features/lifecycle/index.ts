@@ -1,1 +1,1 @@
-export {LifecycleFeature} from './LifecycleFeature'
+export {Lifecycle} from './Lifecycle'

@@ -1,8 +1,8 @@
 import type {RawRange} from '../../shared/editorContracts'
 import {computed} from '../../shared/signals/index.js'
-import type {PropsFeature} from '../props/PropsFeature'
+import type {PropsModel} from '../props/PropsModel'
 
-export class ValueFeature {
+export class ValueModel {
 	readonly isControlledMode = computed(() => this.props.value() !== undefined)
 
 	readonly current = computed<string>({
@@ -16,7 +16,7 @@ export class ValueFeature {
 		},
 	})
 
-	constructor(private readonly props: PropsFeature) {}
+	constructor(private readonly props: PropsModel) {}
 
 	replace(range: RawRange, replacement: string): void {
 		const current = this.current()

@@ -455,7 +455,7 @@ describe('Store', () => {
 			expect(store.value.current()).toBe('updated')
 		})
 
-		it('reacts to props.value changes when ValueFeature is enabled', () => {
+		it('reacts to props.value changes when ValueModel is enabled', () => {
 			const store = new Store()
 			store.props.set({value: 'initial'})
 			store.lifecycle.mounted()

@@ -4,7 +4,7 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {Token} from './parser/types'
 
-describe('ParsingFeature', () => {
+describe('ParseController', () => {
 	let store: Store
 
 	beforeEach(() => {
@@ -111,7 +111,7 @@ describe('ParsingFeature', () => {
 
 	describe('signal ordering guarantee', () => {
 		it('parsing.tokens is updated when value.current fires', () => {
-			// ParsingFeature subscribes to value.current before any other watcher
+			// ParseController subscribes to value.current before any other watcher
 			// added in onMounted, so by the time downstream listeners observe
 			// value.current, parsing.tokens reflects the new value.
 			store.props.set({Mark: () => null, defaultValue: ''})

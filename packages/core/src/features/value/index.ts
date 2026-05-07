@@ -1,1 +1,1 @@
-export {ValueFeature} from './ValueFeature'
+export {ValueModel} from './ValueModel'

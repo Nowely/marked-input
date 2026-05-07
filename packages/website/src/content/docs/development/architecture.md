@@ -83,32 +83,32 @@ Both framework adapters share the same component structure:
 ```
 1. User types in contenteditable
         ↓
-2. KeyboardFeature detects input
+2. KeyboardController detects input
         ↓
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. KeyboardFeature writes store.caret.range({start, end}) with the desired post-edit position,
+4. KeyboardController writes store.caret.range({start, end}) with the desired post-edit position,
    then calls store.value.replace() or store.value.current()
         ↓
-5. ValueFeature updates uncontrolled state or notifies controlled parents
+5. ValueModel updates uncontrolled state or notifies controlled parents
         ↓
-6. ParsingFeature reactively reparses — it had already subscribed to value.current; tokens update before downstream watchers fire
+6. ParseController reactively reparses — it had already subscribed to value.current; tokens update before downstream watchers fire
         ↓
 7. store.parsing.tokens updated (Signal)
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. DomFeature applies caret.range to the DOM after the adapter registers the new DOM
+9. DomController applies caret.range to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomFeature` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParsingFeature` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
 ```
 1. User types trigger character (e.g., '@')
         ↓
-2. OverlayFeature runs a trigger probe after value edits, or on `selectionchange` when `showOverlayOn` includes `selectionChange`
+2. OverlayController runs a trigger probe after value edits, or on `selectionchange` when `showOverlayOn` includes `selectionChange`
         ↓
 3. If found:
    - store.overlay.match set
@@ -229,7 +229,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `unmounted`     | lifecycle      | Framework unmount           | `void`                           |
 | `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
 
-`DomFeature.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
+`DomController.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
 
 ### Event Usage
 
@@ -307,18 +307,18 @@ class Store {
     }
 
     // Features live directly on store, not nested under .feature
-    readonly lifecycle: LifecycleFeature   // mounted, unmounted, rendered events
-    readonly props:     PropsFeature       // framework-provided configuration
-    readonly caret:     CaretFeature       // range, location (computed), selecting signals
+    readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
+    readonly props:     PropsModel         // framework-provided configuration
+    readonly caret:     CaretModel         // range, location (computed), selecting signals
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
-    readonly value:     ValueFeature       // current, replace()
-    readonly parsing:   ParsingFeature     // tokens, parser, token index
-    readonly dom:       DomFeature         // DOM refs, raw mapping, range placement
-    readonly overlay:   OverlayFeature     // match, element, slot, select, close
-    readonly keyboard:  KeyboardFeature    // input, block editing, arrow navigation
-    readonly drag:      DragFeature        // drag-and-drop action event
-    readonly clipboard: ClipboardFeature   // copy/cut handling
+    readonly value:     ValueModel         // current, replace()
+    readonly parsing:   ParseController    // tokens, parser, token index
+    readonly dom:       DomController      // DOM refs, raw mapping, range placement
+    readonly overlay:   OverlayController  // match, element, slot, select, close
+    readonly keyboard:  KeyboardController // input, block editing, arrow navigation
+    readonly drag:      DragController     // drag-and-drop action event
+    readonly clipboard: ClipboardController // copy/cut handling
 }
 ```
 
@@ -339,7 +339,7 @@ batch(() => {
 	store.parsing.tokens(newTokens)
 })
 
-// Accepted serialized value state is owned by ValueFeature.
+// Accepted serialized value state is owned by ValueModel.
 // Route edits through raw positions.
 store.value.replace({start: 0, end: 5}, 'Hello')
 store.value.current('Hello @[World]')
@@ -353,25 +353,25 @@ const tokens = store.parsing.tokens.use()
 
 ## Features
 
-11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardFeature` behavior modules retain the full `Store` as an adapter boundary.
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
 
-Signal subscription order is significant: `ParsingFeature` subscribes to `value.current` inside its `onMounted` hook before any other consumer registers a watcher in `onMounted`. This guarantees that when downstream listeners observe a `value.current` change, `parsing.tokens()` already reflects the new value.
+Signal subscription order is significant: `ParseController` subscribes to `value.current` inside its `onMounted` hook before any other consumer registers a watcher in `onMounted`. This guarantees that when downstream listeners observe a `value.current` change, `parsing.tokens()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
-| **LifecycleFeature**          | Mount/unmount/render lifecycle events                     |
-| **ValueFeature**              | Accepted serialized value state, edit commands           |
-| **ParsingFeature**            | Token parsing, parser selection, reparse event            |
+| **Lifecycle**                 | Mount/unmount/render lifecycle events                     |
+| **ValueModel**                | Accepted serialized value state, edit commands           |
+| **ParseController**           | Token parsing, parser selection, reparse event            |
 | **MarkFeature**               | Mark slot resolution                                      |
-| **OverlayFeature**            | Overlay trigger detection, position, open/close           |
+| **OverlayController**         | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution            |
-| **CaretFeature**              | Caret range, derived location, text selection state       |
-| **KeyboardFeature**           | Text input, block editing, arrow navigation               |
-| **DomFeature**                | DOM registration, raw selection mapping, range placement   |
-| **DragFeature**               | Drag-and-drop reordering of blocks                       |
-| **ClipboardFeature**          | Clipboard copy/cut handling                              |
+| **CaretModel**                | Caret range, derived location, text selection state       |
+| **KeyboardController**        | Text input, block editing, arrow navigation               |
+| **DomController**             | DOM registration, raw selection mapping, range placement   |
+| **DragController**            | Drag-and-drop reordering of blocks                       |
+| **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardFeature` internally composes three modules: input handling, block editing, and arrow navigation. `CaretFeature` exposes a `range: Signal<RawRange | undefined>` as the single source of truth for the caret/selection position, plus a derived `location: Computed<CaretLocation | undefined>` for token-anchored consumers.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<RawRange | undefined>` as the single source of truth for the caret/selection position, plus a derived `location: Computed<CaretLocation | undefined>` for token-anchored consumers.
 
 ## Lifecycle Timing
 
@@ -381,12 +381,12 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Framework emits store.lifecycle.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. After mount, ValueFeature accepts props.value/defaultValue. ParsingFeature
+// 2. After mount, ValueModel accepts props.value/defaultValue. ParseController
 //    subscribed to value.current first inside its onMounted hook, so tokens are
 //    updated before any other onMounted watcher observes the new value.
 
 // 3. Sync contenteditable attributes (layout effect)
-//    → DomFeature reconciles DOM state
+//    → DomController reconciles DOM state
 
 // 4. Framework emits store.lifecycle.rendered() after tokens render
 
@@ -449,9 +449,9 @@ class Caret {
 }
 ```
 
-### DomFeature
+### DomController
 
-`DomFeature` owns the root container signal and indexes rendered structure after each render:
+`DomController` owns the root container signal and indexes rendered structure after each render:
 
 - top-level token roots are discovered from the editor container or block rows;
 - nested slot children are discovered from adapter-owned `TokenChildren` hosts registered through `childrenFor(path)`;

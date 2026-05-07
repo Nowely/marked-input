@@ -3,18 +3,18 @@ import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import {TriggerFinder} from '../caret'
-import type {CaretFeature} from '../caret/CaretFeature'
-import type {DomFeature} from '../dom/DomFeature'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {CaretModel} from '../caret/CaretModel'
+import type {DomController} from '../dom/DomController'
+import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
-import type {ParsingFeature} from '../parsing/ParseFeature'
-import type {PropsFeature} from '../props/PropsFeature'
+import type {ParseController} from '../parsing/ParseController'
+import type {PropsModel} from '../props/PropsModel'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
-import type {ValueFeature} from '../value/ValueFeature'
+import type {ValueModel} from '../value/ValueModel'
 
-export class OverlayFeature {
+export class OverlayController {
 	readonly match = signal<OverlayMatch | undefined>(undefined)
 	readonly element = signal<HTMLElement | null>(null)
 
@@ -29,12 +29,12 @@ export class OverlayFeature {
 	#scope?: () => void
 
 	constructor(
-		private readonly lifecycle: LifecycleFeature,
-		private readonly props: PropsFeature,
-		private readonly value: ValueFeature,
-		private readonly dom: DomFeature,
-		private readonly caret: CaretFeature,
-		private readonly parsing: ParsingFeature
+		private readonly lifecycle: Lifecycle,
+		private readonly props: PropsModel,
+		private readonly value: ValueModel,
+		private readonly dom: DomController,
+		private readonly caret: CaretModel,
+		private readonly parsing: ParseController
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 

@@ -24,9 +24,9 @@ Defined in: [core/src/shared/classes/MarkputHandler.ts:6](https://github.com/Now
 
 | Parameter | Type |
 | ------ | ------ |
-| `dom` | `DomFeature` |
-| `overlayFeature` | `OverlayFeature` |
-| `parsing` | `ParsingFeature` |
+| `dom` | `DomController` |
+| `overlayFeature` | `OverlayController` |
+| `parsing` | `ParseController` |
 
 #### Returns
 

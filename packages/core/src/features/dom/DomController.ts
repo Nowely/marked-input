@@ -12,16 +12,16 @@ import type {
 } from '../../shared/editorContracts'
 import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CaretFeature} from '../caret/CaretFeature'
+import type {CaretModel} from '../caret/CaretModel'
 import {enableFocus} from '../caret/focus'
 import {enableSelection} from '../caret/selection'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
-import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {ParseController} from '../parsing/ParseController'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
-import type {PropsFeature} from '../props/PropsFeature'
-import type {ValueFeature} from '../value/ValueFeature'
+import type {PropsModel} from '../props/PropsModel'
+import type {ValueModel} from '../value/ValueModel'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -126,7 +126,7 @@ function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 	return false
 }
 
-export class DomFeature {
+export class DomController {
 	readonly #domIndex = signal<DomIndex | undefined>(undefined, {readonly: true})
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
@@ -144,11 +144,11 @@ export class DomFeature {
 	#queuedRender = false
 
 	constructor(
-		private readonly lifecycle: LifecycleFeature,
-		private readonly props: PropsFeature,
-		private readonly caret: CaretFeature,
-		private readonly parsing: ParsingFeature,
-		private readonly value: ValueFeature
+		private readonly lifecycle: Lifecycle,
+		private readonly props: PropsModel,
+		private readonly caret: CaretModel,
+		private readonly parsing: ParseController,
+		private readonly value: ValueModel
 	) {
 		lifecycle.onMounted(() => {
 			enableFocus({dom: this, caret, parsing})

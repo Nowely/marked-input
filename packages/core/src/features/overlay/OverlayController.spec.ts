@@ -13,7 +13,7 @@ const stubMatch: OverlayMatch = {
 	option: {},
 }
 
-describe('OverlayFeature', () => {
+describe('OverlayController', () => {
 	let store: Store
 
 	beforeEach(() => {

@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {signal, watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
-describe('LifecycleFeature', () => {
+describe('Lifecycle', () => {
 	it('exposes mounted, unmounted, rendered events', () => {
 		const store = new Store()
 		expect(typeof store.lifecycle.mounted).toBe('function')

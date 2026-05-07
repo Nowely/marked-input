@@ -1,6 +1,6 @@
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {DomFeature} from '../dom/DomFeature'
+import type {DomController} from '../dom/DomController'
 import {Caret} from './Caret'
 
 /** Regex to match word characters from the start of a string */
@@ -20,7 +20,7 @@ export class TriggerFinder {
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor(private readonly dom?: DomFeature) {
+	constructor(private readonly dom?: DomController) {
 		const caretPosition = Caret.getCurrentPosition()
 		this.node = Caret.getSelectedNode()
 		this.span = Caret.getFocusedSpan()
@@ -45,7 +45,7 @@ export class TriggerFinder {
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		dom?: DomFeature
+		dom?: DomController
 	): OverlayMatch<T> | undefined {
 		if (!options) return
 		if (!Caret.isSelectedPosition) return
