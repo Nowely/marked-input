@@ -28,9 +28,9 @@ describe('DragFeature', () => {
 			// disable drag
 			store.props.set({layout: 'inline', draggable: false})
 
-			const replaceAll = vi.spyOn(store.value, 'current')
+			const currentSpy = vi.spyOn(store.value, 'current')
 			store.drag.action({type: 'delete', index: 0})
-			expect(replaceAll).not.toHaveBeenCalled()
+			expect(currentSpy).not.toHaveBeenCalled()
 		})
 	})
 
@@ -44,11 +44,11 @@ describe('DragFeature', () => {
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 		store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
-		const replaceAll = vi.spyOn(store.value, 'current')
+		const currentSpy = vi.spyOn(store.value, 'current')
 
 		store.drag.action({type: 'delete', index: 0})
 
-		expect(replaceAll).toHaveBeenCalledWith('beta\n\n')
+		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
 		expect(store.caret.range()).toEqual({start: 6, end: 6})
 	})
 })
