@@ -13,14 +13,14 @@ export function parseWithParser(parser: Parser | undefined, value: string): Toke
 }
 
 /**
- * Extract tokens from a string value using the given parser.
+ * Alias for `parseWithParser`. Public API compatibility shim.
  */
 export function computeTokensFromValue(parser: Parser | undefined, value: string): Token[] {
 	return parseWithParser(parser, value)
 }
 
 /**
- * Parse tokens from selected indexes in an existing token array, concatenated.
+ * Concatenate the content of tokens at `indexes`, then parse the result.
  */
 export function parseUnionLabels(parser: Parser | undefined, tokens: readonly Token[], ...indexes: number[]): Token[] {
 	let span = ''
