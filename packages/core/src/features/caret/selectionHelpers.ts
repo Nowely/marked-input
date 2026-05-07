@@ -32,6 +32,6 @@ export function selectAllText(store: Pick<Store, 'dom' | 'caret' | 'slots'>, eve
 		if (!selection || !anchorNode || !focusNode) return
 		selection.setBaseAndExtent(anchorNode, 0, focusNode, 1)
 
-		store.caret.selecting('all')
+		store.caret.startAllSelect()
 	}
 }

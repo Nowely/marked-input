@@ -19,9 +19,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 		const isInside = window.getSelection()?.containsNode(container, true)
 
 		if (currentIsPressed && isNotInnerSome && isInside) {
-			if (store.caret.selecting() !== 'drag') {
-				store.caret.selecting('drag')
-			}
+			store.caret.startDragSelect()
 		}
 	})
 
@@ -31,7 +29,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 		if (store.caret.selecting() === 'drag') {
 			const sel = window.getSelection()
 			if (!sel || sel.isCollapsed) {
-				store.caret.selecting(undefined)
+				store.caret.clearDragSelect()
 			}
 		}
 	})
@@ -39,7 +37,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 	listen(document, 'selectionchange', () => {
 		const sel = window.getSelection()
 		if (store.caret.selecting() === 'drag' && (!sel || sel.isCollapsed)) {
-			store.caret.selecting(undefined)
+			store.caret.clearDragSelect()
 		}
 		if (!sel?.focusNode) return
 
@@ -62,7 +60,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 
 	effect(() => () => {
 		if (store.caret.selecting() === 'drag') {
-			store.caret.selecting(undefined)
+			store.caret.clearDragSelect()
 		}
 	})
 }

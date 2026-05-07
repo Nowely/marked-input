@@ -12,6 +12,22 @@ export class CaretFeature {
 	readonly location: Computed<CaretLocation | undefined>
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
+	startDragSelect(): void {
+		if (this.selecting() !== 'drag') this.selecting('drag')
+	}
+	clearDragSelect(): void {
+		if (this.selecting() === 'drag') this.selecting(undefined)
+	}
+	startAllSelect(): void {
+		this.selecting('all')
+	}
+	clearAllSelect(): void {
+		if (this.selecting() === 'all') this.selecting(undefined)
+	}
+	endSelecting(): void {
+		this.selecting(undefined)
+	}
+
 	#parsing: ParsingFeature | undefined
 
 	constructor() {
