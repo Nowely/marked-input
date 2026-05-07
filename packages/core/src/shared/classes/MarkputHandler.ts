@@ -1,12 +1,12 @@
-import type {DomFeature} from '../../features/dom/DomFeature'
-import type {OverlayFeature} from '../../features/overlay/OverlayFeature'
-import type {ParsingFeature} from '../../features/parsing/ParseFeature'
+import type {DomController} from '../../features/dom/DomController'
+import type {OverlayController} from '../../features/overlay/OverlayController'
+import type {ParseController} from '../../features/parsing/ParseController'
 
 export class MarkputHandler {
 	constructor(
-		private readonly dom: DomFeature,
-		private readonly overlayFeature: OverlayFeature,
-		private readonly parsing: ParsingFeature
+		private readonly dom: DomController,
+		private readonly overlayFeature: OverlayController,
+		private readonly parsing: ParseController
 	) {}
 
 	get container() {

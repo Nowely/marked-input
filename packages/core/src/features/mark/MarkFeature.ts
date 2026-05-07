@@ -1,7 +1,7 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
-import type {PropsFeature} from '../props/PropsFeature'
+import type {PropsModel} from '../props/PropsModel'
 import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
 
@@ -19,5 +19,5 @@ export class MarkFeature {
 		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
 	})
 
-	constructor(private readonly props: PropsFeature) {}
+	constructor(private readonly props: PropsModel) {}
 }

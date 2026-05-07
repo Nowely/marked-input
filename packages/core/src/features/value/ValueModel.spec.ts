@@ -2,7 +2,7 @@ import {describe, it, expect, vi} from 'vitest'
 
 import {Store} from '../../store/Store'
 
-describe('ValueFeature', () => {
+describe('ValueModel', () => {
 	it('exposes accepted value state', () => {
 		const store = new Store()
 

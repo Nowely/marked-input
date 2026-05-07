@@ -1,25 +1,25 @@
 import type {RawRange} from '../../shared/editorContracts'
 import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
-import type {CaretFeature} from '../caret/CaretFeature'
+import type {CaretModel} from '../caret/CaretModel'
 import {createRowContent} from '../editing'
 import type {Token} from '../parsing'
-import type {ParsingFeature} from '../parsing/ParseFeature'
-import type {PropsFeature} from '../props/PropsFeature'
-import type {ValueFeature} from '../value/ValueFeature'
+import type {ParseController} from '../parsing/ParseController'
+import type {PropsModel} from '../props/PropsModel'
+import type {ValueModel} from '../value/ValueModel'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
-export class DragFeature {
+export class DragController {
 	readonly action = event<DragAction>()
 
 	#unsub?: () => void
 
 	constructor(
-		private readonly props: PropsFeature,
-		private readonly value: ValueFeature,
-		private readonly parsing: ParsingFeature,
-		private readonly caret: CaretFeature
+		private readonly props: PropsModel,
+		private readonly value: ValueModel,
+		private readonly parsing: ParseController,
+		private readonly caret: CaretModel
 	) {
 		const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
 

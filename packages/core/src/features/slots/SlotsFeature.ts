@@ -4,7 +4,7 @@ import type {CSSProperties, CoreSlotProps, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
-import type {PropsFeature} from '../props/PropsFeature'
+import type {PropsModel} from '../props/PropsModel'
 import {resolveSlot, resolveSlotProps} from './resolveSlot'
 
 import styles from '../../../styles.module.css'
@@ -56,5 +56,5 @@ export class SlotsFeature {
 		resolveSlotProps('span', this.props.slotProps())
 	)
 
-	constructor(private readonly props: PropsFeature) {}
+	constructor(private readonly props: PropsModel) {}
 }

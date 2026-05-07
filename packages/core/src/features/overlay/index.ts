@@ -1,4 +1,4 @@
 export {filterSuggestions} from './filterSuggestions'
 export {createMarkFromOverlay} from './createMarkFromOverlay'
-export {OverlayFeature} from './OverlayFeature'
+export {OverlayController} from './OverlayController'
 export {navigateSuggestions, type NavigationAction, type NavigationResult} from './suggestionNavigation'

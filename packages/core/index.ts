@@ -1,8 +1,8 @@
 /**
  * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`
  *   and `store.caret.location()`. `MarkputState.recovery` and `value.change`
- *   no longer exist — the single source of truth is `CaretFeature.range` (a
- *   `Signal<RawRange | undefined>`) applied to the DOM by `DomFeature` after
+ *   no longer exist — the single source of truth is `CaretModel.range` (a
+ *   `Signal<RawRange | undefined>`) applied to the DOM by `DomController` after
  *   every render.
  */
 

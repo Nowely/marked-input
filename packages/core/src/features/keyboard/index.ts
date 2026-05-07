@@ -1,2 +1,2 @@
-export {KeyboardFeature} from './KeyboardFeature'
+export {KeyboardController} from './KeyboardController'
 export {handleBeforeInput, handlePaste, replaceAllContentWith, applySpanInput} from './input'

@@ -1,6 +1,6 @@
 import {effectScope, event, watch} from '../../shared/signals'
 
-export class LifecycleFeature {
+export class Lifecycle {
 	readonly mounted = event()
 	readonly unmounted = event()
 	readonly rendered = event()

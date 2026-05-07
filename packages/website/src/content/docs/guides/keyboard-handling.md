@@ -12,7 +12,7 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 2. The adapter registers the root with `store.dom.container` and child structure with `store.dom.refFor()`.
 3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom`.
 4. Edits call `store.value.replace()` and optionally write `store.caret.range()` to set the post-edit caret.
-5. `DomFeature` applies `caret.range` to the DOM after the next render.
+5. `DomController` applies `caret.range` to the DOM after the next render.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 

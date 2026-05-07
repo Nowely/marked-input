@@ -1,15 +1,15 @@
 import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {MarkFeature} from '../mark/MarkFeature'
-import type {PropsFeature} from '../props/PropsFeature'
+import type {PropsModel} from '../props/PropsModel'
 import type {SlotsFeature} from '../slots/SlotsFeature'
-import type {ValueFeature} from '../value/ValueFeature'
+import type {ValueModel} from '../value/ValueModel'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 
-export class ParsingFeature {
+export class ParseController {
 	readonly tokens = signal<Token[]>([])
 	readonly #generation = signal(0)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
@@ -28,15 +28,15 @@ export class ParsingFeature {
 	#scope?: () => void
 
 	constructor(
-		private readonly lifecycle: LifecycleFeature,
-		private readonly value: ValueFeature,
+		private readonly lifecycle: Lifecycle,
+		private readonly value: ValueModel,
 		private readonly mark: MarkFeature,
-		private readonly props: PropsFeature,
+		private readonly props: PropsModel,
 		private readonly slots: SlotsFeature
 	) {
 		lifecycle.onMounted(() => {
 			// Parse current value immediately so tokens are ready before other
-			// mounted subscribers (like OverlayFeature) read them.
+			// mounted subscribers (like OverlayController) read them.
 			this.acceptTokens(this.#parseValue(value.current()))
 			this.#subscribeValue()
 		})

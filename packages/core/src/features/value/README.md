@@ -29,7 +29,7 @@ directly.
 **Uncontrolled edit** (`props.value` is `undefined`):
 
 1. `replace()` validates the range and computes the next value
-2. `current(next)` updates the internal field, calls `props.onChange`, and notifies subscribers (e.g. `ParsingFeature`)
+2. `current(next)` updates the internal field, calls `props.onChange`, and notifies subscribers (e.g. `ParseController`)
 
 **Controlled edit** (`props.value` is defined):
 
@@ -37,4 +37,4 @@ directly.
 2. `current(next)` calls `props.onChange` only — the internal field is not written
 3. The parent echoes updated `props.value`, which makes `current` reflect the new value on the next read
 
-There is no separate `change` event; downstream consumers subscribe to `value.current` directly. `ParsingFeature` registers its `value.current` watcher first inside `onMounted`, so any other watcher observes a fresh `parsing.tokens()` when it reads.
+There is no separate `change` event; downstream consumers subscribe to `value.current` directly. `ParseController` registers its `value.current` watcher first inside `onMounted`, so any other watcher observes a fresh `parsing.tokens()` when it reads.
