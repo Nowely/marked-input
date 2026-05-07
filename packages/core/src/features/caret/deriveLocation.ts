@@ -31,7 +31,6 @@ function findAt(
 		if (token.type === 'text') return {address, role: 'text'}
 		// depth > 0: nested mark inside a slot → 'markDescendant'
 		// depth = 0: top-level mark (incl. drag-mode rows) → 'token'
-		// 'row' is not produced; arrowNav only checks role !== 'text'
 		return {address, role: depth > 0 ? 'markDescendant' : 'token'}
 	}
 	return undefined

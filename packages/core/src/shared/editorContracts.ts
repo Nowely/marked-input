@@ -78,7 +78,7 @@ export type DomIndex = {
 
 export type CaretLocation = {
 	readonly address: TokenAddress
-	readonly role: 'row' | 'token' | 'text' | 'markDescendant'
+	readonly role: 'token' | 'text' | 'markDescendant'
 }
 
 export type DomDiagnostic = {
