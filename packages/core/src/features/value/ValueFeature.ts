@@ -26,7 +26,4 @@ export class ValueFeature {
 		this.current(next)
 	}
 
-	replaceAll(next: string): void {
-		return this.replaceRange({start: 0, end: this.current().length}, next)
-	}
 }
