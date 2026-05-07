@@ -270,5 +270,5 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 export function replaceAllContentWith(store: KbCtx, newContent: string): void {
 	store.caret.selecting(undefined)
 	store.caret.range({start: newContent.length, end: newContent.length})
-	store.value.replaceAll(newContent)
+	store.value.current(newContent)
 }
