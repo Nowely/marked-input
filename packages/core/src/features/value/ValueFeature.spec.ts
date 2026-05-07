@@ -1,15 +1,13 @@
 import {describe, it, expect, vi} from 'vitest'
 
-import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('ValueFeature', () => {
-	it('exposes accepted value state and edit notifications', () => {
+	it('exposes accepted value state', () => {
 		const store = new Store()
 
 		expect(typeof store.value.current).toBe('function')
 		expect(typeof store.value.isControlledMode).toBe('function')
-		expect(typeof store.value.change).toBe('function')
 		expect('next' in store.value).toBe(false)
 		expect(store.value.current()).toBe('')
 		expect(store.value.isControlledMode()).toBe(false)
@@ -56,23 +54,6 @@ describe('ValueFeature', () => {
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
-	it('notifies change subscribers for accepted uncontrolled edits', () => {
-		const store = new Store()
-		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', onChange})
-		store.lifecycle.mounted()
-		const notified = vi.fn()
-		const stop = watch(store.value.change, notified)
-
-		store.value.replaceAll('world')
-
-		expect(onChange).toHaveBeenCalledWith('world')
-		expect(notified).toHaveBeenCalledOnce()
-		expect(store.value.current()).toBe('world')
-
-		stop()
-	})
-
 	it('readOnly rejects editor-originated range replacement', () => {
 		const store = new Store()
 		const onChange = vi.fn()
@@ -100,21 +81,17 @@ describe('ValueFeature', () => {
 	})
 
 	describe('replaceRange()', () => {
-		it('commits uncontrolled range replacement and schedules recovery', () => {
+		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
-			const recovery = {kind: 'caret' as const, rawPosition: 5}
 			store.props.set({defaultValue: 'hello world'})
 			store.lifecycle.mounted()
 
-			store.value.replaceRange({start: 6, end: 11}, 'markput', {
-				recover: recovery,
-			})
+			store.value.replaceRange({start: 6, end: 11}, 'markput')
 
 			expect(store.value.current()).toBe('hello markput')
-			expect(store.caret.recovery()).toBe(recovery)
 		})
 
-		it('rejects invalid ranges without emitting change', () => {
+		it('rejects invalid ranges without calling onChange', () => {
 			const store = new Store()
 			const onChange = vi.fn()
 			store.props.set({defaultValue: 'hello', onChange})
@@ -124,70 +101,21 @@ describe('ValueFeature', () => {
 
 			expect(onChange).not.toHaveBeenCalled()
 			expect(store.value.current()).toBe('hello')
-			expect(store.value.current()).toBe('hello')
-			expect(store.value.current()).toBe('hello')
 		})
 
-		it('keeps controlled accepted value until matching echo', () => {
+		it('calls onChange and keeps old current until controlled echo', () => {
 			const store = new Store()
 			const onChange = vi.fn()
-			const recovery = {kind: 'caret' as const, rawPosition: 5}
 			store.props.set({value: 'hello', onChange})
 			store.lifecycle.mounted()
 
-			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+			store.value.replaceRange({start: 0, end: 5}, 'world')
 
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
-			expect(store.caret.recovery()).toBeUndefined()
 
 			store.props.set({value: 'world'})
-
 			expect(store.value.current()).toBe('world')
-			expect(store.caret.recovery()).toBe(recovery)
-		})
-
-		it('keeps recovery when controlled echo is synchronous inside onChange', () => {
-			const store = new Store()
-			const recovery = {kind: 'caret' as const, rawPosition: 5}
-			store.props.set({
-				value: 'hello',
-				onChange: value => store.props.set({value}),
-			})
-			store.lifecycle.mounted()
-
-			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
-
-			expect(store.value.current()).toBe('world')
-			expect(store.caret.recovery()).toBe(recovery)
-		})
-
-		it('clears pending recovery when controlled echo does not match', () => {
-			const store = new Store()
-			const onChange = vi.fn()
-			const recovery = {kind: 'caret' as const, rawPosition: 5}
-			store.props.set({value: 'hello', onChange})
-			store.lifecycle.mounted()
-
-			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
-			store.props.set({value: 'other'})
-			store.props.set({value: 'world'})
-
-			expect(store.value.current()).toBe('world')
-			expect(store.caret.recovery()).toBeUndefined()
-		})
-
-		it('does not set recovery when controlled parent ignores the change', () => {
-			const store = new Store()
-			const recovery = {kind: 'caret' as const, rawPosition: 3}
-			// onChange deliberately does not echo the value back
-			store.props.set({value: 'hello', onChange: () => {}})
-			store.lifecycle.mounted()
-
-			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
-
-			expect(store.caret.recovery()).toBeUndefined()
-			expect(store.value.current()).toBe('hello')
 		})
 	})
 })

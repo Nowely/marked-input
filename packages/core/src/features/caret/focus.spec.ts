@@ -17,17 +17,12 @@ describe('FocusFeature', () => {
 		store.dom.container(stubContainer)
 	})
 
-	it('updates caret location from focus inside structural text surface', () => {
+	it('derives text role from caret.range inside structural text surface', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		const container = document.createElement('div')
-		const text = document.createElement('span')
-		container.append(text)
-		store.dom.container(container)
 		store.lifecycle.mounted()
-		store.lifecycle.rendered()
 
-		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+		store.caret.range({start: 2, end: 2})
 
 		expect(store.caret.location()?.role).toBe('text')
 	})

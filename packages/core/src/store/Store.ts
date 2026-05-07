@@ -33,7 +33,7 @@ export class Store {
 	readonly slots = new SlotsFeature(this.props)
 
 	// in progress. use service terminology?
-	readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
+	readonly value = new ValueFeature(this.props)
 
 	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
@@ -50,7 +50,7 @@ export class Store {
 		this.parsing,
 		this.props
 	)
-	readonly drag = new DragFeature(this.props, this.value, this.parsing)
+	readonly drag = new DragFeature(this.props, this.value, this.parsing, this.caret)
 	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)

@@ -24,7 +24,6 @@ describe('Store', () => {
 	it('have events', () => {
 		const store = new Store()
 		expect(typeof store.parsing.reparse).toBe('function')
-		expect(typeof store.value.change).toBe('function')
 	})
 
 	describe('handler', () => {

@@ -39,7 +39,7 @@ describe('DragFeature', () => {
 		expect(typeof store.drag.action).toBe('function')
 	})
 
-	it('commits drag edits through replaceAll with recovery metadata', () => {
+	it('commits drag edits through replaceAll and writes caret.range', () => {
 		store.props.set({layout: 'block', draggable: true})
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
@@ -48,6 +48,7 @@ describe('DragFeature', () => {
 
 		store.drag.action({type: 'delete', index: 0})
 
-		expect(replaceAll).toHaveBeenCalledWith('beta\n\n', {recover: {kind: 'caret', rawPosition: 6}})
+		expect(replaceAll).toHaveBeenCalledWith('beta\n\n')
+		expect(store.caret.range()).toEqual({start: 6, end: 6})
 	})
 })

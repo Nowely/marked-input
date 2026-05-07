@@ -264,7 +264,6 @@ export class DomFeature {
 		if (role === 'markDescendant') {
 			this.#placeCollapsedBoundary(target, boundary === 'end' ? target.childNodes.length : 0)
 		}
-		this.caret.location({address, role})
 		return {ok: true, value: undefined}
 	}
 
@@ -420,8 +419,6 @@ export class DomFeature {
 		this.#reconcileStructuralTextSurfaces()
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
-		this.#clearStaleCaretLocation()
-		this.#applyPendingRecovery()
 		this.#applyRangeToDOM()
 	}
 
@@ -746,7 +743,6 @@ export class DomFeature {
 				record.tokenElement,
 				boundary === 'end' ? record.tokenElement.childNodes.length : 0
 			)
-			this.caret.location({address: record.address, role: 'markDescendant'})
 			return {ok: true, value: undefined}
 		}
 
@@ -807,38 +803,6 @@ export class DomFeature {
 		}
 	}
 
-	#applyPendingRecovery(): void {
-		const recovery = this.caret.recovery()
-		if (!recovery) return
-
-		if (recovery.kind === 'caret') {
-			const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
-			this.caret.recovery(undefined)
-			if (result.ok) {
-				// Bridge: sync caret.range so #applyRangeToDOM (which runs next) is idempotent
-				this.caret.range({start: recovery.rawPosition, end: recovery.rawPosition})
-			} else {
-				this.diagnostics({
-					kind: 'recoveryFailed',
-					reason: `pending caret recovery could not be applied: ${result.reason}`,
-				})
-			}
-			return
-		}
-
-		const result = this.#placeSelection(recovery.selection)
-		this.caret.recovery(undefined)
-		if (result.ok) {
-			// Bridge: sync caret.range so #applyRangeToDOM (which runs next) is idempotent
-			this.caret.range(recovery.selection.range)
-		} else {
-			this.diagnostics({
-				kind: 'recoveryFailed',
-				reason: `pending selection recovery could not be applied: ${result.reason}`,
-			})
-		}
-	}
-
 	#placeSelection(selection: RawSelection): Result<void, 'notIndexed' | 'invalidBoundary'> {
 		const start = this.#findTextTargetForRawPosition(selection.range.start, 'after')
 		const end = this.#findTextTargetForRawPosition(selection.range.end, 'before')
@@ -870,14 +834,5 @@ export class DomFeature {
 		const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
 		if (!text.parentNode) surface.append(text)
 		return {node: text, offset: text.length}
-	}
-
-	#clearStaleCaretLocation(): void {
-		const location = this.caret.location()
-		if (!location) return
-		const resolved = this.parsing.index().resolveAddress(location.address)
-		if (!resolved.ok || !this.#pathElements.has(pathKey(location.address.path))) {
-			this.caret.location(undefined)
-		}
 	}
 }

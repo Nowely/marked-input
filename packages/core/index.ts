@@ -26,7 +26,6 @@ export type {
 	Result,
 	RawRange,
 	RawSelection,
-	CaretRecovery,
 	MarkPatch,
 	MarkSnapshot,
 	MarkInfo,

@@ -110,19 +110,15 @@ describe('ParsingFeature', () => {
 	})
 
 	describe('signal ordering guarantee', () => {
-		it('parsing.tokens is updated when value.change fires', () => {
-			// Guarantee: parsing.tokens is updated before value.change fires.
-			// Currently: ValueFeature.#accept updates tokens synchronously before
-			// emitting change() in the same watch callback.
-			// After the value↔parsing inversion (Task 5): ParsingFeature subscribes
-			// to value.current at construction time, before ValueFeature registers
-			// its change() emission in onMounted — same observable ordering guarantee.
-			// This test pins the contract regardless of implementation shape.
+		it('parsing.tokens is updated when value.current fires', () => {
+			// ParsingFeature subscribes to value.current before any other watcher
+			// added in onMounted, so by the time downstream listeners observe
+			// value.current, parsing.tokens reflects the new value.
 			store.props.set({Mark: () => null, defaultValue: ''})
 			store.lifecycle.mounted()
 
 			let tokensAtChangeTime: Token[] | undefined
-			const stop = watch(store.value.change, () => {
+			const stop = watch(store.value.current, () => {
 				tokensAtChangeTime = store.parsing.tokens()
 			})
 

@@ -4,12 +4,11 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('CaretFeature', () => {
-	it('exposes range, selecting, location, recovery', () => {
+	it('exposes range, selecting, and location', () => {
 		const store = new Store()
 		expect(typeof store.caret.range).toBe('function')
 		expect(typeof store.caret.selecting).toBe('function')
 		expect(typeof store.caret.location).toBe('function')
-		expect(typeof store.caret.recovery).toBe('function') // bridge; removed in Task 11
 	})
 
 	it('range starts undefined', () => {

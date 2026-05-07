@@ -351,37 +351,23 @@ describe('DomFeature structural indexing', () => {
 		container.remove()
 	})
 
-	it('clears pending caret recovery and emits diagnostics when placement fails', () => {
+	it('clamps OOB caret range and places at maxPos', () => {
 		const {store, container} = mountStructuralInline('hello')
-		const diagnostics: unknown[] = []
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
-		store.caret.recovery({kind: 'caret', rawPosition: 999})
+		store.caret.range({start: 999, end: 999})
 		store.lifecycle.rendered()
 
-		expect(store.caret.recovery()).toBeUndefined()
-		expect(diagnostics).toContainEqual({
-			kind: 'recoveryFailed',
-			reason: 'pending caret recovery could not be applied: invalidBoundary',
-		})
-		stop()
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
-	it('clears pending selection recovery and emits diagnostics when placement fails', () => {
+	it('clamps OOB selection range', () => {
 		const {store, container} = mountStructuralInline('hello')
-		const diagnostics: unknown[] = []
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
-		store.caret.recovery({kind: 'selection', selection: {range: {start: 999, end: 1000}}})
+		store.caret.range({start: 999, end: 1000})
 		store.lifecycle.rendered()
 
-		expect(store.caret.recovery()).toBeUndefined()
-		expect(diagnostics).toContainEqual({
-			kind: 'recoveryFailed',
-			reason: 'pending selection recovery could not be applied: invalidBoundary',
-		})
-		stop()
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
