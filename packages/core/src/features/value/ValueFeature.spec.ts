@@ -60,7 +60,7 @@ describe('ValueFeature', () => {
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
 		store.lifecycle.mounted()
 
-		store.value.replaceAll('world')
+		store.value.current('world')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
