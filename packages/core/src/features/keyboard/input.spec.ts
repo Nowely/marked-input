@@ -88,7 +88,7 @@ describe('replaceAllContentWith()', () => {
 describe('handleBeforeInput()', () => {
 	it('inserts text through replaceRange using target ranges', () => {
 		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.value, 'replaceRange')
+		const replaceRange = vi.spyOn(store.value, 'replace')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
 		range.setEnd(textNode, 1)
@@ -104,7 +104,7 @@ describe('handleBeforeInput()', () => {
 
 	it('does not commit beforeinput during composition', () => {
 		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.value, 'replaceRange')
+		const replaceRange = vi.spyOn(store.value, 'replace')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
 		range.setEnd(textNode, 1)
@@ -120,7 +120,7 @@ describe('handleBeforeInput()', () => {
 
 	it('ignores beforeinput from editable mark descendants', () => {
 		const {store, container, descendantText} = mountStructuralMarkWithDescendant()
-		const replaceRange = vi.spyOn(store.value, 'replaceRange')
+		const replaceRange = vi.spyOn(store.value, 'replace')
 		const range = document.createRange()
 		range.setStart(descendantText, 0)
 		range.setEnd(descendantText, 0)

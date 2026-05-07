@@ -80,7 +80,7 @@ describe('ValueFeature', () => {
 		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
-	describe('replaceRange()', () => {
+	describe('replace()', () => {
 		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello world'})

@@ -20,6 +20,7 @@ export class ValueFeature {
 
 	replace(range: RawRange, replacement: string): void {
 		const current = this.current()
+		if (range.start < 0 || range.end < range.start || range.end > current.length) return
 		const next = current.slice(0, range.start) + replacement + current.slice(range.end)
 		this.current(next)
 	}

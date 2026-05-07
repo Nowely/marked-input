@@ -121,7 +121,7 @@ describe('OverlayFeature', () => {
 
 	describe('select()', () => {
 		it('replaces the trigger range through the value pipeline', () => {
-			const replaceRange = vi.spyOn(store.value, 'replaceRange')
+			const replaceRange = vi.spyOn(store.value, 'replace')
 			const mark = {
 				type: 'text' as const,
 				content: 'world',
