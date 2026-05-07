@@ -37,7 +37,8 @@ export class Store {
 	readonly parsing: ParsingFeature = new ParsingFeature(this)
 
 	constructor() {
-		// Attach caret behavior modules that need dom (constructed after caret).
+		// Wire caret behavior modules here rather than in CaretFeature: they need
+		// dom, which is declared after caret in topological order.
 		this.lifecycle.onMounted(() => {
 			enableFocus(this)
 			enableSelection(this)
