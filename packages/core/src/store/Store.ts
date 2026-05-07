@@ -17,27 +17,29 @@ export type {DragAction} from '../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()
+	// 0 from 10
 	readonly blocks = new BlockRegistry()
 
-	// Layer 0 — no feature deps
+	// Providers?
 	readonly lifecycle = new LifecycleFeature()
 	readonly props = new PropsFeature()
+
+	// in current state it rudementary?
 	readonly caret = new CaretFeature()
 
-	// Layer 1 — props only
+	// rudementary?
 	readonly mark = new MarkFeature(this.props)
+	// rudementary?
 	readonly slots = new SlotsFeature(this.props)
 
-	// Layer 2 — lifecycle + props + caret
+	// in progress. use service terminology?
 	readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
 
-	// Layer 3 — value + mark + slots (+ lifecycle + props)
 	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	// Layer 4 — caret + parsing (+ lifecycle + props)
 	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
 
-	// Layer 5 — everything below
+	// Controllers?
 	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
 	readonly keyboard = new KeyboardFeature(
 		this.lifecycle,
