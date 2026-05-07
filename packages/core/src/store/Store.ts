@@ -23,6 +23,7 @@ export class Store {
 	// Providers?
 	readonly lifecycle = new LifecycleFeature()
 	readonly props = new PropsFeature()
+	readonly value = new ValueFeature(this.props)
 
 	// in current state it rudementary?
 	readonly caret = new CaretFeature()
@@ -31,9 +32,6 @@ export class Store {
 	readonly mark = new MarkFeature(this.props)
 	// rudementary?
 	readonly slots = new SlotsFeature(this.props)
-
-	// in progress. use service terminology?
-	readonly value = new ValueFeature(this.props)
 
 	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
