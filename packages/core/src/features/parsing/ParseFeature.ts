@@ -3,9 +3,7 @@ import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
-import {toString} from './parser/utils/toString'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
-import {parseWithParser} from './utils/valueParser'
 
 export class ParsingFeature {
 	readonly tokens = signal<Token[]>([])
@@ -25,15 +23,19 @@ export class ParsingFeature {
 
 	#scope?: () => void
 
-	constructor(
-		private readonly _store: Pick<Store, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value' | 'caret' | 'parsing'>
-	) {
+	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value'>) {
+		_store.lifecycle.onMounted(() => {
+			// Parse current value immediately so tokens are ready before other
+			// mounted subscribers (like OverlayFeature) read them.
+			this.acceptTokens(this.#parseValue(_store.value.current()))
+			this.#subscribeValue()
+		})
+
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
-				this.sync()
 				this.#scope = effectScope(() => {
-					this.#subscribeParse()
 					this.#subscribeReactiveParse()
+					this.#subscribeReparse()
 				})
 			}
 			if (!enabled && this.#scope) {
@@ -46,10 +48,6 @@ export class ParsingFeature {
 		toggle(this._store.mark.enabled())
 	}
 
-	parseValue(value: string): Token[] {
-		return parseWithParser(this._store, value)
-	}
-
 	acceptTokens(tokens: Token[]): void {
 		batch(
 			() => {
@@ -60,28 +58,35 @@ export class ParsingFeature {
 		)
 	}
 
-	sync(value = this._store.value.current()) {
-		this.acceptTokens(this.parseValue(value))
+	#parseValue(value: string): Token[] {
+		const parser = this.parser()
+		if (!parser) {
+			return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
+		}
+		return parser.parse(value)
 	}
 
-	#subscribeParse() {
+	#subscribeValue(): void {
+		watch(
+			computed(() => this._store.value.current()),
+			v => {
+				this.acceptTokens(this.#parseValue(v))
+			}
+		)
+	}
+
+	#subscribeReactiveParse(): void {
+		watch(
+			computed(() => this.parser()),
+			() => {
+				this.acceptTokens(this.#parseValue(this._store.value.current()))
+			}
+		)
+	}
+
+	#subscribeReparse(): void {
 		watch(this.reparse, () => {
-			if (this._store.caret.recovery()) {
-				const text = toString(this.tokens())
-				this.acceptTokens(this.parseValue(text))
-				return
-			}
-			this.sync()
-		})
-	}
-
-	#subscribeReactiveParse() {
-		const deps = computed(() => this.parser())
-
-		watch(deps, () => {
-			if (!this._store.caret.recovery()) {
-				this.sync(this._store.value.current())
-			}
+			this.acceptTokens(this.#parseValue(this._store.value.current()))
 		})
 	}
 }

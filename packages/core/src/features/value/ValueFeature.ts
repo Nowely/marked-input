@@ -1,5 +1,5 @@
 import type {CaretRecovery, RawRange} from '../../shared/editorContracts'
-import {computed, event, batch, watch} from '../../shared/signals/index.js'
+import {computed, event, watch} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 export class ValueFeature {
@@ -18,7 +18,7 @@ export class ValueFeature {
 
 	#pending: {value: string; recovery: CaretRecovery | undefined} | undefined
 
-	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'parsing' | 'caret'>) {
+	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'caret'>) {
 		_store.lifecycle.onMounted(() => {
 			this.#accept(this.current())
 			watch(this.current, v => {
@@ -46,8 +46,6 @@ export class ValueFeature {
 	#accept(value: string): void {
 		const pending = this.#pending
 		this.#pending = undefined
-		const tokens = this._store.parsing.parseValue(value)
-		batch(() => this._store.parsing.acceptTokens(tokens))
 		if (pending?.value === value) {
 			this._store.caret.recovery(pending.recovery)
 		}
