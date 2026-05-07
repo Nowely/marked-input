@@ -7,7 +7,7 @@ The old standalone DOM walkers were removed with the legacy locator compatibilit
 ## Current Responsibilities
 
 - Keep token navigation address-based instead of DOM-child-order based.
-- Use `store.caret.focus(address, boundary)` for mark focus.
-- Use `store.caret.placeAt(rawPosition)` for raw-position text recovery.
+- Use `store.dom.focusAddress(address, boundary)` for mark focus.
+- Use `store.dom.placeCaretAtRawPosition(rawPosition, affinity)` for raw-position text recovery.
 
 The feature folder is retained for historical documentation only; production navigation code lives with the keyboard/caret pipeline.

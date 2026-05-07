@@ -769,7 +769,7 @@ export class DomFeature {
 		if (!recovery) return
 
 		if (recovery.kind === 'caret') {
-			const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
+			const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
 			this._store.caret.recovery(undefined)
 			if (!result.ok) {
 				this.diagnostics({

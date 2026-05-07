@@ -119,7 +119,7 @@ export class OverlayFeature {
 
 	#probeTrigger() {
 		const match =
-			TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store) ??
+			TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store.dom) ??
 			this.#probeTriggerFromRecovery()
 		this.match(match)
 	}

@@ -1,4 +1,6 @@
 import {CaretFeature} from '../features/caret'
+import {enableFocus} from '../features/caret/focus'
+import {enableSelection} from '../features/caret/selection'
 import {ClipboardFeature} from '../features/clipboard'
 import {DomFeature} from '../features/dom'
 import {DragFeature} from '../features/drag'
@@ -27,10 +29,18 @@ export class Store {
 	readonly mark = new MarkFeature(this)
 	readonly overlay = new OverlayFeature(this)
 	readonly slots = new SlotsFeature(this)
-	readonly caret: CaretFeature = new CaretFeature(this)
+	readonly caret: CaretFeature = new CaretFeature()
 	readonly keyboard = new KeyboardFeature(this)
 	readonly dom: DomFeature = new DomFeature(this)
 	readonly drag = new DragFeature(this)
 	readonly clipboard = new ClipboardFeature(this)
 	readonly parsing: ParsingFeature = new ParsingFeature(this)
+
+	constructor() {
+		// Attach caret behavior modules that need dom (constructed after caret).
+		this.lifecycle.onMounted(() => {
+			enableFocus(this)
+			enableSelection(this)
+		})
+	}
 }
