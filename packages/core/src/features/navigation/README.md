@@ -2,7 +2,7 @@
 
 Navigation is now owned by keyboard and caret features through `store.dom` and token addresses.
 
-The old standalone DOM walkers were removed with the legacy locator compatibility layer. Arrow-key navigation reads the current caret location, resolves neighboring token addresses through the parse index, and asks `store.caret` / `store.dom` to focus the target.
+The old standalone DOM walkers were removed with the legacy locator compatibility layer. Arrow-key navigation reads the current caret location, resolves neighboring token addresses through the parse index, and asks `store.dom` to focus the target.
 
 ## Current Responsibilities
 
