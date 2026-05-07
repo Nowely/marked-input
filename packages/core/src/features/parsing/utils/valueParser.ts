@@ -1,42 +1,43 @@
-import type {Store} from '../../../store/Store'
+import type {Parser} from '../parser/Parser'
 import type {Token} from '../parser/types'
 
-export function computeTokensFromValue(store: Store, value: string): Token[] {
-	return parseWithParser(store, value)
-}
-
-export function parseUnionLabels(store: Store, ...indexes: number[]): Token[] {
-	let span = ''
-	const tokens = store.parsing.tokens()
-	for (const index of indexes) {
-		const token = tokens[index]
-		span += token.content
+/**
+ * Parse a string value using the given parser.
+ * If no parser is provided, returns a single plain-text token.
+ */
+export function parseWithParser(parser: Parser | undefined, value: string): Token[] {
+	if (!parser) {
+		return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
 	}
-
-	return parseWithParser(store, span)
+	return parser.parse(value)
 }
 
-export function getRangeMap(store: Store): number[] {
+/**
+ * Alias for `parseWithParser`. Public API compatibility shim.
+ */
+export function computeTokensFromValue(parser: Parser | undefined, value: string): Token[] {
+	return parseWithParser(parser, value)
+}
+
+/**
+ * Concatenate the content of tokens at `indexes`, then parse the result.
+ */
+export function parseUnionLabels(parser: Parser | undefined, tokens: readonly Token[], ...indexes: number[]): Token[] {
+	let span = ''
+	for (const index of indexes) {
+		span += tokens[index]?.content ?? ''
+	}
+	return parseWithParser(parser, span)
+}
+
+/**
+ * Get the raw start positions of each token.
+ */
+export function getRangeMap(tokens: readonly Token[]): number[] {
 	let position = 0
-	const tokens = store.parsing.tokens()
 	return tokens.map(token => {
 		const length = token.content.length
 		position += length
 		return position - length
 	})
-}
-
-export function parseWithParser(store: Store, value: string): Token[] {
-	const parser = store.parsing.parser()
-	if (!parser) {
-		return [
-			{
-				type: 'text' as const,
-				content: value,
-				position: {start: 0, end: value.length},
-			},
-		]
-	}
-
-	return parser.parse(value)
 }

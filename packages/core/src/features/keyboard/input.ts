@@ -3,6 +3,8 @@ import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../s
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {isFullSelection} from '../caret'
+
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 
@@ -20,7 +22,7 @@ type SpanInputTarget = {
 
 type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reason']
 
-export function enableInput(store: Store): void {
+export function enableInput(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
 	let compositionRange: RawRange | undefined
@@ -63,7 +65,7 @@ export function enableInput(store: Store): void {
 	})
 }
 
-function handleDeleteKey(store: Store, event: KeyboardEvent): void {
+function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.slots.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
@@ -87,7 +89,7 @@ function handleDeleteKey(store: Store, event: KeyboardEvent): void {
 	})
 }
 
-export function handleBeforeInput(store: Store, event: InputEvent): void {
+export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 	const selecting = store.caret.selecting()
 	if (selecting === 'all' && isFullSelection(store)) {
 		if (event.inputType === 'insertFromPaste') {
@@ -180,13 +182,13 @@ export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boole
 	return true
 }
 
-function rawRangeFromInputEvent(store: Store, event: InputEvent): RawSelectionResult {
+function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {
 	const ranges = getTargetRanges(event)
 	if (ranges.length === 0) return store.dom.readRawSelection()
 	return rawRangeFromTargetRange(store, ranges[0])
 }
 
-function rawRangeFromTargetRange(store: Store, range: InputTargetRange): RawSelectionResult {
+function rawRangeFromTargetRange(store: KbCtx, range: InputTargetRange): RawSelectionResult {
 	const start = store.dom.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
 	const end = store.dom.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
 	if (!start.ok) return {ok: false, reason: rawSelectionReason(start)}
@@ -210,7 +212,7 @@ function getTargetRanges(event: InputEvent): readonly InputTargetRange[] {
 	return event.getTargetRanges()
 }
 
-function replacementForInput(store: Store, event: InputEvent): string | undefined {
+function replacementForInput(store: KbCtx, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
 		const container = store.dom.container()
@@ -221,12 +223,12 @@ function replacementForInput(store: Store, event: InputEvent): string | undefine
 	return undefined
 }
 
-function rangeForInput(store: Store, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	return rangeForDelete(store, event.inputType, range)
 }
 
-function rangeForDelete(store: Store, inputType: string, range: RawRange): RawRange | undefined {
+function rangeForDelete(store: KbCtx, inputType: string, range: RawRange): RawRange | undefined {
 	if (range.start !== range.end) return range
 
 	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
@@ -252,7 +254,7 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 	return undefined
 }
 
-export function handlePaste(store: Store, event: ClipboardEvent): void {
+export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 	const selecting = store.caret.selecting()
 	if (selecting !== 'all' || !isFullSelection(store)) {
 		if (selecting === 'all') store.caret.selecting(undefined)
@@ -266,7 +268,7 @@ export function handlePaste(store: Store, event: ClipboardEvent): void {
 	replaceAllContentWith(store, newContent)
 }
 
-export function replaceAllContentWith(store: Store, newContent: string): void {
+export function replaceAllContentWith(store: KbCtx, newContent: string): void {
 	store.caret.selecting(undefined)
 	store.value.replaceAll(newContent, {
 		recover: {kind: 'caret', rawPosition: newContent.length},

@@ -2,7 +2,7 @@ import {nodeTarget} from '../../shared/checkers'
 import {effect, listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-export function enableSelection(store: Store): void {
+export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 	let pressedNode: Node | null = null
 	let isPressed = false
 

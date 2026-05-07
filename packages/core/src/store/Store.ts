@@ -17,20 +17,41 @@ export type {DragAction} from '../shared/types'
 
 export class Store {
 	readonly key = new KeyGenerator()
+	// 0 from 10
 	readonly blocks = new BlockRegistry()
 
-	readonly props = new PropsFeature(this)
-	readonly handler = new MarkputHandler(this)
-
+	// Providers?
 	readonly lifecycle = new LifecycleFeature()
-	readonly value = new ValueFeature(this)
-	readonly mark = new MarkFeature(this)
-	readonly overlay = new OverlayFeature(this)
-	readonly slots = new SlotsFeature(this)
-	readonly caret = new CaretFeature(this)
-	readonly keyboard = new KeyboardFeature(this)
-	readonly dom = new DomFeature(this)
-	readonly drag = new DragFeature(this)
-	readonly clipboard = new ClipboardFeature(this)
-	readonly parsing = new ParsingFeature(this)
+	readonly props = new PropsFeature()
+
+	// in current state it rudementary?
+	readonly caret = new CaretFeature()
+
+	// rudementary?
+	readonly mark = new MarkFeature(this.props)
+	// rudementary?
+	readonly slots = new SlotsFeature(this.props)
+
+	// in progress. use service terminology?
+	readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
+
+	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
+
+	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
+
+	// Controllers?
+	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
+	readonly keyboard = new KeyboardFeature(
+		this.lifecycle,
+		this.dom,
+		this.value,
+		this.caret,
+		this.slots,
+		this.parsing,
+		this.props
+	)
+	readonly drag = new DragFeature(this.props, this.value, this.parsing)
+	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
+
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
 }

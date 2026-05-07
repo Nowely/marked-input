@@ -12,9 +12,15 @@ import type {
 } from '../../shared/editorContracts'
 import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Store} from '../../store/Store'
+import type {CaretFeature} from '../caret/CaretFeature'
+import {enableFocus} from '../caret/focus'
+import {enableSelection} from '../caret/selection'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {Token} from '../parsing'
+import type {ParsingFeature} from '../parsing/ParseFeature'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
+import type {TokenIndex} from '../parsing/tokenIndex'
+import type {PropsFeature} from '../props/PropsFeature'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -136,15 +142,22 @@ export class DomFeature {
 	#isComposing = false
 	#queuedRender = false
 
-	constructor(private readonly _store: Store) {
-		_store.lifecycle.onMounted(() => {
-			watch(_store.lifecycle.rendered, () => {
+	constructor(
+		private readonly lifecycle: LifecycleFeature,
+		private readonly props: PropsFeature,
+		private readonly caret: CaretFeature,
+		private readonly parsing: ParsingFeature
+	) {
+		lifecycle.onMounted(() => {
+			enableFocus({dom: this, caret, parsing})
+			enableSelection({dom: this, caret})
+			watch(lifecycle.rendered, () => {
 				this.#handleRendered()
 			})
 			watch(
 				computed(() => ({
-					readOnly: _store.props.readOnly(),
-					selecting: _store.caret.selecting(),
+					readOnly: props.readOnly(),
+					selecting: caret.selecting(),
 				})),
 				() => this.reconcile()
 			)
@@ -236,7 +249,7 @@ export class DomFeature {
 
 	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): Result<void, 'notIndexed' | 'stale'> {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const resolved = this._store.parsing.index().resolveAddress(address)
+		const resolved = this.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return {ok: false, reason: 'stale'}
 
 		const elements = this.#pathElements.get(pathKey(address.path))
@@ -249,7 +262,7 @@ export class DomFeature {
 		if (role === 'markDescendant') {
 			this.#placeCollapsedBoundary(target, boundary === 'end' ? target.childNodes.length : 0)
 		}
-		this._store.caret.location({address, role})
+		this.caret.location({address, role})
 		return {ok: true, value: undefined}
 	}
 
@@ -269,7 +282,7 @@ export class DomFeature {
 		const location = this.locateNode(node)
 		if (!location.ok) return location.reason === 'control' ? {ok: false, reason: 'control'} : location
 
-		const token = this._store.parsing.index().resolveAddress(location.value.address)
+		const token = this.parsing.index().resolveAddress(location.value.address)
 		if (!token.ok) return {ok: false, reason: 'notIndexed'}
 
 		if (node instanceof HTMLElement) {
@@ -374,7 +387,7 @@ export class DomFeature {
 			return
 		}
 
-		const tokenIndex = this._store.parsing.index()
+		const tokenIndex = this.parsing.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 		const controlElements = new Set<HTMLElement>()
@@ -384,8 +397,8 @@ export class DomFeature {
 			elementRoles.set(element, {role: 'control'})
 		}
 
-		const tokens = this._store.parsing.tokens()
-		if (this._store.props.layout() === 'block') {
+		const tokens = this.parsing.tokens()
+		if (this.props.layout() === 'block') {
 			this.#indexBlockTokens(container, tokens, tokenIndex, controlElements, pathElements, elementRoles)
 		} else {
 			this.#indexTokenSequence(
@@ -435,7 +448,7 @@ export class DomFeature {
 		address: TokenAddress,
 		ownerElement: HTMLElement,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -493,7 +506,7 @@ export class DomFeature {
 	#indexBlockTokens(
 		container: HTMLElement,
 		tokens: readonly Token[],
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -536,7 +549,7 @@ export class DomFeature {
 		tokens: readonly Token[],
 		basePath: TokenPath,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -572,7 +585,7 @@ export class DomFeature {
 		path: TokenPath,
 		element: HTMLElement,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -608,8 +621,8 @@ export class DomFeature {
 	}
 
 	#reconcileStructuralTextSurfaces(): void {
-		const tokenIndex = this._store.parsing.index()
-		const editable = this._store.props.readOnly() || this._store.caret.selecting() ? 'false' : 'true'
+		const tokenIndex = this.parsing.index()
+		const editable = this.props.readOnly() || this.caret.selecting() ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
@@ -639,7 +652,7 @@ export class DomFeature {
 			}
 
 			if (resolved.value.type === 'mark') {
-				if (this._store.props.readOnly()) {
+				if (this.props.readOnly()) {
 					record.tokenElement.removeAttribute('tabindex')
 				} else {
 					record.tokenElement.tabIndex = 0
@@ -649,7 +662,7 @@ export class DomFeature {
 	}
 
 	#rawPositionFromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
-		const tokens = this._store.parsing.tokens()
+		const tokens = this.parsing.tokens()
 		if (tokens.length === 0) return {ok: true, value: 0}
 		if (offset <= 0) return {ok: true, value: tokens[0].position.start}
 		if (offset >= tokens.length) return {ok: true, value: tokens[tokens.length - 1].position.end}
@@ -666,17 +679,15 @@ export class DomFeature {
 		affinity: 'before' | 'after'
 	): BoundaryPositionResult {
 		if (token.type === 'text') {
-			const textElement = this.#pathElements.get(
-				pathKey(this._store.parsing.index().pathFor(token) ?? [])
-			)?.textElement
+			const textElement = this.#pathElements.get(pathKey(this.parsing.index().pathFor(token) ?? []))?.textElement
 			if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
 		}
 
 		const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
 		const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
 		if (before?.ok && after?.ok) {
-			const beforeToken = this._store.parsing.index().resolveAddress(before.value.address)
-			const afterToken = this._store.parsing.index().resolveAddress(after.value.address)
+			const beforeToken = this.parsing.index().resolveAddress(before.value.address)
+			const afterToken = this.parsing.index().resolveAddress(after.value.address)
 			if (beforeToken.ok && afterToken.ok) {
 				return {
 					ok: true,
@@ -698,7 +709,7 @@ export class DomFeature {
 		affinity: 'before' | 'after'
 	): {element: HTMLElement; start: number; end: number} | undefined {
 		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
-		const tokenIndex = this._store.parsing.index()
+		const tokenIndex = this.parsing.index()
 
 		for (const record of this.#pathElements.values()) {
 			if (!record.textElement) continue
@@ -719,7 +730,7 @@ export class DomFeature {
 	}
 
 	#focusMarkBoundaryForRawPosition(rawPosition: number): Result<void, 'notIndexed' | 'invalidBoundary'> {
-		const tokenIndex = this._store.parsing.index()
+		const tokenIndex = this.parsing.index()
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
@@ -732,7 +743,7 @@ export class DomFeature {
 				record.tokenElement,
 				boundary === 'end' ? record.tokenElement.childNodes.length : 0
 			)
-			this._store.caret.location({address: record.address, role: 'markDescendant'})
+			this.caret.location({address: record.address, role: 'markDescendant'})
 			return {ok: true, value: undefined}
 		}
 
@@ -764,12 +775,12 @@ export class DomFeature {
 	}
 
 	#applyPendingRecovery(): void {
-		const recovery = this._store.caret.recovery()
+		const recovery = this.caret.recovery()
 		if (!recovery) return
 
 		if (recovery.kind === 'caret') {
-			const result = this._store.caret.placeAt(recovery.rawPosition, recovery.affinity)
-			this._store.caret.recovery(undefined)
+			const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
+			this.caret.recovery(undefined)
 			if (!result.ok) {
 				this.diagnostics({
 					kind: 'recoveryFailed',
@@ -780,7 +791,7 @@ export class DomFeature {
 		}
 
 		const result = this.#placeSelection(recovery.selection)
-		this._store.caret.recovery(undefined)
+		this.caret.recovery(undefined)
 		if (!result.ok) {
 			this.diagnostics({
 				kind: 'recoveryFailed',
@@ -823,11 +834,11 @@ export class DomFeature {
 	}
 
 	#clearStaleCaretLocation(): void {
-		const location = this._store.caret.location()
+		const location = this.caret.location()
 		if (!location) return
-		const resolved = this._store.parsing.index().resolveAddress(location.address)
+		const resolved = this.parsing.index().resolveAddress(location.address)
 		if (!resolved.ok || !this.#pathElements.has(pathKey(location.address.path))) {
-			this._store.caret.location(undefined)
+			this.caret.location(undefined)
 		}
 	}
 }

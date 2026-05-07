@@ -1,8 +1,11 @@
 import type {RawRange} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
-import type {Store} from '../../store'
+import type {DomFeature} from '../dom/DomFeature'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
+import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {ValueFeature} from '../value/ValueFeature'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 function htmlFromRange(range: Range): string {
@@ -32,11 +35,16 @@ function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token
 }
 
 export class ClipboardFeature {
-	constructor(private readonly store: Store) {
-		store.lifecycle.onMounted(() => {
+	constructor(
+		private readonly lifecycle: LifecycleFeature,
+		private readonly value: ValueFeature,
+		private readonly dom: DomFeature,
+		private readonly parsing: ParsingFeature
+	) {
+		lifecycle.onMounted(() => {
 			// The container must be registered before mounted() fires (adapter
 			// calls dom.container() in its ref/onMounted, then lifecycle.mounted).
-			const container = store.dom.container()
+			const container = dom.container()
 			if (!container) return
 
 			listen(container, 'copy', e => {
@@ -44,9 +52,9 @@ export class ClipboardFeature {
 			})
 			listen(container, 'cut', e => {
 				if (!this.#handleCopy(e)) return
-				const raw = store.dom.readRawSelection()
+				const raw = dom.readRawSelection()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-				store.value.replaceRange(raw.value.range, '', {
+				value.replaceRange(raw.value.range, '', {
 					recover: {kind: 'caret', rawPosition: raw.value.range.start},
 				})
 			})
@@ -54,10 +62,10 @@ export class ClipboardFeature {
 	}
 
 	#handleCopy(e: ClipboardEvent): boolean {
-		const container = this.store.dom.container()
+		const container = this.dom.container()
 		if (!container) return false
 
-		const raw = this.store.dom.readRawSelection()
+		const raw = this.dom.readRawSelection()
 		if (!raw.ok || raw.value.range.start === raw.value.range.end) return false
 
 		// text/plain: visual selected text
@@ -70,7 +78,7 @@ export class ClipboardFeature {
 		const html = htmlFromRange(range)
 
 		// application/x-markput: raw-selected text tokens are trimmed; overlapping plain marks keep markup syntax.
-		const markup = serializeRawRange(this.store.parsing.tokens(), raw.value.range)
+		const markup = serializeRawRange(this.parsing.tokens(), raw.value.range)
 
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', plainText)

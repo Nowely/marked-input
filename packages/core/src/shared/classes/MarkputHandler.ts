@@ -1,19 +1,25 @@
-import type {Store} from '../../store'
+import type {DomFeature} from '../../features/dom/DomFeature'
+import type {OverlayFeature} from '../../features/overlay/OverlayFeature'
+import type {ParsingFeature} from '../../features/parsing/ParseFeature'
 
 export class MarkputHandler {
-	constructor(private readonly store: Store) {}
+	constructor(
+		private readonly dom: DomFeature,
+		private readonly overlayFeature: OverlayFeature,
+		private readonly parsing: ParsingFeature
+	) {}
 
 	get container() {
-		return this.store.dom.container()
+		return this.dom.container()
 	}
 
 	get overlay() {
-		return this.store.overlay.element()
+		return this.overlayFeature.element()
 	}
 
 	focus() {
-		const firstAddress = this.store.parsing.index().addressFor([0])
-		if (firstAddress && this.store.dom.focusAddress(firstAddress).ok) return
+		const firstAddress = this.parsing.index().addressFor([0])
+		if (firstAddress && this.dom.focusAddress(firstAddress).ok) return
 		this.container?.focus()
 	}
 }

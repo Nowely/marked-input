@@ -3,7 +3,9 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import {selectAllText} from '../caret'
 
-export function enableArrowNav(store: Store): void {
+type KbCtx = Pick<Store, 'dom' | 'caret' | 'slots' | 'parsing'>
+
+export function enableArrowNav(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
 
@@ -20,7 +22,7 @@ export function enableArrowNav(store: Store): void {
 	})
 }
 
-function shiftFocus(store: Store, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
+function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
 	const location = store.caret.location()
 	if (!location) return false
 
@@ -45,15 +47,15 @@ function shiftFocus(store: Store, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!siblingAddress) return false
 
 	event.preventDefault()
-	const result = store.caret.focus(siblingAddress, direction === 'prev' ? 'end' : 'start')
+	const result = store.dom.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
 	if (!result.ok) return false
 	const sibling = store.parsing.index().resolve(siblingPath)
 	if (sibling?.type === 'mark') return true
 
 	if (direction === 'prev') {
-		store.caret.placeAt(sibling?.position.end ?? 0, 'before')
+		store.dom.placeCaretAtRawPosition(sibling?.position.end ?? 0, 'before')
 		return true
 	}
-	store.caret.placeAt(sibling?.position.start ?? 0, 'after')
+	store.dom.placeCaretAtRawPosition(sibling?.position.start ?? 0, 'after')
 	return true
 }

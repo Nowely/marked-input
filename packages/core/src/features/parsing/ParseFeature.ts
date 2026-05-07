@@ -1,11 +1,13 @@
 import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Store} from '../../store/Store'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {MarkFeature} from '../mark/MarkFeature'
+import type {PropsFeature} from '../props/PropsFeature'
+import type {SlotsFeature} from '../slots/SlotsFeature'
+import type {ValueFeature} from '../value/ValueFeature'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
-import {toString} from './parser/utils/toString'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
-import {parseWithParser} from './utils/valueParser'
 
 export class ParsingFeature {
 	readonly tokens = signal<Token[]>([])
@@ -13,25 +15,37 @@ export class ParsingFeature {
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
 
 	readonly parser: Computed<Parser | undefined> = computed(() => {
-		if (!this._store.mark.enabled()) return
+		if (!this.mark.enabled()) return
 
-		const markups = this._store.props.options().map(opt => opt.markup)
+		const markups = this.props.options().map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
 
-		return new Parser(markups, this._store.slots.isBlock() ? {skipEmptyText: true} : undefined)
+		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
 	})
 
 	readonly reparse = event()
 
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {
+	constructor(
+		private readonly lifecycle: LifecycleFeature,
+		private readonly value: ValueFeature,
+		private readonly mark: MarkFeature,
+		private readonly props: PropsFeature,
+		private readonly slots: SlotsFeature
+	) {
+		lifecycle.onMounted(() => {
+			// Parse current value immediately so tokens are ready before other
+			// mounted subscribers (like OverlayFeature) read them.
+			this.acceptTokens(this.#parseValue(value.current()))
+			this.#subscribeValue()
+		})
+
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
-				this.sync()
 				this.#scope = effectScope(() => {
-					this.#subscribeParse()
 					this.#subscribeReactiveParse()
+					this.#subscribeReparse()
 				})
 			}
 			if (!enabled && this.#scope) {
@@ -40,12 +54,8 @@ export class ParsingFeature {
 			}
 		}
 
-		watch(this._store.mark.enabled, toggle)
-		toggle(this._store.mark.enabled())
-	}
-
-	parseValue(value: string): Token[] {
-		return parseWithParser(this._store, value)
+		watch(this.mark.enabled, toggle)
+		toggle(this.mark.enabled())
 	}
 
 	acceptTokens(tokens: Token[]): void {
@@ -58,28 +68,41 @@ export class ParsingFeature {
 		)
 	}
 
-	sync(value = this._store.value.current()) {
-		this.acceptTokens(this.parseValue(value))
+	#parseValue(value: string): Token[] {
+		const parser = this.parser()
+		if (!parser) {
+			return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
+		}
+		return parser.parse(value)
 	}
 
-	#subscribeParse() {
-		watch(this.reparse, () => {
-			if (this._store.caret.recovery()) {
-				const text = toString(this.tokens())
-				this.acceptTokens(this.parseValue(text))
-				return
-			}
-			this.sync()
+	#subscribeValue(): void {
+		// Pass value.current directly — it is already a Computed<string>.
+		watch(this.value.current, v => {
+			this.acceptTokens(this.#parseValue(v))
 		})
 	}
 
-	#subscribeReactiveParse() {
-		const deps = computed(() => this.parser())
-
-		watch(deps, () => {
-			if (!this._store.caret.recovery()) {
-				this.sync(this._store.value.current())
+	#subscribeReactiveParse(): void {
+		// Re-parse when parser config changes. The old code skipped this when
+		// caret.recovery was pending, but that guard is no longer needed:
+		// recovery.rawPosition is a raw string index that remains valid across
+		// parser changes (only the markup interpretation changes, not positions).
+		watch(
+			computed(() => this.parser()),
+			() => {
+				this.acceptTokens(this.#parseValue(this.value.current()))
 			}
+		)
+	}
+
+	#subscribeReparse(): void {
+		// Re-parse on external reparse event. The old code parsed from
+		// toString(tokens()) when recovery was pending to avoid disrupting
+		// the layout. That distinction is no longer needed: tokens are always
+		// derived from value.current(), so toString(tokens()) === value.current().
+		watch(this.reparse, () => {
+			this.acceptTokens(this.#parseValue(this.value.current()))
 		})
 	}
 }

@@ -1,6 +1,6 @@
 import type {Store} from '../../store'
 
-export function isFullSelection(store: Store): boolean {
+export function isFullSelection(store: Pick<Store, 'dom'>): boolean {
 	const sel = window.getSelection()
 	const container = store.dom.container()
 	if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
@@ -17,7 +17,7 @@ export function isFullSelection(store: Store): boolean {
 	}
 }
 
-export function selectAllText(store: Store, event: KeyboardEvent): void {
+export function selectAllText(store: Pick<Store, 'dom' | 'caret' | 'slots'>, event: KeyboardEvent): void {
 	if ((event.ctrlKey || event.metaKey) && event.code === 'KeyA') {
 		// In block mode, let the browser handle Ctrl+A natively so it selects
 		// text within the focused block only, not across all blocks.

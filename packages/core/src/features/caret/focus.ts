@@ -2,7 +2,7 @@ import {firstHtmlChild, isHtmlElement} from '../../shared/checkers'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-export function enableFocus(store: Store): void {
+export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): void {
 	const container = store.dom.container()
 	if (!container) return
 
