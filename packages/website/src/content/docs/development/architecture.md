@@ -91,7 +91,7 @@ Both framework adapters share the same component structure:
         ↓
 5. ValueFeature updates uncontrolled state or records a pending controlled echo
         ↓
-6. ParsingFeature reparses store.value.current()
+6. ParsingFeature reactively reparses — it had already subscribed to value.current; tokens update before the change event fires
         ↓
 7. store.parsing.tokens updated (Signal)
         ↓
@@ -306,19 +306,19 @@ class Store {
         slotProps: Signal<CoreSlotProps | undefined>
     }
 
-    readonly feature: {
-        lifecycle: LifecycleFeature    // mounted, unmounted, rendered events
-        value: ValueFeature            // current, replaceRange(), replaceAll(), controlled echo
-        parsing: ParsingFeature        // tokens, parser, token index, parse generation
-        mark: MarkFeature              // mark slot resolution
-        overlay: OverlayFeature        // match, element, slot, select, close
-        slots: SlotsFeature            // isBlock, isDraggable, slot component/prop computeds
-        caret: CaretFeature            // location, recovery, selecting
-        keyboard: KeyboardFeature      // input, block edit, arrow nav (merged Input + BlockEdit + ArrowNav)
-        dom: DomFeature                // DOM refs/registration, raw mapping, reconciliation, recovery
-        drag: DragFeature              // action event
-        clipboard: ClipboardFeature    // copy/cut handling
-    }
+    // Features live directly on store, not nested under .feature
+    readonly lifecycle: LifecycleFeature   // mounted, unmounted, rendered events
+    readonly props:     PropsFeature       // framework-provided configuration
+    readonly caret:     CaretFeature       // location, recovery, selecting signals
+    readonly mark:      MarkFeature        // mark slot resolution
+    readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
+    readonly value:     ValueFeature       // current, replaceRange(), replaceAll()
+    readonly parsing:   ParsingFeature     // tokens, parser, token index
+    readonly dom:       DomFeature         // DOM refs, raw mapping, recovery
+    readonly overlay:   OverlayFeature     // match, element, slot, select, close
+    readonly keyboard:  KeyboardFeature    // input, block editing, arrow navigation
+    readonly drag:      DragFeature        // drag-and-drop action event
+    readonly clipboard: ClipboardFeature   // copy/cut handling
 }
 ```
 
@@ -353,7 +353,9 @@ const tokens = store.parsing.tokens.use()
 
 ## Features
 
-11 features, each with `enable()`/`disable()`. They never import each other — all communication goes through `store.<name>.*` (internal signals), `store.props` (framework-provided signals), `store.dom` (registered DOM structure and raw mapping), and `store.caret` (location/recovery):
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardFeature` behavior modules retain the full `Store` as an adapter boundary.
+
+Signal subscription order is significant: `ParsingFeature` subscribes to `value.current` during initialization (before `lifecycle.mounted()` fires). `ValueFeature` registers its `change()` emission inside `onMounted`. This guarantees that when `value.change` fires, `parsing.tokens()` is already updated.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
@@ -379,8 +381,9 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Framework emits store.lifecycle.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. After mount, ValueFeature accepts props.value/defaultValue and parses tokens.
-//    ParsingFeature watches parser shape changes and reparses from value.current.
+// 2. After mount, ValueFeature accepts props.value/defaultValue; emits change.
+//    ParsingFeature had already subscribed to value.current during initialization —
+//    tokens are updated before the change event fires.
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → DomFeature reconciles DOM state
