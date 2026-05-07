@@ -21,6 +21,7 @@ import type {ParsingFeature} from '../parsing/ParseFeature'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
 import type {PropsFeature} from '../props/PropsFeature'
+import type {ValueFeature} from '../value/ValueFeature'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -146,7 +147,8 @@ export class DomFeature {
 		private readonly lifecycle: LifecycleFeature,
 		private readonly props: PropsFeature,
 		private readonly caret: CaretFeature,
-		private readonly parsing: ParsingFeature
+		private readonly parsing: ParsingFeature,
+		private readonly value: ValueFeature
 	) {
 		lifecycle.onMounted(() => {
 			enableFocus({dom: this, caret, parsing})
@@ -420,6 +422,7 @@ export class DomFeature {
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
 		this.#clearStaleCaretLocation()
 		this.#applyPendingRecovery()
+		this.#applyRangeToDOM()
 	}
 
 	#elementChildren(element: HTMLElement): HTMLElement[] {
@@ -774,6 +777,36 @@ export class DomFeature {
 		selection.addRange(range)
 	}
 
+	#applyRangeToDOM(): void {
+		if (this.caret.selecting() === 'drag') return
+		const range = this.caret.range()
+		if (range === undefined) return
+
+		const maxPos = this.value.current().length
+		const clampedStart = Math.min(range.start, maxPos)
+		const clampedEnd = Math.min(range.end, maxPos)
+
+		// Write back clamped values; structural equality prevents re-propagation if unchanged.
+		if (clampedStart !== range.start || clampedEnd !== range.end) {
+			this.caret.range({start: clampedStart, end: clampedEnd})
+		}
+
+		if (clampedStart === clampedEnd) {
+			const result = this.placeCaretAtRawPosition(clampedStart)
+			if (!result.ok) {
+				this.caret.range(undefined)
+				this.diagnostics({kind: 'recoveryFailed', reason: `caret placement failed: ${result.reason}`})
+			}
+			return
+		}
+
+		const result = this.#placeSelection({range: {start: clampedStart, end: clampedEnd}, direction: undefined})
+		if (!result.ok) {
+			this.caret.range(undefined)
+			this.diagnostics({kind: 'recoveryFailed', reason: `selection placement failed: ${result.reason}`})
+		}
+	}
+
 	#applyPendingRecovery(): void {
 		const recovery = this.caret.recovery()
 		if (!recovery) return
@@ -781,7 +814,10 @@ export class DomFeature {
 		if (recovery.kind === 'caret') {
 			const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
 			this.caret.recovery(undefined)
-			if (!result.ok) {
+			if (result.ok) {
+				// Bridge: sync caret.range so #applyRangeToDOM (which runs next) is idempotent
+				this.caret.range({start: recovery.rawPosition, end: recovery.rawPosition})
+			} else {
 				this.diagnostics({
 					kind: 'recoveryFailed',
 					reason: `pending caret recovery could not be applied: ${result.reason}`,
@@ -792,7 +828,10 @@ export class DomFeature {
 
 		const result = this.#placeSelection(recovery.selection)
 		this.caret.recovery(undefined)
-		if (!result.ok) {
+		if (result.ok) {
+			// Bridge: sync caret.range so #applyRangeToDOM (which runs next) is idempotent
+			this.caret.range(recovery.selection.range)
+		} else {
 			this.diagnostics({
 				kind: 'recoveryFailed',
 				reason: `pending selection recovery could not be applied: ${result.reason}`,

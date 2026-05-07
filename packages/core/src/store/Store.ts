@@ -37,7 +37,7 @@ export class Store {
 
 	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
+	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing, this.value)
 
 	// Controllers?
 	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)

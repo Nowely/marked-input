@@ -385,6 +385,38 @@ describe('DomFeature structural indexing', () => {
 		container.remove()
 	})
 
+	it('applies caret.range to DOM after render', () => {
+		const {store, container, textNode} = mountStructuralInline('hello')
+
+		store.caret.range({start: 3, end: 3})
+		store.lifecycle.rendered()
+
+		const sel = window.getSelection()
+		expect(sel?.focusNode).toBe(textNode)
+		expect(sel?.focusOffset).toBe(3)
+		container.remove()
+	})
+
+	it('clamps OOB range and places caret at clamped position', () => {
+		const {store, container} = mountStructuralInline('hello') // length 5
+		store.caret.range({start: 999, end: 999})
+		store.lifecycle.rendered()
+
+		// clamped to maxPos (5); structural equality prevents re-fire
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		container.remove()
+	})
+
+	it('skips apply when drag-selecting', () => {
+		const {store, container} = mountStructuralInline('hello')
+		store.caret.range({start: 2, end: 2})
+		store.caret.selecting('drag')
+		store.lifecycle.rendered()
+
+		expect(store.caret.range()).toEqual({start: 2, end: 2})
+		container.remove()
+	})
+
 	describe('raw boundary mapping', () => {
 		it('maps text-surface boundaries to raw UTF-16 positions', () => {
 			const {store, container, textNode} = mountStructuralInline('hello')
