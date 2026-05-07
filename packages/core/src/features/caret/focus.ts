@@ -10,21 +10,27 @@ export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): vo
 		const target = isHtmlElement(e.target) ? e.target : undefined
 		if (!target) {
 			store.caret.location(undefined)
+			store.caret.range(undefined)
 			return
 		}
 		const result = store.dom.locateNode(target)
 		if (!result.ok) {
 			if (result.reason === 'control') return
 			store.caret.location(undefined)
+			store.caret.range(undefined)
 			return
 		}
 
 		const role = result.value.textElement?.contains(target) ? 'text' : 'markDescendant'
-		store.caret.location({address: result.value.address, role})
+		store.caret.location({address: result.value.address, role}) // bridge; removed in Task 11
+
+		const rawSel = store.dom.readRawSelection()
+		if (rawSel.ok) store.caret.range(rawSel.value.range)
 	})
 
 	listen(container, 'focusout', () => {
 		store.caret.location(undefined)
+		store.caret.range(undefined)
 	})
 
 	listen(container, 'click', () => {

@@ -42,15 +42,17 @@ describe('FocusFeature', () => {
 		})
 	})
 
-	describe('disable()', () => {
-		it('clears caret location on focusout before disable', () => {
-			const textRole = 'text'
-			store.caret.location({
-				address: {path: [0], parseGeneration: 1},
-				role: textRole,
-			})
+	describe('focusout clears range', () => {
+		it('range is undefined after focusout', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			store.dom.container(container)
+			store.lifecycle.mounted()
 
-			expect(store.caret.location()).toBeDefined()
+			store.caret.range({start: 2, end: 2})
+			container.dispatchEvent(new FocusEvent('focusout', {bubbles: true}))
+
+			expect(store.caret.range()).toBeUndefined()
 		})
 	})
 })

@@ -34,4 +34,31 @@ describe('CaretFeature', () => {
 		expect(notify).not.toHaveBeenCalled()
 		stop()
 	})
+
+	describe('location computed (after wire)', () => {
+		it('is undefined when range is undefined', () => {
+			const store = new Store()
+			store.lifecycle.mounted()
+			store.props.set({value: 'hello'})
+			expect(store.caret.location()).toBeUndefined()
+		})
+
+		it('derives text role from position inside text token', () => {
+			const store = new Store()
+			store.lifecycle.mounted()
+			store.props.set({value: 'hello'})
+			store.caret.range({start: 2, end: 2})
+			expect(store.caret.location()?.role).toBe('text')
+		})
+
+		it('updates when range changes', () => {
+			const store = new Store()
+			store.lifecycle.mounted()
+			store.props.set({value: 'hello'})
+			store.caret.range({start: 1, end: 1})
+			expect(store.caret.location()?.role).toBe('text')
+			store.caret.range(undefined)
+			expect(store.caret.location()).toBeUndefined()
+		})
+	})
 })

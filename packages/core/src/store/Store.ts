@@ -54,4 +54,8 @@ export class Store {
 	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
+
+	constructor() {
+		this.caret.wire(this.parsing)
+	}
 }

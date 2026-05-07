@@ -46,12 +46,18 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 		const result = store.dom.locateNode(sel.focusNode)
 		if (!result.ok) {
 			if (result.reason === 'control') return
-			store.caret.location(undefined)
+			store.caret.location(undefined) // bridge; removed in Task 11
+			store.caret.range(undefined)
 			return
 		}
 
 		const role = result.value.textElement?.contains(sel.focusNode) ? 'text' : 'markDescendant'
-		store.caret.location({address: result.value.address, role})
+		store.caret.location({address: result.value.address, role}) // bridge; removed in Task 11
+
+		const rawSel = store.dom.readRawSelection()
+		// rawSel and result are independent reads; rawSel.ok does not imply result.ok
+		if (rawSel.ok) store.caret.range(rawSel.value.range)
+		else store.caret.range(undefined)
 	})
 
 	effect(() => {
