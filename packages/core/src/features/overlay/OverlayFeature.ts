@@ -132,11 +132,11 @@ export class OverlayFeature {
 	#probeTrigger() {
 		const match =
 			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.dom) ??
-			this.#probeTriggerFromRecovery()
+			this.#probeTriggerFromCaretRange()
 		this.match(match)
 	}
 
-	#probeTriggerFromRecovery(): OverlayMatch | undefined {
+	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
 		const range = this.caret.range()
 		if (!range || range.start !== range.end) return
 
