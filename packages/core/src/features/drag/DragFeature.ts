@@ -59,7 +59,7 @@ export class DragFeature {
 		if (newValue !== value) {
 			const range = this.#rangeAfterDrag(action, rows, newValue)
 			if (range) this.caret.range(range)
-			this.value.replaceAll(newValue)
+			this.value.current(newValue)
 		}
 	}
 
@@ -71,7 +71,7 @@ export class DragFeature {
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
 		if (range) this.caret.range(range)
-		this.value.replaceAll(newValue)
+		this.value.current(newValue)
 	}
 
 	#delete(action: Extract<DragAction, {type: 'delete'}>) {
@@ -80,7 +80,7 @@ export class DragFeature {
 		const newValue = deleteDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
 		if (range) this.caret.range(range)
-		this.value.replaceAll(newValue)
+		this.value.current(newValue)
 	}
 
 	#duplicate(action: Extract<DragAction, {type: 'duplicate'}>) {
@@ -89,7 +89,7 @@ export class DragFeature {
 		const newValue = duplicateDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
 		if (range) this.caret.range(range)
-		this.value.replaceAll(newValue)
+		this.value.current(newValue)
 	}
 
 	#rangeAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): RawRange | undefined {
