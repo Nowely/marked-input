@@ -50,7 +50,7 @@ Markput's core owns the editor-engine primitives:
 - token addresses and token index validation
 - adapter DOM registration through `store.dom`
 - raw DOM selection to serialized value ranges
-- raw value edits through `store.value.replaceRange()` / `replaceAll()`
+- raw value edits through `store.value.replaceRange()` / `store.value.current()`
 - caret and selection recovery after framework renders
 - mark commands through `MarkController`
 

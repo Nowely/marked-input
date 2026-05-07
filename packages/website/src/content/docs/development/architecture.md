@@ -88,7 +88,7 @@ Both framework adapters share the same component structure:
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
 4. KeyboardFeature writes store.caret.range({start, end}) with the desired post-edit position,
-   then calls store.value.replaceRange() or replaceAll()
+   then calls store.value.replaceRange() or store.value.current()
         ↓
 5. ValueFeature updates uncontrolled state or notifies controlled parents
         ↓
@@ -101,7 +101,7 @@ Both framework adapters share the same component structure:
 9. DomFeature applies caret.range to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replaceRange()` or `replaceAll()`. `DomFeature` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParsingFeature` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replaceRange()` or `store.value.current()`. `DomFeature` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParsingFeature` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -312,7 +312,7 @@ class Store {
     readonly caret:     CaretFeature       // range, location (computed), selecting signals
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
-    readonly value:     ValueFeature       // current, replaceRange(), replaceAll()
+    readonly value:     ValueFeature       // current, replaceRange()
     readonly parsing:   ParsingFeature     // tokens, parser, token index
     readonly dom:       DomFeature         // DOM refs, raw mapping, range placement
     readonly overlay:   OverlayFeature     // match, element, slot, select, close
@@ -342,7 +342,7 @@ batch(() => {
 // Accepted serialized value state is owned by ValueFeature.
 // Route edits through raw positions.
 store.value.replaceRange({start: 0, end: 5}, 'Hello')
-store.value.replaceAll('Hello @[World]')
+store.value.current('Hello @[World]')
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
