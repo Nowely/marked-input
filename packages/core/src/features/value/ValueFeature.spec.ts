@@ -176,5 +176,18 @@ describe('ValueFeature', () => {
 			expect(store.value.current()).toBe('world')
 			expect(store.caret.recovery()).toBeUndefined()
 		})
+
+		it('does not set recovery when controlled parent ignores the change', () => {
+			const store = new Store()
+			const recovery = {kind: 'caret' as const, rawPosition: 3}
+			// onChange deliberately does not echo the value back
+			store.props.set({value: 'hello', onChange: () => {}})
+			store.lifecycle.mounted()
+
+			store.value.replaceRange({start: 0, end: 5}, 'world', {recover: recovery})
+
+			expect(store.caret.recovery()).toBeUndefined()
+			expect(store.value.current()).toBe('hello')
+		})
 	})
 })

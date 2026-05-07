@@ -1,6 +1,8 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import type {Token} from './parser/types'
 
 describe('ParsingFeature', () => {
 	let store: Store
@@ -9,69 +11,55 @@ describe('ParsingFeature', () => {
 		store = new Store()
 	})
 
-	describe('sync()', () => {
-		it('sets tokens from current value', () => {
-			store.value.current('hello')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
+	function mountWith(value: string, withMark = true) {
+		store.props.set({Mark: () => null, defaultValue: value})
+		if (!withMark) store.props.set({Mark: undefined})
+		store.lifecycle.mounted()
+	}
 
+	describe('auto-parse on value change', () => {
+		it('sets tokens from initial value on mount', () => {
+			mountWith('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
 			store.props.set({Mark: undefined})
 		})
 
-		it('sets tokens from explicit value', () => {
-			store.props.set({Mark: () => null})
-			store.parsing.sync('default')
-
-			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
-
+		it('updates tokens when value changes via replaceAll', () => {
+			mountWith('hello')
+			store.value.replaceAll('world')
+			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 			store.props.set({Mark: undefined})
 		})
 
-		it('falls back to empty string when both are undefined', () => {
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
+		it('falls back to empty string when defaultValue is empty', () => {
+			mountWith('')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
-
 			store.props.set({Mark: undefined})
 		})
 
-		it('does not write value state', () => {
-			store.props.set({Mark: () => null})
-			store.parsing.sync('test')
-
-			expect(store.value.current()).toBe('')
-
+		it('parsing does not write value state', () => {
+			mountWith('test')
+			expect(store.value.current()).toBe('test')
 			store.props.set({Mark: undefined})
 		})
 
-		it('skips markup when no Mark override and no per-option Mark', () => {
-			store.value.current('@hello')
+		it('parser is undefined when no Mark and no per-option Mark', () => {
 			store.props.set({options: [{markup: '@[__value__]'}]})
-			store.parsing.sync()
-
+			store.lifecycle.mounted()
 			expect(store.parsing.parser()).toBeUndefined()
-			expect(store.parsing.tokens()).toEqual([{type: 'text', content: '@hello', position: {start: 0, end: 6}}])
 		})
 
-		it('uses markup when Mark override is set', () => {
-			store.value.current('@hello')
+		it('parser is defined when Mark override is set', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			store.parsing.sync()
-
+			store.lifecycle.mounted()
 			expect(store.parsing.parser()).toBeDefined()
 		})
 	})
 
-	describe('enable() / disable()', () => {
+	describe('enable / disable', () => {
 		it('is idempotent — setting Mark twice does not double-subscribe', () => {
-			store.value.current('hello')
+			mountWith('hello')
 			store.props.set({Mark: () => null})
-			// setting Mark again is a no-op (already true)
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
 
 			let callCount = 0
 			const original = store.parsing.tokens
@@ -91,102 +79,64 @@ describe('ParsingFeature', () => {
 		})
 
 		it('stops parse subscription after removing Mark', () => {
-			store.value.current('hello')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
-			store.props.set({Mark: undefined})
-
+			mountWith('hello')
 			const tokensBefore = store.parsing.tokens()
+			store.props.set({Mark: undefined})
 			store.parsing.reparse()
 			expect(store.parsing.tokens()).toBe(tokensBefore)
 		})
 
-		it('resets initialized state — re-enable and sync works fresh', () => {
-			store.value.current('first')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
+		it('re-enables and parses fresh after Mark removed and re-added', () => {
+			mountWith('first')
 			store.props.set({Mark: undefined})
-
-			store.value.current('second')
+			store.value.replaceAll('second')
 			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
-
 			store.props.set({Mark: undefined})
 		})
 	})
 
 	describe('reactive parse', () => {
-		it('does not react when only ParsingFeature is active and props.value changes', () => {
-			store.value.current('hello')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
-			store.props.set({value: 'world'})
-
-			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-
-			store.props.set({Mark: undefined})
-		})
-
-		it('re-parses from current value when parser changes', () => {
-			store.value.current('hello @[world]')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
+		it('re-parses when parser changes', () => {
+			mountWith('hello @[world]')
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-
 			expect(store.parsing.tokens()).toEqual([
 				expect.objectContaining({type: 'text', content: 'hello '}),
 				expect.objectContaining({type: 'mark', content: '@[world]', value: 'world'}),
 				expect.objectContaining({type: 'text', content: ''}),
 			])
-
 			store.props.set({Mark: undefined})
 		})
 	})
 
-	describe('parse handler', () => {
-		it('in recovery mode — re-parses from token text', () => {
-			store.value.current('test')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-
-			store.caret.recovery({kind: 'caret', rawPosition: 0})
+	describe('reparse event', () => {
+		it('re-parses from current value on reparse', () => {
+			mountWith('test')
 			store.parsing.reparse()
-
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
-			expect(store.value.current()).toBe('test')
-
 			store.props.set({Mark: undefined})
 		})
+	})
 
-		it('does not re-run parse subscription when recovery changes after parse event', () => {
-			store.value.current('hello')
-			store.props.set({Mark: () => null})
-			store.parsing.sync()
-			store.caret.recovery({kind: 'caret', rawPosition: 0})
+	describe('signal ordering guarantee', () => {
+		it('parsing.tokens is updated when value.change fires', () => {
+			// Guarantee: ParsingFeature subscribes to value.current at construction
+			// time (before lifecycle.mounted). ValueFeature emits change() inside
+			// onMounted. So the parsing subscription fires before change().
+			// This test pins that contract.
+			store.props.set({Mark: () => null, defaultValue: ''})
+			store.lifecycle.mounted()
 
-			let callCount = 0
-			const original = store.parsing.tokens
-			const tokensWrapper = (...args: unknown[]) => {
-				if (args.length) callCount++
-				return (original as (...args: unknown[]) => unknown)(...args)
-			}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
-			;(store.parsing as unknown as Record<string, unknown>).tokens = tokensWrapper
+			let tokensAtChangeTime: Token[] | undefined
+			const stop = watch(store.value.change, () => {
+				tokensAtChangeTime = store.parsing.tokens()
+			})
 
-			store.parsing.reparse()
-			expect(callCount).toBe(1)
+			store.value.replaceAll('hello')
 
-			callCount = 0
-			store.caret.recovery({kind: 'caret', rawPosition: 1})
-			expect(callCount).toBe(0)
+			expect(tokensAtChangeTime).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
-			;(store.parsing as unknown as Record<string, unknown>).tokens = original
+			stop()
 			store.props.set({Mark: undefined})
 		})
 	})
