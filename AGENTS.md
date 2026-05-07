@@ -60,7 +60,7 @@ Hard rules:
   outside `DomFeature` from DOM child order, public data attributes, user refs,
   or framework-rendered wrapper shape.
 - User value mutations must go through `store.value.replaceRange()` or
-  `store.value.replaceAll()` with raw positions. Callers that want a specific
+  `store.value.current()` with raw positions. Callers that want a specific
   post-edit caret write `store.caret.range({start, end})` in the same handler.
   Do not write `store.value.current()` directly for user edits.
 - Token objects are parse results, not durable identities. Do not keep a token
