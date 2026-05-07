@@ -21,20 +21,31 @@ export class Store {
 	readonly key = new KeyGenerator()
 	readonly blocks = new BlockRegistry()
 
-	readonly props = new PropsFeature()
-	readonly handler = new MarkputHandler(this)
-
+	// Layer 0 — no feature deps
 	readonly lifecycle = new LifecycleFeature()
-	readonly value: ValueFeature = new ValueFeature(this)
-	readonly mark = new MarkFeature(this)
-	readonly overlay = new OverlayFeature(this)
-	readonly slots = new SlotsFeature(this)
-	readonly caret: CaretFeature = new CaretFeature()
-	readonly keyboard = new KeyboardFeature(this)
-	readonly dom: DomFeature = new DomFeature(this)
-	readonly drag = new DragFeature(this)
-	readonly clipboard = new ClipboardFeature(this)
-	readonly parsing: ParsingFeature = new ParsingFeature(this)
+	readonly props = new PropsFeature()
+	readonly caret = new CaretFeature()
+
+	// Layer 1 — props only
+	readonly mark = new MarkFeature(this.props)
+	readonly slots = new SlotsFeature(this.props)
+
+	// Layer 2 — lifecycle + props + caret
+	readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
+
+	// Layer 3 — value + mark + slots (+ lifecycle + props)
+	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
+
+	// Layer 4 — caret + parsing (+ lifecycle + props)
+	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
+
+	// Layer 5 — everything below
+	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
+	readonly keyboard = new KeyboardFeature(this) // behavior modules; keeps full Store
+	readonly drag = new DragFeature(this.props, this.value, this.parsing)
+	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
+
+	readonly handler = new MarkputHandler(this)
 
 	constructor() {
 		// Wire caret behavior modules here rather than in CaretFeature: they need

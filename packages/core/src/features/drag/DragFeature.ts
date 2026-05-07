@@ -1,9 +1,11 @@
 import type {CaretRecovery} from '../../shared/editorContracts'
 import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
-import type {Store} from '../../store/Store'
 import {createRowContent} from '../editing'
 import type {Token} from '../parsing'
+import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {PropsFeature} from '../props/PropsFeature'
+import type {ValueFeature} from '../value/ValueFeature'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
@@ -12,8 +14,12 @@ export class DragFeature {
 
 	#unsub?: () => void
 
-	constructor(private readonly store: Store) {
-		const isDragEnabled = computed(() => this.store.props.layout() === 'block' && !!this.store.props.draggable())
+	constructor(
+		private readonly props: PropsFeature,
+		private readonly value: ValueFeature,
+		private readonly parsing: ParsingFeature
+	) {
+		const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
 
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#unsub) {
@@ -45,41 +51,41 @@ export class DragFeature {
 	}
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {
-		const value = this.store.value.current()
-		const rows = this.store.parsing.tokens()
+		const value = this.value.current()
+		const rows = this.parsing.tokens()
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
 		if (newValue !== value) {
-			this.store.value.replaceAll(newValue, {
+			this.value.replaceAll(newValue, {
 				recover: this.#recoverAfterDrag(action, rows, newValue),
 			})
 		}
 	}
 
 	#add(action: Extract<DragAction, {type: 'add'}>) {
-		const value = this.store.value.current()
-		const rawRows = this.store.parsing.tokens()
+		const value = this.value.current()
+		const rawRows = this.parsing.tokens()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
-		const newRowContent = createRowContent(this.store.props.options())
+		const newRowContent = createRowContent(this.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
-		this.store.value.replaceAll(newValue, {
+		this.value.replaceAll(newValue, {
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}
 
 	#delete(action: Extract<DragAction, {type: 'delete'}>) {
-		const value = this.store.value.current()
-		const rows = this.store.parsing.tokens()
+		const value = this.value.current()
+		const rows = this.parsing.tokens()
 		const newValue = deleteDragRow(value, rows, action.index)
-		this.store.value.replaceAll(newValue, {
+		this.value.replaceAll(newValue, {
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}
 
 	#duplicate(action: Extract<DragAction, {type: 'duplicate'}>) {
-		const value = this.store.value.current()
-		const rows = this.store.parsing.tokens()
+		const value = this.value.current()
+		const rows = this.parsing.tokens()
 		const newValue = duplicateDragRow(value, rows, action.index)
-		this.store.value.replaceAll(newValue, {
+		this.value.replaceAll(newValue, {
 			recover: this.#recoverAfterDrag(action, rows, newValue),
 		})
 	}

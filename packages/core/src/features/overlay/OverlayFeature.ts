@@ -2,19 +2,24 @@ import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
-import type {Store} from '../../store/Store'
 import {TriggerFinder} from '../caret'
+import type {CaretFeature} from '../caret/CaretFeature'
+import type {DomFeature} from '../dom/DomFeature'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
+import type {ParsingFeature} from '../parsing/ParseFeature'
+import type {PropsFeature} from '../props/PropsFeature'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
+import type {ValueFeature} from '../value/ValueFeature'
 
 export class OverlayFeature {
 	readonly match = signal<OverlayMatch | undefined>(undefined)
 	readonly element = signal<HTMLElement | null>(null)
 
 	readonly slot: OverlaySlot = computed(() => {
-		const Overlay = this._store.props.Overlay()
+		const Overlay = this.props.Overlay()
 		return (option?: CoreOption, defaultComponent?: Slot) => resolveOverlaySlot(Overlay, option, defaultComponent)
 	})
 
@@ -23,8 +28,15 @@ export class OverlayFeature {
 
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {
-		const hasOverlayTrigger = computed(() => this._store.props.options().some(opt => opt.overlay?.trigger != null))
+	constructor(
+		private readonly lifecycle: LifecycleFeature,
+		private readonly props: PropsFeature,
+		private readonly value: ValueFeature,
+		private readonly dom: DomFeature,
+		private readonly caret: CaretFeature,
+		private readonly parsing: ParsingFeature
+	) {
+		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
@@ -33,8 +45,8 @@ export class OverlayFeature {
 						this.match(undefined)
 					})
 
-					watch(this._store.value.change, () => {
-						const showOverlayOn = this._store.props.showOverlayOn()
+					watch(this.value.change, () => {
+						const showOverlayOn = this.props.showOverlayOn()
 						const type: OverlayTrigger = 'change'
 
 						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -57,7 +69,7 @@ export class OverlayFeature {
 								e => {
 									const target = e.target instanceof HTMLElement ? e.target : null
 									if (this.element()?.contains(target)) return
-									if (this._store.dom.container()?.contains(target)) return
+									if (this.dom.container()?.contains(target)) return
 									this.close()
 								},
 								true
@@ -66,10 +78,10 @@ export class OverlayFeature {
 					})
 
 					const selectionChangeHandler = () => {
-						const container = this._store.dom.container()
+						const container = this.dom.container()
 						if (!container?.contains(document.activeElement)) return
 
-						const showOverlayOn = this._store.props.showOverlayOn()
+						const showOverlayOn = this.props.showOverlayOn()
 						const type: OverlayTrigger = 'selectionChange'
 
 						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
@@ -98,7 +110,7 @@ export class OverlayFeature {
 										value: mark.content,
 									})
 
-						this._store.value.replaceRange(range, annotation, {
+						this.value.replaceRange(range, annotation, {
 							recover: {kind: 'caret', rawPosition: range.start + annotation.length},
 						})
 						this.match(undefined)
@@ -119,22 +131,22 @@ export class OverlayFeature {
 
 	#probeTrigger() {
 		const match =
-			TriggerFinder.find(this._store.props.options(), option => option.overlay?.trigger, this._store.dom) ??
+			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.dom) ??
 			this.#probeTriggerFromRecovery()
 		this.match(match)
 	}
 
 	#probeTriggerFromRecovery(): OverlayMatch | undefined {
-		const recovery = this._store.caret.recovery()
+		const recovery = this.caret.recovery()
 		if (recovery?.kind !== 'caret') return
 
-		const value = this._store.value.current()
+		const value = this.value.current()
 		const cursor = recovery.rawPosition
 		const left = value.slice(0, cursor)
 		const right = value.slice(cursor)
 		const rightWord = right.match(/^\w*/)?.[0] ?? ''
 
-		for (const option of this._store.props.options()) {
+		for (const option of this.props.options()) {
 			const trigger = option.overlay?.trigger
 			if (!trigger) continue
 
@@ -149,7 +161,7 @@ export class OverlayFeature {
 				source,
 				range: {start, end: start + source.length},
 				span: value,
-				node: window.getSelection()?.anchorNode ?? this._store.dom.container() ?? document.body,
+				node: window.getSelection()?.anchorNode ?? this.dom.container() ?? document.body,
 				option,
 			}
 		}

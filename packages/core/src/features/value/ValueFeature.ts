@@ -1,25 +1,31 @@
 import type {CaretRecovery, RawRange} from '../../shared/editorContracts'
 import {computed, event, watch} from '../../shared/signals/index.js'
-import type {Store} from '../../store/Store'
+import type {CaretFeature} from '../caret/CaretFeature'
+import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
+import type {PropsFeature} from '../props/PropsFeature'
 
 export class ValueFeature {
-	readonly isControlledMode = computed(() => this._store.props.value() !== undefined)
+	readonly isControlledMode = computed(() => this.props.value() !== undefined)
 	readonly change = event()
 
 	readonly current = computed<string>({
-		initial: () => this._store.props.value() ?? this._store.props.defaultValue() ?? '',
-		get: field => (this.isControlledMode() ? (this._store.props.value() ?? '') : field()),
+		initial: () => this.props.value() ?? this.props.defaultValue() ?? '',
+		get: field => (this.isControlledMode() ? (this.props.value() ?? '') : field()),
 		set: (next, field) => {
 			if (next === undefined) return
 			if (!this.isControlledMode()) field(next)
-			this._store.props.onChange()?.(next)
+			this.props.onChange()?.(next)
 		},
 	})
 
 	#pending: {value: string; recovery: CaretRecovery | undefined} | undefined
 
-	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'caret'>) {
-		_store.lifecycle.onMounted(() => {
+	constructor(
+		private readonly lifecycle: LifecycleFeature,
+		private readonly props: PropsFeature,
+		private readonly caret: CaretFeature
+	) {
+		lifecycle.onMounted(() => {
 			this.#accept(this.current())
 			watch(this.current, v => {
 				this.#accept(v)
@@ -30,7 +36,7 @@ export class ValueFeature {
 
 	replaceRange(range: RawRange, replacement: string, options?: {recover?: CaretRecovery}): void {
 		const cur = this.current()
-		if (this._store.props.readOnly()) return
+		if (this.props.readOnly()) return
 		if (range.start < 0 || range.end < range.start || range.end > cur.length) return
 
 		const next = cur.slice(0, range.start) + replacement + cur.slice(range.end)
@@ -47,7 +53,7 @@ export class ValueFeature {
 		const pending = this.#pending
 		this.#pending = undefined
 		if (pending?.value === value) {
-			this._store.caret.recovery(pending.recovery)
+			this.caret.recovery(pending.recovery)
 		}
 	}
 }
