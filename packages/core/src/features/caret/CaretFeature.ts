@@ -9,7 +9,7 @@ export class CaretFeature {
 	readonly location = signal<CaretLocation | undefined>(undefined)
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
-	constructor(private readonly _store: Store) {
+	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'dom' | 'caret' | 'parsing'>) {
 		_store.lifecycle.onMounted(() => {
 			enableFocus(_store)
 			enableSelection(_store)

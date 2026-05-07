@@ -23,14 +23,14 @@ export class Store {
 	readonly handler = new MarkputHandler(this)
 
 	readonly lifecycle = new LifecycleFeature()
-	readonly value = new ValueFeature(this)
+	readonly value: ValueFeature = new ValueFeature(this)
 	readonly mark = new MarkFeature(this)
 	readonly overlay = new OverlayFeature(this)
 	readonly slots = new SlotsFeature(this)
-	readonly caret = new CaretFeature(this)
+	readonly caret: CaretFeature = new CaretFeature(this)
 	readonly keyboard = new KeyboardFeature(this)
-	readonly dom = new DomFeature(this)
+	readonly dom: DomFeature = new DomFeature(this)
 	readonly drag = new DragFeature(this)
 	readonly clipboard = new ClipboardFeature(this)
-	readonly parsing = new ParsingFeature(this)
+	readonly parsing: ParsingFeature = new ParsingFeature(this)
 }

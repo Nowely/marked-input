@@ -25,7 +25,9 @@ export class ParsingFeature {
 
 	#scope?: () => void
 
-	constructor(private readonly _store: Store) {
+	constructor(
+		private readonly _store: Pick<Store, 'lifecycle' | 'mark' | 'props' | 'slots' | 'value' | 'caret' | 'parsing'>
+	) {
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
 				this.sync()

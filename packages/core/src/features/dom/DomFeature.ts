@@ -136,7 +136,7 @@ export class DomFeature {
 	#isComposing = false
 	#queuedRender = false
 
-	constructor(private readonly _store: Store) {
+	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'caret' | 'parsing'>) {
 		_store.lifecycle.onMounted(() => {
 			watch(_store.lifecycle.rendered, () => {
 				this.#handleRendered()

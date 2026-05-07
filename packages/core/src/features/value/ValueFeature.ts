@@ -18,7 +18,7 @@ export class ValueFeature {
 
 	#pending: {value: string; recovery: CaretRecovery | undefined} | undefined
 
-	constructor(private readonly _store: Store) {
+	constructor(private readonly _store: Pick<Store, 'lifecycle' | 'props' | 'parsing' | 'caret'>) {
 		_store.lifecycle.onMounted(() => {
 			this.#accept(this.current())
 			watch(this.current, v => {
