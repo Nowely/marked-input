@@ -11,9 +11,8 @@ describe('ParsingFeature', () => {
 		store = new Store()
 	})
 
-	function mountWith(value: string, withMark = true) {
+	function mountWith(value: string) {
 		store.props.set({Mark: () => null, defaultValue: value})
-		if (!withMark) store.props.set({Mark: undefined})
 		store.lifecycle.mounted()
 	}
 
@@ -21,26 +20,22 @@ describe('ParsingFeature', () => {
 		it('sets tokens from initial value on mount', () => {
 			mountWith('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
-			store.props.set({Mark: undefined})
 		})
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
 			store.value.replaceAll('world')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
-			store.props.set({Mark: undefined})
 		})
 
 		it('falls back to empty string when defaultValue is empty', () => {
 			mountWith('')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
-			store.props.set({Mark: undefined})
 		})
 
-		it('parsing does not write value state', () => {
+		it('mount with defaultValue initializes value current', () => {
 			mountWith('test')
 			expect(store.value.current()).toBe('test')
-			store.props.set({Mark: undefined})
 		})
 
 		it('parser is undefined when no Mark and no per-option Mark', () => {
@@ -75,7 +70,6 @@ describe('ParsingFeature', () => {
 
 			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
 			;(store.parsing as unknown as Record<string, unknown>).tokens = original
-			store.props.set({Mark: undefined})
 		})
 
 		it('stops parse subscription after removing Mark', () => {
@@ -92,7 +86,6 @@ describe('ParsingFeature', () => {
 			store.value.replaceAll('second')
 			store.props.set({Mark: () => null})
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
-			store.props.set({Mark: undefined})
 		})
 	})
 
@@ -105,7 +98,6 @@ describe('ParsingFeature', () => {
 				expect.objectContaining({type: 'mark', content: '@[world]', value: 'world'}),
 				expect.objectContaining({type: 'text', content: ''}),
 			])
-			store.props.set({Mark: undefined})
 		})
 	})
 
@@ -114,16 +106,18 @@ describe('ParsingFeature', () => {
 			mountWith('test')
 			store.parsing.reparse()
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
-			store.props.set({Mark: undefined})
 		})
 	})
 
 	describe('signal ordering guarantee', () => {
 		it('parsing.tokens is updated when value.change fires', () => {
-			// Guarantee: ParsingFeature subscribes to value.current at construction
-			// time (before lifecycle.mounted). ValueFeature emits change() inside
-			// onMounted. So the parsing subscription fires before change().
-			// This test pins that contract.
+			// Guarantee: parsing.tokens is updated before value.change fires.
+			// Currently: ValueFeature.#accept updates tokens synchronously before
+			// emitting change() in the same watch callback.
+			// After the value↔parsing inversion (Task 5): ParsingFeature subscribes
+			// to value.current at construction time, before ValueFeature registers
+			// its change() emission in onMounted — same observable ordering guarantee.
+			// This test pins the contract regardless of implementation shape.
 			store.props.set({Mark: () => null, defaultValue: ''})
 			store.lifecycle.mounted()
 
@@ -137,7 +131,6 @@ describe('ParsingFeature', () => {
 			expect(tokensAtChangeTime).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
 			stop()
-			store.props.set({Mark: undefined})
 		})
 	})
 })
