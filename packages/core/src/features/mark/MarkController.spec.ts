@@ -59,7 +59,7 @@ describe('MarkController', () => {
 
 	it('fails closed when address is stale', () => {
 		const {store, controller} = setup()
-		store.value.replaceAll('different @[token]')
+		store.value.current('different @[token]')
 
 		controller.update({value: 'bad'})
 		expect(store.value.current()).toBe('different @[token]')

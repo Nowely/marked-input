@@ -37,7 +37,7 @@ describe('OverlayFeature', () => {
 			store.props.set({options: []})
 			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
-			store.value.replaceAll(store.value.current() + ' ')
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 
@@ -61,7 +61,7 @@ describe('OverlayFeature', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.replaceAll(store.value.current() + ' ')
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 		})
@@ -72,7 +72,7 @@ describe('OverlayFeature', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.replaceAll(store.value.current() + ' ')
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
@@ -100,7 +100,7 @@ describe('OverlayFeature', () => {
 			store.overlay.match(stubMatch)
 
 			store.overlay.close()
-			store.value.replaceAll(store.value.current() + ' ')
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})

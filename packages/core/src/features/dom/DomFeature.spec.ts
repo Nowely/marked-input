@@ -156,7 +156,7 @@ describe('DomFeature structural indexing', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-		store.value.replaceAll('hello @[world]')
+		store.value.current('hello @[world]')
 	})
 
 	it('owns the container ref signal', () => {

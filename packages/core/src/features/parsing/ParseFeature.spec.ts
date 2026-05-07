@@ -24,7 +24,7 @@ describe('ParsingFeature', () => {
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
-			store.value.replaceAll('world')
+			store.value.current('world')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 		})
 
@@ -83,7 +83,7 @@ describe('ParsingFeature', () => {
 		it('re-enables and parses fresh after Mark removed and re-added', () => {
 			mountWith('first')
 			store.props.set({Mark: undefined})
-			store.value.replaceAll('second')
+			store.value.current('second')
 			store.props.set({Mark: () => null})
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 		})
@@ -122,7 +122,7 @@ describe('ParsingFeature', () => {
 				tokensAtChangeTime = store.parsing.tokens()
 			})
 
-			store.value.replaceAll('hello')
+			store.value.current('hello')
 
 			expect(tokensAtChangeTime).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
