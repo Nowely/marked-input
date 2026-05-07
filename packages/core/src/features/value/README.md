@@ -19,9 +19,10 @@ Owns accepted serialized editor value state and the raw-position edit pipeline.
 | Command          | Purpose                                                                                                                                   |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `replaceRange()` | Replace a raw serialized range. Callers that want a specific post-edit caret write `store.caret.range({start, end})` in the same handler. |
-| `replaceAll()`   | Replace the whole serialized value through the same controlled/uncontrolled edit pipeline.                                                |
 
-Drag, clipboard, overlay selection, block editing, inline input, and mark commands all use these commands instead of mutating tokens directly.
+Drag, clipboard, overlay, block editing, inline input, and mark commands use
+`replaceRange` or write `current()` directly instead of mutating tokens
+directly.
 
 ## Internal flow
 
