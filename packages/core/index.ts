@@ -1,3 +1,11 @@
+/**
+ * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`
+ *   and `store.caret.location()`. `MarkputState.recovery` and `value.change`
+ *   no longer exist — the single source of truth is `CaretFeature.range` (a
+ *   `Signal<RawRange | undefined>`) applied to the DOM by `DomFeature` after
+ *   every render.
+ */
+
 // Shared exports
 export {cx, merge} from './src/shared/utils'
 export {DEFAULT_OPTIONS} from './src/shared/constants'

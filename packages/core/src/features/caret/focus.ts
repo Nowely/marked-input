@@ -23,6 +23,9 @@ export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): vo
 		if (rawSel.ok) store.caret.range(rawSel.value.range)
 	})
 
+	// TODO: temporary workaround. Deferred clearing avoids wiping caret.range
+	// writes during re-render caused by value edits. Remove once caret.range
+	// writes go through a transactional batch around render commits.
 	listen(container, 'focusout', () => {
 		// Defer clearing range so intra-editor focus shifts caused by value
 		// edits (e.g. a mark element being removed during re-render) do not
