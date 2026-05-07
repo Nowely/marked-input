@@ -86,7 +86,7 @@ describe('ValueFeature', () => {
 			store.props.set({defaultValue: 'hello world'})
 			store.lifecycle.mounted()
 
-			store.value.replaceRange({start: 6, end: 11}, 'markput')
+			store.value.replace({start: 6, end: 11}, 'markput')
 
 			expect(store.value.current()).toBe('hello markput')
 		})
@@ -97,7 +97,7 @@ describe('ValueFeature', () => {
 			store.props.set({defaultValue: 'hello', onChange})
 			store.lifecycle.mounted()
 
-			store.value.replaceRange({start: 4, end: 2}, 'x')
+			store.value.replace({start: 4, end: 2}, 'x')
 
 			expect(onChange).not.toHaveBeenCalled()
 			expect(store.value.current()).toBe('hello')
@@ -109,7 +109,7 @@ describe('ValueFeature', () => {
 			store.props.set({value: 'hello', onChange})
 			store.lifecycle.mounted()
 
-			store.value.replaceRange({start: 0, end: 5}, 'world')
+			store.value.replace({start: 0, end: 5}, 'world')
 
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')

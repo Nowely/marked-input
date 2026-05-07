@@ -48,7 +48,7 @@ export function enableInput(store: KbCtx): void {
 		const data = e.data
 		const pos = range.start + data.length
 		store.caret.range({start: pos, end: pos})
-		store.value.replaceRange(range, data)
+		store.value.replace(range, data)
 	})
 
 	listen(
@@ -85,7 +85,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 	event.preventDefault()
 	store.caret.range({start: range.start, end: range.start})
-	store.value.replaceRange(range, '')
+	store.value.replace(range, '')
 }
 
 export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
@@ -116,7 +116,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 	event.preventDefault()
 	const pos = range.start + replacement.length
 	store.caret.range({start: pos, end: pos})
-	store.value.replaceRange(range, replacement)
+	store.value.replace(range, replacement)
 }
 
 export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boolean {

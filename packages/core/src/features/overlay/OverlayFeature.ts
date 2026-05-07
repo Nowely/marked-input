@@ -112,7 +112,7 @@ export class OverlayFeature {
 
 						const pos = range.start + annotation.length
 						this.caret.range({start: pos, end: pos})
-						this.value.replaceRange(range, annotation)
+						this.value.replace(range, annotation)
 						this.match(undefined)
 					})
 				})

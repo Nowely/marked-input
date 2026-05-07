@@ -191,7 +191,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
 	const pos = absolutePos + newRowContent.length
 	store.caret.range({start: pos, end: pos})
-	store.value.replaceRange({start: absolutePos, end: absolutePos}, newRowContent)
+	store.value.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
 function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
@@ -327,7 +327,7 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 	event.preventDefault()
 	const pos = range.start + replacement.length
 	store.caret.range({start: pos, end: pos})
-	store.value.replaceRange(range, replacement)
+	store.value.replace(range, replacement)
 }
 
 function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {

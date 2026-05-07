@@ -57,7 +57,7 @@ export class ClipboardFeature {
 				const raw = dom.readRawSelection()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
 				caret.range({start: raw.value.range.start, end: raw.value.range.start})
-				value.replaceRange(raw.value.range, '')
+				value.replace(raw.value.range, '')
 			})
 		})
 	}
