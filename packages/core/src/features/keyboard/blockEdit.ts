@@ -90,7 +90,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
 			store.caret.range({start: pos, end: pos})
-			store.value.replaceAll(newValue)
+			store.value.current(newValue)
 			return
 		}
 
@@ -102,7 +102,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.caret.range({start: joinPos, end: joinPos})
-				store.value.replaceAll(newValue)
+				store.value.current(newValue)
 				return
 			}
 			event.preventDefault()
@@ -125,7 +125,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
 				store.caret.range({start: joinPos, end: joinPos})
-				store.value.replaceAll(newValue)
+				store.value.current(newValue)
 				return
 			}
 			event.preventDefault()
@@ -141,7 +141,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
 				store.caret.range({start: joinPos, end: joinPos})
-				store.value.replaceAll(newValue)
+				store.value.current(newValue)
 				return
 			}
 			event.preventDefault()
@@ -183,7 +183,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
 		store.caret.range({start: pos, end: pos})
-		store.value.replaceAll(newValue)
+		store.value.current(newValue)
 		return
 	}
 
