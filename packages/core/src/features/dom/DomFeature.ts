@@ -15,6 +15,7 @@ import type {Computed} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
+import type {TokenIndex} from '../parsing/tokenIndex'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -435,7 +436,7 @@ export class DomFeature {
 		address: TokenAddress,
 		ownerElement: HTMLElement,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -493,7 +494,7 @@ export class DomFeature {
 	#indexBlockTokens(
 		container: HTMLElement,
 		tokens: readonly Token[],
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -536,7 +537,7 @@ export class DomFeature {
 		tokens: readonly Token[],
 		basePath: TokenPath,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
@@ -572,7 +573,7 @@ export class DomFeature {
 		path: TokenPath,
 		element: HTMLElement,
 		rowElement: HTMLElement | undefined,
-		tokenIndex: ReturnType<Store['parsing']['index']>,
+		tokenIndex: TokenIndex,
 		controlElements: Set<HTMLElement>,
 		pathElements: Map<string, PathElements>,
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
