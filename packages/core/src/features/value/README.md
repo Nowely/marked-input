@@ -18,22 +18,22 @@ Owns accepted serialized editor value state and the raw-position edit pipeline.
 
 | Command          | Purpose                                                                                                                                   |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `replaceRange()` | Replace a raw serialized range. Callers that want a specific post-edit caret write `store.caret.range({start, end})` in the same handler. |
+| `replace()`      | Replace a raw serialized range with bounds validation. Callers that want a specific post-edit caret write `store.caret.range({start, end})` in the same handler. |
 
 Drag, clipboard, overlay, block editing, inline input, and mark commands use
-`replaceRange` or write `current()` directly instead of mutating tokens
+`replace()` or write `current()` directly instead of mutating tokens
 directly.
 
 ## Internal flow
 
 **Uncontrolled edit** (`props.value` is `undefined`):
 
-1. `replaceRange` validates the range and computes the next value
+1. `replace()` validates the range and computes the next value
 2. `current(next)` updates the internal field, calls `props.onChange`, and notifies subscribers (e.g. `ParsingFeature`)
 
 **Controlled edit** (`props.value` is defined):
 
-1. `replaceRange` validates the range and computes the next value
+1. `replace()` validates the range and computes the next value
 2. `current(next)` calls `props.onChange` only — the internal field is not written
 3. The parent echoes updated `props.value`, which makes `current` reflect the new value on the next read
 

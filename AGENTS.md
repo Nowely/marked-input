@@ -59,7 +59,7 @@ Hard rules:
 - DOM/token mapping must go through `store.dom`. Do not infer token location
   outside `DomFeature` from DOM child order, public data attributes, user refs,
   or framework-rendered wrapper shape.
-- User value mutations must go through `store.value.replaceRange()` or
+- User value mutations must go through `store.value.replace()` or
   `store.value.current()` with raw positions. Callers that want a specific
   post-edit caret write `store.caret.range({start, end})` in the same handler.
   Do not write `store.value.current()` directly for user edits.
