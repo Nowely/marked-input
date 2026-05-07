@@ -1,7 +1,7 @@
 ---
 title: Keyboard Handling
-description: How keyboard input, deletion, overlay triggers, and caret recovery flow through core.
-keywords: [keyboard, caret recovery, raw selection, replaceRange, overlay]
+description: How keyboard input, deletion, overlay triggers, and caret placement flow through core.
+keywords: [keyboard, raw selection, replace, overlay, caret range]
 ---
 
 Markput handles text input, deletion, paste, overlay insertion, block editing, and mark commands through core-owned raw positions.
@@ -11,8 +11,8 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 1. React/Vue render adapter-owned token shells and text surfaces.
 2. The adapter registers the root with `store.dom.container` and child structure with `store.dom.refFor()`.
 3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom`.
-4. Edits call `store.value.replaceRange()` or `store.value.current()`.
-5. Core schedules `caret.recovery` and applies it after the next render.
+4. Edits call `store.value.replace()` and optionally write `store.caret.range()` to set the post-edit caret.
+5. `DomFeature` applies `caret.range` to the DOM after the next render.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 
@@ -21,13 +21,11 @@ Production code should not infer token identity from DOM child order or public d
 Inline text input uses the current raw selection:
 
 ```ts
-store.value.replaceRange(selection.range, text, {
-    source: 'input',
-    recover: {kind: 'caret', rawPosition: selection.range.start + text.length},
-})
+store.value.replace(selection.range, text)
+store.caret.range({start: selection.range.start + text.length, end: selection.range.start + text.length})
 ```
 
-Controlled editors emit `onChange` first and apply recovery after the matching prop echo.
+Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
 
 ## Deleting Around Marks
 
@@ -61,7 +59,7 @@ The hook no longer exposes a DOM ref. Focus moves through registered token shell
 
 ## Overlay Triggers
 
-Overlay trigger probing uses the current raw caret position. During input, core can also use pending caret recovery to detect triggers before the browser selection has caught up to the new render.
+Overlay trigger probing uses the current raw caret position (`caret.range()`). During input, core probes the caret range which is updated synchronously with value edits.
 
 ## Custom Keyboard Handlers
 
