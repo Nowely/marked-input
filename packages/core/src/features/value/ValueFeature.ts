@@ -19,11 +19,8 @@ export class ValueFeature {
 	constructor(private readonly props: PropsFeature) {}
 
 	replace(range: RawRange, replacement: string): void {
-		const cur = this.current()
-		if (range.start < 0 || range.end < range.start || range.end > cur.length) return
-		const next = cur.slice(0, range.start) + replacement + cur.slice(range.end)
-		if (next === cur) return
+		const current = this.current()
+		const next = current.slice(0, range.start) + replacement + current.slice(range.end)
 		this.current(next)
 	}
-
 }
