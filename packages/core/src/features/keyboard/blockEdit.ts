@@ -88,9 +88,9 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 							)
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
-			store.value.replaceAll(newValue, {
-				recover: {kind: 'caret', rawPosition: previous ? previous.position.end : 0},
-			})
+			const pos = previous ? previous.position.end : 0
+			store.caret.range({start: pos, end: pos})
+			store.value.replaceAll(newValue)
 			return
 		}
 
@@ -101,9 +101,8 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.value.replaceAll(newValue, {
-					recover: {kind: 'caret', rawPosition: joinPos},
-				})
+				store.caret.range({start: joinPos, end: joinPos})
+				store.value.replaceAll(newValue)
 				return
 			}
 			event.preventDefault()
@@ -125,9 +124,8 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.value.replaceAll(newValue, {
-					recover: {kind: 'caret', rawPosition: joinPos},
-				})
+				store.caret.range({start: joinPos, end: joinPos})
+				store.value.replaceAll(newValue)
 				return
 			}
 			event.preventDefault()
@@ -142,9 +140,8 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.value.replaceAll(newValue, {
-					recover: {kind: 'caret', rawPosition: joinPos},
-				})
+				store.caret.range({start: joinPos, end: joinPos})
+				store.value.replaceAll(newValue)
 				return
 			}
 			event.preventDefault()
@@ -184,17 +181,17 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
-		store.value.replaceAll(newValue, {
-			recover: {kind: 'caret', rawPosition: token.position.end + newRowContent.length},
-		})
+		const pos = token.position.end + newRowContent.length
+		store.caret.range({start: pos, end: pos})
+		store.value.replaceAll(newValue)
 		return
 	}
 
 	const raw = store.dom.readRawSelection()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
-	store.value.replaceRange({start: absolutePos, end: absolutePos}, newRowContent, {
-		recover: {kind: 'caret', rawPosition: absolutePos + newRowContent.length},
-	})
+	const pos = absolutePos + newRowContent.length
+	store.caret.range({start: pos, end: pos})
+	store.value.replaceRange({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
 function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
@@ -328,9 +325,9 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 	if (!range) return
 
 	event.preventDefault()
-	store.value.replaceRange(range, replacement, {
-		recover: {kind: 'caret', rawPosition: range.start + replacement.length},
-	})
+	const pos = range.start + replacement.length
+	store.caret.range({start: pos, end: pos})
+	store.value.replaceRange(range, replacement)
 }
 
 function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {

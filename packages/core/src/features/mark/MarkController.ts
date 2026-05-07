@@ -55,7 +55,7 @@ export class MarkController {
 	remove() {
 		const resolved = this.#resolve()
 		if (!resolved) return
-		this.store.value.replaceRange(resolved.position, '', {recover: undefined})
+		this.store.value.replaceRange(resolved.position, '')
 	}
 
 	update(patch: MarkPatch) {

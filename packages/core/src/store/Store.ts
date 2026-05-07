@@ -51,7 +51,7 @@ export class Store {
 		this.props
 	)
 	readonly drag = new DragFeature(this.props, this.value, this.parsing)
-	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
+	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
 
