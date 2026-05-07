@@ -5,23 +5,28 @@ prev: false
 title: "MarkputHandler"
 ---
 
-Defined in: [core/src/shared/classes/MarkputHandler.ts:3](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L3)
+Defined in: [core/src/shared/classes/MarkputHandler.ts:5](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L5)
 
 ## Constructors
 
 ### Constructor
 
 ```ts
-new MarkputHandler(store): MarkputHandler;
+new MarkputHandler(
+   dom,
+   overlayFeature,
+   parsing): MarkputHandler;
 ```
 
-Defined in: [core/src/shared/classes/MarkputHandler.ts:4](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L4)
+Defined in: [core/src/shared/classes/MarkputHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L6)
 
 #### Parameters
 
 | Parameter | Type |
 | ------ | ------ |
-| `store` | `Store` |
+| `dom` | `DomFeature` |
+| `overlayFeature` | `OverlayFeature` |
+| `parsing` | `ParsingFeature` |
 
 #### Returns
 
@@ -37,7 +42,7 @@ Defined in: [core/src/shared/classes/MarkputHandler.ts:4](https://github.com/Now
 get container(): HTMLElement | null;
 ```
 
-Defined in: [core/src/shared/classes/MarkputHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L6)
+Defined in: [core/src/shared/classes/MarkputHandler.ts:12](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L12)
 
 ##### Returns
 
@@ -53,7 +58,7 @@ Defined in: [core/src/shared/classes/MarkputHandler.ts:6](https://github.com/Now
 get overlay(): HTMLElement | null;
 ```
 
-Defined in: [core/src/shared/classes/MarkputHandler.ts:10](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L10)
+Defined in: [core/src/shared/classes/MarkputHandler.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L16)
 
 ##### Returns
 
@@ -67,7 +72,7 @@ Defined in: [core/src/shared/classes/MarkputHandler.ts:10](https://github.com/No
 focus(): void;
 ```
 
-Defined in: [core/src/shared/classes/MarkputHandler.ts:14](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L14)
+Defined in: [core/src/shared/classes/MarkputHandler.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/classes/MarkputHandler.ts#L20)
 
 #### Returns
 

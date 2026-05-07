@@ -156,7 +156,7 @@ describe('DomFeature structural indexing', () => {
 		vi.clearAllMocks()
 		store = new Store()
 		store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-		store.value.replaceAll('hello @[world]')
+		store.value.current('hello @[world]')
 	})
 
 	it('owns the container ref signal', () => {
@@ -351,37 +351,55 @@ describe('DomFeature structural indexing', () => {
 		container.remove()
 	})
 
-	it('clears pending caret recovery and emits diagnostics when placement fails', () => {
+	it('clamps OOB caret range and places at maxPos', () => {
 		const {store, container} = mountStructuralInline('hello')
-		const diagnostics: unknown[] = []
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
-		store.caret.recovery({kind: 'caret', rawPosition: 999})
+		store.caret.range({start: 999, end: 999})
 		store.lifecycle.rendered()
 
-		expect(store.caret.recovery()).toBeUndefined()
-		expect(diagnostics).toContainEqual({
-			kind: 'recoveryFailed',
-			reason: 'pending caret recovery could not be applied: invalidBoundary',
-		})
-		stop()
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
-	it('clears pending selection recovery and emits diagnostics when placement fails', () => {
+	it('clamps OOB selection range', () => {
 		const {store, container} = mountStructuralInline('hello')
-		const diagnostics: unknown[] = []
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 
-		store.caret.recovery({kind: 'selection', selection: {range: {start: 999, end: 1000}}})
+		store.caret.range({start: 999, end: 1000})
 		store.lifecycle.rendered()
 
-		expect(store.caret.recovery()).toBeUndefined()
-		expect(diagnostics).toContainEqual({
-			kind: 'recoveryFailed',
-			reason: 'pending selection recovery could not be applied: invalidBoundary',
-		})
-		stop()
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		container.remove()
+	})
+
+	it('applies caret.range to DOM after render', () => {
+		const {store, container, textNode} = mountStructuralInline('hello')
+
+		store.caret.range({start: 3, end: 3})
+		store.lifecycle.rendered()
+
+		const sel = window.getSelection()
+		expect(sel?.focusNode).toBe(textNode)
+		expect(sel?.focusOffset).toBe(3)
+		container.remove()
+	})
+
+	it('clamps OOB range and places caret at clamped position', () => {
+		const {store, container} = mountStructuralInline('hello') // length 5
+		store.caret.range({start: 999, end: 999})
+		store.lifecycle.rendered()
+
+		// clamped to maxPos (5); structural equality prevents re-fire
+		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		container.remove()
+	})
+
+	it('skips apply when drag-selecting', () => {
+		const {store, container} = mountStructuralInline('hello')
+		store.caret.range({start: 2, end: 2})
+		store.caret.selecting('drag')
+		store.lifecycle.rendered()
+
+		expect(store.caret.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 

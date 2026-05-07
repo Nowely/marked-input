@@ -18,6 +18,7 @@ describe('OverlayFeature', () => {
 
 	beforeEach(() => {
 		store = new Store()
+		store.lifecycle.mounted()
 	})
 
 	describe('ownership', () => {
@@ -36,7 +37,7 @@ describe('OverlayFeature', () => {
 			store.props.set({options: []})
 			store.props.set({options: [{overlay: {trigger: '@'}}]})
 
-			store.value.change()
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 
@@ -60,7 +61,7 @@ describe('OverlayFeature', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.change()
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBeUndefined()
 		})
@@ -71,7 +72,7 @@ describe('OverlayFeature', () => {
 
 			store.overlay.match(stubMatch)
 
-			store.value.change()
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
@@ -99,7 +100,7 @@ describe('OverlayFeature', () => {
 			store.overlay.match(stubMatch)
 
 			store.overlay.close()
-			store.value.change()
+			store.value.current(store.value.current() + ' ')
 
 			expect(store.overlay.match()).toBe(stubMatch)
 		})
@@ -120,7 +121,7 @@ describe('OverlayFeature', () => {
 
 	describe('select()', () => {
 		it('replaces the trigger range through the value pipeline', () => {
-			const replaceRange = vi.spyOn(store.value, 'replaceRange')
+			const replaceRange = vi.spyOn(store.value, 'replace')
 			const mark = {
 				type: 'text' as const,
 				content: 'world',
@@ -138,9 +139,8 @@ describe('OverlayFeature', () => {
 
 			store.overlay.select({mark, match})
 
-			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]', {
-				recover: {kind: 'caret', rawPosition: 14},
-			})
+			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]')
+			expect(store.caret.range()).toEqual({start: 14, end: 14})
 			expect(store.overlay.match()).toBeUndefined()
 			store.props.set({options: []})
 		})

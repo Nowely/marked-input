@@ -28,9 +28,9 @@ describe('DragFeature', () => {
 			// disable drag
 			store.props.set({layout: 'inline', draggable: false})
 
-			const replaceAll = vi.spyOn(store.value, 'replaceAll')
+			const currentSpy = vi.spyOn(store.value, 'current')
 			store.drag.action({type: 'delete', index: 0})
-			expect(replaceAll).not.toHaveBeenCalled()
+			expect(currentSpy).not.toHaveBeenCalled()
 		})
 	})
 
@@ -39,15 +39,16 @@ describe('DragFeature', () => {
 		expect(typeof store.drag.action).toBe('function')
 	})
 
-	it('commits drag edits through replaceAll with recovery metadata', () => {
+	it('commits drag edits through current() and writes caret.range', () => {
 		store.props.set({layout: 'block', draggable: true})
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 		store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
-		const replaceAll = vi.spyOn(store.value, 'replaceAll')
+		const currentSpy = vi.spyOn(store.value, 'current')
 
 		store.drag.action({type: 'delete', index: 0})
 
-		expect(replaceAll).toHaveBeenCalledWith('beta\n\n', {recover: {kind: 'caret', rawPosition: 6}})
+		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
+		expect(store.caret.range()).toEqual({start: 6, end: 6})
 	})
 })

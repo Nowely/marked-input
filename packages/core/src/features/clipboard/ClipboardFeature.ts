@@ -1,5 +1,6 @@
 import type {RawRange} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
+import type {CaretFeature} from '../caret/CaretFeature'
 import type {DomFeature} from '../dom/DomFeature'
 import type {LifecycleFeature} from '../lifecycle/LifecycleFeature'
 import {toString} from '../parsing'
@@ -39,7 +40,8 @@ export class ClipboardFeature {
 		private readonly lifecycle: LifecycleFeature,
 		private readonly value: ValueFeature,
 		private readonly dom: DomFeature,
-		private readonly parsing: ParsingFeature
+		private readonly parsing: ParsingFeature,
+		private readonly caret: CaretFeature
 	) {
 		lifecycle.onMounted(() => {
 			// The container must be registered before mounted() fires (adapter
@@ -54,9 +56,8 @@ export class ClipboardFeature {
 				if (!this.#handleCopy(e)) return
 				const raw = dom.readRawSelection()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-				value.replaceRange(raw.value.range, '', {
-					recover: {kind: 'caret', rawPosition: raw.value.range.start},
-				})
+				caret.range({start: raw.value.range.start, end: raw.value.range.start})
+				value.replace(raw.value.range, '')
 			})
 		})
 	}

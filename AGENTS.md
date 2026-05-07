@@ -47,7 +47,7 @@ Ownership rules:
 - `store.props`: framework-provided configuration. Set via `store.props.set()`.
 - `store.dom`: DOM refs, structural registration, and DOM-to-token mapping.
 - `store.value`: accepted serialized value and replacement APIs.
-- `store.caret`: caret state and recovery.
+- `store.caret`: caret state (`range: Signal<RawRange | undefined>`).
 - `store.slots`: slot components and slot props.
 - Parser: token addresses and the token index derived from options, drag mode,
   and Mark components.
@@ -59,8 +59,9 @@ Hard rules:
 - DOM/token mapping must go through `store.dom`. Do not infer token location
   outside `DomFeature` from DOM child order, public data attributes, user refs,
   or framework-rendered wrapper shape.
-- User value mutations must go through `store.value.replaceRange()` or
-  `store.value.replaceAll()` with raw positions and optional caret recovery.
+- User value mutations must go through `store.value.replace()` or
+  `store.value.current()` with raw positions. Callers that want a specific
+  post-edit caret write `store.caret.range({start, end})` in the same handler.
   Do not write `store.value.current()` directly for user edits.
 - Token objects are parse results, not durable identities. Do not keep a token
   object for later mutation or comparison across edits; use token addresses,

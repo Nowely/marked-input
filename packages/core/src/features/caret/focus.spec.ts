@@ -17,17 +17,12 @@ describe('FocusFeature', () => {
 		store.dom.container(stubContainer)
 	})
 
-	it('updates caret location from focus inside structural text surface', () => {
+	it('derives text role from caret.range inside structural text surface', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello'})
-		const container = document.createElement('div')
-		const text = document.createElement('span')
-		container.append(text)
-		store.dom.container(container)
 		store.lifecycle.mounted()
-		store.lifecycle.rendered()
 
-		text.dispatchEvent(new FocusEvent('focusin', {bubbles: true}))
+		store.caret.range({start: 2, end: 2})
 
 		expect(store.caret.location()?.role).toBe('text')
 	})
@@ -42,15 +37,21 @@ describe('FocusFeature', () => {
 		})
 	})
 
-	describe('disable()', () => {
-		it('clears caret location on focusout before disable', () => {
-			const textRole = 'text'
-			store.caret.location({
-				address: {path: [0], parseGeneration: 1},
-				role: textRole,
-			})
+	describe('focusout clears range when focus leaves editor', () => {
+		it('range becomes undefined after focusout when active focus is outside editor', async () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.dom.container(container)
+			store.lifecycle.mounted()
 
-			expect(store.caret.location()).toBeDefined()
+			store.caret.range({start: 2, end: 2})
+			container.dispatchEvent(new FocusEvent('focusout', {bubbles: true}))
+			// queueMicrotask tick for the deferred clear
+			await Promise.resolve()
+
+			expect(store.caret.range()).toBeUndefined()
+			container.remove()
 		})
 	})
 })

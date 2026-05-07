@@ -2,7 +2,7 @@ import type * as CSS from 'csstype'
 
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
-import type {CaretRecovery, RawRange} from './editorContracts'
+import type {RawRange} from './editorContracts'
 
 /**
  * Registry interface used as a module-augmentation target. Framework packages
@@ -66,7 +66,6 @@ export interface MarkputState {
 	tokens: Token[]
 	parser: Parser | undefined
 	current: string
-	recovery: CaretRecovery | undefined
 	selecting: 'drag' | 'all' | undefined
 	match: OverlayMatch | undefined
 	/** Annotated text with markups for mark */

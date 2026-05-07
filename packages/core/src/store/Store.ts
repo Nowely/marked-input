@@ -23,6 +23,7 @@ export class Store {
 	// Providers?
 	readonly lifecycle = new LifecycleFeature()
 	readonly props = new PropsFeature()
+	readonly value = new ValueFeature(this.props)
 
 	// in current state it rudementary?
 	readonly caret = new CaretFeature()
@@ -32,12 +33,9 @@ export class Store {
 	// rudementary?
 	readonly slots = new SlotsFeature(this.props)
 
-	// in progress. use service terminology?
-	readonly value = new ValueFeature(this.lifecycle, this.props, this.caret)
-
 	readonly parsing = new ParsingFeature(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing)
+	readonly dom = new DomFeature(this.lifecycle, this.props, this.caret, this.parsing, this.value)
 
 	// Controllers?
 	readonly overlay = new OverlayFeature(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
@@ -50,8 +48,12 @@ export class Store {
 		this.parsing,
 		this.props
 	)
-	readonly drag = new DragFeature(this.props, this.value, this.parsing)
-	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing)
+	readonly drag = new DragFeature(this.props, this.value, this.parsing, this.caret)
+	readonly clipboard = new ClipboardFeature(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
+
+	constructor() {
+		this.caret.wire(this.parsing)
+	}
 }

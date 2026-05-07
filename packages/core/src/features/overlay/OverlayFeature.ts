@@ -45,7 +45,7 @@ export class OverlayFeature {
 						this.match(undefined)
 					})
 
-					watch(this.value.change, () => {
+					watch(this.value.current, () => {
 						const showOverlayOn = this.props.showOverlayOn()
 						const type: OverlayTrigger = 'change'
 
@@ -110,9 +110,9 @@ export class OverlayFeature {
 										value: mark.content,
 									})
 
-						this.value.replaceRange(range, annotation, {
-							recover: {kind: 'caret', rawPosition: range.start + annotation.length},
-						})
+						const pos = range.start + annotation.length
+						this.caret.range({start: pos, end: pos})
+						this.value.replace(range, annotation)
 						this.match(undefined)
 					})
 				})
@@ -123,25 +123,25 @@ export class OverlayFeature {
 			}
 		}
 
-		watch(hasOverlayTrigger, toggle)
-		if (typeof document !== 'undefined') {
+		this.lifecycle.onMounted(() => {
+			watch(hasOverlayTrigger, toggle)
 			toggle(hasOverlayTrigger())
-		}
+		})
 	}
 
 	#probeTrigger() {
 		const match =
 			TriggerFinder.find(this.props.options(), option => option.overlay?.trigger, this.dom) ??
-			this.#probeTriggerFromRecovery()
+			this.#probeTriggerFromCaretRange()
 		this.match(match)
 	}
 
-	#probeTriggerFromRecovery(): OverlayMatch | undefined {
-		const recovery = this.caret.recovery()
-		if (recovery?.kind !== 'caret') return
+	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
+		const range = this.caret.range()
+		if (!range || range.start !== range.end) return
 
+		const cursor = range.start
 		const value = this.value.current()
-		const cursor = recovery.rawPosition
 		const left = value.slice(0, cursor)
 		const right = value.slice(cursor)
 		const rightWord = right.match(/^\w*/)?.[0] ?? ''

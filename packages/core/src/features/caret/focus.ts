@@ -9,22 +9,33 @@ export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): vo
 	listen(container, 'focusin', e => {
 		const target = isHtmlElement(e.target) ? e.target : undefined
 		if (!target) {
-			store.caret.location(undefined)
+			store.caret.range(undefined)
 			return
 		}
 		const result = store.dom.locateNode(target)
 		if (!result.ok) {
 			if (result.reason === 'control') return
-			store.caret.location(undefined)
+			store.caret.range(undefined)
 			return
 		}
 
-		const role = result.value.textElement?.contains(target) ? 'text' : 'markDescendant'
-		store.caret.location({address: result.value.address, role})
+		const rawSel = store.dom.readRawSelection()
+		if (rawSel.ok) store.caret.range(rawSel.value.range)
 	})
 
+	// TODO: temporary workaround. Deferred clearing avoids wiping caret.range
+	// writes during re-render caused by value edits. Remove once caret.range
+	// writes go through a transactional batch around render commits.
 	listen(container, 'focusout', () => {
-		store.caret.location(undefined)
+		// Defer clearing range so intra-editor focus shifts caused by value
+		// edits (e.g. a mark element being removed during re-render) do not
+		// wipe an explicit caret.range write. Only clear when focus has
+		// actually left the editor.
+		queueMicrotask(() => {
+			if (!container.contains(document.activeElement)) {
+				store.caret.range(undefined)
+			}
+		})
 	})
 
 	listen(container, 'click', () => {

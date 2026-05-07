@@ -23,14 +23,21 @@ export function enableArrowNav(store: KbCtx): void {
 }
 
 function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
-	const location = store.caret.location()
-	if (!location) return false
+	// Resolve the "current" token from the focused DOM element, not from
+	// caret.range. At a position exactly between two tokens the position alone
+	// is ambiguous; the active element tells us which token the user is
+	// actually standing on.
+	const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
+	const located = active ? store.dom.locateNode(active) : undefined
+	if (!located?.ok) return false
 
-	const token = store.parsing.index().resolveAddress(location.address)
+	const isFocusedOnMarkElement = active === located.value.tokenElement && !located.value.textElement
+	const address = located.value.address
+
+	const token = store.parsing.index().resolveAddress(address)
 	if (!token.ok) return false
 
-	const focusedMark = token.value.type === 'mark' && location.role !== 'text'
-	if (!focusedMark) {
+	if (!isFocusedOnMarkElement) {
 		const selection = store.dom.readRawSelection()
 		if (!selection.ok || selection.value.range.start !== selection.value.range.end) return false
 
@@ -40,7 +47,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 		if (direction === 'next' && !atEnd) return false
 	}
 
-	const path = location.address.path
+	const path = address.path
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
 	const siblingAddress = store.parsing.index().addressFor(siblingPath)

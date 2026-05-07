@@ -19,9 +19,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 		const isInside = window.getSelection()?.containsNode(container, true)
 
 		if (currentIsPressed && isNotInnerSome && isInside) {
-			if (store.caret.selecting() !== 'drag') {
-				store.caret.selecting('drag')
-			}
+			store.caret.startDragSelect()
 		}
 	})
 
@@ -31,7 +29,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 		if (store.caret.selecting() === 'drag') {
 			const sel = window.getSelection()
 			if (!sel || sel.isCollapsed) {
-				store.caret.selecting(undefined)
+				store.caret.clearDragSelect()
 			}
 		}
 	})
@@ -39,19 +37,20 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 	listen(document, 'selectionchange', () => {
 		const sel = window.getSelection()
 		if (store.caret.selecting() === 'drag' && (!sel || sel.isCollapsed)) {
-			store.caret.selecting(undefined)
+			store.caret.clearDragSelect()
 		}
 		if (!sel?.focusNode) return
 
 		const result = store.dom.locateNode(sel.focusNode)
 		if (!result.ok) {
 			if (result.reason === 'control') return
-			store.caret.location(undefined)
+			store.caret.range(undefined)
 			return
 		}
 
-		const role = result.value.textElement?.contains(sel.focusNode) ? 'text' : 'markDescendant'
-		store.caret.location({address: result.value.address, role})
+		const rawSel = store.dom.readRawSelection()
+		if (rawSel.ok) store.caret.range(rawSel.value.range)
+		else store.caret.range(undefined)
 	})
 
 	effect(() => {
@@ -61,7 +60,7 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 
 	effect(() => () => {
 		if (store.caret.selecting() === 'drag') {
-			store.caret.selecting(undefined)
+			store.caret.clearDragSelect()
 		}
 	})
 }

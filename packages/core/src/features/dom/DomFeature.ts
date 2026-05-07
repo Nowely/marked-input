@@ -21,6 +21,7 @@ import type {ParsingFeature} from '../parsing/ParseFeature'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
 import type {PropsFeature} from '../props/PropsFeature'
+import type {ValueFeature} from '../value/ValueFeature'
 
 type RegisteredRole =
 	| {readonly role: 'control'}
@@ -146,7 +147,8 @@ export class DomFeature {
 		private readonly lifecycle: LifecycleFeature,
 		private readonly props: PropsFeature,
 		private readonly caret: CaretFeature,
-		private readonly parsing: ParsingFeature
+		private readonly parsing: ParsingFeature,
+		private readonly value: ValueFeature
 	) {
 		lifecycle.onMounted(() => {
 			enableFocus({dom: this, caret, parsing})
@@ -262,7 +264,6 @@ export class DomFeature {
 		if (role === 'markDescendant') {
 			this.#placeCollapsedBoundary(target, boundary === 'end' ? target.childNodes.length : 0)
 		}
-		this.caret.location({address, role})
 		return {ok: true, value: undefined}
 	}
 
@@ -418,8 +419,7 @@ export class DomFeature {
 		this.#reconcileStructuralTextSurfaces()
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
-		this.#clearStaleCaretLocation()
-		this.#applyPendingRecovery()
+		this.#applyRangeToDOM()
 	}
 
 	#elementChildren(element: HTMLElement): HTMLElement[] {
@@ -743,7 +743,6 @@ export class DomFeature {
 				record.tokenElement,
 				boundary === 'end' ? record.tokenElement.childNodes.length : 0
 			)
-			this.caret.location({address: record.address, role: 'markDescendant'})
 			return {ok: true, value: undefined}
 		}
 
@@ -774,29 +773,33 @@ export class DomFeature {
 		selection.addRange(range)
 	}
 
-	#applyPendingRecovery(): void {
-		const recovery = this.caret.recovery()
-		if (!recovery) return
+	#applyRangeToDOM(): void {
+		if (this.caret.selecting() === 'drag') return
+		const range = this.caret.range()
+		if (range === undefined) return
 
-		if (recovery.kind === 'caret') {
-			const result = this.placeCaretAtRawPosition(recovery.rawPosition, recovery.affinity)
-			this.caret.recovery(undefined)
+		const maxPos = this.value.current().length
+		const clampedStart = Math.min(range.start, maxPos)
+		const clampedEnd = Math.min(range.end, maxPos)
+
+		// Write back clamped values; structural equality prevents re-propagation if unchanged.
+		if (clampedStart !== range.start || clampedEnd !== range.end) {
+			this.caret.range({start: clampedStart, end: clampedEnd})
+		}
+
+		if (clampedStart === clampedEnd) {
+			const result = this.placeCaretAtRawPosition(clampedStart)
 			if (!result.ok) {
-				this.diagnostics({
-					kind: 'recoveryFailed',
-					reason: `pending caret recovery could not be applied: ${result.reason}`,
-				})
+				this.caret.range(undefined)
+				this.diagnostics({kind: 'recoveryFailed', reason: `caret placement failed: ${result.reason}`})
 			}
 			return
 		}
 
-		const result = this.#placeSelection(recovery.selection)
-		this.caret.recovery(undefined)
+		const result = this.#placeSelection({range: {start: clampedStart, end: clampedEnd}, direction: undefined})
 		if (!result.ok) {
-			this.diagnostics({
-				kind: 'recoveryFailed',
-				reason: `pending selection recovery could not be applied: ${result.reason}`,
-			})
+			this.caret.range(undefined)
+			this.diagnostics({kind: 'recoveryFailed', reason: `selection placement failed: ${result.reason}`})
 		}
 	}
 
@@ -831,14 +834,5 @@ export class DomFeature {
 		const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
 		if (!text.parentNode) surface.append(text)
 		return {node: text, offset: text.length}
-	}
-
-	#clearStaleCaretLocation(): void {
-		const location = this.caret.location()
-		if (!location) return
-		const resolved = this.parsing.index().resolveAddress(location.address)
-		if (!resolved.ok || !this.#pathElements.has(pathKey(location.address.path))) {
-			this.caret.location(undefined)
-		}
 	}
 }

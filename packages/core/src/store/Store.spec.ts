@@ -24,7 +24,6 @@ describe('Store', () => {
 	it('have events', () => {
 		const store = new Store()
 		expect(typeof store.parsing.reparse).toBe('function')
-		expect(typeof store.value.change).toBe('function')
 	})
 
 	describe('handler', () => {
@@ -137,7 +136,7 @@ describe('Store', () => {
 		it('updates tokens and current when uncontrolled replacement is accepted', () => {
 			const store = new Store()
 			store.lifecycle.mounted()
-			store.value.replaceAll('hello')
+			store.value.current('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 			expect(store.value.current()).toBe('hello')
 		})
@@ -147,7 +146,7 @@ describe('Store', () => {
 			const onChange = vi.fn()
 			store.props.set({onChange})
 			store.lifecycle.mounted()
-			store.value.replaceAll('world')
+			store.value.current('world')
 			expect(onChange).toHaveBeenCalledOnce()
 			expect(onChange).toHaveBeenCalledWith('world')
 		})
@@ -157,7 +156,7 @@ describe('Store', () => {
 			const onChange = vi.fn()
 			store.props.set({value: 'hello', onChange})
 			store.lifecycle.mounted()
-			store.value.replaceAll('world')
+			store.value.current('world')
 			expect(onChange).toHaveBeenCalledWith('world')
 			expect(store.value.current()).toBe('hello')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
@@ -166,7 +165,7 @@ describe('Store', () => {
 		it('not throw when onChange is not set', () => {
 			const store = new Store()
 			store.lifecycle.mounted()
-			expect(() => store.value.replaceAll('test')).not.toThrow()
+			expect(() => store.value.current('test')).not.toThrow()
 		})
 	})
 

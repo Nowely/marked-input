@@ -36,7 +36,7 @@ function Mention() {
 | `update(patch)` | Serialize a patch and replace the mark raw range. |
 | `remove()` | Delete the mark raw range. |
 
-The controller does not expose a DOM ref. React and Vue own structural DOM and register it privately with core. Keyboard focus and caret recovery are handled by `store.dom` and `store.caret`.
+The controller does not expose a DOM ref. React and Vue own structural DOM and register it privately with core. Keyboard focus and caret placement are handled by `store.dom` and `store.caret`.
 
 ## Updating Marks
 
@@ -60,7 +60,7 @@ mark.update({meta: {kind: 'clear'}})
 mark.update({slot: {kind: 'set', value: 'nested text'}})
 ```
 
-All commands go through `store.value.replaceRange()`. In controlled mode, Markput emits `onChange` and waits for the matching `value` prop echo before applying recovery.
+All commands go through `store.value.replace()`. In controlled mode, Markput emits `onChange` and waits for the matching `value` prop echo before applying the new caret position.
 
 ## Read-Only Marks
 

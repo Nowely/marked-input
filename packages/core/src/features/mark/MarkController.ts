@@ -55,7 +55,7 @@ export class MarkController {
 	remove() {
 		const resolved = this.#resolve()
 		if (!resolved) return
-		this.store.value.replaceRange(resolved.position, '', {recover: undefined})
+		this.store.value.replace(resolved.position, '')
 	}
 
 	update(patch: MarkPatch) {
@@ -74,7 +74,7 @@ export class MarkController {
 					: token.slot?.content
 		const serialized = this.#serialize(token, {value, meta, slot})
 
-		this.store.value.replaceRange(token.position, serialized)
+		this.store.value.replace(token.position, serialized)
 	}
 
 	#serialize(token: MarkToken, fields: {value: string; meta?: string; slot?: string}): string {

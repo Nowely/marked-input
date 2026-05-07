@@ -87,20 +87,21 @@ Both framework adapters share the same component structure:
         ↓
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. KeyboardFeature calls store.value.replaceRange() or replaceAll()
+4. KeyboardFeature writes store.caret.range({start, end}) with the desired post-edit position,
+   then calls store.value.replace() or store.value.current()
         ↓
-5. ValueFeature updates uncontrolled state or records a pending controlled echo
+5. ValueFeature updates uncontrolled state or notifies controlled parents
         ↓
-6. ParsingFeature reactively reparses — it had already subscribed to value.current; tokens update before the change event fires
+6. ParsingFeature reactively reparses — it had already subscribed to value.current; tokens update before downstream watchers fire
         ↓
 7. store.parsing.tokens updated (Signal)
         ↓
 8. React/Vue re-renders via Signal.use()
         ↓
-9. DomFeature applies pending caret recovery after the adapter registers the new DOM
+9. DomFeature applies caret.range to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, then `ValueFeature` schedules optional `caret.recovery`. `DomFeature` owns DOM-to-raw boundary mapping and recovery application, while `ParsingFeature` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomFeature` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParsingFeature` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -219,7 +220,6 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 | Event           | Feature        | When Fired                  | Payload                          |
 | --------------- | -------------- | --------------------------- | -------------------------------- |
-| `change`        | value          | Text content changes        | `void`                           |
 | `reparse`       | parsing        | Re-parse triggered          | `void`                           |
 | `close`         | overlay        | Close overlay               | `void`                           |
 | `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
@@ -235,7 +235,7 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 
 ```typescript
 // Commit a raw value edit
-store.value.replaceRange({start: 0, end: 5}, 'hello')
+store.value.replace({start: 0, end: 5}, 'hello')
 
 // Emit a payload event
 store.mark.remove({ token })
@@ -248,7 +248,7 @@ import {watch, effectScope} from '@markput/core'
 
 const dispose = effectScope(() => {
     watch(
-        store.value.change,
+        store.value.current,
         () => {
             console.log('Text changed')
         }
@@ -309,12 +309,12 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly lifecycle: LifecycleFeature   // mounted, unmounted, rendered events
     readonly props:     PropsFeature       // framework-provided configuration
-    readonly caret:     CaretFeature       // location, recovery, selecting signals
+    readonly caret:     CaretFeature       // range, location (computed), selecting signals
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
-    readonly value:     ValueFeature       // current, replaceRange(), replaceAll()
+    readonly value:     ValueFeature       // current, replace()
     readonly parsing:   ParsingFeature     // tokens, parser, token index
-    readonly dom:       DomFeature         // DOM refs, raw mapping, recovery
+    readonly dom:       DomFeature         // DOM refs, raw mapping, range placement
     readonly overlay:   OverlayFeature     // match, element, slot, select, close
     readonly keyboard:  KeyboardFeature    // input, block editing, arrow navigation
     readonly drag:      DragFeature        // drag-and-drop action event
@@ -341,8 +341,8 @@ batch(() => {
 
 // Accepted serialized value state is owned by ValueFeature.
 // Route edits through raw positions.
-store.value.replaceRange({start: 0, end: 5}, 'Hello')
-store.value.replaceAll('Hello @[World]')
+store.value.replace({start: 0, end: 5}, 'Hello')
+store.value.current('Hello @[World]')
 
 // Framework-provided props (MarkedInput calls store.props.set on each render)
 store.props.set({readOnly: true})
@@ -355,23 +355,23 @@ const tokens = store.parsing.tokens.use()
 
 11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardFeature` behavior modules retain the full `Store` as an adapter boundary.
 
-Signal subscription order is significant: `ParsingFeature` subscribes to `value.current` during initialization (before `lifecycle.mounted()` fires). `ValueFeature` registers its `change()` emission inside `onMounted`. This guarantees that when `value.change` fires, `parsing.tokens()` is already updated.
+Signal subscription order is significant: `ParsingFeature` subscribes to `value.current` inside its `onMounted` hook before any other consumer registers a watcher in `onMounted`. This guarantees that when downstream listeners observe a `value.current` change, `parsing.tokens()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **LifecycleFeature**          | Mount/unmount/render lifecycle events                     |
-| **ValueFeature**              | Accepted serialized value state, edit commands, change event |
+| **ValueFeature**              | Accepted serialized value state, edit commands           |
 | **ParsingFeature**            | Token parsing, parser selection, reparse event            |
 | **MarkFeature**               | Mark slot resolution                                      |
 | **OverlayFeature**            | Overlay trigger detection, position, open/close           |
 | **SlotsFeature**              | Container ref, slot component/props resolution            |
-| **CaretFeature**              | Caret tracking, focus recovery, text selection state      |
+| **CaretFeature**              | Caret range, derived location, text selection state       |
 | **KeyboardFeature**           | Text input, block editing, arrow navigation               |
-| **DomFeature**                | DOM registration, raw selection mapping, recovery         |
+| **DomFeature**                | DOM registration, raw selection mapping, range placement   |
 | **DragFeature**               | Drag-and-drop reordering of blocks                       |
 | **ClipboardFeature**          | Clipboard copy/cut handling                              |
 
-`KeyboardFeature` internally composes three modules: input handling, block editing, and arrow navigation. `CaretFeature` composes focus recovery and text selection tracking.
+`KeyboardFeature` internally composes three modules: input handling, block editing, and arrow navigation. `CaretFeature` exposes a `range: Signal<RawRange | undefined>` as the single source of truth for the caret/selection position, plus a derived `location: Computed<CaretLocation | undefined>` for token-anchored consumers.
 
 ## Lifecycle Timing
 
@@ -381,9 +381,9 @@ React/Vue render asynchronously, so initialization order matters:
 // 1. Framework emits store.lifecycle.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
-// 2. After mount, ValueFeature accepts props.value/defaultValue; emits change.
-//    ParsingFeature had already subscribed to value.current during initialization —
-//    tokens are updated before the change event fires.
+// 2. After mount, ValueFeature accepts props.value/defaultValue. ParsingFeature
+//    subscribed to value.current first inside its onMounted hook, so tokens are
+//    updated before any other onMounted watcher observes the new value.
 
 // 3. Sync contenteditable attributes (layout effect)
 //    → DomFeature reconciles DOM state
@@ -419,7 +419,7 @@ WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 ## Core-Owned DOM And Cursor Management
 
-Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret recovery. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.dom`/`store.caret`; production code must not infer token identity from DOM child order.
+Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.dom`/`store.caret`; production code must not infer token identity from DOM child order.
 
 ### Caret Class
 
@@ -459,7 +459,7 @@ class Caret {
 - text token roots are reconciled as editable text surfaces;
 - mark roots receive focusability state.
 
-It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies pending `caret.recovery` after renders; failed recovery is cleared after one attempt and reported through DOM diagnostics.
+It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.range` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
 
 ## Framework Hooks
 

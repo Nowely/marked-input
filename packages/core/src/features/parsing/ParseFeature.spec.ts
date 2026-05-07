@@ -24,7 +24,7 @@ describe('ParsingFeature', () => {
 
 		it('updates tokens when value changes via replaceAll', () => {
 			mountWith('hello')
-			store.value.replaceAll('world')
+			store.value.current('world')
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 		})
 
@@ -83,7 +83,7 @@ describe('ParsingFeature', () => {
 		it('re-enables and parses fresh after Mark removed and re-added', () => {
 			mountWith('first')
 			store.props.set({Mark: undefined})
-			store.value.replaceAll('second')
+			store.value.current('second')
 			store.props.set({Mark: () => null})
 			expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 		})
@@ -110,23 +110,19 @@ describe('ParsingFeature', () => {
 	})
 
 	describe('signal ordering guarantee', () => {
-		it('parsing.tokens is updated when value.change fires', () => {
-			// Guarantee: parsing.tokens is updated before value.change fires.
-			// Currently: ValueFeature.#accept updates tokens synchronously before
-			// emitting change() in the same watch callback.
-			// After the value↔parsing inversion (Task 5): ParsingFeature subscribes
-			// to value.current at construction time, before ValueFeature registers
-			// its change() emission in onMounted — same observable ordering guarantee.
-			// This test pins the contract regardless of implementation shape.
+		it('parsing.tokens is updated when value.current fires', () => {
+			// ParsingFeature subscribes to value.current before any other watcher
+			// added in onMounted, so by the time downstream listeners observe
+			// value.current, parsing.tokens reflects the new value.
 			store.props.set({Mark: () => null, defaultValue: ''})
 			store.lifecycle.mounted()
 
 			let tokensAtChangeTime: Token[] | undefined
-			const stop = watch(store.value.change, () => {
+			const stop = watch(store.value.current, () => {
 				tokensAtChangeTime = store.parsing.tokens()
 			})
 
-			store.value.replaceAll('hello')
+			store.value.current('hello')
 
 			expect(tokensAtChangeTime).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 
