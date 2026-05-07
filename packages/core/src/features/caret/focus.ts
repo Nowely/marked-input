@@ -30,7 +30,15 @@ export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): vo
 
 	listen(container, 'focusout', () => {
 		store.caret.location(undefined)
-		store.caret.range(undefined)
+		// Defer clearing range so intra-editor focus shifts caused by value
+		// edits (e.g. a mark element being removed during re-render) do not
+		// wipe an explicit caret.range write. Only clear when focus has
+		// actually left the editor.
+		queueMicrotask(() => {
+			if (!container.contains(document.activeElement)) {
+				store.caret.range(undefined)
+			}
+		})
 	})
 
 	listen(container, 'click', () => {

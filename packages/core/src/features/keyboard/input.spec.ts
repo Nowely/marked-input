@@ -97,9 +97,8 @@ describe('handleBeforeInput()', () => {
 		handleBeforeInput(store, event)
 
 		expect(event.defaultPrevented).toBe(true)
-		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x', {
-			recover: {kind: 'caret', rawPosition: 2},
-		})
+		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
+		expect(store.caret.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 

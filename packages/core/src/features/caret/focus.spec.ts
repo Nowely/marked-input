@@ -42,17 +42,21 @@ describe('FocusFeature', () => {
 		})
 	})
 
-	describe('focusout clears range', () => {
-		it('range is undefined after focusout', () => {
+	describe('focusout clears range when focus leaves editor', () => {
+		it('range becomes undefined after focusout when active focus is outside editor', async () => {
 			const store = new Store()
 			const container = document.createElement('div')
+			document.body.append(container)
 			store.dom.container(container)
 			store.lifecycle.mounted()
 
 			store.caret.range({start: 2, end: 2})
 			container.dispatchEvent(new FocusEvent('focusout', {bubbles: true}))
+			// queueMicrotask tick for the deferred clear
+			await Promise.resolve()
 
 			expect(store.caret.range()).toBeUndefined()
+			container.remove()
 		})
 	})
 })
