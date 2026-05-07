@@ -67,15 +67,17 @@ export class ParsingFeature {
 	}
 
 	#subscribeValue(): void {
-		watch(
-			computed(() => this._store.value.current()),
-			v => {
-				this.acceptTokens(this.#parseValue(v))
-			}
-		)
+		// Pass value.current directly — it is already a Computed<string>.
+		watch(this._store.value.current, v => {
+			this.acceptTokens(this.#parseValue(v))
+		})
 	}
 
 	#subscribeReactiveParse(): void {
+		// Re-parse when parser config changes. The old code skipped this when
+		// caret.recovery was pending, but that guard is no longer needed:
+		// recovery.rawPosition is a raw string index that remains valid across
+		// parser changes (only the markup interpretation changes, not positions).
 		watch(
 			computed(() => this.parser()),
 			() => {
@@ -85,6 +87,10 @@ export class ParsingFeature {
 	}
 
 	#subscribeReparse(): void {
+		// Re-parse on external reparse event. The old code parsed from
+		// toString(tokens()) when recovery was pending to avoid disrupting
+		// the layout. That distinction is no longer needed: tokens are always
+		// derived from value.current(), so toString(tokens()) === value.current().
 		watch(this.reparse, () => {
 			this.acceptTokens(this.#parseValue(this._store.value.current()))
 		})
