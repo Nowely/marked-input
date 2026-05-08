@@ -166,4 +166,78 @@ describe('CaretModel', () => {
 			expect(store.caret.selecting()).toBeUndefined()
 		})
 	})
+
+	describe('lifecycle wiring', () => {
+		it('attaches document listeners on mount', () => {
+			const addSpy = vi.spyOn(document, 'addEventListener')
+			const store = new Store()
+			store.lifecycle.mounted()
+			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
+			addSpy.mockRestore()
+		})
+
+		it('clears drag-selecting on unmount', () => {
+			const store = new Store()
+			store.lifecycle.mounted()
+			store.caret.selecting('drag')
+			store.lifecycle.unmounted()
+			expect(store.caret.selecting()).toBeUndefined()
+		})
+	})
+
+	describe('restoration via dom.indexed', () => {
+		it('restores range after indexed fires', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+
+			const placeAtSpy = vi.spyOn(store.dom, 'placeAt').mockReturnValue({ok: true, value: {applied: 5}})
+			store.props.set({defaultValue: 'hello'})
+			store.dom.container(container)
+			store.lifecycle.mounted()
+			store.caret.setAt(5)
+
+			store.lifecycle.rendered()
+			expect(placeAtSpy).toHaveBeenCalledWith(5)
+			container.remove()
+			placeAtSpy.mockRestore()
+		})
+
+		it('skips restoration when mode is drag', () => {
+			const store = new Store()
+			const placeAtSpy = vi.spyOn(store.dom, 'placeAt')
+			store.lifecycle.mounted()
+			store.caret.setAt(3)
+			store.caret.selecting('drag')
+			store.lifecycle.rendered()
+			expect(placeAtSpy).not.toHaveBeenCalled()
+			placeAtSpy.mockRestore()
+		})
+
+		it('clears range when placeAt fails', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+			vi.spyOn(store.dom, 'placeAt').mockReturnValue({ok: false, reason: 'notIndexed'})
+			store.dom.container(container)
+			store.lifecycle.mounted()
+			store.caret.setAt(3)
+			store.lifecycle.rendered()
+			expect(store.caret.range()).toBeUndefined()
+			container.remove()
+			vi.restoreAllMocks()
+		})
+	})
+
+	describe('single reconcile driver', () => {
+		it('calls dom.reconcile when selecting changes', () => {
+			const store = new Store()
+			const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+			store.lifecycle.mounted()
+			reconcileSpy.mockClear()
+			store.caret.selecting('drag')
+			expect(reconcileSpy).toHaveBeenCalledWith({selecting: true})
+			reconcileSpy.mockRestore()
+		})
+	})
 })

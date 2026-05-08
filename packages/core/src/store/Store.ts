@@ -24,17 +24,14 @@ export class Store {
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
 
-	// in current state it rudementary?
-	readonly caret = new CaretModel()
-
-	// rudementary?
 	readonly mark = new MarkFeature(this.props)
-	// rudementary?
 	readonly slots = new SlotsFeature(this.props)
 
 	readonly parsing = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomController(this.lifecycle, this.props, this.caret, this.parsing, this.value)
+	readonly dom = new DomController(this.lifecycle, this.props, this.parsing, this.value)
+
+	readonly caret = new CaretModel(this.lifecycle, this.dom)
 
 	readonly overlay = new OverlayController(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
 	readonly keyboard = new KeyboardController(
