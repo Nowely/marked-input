@@ -2,7 +2,6 @@ import {KEYBOARD} from '../../shared/constants'
 import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import {isFullSelection} from '../caret'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
@@ -69,7 +68,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.slots.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
-	if (store.caret.selecting() === 'all' && isFullSelection(store)) {
+	if (store.caret.selecting() === 'all' && store.caret.isFullSelection()) {
 		event.preventDefault()
 		replaceAllContentWith(store, '')
 		return
@@ -90,7 +89,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 
 export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 	const selecting = store.caret.selecting()
-	if (selecting === 'all' && isFullSelection(store)) {
+	if (selecting === 'all' && store.caret.isFullSelection()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
 			return
@@ -255,7 +254,7 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 
 export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 	const selecting = store.caret.selecting()
-	if (selecting !== 'all' || !isFullSelection(store)) {
+	if (selecting !== 'all' || !store.caret.isFullSelection()) {
 		if (selecting === 'all') store.caret.selecting(undefined)
 		return
 	}
