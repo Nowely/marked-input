@@ -658,6 +658,37 @@ function makeWritableComputed<T>(opts: {
 }
 
 // ---------------------------------------------------------------------------
+// model<T> — controlled/uncontrolled value primitive (Vue defineModel-inspired)
+// ---------------------------------------------------------------------------
+
+export function model<T>(opts: {
+	default: () => T
+	get: (value: T) => T
+	set: (next: T | undefined, previous: T) => T
+}): Signal<T> {
+	let internal: Signal<T> | undefined
+	const ensureInternal = (): Signal<T> => {
+		internal ??= signal(untracked(opts.default))
+		return internal
+	}
+
+	// Reads go through computed so opts.get is memoized and external signals
+	// read inside opts.get propagate to subscribers.
+	const reader = computed(() => opts.get(ensureInternal()()))
+
+	const callable = function modelOper(...args: [T | undefined] | []): T | void {
+		if (args.length === 0) return reader()
+		const sig = ensureInternal()
+		sig(opts.set(args[0], sig()))
+	}
+
+	Object.defineProperty(callable, 'name', {value: 'bound ' + computedOper.name})
+
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
+	return callable as unknown as Signal<T>
+}
+
+// ---------------------------------------------------------------------------
 // listen() — scope-aware DOM event listener
 // ---------------------------------------------------------------------------
 
