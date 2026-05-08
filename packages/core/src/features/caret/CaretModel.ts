@@ -7,11 +7,9 @@ import type {Lifecycle} from '../lifecycle/Lifecycle'
 
 export class CaretModel {
 	readonly range = signal<RawRange>(undefined, {equals: shallow})
-	readonly position = computed<number | undefined>({
+	readonly position = computed({
 		get: () => this.range()?.start,
-		set: value => {
-			if (value !== undefined) this.range({start: value, end: value})
-		},
+		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
 	readonly selecting = signal<'drag' | 'all'>(undefined)
