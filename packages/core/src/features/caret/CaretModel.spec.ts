@@ -4,10 +4,10 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('CaretModel', () => {
-	it('exposes range and selecting', () => {
+	it('exposes range and isSelecting', () => {
 		const store = new Store()
 		expect(typeof store.caret.range).toBe('function')
-		expect(typeof store.caret.selecting).toBe('function')
+		expect(typeof store.caret.isSelecting).toBe('function')
 	})
 
 	it('range starts undefined', () => {
@@ -83,11 +83,11 @@ describe('CaretModel', () => {
 			store.caret.position(5)
 			expect(store.caret.range()).toEqual({start: 5, end: 5})
 		})
-		it('write does not change selecting', () => {
+		it('write does not change isSelecting', () => {
 			const store = new Store()
-			store.caret.selecting('drag')
+			store.caret.isSelecting(true)
 			store.caret.position(5)
-			expect(store.caret.selecting()).toBe('drag')
+			expect(store.caret.isSelecting()).toBe(true)
 		})
 		it('write collapses an extended range', () => {
 			const store = new Store()
@@ -112,7 +112,7 @@ describe('CaretModel', () => {
 	})
 
 	describe('selectAll', () => {
-		it('sets selecting to all', () => {
+		it('extends DOM selection across container', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			container.appendChild(document.createTextNode('hi'))
@@ -124,7 +124,6 @@ describe('CaretModel', () => {
 			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
 
 			store.caret.selectAll()
-			expect(store.caret.selecting()).toBe('all')
 			expect(mockSel.setBaseAndExtent).toHaveBeenCalledWith(container.firstChild, 0, container.lastChild, 1)
 			container.remove()
 			vi.restoreAllMocks()
@@ -132,7 +131,7 @@ describe('CaretModel', () => {
 		it('is no-op when container is missing', () => {
 			const store = new Store()
 			expect(() => store.caret.selectAll()).not.toThrow()
-			expect(store.caret.selecting()).toBeUndefined()
+			expect(store.caret.isSelecting()).toBe(false)
 		})
 	})
 
@@ -145,12 +144,12 @@ describe('CaretModel', () => {
 			addSpy.mockRestore()
 		})
 
-		it('clears drag-selecting on unmount', () => {
+		it('clears isSelecting on unmount', () => {
 			const store = new Store()
 			store.lifecycle.mounted()
-			store.caret.selecting('drag')
+			store.caret.isSelecting(true)
 			store.lifecycle.unmounted()
-			expect(store.caret.selecting()).toBeUndefined()
+			expect(store.caret.isSelecting()).toBe(false)
 		})
 	})
 
@@ -172,12 +171,12 @@ describe('CaretModel', () => {
 			placeAtSpy.mockRestore()
 		})
 
-		it('skips restoration when mode is drag', () => {
+		it('skips restoration when isSelecting', () => {
 			const store = new Store()
 			const placeAtSpy = vi.spyOn(store.dom, 'placeAt')
 			store.lifecycle.mounted()
 			store.caret.position(3)
-			store.caret.selecting('drag')
+			store.caret.isSelecting(true)
 			store.lifecycle.rendered()
 			expect(placeAtSpy).not.toHaveBeenCalled()
 			placeAtSpy.mockRestore()
@@ -199,13 +198,13 @@ describe('CaretModel', () => {
 	})
 
 	describe('single reconcile driver', () => {
-		it('calls dom.reconcile when selecting changes', () => {
+		it('calls dom.reconcile when isSelecting changes', () => {
 			const store = new Store()
 			const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
 			store.lifecycle.mounted()
 			reconcileSpy.mockClear()
-			store.caret.selecting('drag')
-			expect(reconcileSpy).toHaveBeenCalledWith({selecting: true})
+			store.caret.isSelecting(true)
+			expect(reconcileSpy).toHaveBeenCalledWith({isSelecting: true})
 			reconcileSpy.mockRestore()
 		})
 	})

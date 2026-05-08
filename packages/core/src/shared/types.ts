@@ -66,7 +66,7 @@ export interface MarkputState {
 	tokens: Token[]
 	parser: Parser | undefined
 	current: string
-	selecting: 'drag' | 'all' | undefined
+	isSelecting: boolean
 	match: OverlayMatch | undefined
 	/** Annotated text with markups for mark */
 	value: string | undefined

@@ -12,7 +12,7 @@ export class CaretModel {
 		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
-	readonly selecting = signal<'drag' | 'all'>(undefined)
+	readonly isSelecting = signal<boolean>(false)
 
 	readonly isCollapsed = computed(() => {
 		const r = this.range()
@@ -24,19 +24,19 @@ export class CaretModel {
 		private readonly dom: DomController
 	) {
 		watch(lifecycle.unmounted, () => {
-			if (this.selecting() === 'drag') this.selecting(undefined)
+			if (this.isSelecting()) this.isSelecting(false)
 		})
 		lifecycle.onMounted(() => {
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
 			watch(dom.indexed, () => {
-				dom.reconcile({selecting: this.selecting() === 'drag'})
+				dom.reconcile({isSelecting: this.isSelecting()})
 				this.#applyRangeToDOM()
 			})
 			effect(() => {
-				const isDrag = this.selecting() === 'drag'
+				const isSelecting = this.isSelecting()
 				dom.readOnly()
-				dom.reconcile({selecting: isDrag})
+				dom.reconcile({isSelecting})
 			})
 		})
 	}
@@ -53,18 +53,15 @@ export class CaretModel {
 		const container = this.dom.container()
 		if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
 		const range = sel.getRangeAt(0)
-		return (
-			container.contains(range.startContainer) &&
-			container.contains(range.endContainer) &&
-			range.toString().length > 0
-		)
+		if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return false
+		const selected = range.toString()
+		return selected.length > 0 && selected === container.textContent
 	}
 
 	selectAll(): void {
 		const container = this.dom.container()
 		if (!container?.firstChild || !container.lastChild) return
 		window.getSelection()?.setBaseAndExtent(container.firstChild, 0, container.lastChild, 1)
-		this.selecting('all')
 		const rawSel = this.dom.readRawSelection()
 		if (rawSel.ok) this.range(rawSel.value.range)
 	}
@@ -113,23 +110,23 @@ export class CaretModel {
 			const isNotInnerSome = !container.contains(pressedNode) || pressedNode !== e.target
 			const isInside = window.getSelection()?.containsNode(container, true)
 			if (isPressed && isNotInnerSome && isInside) {
-				this.selecting('drag')
+				this.isSelecting(true)
 			}
 		})
 
 		listen(document, 'mouseup', () => {
 			isPressed = false
 			pressedNode = null
-			if (this.selecting() === 'drag') {
+			if (this.isSelecting()) {
 				const sel = window.getSelection()
-				if (!sel || sel.isCollapsed) this.selecting(undefined)
+				if (!sel || sel.isCollapsed) this.isSelecting(false)
 			}
 		})
 
 		listen(document, 'selectionchange', () => {
 			const sel = window.getSelection()
-			if (this.selecting() === 'drag' && (!sel || sel.isCollapsed)) {
-				this.selecting(undefined)
+			if (this.isSelecting() && (!sel || sel.isCollapsed)) {
+				this.isSelecting(false)
 			}
 			if (!sel?.focusNode) return
 			const result = this.dom.locateNode(sel.focusNode)
@@ -145,7 +142,7 @@ export class CaretModel {
 	}
 
 	#applyRangeToDOM(): void {
-		if (this.selecting() === 'drag') return
+		if (this.isSelecting()) return
 		const range = this.range()
 		if (range === undefined) return
 

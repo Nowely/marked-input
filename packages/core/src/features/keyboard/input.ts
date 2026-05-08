@@ -68,12 +68,11 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.slots.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
-	if (store.caret.selecting() === 'all' && store.caret.isFullSelection()) {
+	if (store.caret.isFullSelection()) {
 		event.preventDefault()
 		replaceAllContentWith(store, '')
 		return
 	}
-	if (store.caret.selecting() === 'all') store.caret.selecting(undefined)
 
 	const raw = store.dom.readRawSelection()
 	if (!raw.ok) return
@@ -88,8 +87,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 }
 
 export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
-	const selecting = store.caret.selecting()
-	if (selecting === 'all' && store.caret.isFullSelection()) {
+	if (store.caret.isFullSelection()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
 			return
@@ -99,7 +97,6 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 		replaceAllContentWith(store, newContent)
 		return
 	}
-	if (selecting === 'all') store.caret.selecting(undefined)
 
 	if (store.slots.isBlock()) return
 
@@ -253,11 +250,7 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 }
 
 export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
-	const selecting = store.caret.selecting()
-	if (selecting !== 'all' || !store.caret.isFullSelection()) {
-		if (selecting === 'all') store.caret.selecting(undefined)
-		return
-	}
+	if (!store.caret.isFullSelection()) return
 
 	event.preventDefault()
 	const c = store.dom.container()
@@ -267,7 +260,6 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 }
 
 export function replaceAllContentWith(store: KbCtx, newContent: string): void {
-	store.caret.selecting(undefined)
 	store.caret.position(newContent.length)
 	store.value.current(newContent)
 }
