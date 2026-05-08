@@ -54,8 +54,8 @@ export function enableSelection(store: Pick<Store, 'dom' | 'caret'>): void {
 	})
 
 	effect(() => {
-		const value = store.caret.selecting()
-		if (value === 'drag') store.dom.reconcile()
+		const isDrag = store.caret.selecting() === 'drag'
+		store.dom.reconcile({selecting: isDrag})
 	})
 
 	effect(() => () => {

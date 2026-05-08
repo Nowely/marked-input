@@ -131,6 +131,8 @@ export class DomController {
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
+	readonly indexed = event<void>()
+	readonly readOnly: Computed<boolean> = computed(() => this.props.readOnly())
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
@@ -158,11 +160,8 @@ export class DomController {
 				this.#handleRendered()
 			})
 			watch(
-				computed(() => ({
-					readOnly: props.readOnly(),
-					selecting: caret.selecting(),
-				})),
-				() => this.reconcile()
+				computed(() => props.readOnly()),
+				() => this.reconcile({selecting: caret.selecting() === 'drag'})
 			)
 		})
 	}
@@ -202,8 +201,8 @@ export class DomController {
 		return callback
 	}
 
-	reconcile(): void {
-		this.#reconcileStructuralTextSurfaces()
+	reconcile(opts?: {selecting?: boolean}): void {
+		this.#reconcileStructuralTextSurfaces(opts?.selecting)
 	}
 
 	locateNode(node: Node): NodeLocationResult {
@@ -417,9 +416,10 @@ export class DomController {
 
 		this.#pathElements = pathElements
 		this.#elementRoles = elementRoles
-		this.#reconcileStructuralTextSurfaces()
+		this.#reconcileStructuralTextSurfaces(this.caret.selecting() === 'drag')
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
+		this.indexed()
 		this.#applyRangeToDOM()
 	}
 
@@ -621,9 +621,9 @@ export class DomController {
 		)
 	}
 
-	#reconcileStructuralTextSurfaces(): void {
+	#reconcileStructuralTextSurfaces(selecting?: boolean): void {
 		const tokenIndex = this.parsing.index()
-		const editable = this.props.readOnly() || this.caret.selecting() ? 'false' : 'true'
+		const editable = this.props.readOnly() || selecting ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)

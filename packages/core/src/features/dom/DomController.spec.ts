@@ -456,4 +456,48 @@ describe('DomController structural indexing', () => {
 			container.remove()
 		})
 	})
+
+	describe('indexed event and reconcile opts', () => {
+		it('indexed event fires after commitRendered', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+			store.props.set({defaultValue: 'hi'})
+			store.lifecycle.mounted()
+			store.dom.container(container)
+
+			const fired = vi.fn()
+			watch(store.dom.indexed, fired)
+			store.lifecycle.rendered()
+			expect(fired).toHaveBeenCalledTimes(1)
+			container.remove()
+		})
+
+		it('reconcile respects selecting flag', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.props.set({defaultValue: 'hello'})
+			store.lifecycle.mounted()
+			store.dom.container(container)
+			store.lifecycle.rendered()
+
+			store.dom.reconcile({selecting: true})
+			expect(span.contentEditable).toBe('false')
+
+			store.dom.reconcile({selecting: false})
+			expect(span.contentEditable).toBe('true')
+
+			container.remove()
+		})
+
+		it('readOnly computed reflects props', () => {
+			const store = new Store()
+			expect(store.dom.readOnly()).toBe(false)
+			store.props.set({readOnly: true})
+			expect(store.dom.readOnly()).toBe(true)
+		})
+	})
 })
