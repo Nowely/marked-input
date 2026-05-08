@@ -11,18 +11,19 @@ Owner: @nowely
    state, the DOM listeners that produce caret events, and the
    semantic-level commands that operate on caret state.
 2. Delete the parallel static `Caret` utility class. Its responsibilities
-   split into two homes: caret-state semantics on `CaretModel`, and
-   stateless DOM-coordinate primitives in a new `caretDom.ts` module.
-   Keeping these at distinct abstraction levels avoids the
-   `setAt(pos)` (writes signal) vs `setAtElement(el, offset)` (writes
-   browser selection, ignores model) footgun.
+   split into three homes:
+   - caret-state semantics on `CaretModel`,
+   - stateless DOM-coordinate primitives in a new `caretDom.ts` module,
+   - overlay positioning on `OverlayController` (no longer faked through
+     a caret method that didn't really belong on Caret).
 3. Keep dependencies honest: only `lifecycle` and `dom` remain. The current
    ad-hoc cross-references to `parsing`, `value`, and `slots` move to the
    features they actually belong to.
 4. Land the change as four reviewable phases. Each phase is independently
    testable, shippable, and revertible.
 5. Preserve all observable behaviors: focus tracking, drag-select, Ctrl+A,
-   restoration after re-render, drag-mode suppression of restoration.
+   restoration after re-render, drag-mode suppression of restoration,
+   overlay positioning.
 
 ## Non-goals
 
@@ -38,6 +39,45 @@ Owner: @nowely
   promoting them into a future block-navigation module is a separate
   decision.
 
+## Public API impact (breaking)
+
+`@markput/core` re-exports `Caret` from `packages/core/index.ts:56` and
+documents it in `packages/core/README.md`. Phase 3 removes that export.
+The `@breaking b0` header at the top of `packages/core/index.ts`
+currently lists `CaretRecovery`; it gains a second entry:
+
+```ts
+/**
+ * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`.
+ *   `MarkputState.recovery` and `value.change` no longer exist — the single source
+ *   of truth is `CaretModel.range` (a `Signal<RawRange | undefined>`) applied to
+ *   the DOM by `DomController` after every render.
+ *
+ * @breaking b0: `Caret` static utility class removed. Migration paths:
+ *   - `Caret.getCaretIndex(el)`, `setIndex(el, n)`, `setCaretToEnd(el)`,
+ *     `trySetIndex(el, n)`, `setAtX(el, x, y)`, `getCaretRect()`,
+ *     `isCaretOnFirstLine(el)`, `isCaretOnLastLine(el)` → use the new
+ *     `caretDom` module exports (`getCaretIndex`, `setAtElement`, `setAtX`,
+ *     `getRect`, `isOnFirstLine`, `isOnLastLine`).
+ *   - `Caret.getAbsolutePosition()` → use `store.overlay.position()` (the
+ *     positioning math previously duplicated in adapter `useOverlay` hooks
+ *     now lives in `OverlayController`).
+ *   - `Caret.getCurrentPosition()`, `getSelectedNode()`, `getFocusedSpan()`,
+ *     `isSelectedPosition` → call `window.getSelection()` directly; these
+ *     were only used internally by `TriggerFinder`.
+ *   - `Caret.getIndex`, `setIndex1`, `setCaretRightTo` → unused; no replacement.
+ */
+```
+
+Phase 3 also:
+
+- Adds `export {caretDom}` to `packages/core/index.ts` (namespace export,
+  not flat function exports — keeps call sites self-documenting).
+- Updates `packages/core/README.md` to drop `Caret` from the imports
+  example (line 24), the `new Caret()` example (line 34), and the
+  components list (line 71). Mentions `caretDom` in the new "Caret
+  feature" section if useful.
+
 ## Final file structure
 
 ```
@@ -47,7 +87,7 @@ packages/core/src/features/caret/
   caretDom.ts            (NEW; stateless DOM-coordinate helpers)
   caretDom.spec.ts       (NEW; ports relevant Caret.spec.ts cases)
   TriggerFinder.ts       (caller-update only, no caret dep)
-  TriggerFinder.spec.ts  (unchanged)
+  TriggerFinder.spec.ts  (rewritten — see Phase 3)
   index.ts               (re-exports CaretModel, caretDom helpers, TriggerFinder)
   README.md              (rewritten)
 ```
@@ -96,10 +136,21 @@ footgun the review flagged:
 1. Read `dom.container()`. Abort if missing.
 2. Read `container.firstChild` and `container.lastChild`. Abort if either missing.
 3. `window.getSelection()?.setBaseAndExtent(firstChild, 0, lastChild, 1)`.
+   The `1` is an offset *inside the container parent* (one position past
+   `lastChild`), not inside `lastChild` itself — that's how
+   `setBaseAndExtent`'s offset arguments work when the node is a child
+   element. The implementation should carry a one-line comment to that
+   effect so future readers don't second-guess it.
 4. `selecting('all')`.
-5. Read `dom.readRawSelection()`. If `ok`, write `range(value.range)`. This
-   is the explicit step — without it, the new `range` arrives only when
-   the global `selectionchange` listener fires, which is a hidden contract.
+5. Read `dom.readRawSelection()`. If `ok`, write `range(value.range)`.
+   This is the explicit step — without it, the new `range` arrives only
+   when the global `selectionchange` listener fires, which is a hidden
+   contract.
+
+If `dom.index()` is unset (editor not yet indexed), step 5 returns
+`{ok: false, reason: 'notIndexed'}` and `range` is left untouched. In
+practice Ctrl+A only fires after mount when the editor is indexed, so
+this is a graceful no-op rather than a behavior gap.
 
 ## Final API — `caretDom.ts`
 
@@ -120,20 +171,76 @@ export function isOnLastLine(el: HTMLElement): boolean
 
 | `caretDom.*` function | Replaces | Notes |
 | --- | --- | --- |
-| `setAtElement(el, offset)` | `Caret.setIndex` / `Caret.setCaretToEnd` / `Caret.trySetIndex` | TreeWalker walk; `Infinity` clamps to end. Body wraps in try/catch and logs to `console.error` so the legacy `try*` variant disappears. |
+| `setAtElement(el, offset)` | `Caret.setIndex` / `Caret.setCaretToEnd` / `Caret.trySetIndex` | TreeWalker walk; `Infinity` clamps to end. Body wraps in try/catch and logs to `console.error` so the legacy `try*` variant disappears. **Behavior change called out below.** |
 | `setAtX(el, x, y?)` | `Caret.setAtX` | Coordinate-based positioning via `caretRangeFromPoint` / `caretPositionFromPoint`. |
 | `getCaretIndex(el)` | `Caret.getCaretIndex` | Visual offset within `el` via cloned Range. |
 | `getRect()` | `Caret.getCaretRect` | Bounding rect of current caret. |
 | `isOnFirstLine(el)` | `Caret.isCaretOnFirstLine` | Line-edge check. |
 | `isOnLastLine(el)` | `Caret.isCaretOnLastLine` | Line-edge check. |
 
-Removed without replacement (unused after migration, verified by grep):
+Removed without replacement (verified by grep; not used by any caller
+inside core or in the React/Vue adapters):
 
 - `Caret.getCurrentPosition` → `TriggerFinder` reads `window.getSelection()?.anchorOffset` directly.
 - `Caret.getFocusedSpan` → `TriggerFinder` reads `node.textContent` directly.
 - `Caret.getSelectedNode` → `TriggerFinder` reads `window.getSelection()?.anchorNode` directly.
 - `Caret.isSelectedPosition` → `TriggerFinder` reads `window.getSelection()?.isCollapsed` directly.
-- `Caret.getAbsolutePosition`, `Caret.getIndex`, `Caret.setIndex1`, `Caret.setCaretRightTo` → all unused (the trailing `//TODO refact caret` block).
+- `Caret.getIndex`, `Caret.setIndex1`, `Caret.setCaretRightTo` → unused (the trailing `//TODO refact caret` block).
+
+Migrated **out of caret** rather than into `caretDom`:
+
+- `Caret.getAbsolutePosition` → moves to `OverlayController.position` (a
+  `Computed<{left: number, top: number}>`). React and Vue adapter
+  `useOverlay` hooks read `store.overlay.position()` instead of calling
+  the old static method. Math (`{left: rect.left, top: rect.top + rect.height + 1}`)
+  is preserved verbatim. See Phase 3.
+
+### Behavior change in `caretDom.setAtElement`
+
+`Caret.setIndex` (today) throws when the selection isn't usable. It is
+called from two places:
+
+- `Caret.trySetIndex` — wraps in try/catch and `console.error`s.
+- `Caret.setAtX` (line 106) — calls `setIndex(element, Infinity)`
+  directly, no try/catch.
+
+The new `caretDom.setAtElement` swallows internally. Callers of
+`caretDom.setAtX` (`blockEdit.ts:269,280`) therefore become infallible at
+the line that today could theoretically throw. This is strictly
+improving — there's no recovery the caller could do — but it is a
+behavior change. Captured under "Risks" below.
+
+## Final API — `OverlayController` tweak
+
+`OverlayController` gains a `position` computed that absorbs the math
+duplicated across adapters:
+
+```ts
+class OverlayController {
+  // existing fields …
+
+  readonly position: Computed<{left: number; top: number}> = computed(() => {
+    if (!this.match()) return {left: 0, top: 0}
+    const rect = caretDom.getRect()
+    if (!rect) return {left: 0, top: 0}
+    return {left: rect.left, top: rect.top + rect.height + 1}
+  })
+}
+```
+
+Adapters become trivial:
+
+```tsx
+// React (useOverlay.tsx)
+const style = useMarkput(s => s.overlay.position())
+
+// Vue (useOverlay.ts)
+const style = computed(() => store.overlay.position())
+```
+
+The `Caret` import vanishes from both adapters. The `match` dependency
+is now read inside `position` itself, so the Vue workaround
+(`const _ = matchRef.value` for re-evaluation) is no longer needed.
 
 ## Final API — `DomController` tweaks
 
@@ -147,20 +254,21 @@ class DomController {
   )                                                            // caret param removed
 
   readonly indexed = event<void>()                             // NEW; fired at end of #commitRendered
+  readonly readOnly: Computed<boolean>                         // NEW; exposed for CaretModel's reconcile effect
 
   reconcile(opts?: {selecting?: boolean}): void                // selecting flag passed in by CaretModel
 
   placeAt(rawPos: number, affinity: 'before' | 'after' = 'after'): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'>
-  // renamed from placeCaretAtRawPosition; affinity is RETAINED (used by arrowNav.ts:63,66)
+  // renamed from placeCaretAtRawPosition; affinity is RETAINED (used by arrowNav.ts:63 with 'before' and :66 with 'after')
 
   placeRange(range: RawRange): Result<{applied: RawRange}, 'notIndexed' | 'invalidBoundary'>
   // promoted from #placeSelection
 }
 ```
 
-Two API contract decisions deserve calling out:
+Three API contract decisions deserve calling out:
 
-**`indexed` event over watcher-order**. Today
+**`indexed` event over watcher-order.** Today
 `DomController.#commitRendered()` calls `#applyRangeToDOM()`
 synchronously — the dependency is in the call graph. After the refactor,
 caret restoration is a separate watcher; relying on it firing after
@@ -168,27 +276,64 @@ DomController's own `lifecycle.rendered` watcher is fragile. The
 `indexed` event makes the dependency explicit: CaretModel
 `watch(dom.indexed, …)` instead of `watch(lifecycle.rendered, …)`. The
 event is emitted unconditionally at the end of `#commitRendered`,
-including the queued-render branch.
+including the queued-render branch (verified: `#handleRendered` re-enters
+`#commitRendered` synchronously, so a single `this.indexed()` at the
+tail fires once per commit).
 
-**`reconcile({selecting})` opts param**. `#reconcileStructuralTextSurfaces`
-at `DomController.ts:625` reads `this.caret.selecting()` to decide
-`contentEditable`. Removing the `caret` constructor dep without breaking
-this requires either (a) passing the flag in or (b) keeping a
-`getSelecting: () => …` callback. Option (a) is cleaner — `reconcile`
-is already the seam — and CaretModel calls
-`dom.reconcile({selecting: this.selecting() === 'drag'})` from its
-drag-mode effect.
+**`reconcile({selecting})` opts param + single-driver effect.** The
+previous spec revision left two reconcile drivers — DomController's own
+`readOnly` watcher and CaretModel's drag-mode effect. With
+`reconcile({selecting})` taking the flag explicitly, the readOnly
+watcher would call `reconcile()` with `selecting: undefined`, which is
+de-facto safe (because `props.readOnly()` short-circuits the `editable`
+computation) but conceptually splits a single truth-bit across two
+callers. The cleaner shape: collapse to **one driver**.
 
-**Internal clamping**. Both `placeAt` and `placeRange` clamp the input
+DomController's `readOnly` watcher is removed. CaretModel's effect tracks
+both signals and drives every reconcile:
+
+```ts
+// CaretModel onMounted:
+effect(() => {
+  const isDrag = this.selecting() === 'drag'
+  this.dom.readOnly()                                          // tracked dependency
+  this.dom.reconcile({selecting: isDrag})
+})
+```
+
+DomController exposes `readOnly: Computed<boolean>` so CaretModel can
+track it without taking `props` as a dep. With this collapse there is no
+multi-driver drift, observable or theoretical.
+
+**Internal clamping.** Both `placeAt` and `placeRange` clamp the input
 against `value.current().length` internally and return the clamped value
 as `applied`. The previous external-clamping logic in
 `#applyRangeToDOM` (lines 781–787) collapses into the `placeAt`/
 `placeRange` bodies.
 
-**Removed**. `#applyRangeToDOM` is gone (its logic now lives in
+**Removed.** `#applyRangeToDOM` is gone (its logic now lives in
 CaretModel). The `{readOnly, selecting}` watcher in DomController's
-`onMounted` reduces to a `readOnly` watcher. The `enableFocus` /
+`onMounted` is removed entirely. The `enableFocus` /
 `enableSelection` imports and calls go away.
+
+### Why the empty-container click handler stays in `DomController`
+
+The handler that focuses the first child of the container when the user
+clicks an effectively-empty editor (today at `focus.ts:41-48`) moves
+into `DomController` as a private listener. Reasoning:
+
+- `DomController` already owns the container element registration and is
+  where the `parsing` dep lives. Putting the handler here is colocation
+  with container ownership, not scope creep.
+- Alternative homes (`keyboard/input.ts`, a new `caret/emptyEditorFocus.ts`)
+  would require a redundant container listener wiring, plus a
+  redundant `parsing` dep injection.
+- The handler is small (5 lines) and its purpose — recover focus when
+  the user clicks a container with no caret-target child — is a default
+  DOM-level recovery, not a token-semantic decision.
+
+The condition `tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === ''`
+is preserved verbatim; the logic moves files but doesn't change.
 
 ## Final Store wiring
 
@@ -219,7 +364,8 @@ revertible on its own. Tests pass after each phase.
 
 **Scope.** Add the new state/derived/command surface to `CaretModel`
 without touching listener wiring. Migrate every collapsed-range write to
-the new `setAt` ergonomic.
+the new `setAt` ergonomic. Migrate every `selecting`-mode wrapper-method
+call to direct signal writes.
 
 **Adds to `CaretModel`:**
 
@@ -238,7 +384,37 @@ the new `setAt` ergonomic.
 - Listener wiring still done via `enableFocus({…})` / `enableSelection({…})`
   in `DomController` — moved into CaretModel in Phase 2.
 
-**Caller migration in this phase:**
+**Caller migration in this phase (full enumeration):**
+
+`caret.selecting()` writes (10 sites):
+
+| Site | Today | After Phase 1 |
+| --- | --- | --- |
+| `caret/selection.ts:22` | `store.caret.startDragSelect()` | `store.caret.selecting('drag')` |
+| `caret/selection.ts:32` | `store.caret.clearDragSelect()` (already inside `if (selecting() === 'drag')` outer guard) | `store.caret.selecting(undefined)` — no new guard needed |
+| `caret/selection.ts:40` | `store.caret.clearDragSelect()` (inline guard `if (selecting() === 'drag' && (!sel \|\| sel.isCollapsed))`) | `store.caret.selecting(undefined)` — guard preserved |
+| `caret/selection.ts:63` | `store.caret.clearDragSelect()` (inline guard `if (selecting() === 'drag')`) | `store.caret.selecting(undefined)` — guard preserved |
+| `caret/selectionHelpers.ts:35` (selectAllText body) | `store.caret.startAllSelect()` | absorbed into new `caret.selectAll()` |
+| `keyboard/input.ts:77` | `store.caret.clearAllSelect()` | `store.caret.selecting(undefined)` |
+| `keyboard/input.ts:103` | `store.caret.clearAllSelect()` | `store.caret.selecting(undefined)` |
+| `keyboard/input.ts:259` | `store.caret.clearAllSelect()` | `store.caret.selecting(undefined)` |
+| `keyboard/input.ts:271` (`replaceAllContentWith`) | `store.caret.endSelecting()` | `store.caret.selecting(undefined)` |
+| `dom/DomController.ts` watcher (lines 159–165) | reads `caret.selecting()` | unchanged in Phase 1; reduced in Phase 2 |
+
+All three `clearDragSelect` callers in `selection.ts` are already inside
+outer `if (selecting() === 'drag')` guards (lines 29, 39, 62). Dropping
+the wrapper is a pure simplification — Phase 1 doesn't need to introduce
+any new guards.
+
+`caret.range({start: pos, end: pos})` collapsed writes (14 sites) become `setAt`:
+
+| Site | After Phase 1 |
+| --- | --- |
+| `dom/DomController.ts:787` (clamp write-back; logic itself moves to CaretModel in Phase 2) | `caret.setAt(start)` |
+| `overlay/OverlayController.ts:114` | `caret.setAt(pos)` |
+| `keyboard/input.ts:50, 87, 118, 272` | `caret.setAt(pos)` |
+| `keyboard/blockEdit.ts:92, 104, 127, 143, 185, 193, 329` | `caret.setAt(pos)` |
+| `clipboard/ClipboardController.ts:59` | `caret.setAt(raw.value.range.start)` |
 
 Block-mode Ctrl+A bail (was in `selectionHelpers.selectAllText`) moves
 into `keyboard/arrowNav.ts`:
@@ -265,53 +441,35 @@ if (selecting === 'all' && store.caret.isFullSelection()) { … }
 
 `selectionHelpers.ts` is deleted at the end of this phase.
 
-`selecting` mode writes:
-
-| Today | After Phase 1 |
-| --- | --- |
-| `caret.startDragSelect()` | `caret.selecting('drag')` |
-| `caret.clearDragSelect()` | `caret.selecting(undefined)` (only when current value is `'drag'` — preserve existing guard at call site) |
-| `caret.startAllSelect()` | `caret.selecting('all')` |
-| `caret.clearAllSelect()` | `caret.selecting(undefined)` |
-| `caret.endSelecting()` | `caret.selecting(undefined)` |
-
-Collapsed-range writes (~14 sites) become `setAt`:
-
-| Site | Today | After Phase 1 |
-| --- | --- | --- |
-| `OverlayController.ts:114` | `caret.range({start: pos, end: pos})` | `caret.setAt(pos)` |
-| `keyboard/input.ts:50, 87, 118, 272` | same | `caret.setAt(pos)` |
-| `keyboard/blockEdit.ts:92, 104, 127, 143, 185, 193, 329` | same | `caret.setAt(pos)` |
-| `ClipboardController.ts:59` | same | `caret.setAt(pos)` |
-| `DomController.ts:787` | same | `caret.setAt(start)` |
-
 **Tests.** `CaretModel.spec.ts` extends with: pure-command behavior,
 derived-signal correctness, `isFullSelection`, `selectAll`. `selection.spec.ts`
 and `focus.spec.ts` keep their current set (they cover wiring still in
-`DomController`). Core test count grows from 313 → ≥ 320 in this phase.
+`DomController`). Net delta: ≈ +6 to +10 new core tests; total ≥ today's count.
 
 **Risks.** Mechanical refactor; the 14 setAt-migration sites are simple
 substitutions. The `selecting` writes preserve current guard semantics
-(e.g. only-clear-if-currently-drag), since the wrapper methods today
-already encode those guards.
+(verified site-by-site).
 
 ### Phase 2 — Listener migration + restoration migration
 
 **Scope.** Move all DOM listeners and range restoration into CaretModel.
 DomController loses its `caret` constructor dep, gains the `indexed`
-event, and accepts `{selecting}` opts on `reconcile`.
+event and `readOnly` computed, accepts `{selecting}` opts on `reconcile`,
+and stops watching its own `readOnly` (CaretModel's effect drives
+reconcile end-to-end).
 
 **Moves into CaretModel:**
 
-- `enableFocus` body → private `#enableFocusTracking()`.
+- `enableFocus` body → private `#enableFocusTracking()` (focus listeners only — see DomController section for the click handler).
 - `enableSelection` body → private `#enableSelectionTracking()`.
 - `DomController.#applyRangeToDOM` → private `#applyRangeToDOM()` watching `dom.indexed`.
-- Drag-mode reconcile effect: `effect(() => dom.reconcile({selecting: this.selecting() === 'drag'}))`.
+- Single reconcile-driver effect: `effect(() => { const d = this.selecting() === 'drag'; this.dom.readOnly(); this.dom.reconcile({selecting: d}) })`.
 
 **Moves into DomController:**
 
 - Empty-editor click handler (was `focus.ts:41-48`) → private listener
-  attached in `onMounted`. Uses existing `parsing` dep.
+  attached in `onMounted`. Uses existing `parsing` dep. (Justified
+  above; not scope creep.)
 
 **DomController API changes:**
 
@@ -321,18 +479,19 @@ constructor(lifecycle: Lifecycle, props: PropsModel, parsing: ParseController, v
 
 // new
 readonly indexed = event<void>()
+readonly readOnly: Computed<boolean> = computed(() => this.props.readOnly())
 
 // changed
 reconcile(opts?: {selecting?: boolean}): void
 
 // removed
 #applyRangeToDOM()
-// previous {readOnly, selecting} watcher → readOnly only
+// previous {readOnly, selecting} watcher → removed entirely
 ```
 
-`#commitRendered` ends with `this.indexed()` (in addition to existing
-diagnostics). The queued-render branch fires `indexed` exactly once per
-commit.
+`#commitRendered` ends with `this.indexed()`. The queued-render branch
+fires `indexed` exactly once per commit because `#handleRendered` re-enters
+`#commitRendered` synchronously and each commit ends with one event fire.
 
 **CaretModel constructor:**
 
@@ -342,7 +501,11 @@ constructor(private readonly lifecycle: Lifecycle, private readonly dom: DomCont
     this.#enableFocusTracking()
     this.#enableSelectionTracking()
     watch(dom.indexed, () => this.#applyRangeToDOM())
-    effect(() => dom.reconcile({selecting: this.selecting() === 'drag'}))
+    effect(() => {
+      const isDrag = this.selecting() === 'drag'
+      dom.readOnly()                                           // tracked dependency
+      dom.reconcile({selecting: isDrag})
+    })
   })
 }
 
@@ -383,33 +546,36 @@ readonly caret = new CaretModel(this.lifecycle, this.dom)
 - New `CaretModel.spec.ts` tests: `dom.indexed` triggers restoration;
   `selecting === 'drag'` suppresses restoration; failed placement clears
   range; structural-equality dedup prevents notify when applied equals
-  current range.
+  current range; reconcile effect re-runs when `dom.readOnly()` flips.
 
-Core test count grows again. Total ≥ 325 after Phase 2.
+Net delta: deletes ~10 cases from `focus.spec.ts` + `selection.spec.ts`,
+adds ~10 cases to `CaretModel.spec.ts` + `DomController.spec.ts`.
+Approximately net-zero.
 
 **Risks.**
 
 - Subscription ordering: handled by switching to `dom.indexed`. CaretModel
   no longer races against DomController's `lifecycle.rendered` watcher.
-- `reconcile({selecting})` change: callers inside DomController itself
-  call `reconcile()` with no args (e.g. the `readOnly` watcher) —
-  default-undefined keeps existing behavior. Only CaretModel passes the flag.
-- `dom.indexed` from queued-render branch: the spec requires it fire
-  exactly once per commit even when rerun is queued. Verified by reading
-  `#handleRendered` — the queued branch re-enters `#commitRendered`,
-  which itself ends with the event fire.
+- Two-driver reconcile drift: eliminated by removing DomController's
+  `readOnly` watcher and having CaretModel's effect track both signals.
+  Single source of truth for reconcile.
+- `dom.indexed` from queued-render branch: verified exactly-once per
+  commit via `#handleRendered` re-entry pattern.
 
-### Phase 3 — Static `Caret` deletion + `caretDom.ts`
+### Phase 3 — Static `Caret` deletion + `caretDom.ts` + overlay positioning
 
 **Scope.** Replace the static `Caret` class with stateless function
-exports in `caretDom.ts`. Migrate all callers.
+exports in `caretDom.ts`. Move overlay-position math into
+`OverlayController`. Update both adapter `useOverlay` hooks. Remove
+`Caret` from public exports. Update README and breaking-change header.
 
 **Adds:**
 
 - `packages/core/src/features/caret/caretDom.ts` with the six functions
   listed earlier.
 - `packages/core/src/features/caret/caretDom.spec.ts` porting the
-  existing `Caret.spec.ts` cases (TreeWalker math, line-edge edge cases).
+  surviving cases from `Caret.spec.ts`.
+- `OverlayController.position: Computed<{left, top}>` (uses `caretDom.getRect()`).
 
 **Migrates:**
 
@@ -446,9 +612,82 @@ static find<T>(options, getTrigger, dom?: DomController) {
 }
 ```
 
-`TriggerFinder` does not gain a `CaretModel` parameter. Its needs are
-DOM-level (selection node + offset within text), which `window.getSelection()`
-provides directly.
+- `caret/TriggerFinder.spec.ts` — **rewritten** (the spec file's prior
+  claim of "unchanged" was wrong). The current file mocks `Caret`
+  entirely:
+
+```ts
+// today
+vi.mock('./Caret', () => ({ Caret: { getCurrentPosition: vi.fn(), … } }))
+const mockGetCurrentPosition = vi.mocked(Caret.getCurrentPosition)
+```
+
+After Phase 3 there's no `Caret` to mock. Replace with direct
+`window.getSelection` stubbing in `beforeEach`:
+
+```ts
+beforeEach(() => {
+  const node = document.createTextNode('Hello @world')
+  vi.spyOn(window, 'getSelection').mockReturnValue({
+    anchorNode: node,
+    anchorOffset: 5,
+    isCollapsed: true,
+  } as Selection)
+  vi.spyOn(document, 'contains').mockReturnValue(true)
+})
+```
+
+Test cases (constructor init, `find` matching, `isSelectedPosition`
+gating) stay; only the mock plumbing changes.
+
+- `react/markput/src/lib/hooks/useOverlay.tsx`:
+
+```tsx
+// before
+import {Caret, createMarkFromOverlay} from '@markput/core'
+const style = useMemo(() => {
+  if (!match) return {left: 0, top: 0}
+  return Caret.getAbsolutePosition()
+}, [match])
+
+// after
+import {createMarkFromOverlay} from '@markput/core'
+const style = useMarkput(s => s.overlay.position())
+```
+
+- `vue/markput/src/lib/hooks/useOverlay.ts`:
+
+```ts
+// before
+import {Caret, createMarkFromOverlay} from '@markput/core'
+const style = computed(() => {
+  const _ = matchRef.value
+  if (!matchRef.value) return {left: 0, top: 0}
+  return Caret.getAbsolutePosition()
+})
+
+// after
+import {createMarkFromOverlay} from '@markput/core'
+const style = computed(() => store.overlay.position())
+```
+
+The Vue `const _ = matchRef.value` workaround is no longer needed — the
+`match` dependency is read inside `position()` itself.
+
+- `packages/core/index.ts`:
+  - Drop `export {Caret} from './src/features/caret'` (line 56).
+  - Add `export {caretDom} from './src/features/caret'` (or
+    `export * as caretDom from './src/features/caret/caretDom'` —
+    namespace export keeps call sites self-documenting).
+  - Extend the `@breaking b0` header (full text in "Public API impact"
+    section above).
+
+- `packages/core/README.md`:
+  - Remove `Caret` from the import example (line 24).
+  - Remove the `new Caret()` example (line 34).
+  - Remove `Caret` from the components list (line 71).
+  - Update line 12 ("Caret position management") to reference both
+    `CaretModel` and `caretDom` if desired, or simplify.
 
 **Deletes:**
 
@@ -463,15 +702,27 @@ export {TriggerFinder} from './TriggerFinder'
 export * as caretDom from './caretDom'
 ```
 
-Consumers do `import {caretDom} from '@core/features/caret'` and call
-`caretDom.setAtElement(el, 0)`. The namespace import keeps the call
-sites self-documenting.
+**Tests.** `caretDom.spec.ts` ports the 6 surviving Caret.spec.ts cases
+(`getCaretIndex`, `setIndex`, `setAtX`, `getCaretRect`, line-edge
+checks). `Caret.spec.ts`'s ≈14 cases for removed methods
+(`getCurrentPosition`, `getFocusedSpan`, `getSelectedNode`,
+`isSelectedPosition`, `getAbsolutePosition`, `getIndex`, `setIndex1`,
+`setCaretRightTo`) are dropped. New tests for `OverlayController.position`
+(adds 2–3 cases). Net delta in core: roughly -5 to -8 cases. Adapter
+test counts (React 171, Vue 157) should stay constant; the hook
+implementation changes shape but its public contract doesn't.
 
-**Tests.** `caretDom.spec.ts` ports Caret.spec.ts coverage. Removing
-`Caret.spec.ts` keeps the count steady. Total still ≥ 325.
+**Risks.**
 
-**Risks.** Lowest of the four phases. Mechanical search-and-replace;
-each call site changes shape but preserves semantics.
+- `OverlayController.position` reads `caretDom.getRect()` which calls
+  `window.getSelection().getRangeAt(0).getBoundingClientRect()`.
+  jsdom's `getBoundingClientRect` returns zeros — same constraint the
+  current adapter math has. Tests that assert the position rectangle
+  numerics already exist or use spies; the migration preserves them.
+- `caretDom.setAtElement` swallows errors that today's `Caret.setIndex`
+  re-throws when called directly from `Caret.setAtX`. Strictly
+  improving (no recovery the caller could do), but a behavior change
+  worth listing here.
 
 ### Phase 4 — `DomController` placement API rename
 
@@ -480,7 +731,7 @@ Single, mechanical phase isolated from caret concerns.
 
 **Renames:**
 
-- `placeCaretAtRawPosition(rawPos, affinity = 'after')` → `placeAt(rawPos, affinity = 'after')`. **Affinity parameter retained** (used by `arrowNav.ts:63` with `'before'` and `:66` with `'after'`).
+- `placeCaretAtRawPosition(rawPos, affinity = 'after')` → `placeAt(rawPos, affinity = 'after')`. **Affinity parameter retained** (used by `arrowNav.ts:63` with `'before'` and `:66` with `'after'`, plus `DomController.spec.ts:337` with explicit `'after'`).
 - `#placeSelection(selection: RawSelection)` → public `placeRange(range: RawRange)`.
 
 **Return shape extension:** both methods return
@@ -492,7 +743,7 @@ valid token boundaries; the clamp is a no-op on the happy path).
 
 | Today | After Phase 4 |
 | --- | --- |
-| `DomController.ts:791` (was inside `#applyRangeToDOM`, moved to CaretModel in Phase 2) | uses `placeAt`/`placeRange` with `applied` return |
+| `CaretModel.#applyRangeToDOM` (was at `DomController.ts:791` pre-Phase-2; in CaretModel after Phase 2) | uses `placeAt`/`placeRange` with `applied` return |
 | `arrowNav.ts:63,66` | `placeAt(pos, 'before' | 'after')` — name change only |
 | `DomController.spec.ts:337` | assertion updated to new name and return shape |
 
@@ -503,17 +754,6 @@ neutral or slight growth.
 **Risks.** Test assertions need updating across ~6 call sites. The
 return-shape change is the only non-mechanical part.
 
-## Block-mode Ctrl+A bail — single phase
-
-The bail check (`if (slots.isBlock()) return`) and `event.preventDefault()`
-move from `selectionHelpers.selectAllText` to `keyboard/arrowNav.ts` in
-Phase 1. This is a 2-line move tightly coupled to the deletion of
-`selectionHelpers.ts`. Splitting it into its own PR (as the review
-suggested) was considered and rejected: the move only makes sense once
-`caret.selectAll` exists as the unconditional command, and `caret.selectAll`
-ships in Phase 1. Keeping the move in the same phase keeps the change
-self-consistent.
-
 ## README sketch
 
 `caret/README.md` rewrite, summarizing the post-Phase-3 layout:
@@ -522,7 +762,8 @@ self-consistent.
 >
 > Owns the editor's caret state and the listeners that produce caret
 > events. Stateless DOM-coordinate primitives live alongside in
-> `caretDom.ts`.
+> `caretDom.ts`. Overlay positioning lives in `OverlayController` (it's
+> not a Caret concern).
 >
 > ## CaretModel
 >
@@ -560,17 +801,27 @@ self-consistent.
   reading `#handleRendered`: the queued branch re-enters
   `#commitRendered` synchronously, so a single `this.indexed()` at the
   end of `#commitRendered` is correct.
-- **`reconcile({selecting})` opts spread.** Existing callers inside
-  DomController call `reconcile()` with no args. Default `undefined` for
-  `opts.selecting` produces the same `editable` flag computation today
-  (`undefined` is falsy, equivalent to `selecting() === undefined`).
-- **Phase 2 store reorder.** `caret` moves below `dom`. The
-  `OverlayController` / `KeyboardController` / `DragController` /
-  `ClipboardController` constructor lists already accept `caret` —
-  reordering field initialization order doesn't change their access
-  pattern.
+- **`reconcile({selecting})` opts spread.** With the single-driver
+  collapse (CaretModel's effect tracks both `selecting` and
+  `dom.readOnly()`), there is no multi-driver state and no observable
+  drift. Existing internal `dom.reconcile()` callers without
+  caret-state semantics (e.g. inside `#commitRendered`) keep their
+  zero-arg form; the `opts.selecting` defaults to `undefined`, which is
+  the correct value when caret state isn't relevant to the call.
+- **`caretDom.setAtElement` error swallowing.** `Caret.setAtX` today
+  calls `Caret.setIndex` (throwing) directly at line 106. The new
+  `caretDom.setAtX` calls `caretDom.setAtElement` (swallows). Strictly
+  improving — `blockEdit.ts:269,280` becomes infallible at lines that
+  previously had a theoretical throw path.
+- **Phase 2 store reorder.** `caret` moves below `dom`. Other
+  controllers (`OverlayController`, `KeyboardController`,
+  `DragController`, `ClipboardController`) keep their `caret` constructor
+  arg unchanged.
 - **`affinity` parameter retention.** Confirmed used at `arrowNav.ts:63,66`
   and `DomController.spec.ts:337`. Phase 4 keeps it.
+- **Public API breaking change.** `Caret` removal is a second
+  `@breaking b0` entry on top of `CaretRecovery`. Phase 3 documents the
+  migration path for every removed surface (see "Public API impact").
 
 ### Open questions
 
