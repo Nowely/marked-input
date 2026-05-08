@@ -500,4 +500,25 @@ describe('DomController structural indexing', () => {
 			expect(store.dom.readOnly()).toBe(true)
 		})
 	})
+
+	describe('empty-editor click handler', () => {
+		it('focuses first child on click when editor is empty', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.contentEditable = 'true'
+			container.appendChild(span)
+			document.body.appendChild(container)
+
+			store.props.set({defaultValue: ''})
+			store.dom.container(container)
+			store.lifecycle.mounted()
+			store.lifecycle.rendered()
+
+			const focusSpy = vi.spyOn(span, 'focus')
+			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			expect(focusSpy).toHaveBeenCalledTimes(1)
+			container.remove()
+		})
+	})
 })

@@ -1,4 +1,4 @@
-import {firstHtmlChild, isHtmlElement} from '../../shared/checkers'
+import {isHtmlElement} from '../../shared/checkers'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
@@ -36,14 +36,5 @@ export function enableFocus(store: Pick<Store, 'dom' | 'caret' | 'parsing'>): vo
 				store.caret.range(undefined)
 			}
 		})
-	})
-
-	listen(container, 'click', () => {
-		const tokens = store.parsing.tokens()
-		if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-			const container = store.dom.container()
-			const element = container ? firstHtmlChild(container) : null
-			element?.focus()
-		}
 	})
 }

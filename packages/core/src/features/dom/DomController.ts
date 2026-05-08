@@ -1,3 +1,4 @@
+import {firstHtmlChild} from '../../shared/checkers'
 import type {
 	BoundaryPositionResult,
 	DomDiagnostic,
@@ -10,7 +11,7 @@ import type {
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
-import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
+import {batch, computed, event, listen, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CaretModel} from '../caret/CaretModel'
 import {enableFocus} from '../caret/focus'
@@ -156,6 +157,17 @@ export class DomController {
 		lifecycle.onMounted(() => {
 			enableFocus({dom: this, caret, parsing})
 			enableSelection({dom: this, caret})
+			const container = this.container()
+			if (container) {
+				listen(container, 'click', () => {
+					const tokens = this.parsing.tokens()
+					if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+						const c = this.container()
+						const element = c ? firstHtmlChild(c) : null
+						element?.focus()
+					}
+				})
+			}
 			watch(lifecycle.rendered, () => {
 				this.#handleRendered()
 			})
