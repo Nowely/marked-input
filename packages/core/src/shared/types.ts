@@ -1,6 +1,5 @@
 import type * as CSS from 'csstype'
 
-import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
 import type {Range} from './editorContracts'
 
@@ -56,39 +55,6 @@ export interface CoreOption {
 	 */
 	markup?: Markup
 	overlay?: {trigger?: string}
-}
-
-/**
- * State for Markput store
- * Contains internal state and props-derived configuration
- */
-export interface MarkputState {
-	tokens: Token[]
-	parser: Parser | undefined
-	current: string
-	isSelecting: boolean
-	match: OverlayMatch | undefined
-	/** Annotated text with markups for mark */
-	value: string | undefined
-	/** Default value */
-	defaultValue: string | undefined
-	/** Change event handler */
-	onChange: ((value: string) => void) | undefined
-	/** Prevents from changing the value */
-	readOnly: boolean
-	/** Configuration options for markups and overlays */
-	options: CoreOption[] | undefined
-	/** Events that trigger overlay display */
-	showOverlayOn: OverlayTrigger | undefined
-	Span: Slot
-	Mark: Slot
-	Overlay: Slot
-	className: string | undefined
-	style: CSSProperties | undefined
-	slots: CoreSlots | undefined
-	slotProps: CoreSlotProps | undefined
-	layout: 'inline' | 'block'
-	draggable: boolean | DraggableConfig
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
