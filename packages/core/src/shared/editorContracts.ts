@@ -12,13 +12,13 @@ export type Result<T, Reason extends string> = {ok: true; value: T} | {ok: false
 
 export type DomRef = (element: HTMLElement | null) => void
 
-export type RawRange = {
+export type Range = {
 	readonly start: number
 	readonly end: number
 }
 
 export type RawSelection = {
-	readonly range: RawRange
+	readonly range: Range
 	readonly direction?: 'forward' | 'backward'
 }
 

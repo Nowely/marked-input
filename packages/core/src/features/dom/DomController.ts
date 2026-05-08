@@ -1,20 +1,19 @@
+import {firstHtmlChild} from '../../shared/checkers'
 import type {
 	BoundaryPositionResult,
 	DomDiagnostic,
 	DomIndex,
 	DomRef,
 	NodeLocationResult,
+	Range,
 	RawSelection,
 	RawSelectionResult,
 	Result,
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
-import {batch, computed, event, signal, watch} from '../../shared/signals/index.js'
+import {batch, computed, event, listen, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CaretModel} from '../caret/CaretModel'
-import {enableFocus} from '../caret/focus'
-import {enableSelection} from '../caret/selection'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
@@ -127,10 +126,12 @@ function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 }
 
 export class DomController {
-	readonly #domIndex = signal<DomIndex | undefined>(undefined, {readonly: true})
+	readonly #domIndex = signal<DomIndex>(undefined, {readonly: true})
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
+	readonly indexed = event<void>()
+	readonly readOnly: Computed<boolean> = computed(() => this.props.readOnly())
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
@@ -146,21 +147,26 @@ export class DomController {
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly props: PropsModel,
-		private readonly caret: CaretModel,
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel
 	) {
 		lifecycle.onMounted(() => {
-			enableFocus({dom: this, caret, parsing})
-			enableSelection({dom: this, caret})
+			const container = this.container()
+			if (container) {
+				listen(container, 'click', () => {
+					const tokens = this.parsing.tokens()
+					if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+						const c = this.container()
+						const element = c ? firstHtmlChild(c) : null
+						element?.focus()
+					}
+				})
+			}
 			watch(lifecycle.rendered, () => {
 				this.#handleRendered()
 			})
 			watch(
-				computed(() => ({
-					readOnly: props.readOnly(),
-					selecting: caret.selecting(),
-				})),
+				computed(() => props.readOnly()),
 				() => this.reconcile()
 			)
 		})
@@ -201,8 +207,8 @@ export class DomController {
 		return callback
 	}
 
-	reconcile(): void {
-		this.#reconcileStructuralTextSurfaces()
+	reconcile(opts?: {isSelecting?: boolean}): void {
+		this.#reconcileStructuralTextSurfaces(opts?.isSelecting)
 	}
 
 	locateNode(node: Node): NodeLocationResult {
@@ -236,17 +242,33 @@ export class DomController {
 		return {ok: false, reason: 'outsideEditor'}
 	}
 
-	placeCaretAtRawPosition(
+	placeAt(
 		rawPosition: number,
 		affinity: 'before' | 'after' = 'after'
-	): Result<void, 'notIndexed' | 'invalidBoundary'> {
+	): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'> {
 		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const target = this.#findTextTargetForRawPosition(rawPosition, affinity)
-		if (!target) return this.#focusMarkBoundaryForRawPosition(rawPosition)
-
+		const maxPos = this.value.current().length
+		const clamped = Math.min(rawPosition, maxPos)
+		const target = this.#findTextTargetForRawPosition(clamped, affinity)
+		if (!target) {
+			const boundary = this.#focusMarkBoundaryForRawPosition(clamped)
+			if (!boundary.ok) return boundary
+			return {ok: true, value: {applied: clamped}}
+		}
 		target.element.focus()
-		this.#placeCaretInTextSurface(target.element, rawPosition - target.start)
-		return {ok: true, value: undefined}
+		this.#placeCaretInTextSurface(target.element, clamped - target.start)
+		return {ok: true, value: {applied: clamped}}
+	}
+
+	placeRange(range: Range): Result<{applied: Range}, 'notIndexed' | 'invalidBoundary'> {
+		const maxPos = this.value.current().length
+		const clamped: Range = {
+			start: Math.min(range.start, maxPos),
+			end: Math.min(range.end, maxPos),
+		}
+		const result = this.#placeSelection({range: clamped, direction: undefined})
+		if (!result.ok) return result
+		return {ok: true, value: {applied: clamped}}
 	}
 
 	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): Result<void, 'notIndexed' | 'stale'> {
@@ -419,7 +441,7 @@ export class DomController {
 		this.#reconcileStructuralTextSurfaces()
 
 		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
-		this.#applyRangeToDOM()
+		this.indexed()
 	}
 
 	#elementChildren(element: HTMLElement): HTMLElement[] {
@@ -620,9 +642,9 @@ export class DomController {
 		)
 	}
 
-	#reconcileStructuralTextSurfaces(): void {
+	#reconcileStructuralTextSurfaces(isSelecting?: boolean): void {
 		const tokenIndex = this.parsing.index()
-		const editable = this.props.readOnly() || this.caret.selecting() ? 'false' : 'true'
+		const editable = this.props.readOnly() || isSelecting ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
@@ -771,36 +793,6 @@ export class DomController {
 		range.collapse(true)
 		selection.removeAllRanges()
 		selection.addRange(range)
-	}
-
-	#applyRangeToDOM(): void {
-		if (this.caret.selecting() === 'drag') return
-		const range = this.caret.range()
-		if (range === undefined) return
-
-		const maxPos = this.value.current().length
-		const clampedStart = Math.min(range.start, maxPos)
-		const clampedEnd = Math.min(range.end, maxPos)
-
-		// Write back clamped values; structural equality prevents re-propagation if unchanged.
-		if (clampedStart !== range.start || clampedEnd !== range.end) {
-			this.caret.range({start: clampedStart, end: clampedEnd})
-		}
-
-		if (clampedStart === clampedEnd) {
-			const result = this.placeCaretAtRawPosition(clampedStart)
-			if (!result.ok) {
-				this.caret.range(undefined)
-				this.diagnostics({kind: 'recoveryFailed', reason: `caret placement failed: ${result.reason}`})
-			}
-			return
-		}
-
-		const result = this.#placeSelection({range: {start: clampedStart, end: clampedEnd}, direction: undefined})
-		if (!result.ok) {
-			this.caret.range(undefined)
-			this.diagnostics({kind: 'recoveryFailed', reason: `selection placement failed: ${result.reason}`})
-		}
 	}
 
 	#placeSelection(selection: RawSelection): Result<void, 'notIndexed' | 'invalidBoundary'> {

@@ -1,8 +1,7 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
+import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import {isFullSelection} from '../caret'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
@@ -25,7 +24,7 @@ type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reaso
 export function enableInput(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
-	let compositionRange: RawRange | undefined
+	let compositionRange: Range | undefined
 
 	listen(container, 'paste', e => {
 		const c = store.dom.container()
@@ -47,7 +46,7 @@ export function enableInput(store: KbCtx): void {
 		if (!range) return
 		const data = e.data
 		const pos = range.start + data.length
-		store.caret.range({start: pos, end: pos})
+		store.caret.position(pos)
 		store.value.replace(range, data)
 	})
 
@@ -69,12 +68,11 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (store.slots.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
-	if (store.caret.selecting() === 'all' && isFullSelection(store)) {
+	if (store.caret.isFullSelection()) {
 		event.preventDefault()
 		replaceAllContentWith(store, '')
 		return
 	}
-	if (store.caret.selecting() === 'all') store.caret.clearAllSelect()
 
 	const raw = store.dom.readRawSelection()
 	if (!raw.ok) return
@@ -84,13 +82,12 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (!range) return
 
 	event.preventDefault()
-	store.caret.range({start: range.start, end: range.start})
+	store.caret.position(range.start)
 	store.value.replace(range, '')
 }
 
 export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
-	const selecting = store.caret.selecting()
-	if (selecting === 'all' && isFullSelection(store)) {
+	if (store.caret.isFullSelection()) {
 		if (event.inputType === 'insertFromPaste') {
 			event.preventDefault()
 			return
@@ -100,7 +97,6 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 		replaceAllContentWith(store, newContent)
 		return
 	}
-	if (selecting === 'all') store.caret.clearAllSelect()
 
 	if (store.slots.isBlock()) return
 
@@ -115,7 +111,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 
 	event.preventDefault()
 	const pos = range.start + replacement.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.position(pos)
 	store.value.replace(range, replacement)
 }
 
@@ -222,12 +218,12 @@ function replacementForInput(store: KbCtx, event: InputEvent): string | undefine
 	return undefined
 }
 
-function rangeForInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	return rangeForDelete(store, event.inputType, range)
 }
 
-function rangeForDelete(store: KbCtx, inputType: string, range: RawRange): RawRange | undefined {
+function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | undefined {
 	if (range.start !== range.end) return range
 
 	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
@@ -242,7 +238,7 @@ function rangeForDelete(store: KbCtx, inputType: string, range: RawRange): RawRa
 	return undefined
 }
 
-function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): RawRange | undefined {
+function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): Range | undefined {
 	for (const token of tokens) {
 		const nested = token.type === 'mark' ? adjacentMarkRange(token.children, position, backward) : undefined
 		if (nested) return nested
@@ -254,11 +250,7 @@ function adjacentMarkRange(tokens: readonly Token[], position: number, backward:
 }
 
 export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
-	const selecting = store.caret.selecting()
-	if (selecting !== 'all' || !isFullSelection(store)) {
-		if (selecting === 'all') store.caret.clearAllSelect()
-		return
-	}
+	if (!store.caret.isFullSelection()) return
 
 	event.preventDefault()
 	const c = store.dom.container()
@@ -268,7 +260,6 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 }
 
 export function replaceAllContentWith(store: KbCtx, newContent: string): void {
-	store.caret.endSelecting()
-	store.caret.range({start: newContent.length, end: newContent.length})
+	store.caret.position(newContent.length)
 	store.value.current(newContent)
 }

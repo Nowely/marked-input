@@ -1,20 +1,36 @@
 # Caret Feature
 
-The Caret feature provides utilities for working with DOM caret position, text selection, and trigger detection in editable content.
+The caret feature owns caret/selection state and DOM-coordinate helpers used by
+overlay positioning and block-edit navigation.
 
 ## Components
 
-- **Caret**: Static class for DOM caret manipulation, position tracking, and selection management
-- **TriggerFinder**: Class for detecting overlay triggers in text based on caret position
+- **CaretModel**: Reactive caret/selection state. Owns:
+    - `range: Signal<Range | undefined>` — the single source of truth for
+      caret/selection position.
+    - `position: Signal<number | undefined>` — writable computed bound to
+      `range.start`; writing collapses the range to `{start: pos, end: pos}`.
+    - `isSelecting: Signal<boolean>` — flips while the user is actively
+      drag-selecting; drives `dom.reconcile({isSelecting})` so structural text
+      surfaces become non-editable during drags.
+    - `isFullSelection()` / `selectAll()` — imperative helpers for whole-editor
+      selection.
+
+    Document mouse + selectionchange listeners and focus tracking are wired in
+    the constructor and tear down with the lifecycle scope. Range is re-applied
+    to the DOM after every render via `watch(dom.indexed, ...)`.
+
+- **caretDom**: Stateless DOM helpers (`getCaretIndex`, `setAtElement`,
+  `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`). Use these for raw DOM
+  caret math.
+- **TriggerFinder**: Detects overlay triggers in text based on the current
+  selection.
 
 ## Usage
 
 ```typescript
-import {Caret, TriggerFinder} from '@core/features/caret'
+import {caretDom, TriggerFinder} from '@core/features/caret'
 
-// Get current caret position
-const position = Caret.getCurrentPosition()
-
-// Find triggers in text
-const triggerFinder = TriggerFinder.find(options)
+const offset = caretDom.getCaretIndex(element)
+const match = TriggerFinder.find(options, opt => opt.overlay?.trigger)
 ```

@@ -1,8 +1,7 @@
 import type * as CSS from 'csstype'
 
-import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
-import type {RawRange} from './editorContracts'
+import type {Range} from './editorContracts'
 
 /**
  * Registry interface used as a module-augmentation target. Framework packages
@@ -58,39 +57,6 @@ export interface CoreOption {
 	overlay?: {trigger?: string}
 }
 
-/**
- * State for Markput store
- * Contains internal state and props-derived configuration
- */
-export interface MarkputState {
-	tokens: Token[]
-	parser: Parser | undefined
-	current: string
-	selecting: 'drag' | 'all' | undefined
-	match: OverlayMatch | undefined
-	/** Annotated text with markups for mark */
-	value: string | undefined
-	/** Default value */
-	defaultValue: string | undefined
-	/** Change event handler */
-	onChange: ((value: string) => void) | undefined
-	/** Prevents from changing the value */
-	readOnly: boolean
-	/** Configuration options for markups and overlays */
-	options: CoreOption[] | undefined
-	/** Events that trigger overlay display */
-	showOverlayOn: OverlayTrigger | undefined
-	Span: Slot
-	Mark: Slot
-	Overlay: Slot
-	className: string | undefined
-	style: CSSProperties | undefined
-	slots: CoreSlots | undefined
-	slotProps: CoreSlotProps | undefined
-	layout: 'inline' | 'block'
-	draggable: boolean | DraggableConfig
-}
-
 export type OverlayMatch<TOption = CoreOption> = {
 	/**
 	 * Found value via a overlayMatch
@@ -108,7 +74,7 @@ export type OverlayMatch<TOption = CoreOption> = {
 	 * Html element, in which was a overlayMatch
 	 */
 	node: Node
-	range: RawRange
+	range: Range
 	/**
 	 * OverlayMatch's option
 	 */

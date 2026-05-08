@@ -1,8 +1,10 @@
 import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
+import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import {TriggerFinder} from '../caret'
+import * as caretDom from '../caret/caretDom'
 import type {CaretModel} from '../caret/CaretModel'
 import type {DomController} from '../dom/DomController'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -15,7 +17,7 @@ import type {OverlaySlot} from '../slots'
 import type {ValueModel} from '../value/ValueModel'
 
 export class OverlayController {
-	readonly match = signal<OverlayMatch | undefined>(undefined)
+	readonly match = signal<OverlayMatch>(undefined)
 	readonly element = signal<HTMLElement | null>(null)
 
 	readonly slot: OverlaySlot = computed(() => {
@@ -25,6 +27,13 @@ export class OverlayController {
 
 	readonly select = event<{mark: Token; match: OverlayMatch}>()
 	readonly close = event()
+
+	readonly position: Computed<{left: number; top: number}> = computed(() => {
+		if (!this.match()) return {left: 0, top: 0}
+		const rect = caretDom.getRect()
+		if (!rect) return {left: 0, top: 0}
+		return {left: rect.left, top: rect.top + rect.height + 1}
+	})
 
 	#scope?: () => void
 
@@ -111,7 +120,7 @@ export class OverlayController {
 									})
 
 						const pos = range.start + annotation.length
-						this.caret.range({start: pos, end: pos})
+						this.caret.position(pos)
 						this.value.replace(range, annotation)
 						this.match(undefined)
 					})

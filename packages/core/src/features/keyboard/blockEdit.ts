@@ -1,11 +1,11 @@
 import {htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
-import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
+import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing' | 'props'>
-import {Caret} from '../caret'
+import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {createRowContent} from '../editing'
@@ -72,7 +72,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		const blockDiv = blockDivs[blockIndex]
-		const caretAtStart = Caret.getCaretIndex(blockDiv) === 0
+		const caretAtStart = caretDom.getCaretIndex(blockDiv) === 0
 
 		const blockText = 'content' in token ? token.content : ''
 		if (blockText === '') {
@@ -89,7 +89,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.caret.range({start: pos, end: pos})
+			store.caret.position(pos)
 			store.value.current(newValue)
 			return
 		}
@@ -101,7 +101,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -113,7 +113,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 
 	if (event.key === KEYBOARD.DELETE) {
 		const blockDiv = blockDivs[blockIndex]
-		const caretIndex = Caret.getCaretIndex(blockDiv)
+		const caretIndex = caretDom.getCaretIndex(blockDiv)
 		const caretAtEnd = caretIndex === blockDiv.textContent.length
 		const caretAtStart = caretIndex === 0
 
@@ -124,7 +124,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -140,7 +140,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -182,7 +182,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.caret.range({start: pos, end: pos})
+		store.caret.position(pos)
 		store.value.current(newValue)
 		return
 	}
@@ -190,7 +190,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	const raw = store.dom.readRawSelection()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
 	const pos = absolutePos + newRowContent.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.position(pos)
 	store.value.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
@@ -203,10 +203,10 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 
 	row.focus()
 	if (caret === 'start') {
-		Caret.trySetIndex(row, 0)
+		caretDom.setAtElement(row, 0)
 		return
 	}
-	Caret.setCaretToEnd(row)
+	caretDom.setAtElement(row, Infinity)
 }
 
 function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
@@ -223,23 +223,23 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const blockDiv = blockDivs[blockIndex]
 
 	if (direction === 'left') {
-		if (Caret.getCaretIndex(blockDiv) !== 0) return false
+		if (caretDom.getCaretIndex(blockDiv) !== 0) return false
 		if (blockIndex === 0) return true
 		event.preventDefault()
 		const prevBlock = blockDivs[blockIndex - 1]
 		prevBlock.focus()
-		Caret.setCaretToEnd(prevBlock)
+		caretDom.setAtElement(prevBlock, Infinity)
 		return true
 	}
 
-	const caretIndex = Caret.getCaretIndex(blockDiv)
+	const caretIndex = caretDom.getCaretIndex(blockDiv)
 	const textLen = blockDiv.textContent.length
 	if (caretIndex !== textLen) return false
 	if (blockIndex >= blockDivs.length - 1) return true
 	event.preventDefault()
 	const nextBlock = blockDivs[blockIndex + 1]
 	nextBlock.focus()
-	Caret.trySetIndex(nextBlock, 0)
+	caretDom.setAtElement(nextBlock, 0)
 	return true
 }
 
@@ -257,27 +257,27 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const blockDiv = blockDivs[blockIndex]
 
 	if (event.key === KEYBOARD.UP) {
-		if (!Caret.isCaretOnFirstLine(blockDiv)) return
+		if (!caretDom.isOnFirstLine(blockDiv)) return
 		if (blockIndex === 0) return
 
 		event.preventDefault()
-		const caretRect = Caret.getCaretRect()
+		const caretRect = caretDom.getRect()
 		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
 		const prevBlockDiv = blockDivs[blockIndex - 1]
 		prevBlockDiv.focus()
 		const prevRect = prevBlockDiv.getBoundingClientRect()
-		Caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
+		caretDom.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
 	} else if (event.key === KEYBOARD.DOWN) {
-		if (!Caret.isCaretOnLastLine(blockDiv)) return
+		if (!caretDom.isOnLastLine(blockDiv)) return
 		if (blockIndex >= blockDivs.length - 1) return
 
 		event.preventDefault()
-		const caretRect = Caret.getCaretRect()
+		const caretRect = caretDom.getRect()
 		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
 		const nextBlockDiv = blockDivs[blockIndex + 1]
 		nextBlockDiv.focus()
 		const nextRect = nextBlockDiv.getBoundingClientRect()
-		Caret.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
+		caretDom.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
 	}
 }
 
@@ -326,7 +326,7 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 
 	event.preventDefault()
 	const pos = range.start + replacement.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.position(pos)
 	store.value.replace(range, replacement)
 }
 
@@ -356,7 +356,7 @@ function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailure
 	return result.reason
 }
 
-function rangeForBlockInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	if (range.start !== range.end) return range
 

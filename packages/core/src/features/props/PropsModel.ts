@@ -13,10 +13,10 @@ import type {
 import {shallow} from '../../shared/utils/shallow'
 
 export class PropsModel {
-	readonly value = signal<string | undefined>(undefined, {readonly: true})
-	readonly defaultValue = signal<string | undefined>(undefined, {readonly: true})
+	readonly value = signal<string>(undefined, {readonly: true})
+	readonly defaultValue = signal<string>(undefined, {readonly: true})
 
-	readonly onChange = signal<((value: string) => void) | undefined>(undefined, {readonly: true})
+	readonly onChange = signal<(value: string) => void>(undefined, {readonly: true})
 
 	readonly options = signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true})
 	readonly readOnly = signal<boolean>(false, {readonly: true})
@@ -26,17 +26,15 @@ export class PropsModel {
 
 	readonly showOverlayOn = signal<OverlayTrigger>('change', {readonly: true})
 
-	readonly Span = signal<Slot | undefined>(undefined, {readonly: true})
-	readonly Mark = signal<Slot | undefined>(undefined, {readonly: true})
-	readonly Overlay = signal<Slot | undefined>(undefined, {readonly: true})
+	readonly Span = signal<Slot>(undefined, {readonly: true})
+	readonly Mark = signal<Slot>(undefined, {readonly: true})
+	readonly Overlay = signal<Slot>(undefined, {readonly: true})
 
-	readonly className = signal<string | undefined>(undefined, {readonly: true})
-	readonly style = signal<CSSProperties | undefined>(undefined, {equals: shallow, readonly: true})
+	readonly className = signal<string>(undefined, {readonly: true})
+	readonly style = signal<CSSProperties>(undefined, {equals: shallow, readonly: true})
 
-	readonly slots = signal<CoreSlots | undefined>(undefined, {readonly: true})
-	readonly slotProps = signal<CoreSlotProps | undefined>(undefined, {readonly: true})
-
-	constructor() {}
+	readonly slots = signal<CoreSlots>(undefined, {readonly: true})
+	readonly slotProps = signal<CoreSlotProps>(undefined, {readonly: true})
 
 	set(values: Partial<SignalValues<typeof this>>): void {
 		batch(

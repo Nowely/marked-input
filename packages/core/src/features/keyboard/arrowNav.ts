@@ -1,7 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
-import {selectAllText} from '../caret'
 
 type KbCtx = Pick<Store, 'dom' | 'caret' | 'slots' | 'parsing'>
 
@@ -18,7 +17,11 @@ export function enableArrowNav(store: KbCtx): void {
 			shiftFocus(store, e, 'next')
 		}
 
-		selectAllText(store, e)
+		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
+			if (store.slots.isBlock()) return
+			e.preventDefault()
+			store.caret.selectAll()
+		}
 	})
 }
 
@@ -60,9 +63,9 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (sibling?.type === 'mark') return true
 
 	if (direction === 'prev') {
-		store.dom.placeCaretAtRawPosition(sibling?.position.end ?? 0, 'before')
+		store.dom.placeAt(sibling?.position.end ?? 0, 'before')
 		return true
 	}
-	store.dom.placeCaretAtRawPosition(sibling?.position.start ?? 0, 'after')
+	store.dom.placeAt(sibling?.position.start ?? 0, 'after')
 	return true
 }

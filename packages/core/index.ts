@@ -1,10 +1,3 @@
-/**
- * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`.
- *   `MarkputState.recovery` and `value.change` no longer exist — the single source
- *   of truth is `CaretModel.range` (a `Signal<RawRange | undefined>`) applied to
- *   the DOM by `DomController` after every render.
- */
-
 // Shared exports
 export {cx, merge} from './src/shared/utils'
 export {DEFAULT_OPTIONS} from './src/shared/constants'
@@ -31,7 +24,7 @@ export type {
 	TokenPath,
 	TokenAddress,
 	Result,
-	RawRange,
+	Range,
 	RawSelection,
 	MarkPatch,
 	MarkSnapshot,
@@ -52,8 +45,8 @@ export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './s
 // Drag
 export {getAlwaysShowHandle} from './src/features/drag'
 
-// Caret
-export {Caret} from './src/features/caret'
+// Caret DOM utilities
+export {caretDom} from './src/features/caret'
 
 // Mark commands
 export {MarkController} from './src/features/mark'

@@ -334,11 +334,48 @@ describe('DomController structural indexing', () => {
 	it('places the caret at a raw position inside a structural text surface', () => {
 		const {store, container, textSurface} = mountStructuralInline('hello')
 
-		expect(store.dom.placeCaretAtRawPosition(3, 'after')).toEqual({ok: true, value: undefined})
+		expect(store.dom.placeAt(3, 'after')).toEqual({ok: true, value: {applied: 3}})
 
 		const selection = window.getSelection()
 		expect(selection?.focusNode).toBe(textSurface.firstChild)
 		expect(selection?.focusOffset).toBe(3)
+		container.remove()
+	})
+
+	it('placeAt returns applied position on success', () => {
+		const {store, container} = mountStructuralInline('hello world')
+
+		const result = store.dom.placeAt(5)
+		expect(result).toEqual({ok: true, value: {applied: 5}})
+		container.remove()
+	})
+
+	it('placeAt clamps position to value length', () => {
+		const {store, container} = mountStructuralInline('hi')
+
+		const result = store.dom.placeAt(999)
+		expect(result.ok).toBe(true)
+		if (result.ok) expect(result.value.applied).toBeLessThanOrEqual(2)
+		container.remove()
+	})
+
+	it('placeRange returns applied range on success', () => {
+		const {store, container} = mountStructuralInline('hello world')
+
+		const result = store.dom.placeRange({start: 0, end: 5})
+		expect(result).toEqual({ok: true, value: {applied: {start: 0, end: 5}}})
+		container.remove()
+	})
+
+	it('placeRange clamps to value length', () => {
+		const {store, container} = mountStructuralInline('hi')
+
+		const result = store.dom.placeRange({start: 0, end: 999})
+		expect(result.ok).toBe(true)
+		if (result.ok) {
+			expect(result.value.applied.start).toBeLessThanOrEqual(2)
+			expect(result.value.applied.end).toBeLessThanOrEqual(2)
+		}
 		container.remove()
 	})
 
@@ -393,10 +430,10 @@ describe('DomController structural indexing', () => {
 		container.remove()
 	})
 
-	it('skips apply when drag-selecting', () => {
+	it('skips apply when isSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
 		store.caret.range({start: 2, end: 2})
-		store.caret.selecting('drag')
+		store.caret.isSelecting(true)
 		store.lifecycle.rendered()
 
 		expect(store.caret.range()).toEqual({start: 2, end: 2})
@@ -453,6 +490,71 @@ describe('DomController structural indexing', () => {
 			selection.addRange(range)
 
 			expect(store.dom.readRawSelection()).toEqual({ok: false, reason: 'mixedBoundary'})
+			container.remove()
+		})
+	})
+
+	describe('indexed event and reconcile opts', () => {
+		it('indexed event fires after commitRendered', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+			store.props.set({defaultValue: 'hi'})
+			store.lifecycle.mounted()
+			store.dom.container(container)
+
+			const fired = vi.fn()
+			watch(store.dom.indexed, fired)
+			store.lifecycle.rendered()
+			expect(fired).toHaveBeenCalledTimes(1)
+			container.remove()
+		})
+
+		it('reconcile respects isSelecting flag', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.props.set({defaultValue: 'hello'})
+			store.lifecycle.mounted()
+			store.dom.container(container)
+			store.lifecycle.rendered()
+
+			store.dom.reconcile({isSelecting: true})
+			expect(span.contentEditable).toBe('false')
+
+			store.dom.reconcile({isSelecting: false})
+			expect(span.contentEditable).toBe('true')
+
+			container.remove()
+		})
+
+		it('readOnly computed reflects props', () => {
+			const store = new Store()
+			expect(store.dom.readOnly()).toBe(false)
+			store.props.set({readOnly: true})
+			expect(store.dom.readOnly()).toBe(true)
+		})
+	})
+
+	describe('empty-editor click handler', () => {
+		it('focuses first child on click when editor is empty', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.contentEditable = 'true'
+			container.appendChild(span)
+			document.body.appendChild(container)
+
+			store.props.set({defaultValue: ''})
+			store.dom.container(container)
+			store.lifecycle.mounted()
+			store.lifecycle.rendered()
+
+			const focusSpy = vi.spyOn(span, 'focus')
+			container.dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			expect(focusSpy).toHaveBeenCalledTimes(1)
 			container.remove()
 		})
 	})

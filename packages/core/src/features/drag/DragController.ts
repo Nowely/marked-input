@@ -1,4 +1,4 @@
-import type {RawRange} from '../../shared/editorContracts'
+import type {Range} from '../../shared/editorContracts'
 import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {CaretModel} from '../caret/CaretModel'
@@ -92,7 +92,7 @@ export class DragController {
 		this.value.current(newValue)
 	}
 
-	#rangeAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): RawRange | undefined {
+	#rangeAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): Range | undefined {
 		let rawPosition: number | undefined
 		if (action.type === 'add') {
 			const after = previousRows.at(action.afterIndex)
