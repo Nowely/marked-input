@@ -1,5 +1,5 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
+import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
@@ -24,7 +24,7 @@ type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reaso
 export function enableInput(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
-	let compositionRange: RawRange | undefined
+	let compositionRange: Range | undefined
 
 	listen(container, 'paste', e => {
 		const c = store.dom.container()
@@ -221,12 +221,12 @@ function replacementForInput(store: KbCtx, event: InputEvent): string | undefine
 	return undefined
 }
 
-function rangeForInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	return rangeForDelete(store, event.inputType, range)
 }
 
-function rangeForDelete(store: KbCtx, inputType: string, range: RawRange): RawRange | undefined {
+function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | undefined {
 	if (range.start !== range.end) return range
 
 	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
@@ -241,7 +241,7 @@ function rangeForDelete(store: KbCtx, inputType: string, range: RawRange): RawRa
 	return undefined
 }
 
-function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): RawRange | undefined {
+function adjacentMarkRange(tokens: readonly Token[], position: number, backward: boolean): Range | undefined {
 	for (const token of tokens) {
 		const nested = token.type === 'mark' ? adjacentMarkRange(token.children, position, backward) : undefined
 		if (nested) return nested

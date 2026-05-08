@@ -41,7 +41,7 @@ export type {
 	TokenPath,
 	TokenAddress,
 	Result,
-	RawRange,
+	Range,
 	RawSelection,
 	MarkPatch,
 	MarkSnapshot,

@@ -5,7 +5,7 @@ import type {
 	DomIndex,
 	DomRef,
 	NodeLocationResult,
-	RawRange,
+	Range,
 	RawSelection,
 	RawSelectionResult,
 	Result,
@@ -260,9 +260,9 @@ export class DomController {
 		return {ok: true, value: {applied: clamped}}
 	}
 
-	placeRange(range: RawRange): Result<{applied: RawRange}, 'notIndexed' | 'invalidBoundary'> {
+	placeRange(range: Range): Result<{applied: Range}, 'notIndexed' | 'invalidBoundary'> {
 		const maxPos = this.value.current().length
-		const clamped: RawRange = {
+		const clamped: Range = {
 			start: Math.min(range.start, maxPos),
 			end: Math.min(range.end, maxPos),
 		}

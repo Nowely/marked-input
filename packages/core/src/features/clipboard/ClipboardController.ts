@@ -1,4 +1,4 @@
-import type {RawRange} from '../../shared/editorContracts'
+import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {CaretModel} from '../caret/CaretModel'
 import type {DomController} from '../dom/DomController'
@@ -9,18 +9,18 @@ import type {ParseController} from '../parsing/ParseController'
 import type {ValueModel} from '../value/ValueModel'
 import {MARKPUT_MIME} from './pasteMarkup'
 
-function htmlFromRange(range: Range): string {
+function htmlFromRange(range: globalThis.Range): string {
 	const fragment = range.cloneContents()
 	const div = document.createElement('div')
 	div.appendChild(fragment)
 	return div.innerHTML
 }
 
-function serializeRawRange(tokens: readonly Token[], range: RawRange): string {
+function serializeRawRange(tokens: readonly Token[], range: Range): string {
 	return toString(trimTokensForRawRange(tokens, range))
 }
 
-function trimTokensForRawRange(tokens: readonly Token[], range: RawRange): Token[] {
+function trimTokensForRawRange(tokens: readonly Token[], range: Range): Token[] {
 	return tokens
 		.filter(token => token.position.end > range.start && token.position.start < range.end)
 		.map(token => {

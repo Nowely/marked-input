@@ -1,6 +1,6 @@
 import {htmlChildren, isHtmlElement} from '../../shared/checkers'
 import {KEYBOARD} from '../../shared/constants'
-import type {BoundaryPositionResult, RawRange, RawSelectionResult} from '../../shared/editorContracts'
+import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
@@ -356,7 +356,7 @@ function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailure
 	return result.reason
 }
 
-function rangeForBlockInput(store: KbCtx, event: InputEvent, range: RawRange): RawRange | undefined {
+function rangeForBlockInput(store: KbCtx, event: InputEvent, range: Range): Range | undefined {
 	if (!event.inputType.startsWith('delete')) return range
 	if (range.start !== range.end) return range
 

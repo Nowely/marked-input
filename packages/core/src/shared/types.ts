@@ -2,7 +2,7 @@ import type * as CSS from 'csstype'
 
 import type {Parser, Token} from '../features/parsing'
 import type {Markup} from '../features/parsing/parser/types'
-import type {RawRange} from './editorContracts'
+import type {Range} from './editorContracts'
 
 /**
  * Registry interface used as a module-augmentation target. Framework packages
@@ -108,7 +108,7 @@ export type OverlayMatch<TOption = CoreOption> = {
 	 * Html element, in which was a overlayMatch
 	 */
 	node: Node
-	range: RawRange
+	range: Range
 	/**
 	 * OverlayMatch's option
 	 */
