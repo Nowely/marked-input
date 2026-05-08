@@ -171,139 +171,104 @@ describe('computed with equals option', () => {
 })
 
 describe('computed — writable', () => {
-	it('reads through get when no deps change', () => {
-		const external = signal('a')
-		const c = computed({
-			initial: () => '',
-			get: field => external() + field(),
-			set: (_next, _field) => {},
+	it('reads via get', () => {
+		const c = computed<number>({
+			get: () => 42,
+			set: () => {},
 		})
-		expect(c()).toBe('a')
+		expect(c()).toBe(42)
 	})
 
-	it('field starts undefined when no initial provided', () => {
-		const c = computed<string>({
-			get: field => field() ?? 'fallback',
-			set: (_next, _field) => {},
-		})
-		expect(c()).toBe('fallback')
-	})
-
-	it('initial runs lazily on first field read', () => {
-		let calls = 0
-		const c = computed({
-			initial: () => {
-				calls++
-				return 'seed'
+	it('passes previous value to get', () => {
+		const trigger = signal(0)
+		let receivedPrev: number | undefined = -1
+		const c = computed<number>({
+			get: prev => {
+				receivedPrev = prev
+				return trigger() + 1
 			},
-			get: field => field(),
-			set: (_next, _field) => {},
+			set: () => {},
 		})
-		expect(calls).toBe(0)
-		c()
-		expect(calls).toBe(1)
-		c()
-		expect(calls).toBe(1)
+		expect(c()).toBe(1)
+		expect(receivedPrev).toBeUndefined()
+		trigger(10)
+		expect(c()).toBe(11)
+		expect(receivedPrev).toBe(1)
 	})
 
-	it('initial runs inside untracked — does not leak deps into getter', () => {
-		const dep = signal('x')
-		let getterCalls = 0
-		const c = computed({
-			initial: () => dep(),
-			get: field => {
-				getterCalls++
-				return field()
-			},
-			set: (_next, _field) => {},
+	it('calls set with the value being written', () => {
+		const setSpy = vi.fn()
+		const c = computed<number>({
+			get: () => 0,
+			set: setSpy,
 		})
-		c()
-		getterCalls = 0
-		dep('y')
-		expect(getterCalls).toBe(0)
+		c(7)
+		expect(setSpy).toHaveBeenCalledWith(7)
 	})
 
-	it('set routing — set writes field when caller chooses', () => {
-		const c = computed({
-			initial: () => 'start',
-			get: field => field(),
-			set: (next, field) => {
-				field(next)
-			},
+	it('skips set when undefined is written', () => {
+		const setSpy = vi.fn()
+		const c = computed<number>({
+			get: () => 0,
+			set: setSpy,
 		})
-		expect(c()).toBe('start')
-		c('updated')
-		expect(c()).toBe('updated')
+		c(undefined)
+		expect(setSpy).not.toHaveBeenCalled()
 	})
 
-	it('set routing — set can skip field write', () => {
-		const external = vi.fn()
-		const c = computed({
-			initial: () => 'keep',
-			get: field => field(),
-			set: (next, _field) => {
-				external(next)
-			},
+	it('set can write to an external signal that get also reads', () => {
+		const backing = signal(1)
+		const c = computed<number>({
+			get: () => backing() * 2,
+			set: next => backing(next / 2),
 		})
-		c('propose')
-		expect(external).toHaveBeenCalledWith('propose')
-		expect(c()).toBe('keep')
-	})
-
-	it('field write propagates through get to effect', () => {
-		const results: string[] = []
-		const c = computed({
-			initial: () => 'a',
-			get: field => field(),
-			set: (next, field) => {
-				field(next)
-			},
-		})
-		const dispose = effect(() => {
-			results.push(c())
-		})
-		expect(results).toEqual(['a'])
-		c('b')
-		expect(results).toEqual(['a', 'b'])
-		dispose()
+		expect(c()).toBe(2)
+		c(20)
+		expect(backing()).toBe(10)
+		expect(c()).toBe(20)
 	})
 
 	it('external dep change in get propagates to effect', () => {
 		const ext = signal(1)
 		const results: number[] = []
-		const c = computed({
-			initial: () => 0,
-			get: field => field() + ext(),
-			set: (_next, _field) => {},
+		const c = computed<number>({
+			get: () => ext() * 10,
+			set: () => {},
 		})
 		const dispose = effect(() => {
 			results.push(c())
 		})
-		expect(results).toEqual([1])
-		ext(10)
-		expect(results).toEqual([1, 10])
+		expect(results).toEqual([10])
+		ext(2)
+		expect(results).toEqual([10, 20])
+		dispose()
+	})
+
+	it('equals option suppresses propagation when output unchanged', () => {
+		const trigger = signal(0)
+		const runs = vi.fn()
+		const c = computed<{parity: 'even' | 'odd'}>({
+			get: () => ({parity: trigger() % 2 === 0 ? 'even' : 'odd'}),
+			set: () => {},
+			equals: (a, b) => a.parity === b.parity,
+		})
+		const dispose = effect(() => {
+			c()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		trigger(2) // still 'even' — equals suppresses
+		expect(runs).toHaveBeenCalledTimes(1)
+		trigger(1) // flips to 'odd' — propagates
+		expect(runs).toHaveBeenCalledTimes(2)
 		dispose()
 	})
 
 	it('isReactive returns true for writable computed', () => {
-		const c = computed({
-			initial: () => '',
-			get: field => field(),
-			set: (next, field) => {
-				field(next)
-			},
+		const c = computed<number>({
+			get: () => 0,
+			set: () => {},
 		})
 		expect(isReactive(c)).toBe(true)
-	})
-
-	it('get can choose external over field, field write does not change result', () => {
-		const ext = signal('controlled')
-		const c = computed({
-			initial: () => 'uncontrolled',
-			get: _field => ext(),
-			set: (_next, _field) => {},
-		})
-		c('ignored')
-		expect(c()).toBe('controlled')
 	})
 })

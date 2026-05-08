@@ -1,9 +1,8 @@
 /**
- * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`
- *   and `store.caret.location()`. `MarkputState.recovery` and `value.change`
- *   no longer exist — the single source of truth is `CaretModel.range` (a
- *   `Signal<RawRange | undefined>`) applied to the DOM by `DomController` after
- *   every render.
+ * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`.
+ *   `MarkputState.recovery` and `value.change` no longer exist — the single source
+ *   of truth is `CaretModel.range` (a `Signal<RawRange | undefined>`) applied to
+ *   the DOM by `DomController` after every render.
  */
 
 // Shared exports
@@ -41,7 +40,7 @@ export type {
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'
-export {effect, event, signal, computed, watch, batch, isReactive} from './src/shared/signals'
+export {effect, event, signal, computed, watch, batch, isReactive, model} from './src/shared/signals'
 
 // Store
 export {Store} from './src/store'

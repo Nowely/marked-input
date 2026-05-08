@@ -76,11 +76,6 @@ export type DomIndex = {
 	readonly generation: number
 }
 
-export type CaretLocation = {
-	readonly address: TokenAddress
-	readonly role: 'token' | 'text' | 'markDescendant'
-}
-
 export type DomDiagnostic = {
 	readonly kind:
 		| 'missingRole'

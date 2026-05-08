@@ -17,16 +17,6 @@ describe('FocusFeature', () => {
 		store.dom.container(stubContainer)
 	})
 
-	it('derives text role from caret.range inside structural text surface', () => {
-		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
-		store.lifecycle.mounted()
-
-		store.caret.range({start: 2, end: 2})
-
-		expect(store.caret.location()?.role).toBe('text')
-	})
-
 	describe('subscription lifecycle', () => {
 		it('does not fire rendered watcher after disable', () => {
 			const syncSpy = vi.spyOn(store.dom, 'reconcile').mockImplementation(() => {})

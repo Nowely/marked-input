@@ -378,40 +378,49 @@ interface ComputedOptions<T> {
 }
 
 export function computed<T>(opts: {
-	initial: () => T
-	get: (field: Signal<T>) => T
-	set: (next: T | undefined, field: Signal<T>) => void
-}): Signal<T>
-export function computed<T>(opts: {
-	get: (field: Signal<T | undefined>) => T
-	set: (next: T | undefined, field: Signal<T | undefined>) => void
+	get: (prev?: T) => T
+	set: (next: T) => void
+	equals?: (a: T, b: T) => boolean
 }): Signal<T>
 export function computed<T>(getter: (previousValue?: T) => T, opts?: ComputedOptions<T>): Computed<T>
 export function computed<T>(
 	getterOrOpts:
 		| ((previousValue?: T) => T)
 		| {
-				get: (field: Signal<T | undefined>) => T
-				set: (next: T | undefined, field: Signal<T | undefined>) => void
-				initial?: () => T
+				get: (prev?: T) => T
+				set: (next: T) => void
+				equals?: (a: T, b: T) => boolean
 		  },
 	opts?: ComputedOptions<T>
 ): Signal<T> | Computed<T> {
-	if (typeof getterOrOpts === 'function') {
-		const node: ComputedNode<T> = {
-			value: undefined,
-			subs: undefined,
-			subsTail: undefined,
-			deps: undefined,
-			depsTail: undefined,
-			flags: ReactiveFlags.None,
-			getter: getterOrOpts as (previousValue?: T) => T,
-			equalsFn: opts?.equals ?? undefined,
-		}
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
-		return (computedOper as (this: ComputedNode<T>) => T).bind(node) as unknown as Computed<T>
+	const isWritable = typeof getterOrOpts !== 'function'
+	const node: ComputedNode<T> = {
+		value: undefined,
+		subs: undefined,
+		subsTail: undefined,
+		deps: undefined,
+		depsTail: undefined,
+		flags: ReactiveFlags.None,
+		getter: isWritable ? getterOrOpts.get : (getterOrOpts as (previousValue?: T) => T),
+		equalsFn: (isWritable ? getterOrOpts.equals : opts?.equals) ?? undefined,
 	}
-	return makeWritableComputed(getterOrOpts)
+	const readFn = (computedOper as (this: ComputedNode<T>) => T).bind(node)
+
+	if (!isWritable) {
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Computed<T> interface but TS can't verify the call signature
+		return readFn as unknown as Computed<T>
+	}
+
+	const writableComputed = function writableComputedOper(...args: [T | undefined] | []): T | void {
+		if (args.length === 0) return readFn()
+		const next = args[0]
+		if (next === undefined) return
+		getterOrOpts.set(next)
+	}
+	Object.defineProperty(writableComputed, 'name', {value: 'bound ' + computedOper.name})
+
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
+	return writableComputed as unknown as Signal<T>
 }
 
 // ---------------------------------------------------------------------------
@@ -595,66 +604,34 @@ export function untracked<T>(fn: () => T): T {
 }
 
 // ---------------------------------------------------------------------------
-// makeWritableComputed — backing factory for computed({get, set, initial?})
+// model<T> — controlled/uncontrolled value primitive (Vue defineModel-inspired)
 // ---------------------------------------------------------------------------
 
-function makeWritableComputed<T>(opts: {
-	get: (field: Signal<T | undefined>) => T
-	set: (next: T | undefined, field: Signal<T | undefined>) => void
-	initial?: () => T
+export function model<T>(opts: {
+	default: () => T
+	get: (value: T) => T
+	set: (next: T | undefined, previous: T) => T
 }): Signal<T> {
-	const backing = signal<T | undefined>(undefined)
-
-	let initialized = !('initial' in opts)
-
-	const field = function fieldOper(...args: [T | undefined] | []): T | undefined | void {
-		if (args.length === 0) {
-			if (!initialized) {
-				initialized = true
-				backing(
-					untracked(() =>
-						// oxlint-disable typescript/no-unsafe-type-assertion -- opts narrowed by runtime 'initial' check
-						(
-							opts as {
-								get: (field: Signal<T | undefined>) => T
-								set: (next: T | undefined, field: Signal<T | undefined>) => void
-								initial: () => T
-							}
-						)
-							// oxlint-enable typescript/no-unsafe-type-assertion
-							.initial()
-					)
-				)
-			}
-			return backing()
-		}
-		initialized = true
-		return backing(args[0])
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- overloaded call signature
-	} as unknown as Signal<T | undefined>
-
-	const node: ComputedNode<T> = {
-		value: undefined,
-		subs: undefined,
-		subsTail: undefined,
-		deps: undefined,
-		depsTail: undefined,
-		flags: ReactiveFlags.None,
-		getter: () => opts.get(field),
-		equalsFn: undefined,
+	let internal: Signal<T> | undefined
+	const ensureInternal = (): Signal<T> => {
+		internal ??= signal(untracked(opts.default))
+		return internal
 	}
 
-	const readFn = (computedOper as (this: ComputedNode<T>) => T).bind(node)
+	// Reads go through computed so opts.get is memoized and external signals
+	// read inside opts.get propagate to subscribers.
+	const reader = computed(() => opts.get(ensureInternal()()))
 
-	const writableComputed = function writableComputedOper(...args: [T | undefined] | []): T | void {
-		if (args.length === 0) return readFn()
-		opts.set(args[0], field)
+	const callable = function modelOper(...args: [T | undefined] | []): T | void {
+		if (args.length === 0) return reader()
+		const sig = ensureInternal()
+		sig(opts.set(args[0], sig()))
 	}
 
-	Object.defineProperty(writableComputed, 'name', {value: 'bound ' + computedOper.name})
+	Object.defineProperty(callable, 'name', {value: 'bound ' + computedOper.name})
 
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface
-	return writableComputed as unknown as Signal<T>
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
+	return callable as unknown as Signal<T>
 }
 
 // ---------------------------------------------------------------------------
