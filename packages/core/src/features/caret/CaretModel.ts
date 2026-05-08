@@ -7,20 +7,18 @@ import type {Lifecycle} from '../lifecycle/Lifecycle'
 
 export class CaretModel {
 	readonly range = signal<RawRange>(undefined, {equals: shallow})
+	readonly position = computed<number | undefined>({
+		get: () => this.range()?.start,
+		set: value => {
+			if (value !== undefined) this.range({start: value, end: value})
+		},
+	})
 
 	readonly selecting = signal<'drag' | 'all'>(undefined)
 
 	readonly isCollapsed = computed(() => {
 		const r = this.range()
 		return !!r && r.start === r.end
-	})
-
-	// Writable: read returns the collapsed position; write collapses the range to {pos, pos}.
-	readonly position = computed<number | undefined>({
-		get: () => (this.isCollapsed() ? this.range()?.start : undefined),
-		set: pos => {
-			if (pos !== undefined) this.range({start: pos, end: pos})
-		},
 	})
 
 	constructor(
