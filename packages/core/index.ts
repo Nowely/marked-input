@@ -1,20 +1,3 @@
-/**
- * @breaking b0: `CaretRecovery` type removed. Replace with `store.caret.range()`.
- *   `MarkputState.recovery` and `value.change` no longer exist — the single source
- *   of truth is `CaretModel.range` (a `Signal<RawRange | undefined>`) applied to
- *   the DOM by `DomController` after every render.
- *
- * @breaking b0: `Caret` static utility class removed. Migration paths:
- *   - `Caret.getCaretIndex(el)`, `setIndex(el, n)`, `setCaretToEnd(el)`,
- *     `trySetIndex(el, n)`, `setAtX(el, x, y)`, `getCaretRect()`,
- *     `isCaretOnFirstLine(el)`, `isCaretOnLastLine(el)` → import `caretDom`
- *     from '@markput/core' and call the equivalent function.
- *   - `Caret.getAbsolutePosition()` → use `store.overlay.position()`.
- *   - `Caret.getCurrentPosition()`, `getSelectedNode()`, `getFocusedSpan()`,
- *     `isSelectedPosition` → call `window.getSelection()` directly.
- *   - `Caret.getIndex`, `setIndex1`, `setCaretRightTo` → unused; no replacement.
- */
-
 // Shared exports
 export {cx, merge} from './src/shared/utils'
 export {DEFAULT_OPTIONS} from './src/shared/constants'
