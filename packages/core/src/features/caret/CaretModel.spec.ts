@@ -33,42 +33,6 @@ describe('CaretModel', () => {
 		stop()
 	})
 
-	describe('collapse', () => {
-		it('collapses to start', () => {
-			const store = new Store()
-			store.caret.range({start: 2, end: 8})
-			store.caret.collapse('start')
-			expect(store.caret.range()).toEqual({start: 2, end: 2})
-		})
-		it('collapses to end', () => {
-			const store = new Store()
-			store.caret.range({start: 2, end: 8})
-			store.caret.collapse('end')
-			expect(store.caret.range()).toEqual({start: 8, end: 8})
-		})
-		it('is no-op when range is undefined', () => {
-			const store = new Store()
-			store.caret.collapse('start')
-			expect(store.caret.range()).toBeUndefined()
-		})
-	})
-
-	describe('isCollapsed', () => {
-		it('is false when range is undefined', () => {
-			expect(new Store().caret.isCollapsed()).toBe(false)
-		})
-		it('is true when start equals end', () => {
-			const store = new Store()
-			store.caret.range({start: 3, end: 3})
-			expect(store.caret.isCollapsed()).toBe(true)
-		})
-		it('is false when start differs from end', () => {
-			const store = new Store()
-			store.caret.range({start: 2, end: 8})
-			expect(store.caret.isCollapsed()).toBe(false)
-		})
-	})
-
 	describe('position', () => {
 		it('is undefined when range is undefined', () => {
 			expect(new Store().caret.position()).toBeUndefined()

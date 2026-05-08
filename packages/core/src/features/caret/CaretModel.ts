@@ -14,11 +14,6 @@ export class CaretModel {
 
 	readonly isSelecting = signal<boolean>(false)
 
-	readonly isCollapsed = computed(() => {
-		const r = this.range()
-		return !!r && r.start === r.end
-	})
-
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomController
@@ -39,13 +34,6 @@ export class CaretModel {
 				dom.reconcile({isSelecting})
 			})
 		})
-	}
-
-	collapse(side: 'start' | 'end'): void {
-		const r = this.range()
-		if (!r) return
-		const at = r[side]
-		this.range({start: at, end: at})
 	}
 
 	isFullSelection(): boolean {
