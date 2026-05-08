@@ -334,11 +334,48 @@ describe('DomController structural indexing', () => {
 	it('places the caret at a raw position inside a structural text surface', () => {
 		const {store, container, textSurface} = mountStructuralInline('hello')
 
-		expect(store.dom.placeCaretAtRawPosition(3, 'after')).toEqual({ok: true, value: undefined})
+		expect(store.dom.placeAt(3, 'after')).toEqual({ok: true, value: {applied: 3}})
 
 		const selection = window.getSelection()
 		expect(selection?.focusNode).toBe(textSurface.firstChild)
 		expect(selection?.focusOffset).toBe(3)
+		container.remove()
+	})
+
+	it('placeAt returns applied position on success', () => {
+		const {store, container} = mountStructuralInline('hello world')
+
+		const result = store.dom.placeAt(5)
+		expect(result).toEqual({ok: true, value: {applied: 5}})
+		container.remove()
+	})
+
+	it('placeAt clamps position to value length', () => {
+		const {store, container} = mountStructuralInline('hi')
+
+		const result = store.dom.placeAt(999)
+		expect(result.ok).toBe(true)
+		if (result.ok) expect(result.value.applied).toBeLessThanOrEqual(2)
+		container.remove()
+	})
+
+	it('placeRange returns applied range on success', () => {
+		const {store, container} = mountStructuralInline('hello world')
+
+		const result = store.dom.placeRange({start: 0, end: 5})
+		expect(result).toEqual({ok: true, value: {applied: {start: 0, end: 5}}})
+		container.remove()
+	})
+
+	it('placeRange clamps to value length', () => {
+		const {store, container} = mountStructuralInline('hi')
+
+		const result = store.dom.placeRange({start: 0, end: 999})
+		expect(result.ok).toBe(true)
+		if (result.ok) {
+			expect(result.value.applied.start).toBeLessThanOrEqual(2)
+			expect(result.value.applied.end).toBeLessThanOrEqual(2)
+		}
 		container.remove()
 	})
 

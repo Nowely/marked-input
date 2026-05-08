@@ -63,9 +63,9 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (sibling?.type === 'mark') return true
 
 	if (direction === 'prev') {
-		store.dom.placeCaretAtRawPosition(sibling?.position.end ?? 0, 'before')
+		store.dom.placeAt(sibling?.position.end ?? 0, 'before')
 		return true
 	}
-	store.dom.placeCaretAtRawPosition(sibling?.position.start ?? 0, 'after')
+	store.dom.placeAt(sibling?.position.start ?? 0, 'after')
 	return true
 }

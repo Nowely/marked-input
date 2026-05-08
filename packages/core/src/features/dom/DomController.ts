@@ -242,32 +242,24 @@ export class DomController {
 		return {ok: false, reason: 'outsideEditor'}
 	}
 
-	placeCaretAtRawPosition(
-		rawPosition: number,
-		affinity: 'before' | 'after' = 'after'
-	): Result<void, 'notIndexed' | 'invalidBoundary'> {
-		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const target = this.#findTextTargetForRawPosition(rawPosition, affinity)
-		if (!target) return this.#focusMarkBoundaryForRawPosition(rawPosition)
-
-		target.element.focus()
-		this.#placeCaretInTextSurface(target.element, rawPosition - target.start)
-		return {ok: true, value: undefined}
-	}
-
-	/** Temporary Phase 2 shim — renamed/promoted to canonical API in Phase 4. */
 	placeAt(
 		rawPosition: number,
 		affinity: 'before' | 'after' = 'after'
 	): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'> {
+		if (!this.index()) return {ok: false, reason: 'notIndexed'}
 		const maxPos = this.value.current().length
 		const clamped = Math.min(rawPosition, maxPos)
-		const result = this.placeCaretAtRawPosition(clamped, affinity)
-		if (!result.ok) return result
+		const target = this.#findTextTargetForRawPosition(clamped, affinity)
+		if (!target) {
+			const boundary = this.#focusMarkBoundaryForRawPosition(clamped)
+			if (!boundary.ok) return boundary
+			return {ok: true, value: {applied: clamped}}
+		}
+		target.element.focus()
+		this.#placeCaretInTextSurface(target.element, clamped - target.start)
 		return {ok: true, value: {applied: clamped}}
 	}
 
-	/** Temporary Phase 2 shim — renamed/promoted to canonical API in Phase 4. */
 	placeRange(range: RawRange): Result<{applied: RawRange}, 'notIndexed' | 'invalidBoundary'> {
 		const maxPos = this.value.current().length
 		const clamped: RawRange = {
