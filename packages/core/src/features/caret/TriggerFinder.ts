@@ -1,7 +1,6 @@
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
 import type {DomController} from '../dom/DomController'
-import {Caret} from './Caret'
 
 /** Regex to match word characters from the start of a string */
 const wordRegex = new RegExp(/^\w*/)
@@ -21,10 +20,12 @@ export class TriggerFinder {
 	dividedText: {left: string; right: string}
 
 	constructor(private readonly dom?: DomController) {
-		const caretPosition = Caret.getCurrentPosition()
-		this.node = Caret.getSelectedNode()
-		this.span = Caret.getFocusedSpan()
-		this.dividedText = this.getDividedTextBy(caretPosition)
+		const sel = window.getSelection()
+		const node = sel?.anchorNode
+		if (!sel || !node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
+		this.node = node
+		this.span = node.textContent ?? ''
+		this.dividedText = this.getDividedTextBy(sel.anchorOffset)
 	}
 
 	/**
@@ -48,7 +49,7 @@ export class TriggerFinder {
 		dom?: DomController
 	): OverlayMatch<T> | undefined {
 		if (!options) return
-		if (!Caret.isSelectedPosition) return
+		if (!window.getSelection()?.isCollapsed) return
 		try {
 			return new TriggerFinder(dom).find(options, getTrigger)
 		} catch {
