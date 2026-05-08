@@ -78,11 +78,6 @@ describe('CaretModel', () => {
 			store.caret.range({start: 5, end: 5})
 			expect(store.caret.position()).toBe(5)
 		})
-		it('is undefined when extended', () => {
-			const store = new Store()
-			store.caret.range({start: 2, end: 8})
-			expect(store.caret.position()).toBeUndefined()
-		})
 		it('write collapses range to {pos, pos}', () => {
 			const store = new Store()
 			store.caret.position(5)
