@@ -1,5 +1,5 @@
 import type {OverlayMatch} from '@markput/core'
-import {Caret, createMarkFromOverlay} from '@markput/core'
+import {createMarkFromOverlay} from '@markput/core'
 import type {RefObject} from 'react'
 import {useCallback, useMemo} from 'react'
 
@@ -20,10 +20,7 @@ export interface OverlayHandler {
 export function useOverlay(): OverlayHandler {
 	const {match, overlay} = useMarkput(s => ({match: s.overlay.match, overlay: s.overlay}))
 
-	const style = useMemo(() => {
-		if (!match) return {left: 0, top: 0}
-		return Caret.getAbsolutePosition()
-	}, [match])
+	const style = useMarkput(s => s.overlay.position())
 
 	const close = useCallback(() => overlay.close(), [overlay])
 	const select = useCallback(
