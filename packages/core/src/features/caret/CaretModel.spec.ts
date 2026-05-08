@@ -32,4 +32,99 @@ describe('CaretModel', () => {
 		expect(notify).not.toHaveBeenCalled()
 		stop()
 	})
+
+	describe('setAt', () => {
+		it('writes collapsed range', () => {
+			const store = new Store()
+			store.caret.setAt(5)
+			expect(store.caret.range()).toEqual({start: 5, end: 5})
+		})
+		it('does not change selecting', () => {
+			const store = new Store()
+			store.caret.selecting('drag')
+			store.caret.setAt(5)
+			expect(store.caret.selecting()).toBe('drag')
+		})
+	})
+
+	describe('select', () => {
+		it('writes extended range', () => {
+			const store = new Store()
+			store.caret.select({start: 2, end: 8})
+			expect(store.caret.range()).toEqual({start: 2, end: 8})
+		})
+		it('collapsed select behaves same as setAt', () => {
+			const store = new Store()
+			store.caret.select({start: 5, end: 5})
+			expect(store.caret.range()).toEqual({start: 5, end: 5})
+		})
+	})
+
+	describe('collapse', () => {
+		it('collapses to start', () => {
+			const store = new Store()
+			store.caret.range({start: 2, end: 8})
+			store.caret.collapse('start')
+			expect(store.caret.range()).toEqual({start: 2, end: 2})
+		})
+		it('collapses to end', () => {
+			const store = new Store()
+			store.caret.range({start: 2, end: 8})
+			store.caret.collapse('end')
+			expect(store.caret.range()).toEqual({start: 8, end: 8})
+		})
+		it('is no-op when range is undefined', () => {
+			const store = new Store()
+			store.caret.collapse('start')
+			expect(store.caret.range()).toBeUndefined()
+		})
+	})
+
+	describe('isCollapsed', () => {
+		it('is false when range is undefined', () => {
+			expect(new Store().caret.isCollapsed()).toBe(false)
+		})
+		it('is true when start equals end', () => {
+			const store = new Store()
+			store.caret.range({start: 3, end: 3})
+			expect(store.caret.isCollapsed()).toBe(true)
+		})
+		it('is false when start differs from end', () => {
+			const store = new Store()
+			store.caret.range({start: 2, end: 8})
+			expect(store.caret.isCollapsed()).toBe(false)
+		})
+	})
+
+	describe('position', () => {
+		it('is undefined when range is undefined', () => {
+			expect(new Store().caret.position()).toBeUndefined()
+		})
+		it('returns start when collapsed', () => {
+			const store = new Store()
+			store.caret.range({start: 5, end: 5})
+			expect(store.caret.position()).toBe(5)
+		})
+		it('is undefined when extended', () => {
+			const store = new Store()
+			store.caret.range({start: 2, end: 8})
+			expect(store.caret.position()).toBeUndefined()
+		})
+	})
+
+	describe('selection', () => {
+		it('is undefined when range is undefined', () => {
+			expect(new Store().caret.selection()).toBeUndefined()
+		})
+		it('is undefined when collapsed', () => {
+			const store = new Store()
+			store.caret.range({start: 5, end: 5})
+			expect(store.caret.selection()).toBeUndefined()
+		})
+		it('returns range when extended', () => {
+			const store = new Store()
+			store.caret.range({start: 2, end: 8})
+			expect(store.caret.selection()).toEqual({start: 2, end: 8})
+		})
+	})
 })
