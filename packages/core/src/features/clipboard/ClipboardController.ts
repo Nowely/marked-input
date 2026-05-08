@@ -56,7 +56,7 @@ export class ClipboardController {
 				if (!this.#handleCopy(e)) return
 				const raw = dom.readRawSelection()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-				caret.setAt(raw.value.range.start)
+				caret.position(raw.value.range.start)
 				value.replace(raw.value.range, '')
 			})
 		})

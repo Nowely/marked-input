@@ -33,33 +33,6 @@ describe('CaretModel', () => {
 		stop()
 	})
 
-	describe('setAt', () => {
-		it('writes collapsed range', () => {
-			const store = new Store()
-			store.caret.setAt(5)
-			expect(store.caret.range()).toEqual({start: 5, end: 5})
-		})
-		it('does not change selecting', () => {
-			const store = new Store()
-			store.caret.selecting('drag')
-			store.caret.setAt(5)
-			expect(store.caret.selecting()).toBe('drag')
-		})
-	})
-
-	describe('select', () => {
-		it('writes extended range', () => {
-			const store = new Store()
-			store.caret.select({start: 2, end: 8})
-			expect(store.caret.range()).toEqual({start: 2, end: 8})
-		})
-		it('collapsed select behaves same as setAt', () => {
-			const store = new Store()
-			store.caret.select({start: 5, end: 5})
-			expect(store.caret.range()).toEqual({start: 5, end: 5})
-		})
-	})
-
 	describe('collapse', () => {
 		it('collapses to start', () => {
 			const store = new Store()
@@ -110,21 +83,22 @@ describe('CaretModel', () => {
 			store.caret.range({start: 2, end: 8})
 			expect(store.caret.position()).toBeUndefined()
 		})
-	})
-
-	describe('selection', () => {
-		it('is undefined when range is undefined', () => {
-			expect(new Store().caret.selection()).toBeUndefined()
-		})
-		it('is undefined when collapsed', () => {
+		it('write collapses range to {pos, pos}', () => {
 			const store = new Store()
-			store.caret.range({start: 5, end: 5})
-			expect(store.caret.selection()).toBeUndefined()
+			store.caret.position(5)
+			expect(store.caret.range()).toEqual({start: 5, end: 5})
 		})
-		it('returns range when extended', () => {
+		it('write does not change selecting', () => {
+			const store = new Store()
+			store.caret.selecting('drag')
+			store.caret.position(5)
+			expect(store.caret.selecting()).toBe('drag')
+		})
+		it('write collapses an extended range', () => {
 			const store = new Store()
 			store.caret.range({start: 2, end: 8})
-			expect(store.caret.selection()).toEqual({start: 2, end: 8})
+			store.caret.position(3)
+			expect(store.caret.range()).toEqual({start: 3, end: 3})
 		})
 	})
 
@@ -195,7 +169,7 @@ describe('CaretModel', () => {
 			store.props.set({defaultValue: 'hello'})
 			store.dom.container(container)
 			store.lifecycle.mounted()
-			store.caret.setAt(5)
+			store.caret.position(5)
 
 			store.lifecycle.rendered()
 			expect(placeAtSpy).toHaveBeenCalledWith(5)
@@ -207,7 +181,7 @@ describe('CaretModel', () => {
 			const store = new Store()
 			const placeAtSpy = vi.spyOn(store.dom, 'placeAt')
 			store.lifecycle.mounted()
-			store.caret.setAt(3)
+			store.caret.position(3)
 			store.caret.selecting('drag')
 			store.lifecycle.rendered()
 			expect(placeAtSpy).not.toHaveBeenCalled()
@@ -221,7 +195,7 @@ describe('CaretModel', () => {
 			vi.spyOn(store.dom, 'placeAt').mockReturnValue({ok: false, reason: 'notIndexed'})
 			store.dom.container(container)
 			store.lifecycle.mounted()
-			store.caret.setAt(3)
+			store.caret.position(3)
 			store.lifecycle.rendered()
 			expect(store.caret.range()).toBeUndefined()
 			container.remove()

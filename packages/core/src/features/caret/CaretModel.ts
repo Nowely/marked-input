@@ -6,18 +6,22 @@ import type {DomController} from '../dom/DomController'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 
 export class CaretModel {
-	readonly range = signal<RawRange | undefined>(undefined, {equals: shallow})
+	readonly range = signal<RawRange>(undefined, {equals: shallow})
 
-	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
+	readonly selecting = signal<'drag' | 'all'>(undefined)
 
 	readonly isCollapsed = computed(() => {
 		const r = this.range()
 		return !!r && r.start === r.end
 	})
 
-	readonly position = computed<number | undefined>(() => (this.isCollapsed() ? this.range()?.start : undefined))
-
-	readonly selection = computed<RawRange | undefined>(() => (this.isCollapsed() ? undefined : this.range()))
+	// Writable: read returns the collapsed position; write collapses the range to {pos, pos}.
+	readonly position = computed<number | undefined>({
+		get: () => (this.isCollapsed() ? this.range()?.start : undefined),
+		set: pos => {
+			if (pos !== undefined) this.range({start: pos, end: pos})
+		},
+	})
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -39,14 +43,6 @@ export class CaretModel {
 				if (this.selecting() === 'drag') this.selecting(undefined)
 			})
 		})
-	}
-
-	setAt(pos: number): void {
-		this.range({start: pos, end: pos})
-	}
-
-	select(r: RawRange): void {
-		this.range(r)
 	}
 
 	collapse(side: 'start' | 'end'): void {
@@ -167,7 +163,8 @@ export class CaretModel {
 				this.range(undefined)
 				return
 			}
-			if (result.value.applied !== range.start) this.setAt(result.value.applied)
+			const applied = result.value.applied
+			if (applied !== range.start) this.range({start: applied, end: applied})
 			return
 		}
 
@@ -176,8 +173,6 @@ export class CaretModel {
 			this.range(undefined)
 			return
 		}
-		if (result.value.applied.start !== range.start || result.value.applied.end !== range.end) {
-			this.select(result.value.applied)
-		}
+		this.range(result.value.applied)
 	}
 }
