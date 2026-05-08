@@ -89,7 +89,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.caret.range({start: pos, end: pos})
+			store.caret.setAt(pos)
 			store.value.current(newValue)
 			return
 		}
@@ -101,7 +101,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.setAt(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -124,7 +124,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.setAt(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -140,7 +140,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.caret.range({start: joinPos, end: joinPos})
+				store.caret.setAt(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -182,7 +182,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.caret.range({start: pos, end: pos})
+		store.caret.setAt(pos)
 		store.value.current(newValue)
 		return
 	}
@@ -190,7 +190,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	const raw = store.dom.readRawSelection()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
 	const pos = absolutePos + newRowContent.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.setAt(pos)
 	store.value.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
@@ -326,7 +326,7 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 
 	event.preventDefault()
 	const pos = range.start + replacement.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.setAt(pos)
 	store.value.replace(range, replacement)
 }
 

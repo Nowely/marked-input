@@ -785,7 +785,7 @@ export class DomController {
 
 		// Write back clamped values; structural equality prevents re-propagation if unchanged.
 		if (clampedStart !== range.start || clampedEnd !== range.end) {
-			this.caret.range({start: clampedStart, end: clampedEnd})
+			this.caret.select({start: clampedStart, end: clampedEnd})
 		}
 
 		if (clampedStart === clampedEnd) {

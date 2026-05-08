@@ -111,7 +111,7 @@ export class OverlayController {
 									})
 
 						const pos = range.start + annotation.length
-						this.caret.range({start: pos, end: pos})
+						this.caret.setAt(pos)
 						this.value.replace(range, annotation)
 						this.match(undefined)
 					})

@@ -46,7 +46,7 @@ export function enableInput(store: KbCtx): void {
 		if (!range) return
 		const data = e.data
 		const pos = range.start + data.length
-		store.caret.range({start: pos, end: pos})
+		store.caret.setAt(pos)
 		store.value.replace(range, data)
 	})
 
@@ -83,7 +83,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (!range) return
 
 	event.preventDefault()
-	store.caret.range({start: range.start, end: range.start})
+	store.caret.setAt(range.start)
 	store.value.replace(range, '')
 }
 
@@ -114,7 +114,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 
 	event.preventDefault()
 	const pos = range.start + replacement.length
-	store.caret.range({start: pos, end: pos})
+	store.caret.setAt(pos)
 	store.value.replace(range, replacement)
 }
 
@@ -268,6 +268,6 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 
 export function replaceAllContentWith(store: KbCtx, newContent: string): void {
 	store.caret.selecting(undefined)
-	store.caret.range({start: newContent.length, end: newContent.length})
+	store.caret.setAt(newContent.length)
 	store.value.current(newContent)
 }
