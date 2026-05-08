@@ -347,6 +347,8 @@ interface SignalOptions<T> {
 	readonly?: boolean
 }
 
+export function signal<T = never>(initial: undefined, opts?: SignalOptions<T | undefined>): Signal<T | undefined>
+export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T>
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 	const node: SignalNode<T> = {
 		currentValue: initial,

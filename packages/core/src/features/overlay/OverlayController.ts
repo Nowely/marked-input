@@ -17,7 +17,7 @@ import type {OverlaySlot} from '../slots'
 import type {ValueModel} from '../value/ValueModel'
 
 export class OverlayController {
-	readonly match = signal<OverlayMatch | undefined>(undefined)
+	readonly match = signal<OverlayMatch>(undefined)
 	readonly element = signal<HTMLElement | null>(null)
 
 	readonly slot: OverlaySlot = computed(() => {
@@ -120,7 +120,7 @@ export class OverlayController {
 									})
 
 						const pos = range.start + annotation.length
-						this.caret.setAt(pos)
+						this.caret.position(pos)
 						this.value.replace(range, annotation)
 						this.match(undefined)
 					})

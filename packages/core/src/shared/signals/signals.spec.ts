@@ -274,6 +274,34 @@ describe('signal<T>', () => {
 			expect(s()).toBeNull()
 		})
 	})
+
+	describe('type inference for undefined initial', () => {
+		it('widen Signal<T> to Signal<T | undefined> when initial is undefined', () => {
+			const s = signal<string>(undefined)
+			const widened: Signal<string | undefined> = s
+			expect(widened()).toBeUndefined()
+			s('hello')
+			expect(s()).toBe('hello')
+		})
+
+		it('keep Signal<T> exact when initial is defined', () => {
+			const s = signal<string>('hello')
+			const exact: Signal<string> = s
+			expect(exact()).toBe('hello')
+		})
+
+		it('treat signal(undefined) without type arg as Signal<undefined>', () => {
+			const s = signal(undefined)
+			const exact: Signal<undefined> = s
+			expect(exact()).toBeUndefined()
+		})
+
+		it('preserve existing Signal<T | undefined>(undefined) form', () => {
+			const s = signal<string | undefined>(undefined)
+			const exact: Signal<string | undefined> = s
+			expect(exact()).toBeUndefined()
+		})
+	})
 })
 
 // ---------------------------------------------------------------------------
