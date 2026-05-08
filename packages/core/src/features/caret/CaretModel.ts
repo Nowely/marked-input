@@ -64,20 +64,4 @@ export class CaretModel {
 		const rawSel = this.#dom?.readRawSelection()
 		if (rawSel?.ok) this.range(rawSel.value.range)
 	}
-
-	startDragSelect(): void {
-		if (this.selecting() !== 'drag') this.selecting('drag')
-	}
-	clearDragSelect(): void {
-		if (this.selecting() === 'drag') this.selecting(undefined)
-	}
-	startAllSelect(): void {
-		this.selecting('all')
-	}
-	clearAllSelect(): void {
-		if (this.selecting() === 'all') this.selecting(undefined)
-	}
-	endSelecting(): void {
-		this.selecting(undefined)
-	}
 }
