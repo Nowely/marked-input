@@ -5,7 +5,7 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing' | 'props'>
-import {Caret} from '../caret'
+import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
 import {createRowContent} from '../editing'
@@ -72,7 +72,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 
 	if (event.key === KEYBOARD.BACKSPACE) {
 		const blockDiv = blockDivs[blockIndex]
-		const caretAtStart = Caret.getCaretIndex(blockDiv) === 0
+		const caretAtStart = caretDom.getCaretIndex(blockDiv) === 0
 
 		const blockText = 'content' in token ? token.content : ''
 		if (blockText === '') {
@@ -113,7 +113,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 
 	if (event.key === KEYBOARD.DELETE) {
 		const blockDiv = blockDivs[blockIndex]
-		const caretIndex = Caret.getCaretIndex(blockDiv)
+		const caretIndex = caretDom.getCaretIndex(blockDiv)
 		const caretAtEnd = caretIndex === blockDiv.textContent.length
 		const caretAtStart = caretIndex === 0
 
@@ -203,10 +203,10 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 
 	row.focus()
 	if (caret === 'start') {
-		Caret.trySetIndex(row, 0)
+		caretDom.setAtElement(row, 0)
 		return
 	}
-	Caret.setCaretToEnd(row)
+	caretDom.setAtElement(row, Infinity)
 }
 
 function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
@@ -223,23 +223,23 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 	const blockDiv = blockDivs[blockIndex]
 
 	if (direction === 'left') {
-		if (Caret.getCaretIndex(blockDiv) !== 0) return false
+		if (caretDom.getCaretIndex(blockDiv) !== 0) return false
 		if (blockIndex === 0) return true
 		event.preventDefault()
 		const prevBlock = blockDivs[blockIndex - 1]
 		prevBlock.focus()
-		Caret.setCaretToEnd(prevBlock)
+		caretDom.setAtElement(prevBlock, Infinity)
 		return true
 	}
 
-	const caretIndex = Caret.getCaretIndex(blockDiv)
+	const caretIndex = caretDom.getCaretIndex(blockDiv)
 	const textLen = blockDiv.textContent.length
 	if (caretIndex !== textLen) return false
 	if (blockIndex >= blockDivs.length - 1) return true
 	event.preventDefault()
 	const nextBlock = blockDivs[blockIndex + 1]
 	nextBlock.focus()
-	Caret.trySetIndex(nextBlock, 0)
+	caretDom.setAtElement(nextBlock, 0)
 	return true
 }
 
@@ -257,27 +257,27 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 	const blockDiv = blockDivs[blockIndex]
 
 	if (event.key === KEYBOARD.UP) {
-		if (!Caret.isCaretOnFirstLine(blockDiv)) return
+		if (!caretDom.isOnFirstLine(blockDiv)) return
 		if (blockIndex === 0) return
 
 		event.preventDefault()
-		const caretRect = Caret.getCaretRect()
+		const caretRect = caretDom.getRect()
 		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
 		const prevBlockDiv = blockDivs[blockIndex - 1]
 		prevBlockDiv.focus()
 		const prevRect = prevBlockDiv.getBoundingClientRect()
-		Caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
+		caretDom.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)
 	} else if (event.key === KEYBOARD.DOWN) {
-		if (!Caret.isCaretOnLastLine(blockDiv)) return
+		if (!caretDom.isOnLastLine(blockDiv)) return
 		if (blockIndex >= blockDivs.length - 1) return
 
 		event.preventDefault()
-		const caretRect = Caret.getCaretRect()
+		const caretRect = caretDom.getRect()
 		const caretX = caretRect?.left ?? blockDiv.getBoundingClientRect().left
 		const nextBlockDiv = blockDivs[blockIndex + 1]
 		nextBlockDiv.focus()
 		const nextRect = nextBlockDiv.getBoundingClientRect()
-		Caret.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
+		caretDom.setAtX(nextBlockDiv, caretX, nextRect.top + 4)
 	}
 }
 
