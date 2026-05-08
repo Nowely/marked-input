@@ -3,6 +3,16 @@
  *   `MarkputState.recovery` and `value.change` no longer exist — the single source
  *   of truth is `CaretModel.range` (a `Signal<RawRange | undefined>`) applied to
  *   the DOM by `DomController` after every render.
+ *
+ * @breaking b0: `Caret` static utility class removed. Migration paths:
+ *   - `Caret.getCaretIndex(el)`, `setIndex(el, n)`, `setCaretToEnd(el)`,
+ *     `trySetIndex(el, n)`, `setAtX(el, x, y)`, `getCaretRect()`,
+ *     `isCaretOnFirstLine(el)`, `isCaretOnLastLine(el)` → import `caretDom`
+ *     from '@markput/core' and call the equivalent function.
+ *   - `Caret.getAbsolutePosition()` → use `store.overlay.position()`.
+ *   - `Caret.getCurrentPosition()`, `getSelectedNode()`, `getFocusedSpan()`,
+ *     `isSelectedPosition` → call `window.getSelection()` directly.
+ *   - `Caret.getIndex`, `setIndex1`, `setCaretRightTo` → unused; no replacement.
  */
 
 // Shared exports
@@ -52,8 +62,8 @@ export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './s
 // Drag
 export {getAlwaysShowHandle} from './src/features/drag'
 
-// Caret
-export {Caret} from './src/features/caret'
+// Caret DOM utilities
+export {caretDom} from './src/features/caret'
 
 // Mark commands
 export {MarkController} from './src/features/mark'

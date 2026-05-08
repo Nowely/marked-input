@@ -9,7 +9,7 @@ This package provides low-level utilities for working with annotated text, inclu
 - Core data structures and types
 - Utility classes for text manipulation
 - Event handling system
-- Caret position management
+- Caret utilities: `import {caretDom} from '@markput/core'` — `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`
 - Text preprocessing utilities
 
 ## Installation
@@ -21,7 +21,7 @@ pnpm add @markput/core
 ## Usage
 
 ```typescript
-import {annotate, denote, Parser, computeTokensFromValue, Store, Caret, TriggerFinder, EventBus} from '@markput/core'
+import {annotate, denote, Parser, computeTokensFromValue, Store, caretDom, TriggerFinder, EventBus} from '@markput/core'
 
 // Annotate text with markup
 const annotated = annotate('@[__label__](__value__)', 'Hello', 'world')
@@ -30,9 +30,8 @@ const annotated = annotate('@[__label__](__value__)', 'Hello', 'world')
 const parser = new Parser()
 const result = parser.parse(annotated)
 
-// Work with text selection and caret position
-const caret = new Caret()
-const position = caret.getPosition()
+// Work with caret DOM position
+const position = caretDom.getCaretIndex(element)
 
 // Find trigger positions in text
 const triggerFinder = new TriggerFinder('@')
@@ -68,7 +67,7 @@ const store = new Store()
 ### Classes
 
 - `Store` - State management for annotated text
-- `Caret` - Caret position utilities
+- `caretDom` - DOM caret/selection utilities (functions, not a class)
 - `TriggerFinder` - Find trigger positions in text
 - `EventBus` - Event handling system
 - `KeyGenerator` - Generate unique keys

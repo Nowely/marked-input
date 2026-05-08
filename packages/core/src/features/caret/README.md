@@ -1,20 +1,25 @@
 # Caret Feature
 
-The Caret feature provides utilities for working with DOM caret position, text selection, and trigger detection in editable content.
+The caret feature owns caret/selection state and DOM-coordinate helpers used by
+overlay positioning and block-edit navigation.
 
 ## Components
 
-- **Caret**: Static class for DOM caret manipulation, position tracking, and selection management
-- **TriggerFinder**: Class for detecting overlay triggers in text based on caret position
+- **CaretModel**: Reactive caret/selection state. Owns `range`, `selecting`,
+  derived `isCollapsed` / `position` / `selection`, the document mouse +
+  selectionchange listeners, focus tracking, and post-render restoration.
+  Drives `dom.reconcile({selecting})` whenever the drag state flips.
+- **caretDom**: Stateless DOM helpers (`getCaretIndex`, `setAtElement`,
+  `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`). Use these for raw DOM
+  caret math; never reach for the deprecated `Caret` static class.
+- **TriggerFinder**: Detects overlay triggers in text based on the current
+  selection.
 
 ## Usage
 
 ```typescript
-import {Caret, TriggerFinder} from '@core/features/caret'
+import {caretDom, TriggerFinder} from '@core/features/caret'
 
-// Get current caret position
-const position = Caret.getCurrentPosition()
-
-// Find triggers in text
-const triggerFinder = TriggerFinder.find(options)
+const offset = caretDom.getCaretIndex(element)
+const match = TriggerFinder.find(options, opt => opt.overlay?.trigger)
 ```
