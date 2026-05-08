@@ -27,6 +27,9 @@ export class CaretModel {
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomController
 	) {
+		watch(lifecycle.unmounted, () => {
+			if (this.selecting() === 'drag') this.selecting(undefined)
+		})
 		lifecycle.onMounted(() => {
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
@@ -38,9 +41,6 @@ export class CaretModel {
 				const isDrag = this.selecting() === 'drag'
 				dom.readOnly()
 				dom.reconcile({selecting: isDrag})
-			})
-			effect(() => () => {
-				if (this.selecting() === 'drag') this.selecting(undefined)
 			})
 		})
 	}
@@ -56,16 +56,12 @@ export class CaretModel {
 		const sel = window.getSelection()
 		const container = this.dom.container()
 		if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
-		try {
-			const range = sel.getRangeAt(0)
-			return (
-				container.contains(range.startContainer) &&
-				container.contains(range.endContainer) &&
-				range.toString().length > 0
-			)
-		} catch {
-			return false
-		}
+		const range = sel.getRangeAt(0)
+		return (
+			container.contains(range.startContainer) &&
+			container.contains(range.endContainer) &&
+			range.toString().length > 0
+		)
 	}
 
 	selectAll(): void {
