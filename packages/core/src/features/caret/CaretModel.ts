@@ -1,13 +1,12 @@
 import {nodeTarget} from '../../shared/checkers'
 import type {RawRange} from '../../shared/editorContracts'
 import {computed, effect, listen, signal, watch} from '../../shared/signals'
+import {shallow} from '../../shared/utils/shallow'
 import type {DomController} from '../dom/DomController'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 
 export class CaretModel {
-	readonly range = signal<{readonly start: number; readonly end: number} | undefined>(undefined, {
-		equals: (a, b) => a === b || (a !== undefined && a.start === b?.start && a.end === b.end),
-	})
+	readonly range = signal<RawRange | undefined>(undefined, {equals: shallow})
 
 	readonly selecting = signal<'drag' | 'all' | undefined>(undefined)
 
