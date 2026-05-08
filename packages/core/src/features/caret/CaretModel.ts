@@ -18,9 +18,6 @@ export class CaretModel {
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomController
 	) {
-		watch(lifecycle.unmounted, () => {
-			if (this.isSelecting()) this.isSelecting(false)
-		})
 		lifecycle.onMounted(() => {
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()

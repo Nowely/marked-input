@@ -107,14 +107,6 @@ describe('CaretModel', () => {
 			expect(addSpy).toHaveBeenCalledWith('mousedown', expect.any(Function), undefined)
 			addSpy.mockRestore()
 		})
-
-		it('clears isSelecting on unmount', () => {
-			const store = new Store()
-			store.lifecycle.mounted()
-			store.caret.isSelecting(true)
-			store.lifecycle.unmounted()
-			expect(store.caret.isSelecting()).toBe(false)
-		})
 	})
 
 	describe('restoration via dom.indexed', () => {
