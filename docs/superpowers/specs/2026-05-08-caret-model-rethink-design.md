@@ -8,382 +8,243 @@ Owner: @nowely
 
 1. Replace the rudimentary `CaretModel` (two raw signals + five verbose
    `start*/clear*` methods) with a single coherent class that owns caret
-   state, the DOM listeners that produce caret events, and the imperative
-   DOM commands that act on the caret.
-2. Delete the parallel static `Caret` utility class — its responsibilities
-   collapse into `CaretModel` instance methods so that all caret behavior
-   has a single owner.
+   state, the DOM listeners that produce caret events, and the
+   semantic-level commands that operate on caret state.
+2. Delete the parallel static `Caret` utility class. Its responsibilities
+   split into two homes: caret-state semantics on `CaretModel`, and
+   stateless DOM-coordinate primitives in a new `caretDom.ts` module.
+   Keeping these at distinct abstraction levels avoids the
+   `setAt(pos)` (writes signal) vs `setAtElement(el, offset)` (writes
+   browser selection, ignores model) footgun.
 3. Keep dependencies honest: only `lifecycle` and `dom` remain. The current
    ad-hoc cross-references to `parsing`, `value`, and `slots` move to the
    features they actually belong to.
-4. Preserve all observable behaviors: focus tracking, drag-select, Ctrl+A,
-   restoration after re-render, drag-mode suppression of restoration. This
-   is a refactor, not a feature change.
+4. Land the change as four reviewable phases. Each phase is independently
+   testable, shippable, and revertible.
+5. Preserve all observable behaviors: focus tracking, drag-select, Ctrl+A,
+   restoration after re-render, drag-mode suppression of restoration.
 
 ## Non-goals
 
-- Adding `caret` / `onCaretChange` props (no controlled mode). `model()`
-  primitive earns its keep when controlled-vs-internal indirection exists;
-  caret has none today.
-- Splitting state from behavior into `CaretModel` + `CaretController`. The
-  class is named `CaretModel` and owns both. Naming convention isn't strict
-  — deps are acceptable when justified.
-- Changing the `RawRange` type, the `selecting` mode literals
-  (`'drag' | 'all'`), or the `lifecycle` / `dom` public API beyond the
-  specific tweaks listed below.
+- Adding `caret` / `onCaretChange` props (no controlled mode).
+- Splitting state from behavior into `CaretModel` + `CaretController`.
+- Renaming the `selecting` signal to `mode`. The new shape collapses the
+  five `start*/clear*` wrapper methods into direct signal writes; the
+  signal itself keeps its name to minimize call-site churn.
 - Block-mode keyboard semantics. Ctrl+A behavior in block mode stays
   identical, only its bail check moves out of caret.
+- Designing a long-term home for the DOM-coordinate helpers used by
+  `blockEdit.ts`. They land as plain function exports in `caretDom.ts`;
+  promoting them into a future block-navigation module is a separate
+  decision.
 
-## File structure
+## Final file structure
 
 ```
 packages/core/src/features/caret/
-  CaretModel.ts          (rewritten; absorbs Caret.ts, focus.ts, selection.ts, selectionHelpers.ts)
-  CaretModel.spec.ts     (rewritten to cover new surface)
-  TriggerFinder.ts       (updated callers; no other change)
+  CaretModel.ts          (rewritten; owns state + listeners + restoration)
+  CaretModel.spec.ts     (rewritten)
+  caretDom.ts            (NEW; stateless DOM-coordinate helpers)
+  caretDom.spec.ts       (NEW; ports relevant Caret.spec.ts cases)
+  TriggerFinder.ts       (caller-update only, no caret dep)
   TriggerFinder.spec.ts  (unchanged)
-  index.ts               (re-exports CaretModel and TriggerFinder only)
+  index.ts               (re-exports CaretModel, caretDom helpers, TriggerFinder)
   README.md              (rewritten)
 ```
 
-Deleted:
+Deleted (across the four phases):
 
 - `Caret.ts` and `Caret.spec.ts`
 - `focus.ts` and `focus.spec.ts`
 - `selection.ts` and `selection.spec.ts`
 - `selectionHelpers.ts`
 
-`focus.spec.ts` and `selection.spec.ts` test cases relevant to the new
-listener wiring fold into `CaretModel.spec.ts`.
-
-## API — `CaretModel`
+## Final API — `CaretModel`
 
 ```ts
 class CaretModel {
   // ----- state -----
-  readonly range: Signal<RawRange | undefined>
-  readonly mode:  Signal<'drag' | 'all' | undefined>
+  readonly range:     Signal<RawRange | undefined>
+  readonly selecting: Signal<'drag' | 'all' | undefined>     // name preserved
 
   // ----- derived -----
   readonly isCollapsed: Computed<boolean>
-  readonly position:    Computed<number | undefined>
-  readonly selection:   Computed<RawRange | undefined>
+  readonly position:    Computed<number | undefined>          // collapsed position; undefined when extended
+  readonly selection:   Computed<RawRange | undefined>        // extended range; undefined when collapsed
 
   constructor(lifecycle: Lifecycle, dom: DomController)
 
-  // ----- pure commands (no DOM) -----
+  // ----- pure commands -----
   setAt(pos: number): void
   select(range: RawRange): void
   collapse(side: 'start' | 'end'): void
-  clear(): void                                // range = undefined, mode = undefined
 
   // ----- semantic (DOM-touching) -----
-  selectAll(): void                            // unconditional; caller decides eligibility
+  selectAll(): void                                           // unconditional; caller decides eligibility
   isFullSelection(): boolean
-
-  // ----- DOM commands (replace static Caret) -----
-  setAtElement(el: HTMLElement, offset: number): void
-  setAtX(el: HTMLElement, x: number, y?: number): void
-  getCaretIndex(el: HTMLElement): number
-  getRect(): DOMRect | null
-  isOnFirstLine(el: HTMLElement): boolean
-  isOnLastLine(el: HTMLElement): boolean
 }
 ```
 
-### State
+The five start/clear methods are removed. Mode transitions become direct
+signal writes (`caret.selecting('drag')`, `caret.selecting(undefined)`).
+There is no `clear()` — no call site resets both `range` and `selecting`
+atomically (verified by grep).
 
-| Signal | Definition | Purpose |
-| --- | --- | --- |
-| `range` | `signal<RawRange \| undefined>(undefined, {equals: structural})` | Source of truth. Collapsed (start === end) or extended. Single signal covers both cursor and selection. |
-| `mode`  | `signal<'drag' \| 'all' \| undefined>(undefined)` | Interaction mode. Replaces today's `selecting`. `'drag'` = active mouse drag-select; `'all'` = active Ctrl+A; `undefined` = no special mode. |
+`selectAll()` is defined explicitly to avoid the implicit-dependency
+footgun the review flagged:
 
-`range` keeps the structural-equality dedupe from today's implementation
-to preserve "no spurious notify when start/end unchanged" semantics covered
-by `CaretModel.spec.ts`.
-
-### Derived
-
-| Computed | Definition |
-| --- | --- |
-| `isCollapsed` | `() => { const r = range(); return !!r && r.start === r.end }` |
-| `position`    | `() => isCollapsed() ? range()?.start : undefined` |
-| `selection`   | `() => isCollapsed() ? undefined : range()` |
-
-`position` and `selection` give callers that only care about one shape a
-clean read primitive without forcing them to interpret `range`. Internal
-implementation reads `range` directly when both shapes are valid (e.g.
-restoration).
-
-### Pure commands
-
-| Command | Behavior |
-| --- | --- |
-| `setAt(pos)` | `range({start: pos, end: pos})`. Mode is unchanged. |
-| `select(r)` | `range(r)`. Mode is unchanged. If `r.start === r.end`, equivalent to `setAt`. |
-| `collapse(side)` | `range({start: r[side], end: r[side]})` if `r` exists; no-op otherwise. |
-| `clear()` | `range(undefined)` and `mode(undefined)`. |
-
-The five start/clear methods (`startDragSelect`, `clearDragSelect`,
-`startAllSelect`, `clearAllSelect`, `endSelecting`) are removed. Callers
-write `mode('drag')`, `mode('all')`, or `mode(undefined)` directly. The
-single signal replaces the verb-based wrapper layer.
-
-### Semantic commands
-
-```ts
-selectAll(): void
-```
-
-Sets the browser selection across the entire container and writes
-`mode('all')`. Unconditional — the caller (KeyboardController) is
-responsible for deciding when it's appropriate (e.g. bailing in block mode
-to let the browser handle Ctrl+A within the focused block). Steps:
-
-1. Read `dom.container()`. If unavailable, return.
-2. Read `container.firstChild` and `container.lastChild`. If either
-   missing, return.
+1. Read `dom.container()`. Abort if missing.
+2. Read `container.firstChild` and `container.lastChild`. Abort if either missing.
 3. `window.getSelection()?.setBaseAndExtent(firstChild, 0, lastChild, 1)`.
-4. `mode('all')`.
+4. `selecting('all')`.
+5. Read `dom.readRawSelection()`. If `ok`, write `range(value.range)`. This
+   is the explicit step — without it, the new `range` arrives only when
+   the global `selectionchange` listener fires, which is a hidden contract.
 
-Does not call `event.preventDefault()` — that's a keyboard-event concern
-owned by KeyboardController.
+## Final API — `caretDom.ts`
+
+Stateless plain-function exports. Nothing here reads or writes
+`CaretModel`. Each takes an `HTMLElement` (or no argument for `getRect`)
+and operates on `window.getSelection()`. This is the abstraction level
+`blockEdit.ts` and a few keyboard handlers actually need.
 
 ```ts
-isFullSelection(): boolean
+// caretDom.ts
+export function setAtElement(el: HTMLElement, offset: number): void
+export function setAtX(el: HTMLElement, x: number, y?: number): void
+export function getCaretIndex(el: HTMLElement): number
+export function getRect(): DOMRect | null
+export function isOnFirstLine(el: HTMLElement): boolean
+export function isOnLastLine(el: HTMLElement): boolean
 ```
 
-Returns true when the active browser selection spans the container with
-non-empty text content. Logic mirrors today's `isFullSelection(store)`
-helper exactly. Reads `window.getSelection()` and `dom.container()`.
-
-### DOM commands
-
-Replace today's static `Caret` class. Each is an instance method with the
-same semantics as its static counterpart:
-
-| New method | Replaces | Notes |
+| `caretDom.*` function | Replaces | Notes |
 | --- | --- | --- |
-| `setAtElement(el, offset)` | `Caret.setIndex` / `Caret.setCaretToEnd` | TreeWalker walk, `Infinity` clamps to end. Wraps the old `try/catch trySetIndex` body internally — callers no longer need a try variant; the method swallows and `console.error`s. |
+| `setAtElement(el, offset)` | `Caret.setIndex` / `Caret.setCaretToEnd` / `Caret.trySetIndex` | TreeWalker walk; `Infinity` clamps to end. Body wraps in try/catch and logs to `console.error` so the legacy `try*` variant disappears. |
 | `setAtX(el, x, y?)` | `Caret.setAtX` | Coordinate-based positioning via `caretRangeFromPoint` / `caretPositionFromPoint`. |
 | `getCaretIndex(el)` | `Caret.getCaretIndex` | Visual offset within `el` via cloned Range. |
 | `getRect()` | `Caret.getCaretRect` | Bounding rect of current caret. |
 | `isOnFirstLine(el)` | `Caret.isCaretOnFirstLine` | Line-edge check. |
 | `isOnLastLine(el)` | `Caret.isCaretOnLastLine` | Line-edge check. |
 
-Removed without replacement (unused after migration):
+Removed without replacement (unused after migration, verified by grep):
 
-- `Caret.getCurrentPosition` → TriggerFinder reads `window.getSelection()?.anchorOffset` directly (it needs the DOM-local offset within the text node, not a `RawRange`).
-- `Caret.getFocusedSpan` → TriggerFinder reads `node.textContent` directly.
-- `Caret.getSelectedNode` → TriggerFinder reads `window.getSelection()?.anchorNode` directly.
-- `Caret.isSelectedPosition` → TriggerFinder reads `window.getSelection()?.isCollapsed` directly.
-- `Caret.getAbsolutePosition` → unused in current codebase (verified by grep).
-- `Caret.getIndex` / `Caret.setIndex1` / `Caret.setCaretRightTo` → unused / dead code (the trailing `//TODO refact caret` block).
+- `Caret.getCurrentPosition` → `TriggerFinder` reads `window.getSelection()?.anchorOffset` directly.
+- `Caret.getFocusedSpan` → `TriggerFinder` reads `node.textContent` directly.
+- `Caret.getSelectedNode` → `TriggerFinder` reads `window.getSelection()?.anchorNode` directly.
+- `Caret.isSelectedPosition` → `TriggerFinder` reads `window.getSelection()?.isCollapsed` directly.
+- `Caret.getAbsolutePosition`, `Caret.getIndex`, `Caret.setIndex1`, `Caret.setCaretRightTo` → all unused (the trailing `//TODO refact caret` block).
 
-## Lifecycle wiring
-
-All listeners attach inside `lifecycle.onMounted`. `listen()` returns
-disposers that the effect scope cleans up automatically.
+## Final API — `DomController` tweaks
 
 ```ts
-constructor(lifecycle: Lifecycle, dom: DomController) {
-  lifecycle.onMounted(() => {
-    this.#enableFocusTracking()
-    this.#enableSelectionTracking()
-    watch(lifecycle.rendered, () => this.#applyRangeToDOM())
-    effect(() => { if (this.mode() === 'drag') dom.reconcile() })
-  })
+class DomController {
+  constructor(
+    lifecycle: Lifecycle,
+    props: PropsModel,
+    parsing: ParseController,
+    value: ValueModel,
+  )                                                            // caret param removed
+
+  readonly indexed = event<void>()                             // NEW; fired at end of #commitRendered
+
+  reconcile(opts?: {selecting?: boolean}): void                // selecting flag passed in by CaretModel
+
+  placeAt(rawPos: number, affinity: 'before' | 'after' = 'after'): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'>
+  // renamed from placeCaretAtRawPosition; affinity is RETAINED (used by arrowNav.ts:63,66)
+
+  placeRange(range: RawRange): Result<{applied: RawRange}, 'notIndexed' | 'invalidBoundary'>
+  // promoted from #placeSelection
 }
 ```
 
-### `#enableFocusTracking` (was `focus.ts`)
+Two API contract decisions deserve calling out:
 
-Listens on `dom.container()`:
+**`indexed` event over watcher-order**. Today
+`DomController.#commitRendered()` calls `#applyRangeToDOM()`
+synchronously — the dependency is in the call graph. After the refactor,
+caret restoration is a separate watcher; relying on it firing after
+DomController's own `lifecycle.rendered` watcher is fragile. The
+`indexed` event makes the dependency explicit: CaretModel
+`watch(dom.indexed, …)` instead of `watch(lifecycle.rendered, …)`. The
+event is emitted unconditionally at the end of `#commitRendered`,
+including the queued-render branch.
 
-| Event | Behavior |
-| --- | --- |
-| `focusin` | If target isn't an HTMLElement → `range(undefined)`. If `dom.locateNode(target)` is `{ok: false, reason: 'control'}` → no-op. Else if `dom.readRawSelection()` succeeds → `range(value.range)`; else `range(undefined)`. |
-| `focusout` | Defer via `queueMicrotask`. After defer, if `document.activeElement` is outside the container → `range(undefined)`. |
+**`reconcile({selecting})` opts param**. `#reconcileStructuralTextSurfaces`
+at `DomController.ts:625` reads `this.caret.selecting()` to decide
+`contentEditable`. Removing the `caret` constructor dep without breaking
+this requires either (a) passing the flag in or (b) keeping a
+`getSelecting: () => …` callback. Option (a) is cleaner — `reconcile`
+is already the seam — and CaretModel calls
+`dom.reconcile({selecting: this.selecting() === 'drag'})` from its
+drag-mode effect.
 
-The empty-editor `click` handler from today's `focus.ts:41-48` is **not**
-in this method — see "Logic relocations" below.
+**Internal clamping**. Both `placeAt` and `placeRange` clamp the input
+against `value.current().length` internally and return the clamped value
+as `applied`. The previous external-clamping logic in
+`#applyRangeToDOM` (lines 781–787) collapses into the `placeAt`/
+`placeRange` bodies.
 
-### `#enableSelectionTracking` (was `selection.ts`)
+**Removed**. `#applyRangeToDOM` is gone (its logic now lives in
+CaretModel). The `{readOnly, selecting}` watcher in DomController's
+`onMounted` reduces to a `readOnly` watcher. The `enableFocus` /
+`enableSelection` imports and calls go away.
 
-Listens on `document` for the global selection events:
-
-| Event | Behavior |
-| --- | --- |
-| `mousedown` | Track pressed node and `isPressed = true`. |
-| `mousemove` | If pressed inside container, target diverged, and selection is inside container → `mode('drag')`. |
-| `mouseup` | Reset press state. If `mode === 'drag'` and selection collapsed → `mode(undefined)`. |
-| `selectionchange` | If `mode === 'drag'` and selection collapsed → `mode(undefined)`. Then resolve selection via `dom.locateNode` + `dom.readRawSelection` and write `range`. Skip when `locateNode` returns `{ok: false, reason: 'control'}`. |
-
-### `#applyRangeToDOM` — restoration
-
-Triggered via `watch(lifecycle.rendered, …)`. Replaces
-`DomController.#applyRangeToDOM` exactly.
+## Final Store wiring
 
 ```ts
-#applyRangeToDOM(): void {
-  if (this.mode() === 'drag') return                       // preserve user drag
-  const range = this.range()
-  if (range === undefined) return
-
-  const result = range.start === range.end
-    ? this.dom.placeAt(range.start)
-    : this.dom.placeRange(range)
-
-  if (!result.ok) {
-    this.range(undefined)
-    return
-  }
-  this.range(result.value.applied)
-}
+readonly lifecycle = new Lifecycle()
+readonly props     = new PropsModel()
+readonly value     = new ValueModel(this.props)
+readonly mark      = new MarkFeature(this.props)
+readonly slots     = new SlotsFeature(this.props)
+readonly parsing   = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
+readonly dom       = new DomController(this.lifecycle, this.props, this.parsing, this.value)
+readonly caret     = new CaretModel(this.lifecycle, this.dom)
+readonly overlay   = new OverlayController(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
+readonly keyboard  = new KeyboardController(this.lifecycle, this.dom, this.value, this.caret, this.slots, this.parsing, this.props)
+readonly drag      = new DragController(this.props, this.value, this.parsing, this.caret)
+readonly clipboard = new ClipboardController(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
+readonly handler   = new MarkputHandler(this.dom, this.overlay, this.parsing)
 ```
 
-The unconditional writeback is safe: the `range` signal carries a
-structural-equality `equals`, so writing back an `applied` value equal
-to the previous `range` is a no-op (no notify, no propagation). When
-`applied` differs (clamping changed it), the signal updates as expected.
+`caret` is constructed after `dom`. `dom` no longer takes `caret`.
 
-Subscription order: CaretModel registers its `lifecycle.rendered` watcher
-inside its own `onMounted`. Because CaretModel is constructed after
-DomController in the Store, DomController's index-rebuild runs first and
-the caret restoration sees a fresh DOM index. Same pattern as
-`ParseController` registering its `value.current` watcher first.
+## Phasing
 
-### Drag-mode reconcile effect
+The change lands in four reviewable phases. Each phase is shippable and
+revertible on its own. Tests pass after each phase.
 
-Replaces today's `DomController` watch on `caret.selecting`:
+### Phase 1 — `CaretModel` API surface
 
-```ts
-effect(() => { if (this.mode() === 'drag') dom.reconcile() })
-```
+**Scope.** Add the new state/derived/command surface to `CaretModel`
+without touching listener wiring. Migrate every collapsed-range write to
+the new `setAt` ergonomic.
 
-The watcher in DomController's constructor that observed
-`{readOnly, selecting}` is reduced to just `readOnly`.
+**Adds to `CaretModel`:**
 
-## DomController API tweaks
+- `setAt(pos)`, `select(r)`, `collapse(side)` methods.
+- `isCollapsed`, `position`, `selection` computed signals.
+- `isFullSelection()` instance method (was `selectionHelpers.isFullSelection(store)`).
+- `selectAll()` instance method (was `selectionHelpers.selectAllText(store, event)` minus the block-mode bail and `preventDefault`).
 
-### Constructor
+**Removes from `CaretModel`:**
 
-```ts
-constructor(
-  lifecycle: Lifecycle,
-  props: PropsModel,
-  parsing: ParseController,
-  value: ValueModel,
-)
-```
+- `startDragSelect`, `clearDragSelect`, `startAllSelect`, `clearAllSelect`,
+  `endSelecting` methods. Callers write `caret.selecting('drag' | 'all' | undefined)` directly.
 
-`caret` parameter removed. DomController no longer reads or writes caret
-state directly.
+**Keeps for now:**
 
-### Public methods
+- Listener wiring still done via `enableFocus({…})` / `enableSelection({…})`
+  in `DomController` — moved into CaretModel in Phase 2.
+
+**Caller migration in this phase:**
+
+Block-mode Ctrl+A bail (was in `selectionHelpers.selectAllText`) moves
+into `keyboard/arrowNav.ts`:
 
 ```ts
-placeAt(rawPos: number): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'>
-placeRange(range: RawRange): Result<{applied: RawRange}, 'notIndexed' | 'invalidBoundary'>
-```
-
-Both clamp internally against `value.current().length` (DomController
-already takes `value`) and return the clamped value as `applied`.
-`placeAt` is a renamed promotion of today's
-`placeCaretAtRawPosition(rawPosition, affinity)` with the affinity
-parameter dropped (callers always pass the default `'after'` today —
-verified by grep). `placeRange` is a public version of today's private
-`#placeSelection`.
-
-The internal `#applyRangeToDOM` method is removed entirely (its logic
-now lives in CaretModel). The `#commitRendered` call to it is replaced by
-nothing — restoration is now driven by CaretModel's watcher on
-`lifecycle.rendered`, which fires after DomController's own `rendered`
-watcher (registered first inside DomController's `onMounted`).
-
-### Empty-editor click handler
-
-Moves into DomController as a private listener on the container. Wired
-inside `onMounted`. Mirrors today's `focus.ts:41-48` exactly:
-
-```ts
-listen(container, 'click', () => {
-  const tokens = parsing.tokens()
-  if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-    const element = firstHtmlChild(container)
-    element?.focus()
-  }
-})
-```
-
-DomController already has `parsing` as a constructor dep, so no new deps.
-
-## Logic relocations
-
-| Logic today | Today's location | New location | Why |
-| --- | --- | --- | --- |
-| Empty-editor click → focus first child | `focus.ts:41-48` | DomController private listener | Container interaction, not caret state |
-| Range clamp via `value.current().length` | `DomController.#applyRangeToDOM` | `DomController.placeAt`/`placeRange` clamp internally | Index owner clamps; caret writes back applied value |
-| Block-mode Ctrl+A bail (`if slots.isBlock() return`) | `selectionHelpers.selectAllText` | KeyboardController (caller of `caret.selectAll`) | Eligibility decision belongs to keyboard layer |
-| Ctrl+A `event.preventDefault()` | `selectionHelpers.selectAllText` | KeyboardController (same site as bail) | Event handling stays with the event handler |
-
-## Caller migration
-
-### `TriggerFinder` (`features/caret/TriggerFinder.ts`)
-
-Today reads four static methods on `Caret`. After migration, takes
-`caret: CaretModel` instead of `dom?: DomController` (or alongside,
-depending on existing call sites — see below) and reads from window
-selection directly for the few cases that don't have a model equivalent.
-
-```ts
-class TriggerFinder {
-  constructor(private readonly caret: CaretModel, private readonly dom?: DomController) {
-    const sel = window.getSelection()
-    const node = sel?.anchorNode
-    if (!node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
-
-    this.node = node
-    this.span = node.textContent ?? ''
-    this.dividedText = this.getDividedTextBy(sel?.anchorOffset ?? 0)
-  }
-
-  static find<T>(options, getTrigger, caret: CaretModel, dom?: DomController) {
-    if (!options) return
-    if (!window.getSelection()?.isCollapsed) return  // was Caret.isSelectedPosition
-    try { return new TriggerFinder(caret, dom).find(options, getTrigger) } catch { return undefined }
-  }
-}
-```
-
-Callers of `TriggerFinder.find` are updated to pass `store.caret` as the
-new third argument. `OverlayController` is the only call site (verified
-by grep).
-
-### `blockEdit.ts` (`features/keyboard/blockEdit.ts`)
-
-| Today | After |
-| --- | --- |
-| `Caret.getCaretIndex(blockDiv)` | `store.caret.getCaretIndex(blockDiv)` |
-| `Caret.setCaretToEnd(prevBlock)` | `store.caret.setAtElement(prevBlock, Infinity)` |
-| `Caret.setCaretToEnd(row)` | `store.caret.setAtElement(row, Infinity)` |
-| `Caret.trySetIndex(row, 0)` | `store.caret.setAtElement(row, 0)` (now swallows internally) |
-| `Caret.trySetIndex(nextBlock, 0)` | `store.caret.setAtElement(nextBlock, 0)` |
-| `Caret.isCaretOnFirstLine(blockDiv)` | `store.caret.isOnFirstLine(blockDiv)` |
-| `Caret.isCaretOnLastLine(blockDiv)` | `store.caret.isOnLastLine(blockDiv)` |
-| `Caret.getCaretRect()` | `store.caret.getRect()` |
-| `Caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)` | `store.caret.setAtX(prevBlockDiv, caretX, prevRect.bottom - 4)` |
-
-### `KeyboardController`
-
-Ctrl+A path (`features/keyboard/arrowNav.ts`):
-
-```ts
-// before
-import {selectAllText} from '../caret'
-selectAllText(store, e)
-
-// after
+// keyboard/arrowNav.ts (was: selectAllText(store, e))
 if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
   if (store.slots.isBlock()) return
   e.preventDefault()
@@ -402,125 +263,315 @@ if (selecting === 'all' && isFullSelection(store)) { … }
 if (selecting === 'all' && store.caret.isFullSelection()) { … }
 ```
 
-### `DomController`
+`selectionHelpers.ts` is deleted at the end of this phase.
 
-- `#applyRangeToDOM` removed.
-- `placeCaretAtRawPosition` renamed to `placeAt` with affinity dropped, return type expanded to include `applied`.
-- `#placeSelection` promoted to public `placeRange` with same return shape.
-- Constructor signature loses the `caret` parameter.
-- Imports of `enableFocus` / `enableSelection` from `../caret/focus` and `../caret/selection` removed.
-- The `{readOnly, selecting}` watcher reduces to a `readOnly` watcher.
+`selecting` mode writes:
 
-### `Store`
+| Today | After Phase 1 |
+| --- | --- |
+| `caret.startDragSelect()` | `caret.selecting('drag')` |
+| `caret.clearDragSelect()` | `caret.selecting(undefined)` (only when current value is `'drag'` — preserve existing guard at call site) |
+| `caret.startAllSelect()` | `caret.selecting('all')` |
+| `caret.clearAllSelect()` | `caret.selecting(undefined)` |
+| `caret.endSelecting()` | `caret.selecting(undefined)` |
+
+Collapsed-range writes (~14 sites) become `setAt`:
+
+| Site | Today | After Phase 1 |
+| --- | --- | --- |
+| `OverlayController.ts:114` | `caret.range({start: pos, end: pos})` | `caret.setAt(pos)` |
+| `keyboard/input.ts:50, 87, 118, 272` | same | `caret.setAt(pos)` |
+| `keyboard/blockEdit.ts:92, 104, 127, 143, 185, 193, 329` | same | `caret.setAt(pos)` |
+| `ClipboardController.ts:59` | same | `caret.setAt(pos)` |
+| `DomController.ts:787` | same | `caret.setAt(start)` |
+
+**Tests.** `CaretModel.spec.ts` extends with: pure-command behavior,
+derived-signal correctness, `isFullSelection`, `selectAll`. `selection.spec.ts`
+and `focus.spec.ts` keep their current set (they cover wiring still in
+`DomController`). Core test count grows from 313 → ≥ 320 in this phase.
+
+**Risks.** Mechanical refactor; the 14 setAt-migration sites are simple
+substitutions. The `selecting` writes preserve current guard semantics
+(e.g. only-clear-if-currently-drag), since the wrapper methods today
+already encode those guards.
+
+### Phase 2 — Listener migration + restoration migration
+
+**Scope.** Move all DOM listeners and range restoration into CaretModel.
+DomController loses its `caret` constructor dep, gains the `indexed`
+event, and accepts `{selecting}` opts on `reconcile`.
+
+**Moves into CaretModel:**
+
+- `enableFocus` body → private `#enableFocusTracking()`.
+- `enableSelection` body → private `#enableSelectionTracking()`.
+- `DomController.#applyRangeToDOM` → private `#applyRangeToDOM()` watching `dom.indexed`.
+- Drag-mode reconcile effect: `effect(() => dom.reconcile({selecting: this.selecting() === 'drag'}))`.
+
+**Moves into DomController:**
+
+- Empty-editor click handler (was `focus.ts:41-48`) → private listener
+  attached in `onMounted`. Uses existing `parsing` dep.
+
+**DomController API changes:**
 
 ```ts
-readonly lifecycle = new Lifecycle()
-readonly props     = new PropsModel()
-readonly value     = new ValueModel(this.props)
-readonly mark      = new MarkFeature(this.props)
-readonly slots     = new SlotsFeature(this.props)
-readonly parsing   = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
-readonly dom       = new DomController(this.lifecycle, this.props, this.parsing, this.value)
-readonly caret     = new CaretModel(this.lifecycle, this.dom)        // moved AFTER dom
-readonly overlay   = new OverlayController(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
-readonly keyboard  = new KeyboardController(this.lifecycle, this.dom, this.value, this.caret, this.slots, this.parsing, this.props)
-readonly drag      = new DragController(this.props, this.value, this.parsing, this.caret)
-readonly clipboard = new ClipboardController(this.lifecycle, this.value, this.dom, this.parsing, this.caret)
-readonly handler   = new MarkputHandler(this.dom, this.overlay, this.parsing)
+// constructor
+constructor(lifecycle: Lifecycle, props: PropsModel, parsing: ParseController, value: ValueModel)
+
+// new
+readonly indexed = event<void>()
+
+// changed
+reconcile(opts?: {selecting?: boolean}): void
+
+// removed
+#applyRangeToDOM()
+// previous {readOnly, selecting} watcher → readOnly only
 ```
 
-`caret` moves down past `dom` because it now takes `dom` in its
-constructor. `dom` no longer takes `caret`.
+`#commitRendered` ends with `this.indexed()` (in addition to existing
+diagnostics). The queued-render branch fires `indexed` exactly once per
+commit.
 
-## `index.ts` changes
+**CaretModel constructor:**
 
 ```ts
-// before
-export {Caret} from './Caret'
-export {CaretModel} from './CaretModel'
-export {isFullSelection, selectAllText} from './selectionHelpers'
-export {TriggerFinder} from './TriggerFinder'
+constructor(private readonly lifecycle: Lifecycle, private readonly dom: DomController) {
+  lifecycle.onMounted(() => {
+    this.#enableFocusTracking()
+    this.#enableSelectionTracking()
+    watch(dom.indexed, () => this.#applyRangeToDOM())
+    effect(() => dom.reconcile({selecting: this.selecting() === 'drag'}))
+  })
+}
 
-// after
-export {CaretModel} from './CaretModel'
-export {TriggerFinder} from './TriggerFinder'
+#applyRangeToDOM(): void {
+  if (this.selecting() === 'drag') return
+  const range = this.range()
+  if (range === undefined) return
+
+  const result = range.start === range.end
+    ? this.dom.placeAt(range.start)
+    : this.dom.placeRange(range)
+
+  if (!result.ok) {
+    this.range(undefined)
+    return
+  }
+  this.range(result.value.applied)   // structural-equality dedup makes a no-op when applied === range
+}
 ```
 
-## Testing strategy
+**Store reorder.** `caret` field moves below `dom`:
 
-Existing test counts to preserve: Core 313, React 171, Vue 157.
+```ts
+readonly dom   = new DomController(this.lifecycle, this.props, this.parsing, this.value)
+readonly caret = new CaretModel(this.lifecycle, this.dom)
+```
 
-### `CaretModel.spec.ts` (rewritten)
+**Tests.**
 
-Covers the new surface in three groups:
+- `focus.spec.ts` and `selection.spec.ts` deleted; relevant cases (mount
+  attaches listeners, unmount detaches, drag-mode triggers reconcile)
+  fold into `CaretModel.spec.ts`.
+- The empty-container click test moves to `DomController.spec.ts`.
+- `DomController.spec.ts`: clamping tests at 357–402 are rewritten to
+  drive `dom.placeAt`/`dom.placeRange` directly (the `caret.range` write
+  path is no longer in DomController). Existing assertions become
+  assertions on the returned `applied` value.
+- New `CaretModel.spec.ts` tests: `dom.indexed` triggers restoration;
+  `selecting === 'drag'` suppresses restoration; failed placement clears
+  range; structural-equality dedup prevents notify when applied equals
+  current range.
 
-1. **State and derived** — range/mode independence, structural-equality
-   dedupe (existing test preserved), `isCollapsed`/`position`/`selection`
-   computed correctness, `clear()` resets both signals.
-2. **Pure commands** — `setAt`, `select`, `collapse('start')`,
-   `collapse('end')`, no-op when `range === undefined`.
-3. **Lifecycle wiring** — listeners attach on `lifecycle.mounted`,
-   detach on `unmounted` (idempotency test from today's
-   `selection.spec.ts` preserved); drag-mode reconcile effect calls
-   `dom.reconcile()`; restoration watcher fires on `lifecycle.rendered`
-   and bails when `mode === 'drag'`.
+Core test count grows again. Total ≥ 325 after Phase 2.
 
-Folded in from deleted spec files:
+**Risks.**
 
-- `selection.spec.ts` (5 tests) → cases for `#enableSelectionTracking` +
-  drag-mode reconcile.
-- `focus.spec.ts` → cases for `#enableFocusTracking`. The
-  empty-container click test moves to `DomController.spec.ts` since
-  that listener now lives there.
+- Subscription ordering: handled by switching to `dom.indexed`. CaretModel
+  no longer races against DomController's `lifecycle.rendered` watcher.
+- `reconcile({selecting})` change: callers inside DomController itself
+  call `reconcile()` with no args (e.g. the `readOnly` watcher) —
+  default-undefined keeps existing behavior. Only CaretModel passes the flag.
+- `dom.indexed` from queued-render branch: the spec requires it fire
+  exactly once per commit even when rerun is queued. Verified by reading
+  `#handleRendered` — the queued branch re-enters `#commitRendered`,
+  which itself ends with the event fire.
 
-### `DomController.spec.ts`
+### Phase 3 — Static `Caret` deletion + `caretDom.ts`
 
-- New tests for `placeAt` and `placeRange` returning `{applied}` after
-  internal clamping. The existing clamping tests at lines 357–402 are
-  rewritten to assert on the returned `applied` value rather than on
-  `caret.range()`.
-- New test for empty-container click → focus first child (moved from
-  `focus.spec.ts`).
-- Remove the watcher test for `caret.selecting` driving `reconcile` —
-  the watcher moved to CaretModel.
+**Scope.** Replace the static `Caret` class with stateless function
+exports in `caretDom.ts`. Migrate all callers.
 
-### React storybook (`packages/react/storybook/src/pages/Drag/Drag.spec.tsx`)
+**Adds:**
 
-Drag mode flows touch caret restoration and Ctrl+A. The test count
-(171) must remain stable; expected to need only minor selector touch-ups
-if any. No semantic changes.
+- `packages/core/src/features/caret/caretDom.ts` with the six functions
+  listed earlier.
+- `packages/core/src/features/caret/caretDom.spec.ts` porting the
+  existing `Caret.spec.ts` cases (TreeWalker math, line-edge edge cases).
 
-### Vue storybook
+**Migrates:**
 
-Same as React — no semantic changes; should continue to pass at 157.
+- `keyboard/blockEdit.ts` — every `Caret.*` call site:
+
+| Today | After |
+| --- | --- |
+| `Caret.getCaretIndex(blockDiv)` | `caretDom.getCaretIndex(blockDiv)` |
+| `Caret.setCaretToEnd(prevBlock)` | `caretDom.setAtElement(prevBlock, Infinity)` |
+| `Caret.setCaretToEnd(row)` | `caretDom.setAtElement(row, Infinity)` |
+| `Caret.trySetIndex(row, 0)` | `caretDom.setAtElement(row, 0)` (now swallows internally) |
+| `Caret.trySetIndex(nextBlock, 0)` | `caretDom.setAtElement(nextBlock, 0)` |
+| `Caret.isCaretOnFirstLine(blockDiv)` | `caretDom.isOnFirstLine(blockDiv)` |
+| `Caret.isCaretOnLastLine(blockDiv)` | `caretDom.isOnLastLine(blockDiv)` |
+| `Caret.getCaretRect()` | `caretDom.getRect()` |
+| `Caret.setAtX(prevBlockDiv, …)` | `caretDom.setAtX(prevBlockDiv, …)` |
+
+- `caret/TriggerFinder.ts` — drop `Caret` import, read selection directly:
+
+```ts
+constructor(private readonly dom?: DomController) {
+  const sel = window.getSelection()
+  const node = sel?.anchorNode
+  if (!node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
+  this.node = node
+  this.span = node.textContent ?? ''
+  this.dividedText = this.getDividedTextBy(sel?.anchorOffset ?? 0)
+}
+
+static find<T>(options, getTrigger, dom?: DomController) {
+  if (!options) return
+  if (!window.getSelection()?.isCollapsed) return     // was Caret.isSelectedPosition
+  try { return new TriggerFinder(dom).find(options, getTrigger) } catch { return undefined }
+}
+```
+
+`TriggerFinder` does not gain a `CaretModel` parameter. Its needs are
+DOM-level (selection node + offset within text), which `window.getSelection()`
+provides directly.
+
+**Deletes:**
+
+- `caret/Caret.ts`
+- `caret/Caret.spec.ts`
+
+**`caret/index.ts` final shape:**
+
+```ts
+export {CaretModel} from './CaretModel'
+export {TriggerFinder} from './TriggerFinder'
+export * as caretDom from './caretDom'
+```
+
+Consumers do `import {caretDom} from '@core/features/caret'` and call
+`caretDom.setAtElement(el, 0)`. The namespace import keeps the call
+sites self-documenting.
+
+**Tests.** `caretDom.spec.ts` ports Caret.spec.ts coverage. Removing
+`Caret.spec.ts` keeps the count steady. Total still ≥ 325.
+
+**Risks.** Lowest of the four phases. Mechanical search-and-replace;
+each call site changes shape but preserves semantics.
+
+### Phase 4 — `DomController` placement API rename
+
+**Scope.** Rename / promote the placement methods on DomController.
+Single, mechanical phase isolated from caret concerns.
+
+**Renames:**
+
+- `placeCaretAtRawPosition(rawPos, affinity = 'after')` → `placeAt(rawPos, affinity = 'after')`. **Affinity parameter retained** (used by `arrowNav.ts:63` with `'before'` and `:66` with `'after'`).
+- `#placeSelection(selection: RawSelection)` → public `placeRange(range: RawRange)`.
+
+**Return shape extension:** both methods return
+`Result<{applied: number | RawRange}, …>`. Internal clamping centralized
+inside the methods (no change for `arrowNav` — its inputs are already
+valid token boundaries; the clamp is a no-op on the happy path).
+
+**Caller updates:**
+
+| Today | After Phase 4 |
+| --- | --- |
+| `DomController.ts:791` (was inside `#applyRangeToDOM`, moved to CaretModel in Phase 2) | uses `placeAt`/`placeRange` with `applied` return |
+| `arrowNav.ts:63,66` | `placeAt(pos, 'before' | 'after')` — name change only |
+| `DomController.spec.ts:337` | assertion updated to new name and return shape |
+
+**Tests.** `DomController.spec.ts` cases for `placeCaretAtRawPosition`
+get renamed and gain coverage of the `applied` return value. Net count
+neutral or slight growth.
+
+**Risks.** Test assertions need updating across ~6 call sites. The
+return-shape change is the only non-mechanical part.
+
+## Block-mode Ctrl+A bail — single phase
+
+The bail check (`if (slots.isBlock()) return`) and `event.preventDefault()`
+move from `selectionHelpers.selectAllText` to `keyboard/arrowNav.ts` in
+Phase 1. This is a 2-line move tightly coupled to the deletion of
+`selectionHelpers.ts`. Splitting it into its own PR (as the review
+suggested) was considered and rejected: the move only makes sense once
+`caret.selectAll` exists as the unconditional command, and `caret.selectAll`
+ships in Phase 1. Keeping the move in the same phase keeps the change
+self-consistent.
+
+## README sketch
+
+`caret/README.md` rewrite, summarizing the post-Phase-3 layout:
+
+> # Caret feature
+>
+> Owns the editor's caret state and the listeners that produce caret
+> events. Stateless DOM-coordinate primitives live alongside in
+> `caretDom.ts`.
+>
+> ## CaretModel
+>
+> | Signal / computed | Purpose |
+> | --- | --- |
+> | `range` | Source of truth. Collapsed when `start === end`. |
+> | `selecting` | Active interaction mode (`'drag'` / `'all'`) or `undefined`. |
+> | `isCollapsed`, `position`, `selection` | Derived. Use `position` when only the cursor matters; use `selection` when only the extended range matters. |
+>
+> | Command | Purpose |
+> | --- | --- |
+> | `setAt(pos)` | Collapsed write. |
+> | `select(range)` | Ranged write. |
+> | `collapse(side)` | Collapse current range to `'start'` or `'end'`. |
+> | `selectAll()` | Place full-container selection in DOM and write `range` + `selecting('all')`. Caller decides eligibility. |
+> | `isFullSelection()` | True when active browser selection spans the container. |
+>
+> Listeners (focus, selection, mouse-drag) and post-render restoration are
+> internal. CaretModel watches `dom.indexed` for restoration.
+>
+> ## caretDom
+>
+> Plain functions for DOM-coordinate caret manipulation. No state. Used
+> by block-level navigation in `keyboard/blockEdit.ts`:
+>
+> `setAtElement(el, offset)`, `setAtX(el, x, y?)`, `getCaretIndex(el)`,
+> `getRect()`, `isOnFirstLine(el)`, `isOnLastLine(el)`.
 
 ## Risks and open questions
 
 ### Risks
 
-- **TriggerFinder constructor signature change.** `OverlayController`
-  is the only caller (verified by grep), so the blast radius is small,
-  but the static `TriggerFinder.find` argument list grows by one. The
-  spec adds `caret: CaretModel` as a new parameter rather than swapping
-  for `dom` to keep diff-noise minimal at the call site.
-- **DomController `placeCaretAtRawPosition` rename to `placeAt`.** The
-  method name is referenced in tests and in
-  `OverlayController`/`ClipboardController`/`KeyboardController` (grep
-  confirms ~6 call sites). The rename + return-shape change is a
-  mechanical update.
-- **`affinity` parameter on `placeAt` dropped.** Today's signature is
-  `placeCaretAtRawPosition(rawPosition, affinity = 'after')`. All
-  callers use the default — verified by grep finding zero call sites
-  passing a second argument. If a future caller needs `'before'`, it
-  can be re-added without breaking existing calls.
-- **Subscription ordering between DomController and CaretModel.** The
-  spec relies on DomController's `lifecycle.rendered` watcher firing
-  before CaretModel's. This holds because CaretModel is constructed
-  after DomController in `Store`, and watchers fire in registration
-  order. This is the same ordering invariant `ParseController` already
-  depends on. Any future re-ordering of the Store fields needs to
-  preserve it.
+- **`dom.indexed` semantics.** Must fire exactly once per
+  `#commitRendered`, including the queued-render re-entry. Verified by
+  reading `#handleRendered`: the queued branch re-enters
+  `#commitRendered` synchronously, so a single `this.indexed()` at the
+  end of `#commitRendered` is correct.
+- **`reconcile({selecting})` opts spread.** Existing callers inside
+  DomController call `reconcile()` with no args. Default `undefined` for
+  `opts.selecting` produces the same `editable` flag computation today
+  (`undefined` is falsy, equivalent to `selecting() === undefined`).
+- **Phase 2 store reorder.** `caret` moves below `dom`. The
+  `OverlayController` / `KeyboardController` / `DragController` /
+  `ClipboardController` constructor lists already accept `caret` —
+  reordering field initialization order doesn't change their access
+  pattern.
+- **`affinity` parameter retention.** Confirmed used at `arrowNav.ts:63,66`
+  and `DomController.spec.ts:337`. Phase 4 keeps it.
 
 ### Open questions
 
-None. All design decisions resolved during brainstorming.
+None. All design decisions resolved.
