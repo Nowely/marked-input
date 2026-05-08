@@ -6,21 +6,24 @@ Owner: @nowely
 
 ## Goals
 
-1. Extract `computed` from the monolithic `signal.ts` into its own module — it
-   has grown into a model rather than a primitive.
+1. Conceptually separate two responsibilities currently fused in the writable
+   `computed`: a pure writable derivation and a controlled/uncontrolled state
+   model. Today's writable `computed` is really the latter dressed as the
+   former.
 2. Drop the `field: Signal<T>` argument from the writable `computed` callbacks.
    Caller passes values, not signals — Vue style.
 3. Simplify the writable `computed` signature so it reads like the readonly
    form.
-4. Split the current writable `computed` into two distinct primitives:
-   - **`computed`** — pure writable computed. No internal state.
-   - **`model`** — Vue `defineModel`-inspired primitive that wraps an internal
-     signal for the controlled/uncontrolled pattern.
+4. Surface a new `model` primitive — Vue `defineModel`-inspired — for the
+   controlled/uncontrolled pattern, alongside the simplified `computed`.
 
 ## Non-goals
 
-- Splitting the rest of `signal.ts` (effect, event, watch, reactive system
-  internals). They share module state with `signal()` and stay together.
+- Splitting `signal.ts` into multiple files. The new `computed` writable form
+  and `model` primitive live in `signal.ts` next to their dependencies
+  (`ComputedNode`, `computedOper`, `ReactiveFlags`, `signal`, `untracked`).
+  Extraction would force those internals to become file-level exports just to
+  satisfy module boundaries.
 - Adding new reactive features. This is a refactor.
 - Behavior changes in `ValueModel`. The spec preserves all four observable
   behaviors (uncontrolled write, controlled write, readOnly, undefined write).
@@ -30,15 +33,17 @@ Owner: @nowely
 ```
 packages/core/src/shared/signals/
   alien-signals/         (unchanged)
-  signal.ts              (-: writable computed factory; -: computed export)
-  computed.ts            (NEW)
-  model.ts               (NEW)
-  index.ts               (updated re-exports)
+  signal.ts              (writable computed reshaped; model added)
+  index.ts               (re-exports model alongside existing primitives)
 ```
 
-`computed.ts` and `model.ts` import a small set of internals from `signal.ts`:
-`computedOper`, `ComputedNode`, `ReactiveFlags`, `signal()`, `untracked()`. The
-reactive system stays in `signal.ts` as a single module.
+No new files. The "extraction" is conceptual — the writable `computed`
+factory shrinks to a pure derivation, and the controlled/uncontrolled logic
+moves into a new `model()` factory in the same file. Both keep direct access
+to module-private internals (`ComputedNode`, `computedOper`, `ReactiveFlags`,
+`signal`, `untracked`) without widening their visibility.
+
+`signals/index.ts` adds `model` to its existing re-export list.
 
 ## API — `computed`
 
@@ -159,9 +164,7 @@ is additive.
 ## ValueModel migration
 
 ```ts
-import {computed} from '../../shared/signals/computed'
-import {model} from '../../shared/signals/model'
-// or via signals/index re-exports
+import {computed, model} from '../../shared/signals'
 
 export class ValueModel {
   readonly isControlledMode = computed(() => this.props.value() !== undefined)
@@ -248,15 +251,19 @@ spec change.
 
 ## Migration order
 
-1. Add `computed.ts` and `model.ts` with full tests (all green in isolation).
-2. Update `signals/index.ts` to re-export from new files.
-3. Remove writable factory and the `computed` export from `signal.ts`.
+1. In `signal.ts`, add the new `model()` factory next to the existing
+   primitives. Reshape the writable `computed` overload: drop `field`, drop
+   `initial`, narrow `set` to `(next: T) => void`. Drop the no-longer-needed
+   `makeWritableComputed` and its lazy-init backing.
+2. Add `model` to `signals/index.ts` re-exports.
+3. Update tests: rewrite the writable describe block in `computed.spec.ts`;
+   add `model.spec.ts`.
 4. Update `ValueModel` to use `model`.
 5. Run full test suite (Core 313, React 171, Vue 157 — all should remain
    green).
 
-The first three steps land the primitives without touching consumers. Step 4
-is a focused diff against the new APIs. Each step compiles.
+Steps 1–3 land the primitives and tests without touching consumers. Step 4 is
+a focused diff against the new APIs.
 
 ## Risk and rollback
 
@@ -268,8 +275,8 @@ is a focused diff against the new APIs. Each step compiles.
 - **Risk: strict-T return surprises.** Existing call sites today are limited to
   the writable `computed` factory inside `signal.ts`. The only user-facing call
   site is `ValueModel`, rewritten in step 4. No other consumers exist.
-- **Rollback:** revert is mechanical — restore `signal.ts`, restore old
-  `ValueModel`, drop new files.
+- **Rollback:** revert is mechanical — restore `signal.ts` and the old
+  `ValueModel` from a single commit.
 
 ## Out of scope
 
