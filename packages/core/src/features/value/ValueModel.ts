@@ -1,18 +1,30 @@
 import type {RawRange} from '../../shared/editorContracts'
-import {computed} from '../../shared/signals/index.js'
+import {computed, model, signal} from '../../shared/signals/index.js'
 import type {PropsModel} from '../props/PropsModel'
 
 export class ValueModel {
 	readonly isControlledMode = computed(() => this.props.value() !== undefined)
 
-	readonly current = computed<string>({
-		initial: () => this.props.value() ?? this.props.defaultValue() ?? '',
-		get: field => (this.isControlledMode() ? (this.props.value() ?? '') : field()),
-		set: (next, field) => {
-			if (next === undefined) return
-			if (this.props.readOnly()) return
-			if (!this.isControlledMode()) field(next)
+	// Tracks whether the user has accepted a write into the uncontrolled internal.
+	// While false, uncontrolled reads surface props.defaultValue() rather than
+	// the model's internal seed, matching the old writable computed's lazy
+	// initial behavior (initial ran only when get demanded the value).
+	private readonly userWritten = signal(false)
+
+	readonly current = model<string>({
+		default: () => '',
+		get: value => {
+			if (this.isControlledMode()) return this.props.value() ?? ''
+			if (this.userWritten()) return value
+			return this.props.defaultValue() ?? ''
+		},
+		set: (next, previous) => {
+			if (next === undefined) return previous
+			if (this.props.readOnly()) return previous
 			this.props.onChange()?.(next)
+			if (this.isControlledMode()) return previous
+			this.userWritten(true)
+			return next
 		},
 	})
 
