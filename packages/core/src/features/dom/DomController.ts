@@ -150,6 +150,7 @@ export class DomController {
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel
 	) {
+		caret._bindDom(this)
 		lifecycle.onMounted(() => {
 			enableFocus({dom: this, caret, parsing})
 			enableSelection({dom: this, caret})

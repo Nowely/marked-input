@@ -127,4 +127,43 @@ describe('CaretModel', () => {
 			expect(store.caret.selection()).toEqual({start: 2, end: 8})
 		})
 	})
+
+	describe('isFullSelection', () => {
+		it('returns false when no container', () => {
+			expect(new Store().caret.isFullSelection()).toBe(false)
+		})
+		it('returns false when selection is collapsed', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+			store.dom.container(container)
+			expect(store.caret.isFullSelection()).toBe(false)
+			container.remove()
+		})
+	})
+
+	describe('selectAll', () => {
+		it('sets selecting to all', () => {
+			const store = new Store()
+			const container = document.createElement('div')
+			container.appendChild(document.createTextNode('hi'))
+			document.body.appendChild(container)
+			store.dom.container(container)
+
+			const mockSel = {setBaseAndExtent: vi.fn(), rangeCount: 0}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for spy
+			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
+
+			store.caret.selectAll()
+			expect(store.caret.selecting()).toBe('all')
+			expect(mockSel.setBaseAndExtent).toHaveBeenCalledWith(container.firstChild, 0, container.lastChild, 1)
+			container.remove()
+			vi.restoreAllMocks()
+		})
+		it('is no-op when container is missing', () => {
+			const store = new Store()
+			expect(() => store.caret.selectAll()).not.toThrow()
+			expect(store.caret.selecting()).toBeUndefined()
+		})
+	})
 })
