@@ -9,8 +9,8 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 ## Edit Flow
 
 1. React/Vue render adapter-owned token shells and text surfaces.
-2. The adapter registers the root with `store.dom.container` and child structure with `store.dom.refFor()`.
-3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom`.
+2. The adapter registers the root with `store.dom.container` and child structure through `store.dom.controlFor(path?)` (for non-editable controls inside a token) and `store.dom.childrenFor(ownerPath)` (for nested `__slot__` child sequence hosts).
+3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom.readRawSelection()` or `store.dom.rawPositionFromBoundary()`.
 4. Edits call `store.value.replace()` and optionally write `store.caret.range()` to set the post-edit caret.
 5. `DomController` applies `caret.range` to the DOM after the next render.
 

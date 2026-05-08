@@ -5,13 +5,24 @@ overlay positioning and block-edit navigation.
 
 ## Components
 
-- **CaretModel**: Reactive caret/selection state. Owns `range`, `selecting`,
-  derived `isCollapsed` / `position` / `selection`, the document mouse +
-  selectionchange listeners, focus tracking, and post-render restoration.
-  Drives `dom.reconcile({selecting})` whenever the drag state flips.
+- **CaretModel**: Reactive caret/selection state. Owns:
+    - `range: Signal<Range | undefined>` — the single source of truth for
+      caret/selection position.
+    - `position: Signal<number | undefined>` — writable computed bound to
+      `range.start`; writing collapses the range to `{start: pos, end: pos}`.
+    - `isSelecting: Signal<boolean>` — flips while the user is actively
+      drag-selecting; drives `dom.reconcile({isSelecting})` so structural text
+      surfaces become non-editable during drags.
+    - `isFullSelection()` / `selectAll()` — imperative helpers for whole-editor
+      selection.
+
+    Document mouse + selectionchange listeners and focus tracking are wired in
+    the constructor and tear down with the lifecycle scope. Range is re-applied
+    to the DOM after every render via `watch(dom.indexed, ...)`.
+
 - **caretDom**: Stateless DOM helpers (`getCaretIndex`, `setAtElement`,
   `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`). Use these for raw DOM
-  caret math; never reach for the deprecated `Caret` static class.
+  caret math.
 - **TriggerFinder**: Detects overlay triggers in text based on the current
   selection.
 

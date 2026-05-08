@@ -96,7 +96,7 @@ Both framework adapters share the same component structure:
         ↓
 7. store.parsing.tokens updated (Signal)
         ↓
-8. React/Vue re-renders via Signal.use()
+8. React/Vue re-renders via the framework `useMarkput()` hook
         ↓
 9. DomController applies caret.range to the DOM after the adapter registers the new DOM
 ```
@@ -268,16 +268,21 @@ State is managed through direct signal declarations. Each property is a `Signal<
 ```typescript
 export interface Signal<T> {
     (): T                 // Read value (also tracks as reactive dependency)
-    (value: T): void      // Write value
-    get(): T              // Alias for read
-    set(value: T): void   // Alias for write
-    use(): T              // Framework-specific reactive hook (React/Vue)
+    (value: T | undefined): void  // Write value (undefined reverts to default)
 }
 ```
 
-The framework adapter calls `setUseHookFactory()` once at module load (in `createUseHook.ts`) to register a framework-specific subscriber:
-- **React**: `use()` calls `useSyncExternalStore`; the subscribe function creates an `effect()` that tracks the signal and calls the notify callback on each re-run
-- **Vue**: `use()` creates a `shallowRef`, drives it with `effect()`, and disposes on `onUnmounted`
+Framework adapters subscribe to signals through their own `useMarkput()` hook
+(see `packages/react/markput/src/lib/hooks/useMarkput.ts` and the Vue
+equivalent). The hook accepts a selector that reads from the store; the
+adapter wraps it in an `effect()` that tracks signal reads and notifies the
+framework when any tracked signal changes:
+
+- **React**: `useMarkput` is built on `useSyncExternalStore`; the subscribe
+  function creates an `effect()` and the snapshot reads the selector
+  untracked.
+- **Vue**: `useMarkput` returns a `shallowRef`, drives it with `effect()`, and
+  disposes on `onUnmounted`.
 
 This is the **only framework coupling point**.
 
@@ -289,6 +294,8 @@ class Store {
     readonly blocks: BlockRegistry
 
     readonly props: {
+        // Each is `Signal<T>` declared with `signal<T>(undefined, {readonly: true})`.
+        // The undefined-initial overload widens to `Signal<T | undefined>` automatically.
         value: Signal<string | undefined>
         defaultValue: Signal<string | undefined>
         onChange: Signal<((value: string) => void) | undefined>
@@ -309,7 +316,7 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
     readonly props:     PropsModel         // framework-provided configuration
-    readonly caret:     CaretModel         // range, location (computed), selecting signals
+    readonly caret:     CaretModel         // range, position (computed), isSelecting
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
     readonly value:     ValueModel         // current, replace()
@@ -348,7 +355,7 @@ store.value.current('Hello @[World]')
 store.props.set({readOnly: true})
 
 // Use in component (framework-specific reactive binding)
-const tokens = store.parsing.tokens.use()
+const tokens = useMarkput(s => s.parsing.tokens())
 ```
 
 ## Features
@@ -371,7 +378,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **DragController**            | Drag-and-drop reordering of blocks                       |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<RawRange | undefined>` as the single source of truth for the caret/selection position, plus a derived `location: Computed<CaretLocation | undefined>` for token-anchored consumers.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), and an `isSelecting: Signal<boolean>` for drag-selection state.
 
 ## Lifecycle Timing
 
@@ -421,32 +428,29 @@ WeakMap keys mean garbage collection frees state when tokens are deleted.
 
 Core owns token addresses, DOM registration, raw selection mapping, raw value mutation, and caret range placement. React and Vue render adapter-owned structural DOM and register it with core through private refs. Features communicate through `store.<name>.*`, `store.props`, and `store.dom`/`store.caret`; production code must not infer token identity from DOM child order.
 
-### Caret Class
+### CaretModel and caretDom
 
-Static helpers for cursor/selection positioning in contenteditable:
+Caret responsibilities are split into a stateful feature and a stateless helper
+module:
+
+- `CaretModel` (feature) owns the reactive caret/selection state — `range`,
+  `position`, and `isSelecting` signals — plus document-level mouse and
+  selectionchange listeners that keep the signals in sync with the browser
+  selection. It depends on `DomController` for DOM placement
+  (`dom.placeAt` / `dom.placeRange`) and never touches the DOM directly for
+  token mapping.
+- `caretDom` (stateless module, exported from `@markput/core`) provides
+  pure DOM helpers: `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`,
+  `isOnFirstLine`, `isOnLastLine`. These are used for raw DOM caret math in
+  block-edit arrow navigation and overlay positioning. They do not consult
+  the token index.
 
 ```typescript
-class Caret {
-    // Selection queries
-    static get isSelectedPosition(): boolean
-    static getCurrentPosition(): number
-    static getSelectedNode(): Node
+import {caretDom} from '@markput/core'
 
-    // Position calculations
-    static getAbsolutePosition(): { left: number; top: number }
-    static getCaretRect(): DOMRect | null
-    static isCaretOnFirstLine(element: HTMLElement): boolean
-    static isCaretOnLastLine(element: HTMLElement): boolean
-
-    // Caret positioning
-    static setAtX(element: HTMLElement, x: number, y?: number): void
-    static setIndex(element: HTMLElement, offset: number): void
-    static setCaretToEnd(element: HTMLElement | null | undefined): void
-
-    // Index helpers
-    static getCaretIndex(element: HTMLElement): number
-    static getIndex(): number
-}
+const offset = caretDom.getCaretIndex(element)
+caretDom.setAtElement(element, 0)
+const rect = caretDom.getRect()
 ```
 
 ### DomController
@@ -584,7 +588,7 @@ function App() {
 
 ### Re-render Optimization
 
-- **Signal-based**: only components that call `.use()` on a changed signal re-render
+- **Signal-based**: only components subscribing through `useMarkput()` to a changed signal re-render
 - **Token changes**: only affected tokens re-render (not the entire tree)
 - **Overlay opens**: only the overlay component re-renders
 

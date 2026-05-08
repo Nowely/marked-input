@@ -81,31 +81,35 @@ export class CaretModel {
 	}
 
 	#enableSelectionTracking(): void {
-		let pressedNode: Node | null = null
-		let isPressed = false
+		// Track whether a mouse button is currently pressed and which node it
+		// started on. The pressed-node identity lets us tell "drag stayed on
+		// the original element" (no selection yet) from "drag is sweeping
+		// across nodes" (real selection in progress).
+		let pressedAt: Node | null = null
 
 		listen(document, 'mousedown', e => {
-			pressedNode = nodeTarget(e)
-			isPressed = true
+			pressedAt = nodeTarget(e)
 		})
 
 		listen(document, 'mousemove', e => {
+			if (pressedAt === null) return
 			const container = this.dom.container()
 			if (!container) return
-			const isNotInnerSome = !container.contains(pressedNode) || pressedNode !== e.target
-			const isInside = window.getSelection()?.containsNode(container, true)
-			if (isPressed && isNotInnerSome && isInside) {
+
+			const startedOutsideEditor = !container.contains(pressedAt)
+			const sweepingAcrossNodes = pressedAt !== e.target
+			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
+
+			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
 				this.isSelecting(true)
 			}
 		})
 
 		listen(document, 'mouseup', () => {
-			isPressed = false
-			pressedNode = null
-			if (this.isSelecting()) {
-				const sel = window.getSelection()
-				if (!sel || sel.isCollapsed) this.isSelecting(false)
-			}
+			pressedAt = null
+			if (!this.isSelecting()) return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) this.isSelecting(false)
 		})
 
 		listen(document, 'selectionchange', () => {

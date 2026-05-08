@@ -92,10 +92,96 @@ describe('CaretModel', () => {
 			container.remove()
 			vi.restoreAllMocks()
 		})
+		it('writes caret.range from the resulting raw selection', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			store.lifecycle.mounted()
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.dom.container(container)
+			store.lifecycle.rendered()
+
+			vi.spyOn(store.dom, 'readRawSelection').mockReturnValue({
+				ok: true,
+				value: {range: {start: 0, end: 5}},
+			})
+
+			store.caret.selectAll()
+			expect(store.caret.range()).toEqual({start: 0, end: 5})
+			container.remove()
+			vi.restoreAllMocks()
+		})
 		it('is no-op when container is missing', () => {
 			const store = new Store()
 			expect(() => store.caret.selectAll()).not.toThrow()
 			expect(store.caret.isSelecting()).toBe(false)
+		})
+	})
+
+	describe('mouse-driven selection tracking', () => {
+		function mountWithContainer() {
+			const store = new Store()
+			const container = document.createElement('div')
+			document.body.appendChild(container)
+			store.dom.container(container)
+			store.lifecycle.mounted()
+			return {store, container}
+		}
+
+		it('flips isSelecting when mouse drags across nodes inside the editor', () => {
+			const {store, container} = mountWithContainer()
+			const a = document.createElement('span')
+			const b = document.createElement('span')
+			a.textContent = 'a'
+			b.textContent = 'b'
+			container.append(a, b)
+
+			const mockSel = {containsNode: () => true, isCollapsed: false, focusNode: null, rangeCount: 0}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for tracking logic
+			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
+
+			a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
+			b.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
+			expect(store.caret.isSelecting()).toBe(true)
+
+			container.remove()
+			vi.restoreAllMocks()
+		})
+
+		it('does not flip isSelecting when drag stays on the same element', () => {
+			const {store, container} = mountWithContainer()
+			const a = document.createElement('span')
+			a.textContent = 'a'
+			container.append(a)
+
+			const mockSel = {containsNode: () => true, isCollapsed: true, focusNode: null, rangeCount: 0}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for tracking logic
+			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
+
+			a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
+			a.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
+			expect(store.caret.isSelecting()).toBe(false)
+
+			container.remove()
+			vi.restoreAllMocks()
+		})
+
+		it('clears isSelecting on mouseup when the resulting selection is collapsed', () => {
+			const {store, container} = mountWithContainer()
+			store.caret.isSelecting(true)
+
+			const mockSel = {isCollapsed: true, focusNode: null, rangeCount: 0}
+			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for tracking logic
+			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
+
+			document.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}))
+			expect(store.caret.isSelecting()).toBe(false)
+
+			container.remove()
+			vi.restoreAllMocks()
 		})
 	})
 

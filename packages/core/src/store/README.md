@@ -5,9 +5,9 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 ## Components
 
 - **Store**: Main state container that manages:
-    - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, caret range, selection mode, overlay match
+    - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, caret range, drag-selection flag, overlay match
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
-    - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `isControlledMode`, `caret.location`, `containerComponent`, `containerProps`, slot resolvers
+    - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `isControlledMode`, `caret.position`, `containerComponent`, `containerProps`, slot resolvers
     - **Events** (`store.<feature>.<event>()`) — typed reactive events: `parsing.reparse`, `overlay.select`, `overlay.close`, `drag.action`, and lifecycle events
     - **DOM refs** (`store.dom.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
     - **DOM registration** (`store.dom`) — adapter-owned structural refs, token location, raw selection mapping, and caret placement
