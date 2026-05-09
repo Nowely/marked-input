@@ -140,7 +140,7 @@ describe('OverlayController', () => {
 			store.overlay.select({mark, match})
 
 			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]')
-			expect(store.caret.range()).toEqual({start: 14, end: 14})
+			expect(store.caret.selection()).toEqual({start: 14, end: 14})
 			expect(store.overlay.match()).toBeUndefined()
 			store.props.set({options: []})
 		})

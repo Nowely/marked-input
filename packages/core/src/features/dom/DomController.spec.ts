@@ -391,27 +391,27 @@ describe('DomController structural indexing', () => {
 	it('clamps OOB caret range and places at maxPos', () => {
 		const {store, container} = mountStructuralInline('hello')
 
-		store.caret.range({start: 999, end: 999})
+		store.caret.selection({start: 999, end: 999})
 		store.lifecycle.rendered()
 
-		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		expect(store.caret.selection()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
 	it('clamps OOB selection range', () => {
 		const {store, container} = mountStructuralInline('hello')
 
-		store.caret.range({start: 999, end: 1000})
+		store.caret.selection({start: 999, end: 1000})
 		store.lifecycle.rendered()
 
-		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		expect(store.caret.selection()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
-	it('applies caret.range to DOM after render', () => {
+	it('applies caret.selection to DOM after render', () => {
 		const {store, container, textNode} = mountStructuralInline('hello')
 
-		store.caret.range({start: 3, end: 3})
+		store.caret.selection({start: 3, end: 3})
 		store.lifecycle.rendered()
 
 		const sel = window.getSelection()
@@ -422,21 +422,21 @@ describe('DomController structural indexing', () => {
 
 	it('clamps OOB range and places caret at clamped position', () => {
 		const {store, container} = mountStructuralInline('hello') // length 5
-		store.caret.range({start: 999, end: 999})
+		store.caret.selection({start: 999, end: 999})
 		store.lifecycle.rendered()
 
 		// clamped to maxPos (5); structural equality prevents re-fire
-		expect(store.caret.range()).toEqual({start: 5, end: 5})
+		expect(store.caret.selection()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
-	it('skips apply when isSelecting', () => {
+	it('skips apply when isUserSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
-		store.caret.range({start: 2, end: 2})
-		store.caret.isSelecting(true)
+		store.caret.selection({start: 2, end: 2})
+		store.caret.isUserSelecting(true)
 		store.lifecycle.rendered()
 
-		expect(store.caret.range()).toEqual({start: 2, end: 2})
+		expect(store.caret.selection()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 
@@ -510,7 +510,7 @@ describe('DomController structural indexing', () => {
 			container.remove()
 		})
 
-		it('reconcile respects isSelecting flag', () => {
+		it('reconcile respects isUserSelecting flag', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -521,10 +521,10 @@ describe('DomController structural indexing', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			store.dom.reconcile({isSelecting: true})
+			store.dom.reconcile({isUserSelecting: true})
 			expect(span.contentEditable).toBe('false')
 
-			store.dom.reconcile({isSelecting: false})
+			store.dom.reconcile({isUserSelecting: false})
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()

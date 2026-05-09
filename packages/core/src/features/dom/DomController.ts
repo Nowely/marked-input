@@ -207,8 +207,8 @@ export class DomController {
 		return callback
 	}
 
-	reconcile(opts?: {isSelecting?: boolean}): void {
-		this.#reconcileStructuralTextSurfaces(opts?.isSelecting)
+	reconcile(opts?: {isUserSelecting?: boolean}): void {
+		this.#reconcileStructuralTextSurfaces(opts?.isUserSelecting)
 	}
 
 	locateNode(node: Node): NodeLocationResult {
@@ -642,9 +642,9 @@ export class DomController {
 		)
 	}
 
-	#reconcileStructuralTextSurfaces(isSelecting?: boolean): void {
+	#reconcileStructuralTextSurfaces(isUserSelecting?: boolean): void {
 		const tokenIndex = this.parsing.index()
-		const editable = this.props.readOnly() || isSelecting ? 'false' : 'true'
+		const editable = this.props.readOnly() || isUserSelecting ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)

@@ -87,7 +87,7 @@ Both framework adapters share the same component structure:
         ↓
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. KeyboardController writes store.caret.range({start, end}) with the desired post-edit position,
+4. KeyboardController writes store.caret.selection({start, end}) with the desired post-edit position,
    then calls store.value.replace() or store.value.current()
         ↓
 5. ValueModel updates uncontrolled state or notifies controlled parents
@@ -98,10 +98,10 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via the framework `useMarkput()` hook
         ↓
-9. DomController applies caret.range to the DOM after the adapter registers the new DOM
+9. DomController applies caret.selection to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.selection` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.selection` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -316,7 +316,7 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
     readonly props:     PropsModel         // framework-provided configuration
-    readonly caret:     CaretModel         // range, position (computed), isSelecting
+    readonly caret:     CaretModel         // selection, position (computed), isUserSelecting, isAllSelected
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
     readonly value:     ValueModel         // current, replace()
@@ -378,7 +378,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **DragController**            | Drag-and-drop reordering of blocks                       |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), and an `isSelecting: Signal<boolean>` for drag-selection state.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `selection: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `selection.start` (writes collapse the range), an `isUserSelecting: Signal<boolean>` for selection-in-progress state, and `isAllSelected: Signal<boolean>` derived from `selection` and the raw value length.
 
 ## Lifecycle Timing
 
@@ -433,8 +433,8 @@ Core owns token addresses, DOM registration, raw selection mapping, raw value mu
 Caret responsibilities are split into a stateful feature and a stateless helper
 module:
 
-- `CaretModel` (feature) owns the reactive caret/selection state — `range`,
-  `position`, and `isSelecting` signals — plus document-level mouse and
+- `CaretModel` (feature) owns the reactive caret/selection state — `selection`,
+  `position`, `isUserSelecting`, and `isAllSelected` signals — plus document-level mouse and
   selectionchange listeners that keep the signals in sync with the browser
   selection. It depends on `DomController` for DOM placement
   (`dom.placeAt` / `dom.placeRange`) and never touches the DOM directly for
@@ -463,7 +463,7 @@ const rect = caretDom.getRect()
 - text token roots are reconciled as editable text surfaces;
 - mark roots receive focusability state.
 
-It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.range` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
+It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.selection` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
 
 ## Framework Hooks
 

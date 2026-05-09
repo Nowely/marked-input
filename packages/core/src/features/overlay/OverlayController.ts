@@ -146,10 +146,10 @@ export class OverlayController {
 	}
 
 	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const range = this.caret.range()
-		if (!range || range.start !== range.end) return
+		const sel = this.caret.selection()
+		if (!sel || sel.start !== sel.end) return
 
-		const cursor = range.start
+		const cursor = sel.start
 		const value = this.value.current()
 		const left = value.slice(0, cursor)
 		const right = value.slice(cursor)

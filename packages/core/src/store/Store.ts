@@ -31,7 +31,7 @@ export class Store {
 
 	readonly dom = new DomController(this.lifecycle, this.props, this.parsing, this.value)
 
-	readonly caret = new CaretModel(this.lifecycle, this.dom)
+	readonly caret = new CaretModel(this.lifecycle, this.dom, this.value)
 
 	readonly overlay = new OverlayController(this.lifecycle, this.props, this.value, this.dom, this.caret, this.parsing)
 	readonly keyboard = new KeyboardController(

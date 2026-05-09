@@ -58,7 +58,7 @@ export class DragController {
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
 		if (newValue !== value) {
 			const range = this.#rangeAfterDrag(action, rows, newValue)
-			if (range) this.caret.range(range)
+			if (range) this.caret.selection(range)
 			this.value.current(newValue)
 		}
 	}
@@ -70,7 +70,7 @@ export class DragController {
 		const newRowContent = createRowContent(this.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.range(range)
+		if (range) this.caret.selection(range)
 		this.value.current(newValue)
 	}
 
@@ -79,7 +79,7 @@ export class DragController {
 		const rows = this.parsing.tokens()
 		const newValue = deleteDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.range(range)
+		if (range) this.caret.selection(range)
 		this.value.current(newValue)
 	}
 
@@ -88,7 +88,7 @@ export class DragController {
 		const rows = this.parsing.tokens()
 		const newValue = duplicateDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.range(range)
+		if (range) this.caret.selection(range)
 		this.value.current(newValue)
 	}
 

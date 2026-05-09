@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {shallow} from '../utils/shallow'
 import {signal, effect, model, isReactive} from './signal'
 
 describe('model', () => {
@@ -143,6 +144,67 @@ describe('model', () => {
 			get: value => value,
 			set: (_next, previous) => previous,
 		})
+		expect(isReactive(m)).toBe(true)
+	})
+})
+
+describe('model — upgrade: optional fields and equals', () => {
+	it('returns undefined initially when default is omitted', () => {
+		const m = model<string>({})
+		expect(m()).toBeUndefined()
+	})
+
+	it('writes value when set is omitted (identity default)', () => {
+		const m = model<string>({default: () => 'a'})
+		expect(m()).toBe('a')
+		m('b')
+		expect(m()).toBe('b')
+	})
+
+	it('treats m(undefined) as a no-op when set is omitted', () => {
+		const m = model<string>({default: () => 'a'})
+		m('b')
+		m(undefined)
+		expect(m()).toBe('b')
+	})
+
+	it('reads via custom get when default is omitted', () => {
+		const m = model<string>({get: value => value ?? 'fallback'})
+		expect(m()).toBe('fallback')
+		m('written')
+		expect(m()).toBe('written')
+	})
+
+	it('skips subscribers when equals reports unchanged', () => {
+		const m = model<{x: number}>({default: () => ({x: 1}), equals: shallow})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			m()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		m({x: 1})
+		expect(runs).toHaveBeenCalledTimes(1)
+		m({x: 2})
+		expect(runs).toHaveBeenCalledTimes(2)
+		dispose()
+	})
+
+	it('uses reference equality when equals is omitted', () => {
+		const m = model<{x: number}>({default: () => ({x: 1})})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			m()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		m({x: 1})
+		expect(runs).toHaveBeenCalledTimes(2)
+		dispose()
+	})
+
+	it('isReactive returns true for a model with no options', () => {
+		const m = model<string>({})
 		expect(isReactive(m)).toBe(true)
 	})
 })

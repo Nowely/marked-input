@@ -11,8 +11,8 @@ Markput handles text input, deletion, paste, overlay insertion, block editing, a
 1. React/Vue render adapter-owned token shells and text surfaces.
 2. The adapter registers the root with `store.dom.container` and child structure through `store.dom.controlFor(path?)` (for non-editable controls inside a token) and `store.dom.childrenFor(ownerPath)` (for nested `__slot__` child sequence hosts).
 3. Keyboard handlers convert the browser selection to a raw serialized range through `store.dom.readRawSelection()` or `store.dom.rawPositionFromBoundary()`.
-4. Edits call `store.value.replace()` and optionally write `store.caret.range()` to set the post-edit caret.
-5. `DomController` applies `caret.range` to the DOM after the next render.
+4. Edits call `store.value.replace()` and optionally write `store.caret.selection()` to set the post-edit caret.
+5. `DomController` applies `caret.selection` to the DOM after the next render.
 
 Production code should not infer token identity from DOM child order or public data attributes.
 
@@ -22,7 +22,7 @@ Inline text input uses the current raw selection:
 
 ```ts
 store.value.replace(selection.range, text)
-store.caret.range({start: selection.range.start + text.length, end: selection.range.start + text.length})
+store.caret.selection({start: selection.range.start + text.length, end: selection.range.start + text.length})
 ```
 
 Controlled editors emit `onChange` first and update the accepted value after the matching prop echo.
@@ -59,7 +59,7 @@ The hook no longer exposes a DOM ref. Focus moves through registered token shell
 
 ## Overlay Triggers
 
-Overlay trigger probing uses the current raw caret position (`caret.range()`). During input, core probes the caret range which is updated synchronously with value edits.
+Overlay trigger probing uses the current raw caret position (`caret.selection()`). During input, core probes the caret range which is updated synchronously with value edits.
 
 ## Custom Keyboard Handlers
 
