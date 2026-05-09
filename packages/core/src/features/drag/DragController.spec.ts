@@ -39,7 +39,7 @@ describe('DragController', () => {
 		expect(typeof store.drag.action).toBe('function')
 	})
 
-	it('commits drag edits through current() and writes caret.range', () => {
+	it('commits drag edits through current() and writes caret.selection', () => {
 		store.props.set({layout: 'block', draggable: true})
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
@@ -49,6 +49,6 @@ describe('DragController', () => {
 		store.drag.action({type: 'delete', index: 0})
 
 		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
-		expect(store.caret.range()).toEqual({start: 6, end: 6})
+		expect(store.caret.selection()).toEqual({start: 6, end: 6})
 	})
 })

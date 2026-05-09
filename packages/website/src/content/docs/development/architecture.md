@@ -87,7 +87,7 @@ Both framework adapters share the same component structure:
         ↓
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. KeyboardController writes store.caret.range({start, end}) with the desired post-edit position,
+4. KeyboardController writes store.caret.selection({start, end}) with the desired post-edit position,
    then calls store.value.replace() or store.value.current()
         ↓
 5. ValueModel updates uncontrolled state or notifies controlled parents
@@ -98,10 +98,10 @@ Both framework adapters share the same component structure:
         ↓
 8. React/Vue re-renders via the framework `useMarkput()` hook
         ↓
-9. DomController applies caret.range to the DOM after the adapter registers the new DOM
+9. DomController applies caret.selection to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.range` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.range` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
+There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.selection` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.selection` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -463,7 +463,7 @@ const rect = caretDom.getRect()
 - text token roots are reconciled as editable text surfaces;
 - mark roots receive focusability state.
 
-It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.range` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
+It exposes raw boundary helpers used by keyboard, clipboard, overlay, block editing, drag, and mark commands. It also applies `caret.selection` to the DOM after every render; ranges that cannot be placed are cleared and reported through DOM diagnostics.
 
 ## Framework Hooks
 

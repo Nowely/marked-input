@@ -4,48 +4,48 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('CaretModel', () => {
-	it('exposes range and isUserSelecting', () => {
+	it('exposes selection and isUserSelecting', () => {
 		const store = new Store()
-		expect(typeof store.caret.range).toBe('function')
+		expect(typeof store.caret.selection).toBe('function')
 		expect(typeof store.caret.isUserSelecting).toBe('function')
 	})
 
-	it('range starts undefined', () => {
-		expect(new Store().caret.range()).toBeUndefined()
+	it('selection starts undefined', () => {
+		expect(new Store().caret.selection()).toBeUndefined()
 	})
 
-	it('range write is structural-equality deduped', () => {
+	it('selection write is structural-equality deduped', () => {
 		const store = new Store()
 		const notify = vi.fn()
-		const stop = watch(store.caret.range, notify)
-		store.caret.range({start: 5, end: 5})
-		store.caret.range({start: 5, end: 5})
+		const stop = watch(store.caret.selection, notify)
+		store.caret.selection({start: 5, end: 5})
+		store.caret.selection({start: 5, end: 5})
 		expect(notify).toHaveBeenCalledTimes(1)
 		stop()
 	})
 
-	it('range undefined write is no-op when already undefined', () => {
+	it('selection undefined write is no-op when already undefined', () => {
 		const store = new Store()
 		const notify = vi.fn()
-		const stop = watch(store.caret.range, notify)
-		store.caret.range(undefined)
+		const stop = watch(store.caret.selection, notify)
+		store.caret.selection(undefined)
 		expect(notify).not.toHaveBeenCalled()
 		stop()
 	})
 
 	describe('position', () => {
-		it('is undefined when range is undefined', () => {
+		it('is undefined when selection is undefined', () => {
 			expect(new Store().caret.position()).toBeUndefined()
 		})
 		it('returns start when collapsed', () => {
 			const store = new Store()
-			store.caret.range({start: 5, end: 5})
+			store.caret.selection({start: 5, end: 5})
 			expect(store.caret.position()).toBe(5)
 		})
-		it('write collapses range to {pos, pos}', () => {
+		it('write collapses selection to {pos, pos}', () => {
 			const store = new Store()
 			store.caret.position(5)
-			expect(store.caret.range()).toEqual({start: 5, end: 5})
+			expect(store.caret.selection()).toEqual({start: 5, end: 5})
 		})
 		it('write does not change isUserSelecting', () => {
 			const store = new Store()
@@ -53,11 +53,11 @@ describe('CaretModel', () => {
 			store.caret.position(5)
 			expect(store.caret.isUserSelecting()).toBe(true)
 		})
-		it('write collapses an extended range', () => {
+		it('write collapses an extended selection', () => {
 			const store = new Store()
-			store.caret.range({start: 2, end: 8})
+			store.caret.selection({start: 2, end: 8})
 			store.caret.position(3)
-			expect(store.caret.range()).toEqual({start: 3, end: 3})
+			expect(store.caret.selection()).toEqual({start: 3, end: 3})
 		})
 	})
 
@@ -92,7 +92,7 @@ describe('CaretModel', () => {
 			container.remove()
 			vi.restoreAllMocks()
 		})
-		it('writes caret.range from the resulting raw selection', () => {
+		it('writes caret.selection from the resulting raw selection', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			store.lifecycle.mounted()
@@ -110,7 +110,7 @@ describe('CaretModel', () => {
 			})
 
 			store.caret.selectAll()
-			expect(store.caret.range()).toEqual({start: 0, end: 5})
+			expect(store.caret.selection()).toEqual({start: 0, end: 5})
 			container.remove()
 			vi.restoreAllMocks()
 		})
@@ -196,7 +196,7 @@ describe('CaretModel', () => {
 	})
 
 	describe('restoration via dom.indexed', () => {
-		it('restores range after indexed fires', () => {
+		it('restores selection after indexed fires', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			document.body.appendChild(container)
@@ -224,7 +224,7 @@ describe('CaretModel', () => {
 			placeAtSpy.mockRestore()
 		})
 
-		it('clears range when placeAt fails', () => {
+		it('clears selection when placeAt fails', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			document.body.appendChild(container)
@@ -233,7 +233,7 @@ describe('CaretModel', () => {
 			store.lifecycle.mounted()
 			store.caret.position(3)
 			store.lifecycle.rendered()
-			expect(store.caret.range()).toBeUndefined()
+			expect(store.caret.selection()).toBeUndefined()
 			container.remove()
 			vi.restoreAllMocks()
 		})

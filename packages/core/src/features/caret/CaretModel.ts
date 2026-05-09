@@ -6,10 +6,10 @@ import type {DomController} from '../dom/DomController'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 
 export class CaretModel {
-	readonly range = signal<Range>(undefined, {equals: shallow})
+	readonly selection = signal<Range>(undefined, {equals: shallow})
 	readonly position = computed({
-		get: () => this.range()?.start,
-		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
+		get: () => this.selection()?.start,
+		set: value => this.selection(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
 	/**
@@ -53,7 +53,7 @@ export class CaretModel {
 		if (!container?.firstChild || !container.lastChild) return
 		window.getSelection()?.setBaseAndExtent(container.firstChild, 0, container.lastChild, 1)
 		const rawSel = this.dom.readRawSelection()
-		if (rawSel.ok) this.range(rawSel.value.range)
+		if (rawSel.ok) this.selection(rawSel.value.range)
 	}
 
 	#enableFocusTracking(): void {
@@ -63,23 +63,23 @@ export class CaretModel {
 		listen(container, 'focusin', e => {
 			const target = e.target instanceof HTMLElement ? e.target : undefined
 			if (!target) {
-				this.range(undefined)
+				this.selection(undefined)
 				return
 			}
 			const result = this.dom.locateNode(target)
 			if (!result.ok) {
 				if (result.reason === 'control') return
-				this.range(undefined)
+				this.selection(undefined)
 				return
 			}
 			const rawSel = this.dom.readRawSelection()
-			if (rawSel.ok) this.range(rawSel.value.range)
+			if (rawSel.ok) this.selection(rawSel.value.range)
 		})
 
 		listen(container, 'focusout', () => {
 			queueMicrotask(() => {
 				if (!container.contains(document.activeElement)) {
-					this.range(undefined)
+					this.selection(undefined)
 				}
 			})
 		})
@@ -126,36 +126,36 @@ export class CaretModel {
 			const result = this.dom.locateNode(sel.focusNode)
 			if (!result.ok) {
 				if (result.reason === 'control') return
-				this.range(undefined)
+				this.selection(undefined)
 				return
 			}
 			const rawSel = this.dom.readRawSelection()
-			if (rawSel.ok) this.range(rawSel.value.range)
-			else this.range(undefined)
+			if (rawSel.ok) this.selection(rawSel.value.range)
+			else this.selection(undefined)
 		})
 	}
 
 	#applyRangeToDOM(): void {
 		if (this.isUserSelecting()) return
-		const range = this.range()
-		if (range === undefined) return
+		const sel = this.selection()
+		if (sel === undefined) return
 
-		if (range.start === range.end) {
-			const result = this.dom.placeAt(range.start)
+		if (sel.start === sel.end) {
+			const result = this.dom.placeAt(sel.start)
 			if (!result.ok) {
-				this.range(undefined)
+				this.selection(undefined)
 				return
 			}
 			const applied = result.value.applied
-			if (applied !== range.start) this.range({start: applied, end: applied})
+			if (applied !== sel.start) this.selection({start: applied, end: applied})
 			return
 		}
 
-		const result = this.dom.placeRange(range)
+		const result = this.dom.placeRange(sel)
 		if (!result.ok) {
-			this.range(undefined)
+			this.selection(undefined)
 			return
 		}
-		this.range(result.value.applied)
+		this.selection(result.value.applied)
 	}
 }

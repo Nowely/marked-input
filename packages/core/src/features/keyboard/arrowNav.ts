@@ -27,7 +27,7 @@ export function enableArrowNav(store: KbCtx): void {
 
 function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'next'): boolean {
 	// Resolve the "current" token from the focused DOM element, not from
-	// caret.range. At a position exactly between two tokens the position alone
+	// caret.selection. At a position exactly between two tokens the position alone
 	// is ambiguous; the active element tells us which token the user is
 	// actually standing on.
 	const active = document.activeElement instanceof HTMLElement ? document.activeElement : undefined
