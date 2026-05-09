@@ -610,24 +610,43 @@ export function untracked<T>(fn: () => T): T {
 // ---------------------------------------------------------------------------
 
 export function model<T>(opts: {
+	default?: undefined
+	equals?: (a: T | undefined, b: T | undefined) => boolean
+	get?: (value: T | undefined) => T | undefined
+	set?: (next: T | undefined, previous: T | undefined) => T | undefined
+}): Signal<T | undefined>
+export function model<T>(opts: {
 	default: () => T
-	get: (value: T) => T
-	set: (next: T | undefined, previous: T) => T
+	equals?: (a: T, b: T) => boolean
+	get?: (value: T) => T
+	set?: (next: T | undefined, previous: T) => T
+}): Signal<T>
+export function model<T>(opts: {
+	default?: () => T
+	equals?: (a: T, b: T) => boolean
+	get?: (value: T) => T
+	set?: (next: T | undefined, previous: T) => T
 }): Signal<T> {
 	let internal: Signal<T> | undefined
 	const ensureInternal = (): Signal<T> => {
-		internal ??= signal(untracked(opts.default))
+		if (internal !== undefined) return internal
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is a valid seed for the no-default overload; signal() handles hasDefault correctly
+		const seed = opts.default !== undefined ? untracked(opts.default) : (undefined as T)
+		internal = signal<T>(seed, {equals: opts.equals})
 		return internal
 	}
 
+	const getFn = opts.get ?? ((value: T) => value)
+	const setFn = opts.set ?? ((next: T | undefined, previous: T) => next ?? previous)
+
 	// Reads go through computed so opts.get is memoized and external signals
 	// read inside opts.get propagate to subscribers.
-	const reader = computed(() => opts.get(ensureInternal()()))
+	const reader = computed(() => getFn(ensureInternal()()))
 
 	const callable = function modelOper(...args: [T | undefined] | []): T | void {
 		if (args.length === 0) return reader()
 		const sig = ensureInternal()
-		sig(opts.set(args[0], sig()))
+		sig(setFn(args[0], sig()))
 	}
 
 	Object.defineProperty(callable, 'name', {value: 'bound ' + computedOper.name})
