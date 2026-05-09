@@ -12,9 +12,11 @@ export class CaretModel {
 		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
-	// isUserSelecting flags the period between the user starting and finishing
-	// a selection (mouse drag, keyboard Shift+Arrow, etc.). It is used to freeze
-	// structural text surfaces (contenteditable=false) while selecting.
+	/**
+	 * Whether the user is actively selecting text (mouse drag, keyboard
+	 * Shift+Arrow, etc.). Drives {@link DomController.reconcile} to freeze
+	 * structural text surfaces (contenteditable=false) while selecting.
+	 */
 	readonly isUserSelecting = signal<boolean>(false)
 
 	constructor(
