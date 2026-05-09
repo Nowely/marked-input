@@ -10,8 +10,8 @@ overlay positioning and block-edit navigation.
       caret/selection position.
     - `position: Signal<number | undefined>` — writable computed bound to
       `range.start`; writing collapses the range to `{start: pos, end: pos}`.
-    - `isSelecting: Signal<boolean>` — flips while the user is actively
-      drag-selecting; drives `dom.reconcile({isSelecting})` so structural text
+    - `isUserSelecting: Signal<boolean>` — flips while the user is actively
+      drag-selecting; drives `dom.reconcile({isUserSelecting})` so structural text
       surfaces become non-editable during drags.
     - `isFullSelection()` / `selectAll()` — imperative helpers for whole-editor
       selection.

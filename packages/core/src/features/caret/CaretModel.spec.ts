@@ -4,10 +4,10 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('CaretModel', () => {
-	it('exposes range and isSelecting', () => {
+	it('exposes range and isUserSelecting', () => {
 		const store = new Store()
 		expect(typeof store.caret.range).toBe('function')
-		expect(typeof store.caret.isSelecting).toBe('function')
+		expect(typeof store.caret.isUserSelecting).toBe('function')
 	})
 
 	it('range starts undefined', () => {
@@ -47,11 +47,11 @@ describe('CaretModel', () => {
 			store.caret.position(5)
 			expect(store.caret.range()).toEqual({start: 5, end: 5})
 		})
-		it('write does not change isSelecting', () => {
+		it('write does not change isUserSelecting', () => {
 			const store = new Store()
-			store.caret.isSelecting(true)
+			store.caret.isUserSelecting(true)
 			store.caret.position(5)
-			expect(store.caret.isSelecting()).toBe(true)
+			expect(store.caret.isUserSelecting()).toBe(true)
 		})
 		it('write collapses an extended range', () => {
 			const store = new Store()
@@ -117,7 +117,7 @@ describe('CaretModel', () => {
 		it('is no-op when container is missing', () => {
 			const store = new Store()
 			expect(() => store.caret.selectAll()).not.toThrow()
-			expect(store.caret.isSelecting()).toBe(false)
+			expect(store.caret.isUserSelecting()).toBe(false)
 		})
 	})
 
@@ -131,7 +131,7 @@ describe('CaretModel', () => {
 			return {store, container}
 		}
 
-		it('flips isSelecting when mouse drags across nodes inside the editor', () => {
+		it('flips isUserSelecting when mouse drags across nodes inside the editor', () => {
 			const {store, container} = mountWithContainer()
 			const a = document.createElement('span')
 			const b = document.createElement('span')
@@ -145,13 +145,13 @@ describe('CaretModel', () => {
 
 			a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
 			b.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
-			expect(store.caret.isSelecting()).toBe(true)
+			expect(store.caret.isUserSelecting()).toBe(true)
 
 			container.remove()
 			vi.restoreAllMocks()
 		})
 
-		it('does not flip isSelecting when drag stays on the same element', () => {
+		it('does not flip isUserSelecting when drag stays on the same element', () => {
 			const {store, container} = mountWithContainer()
 			const a = document.createElement('span')
 			a.textContent = 'a'
@@ -163,22 +163,22 @@ describe('CaretModel', () => {
 
 			a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
 			a.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
-			expect(store.caret.isSelecting()).toBe(false)
+			expect(store.caret.isUserSelecting()).toBe(false)
 
 			container.remove()
 			vi.restoreAllMocks()
 		})
 
-		it('clears isSelecting on mouseup when the resulting selection is collapsed', () => {
+		it('clears isUserSelecting on mouseup when the resulting selection is collapsed', () => {
 			const {store, container} = mountWithContainer()
-			store.caret.isSelecting(true)
+			store.caret.isUserSelecting(true)
 
 			const mockSel = {isCollapsed: true, focusNode: null, rangeCount: 0}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for tracking logic
 			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
 
 			document.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}))
-			expect(store.caret.isSelecting()).toBe(false)
+			expect(store.caret.isUserSelecting()).toBe(false)
 
 			container.remove()
 			vi.restoreAllMocks()
@@ -213,12 +213,12 @@ describe('CaretModel', () => {
 			placeAtSpy.mockRestore()
 		})
 
-		it('skips restoration when isSelecting', () => {
+		it('skips restoration when isUserSelecting', () => {
 			const store = new Store()
 			const placeAtSpy = vi.spyOn(store.dom, 'placeAt')
 			store.lifecycle.mounted()
 			store.caret.position(3)
-			store.caret.isSelecting(true)
+			store.caret.isUserSelecting(true)
 			store.lifecycle.rendered()
 			expect(placeAtSpy).not.toHaveBeenCalled()
 			placeAtSpy.mockRestore()
@@ -240,13 +240,13 @@ describe('CaretModel', () => {
 	})
 
 	describe('single reconcile driver', () => {
-		it('calls dom.reconcile when isSelecting changes', () => {
+		it('calls dom.reconcile when isUserSelecting changes', () => {
 			const store = new Store()
 			const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
 			store.lifecycle.mounted()
 			reconcileSpy.mockClear()
-			store.caret.isSelecting(true)
-			expect(reconcileSpy).toHaveBeenCalledWith({isSelecting: true})
+			store.caret.isUserSelecting(true)
+			expect(reconcileSpy).toHaveBeenCalledWith({isUserSelecting: true})
 			reconcileSpy.mockRestore()
 		})
 	})

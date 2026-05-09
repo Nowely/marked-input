@@ -316,7 +316,7 @@ class Store {
     // Features live directly on store, not nested under .feature
     readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
     readonly props:     PropsModel         // framework-provided configuration
-    readonly caret:     CaretModel         // range, position (computed), isSelecting
+    readonly caret:     CaretModel         // range, position (computed), isUserSelecting
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
     readonly value:     ValueModel         // current, replace()
@@ -378,7 +378,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **DragController**            | Drag-and-drop reordering of blocks                       |
 | **ClipboardController**       | Clipboard copy/cut handling                              |
 
-`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), and an `isSelecting: Signal<boolean>` for drag-selection state.
+`KeyboardController` internally composes three modules: input handling, block editing, and arrow navigation. `CaretModel` exposes a `range: Signal<Range | undefined>` as the single source of truth for the caret/selection position, a writable `position: Signal<number | undefined>` computed bound to `range.start` (writes collapse the range), and an `isUserSelecting: Signal<boolean>` for drag-selection state.
 
 ## Lifecycle Timing
 
@@ -434,7 +434,7 @@ Caret responsibilities are split into a stateful feature and a stateless helper
 module:
 
 - `CaretModel` (feature) owns the reactive caret/selection state — `range`,
-  `position`, and `isSelecting` signals — plus document-level mouse and
+  `position`, and `isUserSelecting` signals — plus document-level mouse and
   selectionchange listeners that keep the signals in sync with the browser
   selection. It depends on `DomController` for DOM placement
   (`dom.placeAt` / `dom.placeRange`) and never touches the DOM directly for

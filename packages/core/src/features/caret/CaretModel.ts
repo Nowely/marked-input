@@ -12,7 +12,10 @@ export class CaretModel {
 		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
-	readonly isSelecting = signal<boolean>(false)
+	// isUserSelecting flags the period between the user starting and finishing
+	// a selection (mouse drag, keyboard Shift+Arrow, etc.). It is used to freeze
+	// structural text surfaces (contenteditable=false) while selecting.
+	readonly isUserSelecting = signal<boolean>(false)
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -22,13 +25,13 @@ export class CaretModel {
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
 			watch(dom.indexed, () => {
-				dom.reconcile({isSelecting: this.isSelecting()})
+				dom.reconcile({isUserSelecting: this.isUserSelecting()})
 				this.#applyRangeToDOM()
 			})
 			effect(() => {
-				const isSelecting = this.isSelecting()
+				const isUserSelecting = this.isUserSelecting()
 				dom.readOnly()
-				dom.reconcile({isSelecting})
+				dom.reconcile({isUserSelecting})
 			})
 		})
 	}
@@ -101,21 +104,21 @@ export class CaretModel {
 			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
 
 			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
-				this.isSelecting(true)
+				this.isUserSelecting(true)
 			}
 		})
 
 		listen(document, 'mouseup', () => {
 			pressedAt = null
-			if (!this.isSelecting()) return
+			if (!this.isUserSelecting()) return
 			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) this.isSelecting(false)
+			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
 		})
 
 		listen(document, 'selectionchange', () => {
 			const sel = window.getSelection()
-			if (this.isSelecting() && (!sel || sel.isCollapsed)) {
-				this.isSelecting(false)
+			if (this.isUserSelecting() && (!sel || sel.isCollapsed)) {
+				this.isUserSelecting(false)
 			}
 			if (!sel?.focusNode) return
 			const result = this.dom.locateNode(sel.focusNode)
@@ -131,7 +134,7 @@ export class CaretModel {
 	}
 
 	#applyRangeToDOM(): void {
-		if (this.isSelecting()) return
+		if (this.isUserSelecting()) return
 		const range = this.range()
 		if (range === undefined) return
 

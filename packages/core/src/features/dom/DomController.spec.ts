@@ -430,10 +430,10 @@ describe('DomController structural indexing', () => {
 		container.remove()
 	})
 
-	it('skips apply when isSelecting', () => {
+	it('skips apply when isUserSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
 		store.caret.range({start: 2, end: 2})
-		store.caret.isSelecting(true)
+		store.caret.isUserSelecting(true)
 		store.lifecycle.rendered()
 
 		expect(store.caret.range()).toEqual({start: 2, end: 2})
@@ -510,7 +510,7 @@ describe('DomController structural indexing', () => {
 			container.remove()
 		})
 
-		it('reconcile respects isSelecting flag', () => {
+		it('reconcile respects isUserSelecting flag', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -521,10 +521,10 @@ describe('DomController structural indexing', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			store.dom.reconcile({isSelecting: true})
+			store.dom.reconcile({isUserSelecting: true})
 			expect(span.contentEditable).toBe('false')
 
-			store.dom.reconcile({isSelecting: false})
+			store.dom.reconcile({isUserSelecting: false})
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()
