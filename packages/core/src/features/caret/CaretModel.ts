@@ -47,11 +47,8 @@ export class CaretModel {
 	}
 
 	selectAll(): void {
-		const container = this.dom.container()
-		if (!container?.firstChild || !container.lastChild) return
-		window.getSelection()?.setBaseAndExtent(container.firstChild, 0, container.lastChild, 1)
-		const rawSel = this.dom.readRawSelection()
-		if (rawSel.ok) this.selection(rawSel.value.range)
+		this.selection({start: 0, end: this.value.current().length})
+		this.#applyRangeToDOM()
 	}
 
 	#enableFocusTracking(): void {

@@ -86,23 +86,7 @@ describe('CaretModel', () => {
 	})
 
 	describe('selectAll', () => {
-		it('extends DOM selection across container', () => {
-			const store = new Store()
-			const container = document.createElement('div')
-			container.appendChild(document.createTextNode('hi'))
-			document.body.appendChild(container)
-			store.dom.container(container)
-
-			const mockSel = {setBaseAndExtent: vi.fn(), rangeCount: 0}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for spy
-			vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
-
-			store.caret.selectAll()
-			expect(mockSel.setBaseAndExtent).toHaveBeenCalledWith(container.firstChild, 0, container.lastChild, 1)
-			container.remove()
-			vi.restoreAllMocks()
-		})
-		it('writes caret.selection from the resulting raw selection', () => {
+		it('sets selection to full value range and applies it to DOM', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			store.lifecycle.mounted()
@@ -114,20 +98,27 @@ describe('CaretModel', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			vi.spyOn(store.dom, 'readRawSelection').mockReturnValue({
+			const placeRangeSpy = vi.spyOn(store.dom, 'placeRange').mockReturnValue({
 				ok: true,
-				value: {range: {start: 0, end: 5}},
+				value: {applied: {start: 0, end: 5}},
 			})
 
 			store.caret.selectAll()
+			expect(placeRangeSpy).toHaveBeenCalledWith({start: 0, end: 5})
 			expect(store.caret.selection()).toEqual({start: 0, end: 5})
 			container.remove()
 			vi.restoreAllMocks()
 		})
-		it('is no-op when container is missing', () => {
+		it('clears selection when placeRange fails', () => {
 			const store = new Store()
-			expect(() => store.caret.selectAll()).not.toThrow()
-			expect(store.caret.isUserSelecting()).toBe(false)
+			store.props.set({defaultValue: 'hello'})
+			store.lifecycle.mounted()
+
+			vi.spyOn(store.dom, 'placeRange').mockReturnValue({ok: false, reason: 'notIndexed'})
+
+			store.caret.selectAll()
+			expect(store.caret.selection()).toBeUndefined()
+			vi.restoreAllMocks()
 		})
 	})
 
