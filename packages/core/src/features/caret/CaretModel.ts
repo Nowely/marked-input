@@ -24,7 +24,7 @@ export class CaretModel {
 	 * Whether the current selection spans the entire raw value
 	 * ({@link selection} is `{start: 0, end: value.length}`).
 	 */
-	readonly isFullSelection = computed(() => {
+	readonly isAllSelected = computed(() => {
 		const s = this.selection()
 		const v = this.value.current()
 		return s?.start === 0 && s.end === v.length && v.length > 0

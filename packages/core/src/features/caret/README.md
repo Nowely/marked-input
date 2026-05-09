@@ -13,7 +13,7 @@ overlay positioning and block-edit navigation.
     - `isUserSelecting: Signal<boolean>` — flips while the user is actively
       drag-selecting; drives `dom.reconcile({isUserSelecting})` so structural text
       surfaces become non-editable during drags.
-    - `isFullSelection: Signal<boolean>` — computed from {@link selection} and
+    - `isAllSelected: Signal<boolean>` — computed from {@link selection} and
       `value.current().length`; true when the selection spans the entire raw value.
     - `selectAll()` — imperative helper for whole-editor selection.
 
