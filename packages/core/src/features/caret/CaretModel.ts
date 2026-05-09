@@ -20,10 +20,6 @@ export class CaretModel {
 	 */
 	readonly isUserSelecting = signal<boolean>(false)
 
-	/**
-	 * Whether the current selection spans the entire raw value
-	 * ({@link selection} is `{start: 0, end: value.length}`).
-	 */
 	readonly isAllSelected = computed(() => {
 		const s = this.selection()
 		const v = this.value.current()
