@@ -62,16 +62,26 @@ describe('CaretModel', () => {
 	})
 
 	describe('isFullSelection', () => {
-		it('returns false when no container', () => {
+		it('returns false when value is empty', () => {
 			expect(new Store().caret.isFullSelection()).toBe(false)
 		})
 		it('returns false when selection is collapsed', () => {
 			const store = new Store()
-			const container = document.createElement('div')
-			document.body.appendChild(container)
-			store.dom.container(container)
+			store.props.set({defaultValue: 'hello'})
+			store.caret.selection({start: 2, end: 2})
 			expect(store.caret.isFullSelection()).toBe(false)
-			container.remove()
+		})
+		it('returns false for a partial selection', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			store.caret.selection({start: 1, end: 3})
+			expect(store.caret.isFullSelection()).toBe(false)
+		})
+		it('returns true when selection spans the entire value', () => {
+			const store = new Store()
+			store.props.set({defaultValue: 'hello'})
+			store.caret.selection({start: 0, end: 5})
+			expect(store.caret.isFullSelection()).toBe(true)
 		})
 	})
 

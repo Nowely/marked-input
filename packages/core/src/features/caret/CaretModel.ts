@@ -4,6 +4,7 @@ import {computed, effect, listen, signal, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomController} from '../dom/DomController'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
+import type {ValueModel} from '../value/ValueModel'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -19,9 +20,20 @@ export class CaretModel {
 	 */
 	readonly isUserSelecting = signal<boolean>(false)
 
+	/**
+	 * Whether the current selection spans the entire raw value
+	 * ({@link selection} is `{start: 0, end: value.length}`).
+	 */
+	readonly isFullSelection = computed(() => {
+		const s = this.selection()
+		const v = this.value.current()
+		return s?.start === 0 && s.end === v.length && v.length > 0
+	})
+
 	constructor(
 		private readonly lifecycle: Lifecycle,
-		private readonly dom: DomController
+		private readonly dom: DomController,
+		private readonly value: ValueModel
 	) {
 		lifecycle.onMounted(() => {
 			this.#enableFocusTracking()
@@ -36,16 +48,6 @@ export class CaretModel {
 				dom.reconcile({isUserSelecting})
 			})
 		})
-	}
-
-	isFullSelection(): boolean {
-		const sel = window.getSelection()
-		const container = this.dom.container()
-		if (!sel?.rangeCount || !container?.firstChild || !container.lastChild) return false
-		const range = sel.getRangeAt(0)
-		if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) return false
-		const selected = range.toString()
-		return selected.length > 0 && selected === container.textContent
 	}
 
 	selectAll(): void {

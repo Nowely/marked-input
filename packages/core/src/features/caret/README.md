@@ -13,8 +13,9 @@ overlay positioning and block-edit navigation.
     - `isUserSelecting: Signal<boolean>` — flips while the user is actively
       drag-selecting; drives `dom.reconcile({isUserSelecting})` so structural text
       surfaces become non-editable during drags.
-    - `isFullSelection()` / `selectAll()` — imperative helpers for whole-editor
-      selection.
+    - `isFullSelection: Signal<boolean>` — computed from {@link selection} and
+      `value.current().length`; true when the selection spans the entire raw value.
+    - `selectAll()` — imperative helper for whole-editor selection.
 
     Document mouse + selectionchange listeners and focus tracking are wired in
     the constructor and tear down with the lifecycle scope. Range is re-applied
