@@ -75,7 +75,7 @@ export class CaretModel {
 	 * Returns `true` when the address could be resolved and focused, `false`
 	 * when the DOM is not yet indexed or the address is stale.
 	 */
-	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
+	placeAtAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
 		if (this.dom.index() === undefined) return false
 		if (!this.dom.pathElementsFor(address)) return false
 		const resolved = this.parsing.index().resolveAddress(address)

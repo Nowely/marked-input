@@ -21,7 +21,7 @@ export class MarkputHandler {
 
 	focus() {
 		const firstAddress = this.parsing.index().addressFor([0])
-		if (firstAddress && this.caret.focusAddress(firstAddress, 'start')) return
+		if (firstAddress && this.caret.placeAtAddress(firstAddress, 'start')) return
 		this.container?.focus()
 	}
 }

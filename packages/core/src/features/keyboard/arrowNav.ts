@@ -60,5 +60,5 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// Address-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
 	// the wrong token at text↔mark boundaries.
-	return store.caret.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
+	return store.caret.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
 }
