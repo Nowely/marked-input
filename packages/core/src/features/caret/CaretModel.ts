@@ -117,18 +117,18 @@ export class CaretModel {
 			}
 		})
 
+		const clearIfCollapsed = (): void => {
+			if (!this.isUserSelecting()) return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
+		}
+
 		listen(document, 'mouseup', () => {
 			pressedAt = null
-			if (!this.isUserSelecting()) return
-			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
+			clearIfCollapsed()
 		})
 
-		listen(document, 'selectionchange', () => {
-			if (!this.isUserSelecting()) return
-			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
-		})
+		listen(document, 'selectionchange', clearIfCollapsed)
 	}
 
 	#trackSelection(): void {
