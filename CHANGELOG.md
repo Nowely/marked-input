@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.14.1](https://github.com/Nowely/marked-input/compare/0.14.0...0.14.1) (2026-05-13)
+
+
+### Refactoring
+
+* **caret:** consolidate caret model and improve model() primitive ([#240](https://github.com/Nowely/marked-input/issues/240)) ([4a5c7af](https://github.com/Nowely/marked-input/commit/4a5c7af78f9ebf22a2796972adda3100f0f1b3c1))
+* **caret:** consolidate caret model and migrate DOM handling ([#239](https://github.com/Nowely/marked-input/issues/239)) ([e8eedf8](https://github.com/Nowely/marked-input/commit/e8eedf8968cf0f13de5a626192f5a1d150317a22))
+* **core:** add lifecycle.onMounted helper, remove queueMicrotask workarounds and dead code ([#231](https://github.com/Nowely/marked-input/issues/231)) ([7b1f2c8](https://github.com/Nowely/marked-input/commit/7b1f2c81340da009e7502b992d5ace84d6fed43f))
+* **core:** add model() primitive to signals ([#238](https://github.com/Nowely/marked-input/issues/238)) ([a44bcb0](https://github.com/Nowely/marked-input/commit/a44bcb007a06897ed5aee5fe109f557d7746f166))
+* **core:** add writable computed primitive and refactor ValueFeature ([#232](https://github.com/Nowely/marked-input/issues/232)) ([1cde9f2](https://github.com/Nowely/marked-input/commit/1cde9f2838769c191d66a3e079158fbaf0ee3ffb))
+* **core:** explicit feature dependencies, remove feature cycles ([#234](https://github.com/Nowely/marked-input/issues/234)) ([fa18ca5](https://github.com/Nowely/marked-input/commit/fa18ca5e942582240e81bb1d4e25c9b8e9288327))
+* **core:** rename Features to Controllers/Models ([#237](https://github.com/Nowely/marked-input/issues/237)) ([c827334](https://github.com/Nowely/marked-input/commit/c82733400ea0c42732bbd38a308857ac47f727ca))
+* **edit:** introduce EditController for centralized single-range edits ([#242](https://github.com/Nowely/marked-input/issues/242)) ([c84518b](https://github.com/Nowely/marked-input/commit/c84518b43d8203f5af13a3d4b6b95350a20c65bd))
+* remove enable/disable from Feature interface ([#229](https://github.com/Nowely/marked-input/issues/229)) ([f7cbe40](https://github.com/Nowely/marked-input/commit/f7cbe40f48574543e0889063a3d9521f00977fc0))
+* simplify value API and centralize caret selecting state transitions ([#236](https://github.com/Nowely/marked-input/issues/236)) ([d8be05a](https://github.com/Nowely/marked-input/commit/d8be05a1d59d94e2d6c97db054758c5f3f493015))
+
 ## [0.14.0](https://github.com/Nowely/marked-input/compare/0.13.0...0.14.0) (2026-05-06)
 
 
