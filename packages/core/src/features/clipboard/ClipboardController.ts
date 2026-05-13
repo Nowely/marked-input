@@ -1,12 +1,11 @@
 import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
-import type {CaretModel} from '../caret/CaretModel'
 import type {DomController} from '../dom/DomController'
+import type {EditController} from '../edit'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
-import type {ValueModel} from '../value/ValueModel'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 function htmlFromRange(range: globalThis.Range): string {
@@ -38,10 +37,9 @@ function trimTokensForRawRange(tokens: readonly Token[], range: Range): Token[] 
 export class ClipboardController {
 	constructor(
 		private readonly lifecycle: Lifecycle,
-		private readonly value: ValueModel,
+		private readonly edit: EditController,
 		private readonly dom: DomController,
-		private readonly parsing: ParseController,
-		private readonly caret: CaretModel
+		private readonly parsing: ParseController
 	) {
 		lifecycle.onMounted(() => {
 			// The container must be registered before mounted() fires (adapter
@@ -56,8 +54,7 @@ export class ClipboardController {
 				if (!this.#handleCopy(e)) return
 				const raw = dom.readRawSelection()
 				if (!raw.ok || raw.value.range.start === raw.value.range.end) return
-				caret.position(raw.value.range.start)
-				value.replace(raw.value.range, '')
+				edit.replace(raw.value.range, '')
 			})
 		})
 	}

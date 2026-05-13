@@ -120,8 +120,8 @@ describe('OverlayController', () => {
 	})
 
 	describe('select()', () => {
-		it('replaces the trigger range through the value pipeline', () => {
-			const replaceRange = vi.spyOn(store.value, 'replace')
+		it('delegates trigger replacement to the edit coordinator', () => {
+			const replaceRange = vi.spyOn(store.edit, 'replace')
 			const mark = {
 				type: 'text' as const,
 				content: 'world',
@@ -140,7 +140,6 @@ describe('OverlayController', () => {
 			store.overlay.select({mark, match})
 
 			expect(replaceRange).toHaveBeenCalledWith({start: 6, end: 9}, '@[world]')
-			expect(store.caret.selection()).toEqual({start: 14, end: 14})
 			expect(store.overlay.match()).toBeUndefined()
 			store.props.set({options: []})
 		})

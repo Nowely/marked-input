@@ -87,8 +87,7 @@ Both framework adapters share the same component structure:
         ↓
 3. store.dom maps the DOM selection or input target range to a raw value range
         ↓
-4. KeyboardController writes store.caret.selection({start, end}) with the desired post-edit position,
-   then calls store.value.replace() or store.value.current()
+4. KeyboardController calls store.edit.replace() for single-range user edits, or writes store.caret.selection({start, end}) and store.value.current() for whole-value edits that are not expressed as one replacement range
         ↓
 5. ValueModel updates uncontrolled state or notifies controlled parents
         ↓
@@ -101,7 +100,7 @@ Both framework adapters share the same component structure:
 9. DomController applies caret.selection to the DOM after the adapter registers the new DOM
 ```
 
-There is one serialized value edit path for user mutations: features describe the raw range and replacement text, optionally write `store.caret.selection` to set the post-edit caret, then call `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.selection` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
+Single-range user mutations go through `store.edit.replace()`: features describe the raw range and replacement text, and the edit coordinator records the default post-edit caret before delegating to `store.value.replace()`. Lower-level raw value mutations still go through `store.value.replace()` or `store.value.current()`. `DomController` owns DOM-to-raw boundary mapping and applies `caret.selection` to the DOM after every render, while `ParseController` owns parser selection and string-to-token parsing.
 
 ### Trigger Flow (Overlay Opens)
 
@@ -320,6 +319,7 @@ class Store {
     readonly mark:      MarkFeature        // mark slot resolution
     readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
     readonly value:     ValueModel         // current, replace()
+    readonly edit:      EditController     // replace() — single-range user edit + caret intent
     readonly parsing:   ParseController    // tokens, parser, token index
     readonly dom:       DomController      // DOM refs, raw mapping, range placement
     readonly overlay:   OverlayController  // match, element, slot, select, close
@@ -360,14 +360,15 @@ const tokens = useMarkput(s => s.parsing.tokens())
 
 ## Features
 
-11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
+12 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
 
 Signal subscription order is significant: `ParseController` subscribes to `value.current` inside its `onMounted` hook before any other consumer registers a watcher in `onMounted`. This guarantees that when downstream listeners observe a `value.current` change, `parsing.tokens()` already reflects the new value.
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
 | **Lifecycle**                 | Mount/unmount/render lifecycle events                     |
-| **ValueModel**                | Accepted serialized value state, edit commands           |
+| **ValueModel**                | Accepted serialized value state, raw range replacement   |
+| **EditController**            | Single-range user edit coordination (value + caret intent) |
 | **ParseController**           | Token parsing, parser selection, reparse event            |
 | **MarkFeature**               | Mark slot resolution                                      |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |

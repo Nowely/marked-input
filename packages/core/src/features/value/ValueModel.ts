@@ -1,5 +1,6 @@
 import type {Range} from '../../shared/editorContracts'
 import {computed, model} from '../../shared/signals/index.js'
+import {replaceInString} from '../../shared/utils'
 import type {PropsModel} from '../props/PropsModel'
 
 export class ValueModel {
@@ -19,9 +20,8 @@ export class ValueModel {
 	constructor(private readonly props: PropsModel) {}
 
 	replace(range: Range, replacement: string): void {
-		const current = this.current()
-		if (range.start < 0 || range.end < range.start || range.end > current.length) return
-		const next = current.slice(0, range.start) + replacement + current.slice(range.end)
+		const next = replaceInString(this.current(), range, replacement)
+		if (next === undefined) return
 		this.current(next)
 	}
 }

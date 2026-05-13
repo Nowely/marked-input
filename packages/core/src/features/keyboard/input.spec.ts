@@ -88,7 +88,7 @@ describe('replaceAllContentWith()', () => {
 describe('handleBeforeInput()', () => {
 	it('inserts text through replaceRange using target ranges', () => {
 		const {store, container, textNode} = mountStructuralInline()
-		const replaceRange = vi.spyOn(store.value, 'replace')
+		const replaceRange = vi.spyOn(store.edit, 'replace')
 		const range = document.createRange()
 		range.setStart(textNode, 1)
 		range.setEnd(textNode, 1)
@@ -159,6 +159,7 @@ describe('composition input', () => {
 		container.dispatchEvent(compositionEnd)
 
 		expect(store.value.current()).toBe('aXb')
+		expect(store.caret.selection()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 })
