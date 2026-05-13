@@ -1,4 +1,3 @@
-import {firstHtmlChild} from '../../shared/checkers'
 import type {
 	BoundaryPositionResult,
 	DomIndex,
@@ -8,11 +7,10 @@ import type {
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
-import {computed, event, listen, signal} from '../../shared/signals/index.js'
+import {event, signal} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
-import {pathKey} from '../parsing/tokenIndex'
 import type {PropsModel} from '../props/PropsModel'
 import {DomBoundary} from './DomBoundary'
 import type {DomBoundaryHost} from './DomBoundary'
@@ -22,7 +20,6 @@ import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost, Pat
 export class DomModel {
 	readonly container = signal<HTMLElement | null>(null)
 	readonly indexed = event<void>()
-	readonly readOnly: Computed<boolean> = computed(() => this.props.readOnly())
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
@@ -34,11 +31,7 @@ export class DomModel {
 	readonly #boundary: DomBoundary
 	readonly index: Computed<DomIndex | undefined>
 
-	constructor(
-		private readonly lifecycle: Lifecycle,
-		private readonly props: PropsModel,
-		private readonly parsing: ParseController
-	) {
+	constructor(lifecycle: Lifecycle, props: PropsModel, parsing: ParseController) {
 		const indexerHost: DomIndexerHost = {
 			container: () => this.container(),
 			pendingControls: () => this.#pendingControls.values(),
@@ -57,20 +50,6 @@ export class DomModel {
 			pathElementsFor: address => this.#indexer.pathElementsFor(address),
 		}
 		this.#boundary = new DomBoundary(boundaryHost, parsing)
-
-		lifecycle.onMounted(() => {
-			const container = this.container()
-			if (container) {
-				listen(container, 'click', () => {
-					const tokens = this.parsing.tokens()
-					if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-						const c = this.container()
-						const element = c ? firstHtmlChild(c) : null
-						element?.focus()
-					}
-				})
-			}
-		})
 	}
 
 	compositionStarted(): void {
@@ -78,12 +57,11 @@ export class DomModel {
 	}
 
 	compositionEnded(): void {
-		if (!this.#isComposing) return
 		this.#isComposing = false
 	}
 
 	controlFor(ownerPath?: TokenPath): DomRef {
-		const key = `control:${ownerPath ? pathKey(ownerPath) : 'global'}:${++this.#nextControlId}`
+		const key = `control:${++this.#nextControlId}`
 
 		const callback: DomRef = element => {
 			if (element) {
@@ -96,7 +74,7 @@ export class DomModel {
 	}
 
 	childrenFor(ownerPath: TokenPath): DomRef {
-		const key = `children:${pathKey(ownerPath)}:${++this.#nextChildSequenceId}`
+		const key = `children:${++this.#nextChildSequenceId}`
 
 		const callback: DomRef = element => {
 			if (element) {

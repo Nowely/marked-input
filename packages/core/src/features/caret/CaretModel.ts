@@ -1,4 +1,4 @@
-import {nodeTarget} from '../../shared/checkers'
+import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
 import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
@@ -6,6 +6,7 @@ import type {DomModel} from '../dom/DomModel'
 import {nextTextNode} from '../dom/textOffsets'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
+import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
 
 export class CaretModel {
@@ -34,9 +35,19 @@ export class CaretModel {
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomModel,
 		private readonly parsing: ParseController,
-		private readonly value: ValueModel
+		private readonly value: ValueModel,
+		private readonly props: PropsModel
 	) {
 		lifecycle.onMounted(() => {
+			const container = dom.container()
+			if (container) {
+				listen(container, 'click', () => {
+					const tokens = this.parsing.tokens()
+					if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+						firstHtmlChild(dom.container())?.focus()
+					}
+				})
+			}
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
 			watch(dom.indexed, () => {
@@ -45,7 +56,7 @@ export class CaretModel {
 			})
 			effect(() => {
 				const isUserSelecting = this.isUserSelecting()
-				dom.readOnly()
+				this.props.readOnly()
 				dom.reconcile({isUserSelecting})
 			})
 			effect(() => {

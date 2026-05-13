@@ -453,13 +453,6 @@ describe('DomModel structural indexing', () => {
 
 			container.remove()
 		})
-
-		it('readOnly computed reflects props', () => {
-			const store = new Store()
-			expect(store.dom.readOnly()).toBe(false)
-			store.props.set({readOnly: true})
-			expect(store.dom.readOnly()).toBe(true)
-		})
 	})
 
 	describe('empty-editor click handler', () => {
