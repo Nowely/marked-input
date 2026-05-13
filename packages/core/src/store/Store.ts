@@ -30,9 +30,9 @@ export class Store {
 
 	readonly parsing = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomModel(this.lifecycle, this.props, this.parsing, this.value)
+	readonly dom = new DomModel(this.lifecycle, this.props, this.parsing)
 
-	readonly caret = new CaretModel(this.lifecycle, this.dom, this.value)
+	readonly caret = new CaretModel(this.lifecycle, this.dom, this.parsing, this.value)
 	readonly edit = new EditController(this.value, this.caret)
 
 	readonly overlay = new OverlayController(
@@ -57,5 +57,5 @@ export class Store {
 	readonly drag = new DragController(this.props, this.value, this.parsing, this.caret)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.parsing)
 
-	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing)
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing, this.caret)
 }

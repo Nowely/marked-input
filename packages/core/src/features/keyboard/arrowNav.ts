@@ -57,15 +57,8 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	if (!siblingAddress) return false
 
 	event.preventDefault()
-	const result = store.dom.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
-	if (!result.ok) return false
-	const sibling = store.parsing.index().resolve(siblingPath)
-	if (sibling?.type === 'mark') return true
-
-	if (direction === 'prev') {
-		store.dom.placeAt(sibling?.position.end ?? 0, 'before')
-		return true
-	}
-	store.dom.placeAt(sibling?.position.start ?? 0, 'after')
-	return true
+	// Address-based placement disambiguates the sibling from any neighbouring
+	// token that shares a boundary position. Position-only placement would pick
+	// the wrong token at text↔mark boundaries.
+	return store.caret.focusAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
 }

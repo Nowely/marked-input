@@ -1,14 +1,13 @@
 # DOM Feature
 
-Owns rendered DOM structure, token-to-element indexing, raw boundary mapping, text reconciliation, focus-by-address, and caret range placement.
+Owns rendered DOM structure, token-to-element indexing, raw boundary mapping, and structural text reconciliation. Caret placement back into the DOM is the responsibility of `CaretModel` (see `../caret/README.md`).
 
 ## Layout
 
-- `DomModel.ts` — public facade exposed as `store.dom`. Owns `container`, ref registries (`controlFor` / `childrenFor`), composition flags, the click-on-empty listener, and the `index` / `indexed` / `diagnostics` / `readOnly` surface. Composes the three collaborators below and delegates the imperative methods to them.
+- `DomModel.ts` — public facade exposed as `store.dom`. Owns `container`, ref registries (`controlFor` / `childrenFor`), composition flags, the click-on-empty listener, and the `index` / `indexed` / `diagnostics` / `readOnly` surface. Exposes read-only views into the index (`locateNode`, `pathElements`, `pathElementsFor`) and the boundary mapping (`rawPositionFromBoundary`, `readRawSelection`).
 - `DomIndexer.ts` — rebuilds the token-to-element index after `lifecycle.rendered`, keeps `#pathElements` / `#elementRoles` in sync, and reconciles structural text surfaces (text content + `contentEditable`) when `props.readOnly` changes or selection mode toggles.
 - `DomBoundary.ts` — converts DOM `(node, offset)` boundaries and the current browser selection into raw value positions. Used by the value pipeline and keyboard handlers.
-- `DomCaretPlacer.ts` — places carets and ranges back into the DOM from raw positions or token addresses (`placeAt`, `placeRange`, `focusAddress`). Out-of-bounds inputs are clamped; placements that cannot resolve return `invalidBoundary` and the caller is expected to surface that.
-- `textOffsets.ts` — pure helpers for walking text content (`textOffsetWithin`, `textLength`, `splitsSurrogatePair`, `hasEditableAncestorBefore`, etc.).
+- `textOffsets.ts` — pure helpers for walking text content (`textOffsetWithin`, `textLength`, `splitsSurrogatePair`, `hasEditableAncestorBefore`, etc.). Also consumed by `CaretModel`'s inlined placement helpers.
 
 ## Registration
 

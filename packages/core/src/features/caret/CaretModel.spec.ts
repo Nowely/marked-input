@@ -98,27 +98,24 @@ describe('CaretModel', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			const placeRangeSpy = vi.spyOn(store.dom, 'placeRange').mockReturnValue({
-				ok: true,
-				value: {applied: {start: 0, end: 5}},
-			})
-
 			store.caret.selectAll()
-			expect(placeRangeSpy).toHaveBeenCalledWith({start: 0, end: 5})
 			expect(store.caret.selection()).toEqual({start: 0, end: 5})
+			const sel = window.getSelection()
+			expect(sel?.anchorNode).toBe(span.firstChild)
+			expect(sel?.anchorOffset).toBe(0)
+			expect(sel?.focusNode).toBe(span.firstChild)
+			expect(sel?.focusOffset).toBe(5)
 			container.remove()
-			vi.restoreAllMocks()
 		})
-		it('clears selection when placeRange fails', () => {
+		it('retains selection intent when the DOM has no target yet', () => {
 			const store = new Store()
 			store.props.set({defaultValue: 'hello'})
 			store.lifecycle.mounted()
 
-			vi.spyOn(store.dom, 'placeRange').mockReturnValue({ok: false, reason: 'notIndexed'})
-
+			// No container set → dom.index() is undefined → placement is deferred
+			// until the next render. The selection signal still reflects user intent.
 			store.caret.selectAll()
-			expect(store.caret.selection()).toBeUndefined()
-			vi.restoreAllMocks()
+			expect(store.caret.selection()).toEqual({start: 0, end: 5})
 		})
 	})
 
@@ -200,43 +197,59 @@ describe('CaretModel', () => {
 		it('restores selection after indexed fires', () => {
 			const store = new Store()
 			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
 			document.body.appendChild(container)
 
-			const placeAtSpy = vi.spyOn(store.dom, 'placeAt').mockReturnValue({ok: true, value: {applied: 5}})
 			store.props.set({defaultValue: 'hello'})
 			store.dom.container(container)
 			store.lifecycle.mounted()
 			store.caret.position(5)
 
 			store.lifecycle.rendered()
-			expect(placeAtSpy).toHaveBeenCalledWith(5)
+			const sel = window.getSelection()
+			expect(sel?.focusNode).toBe(span.firstChild)
+			expect(sel?.focusOffset).toBe(5)
 			container.remove()
-			placeAtSpy.mockRestore()
 		})
 
 		it('skips restoration when isUserSelecting', () => {
 			const store = new Store()
-			const placeAtSpy = vi.spyOn(store.dom, 'placeAt')
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.dom.container(container)
 			store.lifecycle.mounted()
-			store.caret.position(3)
 			store.caret.isUserSelecting(true)
+			store.caret.position(3)
+
+			// Clear any pre-existing browser selection so we can detect non-changes.
+			window.getSelection()?.removeAllRanges()
 			store.lifecycle.rendered()
-			expect(placeAtSpy).not.toHaveBeenCalled()
-			placeAtSpy.mockRestore()
+
+			const sel = window.getSelection()
+			expect(sel?.rangeCount ?? 0).toBe(0)
+			container.remove()
 		})
 
-		it('clears selection when placeAt fails', () => {
+		it('retains selection intent when no DOM target exists for the position', () => {
+			// Empty container: no token elements registered → placer can't find a
+			// target → placement is deferred (selection intent retained until the
+			// DOM catches up).
 			const store = new Store()
 			const container = document.createElement('div')
 			document.body.appendChild(container)
-			vi.spyOn(store.dom, 'placeAt').mockReturnValue({ok: false, reason: 'notIndexed'})
+			store.props.set({defaultValue: 'hello'})
 			store.dom.container(container)
 			store.lifecycle.mounted()
 			store.caret.position(3)
 			store.lifecycle.rendered()
-			expect(store.caret.selection()).toBeUndefined()
+			expect(store.caret.selection()).toEqual({start: 3, end: 3})
 			container.remove()
-			vi.restoreAllMocks()
 		})
 	})
 

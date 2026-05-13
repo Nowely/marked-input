@@ -1,9 +1,11 @@
 import {nodeTarget} from '../../shared/checkers'
-import type {Range} from '../../shared/editorContracts'
-import {computed, effect, listen, signal, watch} from '../../shared/signals'
+import type {Range, TokenAddress} from '../../shared/editorContracts'
+import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
+import {nextTextNode} from '../dom/textOffsets'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
+import type {ParseController} from '../parsing/ParseController'
 import type {ValueModel} from '../value/ValueModel'
 
 export class CaretModel {
@@ -26,9 +28,12 @@ export class CaretModel {
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
 
+	#suppressAutoApply = false
+
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomModel,
+		private readonly parsing: ParseController,
 		private readonly value: ValueModel
 	) {
 		lifecycle.onMounted(() => {
@@ -43,12 +48,56 @@ export class CaretModel {
 				dom.readOnly()
 				dom.reconcile({isUserSelecting})
 			})
+			effect(() => {
+				this.selection()
+				untracked(() => this.#applyRangeToDOM())
+			})
 		})
 	}
 
 	selectAll(): void {
 		this.selection({start: 0, end: this.value.current().length})
-		this.#applyRangeToDOM()
+	}
+
+	/**
+	 * Place the caret at a known token address. Use this when the caller already
+	 * has a {@link TokenAddress} and needs to disambiguate which token owns a
+	 * shared boundary position (e.g. a text-token ending at N and a mark-token
+	 * starting at N both "own" position N). Position-only callers should write
+	 * to `selection` instead — the auto-apply effect handles the common case.
+	 *
+	 * Returns `true` when the address could be resolved and focused, `false`
+	 * when the DOM is not yet indexed or the address is stale.
+	 */
+	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
+		if (this.dom.index() === undefined) return false
+		const elements = this.dom.pathElementsFor(address)
+		if (!elements) return false
+		const resolved = this.parsing.index().resolveAddress(address)
+		if (!resolved.ok) return false
+
+		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
+
+		this.#suppressAutoApply = true
+		try {
+			if (resolved.value.type === 'mark') {
+				if (document.activeElement !== elements.tokenElement) elements.tokenElement.focus()
+				this.#placeCollapsedBoundary(
+					elements.tokenElement,
+					boundary === 'end' ? elements.tokenElement.childNodes.length : 0
+				)
+			} else {
+				const target = elements.textElement ?? elements.tokenElement
+				if (document.activeElement !== target) target.focus()
+				if (elements.textElement) {
+					this.#placeCaretInTextSurface(elements.textElement, pos - resolved.value.position.start)
+				}
+			}
+			this.selection({start: pos, end: pos})
+		} finally {
+			this.#suppressAutoApply = false
+		}
+		return true
 	}
 
 	#enableFocusTracking(): void {
@@ -131,26 +180,129 @@ export class CaretModel {
 	}
 
 	#applyRangeToDOM(): void {
+		if (this.#suppressAutoApply) return
 		if (this.isUserSelecting()) return
+		if (this.dom.index() === undefined) return
 		const sel = this.selection()
 		if (sel === undefined) return
 
-		if (sel.start === sel.end) {
-			const result = this.dom.placeAt(sel.start)
-			if (!result.ok) {
-				this.selection(undefined)
+		const maxPos = this.value.current().length
+		const clamped: Range = {
+			start: Math.min(sel.start, maxPos),
+			end: Math.min(sel.end, maxPos),
+		}
+
+		if (clamped.start === clamped.end) {
+			const target = this.#findTextTargetForRawPosition(clamped.start)
+			if (target) {
+				if (document.activeElement !== target.element) target.element.focus()
+				this.#placeCaretInTextSurface(target.element, clamped.start - target.start)
+			} else if (!this.#focusMarkBoundaryForRawPosition(clamped.start)) {
+				// Placement target not found in the current DOM index. Likely the
+				// DOM hasn't caught up with a fresh parser generation; leave the
+				// selection signal alone and let `watch(dom.indexed)` retry on
+				// the next render.
 				return
 			}
-			const applied = result.value.applied
-			if (applied !== sel.start) this.selection({start: applied, end: applied})
+			if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
 			return
 		}
 
-		const result = this.dom.placeRange(sel)
-		if (!result.ok) {
-			this.selection(undefined)
-			return
+		const startTarget = this.#findTextTargetForRawPosition(clamped.start)
+		const endTarget = this.#findTextTargetForRawPosition(clamped.end)
+		const browserSelection = window.getSelection()
+		if (!startTarget || !endTarget || !browserSelection) return
+
+		const startBoundary = this.#boundaryInTextSurface(startTarget.element, clamped.start - startTarget.start)
+		const endBoundary = this.#boundaryInTextSurface(endTarget.element, clamped.end - endTarget.start)
+		if (!startBoundary || !endBoundary) return
+
+		const range = document.createRange()
+		range.setStart(startBoundary.node, startBoundary.offset)
+		range.setEnd(endBoundary.node, endBoundary.offset)
+		browserSelection.removeAllRanges()
+		browserSelection.addRange(range)
+
+		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+	}
+
+	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
+		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
+		const tokenIndex = this.parsing.index()
+
+		for (const record of this.dom.pathElements()) {
+			if (!record.textElement) continue
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'text') continue
+			candidates.push({
+				element: record.textElement,
+				start: resolved.value.position.start,
+				end: resolved.value.position.end,
+			})
 		}
-		this.selection(result.value.applied)
+
+		candidates.sort((a, b) => a.start - b.start)
+		const containing = candidates.find(candidate => rawPosition >= candidate.start && rawPosition <= candidate.end)
+		if (containing) return containing
+		return candidates.find(candidate => candidate.start >= rawPosition)
+	}
+
+	#focusMarkBoundaryForRawPosition(rawPosition: number): boolean {
+		const tokenIndex = this.parsing.index()
+
+		for (const record of this.dom.pathElements()) {
+			const resolved = tokenIndex.resolveAddress(record.address)
+			if (!resolved.ok || resolved.value.type !== 'mark') continue
+			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
+
+			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
+			if (document.activeElement !== record.tokenElement) record.tokenElement.focus()
+			this.#placeCollapsedBoundary(
+				record.tokenElement,
+				boundary === 'end' ? record.tokenElement.childNodes.length : 0
+			)
+			return true
+		}
+
+		return false
+	}
+
+	#placeCaretInTextSurface(surface: HTMLElement, offset: number): void {
+		const selection = window.getSelection()
+		if (!selection) return
+
+		const boundary = this.#boundaryInTextSurface(surface, offset)
+		if (!boundary) return
+		const range = document.createRange()
+		range.setStart(boundary.node, boundary.offset)
+		range.collapse(true)
+		selection.removeAllRanges()
+		selection.addRange(range)
+	}
+
+	#placeCollapsedBoundary(element: HTMLElement, offset: number): void {
+		const selection = window.getSelection()
+		if (!selection) return
+
+		const range = document.createRange()
+		range.setStart(element, Math.min(Math.max(offset, 0), element.childNodes.length))
+		range.collapse(true)
+		selection.removeAllRanges()
+		selection.addRange(range)
+	}
+
+	#boundaryInTextSurface(surface: HTMLElement, offset: number): {node: Text; offset: number} | undefined {
+		const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+		let remaining = Math.max(0, offset)
+		let node = nextTextNode(walker)
+		while (node) {
+			if (remaining <= node.length) return {node, offset: remaining}
+			remaining -= node.length
+			node = nextTextNode(walker)
+		}
+
+		const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
+		if (!text.parentNode) surface.append(text)
+		return {node: text, offset: text.length}
 	}
 }

@@ -437,9 +437,10 @@ module:
 - `CaretModel` (feature) owns the reactive caret/selection state — `selection`,
   `position`, `isUserSelecting`, and `isAllSelected` signals — plus document-level mouse and
   selectionchange listeners that keep the signals in sync with the browser
-  selection. It depends on `DomController` for DOM placement
-  (`dom.placeAt` / `dom.placeRange`) and never touches the DOM directly for
-  token mapping.
+  selection. It is the single source of truth for DOM caret placement: writes
+  to `caret.selection` are auto-applied to the DOM through an effect, and the
+  same path re-runs after each `dom.indexed`. External features never move the
+  caret imperatively; they write the desired range to `caret.selection`.
 - `caretDom` (stateless module, exported from `@markput/core`) provides
   pure DOM helpers: `getCaretIndex`, `setAtElement`, `setAtX`, `getRect`,
   `isOnFirstLine`, `isOnLastLine`. These are used for raw DOM caret math in

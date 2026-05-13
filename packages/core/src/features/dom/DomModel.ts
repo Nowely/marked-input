@@ -4,9 +4,7 @@ import type {
 	DomIndex,
 	DomRef,
 	NodeLocationResult,
-	Range,
 	RawSelectionResult,
-	Result,
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
@@ -16,13 +14,10 @@ import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
 import {pathKey} from '../parsing/tokenIndex'
 import type {PropsModel} from '../props/PropsModel'
-import type {ValueModel} from '../value/ValueModel'
 import {DomBoundary} from './DomBoundary'
 import type {DomBoundaryHost} from './DomBoundary'
-import {DomCaretPlacer} from './DomCaretPlacer'
-import type {DomCaretHost} from './DomCaretPlacer'
 import {DomIndexer} from './DomIndexer'
-import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost} from './DomIndexer'
+import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost, PathElements} from './DomIndexer'
 
 export class DomModel {
 	readonly container = signal<HTMLElement | null>(null)
@@ -37,14 +32,12 @@ export class DomModel {
 
 	readonly #indexer: DomIndexer
 	readonly #boundary: DomBoundary
-	readonly #caret: DomCaretPlacer
 	readonly index: Computed<DomIndex | undefined>
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly props: PropsModel,
-		private readonly parsing: ParseController,
-		private readonly value: ValueModel
+		private readonly parsing: ParseController
 	) {
 		const indexerHost: DomIndexerHost = {
 			container: () => this.container(),
@@ -64,13 +57,6 @@ export class DomModel {
 			pathElementsFor: address => this.#indexer.pathElementsFor(address),
 		}
 		this.#boundary = new DomBoundary(boundaryHost, parsing)
-
-		const caretHost: DomCaretHost = {
-			isIndexed: () => this.index() !== undefined,
-			pathElements: () => this.#indexer.pathElements(),
-			pathElementsFor: address => this.#indexer.pathElementsFor(address),
-		}
-		this.#caret = new DomCaretPlacer(caretHost, parsing, value)
 
 		lifecycle.onMounted(() => {
 			const container = this.container()
@@ -130,19 +116,12 @@ export class DomModel {
 		return this.#indexer.locateNode(node)
 	}
 
-	placeAt(
-		rawPosition: number,
-		affinity: 'before' | 'after' = 'after'
-	): Result<{applied: number}, 'notIndexed' | 'invalidBoundary'> {
-		return this.#caret.placeAt(rawPosition, affinity)
+	pathElements(): IterableIterator<PathElements> {
+		return this.#indexer.pathElements()
 	}
 
-	placeRange(range: Range): Result<{applied: Range}, 'notIndexed' | 'invalidBoundary'> {
-		return this.#caret.placeRange(range)
-	}
-
-	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): Result<void, 'notIndexed' | 'stale'> {
-		return this.#caret.focusAddress(address, boundary)
+	pathElementsFor(address: TokenAddress): PathElements | undefined {
+		return this.#indexer.pathElementsFor(address)
 	}
 
 	rawPositionFromBoundary(
