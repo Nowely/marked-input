@@ -1,6 +1,6 @@
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
-import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
+import {computed, effect, listen, signal, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -43,10 +43,7 @@ export class CaretModel {
 			this.#focusEmptyEditorOnClick()
 
 			this.#trackSelection()
-			effect(() => {
-				this.selection()
-				untracked(() => this.#applyRangeToDOM())
-			})
+			watch(this.selection, () => this.#applyRangeToDOM())
 
 			this.#trackUserSelecting()
 			watch(dom.indexed, () => {
