@@ -40,10 +40,16 @@ export class CaretModel {
 		private readonly props: PropsModel
 	) {
 		lifecycle.onMounted(() => {
-			this.#trackUserSelecting()
 			this.#wireEmptyDocClickFocus()
 			this.#enableFocusTracking()
+
 			this.#enableSelectionTracking()
+			effect(() => {
+				this.selection()
+				untracked(() => this.#applyRangeToDOM())
+			})
+
+			this.#trackUserSelecting()
 			watch(dom.indexed, () => {
 				dom.reconcile({isUserSelecting: this.isUserSelecting()})
 				this.#applyRangeToDOM()
@@ -52,10 +58,6 @@ export class CaretModel {
 				const isUserSelecting = this.isUserSelecting()
 				this.props.readOnly()
 				dom.reconcile({isUserSelecting})
-			})
-			effect(() => {
-				this.selection()
-				untracked(() => this.#applyRangeToDOM())
 			})
 		})
 	}
