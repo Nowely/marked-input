@@ -1,6 +1,6 @@
 import {CaretModel} from '../features/caret'
 import {ClipboardController} from '../features/clipboard'
-import {DomController} from '../features/dom'
+import {DomModel} from '../features/dom'
 import {DragController} from '../features/drag'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
@@ -30,7 +30,7 @@ export class Store {
 
 	readonly parsing = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomController(this.lifecycle, this.props, this.parsing, this.value)
+	readonly dom = new DomModel(this.lifecycle, this.props, this.parsing, this.value)
 
 	readonly caret = new CaretModel(this.lifecycle, this.dom, this.value)
 	readonly edit = new EditController(this.value, this.caret)

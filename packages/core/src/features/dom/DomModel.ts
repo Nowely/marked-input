@@ -125,7 +125,7 @@ function hasEditableAncestorBefore(node: Node, boundary: HTMLElement): boolean {
 	return false
 }
 
-export class DomController {
+export class DomModel {
 	readonly #domIndex = signal<DomIndex>(undefined, {readonly: true})
 	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
