@@ -3,11 +3,11 @@ import type {Range, TokenAddress} from '../../shared/editorContracts'
 import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
-import {nextTextNode} from '../dom/textOffsets'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
+import {placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -93,15 +93,12 @@ export class CaretModel {
 		try {
 			if (resolved.value.type === 'mark') {
 				if (document.activeElement !== elements.tokenElement) elements.tokenElement.focus()
-				this.#placeCollapsedBoundary(
-					elements.tokenElement,
-					boundary === 'end' ? elements.tokenElement.childNodes.length : 0
-				)
+				placeAtChildBoundary(elements.tokenElement, boundary)
 			} else {
 				const target = elements.textElement ?? elements.tokenElement
 				if (document.activeElement !== target) target.focus()
 				if (elements.textElement) {
-					this.#placeCaretInTextSurface(elements.textElement, pos - resolved.value.position.start)
+					placeAtTextOffset(elements.textElement, pos - resolved.value.position.start)
 				}
 			}
 			this.selection({start: pos, end: pos})
@@ -207,7 +204,7 @@ export class CaretModel {
 			const target = this.#findTextTargetForRawPosition(clamped.start)
 			if (target) {
 				if (document.activeElement !== target.element) target.element.focus()
-				this.#placeCaretInTextSurface(target.element, clamped.start - target.start)
+				placeAtTextOffset(target.element, clamped.start - target.start)
 			} else if (!this.#focusMarkBoundaryForRawPosition(clamped.start)) {
 				// Placement target not found in the current DOM index. Likely the
 				// DOM hasn't caught up with a fresh parser generation; leave the
@@ -221,18 +218,12 @@ export class CaretModel {
 
 		const startTarget = this.#findTextTargetForRawPosition(clamped.start)
 		const endTarget = this.#findTextTargetForRawPosition(clamped.end)
-		const browserSelection = window.getSelection()
-		if (!startTarget || !endTarget || !browserSelection) return
+		if (!startTarget || !endTarget) return
 
-		const startBoundary = this.#boundaryInTextSurface(startTarget.element, clamped.start - startTarget.start)
-		const endBoundary = this.#boundaryInTextSurface(endTarget.element, clamped.end - endTarget.start)
-		if (!startBoundary || !endBoundary) return
-
-		const range = document.createRange()
-		range.setStart(startBoundary.node, startBoundary.offset)
-		range.setEnd(endBoundary.node, endBoundary.offset)
-		browserSelection.removeAllRanges()
-		browserSelection.addRange(range)
+		placeRangeAcrossSurfaces(
+			{element: startTarget.element, offset: clamped.start - startTarget.start},
+			{element: endTarget.element, offset: clamped.end - endTarget.start}
+		)
 
 		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
 	}
@@ -268,52 +259,10 @@ export class CaretModel {
 
 			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
 			if (document.activeElement !== record.tokenElement) record.tokenElement.focus()
-			this.#placeCollapsedBoundary(
-				record.tokenElement,
-				boundary === 'end' ? record.tokenElement.childNodes.length : 0
-			)
+			placeAtChildBoundary(record.tokenElement, boundary)
 			return true
 		}
 
 		return false
-	}
-
-	#placeCaretInTextSurface(surface: HTMLElement, offset: number): void {
-		const selection = window.getSelection()
-		if (!selection) return
-
-		const boundary = this.#boundaryInTextSurface(surface, offset)
-		if (!boundary) return
-		const range = document.createRange()
-		range.setStart(boundary.node, boundary.offset)
-		range.collapse(true)
-		selection.removeAllRanges()
-		selection.addRange(range)
-	}
-
-	#placeCollapsedBoundary(element: HTMLElement, offset: number): void {
-		const selection = window.getSelection()
-		if (!selection) return
-
-		const range = document.createRange()
-		range.setStart(element, Math.min(Math.max(offset, 0), element.childNodes.length))
-		range.collapse(true)
-		selection.removeAllRanges()
-		selection.addRange(range)
-	}
-
-	#boundaryInTextSurface(surface: HTMLElement, offset: number): {node: Text; offset: number} | undefined {
-		const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
-		let remaining = Math.max(0, offset)
-		let node = nextTextNode(walker)
-		while (node) {
-			if (remaining <= node.length) return {node, offset: remaining}
-			remaining -= node.length
-			node = nextTextNode(walker)
-		}
-
-		const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
-		if (!text.parentNode) surface.append(text)
-		return {node: text, offset: text.length}
 	}
 }
