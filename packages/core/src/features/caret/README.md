@@ -5,31 +5,42 @@ overlay positioning and block-edit navigation.
 
 ## Components
 
-- **CaretModel**: Reactive caret/selection state AND the single source of
-  truth for applying that state to the DOM. External code should never
-  imperatively move the caret; instead, write to `caret.selection` and let the
-  auto-apply effect handle DOM placement. Owns:
+- **CaretModel**: Reactive caret/selection state plus DOM↔signal sync. Owns:
     - `selection: Signal<Range | undefined>` — the single source of truth for
       caret/selection position.
     - `position: Signal<number | undefined>` — writable computed bound to
       `selection.start`; writing collapses the range to `{start: pos, end: pos}`.
-    - `isUserSelecting: Signal<boolean>` — flips while the user is actively
-      drag-selecting; drives `dom.reconcile({isUserSelecting})` so structural text
-      surfaces become non-editable during drags.
+    - `isUserSelecting: Signal<boolean>` — passthrough to
+      `UserSelectingTracker.isSelecting`. Drives
+      `dom.reconcile({isUserSelecting})` so structural text surfaces become
+      non-editable during drags.
     - `isAllSelected: Signal<boolean>` — computed from `selection` and
       `value.current().length`; true when the selection spans the entire raw value.
     - `selectAll()` — imperative helper for whole-editor selection.
+    - `focusAddress(address, boundary)` — sets a one-shot address hint and
+      writes the selection so the auto-apply effect lands on the right
+      element when a position is shared between two adjacent tokens.
 
-    Document mouse + selectionchange listeners and focus tracking are wired in
-    the constructor and tear down with the lifecycle scope. The DOM caret is
-    updated whenever `selection` changes (auto-apply effect) and whenever
-    `dom.indexed` fires after a re-render. If the current DOM has no resolvable
-    target for the selection, placement is deferred (the selection signal is
-    retained as user intent until the next render).
+    Document `selectionchange` and focus tracking are wired in the constructor
+    and tear down with the lifecycle scope. The DOM caret is updated whenever
+    `selection` changes (auto-apply effect) and whenever `dom.indexed` fires
+    after a re-render. If the current DOM has no resolvable target for the
+    selection, placement is deferred (the selection signal is retained as user
+    intent until the next render). Caret placement primitives live in
+    `caretDom.ts` (`placeAtTextOffset`, `placeAtChildBoundary`,
+    `placeRangeAcrossSurfaces`).
 
-- **caretDom**: Stateless DOM helpers (`getCaretIndex`, `setAtElement`,
-  `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine`). Use these for raw DOM
-  caret math.
+- **UserSelectingTracker**: Owns `isSelecting: Signal<boolean>`. Listens on
+  `document` for mousedown/mousemove/mouseup/selectionchange and flips the
+  signal when a drag sweeps across nodes inside the editor or any non-
+  collapsed selection touches the container. Reachable as
+  `store.userSelecting`; `CaretModel` re-exports its signal as
+  `caret.isUserSelecting` for API compatibility.
+
+- **caretDom**: Stateless DOM helpers — `getCaretIndex`, `setAtElement`,
+  `setAtX`, `getRect`, `isOnFirstLine`, `isOnLastLine` for raw DOM caret math,
+  plus `placeAtTextOffset`, `placeAtChildBoundary`, `placeRangeAcrossSurfaces`
+  used by `CaretModel` for selection placement.
 - **TriggerFinder**: Detects overlay triggers in text based on the current
   selection.
 
