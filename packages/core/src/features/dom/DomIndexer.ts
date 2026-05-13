@@ -1,4 +1,4 @@
-import type {DomDiagnostic, DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, computed, signal, watch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -38,7 +38,6 @@ export interface DomIndexerHost {
 	container(): HTMLElement | null
 	pendingControls(): IterableIterator<ControlRegistration>
 	pendingChildSequences(): IterableIterator<ChildSequenceRegistration>
-	emitDiagnostic(diagnostic: DomDiagnostic): void
 	emitIndexed(): void
 }
 
@@ -119,7 +118,6 @@ export class DomIndexer {
 	#handleRendered(): void {
 		if (this.#rendering) {
 			this.#queuedRender = true
-			this.host.emitDiagnostic({kind: 'renderReentry', reason: 'rendered event queued during DOM indexing'})
 			return
 		}
 
@@ -137,7 +135,6 @@ export class DomIndexer {
 	#commitRendered(): void {
 		const container = this.host.container()
 		if (!container) {
-			this.host.emitDiagnostic({kind: 'missingContainer', reason: 'container is not registered'})
 			return
 		}
 
@@ -223,23 +220,12 @@ export class DomIndexer {
 			return
 		}
 
-		const ownerKey = pathKey(path)
 		if (hosts.length !== 1) {
-			this.host.emitDiagnostic({
-				kind: 'ambiguousStructure',
-				path,
-				reason: `expected exactly 1 child sequence host for owner path ${ownerKey} but found ${hosts.length}`,
-			})
 			return
 		}
 
 		const host = hosts[0]
 		if (!ownerElement.contains(host)) {
-			this.host.emitDiagnostic({
-				kind: 'ambiguousStructure',
-				path,
-				reason: `child sequence host for owner path ${ownerKey} is not contained by owner token element`,
-			})
 			return
 		}
 
@@ -265,23 +251,12 @@ export class DomIndexer {
 		elementRoles: WeakMap<HTMLElement, RegisteredRole>
 	): void {
 		const rows = this.#elementChildren(container)
-		if (rows.length !== tokens.length) {
-			this.host.emitDiagnostic({
-				kind: 'ambiguousStructure',
-				reason: `expected ${tokens.length} block rows but found ${rows.length}`,
-			})
-		}
 
 		tokens.forEach((token, i) => {
 			const row = rows.at(i)
 			if (!row) return
 			const candidates = this.#elementChildren(row).filter(child => !this.#isControlRoot(child, controlElements))
 			if (candidates.length !== 1) {
-				this.host.emitDiagnostic({
-					kind: 'ambiguousStructure',
-					path: [i],
-					reason: `expected 1 block token element but found ${candidates.length}`,
-				})
 				return
 			}
 			this.#indexTokenElement(
@@ -309,11 +284,6 @@ export class DomIndexer {
 	): void {
 		const elements = this.#elementChildren(parent).filter(child => !this.#isControlRoot(child, controlElements))
 		if (elements.length !== tokens.length) {
-			this.host.emitDiagnostic({
-				kind: 'ambiguousStructure',
-				path: basePath.length ? basePath : undefined,
-				reason: `expected ${tokens.length} child token elements but found ${elements.length}`,
-			})
 			return
 		}
 
@@ -345,7 +315,6 @@ export class DomIndexer {
 	): void {
 		const address = tokenIndex.addressFor(path)
 		if (!address) {
-			this.host.emitDiagnostic({kind: 'stalePath', path, reason: 'structural path no longer resolves'})
 			return
 		}
 
@@ -380,21 +349,11 @@ export class DomIndexer {
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
 			if (!resolved.ok) {
-				this.host.emitDiagnostic({
-					kind: 'stalePath',
-					path: record.path,
-					reason: 'structural path became stale during reconciliation',
-				})
 				continue
 			}
 
 			if (record.textElement) {
 				if (resolved.value.type !== 'text') {
-					this.host.emitDiagnostic({
-						kind: 'missingRole',
-						path: record.path,
-						reason: 'text role registered for non-text token',
-					})
 					continue
 				}
 				if (record.textElement.textContent !== resolved.value.content) {

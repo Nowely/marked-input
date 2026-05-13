@@ -254,35 +254,23 @@ describe('DomModel structural indexing', () => {
 		container.remove()
 	})
 
-	it('emits diagnostics for duplicate child sequence hosts', () => {
-		const diagnostics: unknown[] = []
-		const {store, container} = mountStructuralNestedWithDuplicateChildSequences()
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+	it('completes indexing when duplicate child sequence hosts are registered', () => {
+		const {store, container, outer} = mountStructuralNestedWithDuplicateChildSequences()
 
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'expected exactly 1 child sequence host for owner path 1 but found 2',
-		})
-		stop()
+		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
 
-	it('emits diagnostics when child sequence host is outside owner mark root', () => {
-		const diagnostics: unknown[] = []
-		const {store, container} = mountStructuralNestedWithOutsideChildSequence()
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+	it('completes indexing when child sequence host is outside owner mark root', () => {
+		const {store, container, outer} = mountStructuralNestedWithOutsideChildSequence()
 
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'child sequence host for owner path 1 is not contained by owner token element',
-		})
-		stop()
+		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
 
@@ -305,13 +293,11 @@ describe('DomModel structural indexing', () => {
 		container.remove()
 	})
 
-	it('emits diagnostics when a nested mark omits child roots', () => {
-		const diagnostics: unknown[] = []
+	it('completes indexing when a nested mark renders no child elements', () => {
 		const store = enableStructuralStore('@[before @[nested] after]', {
 			Mark: () => null,
 			options: [{markup: '@[__slot__]'}],
 		})
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 		const container = document.createElement('div')
 		const leading = document.createElement('span')
 		const outer = document.createElement('mark')
@@ -321,13 +307,8 @@ describe('DomModel structural indexing', () => {
 		store.dom.container(container)
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'expected 3 child token elements but found 0',
-		})
+		expect(store.dom.index()).toBeDefined()
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
-		stop()
 		container.remove()
 	})
 

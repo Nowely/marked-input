@@ -1,7 +1,6 @@
 import {firstHtmlChild} from '../../shared/checkers'
 import type {
 	BoundaryPositionResult,
-	DomDiagnostic,
 	DomIndex,
 	DomRef,
 	NodeLocationResult,
@@ -27,7 +26,6 @@ import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost} fro
 
 export class DomModel {
 	readonly container = signal<HTMLElement | null>(null)
-	readonly diagnostics = event<DomDiagnostic>()
 	readonly indexed = event<void>()
 	readonly readOnly: Computed<boolean> = computed(() => this.props.readOnly())
 
@@ -52,7 +50,6 @@ export class DomModel {
 			container: () => this.container(),
 			pendingControls: () => this.#pendingControls.values(),
 			pendingChildSequences: () => this.#pendingChildSequences.values(),
-			emitDiagnostic: diagnostic => this.diagnostics(diagnostic),
 			emitIndexed: () => this.indexed(),
 		}
 		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, parsing)
