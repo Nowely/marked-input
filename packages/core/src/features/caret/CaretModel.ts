@@ -18,13 +18,10 @@ export class CaretModel {
 	})
 
 	/**
-	 * Whether the user is actively selecting text (mouse drag, keyboard
-	 * Shift+Arrow, etc.). Drives {@link DomModel.reconcile} to freeze
-	 * structural text surfaces (contenteditable=false) while selecting.
-	 *
-	 * Bound to {@link UserSelectingTracker.isSelecting} — same signal instance,
-	 * exposed here for API compatibility (callers read and write through
-	 * `caret.isUserSelecting`).
+	 * True while the user drag-selects across token boundaries.
+	 * Frozen `contenteditable="false"` on structural text surfaces
+	 * so the browser sees one continuous selection instead of
+	 * fragmenting it per-node.
 	 */
 	readonly isUserSelecting: Signal<boolean>
 
