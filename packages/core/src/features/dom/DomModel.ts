@@ -15,14 +15,15 @@ import type {
 import {computed, event, listen, signal} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
-import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
 import {pathKey} from '../parsing/tokenIndex'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
+import {DomBoundary} from './DomBoundary'
+import type {DomBoundaryHost} from './DomBoundary'
 import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost} from './DomIndexer'
 import {DomIndexer} from './DomIndexer'
-import {hasEditableAncestorBefore, nextTextNode, textLength, textOffsetWithin} from './textOffsets'
+import {nextTextNode} from './textOffsets'
 
 export class DomModel {
 	readonly container = signal<HTMLElement | null>(null)
@@ -37,6 +38,7 @@ export class DomModel {
 	#isComposing = false
 
 	readonly #indexer: DomIndexer
+	readonly #boundary: DomBoundary
 	readonly index: Computed<DomIndex | undefined>
 
 	constructor(
@@ -45,15 +47,25 @@ export class DomModel {
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel
 	) {
-		const host: DomIndexerHost = {
+		const indexerHost: DomIndexerHost = {
 			container: () => this.container(),
 			pendingControls: () => this.#pendingControls.values(),
 			pendingChildSequences: () => this.#pendingChildSequences.values(),
 			emitDiagnostic: diagnostic => this.diagnostics(diagnostic),
 			emitIndexed: () => this.indexed(),
 		}
-		this.#indexer = new DomIndexer(host, lifecycle, props, parsing)
+		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, parsing)
 		this.index = this.#indexer.index
+
+		const boundaryHost: DomBoundaryHost = {
+			container: () => this.container(),
+			isIndexed: () => this.index() !== undefined,
+			isComposing: () => this.#isComposing,
+			locateNode: node => this.#indexer.locateNode(node),
+			roleFor: element => this.#indexer.roleFor(element),
+			pathElementsFor: address => this.#indexer.pathElementsFor(address),
+		}
+		this.#boundary = new DomBoundary(boundaryHost, parsing)
 
 		lifecycle.onMounted(() => {
 			const container = this.container()
@@ -165,140 +177,11 @@ export class DomModel {
 		offset: number,
 		affinity: 'before' | 'after' = 'after'
 	): BoundaryPositionResult {
-		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		if (this.#isComposing) return {ok: false, reason: 'composing'}
-
-		const container = this.container()
-		if (container && node === container) {
-			return this.#rawPositionFromContainerBoundary(offset, affinity)
-		}
-
-		const location = this.locateNode(node)
-		if (!location.ok) return location.reason === 'control' ? {ok: false, reason: 'control'} : location
-
-		const token = this.parsing.index().resolveAddress(location.value.address)
-		if (!token.ok) return {ok: false, reason: 'notIndexed'}
-
-		if (node instanceof HTMLElement) {
-			const role = this.#indexer.roleFor(node)
-			if (role?.role === 'childSequence') {
-				const childCount = node.childNodes.length
-				if (offset <= 0) return {ok: true, value: token.value.position.start}
-				if (offset >= childCount) return {ok: true, value: token.value.position.end}
-				return this.#rawPositionFromTokenChildBoundary(node, offset, token.value, affinity)
-			}
-		}
-
-		const textElement = location.value.textElement
-		if (textElement?.contains(node)) {
-			const local = textOffsetWithin(textElement, node, offset)
-			if (local === undefined) return {ok: false, reason: 'invalidBoundary'}
-			return {ok: true, value: token.value.position.start + local}
-		}
-
-		if (node === location.value.tokenElement) {
-			const childCount = location.value.tokenElement.childNodes.length
-			if (offset <= 0) return {ok: true, value: token.value.position.start}
-			if (offset >= childCount) return {ok: true, value: token.value.position.end}
-			return this.#rawPositionFromTokenChildBoundary(location.value.tokenElement, offset, token.value, affinity)
-		}
-
-		if (token.value.type === 'mark' && location.value.tokenElement.contains(node)) {
-			if (hasEditableAncestorBefore(node, location.value.tokenElement)) {
-				return {ok: false, reason: 'invalidBoundary'}
-			}
-			return {
-				ok: true,
-				value: affinity === 'after' ? token.value.position.start : token.value.position.end,
-			}
-		}
-
-		if (location.value.rowElement && node === location.value.rowElement) {
-			return {ok: true, value: offset <= 0 ? token.value.position.start : token.value.position.end}
-		}
-
-		return {ok: false, reason: 'invalidBoundary'}
+		return this.#boundary.fromBoundary(node, offset, affinity)
 	}
 
 	readRawSelection(): RawSelectionResult {
-		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const selection = window.getSelection()
-		if (!selection || selection.rangeCount === 0) return {ok: false, reason: 'invalidBoundary'}
-
-		const range = selection.getRangeAt(0)
-		const start = this.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
-		const end = this.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
-
-		if (!start.ok) {
-			const reason = start.reason === 'composing' ? 'invalidBoundary' : start.reason
-			return {
-				ok: false,
-				reason: reason === 'control' || reason === 'outsideEditor' ? 'mixedBoundary' : reason,
-			}
-		}
-		if (!end.ok) {
-			const reason = end.reason === 'composing' ? 'invalidBoundary' : end.reason
-			return {
-				ok: false,
-				reason: reason === 'control' || reason === 'outsideEditor' ? 'mixedBoundary' : reason,
-			}
-		}
-
-		const rangeValue =
-			start.value <= end.value ? {start: start.value, end: end.value} : {start: end.value, end: start.value}
-		const direction =
-			rangeValue.start === rangeValue.end
-				? undefined
-				: selection.anchorNode === range.endContainer && selection.anchorOffset === range.endOffset
-					? 'backward'
-					: 'forward'
-
-		return {ok: true, value: direction ? {range: rangeValue, direction} : {range: rangeValue}}
-	}
-
-	#rawPositionFromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
-		const tokens = this.parsing.tokens()
-		if (tokens.length === 0) return {ok: true, value: 0}
-		if (offset <= 0) return {ok: true, value: tokens[0].position.start}
-		if (offset >= tokens.length) return {ok: true, value: tokens[tokens.length - 1].position.end}
-
-		const before = tokens[offset - 1]
-		const after = tokens[offset]
-		return {ok: true, value: affinity === 'before' ? before.position.end : after.position.start}
-	}
-
-	#rawPositionFromTokenChildBoundary(
-		tokenElement: HTMLElement,
-		offset: number,
-		token: Token,
-		affinity: 'before' | 'after'
-	): BoundaryPositionResult {
-		if (token.type === 'text') {
-			const path = this.parsing.index().pathFor(token) ?? []
-			const address = this.parsing.index().addressFor(path)
-			const textElement = address ? this.#indexer.pathElementsFor(address)?.textElement : undefined
-			if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
-		}
-
-		const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
-		const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
-		if (before?.ok && after?.ok) {
-			const beforeToken = this.parsing.index().resolveAddress(before.value.address)
-			const afterToken = this.parsing.index().resolveAddress(after.value.address)
-			if (beforeToken.ok && afterToken.ok) {
-				return {
-					ok: true,
-					value: affinity === 'before' ? beforeToken.value.position.end : afterToken.value.position.start,
-				}
-			}
-		}
-
-		return {ok: true, value: affinity === 'before' ? token.position.start : token.position.end}
-	}
-
-	#locateRegisteredDescendant(node: Node | null): NodeLocationResult | undefined {
-		if (!node) return undefined
-		return this.locateNode(node)
+		return this.#boundary.readSelection()
 	}
 
 	#findTextTargetForRawPosition(
