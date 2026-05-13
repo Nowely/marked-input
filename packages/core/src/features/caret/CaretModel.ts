@@ -40,7 +40,7 @@ export class CaretModel {
 		private readonly props: PropsModel
 	) {
 		lifecycle.onMounted(() => {
-			this.#wireEmptyDocClickFocus()
+			this.#focusEmptyEditorOnClick()
 
 			this.#trackSelection()
 			effect(() => {
@@ -92,7 +92,7 @@ export class CaretModel {
 	 * anywhere in the container should focus the first child — otherwise the
 	 * browser leaves the editor unfocused because there's no text to click on.
 	 */
-	#wireEmptyDocClickFocus(): void {
+	#focusEmptyEditorOnClick(): void {
 		const container = this.dom.container()
 		if (!container) return
 		listen(container, 'click', () => {
