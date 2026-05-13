@@ -8,7 +8,7 @@ import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
 import {placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
-import type {UserSelectingTracker} from './UserSelectingTracker'
+import {UserSelectingTracker} from './UserSelectingTracker'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -38,9 +38,9 @@ export class CaretModel {
 		private readonly dom: DomModel,
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel,
-		private readonly props: PropsModel,
-		userSelecting: UserSelectingTracker
+		private readonly props: PropsModel
 	) {
+		const userSelecting = new UserSelectingTracker(lifecycle, dom)
 		this.isUserSelecting = userSelecting.isSelecting
 		lifecycle.onMounted(() => {
 			this.#wireEmptyDocClickFocus()

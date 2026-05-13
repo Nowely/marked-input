@@ -26,7 +26,7 @@ describe('UserSelectingTracker', () => {
 
 		a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
 		b.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
-		expect(store.userSelecting.isSelecting()).toBe(true)
+		expect(store.caret.isUserSelecting()).toBe(true)
 
 		container.remove()
 		vi.restoreAllMocks()
@@ -44,7 +44,7 @@ describe('UserSelectingTracker', () => {
 
 		a.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}))
 		a.dispatchEvent(new MouseEvent('mousemove', {bubbles: true}))
-		expect(store.userSelecting.isSelecting()).toBe(false)
+		expect(store.caret.isUserSelecting()).toBe(false)
 
 		container.remove()
 		vi.restoreAllMocks()
@@ -52,14 +52,14 @@ describe('UserSelectingTracker', () => {
 
 	it('clears isSelecting on mouseup when the resulting selection is collapsed', () => {
 		const {store, container} = mountWithContainer()
-		store.userSelecting.isSelecting(true)
+		store.caret.isUserSelecting(true)
 
 		const mockSel = {isCollapsed: true, focusNode: null, rangeCount: 0}
 		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub of Selection for tracking logic
 		vi.spyOn(window, 'getSelection').mockReturnValue(mockSel as unknown as Selection)
 
 		document.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}))
-		expect(store.userSelecting.isSelecting()).toBe(false)
+		expect(store.caret.isUserSelecting()).toBe(false)
 
 		container.remove()
 		vi.restoreAllMocks()
