@@ -46,15 +46,7 @@ export class CaretModel {
 	) {
 		this.isUserSelecting = userSelecting.isSelecting
 		lifecycle.onMounted(() => {
-			const container = dom.container()
-			if (container) {
-				listen(container, 'click', () => {
-					const tokens = this.parsing.tokens()
-					if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-						firstHtmlChild(dom.container())?.focus()
-					}
-				})
-			}
+			this.#wireEmptyDocClickFocus()
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
 			watch(dom.indexed, () => {
@@ -97,6 +89,22 @@ export class CaretModel {
 		this.#preferredAddress = address
 		this.selection({start: pos, end: pos})
 		return true
+	}
+
+	/**
+	 * When the value is a single empty text token (an empty editor), a click
+	 * anywhere in the container should focus the first child — otherwise the
+	 * browser leaves the editor unfocused because there's no text to click on.
+	 */
+	#wireEmptyDocClickFocus(): void {
+		const container = this.dom.container()
+		if (!container) return
+		listen(container, 'click', () => {
+			const tokens = this.parsing.tokens()
+			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
+				firstHtmlChild(this.dom.container())?.focus()
+			}
+		})
 	}
 
 	#enableFocusTracking(): void {
