@@ -12,46 +12,19 @@ import type {
 	TokenAddress,
 	TokenPath,
 } from '../../shared/editorContracts'
-import {batch, computed, event, listen, signal, watch} from '../../shared/signals/index.js'
+import {computed, event, listen, signal} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
-import {pathEquals, pathKey} from '../parsing/tokenIndex'
-import type {TokenIndex} from '../parsing/tokenIndex'
+import {pathKey} from '../parsing/tokenIndex'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
+import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost} from './DomIndexer'
+import {DomIndexer} from './DomIndexer'
 import {hasEditableAncestorBefore, nextTextNode, textLength, textOffsetWithin} from './textOffsets'
 
-type RegisteredRole =
-	| {readonly role: 'control'}
-	| {
-			readonly role: 'childSequence' | 'row' | 'token' | 'text'
-			readonly path: TokenPath
-			readonly address: TokenAddress
-	  }
-
-type PathElements = {
-	path: TokenPath
-	address: TokenAddress
-	rowElement?: HTMLElement
-	tokenElement: HTMLElement
-	textElement?: HTMLElement
-}
-
-type ControlRegistration = {
-	readonly ownerPath?: TokenPath
-	readonly element: HTMLElement
-}
-
-type ChildSequenceRegistration = {
-	readonly ownerPath: TokenPath
-	readonly element: HTMLElement
-}
-
 export class DomModel {
-	readonly #domIndex = signal<DomIndex>(undefined, {readonly: true})
-	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
 	readonly container = signal<HTMLElement | null>(null)
 	readonly diagnostics = event<DomDiagnostic>()
 	readonly indexed = event<void>()
@@ -61,12 +34,10 @@ export class DomModel {
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
 	#nextControlId = 0
 	#nextChildSequenceId = 0
-	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
-	#pathElements = new Map<string, PathElements>()
-	#generation = 0
-	#rendering = false
 	#isComposing = false
-	#queuedRender = false
+
+	readonly #indexer: DomIndexer
+	readonly index: Computed<DomIndex | undefined>
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -74,6 +45,16 @@ export class DomModel {
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel
 	) {
+		const host: DomIndexerHost = {
+			container: () => this.container(),
+			pendingControls: () => this.#pendingControls.values(),
+			pendingChildSequences: () => this.#pendingChildSequences.values(),
+			emitDiagnostic: diagnostic => this.diagnostics(diagnostic),
+			emitIndexed: () => this.indexed(),
+		}
+		this.#indexer = new DomIndexer(host, lifecycle, props, parsing)
+		this.index = this.#indexer.index
+
 		lifecycle.onMounted(() => {
 			const container = this.container()
 			if (container) {
@@ -86,13 +67,6 @@ export class DomModel {
 					}
 				})
 			}
-			watch(lifecycle.rendered, () => {
-				this.#handleRendered()
-			})
-			watch(
-				computed(() => props.readOnly()),
-				() => this.reconcile()
-			)
 		})
 	}
 
@@ -132,38 +106,11 @@ export class DomModel {
 	}
 
 	reconcile(opts?: {isUserSelecting?: boolean}): void {
-		this.#reconcileStructuralTextSurfaces(opts?.isUserSelecting)
+		this.#indexer.reconcile(opts)
 	}
 
 	locateNode(node: Node): NodeLocationResult {
-		if (!this.index()) return {ok: false, reason: 'notIndexed'}
-		const container = this.container()
-		if (!container || !container.contains(node)) return {ok: false, reason: 'outsideEditor'}
-
-		let current: Node | null = node
-		while (current) {
-			if (current instanceof HTMLElement) {
-				const role = this.#elementRoles.get(current)
-				if (role?.role === 'control') return {ok: false, reason: 'control'}
-				if (role) {
-					const elements = this.#pathElements.get(pathKey(role.path))
-					if (!elements?.tokenElement) return {ok: false, reason: 'notIndexed'}
-					return {
-						ok: true,
-						value: {
-							address: role.address,
-							tokenElement: elements.tokenElement,
-							textElement: elements.textElement,
-							rowElement: elements.rowElement,
-						},
-					}
-				}
-			}
-			if (current === container) break
-			current = current.parentNode
-		}
-
-		return {ok: false, reason: 'outsideEditor'}
+		return this.#indexer.locateNode(node)
 	}
 
 	placeAt(
@@ -200,7 +147,7 @@ export class DomModel {
 		const resolved = this.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return {ok: false, reason: 'stale'}
 
-		const elements = this.#pathElements.get(pathKey(address.path))
+		const elements = this.#indexer.pathElementsFor(address)
 		const target = elements?.textElement ?? elements?.tokenElement ?? elements?.rowElement
 		if (!target) return {ok: false, reason: 'notIndexed'}
 
@@ -233,7 +180,7 @@ export class DomModel {
 		if (!token.ok) return {ok: false, reason: 'notIndexed'}
 
 		if (node instanceof HTMLElement) {
-			const role = this.#elementRoles.get(node)
+			const role = this.#indexer.roleFor(node)
 			if (role?.role === 'childSequence') {
 				const childCount = node.childNodes.length
 				if (offset <= 0) return {ok: true, value: token.value.position.start}
@@ -309,304 +256,6 @@ export class DomModel {
 		return {ok: true, value: direction ? {range: rangeValue, direction} : {range: rangeValue}}
 	}
 
-	#handleRendered(): void {
-		if (this.#rendering) {
-			this.#queuedRender = true
-			this.diagnostics({kind: 'renderReentry', reason: 'rendered event queued during DOM indexing'})
-			return
-		}
-
-		this.#rendering = true
-		try {
-			this.#commitRendered()
-		} finally {
-			this.#rendering = false
-			const queued = this.#queuedRender
-			this.#queuedRender = false
-			if (queued) this.#handleRendered()
-		}
-	}
-
-	#commitRendered(): void {
-		const container = this.container()
-		if (!container) {
-			this.diagnostics({kind: 'missingContainer', reason: 'container is not registered'})
-			return
-		}
-
-		const tokenIndex = this.parsing.index()
-		const pathElements = new Map<string, PathElements>()
-		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
-		const controlElements = new Set<HTMLElement>()
-
-		for (const {element} of this.#pendingControls.values()) {
-			controlElements.add(element)
-			elementRoles.set(element, {role: 'control'})
-		}
-
-		const tokens = this.parsing.tokens()
-		if (this.props.layout() === 'block') {
-			this.#indexBlockTokens(container, tokens, tokenIndex, controlElements, pathElements, elementRoles)
-		} else {
-			this.#indexTokenSequence(
-				container,
-				tokens,
-				[],
-				undefined,
-				tokenIndex,
-				controlElements,
-				pathElements,
-				elementRoles
-			)
-		}
-
-		this.#pathElements = pathElements
-		this.#elementRoles = elementRoles
-		this.#reconcileStructuralTextSurfaces()
-
-		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
-		this.indexed()
-	}
-
-	#elementChildren(element: HTMLElement): HTMLElement[] {
-		return Array.from(element.children).filter(child => child instanceof HTMLElement)
-	}
-
-	#isControlRoot(element: HTMLElement, controlElements: Set<HTMLElement>): boolean {
-		if (controlElements.has(element)) return true
-		for (const control of controlElements) {
-			if (element.contains(control)) return true
-		}
-		return false
-	}
-
-	#childSequenceHostsFor(ownerPath: TokenPath): HTMLElement[] {
-		const hosts: HTMLElement[] = []
-		for (const registration of this.#pendingChildSequences.values()) {
-			if (pathEquals(registration.ownerPath, ownerPath)) hosts.push(registration.element)
-		}
-		return hosts
-	}
-
-	#indexNestedTokenSequence(
-		token: Token,
-		path: TokenPath,
-		address: TokenAddress,
-		ownerElement: HTMLElement,
-		rowElement: HTMLElement | undefined,
-		tokenIndex: TokenIndex,
-		controlElements: Set<HTMLElement>,
-		pathElements: Map<string, PathElements>,
-		elementRoles: WeakMap<HTMLElement, RegisteredRole>
-	): void {
-		if (token.type !== 'mark' || token.children.length === 0) return
-
-		const hosts = this.#childSequenceHostsFor(path)
-		if (hosts.length === 0) {
-			this.#indexTokenSequence(
-				ownerElement,
-				token.children,
-				path,
-				rowElement,
-				tokenIndex,
-				controlElements,
-				pathElements,
-				elementRoles
-			)
-			return
-		}
-
-		const ownerKey = pathKey(path)
-		if (hosts.length !== 1) {
-			this.diagnostics({
-				kind: 'ambiguousStructure',
-				path,
-				reason: `expected exactly 1 child sequence host for owner path ${ownerKey} but found ${hosts.length}`,
-			})
-			return
-		}
-
-		const host = hosts[0]
-		if (!ownerElement.contains(host)) {
-			this.diagnostics({
-				kind: 'ambiguousStructure',
-				path,
-				reason: `child sequence host for owner path ${ownerKey} is not contained by owner token element`,
-			})
-			return
-		}
-
-		elementRoles.set(host, {role: 'childSequence', path, address})
-		this.#indexTokenSequence(
-			host,
-			token.children,
-			path,
-			rowElement,
-			tokenIndex,
-			controlElements,
-			pathElements,
-			elementRoles
-		)
-	}
-
-	#indexBlockTokens(
-		container: HTMLElement,
-		tokens: readonly Token[],
-		tokenIndex: TokenIndex,
-		controlElements: Set<HTMLElement>,
-		pathElements: Map<string, PathElements>,
-		elementRoles: WeakMap<HTMLElement, RegisteredRole>
-	): void {
-		const rows = this.#elementChildren(container)
-		if (rows.length !== tokens.length) {
-			this.diagnostics({
-				kind: 'ambiguousStructure',
-				reason: `expected ${tokens.length} block rows but found ${rows.length}`,
-			})
-		}
-
-		tokens.forEach((token, i) => {
-			const row = rows.at(i)
-			if (!row) return
-			const candidates = this.#elementChildren(row).filter(child => !this.#isControlRoot(child, controlElements))
-			if (candidates.length !== 1) {
-				this.diagnostics({
-					kind: 'ambiguousStructure',
-					path: [i],
-					reason: `expected 1 block token element but found ${candidates.length}`,
-				})
-				return
-			}
-			this.#indexTokenElement(
-				token,
-				[i],
-				candidates[0],
-				row,
-				tokenIndex,
-				controlElements,
-				pathElements,
-				elementRoles
-			)
-		})
-	}
-
-	#indexTokenSequence(
-		parent: HTMLElement,
-		tokens: readonly Token[],
-		basePath: TokenPath,
-		rowElement: HTMLElement | undefined,
-		tokenIndex: TokenIndex,
-		controlElements: Set<HTMLElement>,
-		pathElements: Map<string, PathElements>,
-		elementRoles: WeakMap<HTMLElement, RegisteredRole>
-	): void {
-		const elements = this.#elementChildren(parent).filter(child => !this.#isControlRoot(child, controlElements))
-		if (elements.length !== tokens.length) {
-			this.diagnostics({
-				kind: 'ambiguousStructure',
-				path: basePath.length ? basePath : undefined,
-				reason: `expected ${tokens.length} child token elements but found ${elements.length}`,
-			})
-			return
-		}
-
-		tokens.forEach((token, i) => {
-			const element = elements.at(i)
-			if (!element) return
-			this.#indexTokenElement(
-				token,
-				[...basePath, i],
-				element,
-				rowElement,
-				tokenIndex,
-				controlElements,
-				pathElements,
-				elementRoles
-			)
-		})
-	}
-
-	#indexTokenElement(
-		token: Token,
-		path: TokenPath,
-		element: HTMLElement,
-		rowElement: HTMLElement | undefined,
-		tokenIndex: TokenIndex,
-		controlElements: Set<HTMLElement>,
-		pathElements: Map<string, PathElements>,
-		elementRoles: WeakMap<HTMLElement, RegisteredRole>
-	): void {
-		const address = tokenIndex.addressFor(path)
-		if (!address) {
-			this.diagnostics({kind: 'stalePath', path, reason: 'structural path no longer resolves'})
-			return
-		}
-
-		const record: PathElements = {
-			path: [...path],
-			address,
-			tokenElement: element,
-			textElement: token.type === 'text' ? element : undefined,
-			rowElement,
-		}
-		pathElements.set(tokenIndex.key(path), record)
-		elementRoles.set(element, {role: token.type === 'text' ? 'text' : 'token', path, address})
-		if (rowElement && path.length === 1) elementRoles.set(rowElement, {role: 'row', path, address})
-
-		this.#indexNestedTokenSequence(
-			token,
-			path,
-			address,
-			element,
-			rowElement,
-			tokenIndex,
-			controlElements,
-			pathElements,
-			elementRoles
-		)
-	}
-
-	#reconcileStructuralTextSurfaces(isUserSelecting?: boolean): void {
-		const tokenIndex = this.parsing.index()
-		const editable = this.props.readOnly() || isUserSelecting ? 'false' : 'true'
-
-		for (const record of this.#pathElements.values()) {
-			const resolved = tokenIndex.resolveAddress(record.address)
-			if (!resolved.ok) {
-				this.diagnostics({
-					kind: 'stalePath',
-					path: record.path,
-					reason: 'structural path became stale during reconciliation',
-				})
-				continue
-			}
-
-			if (record.textElement) {
-				if (resolved.value.type !== 'text') {
-					this.diagnostics({
-						kind: 'missingRole',
-						path: record.path,
-						reason: 'text role registered for non-text token',
-					})
-					continue
-				}
-				if (record.textElement.textContent !== resolved.value.content) {
-					record.textElement.textContent = resolved.value.content
-				}
-				record.textElement.contentEditable = editable
-				continue
-			}
-
-			if (resolved.value.type === 'mark') {
-				if (this.props.readOnly()) {
-					record.tokenElement.removeAttribute('tabindex')
-				} else {
-					record.tokenElement.tabIndex = 0
-				}
-			}
-		}
-	}
-
 	#rawPositionFromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
 		const tokens = this.parsing.tokens()
 		if (tokens.length === 0) return {ok: true, value: 0}
@@ -625,7 +274,9 @@ export class DomModel {
 		affinity: 'before' | 'after'
 	): BoundaryPositionResult {
 		if (token.type === 'text') {
-			const textElement = this.#pathElements.get(pathKey(this.parsing.index().pathFor(token) ?? []))?.textElement
+			const path = this.parsing.index().pathFor(token) ?? []
+			const address = this.parsing.index().addressFor(path)
+			const textElement = address ? this.#indexer.pathElementsFor(address)?.textElement : undefined
 			if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
 		}
 
@@ -657,7 +308,7 @@ export class DomModel {
 		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
 		const tokenIndex = this.parsing.index()
 
-		for (const record of this.#pathElements.values()) {
+		for (const record of this.#indexer.pathElements()) {
 			if (!record.textElement) continue
 			const resolved = tokenIndex.resolveAddress(record.address)
 			if (!resolved.ok || resolved.value.type !== 'text') continue
@@ -678,7 +329,7 @@ export class DomModel {
 	#focusMarkBoundaryForRawPosition(rawPosition: number): Result<void, 'notIndexed' | 'invalidBoundary'> {
 		const tokenIndex = this.parsing.index()
 
-		for (const record of this.#pathElements.values()) {
+		for (const record of this.#indexer.pathElements()) {
 			const resolved = tokenIndex.resolveAddress(record.address)
 			if (!resolved.ok || resolved.value.type !== 'mark') continue
 			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
