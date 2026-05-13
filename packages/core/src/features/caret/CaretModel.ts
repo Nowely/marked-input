@@ -7,7 +7,7 @@ import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
-import {placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
+import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -198,7 +198,7 @@ export class CaretModel {
 			}
 			const target = this.#findTextTargetForRawPosition(clamped.start)
 			if (target) {
-				if (document.activeElement !== target.element) target.element.focus()
+				focusIfNeeded(target.element)
 				placeAtTextOffset(target.element, clamped.start - target.start)
 			} else if (!this.#focusMarkBoundaryForRawPosition(clamped.start)) {
 				// Placement target not found in the current DOM index. Likely the
@@ -234,14 +234,14 @@ export class CaretModel {
 		if (!resolved.ok) return false
 
 		if (resolved.value.type === 'mark') {
-			if (document.activeElement !== elements.tokenElement) elements.tokenElement.focus()
+			focusIfNeeded(elements.tokenElement)
 			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
 			placeAtChildBoundary(elements.tokenElement, boundary)
 			return true
 		}
 
 		const target = elements.textElement ?? elements.tokenElement
-		if (document.activeElement !== target) target.focus()
+		focusIfNeeded(target)
 		if (elements.textElement) {
 			placeAtTextOffset(elements.textElement, rawPosition - resolved.value.position.start)
 		}
@@ -278,7 +278,7 @@ export class CaretModel {
 			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
 
 			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
-			if (document.activeElement !== record.tokenElement) record.tokenElement.focus()
+			focusIfNeeded(record.tokenElement)
 			placeAtChildBoundary(record.tokenElement, boundary)
 			return true
 		}

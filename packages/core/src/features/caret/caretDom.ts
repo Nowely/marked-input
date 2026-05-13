@@ -161,3 +161,8 @@ export function placeRangeAcrossSurfaces(
 	selection.removeAllRanges()
 	selection.addRange(range)
 }
+
+/** Focus `element` only when it is not already the active element. */
+export function focusIfNeeded(element: HTMLElement): void {
+	if (document.activeElement !== element) element.focus()
+}
