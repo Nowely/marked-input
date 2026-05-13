@@ -1,5 +1,5 @@
 import type {CaretModel} from '../caret/CaretModel'
-import type {DomController} from '../dom/DomController'
+import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
@@ -13,7 +13,7 @@ import {enableInput} from './input'
 export class KeyboardController {
 	constructor(
 		lifecycle: Lifecycle,
-		dom: DomController,
+		dom: DomModel,
 		value: ValueModel,
 		caret: CaretModel,
 		edit: EditController,

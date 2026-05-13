@@ -2,7 +2,7 @@ import {nodeTarget} from '../../shared/checkers'
 import type {Range} from '../../shared/editorContracts'
 import {computed, effect, listen, signal, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
-import type {DomController} from '../dom/DomController'
+import type {DomModel} from '../dom/DomModel'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ValueModel} from '../value/ValueModel'
 
@@ -15,7 +15,7 @@ export class CaretModel {
 
 	/**
 	 * Whether the user is actively selecting text (mouse drag, keyboard
-	 * Shift+Arrow, etc.). Drives {@link DomController.reconcile} to freeze
+	 * Shift+Arrow, etc.). Drives {@link DomModel.reconcile} to freeze
 	 * structural text surfaces (contenteditable=false) while selecting.
 	 */
 	readonly isUserSelecting = signal<boolean>(false)
@@ -28,7 +28,7 @@ export class CaretModel {
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
-		private readonly dom: DomController,
+		private readonly dom: DomModel,
 		private readonly value: ValueModel
 	) {
 		lifecycle.onMounted(() => {

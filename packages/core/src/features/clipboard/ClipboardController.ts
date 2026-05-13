@@ -1,6 +1,6 @@
 import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
-import type {DomController} from '../dom/DomController'
+import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import {toString} from '../parsing'
@@ -38,7 +38,7 @@ export class ClipboardController {
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly edit: EditController,
-		private readonly dom: DomController,
+		private readonly dom: DomModel,
 		private readonly parsing: ParseController
 	) {
 		lifecycle.onMounted(() => {

@@ -149,7 +149,7 @@ function mountStructuralBlockWithControls(value: string) {
 	return {store, container, row, beforeControl, afterControl, textSurface, textNode}
 }
 
-describe('DomController structural indexing', () => {
+describe('DomModel structural indexing', () => {
 	let store: Store
 
 	beforeEach(() => {

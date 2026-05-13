@@ -1,6 +1,6 @@
 import {escape} from '../../shared/escape'
 import type {OverlayMatch} from '../../shared/types'
-import type {DomController} from '../dom/DomController'
+import type {DomModel} from '../dom/DomModel'
 
 /** Regex to match word characters from the start of a string */
 const wordRegex = new RegExp(/^\w*/)
@@ -19,7 +19,7 @@ export class TriggerFinder {
 	node: Node
 	dividedText: {left: string; right: string}
 
-	constructor(private readonly dom?: DomController) {
+	constructor(private readonly dom?: DomModel) {
 		const sel = window.getSelection()
 		const node = sel?.anchorNode
 		if (!sel || !node || !document.contains(node)) throw new Error('Anchor node of selection is not exists!')
@@ -46,7 +46,7 @@ export class TriggerFinder {
 	static find<T>(
 		options: T[] | undefined,
 		getTrigger: TriggerExtractor<T>,
-		dom?: DomController
+		dom?: DomModel
 	): OverlayMatch<T> | undefined {
 		if (!options) return
 		if (!window.getSelection()?.isCollapsed) return
