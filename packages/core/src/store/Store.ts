@@ -1,4 +1,4 @@
-import {CaretModel} from '../features/caret'
+import {CaretModel, UserSelectingTracker} from '../features/caret'
 import {ClipboardController} from '../features/clipboard'
 import {DomModel} from '../features/dom'
 import {DragController} from '../features/drag'
@@ -32,7 +32,8 @@ export class Store {
 
 	readonly dom = new DomModel(this.lifecycle, this.props, this.parsing)
 
-	readonly caret = new CaretModel(this.lifecycle, this.dom, this.parsing, this.value, this.props)
+	readonly userSelecting = new UserSelectingTracker(this.lifecycle, this.dom)
+	readonly caret = new CaretModel(this.lifecycle, this.dom, this.parsing, this.value, this.props, this.userSelecting)
 	readonly edit = new EditController(this.value, this.caret)
 
 	readonly overlay = new OverlayController(

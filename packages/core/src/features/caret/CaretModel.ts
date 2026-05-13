@@ -1,6 +1,6 @@
-import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
+import {firstHtmlChild} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
-import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
+import {computed, effect, listen, type Signal, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -8,6 +8,7 @@ import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
 import {placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
+import type {UserSelectingTracker} from './UserSelectingTracker'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -20,8 +21,12 @@ export class CaretModel {
 	 * Whether the user is actively selecting text (mouse drag, keyboard
 	 * Shift+Arrow, etc.). Drives {@link DomModel.reconcile} to freeze
 	 * structural text surfaces (contenteditable=false) while selecting.
+	 *
+	 * Bound to {@link UserSelectingTracker.isSelecting} — same signal instance,
+	 * exposed here for API compatibility (callers read and write through
+	 * `caret.isUserSelecting`).
 	 */
-	readonly isUserSelecting = signal<boolean>(false)
+	readonly isUserSelecting: Signal<boolean>
 
 	readonly isAllSelected = computed(() => {
 		const s = this.selection()
@@ -36,8 +41,10 @@ export class CaretModel {
 		private readonly dom: DomModel,
 		private readonly parsing: ParseController,
 		private readonly value: ValueModel,
-		private readonly props: PropsModel
+		private readonly props: PropsModel,
+		userSelecting: UserSelectingTracker
 	) {
+		this.isUserSelecting = userSelecting.isSelecting
 		lifecycle.onMounted(() => {
 			const container = dom.container()
 			if (container) {
@@ -122,42 +129,8 @@ export class CaretModel {
 	}
 
 	#enableSelectionTracking(): void {
-		// Track whether a mouse button is currently pressed and which node it
-		// started on. The pressed-node identity lets us tell "drag stayed on
-		// the original element" (no selection yet) from "drag is sweeping
-		// across nodes" (real selection in progress).
-		let pressedAt: Node | null = null
-
-		listen(document, 'mousedown', e => {
-			pressedAt = nodeTarget(e)
-		})
-
-		listen(document, 'mousemove', e => {
-			if (pressedAt === null) return
-			const container = this.dom.container()
-			if (!container) return
-
-			const startedOutsideEditor = !container.contains(pressedAt)
-			const sweepingAcrossNodes = pressedAt !== e.target
-			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
-
-			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
-				this.isUserSelecting(true)
-			}
-		})
-
-		listen(document, 'mouseup', () => {
-			pressedAt = null
-			if (!this.isUserSelecting()) return
-			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
-		})
-
 		listen(document, 'selectionchange', () => {
 			const sel = window.getSelection()
-			if (this.isUserSelecting() && (!sel || sel.isCollapsed)) {
-				this.isUserSelecting(false)
-			}
 			if (!sel?.focusNode) return
 			const result = this.dom.locateNode(sel.focusNode)
 			if (!result.ok) {
