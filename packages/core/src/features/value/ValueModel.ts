@@ -19,9 +19,17 @@ export class ValueModel {
 
 	constructor(private readonly props: PropsModel) {}
 
-	replace(range: Range, replacement: string): void {
+	/**
+	 * Attempts to replace `range` with `replacement`. Returns `true` when the
+	 * edit was accepted (range valid and not read-only), `false` otherwise.
+	 * Callers use the return value to gate downstream side effects such as
+	 * caret placement.
+	 */
+	replace(range: Range, replacement: string): boolean {
+		if (this.props.readOnly()) return false
 		const next = replaceInString(this.current(), range, replacement)
-		if (next === undefined) return
+		if (next === undefined) return false
 		this.current(next)
+		return true
 	}
 }

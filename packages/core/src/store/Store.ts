@@ -33,7 +33,7 @@ export class Store {
 	readonly dom = new DomController(this.lifecycle, this.props, this.parsing, this.value)
 
 	readonly caret = new CaretModel(this.lifecycle, this.dom, this.value)
-	readonly edit = new EditController(this.props, this.value, this.caret)
+	readonly edit = new EditController(this.value, this.caret)
 
 	readonly overlay = new OverlayController(
 		this.lifecycle,
