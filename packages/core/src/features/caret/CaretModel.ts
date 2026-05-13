@@ -29,7 +29,7 @@ export class CaretModel {
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
 
-	#suppressAutoApply = false
+	#preferredAddress: TokenAddress | undefined
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -82,29 +82,13 @@ export class CaretModel {
 	 */
 	focusAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
 		if (this.dom.index() === undefined) return false
-		const elements = this.dom.pathElementsFor(address)
-		if (!elements) return false
+		if (!this.dom.pathElementsFor(address)) return false
 		const resolved = this.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return false
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
-
-		this.#suppressAutoApply = true
-		try {
-			if (resolved.value.type === 'mark') {
-				if (document.activeElement !== elements.tokenElement) elements.tokenElement.focus()
-				placeAtChildBoundary(elements.tokenElement, boundary)
-			} else {
-				const target = elements.textElement ?? elements.tokenElement
-				if (document.activeElement !== target) target.focus()
-				if (elements.textElement) {
-					placeAtTextOffset(elements.textElement, pos - resolved.value.position.start)
-				}
-			}
-			this.selection({start: pos, end: pos})
-		} finally {
-			this.#suppressAutoApply = false
-		}
+		this.#preferredAddress = address
+		this.selection({start: pos, end: pos})
 		return true
 	}
 
@@ -188,7 +172,6 @@ export class CaretModel {
 	}
 
 	#applyRangeToDOM(): void {
-		if (this.#suppressAutoApply) return
 		if (this.isUserSelecting()) return
 		if (this.dom.index() === undefined) return
 		const sel = this.selection()
@@ -201,6 +184,10 @@ export class CaretModel {
 		}
 
 		if (clamped.start === clamped.end) {
+			if (this.#applyPreferredAddress(clamped.start)) {
+				if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+				return
+			}
 			const target = this.#findTextTargetForRawPosition(clamped.start)
 			if (target) {
 				if (document.activeElement !== target.element) target.element.focus()
@@ -226,6 +213,31 @@ export class CaretModel {
 		)
 
 		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+	}
+
+	#applyPreferredAddress(rawPosition: number): boolean {
+		const address = this.#preferredAddress
+		this.#preferredAddress = undefined
+		if (!address) return false
+
+		const elements = this.dom.pathElementsFor(address)
+		if (!elements) return false
+		const resolved = this.parsing.index().resolveAddress(address)
+		if (!resolved.ok) return false
+
+		if (resolved.value.type === 'mark') {
+			if (document.activeElement !== elements.tokenElement) elements.tokenElement.focus()
+			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
+			placeAtChildBoundary(elements.tokenElement, boundary)
+			return true
+		}
+
+		const target = elements.textElement ?? elements.tokenElement
+		if (document.activeElement !== target) target.focus()
+		if (elements.textElement) {
+			placeAtTextOffset(elements.textElement, rawPosition - resolved.value.position.start)
+		}
+		return true
 	}
 
 	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
