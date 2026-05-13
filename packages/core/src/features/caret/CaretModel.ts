@@ -234,9 +234,7 @@ export class CaretModel {
 		if (!resolved.ok) return false
 
 		if (resolved.value.type === 'mark') {
-			focusIfNeeded(elements.tokenElement)
-			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
-			placeAtChildBoundary(elements.tokenElement, boundary)
+			this.#placeAtMarkBoundary(elements.tokenElement, rawPosition, resolved.value.position)
 			return true
 		}
 
@@ -277,12 +275,15 @@ export class CaretModel {
 			if (!resolved.ok || resolved.value.type !== 'mark') continue
 			if (rawPosition !== resolved.value.position.start && rawPosition !== resolved.value.position.end) continue
 
-			const boundary = rawPosition === resolved.value.position.end ? 'end' : 'start'
-			focusIfNeeded(record.tokenElement)
-			placeAtChildBoundary(record.tokenElement, boundary)
+			this.#placeAtMarkBoundary(record.tokenElement, rawPosition, resolved.value.position)
 			return true
 		}
 
 		return false
+	}
+
+	#placeAtMarkBoundary(element: HTMLElement, rawPosition: number, position: {start: number; end: number}): void {
+		focusIfNeeded(element)
+		placeAtChildBoundary(element, rawPosition === position.end ? 'end' : 'start')
 	}
 }
