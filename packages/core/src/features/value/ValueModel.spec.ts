@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {replaceInString} from '../../shared/utils'
 import {Store} from '../../store/Store'
 
 describe('ValueModel', () => {
@@ -116,6 +117,16 @@ describe('ValueModel', () => {
 
 			store.props.set({value: 'world'})
 			expect(store.value.current()).toBe('world')
+		})
+
+		it('returns replaced string for a valid range', () => {
+			expect(replaceInString('hello world', {start: 6, end: 11}, 'markput')).toBe('hello markput')
+		})
+
+		it('returns undefined for invalid replacement ranges', () => {
+			expect(replaceInString('hello', {start: -1, end: 1}, 'x')).toBeUndefined()
+			expect(replaceInString('hello', {start: 4, end: 2}, 'x')).toBeUndefined()
+			expect(replaceInString('hello', {start: 0, end: 6}, 'x')).toBeUndefined()
 		})
 	})
 })

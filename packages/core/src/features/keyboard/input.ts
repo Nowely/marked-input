@@ -3,7 +3,7 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 
@@ -45,9 +45,7 @@ export function enableInput(store: KbCtx): void {
 		if (store.slots.isBlock()) return
 		if (!range) return
 		const data = e.data
-		const pos = range.start + data.length
-		store.caret.position(pos)
-		store.value.replace(range, data)
+		store.edit.replace(range, data)
 	})
 
 	listen(
@@ -82,8 +80,7 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	if (!range) return
 
 	event.preventDefault()
-	store.caret.position(range.start)
-	store.value.replace(range, '')
+	store.edit.replace(range, '')
 }
 
 export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
@@ -110,9 +107,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 	if (!range) return
 
 	event.preventDefault()
-	const pos = range.start + replacement.length
-	store.caret.position(pos)
-	store.value.replace(range, replacement)
+	store.edit.replace(range, replacement)
 }
 
 export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boolean {

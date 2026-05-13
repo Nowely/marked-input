@@ -1,5 +1,6 @@
 import type {CaretModel} from '../caret/CaretModel'
 import type {DomController} from '../dom/DomController'
+import type {EditController} from '../edit'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
@@ -15,11 +16,12 @@ export class KeyboardController {
 		dom: DomController,
 		value: ValueModel,
 		caret: CaretModel,
+		edit: EditController,
 		slots: SlotsFeature,
 		parsing: ParseController,
 		props: PropsModel
 	) {
-		const ctx = {dom, value, caret, slots, parsing, props}
+		const ctx = {dom, value, caret, edit, slots, parsing, props}
 		lifecycle.onMounted(() => {
 			enableInput(ctx)
 			enableBlockEdit(ctx)

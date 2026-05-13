@@ -1,5 +1,6 @@
 import type {Range} from '../../shared/editorContracts'
 import {computed, model} from '../../shared/signals/index.js'
+import {replaceInString} from '../../shared/utils'
 import type {PropsModel} from '../props/PropsModel'
 
 export class ValueModel {
@@ -18,10 +19,17 @@ export class ValueModel {
 
 	constructor(private readonly props: PropsModel) {}
 
-	replace(range: Range, replacement: string): void {
-		const current = this.current()
-		if (range.start < 0 || range.end < range.start || range.end > current.length) return
-		const next = current.slice(0, range.start) + replacement + current.slice(range.end)
+	/**
+	 * Attempts to replace `range` with `replacement`. Returns `true` when the
+	 * edit was accepted (range valid and not read-only), `false` otherwise.
+	 * Callers use the return value to gate downstream side effects such as
+	 * caret placement.
+	 */
+	replace(range: Range, replacement: string): boolean {
+		if (this.props.readOnly()) return false
+		const next = replaceInString(this.current(), range, replacement)
+		if (next === undefined) return false
 		this.current(next)
+		return true
 	}
 }

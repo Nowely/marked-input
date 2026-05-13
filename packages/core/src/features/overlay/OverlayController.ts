@@ -7,6 +7,7 @@ import {TriggerFinder} from '../caret'
 import * as caretDom from '../caret/caretDom'
 import type {CaretModel} from '../caret/CaretModel'
 import type {DomController} from '../dom/DomController'
+import type {EditController} from '../edit'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
@@ -43,6 +44,7 @@ export class OverlayController {
 		private readonly value: ValueModel,
 		private readonly dom: DomController,
 		private readonly caret: CaretModel,
+		private readonly edit: EditController,
 		private readonly parsing: ParseController
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
@@ -119,9 +121,7 @@ export class OverlayController {
 										value: mark.content,
 									})
 
-						const pos = range.start + annotation.length
-						this.caret.position(pos)
-						this.value.replace(range, annotation)
+						this.edit.replace(range, annotation)
 						this.match(undefined)
 					})
 				})

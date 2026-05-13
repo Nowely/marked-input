@@ -4,7 +4,7 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'slots' | 'parsing' | 'props'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing' | 'props'>
 import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
@@ -189,9 +189,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 	const raw = store.dom.readRawSelection()
 	const absolutePos = raw.ok ? raw.value.range.start : token.position.end
-	const pos = absolutePos + newRowContent.length
-	store.caret.position(pos)
-	store.value.replace({start: absolutePos, end: absolutePos}, newRowContent)
+	store.edit.replace({start: absolutePos, end: absolutePos}, newRowContent)
 }
 
 function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
@@ -325,9 +323,7 @@ function replaceBlockRange(store: KbCtx, event: InputEvent, replacement: string)
 	if (!range) return
 
 	event.preventDefault()
-	const pos = range.start + replacement.length
-	store.caret.position(pos)
-	store.value.replace(range, replacement)
+	store.edit.replace(range, replacement)
 }
 
 function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {

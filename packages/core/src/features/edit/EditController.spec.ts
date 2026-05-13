@@ -1,0 +1,74 @@
+import {describe, it, expect, vi} from 'vitest'
+
+import {Store} from '../../store/Store'
+
+describe('EditController', () => {
+	it('exposes replace on the store', () => {
+		const store = new Store()
+
+		expect(typeof store.edit.replace).toBe('function')
+	})
+
+	it('replaces value and places caret after replacement', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello world'})
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 6, end: 11}, 'markput')
+
+		expect(store.value.current()).toBe('hello markput')
+		expect(store.caret.selection()).toEqual({start: 13, end: 13})
+	})
+
+	it('places caret at range start when deleting', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello world'})
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 5, end: 11}, '')
+
+		expect(store.value.current()).toBe('hello')
+		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+	})
+
+	it('does not move caret or change value for invalid ranges', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({defaultValue: 'hello', onChange})
+		store.lifecycle.mounted()
+		store.caret.position(2)
+
+		store.edit.replace({start: 4, end: 2}, 'x')
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('hello')
+		expect(store.caret.selection()).toEqual({start: 2, end: 2})
+	})
+
+	it('does not move caret or change value when readOnly', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.lifecycle.mounted()
+		store.caret.position(1)
+
+		store.edit.replace({start: 1, end: 4}, 'i')
+
+		expect(onChange).not.toHaveBeenCalled()
+		expect(store.value.current()).toBe('hello')
+		expect(store.caret.selection()).toEqual({start: 1, end: 1})
+	})
+
+	it('calls onChange and records caret intent in controlled mode', () => {
+		const store = new Store()
+		const onChange = vi.fn()
+		store.props.set({value: 'hello', onChange})
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 0, end: 5}, 'world')
+
+		expect(onChange).toHaveBeenCalledWith('world')
+		expect(store.value.current()).toBe('hello')
+		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+	})
+})
