@@ -41,9 +41,8 @@ export class CaretModel {
 	) {
 		lifecycle.onMounted(() => {
 			this.#wireEmptyDocClickFocus()
-			this.#enableFocusTracking()
 
-			this.#enableSelectionTracking()
+			this.#trackSelection()
 			effect(() => {
 				this.selection()
 				untracked(() => this.#applyRangeToDOM())
@@ -139,9 +138,25 @@ export class CaretModel {
 		})
 	}
 
-	#enableFocusTracking(): void {
+	#trackSelection(): void {
 		const container = this.dom.container()
 		if (!container) return
+
+		const sync = (): void => {
+			const rawSel = this.dom.readRawSelection()
+			if (rawSel.ok) this.selection(rawSel.value.range)
+			else this.selection(undefined)
+		}
+
+		const syncIfInEditor = (node: Node): void => {
+			const result = this.dom.locateNode(node)
+			if (!result.ok) {
+				if (result.reason === 'control') return
+				this.selection(undefined)
+				return
+			}
+			sync()
+		}
 
 		listen(container, 'focusin', e => {
 			const target = e.target instanceof HTMLElement ? e.target : undefined
@@ -149,14 +164,7 @@ export class CaretModel {
 				this.selection(undefined)
 				return
 			}
-			const result = this.dom.locateNode(target)
-			if (!result.ok) {
-				if (result.reason === 'control') return
-				this.selection(undefined)
-				return
-			}
-			const rawSel = this.dom.readRawSelection()
-			if (rawSel.ok) this.selection(rawSel.value.range)
+			syncIfInEditor(target)
 		})
 
 		listen(container, 'focusout', () => {
@@ -166,21 +174,11 @@ export class CaretModel {
 				}
 			})
 		})
-	}
 
-	#enableSelectionTracking(): void {
 		listen(document, 'selectionchange', () => {
 			const sel = window.getSelection()
 			if (!sel?.focusNode) return
-			const result = this.dom.locateNode(sel.focusNode)
-			if (!result.ok) {
-				if (result.reason === 'control') return
-				this.selection(undefined)
-				return
-			}
-			const rawSel = this.dom.readRawSelection()
-			if (rawSel.ok) this.selection(rawSel.value.range)
-			else this.selection(undefined)
+			syncIfInEditor(sel.focusNode)
 		})
 	}
 
