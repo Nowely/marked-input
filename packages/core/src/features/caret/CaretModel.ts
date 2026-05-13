@@ -1,6 +1,6 @@
-import {firstHtmlChild} from '../../shared/checkers'
+import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
-import {computed, effect, listen, type Signal, signal, untracked, watch} from '../../shared/signals'
+import {computed, effect, listen, signal, untracked, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -8,7 +8,6 @@ import type {ParseController} from '../parsing/ParseController'
 import type {PropsModel} from '../props/PropsModel'
 import type {ValueModel} from '../value/ValueModel'
 import {placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
-import {UserSelectingTracker} from './UserSelectingTracker'
 
 export class CaretModel {
 	readonly selection = signal<Range>(undefined, {equals: shallow})
@@ -23,7 +22,7 @@ export class CaretModel {
 	 * so the browser sees one continuous selection instead of
 	 * fragmenting it per-node.
 	 */
-	readonly isUserSelecting: Signal<boolean>
+	readonly isUserSelecting = signal<boolean>(false)
 
 	readonly isAllSelected = computed(() => {
 		const s = this.selection()
@@ -40,9 +39,8 @@ export class CaretModel {
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
-		const userSelecting = new UserSelectingTracker(lifecycle, dom)
-		this.isUserSelecting = userSelecting.isSelecting
 		lifecycle.onMounted(() => {
+			this.#trackUserSelecting()
 			this.#wireEmptyDocClickFocus()
 			this.#enableFocusTracking()
 			this.#enableSelectionTracking()
@@ -101,6 +99,41 @@ export class CaretModel {
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(this.dom.container())?.focus()
 			}
+		})
+	}
+
+	#trackUserSelecting(): void {
+		let pressedAt: Node | null = null
+
+		listen(document, 'mousedown', e => {
+			pressedAt = nodeTarget(e)
+		})
+
+		listen(document, 'mousemove', e => {
+			if (pressedAt === null) return
+			const container = this.dom.container()
+			if (!container) return
+
+			const startedOutsideEditor = !container.contains(pressedAt)
+			const sweepingAcrossNodes = pressedAt !== e.target
+			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
+
+			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
+				this.isUserSelecting(true)
+			}
+		})
+
+		listen(document, 'mouseup', () => {
+			pressedAt = null
+			if (!this.isUserSelecting()) return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
+		})
+
+		listen(document, 'selectionchange', () => {
+			if (!this.isUserSelecting()) return
+			const sel = window.getSelection()
+			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
 		})
 	}
 
