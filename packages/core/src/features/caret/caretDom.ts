@@ -100,3 +100,69 @@ export function setAtX(element: HTMLElement, x: number, y?: number): void {
 	sel.removeAllRanges()
 	sel.addRange(domRange)
 }
+
+/**
+ * Resolve a character offset within a structural text surface to a concrete
+ * (Text, offset) pair. If the surface contains no Text node, append an empty
+ * one and target it. Used for caret placement in CaretModel — needs the
+ * fallback because freshly-mounted empty surfaces should still accept a
+ * caret.
+ */
+function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
+	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
+	let remaining = Math.max(0, offset)
+	let node = nextText(walker)
+	while (node) {
+		if (remaining <= node.length) return {node, offset: remaining}
+		remaining -= node.length
+		node = nextText(walker)
+	}
+	const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
+	if (!text.parentNode) surface.append(text)
+	return {node: text, offset: text.length}
+}
+
+/** Place a collapsed caret at a character offset inside a text surface. */
+export function placeAtTextOffset(surface: HTMLElement, offset: number): void {
+	const selection = window.getSelection()
+	if (!selection) return
+	const {node, offset: nodeOffset} = findTextBoundary(surface, offset)
+	const range = document.createRange()
+	range.setStart(node, nodeOffset)
+	range.collapse(true)
+	selection.removeAllRanges()
+	selection.addRange(range)
+}
+
+/** Place a collapsed caret at the start or end of an element's child list. */
+export function placeAtChildBoundary(element: HTMLElement, side: 'start' | 'end'): void {
+	const selection = window.getSelection()
+	if (!selection) return
+	const range = document.createRange()
+	const childIndex = side === 'end' ? element.childNodes.length : 0
+	range.setStart(element, childIndex)
+	range.collapse(true)
+	selection.removeAllRanges()
+	selection.addRange(range)
+}
+
+/** Build a (possibly non-collapsed) selection range across two text surfaces. */
+export function placeRangeAcrossSurfaces(
+	start: {element: HTMLElement; offset: number},
+	end: {element: HTMLElement; offset: number}
+): void {
+	const selection = window.getSelection()
+	if (!selection) return
+	const startBoundary = findTextBoundary(start.element, start.offset)
+	const endBoundary = findTextBoundary(end.element, end.offset)
+	const range = document.createRange()
+	range.setStart(startBoundary.node, startBoundary.offset)
+	range.setEnd(endBoundary.node, endBoundary.offset)
+	selection.removeAllRanges()
+	selection.addRange(range)
+}
+
+/** Focus `element` only when it is not already the active element. */
+export function focusIfNeeded(element: HTMLElement): void {
+	if (document.activeElement !== element) element.focus()
+}

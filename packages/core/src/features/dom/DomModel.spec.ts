@@ -254,35 +254,23 @@ describe('DomModel structural indexing', () => {
 		container.remove()
 	})
 
-	it('emits diagnostics for duplicate child sequence hosts', () => {
-		const diagnostics: unknown[] = []
-		const {store, container} = mountStructuralNestedWithDuplicateChildSequences()
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+	it('completes indexing when duplicate child sequence hosts are registered', () => {
+		const {store, container, outer} = mountStructuralNestedWithDuplicateChildSequences()
 
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'expected exactly 1 child sequence host for owner path 1 but found 2',
-		})
-		stop()
+		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
 
-	it('emits diagnostics when child sequence host is outside owner mark root', () => {
-		const diagnostics: unknown[] = []
-		const {store, container} = mountStructuralNestedWithOutsideChildSequence()
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
+	it('completes indexing when child sequence host is outside owner mark root', () => {
+		const {store, container, outer} = mountStructuralNestedWithOutsideChildSequence()
 
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'child sequence host for owner path 1 is not contained by owner token element',
-		})
-		stop()
+		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
 
@@ -305,13 +293,11 @@ describe('DomModel structural indexing', () => {
 		container.remove()
 	})
 
-	it('emits diagnostics when a nested mark omits child roots', () => {
-		const diagnostics: unknown[] = []
+	it('completes indexing when a nested mark renders no child elements', () => {
 		const store = enableStructuralStore('@[before @[nested] after]', {
 			Mark: () => null,
 			options: [{markup: '@[__slot__]'}],
 		})
-		const stop = watch(store.dom.diagnostics, diagnostic => diagnostics.push(diagnostic))
 		const container = document.createElement('div')
 		const leading = document.createElement('span')
 		const outer = document.createElement('mark')
@@ -321,70 +307,8 @@ describe('DomModel structural indexing', () => {
 		store.dom.container(container)
 		store.lifecycle.rendered()
 
-		expect(diagnostics).toContainEqual({
-			kind: 'ambiguousStructure',
-			path: [1],
-			reason: 'expected 3 child token elements but found 0',
-		})
+		expect(store.dom.index()).toBeDefined()
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
-		stop()
-		container.remove()
-	})
-
-	it('places the caret at a raw position inside a structural text surface', () => {
-		const {store, container, textSurface} = mountStructuralInline('hello')
-
-		expect(store.dom.placeAt(3, 'after')).toEqual({ok: true, value: {applied: 3}})
-
-		const selection = window.getSelection()
-		expect(selection?.focusNode).toBe(textSurface.firstChild)
-		expect(selection?.focusOffset).toBe(3)
-		container.remove()
-	})
-
-	it('placeAt returns applied position on success', () => {
-		const {store, container} = mountStructuralInline('hello world')
-
-		const result = store.dom.placeAt(5)
-		expect(result).toEqual({ok: true, value: {applied: 5}})
-		container.remove()
-	})
-
-	it('placeAt clamps position to value length', () => {
-		const {store, container} = mountStructuralInline('hi')
-
-		const result = store.dom.placeAt(999)
-		expect(result.ok).toBe(true)
-		if (result.ok) expect(result.value.applied).toBeLessThanOrEqual(2)
-		container.remove()
-	})
-
-	it('placeRange returns applied range on success', () => {
-		const {store, container} = mountStructuralInline('hello world')
-
-		const result = store.dom.placeRange({start: 0, end: 5})
-		expect(result).toEqual({ok: true, value: {applied: {start: 0, end: 5}}})
-		container.remove()
-	})
-
-	it('placeRange clamps to value length', () => {
-		const {store, container} = mountStructuralInline('hi')
-
-		const result = store.dom.placeRange({start: 0, end: 999})
-		expect(result.ok).toBe(true)
-		if (result.ok) {
-			expect(result.value.applied.start).toBeLessThanOrEqual(2)
-			expect(result.value.applied.end).toBeLessThanOrEqual(2)
-		}
-		container.remove()
-	})
-
-	it('focuses the element for an address', () => {
-		const {store, container, textSurface} = mountStructuralInline('hello')
-		const address = store.parsing.index().addressFor([0])!
-
-		expect(store.dom.focusAddress(address)).toEqual({ok: true, value: undefined})
-		expect(document.activeElement).toBe(textSurface)
 		container.remove()
 	})
 
@@ -510,7 +434,7 @@ describe('DomModel structural indexing', () => {
 			container.remove()
 		})
 
-		it('reconcile respects isUserSelecting flag', () => {
+		it('reconcile respects isUserSelecting signal', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -521,20 +445,13 @@ describe('DomModel structural indexing', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			store.dom.reconcile({isUserSelecting: true})
+			store.dom.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
 
-			store.dom.reconcile({isUserSelecting: false})
+			store.dom.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()
-		})
-
-		it('readOnly computed reflects props', () => {
-			const store = new Store()
-			expect(store.dom.readOnly()).toBe(false)
-			store.props.set({readOnly: true})
-			expect(store.dom.readOnly()).toBe(true)
 		})
 	})
 

@@ -76,20 +76,4 @@ export type DomIndex = {
 	readonly generation: number
 }
 
-export type DomDiagnostic = {
-	readonly kind:
-		| 'missingRole'
-		| 'stalePath'
-		| 'outsideEditor'
-		| 'controlBoundary'
-		| 'mixedBoundary'
-		| 'invalidBoundary'
-		| 'renderReentry'
-		| 'recoveryFailed'
-		| 'missingContainer'
-		| 'ambiguousStructure'
-	readonly path?: TokenPath
-	readonly reason: string
-}
-
 export type MarkControllerConstructor = new (store: Store, address: TokenAddress, snapshot: MarkSnapshot) => unknown

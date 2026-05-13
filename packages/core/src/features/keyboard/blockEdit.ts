@@ -196,7 +196,7 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 	if (token.type === 'mark') {
 		const path = store.parsing.index().pathFor(token)
 		const address = path ? store.parsing.index().addressFor(path) : undefined
-		if (address && store.dom.focusAddress(address).ok) return
+		if (address && store.caret.placeAtAddress(address, caret)) return
 	}
 
 	row.focus()
