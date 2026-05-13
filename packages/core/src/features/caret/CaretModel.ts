@@ -33,6 +33,7 @@ export class CaretModel {
 	})
 
 	#preferredAddress: TokenAddress | undefined
+	#isPlacingCaret = false
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -76,7 +77,12 @@ export class CaretModel {
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
 		this.#preferredAddress = address
+		const prev = this.selection()
 		this.selection({start: pos, end: pos})
+		// When pos equals the prior selection (shared text/mark boundary), the
+		// signal's shallow-equals check suppresses the watch effect, leaving
+		// #preferredAddress unconsumed. Apply it directly in that case.
+		if (shallow(prev, {start: pos, end: pos})) this.#applyRangeToDOM()
 		return true
 	}
 
@@ -152,6 +158,7 @@ export class CaretModel {
 		}
 
 		listen(container, 'focusin', e => {
+			if (this.#isPlacingCaret) return
 			const target = e.target instanceof HTMLElement ? e.target : undefined
 			if (!target) {
 				this.selection(undefined)
@@ -172,6 +179,7 @@ export class CaretModel {
 		})
 
 		listen(document, 'selectionchange', () => {
+			if (this.#isPlacingCaret) return
 			const sel = window.getSelection()
 			if (!sel?.focusNode) return
 			syncIfInEditor(sel.focusNode)
@@ -190,8 +198,11 @@ export class CaretModel {
 			end: Math.min(sel.end, maxPos),
 		}
 
+		this.#isPlacingCaret = true
 		const placed =
 			clamped.start === clamped.end ? this.#placeCollapsed(clamped.start) : this.#placeExtended(clamped)
+		this.#isPlacingCaret = false
+
 		if (!placed) return
 		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
 	}
