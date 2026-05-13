@@ -434,7 +434,7 @@ describe('DomModel structural indexing', () => {
 			container.remove()
 		})
 
-		it('reconcile respects isUserSelecting flag', () => {
+		it('reconcile respects isUserSelecting signal', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			const span = document.createElement('span')
@@ -445,10 +445,10 @@ describe('DomModel structural indexing', () => {
 			store.dom.container(container)
 			store.lifecycle.rendered()
 
-			store.dom.reconcile({isUserSelecting: true})
+			store.dom.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
 
-			store.dom.reconcile({isUserSelecting: false})
+			store.dom.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()

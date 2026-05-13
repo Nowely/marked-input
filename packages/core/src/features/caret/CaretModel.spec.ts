@@ -189,15 +189,28 @@ describe('CaretModel', () => {
 		})
 	})
 
-	describe('single reconcile driver', () => {
-		it('calls dom.reconcile when isUserSelecting changes', () => {
+	describe('isUserSelecting → contentEditable', () => {
+		it('flips structural text surfaces non-editable while user is selecting', () => {
 			const store = new Store()
-			const reconcileSpy = vi.spyOn(store.dom, 'reconcile')
+			store.props.set({defaultValue: 'hello'})
+			const container = document.createElement('div')
+			const span = document.createElement('span')
+			span.appendChild(document.createTextNode('hello'))
+			container.appendChild(span)
+			document.body.appendChild(container)
+			store.dom.container(container)
 			store.lifecycle.mounted()
-			reconcileSpy.mockClear()
+			store.lifecycle.rendered()
+
+			expect(span.contentEditable).toBe('true')
+
 			store.caret.isUserSelecting(true)
-			expect(reconcileSpy).toHaveBeenCalledWith({isUserSelecting: true})
-			reconcileSpy.mockRestore()
+			expect(span.contentEditable).toBe('false')
+
+			store.caret.isUserSelecting(false)
+			expect(span.contentEditable).toBe('true')
+
+			container.remove()
 		})
 	})
 })

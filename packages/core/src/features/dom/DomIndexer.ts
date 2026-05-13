@@ -1,6 +1,6 @@
 import type {DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, computed, signal, watch} from '../../shared/signals/index.js'
-import type {Computed} from '../../shared/signals/index.js'
+import type {Computed, Signal} from '../../shared/signals/index.js'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
@@ -39,6 +39,7 @@ export interface DomIndexerHost {
 	pendingControls(): IterableIterator<ControlRegistration>
 	pendingChildSequences(): IterableIterator<ChildSequenceRegistration>
 	emitIndexed(): void
+	isUserSelecting: Signal<boolean>
 }
 
 export class DomIndexer {
@@ -65,11 +66,12 @@ export class DomIndexer {
 				computed(() => props.readOnly()),
 				() => this.reconcile()
 			)
+			watch(host.isUserSelecting, () => this.reconcile())
 		})
 	}
 
-	reconcile(opts?: {isUserSelecting?: boolean}): void {
-		this.#reconcileStructuralTextSurfaces(opts?.isUserSelecting)
+	reconcile(): void {
+		this.#reconcileStructuralTextSurfaces()
 	}
 
 	locateNode(node: Node): NodeLocationResult {
@@ -342,9 +344,9 @@ export class DomIndexer {
 		)
 	}
 
-	#reconcileStructuralTextSurfaces(isUserSelecting?: boolean): void {
+	#reconcileStructuralTextSurfaces(): void {
 		const tokenIndex = this.parsing.index()
-		const editable = this.props.readOnly() || isUserSelecting ? 'false' : 'true'
+		const editable = this.props.readOnly() || this.host.isUserSelecting() ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {
 			const resolved = tokenIndex.resolveAddress(record.address)

@@ -1,6 +1,7 @@
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
-import {computed, effect, listen, signal, watch} from '../../shared/signals'
+import {computed, listen, signal, watch} from '../../shared/signals'
+import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {Lifecycle} from '../lifecycle/Lifecycle'
@@ -17,12 +18,13 @@ export class CaretModel {
 	})
 
 	/**
-	 * True while the user drag-selects across token boundaries.
-	 * Frozen `contenteditable="false"` on structural text surfaces
-	 * so the browser sees one continuous selection instead of
-	 * fragmenting it per-node.
+	 * True while the user drag-selects across token boundaries. Owned by
+	 * `DomModel` because its only consequence is freezing
+	 * `contenteditable="false"` on structural text surfaces. Re-exported here
+	 * for API compatibility — readers and writers both go through the same
+	 * underlying signal.
 	 */
-	readonly isUserSelecting = signal<boolean>(false)
+	readonly isUserSelecting: Signal<boolean>
 
 	readonly isAllSelected = computed(() => {
 		const s = this.selection()
@@ -39,6 +41,8 @@ export class CaretModel {
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
+		this.isUserSelecting = dom.isUserSelecting
+
 		lifecycle.onMounted(() => {
 			this.#focusEmptyEditorOnClick()
 
@@ -46,15 +50,7 @@ export class CaretModel {
 			watch(this.selection, () => this.#applyRangeToDOM())
 
 			this.#trackUserSelecting()
-			watch(dom.indexed, () => {
-				dom.reconcile({isUserSelecting: this.isUserSelecting()})
-				this.#applyRangeToDOM()
-			})
-			effect(() => {
-				const isUserSelecting = this.isUserSelecting()
-				this.props.readOnly()
-				dom.reconcile({isUserSelecting})
-			})
+			watch(dom.indexed, () => this.#applyRangeToDOM())
 		})
 	}
 

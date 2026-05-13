@@ -20,6 +20,7 @@ import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost, Pat
 export class DomModel {
 	readonly container = signal<HTMLElement | null>(null)
 	readonly indexed = event<void>()
+	readonly isUserSelecting = signal<boolean>(false)
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()
@@ -37,6 +38,7 @@ export class DomModel {
 			pendingControls: () => this.#pendingControls.values(),
 			pendingChildSequences: () => this.#pendingChildSequences.values(),
 			emitIndexed: () => this.indexed(),
+			isUserSelecting: this.isUserSelecting,
 		}
 		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, parsing)
 		this.index = this.#indexer.index
@@ -86,8 +88,8 @@ export class DomModel {
 		return callback
 	}
 
-	reconcile(opts?: {isUserSelecting?: boolean}): void {
-		this.#indexer.reconcile(opts)
+	reconcile(): void {
+		this.#indexer.reconcile()
 	}
 
 	locateNode(node: Node): NodeLocationResult {
