@@ -187,36 +187,43 @@ export class CaretModel {
 			end: Math.min(sel.end, maxPos),
 		}
 
-		if (clamped.start === clamped.end) {
-			if (this.#applyPreferredAddress(clamped.start)) {
-				if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
-				return
-			}
-			const target = this.#findTextTargetForRawPosition(clamped.start)
-			if (target) {
-				focusIfNeeded(target.element)
-				placeAtTextOffset(target.element, clamped.start - target.start)
-			} else if (!this.#focusMarkBoundaryForRawPosition(clamped.start)) {
-				// Placement target not found in the current DOM index. Likely the
-				// DOM hasn't caught up with a fresh parser generation; leave the
-				// selection signal alone and let `watch(dom.indexed)` retry on
-				// the next render.
-				return
-			}
-			if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
-			return
-		}
+		const placed =
+			clamped.start === clamped.end ? this.#placeCollapsed(clamped.start) : this.#placeExtended(clamped)
+		if (!placed) return
+		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+	}
 
-		const startTarget = this.#findTextTargetForRawPosition(clamped.start)
-		const endTarget = this.#findTextTargetForRawPosition(clamped.end)
-		if (!startTarget || !endTarget) return
+	/**
+	 * Place a collapsed caret at `rawPosition`. Returns `false` when no DOM
+	 * target was found in the current index — the caller should leave the
+	 * selection signal alone so `watch(dom.indexed)` can retry after the
+	 * next render.
+	 */
+	#placeCollapsed(rawPosition: number): boolean {
+		if (this.#applyPreferredAddress(rawPosition)) return true
+		const target = this.#findTextTargetForRawPosition(rawPosition)
+		if (target) {
+			focusIfNeeded(target.element)
+			placeAtTextOffset(target.element, rawPosition - target.start)
+			return true
+		}
+		return this.#focusMarkBoundaryForRawPosition(rawPosition)
+	}
+
+	/**
+	 * Place an extended selection range. Returns `false` when either endpoint
+	 * has no DOM target in the current index.
+	 */
+	#placeExtended(range: Range): boolean {
+		const startTarget = this.#findTextTargetForRawPosition(range.start)
+		const endTarget = this.#findTextTargetForRawPosition(range.end)
+		if (!startTarget || !endTarget) return false
 
 		placeRangeAcrossSurfaces(
-			{element: startTarget.element, offset: clamped.start - startTarget.start},
-			{element: endTarget.element, offset: clamped.end - endTarget.start}
+			{element: startTarget.element, offset: range.start - startTarget.start},
+			{element: endTarget.element, offset: range.end - endTarget.start}
 		)
-
-		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+		return true
 	}
 
 	#applyPreferredAddress(rawPosition: number): boolean {
