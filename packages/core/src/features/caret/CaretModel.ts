@@ -161,6 +161,9 @@ export class CaretModel {
 		})
 
 		listen(container, 'focusout', () => {
+			// `focusout` fires before `document.activeElement` updates to the new
+			// target; defer one microtask so we can tell whether focus moved
+			// outside the editor.
 			queueMicrotask(() => {
 				if (!container.contains(document.activeElement)) {
 					this.selection(undefined)
