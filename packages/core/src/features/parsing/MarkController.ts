@@ -17,7 +17,7 @@ export class MarkController {
 	}
 
 	static fromToken(store: Store, token: MarkToken): MarkController {
-		const index = store.parsing.index()
+		const index = store.tokens.index()
 		const path = index.pathFor(token)
 		if (!path) throw new Error('Cannot create MarkController for unindexed token')
 		const address = index.addressFor(path)
@@ -87,7 +87,7 @@ export class MarkController {
 
 	#resolve(): MarkToken | undefined {
 		if (this.store.props.readOnly()) return undefined
-		const resolved = this.store.parsing.index().resolveAddress(this.address, this.#shape)
+		const resolved = this.store.tokens.index().resolveAddress(this.address, this.#shape)
 		if (!resolved.ok || resolved.value.type !== 'mark') return undefined
 		return resolved.value
 	}

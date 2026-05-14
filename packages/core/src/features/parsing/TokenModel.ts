@@ -11,12 +11,12 @@ import type {Token} from './parser/types'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
-export class ParseController {
-	readonly tokens = signal<Token[]>([])
+export class TokenModel {
+	readonly current = signal<Token[]>([])
 	readonly #generation = signal(0)
-	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.tokens(), this.#generation()))
+	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current(), this.#generation()))
 
-	readonly parser: Computed<Parser | undefined> = computed(() => {
+	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		if (!this.mark.enabled()) return
 
 		const markups = this.props.options().map(opt => opt.markup)
@@ -25,7 +25,7 @@ export class ParseController {
 		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
 	})
 
-	readonly reparse = event()
+	readonly invalidate = event()
 
 	#scope?: () => void
 
@@ -39,15 +39,15 @@ export class ParseController {
 		lifecycle.onMounted(() => {
 			// Parse current value immediately so tokens are ready before other
 			// mounted subscribers (like OverlayController) read them.
-			this.#reparseNow()
-			this.#subscribeValue()
+			this.#update()
+			this.#watchValue()
 		})
 
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#scope) {
 				this.#scope = effectScope(() => {
-					this.#subscribeReactiveParse()
-					this.#subscribeReparse()
+					this.#watchParser()
+					this.#watchInvalidate()
 				})
 			}
 			if (!enabled && this.#scope) {
@@ -61,43 +61,43 @@ export class ParseController {
 	}
 
 	serializeRange(range: Range): string {
-		return serializeRangeUtil(this.tokens(), range)
+		return serializeRangeUtil(this.current(), range)
 	}
 
-	acceptTokens(tokens: Token[]): void {
+	set(tokens: Token[]): void {
 		batch(
 			() => {
-				this.tokens(tokens)
+				this.current(tokens)
 				this.#generation(this.#generation() + 1)
 			},
 			{mutable: true}
 		)
 	}
 
-	#parseValue(value: string): Token[] {
-		const parser = this.parser()
+	#parse(value: string): Token[] {
+		const parser = this.#parser()
 		if (!parser) {
 			return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
 		}
 		return parser.parse(value)
 	}
 
-	#reparseNow(): void {
-		this.acceptTokens(this.#parseValue(this.value.current()))
+	#update(): void {
+		this.set(this.#parse(this.value.current()))
 	}
 
-	#subscribeValue(): void {
-		watch(this.value.current, () => this.#reparseNow())
+	#watchValue(): void {
+		watch(this.value.current, () => this.#update())
 	}
 
-	#subscribeReactiveParse(): void {
+	#watchParser(): void {
 		watch(
-			computed(() => this.parser()),
-			() => this.#reparseNow()
+			computed(() => this.#parser()),
+			() => this.#update()
 		)
 	}
 
-	#subscribeReparse(): void {
-		watch(this.reparse, () => this.#reparseNow())
+	#watchInvalidate(): void {
+		watch(this.invalidate, () => this.#update())
 	}
 }

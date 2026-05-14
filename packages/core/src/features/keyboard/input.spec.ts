@@ -81,7 +81,7 @@ describe('replaceAllContentWith()', () => {
 
 		expect(onChange).toHaveBeenCalledWith('world')
 		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 })
 

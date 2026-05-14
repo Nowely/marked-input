@@ -5,7 +5,7 @@ import {DomModel} from '../features/dom'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
-import {MarkFeature, ParseController} from '../features/parsing'
+import {MarkFeature, TokenModel} from '../features/parsing'
 import {SlotsFeature} from '../features/slots'
 import {Lifecycle, PropsModel, ValueModel} from '../features/state'
 import {KeyGenerator} from '../shared/classes'
@@ -25,11 +25,11 @@ export class Store {
 	readonly mark = new MarkFeature(this.props)
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly parsing = new ParseController(this.lifecycle, this.value, this.mark, this.props, this.slots)
+	readonly tokens = new TokenModel(this.lifecycle, this.value, this.mark, this.props, this.slots)
 
-	readonly dom = new DomModel(this.lifecycle, this.props, this.parsing)
+	readonly dom = new DomModel(this.lifecycle, this.props, this.tokens)
 
-	readonly caret = new CaretModel(this.lifecycle, this.dom, this.parsing, this.value, this.props)
+	readonly caret = new CaretModel(this.lifecycle, this.dom, this.tokens, this.value, this.props)
 	readonly edit = new EditController(this.value, this.caret)
 
 	readonly overlay = new OverlayController(
@@ -39,7 +39,7 @@ export class Store {
 		this.dom,
 		this.caret,
 		this.edit,
-		this.parsing
+		this.tokens
 	)
 	readonly keyboard = new KeyboardController(
 		this.lifecycle,
@@ -48,11 +48,11 @@ export class Store {
 		this.caret,
 		this.edit,
 		this.slots,
-		this.parsing,
+		this.tokens,
 		this.props
 	)
-	readonly block = new BlockController(this.props, this.value, this.parsing, this.caret)
-	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.parsing)
+	readonly block = new BlockController(this.props, this.value, this.tokens, this.caret)
+	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.tokens)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.caret)
 }

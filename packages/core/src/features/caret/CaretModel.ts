@@ -4,7 +4,7 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
@@ -38,7 +38,7 @@ export class CaretModel {
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomModel,
-		private readonly parsing: ParseController,
+		private readonly tokens: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
@@ -56,7 +56,7 @@ export class CaretModel {
 	}
 
 	focusFirst(): void {
-		const firstAddress = this.parsing.index().addressFor([0])
+		const firstAddress = this.tokens.index().addressFor([0])
 		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
 		this.dom.container()?.focus()
 	}
@@ -78,7 +78,7 @@ export class CaretModel {
 	placeAtAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
 		if (this.dom.index() === undefined) return false
 		if (!this.dom.pathElementsFor(address)) return false
-		const resolved = this.parsing.index().resolveAddress(address)
+		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved.ok) return false
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
@@ -99,7 +99,7 @@ export class CaretModel {
 		const container = this.dom.container()
 		if (!container) return
 		listen(container, 'click', () => {
-			const tokens = this.parsing.tokens()
+			const tokens = this.tokens.current()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(this.dom.container())?.focus()
 			}
@@ -251,7 +251,7 @@ export class CaretModel {
 
 		const elements = this.dom.pathElementsFor(address)
 		if (!elements) return false
-		const resolved = this.parsing.index().resolveAddress(address)
+		const resolved = this.tokens.index().resolveAddress(address)
 		if (!resolved.ok) return false
 
 		if (resolved.value.type === 'mark') {
@@ -269,7 +269,7 @@ export class CaretModel {
 
 	#findTextTargetForRawPosition(rawPosition: number): {element: HTMLElement; start: number; end: number} | undefined {
 		const candidates: Array<{element: HTMLElement; start: number; end: number}> = []
-		const tokenIndex = this.parsing.index()
+		const tokenIndex = this.tokens.index()
 
 		for (const record of this.dom.pathElements()) {
 			if (!record.textElement) continue
@@ -289,7 +289,7 @@ export class CaretModel {
 	}
 
 	#focusMarkBoundaryForRawPosition(rawPosition: number): boolean {
-		const tokenIndex = this.parsing.index()
+		const tokenIndex = this.tokens.index()
 
 		for (const record of this.dom.pathElements()) {
 			const resolved = tokenIndex.resolveAddress(record.address)

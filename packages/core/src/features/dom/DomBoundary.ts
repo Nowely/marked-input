@@ -6,7 +6,7 @@ import type {
 	TokenPath,
 } from '../../shared/editorContracts'
 import type {Token} from '../parsing'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {PathElements, RegisteredRole} from './DomIndexer'
 import {hasEditableAncestorBefore, textLength, textOffsetWithin} from './textOffsets'
 
@@ -22,7 +22,7 @@ export interface DomBoundaryHost {
 export class DomBoundary {
 	constructor(
 		private readonly host: DomBoundaryHost,
-		private readonly parsing: ParseController
+		private readonly tokens: TokenModel
 	) {}
 
 	fromBoundary(node: Node, offset: number, affinity: 'before' | 'after' = 'after'): BoundaryPositionResult {
@@ -37,7 +37,7 @@ export class DomBoundary {
 		const location = this.host.locateNode(node)
 		if (!location.ok) return location.reason === 'control' ? {ok: false, reason: 'control'} : location
 
-		const token = this.parsing.index().resolveAddress(location.value.address)
+		const token = this.tokens.index().resolveAddress(location.value.address)
 		if (!token.ok) return {ok: false, reason: 'notIndexed'}
 
 		if (node instanceof HTMLElement) {
@@ -118,7 +118,7 @@ export class DomBoundary {
 	}
 
 	#fromContainerBoundary(offset: number, affinity: 'before' | 'after'): BoundaryPositionResult {
-		const tokens = this.parsing.tokens()
+		const tokens = this.tokens.current()
 		if (tokens.length === 0) return {ok: true, value: 0}
 		if (offset <= 0) return {ok: true, value: tokens[0].position.start}
 		if (offset >= tokens.length) return {ok: true, value: tokens[tokens.length - 1].position.end}
@@ -135,8 +135,8 @@ export class DomBoundary {
 		affinity: 'before' | 'after'
 	): BoundaryPositionResult {
 		if (token.type === 'text') {
-			const path: TokenPath = this.parsing.index().pathFor(token) ?? []
-			const address = this.parsing.index().addressFor(path)
+			const path: TokenPath = this.tokens.index().pathFor(token) ?? []
+			const address = this.tokens.index().addressFor(path)
 			const textElement = address ? this.host.pathElementsFor(address)?.textElement : undefined
 			if (!textElement || textLength(textElement) === 0) return {ok: true, value: token.position.start}
 		}
@@ -144,8 +144,8 @@ export class DomBoundary {
 		const before = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset - 1))
 		const after = this.#locateRegisteredDescendant(tokenElement.childNodes.item(offset))
 		if (before?.ok && after?.ok) {
-			const beforeToken = this.parsing.index().resolveAddress(before.value.address)
-			const afterToken = this.parsing.index().resolveAddress(after.value.address)
+			const beforeToken = this.tokens.index().resolveAddress(before.value.address)
+			const afterToken = this.tokens.index().resolveAddress(after.value.address)
 			if (beforeToken.ok && afterToken.ok) {
 				return {
 					ok: true,

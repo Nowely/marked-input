@@ -2,9 +2,9 @@ import type {DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../
 import {batch, computed, signal, watch} from '../../shared/signals/index.js'
 import type {Computed, Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
-import type {ParseController} from '../parsing/ParseController'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 
@@ -56,7 +56,7 @@ export class DomIndexer {
 		private readonly host: DomIndexerHost,
 		private readonly lifecycle: Lifecycle,
 		private readonly props: PropsModel,
-		private readonly parsing: ParseController
+		private readonly tokens: TokenModel
 	) {
 		lifecycle.onMounted(() => {
 			watch(lifecycle.rendered, () => {
@@ -140,7 +140,7 @@ export class DomIndexer {
 			return
 		}
 
-		const tokenIndex = this.parsing.index()
+		const tokenIndex = this.tokens.index()
 		const pathElements = new Map<string, PathElements>()
 		const elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 		const controlElements = new Set<HTMLElement>()
@@ -150,7 +150,7 @@ export class DomIndexer {
 			elementRoles.set(element, {role: 'control'})
 		}
 
-		const tokens = this.parsing.tokens()
+		const tokens = this.tokens.current()
 		if (this.props.layout() === 'block') {
 			this.#indexBlockTokens(container, tokens, tokenIndex, controlElements, pathElements, elementRoles)
 		} else {
@@ -345,7 +345,7 @@ export class DomIndexer {
 	}
 
 	#reconcileStructuralTextSurfaces(): void {
-		const tokenIndex = this.parsing.index()
+		const tokenIndex = this.tokens.index()
 		const editable = this.props.readOnly() || this.host.isUserSelecting() ? 'false' : 'true'
 
 		for (const record of this.#pathElements.values()) {

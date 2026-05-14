@@ -4,7 +4,7 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing' | 'props'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import * as caretDom from '../caret/caretDom'
@@ -64,7 +64,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	)
 	if (blockIndex === -1) return
 
-	const rows = store.parsing.tokens()
+	const rows = store.tokens.current()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -173,7 +173,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	}
 	if (blockIndex === -1) return
 
-	const rows = store.parsing.tokens()
+	const rows = store.tokens.current()
 	const token = rows[blockIndex]
 	const value = store.value.current()
 
@@ -194,8 +194,8 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
-		const path = store.parsing.index().pathFor(token)
-		const address = path ? store.parsing.index().addressFor(path) : undefined
+		const path = store.tokens.index().pathFor(token)
+		const address = path ? store.tokens.index().addressFor(path) : undefined
 		if (address && store.caret.placeAtAddress(address, caret)) return
 	}
 

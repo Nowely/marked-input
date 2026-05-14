@@ -226,7 +226,7 @@ describe('DomModel structural indexing', () => {
 
 	it('maps registered child sequence host boundaries to nested child positions', () => {
 		const {store, container, host} = mountStructuralNestedWithChildSequence()
-		const tokenIndex = store.parsing.index()
+		const tokenIndex = store.tokens.index()
 		const beforeToken = tokenIndex.resolve([1, 0])
 		const innerToken = tokenIndex.resolve([1, 1])
 		const afterToken = tokenIndex.resolve([1, 2])

@@ -20,7 +20,7 @@ describe('ValueModel', () => {
 		store.lifecycle.mounted()
 
 		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
@@ -29,7 +29,7 @@ describe('ValueModel', () => {
 		store.lifecycle.mounted()
 
 		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('controlled prop echo commits current and tokens', () => {
@@ -40,7 +40,7 @@ describe('ValueModel', () => {
 		store.props.set({value: 'world'})
 
 		expect(store.value.current()).toBe('world')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	it('falls back to defaultValue when controlled value becomes undefined', () => {
@@ -52,7 +52,7 @@ describe('ValueModel', () => {
 
 		expect(store.value.isControlledMode()).toBe(false)
 		expect(store.value.current()).toBe('default')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})
 
 	it('readOnly rejects editor-originated range replacement', () => {
@@ -65,7 +65,7 @@ describe('ValueModel', () => {
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
@@ -78,7 +78,7 @@ describe('ValueModel', () => {
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('world')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'world', position: {start: 0, end: 5}}])
 	})
 
 	describe('replace()', () => {

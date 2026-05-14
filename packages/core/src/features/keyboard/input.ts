@@ -3,7 +3,7 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 
@@ -221,7 +221,7 @@ function rangeForInput(store: KbCtx, event: InputEvent, range: Range): Range | u
 function rangeForDelete(store: KbCtx, inputType: string, range: Range): Range | undefined {
 	if (range.start !== range.end) return range
 
-	const adjacentMark = adjacentMarkRange(store.parsing.tokens(), range.start, inputType.endsWith('Backward'))
+	const adjacentMark = adjacentMarkRange(store.tokens.current(), range.start, inputType.endsWith('Backward'))
 	if (adjacentMark) return adjacentMark
 
 	if (inputType.endsWith('Backward') && range.start > 0) {

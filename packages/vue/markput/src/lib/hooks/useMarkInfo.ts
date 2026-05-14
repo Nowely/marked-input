@@ -13,13 +13,13 @@ export const useMarkInfo = (): MarkInfo => {
 	const token = tokenRef.value
 	if (token.type !== 'mark') throw new Error('useMarkInfo must be called within a mark token context')
 
-	const index = store.parsing.index()
+	const index = store.tokens.index()
 	const path = index.pathFor(token)
 	if (!path) throw new Error('Mark token is not indexed')
 	const address = index.addressFor(path)
 	if (!address) throw new Error('Mark token path is stale')
 
-	const info = findToken(store.parsing.tokens(), token)
+	const info = findToken(store.tokens.current(), token)
 	return {
 		address,
 		depth: info?.depth ?? 0,

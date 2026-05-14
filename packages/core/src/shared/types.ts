@@ -29,7 +29,7 @@ export type Slot = keyof SlotRegistry extends never ? unknown : SlotRegistry[key
  * Architecture:
  * - CoreOption: Contains only markup pattern (framework-independent)
  * - trigger configuration: Handled by framework layer via getTrigger function in TriggerFinder
- * - Separation of concerns: Core focuses on markup parsing, framework handles overlay triggers
+ * - Separation of concerns: Core focuses on markup tokens, framework handles overlay triggers
  */
 export interface CoreOption {
 	/**

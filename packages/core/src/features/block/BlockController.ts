@@ -3,7 +3,7 @@ import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {CaretModel} from '../caret/CaretModel'
 import type {Token} from '../parsing'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {createRowContent} from './createRowContent'
@@ -18,7 +18,7 @@ export class BlockController {
 	constructor(
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
-		private readonly parsing: ParseController,
+		private readonly tokens: TokenModel,
 		private readonly caret: CaretModel
 	) {
 		const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
@@ -54,7 +54,7 @@ export class BlockController {
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {
 		const value = this.value.current()
-		const rows = this.parsing.tokens()
+		const rows = this.tokens.current()
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
 		if (newValue !== value) {
 			const range = this.#rangeAfterDrag(action, rows, newValue)
@@ -65,7 +65,7 @@ export class BlockController {
 
 	#add(action: Extract<DragAction, {type: 'add'}>) {
 		const value = this.value.current()
-		const rawRows = this.parsing.tokens()
+		const rawRows = this.tokens.current()
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
@@ -76,7 +76,7 @@ export class BlockController {
 
 	#delete(action: Extract<DragAction, {type: 'delete'}>) {
 		const value = this.value.current()
-		const rows = this.parsing.tokens()
+		const rows = this.tokens.current()
 		const newValue = deleteDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
 		if (range) this.caret.selection(range)
@@ -85,7 +85,7 @@ export class BlockController {
 
 	#duplicate(action: Extract<DragAction, {type: 'duplicate'}>) {
 		const value = this.value.current()
-		const rows = this.parsing.tokens()
+		const rows = this.tokens.current()
 		const newValue = duplicateDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
 		if (range) this.caret.selection(range)

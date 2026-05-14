@@ -9,7 +9,7 @@ import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 import type {Lifecycle} from '../state/Lifecycle'
@@ -45,7 +45,7 @@ export class OverlayController {
 		private readonly dom: DomModel,
 		private readonly caret: CaretModel,
 		private readonly edit: EditController,
-		private readonly parsing: ParseController
+		private readonly tokens: TokenModel
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
