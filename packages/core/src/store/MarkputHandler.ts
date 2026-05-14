@@ -1,6 +1,6 @@
-import type {SelectionController} from '../features/caret/SelectionController'
 import type {DomModel} from '../features/dom/DomModel'
 import type {OverlayController} from '../features/overlay/OverlayController'
+import type {SelectionController} from '../features/selection/SelectionController'
 
 export class MarkputHandler {
 	constructor(

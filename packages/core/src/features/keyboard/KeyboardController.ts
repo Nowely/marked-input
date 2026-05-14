@@ -1,7 +1,7 @@
-import type {SelectionController} from '../caret/SelectionController'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {TokenModel} from '../parsing/TokenModel'
+import type {SelectionController} from '../selection/SelectionController'
 import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'

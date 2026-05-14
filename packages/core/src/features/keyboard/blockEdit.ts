@@ -7,9 +7,9 @@ import type {Store} from '../../store/Store'
 type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
-import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
+import * as caretDom from '../selection/caretDom'
 
 type InputTargetRange = {
 	readonly startContainer: Node

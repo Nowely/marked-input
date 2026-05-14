@@ -1,6 +1,6 @@
 import type {Range} from '../../shared/editorContracts'
 import {batch} from '../../shared/signals'
-import type {SelectionController} from '../caret/SelectionController'
+import type {SelectionController} from '../selection/SelectionController'
 import type {ValueModel} from '../state'
 
 /**
