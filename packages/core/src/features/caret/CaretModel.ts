@@ -83,12 +83,10 @@ export class CaretModel {
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
 		this.#preferredAddress = address
-		const prev = this.selection()
-		this.selection({start: pos, end: pos})
 		// When pos equals the prior selection (shared text/mark boundary), the
 		// signal's shallow-equals check suppresses the watch effect, leaving
 		// #preferredAddress unconsumed. Apply it directly in that case.
-		if (shallow(prev, {start: pos, end: pos})) this.#applyRangeToDOM()
+		if (!this.selection({start: pos, end: pos})) this.#applyRangeToDOM()
 		return true
 	}
 
