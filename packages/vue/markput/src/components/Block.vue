@@ -35,7 +35,7 @@ const otherSlotProps = computed(() => {
 const setBlockRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
 	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLElement | null
-	blockStore.attachContainer(element, props.blockIndex, {action: store.drag.action})
+	blockStore.attachContainer(element, props.blockIndex, {action: store.block.action})
 }
 </script>
 

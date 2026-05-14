@@ -201,15 +201,15 @@ function purgeDeps(sub: ReactiveNode) {
 // Oper functions (bound to nodes)
 // ---------------------------------------------------------------------------
 
-function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T | void {
+function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T | boolean {
 	if (value.length) {
-		if (this.isReadonly && !mutableScope) return
+		if (this.isReadonly && !mutableScope) return false
 		const v = value[0]
 		if (v === undefined) {
 			const isAtDefault = this.hasDefault
 				? this.pendingValue === undefined || this.pendingValue === this.defaultValue
 				: this.pendingValue === undefined
-			if (isAtDefault) return
+			if (isAtDefault) return false
 			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
 			this.pendingValue = undefined as T
 		} else {
@@ -217,9 +217,9 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 			const effectiveCurrent = current === undefined && this.hasDefault ? this.defaultValue : current
 			if (this.equalsFn !== undefined) {
 				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- effectiveCurrent is T when equalsFn is defined and either current !== undefined or hasDefault
-				if (this.equalsFn(effectiveCurrent as T, v)) return
+				if (this.equalsFn(effectiveCurrent as T, v)) return false
 			} else {
-				if (effectiveCurrent === v) return
+				if (effectiveCurrent === v) return false
 			}
 			this.pendingValue = v
 		}
@@ -231,6 +231,7 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 				flush()
 			}
 		}
+		return true
 	} else {
 		if (this.flags & ReactiveFlags.Dirty) {
 			if (updateSignal(this)) {
@@ -329,7 +330,7 @@ function effectScopeOper(this: ReactiveNode): void {
 
 export interface Signal<T> {
 	(): T
-	(value: T | undefined): void
+	(value: T | undefined): boolean
 }
 
 export type SignalValues<T> = {
@@ -362,7 +363,7 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		flags: ReactiveFlags.Mutable,
 	}
 	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	return (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | void).bind(
+	return (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | boolean).bind(
 		node
 	) as unknown as Signal<T>
 }
@@ -413,11 +414,14 @@ export function computed<T>(
 		return readFn as unknown as Computed<T>
 	}
 
-	const writableComputed = function writableComputedOper(...args: [T | undefined] | []): T | void {
+	const writableComputed = function writableComputedOper(...args: [T | undefined] | []): T | boolean {
 		if (args.length === 0) return readFn()
 		const next = args[0]
-		if (next === undefined) return
+		if (next === undefined) return false
+		const prev = readFn()
+		if (next === prev) return false
 		getterOrOpts.set(next)
+		return readFn() !== prev
 	}
 	Object.defineProperty(writableComputed, 'name', {value: 'bound ' + computedOper.name})
 
@@ -643,10 +647,10 @@ export function model<T>(opts: {
 	// read inside opts.get propagate to subscribers.
 	const reader = computed(() => getFn(ensureInternal()()))
 
-	const callable = function modelOper(...args: [T | undefined] | []): T | void {
+	const callable = function modelOper(...args: [T | undefined] | []): T | boolean {
 		if (args.length === 0) return reader()
 		const sig = ensureInternal()
-		sig(setFn(args[0], sig()))
+		return sig(setFn(args[0], sig()))
 	}
 
 	Object.defineProperty(callable, 'name', {value: 'bound ' + computedOper.name})

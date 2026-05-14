@@ -1,7 +1,7 @@
 import type {Range} from '../../shared/editorContracts'
 import {computed, model} from '../../shared/signals/index.js'
 import {replaceInString} from '../../shared/utils'
-import type {PropsModel} from '../props/PropsModel'
+import type {PropsModel} from './PropsModel'
 
 export class ValueModel {
 	readonly isControlledMode = computed(() => this.props.value() !== undefined)

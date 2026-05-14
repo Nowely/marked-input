@@ -111,6 +111,57 @@ describe('signal<T>', () => {
 		expect(typeof s.use).toBe('undefined')
 	})
 
+	describe('setter return value', () => {
+		it('return true when value actually changes', () => {
+			const s = signal(0)
+			expect(s(1)).toBe(true)
+		})
+
+		it('return false when setting the same value', () => {
+			const s = signal(5)
+			expect(s(5)).toBe(false)
+		})
+
+		it('return false when custom equals reports equality', () => {
+			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			expect(s({id: 1, name: 'changed'})).toBe(false)
+		})
+
+		it('return true when custom equals reports inequality', () => {
+			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			expect(s({id: 2, name: 'b'})).toBe(true)
+		})
+
+		it('return false for readonly writes outside mutable batch', () => {
+			const s = signal(42, {readonly: true})
+			expect(s(99)).toBe(false)
+		})
+
+		it('return true for readonly writes inside mutable batch when value changes', () => {
+			const s = signal(42, {readonly: true})
+			let result: boolean | undefined
+			batch(
+				() => {
+					result = s(99)
+				},
+				{mutable: true}
+			)
+			expect(result).toBe(true)
+		})
+
+		it('return false when setting undefined and already at default', () => {
+			const s = signal<string>('default')
+			expect(s(undefined)).toBe(false)
+		})
+
+		it('return true when reverting from value to default via undefined', () => {
+			const s = signal<string>('default')
+			s('changed')
+			expect(s(undefined)).toBe(true)
+			expect(s()).toBe('default')
+		})
+	})
+
 	describe('default fallback', () => {
 		it('return initial value as default when set to undefined', () => {
 			const s = signal<string>('change')

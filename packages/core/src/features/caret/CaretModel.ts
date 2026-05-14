@@ -4,10 +4,10 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
-import type {PropsModel} from '../props/PropsModel'
-import type {ValueModel} from '../value/ValueModel'
+import type {Lifecycle} from '../state/Lifecycle'
+import type {PropsModel} from '../state/PropsModel'
+import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
 export class CaretModel {
@@ -55,6 +55,12 @@ export class CaretModel {
 		})
 	}
 
+	focusFirst(): void {
+		const firstAddress = this.parsing.index().addressFor([0])
+		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
+		this.dom.container()?.focus()
+	}
+
 	selectAll(): void {
 		this.selection({start: 0, end: this.value.current().length})
 	}
@@ -77,12 +83,10 @@ export class CaretModel {
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
 		this.#preferredAddress = address
-		const prev = this.selection()
-		this.selection({start: pos, end: pos})
 		// When pos equals the prior selection (shared text/mark boundary), the
 		// signal's shallow-equals check suppresses the watch effect, leaving
 		// #preferredAddress unconsumed. Apply it directly in that case.
-		if (shallow(prev, {start: pos, end: pos})) this.#applyRangeToDOM()
+		if (!this.selection({start: pos, end: pos})) this.#applyRangeToDOM()
 		return true
 	}
 

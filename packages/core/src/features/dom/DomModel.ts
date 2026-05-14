@@ -9,9 +9,9 @@ import type {
 } from '../../shared/editorContracts'
 import {event, signal} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
-import type {PropsModel} from '../props/PropsModel'
+import type {Lifecycle} from '../state/Lifecycle'
+import type {PropsModel} from '../state/PropsModel'
 import {DomBoundary} from './DomBoundary'
 import type {DomBoundaryHost} from './DomBoundary'
 import {DomIndexer} from './DomIndexer'
@@ -114,5 +114,15 @@ export class DomModel {
 
 	readRawSelection(): RawSelectionResult {
 		return this.#boundary.readSelection()
+	}
+
+	readSelectedContent(): {html: string; text: string} | undefined {
+		const sel = window.getSelection()
+		const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
+		if (!range) return undefined
+		const fragment = range.cloneContents()
+		const div = document.createElement('div')
+		div.appendChild(fragment)
+		return {html: div.innerHTML, text: range.toString()}
 	}
 }

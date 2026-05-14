@@ -1,9 +1,9 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
-import type {PropsModel} from '../props/PropsModel'
 import {resolveMarkSlot} from '../slots'
 import type {MarkSlot} from '../slots'
+import type {PropsModel} from '../state/PropsModel'
 
 export class MarkFeature {
 	readonly enabled: Computed<boolean> = computed(() => {

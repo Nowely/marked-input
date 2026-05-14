@@ -1,13 +1,15 @@
+import type {Range} from '../../shared/editorContracts'
 import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
-import type {MarkFeature} from '../mark/MarkFeature'
-import type {PropsModel} from '../props/PropsModel'
 import type {SlotsFeature} from '../slots/SlotsFeature'
-import type {ValueModel} from '../value/ValueModel'
+import type {Lifecycle} from '../state/Lifecycle'
+import type {PropsModel} from '../state/PropsModel'
+import type {ValueModel} from '../state/ValueModel'
+import type {MarkFeature} from './MarkFeature'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
+import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
 export class ParseController {
 	readonly tokens = signal<Token[]>([])
@@ -37,7 +39,7 @@ export class ParseController {
 		lifecycle.onMounted(() => {
 			// Parse current value immediately so tokens are ready before other
 			// mounted subscribers (like OverlayController) read them.
-			this.acceptTokens(this.#parseValue(value.current()))
+			this.#reparseNow()
 			this.#subscribeValue()
 		})
 
@@ -58,6 +60,10 @@ export class ParseController {
 		toggle(this.mark.enabled())
 	}
 
+	serializeRange(range: Range): string {
+		return serializeRangeUtil(this.tokens(), range)
+	}
+
 	acceptTokens(tokens: Token[]): void {
 		batch(
 			() => {
@@ -76,25 +82,22 @@ export class ParseController {
 		return parser.parse(value)
 	}
 
+	#reparseNow(): void {
+		this.acceptTokens(this.#parseValue(this.value.current()))
+	}
+
 	#subscribeValue(): void {
-		// Pass value.current directly — it is already a Computed<string>.
-		watch(this.value.current, v => {
-			this.acceptTokens(this.#parseValue(v))
-		})
+		watch(this.value.current, () => this.#reparseNow())
 	}
 
 	#subscribeReactiveParse(): void {
 		watch(
 			computed(() => this.parser()),
-			() => {
-				this.acceptTokens(this.#parseValue(this.value.current()))
-			}
+			() => this.#reparseNow()
 		)
 	}
 
 	#subscribeReparse(): void {
-		watch(this.reparse, () => {
-			this.acceptTokens(this.#parseValue(this.value.current()))
-		})
+		watch(this.reparse, () => this.#reparseNow())
 	}
 }

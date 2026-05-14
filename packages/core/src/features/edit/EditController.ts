@@ -1,7 +1,7 @@
 import type {Range} from '../../shared/editorContracts'
 import {batch} from '../../shared/signals'
 import type {CaretModel} from '../caret/CaretModel'
-import type {ValueModel} from '../value'
+import type {ValueModel} from '../state'
 
 /**
  * Single write path for text edits — delegates gating to {@link ValueModel.replace}

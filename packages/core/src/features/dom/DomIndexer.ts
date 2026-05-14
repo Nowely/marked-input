@@ -1,12 +1,12 @@
 import type {DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, computed, signal, watch} from '../../shared/signals/index.js'
 import type {Computed, Signal} from '../../shared/signals/index.js'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
-import type {PropsModel} from '../props/PropsModel'
+import type {Lifecycle} from '../state/Lifecycle'
+import type {PropsModel} from '../state/PropsModel'
 
 export type RegisteredRole =
 	| {readonly role: 'control'}

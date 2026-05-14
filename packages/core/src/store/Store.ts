@@ -1,18 +1,15 @@
+import {BlockController, BlockRegistry} from '../features/block'
 import {CaretModel} from '../features/caret'
 import {ClipboardController} from '../features/clipboard'
 import {DomModel} from '../features/dom'
-import {DragController} from '../features/drag'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
-import {Lifecycle} from '../features/lifecycle'
-import {MarkFeature} from '../features/mark'
 import {OverlayController} from '../features/overlay'
-import {ParseController} from '../features/parsing/ParseController'
-import {PropsModel} from '../features/props/PropsModel'
+import {MarkFeature, ParseController} from '../features/parsing'
 import {SlotsFeature} from '../features/slots'
-import {ValueModel} from '../features/value'
-import {KeyGenerator, MarkputHandler} from '../shared/classes'
-import {BlockRegistry} from './BlockRegistry'
+import {Lifecycle, PropsModel, ValueModel} from '../features/state'
+import {KeyGenerator} from '../shared/classes'
+import {MarkputHandler} from './MarkputHandler'
 
 export type {DragAction} from '../shared/types'
 
@@ -54,8 +51,8 @@ export class Store {
 		this.parsing,
 		this.props
 	)
-	readonly drag = new DragController(this.props, this.value, this.parsing, this.caret)
+	readonly block = new BlockController(this.props, this.value, this.parsing, this.caret)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.parsing)
 
-	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing, this.caret)
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.caret)
 }
