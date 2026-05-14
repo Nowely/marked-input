@@ -81,11 +81,6 @@ export type OverlayMatch<TOption = CoreOption> = {
 	option: TOption
 }
 
-export type Listener<T = unknown> = (e: T) => void
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, oxlint-disable-next-line no-wrapper-object-types
-export interface EventKey<T = unknown> extends Symbol {}
-
 export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 'selectionChange' | 'none'
 
 export type CSSProperties = CSS.Properties<string | number>

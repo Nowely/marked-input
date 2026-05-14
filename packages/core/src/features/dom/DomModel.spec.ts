@@ -174,7 +174,7 @@ describe('DomModel structural indexing', () => {
 	it('publishes one dom index per rendered commit', () => {
 		const {store, textSurface, container} = mountStructuralInline('hello')
 
-		expect(store.dom.index()).toEqual({generation: 1})
+		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(textSurface)).toMatchObject({ok: true})
 		container.remove()
 	})
@@ -259,7 +259,7 @@ describe('DomModel structural indexing', () => {
 
 		store.lifecycle.rendered()
 
-		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
@@ -269,7 +269,7 @@ describe('DomModel structural indexing', () => {
 
 		store.lifecycle.rendered()
 
-		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
@@ -307,7 +307,7 @@ describe('DomModel structural indexing', () => {
 		store.dom.container(container)
 		store.lifecycle.rendered()
 
-		expect(store.dom.index()).toBeDefined()
+		expect(store.dom.isIndexed()).toBe(true)
 		expect(store.dom.locateNode(outer)).toMatchObject({ok: true})
 		container.remove()
 	})
@@ -357,7 +357,7 @@ describe('DomModel structural indexing', () => {
 	it('skips apply when isUserSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
 		store.selection.range({start: 2, end: 2})
-		store.selection.isUserSelecting(true)
+		store.dom.isUserSelecting(true)
 		store.lifecycle.rendered()
 
 		expect(store.selection.range()).toEqual({start: 2, end: 2})

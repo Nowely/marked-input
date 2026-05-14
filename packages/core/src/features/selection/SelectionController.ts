@@ -1,7 +1,6 @@
 import {firstHtmlChild, nodeTarget} from '../../shared/checkers'
 import type {Range, TokenAddress} from '../../shared/editorContracts'
 import {computed, listen, signal, watch} from '../../shared/signals'
-import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {TokenModel} from '../parsing/TokenModel'
@@ -16,15 +15,6 @@ export class SelectionController {
 		get: () => this.range()?.start,
 		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
-
-	/**
-	 * True while the user drag-selects across token boundaries. Owned by
-	 * `DomModel` because its only consequence is freezing
-	 * `contenteditable="false"` on structural text surfaces. Re-exported here
-	 * for API compatibility — readers and writers both go through the same
-	 * underlying signal.
-	 */
-	readonly isUserSelecting: Signal<boolean>
 
 	readonly isAllSelected = computed(() => {
 		const s = this.range()
@@ -42,8 +32,6 @@ export class SelectionController {
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
-		this.isUserSelecting = dom.isUserSelecting
-
 		lifecycle.onMounted(() => {
 			this.#focusEmptyEditorOnClick()
 
@@ -76,7 +64,7 @@ export class SelectionController {
 	 * when the DOM is not yet indexed or the address is stale.
 	 */
 	placeAtAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
-		if (this.dom.index() === undefined) return false
+		if (!this.dom.isIndexed()) return false
 		if (!this.dom.pathElementsFor(address)) return false
 		const resolved = this.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return false
@@ -123,14 +111,14 @@ export class SelectionController {
 			const selectionIntersectsEditor = window.getSelection()?.containsNode(container, true) ?? false
 
 			if ((startedOutsideEditor || sweepingAcrossNodes) && selectionIntersectsEditor) {
-				this.isUserSelecting(true)
+				this.dom.isUserSelecting(true)
 			}
 		})
 
 		const clearIfCollapsed = (): void => {
-			if (!this.isUserSelecting()) return
+			if (!this.dom.isUserSelecting()) return
 			const sel = window.getSelection()
-			if (!sel || sel.isCollapsed) this.isUserSelecting(false)
+			if (!sel || sel.isCollapsed) this.dom.isUserSelecting(false)
 		}
 
 		listen(document, 'mouseup', () => {
@@ -191,8 +179,8 @@ export class SelectionController {
 	}
 
 	#applyRangeToDOM(): void {
-		if (this.isUserSelecting()) return
-		if (this.dom.index() === undefined) return
+		if (this.dom.isUserSelecting()) return
+		if (!this.dom.isIndexed()) return
 		const sel = this.range()
 		if (sel === undefined) return
 

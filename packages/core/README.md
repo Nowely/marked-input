@@ -21,7 +21,7 @@ pnpm add @markput/core
 ## Usage
 
 ```typescript
-import {annotate, denote, Parser, computeTokensFromValue, Store, caretDom, TriggerFinder, EventBus} from '@markput/core'
+import {annotate, denote, Parser, Store, caretDom} from '@markput/core'
 
 // Annotate text with markup
 const annotated = annotate('@[__label__](__value__)', 'Hello', 'world')
@@ -50,13 +50,11 @@ const store = new Store()
 - `escape(text)` - Escape special characters in text
 - `toString(pieces)` - Convert piece array to string
 - `shallow(obj)` - Create shallow copy of object
-- `createNewSpan(text, start, end)` - Create new text span
 - `deleteMark(text, mark)` - Remove mark from text
 
 ### Parsing & Tokenization
 
 - `Parser` - Main parsing class for markup processing
-- `computeTokensFromValue(value)` - Extract tokens from annotated text
 - `getTokensByUI(pieces)` - Convert UI pieces to tokens
 
 ### Preprocessing
@@ -79,7 +77,6 @@ const store = new Store()
 
 ### Type Guards & Assertions
 
-- `assertNonNullable(value)` - Assert value is not null/undefined
 - `isAnnotated(value)` - Check if value is annotated
 
 ### Types
@@ -89,14 +86,10 @@ const store = new Store()
 - `OverlayMatch` - Match result for overlay triggers
 - `MarkMatch` - Match result for marks
 - `OverlayTrigger` - Trigger configuration
-- `EventKey` - Event key type
-- `Listener` - Event listener type
 
 ### Constants
 
 - `DEFAULT_CLASS_NAME` - Default CSS class name
-- `DEFAULT_MARKUP` - Default markup template
-- `DEFAULT_OVERLAY_TRIGGER` - Default trigger character
 - `KEYBOARD` - Keyboard constants
 - `PLACEHOLDER` - Placeholder constants (`__label__`, `__value__`, `__slot__`)
 

@@ -1,17 +1,7 @@
 import type {Markup} from '../features/parsing/parser/types'
 import type {CoreOption} from './types'
 
-export interface DefaultOverlayConfig {
-	trigger?: string
-	data?: string[]
-}
-
-export interface DefaultOption extends CoreOption {
-	overlay?: DefaultOverlayConfig
-}
-
 export const KEYBOARD = {
-	// Navigation Keys
 	UP: 'ArrowUp',
 	DOWN: 'ArrowDown',
 	LEFT: 'ArrowLeft',
@@ -21,30 +11,23 @@ export const KEYBOARD = {
 	PAGE_DOWN: 'PageDown',
 	PAGE_UP: 'PageUp',
 
-	// Whitespace Keys
 	ENTER: 'Enter',
 	TAB: 'Tab',
 	SPACE: ' ',
 
-	// Editing Keys
 	BACKSPACE: 'Backspace',
 	DELETE: 'Delete',
 	COMMA: ',',
 
-	// UI Keys
 	ESC: 'Escape',
 } as const
 export type KEYBOARD = (typeof KEYBOARD)[keyof typeof KEYBOARD]
 
-export const DEFAULT_OVERLAY_TRIGGER = '@'
-
-export const DEFAULT_MARKUP: Markup = '@[__value__](__meta__)'
-
-export const DEFAULT_OPTIONS: DefaultOption[] = [
+export const DEFAULT_OPTIONS: (CoreOption & {overlay?: {trigger?: string; data?: string[]}})[] = [
 	{
-		markup: DEFAULT_MARKUP,
+		markup: '@[__value__](__meta__)' satisfies Markup,
 		overlay: {
-			trigger: DEFAULT_OVERLAY_TRIGGER,
+			trigger: '@',
 			data: [],
 		},
 	},

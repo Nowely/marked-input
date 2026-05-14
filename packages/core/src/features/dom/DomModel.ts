@@ -1,6 +1,5 @@
 import type {
 	BoundaryPositionResult,
-	DomIndex,
 	DomRef,
 	NodeLocationResult,
 	RawSelectionResult,
@@ -8,7 +7,7 @@ import type {
 	TokenPath,
 } from '../../shared/editorContracts'
 import {event, signal} from '../../shared/signals/index.js'
-import type {Computed} from '../../shared/signals/index.js'
+import type {Signal} from '../../shared/signals/index.js'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
@@ -30,7 +29,7 @@ export class DomModel {
 
 	readonly #indexer: DomIndexer
 	readonly #boundary: DomBoundary
-	readonly index: Computed<DomIndex | undefined>
+	readonly isIndexed: Signal<boolean>
 
 	constructor(lifecycle: Lifecycle, props: PropsModel, tokens: TokenModel) {
 		const indexerHost: DomIndexerHost = {
@@ -41,11 +40,11 @@ export class DomModel {
 			isUserSelecting: this.isUserSelecting,
 		}
 		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, tokens)
-		this.index = this.#indexer.index
+		this.isIndexed = this.#indexer.isIndexed
 
 		const boundaryHost: DomBoundaryHost = {
 			container: () => this.container(),
-			isIndexed: () => this.index() !== undefined,
+			isIndexed: () => this.isIndexed(),
 			isComposing: () => this.#isComposing,
 			locateNode: node => this.#indexer.locateNode(node),
 			roleFor: element => this.#indexer.roleFor(element),

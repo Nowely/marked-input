@@ -36,7 +36,6 @@ export class Parser {
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
 	 * @param options - Optional parse options to control token output:
-	 *   - `marksOnly` - return only MarkTokens, drop all TextTokens
 	 *   - `skipEmptyText` - drop zero-length TextTokens (where start === end)
 	 *
 	 * @example

@@ -7,7 +7,6 @@ export type TokenIndex = {
 	resolve(path: TokenPath): Token | undefined
 	resolveAddress(address: TokenAddress): Result<Token, 'stale'>
 	key(path: TokenPath): string
-	equals(a: TokenPath, b: TokenPath): boolean
 }
 
 export function pathEquals(a: TokenPath, b: TokenPath): boolean {
@@ -56,6 +55,5 @@ export function createTokenIndex(tokens: readonly Token[]): TokenIndex {
 			return {ok: true, value: current}
 		},
 		key: pathKey,
-		equals: pathEquals,
 	}
 }

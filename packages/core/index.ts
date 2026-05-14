@@ -47,4 +47,3 @@ export {getAlwaysShowHandle} from './src/features/block'
 
 // Mark commands
 export {MarkController} from './src/features/parsing'
-export type {MarkOptions} from './src/features/parsing'

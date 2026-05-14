@@ -5,7 +5,7 @@ prev: false
 title: "MarkToken"
 ---
 
-Defined in: [core/src/features/parsing/parser/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L19)
+Defined in: [core/src/features/parsing/parser/types.ts:15](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L15)
 
 ## Properties
 
@@ -15,7 +15,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:19](https://github.com/No
 children: Token[];
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:34](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L34)
+Defined in: [core/src/features/parsing/parser/types.ts:30](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L30)
 
 ***
 
@@ -25,7 +25,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:34](https://github.com/No
 content: string;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L21)
+Defined in: [core/src/features/parsing/parser/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L17)
 
 ***
 
@@ -35,7 +35,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:21](https://github.com/No
 descriptor: MarkupDescriptor;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:26](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L26)
+Defined in: [core/src/features/parsing/parser/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L22)
 
 ***
 
@@ -45,7 +45,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:26](https://github.com/No
 optional meta: string;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L28)
+Defined in: [core/src/features/parsing/parser/types.ts:24](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L24)
 
 ***
 
@@ -55,7 +55,7 @@ Defined in: [core/src/features/parsing/parser/types.ts:28](https://github.com/No
 position: object;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:22](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L22)
+Defined in: [core/src/features/parsing/parser/types.ts:18](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L18)
 
 #### end
 
@@ -77,7 +77,7 @@ start: number;
 optional slot: object;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:29](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L29)
+Defined in: [core/src/features/parsing/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L25)
 
 #### content
 
@@ -105,7 +105,7 @@ start: number;
 type: "mark";
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:20](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L20)
+Defined in: [core/src/features/parsing/parser/types.ts:16](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L16)
 
 ***
 
@@ -115,4 +115,4 @@ Defined in: [core/src/features/parsing/parser/types.ts:20](https://github.com/No
 value: string;
 ```
 
-Defined in: [core/src/features/parsing/parser/types.ts:27](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L27)
+Defined in: [core/src/features/parsing/parser/types.ts:23](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/parsing/parser/types.ts#L23)

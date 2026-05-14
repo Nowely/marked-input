@@ -14,8 +14,6 @@ import {EMPTY_TEXT_TOKEN} from './tokens'
 export class BlockController {
 	readonly action = event<DragAction>()
 
-	#unsub?: () => void
-
 	constructor(
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
@@ -23,33 +21,23 @@ export class BlockController {
 		private readonly selection: SelectionController,
 		slots: SlotsFeature
 	) {
-		const toggle = (enabled: boolean) => {
-			if (enabled && !this.#unsub) {
-				this.#unsub = watch(this.action, action => {
-					switch (action.type) {
-						case 'reorder':
-							this.#reorder(action)
-							break
-						case 'add':
-							this.#add(action)
-							break
-						case 'delete':
-							this.#delete(action)
-							break
-						case 'duplicate':
-							this.#duplicate(action)
-							break
-					}
-				})
+		watch(this.action, action => {
+			if (!slots.isDragEnabled()) return
+			switch (action.type) {
+				case 'reorder':
+					this.#reorder(action)
+					break
+				case 'add':
+					this.#add(action)
+					break
+				case 'delete':
+					this.#delete(action)
+					break
+				case 'duplicate':
+					this.#duplicate(action)
+					break
 			}
-			if (!enabled && this.#unsub) {
-				this.#unsub()
-				this.#unsub = undefined
-			}
-		}
-
-		watch(slots.isDragEnabled, toggle)
-		toggle(slots.isDragEnabled())
+		})
 	}
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {

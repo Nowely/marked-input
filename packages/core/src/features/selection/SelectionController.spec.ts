@@ -4,10 +4,9 @@ import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
 describe('SelectionController', () => {
-	it('exposes range and isUserSelecting', () => {
+	it('exposes range', () => {
 		const store = new Store()
 		expect(typeof store.selection.range).toBe('function')
-		expect(typeof store.selection.isUserSelecting).toBe('function')
 	})
 
 	it('range starts undefined', () => {
@@ -49,9 +48,9 @@ describe('SelectionController', () => {
 		})
 		it('write does not change isUserSelecting', () => {
 			const store = new Store()
-			store.selection.isUserSelecting(true)
+			store.dom.isUserSelecting(true)
 			store.selection.position(5)
-			expect(store.selection.isUserSelecting()).toBe(true)
+			expect(store.dom.isUserSelecting()).toBe(true)
 		})
 		it('write collapses an extended range', () => {
 			const store = new Store()
@@ -112,7 +111,7 @@ describe('SelectionController', () => {
 			store.props.set({defaultValue: 'hello'})
 			store.lifecycle.mounted()
 
-			// No container set → dom.index() is undefined → placement is deferred
+			// No container set → dom.isIndexed() is false → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
 			expect(store.selection.range()).toEqual({start: 0, end: 5})
@@ -160,7 +159,7 @@ describe('SelectionController', () => {
 			document.body.appendChild(container)
 			store.dom.container(container)
 			store.lifecycle.mounted()
-			store.selection.isUserSelecting(true)
+			store.dom.isUserSelecting(true)
 			store.selection.position(3)
 
 			// Clear any pre-existing browser selection so we can detect non-changes.
@@ -204,10 +203,10 @@ describe('SelectionController', () => {
 
 			expect(span.contentEditable).toBe('true')
 
-			store.selection.isUserSelecting(true)
+			store.dom.isUserSelecting(true)
 			expect(span.contentEditable).toBe('false')
 
-			store.selection.isUserSelecting(false)
+			store.dom.isUserSelecting(false)
 			expect(span.contentEditable).toBe('true')
 
 			container.remove()

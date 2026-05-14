@@ -1,4 +1,3 @@
-import type {Range} from '../../shared/editorContracts'
 import {signal, computed, watch} from '../../shared/signals/index.js'
 import type {Computed, Signal} from '../../shared/signals/index.js'
 import type {SlotsFeature} from '../slots/SlotsFeature'
@@ -9,7 +8,6 @@ import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
-import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
 export class TokenModel {
 	readonly current: Signal<Token[]> = signal<Token[]>([])
@@ -36,10 +34,6 @@ export class TokenModel {
 			watch(this.value.current, () => this.#reparse())
 			watch(this.#parser, () => this.#reparse())
 		})
-	}
-
-	serializeRange(range: Range): string {
-		return serializeRangeUtil(this.current(), range)
 	}
 
 	#reparse(): void {
