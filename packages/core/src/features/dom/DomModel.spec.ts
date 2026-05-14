@@ -357,7 +357,7 @@ describe('DomModel structural indexing', () => {
 	it('skips apply when isUserSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
 		store.selection.range({start: 2, end: 2})
-		store.selection.isUserSelecting(true)
+		store.dom.isUserSelecting(true)
 		store.lifecycle.rendered()
 
 		expect(store.selection.range()).toEqual({start: 2, end: 2})

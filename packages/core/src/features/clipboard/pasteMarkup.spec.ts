@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {captureMarkupPaste, clearMarkupPaste, consumeMarkupPaste, MARKPUT_MIME} from './pasteMarkup'
+import {captureMarkupPaste, consumeMarkupPaste, MARKPUT_MIME} from './pasteMarkup'
 
 function makeContainer(): HTMLElement {
 	// oxlint-disable-next-line no-unsafe-type-assertion -- plain object used as WeakMap key; no DOM methods needed
@@ -46,10 +46,10 @@ describe('captureMarkupPaste / consumeMarkupPaste', () => {
 		expect(consumeMarkupPaste(container)).toBeUndefined()
 	})
 
-	it('clearMarkupPaste removes pending markup for that container', () => {
+	it('consumeMarkupPaste removes pending markup for that container', () => {
 		const container = makeContainer()
 		captureMarkupPaste(makePasteEvent('@[a](1)'), container)
-		clearMarkupPaste(container)
+		consumeMarkupPaste(container)
 		expect(consumeMarkupPaste(container)).toBeUndefined()
 	})
 })

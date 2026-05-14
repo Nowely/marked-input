@@ -173,7 +173,7 @@ export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boole
 }
 
 function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {
-	const ranges = getTargetRanges(event)
+	const ranges = event.getTargetRanges()
 	if (ranges.length === 0) return store.dom.readRawSelection()
 	return rawRangeFromTargetRange(store, ranges[0])
 }
@@ -196,10 +196,6 @@ function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailure
 	if (result.ok) return 'invalidBoundary'
 	if (result.reason === 'composing') return 'invalidBoundary'
 	return result.reason
-}
-
-function getTargetRanges(event: InputEvent): readonly InputTargetRange[] {
-	return event.getTargetRanges()
 }
 
 function replacementForInput(store: KbCtx, event: InputEvent): string | undefined {

@@ -8,10 +8,8 @@ describe('ValueModel', () => {
 		const store = new Store()
 
 		expect(typeof store.value.current).toBe('function')
-		expect(typeof store.value.isControlledMode).toBe('function')
 		expect('next' in store.value).toBe(false)
 		expect(store.value.current()).toBe('')
-		expect(store.value.isControlledMode()).toBe(false)
 	})
 
 	it('initializes from controlled value on enable', () => {
@@ -50,7 +48,7 @@ describe('ValueModel', () => {
 
 		store.props.set({value: undefined})
 
-		expect(store.value.isControlledMode()).toBe(false)
+		expect(store.props.value()).toBeUndefined()
 		expect(store.value.current()).toBe('default')
 		expect(store.tokens.current()).toEqual([{type: 'text', content: 'default', position: {start: 0, end: 7}}])
 	})

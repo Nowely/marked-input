@@ -2,6 +2,7 @@ import {listen} from '../../shared/signals/index.js'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {TokenModel} from '../parsing/TokenModel'
+import {serializeRange} from '../parsing/utils/serializeRange'
 import type {Lifecycle} from '../state/Lifecycle'
 import {MARKPUT_MIME} from './pasteMarkup'
 
@@ -38,7 +39,7 @@ export class ClipboardController {
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', content.text)
 		e.clipboardData?.setData('text/html', content.html)
-		e.clipboardData?.setData(MARKPUT_MIME, this.tokens.serializeRange(raw.value.range))
+		e.clipboardData?.setData(MARKPUT_MIME, serializeRange(this.tokens.current(), raw.value.range))
 		return true
 	}
 }

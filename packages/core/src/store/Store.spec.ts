@@ -66,8 +66,8 @@ describe('Store', () => {
 
 		it('leave other keys unchanged when one signal is updated', () => {
 			const store = new Store()
-			store.selection.isUserSelecting(true)
-			expect(store.selection.isUserSelecting()).toBe(true)
+			store.dom.isUserSelecting(true)
+			expect(store.dom.isUserSelecting()).toBe(true)
 			expect(store.tokens.current()).toEqual([])
 		})
 
@@ -76,14 +76,14 @@ describe('Store', () => {
 			const effectSpy = vi.fn()
 			effect(() => {
 				store.tokens.current()
-				store.selection.isUserSelecting()
+				store.dom.isUserSelecting()
 				effectSpy()
 			})
 			effectSpy.mockClear()
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
 				store.tokens.current([token])
-				store.selection.isUserSelecting(true)
+				store.dom.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
 		})

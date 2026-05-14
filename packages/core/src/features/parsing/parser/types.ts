@@ -3,10 +3,6 @@ import type {MarkupDescriptor} from './core/MarkupDescriptor'
 
 export type Token = TextToken | MarkToken
 
-export function isMarkToken(token: Token): token is MarkToken {
-	return token.type === 'mark'
-}
-
 export interface TextToken {
 	type: 'text'
 	content: string
@@ -35,8 +31,6 @@ export interface MarkToken {
 }
 
 export interface ParseOptions {
-	/** Return only MarkTokens, drop all TextTokens */
-	marksOnly?: boolean
 	/** Drop zero-length TextTokens (where start === end) */
 	skipEmptyText?: boolean
 }

@@ -29,10 +29,3 @@ export function consumeMarkupPaste(container: HTMLElement): string | undefined {
 	pendingMarkupByContainer.delete(container)
 	return markup
 }
-
-/**
- * Clear the pending markup buffer for the given container. Useful for test cleanup.
- */
-export function clearMarkupPaste(container: HTMLElement): void {
-	pendingMarkupByContainer.delete(container)
-}

@@ -255,14 +255,12 @@ export class TreeBuilder {
 	// ===== TOKEN FILTERING. TODO: Is a hack =====
 
 	private filterTokens(tokens: Token[]): Token[] {
-		const {marksOnly, skipEmptyText} = this.options
-		if (!marksOnly && !skipEmptyText) return tokens
+		const {skipEmptyText} = this.options
+		if (!skipEmptyText) return tokens
 
 		return tokens.filter(token => {
 			if (token.type !== 'text') return true
-			if (marksOnly) return false
-			if (skipEmptyText && token.position.start === token.position.end) return false
-			return true
+			return token.position.start !== token.position.end
 		})
 	}
 }
