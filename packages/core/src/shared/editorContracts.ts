@@ -1,5 +1,4 @@
 import type {Token} from '../features/parsing/parser/types'
-import type {Store} from '../store/Store'
 
 export type TokenPath = readonly number[]
 
@@ -67,5 +66,3 @@ export type MarkInfo = {
 export type DomIndex = {
 	readonly generation: number
 }
-
-export type MarkControllerConstructor = new (store: Store, address: TokenAddress, snapshot: MarkSnapshot) => unknown

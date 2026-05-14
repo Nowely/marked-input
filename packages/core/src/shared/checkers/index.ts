@@ -1,14 +1,1 @@
-export {assertNonNullable} from './assertNonNullable'
-export {
-	childAt,
-	firstHtmlChild,
-	htmlChildren,
-	htmlTarget,
-	isHtmlElement,
-	isTextNode,
-	lastHtmlChild,
-	nextText,
-	nodeTarget,
-} from './domGuards'
-export {isFunction} from './isFunction'
-export {isObject} from './isObject'
+export {firstHtmlChild, htmlChildren, isHtmlElement, nextText, nodeTarget} from './domGuards'
