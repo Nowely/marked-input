@@ -7,7 +7,7 @@ function text(content: string, start: number): TextToken {
 	return {type: 'text', content, position: {start, end: start + content.length}}
 }
 
-describe('DragController', () => {
+describe('BlockController', () => {
 	let store: Store
 
 	beforeEach(() => {

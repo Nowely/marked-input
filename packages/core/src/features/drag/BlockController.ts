@@ -10,7 +10,7 @@ import type {ValueModel} from '../value/ValueModel'
 import {addDragRow, deleteDragRow, duplicateDragRow, reorderDragRows} from './operations'
 import {EMPTY_TEXT_TOKEN} from './tokens'
 
-export class DragController {
+export class BlockController {
 	readonly action = event<DragAction>()
 
 	#unsub?: () => void

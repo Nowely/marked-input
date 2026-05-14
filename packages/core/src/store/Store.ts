@@ -1,7 +1,7 @@
 import {CaretModel} from '../features/caret'
 import {ClipboardController} from '../features/clipboard'
 import {DomModel} from '../features/dom'
-import {DragController} from '../features/drag'
+import {BlockController} from '../features/drag'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {Lifecycle} from '../features/lifecycle'
@@ -54,7 +54,7 @@ export class Store {
 		this.parsing,
 		this.props
 	)
-	readonly drag = new DragController(this.props, this.value, this.parsing, this.caret)
+	readonly drag = new BlockController(this.props, this.value, this.parsing, this.caret)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.parsing)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing, this.caret)
