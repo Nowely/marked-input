@@ -111,7 +111,7 @@ describe('SelectionController', () => {
 			store.props.set({defaultValue: 'hello'})
 			store.lifecycle.mounted()
 
-			// No container set → dom.index() is undefined → placement is deferred
+			// No container set → dom.isIndexed() is false → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.selection.selectAll()
 			expect(store.selection.range()).toEqual({start: 0, end: 5})

@@ -62,7 +62,3 @@ export type MarkInfo = {
 	readonly hasNestedMarks: boolean
 	readonly key: string
 }
-
-export type DomIndex = {
-	readonly generation: number
-}

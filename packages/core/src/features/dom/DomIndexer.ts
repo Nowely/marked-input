@@ -1,6 +1,6 @@
-import type {DomIndex, NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
+import type {NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import {batch, computed, signal, watch} from '../../shared/signals/index.js'
-import type {Computed, Signal} from '../../shared/signals/index.js'
+import type {Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
@@ -43,12 +43,11 @@ export interface DomIndexerHost {
 }
 
 export class DomIndexer {
-	readonly #domIndex = signal<DomIndex>(undefined, {readonly: true})
-	readonly index: Computed<DomIndex | undefined> = computed(() => this.#domIndex())
+	readonly #isIndexed = signal(false, {readonly: true})
+	readonly isIndexed: Signal<boolean> = this.#isIndexed
 
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()
 	#pathElements = new Map<string, PathElements>()
-	#generation = 0
 	#rendering = false
 	#queuedRender = false
 
@@ -75,7 +74,7 @@ export class DomIndexer {
 	}
 
 	locateNode(node: Node): NodeLocationResult {
-		if (!this.index()) return {ok: false, reason: 'notIndexed'}
+		if (!this.#isIndexed()) return {ok: false, reason: 'notIndexed'}
 		const container = this.host.container()
 		if (!container || !container.contains(node)) return {ok: false, reason: 'outsideEditor'}
 
@@ -170,7 +169,7 @@ export class DomIndexer {
 		this.#elementRoles = elementRoles
 		this.#reconcileStructuralTextSurfaces()
 
-		batch(() => this.#domIndex({generation: ++this.#generation}), {mutable: true})
+		if (!this.#isIndexed()) batch(() => this.#isIndexed(true), {mutable: true})
 		this.host.emitIndexed()
 	}
 

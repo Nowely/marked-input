@@ -64,7 +64,7 @@ export class SelectionController {
 	 * when the DOM is not yet indexed or the address is stale.
 	 */
 	placeAtAddress(address: TokenAddress, boundary: 'start' | 'end' = 'start'): boolean {
-		if (this.dom.index() === undefined) return false
+		if (!this.dom.isIndexed()) return false
 		if (!this.dom.pathElementsFor(address)) return false
 		const resolved = this.parsing.index().resolveAddress(address)
 		if (!resolved.ok) return false
@@ -180,7 +180,7 @@ export class SelectionController {
 
 	#applyRangeToDOM(): void {
 		if (this.dom.isUserSelecting()) return
-		if (this.dom.index() === undefined) return
+		if (!this.dom.isIndexed()) return
 		const sel = this.range()
 		if (sel === undefined) return
 
