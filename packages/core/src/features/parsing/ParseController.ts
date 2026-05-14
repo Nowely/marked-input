@@ -1,3 +1,4 @@
+import type {Range} from '../../shared/editorContracts'
 import {signal, computed, event, effectScope, watch, batch} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {SlotsFeature} from '../slots/SlotsFeature'
@@ -8,6 +9,7 @@ import type {MarkFeature} from './MarkFeature'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
+import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
 export class ParseController {
 	readonly tokens = signal<Token[]>([])
@@ -56,6 +58,10 @@ export class ParseController {
 
 		watch(this.mark.enabled, toggle)
 		toggle(this.mark.enabled())
+	}
+
+	serializeRange(range: Range): string {
+		return serializeRangeUtil(this.tokens(), range)
 	}
 
 	acceptTokens(tokens: Token[]): void {

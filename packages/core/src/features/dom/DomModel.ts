@@ -115,4 +115,14 @@ export class DomModel {
 	readRawSelection(): RawSelectionResult {
 		return this.#boundary.readSelection()
 	}
+
+	readSelectedContent(): {html: string; text: string} | undefined {
+		const sel = window.getSelection()
+		const range = sel?.rangeCount ? sel.getRangeAt(0) : undefined
+		if (!range) return undefined
+		const fragment = range.cloneContents()
+		const div = document.createElement('div')
+		div.appendChild(fragment)
+		return {html: div.innerHTML, text: range.toString()}
+	}
 }
