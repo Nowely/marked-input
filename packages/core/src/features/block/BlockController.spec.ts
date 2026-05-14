@@ -49,6 +49,6 @@ describe('BlockController', () => {
 		store.block.action({type: 'delete', index: 0})
 
 		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
-		expect(store.caret.selection()).toEqual({start: 6, end: 6})
+		expect(store.selection.range()).toEqual({start: 6, end: 6})
 	})
 })

@@ -1,5 +1,5 @@
 import {BlockController, BlockRegistry} from '../features/block'
-import {CaretModel} from '../features/caret'
+import {SelectionController} from '../features/caret'
 import {ClipboardController} from '../features/clipboard'
 import {DomModel} from '../features/dom'
 import {EditController} from '../features/edit'
@@ -29,15 +29,15 @@ export class Store {
 
 	readonly dom = new DomModel(this.lifecycle, this.props, this.tokens)
 
-	readonly caret = new CaretModel(this.lifecycle, this.dom, this.tokens, this.value, this.props)
-	readonly edit = new EditController(this.value, this.caret)
+	readonly selection = new SelectionController(this.lifecycle, this.dom, this.tokens, this.value, this.props)
+	readonly edit = new EditController(this.value, this.selection)
 
 	readonly overlay = new OverlayController(
 		this.lifecycle,
 		this.props,
 		this.value,
 		this.dom,
-		this.caret,
+		this.selection,
 		this.edit,
 		this.tokens
 	)
@@ -45,14 +45,14 @@ export class Store {
 		this.lifecycle,
 		this.dom,
 		this.value,
-		this.caret,
+		this.selection,
 		this.edit,
 		this.slots,
 		this.tokens,
 		this.props
 	)
-	readonly block = new BlockController(this.props, this.value, this.tokens, this.caret)
+	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.tokens)
 
-	readonly handler = new MarkputHandler(this.dom, this.overlay, this.caret)
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.selection)
 }

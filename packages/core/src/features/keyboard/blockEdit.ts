@@ -4,7 +4,7 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import * as caretDom from '../caret/caretDom'
@@ -89,7 +89,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.caret.position(pos)
+			store.selection.position(pos)
 			store.value.current(newValue)
 			return
 		}
@@ -101,7 +101,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -124,7 +124,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -140,7 +140,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -182,7 +182,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.caret.position(pos)
+		store.selection.position(pos)
 		store.value.current(newValue)
 		return
 	}
@@ -196,7 +196,7 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 	if (token.type === 'mark') {
 		const path = store.tokens.index().pathFor(token)
 		const address = path ? store.tokens.index().addressFor(path) : undefined
-		if (address && store.caret.placeAtAddress(address, caret)) return
+		if (address && store.selection.placeAtAddress(address, caret)) return
 	}
 
 	row.focus()

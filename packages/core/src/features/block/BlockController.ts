@@ -1,7 +1,7 @@
 import type {Range} from '../../shared/editorContracts'
 import {computed, event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
-import type {CaretModel} from '../caret/CaretModel'
+import type {SelectionController} from '../caret/SelectionController'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {PropsModel} from '../state/PropsModel'
@@ -19,7 +19,7 @@ export class BlockController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
-		private readonly caret: CaretModel
+		private readonly selection: SelectionController
 	) {
 		const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
 
@@ -58,7 +58,7 @@ export class BlockController {
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
 		if (newValue !== value) {
 			const range = this.#rangeAfterDrag(action, rows, newValue)
-			if (range) this.caret.selection(range)
+			if (range) this.selection.range(range)
 			this.value.current(newValue)
 		}
 	}
@@ -70,7 +70,7 @@ export class BlockController {
 		const newRowContent = createRowContent(this.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.selection(range)
+		if (range) this.selection.range(range)
 		this.value.current(newValue)
 	}
 
@@ -79,7 +79,7 @@ export class BlockController {
 		const rows = this.tokens.current()
 		const newValue = deleteDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.selection(range)
+		if (range) this.selection.range(range)
 		this.value.current(newValue)
 	}
 
@@ -88,7 +88,7 @@ export class BlockController {
 		const rows = this.tokens.current()
 		const newValue = duplicateDragRow(value, rows, action.index)
 		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.caret.selection(range)
+		if (range) this.selection.range(range)
 		this.value.current(newValue)
 	}
 

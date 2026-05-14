@@ -1,4 +1,4 @@
-import type {CaretModel} from '../features/caret/CaretModel'
+import type {SelectionController} from '../features/caret/SelectionController'
 import type {DomModel} from '../features/dom/DomModel'
 import type {OverlayController} from '../features/overlay/OverlayController'
 
@@ -6,7 +6,7 @@ export class MarkputHandler {
 	constructor(
 		private readonly dom: DomModel,
 		private readonly overlayFeature: OverlayController,
-		private readonly caret: CaretModel
+		private readonly selection: SelectionController
 	) {}
 
 	get container() {
@@ -18,6 +18,6 @@ export class MarkputHandler {
 	}
 
 	focus() {
-		this.caret.focusFirst()
+		this.selection.focusFirst()
 	}
 }

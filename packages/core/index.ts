@@ -45,9 +45,6 @@ export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './s
 // Drag
 export {getAlwaysShowHandle} from './src/features/block'
 
-// Caret DOM utilities
-export {caretDom} from './src/features/caret'
-
 // Mark commands
 export {MarkController} from './src/features/parsing'
 export type {MarkOptions} from './src/features/parsing'

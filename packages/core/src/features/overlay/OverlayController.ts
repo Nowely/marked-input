@@ -4,7 +4,7 @@ import {signal, computed, event, effectScope, effect, watch, listen} from '../..
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import * as caretDom from '../caret/caretDom'
-import type {CaretModel} from '../caret/CaretModel'
+import type {SelectionController} from '../caret/SelectionController'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Token} from '../parsing'
@@ -43,7 +43,7 @@ export class OverlayController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly dom: DomModel,
-		private readonly caret: CaretModel,
+		private readonly selection: SelectionController,
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
@@ -146,7 +146,7 @@ export class OverlayController {
 	}
 
 	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const sel = this.caret.selection()
+		const sel = this.selection.range()
 		if (!sel || sel.start !== sel.end) return
 
 		const cursor = sel.start

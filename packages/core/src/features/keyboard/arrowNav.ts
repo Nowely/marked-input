@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'caret' | 'slots' | 'tokens'>
+type KbCtx = Pick<Store, 'dom' | 'selection' | 'slots' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx): void {
 	const container = store.dom.container()
@@ -20,7 +20,7 @@ export function enableArrowNav(store: KbCtx): void {
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			if (store.slots.isBlock()) return
 			e.preventDefault()
-			store.caret.selectAll()
+			store.selection.selectAll()
 		}
 	})
 }
@@ -60,5 +60,5 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	// Address-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
 	// the wrong token at text↔mark boundaries.
-	return store.caret.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
+	return store.selection.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
 }
