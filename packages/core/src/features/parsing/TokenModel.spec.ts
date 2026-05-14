@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 
-import {watch} from '../../shared/signals'
+import {effect, watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {Token} from './parser/types'
 
@@ -58,20 +58,17 @@ describe('TokenModel', () => {
 			mountWith('hello')
 			store.props.set({Mark: () => null})
 
-			let callCount = 0
-			const original = store.tokens.current
-			const tokensWrapper = (...args: unknown[]) => {
-				if (args.length) callCount++
-				return (original as (...args: unknown[]) => unknown)(...args)
-			}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
-			;(store.tokens as unknown as Record<string, unknown>).current = tokensWrapper
+			let updateCount = 0
+			const stop = effect(() => {
+				store.tokens.current()
+				updateCount++
+			})
+			updateCount = 0
 
 			store.tokens.invalidate()
-			expect(callCount).toBe(1)
 
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
-			;(store.tokens as unknown as Record<string, unknown>).current = original
+			expect(updateCount).toBe(1)
+			stop()
 		})
 
 		it('stops parse subscription after removing Mark', () => {

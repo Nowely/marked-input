@@ -11,9 +11,10 @@ import {createTokenIndex, type TokenIndex} from './tokenIndex'
 import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
 export class TokenModel {
-	readonly current = signal<Token[]>([])
+	readonly #current = signal<Token[]>([])
+	readonly current: Computed<Token[]> = computed(() => this.#current())
 	readonly #generation = signal(0)
-	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current(), this.#generation()))
+	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.#current(), this.#generation()))
 
 	readonly #markEnabled: Computed<boolean> = computed(() => {
 		const Mark = this.props.Mark()
@@ -71,7 +72,7 @@ export class TokenModel {
 	set(tokens: Token[]): void {
 		batch(
 			() => {
-				this.current(tokens)
+				this.#current(tokens)
 				this.#generation(this.#generation() + 1)
 			},
 			{mutable: true}
