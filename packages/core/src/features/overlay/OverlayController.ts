@@ -1,6 +1,6 @@
 import {KEYBOARD} from '../../shared/constants'
 import {escape} from '../../shared/escape'
-import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
+import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
 import type {DomModel} from '../dom/DomModel'
@@ -36,8 +36,6 @@ export class OverlayController {
 		return {left: rect.left, top: rect.top + rect.height + 1}
 	})
 
-	#scope?: () => void
-
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly props: PropsModel,
@@ -49,92 +47,77 @@ export class OverlayController {
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
-		const toggle = (enabled: boolean) => {
-			if (enabled && !this.#scope) {
-				this.#scope = effectScope(() => {
-					watch(this.close, () => {
-						this.match(undefined)
-					})
+		this.lifecycle.onMounted(() => {
+			watch(this.close, () => {
+				if (!hasOverlayTrigger()) return
+				this.match(undefined)
+			})
 
-					watch(this.value.current, () => {
-						const showOverlayOn = this.props.showOverlayOn()
-						const type: OverlayTrigger = 'change'
+			watch(this.value.current, () => {
+				if (!hasOverlayTrigger()) return
+				const showOverlayOn = this.props.showOverlayOn()
+				const type: OverlayTrigger = 'change'
+				if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+					this.#probeTrigger()
+				}
+			})
 
-						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-							this.#probeTrigger()
-						}
-					})
+			effect(() => {
+				const match = this.match()
+				if (!match) return
+				listen(window, 'keydown', e => {
+					if (e.key === KEYBOARD.ESC) this.close()
+				})
+				listen(
+					document,
+					'click',
+					e => {
+						const target = e.target instanceof HTMLElement ? e.target : null
+						if (this.element()?.contains(target)) return
+						if (this.dom.container()?.contains(target)) return
+						this.close()
+					},
+					true
+				)
+			})
 
-					effect(() => {
-						const match = this.match()
-						if (match) {
-							listen(window, 'keydown', e => {
-								if (e.key === KEYBOARD.ESC) {
-									this.close()
-								}
+			effect(() => {
+				if (!hasOverlayTrigger()) return
+				const handler = () => {
+					const container = this.dom.container()
+					if (!container?.contains(document.activeElement)) return
+					const showOverlayOn = this.props.showOverlayOn()
+					const type: OverlayTrigger = 'selectionChange'
+					if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
+						this.#probeTrigger()
+					}
+				}
+				listen(document, 'selectionchange', handler)
+			})
+
+			watch(this.select, overlayEvent => {
+				if (!hasOverlayTrigger()) return
+				const {
+					mark,
+					match: {option, range},
+				} = overlayEvent
+
+				const markup = option.markup
+				if (!markup) return
+
+				const annotation =
+					mark.type === 'mark'
+						? annotate(markup, {
+								value: mark.value,
+								meta: mark.meta,
+							})
+						: annotate(markup, {
+								value: mark.content,
 							})
 
-							listen(
-								document,
-								'click',
-								e => {
-									const target = e.target instanceof HTMLElement ? e.target : null
-									if (this.element()?.contains(target)) return
-									if (this.dom.container()?.contains(target)) return
-									this.close()
-								},
-								true
-							)
-						}
-					})
-
-					const selectionChangeHandler = () => {
-						const container = this.dom.container()
-						if (!container?.contains(document.activeElement)) return
-
-						const showOverlayOn = this.props.showOverlayOn()
-						const type: OverlayTrigger = 'selectionChange'
-
-						if (showOverlayOn === type || (Array.isArray(showOverlayOn) && showOverlayOn.includes(type))) {
-							this.#probeTrigger()
-						}
-					}
-
-					listen(document, 'selectionchange', selectionChangeHandler)
-
-					watch(this.select, overlayEvent => {
-						const {
-							mark,
-							match: {option, range},
-						} = overlayEvent
-
-						const markup = option.markup
-						if (!markup) return
-
-						const annotation =
-							mark.type === 'mark'
-								? annotate(markup, {
-										value: mark.value,
-										meta: mark.meta,
-									})
-								: annotate(markup, {
-										value: mark.content,
-									})
-
-						this.edit.replace(range, annotation)
-						this.match(undefined)
-					})
-				})
-			}
-			if (!enabled && this.#scope) {
-				this.#scope()
-				this.#scope = undefined
-			}
-		}
-
-		this.lifecycle.onMounted(() => {
-			watch(hasOverlayTrigger, toggle)
-			toggle(hasOverlayTrigger())
+				this.edit.replace(range, annotation)
+				this.match(undefined)
+			})
 		})
 	}
 
