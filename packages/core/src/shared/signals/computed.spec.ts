@@ -271,4 +271,42 @@ describe('computed — writable', () => {
 		})
 		expect(isReactive(c)).toBe(true)
 	})
+
+	describe('setter return value', () => {
+		it('returns true when set causes the read value to change', () => {
+			const backing = signal(1)
+			const c = computed<number>({
+				get: () => backing(),
+				set: next => backing(next),
+			})
+			expect(c(2)).toBe(true)
+		})
+
+		it('returns false when next equals current value (set not called)', () => {
+			const setSpy = vi.fn()
+			const c = computed<number>({
+				get: () => 5,
+				set: setSpy,
+			})
+			expect(c(5)).toBe(false)
+			expect(setSpy).not.toHaveBeenCalled()
+		})
+
+		it('returns false when undefined is written', () => {
+			const c = computed<number>({
+				get: () => 0,
+				set: () => {},
+			})
+			expect(c(undefined)).toBe(false)
+		})
+
+		it('returns false when set rejects the write (value did not change)', () => {
+			const backing = signal(1, {readonly: true})
+			const c = computed<number>({
+				get: () => backing(),
+				set: next => backing(next),
+			})
+			expect(c(2)).toBe(false)
+		})
+	})
 })

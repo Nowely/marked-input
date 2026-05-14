@@ -207,4 +207,40 @@ describe('model — upgrade: optional fields and equals', () => {
 		const m = model<string>({})
 		expect(isReactive(m)).toBe(true)
 	})
+
+	describe('setter return value', () => {
+		it('returns true when write changes the internal value', () => {
+			const m = model<number>({default: () => 0})
+			expect(m(1)).toBe(true)
+		})
+
+		it('returns false when write keeps the internal value the same', () => {
+			const m = model<number>({default: () => 5})
+			expect(m(5)).toBe(false)
+		})
+
+		it('returns false when set returns previous (rejection)', () => {
+			const m = model<number>({
+				default: () => 0,
+				set: (_next, prev) => prev,
+			})
+			expect(m(99)).toBe(false)
+		})
+
+		it('returns false when equals reports unchanged', () => {
+			const m = model<{id: number}>({
+				default: () => ({id: 1}),
+				equals: (a, b) => a.id === b.id,
+			})
+			expect(m({id: 1})).toBe(false)
+		})
+
+		it('returns true when equals reports changed', () => {
+			const m = model<{id: number}>({
+				default: () => ({id: 1}),
+				equals: (a, b) => a.id === b.id,
+			})
+			expect(m({id: 2})).toBe(true)
+		})
+	})
 })
