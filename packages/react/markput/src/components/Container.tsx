@@ -9,7 +9,7 @@ export const Container = memo(() => {
 		dom: s.dom,
 		lifecycle: s.lifecycle,
 		isBlock: s.slots.isBlock,
-		tokens: s.parsing.tokens,
+		tokens: s.tokens.current,
 		key: s.key,
 		Component: s.slots.containerComponent,
 		props: s.slots.containerProps,

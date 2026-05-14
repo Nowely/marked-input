@@ -17,7 +17,7 @@ describe('EditController', () => {
 		store.edit.replace({start: 6, end: 11}, 'markput')
 
 		expect(store.value.current()).toBe('hello markput')
-		expect(store.caret.selection()).toEqual({start: 13, end: 13})
+		expect(store.selection.range()).toEqual({start: 13, end: 13})
 	})
 
 	it('places caret at range start when deleting', () => {
@@ -28,7 +28,7 @@ describe('EditController', () => {
 		store.edit.replace({start: 5, end: 11}, '')
 
 		expect(store.value.current()).toBe('hello')
-		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
 	})
 
 	it('does not move caret or change value for invalid ranges', () => {
@@ -36,13 +36,13 @@ describe('EditController', () => {
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})
 		store.lifecycle.mounted()
-		store.caret.position(2)
+		store.selection.position(2)
 
 		store.edit.replace({start: 4, end: 2}, 'x')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
-		expect(store.caret.selection()).toEqual({start: 2, end: 2})
+		expect(store.selection.range()).toEqual({start: 2, end: 2})
 	})
 
 	it('does not move caret or change value when readOnly', () => {
@@ -50,13 +50,13 @@ describe('EditController', () => {
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
 		store.lifecycle.mounted()
-		store.caret.position(1)
+		store.selection.position(1)
 
 		store.edit.replace({start: 1, end: 4}, 'i')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.value.current()).toBe('hello')
-		expect(store.caret.selection()).toEqual({start: 1, end: 1})
+		expect(store.selection.range()).toEqual({start: 1, end: 1})
 	})
 
 	it('calls onChange and records caret intent in controlled mode', () => {
@@ -69,6 +69,6 @@ describe('EditController', () => {
 
 		expect(onChange).toHaveBeenCalledWith('world')
 		expect(store.value.current()).toBe('hello')
-		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
 	})
 })

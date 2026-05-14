@@ -8,7 +8,7 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const store = new Store()
 	store.props.set({defaultValue: value, Mark: () => null, options: [{markup}]})
 	store.lifecycle.mounted()
-	const token = store.parsing.tokens().find(t => t.type === 'mark')
+	const token = store.tokens.current().find(t => t.type === 'mark')
 	if (!token) throw new Error('expected parsed mark token')
 	const controller = MarkController.fromToken(store, token)
 	return {store, token, controller}

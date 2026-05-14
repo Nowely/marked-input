@@ -4,12 +4,12 @@ import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shar
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing' | 'props'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
-import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
+import * as caretDom from '../selection/caretDom'
 
 type InputTargetRange = {
 	readonly startContainer: Node
@@ -64,7 +64,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 	)
 	if (blockIndex === -1) return
 
-	const rows = store.parsing.tokens()
+	const rows = store.tokens.current()
 	if (blockIndex >= rows.length) return
 
 	const token = rows[blockIndex]
@@ -89,7 +89,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 						})()
 			const previous = rows.at(Math.max(0, blockIndex - 1))
 			const pos = previous ? previous.position.end : 0
-			store.caret.position(pos)
+			store.selection.position(pos)
 			store.value.current(newValue)
 			return
 		}
@@ -101,7 +101,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -124,7 +124,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex)
 				const newValue = mergeDragRows(value, rows, blockIndex)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -140,7 +140,7 @@ function handleDelete(store: KbCtx, event: KeyboardEvent) {
 				event.preventDefault()
 				const joinPos = getMergeDragRowJoinPos(rows, blockIndex + 1)
 				const newValue = mergeDragRows(value, rows, blockIndex + 1)
-				store.caret.position(joinPos)
+				store.selection.position(joinPos)
 				store.value.current(newValue)
 				return
 			}
@@ -173,7 +173,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	}
 	if (blockIndex === -1) return
 
-	const rows = store.parsing.tokens()
+	const rows = store.tokens.current()
 	const token = rows[blockIndex]
 	const value = store.value.current()
 
@@ -182,7 +182,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (!isTextLikeRow(token)) {
 		const newValue = addDragRow(value, rows, blockIndex, newRowContent)
 		const pos = token.position.end + newRowContent.length
-		store.caret.position(pos)
+		store.selection.position(pos)
 		store.value.current(newValue)
 		return
 	}
@@ -194,9 +194,9 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 
 function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' | 'end'): void {
 	if (token.type === 'mark') {
-		const path = store.parsing.index().pathFor(token)
-		const address = path ? store.parsing.index().addressFor(path) : undefined
-		if (address && store.caret.placeAtAddress(address, caret)) return
+		const path = store.tokens.index().pathFor(token)
+		const address = path ? store.tokens.index().addressFor(path) : undefined
+		if (address && store.selection.placeAtAddress(address, caret)) return
 	}
 
 	row.focus()

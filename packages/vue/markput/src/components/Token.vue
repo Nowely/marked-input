@@ -21,7 +21,7 @@ const Token = defineComponent({
 		const store = useStore()
 		const key = store.key
 		const resolveMarkSlot = useMarkput(s => s.mark.slot)
-		const index = useMarkput(s => s.parsing.index)
+		const index = useMarkput(s => s.tokens.index)
 
 		return () => {
 			const token = props.token

@@ -4,17 +4,17 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
-export class CaretModel {
-	readonly selection = signal<Range>(undefined, {equals: shallow})
+export class SelectionController {
+	readonly range = signal<Range>(undefined, {equals: shallow})
 	readonly position = computed({
-		get: () => this.selection()?.start,
-		set: value => this.selection(value !== undefined ? {start: value, end: value} : undefined),
+		get: () => this.range()?.start,
+		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),
 	})
 
 	/**
@@ -27,7 +27,7 @@ export class CaretModel {
 	readonly isUserSelecting: Signal<boolean>
 
 	readonly isAllSelected = computed(() => {
-		const s = this.selection()
+		const s = this.range()
 		const v = this.value.current()
 		return s?.start === 0 && s.end === v.length && v.length > 0
 	})
@@ -38,7 +38,7 @@ export class CaretModel {
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly dom: DomModel,
-		private readonly parsing: ParseController,
+		private readonly parsing: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
@@ -48,7 +48,7 @@ export class CaretModel {
 			this.#focusEmptyEditorOnClick()
 
 			this.#trackSelection()
-			watch(this.selection, () => this.#applyRangeToDOM())
+			watch(this.range, () => this.#applyRangeToDOM())
 
 			this.#trackUserSelecting()
 			watch(dom.indexed, () => this.#applyRangeToDOM())
@@ -62,7 +62,7 @@ export class CaretModel {
 	}
 
 	selectAll(): void {
-		this.selection({start: 0, end: this.value.current().length})
+		this.range({start: 0, end: this.value.current().length})
 	}
 
 	/**
@@ -70,7 +70,7 @@ export class CaretModel {
 	 * has a {@link TokenAddress} and needs to disambiguate which token owns a
 	 * shared boundary position (e.g. a text-token ending at N and a mark-token
 	 * starting at N both "own" position N). Position-only callers should write
-	 * to `selection` instead — the auto-apply effect handles the common case.
+	 * to `range` instead — the auto-apply effect handles the common case.
 	 *
 	 * Returns `true` when the address could be resolved and focused, `false`
 	 * when the DOM is not yet indexed or the address is stale.
@@ -83,10 +83,10 @@ export class CaretModel {
 
 		const pos = boundary === 'end' ? resolved.value.position.end : resolved.value.position.start
 		this.#preferredAddress = address
-		// When pos equals the prior selection (shared text/mark boundary), the
+		// When pos equals the prior range (shared text/mark boundary), the
 		// signal's shallow-equals check suppresses the watch effect, leaving
 		// #preferredAddress unconsumed. Apply it directly in that case.
-		if (!this.selection({start: pos, end: pos})) this.#applyRangeToDOM()
+		if (!this.range({start: pos, end: pos})) this.#applyRangeToDOM()
 		return true
 	}
 
@@ -99,7 +99,7 @@ export class CaretModel {
 		const container = this.dom.container()
 		if (!container) return
 		listen(container, 'click', () => {
-			const tokens = this.parsing.tokens()
+			const tokens = this.parsing.current()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
 				firstHtmlChild(this.dom.container())?.focus()
 			}
@@ -147,15 +147,15 @@ export class CaretModel {
 
 		const sync = (): void => {
 			const rawSel = this.dom.readRawSelection()
-			if (rawSel.ok) this.selection(rawSel.value.range)
-			else this.selection(undefined)
+			if (rawSel.ok) this.range(rawSel.value.range)
+			else this.range(undefined)
 		}
 
 		const syncIfInEditor = (node: Node): void => {
 			const result = this.dom.locateNode(node)
 			if (!result.ok) {
 				if (result.reason === 'control') return
-				this.selection(undefined)
+				this.range(undefined)
 				return
 			}
 			sync()
@@ -165,7 +165,7 @@ export class CaretModel {
 			if (this.#isPlacingCaret) return
 			const target = e.target instanceof HTMLElement ? e.target : undefined
 			if (!target) {
-				this.selection(undefined)
+				this.range(undefined)
 				return
 			}
 			syncIfInEditor(target)
@@ -177,7 +177,7 @@ export class CaretModel {
 			// outside the editor.
 			queueMicrotask(() => {
 				if (!container.contains(document.activeElement)) {
-					this.selection(undefined)
+					this.range(undefined)
 				}
 			})
 		})
@@ -193,7 +193,7 @@ export class CaretModel {
 	#applyRangeToDOM(): void {
 		if (this.isUserSelecting()) return
 		if (this.dom.index() === undefined) return
-		const sel = this.selection()
+		const sel = this.range()
 		if (sel === undefined) return
 
 		const maxPos = this.value.current().length
@@ -208,13 +208,13 @@ export class CaretModel {
 		this.#isPlacingCaret = false
 
 		if (!placed) return
-		if (clamped.start !== sel.start || clamped.end !== sel.end) this.selection(clamped)
+		if (clamped.start !== sel.start || clamped.end !== sel.end) this.range(clamped)
 	}
 
 	/**
 	 * Place a collapsed caret at `rawPosition`. Returns `false` when no DOM
 	 * target was found in the current index — the caller should leave the
-	 * selection signal alone so `watch(dom.indexed)` can retry after the
+	 * range signal alone so `watch(dom.indexed)` can retry after the
 	 * next render.
 	 */
 	#placeCollapsed(rawPosition: number): boolean {

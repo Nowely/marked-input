@@ -226,7 +226,7 @@ describe('DomModel structural indexing', () => {
 
 	it('maps registered child sequence host boundaries to nested child positions', () => {
 		const {store, container, host} = mountStructuralNestedWithChildSequence()
-		const tokenIndex = store.parsing.index()
+		const tokenIndex = store.tokens.index()
 		const beforeToken = tokenIndex.resolve([1, 0])
 		const innerToken = tokenIndex.resolve([1, 1])
 		const afterToken = tokenIndex.resolve([1, 2])
@@ -315,27 +315,27 @@ describe('DomModel structural indexing', () => {
 	it('clamps OOB caret range and places at maxPos', () => {
 		const {store, container} = mountStructuralInline('hello')
 
-		store.caret.selection({start: 999, end: 999})
+		store.selection.range({start: 999, end: 999})
 		store.lifecycle.rendered()
 
-		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
 	it('clamps OOB selection range', () => {
 		const {store, container} = mountStructuralInline('hello')
 
-		store.caret.selection({start: 999, end: 1000})
+		store.selection.range({start: 999, end: 1000})
 		store.lifecycle.rendered()
 
-		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
 	it('applies caret.selection to DOM after render', () => {
 		const {store, container, textNode} = mountStructuralInline('hello')
 
-		store.caret.selection({start: 3, end: 3})
+		store.selection.range({start: 3, end: 3})
 		store.lifecycle.rendered()
 
 		const sel = window.getSelection()
@@ -346,21 +346,21 @@ describe('DomModel structural indexing', () => {
 
 	it('clamps OOB range and places caret at clamped position', () => {
 		const {store, container} = mountStructuralInline('hello') // length 5
-		store.caret.selection({start: 999, end: 999})
+		store.selection.range({start: 999, end: 999})
 		store.lifecycle.rendered()
 
 		// clamped to maxPos (5); structural equality prevents re-fire
-		expect(store.caret.selection()).toEqual({start: 5, end: 5})
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
 		container.remove()
 	})
 
 	it('skips apply when isUserSelecting', () => {
 		const {store, container} = mountStructuralInline('hello')
-		store.caret.selection({start: 2, end: 2})
-		store.caret.isUserSelecting(true)
+		store.selection.range({start: 2, end: 2})
+		store.selection.isUserSelecting(true)
 		store.lifecycle.rendered()
 
-		expect(store.caret.selection()).toEqual({start: 2, end: 2})
+		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 

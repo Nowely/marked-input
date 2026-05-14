@@ -1,7 +1,7 @@
 import {listen} from '../../shared/signals/index.js'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import {MARKPUT_MIME} from './pasteMarkup'
 
@@ -10,7 +10,7 @@ export class ClipboardController {
 		private readonly lifecycle: Lifecycle,
 		private readonly edit: EditController,
 		private readonly dom: DomModel,
-		private readonly parsing: ParseController
+		private readonly tokens: TokenModel
 	) {
 		lifecycle.onMounted(() => {
 			const container = dom.container()
@@ -38,7 +38,7 @@ export class ClipboardController {
 		e.preventDefault()
 		e.clipboardData?.setData('text/plain', content.text)
 		e.clipboardData?.setData('text/html', content.html)
-		e.clipboardData?.setData(MARKPUT_MIME, this.parsing.serializeRange(raw.value.range))
+		e.clipboardData?.setData(MARKPUT_MIME, this.tokens.serializeRange(raw.value.range))
 		return true
 	}
 }

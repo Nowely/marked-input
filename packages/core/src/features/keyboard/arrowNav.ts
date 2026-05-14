@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'caret' | 'slots' | 'parsing'>
+type KbCtx = Pick<Store, 'dom' | 'selection' | 'slots' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx): void {
 	const container = store.dom.container()
@@ -20,7 +20,7 @@ export function enableArrowNav(store: KbCtx): void {
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			if (store.slots.isBlock()) return
 			e.preventDefault()
-			store.caret.selectAll()
+			store.selection.selectAll()
 		}
 	})
 }
@@ -37,7 +37,7 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const isFocusedOnMarkElement = active === located.value.tokenElement && !located.value.textElement
 	const address = located.value.address
 
-	const token = store.parsing.index().resolveAddress(address)
+	const token = store.tokens.index().resolveAddress(address)
 	if (!token.ok) return false
 
 	if (!isFocusedOnMarkElement) {
@@ -53,12 +53,12 @@ function shiftFocus(store: KbCtx, event: KeyboardEvent, direction: 'prev' | 'nex
 	const path = address.path
 	const siblingIndex = direction === 'prev' ? path[path.length - 1] - 1 : path[path.length - 1] + 1
 	const siblingPath = [...path.slice(0, -1), siblingIndex]
-	const siblingAddress = store.parsing.index().addressFor(siblingPath)
+	const siblingAddress = store.tokens.index().addressFor(siblingPath)
 	if (!siblingAddress) return false
 
 	event.preventDefault()
 	// Address-based placement disambiguates the sibling from any neighbouring
 	// token that shares a boundary position. Position-only placement would pick
 	// the wrong token at text↔mark boundaries.
-	return store.caret.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
+	return store.selection.placeAtAddress(siblingAddress, direction === 'prev' ? 'end' : 'start')
 }

@@ -18,7 +18,7 @@ export const BlockMenu = memo(({token}: {token: Token}) => {
 			menuOpen: blockStore.state.menuOpen,
 			menuPosition: blockStore.state.menuPosition,
 			dom: s.dom,
-			index: s.parsing.index,
+			index: s.tokens.index,
 		}
 	})
 	const path = index.pathFor(token)

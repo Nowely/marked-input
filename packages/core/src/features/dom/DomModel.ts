@@ -9,7 +9,7 @@ import type {
 } from '../../shared/editorContracts'
 import {event, signal} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 import {DomBoundary} from './DomBoundary'
@@ -32,7 +32,7 @@ export class DomModel {
 	readonly #boundary: DomBoundary
 	readonly index: Computed<DomIndex | undefined>
 
-	constructor(lifecycle: Lifecycle, props: PropsModel, parsing: ParseController) {
+	constructor(lifecycle: Lifecycle, props: PropsModel, tokens: TokenModel) {
 		const indexerHost: DomIndexerHost = {
 			container: () => this.container(),
 			pendingControls: () => this.#pendingControls.values(),
@@ -40,7 +40,7 @@ export class DomModel {
 			emitIndexed: () => this.indexed(),
 			isUserSelecting: this.isUserSelecting,
 		}
-		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, parsing)
+		this.#indexer = new DomIndexer(indexerHost, lifecycle, props, tokens)
 		this.index = this.#indexer.index
 
 		const boundaryHost: DomBoundaryHost = {
@@ -51,7 +51,7 @@ export class DomModel {
 			roleFor: element => this.#indexer.roleFor(element),
 			pathElementsFor: address => this.#indexer.pathElementsFor(address),
 		}
-		this.#boundary = new DomBoundary(boundaryHost, parsing)
+		this.#boundary = new DomBoundary(boundaryHost, tokens)
 	}
 
 	compositionStarted(): void {

@@ -3,13 +3,13 @@ import {escape} from '../../shared/escape'
 import {signal, computed, event, effectScope, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
 import type {CoreOption, OverlayMatch, OverlayTrigger, Slot} from '../../shared/types'
-import * as caretDom from '../caret/caretDom'
-import type {CaretModel} from '../caret/CaretModel'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
 import type {Token} from '../parsing'
 import {annotate} from '../parsing'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
+import * as caretDom from '../selection/caretDom'
+import type {SelectionController} from '../selection/SelectionController'
 import {resolveOverlaySlot} from '../slots'
 import type {OverlaySlot} from '../slots'
 import type {Lifecycle} from '../state/Lifecycle'
@@ -43,9 +43,9 @@ export class OverlayController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly dom: DomModel,
-		private readonly caret: CaretModel,
+		private readonly selection: SelectionController,
 		private readonly edit: EditController,
-		private readonly parsing: ParseController
+		private readonly tokens: TokenModel
 	) {
 		const hasOverlayTrigger = computed(() => this.props.options().some(opt => opt.overlay?.trigger != null))
 
@@ -146,7 +146,7 @@ export class OverlayController {
 	}
 
 	#probeTriggerFromCaretRange(): OverlayMatch | undefined {
-		const sel = this.caret.selection()
+		const sel = this.selection.range()
 		if (!sel || sel.start !== sel.end) return
 
 		const cursor = sel.start

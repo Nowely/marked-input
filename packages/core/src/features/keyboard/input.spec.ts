@@ -81,7 +81,7 @@ describe('replaceAllContentWith()', () => {
 
 		expect(onChange).toHaveBeenCalledWith('world')
 		expect(store.value.current()).toBe('hello')
-		expect(store.parsing.tokens()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: 'hello', position: {start: 0, end: 5}}])
 	})
 })
 
@@ -98,7 +98,7 @@ describe('handleBeforeInput()', () => {
 
 		expect(event.defaultPrevented).toBe(true)
 		expect(replaceRange).toHaveBeenCalledWith({start: 1, end: 1}, 'x')
-		expect(store.caret.selection()).toEqual({start: 2, end: 2})
+		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 
@@ -159,7 +159,7 @@ describe('composition input', () => {
 		container.dispatchEvent(compositionEnd)
 
 		expect(store.value.current()).toBe('aXb')
-		expect(store.caret.selection()).toEqual({start: 2, end: 2})
+		expect(store.selection.range()).toEqual({start: 2, end: 2})
 		container.remove()
 	})
 })

@@ -1,7 +1,7 @@
-import type {CaretModel} from '../caret/CaretModel'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
-import type {ParseController} from '../parsing/ParseController'
+import type {TokenModel} from '../parsing/TokenModel'
+import type {SelectionController} from '../selection/SelectionController'
 import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
@@ -15,13 +15,13 @@ export class KeyboardController {
 		lifecycle: Lifecycle,
 		dom: DomModel,
 		value: ValueModel,
-		caret: CaretModel,
+		selection: SelectionController,
 		edit: EditController,
 		slots: SlotsFeature,
-		parsing: ParseController,
+		tokens: TokenModel,
 		props: PropsModel
 	) {
-		const ctx = {dom, value, caret, edit, slots, parsing, props}
+		const ctx = {dom, value, selection, edit, slots, tokens, props}
 		lifecycle.onMounted(() => {
 			enableInput(ctx)
 			enableBlockEdit(ctx)
