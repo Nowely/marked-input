@@ -7,7 +7,7 @@ import {TokenChildren} from './TokenChildren'
 
 export const Token = memo(({token}: {token: TokenType}) => {
 	const {resolveMarkSlot, key, index, store} = useMarkput(s => ({
-		resolveMarkSlot: s.mark.slot,
+		resolveMarkSlot: s.slots.mark,
 		key: s.key,
 		index: s.tokens.index,
 		store: s,

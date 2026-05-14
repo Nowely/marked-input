@@ -222,7 +222,6 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `reparse`       | parsing        | Re-parse triggered          | `void`                           |
 | `close`         | overlay        | Close overlay               | `void`                           |
 | `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `remove`        | mark           | Mark removed                | `{ token: Token }`               |
 | `rendered`      | lifecycle      | After tokens render         | `void`                           |
 | `mounted`       | lifecycle      | Framework initial mount      | `void`                           |
 | `unmounted`     | lifecycle      | Framework unmount           | `void`                           |
@@ -236,11 +235,11 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 // Commit a raw value edit
 store.value.replace({start: 0, end: 5}, 'hello')
 
-// Emit a payload event
-store.mark.remove({ token })
+// Emit a void event
+store.tokens.invalidate()
 
 // Emit a drag action event
-store.drag.action({ type: 'delete', index: 0 })
+store.block.action({ type: 'delete', index: 0 })
 
 // Subscribe to an event
 import {watch, effectScope} from '@markput/core'
@@ -316,8 +315,7 @@ class Store {
     readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
     readonly props:     PropsModel         // framework-provided configuration
     readonly caret:     CaretModel         // selection, position (computed), isUserSelecting, isAllSelected
-    readonly mark:      MarkFeature        // mark slot resolution
-    readonly slots:     SlotsFeature       // isBlock, isDraggable, slot component/props
+    readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
     readonly value:     ValueModel         // current, replace()
     readonly edit:      EditController     // replace() — single-range user edit + caret intent
     readonly parsing:   ParseController    // tokens, parser, token index
@@ -360,7 +358,7 @@ const tokens = useMarkput(s => s.parsing.tokens())
 
 ## Features
 
-12 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
+11 features, each declaring its dependencies as positional constructor parameters with concrete feature types. The dependency graph is acyclic — features can only depend on features constructed above them in `Store`. They never import each other directly; all cross-feature access goes through the injected constructor parameters. `MarkputHandler` and `KeyboardController` behavior modules retain the full `Store` as an adapter boundary.
 
 Signal subscription order is significant: `ParseController` subscribes to `value.current` inside its `onMounted` hook before any other consumer registers a watcher in `onMounted`. This guarantees that when downstream listeners observe a `value.current` change, `parsing.tokens()` already reflects the new value.
 
@@ -370,9 +368,8 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 | **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Single-range user edit coordination (value + caret intent) |
 | **ParseController**           | Token parsing, parser selection, reparse event            |
-| **MarkFeature**               | Mark slot resolution                                      |
 | **OverlayController**         | Overlay trigger detection, position, open/close           |
-| **SlotsFeature**              | Container ref, slot component/props resolution            |
+| **SlotsFeature**              | Container ref, slot component/props resolution, mark resolver |
 | **CaretModel**                | Caret range, derived location, text selection state       |
 | **KeyboardController**        | Text input, block editing, arrow navigation               |
 | **DomController**             | DOM registration, raw selection mapping, range placement   |

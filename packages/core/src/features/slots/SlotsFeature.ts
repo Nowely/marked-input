@@ -4,8 +4,10 @@ import type {CSSProperties, CoreSlotProps, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
+import type {Token} from '../parsing'
 import type {PropsModel} from '../state/PropsModel'
-import {resolveSlot, resolveSlotProps} from './resolveSlot'
+import {resolveMarkSlot, resolveSlot, resolveSlotProps} from './resolveSlot'
+import type {MarkSlot} from './types'
 
 import styles from '../../../styles.module.css'
 
@@ -33,13 +35,15 @@ function buildContainerProps(
 
 export class SlotsFeature {
 	readonly isBlock: Computed<boolean> = computed(() => this.props.layout() === 'block')
-	readonly isDraggable: Computed<boolean> = computed(() => !!this.props.draggable())
+	readonly isDragEnabled: Computed<boolean> = computed(
+		() => this.props.layout() === 'block' && !!this.props.draggable()
+	)
 	readonly containerComponent: Computed<Slot> = computed(() => resolveSlot('container', this.props.slots()))
 	readonly containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}> =
 		computed(
 			() =>
 				buildContainerProps(
-					this.isDraggable() && this.isBlock(),
+					this.isDragEnabled(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),
@@ -51,10 +55,12 @@ export class SlotsFeature {
 	readonly blockProps: Computed<Record<string, unknown> | undefined> = computed(() =>
 		resolveSlotProps('block', this.props.slotProps())
 	)
-	readonly spanComponent: Computed<Slot> = computed(() => resolveSlot('span', this.props.slots()))
-	readonly spanProps: Computed<Record<string, unknown> | undefined> = computed(() =>
-		resolveSlotProps('span', this.props.slotProps())
-	)
+	readonly mark: MarkSlot = computed(() => {
+		const options = this.props.options()
+		const Mark = this.props.Mark()
+		const Span = this.props.Span()
+		return (token: Token) => resolveMarkSlot(token, options, Mark, Span)
+	})
 
 	constructor(private readonly props: PropsModel) {}
 }

@@ -3,12 +3,11 @@ import {convertDataAttrs} from '../../shared/utils/dataAttributes'
 import type {Token} from '../parsing'
 import {resolveOptionSlot} from './resolveOptionSlot'
 
-export type SlotName = 'container' | 'block' | 'span'
+export type SlotName = 'container' | 'block'
 
 const defaultSlots: Record<SlotName, string> = {
 	container: 'div',
 	block: 'div',
-	span: 'span',
 }
 
 export function resolveSlot(slotName: SlotName, slots: unknown): Slot {

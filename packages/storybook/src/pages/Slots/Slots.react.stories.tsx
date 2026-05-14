@@ -38,21 +38,8 @@ const FancyContainer = ({ref, ...props}: React.HTMLAttributes<HTMLDivElement> & 
 	/>
 )
 
-const FancySpan = ({ref, ...props}: React.HTMLAttributes<HTMLSpanElement> & {ref?: React.Ref<HTMLSpanElement>}) => (
-	<span
-		{...props}
-		ref={ref}
-		style={{
-			...props.style,
-			fontFamily: 'Georgia, serif',
-			fontSize: '16px',
-			letterSpacing: '0.5px',
-		}}
-	/>
-)
-
 /**
- * Using slots to completely replace container and span components.
+ * Using slots to completely replace the container component.
  * This is useful when you need full control over the component structure.
  */
 export const CustomComponents: StoryObj<MarkedInputProps> = {
@@ -61,7 +48,6 @@ export const CustomComponents: StoryObj<MarkedInputProps> = {
 		value: 'Both @[container] and @[span] are @[customized]',
 		slots: {
 			container: FancyContainer,
-			span: FancySpan,
 		},
 	},
 }
@@ -130,12 +116,6 @@ export const WithSlotProps: StoryObj<MarkedInputProps> = {
 					backgroundColor: '#f5f5f5',
 				},
 			},
-			span: {
-				style: {
-					color: '#333',
-					fontSize: '14px',
-				},
-			},
 		},
 	},
 	render: args => <EventLogStory {...args} />,
@@ -194,9 +174,6 @@ export const DataAttributes: StoryObj<MarkedInputProps> = {
 					borderRadius: '4px',
 					backgroundColor: '#f9f9f9',
 				},
-			},
-			span: {
-				dataTokenType: 'text',
 			},
 		},
 	},

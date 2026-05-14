@@ -2,7 +2,7 @@ import {MarkedInput} from '@markput/react'
 import {useCallback, useState} from 'react'
 import type {ComponentPropsWithRef} from 'react'
 
-import {CustomContainer, HTMLMark, PlainTextSpan} from './components'
+import {CustomContainer, HTMLMark} from './components'
 import {htmlToPlainText} from './utils'
 
 interface SingleEditableControlledProps {
@@ -42,7 +42,6 @@ export const SingleEditableControlled = ({onValueChange}: SingleEditableControll
 			Mark={HTMLMark}
 			slots={{
 				container: CustomContainer,
-				span: PlainTextSpan,
 			}}
 			slotProps={{
 				container: {

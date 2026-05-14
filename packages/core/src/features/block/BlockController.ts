@@ -1,9 +1,10 @@
 import type {Range} from '../../shared/editorContracts'
-import {computed, event, watch} from '../../shared/signals'
+import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {SelectionController} from '../selection/SelectionController'
+import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {createRowContent} from './createRowContent'
@@ -19,10 +20,9 @@ export class BlockController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
-		private readonly selection: SelectionController
+		private readonly selection: SelectionController,
+		slots: SlotsFeature
 	) {
-		const isDragEnabled = computed(() => this.props.layout() === 'block' && !!this.props.draggable())
-
 		const toggle = (enabled: boolean) => {
 			if (enabled && !this.#unsub) {
 				this.#unsub = watch(this.action, action => {
@@ -48,8 +48,8 @@ export class BlockController {
 			}
 		}
 
-		watch(isDragEnabled, toggle)
-		toggle(isDragEnabled())
+		watch(slots.isDragEnabled, toggle)
+		toggle(slots.isDragEnabled())
 	}
 
 	#reorder(action: Extract<DragAction, {type: 'reorder'}>) {

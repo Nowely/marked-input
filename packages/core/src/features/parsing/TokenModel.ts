@@ -5,7 +5,6 @@ import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
-import type {MarkFeature} from './MarkFeature'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
@@ -16,8 +15,14 @@ export class TokenModel {
 	readonly #generation = signal(0)
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current(), this.#generation()))
 
+	readonly #markEnabled: Computed<boolean> = computed(() => {
+		const Mark = this.props.Mark()
+		if (Mark) return true
+		return this.props.options().some(opt => 'Mark' in opt && opt.Mark != null)
+	})
+
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
-		if (!this.mark.enabled()) return
+		if (!this.#markEnabled()) return
 
 		const markups = this.props.options().map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
@@ -32,7 +37,6 @@ export class TokenModel {
 	constructor(
 		private readonly lifecycle: Lifecycle,
 		private readonly value: ValueModel,
-		private readonly mark: MarkFeature,
 		private readonly props: PropsModel,
 		private readonly slots: SlotsFeature
 	) {
@@ -56,8 +60,8 @@ export class TokenModel {
 			}
 		}
 
-		watch(this.mark.enabled, toggle)
-		toggle(this.mark.enabled())
+		watch(this.#markEnabled, toggle)
+		toggle(this.#markEnabled())
 	}
 
 	serializeRange(range: Range): string {

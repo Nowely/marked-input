@@ -46,12 +46,12 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	style?: CSSProperties
 	/**
 	 * Override internal components using slots
-	 * @example slots={{ container: 'div', span: 'span' }}
+	 * @example slots={{ container: 'div' }}
 	 */
 	slots?: Slots
 	/**
 	 * Props to pass to slot components
-	 * @example slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
+	 * @example slotProps={{ container: { onKeyDown: handler } }}
 	 */
 	slotProps?: SlotProps
 	/**
