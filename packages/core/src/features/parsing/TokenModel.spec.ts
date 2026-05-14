@@ -53,44 +53,6 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('enable / disable', () => {
-		it('is idempotent — setting Mark twice does not double-subscribe', () => {
-			mountWith('hello')
-			store.props.set({Mark: () => null})
-
-			let callCount = 0
-			const original = store.tokens.current
-			const tokensWrapper = (...args: unknown[]) => {
-				if (args.length) callCount++
-				return (original as (...args: unknown[]) => unknown)(...args)
-			}
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy
-			;(store.tokens as unknown as Record<string, unknown>).current = tokensWrapper
-
-			store.tokens.invalidate()
-			expect(callCount).toBe(1)
-
-			// oxlint-disable-next-line no-unsafe-type-assertion -- test spy restore
-			;(store.tokens as unknown as Record<string, unknown>).current = original
-		})
-
-		it('stops parse subscription after removing Mark', () => {
-			mountWith('hello')
-			const tokensBefore = store.tokens.current()
-			store.props.set({Mark: undefined})
-			store.tokens.invalidate()
-			expect(store.tokens.current()).toBe(tokensBefore)
-		})
-
-		it('re-enables and parses fresh after Mark removed and re-added', () => {
-			mountWith('first')
-			store.props.set({Mark: undefined})
-			store.value.current('second')
-			store.props.set({Mark: () => null})
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
-		})
-	})
-
 	describe('reactive parse', () => {
 		it('re-parses when parser changes', () => {
 			mountWith('hello @[world]')
@@ -101,13 +63,13 @@ describe('TokenModel', () => {
 				expect.objectContaining({type: 'text', content: ''}),
 			])
 		})
-	})
 
-	describe('invalidate event', () => {
-		it('re-parses from current value on invalidate', () => {
-			mountWith('test')
-			store.tokens.invalidate()
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
+		it('re-parses when Mark is added or removed', () => {
+			mountWith('first')
+			store.props.set({Mark: undefined})
+			store.value.current('second')
+			store.props.set({Mark: () => null})
+			expect(store.tokens.current()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 		})
 	})
 

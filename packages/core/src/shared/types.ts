@@ -94,13 +94,11 @@ export type DataAttributes = Record<`data${Capitalize<string>}`, string | number
 export interface CoreSlots {
 	container?: Slot
 	block?: Slot
-	span?: Slot
 }
 
 export interface CoreSlotProps {
 	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
-	span?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 }
 
 export interface DraggableConfig {

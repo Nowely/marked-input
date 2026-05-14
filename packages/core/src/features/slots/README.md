@@ -1,6 +1,6 @@
 # Slots Feature
 
-Resolver utilities that implement the component slot/customization system — allowing framework wrappers to override default HTML elements (`container`, `block`, `span`, `overlay`, `mark`) with custom components.
+Resolver utilities that implement the component slot/customization system — allowing framework wrappers to override default HTML elements (`container`, `block`, `overlay`, `mark`) with custom components.
 
 ## Resolver Functions
 
@@ -12,25 +12,24 @@ Resolver utilities that implement the component slot/customization system — al
 
 ## Usage
 
-Named slot computeds live on `store.computed` as separate `component` and `props` values:
+Named slot computeds live on `store.slots` as separate `component` and `props` values:
 
 ```typescript
 // Named slots — component and fully-resolved props are separate computeds
-const Component = store.computed.containerComponent()
-const props = store.computed.containerProps()
-// props includes className, style (with drag paddingLeft), and data-* slotProps
+const Component = store.slots.containerComponent()
+const props = store.slots.containerProps()
+// props includes className, style (with drag paddingLeft when drag is enabled),
+// and data-* slotProps
 
-const BlockComponent = store.computed.blockComponent()
-const blockProps = store.computed.blockProps() // raw slotProps only
+const BlockComponent = store.slots.blockComponent()
+const blockProps = store.slots.blockProps() // raw slotProps only
 
-const SpanComponent = store.computed.spanComponent()
-const spanProps = store.computed.spanProps() // raw slotProps only
+// Mark resolver — call() returns a resolver function, call it with the token
+const resolveMark = store.slots.mark()
+const [MarkComponent, markProps] = resolveMark(token)
 
-// Parameterized slots — call() returns a resolver function, call it with the argument
-const resolveMarkSlot = store.computed.mark()
-const [MarkComponent, markProps] = resolveMarkSlot(token)
-
-const resolveOverlay = store.computed.overlay()
+// Overlay resolver — same shape, takes an option and a default
+const resolveOverlay = store.overlay.slot()
 const [Overlay, overlayProps] = resolveOverlay(option, defaultComponent)
 ```
 

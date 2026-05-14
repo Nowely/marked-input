@@ -43,7 +43,7 @@ describe('BlockController', () => {
 		store.props.set({layout: 'block', draggable: true})
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
-		store.tokens.set([text('alpha', 0), text('beta', 7)])
+		store.tokens.current([text('alpha', 0), text('beta', 7)])
 		const currentSpy = vi.spyOn(store.value, 'current')
 
 		store.block.action({type: 'delete', index: 0})

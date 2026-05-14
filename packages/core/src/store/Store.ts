@@ -4,7 +4,7 @@ import {DomModel} from '../features/dom'
 import {EditController} from '../features/edit'
 import {KeyboardController} from '../features/keyboard'
 import {OverlayController} from '../features/overlay'
-import {MarkFeature, TokenModel} from '../features/parsing'
+import {TokenModel} from '../features/parsing'
 import {SelectionController} from '../features/selection'
 import {SlotsFeature} from '../features/slots'
 import {Lifecycle, PropsModel, ValueModel} from '../features/state'
@@ -22,10 +22,9 @@ export class Store {
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
 
-	readonly mark = new MarkFeature(this.props)
 	readonly slots = new SlotsFeature(this.props)
 
-	readonly tokens = new TokenModel(this.lifecycle, this.value, this.mark, this.props, this.slots)
+	readonly tokens = new TokenModel(this.lifecycle, this.value, this.props, this.slots)
 
 	readonly dom = new DomModel(this.lifecycle, this.props, this.tokens)
 
@@ -51,7 +50,7 @@ export class Store {
 		this.tokens,
 		this.props
 	)
-	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection)
+	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection, this.slots)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.tokens)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.selection)

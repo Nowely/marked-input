@@ -1,11 +1,11 @@
-import type {MarkupDescriptor} from '../features/parsing/parser/core/MarkupDescriptor'
+import type {Token} from '../features/parsing/parser/types'
 import type {Store} from '../store/Store'
 
 export type TokenPath = readonly number[]
 
 export type TokenAddress = {
 	readonly path: TokenPath
-	readonly parseGeneration: number
+	readonly token: Token
 }
 
 export type Result<T, Reason extends string> = {ok: true; value: T} | {ok: false; reason: Reason}
@@ -63,14 +63,6 @@ export type MarkInfo = {
 	readonly hasNestedMarks: boolean
 	readonly key: string
 }
-
-export type TokenShapeSnapshot =
-	| {readonly kind: 'text'}
-	| {
-			readonly kind: 'mark'
-			readonly descriptor: MarkupDescriptor
-			readonly descriptorIndex: number
-	  }
 
 export type DomIndex = {
 	readonly generation: number

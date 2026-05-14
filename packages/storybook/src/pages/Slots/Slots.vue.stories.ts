@@ -71,12 +71,6 @@ const EventLogComponent = defineComponent({
 							backgroundColor: '#f5f5f5',
 						},
 					},
-					span: {
-						style: {
-							color: '#333',
-							fontSize: '14px',
-						},
-					},
 				},
 			}),
 			h('div', {style: {marginTop: '16px', padding: '12px', backgroundColor: '#f0f0f0', borderRadius: '4px'}}, [
@@ -134,9 +128,6 @@ export const DataAttributes: Story = {
 					borderRadius: '4px',
 					backgroundColor: '#f9f9f9',
 				},
-			},
-			span: {
-				dataTokenType: 'text',
 			},
 		},
 	},

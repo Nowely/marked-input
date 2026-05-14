@@ -1,20 +1,14 @@
 import type {MarkToken} from '.'
-import type {MarkPatch, MarkSnapshot, TokenAddress, TokenShapeSnapshot} from '../../shared/editorContracts'
+import type {MarkPatch, MarkSnapshot, TokenAddress} from '../../shared/editorContracts'
 import type {Store} from '../../store'
 import {annotate} from './parser/utils/annotate'
-import {snapshotTokenShape} from './tokenIndex'
 
 export class MarkController {
-	readonly #shape: TokenShapeSnapshot
-
 	constructor(
 		private readonly store: Store,
 		private readonly address: TokenAddress,
-		private readonly snapshot: MarkSnapshot,
-		shape: TokenShapeSnapshot
-	) {
-		this.#shape = shape
-	}
+		private readonly snapshot: MarkSnapshot
+	) {}
 
 	static fromToken(store: Store, token: MarkToken): MarkController {
 		const index = store.tokens.index()
@@ -23,17 +17,12 @@ export class MarkController {
 		const address = index.addressFor(path)
 		if (!address) throw new Error('Cannot create MarkController for unresolved token path')
 
-		return new MarkController(
-			store,
-			address,
-			{
-				value: token.value,
-				meta: token.meta,
-				slot: token.slot?.content,
-				readOnly: store.props.readOnly(),
-			},
-			snapshotTokenShape(token)
-		)
+		return new MarkController(store, address, {
+			value: token.value,
+			meta: token.meta,
+			slot: token.slot?.content,
+			readOnly: store.props.readOnly(),
+		})
 	}
 
 	get value(): string {
@@ -87,7 +76,7 @@ export class MarkController {
 
 	#resolve(): MarkToken | undefined {
 		if (this.store.props.readOnly()) return undefined
-		const resolved = this.store.tokens.index().resolveAddress(this.address, this.#shape)
+		const resolved = this.store.tokens.index().resolveAddress(this.address)
 		if (!resolved.ok || resolved.value.type !== 'mark') return undefined
 		return resolved.value
 	}

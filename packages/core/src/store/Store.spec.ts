@@ -21,11 +21,6 @@ describe('Store', () => {
 		expect(store.props.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
-	it('have events', () => {
-		const store = new Store()
-		expect(typeof store.tokens.invalidate).toBe('function')
-	})
-
 	describe('handler', () => {
 		it('return an object with container, overlay, and focus properties', () => {
 			const store = new Store()
@@ -286,30 +281,6 @@ describe('Store', () => {
 		})
 	})
 
-	describe('spanComponent / spanProps (computed)', () => {
-		it('return "span" for spanComponent by default', () => {
-			const store = new Store()
-			expect(store.slots.spanComponent()).toBe('span')
-		})
-
-		it('return undefined for spanProps by default', () => {
-			const store = new Store()
-			expect(store.slots.spanProps()).toBeUndefined()
-		})
-
-		it('resolve custom span slot', () => {
-			const store = new Store()
-			store.props.set({slots: {span: 'strong'}})
-			expect(store.slots.spanComponent()).toBe('strong')
-		})
-
-		it('resolve span slotProps', () => {
-			const store = new Store()
-			store.props.set({slotProps: {span: {className: 'bold'}}})
-			expect(store.slots.spanProps()).toMatchObject({className: 'bold'})
-		})
-	})
-
 	describe('isBlock', () => {
 		it('return false when layout is inline', () => {
 			const store = new Store()
@@ -329,68 +300,34 @@ describe('Store', () => {
 		})
 	})
 
-	describe('isDraggable', () => {
-		it('return false when draggable is false', () => {
+	describe('isDragEnabled', () => {
+		it('returns false when layout is inline even if draggable is true', () => {
 			const store = new Store()
-			store.props.set({draggable: false})
-			expect(store.slots.isDraggable()).toBe(false)
+			store.props.set({layout: 'inline', draggable: true})
+			expect(store.slots.isDragEnabled()).toBe(false)
 		})
 
-		it('return true when draggable is true', () => {
+		it('returns false when draggable is false', () => {
 			const store = new Store()
-			store.props.set({draggable: true})
-			expect(store.slots.isDraggable()).toBe(true)
+			store.props.set({layout: 'block', draggable: false})
+			expect(store.slots.isDragEnabled()).toBe(false)
 		})
 
-		it('return true when draggable is a DraggableConfig', () => {
+		it('returns true when layout is block and draggable is true', () => {
 			const store = new Store()
-			store.props.set({draggable: {alwaysShowHandle: true}})
-			expect(store.slots.isDraggable()).toBe(true)
+			store.props.set({layout: 'block', draggable: true})
+			expect(store.slots.isDragEnabled()).toBe(true)
 		})
 
-		it('default to false', () => {
+		it('returns true when layout is block and draggable is a DraggableConfig', () => {
 			const store = new Store()
-			expect(store.slots.isDraggable()).toBe(false)
-		})
-	})
-
-	describe('enabled (computed)', () => {
-		it('return false when no Mark override and no per-option Mark', () => {
-			const store = new Store()
-			expect(store.mark.enabled()).toBe(false)
+			store.props.set({layout: 'block', draggable: {alwaysShowHandle: true}})
+			expect(store.slots.isDragEnabled()).toBe(true)
 		})
 
-		it('return true when Mark override is set', () => {
+		it('defaults to false', () => {
 			const store = new Store()
-			store.props.set({Mark: () => null})
-			expect(store.mark.enabled()).toBe(true)
-		})
-
-		it('return true when option has per-option Mark', () => {
-			const store = new Store()
-			store.props.set({options: [{markup: '@[__value__]', Mark: () => null} as Record<string, unknown>]})
-			expect(store.mark.enabled()).toBe(true)
-		})
-
-		it('return true when Mark override is set even without per-option Mark', () => {
-			const store = new Store()
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			expect(store.mark.enabled()).toBe(true)
-		})
-
-		it('return false when option has Mark set to null', () => {
-			const store = new Store()
-			store.props.set({options: [{markup: '@[__value__]', Mark: null} as Record<string, unknown>]})
-			expect(store.mark.enabled()).toBe(false)
-		})
-
-		it('react to Mark override changes', () => {
-			const store = new Store()
-			expect(store.mark.enabled()).toBe(false)
-			store.props.set({Mark: () => null})
-			expect(store.mark.enabled()).toBe(true)
-			store.props.set({Mark: undefined})
-			expect(store.mark.enabled()).toBe(false)
+			expect(store.slots.isDragEnabled()).toBe(false)
 		})
 	})
 
@@ -398,7 +335,7 @@ describe('Store', () => {
 		it('resolve mark slot for text token using span fallback', () => {
 			const store = new Store()
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.mark.slot()(token)
+			const [component, props] = store.slots.mark()(token)
 			expect(component).toBe('span')
 			expect(props).toEqual({})
 		})
@@ -408,7 +345,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.props.set({Span: CustomSpan})
 			const token = {type: 'text', content: 'hello', position: {start: 0, end: 5}} as const
-			const [component, props] = store.mark.slot()(token)
+			const [component, props] = store.slots.mark()(token)
 			expect(component).toBe(CustomSpan)
 			expect(props).toEqual({value: 'hello'})
 		})
@@ -423,7 +360,7 @@ describe('Store', () => {
 				descriptor: {index: 0},
 				position: {start: 0, end: 5},
 			} as any
-			expect(() => store.mark.slot()(token)).toThrow('No mark component found')
+			expect(() => store.slots.mark()(token)).toThrow('No mark component found')
 		})
 
 		it('resolve overlay from global Overlay component', () => {

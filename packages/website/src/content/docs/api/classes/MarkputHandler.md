@@ -15,7 +15,7 @@ Defined in: [core/src/store/MarkputHandler.ts:5](https://github.com/Nowely/marke
 new MarkputHandler(
    dom,
    overlayFeature,
-   caret): MarkputHandler;
+   selection): MarkputHandler;
 ```
 
 Defined in: [core/src/store/MarkputHandler.ts:6](https://github.com/Nowely/marked-input/blob/next/packages/core/src/store/MarkputHandler.ts#L6)
@@ -26,7 +26,7 @@ Defined in: [core/src/store/MarkputHandler.ts:6](https://github.com/Nowely/marke
 | ------ | ------ |
 | `dom` | `DomModel` |
 | `overlayFeature` | `OverlayController` |
-| `caret` | `CaretModel` |
+| `selection` | `SelectionController` |
 
 #### Returns
 

@@ -205,7 +205,7 @@ Props to pass to slot components
 #### Example
 
 ```ts
-slotProps={{ container: { onKeyDown: handler }, span: { className: 'custom' } }}
+slotProps={{ container: { onKeyDown: handler } }}
 ```
 
 ***
@@ -223,7 +223,7 @@ Override internal components using slots
 #### Example
 
 ```ts
-slots={{ container: 'div', span: 'span' }}
+slots={{ container: 'div' }}
 ```
 
 ***

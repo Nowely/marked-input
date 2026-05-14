@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest'
 
 import type {MarkToken, TextToken, Token} from './parser/types'
-import {createTokenIndex, pathEquals, pathKey, resolvePath, snapshotTokenShape} from './tokenIndex'
+import {createTokenIndex, pathEquals, pathKey, resolvePath} from './tokenIndex'
 
 function text(content: string, start: number): TextToken {
 	return {type: 'text', content, position: {start, end: start + content.length}}
@@ -30,18 +30,18 @@ describe('TokenIndex', () => {
 	it('builds paths for top-level and nested tokens', () => {
 		const inner = mark('inner', 9, [text('leaf', 12)])
 		const tokens = [text('hello ', 0), mark('outer', 6, [inner]), text('!', 20)]
-		const index = createTokenIndex(tokens, 4)
+		const index = createTokenIndex(tokens)
 
 		expect(index.pathFor(tokens[0])).toEqual([0])
 		expect(index.pathFor(inner)).toEqual([1, 0])
 		expect(index.pathFor(inner.children[0])).toEqual([1, 0, 0])
-		expect(index.addressFor([1, 0])).toEqual({path: [1, 0], parseGeneration: 4})
+		expect(index.addressFor([1, 0])).toEqual({path: [1, 0], token: inner})
 		expect(index.key([1, 0, 0])).toBe('1.0.0')
 	})
 
 	it('resolves paths and rejects invalid paths', () => {
 		const tokens = [text('a', 0), mark('b', 1)]
-		const index = createTokenIndex(tokens, 2)
+		const index = createTokenIndex(tokens)
 
 		expect(resolvePath(tokens, [1])).toBe(tokens[1])
 		expect(resolvePath(tokens, [])).toBeUndefined()
@@ -55,25 +55,22 @@ describe('TokenIndex', () => {
 		expect(pathKey([2, 0, 3])).toBe('2.0.3')
 	})
 
-	it('rejects stale addresses before resolving same-path tokens', () => {
+	it('rejects stale addresses when the token at the path has been replaced', () => {
 		const first = mark('first', 0)
-		const firstIndex = createTokenIndex([first], 1)
+		const firstIndex = createTokenIndex([first])
 		const staleAddress = firstIndex.addressFor([0])!
 
 		const second = mark('second', 0)
-		const secondIndex = createTokenIndex([second], 2)
-		const result = secondIndex.resolveAddress(staleAddress, snapshotTokenShape(first))
+		const secondIndex = createTokenIndex([second])
 
-		expect(result).toEqual({ok: false, reason: 'stale'})
+		expect(secondIndex.resolveAddress(staleAddress)).toEqual({ok: false, reason: 'stale'})
 	})
 
-	it('rejects same-generation shape mismatches', () => {
-		const oldToken = mark('first', 0)
-		const currentToken = text('first', 0)
-		const index = createTokenIndex([currentToken], 5)
+	it('resolves addresses when the same token instance is still at the path', () => {
+		const token = mark('first', 0)
+		const index = createTokenIndex([token])
+		const address = index.addressFor([0])!
 
-		const result = index.resolveAddress({path: [0], parseGeneration: 5}, snapshotTokenShape(oldToken))
-
-		expect(result).toEqual({ok: false, reason: 'stale'})
+		expect(index.resolveAddress(address)).toEqual({ok: true, value: token})
 	})
 })
