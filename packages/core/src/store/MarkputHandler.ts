@@ -1,13 +1,11 @@
 import type {CaretModel} from '../features/caret/CaretModel'
 import type {DomModel} from '../features/dom/DomModel'
 import type {OverlayController} from '../features/overlay/OverlayController'
-import type {ParseController} from '../features/parsing/ParseController'
 
 export class MarkputHandler {
 	constructor(
 		private readonly dom: DomModel,
 		private readonly overlayFeature: OverlayController,
-		private readonly parsing: ParseController,
 		private readonly caret: CaretModel
 	) {}
 
@@ -20,8 +18,6 @@ export class MarkputHandler {
 	}
 
 	focus() {
-		const firstAddress = this.parsing.index().addressFor([0])
-		if (firstAddress && this.caret.placeAtAddress(firstAddress, 'start')) return
-		this.container?.focus()
+		this.caret.focusFirst()
 	}
 }

@@ -54,5 +54,5 @@ export class Store {
 	readonly block = new BlockController(this.props, this.value, this.parsing, this.caret)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.parsing)
 
-	readonly handler = new MarkputHandler(this.dom, this.overlay, this.parsing, this.caret)
+	readonly handler = new MarkputHandler(this.dom, this.overlay, this.caret)
 }

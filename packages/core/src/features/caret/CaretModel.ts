@@ -55,6 +55,12 @@ export class CaretModel {
 		})
 	}
 
+	focusFirst(): void {
+		const firstAddress = this.parsing.index().addressFor([0])
+		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
+		this.dom.container()?.focus()
+	}
+
 	selectAll(): void {
 		this.selection({start: 0, end: this.value.current().length})
 	}

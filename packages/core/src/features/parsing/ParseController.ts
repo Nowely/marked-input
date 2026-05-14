@@ -37,7 +37,7 @@ export class ParseController {
 		lifecycle.onMounted(() => {
 			// Parse current value immediately so tokens are ready before other
 			// mounted subscribers (like OverlayController) read them.
-			this.acceptTokens(this.#parseValue(value.current()))
+			this.#reparseNow()
 			this.#subscribeValue()
 		})
 
@@ -76,25 +76,22 @@ export class ParseController {
 		return parser.parse(value)
 	}
 
+	#reparseNow(): void {
+		this.acceptTokens(this.#parseValue(this.value.current()))
+	}
+
 	#subscribeValue(): void {
-		// Pass value.current directly — it is already a Computed<string>.
-		watch(this.value.current, v => {
-			this.acceptTokens(this.#parseValue(v))
-		})
+		watch(this.value.current, () => this.#reparseNow())
 	}
 
 	#subscribeReactiveParse(): void {
 		watch(
 			computed(() => this.parser()),
-			() => {
-				this.acceptTokens(this.#parseValue(this.value.current()))
-			}
+			() => this.#reparseNow()
 		)
 	}
 
 	#subscribeReparse(): void {
-		watch(this.reparse, () => {
-			this.acceptTokens(this.#parseValue(this.value.current()))
-		})
+		watch(this.reparse, () => this.#reparseNow())
 	}
 }
