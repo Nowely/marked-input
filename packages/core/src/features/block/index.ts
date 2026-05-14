@@ -1,4 +1,7 @@
 export {BlockController} from './BlockController'
+export {BlockRegistry} from './BlockRegistry'
+export {BlockStore} from './BlockStore'
+export type {DropPosition} from './BlockStore'
 export {getDragDropPosition, parseDragSourceIndex, getDragTargetIndex} from '../../shared/utils/dragUtils'
 export {EMPTY_TEXT_TOKEN} from './tokens'
 export {getAlwaysShowHandle} from './config'

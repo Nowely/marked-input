@@ -1,7 +1,7 @@
-import type {CaretModel} from '../../features/caret/CaretModel'
-import type {DomModel} from '../../features/dom/DomModel'
-import type {OverlayController} from '../../features/overlay/OverlayController'
-import type {ParseController} from '../../features/parsing/ParseController'
+import type {CaretModel} from '../features/caret/CaretModel'
+import type {DomModel} from '../features/dom/DomModel'
+import type {OverlayController} from '../features/overlay/OverlayController'
+import type {ParseController} from '../features/parsing/ParseController'
 
 export class MarkputHandler {
 	constructor(

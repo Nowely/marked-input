@@ -35,7 +35,7 @@ const setPanelRef = (el: unknown) => {
 
 const setGripRef = (el: unknown) => {
 	const element = el as HTMLButtonElement | null
-	blockStore.attachGrip(element, props.blockIndex, {action: store.drag.action})
+	blockStore.attachGrip(element, props.blockIndex, {action: store.block.action})
 }
 </script>
 

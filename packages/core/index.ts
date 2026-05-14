@@ -15,7 +15,7 @@ export type {
 	Slot,
 	SlotRegistry,
 } from './src/shared/types'
-export {MarkputHandler} from './src/shared/classes'
+export {MarkputHandler} from './src/store/MarkputHandler'
 
 // Parsing exports (modern API)
 export {annotate, denote, findToken} from './src/features/parsing'
@@ -43,11 +43,11 @@ export type {MarkSlot, OverlaySlot} from './src/features/slots'
 export {createMarkFromOverlay, filterSuggestions, navigateSuggestions} from './src/features/overlay'
 
 // Drag
-export {getAlwaysShowHandle} from './src/features/drag'
+export {getAlwaysShowHandle} from './src/features/block'
 
 // Caret DOM utilities
 export {caretDom} from './src/features/caret'
 
 // Mark commands
-export {MarkController} from './src/features/mark'
-export type {MarkOptions} from './src/features/mark'
+export {MarkController} from './src/features/parsing'
+export type {MarkOptions} from './src/features/parsing'

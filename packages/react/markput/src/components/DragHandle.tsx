@@ -14,7 +14,7 @@ export const DragHandle = memo(({token, blockIndex}: {token: TokenType; blockInd
 
 		return {
 			blockStore,
-			action: s.drag.action,
+			action: s.block.action,
 			readOnly: s.props.readOnly,
 			draggable: s.props.draggable,
 			isDragging: blockStore.state.isDragging,

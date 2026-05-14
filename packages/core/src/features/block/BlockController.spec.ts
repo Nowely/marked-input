@@ -29,14 +29,14 @@ describe('BlockController', () => {
 			store.props.set({layout: 'inline', draggable: false})
 
 			const currentSpy = vi.spyOn(store.value, 'current')
-			store.drag.action({type: 'delete', index: 0})
+			store.block.action({type: 'delete', index: 0})
 			expect(currentSpy).not.toHaveBeenCalled()
 		})
 	})
 
 	it('owns the drag event', () => {
 		const store = new Store()
-		expect(typeof store.drag.action).toBe('function')
+		expect(typeof store.block.action).toBe('function')
 	})
 
 	it('commits drag edits through current() and writes caret.selection', () => {
@@ -46,7 +46,7 @@ describe('BlockController', () => {
 		store.parsing.acceptTokens([text('alpha', 0), text('beta', 7)])
 		const currentSpy = vi.spyOn(store.value, 'current')
 
-		store.drag.action({type: 'delete', index: 0})
+		store.block.action({type: 'delete', index: 0})
 
 		expect(currentSpy).toHaveBeenCalledWith('beta\n\n')
 		expect(store.caret.selection()).toEqual({start: 6, end: 6})

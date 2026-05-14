@@ -4,10 +4,10 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import type {Signal} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
 import type {ParseController} from '../parsing/ParseController'
-import type {PropsModel} from '../props/PropsModel'
-import type {ValueModel} from '../value/ValueModel'
+import type {Lifecycle} from '../state/Lifecycle'
+import type {PropsModel} from '../state/PropsModel'
+import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
 export class CaretModel {

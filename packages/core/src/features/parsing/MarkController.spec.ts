@@ -1,7 +1,7 @@
 import {describe, it, expect} from 'vitest'
 
+import type {Markup} from '.'
 import {Store} from '../../store/Store'
-import type {Markup} from '../parsing'
 import {MarkController} from './MarkController'
 
 function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {

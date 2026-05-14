@@ -4,7 +4,7 @@ import type {CSSProperties, CoreSlotProps, Slot} from '../../shared/types'
 import {cx} from '../../shared/utils/cx'
 import {merge} from '../../shared/utils/merge'
 import {shallow} from '../../shared/utils/shallow'
-import type {PropsModel} from '../props/PropsModel'
+import type {PropsModel} from '../state/PropsModel'
 import {resolveSlot, resolveSlotProps} from './resolveSlot'
 
 import styles from '../../../styles.module.css'

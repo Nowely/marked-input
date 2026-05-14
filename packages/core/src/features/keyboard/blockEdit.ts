@@ -5,10 +5,10 @@ import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'caret' | 'edit' | 'slots' | 'parsing' | 'props'>
+import {createRowContent} from '../block/createRowContent'
+import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import * as caretDom from '../caret/caretDom'
 import {consumeMarkupPaste} from '../clipboard'
-import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../drag/operations'
-import {createRowContent} from '../editing'
 import type {Token} from '../parsing'
 
 type InputTargetRange = {

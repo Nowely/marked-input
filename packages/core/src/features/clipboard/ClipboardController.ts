@@ -2,10 +2,10 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {DomModel} from '../dom/DomModel'
 import type {EditController} from '../edit'
-import type {Lifecycle} from '../lifecycle/Lifecycle'
 import {toString} from '../parsing'
 import type {Token} from '../parsing'
 import type {ParseController} from '../parsing/ParseController'
+import type {Lifecycle} from '../state/Lifecycle'
 import {MARKPUT_MIME} from './pasteMarkup'
 
 function htmlFromRange(range: globalThis.Range): string {

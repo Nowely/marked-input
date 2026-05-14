@@ -1,8 +1,8 @@
+import type {MarkToken} from '.'
 import type {MarkPatch, MarkSnapshot, TokenAddress, TokenShapeSnapshot} from '../../shared/editorContracts'
 import type {Store} from '../../store'
-import type {MarkToken} from '../parsing'
-import {annotate} from '../parsing/parser/utils/annotate'
-import {snapshotTokenShape} from '../parsing/tokenIndex'
+import {annotate} from './parser/utils/annotate'
+import {snapshotTokenShape} from './tokenIndex'
 
 export class MarkController {
 	readonly #shape: TokenShapeSnapshot
