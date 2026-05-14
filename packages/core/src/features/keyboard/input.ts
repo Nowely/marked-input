@@ -1,25 +1,17 @@
 import {KEYBOARD} from '../../shared/constants'
-import type {BoundaryPositionResult, Range, RawSelectionResult} from '../../shared/editorContracts'
+import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
 type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
-
-type InputTargetRange = {
-	readonly startContainer: Node
-	readonly startOffset: number
-	readonly endContainer: Node
-	readonly endOffset: number
-}
+import {rawRangeFromInputEvent} from './inputRange'
 
 type SpanInputTarget = {
 	content: string
 	caret: number
 }
-
-type RawSelectionFailureReason = Extract<RawSelectionResult, {ok: false}>['reason']
 
 export function enableInput(store: KbCtx): void {
 	const container = store.dom.container()
@@ -170,32 +162,6 @@ export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boole
 	focus.content = newContent
 	focus.caret = newCaret
 	return true
-}
-
-function rawRangeFromInputEvent(store: KbCtx, event: InputEvent): RawSelectionResult {
-	const ranges = event.getTargetRanges()
-	if (ranges.length === 0) return store.dom.readRawSelection()
-	return rawRangeFromTargetRange(store, ranges[0])
-}
-
-function rawRangeFromTargetRange(store: KbCtx, range: InputTargetRange): RawSelectionResult {
-	const start = store.dom.rawPositionFromBoundary(range.startContainer, range.startOffset, 'after')
-	const end = store.dom.rawPositionFromBoundary(range.endContainer, range.endOffset, 'before')
-	if (!start.ok) return {ok: false, reason: rawSelectionReason(start)}
-	if (!end.ok) return {ok: false, reason: rawSelectionReason(end)}
-	return {
-		ok: true,
-		value: {
-			range:
-				start.value <= end.value ? {start: start.value, end: end.value} : {start: end.value, end: start.value},
-		},
-	}
-}
-
-function rawSelectionReason(result: BoundaryPositionResult): RawSelectionFailureReason {
-	if (result.ok) return 'invalidBoundary'
-	if (result.reason === 'composing') return 'invalidBoundary'
-	return result.reason
 }
 
 function replacementForInput(store: KbCtx, event: InputEvent): string | undefined {
