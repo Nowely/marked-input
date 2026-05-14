@@ -1,12 +1,11 @@
-import type {Result, TokenAddress, TokenPath, TokenShapeSnapshot} from '../../shared/editorContracts'
+import type {Result, TokenAddress, TokenPath} from '../../shared/editorContracts'
 import type {Token} from './parser/types'
 
 export type TokenIndex = {
-	readonly generation: number
 	pathFor(token: Token): TokenPath | undefined
 	addressFor(path: TokenPath): TokenAddress | undefined
 	resolve(path: TokenPath): Token | undefined
-	resolveAddress(address: TokenAddress, expected?: TokenShapeSnapshot): Result<Token, 'stale'>
+	resolveAddress(address: TokenAddress): Result<Token, 'stale'>
 	key(path: TokenPath): string
 	equals(a: TokenPath, b: TokenPath): boolean
 }
@@ -31,21 +30,7 @@ export function resolvePath(tokens: readonly Token[], path: TokenPath): Token | 
 	return token
 }
 
-export function snapshotTokenShape(token: Token): TokenShapeSnapshot {
-	if (token.type === 'text') return {kind: 'text'}
-	return {kind: 'mark', descriptor: token.descriptor, descriptorIndex: token.descriptor.index}
-}
-
-function shapeMatches(token: Token, expected: TokenShapeSnapshot): boolean {
-	if (expected.kind === 'text') return token.type === 'text'
-	return (
-		token.type === 'mark' &&
-		token.descriptor === expected.descriptor &&
-		token.descriptor.index === expected.descriptorIndex
-	)
-}
-
-export function createTokenIndex(tokens: readonly Token[], generation: number): TokenIndex {
+export function createTokenIndex(tokens: readonly Token[]): TokenIndex {
 	const paths = new WeakMap<Token, TokenPath>()
 
 	const visit = (items: readonly Token[], parent: TokenPath) => {
@@ -59,16 +44,16 @@ export function createTokenIndex(tokens: readonly Token[], generation: number): 
 	visit(tokens, [])
 
 	return {
-		generation,
 		pathFor: token => paths.get(token),
-		addressFor: path => (resolvePath(tokens, path) ? {path: [...path], parseGeneration: generation} : undefined),
+		addressFor(path) {
+			const token = resolvePath(tokens, path)
+			return token ? {path: [...path], token} : undefined
+		},
 		resolve: path => resolvePath(tokens, path),
-		resolveAddress(address, expected) {
-			if (address.parseGeneration !== generation) return {ok: false, reason: 'stale'}
-			const token = resolvePath(tokens, address.path)
-			if (!token) return {ok: false, reason: 'stale'}
-			if (expected && !shapeMatches(token, expected)) return {ok: false, reason: 'stale'}
-			return {ok: true, value: token}
+		resolveAddress(address) {
+			const current = resolvePath(tokens, address.path)
+			if (!current || current !== address.token) return {ok: false, reason: 'stale'}
+			return {ok: true, value: current}
 		},
 		key: pathKey,
 		equals: pathEquals,

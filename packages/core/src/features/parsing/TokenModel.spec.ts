@@ -1,6 +1,6 @@
 import {describe, it, expect, beforeEach} from 'vitest'
 
-import {effect, watch} from '../../shared/signals'
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 import type {Token} from './parser/types'
 
@@ -53,41 +53,6 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('enable / disable', () => {
-		it('is idempotent — setting Mark twice does not double-subscribe', () => {
-			mountWith('hello')
-			store.props.set({Mark: () => null})
-
-			let updateCount = 0
-			const stop = effect(() => {
-				store.tokens.current()
-				updateCount++
-			})
-			updateCount = 0
-
-			store.tokens.invalidate()
-
-			expect(updateCount).toBe(1)
-			stop()
-		})
-
-		it('stops parse subscription after removing Mark', () => {
-			mountWith('hello')
-			const tokensBefore = store.tokens.current()
-			store.props.set({Mark: undefined})
-			store.tokens.invalidate()
-			expect(store.tokens.current()).toBe(tokensBefore)
-		})
-
-		it('re-enables and parses fresh after Mark removed and re-added', () => {
-			mountWith('first')
-			store.props.set({Mark: undefined})
-			store.value.current('second')
-			store.props.set({Mark: () => null})
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
-		})
-	})
-
 	describe('reactive parse', () => {
 		it('re-parses when parser changes', () => {
 			mountWith('hello @[world]')
@@ -98,13 +63,13 @@ describe('TokenModel', () => {
 				expect.objectContaining({type: 'text', content: ''}),
 			])
 		})
-	})
 
-	describe('invalidate event', () => {
-		it('re-parses from current value on invalidate', () => {
-			mountWith('test')
-			store.tokens.invalidate()
-			expect(store.tokens.current()).toEqual([{type: 'text', content: 'test', position: {start: 0, end: 4}}])
+		it('re-parses when Mark is added or removed', () => {
+			mountWith('first')
+			store.props.set({Mark: undefined})
+			store.value.current('second')
+			store.props.set({Mark: () => null})
+			expect(store.tokens.current()).toEqual([{type: 'text', content: 'second', position: {start: 0, end: 6}}])
 		})
 	})
 

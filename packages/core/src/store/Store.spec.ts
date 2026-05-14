@@ -21,11 +21,6 @@ describe('Store', () => {
 		expect(store.props.options()).toEqual(DEFAULT_OPTIONS)
 	})
 
-	it('have events', () => {
-		const store = new Store()
-		expect(typeof store.tokens.invalidate).toBe('function')
-	})
-
 	describe('handler', () => {
 		it('return an object with container, overlay, and focus properties', () => {
 			const store = new Store()
@@ -87,7 +82,7 @@ describe('Store', () => {
 			effectSpy.mockClear()
 			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
-				store.tokens.set([token])
+				store.tokens.current([token])
 				store.selection.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
