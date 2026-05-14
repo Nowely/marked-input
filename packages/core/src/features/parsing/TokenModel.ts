@@ -7,6 +7,7 @@ import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {Parser} from './parser/Parser'
 import type {Token} from './parser/types'
+import {createTextToken} from './parser/utils/createTextToken'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 import {serializeRange as serializeRangeUtil} from './utils/serializeRange'
 
@@ -24,16 +25,12 @@ export class TokenModel {
 
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		if (!this.#markEnabled()) return
-
 		const markups = this.props.options().map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
-
 		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
 	})
 
 	readonly invalidate = event()
-
-	#scope?: () => void
 
 	constructor(
 		private readonly lifecycle: Lifecycle,
@@ -42,31 +39,34 @@ export class TokenModel {
 		private readonly slots: SlotsFeature
 	) {
 		lifecycle.onMounted(() => {
-			// Parse current value immediately so tokens are ready before other
-			// mounted subscribers (like OverlayController) read them.
+			// Parse the initial value before any other onMounted subscriber
+			// (e.g. OverlayController) reads tokens.
 			this.#update()
-			this.#watchValue()
+			watch(this.value.current, () => this.#update())
+
+			let scope: (() => void) | undefined
+			const reparseIfEnabled = () => {
+				if (this.#markEnabled()) this.#update()
+			}
+			const toggle = (enabled: boolean) => {
+				if (enabled && !scope) {
+					scope = effectScope(() => {
+						watch(this.#parser, reparseIfEnabled)
+						watch(this.invalidate, reparseIfEnabled)
+					})
+				}
+				if (!enabled && scope) {
+					scope()
+					scope = undefined
+				}
+			}
+			watch(this.#markEnabled, toggle)
+			toggle(this.#markEnabled())
 		})
-
-		const toggle = (enabled: boolean) => {
-			if (enabled && !this.#scope) {
-				this.#scope = effectScope(() => {
-					this.#watchParser()
-					this.#watchInvalidate()
-				})
-			}
-			if (!enabled && this.#scope) {
-				this.#scope()
-				this.#scope = undefined
-			}
-		}
-
-		watch(this.#markEnabled, toggle)
-		toggle(this.#markEnabled())
 	}
 
 	serializeRange(range: Range): string {
-		return serializeRangeUtil(this.current(), range)
+		return serializeRangeUtil(this.#current(), range)
 	}
 
 	set(tokens: Token[]): void {
@@ -81,28 +81,11 @@ export class TokenModel {
 
 	#parse(value: string): Token[] {
 		const parser = this.#parser()
-		if (!parser) {
-			return [{type: 'text' as const, content: value, position: {start: 0, end: value.length}}]
-		}
+		if (!parser) return [createTextToken(value)]
 		return parser.parse(value)
 	}
 
 	#update(): void {
 		this.set(this.#parse(this.value.current()))
-	}
-
-	#watchValue(): void {
-		watch(this.value.current, () => this.#update())
-	}
-
-	#watchParser(): void {
-		watch(
-			computed(() => this.#parser()),
-			() => this.#update()
-		)
-	}
-
-	#watchInvalidate(): void {
-		watch(this.invalidate, () => this.#update())
 	}
 }
