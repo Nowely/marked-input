@@ -1,5 +1,5 @@
 import type {NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {batch, computed, signal, watch} from '../../shared/signals/index.js'
+import {batch, signal, watch} from '../../shared/signals/index.js'
 import type {Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
@@ -61,10 +61,7 @@ export class DomIndexer {
 			watch(lifecycle.rendered, () => {
 				this.#handleRendered()
 			})
-			watch(
-				computed(() => props.readOnly()),
-				() => this.reconcile()
-			)
+			watch(props.readOnly, () => this.reconcile())
 			watch(host.isUserSelecting, () => this.reconcile())
 		})
 	}
