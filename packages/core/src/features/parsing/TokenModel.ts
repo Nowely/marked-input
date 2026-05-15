@@ -19,10 +19,12 @@ export class TokenModel {
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
 		const Mark = this.props.Mark()
 		const options = this.props.options()
+		// TODO maybe in the future it place in one again
 		const hasMark = Mark != null || options.some(opt => 'Mark' in opt && opt.Mark != null)
 		if (!hasMark) return
 		const markups = options.map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
+		//TODO this.slots.isBlock() smelling here
 		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
 	})
 
