@@ -30,9 +30,11 @@ export class TokenModel {
 		private readonly slots: SlotsFeature
 	) {
 		lifecycle.onMounted(() => {
-			this.#reparse()
-			watch(this.value.current, () => this.#reparse())
-			watch(this.#parser, () => this.#reparse())
+			watch(
+				() => [this.value.current(), this.#parser()],
+				() => this.#reparse(),
+				{immediate: true}
+			)
 		})
 	}
 
