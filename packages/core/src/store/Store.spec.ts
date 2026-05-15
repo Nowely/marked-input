@@ -7,7 +7,7 @@ import {Store} from './Store'
 describe('Store', () => {
 	it('construct with no arguments', () => {
 		const store = new Store()
-		expect(store.tokens.current()).toEqual([])
+		expect(store.tokens.current()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
 		expect(store.props.readOnly()).toBe(false)
 	})
 
@@ -68,7 +68,7 @@ describe('Store', () => {
 			const store = new Store()
 			store.dom.isUserSelecting(true)
 			expect(store.dom.isUserSelecting()).toBe(true)
-			expect(store.tokens.current()).toEqual([])
+			expect(store.tokens.current()).toEqual([{type: 'text', content: '', position: {start: 0, end: 0}}])
 		})
 
 		it('batch multiple internal writes so effects fire once', () => {
@@ -80,9 +80,8 @@ describe('Store', () => {
 				effectSpy()
 			})
 			effectSpy.mockClear()
-			const token = {type: 'text' as const, content: 'a', position: {start: 0, end: 1}}
 			batch(() => {
-				store.tokens.current([token])
+				store.value.current('a')
 				store.dom.isUserSelecting(true)
 			})
 			expect(effectSpy).toHaveBeenCalledTimes(1)
@@ -112,11 +111,13 @@ describe('Store', () => {
 			// Should not throw
 		})
 
-		it('does not modify state when props.set is called', () => {
+		it('reflects controlled value via tokens without changing internal state', () => {
 			const store = new Store()
-			const tokensBefore = store.tokens.current()
-			store.props.set({value: 'test'})
-			expect(store.tokens.current()).toBe(tokensBefore)
+			store.value.current('internal')
+			store.props.set({value: 'controlled'})
+			expect(store.value.current()).toBe('controlled')
+			store.props.set({value: undefined})
+			expect(store.value.current()).toBe('internal')
 		})
 
 		it('ignores direct signal writes on props (readonly guard)', () => {

@@ -1,7 +1,6 @@
-import {signal, computed, watch} from '../../shared/signals/index.js'
-import type {Computed, Signal} from '../../shared/signals/index.js'
+import {computed} from '../../shared/signals/index.js'
+import type {Computed} from '../../shared/signals/index.js'
 import type {SlotsFeature} from '../slots/SlotsFeature'
-import type {Lifecycle} from '../state/Lifecycle'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {Parser} from './parser/Parser'
@@ -10,7 +9,11 @@ import {createTextToken} from './parser/utils/createTextToken'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 
 export class TokenModel {
-	readonly current: Signal<Token[]> = signal<Token[]>([])
+	readonly current: Computed<Token[]> = computed(() => {
+		const parser = this.#parser()
+		const value = this.value.current()
+		return parser ? parser.parse(value) : [createTextToken(value)]
+	})
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
 
 	readonly #parser: Computed<Parser | undefined> = computed(() => {
@@ -24,23 +27,8 @@ export class TokenModel {
 	})
 
 	constructor(
-		lifecycle: Lifecycle,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel,
 		private readonly slots: SlotsFeature
-	) {
-		lifecycle.onMounted(() => {
-			watch(
-				() => [this.value.current(), this.#parser()],
-				() => this.#reparse(),
-				{immediate: true}
-			)
-		})
-	}
-
-	#reparse(): void {
-		const parser = this.#parser()
-		const value = this.value.current()
-		this.current(parser ? parser.parse(value) : [createTextToken(value)])
-	}
+	) {}
 }
