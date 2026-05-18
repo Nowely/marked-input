@@ -520,21 +520,41 @@ export function effectScope(fn: () => void): () => void {
 // watch() — skip-first-run helper for event subscriptions
 // ---------------------------------------------------------------------------
 
-export function watch<T>(dep: Signal<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
-export function watch<T>(dep: Event<T>, fn: (newValue: T, oldValue: T | undefined) => void): () => void
-export function watch<T>(dep: () => T, fn: (newValue: T, oldValue: T | undefined) => void): () => void
+interface WatchOptions {
+	immediate?: boolean
+}
+
+export function watch<T>(
+	dep: Signal<T>,
+	fn: (newValue: T, oldValue: T | undefined) => void,
+	opts?: WatchOptions
+): () => void
+export function watch<T>(
+	dep: Event<T>,
+	fn: (newValue: T, oldValue: T | undefined) => void,
+	opts?: WatchOptions
+): () => void
+export function watch<T>(
+	dep: () => T,
+	fn: (newValue: T, oldValue: T | undefined) => void,
+	opts?: WatchOptions
+): () => void
 export function watch<T>(
 	dep: Signal<T> | Event<T> | (() => T),
-	fn: (newValue: T, oldValue: T | undefined) => void
+	fn: (newValue: T, oldValue: T | undefined) => void,
+	opts?: WatchOptions
 ): () => void {
 	let initialized = false
 	let oldValue: T | undefined
 	return effect(() => {
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit, but watch skips the first run so callback always receives T
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- Event<T> returns T | undefined before first emit; callers using watch() with Event must accept that the first immediate call may pass undefined when the event has not yet emitted
 		const newValue = ('read' in dep ? dep.read() : dep()) as T
 		if (!initialized) {
 			initialized = true
 			oldValue = newValue
+			if (opts?.immediate) {
+				untracked(() => fn(newValue, undefined))
+			}
 			return
 		}
 		const prev = oldValue

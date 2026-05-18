@@ -1,11 +1,6 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest'
 
 import {Store} from '../../store/Store'
-import type {TextToken} from '../parsing'
-
-function text(content: string, start: number): TextToken {
-	return {type: 'text', content, position: {start, end: start + content.length}}
-}
 
 describe('BlockController', () => {
 	let store: Store
@@ -40,10 +35,14 @@ describe('BlockController', () => {
 	})
 
 	it('commits drag edits through current() and writes caret.selection', () => {
-		store.props.set({layout: 'block', draggable: true})
+		store.props.set({
+			layout: 'block',
+			draggable: true,
+			Mark: () => null,
+			options: [{markup: '__slot__\n\n'}],
+		})
 		store.lifecycle.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
-		store.tokens.current([text('alpha', 0), text('beta', 7)])
 		const currentSpy = vi.spyOn(store.value, 'current')
 
 		store.block.action({type: 'delete', index: 0})

@@ -1,5 +1,5 @@
 import type {NodeLocationResult, TokenAddress, TokenPath} from '../../shared/editorContracts'
-import {batch, computed, signal, watch} from '../../shared/signals/index.js'
+import {batch, signal, watch} from '../../shared/signals/index.js'
 import type {Signal} from '../../shared/signals/index.js'
 import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
@@ -58,13 +58,11 @@ export class DomIndexer {
 		private readonly tokens: TokenModel
 	) {
 		lifecycle.onMounted(() => {
-			watch(lifecycle.rendered, () => {
-				this.#handleRendered()
-			})
-			watch(
-				computed(() => props.readOnly()),
-				() => this.reconcile()
-			)
+			// Container mounts before MarkedInput, so the first lifecycle.rendered()
+			// is emitted before this watch subscribes. Run the initial commit here
+			// instead of relying on a follow-up rendered event.
+			watch(lifecycle.rendered, () => this.#handleRendered(), {immediate: true})
+			watch(props.readOnly, () => this.reconcile())
 			watch(host.isUserSelecting, () => this.reconcile())
 		})
 	}

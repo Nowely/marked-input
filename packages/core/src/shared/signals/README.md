@@ -206,9 +206,9 @@ stop()
 count(2) // no output — both effects cleaned up
 ```
 
-### `watch(source, callback)`
+### `watch(source, callback, options?)`
 
-Watches a reactive source for changes. Skips the first run (unlike `effect`), and provides the previous value to the callback.
+Watches a reactive source for changes. Skips the first run by default (unlike `effect`); pass `{immediate: true}` to fire on the first run as well. Provides the previous value to the callback.
 
 ```ts
 const count = signal(0)
@@ -219,6 +219,23 @@ const dispose = watch(count, (newVal, oldVal) => {
 
 count(1) // Console: 0 -> 1
 count(5) // Console: 1 -> 5
+```
+
+To run the callback immediately (not just on changes), pass `{immediate: true}`. The first call receives `(currentValue, undefined)`:
+
+```ts
+const count = signal(5)
+
+watch(
+    count,
+    (newVal, oldVal) => {
+        console.log(`${oldVal} -> ${newVal}`)
+    },
+    {immediate: true}
+)
+// Console: undefined -> 5
+count(10)
+// Console: 5 -> 10
 ```
 
 Accepts three source types:

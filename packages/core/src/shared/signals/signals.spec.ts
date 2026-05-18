@@ -631,6 +631,45 @@ describe('watch()', () => {
 
 		expect(seen).toEqual(['b', 'c'])
 	})
+
+	it('fires callback immediately when immediate: true', () => {
+		const s = signal(0)
+		const fn = vi.fn()
+
+		const dispose = watch(s, fn, {immediate: true})
+		disposers.push(dispose)
+
+		expect(fn).toHaveBeenCalledTimes(1)
+		expect(fn).toHaveBeenCalledWith(0, undefined)
+
+		s(1)
+		expect(fn).toHaveBeenCalledTimes(2)
+		expect(fn).toHaveBeenCalledWith(1, 0)
+	})
+
+	it('disposer stops future calls with immediate: true', () => {
+		const s = signal(0)
+		const fn = vi.fn()
+
+		const dispose = watch(s, fn, {immediate: true})
+		disposers.push(dispose)
+
+		expect(fn).toHaveBeenCalledTimes(1)
+
+		dispose()
+		s(1)
+		expect(fn).toHaveBeenCalledTimes(1)
+	})
+
+	it('defaults to skip-first-run when immediate is omitted', () => {
+		const s = signal(0)
+		const fn = vi.fn()
+
+		const dispose = watch(s, fn)
+		disposers.push(dispose)
+
+		expect(fn).not.toHaveBeenCalled()
+	})
 })
 
 // ---------------------------------------------------------------------------
