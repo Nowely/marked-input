@@ -58,9 +58,10 @@ export class DomIndexer {
 		private readonly tokens: TokenModel
 	) {
 		lifecycle.onMounted(() => {
-			watch(lifecycle.rendered, () => {
-				this.#handleRendered()
-			})
+			// Container mounts before MarkedInput, so the first lifecycle.rendered()
+			// is emitted before this watch subscribes. Run the initial commit here
+			// instead of relying on a follow-up rendered event.
+			watch(lifecycle.rendered, () => this.#handleRendered(), {immediate: true})
 			watch(props.readOnly, () => this.reconcile())
 			watch(host.isUserSelecting, () => this.reconcile())
 		})
