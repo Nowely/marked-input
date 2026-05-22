@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.14.2](https://github.com/Nowely/marked-input/compare/0.14.1...0.14.2) (2026-05-22)
+
+
+### Refactoring
+
+* **caret:** consolidate caret placement into CaretModel ([#245](https://github.com/Nowely/marked-input/issues/245)) ([c12e7f6](https://github.com/Nowely/marked-input/commit/c12e7f6fdce53e2f68702bb30049ff0a8d90c85f))
+* **core:** dead-code cleanup and keyboard deduplication ([#249](https://github.com/Nowely/marked-input/issues/249)) ([d41317e](https://github.com/Nowely/marked-input/commit/d41317ec5c406f008dd686e0b934bad0ed126f14))
+* **core:** decouple TokenModel from SlotsFeature and clean up Store initialization ([#251](https://github.com/Nowely/marked-input/issues/251)) ([6072273](https://github.com/Nowely/marked-input/commit/6072273900b70e52aae58a99dc383a4d7520d015))
+* **core:** derive tokens from computed, add watch immediate option ([#250](https://github.com/Nowely/marked-input/issues/250)) ([01482f5](https://github.com/Nowely/marked-input/commit/01482f58f7d419e0830c350ff5dc474970840862))
+* **core:** rename ParseController→TokenModel and CaretModel→SelectionController ([#247](https://github.com/Nowely/marked-input/issues/247)) ([0962102](https://github.com/Nowely/marked-input/commit/096210229b20e6c20ea93ed3872363a1c25e379b))
+* **core:** reorganize features into block/parsing/state modules ([#246](https://github.com/Nowely/marked-input/issues/246)) ([647f7d7](https://github.com/Nowely/marked-input/commit/647f7d73050a5854795db661d02940f917fded62))
+* **dom:** split DomModel into focused subsystems ([#243](https://github.com/Nowely/marked-input/issues/243)) ([df86f3e](https://github.com/Nowely/marked-input/commit/df86f3e2a9536103ac39da9dae426e0b2fb626f7))
+* **parsing:** simplify TokenModel, slots, and remove unused abstractions ([#248](https://github.com/Nowely/marked-input/issues/248)) ([b8f318b](https://github.com/Nowely/marked-input/commit/b8f318bfb3b75f35b315d71c85539447705b4135))
+
 ## [0.14.1](https://github.com/Nowely/marked-input/compare/0.14.0...0.14.1) (2026-05-13)
 
 
