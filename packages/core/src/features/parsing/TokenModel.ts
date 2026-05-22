@@ -1,6 +1,5 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {Parser} from './parser/Parser'
@@ -24,13 +23,11 @@ export class TokenModel {
 		if (!hasMark) return
 		const markups = options.map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
-		//TODO this.slots.isBlock() smelling here
-		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
+		return new Parser(markups, this.props.layout() === 'block' ? {skipEmptyText: true} : undefined)
 	})
 
 	constructor(
 		private readonly value: ValueModel,
-		private readonly props: PropsModel,
-		private readonly slots: SlotsFeature
+		private readonly props: PropsModel
 	) {}
 }
