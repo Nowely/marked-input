@@ -7,13 +7,6 @@ import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 
-function filterEmptyText(tokens: Token[]): Token[] {
-	return tokens.filter(token => {
-		if (token.type !== 'text') return true
-		return token.position.start !== token.position.end
-	})
-}
-
 export class TokenModel {
 	readonly current: Computed<Token[]> = computed(() => {
 		const parser = this.#parser()
@@ -38,4 +31,11 @@ export class TokenModel {
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {}
+}
+
+function filterEmptyText(tokens: Token[]): Token[] {
+	return tokens.filter(token => {
+		if (token.type !== 'text') return true
+		return token.position.start !== token.position.end
+	})
 }
