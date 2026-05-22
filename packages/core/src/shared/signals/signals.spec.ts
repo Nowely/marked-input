@@ -356,6 +356,80 @@ describe('signal<T>', () => {
 })
 
 // ---------------------------------------------------------------------------
+// signal<T> with computed views
+// ---------------------------------------------------------------------------
+
+describe('signal<T> with computed views', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('expose attached computeds as Computed values', () => {
+		const layout = signal('inline' as 'inline' | 'block', {
+			computed: self => ({
+				isBlock: () => self() === 'block',
+			}),
+		})
+		const isBlockResult: boolean = layout.isBlock()
+		expect(typeof layout.isBlock).toBe('function')
+		expect(isBlockResult).toBe(false)
+		expect(isReactive(layout.isBlock)).toBe(true)
+	})
+
+	it('recompute attached views when the signal updates', () => {
+		const layout = signal('inline' as 'inline' | 'block', {
+			computed: self => ({
+				isBlock: () => self() === 'block',
+			}),
+		})
+
+		const runs = vi.fn()
+		trackedEffect(() => {
+			layout.isBlock()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+
+		layout('block')
+		expect(layout.isBlock()).toBe(true)
+		expect(runs).toHaveBeenCalledTimes(2)
+	})
+
+	it('still treat the augmented value as a normal signal', () => {
+		const layout = signal('inline' as 'inline' | 'block', {
+			computed: self => ({isBlock: () => self() === 'block'}),
+		})
+		expect(isReactive(layout)).toBe(true)
+		layout('block')
+		expect(layout()).toBe('block')
+	})
+
+	it('support multiple computed views on one signal', () => {
+		const layout = signal('inline' as 'inline' | 'block', {
+			computed: self => ({
+				isBlock: () => self() === 'block',
+				isInline: () => self() === 'inline',
+			}),
+		})
+		expect(layout.isBlock()).toBe(false)
+		expect(layout.isInline()).toBe(true)
+		layout('block')
+		expect(layout.isBlock()).toBe(true)
+		expect(layout.isInline()).toBe(false)
+	})
+
+	it('honor readonly while still exposing computed views', () => {
+		const layout = signal('inline' as 'inline' | 'block', {
+			readonly: true,
+			computed: self => ({isBlock: () => self() === 'block'}),
+		})
+		expect(layout.isBlock()).toBe(false)
+		// Readonly signals reject external writes by returning false without mutating
+		expect(layout('block')).toBe(false)
+		expect(layout()).toBe('inline')
+		expect(layout.isBlock()).toBe(false)
+	})
+})
+
+// ---------------------------------------------------------------------------
 // event<T>()
 // ---------------------------------------------------------------------------
 

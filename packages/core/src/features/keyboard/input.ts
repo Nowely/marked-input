@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -34,7 +34,7 @@ export function enableInput(store: KbCtx): void {
 		const range = compositionRange
 		compositionRange = undefined
 		store.dom.compositionEnded()
-		if (store.slots.isBlock()) return
+		if (store.props.layout.isBlock()) return
 		if (!range) return
 		const data = e.data
 		store.edit.replace(range, data)
@@ -55,7 +55,7 @@ export function enableInput(store: KbCtx): void {
 }
 
 function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
-	if (store.slots.isBlock()) return
+	if (store.props.layout.isBlock()) return
 	if (event.key !== KEYBOARD.BACKSPACE && event.key !== KEYBOARD.DELETE) return
 
 	if (store.selection.isAllSelected()) {
@@ -87,7 +87,7 @@ export function handleBeforeInput(store: KbCtx, event: InputEvent): void {
 		return
 	}
 
-	if (store.slots.isBlock()) return
+	if (store.props.layout.isBlock()) return
 
 	const raw = rawRangeFromInputEvent(store, event)
 	if (!raw.ok) return

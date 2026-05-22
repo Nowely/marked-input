@@ -35,8 +35,7 @@ export class Parser {
 	 *   - `__meta__` - metadata (plain text, no nesting)
 	 *   - `__slot__` - content supporting nested structures
 	 *   - `undefined` - skipped, but original array indices are preserved for descriptor matching
-	 * @param options - Optional parse options to control token output:
-	 *   - `skipEmptyText` - drop zero-length TextTokens (where start === end)
+	 * @param options - Optional parse options to control token output
 	 *
 	 * @example
 	 * ```typescript
@@ -53,7 +52,7 @@ export class Parser {
 		this.segmentMatcher = new SegmentMatcher(this.registry.segments)
 		this.patternMatcher = new PatternMatcher(this.registry)
 		this.parseOptions = options ?? {}
-		this.treeBuilder = new TreeBuilder(this.parseOptions)
+		this.treeBuilder = new TreeBuilder()
 	}
 
 	/**

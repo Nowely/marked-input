@@ -2,14 +2,14 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'selection' | 'slots' | 'tokens'>
+type KbCtx = Pick<Store, 'dom' | 'selection' | 'props' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx): void {
 	const container = store.dom.container()
 	if (!container) return
 
 	listen(container, 'keydown', e => {
-		if (store.slots.isBlock()) return
+		if (store.props.layout.isBlock()) return
 
 		if (e.key === KEYBOARD.LEFT) {
 			shiftFocus(store, e, 'prev')
@@ -18,7 +18,7 @@ export function enableArrowNav(store: KbCtx): void {
 		}
 
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
-			if (store.slots.isBlock()) return
+			if (store.props.layout.isBlock()) return
 			e.preventDefault()
 			store.selection.selectAll()
 		}

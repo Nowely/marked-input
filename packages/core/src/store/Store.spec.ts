@@ -286,49 +286,50 @@ describe('Store', () => {
 		it('return false when layout is inline', () => {
 			const store = new Store()
 			store.props.set({layout: 'inline'})
-			expect(store.slots.isBlock()).toBe(false)
+			expect(store.props.layout.isBlock()).toBe(false)
 		})
 
 		it('return true when layout is block', () => {
 			const store = new Store()
 			store.props.set({layout: 'block'})
-			expect(store.slots.isBlock()).toBe(true)
+			expect(store.props.layout.isBlock()).toBe(true)
 		})
 
 		it('default to false', () => {
 			const store = new Store()
-			expect(store.slots.isBlock()).toBe(false)
+			expect(store.props.layout.isBlock()).toBe(false)
 		})
 	})
 
-	describe('isDragEnabled', () => {
-		it('returns false when layout is inline even if draggable is true', () => {
+	describe('drag-enabled container padding', () => {
+		it('skip drag-handle padding when layout is inline even if draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'inline', draggable: true})
-			expect(store.slots.isDragEnabled()).toBe(false)
+			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 
-		it('returns false when draggable is false', () => {
+		it('skip drag-handle padding when draggable is false', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: false})
-			expect(store.slots.isDragEnabled()).toBe(false)
+			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 
-		it('returns true when layout is block and draggable is true', () => {
+		it('apply drag-handle padding when layout is block and draggable is true', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: true})
-			expect(store.slots.isDragEnabled()).toBe(true)
+			expect(store.slots.containerProps().style?.paddingLeft).toBe(24)
 		})
 
-		it('returns true when layout is block and draggable is a DraggableConfig', () => {
+		it('apply drag-handle padding when draggable is a DraggableConfig', () => {
 			const store = new Store()
 			store.props.set({layout: 'block', draggable: {alwaysShowHandle: true}})
-			expect(store.slots.isDragEnabled()).toBe(true)
+			expect(store.slots.containerProps().style?.paddingLeft).toBe(24)
 		})
 
-		it('defaults to false', () => {
+		it('skip drag-handle padding in read-only mode', () => {
 			const store = new Store()
-			expect(store.slots.isDragEnabled()).toBe(false)
+			store.props.set({layout: 'block', draggable: true, readOnly: true})
+			expect(store.slots.containerProps().style?.paddingLeft).toBeUndefined()
 		})
 	})
 

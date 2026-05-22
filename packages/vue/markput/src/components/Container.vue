@@ -8,7 +8,7 @@ import Token from './Token.vue'
 
 const store = useStore()
 const result = useMarkput(s => ({
-	isBlock: s.slots.isBlock,
+	isBlock: s.props.layout.isBlock,
 	tokens: s.tokens.current,
 	key: s.key,
 }))

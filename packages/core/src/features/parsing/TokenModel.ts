@@ -1,6 +1,5 @@
 import {computed} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {Parser} from './parser/Parser'
@@ -12,7 +11,8 @@ export class TokenModel {
 	readonly current: Computed<Token[]> = computed(() => {
 		const parser = this.#parser()
 		const value = this.value.current()
-		return parser ? parser.parse(value) : [createTextToken(value)]
+		const tokens = parser ? parser.parse(value) : [createTextToken(value)]
+		return this.props.layout.isBlock() ? filterEmptyText(tokens) : tokens
 	})
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
 
@@ -24,13 +24,18 @@ export class TokenModel {
 		if (!hasMark) return
 		const markups = options.map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
-		//TODO this.slots.isBlock() smelling here
-		return new Parser(markups, this.slots.isBlock() ? {skipEmptyText: true} : undefined)
+		return new Parser(markups)
 	})
 
 	constructor(
 		private readonly value: ValueModel,
-		private readonly props: PropsModel,
-		private readonly slots: SlotsFeature
+		private readonly props: PropsModel
 	) {}
+}
+
+function filterEmptyText(tokens: Token[]): Token[] {
+	return tokens.filter(token => {
+		if (token.type !== 'text') return true
+		return token.position.start !== token.position.end
+	})
 }

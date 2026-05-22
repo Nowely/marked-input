@@ -4,7 +4,6 @@ import type {DragAction} from '../../shared/types'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {SelectionController} from '../selection/SelectionController'
-import type {SlotsFeature} from '../slots/SlotsFeature'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {createRowContent} from './createRowContent'
@@ -18,11 +17,10 @@ export class BlockController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
-		private readonly selection: SelectionController,
-		slots: SlotsFeature
+		private readonly selection: SelectionController
 	) {
 		watch(this.action, action => {
-			if (!slots.isDragEnabled()) return
+			if (!this.props.layout.isBlock() || !this.props.draggable()) return
 			switch (action.type) {
 				case 'reorder':
 					this.#reorder(action)

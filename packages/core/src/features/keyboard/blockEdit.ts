@@ -4,7 +4,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'slots' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
@@ -22,7 +22,7 @@ export function enableBlockEdit(store: KbCtx): void {
 	if (!container) return
 
 	listen(container, 'keydown', e => {
-		if (!store.slots.isBlock()) return
+		if (!store.props.layout.isBlock()) return
 
 		if (e.key === KEYBOARD.LEFT || e.key === KEYBOARD.RIGHT) {
 			handleBlockArrowLeftRight(store, e, e.key === KEYBOARD.LEFT ? 'left' : 'right')
@@ -38,7 +38,7 @@ export function enableBlockEdit(store: KbCtx): void {
 		container,
 		'beforeinput',
 		e => {
-			if (!store.slots.isBlock()) return
+			if (!store.props.layout.isBlock()) return
 			if (e.defaultPrevented) return
 			handleBlockBeforeInput(store, e)
 		},

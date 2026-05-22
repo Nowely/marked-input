@@ -348,9 +348,24 @@ interface SignalOptions<T> {
 	readonly?: boolean
 }
 
+export type ComputedRecord<C> = {
+	readonly [K in keyof C]: C[K] extends () => infer R ? Computed<R> : never
+}
+
+interface SignalOptionsWithComputed<T, C> extends SignalOptions<T> {
+	computed: (self: Signal<T>) => C
+}
+
+export function signal<T, C extends Record<string, () => unknown> = Record<string, () => unknown>>(
+	initial: T,
+	opts: SignalOptionsWithComputed<T, C>
+): Signal<T> & ComputedRecord<C>
 export function signal<T = never>(initial: undefined, opts?: SignalOptions<T | undefined>): Signal<T | undefined>
 export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T>
-export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
+export function signal<T>(
+	initial: T,
+	opts?: SignalOptions<T> | SignalOptionsWithComputed<T, Record<string, () => unknown>>
+): Signal<T> {
 	const node: SignalNode<T> = {
 		currentValue: initial,
 		pendingValue: initial,
@@ -363,9 +378,20 @@ export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T> {
 		flags: ReactiveFlags.Mutable,
 	}
 	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	return (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | boolean).bind(
+	const bound = (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | boolean).bind(
 		node
 	) as unknown as Signal<T>
+
+	if (opts && 'computed' in opts) {
+		const getters = opts.computed(bound)
+		const views: Record<string, Computed<unknown>> = {}
+		for (const key of Object.keys(getters)) {
+			views[key] = computed(getters[key])
+		}
+		Object.assign(bound, views)
+	}
+
+	return bound
 }
 
 // ---------------------------------------------------------------------------

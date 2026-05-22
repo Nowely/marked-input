@@ -148,7 +148,7 @@ export class DomIndexer {
 		}
 
 		const tokens = this.tokens.current()
-		if (this.props.layout() === 'block') {
+		if (this.props.layout.isBlock()) {
 			this.#indexBlockTokens(container, tokens, tokenIndex, controlElements, pathElements, elementRoles)
 		} else {
 			this.#indexTokenSequence(

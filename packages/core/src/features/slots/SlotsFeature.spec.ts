@@ -8,17 +8,8 @@ describe('SlotsFeature', () => {
 		expect('container' in store.slots).toBe(false)
 	})
 
-	it('exposes layout slot computed values', () => {
-		const store = new Store()
-		expect(store.slots.isBlock()).toBe(false)
-		expect(store.slots.isDragEnabled()).toBe(false)
-		expect(typeof store.slots.containerComponent()).toBeTruthy()
-	})
-
 	it('exposes every slot computed', () => {
 		const store = new Store()
-		expect(typeof store.slots.isBlock()).toBe('boolean')
-		expect(typeof store.slots.isDragEnabled()).toBe('boolean')
 		expect(typeof store.slots.containerComponent()).toBeTruthy()
 		expect(typeof store.slots.containerProps()).toBe('object')
 		expect(typeof store.slots.blockComponent()).toBeTruthy()

@@ -21,10 +21,9 @@ export class Store {
 	readonly lifecycle = new Lifecycle()
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
+	readonly tokens = new TokenModel(this.value, this.props)
 
 	readonly slots = new SlotsFeature(this.props)
-
-	readonly tokens = new TokenModel(this.value, this.props, this.slots)
 
 	readonly dom = new DomModel(this.lifecycle, this.props, this.tokens)
 
@@ -46,11 +45,10 @@ export class Store {
 		this.value,
 		this.selection,
 		this.edit,
-		this.slots,
 		this.tokens,
 		this.props
 	)
-	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection, this.slots)
+	readonly block = new BlockController(this.props, this.value, this.tokens, this.selection)
 	readonly clipboard = new ClipboardController(this.lifecycle, this.edit, this.dom, this.tokens)
 
 	readonly handler = new MarkputHandler(this.dom, this.overlay, this.selection)

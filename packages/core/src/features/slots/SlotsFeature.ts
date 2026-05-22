@@ -34,16 +34,12 @@ function buildContainerProps(
 }
 
 export class SlotsFeature {
-	readonly isBlock: Computed<boolean> = computed(() => this.props.layout() === 'block')
-	readonly isDragEnabled: Computed<boolean> = computed(
-		() => this.props.layout() === 'block' && !!this.props.draggable()
-	)
 	readonly containerComponent: Computed<Slot> = computed(() => resolveSlot('container', this.props.slots()))
 	readonly containerProps: Computed<{className: string | undefined; style?: CSSProperties; [key: string]: unknown}> =
 		computed(
 			() =>
 				buildContainerProps(
-					this.isDragEnabled(),
+					this.props.layout.isBlock() && !!this.props.draggable(),
 					this.props.readOnly(),
 					this.props.className(),
 					this.props.style(),
