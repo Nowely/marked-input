@@ -8,7 +8,7 @@ export const Container = memo(() => {
 	const {dom, lifecycle, isBlock, tokens, key, Component, props} = useMarkput(s => ({
 		dom: s.dom,
 		lifecycle: s.lifecycle,
-		isBlock: s.slots.isBlock,
+		isBlock: s.props.layout.isBlock,
 		tokens: s.tokens.current,
 		key: s.key,
 		Component: s.slots.containerComponent,

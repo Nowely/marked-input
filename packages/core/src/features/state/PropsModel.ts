@@ -21,7 +21,12 @@ export class PropsModel {
 	readonly options = signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true})
 	readonly readOnly = signal<boolean>(false, {readonly: true})
 
-	readonly layout = signal<'inline' | 'block'>('inline', {readonly: true})
+	readonly layout = signal('inline' as 'inline' | 'block', {
+		readonly: true,
+		computed: self => ({
+			isBlock: () => self() === 'block',
+		}),
+	})
 	readonly draggable = signal<boolean | DraggableConfig>(false, {readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>('change', {readonly: true})

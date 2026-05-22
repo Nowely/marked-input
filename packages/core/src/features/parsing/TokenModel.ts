@@ -12,7 +12,7 @@ export class TokenModel {
 		const parser = this.#parser()
 		const value = this.value.current()
 		const tokens = parser ? parser.parse(value) : [createTextToken(value)]
-		return this.props.layout() === 'block' ? filterEmptyText(tokens) : tokens
+		return this.props.layout.isBlock() ? filterEmptyText(tokens) : tokens
 	})
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
 
