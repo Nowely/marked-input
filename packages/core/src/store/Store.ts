@@ -21,10 +21,9 @@ export class Store {
 	readonly lifecycle = new Lifecycle()
 	readonly props = new PropsModel()
 	readonly value = new ValueModel(this.props)
+	readonly tokens = new TokenModel(this.value, this.props)
 
 	readonly slots = new SlotsFeature(this.props)
-
-	readonly tokens = new TokenModel(this.value, this.props)
 
 	readonly dom = new DomModel(this.lifecycle, this.props, this.tokens)
 
