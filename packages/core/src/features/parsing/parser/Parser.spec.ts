@@ -1417,75 +1417,7 @@ describe('Parser', () => {
 		})
 	})
 
-	describe('ParseOptions', () => {
-		describe('skipEmptyText', () => {
-			it('removes zero-length text tokens', () => {
-				const parser = new Parser(markups, {skipEmptyText: true})
-				const result = parser.parse('@[hello](world)')
-
-				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: MARK "@[hello](world)" [0-15] [value="hello", meta="world"]"
-				`)
-			})
-
-			it('keeps non-empty text tokens', () => {
-				const parser = new Parser(markups, {skipEmptyText: true})
-				const result = parser.parse('Hello @[world](test) and #[tag]')
-
-				expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-					"0: TEXT "Hello " [0-6]
-					 1: MARK "@[world](test)" [6-20] [value="world", meta="test"]
-					 2: TEXT " and " [20-25]
-					 3: MARK "#[tag]" [25-31] [value="tag"]"
-				`)
-			})
-
-			it('preserves all text tokens in nested children', () => {
-				const parser = new Parser(['@[__slot__]', '#[__slot__]'], {skipEmptyText: true})
-				const result = parser.parse('@[hello #[world]]')
-
-				const mark = getMarkToken(result)
-				expect(mark.children).toHaveLength(3)
-				expect(mark.children[0].type).toBe('text')
-				expect(mark.children[0].content).toBe('hello ')
-				expect(mark.children[1].type).toBe('mark')
-				expect(mark.children[2].type).toBe('text')
-				expect(mark.children[2].position.start).toBe(mark.children[2].position.end)
-			})
-
-			it('handles adjacent marks by removing empty text between them', () => {
-				const parser = new Parser(markups, {skipEmptyText: true})
-				const result = parser.parse('#[tag1]#[tag2]#[tag3]')
-
-				expect(result).toHaveLength(3)
-				expect(result.every(t => t.type === 'mark')).toBe(true)
-			})
-
-			it('works via static Parser.parse()', () => {
-				const result = Parser.parse('@[hello](world)', {
-					markup: ['@[__value__](__meta__)'],
-					skipEmptyText: true,
-				})
-
-				expect(result).toHaveLength(1)
-				expect(result[0].type).toBe('mark')
-			})
-		})
-	})
-
 	describe('slot-leading single-segment patterns', () => {
-		it('parses __slot__\\n\\n into mark tokens with slot content', () => {
-			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
-			const result = parser.parse('First\n\nSecond\n\n')
-
-			expect(tokensToDebugTree(result)).toMatchInlineSnapshot(`
-				"0: MARK "First↲↲" [0-7] [value="", slot="First"]
-					0.0: TEXT "First" [0-5]
-				 1: MARK "Second↲↲" [7-15] [value="", slot="Second"]
-					1.0: TEXT "Second" [7-13]"
-			`)
-		})
-
 		it('produces correct token structure with boundary text tokens', () => {
 			const parser = new Parser(['__slot__\n\n'])
 			const result = parser.parse('First\n\nSecond\n\n')
@@ -1502,14 +1434,15 @@ describe('Parser', () => {
 		})
 
 		it('handles trailing text without delimiter as text token', () => {
-			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const parser = new Parser(['__slot__\n\n'])
 			const result = parser.parse('First\n\nTrailing')
 
-			expect(result).toHaveLength(2)
-			expect(result[0].type).toBe('mark')
-			expect(result[0].content).toBe('First\n\n')
-			expect(result[1].type).toBe('text')
-			expect(result[1].content).toBe('Trailing')
+			expect(result).toHaveLength(3)
+			expect(result[0].type).toBe('text')
+			expect(result[1].type).toBe('mark')
+			expect(result[1].content).toBe('First\n\n')
+			expect(result[2].type).toBe('text')
+			expect(result[2].content).toBe('Trailing')
 		})
 
 		it('handles empty input', () => {
@@ -1521,10 +1454,11 @@ describe('Parser', () => {
 		})
 
 		it('supports nesting with other markups', () => {
-			const parser = new Parser(['__slot__\n\n', '@[__value__]'], {skipEmptyText: true})
+			const parser = new Parser(['__slot__\n\n', '@[__value__]'])
 			const result = parser.parse('Hello @[world]\n\n')
 
-			expect(result).toHaveLength(1)
+			expect(result).toHaveLength(3)
+			expect(result[0].type).toBe('text')
 			const mark = getMarkToken(result)
 			expect(mark.type).toBe('mark')
 			expect(mark.content).toBe('Hello @[world]\n\n')
@@ -1533,14 +1467,7 @@ describe('Parser', () => {
 			expect(mark.children[0].content).toBe('Hello ')
 			expect(mark.children[1].type).toBe('mark')
 			expect(mark.children[2].type).toBe('text')
-		})
-
-		it('works with skipEmptyText', () => {
-			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
-			const result = parser.parse('First\n\nSecond\n\n')
-
-			expect(result).toHaveLength(2)
-			expect(result.every(t => t.type === 'mark')).toBe(true)
+			expect(result[2].type).toBe('text')
 		})
 
 		it('round-trips through Parser.stringify', () => {
@@ -1552,24 +1479,24 @@ describe('Parser', () => {
 		})
 
 		it('handles single paragraph', () => {
-			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const parser = new Parser(['__slot__\n\n'])
 			const result = parser.parse('Only\n\n')
 
-			expect(result).toHaveLength(1)
-			expect(result[0].type).toBe('mark')
-			expect(result[0].content).toBe('Only\n\n')
+			expect(result).toHaveLength(3)
+			expect(result[1].type).toBe('mark')
+			expect(result[1].content).toBe('Only\n\n')
 			const mark = getMarkToken(result)
 			expect(mark.value).toBe('')
 			expect(mark.slot?.content).toBe('Only')
 		})
 
 		it('handles empty slot content (just delimiter)', () => {
-			const parser = new Parser(['__slot__\n\n'], {skipEmptyText: true})
+			const parser = new Parser(['__slot__\n\n'])
 			const result = parser.parse('\n\n')
 
-			expect(result).toHaveLength(1)
-			expect(result[0].type).toBe('mark')
-			expect(result[0].content).toBe('\n\n')
+			expect(result).toHaveLength(3)
+			expect(result[1].type).toBe('mark')
+			expect(result[1].content).toBe('\n\n')
 		})
 	})
 })

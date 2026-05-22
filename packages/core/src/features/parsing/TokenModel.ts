@@ -7,11 +7,19 @@ import type {Token} from './parser/types'
 import {createTextToken} from './parser/utils/createTextToken'
 import {createTokenIndex, type TokenIndex} from './tokenIndex'
 
+function filterEmptyText(tokens: Token[]): Token[] {
+	return tokens.filter(token => {
+		if (token.type !== 'text') return true
+		return token.position.start !== token.position.end
+	})
+}
+
 export class TokenModel {
 	readonly current: Computed<Token[]> = computed(() => {
 		const parser = this.#parser()
 		const value = this.value.current()
-		return parser ? parser.parse(value) : [createTextToken(value)]
+		const tokens = parser ? parser.parse(value) : [createTextToken(value)]
+		return this.props.layout() === 'block' ? filterEmptyText(tokens) : tokens
 	})
 	readonly index: Computed<TokenIndex> = computed(() => createTokenIndex(this.current()))
 
@@ -23,7 +31,7 @@ export class TokenModel {
 		if (!hasMark) return
 		const markups = options.map(opt => opt.markup)
 		if (!markups.some(Boolean)) return
-		return new Parser(markups, this.props.layout() === 'block' ? {skipEmptyText: true} : undefined)
+		return new Parser(markups)
 	})
 
 	constructor(

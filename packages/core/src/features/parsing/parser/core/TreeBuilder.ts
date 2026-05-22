@@ -1,4 +1,4 @@
-import type {MarkToken, ParseOptions, PositionRange, TextToken, Token} from '../types'
+import type {MarkToken, PositionRange, TextToken, Token} from '../types'
 import {createTextToken} from '../utils/createTextToken'
 import type {Match} from './Match'
 
@@ -32,11 +32,6 @@ interface ParentContext {
 export class TreeBuilder {
 	// Instance fields - only what's needed for single pass
 	private input!: string
-	private readonly options: ParseOptions
-
-	constructor(options?: ParseOptions) {
-		this.options = options ?? {}
-	}
 
 	// ===== PUBLIC API =====
 
@@ -60,11 +55,10 @@ export class TreeBuilder {
 		this.input = input
 
 		if (matches.length === 0) {
-			return this.filterTokens([this.createTextToken(0, input.length)])
+			return [this.createTextToken(0, input.length)]
 		}
 
-		const tokens = this.buildSinglePass(matches)
-		return this.filterTokens(tokens)
+		return this.buildSinglePass(matches)
 	}
 
 	// ===== SINGLE-PASS ALGORITHM =====
@@ -250,17 +244,5 @@ export class TreeBuilder {
 			start: match.gaps.slot.start,
 			end: match.gaps.slot.end,
 		}
-	}
-
-	// ===== TOKEN FILTERING. TODO: Is a hack =====
-
-	private filterTokens(tokens: Token[]): Token[] {
-		const {skipEmptyText} = this.options
-		if (!skipEmptyText) return tokens
-
-		return tokens.filter(token => {
-			if (token.type !== 'text') return true
-			return token.position.start !== token.position.end
-		})
 	}
 }

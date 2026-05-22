@@ -93,4 +93,32 @@ describe('TokenModel', () => {
 			stop()
 		})
 	})
+
+	describe('block layout empty text filtering', () => {
+		it('filters out empty text tokens when layout is block', () => {
+			store.props.set({
+				Mark: () => null,
+				layout: 'block',
+				options: [{markup: '@[__value__]'}],
+				defaultValue: '@[hello]',
+			})
+			store.lifecycle.mounted()
+			expect(store.tokens.current()).toHaveLength(1)
+			expect(store.tokens.current()[0].type).toBe('mark')
+		})
+
+		it('does not filter out empty text tokens when layout is inline', () => {
+			store.props.set({
+				Mark: () => null,
+				layout: 'inline',
+				options: [{markup: '@[__value__]'}],
+				defaultValue: '@[hello]',
+			})
+			store.lifecycle.mounted()
+			expect(store.tokens.current()).toHaveLength(3)
+			expect(store.tokens.current()[0].type).toBe('text')
+			expect(store.tokens.current()[1].type).toBe('mark')
+			expect(store.tokens.current()[2].type).toBe('text')
+		})
+	})
 })
