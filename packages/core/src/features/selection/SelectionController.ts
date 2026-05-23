@@ -10,7 +10,7 @@ import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
 
 export class SelectionController {
-	readonly range = signal<Range>(undefined, {equals: shallow})
+	readonly range = signal<Range>({equals: shallow})
 	readonly position = computed({
 		get: () => this.range()?.start,
 		set: value => this.range(value !== undefined ? {start: value, end: value} : undefined),

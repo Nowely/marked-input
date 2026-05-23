@@ -20,53 +20,85 @@ Design principles:
 
 ## API
 
-### `signal<T>(initial, options?)`
+### `signal<T>(options?)`
 
-Creates a reactive state cell.
+Creates a reactive state cell. The single argument is an options object — there is no positional `initial`.
 
 ```ts
 import {signal} from './signals'
 
-const count = signal(0)
+const count = signal<number>({initial: 0})
 
 count() // 0 — read
 count(1) // write
 count() // 1
 ```
 
-**Default fallback.** If the signal was created with a non-`undefined` initial value, setting it to `undefined` reverts to that initial value:
+Writing `undefined` stores `undefined` literally — there is no "revert to initial" behavior. If `initial` is omitted, the signal starts at `undefined` and its type widens to `Signal<T | undefined>`.
 
 ```ts
-const mode = signal('edit')
-mode(undefined)
-mode() // 'edit' — reverted to default
+const slot = signal<string>() // Signal<string | undefined>
+slot() // undefined
+slot('a')
+slot() // 'a'
+slot(undefined)
+slot() // undefined — literal
 ```
-
-Signals created with `undefined` as initial have no default fallback — `undefined` is a valid value.
 
 **Options:**
 
 ```ts
-signal(
-    {id: 1, name: 'alice'},
-    {
-        equals: (a, b) => a.id === b.id, // custom equality — skips propagation when true
-        readonly: true, // ignores direct writes (see batch with mutable)
-    }
-)
+signal<{id: number; name: string}>({
+    initial: {id: 1, name: 'alice'},
+    equals: (a, b) => a.id === b.id, // custom equality — skips propagation when true
+    readonly: true, // ignores direct writes (see batch with mutable)
+})
 ```
 
-| Option     | Type                      | Default | Description                                             |
-| ---------- | ------------------------- | ------- | ------------------------------------------------------- |
-| `equals`   | `(a: T, b: T) => boolean` | `===`   | Return `true` to suppress propagation                   |
-| `readonly` | `boolean`                 | `false` | Block writes except inside `batch(fn, {mutable: true})` |
+When using a `computed` companion together with a union-typed `initial`, drop
+the explicit `<T>` argument and widen on `initial` instead — TS infers both
+the value type and the companion shape from the option object in one pass:
+
+```ts
+const layout = signal({
+    initial: 'inline' as 'inline' | 'block',
+    readonly: true,
+    computed: self => ({isBlock: () => self() === 'block'}),
+})
+layout.isBlock() // Computed<boolean>
+```
+
+| Option     | Type                                       | Default     | Description                                                                                                                                  |
+| ---------- | ------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initial`  | `T \| (() => T)`                           | `undefined` | Eager value, or a lazy factory called once in `untracked()` on first read/write. Factory form disallowed when `T` is itself a function type. |
+| `equals`   | `(a: T, b: T) => boolean`                  | `===`       | Return `true` to suppress propagation                                                                                                        |
+| `readonly` | `boolean`                                  | `false`     | Block writes except inside `batch(fn, {mutable: true})`                                                                                      |
+| `get`      | `(value: T) => T`                          | identity    | Memoized read transform; runs inside a private `computed` so external signals read inside `get` propagate to consumers                       |
+| `set`      | `(next: T \| undefined, previous: T) => T` | identity    | Write transform; return `previous` to reject the write                                                                                       |
+| `computed` | `(self) => Record<string, () => unknown>`  | —           | Attach named derived views to the signal callable (e.g. `layout.isBlock()`)                                                                  |
+
+**Controlled / uncontrolled pattern.** `get` and `set` together model a value that can be either internally owned or externally driven:
+
+```ts
+const props = {value: signal<string>(), defaultValue: signal<string>(), onChange: signal<(v: string) => void>()}
+
+const current = signal<string>({
+    initial: () => props.defaultValue() ?? '',
+    get: value => (props.value() !== undefined ? (props.value() ?? '') : value),
+    set: (next, previous) => {
+        if (next === undefined) return previous
+        props.onChange()?.(next)
+        return props.value() !== undefined ? previous : next
+    },
+})
+```
 
 ### `computed<T>(getter, options?)`
 
 Creates a lazily-evaluated derived value. The getter receives the previous value as its argument.
 
 ```ts
-const count = signal(1)
+const count = signal<number>({initial: 1})
 const doubled = computed(() => count() * 2)
 
 doubled() // 2 — computed on first read
@@ -95,7 +127,7 @@ calls // 2 — recomputed because dependency changed
 **Chained computeds** work naturally:
 
 ```ts
-const a = signal(1)
+const a = signal<number>({initial: 1})
 const b = computed(() => a() + 1)
 const c = computed(() => b() * 3)
 c() // 6
@@ -149,7 +181,7 @@ This separation prevents accidental subscription when emitting.
 Runs `fn` immediately, auto-tracks any signal/computed/event reads inside it, and re-runs when tracked dependencies change. Returns a dispose function.
 
 ```ts
-const count = signal(0)
+const count = signal<number>({initial: 0})
 
 const dispose = effect(() => {
     console.log(count())
@@ -167,8 +199,8 @@ count(2)
 **Nested effects** are cleaned up when the outer effect re-runs:
 
 ```ts
-const show = signal(true)
-const count = signal(0)
+const show = signal<boolean>({initial: true})
+const count = signal<number>({initial: 0})
 
 effect(() => {
     if (show()) {
@@ -191,7 +223,7 @@ count(2) // no output — inner effect no longer exists
 Creates a scope that collects all effects created inside `fn`. Calling the returned dispose function cleans up all of them at once.
 
 ```ts
-const count = signal(0)
+const count = signal<number>({initial: 0})
 
 const stop = effectScope(() => {
     effect(() => console.log(`A: ${count()}`))
@@ -211,7 +243,7 @@ count(2) // no output — both effects cleaned up
 Watches a reactive source for changes. Skips the first run by default (unlike `effect`); pass `{immediate: true}` to fire on the first run as well. Provides the previous value to the callback.
 
 ```ts
-const count = signal(0)
+const count = signal<number>({initial: 0})
 
 const dispose = watch(count, (newVal, oldVal) => {
     console.log(`${oldVal} -> ${newVal}`)
@@ -224,7 +256,7 @@ count(5) // Console: 1 -> 5
 To run the callback immediately (not just on changes), pass `{immediate: true}`. The first call receives `(currentValue, undefined)`:
 
 ```ts
-const count = signal(5)
+const count = signal<number>({initial: 5})
 
 watch(
     count,
@@ -262,8 +294,8 @@ The callback runs inside `untracked()` — reads inside the callback do not crea
 Defers effect flush until `fn` completes. Multiple signal writes inside the batch trigger only a single effect run.
 
 ```ts
-const a = signal(1)
-const b = signal(2)
+const a = signal<number>({initial: 1})
+const b = signal<number>({initial: 2})
 const sum = computed(() => a() + b())
 
 effect(() => console.log(sum()))
@@ -280,7 +312,7 @@ batch(() => {
 **Mutable option.** Allows writes to `readonly` signals inside the batch:
 
 ```ts
-const config = signal('default', {readonly: true})
+const config = signal<string>({initial: 'default', readonly: true})
 
 batch(() => {
     config('override') // ignored — not mutable
@@ -332,8 +364,8 @@ length() // 1 — propagated
 Runs `fn` without tracking reactive dependencies. Useful inside effects where you need to read a signal without subscribing to it.
 
 ```ts
-const a = signal(1)
-const b = signal(2)
+const a = signal<number>({initial: 1})
+const b = signal<number>({initial: 2})
 
 effect(() => {
     a() // tracked
@@ -350,7 +382,7 @@ b(10) // no effect re-run — b was read inside untracked
 ```ts
 interface Signal<T> {
     (): T // read
-    (value: T | undefined): void // write
+    (value: T | undefined): boolean // write — returns true if the stored value actually changed
 }
 ```
 
@@ -416,7 +448,8 @@ This module extends the [alien-signals](./alien-signals/) reference API with:
 | Custom `equals` on signal        | No            | Yes         |
 | Custom `equals` on computed      | No            | Yes         |
 | `readonly` signals               | No            | Yes         |
-| Default fallback on `undefined`  | No            | Yes         |
+| Lazy `initial` factory           | No            | Yes         |
+| `get` / `set` transforms         | No            | Yes         |
 | `event<T>()` primitive           | No            | Yes         |
 | `watch()` with old/new values    | No            | Yes         |
 | `batch()` with `{mutable}` scope | No            | Yes         |

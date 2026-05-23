@@ -292,8 +292,8 @@ class Store {
     readonly blocks: BlockRegistry
 
     readonly props: {
-        // Each is `Signal<T>` declared with `signal<T>(undefined, {readonly: true})`.
-        // The undefined-initial overload widens to `Signal<T | undefined>` automatically.
+        // Each is `Signal<T>` declared with `signal<T>({readonly: true})` — omitting
+        // `initial` widens the signal type to `Signal<T | undefined>` automatically.
         value: Signal<string | undefined>
         defaultValue: Signal<string | undefined>
         onChange: Signal<((value: string) => void) | undefined>

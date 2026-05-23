@@ -10,6 +10,5 @@ export {
 	untracked,
 	listen,
 	isReactive,
-	model,
 } from './signal'
 export type {Signal, Computed, Event, SignalValues} from './signal'

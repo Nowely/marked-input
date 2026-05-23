@@ -33,7 +33,7 @@ export type {
 
 // Reactive system
 export type {Signal, Computed, Event, SignalValues} from './src/shared/signals'
-export {effect, event, signal, computed, watch, batch, isReactive, model} from './src/shared/signals'
+export {effect, event, signal, computed, watch, batch, isReactive} from './src/shared/signals'
 
 // Store
 export {Store} from './src/store'

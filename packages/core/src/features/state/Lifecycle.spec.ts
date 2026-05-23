@@ -35,7 +35,7 @@ describe('Lifecycle', () => {
 
 		it('disposes inner watchers on unmount', () => {
 			const store = new Store()
-			const source = signal(0)
+			const source = signal<number>({initial: 0})
 			const observed = vi.fn()
 			store.lifecycle.onMounted(() => {
 				watch(source, value => observed(value))
@@ -61,7 +61,7 @@ describe('Lifecycle', () => {
 
 		it('re-runs setup with a fresh scope on remount', () => {
 			const store = new Store()
-			const source = signal(0)
+			const source = signal<number>({initial: 0})
 			const observed = vi.fn()
 			const setup = vi.fn(() => {
 				watch(source, value => observed(value))

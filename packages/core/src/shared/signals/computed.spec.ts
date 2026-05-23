@@ -5,25 +5,25 @@ import {signal, computed, effect, batch, isReactive} from './signal'
 
 describe('computed', () => {
 	it('derive value from signal', () => {
-		const name = signal<string | undefined>('hello')
+		const name = signal<string | undefined>({initial: 'hello'})
 		const upper = computed(() => name()!.toUpperCase())
 		expect(upper()).toBe('HELLO')
 	})
 
 	it('have .get() method', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const doubled = computed(() => count() * 2)
 		expect(doubled()).toBe(2)
 	})
 
 	it('Signal should not have a .use() method', () => {
-		const s = signal(1)
+		const s = signal<number>({initial: 1})
 		// @ts-expect-error -- .use() must not exist on Signal after this refactor
 		expect(typeof s.use).toBe('undefined')
 	})
 
 	it('re-derive when dependency changes', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const doubled = computed(() => count() * 2)
 		expect(doubled()).toBe(2)
 		count(5)
@@ -31,7 +31,7 @@ describe('computed', () => {
 	})
 
 	it('be lazy — not computed until read', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		let calls = 0
 		const doubled = computed(() => {
 			calls++
@@ -43,7 +43,7 @@ describe('computed', () => {
 	})
 
 	it('cache until dependencies change', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		let calls = 0
 		const doubled = computed(() => {
 			calls++
@@ -59,7 +59,7 @@ describe('computed', () => {
 	})
 
 	it('auto-track inside effect', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const doubled = computed(() => count() * 2)
 		const results: number[] = []
 		effect(() => {
@@ -71,7 +71,7 @@ describe('computed', () => {
 	})
 
 	it('support chained computed', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const doubled = computed(() => count() * 2)
 		const quadrupled = computed(() => doubled() * 2)
 		expect(quadrupled()).toBe(4)
@@ -80,7 +80,7 @@ describe('computed', () => {
 	})
 
 	it('receive previous value in getter', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const withPrev = computed((prev?: number) => {
 			void prev
 			return count() + 1
@@ -89,8 +89,8 @@ describe('computed', () => {
 	})
 
 	it('work inside batch', () => {
-		const a = signal(1)
-		const b = signal(2)
+		const a = signal<number>({initial: 1})
+		const b = signal<number>({initial: 2})
 		const sum = computed(() => a() + b())
 		const results: number[] = []
 		effect(() => {
@@ -107,8 +107,7 @@ describe('computed', () => {
 
 describe('computed with equals option', () => {
 	it('suppress propagation when signal changes but computed output is structurally unchanged', () => {
-		// count changes 0→2, but parity stays 'even' — equals should suppress effect rerun
-		const count = signal(0)
+		const count = signal<number>({initial: 0})
 		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
 			equals: (a, b) => a.parity === b.parity,
 		})
@@ -118,14 +117,13 @@ describe('computed with equals option', () => {
 			runs()
 		})
 		expect(runs).toHaveBeenCalledTimes(1)
-		count(2) // signal changes → computed reruns → {parity: 'even'} again → equals suppresses
+		count(2)
 		expect(runs).toHaveBeenCalledTimes(1)
 		dispose()
 	})
 
 	it('allow propagation when computed output changes', () => {
-		// count changes 0→1, parity flips 'even'→'odd' — equals returns false, effect reruns
-		const count = signal(0)
+		const count = signal<number>({initial: 0})
 		const obj = computed(() => ({parity: count() % 2 === 0 ? 'even' : 'odd'}), {
 			equals: (a, b) => a.parity === b.parity,
 		})
@@ -135,20 +133,19 @@ describe('computed with equals option', () => {
 			runs()
 		})
 		expect(runs).toHaveBeenCalledTimes(1)
-		count(1) // signal changes → computed reruns → {parity: 'odd'} → equals returns false → propagates
+		count(1)
 		expect(runs).toHaveBeenCalledTimes(2)
 		dispose()
 	})
 
 	it('always produce a value on first read regardless of equals', () => {
-		const count = signal(1)
+		const count = signal<number>({initial: 1})
 		const alwaysEqual = computed(() => ({value: count()}), {equals: () => true})
 		expect(alwaysEqual()).toEqual({value: 1})
 	})
 
 	it('work with shallow equals — suppress when shape unchanged', () => {
-		// trigger changes but computed always returns same {x,y} shape
-		const trigger = signal(0)
+		const trigger = signal<number>({initial: 0})
 		const obj = computed(
 			() => {
 				trigger()
@@ -162,7 +159,7 @@ describe('computed with equals option', () => {
 			runs()
 		})
 		expect(runs).toHaveBeenCalledTimes(1)
-		trigger(1) // signal changes → computed reruns → new {x:1,y:2} ref → shallow equal → suppressed
+		trigger(1)
 		expect(runs).toHaveBeenCalledTimes(1)
 		trigger(2)
 		expect(runs).toHaveBeenCalledTimes(1)
@@ -180,7 +177,7 @@ describe('computed — writable', () => {
 	})
 
 	it('passes previous value to get', () => {
-		const trigger = signal(0)
+		const trigger = signal<number>({initial: 0})
 		let receivedPrev: number | undefined = -1
 		const c = computed<number>({
 			get: prev => {
@@ -217,7 +214,7 @@ describe('computed — writable', () => {
 	})
 
 	it('set can write to an external signal that get also reads', () => {
-		const backing = signal(1)
+		const backing = signal<number>({initial: 1})
 		const c = computed<number>({
 			get: () => backing() * 2,
 			set: next => backing(next / 2),
@@ -229,7 +226,7 @@ describe('computed — writable', () => {
 	})
 
 	it('external dep change in get propagates to effect', () => {
-		const ext = signal(1)
+		const ext = signal<number>({initial: 1})
 		const results: number[] = []
 		const c = computed<number>({
 			get: () => ext() * 10,
@@ -245,7 +242,7 @@ describe('computed — writable', () => {
 	})
 
 	it('equals option suppresses propagation when output unchanged', () => {
-		const trigger = signal(0)
+		const trigger = signal<number>({initial: 0})
 		const runs = vi.fn()
 		const c = computed<{parity: 'even' | 'odd'}>({
 			get: () => ({parity: trigger() % 2 === 0 ? 'even' : 'odd'}),
@@ -257,9 +254,9 @@ describe('computed — writable', () => {
 			runs()
 		})
 		expect(runs).toHaveBeenCalledTimes(1)
-		trigger(2) // still 'even' — equals suppresses
+		trigger(2)
 		expect(runs).toHaveBeenCalledTimes(1)
-		trigger(1) // flips to 'odd' — propagates
+		trigger(1)
 		expect(runs).toHaveBeenCalledTimes(2)
 		dispose()
 	})
@@ -274,7 +271,7 @@ describe('computed — writable', () => {
 
 	describe('setter return value', () => {
 		it('returns true when set causes the read value to change', () => {
-			const backing = signal(1)
+			const backing = signal<number>({initial: 1})
 			const c = computed<number>({
 				get: () => backing(),
 				set: next => backing(next),
@@ -301,7 +298,7 @@ describe('computed — writable', () => {
 		})
 
 		it('returns false when set rejects the write (value did not change)', () => {
-			const backing = signal(1, {readonly: true})
+			const backing = signal<number>({initial: 1, readonly: true})
 			const c = computed<number>({
 				get: () => backing(),
 				set: next => backing(next),

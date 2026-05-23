@@ -12,34 +12,55 @@ import type {
 } from '../../shared/types'
 import {shallow} from '../../shared/utils/shallow'
 
+// Framework adapters spread *every* prop into `set({...})`, including ones the
+// user did not provide. For default-bearing props (e.g. `options`, `readOnly`)
+// an incoming `undefined` means "not provided" — we must keep the current
+// (default) value instead of clobbering it. Use this `set` transform on every
+// prop signal that has a non-undefined `initial`.
+const keepOnUndefined = <T>(next: T | undefined, previous: T): T => next ?? previous
+
 export class PropsModel {
-	readonly value = signal<string>(undefined, {readonly: true})
-	readonly defaultValue = signal<string>(undefined, {readonly: true})
+	readonly value = signal<string>({readonly: true})
+	readonly defaultValue = signal<string>({readonly: true})
 
-	readonly onChange = signal<(value: string) => void>(undefined, {readonly: true})
+	readonly onChange = signal<(value: string) => void>({readonly: true})
 
-	readonly options = signal<CoreOption[]>(DEFAULT_OPTIONS, {readonly: true})
-	readonly readOnly = signal<boolean>(false, {readonly: true})
-
-	readonly layout = signal('inline' as 'inline' | 'block', {
+	readonly options = signal<CoreOption[]>({
+		initial: DEFAULT_OPTIONS,
 		readonly: true,
+		set: keepOnUndefined,
+	})
+	readonly readOnly = signal<boolean>({initial: false, readonly: true, set: keepOnUndefined})
+
+	readonly layout = signal({
+		initial: 'inline' as 'inline' | 'block',
+		readonly: true,
+		set: keepOnUndefined,
 		computed: self => ({
 			isBlock: () => self() === 'block',
 		}),
 	})
-	readonly draggable = signal<boolean | DraggableConfig>(false, {readonly: true})
+	readonly draggable = signal<boolean | DraggableConfig>({
+		initial: false,
+		readonly: true,
+		set: keepOnUndefined,
+	})
 
-	readonly showOverlayOn = signal<OverlayTrigger>('change', {readonly: true})
+	readonly showOverlayOn = signal<OverlayTrigger>({
+		initial: 'change',
+		readonly: true,
+		set: keepOnUndefined,
+	})
 
-	readonly Span = signal<Slot>(undefined, {readonly: true})
-	readonly Mark = signal<Slot>(undefined, {readonly: true})
-	readonly Overlay = signal<Slot>(undefined, {readonly: true})
+	readonly Span = signal<Slot>({readonly: true})
+	readonly Mark = signal<Slot>({readonly: true})
+	readonly Overlay = signal<Slot>({readonly: true})
 
-	readonly className = signal<string>(undefined, {readonly: true})
-	readonly style = signal<CSSProperties>(undefined, {equals: shallow, readonly: true})
+	readonly className = signal<string>({readonly: true})
+	readonly style = signal<CSSProperties>({equals: shallow, readonly: true})
 
-	readonly slots = signal<CoreSlots>(undefined, {readonly: true})
-	readonly slotProps = signal<CoreSlotProps>(undefined, {readonly: true})
+	readonly slots = signal<CoreSlots>({readonly: true})
+	readonly slotProps = signal<CoreSlotProps>({readonly: true})
 
 	set(values: Partial<SignalValues<typeof this>>): void {
 		batch(
