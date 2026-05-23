@@ -410,6 +410,17 @@ describe('signal<T> with computed views', () => {
 		expect(layout()).toBe('inline')
 		expect(layout.isBlock()).toBe(false)
 	})
+
+	it('assigns to a manually-written Signal<T, C> annotation', () => {
+		const layout: Signal<'inline' | 'block', {isBlock: boolean}> = signal({
+			initial: 'inline' as 'inline' | 'block',
+			computed: self => ({isBlock: () => self() === 'block'}),
+		})
+		expect(layout()).toBe('inline')
+		expect(layout.isBlock()).toBe(false)
+		layout('block')
+		expect(layout.isBlock()).toBe(true)
+	})
 })
 
 // ---------------------------------------------------------------------------

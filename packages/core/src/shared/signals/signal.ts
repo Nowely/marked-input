@@ -314,10 +314,16 @@ function effectScopeOper(this: ReactiveNode): void {
 // Signal<T> — reactive state value
 // ---------------------------------------------------------------------------
 
-export interface Signal<T> {
+// `Signal<T>` is the base callable: read returns T, write accepts T | undefined
+// and returns whether the stored value changed. `Signal<T, C>` augments the
+// callable with named `Computed` views — one per key in `C` — derived from the
+// signal via the `computed` option. `C` is the *value* record (e.g. `{isBlock:
+// boolean}`), not a record of getters; the getter shape is collapsed at the
+// `signal()` overload boundary.
+export type Signal<T, C extends Record<string, unknown> = {}> = {
 	(): T
 	(value: T | undefined): boolean
-}
+} & {readonly [K in keyof C]: Computed<C[K]>}
 
 export type SignalValues<T> = {
 	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : T[K]
@@ -368,10 +374,6 @@ export interface SignalOptionsWithDefault<T> {
 	set?: (next: T, previous: T) => T
 }
 
-export type ComputedRecord<C> = {
-	readonly [K in keyof C]: C[K] extends () => infer R ? Computed<R> : never
-}
-
 export interface SignalOptionsWithInitialAndComputed<T, C> extends SignalOptionsWithInitial<T> {
 	computed: (self: Signal<T>) => C
 }
@@ -386,13 +388,13 @@ export interface SignalOptionsWithDefaultAndComputed<T, C> extends SignalOptions
 
 export function signal<T, C extends Record<string, () => unknown>>(
 	opts: SignalOptionsWithDefaultAndComputed<T, C>
-): Signal<T> & ComputedRecord<C>
+): Signal<T, {[K in keyof C]: ReturnType<C[K]>}>
 export function signal<T, C extends Record<string, () => unknown>>(
 	opts: SignalOptionsWithInitialAndComputed<T, C>
-): Signal<T> & ComputedRecord<C>
+): Signal<T, {[K in keyof C]: ReturnType<C[K]>}>
 export function signal<T, C extends Record<string, () => unknown>>(
 	opts: SignalOptionsWithoutInitialAndComputed<T, C>
-): Signal<T | undefined> & ComputedRecord<C>
+): Signal<T | undefined, {[K in keyof C]: ReturnType<C[K]>}>
 export function signal<T>(opts: SignalOptionsWithDefault<T>): Signal<T>
 export function signal<T>(opts: SignalOptionsWithInitial<T>): Signal<T>
 export function signal<T = never>(opts?: SignalOptionsWithoutInitial<T>): Signal<T | undefined>

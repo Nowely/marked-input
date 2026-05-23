@@ -418,14 +418,28 @@ b(10) // no effect re-run — b was read inside untracked
 
 ## Type Helpers
 
-### `Signal<T>`
+### `Signal<T, C>`
 
 ```ts
-interface Signal<T> {
+type Signal<T, C extends Record<string, unknown> = {}> = {
     (): T // read
     (value: T | undefined): boolean // write — returns true if the stored value actually changed
-}
+} & {readonly [K in keyof C]: Computed<C[K]>}
 ```
+
+`C` is the _value_ record for any computed companions attached via the `computed` option. For a signal without companions, `C` defaults to `{}` so `Signal<T>` reads as before:
+
+```ts
+const layout: Signal<'inline' | 'block', {isBlock: boolean}> = signal({
+    initial: 'inline' as 'inline' | 'block',
+    computed: self => ({isBlock: () => self() === 'block'}),
+})
+
+layout() // 'inline' | 'block'
+layout.isBlock() // Computed<boolean>
+```
+
+You almost never write this annotation by hand — TS infers it from the `signal({...})` call. The two-parameter form mainly makes hover types and explicit re-annotations readable.
 
 ### `Computed<T>`
 
