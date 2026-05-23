@@ -1,5 +1,6 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
 
+import {shallow} from '../utils/shallow'
 import {signal, computed, watch, event, batch, effect, effectScope, listen, isReactive} from './signal'
 import type {SignalValues, Signal} from './signal'
 
@@ -22,36 +23,36 @@ function trackedEffect(fn: () => void | (() => void)): () => void {
 }
 
 // ---------------------------------------------------------------------------
-// signal<T>
+// signal<T> — basic read / write / track
 // ---------------------------------------------------------------------------
 
 describe('signal<T>', () => {
 	beforeEach(() => vi.clearAllMocks())
 
 	it('return current value when called with no args', () => {
-		const s = signal(42)
+		const s = signal<number>({initial: 42})
 		expect(s()).toBe(42)
 	})
 
 	it('update the value when called with an arg', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		s(10)
 		expect(s()).toBe(10)
 	})
 
-	it('support .get() as a read alias', () => {
-		const s = signal('hello')
+	it('return the initial value', () => {
+		const s = signal<string>({initial: 'hello'})
 		expect(s()).toBe('hello')
 	})
 
-	it('support .set() as a write alias', () => {
-		const s = signal('hello')
+	it('overwrite the value on subsequent writes', () => {
+		const s = signal<string>({initial: 'hello'})
 		s('world')
 		expect(s()).toBe('world')
 	})
 
 	it('NOT re-notify when the same value is set', () => {
-		const s = signal(5)
+		const s = signal<number>({initial: 5})
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -60,12 +61,15 @@ describe('signal<T>', () => {
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		s(5) // same value
+		s(5)
 		expect(runs).toHaveBeenCalledTimes(1)
 	})
 
 	it('skip notification when custom equals returns true', () => {
-		const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+		const s = signal<{id: number; name: string}>({
+			initial: {id: 1, name: 'a'},
+			equals: (a, b) => a.id === b.id,
+		})
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -74,12 +78,15 @@ describe('signal<T>', () => {
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		s({id: 1, name: 'changed'}) // same id — equals returns true
+		s({id: 1, name: 'changed'})
 		expect(runs).toHaveBeenCalledTimes(1)
 	})
 
 	it('notify when custom equals returns false', () => {
-		const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+		const s = signal<{id: number; name: string}>({
+			initial: {id: 1, name: 'a'},
+			equals: (a, b) => a.id === b.id,
+		})
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -88,12 +95,12 @@ describe('signal<T>', () => {
 		})
 
 		expect(runs).toHaveBeenCalledTimes(1)
-		s({id: 2, name: 'b'}) // different id
+		s({id: 2, name: 'b'})
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 
-	it('auto-track inside alien-signals effect', () => {
-		const s = signal(0)
+	it('auto-track inside effect', () => {
+		const s = signal<number>({initial: 0})
 		let captured = -1
 
 		trackedEffect(() => {
@@ -106,39 +113,45 @@ describe('signal<T>', () => {
 	})
 
 	it('not have a .use() method', () => {
-		const s = signal(1)
+		const s = signal<number>({initial: 1})
 		// @ts-expect-error -- .use() must not exist on Signal after this refactor
 		expect(typeof s.use).toBe('undefined')
 	})
 
 	describe('setter return value', () => {
 		it('return true when value actually changes', () => {
-			const s = signal(0)
+			const s = signal<number>({initial: 0})
 			expect(s(1)).toBe(true)
 		})
 
 		it('return false when setting the same value', () => {
-			const s = signal(5)
+			const s = signal<number>({initial: 5})
 			expect(s(5)).toBe(false)
 		})
 
 		it('return false when custom equals reports equality', () => {
-			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			const s = signal<{id: number; name: string}>({
+				initial: {id: 1, name: 'a'},
+				equals: (a, b) => a.id === b.id,
+			})
 			expect(s({id: 1, name: 'changed'})).toBe(false)
 		})
 
 		it('return true when custom equals reports inequality', () => {
-			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
+			const s = signal<{id: number; name: string}>({
+				initial: {id: 1, name: 'a'},
+				equals: (a, b) => a.id === b.id,
+			})
 			expect(s({id: 2, name: 'b'})).toBe(true)
 		})
 
 		it('return false for readonly writes outside mutable batch', () => {
-			const s = signal(42, {readonly: true})
+			const s = signal<number>({initial: 42, readonly: true})
 			expect(s(99)).toBe(false)
 		})
 
 		it('return true for readonly writes inside mutable batch when value changes', () => {
-			const s = signal(42, {readonly: true})
+			const s = signal<number>({initial: 42, readonly: true})
 			let result: boolean | undefined
 			batch(
 				() => {
@@ -148,210 +161,176 @@ describe('signal<T>', () => {
 			)
 			expect(result).toBe(true)
 		})
+	})
+})
 
-		it('return false when setting undefined and already at default', () => {
-			const s = signal<string>('default')
-			expect(s(undefined)).toBe(false)
-		})
+// ---------------------------------------------------------------------------
+// initial values & undefined semantics
+// ---------------------------------------------------------------------------
 
-		it('return true when reverting from value to default via undefined', () => {
-			const s = signal<string>('default')
-			s('changed')
-			expect(s(undefined)).toBe(true)
-			expect(s()).toBe('default')
-		})
+describe('signal<T> initial values', () => {
+	it('start at undefined when initial is omitted', () => {
+		const s = signal<string>()
+		expect(s()).toBeUndefined()
 	})
 
-	describe('default fallback', () => {
-		it('return initial value as default when set to undefined', () => {
-			const s = signal<string>('change')
-			expect(s()).toBe('change')
-			s(undefined)
-			expect(s()).toBe('change')
-			expect(s()).toBe('change')
-		})
-
-		it('return the actual value when set to a non-undefined value', () => {
-			const s = signal<string>('change')
-			s('focus')
-			expect(s()).toBe('focus')
-		})
-
-		it('NOT apply fallback when initial value is undefined', () => {
-			const s = signal<string | undefined>(undefined)
-			expect(s()).toBeUndefined()
-			s('hello')
-			expect(s()).toBe('hello')
-			s(undefined)
-			expect(s()).toBeUndefined()
-		})
-
-		it('work with custom equals and default fallback', () => {
-			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id})
-			s(undefined)
-			expect(s()).toEqual({id: 1, name: 'a'})
-		})
-
-		it('notify subscribers when reverting from value to default', () => {
-			const s = signal<boolean>(false)
-			s(true)
-			const runs = vi.fn()
-			trackedEffect(() => {
-				s()
-				runs()
-			})
-			runs.mockClear()
-			s(undefined)
-			expect(runs).toHaveBeenCalledTimes(1)
-			expect(s()).toBe(false)
-		})
-
-		it('not notify when setting undefined and already at default', () => {
-			const s = signal<boolean>(false)
-			const runs = vi.fn()
-			trackedEffect(() => {
-				s()
-				runs()
-			})
-			runs.mockClear()
-			s(undefined)
-			expect(runs).toHaveBeenCalledTimes(0)
-		})
-
-		it('work with array defaults', () => {
-			const s = signal<number[]>([1, 2, 3])
-			s(undefined)
-			expect(s()).toEqual([1, 2, 3])
-			s([4, 5])
-			expect(s()).toEqual([4, 5])
-		})
+	it('start at the provided initial value', () => {
+		const s = signal<string>({initial: 'hello'})
+		expect(s()).toBe('hello')
 	})
 
-	describe('readonly option', () => {
-		it('ignore direct writes when readonly is true', () => {
-			const s = signal(42, {readonly: true})
+	it('store undefined literally when writing undefined', () => {
+		const s = signal<string>({initial: 'hello'})
+		s(undefined)
+		expect(s()).toBeUndefined()
+	})
+
+	it('treat null as a valid initial value', () => {
+		const s = signal<string | null>({initial: null})
+		expect(s()).toBeNull()
+		s('hello')
+		expect(s()).toBe('hello')
+	})
+
+	it('does not conflate null with undefined', () => {
+		const s = signal<string | null>({initial: null})
+		s('world')
+		s(undefined)
+		expect(s()).toBeUndefined()
+	})
+
+	it('widen to Signal<T | undefined> when initial is omitted', () => {
+		const s = signal<string>()
+		const widened: Signal<string | undefined> = s
+		expect(widened()).toBeUndefined()
+		s('hello')
+		expect(s()).toBe('hello')
+	})
+
+	it('keep Signal<T> exact when initial is defined', () => {
+		const s = signal<string>({initial: 'hello'})
+		const exact: Signal<string> = s
+		expect(exact()).toBe('hello')
+	})
+
+	it('accept signal() with no args as Signal<undefined>', () => {
+		const s = signal()
+		const exact: Signal<undefined> = s
+		expect(exact()).toBeUndefined()
+	})
+
+	it('notify subscribers when writing undefined after a value', () => {
+		const s = signal<string>({initial: 'a'})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(1)
+		expect(s()).toBeUndefined()
+	})
+
+	it('does not re-notify when writing undefined twice', () => {
+		const s = signal<string>()
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(0)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// readonly option
+// ---------------------------------------------------------------------------
+
+describe('signal<T> readonly option', () => {
+	it('ignore direct writes when readonly is true', () => {
+		const s = signal<number>({initial: 42, readonly: true})
+		s(99)
+		expect(s()).toBe(42)
+	})
+
+	it('allow writes inside batch with mutable: true', () => {
+		const s = signal<number>({initial: 42, readonly: true})
+		batch(
+			() => {
+				s(99)
+			},
+			{mutable: true}
+		)
+		expect(s()).toBe(99)
+	})
+
+	it('ignore writes inside regular batch without mutable', () => {
+		const s = signal<number>({initial: 42, readonly: true})
+		batch(() => {
 			s(99)
-			expect(s()).toBe(42)
 		})
+		expect(s()).toBe(42)
+	})
 
-		it('allow writes inside batch with mutable: true', () => {
-			const s = signal(42, {readonly: true})
+	it('restore mutableScope after nested batches', () => {
+		const s = signal<number>({initial: 42, readonly: true})
+		batch(() => {
 			batch(
 				() => {
 					s(99)
 				},
 				{mutable: true}
 			)
-			expect(s()).toBe(99)
+			s(100)
 		})
-
-		it('ignore writes inside regular batch without mutable', () => {
-			const s = signal(42, {readonly: true})
-			batch(() => {
-				s(99)
-			})
-			expect(s()).toBe(42)
-		})
-
-		it('restore mutableScope after nested batches', () => {
-			const s = signal(42, {readonly: true})
-			batch(() => {
-				batch(
-					() => {
-						s(99)
-					},
-					{mutable: true}
-				)
-				s(100)
-			})
-			expect(s()).toBe(99)
-		})
-
-		it('work with custom equals and readonly', () => {
-			const s = signal({id: 1, name: 'a'}, {equals: (a, b) => a.id === b.id, readonly: true})
-			s({id: 2, name: 'b'})
-			expect(s()).toEqual({id: 1, name: 'a'})
-			batch(
-				() => {
-					s({id: 2, name: 'b'})
-				},
-				{mutable: true}
-			)
-			expect(s()).toEqual({id: 2, name: 'b'})
-		})
-
-		it('not affect non-readonly signals', () => {
-			const s = signal(42)
-			s(99)
-			expect(s()).toBe(99)
-		})
-
-		it('allow reads from readonly signals normally', () => {
-			const s = signal(42, {readonly: true})
-			expect(s()).toBe(42)
-		})
-
-		it('track readonly signals in effects', () => {
-			const s = signal(0, {readonly: true})
-			let captured = -1
-			trackedEffect(() => {
-				captured = s()
-			})
-			expect(captured).toBe(0)
-			batch(
-				() => {
-					s(42)
-				},
-				{mutable: true}
-			)
-			expect(captured).toBe(42)
-		})
+		expect(s()).toBe(99)
 	})
 
-	describe('null initial value', () => {
-		it('treat null as a valid default', () => {
-			const s = signal<string | null>(null)
-			expect(s()).toBeNull()
-			s('hello')
-			expect(s()).toBe('hello')
-			s(undefined)
-			expect(s()).toBeNull()
+	it('work with custom equals and readonly', () => {
+		const s = signal<{id: number; name: string}>({
+			initial: {id: 1, name: 'a'},
+			equals: (a, b) => a.id === b.id,
+			readonly: true,
 		})
-
-		it('not conflate null with undefined for hasDefault', () => {
-			const s = signal<string | null>(null)
-			s('world')
-			s(undefined)
-			expect(s()).toBeNull()
-		})
+		s({id: 2, name: 'b'})
+		expect(s()).toEqual({id: 1, name: 'a'})
+		batch(
+			() => {
+				s({id: 2, name: 'b'})
+			},
+			{mutable: true}
+		)
+		expect(s()).toEqual({id: 2, name: 'b'})
 	})
 
-	describe('type inference for undefined initial', () => {
-		it('widen Signal<T> to Signal<T | undefined> when initial is undefined', () => {
-			const s = signal<string>(undefined)
-			const widened: Signal<string | undefined> = s
-			expect(widened()).toBeUndefined()
-			s('hello')
-			expect(s()).toBe('hello')
-		})
+	it('not affect non-readonly signals', () => {
+		const s = signal<number>({initial: 42})
+		s(99)
+		expect(s()).toBe(99)
+	})
 
-		it('keep Signal<T> exact when initial is defined', () => {
-			const s = signal<string>('hello')
-			const exact: Signal<string> = s
-			expect(exact()).toBe('hello')
-		})
+	it('allow reads from readonly signals normally', () => {
+		const s = signal<number>({initial: 42, readonly: true})
+		expect(s()).toBe(42)
+	})
 
-		it('treat signal(undefined) without type arg as Signal<undefined>', () => {
-			const s = signal(undefined)
-			const exact: Signal<undefined> = s
-			expect(exact()).toBeUndefined()
+	it('track readonly signals in effects', () => {
+		const s = signal<number>({initial: 0, readonly: true})
+		let captured = -1
+		trackedEffect(() => {
+			captured = s()
 		})
-
-		it('preserve existing Signal<T | undefined>(undefined) form', () => {
-			const s = signal<string | undefined>(undefined)
-			const exact: Signal<string | undefined> = s
-			expect(exact()).toBeUndefined()
-		})
+		expect(captured).toBe(0)
+		batch(
+			() => {
+				s(42)
+			},
+			{mutable: true}
+		)
+		expect(captured).toBe(42)
 	})
 })
 
@@ -363,7 +342,8 @@ describe('signal<T> with computed views', () => {
 	beforeEach(() => vi.clearAllMocks())
 
 	it('expose attached computeds as Computed values', () => {
-		const layout = signal('inline' as 'inline' | 'block', {
+		const layout = signal({
+			initial: 'inline' as 'inline' | 'block',
 			computed: self => ({
 				isBlock: () => self() === 'block',
 			}),
@@ -375,7 +355,8 @@ describe('signal<T> with computed views', () => {
 	})
 
 	it('recompute attached views when the signal updates', () => {
-		const layout = signal('inline' as 'inline' | 'block', {
+		const layout = signal({
+			initial: 'inline' as 'inline' | 'block',
 			computed: self => ({
 				isBlock: () => self() === 'block',
 			}),
@@ -394,7 +375,8 @@ describe('signal<T> with computed views', () => {
 	})
 
 	it('still treat the augmented value as a normal signal', () => {
-		const layout = signal('inline' as 'inline' | 'block', {
+		const layout = signal({
+			initial: 'inline' as 'inline' | 'block',
 			computed: self => ({isBlock: () => self() === 'block'}),
 		})
 		expect(isReactive(layout)).toBe(true)
@@ -403,7 +385,8 @@ describe('signal<T> with computed views', () => {
 	})
 
 	it('support multiple computed views on one signal', () => {
-		const layout = signal('inline' as 'inline' | 'block', {
+		const layout = signal({
+			initial: 'inline' as 'inline' | 'block',
 			computed: self => ({
 				isBlock: () => self() === 'block',
 				isInline: () => self() === 'inline',
@@ -417,15 +400,469 @@ describe('signal<T> with computed views', () => {
 	})
 
 	it('honor readonly while still exposing computed views', () => {
-		const layout = signal('inline' as 'inline' | 'block', {
+		const layout = signal({
+			initial: 'inline' as 'inline' | 'block',
 			readonly: true,
 			computed: self => ({isBlock: () => self() === 'block'}),
 		})
 		expect(layout.isBlock()).toBe(false)
-		// Readonly signals reject external writes by returning false without mutating
 		expect(layout('block')).toBe(false)
 		expect(layout()).toBe('inline')
 		expect(layout.isBlock()).toBe(false)
+	})
+
+	it('assigns to a manually-written Signal<T, C> annotation', () => {
+		const layout: Signal<'inline' | 'block', {isBlock: boolean}> = signal({
+			initial: 'inline' as 'inline' | 'block',
+			computed: self => ({isBlock: () => self() === 'block'}),
+		})
+		expect(layout()).toBe('inline')
+		expect(layout.isBlock()).toBe(false)
+		layout('block')
+		expect(layout.isBlock()).toBe(true)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// signal<T> with lazy initial, get, set
+// ---------------------------------------------------------------------------
+
+describe('signal<T> with lazy initial', () => {
+	it('returns the lazy initial value on first read', () => {
+		const s = signal<string>({initial: () => 'seed'})
+		expect(s()).toBe('seed')
+	})
+
+	it('runs the initial factory lazily on first read', () => {
+		let calls = 0
+		const s = signal<string>({
+			initial: () => {
+				calls++
+				return 'seed'
+			},
+		})
+		expect(calls).toBe(0)
+		s()
+		expect(calls).toBe(1)
+		s()
+		expect(calls).toBe(1)
+	})
+
+	it('runs the initial factory in untracked scope — dep changes do not propagate to consumers', () => {
+		const dep = signal<string>({initial: 'x'})
+		const s = signal<string>({initial: () => dep()})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		dep('y')
+		// Factory ran in untracked, so the signal is not subscribed to dep.
+		expect(runs).toHaveBeenCalledTimes(1)
+	})
+
+	it('realizes the factory on first write before set runs', () => {
+		const s = signal<number>({
+			initial: () => 10,
+			set: (next, previous) => {
+				expect(previous).toBe(10)
+				return next ?? previous
+			},
+		})
+		s(20)
+		expect(s()).toBe(20)
+	})
+})
+
+describe('signal<T> with get/set transforms', () => {
+	it('reads via get when no value has been written', () => {
+		const s = signal<string>({
+			initial: 'fallback',
+			get: value => value.toUpperCase(),
+		})
+		expect(s()).toBe('FALLBACK')
+	})
+
+	it('calls set with (next, previous) and writes the return value to internal', () => {
+		const setSpy = vi.fn((next: string | undefined, previous: string) => next ?? previous)
+		const s = signal<string>({initial: 'init', set: setSpy})
+		s('updated')
+		expect(setSpy).toHaveBeenCalledWith('updated', 'init')
+		expect(s()).toBe('updated')
+	})
+
+	it('keeps internal unchanged when set returns previous (reject)', () => {
+		const s = signal<string>({
+			initial: 'a',
+			set: (_next, previous) => previous,
+		})
+		s('b')
+		expect(s()).toBe('a')
+	})
+
+	it('controlled-style: get reads external; set returning previous keeps internal stable', () => {
+		const external = signal<string>({initial: 'controlled'})
+		const s = signal<string>({
+			initial: 'fallback',
+			get: () => external(),
+			set: (_next, previous) => previous,
+		})
+		expect(s()).toBe('controlled')
+		s('attempted')
+		expect(s()).toBe('controlled')
+	})
+
+	it('uncontrolled-style: get reads internal; set returning next writes internal', () => {
+		const s = signal<string>({
+			initial: 'init',
+			get: value => value,
+			set: (next, previous) => next ?? previous,
+		})
+		expect(s()).toBe('init')
+		s('updated')
+		expect(s()).toBe('updated')
+	})
+
+	it('propagates external dep changes to effects via get', () => {
+		const external = signal<string>({initial: 'a'})
+		const s = signal<string>({
+			initial: '',
+			get: () => external(),
+			set: (_next, previous) => previous,
+		})
+		const results: string[] = []
+		const dispose = effect(() => {
+			results.push(s())
+		})
+		expect(results).toEqual(['a'])
+		external('b')
+		expect(results).toEqual(['a', 'b'])
+		dispose()
+	})
+
+	it('propagates internal writes to effects', () => {
+		const s = signal<number>({
+			initial: 0,
+			set: (next, previous) => next ?? previous,
+		})
+		const results: number[] = []
+		const dispose = effect(() => {
+			results.push(s())
+		})
+		expect(results).toEqual([0])
+		s(1)
+		expect(results).toEqual([0, 1])
+		dispose()
+	})
+
+	it('returns true when write changes the internal value', () => {
+		const s = signal<number>({initial: 0})
+		expect(s(1)).toBe(true)
+	})
+
+	it('returns false when write keeps the internal value the same', () => {
+		const s = signal<number>({initial: 5})
+		expect(s(5)).toBe(false)
+	})
+
+	it('returns false when set returns previous (rejection)', () => {
+		const s = signal<number>({
+			initial: 0,
+			set: (_next, prev) => prev,
+		})
+		expect(s(99)).toBe(false)
+	})
+
+	it('returns false when equals reports unchanged', () => {
+		const s = signal<{id: number}>({
+			initial: {id: 1},
+			equals: (a, b) => a.id === b.id,
+		})
+		expect(s({id: 1})).toBe(false)
+	})
+
+	it('returns true when equals reports changed', () => {
+		const s = signal<{id: number}>({
+			initial: {id: 1},
+			equals: (a, b) => a.id === b.id,
+		})
+		expect(s({id: 2})).toBe(true)
+	})
+
+	it('skips subscribers when equals reports unchanged', () => {
+		const s = signal<{x: number}>({initial: {x: 1}, equals: shallow})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			s()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		s({x: 1})
+		expect(runs).toHaveBeenCalledTimes(1)
+		s({x: 2})
+		expect(runs).toHaveBeenCalledTimes(2)
+		dispose()
+	})
+
+	it('uses reference equality when equals is omitted', () => {
+		const s = signal<{x: number}>({initial: {x: 1}})
+		const runs = vi.fn()
+		const dispose = effect(() => {
+			s()
+			runs()
+		})
+		expect(runs).toHaveBeenCalledTimes(1)
+		s({x: 1})
+		expect(runs).toHaveBeenCalledTimes(2)
+		dispose()
+	})
+
+	it('isReactive returns true for a signal with get/set', () => {
+		const s = signal<string>({
+			initial: 'a',
+			get: value => value,
+			set: (_next, previous) => previous,
+		})
+		expect(isReactive(s)).toBe(true)
+	})
+
+	it('isReactive returns true for a signal with no options', () => {
+		const s = signal<string>()
+		expect(isReactive(s)).toBe(true)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// signal<T> with default slot — revert-on-undefined
+// ---------------------------------------------------------------------------
+
+describe('signal<T> with default slot', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('returns the default value on first read', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s()).toBe('hi')
+	})
+
+	it('keeps Signal<T> exact (no undefined in the read type)', () => {
+		const s = signal<string>({default: 'hi'})
+		const exact: Signal<string> = s
+		expect(exact()).toBe('hi')
+	})
+
+	it('matches the canonical revert trace', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s()).toBe('hi')
+		expect(s('bye')).toBe(true)
+		expect(s()).toBe('bye')
+		expect(s(undefined)).toBe(true)
+		expect(s()).toBe('hi')
+	})
+
+	it('returns false from setter when already at default and undefined is written', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s(undefined)).toBe(false)
+	})
+
+	it('reverts to the default on undefined write after multiple writes', () => {
+		const s = signal<number>({default: 0})
+		s(1)
+		s(2)
+		s(3)
+		expect(s(undefined)).toBe(true)
+		expect(s()).toBe(0)
+	})
+
+	it('notifies subscribers on revert when value actually changes', () => {
+		const s = signal<string>({default: 'hi'})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s('bye')
+		expect(runs).toHaveBeenCalledTimes(1)
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(2)
+		expect(s()).toBe('hi')
+	})
+
+	it('does not notify when reverting from the default to the default', () => {
+		const s = signal<string>({default: 'hi'})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(0)
+	})
+
+	describe('factory', () => {
+		it('returns the factory result on first read', () => {
+			const s = signal<string>({default: () => 'seed'})
+			expect(s()).toBe('seed')
+		})
+
+		it('runs the factory lazily on first read', () => {
+			let calls = 0
+			const s = signal<string>({
+				default: () => {
+					calls++
+					return 'seed'
+				},
+			})
+			expect(calls).toBe(0)
+			s()
+			expect(calls).toBe(1)
+			s()
+			expect(calls).toBe(1)
+		})
+
+		it('runs the factory at most once across reads and writes', () => {
+			let calls = 0
+			const s = signal<number>({
+				default: () => {
+					calls++
+					return 7
+				},
+			})
+			s(99)
+			s(undefined)
+			s(11)
+			s(undefined)
+			expect(calls).toBe(1)
+		})
+
+		it('caches the factory result for subsequent reverts', () => {
+			let nextSeed = 1
+			const s = signal<number>({default: () => nextSeed})
+			expect(s()).toBe(1)
+			nextSeed = 2
+			s(99)
+			s(undefined)
+			expect(s()).toBe(1)
+		})
+
+		it('runs the factory in untracked scope', () => {
+			const dep = signal<string>({initial: 'x'})
+			const s = signal<string>({default: () => dep()})
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			expect(runs).toHaveBeenCalledTimes(1)
+			dep('y')
+			expect(runs).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('interaction with set', () => {
+		it('bypasses set when writing undefined', () => {
+			const setSpy = vi.fn((next: number, _previous: number) => next)
+			const s = signal<number>({default: 0, set: setSpy})
+			s(undefined)
+			expect(setSpy).not.toHaveBeenCalled()
+			expect(s()).toBe(0)
+		})
+
+		it('runs set for defined writes', () => {
+			const setSpy = vi.fn((next: number, _previous: number) => next * 2)
+			const s = signal<number>({default: 1, set: setSpy})
+			s(5)
+			expect(setSpy).toHaveBeenCalledWith(5, 1)
+			expect(s()).toBe(10)
+		})
+	})
+
+	describe('interaction with get', () => {
+		it('applies get to the default value', () => {
+			const s = signal<string>({
+				default: 'hi',
+				get: v => v.toUpperCase(),
+			})
+			expect(s()).toBe('HI')
+		})
+
+		it('applies get to the post-revert value', () => {
+			const s = signal<string>({
+				default: 'hi',
+				get: v => v.toUpperCase(),
+			})
+			s('bye')
+			expect(s()).toBe('BYE')
+			s(undefined)
+			expect(s()).toBe('HI')
+		})
+	})
+
+	describe('interaction with readonly', () => {
+		it('rejects undefined writes outside a mutable batch', () => {
+			const s = signal<string>({default: 'hi', readonly: true})
+			s('bye') // ignored
+			expect(s()).toBe('hi')
+			expect(s(undefined)).toBe(false)
+			expect(s()).toBe('hi')
+		})
+
+		it('allows undefined writes to revert inside a mutable batch', () => {
+			const s = signal<string>({default: 'hi', readonly: true})
+			batch(
+				() => {
+					s('bye')
+				},
+				{mutable: true}
+			)
+			expect(s()).toBe('bye')
+			batch(
+				() => {
+					s(undefined)
+				},
+				{mutable: true}
+			)
+			expect(s()).toBe('hi')
+		})
+	})
+
+	describe('interaction with equals', () => {
+		it('treats revert as a no-op when current value equals default per equals', () => {
+			const s = signal<{id: number; name: string}>({
+				default: {id: 1, name: 'a'},
+				equals: (a, b) => a.id === b.id,
+			})
+			s({id: 1, name: 'changed'})
+			expect(s(undefined)).toBe(false)
+		})
+
+		it('reverts and notifies when equals reports changed', () => {
+			const s = signal<{id: number}>({
+				default: {id: 1},
+				equals: (a, b) => a.id === b.id,
+			})
+			s({id: 2})
+			expect(s(undefined)).toBe(true)
+			expect(s().id).toBe(1)
+		})
+	})
+
+	describe('interaction with computed views', () => {
+		it('attaches computed views that see the post-revert value', () => {
+			const layout = signal({
+				default: 'inline' as 'inline' | 'block',
+				computed: self => ({
+					isBlock: () => self() === 'block',
+				}),
+			})
+			expect(layout.isBlock()).toBe(false)
+			layout('block')
+			expect(layout.isBlock()).toBe(true)
+			layout(undefined)
+			expect(layout.isBlock()).toBe(false)
+		})
 	})
 })
 
@@ -500,7 +937,7 @@ describe('event<T>()', () => {
 		expect(runs).toHaveBeenCalledTimes(1)
 		ev(payload)
 		expect(runs).toHaveBeenCalledTimes(2)
-		ev(payload) // same reference
+		ev(payload)
 		expect(runs).toHaveBeenCalledTimes(3)
 	})
 
@@ -553,7 +990,7 @@ describe('watch()', () => {
 	beforeEach(() => vi.clearAllMocks())
 
 	it('call fn when dependency changes', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn)
@@ -564,7 +1001,7 @@ describe('watch()', () => {
 	})
 
 	it('NOT call fn on first run (skip-first-run)', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn)
@@ -574,7 +1011,7 @@ describe('watch()', () => {
 	})
 
 	it('return a disposer that stops future calls', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn)
@@ -585,12 +1022,12 @@ describe('watch()', () => {
 
 		dispose()
 		s(2)
-		expect(fn).toHaveBeenCalledTimes(1) // no additional call
+		expect(fn).toHaveBeenCalledTimes(1)
 	})
 
 	it('not track reactive reads inside the callback', () => {
-		const source = signal(0)
-		const extra = signal(0)
+		const source = signal<number>({initial: 0})
+		const extra = signal<number>({initial: 0})
 		const fn = vi.fn(() => {
 			extra()
 		})
@@ -630,7 +1067,7 @@ describe('watch()', () => {
 
 	it('not replay stale payloads on unrelated reactive changes', () => {
 		const source = event<number>()
-		const extra = signal(0)
+		const extra = signal<number>({initial: 0})
 		const seen: number[] = []
 
 		const dispose = watch(
@@ -656,7 +1093,7 @@ describe('watch()', () => {
 	})
 
 	it('pass newValue and oldValue to callback', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const calls: Array<[number, number | undefined]> = []
 
 		const dispose = watch(s, (newVal, oldVal) => {
@@ -694,7 +1131,7 @@ describe('watch()', () => {
 	})
 
 	it('accept signal directly (not wrapped in getter)', () => {
-		const s = signal('a')
+		const s = signal<string>({initial: 'a'})
 		const seen: string[] = []
 
 		const dispose = watch(s, v => seen.push(v))
@@ -707,7 +1144,7 @@ describe('watch()', () => {
 	})
 
 	it('fires callback immediately when immediate: true', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn, {immediate: true})
@@ -722,7 +1159,7 @@ describe('watch()', () => {
 	})
 
 	it('disposer stops future calls with immediate: true', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn, {immediate: true})
@@ -736,7 +1173,7 @@ describe('watch()', () => {
 	})
 
 	it('defaults to skip-first-run when immediate is omitted', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const fn = vi.fn()
 
 		const dispose = watch(s, fn)
@@ -754,7 +1191,7 @@ describe('effect cleanup', () => {
 	beforeEach(() => vi.clearAllMocks())
 
 	it('call returned cleanup on re-run', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const cleanup = vi.fn()
 
 		trackedEffect(() => {
@@ -781,7 +1218,7 @@ describe('effect cleanup', () => {
 	})
 
 	it('call inner effect cleanup when outer re-runs', () => {
-		const show = signal(true)
+		const show = signal<boolean>({initial: true})
 		const innerCleanup = vi.fn()
 
 		trackedEffect(() => {
@@ -808,7 +1245,7 @@ describe('effect cleanup', () => {
 	})
 
 	it('replace cleanup on each re-run', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const cleanups: number[] = []
 
 		trackedEffect(() => {
@@ -823,7 +1260,7 @@ describe('effect cleanup', () => {
 	})
 
 	it('work with effects returning void (no cleanup)', () => {
-		const s = signal(0)
+		const s = signal<number>({initial: 0})
 		const runs = vi.fn()
 
 		trackedEffect(() => {
@@ -836,6 +1273,10 @@ describe('effect cleanup', () => {
 		expect(runs).toHaveBeenCalledTimes(2)
 	})
 })
+
+// ---------------------------------------------------------------------------
+// listen()
+// ---------------------------------------------------------------------------
 
 describe('listen()', () => {
 	beforeEach(() => vi.clearAllMocks())
@@ -861,7 +1302,7 @@ describe('listen()', () => {
 	it('remove listener when nested effect re-runs', () => {
 		const target = new EventTarget()
 		const handler = vi.fn()
-		const show = signal(true)
+		const show = signal<boolean>({initial: true})
 		const removeSpy = vi.spyOn(target, 'removeEventListener')
 
 		trackedEffect(() => {
@@ -907,7 +1348,7 @@ describe('listen()', () => {
 
 describe('isReactive', () => {
 	it('returns true for a signal', () => {
-		expect(isReactive(signal(0))).toBe(true)
+		expect(isReactive(signal<number>({initial: 0}))).toBe(true)
 	})
 
 	it('returns true for a computed', () => {

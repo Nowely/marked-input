@@ -8,10 +8,7 @@ import {createReactiveSystem, ReactiveFlags, type ReactiveNode} from './alien-si
 interface SignalNode<T = any> extends ReactiveNode {
 	currentValue: T
 	pendingValue: T
-	defaultValue: T | undefined
-	hasDefault: boolean
 	equalsFn: ((a: T, b: T) => boolean) | undefined
-	isReadonly: boolean
 }
 
 interface ComputedNode<T = any> extends ReactiveNode {
@@ -201,28 +198,20 @@ function purgeDeps(sub: ReactiveNode) {
 // Oper functions (bound to nodes)
 // ---------------------------------------------------------------------------
 
+// Internal read/write oper for the raw SignalNode. Equality, propagation,
+// auto-tracking. Higher-level concerns (readonly gate, set transform, lazy
+// initial, get memoization) live in the `signal()` factory wrapper.
 function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T | boolean {
 	if (value.length) {
-		if (this.isReadonly && !mutableScope) return false
-		const v = value[0]
-		if (v === undefined) {
-			const isAtDefault = this.hasDefault
-				? this.pendingValue === undefined || this.pendingValue === this.defaultValue
-				: this.pendingValue === undefined
-			if (isAtDefault) return false
-			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is valid for T when reverting to default
-			this.pendingValue = undefined as T
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- caller's equalsFn is responsible for its own type contract
+		const v = value[0] as T
+		const current = this.pendingValue
+		if (this.equalsFn !== undefined) {
+			if (this.equalsFn(current, v)) return false
 		} else {
-			const current = this.pendingValue
-			const effectiveCurrent = current === undefined && this.hasDefault ? this.defaultValue : current
-			if (this.equalsFn !== undefined) {
-				// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- effectiveCurrent is T when equalsFn is defined and either current !== undefined or hasDefault
-				if (this.equalsFn(effectiveCurrent as T, v)) return false
-			} else {
-				if (effectiveCurrent === v) return false
-			}
-			this.pendingValue = v
+			if (current === v) return false
 		}
+		this.pendingValue = v
 		this.flags = ReactiveFlags.Mutable | ReactiveFlags.Dirty
 		const subs = this.subs
 		if (subs !== undefined) {
@@ -254,10 +243,7 @@ function signalOper<T>(this: SignalNode<T>, ...value: [T | undefined] | []): T |
 			}
 			sub = sub.subs?.sub
 		}
-		const v = this.currentValue
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- defaultValue is T when hasDefault is true
-		if (v === undefined && this.hasDefault) return this.defaultValue as T
-		return v
+		return this.currentValue
 	}
 }
 
@@ -328,70 +314,187 @@ function effectScopeOper(this: ReactiveNode): void {
 // Signal<T> — reactive state value
 // ---------------------------------------------------------------------------
 
-export interface Signal<T> {
+// `Signal<T>` is the base callable: read returns T, write accepts T | undefined
+// and returns whether the stored value changed. `Signal<T, C>` augments the
+// callable with named `Computed` views — one per key in `C` — derived from the
+// signal via the `computed` option. `C` is the *value* record (e.g. `{isBlock:
+// boolean}`), not a record of getters; the getter shape is collapsed at the
+// `signal()` overload boundary.
+export type Signal<T, C extends Record<string, unknown> = {}> = {
 	(): T
 	(value: T | undefined): boolean
-}
+} & {readonly [K in keyof C]: Computed<C[K]>}
 
 export type SignalValues<T> = {
 	[K in keyof T]: T[K] extends Signal<infer V> | Computed<infer V> ? V : T[K]
 }
 
+const BOUND_SIGNAL_NAME = 'bound ' + signalOper.name
+const BOUND_COMPUTED_NAME = 'bound ' + computedOper.name
+
 export function isReactive(fn: unknown): fn is Signal<unknown> | Computed<unknown> {
 	if (typeof fn !== 'function') return false
 	const name = (fn as {name: string}).name
-	return name === 'bound ' + signalOper.name || name === 'bound ' + computedOper.name
+	return name === BOUND_SIGNAL_NAME || name === BOUND_COMPUTED_NAME
 }
 
-interface SignalOptions<T> {
+// `initial` and `default` both accept a value OR a lazy factory `() => T`. For
+// T that is itself a function (e.g. `Slot`), the slot type is intentionally
+// `never` — runtime cannot disambiguate "the value" from "a factory of the
+// value" via `typeof`. For callable T, omit `initial`/`default` and write via
+// the signal callable instead. `initial` and `default` are mutually exclusive
+// at the type level; only one carries a non-undefined value at a time.
+type Callable = (...args: any[]) => any
+type InitialValue<T> = [T] extends [Callable] ? never : T | (() => T)
+
+export interface SignalOptionsWithInitial<T> {
+	initial: InitialValue<T>
+	default?: undefined
 	equals?: (a: T, b: T) => boolean
 	readonly?: boolean
+	get?: (value: T) => T
+	set?: (next: T | undefined, previous: T) => T
 }
 
-export type ComputedRecord<C> = {
-	readonly [K in keyof C]: C[K] extends () => infer R ? Computed<R> : never
+export interface SignalOptionsWithoutInitial<T> {
+	initial?: undefined
+	default?: undefined
+	equals?: (a: T | undefined, b: T | undefined) => boolean
+	readonly?: boolean
+	get?: (value: T | undefined) => T | undefined
+	set?: (next: T | undefined, previous: T | undefined) => T | undefined
 }
 
-interface SignalOptionsWithComputed<T, C> extends SignalOptions<T> {
+export interface SignalOptionsWithDefault<T> {
+	default: InitialValue<T>
+	initial?: undefined
+	equals?: (a: T, b: T) => boolean
+	readonly?: boolean
+	get?: (value: T) => T
+	set?: (next: T, previous: T) => T
+}
+
+export interface SignalOptionsWithInitialAndComputed<T, C> extends SignalOptionsWithInitial<T> {
 	computed: (self: Signal<T>) => C
 }
 
-export function signal<T, C extends Record<string, () => unknown> = Record<string, () => unknown>>(
-	initial: T,
-	opts: SignalOptionsWithComputed<T, C>
-): Signal<T> & ComputedRecord<C>
-export function signal<T = never>(initial: undefined, opts?: SignalOptions<T | undefined>): Signal<T | undefined>
-export function signal<T>(initial: T, opts?: SignalOptions<T>): Signal<T>
-export function signal<T>(
-	initial: T,
-	opts?: SignalOptions<T> | SignalOptionsWithComputed<T, Record<string, () => unknown>>
-): Signal<T> {
-	const node: SignalNode<T> = {
-		currentValue: initial,
-		pendingValue: initial,
-		defaultValue: initial,
-		hasDefault: initial !== undefined,
-		equalsFn: opts?.equals ?? undefined,
-		isReadonly: !!opts?.readonly,
+export interface SignalOptionsWithoutInitialAndComputed<T, C> extends SignalOptionsWithoutInitial<T> {
+	computed: (self: Signal<T | undefined>) => C
+}
+
+export interface SignalOptionsWithDefaultAndComputed<T, C> extends SignalOptionsWithDefault<T> {
+	computed: (self: Signal<T>) => C
+}
+
+export function signal<T, C extends Record<string, () => unknown>>(
+	opts: SignalOptionsWithDefaultAndComputed<T, C>
+): Signal<T, {[K in keyof C]: ReturnType<C[K]>}>
+export function signal<T, C extends Record<string, () => unknown>>(
+	opts: SignalOptionsWithInitialAndComputed<T, C>
+): Signal<T, {[K in keyof C]: ReturnType<C[K]>}>
+export function signal<T, C extends Record<string, () => unknown>>(
+	opts: SignalOptionsWithoutInitialAndComputed<T, C>
+): Signal<T | undefined, {[K in keyof C]: ReturnType<C[K]>}>
+export function signal<T>(opts: SignalOptionsWithDefault<T>): Signal<T>
+export function signal<T>(opts: SignalOptionsWithInitial<T>): Signal<T>
+export function signal<T = never>(opts?: SignalOptionsWithoutInitial<T>): Signal<T | undefined>
+export function signal(opts?: {
+	initial?: unknown
+	default?: unknown
+	equals?: (a: unknown, b: unknown) => boolean
+	readonly?: boolean
+	get?: (value: unknown) => unknown
+	set?: (next: unknown, previous: unknown) => unknown
+	computed?: (self: Signal<unknown>) => Record<string, () => unknown>
+}): Signal<unknown> {
+	let initFn: (() => unknown) | undefined
+	let seed: unknown
+	let isDefaultBearing = false
+	let cachedDefault: unknown
+
+	if (opts !== undefined && 'default' in opts && opts.default !== undefined) {
+		isDefaultBearing = true
+		if (typeof opts.default === 'function') {
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- TS narrowing forbids factories when T is callable; at runtime any function in `default` is a factory
+			initFn = opts.default as () => unknown
+		} else {
+			seed = opts.default
+			cachedDefault = opts.default
+		}
+	} else if (opts !== undefined && 'initial' in opts && opts.initial !== undefined) {
+		if (typeof opts.initial === 'function') {
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- TS narrowing forbids factories when T is callable; at runtime any function in `initial` is a factory
+			initFn = opts.initial as () => unknown
+		} else {
+			seed = opts.initial
+		}
+	}
+
+	const node: SignalNode<unknown> = {
+		currentValue: seed,
+		pendingValue: seed,
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- equalsFn is upstreamed; caller's type contract verified at the call site
+		equalsFn: opts?.equals as ((a: unknown, b: unknown) => boolean) | undefined,
 		subs: undefined,
 		subsTail: undefined,
 		flags: ReactiveFlags.Mutable,
 	}
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	const bound = (signalOper as (this: SignalNode<T>, ...value: [T | undefined] | []) => T | boolean).bind(
-		node
-	) as unknown as Signal<T>
 
-	if (opts && 'computed' in opts) {
-		const getters = opts.computed(bound)
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- bound oper matches Signal<unknown> shape; TS can't verify the overloaded call signature
+	const rawOper = (signalOper as (this: SignalNode<unknown>, ...value: [unknown] | []) => unknown).bind(
+		node
+	) as Signal<unknown>
+
+	const realize = initFn
+		? () => {
+				if (initFn === undefined) return
+				const fn = initFn
+				initFn = undefined
+				const v = untracked(fn)
+				if (isDefaultBearing) cachedDefault = v
+				node.currentValue = v
+				node.pendingValue = v
+			}
+		: undefined
+
+	const getFn = opts?.get
+	const setFn = opts?.set
+	const isReadonly = opts?.readonly === true
+
+	// When `get` is provided, route reads through a private `computed` so that
+	// external signals read inside `get` propagate to consumers (auto-tracking).
+	const reader = getFn ? computed(() => getFn(rawOper())) : undefined
+
+	const exposed = function boundSignalOper(...args: [unknown] | []): unknown {
+		if (args.length === 0) {
+			realize?.()
+			return reader ? reader() : rawOper()
+		}
+		if (isReadonly && !mutableScope) return false
+		realize?.()
+		const next = args[0]
+		if (isDefaultBearing && next === undefined) {
+			return rawOper(cachedDefault)
+		}
+		const previous = node.pendingValue
+		const committed = setFn ? setFn(next, previous) : next
+		return rawOper(committed)
+	}
+
+	Object.defineProperty(exposed, 'name', {value: BOUND_SIGNAL_NAME})
+
+	if (opts?.computed !== undefined) {
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- exposed implements Signal<T> for whichever T the overloaded call resolved
+		const getters = opts.computed(exposed as Signal<unknown>)
 		const views: Record<string, Computed<unknown>> = {}
 		for (const key of Object.keys(getters)) {
 			views[key] = computed(getters[key])
 		}
-		Object.assign(bound, views)
+		Object.assign(exposed, views)
 	}
 
-	return bound
+	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
+	return exposed as unknown as Signal<unknown>
 }
 
 // ---------------------------------------------------------------------------
@@ -449,7 +552,7 @@ export function computed<T>(
 		getterOrOpts.set(next)
 		return readFn() !== prev
 	}
-	Object.defineProperty(writableComputed, 'name', {value: 'bound ' + computedOper.name})
+	Object.defineProperty(writableComputed, 'name', {value: BOUND_COMPUTED_NAME})
 
 	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
 	return writableComputed as unknown as Signal<T>
@@ -653,56 +756,6 @@ export function untracked<T>(fn: () => T): T {
 	} finally {
 		setActiveSub(prev)
 	}
-}
-
-// ---------------------------------------------------------------------------
-// model<T> — controlled/uncontrolled value primitive (Vue defineModel-inspired)
-// ---------------------------------------------------------------------------
-
-export function model<T>(opts: {
-	default?: undefined
-	equals?: (a: T | undefined, b: T | undefined) => boolean
-	get?: (value: T | undefined) => T | undefined
-	set?: (next: T | undefined, previous: T | undefined) => T | undefined
-}): Signal<T | undefined>
-export function model<T>(opts: {
-	default: () => T
-	equals?: (a: T, b: T) => boolean
-	get?: (value: T) => T
-	set?: (next: T | undefined, previous: T) => T
-}): Signal<T>
-export function model<T>(opts: {
-	default?: () => T
-	equals?: (a: T, b: T) => boolean
-	get?: (value: T) => T
-	set?: (next: T | undefined, previous: T) => T
-}): Signal<T> {
-	let internal: Signal<T> | undefined
-	const ensureInternal = (): Signal<T> => {
-		if (internal !== undefined) return internal
-		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- undefined is a valid seed for the no-default overload; signal() handles hasDefault correctly
-		const seed = opts.default !== undefined ? untracked(opts.default) : (undefined as T)
-		internal = signal<T>(seed, {equals: opts.equals})
-		return internal
-	}
-
-	const getFn = opts.get ?? ((value: T) => value)
-	const setFn = opts.set ?? ((next: T | undefined, previous: T) => next ?? previous)
-
-	// Reads go through computed so opts.get is memoized and external signals
-	// read inside opts.get propagate to subscribers.
-	const reader = computed(() => getFn(ensureInternal()()))
-
-	const callable = function modelOper(...args: [T | undefined] | []): T | boolean {
-		if (args.length === 0) return reader()
-		const sig = ensureInternal()
-		return sig(setFn(args[0], sig()))
-	}
-
-	Object.defineProperty(callable, 'name', {value: 'bound ' + computedOper.name})
-
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Signal<T> interface but TS can't verify the overloaded call signature
-	return callable as unknown as Signal<T>
 }
 
 // ---------------------------------------------------------------------------

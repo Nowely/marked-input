@@ -17,9 +17,9 @@ import {DomIndexer} from './DomIndexer'
 import type {ChildSequenceRegistration, ControlRegistration, DomIndexerHost, PathElements} from './DomIndexer'
 
 export class DomModel {
-	readonly container = signal<HTMLElement | null>(null)
+	readonly container = signal<HTMLElement | null>({initial: null})
 	readonly indexed = event<void>()
-	readonly isUserSelecting = signal<boolean>(false)
+	readonly isUserSelecting = signal<boolean>({initial: false})
 
 	readonly #pendingControls = new Map<string, ControlRegistration>()
 	readonly #pendingChildSequences = new Map<string, ChildSequenceRegistration>()

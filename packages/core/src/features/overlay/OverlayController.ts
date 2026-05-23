@@ -18,8 +18,8 @@ import type {ValueModel} from '../state/ValueModel'
 import {TriggerFinder} from './TriggerFinder'
 
 export class OverlayController {
-	readonly match = signal<OverlayMatch>(undefined)
-	readonly element = signal<HTMLElement | null>(null)
+	readonly match = signal<OverlayMatch>()
+	readonly element = signal<HTMLElement | null>({initial: null})
 
 	readonly slot: OverlaySlot = computed(() => {
 		const Overlay = this.props.Overlay()

@@ -43,7 +43,7 @@ export interface DomIndexerHost {
 }
 
 export class DomIndexer {
-	readonly #isIndexed = signal(false, {readonly: true})
+	readonly #isIndexed = signal<boolean>({initial: false, readonly: true})
 	readonly isIndexed: Signal<boolean> = this.#isIndexed
 
 	#elementRoles = new WeakMap<HTMLElement, RegisteredRole>()

@@ -1,11 +1,11 @@
 import type {Range} from '../../shared/editorContracts'
-import {model} from '../../shared/signals/index.js'
+import {signal} from '../../shared/signals/index.js'
 import {replaceInString} from '../../shared/utils'
 import type {PropsModel} from './PropsModel'
 
 export class ValueModel {
-	readonly current = model<string>({
-		default: () => this.props.defaultValue() ?? '',
+	readonly current = signal<string>({
+		initial: () => this.props.defaultValue() ?? '',
 		get: value => (this.props.value() !== undefined ? (this.props.value() ?? '') : value),
 		set: (next, previous) => {
 			if (next === undefined) return previous
