@@ -34,7 +34,7 @@ count(1) // write
 count() // 1
 ```
 
-Writing `undefined` stores `undefined` literally — there is no "revert to initial" behavior. If `initial` is omitted, the signal starts at `undefined` and its type widens to `Signal<T | undefined>`.
+Writing `undefined` stores `undefined` literally — there is no implicit "revert to initial" behavior. If `initial` is omitted, the signal starts at `undefined` and its type widens to `Signal<T | undefined>`.
 
 ```ts
 const slot = signal<string>() // Signal<string | undefined>
@@ -44,6 +44,8 @@ slot() // 'a'
 slot(undefined)
 slot() // undefined — literal
 ```
+
+For revert-on-undefined behavior, use `default` instead of `initial` — see the [Default slot](#default-slot) section below.
 
 **Options:**
 
@@ -68,14 +70,53 @@ const layout = signal({
 layout.isBlock() // Computed<boolean>
 ```
 
-| Option     | Type                                       | Default     | Description                                                                                                                                  |
-| ---------- | ------------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial`  | `T \| (() => T)`                           | `undefined` | Eager value, or a lazy factory called once in `untracked()` on first read/write. Factory form disallowed when `T` is itself a function type. |
-| `equals`   | `(a: T, b: T) => boolean`                  | `===`       | Return `true` to suppress propagation                                                                                                        |
-| `readonly` | `boolean`                                  | `false`     | Block writes except inside `batch(fn, {mutable: true})`                                                                                      |
-| `get`      | `(value: T) => T`                          | identity    | Memoized read transform; runs inside a private `computed` so external signals read inside `get` propagate to consumers                       |
-| `set`      | `(next: T \| undefined, previous: T) => T` | identity    | Write transform; return `previous` to reject the write                                                                                       |
-| `computed` | `(self) => Record<string, () => unknown>`  | —           | Attach named derived views to the signal callable (e.g. `layout.isBlock()`)                                                                  |
+| Option     | Type                                      | Default     | Description                                                                                                                                                                     |
+| ---------- | ----------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initial`  | `T \| (() => T)`                          | `undefined` | Eager value, or a lazy factory called once in `untracked()` on first read/write. Factory form disallowed when `T` is itself a function type. Mutually exclusive with `default`. |
+| `default`  | `T \| (() => T)`                          | `undefined` | Like `initial`, plus: writing `undefined` reverts the signal to this default. Read type stays `Signal<T>`. Mutually exclusive with `initial`. See below.                        |
+| `equals`   | `(a: T, b: T) => boolean`                 | `===`       | Return `true` to suppress propagation                                                                                                                                           |
+| `readonly` | `boolean`                                 | `false`     | Block writes except inside `batch(fn, {mutable: true})`                                                                                                                         |
+| `get`      | `(value: T) => T`                         | identity    | Memoized read transform; runs inside a private `computed` so external signals read inside `get` propagate to consumers                                                          |
+| `set`      | `(next, previous: T) => T`                | identity    | Write transform; return `previous` to reject the write. With `initial`, `next: T \| undefined`. With `default`, `next: T` (undefined is handled before `set`).                  |
+| `computed` | `(self) => Record<string, () => unknown>` | —           | Attach named derived views to the signal callable (e.g. `layout.isBlock()`)                                                                                                     |
+
+#### Default slot
+
+Use `default` instead of `initial` when writing `undefined` should reset the signal to a known fallback. This is the right tool for framework-prop signals where adapters spread every prop into a `set({...})` call — including the ones the user did not provide, which arrive as `undefined`.
+
+```ts
+const layout = signal<'inline' | 'block'>({default: 'inline', readonly: true})
+
+layout() // 'inline'
+layout('block') // returns true
+layout() // 'block'
+layout(undefined) // returns true — reverts to 'inline'
+layout() // 'inline'
+layout(undefined) // returns false — already at default
+```
+
+Trace summary:
+
+| Call           | Returns | State after |
+| -------------- | ------- | ----------- |
+| `s()`          | `'hi'`  | `'hi'`      |
+| `s('bye')`     | `true`  | `'bye'`     |
+| `s()`          | `'bye'` | `'bye'`     |
+| `s(undefined)` | `true`  | `'hi'`      |
+| `s()`          | `'hi'`  | `'hi'`      |
+| `s(undefined)` | `false` | `'hi'`      |
+
+Behavior:
+
+- The signal's read type is `Signal<T>`, not `Signal<T | undefined>`.
+- The factory form `default: () => T` is lazy and cached: it runs once inside `untracked()` on first read/write, and the cached value is used for every subsequent revert.
+- `set` (if provided) sees only defined writes. Undefined-revert is handled before `set` is consulted.
+- `readonly` gates undefined writes too. Outside a mutable batch, `s(undefined)` returns `false` and does not revert.
+- `equals` applies to revert as well — writing `undefined` while the current value already equals the default is a no-op.
+- `default` and `initial` are mutually exclusive at the type level.
+- Callable `T` (e.g. `Slot`) cannot use `default`, same rule as `initial`.
+
+If you need dynamic revert behavior (e.g. "reset to whatever the current external default formula yields"), stay on `initial` and write your own `set` — that is what `ValueModel.current` does for the controlled/uncontrolled pattern below.
 
 **Controlled / uncontrolled pattern.** `get` and `set` together model a value that can be either internally owned or externally driven:
 
@@ -443,16 +484,17 @@ This module wires those primitives through `createReactiveSystem()`, providing t
 
 This module extends the [alien-signals](./alien-signals/) reference API with:
 
-| Feature                          | alien-signals | This module |
-| -------------------------------- | ------------- | ----------- |
-| Custom `equals` on signal        | No            | Yes         |
-| Custom `equals` on computed      | No            | Yes         |
-| `readonly` signals               | No            | Yes         |
-| Lazy `initial` factory           | No            | Yes         |
-| `get` / `set` transforms         | No            | Yes         |
-| `event<T>()` primitive           | No            | Yes         |
-| `watch()` with old/new values    | No            | Yes         |
-| `batch()` with `{mutable}` scope | No            | Yes         |
-| Effect scopes                    | Yes           | Yes         |
-| `trigger()`                      | Yes           | Yes         |
-| `untracked()`                    | No            | Yes         |
+| Feature                              | alien-signals | This module |
+| ------------------------------------ | ------------- | ----------- |
+| Custom `equals` on signal            | No            | Yes         |
+| Custom `equals` on computed          | No            | Yes         |
+| `readonly` signals                   | No            | Yes         |
+| Lazy `initial` factory               | No            | Yes         |
+| `default` slot (revert-on-undefined) | No            | Yes         |
+| `get` / `set` transforms             | No            | Yes         |
+| `event<T>()` primitive               | No            | Yes         |
+| `watch()` with old/new values        | No            | Yes         |
+| `batch()` with `{mutable}` scope     | No            | Yes         |
+| Effect scopes                        | Yes           | Yes         |
+| `trigger()`                          | Yes           | Yes         |
+| `untracked()`                        | No            | Yes         |

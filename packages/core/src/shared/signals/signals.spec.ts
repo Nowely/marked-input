@@ -623,6 +623,239 @@ describe('signal<T> with get/set transforms', () => {
 })
 
 // ---------------------------------------------------------------------------
+// signal<T> with default slot — revert-on-undefined
+// ---------------------------------------------------------------------------
+
+describe('signal<T> with default slot', () => {
+	beforeEach(() => vi.clearAllMocks())
+
+	it('returns the default value on first read', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s()).toBe('hi')
+	})
+
+	it('keeps Signal<T> exact (no undefined in the read type)', () => {
+		const s = signal<string>({default: 'hi'})
+		const exact: Signal<string> = s
+		expect(exact()).toBe('hi')
+	})
+
+	it('matches the canonical revert trace', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s()).toBe('hi')
+		expect(s('bye')).toBe(true)
+		expect(s()).toBe('bye')
+		expect(s(undefined)).toBe(true)
+		expect(s()).toBe('hi')
+	})
+
+	it('returns false from setter when already at default and undefined is written', () => {
+		const s = signal<string>({default: 'hi'})
+		expect(s(undefined)).toBe(false)
+	})
+
+	it('reverts to the default on undefined write after multiple writes', () => {
+		const s = signal<number>({default: 0})
+		s(1)
+		s(2)
+		s(3)
+		expect(s(undefined)).toBe(true)
+		expect(s()).toBe(0)
+	})
+
+	it('notifies subscribers on revert when value actually changes', () => {
+		const s = signal<string>({default: 'hi'})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s('bye')
+		expect(runs).toHaveBeenCalledTimes(1)
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(2)
+		expect(s()).toBe('hi')
+	})
+
+	it('does not notify when reverting from the default to the default', () => {
+		const s = signal<string>({default: 'hi'})
+		const runs = vi.fn()
+		trackedEffect(() => {
+			s()
+			runs()
+		})
+		runs.mockClear()
+		s(undefined)
+		expect(runs).toHaveBeenCalledTimes(0)
+	})
+
+	describe('factory', () => {
+		it('returns the factory result on first read', () => {
+			const s = signal<string>({default: () => 'seed'})
+			expect(s()).toBe('seed')
+		})
+
+		it('runs the factory lazily on first read', () => {
+			let calls = 0
+			const s = signal<string>({
+				default: () => {
+					calls++
+					return 'seed'
+				},
+			})
+			expect(calls).toBe(0)
+			s()
+			expect(calls).toBe(1)
+			s()
+			expect(calls).toBe(1)
+		})
+
+		it('runs the factory at most once across reads and writes', () => {
+			let calls = 0
+			const s = signal<number>({
+				default: () => {
+					calls++
+					return 7
+				},
+			})
+			s(99)
+			s(undefined)
+			s(11)
+			s(undefined)
+			expect(calls).toBe(1)
+		})
+
+		it('caches the factory result for subsequent reverts', () => {
+			let nextSeed = 1
+			const s = signal<number>({default: () => nextSeed})
+			expect(s()).toBe(1)
+			nextSeed = 2
+			s(99)
+			s(undefined)
+			expect(s()).toBe(1)
+		})
+
+		it('runs the factory in untracked scope', () => {
+			const dep = signal<string>({initial: 'x'})
+			const s = signal<string>({default: () => dep()})
+			const runs = vi.fn()
+			trackedEffect(() => {
+				s()
+				runs()
+			})
+			expect(runs).toHaveBeenCalledTimes(1)
+			dep('y')
+			expect(runs).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('interaction with set', () => {
+		it('bypasses set when writing undefined', () => {
+			const setSpy = vi.fn((next: number, _previous: number) => next)
+			const s = signal<number>({default: 0, set: setSpy})
+			s(undefined)
+			expect(setSpy).not.toHaveBeenCalled()
+			expect(s()).toBe(0)
+		})
+
+		it('runs set for defined writes', () => {
+			const setSpy = vi.fn((next: number, _previous: number) => next * 2)
+			const s = signal<number>({default: 1, set: setSpy})
+			s(5)
+			expect(setSpy).toHaveBeenCalledWith(5, 1)
+			expect(s()).toBe(10)
+		})
+	})
+
+	describe('interaction with get', () => {
+		it('applies get to the default value', () => {
+			const s = signal<string>({
+				default: 'hi',
+				get: v => v.toUpperCase(),
+			})
+			expect(s()).toBe('HI')
+		})
+
+		it('applies get to the post-revert value', () => {
+			const s = signal<string>({
+				default: 'hi',
+				get: v => v.toUpperCase(),
+			})
+			s('bye')
+			expect(s()).toBe('BYE')
+			s(undefined)
+			expect(s()).toBe('HI')
+		})
+	})
+
+	describe('interaction with readonly', () => {
+		it('rejects undefined writes outside a mutable batch', () => {
+			const s = signal<string>({default: 'hi', readonly: true})
+			s('bye') // ignored
+			expect(s()).toBe('hi')
+			expect(s(undefined)).toBe(false)
+			expect(s()).toBe('hi')
+		})
+
+		it('allows undefined writes to revert inside a mutable batch', () => {
+			const s = signal<string>({default: 'hi', readonly: true})
+			batch(
+				() => {
+					s('bye')
+				},
+				{mutable: true}
+			)
+			expect(s()).toBe('bye')
+			batch(
+				() => {
+					s(undefined)
+				},
+				{mutable: true}
+			)
+			expect(s()).toBe('hi')
+		})
+	})
+
+	describe('interaction with equals', () => {
+		it('treats revert as a no-op when current value equals default per equals', () => {
+			const s = signal<{id: number; name: string}>({
+				default: {id: 1, name: 'a'},
+				equals: (a, b) => a.id === b.id,
+			})
+			s({id: 1, name: 'changed'})
+			expect(s(undefined)).toBe(false)
+		})
+
+		it('reverts and notifies when equals reports changed', () => {
+			const s = signal<{id: number}>({
+				default: {id: 1},
+				equals: (a, b) => a.id === b.id,
+			})
+			s({id: 2})
+			expect(s(undefined)).toBe(true)
+			expect(s().id).toBe(1)
+		})
+	})
+
+	describe('interaction with computed views', () => {
+		it('attaches computed views that see the post-revert value', () => {
+			const layout = signal({
+				default: 'inline' as 'inline' | 'block',
+				computed: self => ({
+					isBlock: () => self() === 'block',
+				}),
+			})
+			expect(layout.isBlock()).toBe(false)
+			layout('block')
+			expect(layout.isBlock()).toBe(true)
+			layout(undefined)
+			expect(layout.isBlock()).toBe(false)
+		})
+	})
+})
+
+// ---------------------------------------------------------------------------
 // event<T>()
 // ---------------------------------------------------------------------------
 

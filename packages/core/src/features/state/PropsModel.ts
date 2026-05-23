@@ -13,11 +13,9 @@ import type {
 import {shallow} from '../../shared/utils/shallow'
 
 // Framework adapters spread *every* prop into `set({...})`, including ones the
-// user did not provide. For default-bearing props (e.g. `options`, `readOnly`)
-// an incoming `undefined` means "not provided" — we must keep the current
-// (default) value instead of clobbering it. Use this `set` transform on every
-// prop signal that has a non-undefined `initial`.
-const keepOnUndefined = <T>(next: T | undefined, previous: T): T => next ?? previous
+// user did not provide. Default-bearing props use `default: T` so that an
+// incoming `undefined` reverts the signal to its declared default instead of
+// clobbering it.
 
 export class PropsModel {
 	readonly value = signal<string>({readonly: true})
@@ -25,32 +23,19 @@ export class PropsModel {
 
 	readonly onChange = signal<(value: string) => void>({readonly: true})
 
-	readonly options = signal<CoreOption[]>({
-		initial: DEFAULT_OPTIONS,
-		readonly: true,
-		set: keepOnUndefined,
-	})
-	readonly readOnly = signal<boolean>({initial: false, readonly: true, set: keepOnUndefined})
+	readonly options = signal<CoreOption[]>({default: DEFAULT_OPTIONS, readonly: true})
+	readonly readOnly = signal<boolean>({default: false, readonly: true})
 
 	readonly layout = signal({
-		initial: 'inline' as 'inline' | 'block',
+		default: 'inline' as 'inline' | 'block',
 		readonly: true,
-		set: keepOnUndefined,
 		computed: self => ({
 			isBlock: () => self() === 'block',
 		}),
 	})
-	readonly draggable = signal<boolean | DraggableConfig>({
-		initial: false,
-		readonly: true,
-		set: keepOnUndefined,
-	})
+	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
 
-	readonly showOverlayOn = signal<OverlayTrigger>({
-		initial: 'change',
-		readonly: true,
-		set: keepOnUndefined,
-	})
+	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})
 
 	readonly Span = signal<Slot>({readonly: true})
 	readonly Mark = signal<Slot>({readonly: true})

@@ -332,15 +332,18 @@ export function isReactive(fn: unknown): fn is Signal<unknown> | Computed<unknow
 	return name === BOUND_SIGNAL_NAME || name === BOUND_COMPUTED_NAME
 }
 
-// `initial` accepts a value OR a lazy factory `() => T`. For T that is itself a
-// function (e.g. `Slot`), `initial` is intentionally `never` — runtime cannot
-// disambiguate "the value" from "a factory of the value" via `typeof`. For
-// callable T, omit `initial` and write via the signal callable instead.
+// `initial` and `default` both accept a value OR a lazy factory `() => T`. For
+// T that is itself a function (e.g. `Slot`), the slot type is intentionally
+// `never` — runtime cannot disambiguate "the value" from "a factory of the
+// value" via `typeof`. For callable T, omit `initial`/`default` and write via
+// the signal callable instead. `initial` and `default` are mutually exclusive
+// at the type level; only one carries a non-undefined value at a time.
 type Callable = (...args: any[]) => any
 type InitialValue<T> = [T] extends [Callable] ? never : T | (() => T)
 
 export interface SignalOptionsWithInitial<T> {
 	initial: InitialValue<T>
+	default?: undefined
 	equals?: (a: T, b: T) => boolean
 	readonly?: boolean
 	get?: (value: T) => T
@@ -349,10 +352,20 @@ export interface SignalOptionsWithInitial<T> {
 
 export interface SignalOptionsWithoutInitial<T> {
 	initial?: undefined
+	default?: undefined
 	equals?: (a: T | undefined, b: T | undefined) => boolean
 	readonly?: boolean
 	get?: (value: T | undefined) => T | undefined
 	set?: (next: T | undefined, previous: T | undefined) => T | undefined
+}
+
+export interface SignalOptionsWithDefault<T> {
+	default: InitialValue<T>
+	initial?: undefined
+	equals?: (a: T, b: T) => boolean
+	readonly?: boolean
+	get?: (value: T) => T
+	set?: (next: T, previous: T) => T
 }
 
 export type ComputedRecord<C> = {
@@ -367,16 +380,25 @@ export interface SignalOptionsWithoutInitialAndComputed<T, C> extends SignalOpti
 	computed: (self: Signal<T | undefined>) => C
 }
 
+export interface SignalOptionsWithDefaultAndComputed<T, C> extends SignalOptionsWithDefault<T> {
+	computed: (self: Signal<T>) => C
+}
+
+export function signal<T, C extends Record<string, () => unknown>>(
+	opts: SignalOptionsWithDefaultAndComputed<T, C>
+): Signal<T> & ComputedRecord<C>
 export function signal<T, C extends Record<string, () => unknown>>(
 	opts: SignalOptionsWithInitialAndComputed<T, C>
 ): Signal<T> & ComputedRecord<C>
 export function signal<T, C extends Record<string, () => unknown>>(
 	opts: SignalOptionsWithoutInitialAndComputed<T, C>
 ): Signal<T | undefined> & ComputedRecord<C>
+export function signal<T>(opts: SignalOptionsWithDefault<T>): Signal<T>
 export function signal<T>(opts: SignalOptionsWithInitial<T>): Signal<T>
 export function signal<T = never>(opts?: SignalOptionsWithoutInitial<T>): Signal<T | undefined>
 export function signal(opts?: {
 	initial?: unknown
+	default?: unknown
 	equals?: (a: unknown, b: unknown) => boolean
 	readonly?: boolean
 	get?: (value: unknown) => unknown
@@ -385,8 +407,19 @@ export function signal(opts?: {
 }): Signal<unknown> {
 	let initFn: (() => unknown) | undefined
 	let seed: unknown
+	let isDefaultBearing = false
+	let cachedDefault: unknown
 
-	if (opts !== undefined && 'initial' in opts && opts.initial !== undefined) {
+	if (opts !== undefined && 'default' in opts && opts.default !== undefined) {
+		isDefaultBearing = true
+		if (typeof opts.default === 'function') {
+			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- TS narrowing forbids factories when T is callable; at runtime any function in `default` is a factory
+			initFn = opts.default as () => unknown
+		} else {
+			seed = opts.default
+			cachedDefault = opts.default
+		}
+	} else if (opts !== undefined && 'initial' in opts && opts.initial !== undefined) {
 		if (typeof opts.initial === 'function') {
 			// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- TS narrowing forbids factories when T is callable; at runtime any function in `initial` is a factory
 			initFn = opts.initial as () => unknown
@@ -416,6 +449,7 @@ export function signal(opts?: {
 				const fn = initFn
 				initFn = undefined
 				const v = untracked(fn)
+				if (isDefaultBearing) cachedDefault = v
 				node.currentValue = v
 				node.pendingValue = v
 			}
@@ -437,6 +471,9 @@ export function signal(opts?: {
 		if (isReadonly && !mutableScope) return false
 		realize?.()
 		const next = args[0]
+		if (isDefaultBearing && next === undefined) {
+			return rawOper(cachedDefault)
+		}
 		const previous = node.pendingValue
 		const committed = setFn ? setFn(next, previous) : next
 		return rawOper(committed)

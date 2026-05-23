@@ -292,8 +292,10 @@ class Store {
     readonly blocks: BlockRegistry
 
     readonly props: {
-        // Each is `Signal<T>` declared with `signal<T>({readonly: true})` — omitting
-        // `initial` widens the signal type to `Signal<T | undefined>` automatically.
+        // Identity props are declared with `signal<T>({readonly: true})` — no
+        // initial, so the type widens to `Signal<T | undefined>`. Default-bearing
+        // props use `signal<T>({default: X, readonly: true})` so an incoming
+        // `undefined` from the adapter spread reverts to the declared default.
         value: Signal<string | undefined>
         defaultValue: Signal<string | undefined>
         onChange: Signal<((value: string) => void) | undefined>
