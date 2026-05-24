@@ -222,9 +222,9 @@ Events use `event<T>()` to create typed emitters backed by reactive signals:
 | `reparse`       | parsing        | Re-parse triggered          | `void`                           |
 | `close`         | overlay        | Close overlay               | `void`                           |
 | `select`        | overlay        | Overlay item selected       | `{ mark: Token, match: OverlayMatch }` |
-| `rendered`      | lifecycle      | After tokens render         | `void`                           |
-| `mounted`       | lifecycle      | Framework initial mount      | `void`                           |
-| `unmounted`     | lifecycle      | Framework unmount           | `void`                           |
+| `rendered`      | host           | After tokens render         | `void`                           |
+| `mounted`       | host           | Framework initial mount      | `void`                           |
+| `unmounted`     | host           | Framework unmount           | `void`                           |
 | `action`        | drag           | Drag-and-drop action        | `DragAction`                     |
 
 `DomController.reconcile()` is a method called by reactive effects and by the post-render focus workflow; it is not a store event.
@@ -314,7 +314,7 @@ class Store {
     }
 
     // Features live directly on store, not nested under .feature
-    readonly lifecycle: Lifecycle          // mounted, unmounted, rendered events
+    readonly host:      Host               // mounted/unmounted/rendered events + container HTMLElement
     readonly props:     PropsModel         // framework-provided configuration
     readonly caret:     CaretModel         // selection, position (computed), isUserSelecting, isAllSelected
     readonly slots:     SlotsFeature       // isBlock, isDragEnabled, slot component/props, mark resolver
@@ -366,7 +366,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 
 | Feature                       | Responsibility                                           |
 | ----------------------------- | -------------------------------------------------------- |
-| **Lifecycle**                 | Mount/unmount/render lifecycle events                     |
+| **Host**                      | Adapter-fed runtime state: mount/unmount/render events and the container HTMLElement |
 | **ValueModel**                | Accepted serialized value state, raw range replacement   |
 | **EditController**            | Unified user edit path: `replace(range, replacement, caretAt?)`, `{end: -1}` resolves to current value length |
 | **ParseController**           | Token parsing, parser selection, reparse event            |
@@ -385,7 +385,7 @@ Signal subscription order is significant: `ParseController` subscribes to `value
 React/Vue render asynchronously, so initialization order matters:
 
 ```typescript
-// 1. Framework emits store.lifecycle.mounted() on initial mount
+// 1. Framework emits store.host.mounted() on initial mount
 //    → Store enables all features (DOM listeners, reactive subscriptions)
 
 // 2. After mount, ValueModel accepts props.value/defaultValue. ParseController
@@ -395,9 +395,9 @@ React/Vue render asynchronously, so initialization order matters:
 // 3. Sync contenteditable attributes (layout effect)
 //    → DomController reconciles DOM state
 
-// 4. Framework emits store.lifecycle.rendered() after tokens render
+// 4. Framework emits store.host.rendered() after tokens render
 
-// 5. Framework emits store.lifecycle.unmounted() on unmount
+// 5. Framework emits store.host.unmounted() on unmount
 //    → Store disables all features (cleanup DOM listeners, dispose scopes)
 ```
 

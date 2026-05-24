@@ -5,7 +5,7 @@ import type {Token} from '../parsing'
 import {pathEquals, pathKey} from '../parsing/tokenIndex'
 import type {TokenIndex} from '../parsing/tokenIndex'
 import type {TokenModel} from '../parsing/TokenModel'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 
 export type RegisteredRole =
@@ -53,15 +53,15 @@ export class DomIndexer {
 
 	constructor(
 		private readonly host: DomIndexerHost,
-		private readonly lifecycle: Lifecycle,
+		hostModel: Host,
 		private readonly props: PropsModel,
 		private readonly tokens: TokenModel
 	) {
-		lifecycle.onMounted(() => {
-			// Container mounts before MarkedInput, so the first lifecycle.rendered()
-			// is emitted before this watch subscribes. Run the initial commit here
-			// instead of relying on a follow-up rendered event.
-			watch(lifecycle.rendered, () => this.#handleRendered(), {immediate: true})
+		hostModel.onMounted(() => {
+			// Container mounts before MarkedInput, so the first rendered() event
+			// is emitted before this watch subscribes. Run the initial commit
+			// here instead of relying on a follow-up rendered event.
+			watch(hostModel.rendered, () => this.#handleRendered(), {immediate: true})
 			watch(props.readOnly, () => this.reconcile())
 			watch(host.isUserSelecting, () => this.reconcile())
 		})

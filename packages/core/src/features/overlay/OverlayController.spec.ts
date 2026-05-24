@@ -18,7 +18,7 @@ describe('OverlayController', () => {
 
 	beforeEach(() => {
 		store = new Store()
-		store.lifecycle.mounted()
+		store.host.mounted()
 	})
 
 	describe('ownership', () => {

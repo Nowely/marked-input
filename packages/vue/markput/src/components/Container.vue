@@ -16,14 +16,14 @@ const result = useMarkput(s => ({
 const setContainerRef = (el: unknown) => {
 	const resolved = el as {$el?: HTMLElement} | HTMLElement | null
 	const element = (resolved && '$el' in resolved ? resolved.$el : resolved) as HTMLDivElement | null
-	store.dom.container(element)
+	store.host.container(element)
 }
 
 const containerComponent = useMarkput(s => s.slots.containerComponent)
 const containerProps = useMarkput(s => s.slots.containerProps)
 
-onMounted(() => store.lifecycle.rendered())
-onUpdated(() => store.lifecycle.rendered())
+onMounted(() => store.host.rendered())
+onUpdated(() => store.host.rendered())
 </script>
 
 <template>

@@ -6,11 +6,12 @@ The central orchestrator of the markput system. Aggregates reactive state, compu
 
 - **Store**: Main state container that manages:
     - **Feature state** (`store.<feature>.*`) — signals owned by features: tokens, accepted serialized value, caret range, drag-selection flag, overlay match
+    - **Host** (`store.host`) — adapter-fed runtime state: `mounted`/`unmounted`/`rendered` events and the `container` HTMLElement signal. Written by React/Vue `MarkedInput`; features read.
     - **Props** (`store.props`) — readonly signals written only via `store.props.set()` (value, options, readOnly, drag, slots, etc.)
     - **Computed values** (`store.<feature>.*`) — derived values: `enabled`, `parser`, `caret.position`, `containerComponent`, `containerProps`, slot resolvers
-    - **Events** (`store.<feature>.<event>()`) — typed reactive events: `parsing.reparse`, `overlay.select`, `overlay.close`, `drag.action`, and lifecycle events
-    - **DOM refs** (`store.dom.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
-    - **DOM registration** (`store.dom`) — adapter-owned structural refs, token location, raw selection mapping, and caret placement
+    - **Events** (`store.<feature>.<event>()`) — typed reactive events: `parsing.reparse`, `overlay.select`, `overlay.close`, `drag.action`, and host lifecycle events
+    - **DOM refs** (`store.host.container`, `store.overlay.element`) — reactive signals holding container and overlay HTMLElement references
+    - **DOM registration** (`store.dom`) — adapter-owned structural refs (`controlFor`, `childrenFor`), token location, raw selection mapping, and caret placement
     - **Features** (`store.<feature>`) — all feature instances
     - **`store.props.set()`** — batch update for framework-provided prop signals (used by React/Vue `MarkedInput`)
 

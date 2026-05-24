@@ -19,7 +19,7 @@ describe('BlockController', () => {
 				value: 'test',
 				onChange: () => {},
 			})
-			store.lifecycle.mounted()
+			store.host.mounted()
 
 			// disable drag
 			store.props.set({layout: 'inline', draggable: false})
@@ -42,7 +42,7 @@ describe('BlockController', () => {
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
-		store.lifecycle.mounted()
+		store.host.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 		const currentSpy = vi.spyOn(store.value, 'current')
 
@@ -59,7 +59,7 @@ describe('BlockController', () => {
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
-		store.lifecycle.mounted()
+		store.host.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 
 		let runs = 0
@@ -83,7 +83,7 @@ describe('BlockController', () => {
 			Mark: () => null,
 			options: [{markup: '__slot__\n\n'}],
 		})
-		store.lifecycle.mounted()
+		store.host.mounted()
 		store.value.current('alpha\n\nbeta\n\n')
 		const replaceSpy = vi.spyOn(store.value, 'replace')
 		const positionSpy = vi.spyOn(store.selection, 'position')

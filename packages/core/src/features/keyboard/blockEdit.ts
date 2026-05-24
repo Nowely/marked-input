@@ -4,7 +4,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
+type KbCtx = Pick<Store, 'host' | 'dom' | 'value' | 'selection' | 'edit' | 'tokens' | 'props'>
 import {createRowContent} from '../block/createRowContent'
 import {addDragRow, getMergeDragRowJoinPos, mergeDragRows, canMergeRows} from '../block/operations'
 import {consumeMarkupPaste} from '../clipboard'
@@ -18,7 +18,7 @@ function isTextLikeRow(token: Token): boolean {
 }
 
 export function enableBlockEdit(store: KbCtx): void {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	listen(container, 'keydown', e => {
@@ -47,7 +47,7 @@ export function enableBlockEdit(store: KbCtx): void {
 }
 
 function handleDelete(store: KbCtx, event: KeyboardEvent) {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	const blockDivs = htmlChildren(container)
@@ -143,7 +143,7 @@ function handleEnter(store: KbCtx, event: KeyboardEvent) {
 	if (event.key !== KEYBOARD.ENTER) return
 	if (event.shiftKey) return
 
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -195,7 +195,7 @@ function focusRow(store: KbCtx, token: Token, row: HTMLElement, caret: 'start' |
 }
 
 function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction: 'left' | 'right'): boolean {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return false
 
 	const activeElement = document.activeElement
@@ -229,7 +229,7 @@ function handleBlockArrowLeftRight(store: KbCtx, event: KeyboardEvent, direction
 }
 
 function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -267,7 +267,7 @@ function handleArrowUpDown(store: KbCtx, event: KeyboardEvent) {
 }
 
 function handleBlockBeforeInput(store: KbCtx, event: InputEvent) {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	const activeElement = document.activeElement
@@ -285,7 +285,7 @@ function handleBlockBeforeInput(store: KbCtx, event: InputEvent) {
 		}
 		case 'insertFromPaste':
 		case 'insertReplacementText': {
-			const c = store.dom.container()
+			const c = store.host.container()
 			const markup = c ? consumeMarkupPaste(c) : undefined
 			const pasteData = markup ?? event.dataTransfer?.getData('text/plain') ?? ''
 			replaceBlockRange(store, event, pasteData)

@@ -12,7 +12,7 @@ describe('EditController', () => {
 	it('replaces value and places caret after replacement', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello world'})
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 6, end: 11}, 'markput')
 
@@ -23,7 +23,7 @@ describe('EditController', () => {
 	it('places caret at range start when deleting', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello world'})
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 5, end: 11}, '')
 
@@ -35,7 +35,7 @@ describe('EditController', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', onChange})
-		store.lifecycle.mounted()
+		store.host.mounted()
 		store.selection.position(2)
 
 		store.edit.replace({start: 4, end: 2}, 'x')
@@ -49,7 +49,7 @@ describe('EditController', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
-		store.lifecycle.mounted()
+		store.host.mounted()
 		store.selection.position(1)
 
 		store.edit.replace({start: 1, end: 4}, 'i')
@@ -63,7 +63,7 @@ describe('EditController', () => {
 		const store = new Store()
 		const onChange = vi.fn()
 		store.props.set({value: 'hello', onChange})
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 0, end: 5}, 'world')
 
@@ -75,7 +75,7 @@ describe('EditController', () => {
 	it('honors explicit caretAt over the natural end of the replacement', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello world'})
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 0, end: 5}, 'hi', 0)
 
@@ -86,7 +86,7 @@ describe('EditController', () => {
 	it('normalizes negative range.end to the current value length', () => {
 		const store = new Store()
 		store.props.set({defaultValue: 'hello world'})
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 0, end: -1}, 'replaced')
 
@@ -96,7 +96,7 @@ describe('EditController', () => {
 
 	it('normalizes negative range.end on an empty value', () => {
 		const store = new Store()
-		store.lifecycle.mounted()
+		store.host.mounted()
 
 		store.edit.replace({start: 0, end: -1}, 'first')
 

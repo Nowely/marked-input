@@ -1,9 +1,14 @@
-import {effectScope, event, watch} from '../../shared/signals'
+import {effectScope, event, signal, watch} from '../../shared/signals'
 
-export class Lifecycle {
+// Owns adapter-fed runtime state: lifecycle events emitted by the embedding
+// component (mounted/unmounted/rendered) and the host element ref. Features
+// read these; only the React/Vue adapter writes them.
+
+export class Host {
 	readonly mounted = event()
 	readonly unmounted = event()
 	readonly rendered = event()
+	readonly container = signal<HTMLElement | null>({initial: null})
 
 	/**
 	 * Run `setup` when the editor is mounted. Any reactive subscription

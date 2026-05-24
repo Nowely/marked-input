@@ -13,7 +13,7 @@ describe('TokenModel', () => {
 
 	function mountWith(value: string) {
 		store.props.set({Mark: () => null, defaultValue: value})
-		store.lifecycle.mounted()
+		store.host.mounted()
 	}
 
 	describe('auto-parse on value change', () => {
@@ -40,14 +40,14 @@ describe('TokenModel', () => {
 
 		it('does not parse markup when Mark is not set', () => {
 			store.props.set({options: [{markup: '@[__value__]'}]})
-			store.lifecycle.mounted()
+			store.host.mounted()
 			store.value.current('@[test]')
 			expect(store.tokens.current()).toEqual([{type: 'text', content: '@[test]', position: {start: 0, end: 7}}])
 		})
 
 		it('parses markup when Mark is set', () => {
 			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
-			store.lifecycle.mounted()
+			store.host.mounted()
 			store.value.current('@[test]')
 			expect(store.tokens.current()).toEqual(expect.arrayContaining([expect.objectContaining({type: 'mark'})]))
 		})
@@ -79,7 +79,7 @@ describe('TokenModel', () => {
 			// added in onMounted, so by the time downstream listeners observe
 			// value.current, tokens.current reflects the new value.
 			store.props.set({Mark: () => null, defaultValue: ''})
-			store.lifecycle.mounted()
+			store.host.mounted()
 
 			let tokensAtChangeTime: Token[] | undefined
 			const stop = watch(store.value.current, () => {
@@ -102,7 +102,7 @@ describe('TokenModel', () => {
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
-			store.lifecycle.mounted()
+			store.host.mounted()
 			expect(store.tokens.current()).toHaveLength(1)
 			expect(store.tokens.current()[0].type).toBe('mark')
 		})
@@ -114,7 +114,7 @@ describe('TokenModel', () => {
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
-			store.lifecycle.mounted()
+			store.host.mounted()
 			expect(store.tokens.current()).toHaveLength(3)
 			expect(store.tokens.current()[0].type).toBe('text')
 			expect(store.tokens.current()[1].type).toBe('mark')

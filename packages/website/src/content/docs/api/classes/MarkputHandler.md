@@ -13,7 +13,7 @@ Defined in: [core/src/store/MarkputHandler.ts:5](https://github.com/Nowely/marke
 
 ```ts
 new MarkputHandler(
-   dom,
+   host,
    overlayFeature,
    selection): MarkputHandler;
 ```
@@ -24,7 +24,7 @@ Defined in: [core/src/store/MarkputHandler.ts:6](https://github.com/Nowely/marke
 
 | Parameter | Type |
 | ------ | ------ |
-| `dom` | `DomModel` |
+| `host` | `Host` |
 | `overlayFeature` | `OverlayController` |
 | `selection` | `SelectionController` |
 

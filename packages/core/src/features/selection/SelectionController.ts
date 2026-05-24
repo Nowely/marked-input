@@ -4,7 +4,7 @@ import {computed, listen, signal, watch} from '../../shared/signals'
 import {shallow} from '../../shared/utils/shallow'
 import type {DomModel} from '../dom/DomModel'
 import type {TokenModel} from '../parsing/TokenModel'
-import type {Lifecycle} from '../state/Lifecycle'
+import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
 import type {ValueModel} from '../state/ValueModel'
 import {focusIfNeeded, placeAtChildBoundary, placeAtTextOffset, placeRangeAcrossSurfaces} from './caretDom'
@@ -26,13 +26,13 @@ export class SelectionController {
 	#isPlacingCaret = false
 
 	constructor(
-		private readonly lifecycle: Lifecycle,
+		private readonly host: Host,
 		private readonly dom: DomModel,
 		private readonly parsing: TokenModel,
 		private readonly value: ValueModel,
 		private readonly props: PropsModel
 	) {
-		lifecycle.onMounted(() => {
+		host.onMounted(() => {
 			this.#focusEmptyEditorOnClick()
 
 			this.#trackSelection()
@@ -46,7 +46,7 @@ export class SelectionController {
 	focusFirst(): void {
 		const firstAddress = this.parsing.index().addressFor([0])
 		if (firstAddress && this.placeAtAddress(firstAddress, 'start')) return
-		this.dom.container()?.focus()
+		this.host.container()?.focus()
 	}
 
 	selectAll(): void {
@@ -84,12 +84,12 @@ export class SelectionController {
 	 * browser leaves the editor unfocused because there's no text to click on.
 	 */
 	#focusEmptyEditorOnClick(): void {
-		const container = this.dom.container()
+		const container = this.host.container()
 		if (!container) return
 		listen(container, 'click', () => {
 			const tokens = this.parsing.current()
 			if (tokens.length === 1 && tokens[0].type === 'text' && tokens[0].content === '') {
-				firstHtmlChild(this.dom.container())?.focus()
+				firstHtmlChild(this.host.container())?.focus()
 			}
 		})
 	}
@@ -103,7 +103,7 @@ export class SelectionController {
 
 		listen(document, 'mousemove', e => {
 			if (pressedAt === null) return
-			const container = this.dom.container()
+			const container = this.host.container()
 			if (!container) return
 
 			const startedOutsideEditor = !container.contains(pressedAt)
@@ -130,7 +130,7 @@ export class SelectionController {
 	}
 
 	#trackSelection(): void {
-		const container = this.dom.container()
+		const container = this.host.container()
 		if (!container) return
 
 		const sync = (): void => {

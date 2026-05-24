@@ -2,10 +2,10 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'selection' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'host' | 'dom' | 'selection' | 'props' | 'tokens'>
 
 export function enableArrowNav(store: KbCtx): void {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 
 	listen(container, 'keydown', e => {

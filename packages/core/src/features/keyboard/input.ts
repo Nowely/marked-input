@@ -3,7 +3,7 @@ import type {Range} from '../../shared/editorContracts'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
+type KbCtx = Pick<Store, 'host' | 'dom' | 'value' | 'selection' | 'edit' | 'props' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import type {Token} from '../parsing'
 import {rawRangeFromInputEvent} from './inputRange'
@@ -14,12 +14,12 @@ type SpanInputTarget = {
 }
 
 export function enableInput(store: KbCtx): void {
-	const container = store.dom.container()
+	const container = store.host.container()
 	if (!container) return
 	let compositionRange: Range | undefined
 
 	listen(container, 'paste', e => {
-		const c = store.dom.container()
+		const c = store.host.container()
 		if (c) captureMarkupPaste(e, c)
 		handlePaste(store, e)
 	})
@@ -167,7 +167,7 @@ export function applySpanInput(focus: SpanInputTarget, event: InputEvent): boole
 function replacementForInput(store: KbCtx, event: InputEvent): string | undefined {
 	if (event.inputType.startsWith('delete')) return ''
 	if (event.inputType === 'insertFromPaste' || event.inputType === 'insertReplacementText') {
-		const container = store.dom.container()
+		const container = store.host.container()
 		const markup = container ? consumeMarkupPaste(container) : undefined
 		return markup ?? event.dataTransfer?.getData('text/plain') ?? event.data ?? ''
 	}
@@ -210,7 +210,7 @@ export function handlePaste(store: KbCtx, event: ClipboardEvent): void {
 	if (!store.selection.isAllSelected()) return
 
 	event.preventDefault()
-	const c = store.dom.container()
+	const c = store.host.container()
 	const markup = c ? consumeMarkupPaste(c) : undefined
 	const newContent = markup ?? event.clipboardData?.getData('text/plain') ?? ''
 	store.edit.replace({start: 0, end: -1}, newContent)

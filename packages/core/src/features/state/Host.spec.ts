@@ -3,32 +3,42 @@ import {describe, expect, it, vi} from 'vitest'
 import {signal, watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
 
-describe('Lifecycle', () => {
+describe('Host', () => {
 	it('exposes mounted, unmounted, rendered events', () => {
 		const store = new Store()
-		expect(typeof store.lifecycle.mounted).toBe('function')
-		expect(typeof store.lifecycle.unmounted).toBe('function')
-		expect(typeof store.lifecycle.rendered).toBe('function')
+		expect(typeof store.host.mounted).toBe('function')
+		expect(typeof store.host.unmounted).toBe('function')
+		expect(typeof store.host.rendered).toBe('function')
+	})
+
+	it('exposes a container signal initialised to null', () => {
+		const store = new Store()
+		expect(store.host.container()).toBeNull()
+		const el = document.createElement('div')
+		store.host.container(el)
+		expect(store.host.container()).toBe(el)
+		store.host.container(null)
+		expect(store.host.container()).toBeNull()
 	})
 
 	describe('onMounted()', () => {
 		it('runs setup once on mounted', () => {
 			const store = new Store()
 			const setup = vi.fn()
-			store.lifecycle.onMounted(setup)
+			store.host.onMounted(setup)
 
 			expect(setup).not.toHaveBeenCalled()
-			store.lifecycle.mounted()
+			store.host.mounted()
 			expect(setup).toHaveBeenCalledTimes(1)
 		})
 
 		it('does not re-run setup if mounted fires again without an unmount', () => {
 			const store = new Store()
 			const setup = vi.fn()
-			store.lifecycle.onMounted(setup)
+			store.host.onMounted(setup)
 
-			store.lifecycle.mounted()
-			store.lifecycle.mounted()
+			store.host.mounted()
+			store.host.mounted()
 
 			expect(setup).toHaveBeenCalledTimes(1)
 		})
@@ -37,16 +47,16 @@ describe('Lifecycle', () => {
 			const store = new Store()
 			const source = signal<number>({initial: 0})
 			const observed = vi.fn()
-			store.lifecycle.onMounted(() => {
+			store.host.onMounted(() => {
 				watch(source, value => observed(value))
 			})
 
-			store.lifecycle.mounted()
+			store.host.mounted()
 			source(1)
 			expect(observed).toHaveBeenCalledTimes(1)
 			expect(observed).toHaveBeenLastCalledWith(1)
 
-			store.lifecycle.unmounted()
+			store.host.unmounted()
 			source(2)
 			expect(observed).toHaveBeenCalledTimes(1)
 		})
@@ -54,8 +64,8 @@ describe('Lifecycle', () => {
 		it('does nothing if registered after mount', () => {
 			const store = new Store()
 			const setup = vi.fn()
-			store.lifecycle.mounted()
-			store.lifecycle.onMounted(setup)
+			store.host.mounted()
+			store.host.onMounted(setup)
 			expect(setup).not.toHaveBeenCalled()
 		})
 
@@ -66,12 +76,12 @@ describe('Lifecycle', () => {
 			const setup = vi.fn(() => {
 				watch(source, value => observed(value))
 			})
-			store.lifecycle.onMounted(setup)
+			store.host.onMounted(setup)
 
-			store.lifecycle.mounted()
+			store.host.mounted()
 			source(1)
-			store.lifecycle.unmounted()
-			store.lifecycle.mounted()
+			store.host.unmounted()
+			store.host.mounted()
 			source(2)
 
 			expect(setup).toHaveBeenCalledTimes(2)
