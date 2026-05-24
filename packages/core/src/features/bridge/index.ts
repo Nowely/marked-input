@@ -1,0 +1,1 @@
+export {isTextTokenSpan} from './isTextTokenSpan'
