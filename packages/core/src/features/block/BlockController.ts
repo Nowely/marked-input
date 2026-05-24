@@ -1,6 +1,7 @@
 import type {Range} from '../../shared/editorContracts'
 import {event, watch} from '../../shared/signals'
 import type {DragAction} from '../../shared/types'
+import type {EditController} from '../edit'
 import type {Token} from '../parsing'
 import type {TokenModel} from '../parsing/TokenModel'
 import type {SelectionController} from '../selection/SelectionController'
@@ -17,7 +18,8 @@ export class BlockController {
 		private readonly props: PropsModel,
 		private readonly value: ValueModel,
 		private readonly tokens: TokenModel,
-		private readonly selection: SelectionController
+		private readonly selection: SelectionController,
+		private readonly edit: EditController
 	) {
 		watch(this.action, action => {
 			if (!this.props.layout.isBlock() || !this.props.draggable()) return
@@ -42,11 +44,9 @@ export class BlockController {
 		const value = this.value.current()
 		const rows = this.tokens.current()
 		const newValue = reorderDragRows(value, rows, action.source, action.target)
-		if (newValue !== value) {
-			const range = this.#rangeAfterDrag(action, rows, newValue)
-			if (range) this.selection.range(range)
-			this.value.current(newValue)
-		}
+		if (newValue === value) return
+		const caretAt = this.#rangeAfterDrag(action, rows, newValue)?.start
+		this.edit.replace({start: 0, end: -1}, newValue, caretAt)
 	}
 
 	#add(action: Extract<DragAction, {type: 'add'}>) {
@@ -55,27 +55,24 @@ export class BlockController {
 		const rows = rawRows.length > 0 ? rawRows : [EMPTY_TEXT_TOKEN]
 		const newRowContent = createRowContent(this.props.options())
 		const newValue = addDragRow(value, rows, action.afterIndex, newRowContent)
-		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.selection.range(range)
-		this.value.current(newValue)
+		const caretAt = this.#rangeAfterDrag(action, rows, newValue)?.start
+		this.edit.replace({start: 0, end: -1}, newValue, caretAt)
 	}
 
 	#delete(action: Extract<DragAction, {type: 'delete'}>) {
 		const value = this.value.current()
 		const rows = this.tokens.current()
 		const newValue = deleteDragRow(value, rows, action.index)
-		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.selection.range(range)
-		this.value.current(newValue)
+		const caretAt = this.#rangeAfterDrag(action, rows, newValue)?.start
+		this.edit.replace({start: 0, end: -1}, newValue, caretAt)
 	}
 
 	#duplicate(action: Extract<DragAction, {type: 'duplicate'}>) {
 		const value = this.value.current()
 		const rows = this.tokens.current()
 		const newValue = duplicateDragRow(value, rows, action.index)
-		const range = this.#rangeAfterDrag(action, rows, newValue)
-		if (range) this.selection.range(range)
-		this.value.current(newValue)
+		const caretAt = this.#rangeAfterDrag(action, rows, newValue)?.start
+		this.edit.replace({start: 0, end: -1}, newValue, caretAt)
 	}
 
 	#rangeAfterDrag(action: DragAction, previousRows: readonly Token[], nextValue: string): Range | undefined {

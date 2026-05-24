@@ -1,10 +1,10 @@
-# Drag Feature
+# Block Feature
 
-Manages the drag-and-drop block editing mode where each row/token is rendered as a separate draggable block. Subscribes to drag action events and dispatches operations like reorder, add, delete, duplicate, and merge.
+Manages the block editing mode where each row/token is rendered as a separate draggable block. Subscribes to drag action events and routes value mutations through `store.edit.replace()` so subscribers observe a batched value/caret update per drag operation.
 
 ## Components
 
-- **DragController**: Controller class that subscribes to `store.drag.action` and dispatches drag operations
+- **BlockController**: Subscribes to `store.block.action` (a reactive event) and dispatches drag operations (reorder, add, delete, duplicate). Receives `EditController` so all writes go through the single batched write path.
 - **getAlwaysShowHandle**: Extracts `alwaysShowHandle` from `DraggableConfig`
 - **EMPTY_TEXT_TOKEN**: Constant used as placeholder when no rows exist
 
@@ -14,4 +14,4 @@ The feature uses pure functions from `operations.ts` for manipulating the raw va
 
 ## Usage
 
-The feature is registered by the Store and activates when drag mode is enabled. Drag actions are dispatched via `store.drag.action`.
+The feature is registered by the Store and activates when block layout and `draggable` are both enabled. Drag actions are dispatched via `store.block.action({...})`.

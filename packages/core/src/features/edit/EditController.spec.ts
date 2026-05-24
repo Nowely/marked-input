@@ -71,4 +71,36 @@ describe('EditController', () => {
 		expect(store.value.current()).toBe('hello')
 		expect(store.selection.range()).toEqual({start: 5, end: 5})
 	})
+
+	it('honors explicit caretAt over the natural end of the replacement', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello world'})
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 0, end: 5}, 'hi', 0)
+
+		expect(store.value.current()).toBe('hi world')
+		expect(store.selection.range()).toEqual({start: 0, end: 0})
+	})
+
+	it('normalizes negative range.end to the current value length', () => {
+		const store = new Store()
+		store.props.set({defaultValue: 'hello world'})
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 0, end: -1}, 'replaced')
+
+		expect(store.value.current()).toBe('replaced')
+		expect(store.selection.range()).toEqual({start: 8, end: 8})
+	})
+
+	it('normalizes negative range.end on an empty value', () => {
+		const store = new Store()
+		store.lifecycle.mounted()
+
+		store.edit.replace({start: 0, end: -1}, 'first')
+
+		expect(store.value.current()).toBe('first')
+		expect(store.selection.range()).toEqual({start: 5, end: 5})
+	})
 })
